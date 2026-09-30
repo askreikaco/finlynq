@@ -337,7 +337,7 @@ export function Nav() {
 
   // Mobile bottom bar
   const mobileBar = (
-    <nav aria-label="Mobile navigation" className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-sidebar border-t border-sidebar-border">
+    <nav aria-label="Mobile navigation" className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-sidebar border-t border-sidebar-border pb-[env(safe-area-inset-bottom)]">
       <div className="flex items-center justify-around h-14">
         {mobileBarItems.map((item) => {
           const isActive = pathname.startsWith(item.href);
@@ -375,7 +375,7 @@ export function Nav() {
   const mobilePanel = mobileOpen && (
     <div className="md:hidden fixed inset-0 z-40">
       <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} aria-hidden="true" />
-      <div className="absolute bottom-14 left-0 right-0 bg-sidebar border-t border-sidebar-border rounded-t-xl max-h-[70vh] overflow-y-auto p-4 space-y-1 animate-in slide-in-from-bottom duration-200">
+      <div className="absolute bottom-[calc(3.5rem+env(safe-area-inset-bottom))] left-0 right-0 bg-sidebar border-t border-sidebar-border rounded-t-xl max-h-[70vh] overflow-y-auto p-4 space-y-1 animate-in slide-in-from-bottom duration-200">
         <div className="flex items-center justify-between mb-3">
           <span className="text-sm font-semibold text-sidebar-foreground">All Pages</span>
           <ThemeToggle />
