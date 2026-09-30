@@ -105,8 +105,8 @@ describe("finishPasswordLogin and issueSessionForDek", () => {
       const result = await finishPasswordLogin(user, "test-password");
 
       expect(result.kind).toBe("session");
-      expect(result.token).toBeTruthy();
       if (result.kind === "session") {
+        expect(result.token).toBeTruthy();
         expect(result.jti).toBeTruthy();
         expect(recordedLogins.has(testUserId)).toBe(true);
         expect(putDEKCalls.length).toBe(1);
@@ -134,13 +134,15 @@ describe("finishPasswordLogin and issueSessionForDek", () => {
       const result = await finishPasswordLogin(user, "test-password");
 
       expect(result.kind).toBe("mfa");
-      expect(result.token).toBeTruthy();
-      // MFA path should NOT call recordSuccessfulLogin
-      expect(recordedLogins.has(testUserId)).toBe(false);
-      // MFA path should cache DEK under a 5-minute TTL
-      expect(putDEKCalls.length).toBe(1);
-      expect(putDEKCalls[0].ttl).toBe(5 * 60_000); // 5 minutes
-      expect(putDEKCalls[0].userId).toBe(testUserId);
+      if (result.kind === "mfa") {
+        expect(result.token).toBeTruthy();
+        // MFA path should NOT call recordSuccessfulLogin
+        expect(recordedLogins.has(testUserId)).toBe(false);
+        // MFA path should cache DEK under a 5-minute TTL
+        expect(putDEKCalls.length).toBe(1);
+        expect(putDEKCalls[0].ttl).toBe(5 * 60_000); // 5 minutes
+        expect(putDEKCalls[0].userId).toBe(testUserId);
+      }
     });
   });
 
@@ -157,8 +159,8 @@ describe("finishPasswordLogin and issueSessionForDek", () => {
       const result = await issueSessionForDek(user as unknown as AuthUser, dek);
 
       expect(result.kind).toBe("session");
-      expect(result.token).toBeTruthy();
       if (result.kind === "session") {
+        expect(result.token).toBeTruthy();
         expect(result.jti).toBeTruthy();
       }
       expect(recordedLogins.has(testUserId)).toBe(true);
@@ -176,7 +178,9 @@ describe("finishPasswordLogin and issueSessionForDek", () => {
       const result = await issueSessionForDek(user as unknown as AuthUser, dek);
 
       expect(result.kind).toBe("mfa");
-      expect(result.token).toBeTruthy();
+      if (result.kind === "mfa") {
+        expect(result.token).toBeTruthy();
+      }
       expect(recordedLogins.has(testUserId)).toBe(false);
     });
 
@@ -191,7 +195,9 @@ describe("finishPasswordLogin and issueSessionForDek", () => {
       const result = await issueSessionForDek(user as unknown as AuthUser, null);
 
       expect(result.kind).toBe("session");
-      expect(result.token).toBeTruthy();
+      if (result.kind === "session") {
+        expect(result.token).toBeTruthy();
+      }
       // putDEK should not be called when dek is null
       expect(putDEKCalls.length).toBe(0);
       expect(recordedLogins.has(testUserId)).toBe(true);
@@ -211,9 +217,37 @@ describe("finishPasswordLogin and issueSessionForDek", () => {
       const result = await finishPasswordLogin(user as unknown as AuthUser, "test-password");
 
       expect(result.kind).toBe("session");
-      expect(result.token).toBeTruthy();
+      if (result.kind === "session") {
+        expect(result.token).toBeTruthy();
+      }
       // Should still issue a session even if promotion failed
       expect(recordedLogins.has(testUserId)).toBe(true);
+    });
+  });
+
+  describe("DEK unwrap failure", () => {
+    it("should return kind='unlock_failed' when DEK unwrap fails", async () => {
+      // This test uses real createWrappedDEKForPassword but corrupts the envelope
+      // by passing invalid base64 data. When unwrapDEK tries to decrypt, it fails.
+      const testUserId = "user-unwrap-fail";
+
+      const user = {
+        id: testUserId,
+        mfaEnabled: 0,
+        kekSalt: "invalid-base64-that-will-fail",
+        dekWrapped: "invalid-base64-that-will-fail",
+        dekWrappedIv: "invalid-base64-that-will-fail",
+        dekWrappedTag: "invalid-base64-that-will-fail",
+        pepperVersion: 1,
+      };
+
+      const result = await finishPasswordLogin(user as unknown as AuthUser, "test-password");
+
+      expect(result.kind).toBe("unlock_failed");
+      // Should not have issued a session
+      expect(recordedLogins.has(testUserId)).toBe(false);
+      // Should not have cached a DEK
+      expect(putDEKCalls.length).toBe(0);
     });
   });
 });

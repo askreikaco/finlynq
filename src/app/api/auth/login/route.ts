@@ -147,7 +147,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Build the response based on whether MFA is required or not.
+    // Build the response based on the result kind.
+    if (result.kind === "unlock_failed") {
+      return NextResponse.json(
+        { error: "Unable to unlock your encrypted data. Please contact support." },
+        { status: 500 }
+      );
+    }
+
     if (result.kind === "mfa") {
       return NextResponse.json({
         mfaRequired: true,

@@ -34,7 +34,8 @@ interface AuthUser {
 /** Result of finishPasswordLogin and issueSessionForDek. */
 export type FinishLoginResult =
   | { kind: "mfa"; token: string }
-  | { kind: "session"; token: string; jti: string };
+  | { kind: "session"; token: string; jti: string }
+  | { kind: "unlock_failed" };
 
 /**
  * Complete the login flow after password verification succeeds.
@@ -109,7 +110,7 @@ export async function finishPasswordLogin(
       }
     } catch (err) {
       await logApiError("finish-login", "unwrap", err);
-      throw new Error("Unable to unlock your encrypted data. Please contact support.");
+      return { kind: "unlock_failed" };
     }
   } else {
     // Grace migration: pre-encryption account. bcrypt just verified the
