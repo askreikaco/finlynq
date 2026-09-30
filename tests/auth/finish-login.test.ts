@@ -137,6 +137,7 @@ describe("finishPasswordLogin and issueSessionForDek", () => {
       expect(result.kind).toBe("mfa");
       if (result.kind === "mfa") {
         expect(result.token).toBeTruthy();
+        expect(result.jti).toBeTruthy();
         expect(result.dek).toBeTruthy();
         // MFA path should NOT call recordSuccessfulLogin
         expect(recordedLogins.has(testUserId)).toBe(false);
@@ -183,6 +184,7 @@ describe("finishPasswordLogin and issueSessionForDek", () => {
       expect(result.kind).toBe("mfa");
       if (result.kind === "mfa") {
         expect(result.token).toBeTruthy();
+        expect(result.jti).toBeTruthy();
         expect(result.dek).toBe(dek);
       }
       expect(recordedLogins.has(testUserId)).toBe(false);

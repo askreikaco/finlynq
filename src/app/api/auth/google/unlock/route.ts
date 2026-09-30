@@ -11,6 +11,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { verifyShortLived, revokeJti } from "@/lib/auth/jwt";
 import { issueDevice } from "@/lib/auth/trusted-device";
 import { verifyPassword } from "@/lib/auth";
@@ -20,7 +21,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { clientIp } from "@/lib/client-ip";
 
 export async function POST(req: NextRequest) {
-  // Parse request body
+  // Parse and validate request body
   let body;
   try {
     body = await req.json();
@@ -28,10 +29,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const password = body.password as string;
-  if (!password) {
+  const bodySchema = z.object({ password: z.string().min(1).max(256) });
+  const validation = bodySchema.safeParse(body);
+  if (!validation.success) {
     return NextResponse.json({ error: "Password required" }, { status: 400 });
   }
+
+  const password = validation.data.password;
 
   // Rate limit by IP
   const ip = clientIp(req);
@@ -61,13 +65,13 @@ export async function POST(req: NextRequest) {
     const unlockExp = unlockPayload.exp;
 
     // Rate limit by user (hourly: 10 per hour)
-    const userLimit = checkRateLimit(`google:unlock:user:${userId}`, 10, 3600);
+    const userLimit = checkRateLimit(`google:unlock:user:${userId}`, 10, 3_600_000);
     if (!userLimit.allowed) {
       return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
 
     // Rate limit by user (daily: 50 per 24h)
-    const userDailyLimit = checkRateLimit(`google:unlock:user:d:${userId}`, 50, 86400);
+    const userDailyLimit = checkRateLimit(`google:unlock:user:d:${userId}`, 50, 86_400_000);
     if (!userDailyLimit.allowed) {
       return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
@@ -155,7 +159,7 @@ export async function POST(req: NextRequest) {
         sub: googleSub,
         email: googleEmail,
         emailVerified: googleEmailVerified,
-        pendingJti: unlockJti,
+        pendingJti: loginResult.jti,
       };
       const googleLinkToken = await signShortLived(googleLinkPayload, 300, "google-link"); // 5 min
 

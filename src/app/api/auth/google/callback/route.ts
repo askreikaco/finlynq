@@ -102,12 +102,26 @@ export async function GET(req: NextRequest) {
 
   // Verify state parameter matches (constant-time)
   if (typeof (statePayload.state) !== "string") {
-    return redirectToCloud({ error: "google_invalid_state" });
+    const response = NextResponse.redirect(
+      new URL("/cloud", process.env.APP_URL || "http://localhost:3000")
+    );
+    response.cookies.delete("pf_oauth_state");
+    return redirectToCloud({ error: "google_invalid_state" }, response);
   }
   const expectedState = statePayload.state;
   if (!constantTimeEqual(state, expectedState)) {
-    return redirectToCloud({ error: "google_state_mismatch" });
+    const response = NextResponse.redirect(
+      new URL("/cloud", process.env.APP_URL || "http://localhost:3000")
+    );
+    response.cookies.delete("pf_oauth_state");
+    return redirectToCloud({ error: "google_state_mismatch" }, response);
   }
+
+  // Create response and clear the state cookie (single-use)
+  const response = NextResponse.redirect(
+    new URL("/cloud", process.env.APP_URL || "http://localhost:3000")
+  );
+  response.cookies.delete("pf_oauth_state");
 
   const nonce = statePayload.nonce as string;
   const codeVerifier = statePayload.codeVerifier as string;
@@ -121,24 +135,18 @@ export async function GET(req: NextRequest) {
     tokens = await exchangeCode({ code, codeVerifier });
   } catch (e) {
     console.error("Token exchange failed:", e);
-    return redirectToCloud({ error: "google_exchange_failed" });
+    return redirectToCloud({ error: "google_exchange_failed" }, response);
   }
 
   // Verify ID token
   const claims = await verifyIdToken(tokens.id_token, nonce);
   if (!claims) {
-    return redirectToCloud({ error: "google_token_invalid" });
+    return redirectToCloud({ error: "google_token_invalid" }, response);
   }
 
   const googleSub = claims.sub;
   const googleEmail = claims.email;
   const googleEmailVerified = claims.email_verified;
-
-  // Create response and clear the state cookie (single-use)
-  const response = NextResponse.redirect(
-    new URL("/cloud", process.env.APP_URL || "http://localhost:3000")
-  );
-  response.cookies.delete("pf_oauth_state");
 
   try {
     // Handle intent=link early, right after ID token is verified
@@ -239,13 +247,20 @@ export async function GET(req: NextRequest) {
             });
             return redirectToCloudWithNextUrl(response, next);
           } else if (result.kind === "mfa") {
-            // MFA required — set unlock cookie (do NOT set device yet)
+            // MFA required — set unlock cookie and rotated device cookie
             response.cookies.set("pf_unlock", result.token, {
               httpOnly: true,
               secure: process.env.NODE_ENV === "production",
               sameSite: "lax",
               maxAge: 600, // 10 min
               path: "/",
+            });
+            response.cookies.set("pf_device", redeemed.rotatedCookieValue, {
+              httpOnly: true,
+              secure: process.env.NODE_ENV === "production",
+              sameSite: "lax",
+              maxAge: redeemed.maxAgeSeconds,
+              path: "/api/auth",
             });
             return redirectToCloud({ step: "mfa" }, response);
           }

@@ -33,7 +33,7 @@ interface AuthUser {
 
 /** Result of finishPasswordLogin and issueSessionForDek. */
 export type FinishLoginResult =
-  | { kind: "mfa"; token: string; dek: Buffer | null }
+  | { kind: "mfa"; token: string; jti: string; dek: Buffer | null }
   | { kind: "session"; token: string; jti: string; dek: Buffer | null }
   | { kind: "unlock_failed" };
 
@@ -166,7 +166,7 @@ export async function issueSessionForDek(
       { pending: true, expirationTime: "5m" }
     );
     if (dek) putDEK(pendingJti, dek, 5 * 60_000, user.id);
-    return { kind: "mfa", token: pendingToken, dek };
+    return { kind: "mfa", token: pendingToken, jti: pendingJti, dek };
   }
 
   // No MFA — issue full session and cache the DEK under this session's jti.
