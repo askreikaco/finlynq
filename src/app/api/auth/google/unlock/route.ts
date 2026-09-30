@@ -1,0 +1,231 @@
+/**
+ * POST /api/auth/google/unlock
+ *
+ * Handles password unlock after Google sign-in.
+ *
+ * Reads pf_unlock (pending token) and pf_google_unlock_data (signed Google claims).
+ * Verifies the password, issues a device cookie, links the identity,
+ * and sets the session cookie.
+ *
+ * Rate limits: 5/60s per IP (like login), plus per-user limits.
+ */
+
+import { NextRequest, NextResponse } from "next/server";
+import { verifyShortLived, revokeJti } from "@/lib/auth/jwt";
+import { issueDevice } from "@/lib/auth/trusted-device";
+import { verifyPassword } from "@/lib/auth";
+import { finishPasswordLogin } from "@/lib/auth/finish-login";
+import { upsertIdentity } from "@/lib/auth/queries";
+import { checkRateLimit } from "@/lib/rate-limit";
+
+export async function POST(req: NextRequest) {
+  // Parse request body
+  let body;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const password = body.password as string;
+  if (!password) {
+    return NextResponse.json({ error: "Password required" }, { status: 400 });
+  }
+
+  // Rate limit by IP
+  const ip = req.headers.get("x-forwarded-for") || "0.0.0.0";
+  const ipLimit = checkRateLimit(`google:unlock:${ip}`, 5, 60_000);
+  if (!ipLimit.allowed) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
+  // Read cookies
+  const unlockToken = req.cookies.get("pf_unlock")?.value;
+  const googleDataToken = req.cookies.get("pf_google_unlock_data")?.value;
+
+  if (!unlockToken || !googleDataToken) {
+    return NextResponse.json({ error: "Missing unlock tokens" }, { status: 400 });
+  }
+
+  try {
+    // Decode the unlock token (pending session JWT)
+    const { verifySessionToken } = await import("@/lib/auth/jwt");
+    const unlockPayload = await verifySessionToken(unlockToken);
+    if (!unlockPayload || !unlockPayload.sub || !unlockPayload.pending) {
+      return NextResponse.json({ error: "Invalid unlock token" }, { status: 400 });
+    }
+
+    const userId = unlockPayload.sub;
+    const unlockJti = unlockPayload.jti;
+
+    // Rate limit by user
+    const userLimit = checkRateLimit(`google:unlock:user:${userId}`, 10, 60 * 60 * 1000);
+    if (!userLimit.allowed) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
+    // Decode Google data
+    const googleData = await verifyShortLived(googleDataToken);
+    if (!googleData) {
+      return NextResponse.json({ error: "Invalid Google data" }, { status: 400 });
+    }
+
+    const googleSub = googleData.sub as string;
+    const googleEmail = googleData.email as string;
+    const googleEmailVerified = googleData.emailVerified as boolean;
+
+    // Fetch user
+    const { db } = await import("@/db");
+    const { users } = await import("@/db/schema-pg");
+    const { eq } = await import("drizzle-orm");
+
+    const userRows = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    if (userRows.length === 0) {
+      return NextResponse.json({ error: "User not found" }, { status: 401 });
+    }
+
+    const user = userRows[0];
+
+    // Verify password
+    const passwordValid = await verifyPassword(password, user.passwordHash);
+    if (!passwordValid) {
+      return NextResponse.json({ error: "Invalid password" }, { status: 401 });
+    }
+
+    // Password verified — now we can link the identity, issue device, and complete login
+    // Finish the login (unwrap DEK, handle MFA, etc.)
+    // finishPasswordLogin expects an AuthUser with just the fields it needs
+    const authUser = {
+      id: user.id,
+      mfaEnabled: user.mfaEnabled,
+      kekSalt: user.kekSalt,
+      dekWrapped: user.dekWrapped,
+      dekWrappedIv: user.dekWrappedIv,
+      dekWrappedTag: user.dekWrappedTag,
+      pepperVersion: user.pepperVersion,
+    };
+    const loginResult = await finishPasswordLogin(authUser, password);
+
+    if (loginResult.kind === "unlock_failed") {
+      // Password unlock failed
+      return NextResponse.json({ error: "Invalid password" }, { status: 401 });
+    }
+
+    if (loginResult.kind === "mfa") {
+      // MFA required — the DEK is cached under the pending jti
+      // Issue a device cookie before returning MFA challenge
+      // We need to derive the DEK from the password to issue the device
+      const { deriveKEK, unwrapDEK } = await import("@/lib/crypto/envelope");
+      const kek = deriveKEK(
+        password,
+        Buffer.from(user.kekSalt || "", "base64"),
+        user.pepperVersion ?? 1
+      );
+      const dek = unwrapDEK(kek, {
+        salt: Buffer.from(user.kekSalt || "", "base64"),
+        wrapped: Buffer.from(user.dekWrapped || "", "base64"),
+        iv: Buffer.from(user.dekWrappedIv || "", "base64"),
+        tag: Buffer.from(user.dekWrappedTag || "", "base64"),
+      });
+
+      const userAgent = req.headers.get("user-agent") || undefined;
+      const device = await issueDevice(userId, dek, userAgent);
+
+      const response = NextResponse.json({
+        mfaRequired: true,
+        mfaPendingToken: loginResult.token,
+      });
+
+      if (device) {
+        response.cookies.set("pf_device", device.cookieValue, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          maxAge: device.maxAgeSeconds,
+          path: "/api/auth",
+        });
+      }
+
+      // Clear unlock cookies and revoke jti
+      response.cookies.delete("pf_unlock");
+      response.cookies.delete("pf_google_unlock_data");
+      if (unlockJti) {
+        await revokeJti(unlockJti, new Date(Date.now() + 10 * 60 * 1000));
+      }
+
+      return response;
+    }
+
+    // Full session — link identity, issue device, set cookies
+    // issueSessionForDek has already cached the DEK, we just need to get it for the device cookie
+    const { deriveKEK, unwrapDEK } = await import("@/lib/crypto/envelope");
+    const kek = deriveKEK(
+      password,
+      Buffer.from(user.kekSalt || "", "base64"),
+      user.pepperVersion ?? 1
+    );
+    const dek = unwrapDEK(kek, {
+      salt: Buffer.from(user.kekSalt || "", "base64"),
+      wrapped: Buffer.from(user.dekWrapped || "", "base64"),
+      iv: Buffer.from(user.dekWrappedIv || "", "base64"),
+      tag: Buffer.from(user.dekWrappedTag || "", "base64"),
+    });
+
+    // Upsert the identity (link Google account)
+    await upsertIdentity({
+      userId,
+      provider: "google",
+      subject: googleSub,
+      email: googleEmail,
+      emailVerified: googleEmailVerified ? 1 : 0,
+    });
+
+    // Issue a device cookie
+    const userAgent = req.headers.get("user-agent") || undefined;
+    const device = await issueDevice(userId, dek, userAgent);
+
+    // Build response
+    const response = NextResponse.json({ ok: true });
+
+    // Set session cookie
+    response.cookies.set("pf_session", loginResult.token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 24 * 60 * 60, // 24h
+      path: "/",
+    });
+
+    // Set device cookie if issued
+    if (device) {
+      response.cookies.set("pf_device", device.cookieValue, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: device.maxAgeSeconds,
+        path: "/api/auth",
+      });
+    }
+
+    // Clear unlock cookies and revoke unlock jti
+    response.cookies.delete("pf_unlock");
+    response.cookies.delete("pf_google_unlock_data");
+
+    if (unlockJti) {
+      await revokeJti(unlockJti, new Date(Date.now() + 10 * 60 * 1000));
+    }
+
+    return response;
+  } catch (error) {
+    console.error("Google unlock failed:", error);
+    return NextResponse.json(
+      { error: "Server error" },
+      { status: 500 }
+    );
+  }
+}
