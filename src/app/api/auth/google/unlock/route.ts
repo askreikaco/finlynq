@@ -109,10 +109,10 @@ export async function POST(req: NextRequest) {
 
     const user = userRows[0];
 
-    // Verify password
-    const passwordValid = await verifyPassword(password, user.passwordHash);
-    if (!passwordValid) {
-      // Wrong password — revoke the pending unlock token so it can't be replayed
+    // Per-pending-token retry limit: 5 attempts per 15 minutes
+    const retryLimit = checkRateLimit(`google:unlock:pending:${unlockJti}`, 5, 900_000); // 15 min
+    if (!retryLimit.allowed) {
+      // Too many attempts — revoke the pending unlock token and clear cookies
       if (unlockJti && unlockExp) {
         try {
           const expDate = typeof unlockExp === "number"
@@ -120,15 +120,21 @@ export async function POST(req: NextRequest) {
             : new Date(Date.now() + 5 * 60 * 1000);
           await revokeJti(unlockJti, expDate);
         } catch {
-          // Swallow — revocation failure shouldn't block the login denial
+          // Swallow — revocation failure shouldn't block the response
         }
       }
 
-      // Clear unlock cookies
-      const response = NextResponse.json({ error: "Invalid password" }, { status: 401 });
+      const response = NextResponse.json({ error: "Too many requests" }, { status: 429 });
       response.cookies.delete("pf_unlock");
       response.cookies.delete("pf_google_unlock_data");
       return response;
+    }
+
+    // Verify password
+    const passwordValid = await verifyPassword(password, user.passwordHash);
+    if (!passwordValid) {
+      // Wrong password — allow retries, do NOT revoke jti or clear cookies
+      return NextResponse.json({ error: "Wrong password", retry: true }, { status: 401 });
     }
 
     // Password verified — now we can link the identity, issue device, and complete login

@@ -162,8 +162,8 @@ describe("/api/auth/google/unlock", () => {
     expect(data.error).toBe("Password required");
   });
 
-  it("c) wrong password → 401, upsertIdentity NOT called, pf_unlock cleared", async () => {
-    const { token: unlockToken } = await createSessionToken("user_id_123", false, {
+  it("c) wrong password → 401 with retry:true, upsertIdentity NOT called, cookies NOT cleared", async () => {
+    const { token: unlockToken, jti: unlockJti } = await createSessionToken("user_id_123", false, {
       pending: true,
       expirationTime: "5m",
     });
@@ -184,14 +184,18 @@ describe("/api/auth/google/unlock", () => {
     const res = await POST(req);
     expect(res.status).toBe(401);
     const data = await res.json();
-    expect(data.error).toBe("Invalid password");
+    expect(data.error).toBe("Wrong password");
+    expect(data.retry).toBe(true);
 
     // Verify upsertIdentity was NOT called
     expect(mockUpsertIdentity).not.toHaveBeenCalled();
 
-    // Verify pf_unlock cookie was cleared
+    // Verify jti was NOT revoked (allow retries)
+    expect(mockRevokeJti).not.toHaveBeenCalled();
+
+    // Verify pf_unlock cookie was NOT cleared (allow retries)
     const setCookie = res.headers.get("set-cookie") || "";
-    expect(setCookie).toContain("pf_unlock");
+    expect(setCookie).not.toContain("pf_unlock");
   });
 
   it("d) right password, finishPasswordLogin → session → 200, upsertIdentity called, issueDevice called", async () => {
@@ -414,6 +418,79 @@ describe("/api/auth/google/unlock", () => {
     expect(dailyLimitCall).toBeDefined();
     if (dailyLimitCall) {
       expect(dailyLimitCall[2]).toBe(86_400_000); // windowMs should be 24h in milliseconds
+    }
+  });
+
+  it("h) 6th attempt → 429, jti revoked, cookies cleared", async () => {
+    const { token: unlockToken, jti: unlockJti } = await createSessionToken("user_id_123", false, {
+      pending: true,
+      expirationTime: "5m",
+    });
+    const googleDataToken = await signShortLived(
+      { userId: "user_id_123", sub: "google_sub", email: "user@test.com", emailVerified: true },
+      300,
+      "google-unlock-data"
+    );
+
+    // Per-pending-token retry limit exceeded
+    mockCheckRateLimit.mockImplementation((key: string) => {
+      if (key.includes("google:unlock:pending:")) {
+        return { allowed: false } as any; // Exceeded per-pending limit
+      }
+      return { allowed: true } as any;
+    });
+
+    const req = makeUnlockRequest({
+      unlockToken,
+      googleDataToken,
+      body: { password: "wrong_password" },
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(429);
+    const data = await res.json();
+    expect(data.error).toBe("Too many requests");
+
+    // Verify jti was revoked
+    expect(mockRevokeJti).toHaveBeenCalledWith(unlockJti, expect.any(Date));
+
+    // Verify cookies were cleared
+    for (const name of ["pf_unlock", "pf_google_unlock_data"]) {
+      const c = res.cookies.get(name);
+      expect(c?.value).toBe("");
+    }
+  });
+
+  it("i) per-pending-token limit uses 15-minute window", async () => {
+    const { token: unlockToken } = await createSessionToken("user_id_123", false, {
+      pending: true,
+      expirationTime: "5m",
+    });
+    const googleDataToken = await signShortLived(
+      { userId: "user_id_123", sub: "google_sub", email: "user@test.com", emailVerified: true },
+      300,
+      "google-unlock-data"
+    );
+
+    mockCheckRateLimit.mockReturnValue({ allowed: true } as any);
+    mockVerifyPassword.mockResolvedValue(false);
+
+    const req = makeUnlockRequest({
+      unlockToken,
+      googleDataToken,
+      body: { password: "wrong_password" },
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(401);
+
+    // Verify checkRateLimit was called with 15-minute window for pending jti
+    const calls = mockCheckRateLimit.mock.calls;
+    const pendingLimitCall = calls.find((c) => c[0].includes("google:unlock:pending:"));
+    expect(pendingLimitCall).toBeDefined();
+    if (pendingLimitCall) {
+      expect(pendingLimitCall[1]).toBe(5); // 5 attempts
+      expect(pendingLimitCall[2]).toBe(900_000); // 15 minutes in milliseconds
     }
   });
 });
