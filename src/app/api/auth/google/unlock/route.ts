@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
 
   // Rate limit by IP
   const ip = req.headers.get("x-forwarded-for") || "0.0.0.0";
-  const ipLimit = checkRateLimit(`google:unlock:${ip}`, 5, 60_000);
+  const ipLimit = checkRateLimit(`google:unlock:${ip}`, 5, 60);
   if (!ipLimit.allowed) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
     const unlockJti = unlockPayload.jti;
 
     // Rate limit by user
-    const userLimit = checkRateLimit(`google:unlock:user:${userId}`, 10, 60 * 60 * 1000);
+    const userLimit = checkRateLimit(`google:unlock:user:${userId}`, 10, 3600);
     if (!userLimit.allowed) {
       return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
@@ -117,39 +117,30 @@ export async function POST(req: NextRequest) {
     }
 
     if (loginResult.kind === "mfa") {
-      // MFA required — the DEK is cached under the pending jti
-      // Issue a device cookie before returning MFA challenge
-      // We need to derive the DEK from the password to issue the device
-      const { deriveKEK, unwrapDEK } = await import("@/lib/crypto/envelope");
-      const kek = deriveKEK(
-        password,
-        Buffer.from(user.kekSalt || "", "base64"),
-        user.pepperVersion ?? 1
-      );
-      const dek = unwrapDEK(kek, {
-        salt: Buffer.from(user.kekSalt || "", "base64"),
-        wrapped: Buffer.from(user.dekWrapped || "", "base64"),
-        iv: Buffer.from(user.dekWrappedIv || "", "base64"),
-        tag: Buffer.from(user.dekWrappedTag || "", "base64"),
-      });
-
-      const userAgent = req.headers.get("user-agent") || undefined;
-      const device = await issueDevice(userId, dek, userAgent);
+      // MFA required — do NOT issue device yet. Set pf_google_link cookie
+      // which will be verified in mfa/verify after MFA passes.
+      const { signShortLived } = await import("@/lib/auth/jwt");
+      const googleLinkPayload = {
+        userId,
+        sub: googleSub,
+        email: googleEmail,
+        emailVerified: googleEmailVerified,
+        pendingJti: unlockJti,
+      };
+      const googleLinkToken = await signShortLived(googleLinkPayload, 300); // 5 min
 
       const response = NextResponse.json({
         mfaRequired: true,
         mfaPendingToken: loginResult.token,
       });
 
-      if (device) {
-        response.cookies.set("pf_device", device.cookieValue, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "lax",
-          maxAge: device.maxAgeSeconds,
-          path: "/api/auth",
-        });
-      }
+      response.cookies.set("pf_google_link", googleLinkToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 300, // 5 min
+        path: "/",
+      });
 
       // Clear unlock cookies and revoke jti
       response.cookies.delete("pf_unlock");

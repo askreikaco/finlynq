@@ -36,11 +36,15 @@ function isSafeNext(next: string | null | undefined): next is string {
   return true;
 }
 
-function redirectToCloud(query: Record<string, string>): NextResponse {
+function redirectToCloud(query: Record<string, string>, response?: NextResponse): NextResponse {
   const url = new URL("/cloud", process.env.APP_URL || "http://localhost:3000");
   Object.entries(query).forEach(([key, value]) => {
     url.searchParams.set(key, value);
   });
+  if (response) {
+    response.headers.set("Location", url.toString());
+    return response;
+  }
   return NextResponse.redirect(url);
 }
 
@@ -52,7 +56,7 @@ export async function GET(req: NextRequest) {
 
   // Rate limit by IP
   const ip = req.headers.get("x-forwarded-for") || "0.0.0.0";
-  const rateLimit = checkRateLimit(`google:callback:${ip}`, 10, 60_000);
+  const rateLimit = checkRateLimit(`google:callback:${ip}`, 10, 60);
   if (!rateLimit.allowed) {
     return redirectToCloud({ error: "google_rate_limit" });
   }
@@ -84,7 +88,10 @@ export async function GET(req: NextRequest) {
   }
 
   // Verify state parameter matches (constant-time)
-  const expectedState = statePayload.state as string;
+  if (typeof (statePayload.state) !== "string") {
+    return redirectToCloud({ error: "google_invalid_state" });
+  }
+  const expectedState = statePayload.state;
   if (!constantTimeEqual(state, expectedState)) {
     return redirectToCloud({ error: "google_state_mismatch" });
   }
@@ -114,7 +121,7 @@ export async function GET(req: NextRequest) {
   const googleEmail = claims.email;
   const googleEmailVerified = claims.email_verified;
 
-  // Clear the state cookie
+  // Create response and clear the state cookie (single-use)
   const response = NextResponse.redirect(
     new URL("/cloud", process.env.APP_URL || "http://localhost:3000")
   );
@@ -139,7 +146,7 @@ export async function GET(req: NextRequest) {
         .limit(1);
 
       if (userRows.length === 0) {
-        return redirectToCloud({ error: "google_user_not_found" });
+        return redirectToCloud({ error: "google_user_not_found" }, response);
       }
 
       const user = userRows[0];
@@ -169,7 +176,7 @@ export async function GET(req: NextRequest) {
             });
             return redirectToCloudWithNextUrl(response, next);
           } else if (result.kind === "mfa") {
-            // MFA required — set unlock and mfa cookies
+            // MFA required — set unlock cookie (do NOT set device yet)
             response.cookies.set("pf_unlock", result.token, {
               httpOnly: true,
               secure: process.env.NODE_ENV === "production",
@@ -177,14 +184,7 @@ export async function GET(req: NextRequest) {
               maxAge: 600, // 10 min
               path: "/",
             });
-            response.cookies.set("pf_device", redeemed.rotatedCookieValue, {
-              httpOnly: true,
-              secure: process.env.NODE_ENV === "production",
-              sameSite: "lax",
-              maxAge: redeemed.maxAgeSeconds,
-              path: "/api/auth",
-            });
-            return redirectToCloud({ step: "mfa" });
+            return redirectToCloud({ step: "mfa" }, response);
           }
         }
       }
@@ -217,7 +217,7 @@ export async function GET(req: NextRequest) {
         path: "/",
       });
 
-      return redirectToCloud({ step: "unlock" });
+      return redirectToCloud({ step: "unlock" }, response);
     }
 
     // No identity for this sub — check if email matches an existing user
@@ -252,7 +252,7 @@ export async function GET(req: NextRequest) {
           path: "/",
         });
 
-        return redirectToCloud({ step: "unlock" });
+        return redirectToCloud({ step: "unlock" }, response);
       }
     }
 
@@ -273,10 +273,10 @@ export async function GET(req: NextRequest) {
       path: "/",
     });
 
-    return redirectToCloud({ tab: "register", google: "1" });
+    return redirectToCloud({ tab: "register", google: "1" }, response);
   } catch (e) {
     console.error("Callback processing failed:", e);
-    return redirectToCloud({ error: "google_server_error" });
+    return redirectToCloud({ error: "google_server_error" }, response);
   }
 }
 
