@@ -407,7 +407,7 @@ export default function AdminSystemPage() {
 
   return (
     <div className="max-w-7xl space-y-6">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
             <Server className="h-5 w-5 text-primary" />
@@ -425,7 +425,7 @@ export default function AdminSystemPage() {
             <span className="font-medium text-foreground">this environment only</span>.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <input
               type="checkbox"

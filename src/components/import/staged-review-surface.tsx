@@ -1152,7 +1152,7 @@ export function StagedReviewSurface({
 
   // Two-pane reconciliation view — batch open.
   return (
-    <div className="space-y-4 flex flex-col h-[calc(100vh-8rem)]">
+    <div className="space-y-4 flex flex-col md:h-[calc(100dvh-8rem)]">
       <ReconcileHeader
         detail={detail}
         accountId={accountId}

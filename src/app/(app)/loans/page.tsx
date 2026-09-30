@@ -1,7 +1,5 @@
 "use client";
 
-import { DevModeGuard } from "@/components/dev-mode-guard";
-
 import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -684,4 +682,4 @@ function LoansPageContent() {
   );
 }
 
-export default function LoansPage() { return <DevModeGuard><LoansPageContent /></DevModeGuard>; }
+export default function LoansPage() { return <LoansPageContent />; }

@@ -184,7 +184,7 @@ export default function AdminApiLogPage() {
 
   return (
     <div className="max-w-7xl space-y-6">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
             <Activity className="h-5 w-5 text-primary" />

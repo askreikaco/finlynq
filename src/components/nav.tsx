@@ -49,7 +49,7 @@ type NavItem = { href: string; label: string; icon: LucideIcon; color: string; m
 // landing's restraint. Inactive icons use the sidebar-foreground muted tones.
 const ACTIVE_ACCENT = "text-primary";
 
-const navGroups: { label: string; items: NavItem[] }[] = [
+export const navGroups: { label: string; items: NavItem[] }[] = [
   {
     label: "",
     items: [
@@ -65,8 +65,8 @@ const navGroups: { label: string; items: NavItem[] }[] = [
       { href: "/transactions", label: "Transactions", icon: ArrowLeftRight, color: ACTIVE_ACCENT, mode: "prod" },
       { href: "/budgets", label: "Budgets", icon: PiggyBank, color: ACTIVE_ACCENT, mode: "prod" },
       { href: "/goals", label: "Goals", icon: Target, color: ACTIVE_ACCENT, mode: "prod" },
-      { href: "/subscriptions", label: "Subscriptions", icon: CreditCard, color: ACTIVE_ACCENT, mode: "dev" },
-      { href: "/calendar", label: "Calendar", icon: CalendarDays, color: ACTIVE_ACCENT, mode: "dev" },
+      { href: "/subscriptions", label: "Subscriptions", icon: CreditCard, color: ACTIVE_ACCENT, mode: "prod" },
+      { href: "/calendar", label: "Calendar", icon: CalendarDays, color: ACTIVE_ACCENT, mode: "prod" },
     ],
   },
   {
@@ -74,7 +74,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     items: [
       { href: "/accounts", label: "Accounts", icon: Wallet, color: ACTIVE_ACCENT, mode: "prod" },
       { href: "/portfolio", label: "Portfolio", icon: TrendingUp, color: ACTIVE_ACCENT, mode: "prod" },
-      { href: "/loans", label: "Loans & Debt", icon: Landmark, color: ACTIVE_ACCENT, mode: "dev" },
+      { href: "/loans", label: "Loans & Debt", icon: Landmark, color: ACTIVE_ACCENT, mode: "prod" },
     ],
   },
   {

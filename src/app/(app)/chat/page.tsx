@@ -378,7 +378,7 @@ function ChatPageContent() {
   // ─── Render ─────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col h-[calc(100vh-2rem)] max-h-[calc(100vh-2rem)] md:h-screen md:max-h-screen">
+    <div className="flex flex-col h-[calc(100dvh-8.5rem)] md:h-[calc(100dvh-4rem)]">
       {/* Header */}
       <div className="flex items-center justify-between px-4 md:px-6 py-3 border-b border-border bg-background/80 backdrop-blur-sm shrink-0">
         <div className="flex items-center gap-3">
