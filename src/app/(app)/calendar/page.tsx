@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
-import {
 import { nextDate, prevDate } from "@/lib/utils/date";
+import {
   ChevronLeft,
   ChevronRight,
   DollarSign,
@@ -66,17 +66,17 @@ function generateOccurrences(
   currency: string,
   displayAmount: number,
   frequency: string,
-  nextDate: string,
+  startDate: string,
   monthStart: string,
   monthEnd: string,
   type: "bill" | "income",
   source: "subscription" | "recurring"
 ): CalendarEvent[] {
   const events: CalendarEvent[] = [];
-  let current = nextDate;
+  let current = startDate;
 
-  // Walk backwards if nextDate is after monthEnd to find earlier occurrences
-  // Walk forward from nextDate to cover the month
+  // Walk backwards if startDate is after monthEnd to find earlier occurrences
+  // Walk forward from startDate to cover the month
   // First, rewind to before monthStart
   let rewindDate = current;
   for (let i = 0; i < 60; i++) {
