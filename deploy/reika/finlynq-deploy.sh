@@ -58,6 +58,7 @@ fi
 
 /usr/local/bin/finlynq-backup.sh
 
+SCHEMA_CHANGE=false
 # Check if the new image has any new migration files compared to the previous image
 if [ -n "$PREV" ]; then
   PREV_MIGRATIONS=$(docker run --rm --entrypoint ls "$IMG:prev" /app/scripts/migrations 2>&1 | sort) || {
