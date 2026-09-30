@@ -167,6 +167,7 @@ export async function GET(request: NextRequest) {
     auth.context.dek,
     goals.map((g) => ({
       id: g.id,
+      type: g.type,
       currency: g.currency ?? null,
       targetAmount: g.targetAmount,
       deadline: g.deadline ?? null,
