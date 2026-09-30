@@ -50,7 +50,7 @@ import {
 import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
 import { Badge } from "@/components/ui/badge";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
-import { formatCurrency, formatDate, currencyDecimals } from "@/lib/currency";
+import { formatCurrency, formatDate, currencyDecimals, fxPreviewText } from "@/lib/currency";
 import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import {
@@ -710,8 +710,8 @@ export function TransactionDialog({
             to: toAcct.currency,
           });
           if (!transferReceivedTouched) {
-            const decimals = toAcct ? currencyDecimals(toAcct.currency) : 2;
-            setTransferForm((tf) => ({ ...tf, receivedAmount: converted.toFixed(decimals) }));
+            const targetCcy = toAcct?.currency ?? "USD";
+            setTransferForm((tf) => ({ ...tf, receivedAmount: fxPreviewText(converted, targetCcy) }));
           }
         })
         .catch((e) => setTransferFxPreview({ state: "error", message: String(e?.message ?? "Network error") }));
@@ -2122,7 +2122,9 @@ export function TransactionDialog({
                       setTransferForm({ ...transferForm, receivedAmount: e.target.value });
                     }}
                     placeholder={
-                      transferFxPreview.state === "ok" ? transferFxPreview.converted.toFixed(currencyDecimals(toAcct!.currency)) : `0.${"0".repeat(currencyDecimals(toAcct!.currency))}`
+                      transferFxPreview.state === "ok"
+                        ? fxPreviewText(transferFxPreview.converted, toAcct?.currency ?? "USD")
+                        : `0.${"0".repeat(currencyDecimals(toAcct?.currency ?? "USD"))}`
                     }
                   />
                   <p className="text-[11px] text-muted-foreground">
