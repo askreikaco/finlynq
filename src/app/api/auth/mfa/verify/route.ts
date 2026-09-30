@@ -248,7 +248,16 @@ export async function POST(request: NextRequest) {
           });
 
           const userAgent = request.headers.get("user-agent") || undefined;
-          issuedDevice = await issueDevice(user.id, pendingDek, userAgent);
+          // Extract device ID from pf_device cookie to replace it
+          const pf_device = request.cookies.get("pf_device")?.value;
+          let replaceDeviceId: string | undefined;
+          if (pf_device) {
+            const parts = pf_device.split(".");
+            if (parts.length === 2) {
+              replaceDeviceId = parts[0];
+            }
+          }
+          issuedDevice = await issueDevice(user.id, pendingDek, userAgent, replaceDeviceId);
         }
       } catch (error) {
         // Log the error but don't fail the MFA login

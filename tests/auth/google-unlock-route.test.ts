@@ -362,4 +362,43 @@ describe("/api/auth/google/unlock", () => {
       expect(userLimitCall[2]).toBe(3_600_000); // windowMs should be in milliseconds
     }
   });
+
+  it("h) per-user daily limit: checkRateLimit allowed:false → 429, assert windowMs 86_400_000", async () => {
+    const { token: unlockToken } = await createSessionToken("user_id_123", false, {
+      pending: true,
+      expirationTime: "5m",
+    });
+    const googleDataToken = await signShortLived(
+      { userId: "user_id_123", sub: "google_sub", email: "user@test.com", emailVerified: true },
+      300,
+      "google-unlock-data"
+    );
+
+    // Set up the rate limit check to return allowed:false on per-user daily keys
+    mockCheckRateLimit.mockImplementation((key: string) => {
+      if (key.startsWith("google:unlock:user:d:")) {
+        return { allowed: false } as any;
+      }
+      return { allowed: true } as any;
+    });
+
+    mockVerifyPassword.mockResolvedValue(true);
+
+    const req = makeUnlockRequest({
+      unlockToken,
+      googleDataToken,
+      body: { password: "correct_password" },
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(429);
+
+    // Verify checkRateLimit was called with the correct windowMs for daily limit
+    const calls = mockCheckRateLimit.mock.calls;
+    const dailyLimitCall = calls.find((c) => c[0].includes("google:unlock:user:d:"));
+    expect(dailyLimitCall).toBeDefined();
+    if (dailyLimitCall) {
+      expect(dailyLimitCall[2]).toBe(86_400_000); // windowMs should be 24h in milliseconds
+    }
+  });
 });

@@ -146,8 +146,23 @@ export async function POST(req: NextRequest) {
     const loginResult = await finishPasswordLogin(authUser, password);
 
     if (loginResult.kind === "unlock_failed") {
-      // Password unlock failed
-      return NextResponse.json({ error: "Invalid password" }, { status: 401 });
+      // Password unlock failed — revoke the pending unlock token
+      if (unlockJti && unlockExp) {
+        try {
+          const expDate = typeof unlockExp === "number"
+            ? new Date(unlockExp * 1000)
+            : new Date(Date.now() + 5 * 60 * 1000);
+          await revokeJti(unlockJti, expDate);
+        } catch {
+          // Swallow — revocation failure shouldn't block the login denial
+        }
+      }
+
+      // Clear unlock cookies
+      const response = NextResponse.json({ error: "Invalid password" }, { status: 401 });
+      response.cookies.delete("pf_unlock");
+      response.cookies.delete("pf_google_unlock_data");
+      return response;
     }
 
     if (loginResult.kind === "mfa") {

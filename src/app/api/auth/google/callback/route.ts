@@ -20,7 +20,7 @@ import {
   verifyIdToken,
 } from "@/lib/auth/google-oidc";
 import { verifyShortLived, signShortLived, createSessionToken } from "@/lib/auth/jwt";
-import { redeemDevice } from "@/lib/auth/trusted-device";
+import { redeemDevice, deviceCookieOptions } from "@/lib/auth/trusted-device";
 import { getUserByEmail } from "@/lib/auth/queries";
 import { issueSessionForDek } from "@/lib/auth/finish-login";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -79,49 +79,41 @@ export async function GET(req: NextRequest) {
   const state = url.searchParams.get("state");
   const error = url.searchParams.get("error");
 
+  // Create response and prepare to clear the state cookie (single-use)
+  const response = NextResponse.redirect(
+    new URL("/cloud", process.env.APP_URL || "http://localhost:3000")
+  );
+  response.cookies.delete("pf_oauth_state");
+
   // Google returned an error
   if (error) {
     const errorCode = error === "access_denied" ? "denied" : "server_error";
-    return redirectToCloud({ error: `google_${errorCode}` });
+    return redirectToCloud({ error: `google_${errorCode}` }, response);
   }
 
   if (!code || !state) {
-    return redirectToCloud({ error: "google_missing_params" });
+    return redirectToCloud({ error: "google_missing_params" }, response);
   }
 
   // Read and verify the state cookie
   const stateToken = req.cookies.get("pf_oauth_state")?.value;
   if (!stateToken) {
-    return redirectToCloud({ error: "google_no_state" });
+    return redirectToCloud({ error: "google_no_state" }, response);
   }
 
   const statePayload = await verifyShortLived(stateToken, "oauth-state");
   if (!statePayload) {
-    return redirectToCloud({ error: "google_invalid_state" });
+    return redirectToCloud({ error: "google_invalid_state" }, response);
   }
 
   // Verify state parameter matches (constant-time)
   if (typeof (statePayload.state) !== "string") {
-    const response = NextResponse.redirect(
-      new URL("/cloud", process.env.APP_URL || "http://localhost:3000")
-    );
-    response.cookies.delete("pf_oauth_state");
     return redirectToCloud({ error: "google_invalid_state" }, response);
   }
   const expectedState = statePayload.state;
   if (!constantTimeEqual(state, expectedState)) {
-    const response = NextResponse.redirect(
-      new URL("/cloud", process.env.APP_URL || "http://localhost:3000")
-    );
-    response.cookies.delete("pf_oauth_state");
     return redirectToCloud({ error: "google_state_mismatch" }, response);
   }
-
-  // Create response and clear the state cookie (single-use)
-  const response = NextResponse.redirect(
-    new URL("/cloud", process.env.APP_URL || "http://localhost:3000")
-  );
-  response.cookies.delete("pf_oauth_state");
 
   const nonce = statePayload.nonce as string;
   const codeVerifier = statePayload.codeVerifier as string;
@@ -227,10 +219,15 @@ export async function GET(req: NextRequest) {
       if (deviceCookie) {
         const redeemed = await redeemDevice(deviceCookie, user.id);
         if (redeemed) {
+          // Set the rotated device cookie immediately
+          response.cookies.set("pf_device", redeemed.rotatedCookieValue, {
+            ...deviceCookieOptions(),
+          });
+
           // Device unlock successful — issue session without password
           const result = await issueSessionForDek(user, redeemed.dek);
           if (result.kind === "session") {
-            // Set session and rotated device cookies
+            // Set session cookie
             response.cookies.set("pf_session", result.token, {
               httpOnly: true,
               secure: process.env.NODE_ENV === "production",
@@ -238,29 +235,15 @@ export async function GET(req: NextRequest) {
               maxAge: 24 * 60 * 60, // 24h
               path: "/",
             });
-            response.cookies.set("pf_device", redeemed.rotatedCookieValue, {
-              httpOnly: true,
-              secure: process.env.NODE_ENV === "production",
-              sameSite: "lax",
-              maxAge: redeemed.maxAgeSeconds,
-              path: "/api/auth",
-            });
             return redirectToCloudWithNextUrl(response, next);
           } else if (result.kind === "mfa") {
-            // MFA required — set unlock cookie and rotated device cookie
+            // MFA required — set unlock cookie
             response.cookies.set("pf_unlock", result.token, {
               httpOnly: true,
               secure: process.env.NODE_ENV === "production",
               sameSite: "lax",
               maxAge: 600, // 10 min
               path: "/",
-            });
-            response.cookies.set("pf_device", redeemed.rotatedCookieValue, {
-              httpOnly: true,
-              secure: process.env.NODE_ENV === "production",
-              sameSite: "lax",
-              maxAge: redeemed.maxAgeSeconds,
-              path: "/api/auth",
             });
             return redirectToCloud({ step: "mfa" }, response);
           }
