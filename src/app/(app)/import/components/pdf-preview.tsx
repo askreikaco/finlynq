@@ -20,6 +20,8 @@ import {
 } from "@/components/ui/select";
 import { File, Eye, ArrowRight } from "lucide-react";
 import type { RawTransaction } from "@/lib/import-pipeline";
+import { formatCurrency } from "@/lib/currency";
+import { useDisplayCurrency } from "@/components/currency-provider";
 
 interface PdfPreviewProps {
   open: boolean;
@@ -40,6 +42,7 @@ export function PdfPreview({
   accounts,
   onConfirm,
 }: PdfPreviewProps) {
+  const { displayCurrency } = useDisplayCurrency();
   const [selectedAccount, setSelectedAccount] = useState("");
   const [showRawText, setShowRawText] = useState(false);
 
@@ -132,7 +135,7 @@ export function PdfPreview({
                   <span className="flex-1 truncate">{row.payee}</span>
                   <ArrowRight className="h-3 w-3 text-muted-foreground shrink-0" />
                   <span className={`font-mono w-20 text-right shrink-0 ${row.amount < 0 ? "text-rose-600" : "text-emerald-600"}`}>
-                    {row.amount.toFixed(2)}
+                    {formatCurrency(row.amount, row.currency ?? displayCurrency)}
                   </span>
                 </div>
               ))}

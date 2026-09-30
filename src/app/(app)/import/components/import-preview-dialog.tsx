@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/table";
 import { AlertCircle, AlertTriangle, ArrowLeft, BookTemplate, CheckCircle2, Copy } from "lucide-react";
 import type { RawTransaction } from "@/lib/import-pipeline";
+import { formatCurrency } from "@/lib/currency";
+import { useDisplayCurrency } from "@/components/currency-provider";
 import { SaveTemplateDialog } from "./save-template-dialog";
 
 interface PreviewRow extends RawTransaction {
@@ -94,6 +96,7 @@ export function ImportPreviewDialog({
   onChangeTemplate,
   onTemplateSaved,
 }: ImportPreviewDialogProps) {
+  const { displayCurrency } = useDisplayCurrency();
   const [includeDuplicates, setIncludeDuplicates] = useState<Set<number>>(new Set());
   const [skipProbable, setSkipProbable] = useState<Set<number>>(new Set());
   const [expandedProbable, setExpandedProbable] = useState<Set<number>>(new Set());
@@ -304,7 +307,7 @@ export function ImportPreviewDialog({
                       <TableCell className="text-xs">{row.account}</TableCell>
                       <TableCell className="text-xs max-w-[200px] truncate">{row.payee}</TableCell>
                       <TableCell className={`text-right font-mono text-xs ${row.amount < 0 ? "text-rose-600" : "text-emerald-600"}`}>
-                        {row.amount.toFixed(2)}
+                        {formatCurrency(row.amount, row.currency ?? displayCurrency)}
                       </TableCell>
                       <TableCell className="text-xs">{row.category || "—"}</TableCell>
                       <TableCell>
@@ -355,9 +358,9 @@ export function ImportPreviewDialog({
                               )}
                             </div>
                             <div className="text-muted-foreground">
-                              Existing: <span className="font-mono text-foreground">{probable.matchedTx.date}</span> <span className="font-mono text-foreground">${probable.matchedTx.amount.toFixed(2)}</span> —
+                              Existing: <span className="font-mono text-foreground">{probable.matchedTx.date}</span> <span className="font-mono text-foreground">{formatCurrency(probable.matchedTx.amount, displayCurrency)}</span> —
                               {" "}<span className="font-medium text-foreground">{probable.matchedTx.daysOff}d</span> off,
-                              {" "}delta <span className="font-mono text-foreground">${probable.matchedTx.amountDeltaAbs.toFixed(2)}</span> ({(probable.matchedTx.amountDeltaPct * 100).toFixed(2)}%)
+                              {" "}delta <span className="font-mono text-foreground">{formatCurrency(probable.matchedTx.amountDeltaAbs, displayCurrency)}</span> ({(probable.matchedTx.amountDeltaPct * 100).toFixed(2)}%)
                             </div>
                             <div className="text-orange-700 dark:text-orange-300 font-medium">
                               Score {probable.matchScore.toFixed(2)} · {probable.matchReason}
@@ -383,7 +386,7 @@ export function ImportPreviewDialog({
                               )}
                             </div>
                             <div className="text-muted-foreground">
-                              Existing: <span className="font-mono text-foreground">{dupMatch.matchedTx.date}</span> <span className="font-mono text-foreground">${dupMatch.matchedTx.amount.toFixed(2)}</span>
+                              Existing: <span className="font-mono text-foreground">{dupMatch.matchedTx.date}</span> <span className="font-mono text-foreground">{formatCurrency(dupMatch.matchedTx.amount, displayCurrency)}</span>
                             </div>
                             <div className="text-amber-700 dark:text-amber-300 font-medium">
                               {dupMatch.matchBasis === "fit_id"
