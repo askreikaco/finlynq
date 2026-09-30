@@ -76,7 +76,7 @@ export function Pagination({
   const pages = getPageNumbers(page, totalPages);
 
   return (
-    <div className={cn("flex items-center justify-between", className)}>
+    <div className={cn("flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between", className)}>
       <p className="text-sm text-muted-foreground">
         Showing {total === 0 ? 0 : page * limit + 1}–
         {Math.min((page + 1) * limit, total)} of {total}
@@ -105,7 +105,7 @@ export function Pagination({
               key={p}
               variant={page === p ? "default" : "outline"}
               size="sm"
-              className="h-8 w-8 p-0 text-sm"
+              className="hidden sm:inline-flex h-8 w-8 p-0 text-sm"
               onClick={() => onPageChange(p)}
               aria-label={`Page ${p + 1}`}
               aria-current={page === p ? "page" : undefined}

@@ -526,7 +526,7 @@ function ScenariosPageContent() {
       </div>
 
       <Tabs defaultValue="home-purchase">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList>
           <TabsTrigger value="home-purchase">Home Purchase</TabsTrigger>
           <TabsTrigger value="extra-savings">Extra Savings</TabsTrigger>
           <TabsTrigger value="debt-payoff">Debt Payoff</TabsTrigger>
