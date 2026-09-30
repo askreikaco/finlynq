@@ -271,6 +271,7 @@ export function registerGoalsTools(server: McpServer, ctx: PgToolContext) {
       dek,
       goalsRaw.map((r) => ({
         id: Number(r.id),
+        type: (r.type as string | null) ?? null,
         currency: (r.currency as string | null) ?? null,
         targetAmount: Number(r.target_amount ?? 0),
         deadline: (r.deadline as string | null) ?? null,

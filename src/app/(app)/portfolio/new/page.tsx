@@ -154,7 +154,7 @@ function PortfolioNewInner() {
 
   return (
     <div className="container mx-auto max-w-4xl space-y-6 p-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">New portfolio operation</h1>
           <p className="text-sm text-muted-foreground">

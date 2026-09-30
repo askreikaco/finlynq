@@ -31,6 +31,8 @@ import { getLatestFxRate } from "@/lib/fx-service";
 
 export type GoalProgressInput = {
   id: number;
+  /** Goal type; `debt_payoff` measures paid-down debt instead of saved balance. */
+  type?: string | null;
   currency: string | null;
   targetAmount: number;
   deadline: string | null;
@@ -133,6 +135,14 @@ export async function computeGoalProgress(
         : cashByAccount.get(accountId) ?? 0;
       const fx = await getFx(meta.currency, goalCurrency);
       currentAmount += valueInAccountCcy * fx;
+    }
+
+    // debt_payoff goals link liability accounts, whose balance is negative
+    // (what is still owed). Progress is the part of the target already paid
+    // off, so a freshly-linked loan reads 0% rather than -100%.
+    if (g.type === "debt_payoff") {
+      const owed = Math.max(-currentAmount, 0);
+      currentAmount = Math.max(g.targetAmount - owed, 0);
     }
 
     const progress =

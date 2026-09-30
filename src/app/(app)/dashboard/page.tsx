@@ -344,7 +344,7 @@ export default function DashboardPage() {
       {/* ============================================
           HEADER — Greeting + Profile hint
           ============================================ */}
-      <motion.div variants={itemVariants} className="flex items-center justify-between">
+      <motion.div variants={itemVariants} className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">{greeting}</h1>
           <p className="text-[13px] text-muted-foreground mt-0.5">Here&apos;s your financial overview</p>
@@ -475,7 +475,7 @@ export default function DashboardPage() {
             <SpendingCategoryChart data={spendingData} currency={apiDisplayCurrency} />
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-            <AvailableToSpend income={lastMonthIncome} expenses={lastMonthExpenses} currency={apiDisplayCurrency} />
+            <AvailableToSpend income={lastMonthIncome} expenses={lastMonthExpenses} currency={apiDisplayCurrency} monthLabel={lastMonthKey ? getMonthLabel(lastMonthKey) : undefined} />
           </div>
           <InsightsSection currency={apiDisplayCurrency} />
         </>

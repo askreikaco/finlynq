@@ -399,6 +399,15 @@ function CloudAuthPageInner() {
                   autoComplete={tab === "register" ? "new-password" : "current-password"}
                   className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 />
+                {tab === "login" && (
+                  <Link
+                    href="/auth/forgot-password"
+                    prefetch={false}
+                    className="mt-1.5 inline-block text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                  >
+                    Forgot password?
+                  </Link>
+                )}
               </div>
 
               {showAck && (

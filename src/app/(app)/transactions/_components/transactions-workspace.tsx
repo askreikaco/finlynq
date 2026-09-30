@@ -621,12 +621,12 @@ export function TransactionsWorkspace({
       {showHeader && (
         <>
           <OnboardingTips page="transactions" />
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h1 className="text-2xl font-bold">Transactions</h1>
               <p className="text-sm text-muted-foreground mt-0.5">Manage and track all your financial transactions</p>
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-1.5">
               {/* Split button: main click → quick Transaction dialog. Chevron →
                   dropdown with every kind (Transfer + the 6 portfolio operations).
                   Phase 2 portfolio-ops UX (2026-05-25). */}
@@ -746,9 +746,9 @@ export function TransactionsWorkspace({
           </div>
           <div className="flex flex-wrap gap-2 items-center">
             <SlidersHorizontal className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            <Input type="date" className="w-36 h-8 text-xs" value={filters.startDate} onChange={(e) => { setFilters({ ...filters, startDate: e.target.value }); setPage(0); }} />
+            <Input type="date" className="w-full sm:w-36 h-8 text-xs min-w-0" value={filters.startDate} onChange={(e) => { setFilters({ ...filters, startDate: e.target.value }); setPage(0); }} />
             <span className="text-xs text-muted-foreground">to</span>
-            <Input type="date" className="w-36 h-8 text-xs" value={filters.endDate} onChange={(e) => { setFilters({ ...filters, endDate: e.target.value }); setPage(0); }} />
+            <Input type="date" className="w-full sm:w-36 h-8 text-xs min-w-0" value={filters.endDate} onChange={(e) => { setFilters({ ...filters, endDate: e.target.value }); setPage(0); }} />
             {/* Account picker is hidden on the account-scoped embed — the view
                 is already locked to a single account (keep the other filters). */}
             {!locked && (
@@ -960,7 +960,7 @@ export function TransactionsWorkspace({
 
       {/* Bulk action bar */}
       {someSelected && (
-        <div className="flex items-center gap-3 px-4 py-2.5 bg-primary/5 border border-primary/20 rounded-lg text-sm">
+        <div className="flex flex-wrap items-center gap-3 px-4 py-2.5 bg-primary/5 border border-primary/20 rounded-lg text-sm">
           <span className="font-medium text-primary">{selected.size} selected</span>
           <div className="flex items-center gap-2 flex-1 flex-wrap">
             <Select value={bulkAction} onValueChange={(v) => { setBulkAction(v ?? ""); resetBulkFields(); }}>

@@ -1037,6 +1037,76 @@ export const passwordResetTokens = pgTable("password_reset_tokens", {
   createdAt: text("created_at").notNull(),
 });
 
+/** External provider identities (Google, future: Apple/GitHub) */
+export const userIdentities = pgTable("user_identities", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  provider: text("provider").notNull(), // 'google'
+  providerSubject: text("provider_subject").notNull(),
+  email: text("email"),
+  emailVerified: integer("email_verified").notNull().default(0),
+  createdAt: text("created_at").notNull(),
+  lastLoginAt: text("last_login_at"),
+}, (t) => [
+  check("user_identities_provider_check", sql`${t.provider} IN ('google')`),
+  uniqueIndex("user_identities_provider_subject_unique").on(t.provider, t.providerSubject),
+  index("idx_user_identities_user_id").on(t.userId),
+]);
+
+/** Trusted devices with secret rotation and rotation envelope encryption */
+export const userDevices = pgTable("user_devices", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  secretHash: text("secret_hash").notNull(), // SHA-256 of device secret
+  dekWrapped: text("dek_wrapped").notNull(), // AES-GCM(device_secret, device_dek)
+  label: text("label"),
+  createdAt: text("created_at").notNull(),
+  lastUsedAt: text("last_used_at"),
+  expiresAt: text("expires_at").notNull(),
+  revokedAt: text("revoked_at"),
+}, (t) => [
+  uniqueIndex("user_devices_secret_hash_unique").on(t.secretHash),
+  index("idx_user_devices_user_id").on(t.userId),
+]);
+
+/** WebAuthn passkeys for FIDO2, Windows Hello, Touch ID, etc. */
+export const userPasskeys = pgTable("user_passkeys", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  publicKey: text("public_key").notNull(), // CBOR-encoded public key (base64)
+  counter: bigint("counter", { mode: "number" }).notNull().default(0), // Signature counter for cloned-key detection
+  transports: text("transports"), // JSON: ["internal" | "hybrid" | "usb" | "nfc" | "ble"]
+  aaguid: text("aaguid"), // Authenticator GUID (UUID format)
+  backedUp: integer("backed_up").notNull().default(0), // Backup-eligible flag
+  label: text("label"),
+  prfSupported: integer("prf_supported").notNull().default(0), // PRF extension available
+  dekWrappedPrf: text("dek_wrapped_prf"), // AES-GCM(PRF(secret), device_dek) for hybrid flow
+  createdAt: text("created_at").notNull(),
+  lastUsedAt: text("last_used_at"),
+}, (t) => [
+  index("idx_user_passkeys_user_id").on(t.userId),
+]);
+
+/** Recovery codes — backup single-use codes for account recovery */
+export const userRecoveryCodes = pgTable("user_recovery_codes", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  codeHash: text("code_hash").notNull(), // SHA-256 of recovery code
+  usedAt: text("used_at"), // Nullable; NULL = unused
+  createdAt: text("created_at").notNull(),
+}, (t) => [
+  uniqueIndex("user_recovery_codes_hash_unique").on(t.codeHash),
+  index("idx_user_recovery_codes_user_id").on(t.userId),
+]);
+
 export const contributionRoom = pgTable("contribution_room", {
   id: serial("id").primaryKey(),
   userId: text("user_id").notNull(),
