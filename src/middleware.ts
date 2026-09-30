@@ -109,6 +109,7 @@ const CSRF_BYPASS_PATHS = new Set([
   "/api/auth/password-reset/request",
   "/api/auth/password-reset/confirm",
   "/api/auth/verify-email",
+  "/api/auth/google/unlock",
 ]);
 
 /**

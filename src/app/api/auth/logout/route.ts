@@ -6,11 +6,14 @@
  * into the server-side `revoked_jtis` denylist so a stolen cookie can't
  * keep accessing plaintext-only routes for the remainder of the JWT exp
  * (finding H-5).
+ *
+ * Query parameter ?everywhere=1 also revokes all trusted devices for the user.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { AUTH_COOKIE, verifySessionTokenDetailed, revokeJti } from "@/lib/auth";
 import { deleteDEK } from "@/lib/crypto/dek-cache";
+import { revokeAllDevices } from "@/lib/auth/trusted-device";
 
 export async function POST(request: NextRequest) {
   // Read the JWT before we blank the cookie so we can target its jti.
@@ -18,6 +21,7 @@ export async function POST(request: NextRequest) {
   // here (its claims are extractable even though it's no longer auth-valid)
   // — best-effort eviction even on the unhappy path.
   const token = request.cookies.get(AUTH_COOKIE)?.value;
+  let userId: string | null = null;
   if (token) {
     // verifySessionTokenDetailed normally bails on revoked / deploy-rotated.
     // For logout we want the jti regardless, so we re-parse via the jose
@@ -38,6 +42,9 @@ export async function POST(request: NextRequest) {
       }
       deleteDEK(payload.jti);
     }
+    if (payload?.sub) {
+      userId = payload.sub;
+    }
   }
 
   const response = NextResponse.json({ success: true });
@@ -49,6 +56,17 @@ export async function POST(request: NextRequest) {
     maxAge: 0,
     path: "/",
   });
+
+  // If ?everywhere=1, also revoke all trusted devices
+  const url = new URL(request.url);
+  const everywhere = url.searchParams.get("everywhere") === "1";
+  if (everywhere && userId) {
+    try {
+      await revokeAllDevices(userId);
+    } catch {
+      // swallow — device revocation shouldn't block logout
+    }
+  }
 
   return response;
 }

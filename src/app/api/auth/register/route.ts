@@ -17,6 +17,7 @@ import {
   getUserByEmail,
   getUserByUsername,
   isIdentifierClaimed,
+  upsertIdentity,
 } from "@/lib/auth/queries";
 import { validateBody, safeErrorMessage, logApiError } from "@/lib/validate";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -27,6 +28,8 @@ import { putDEK } from "@/lib/crypto/dek-cache";
 import { validatePasswordStrength } from "@/lib/auth/password-policy";
 import { validateUsername } from "@/lib/auth/username";
 import { setSessionCookie } from "@/lib/auth/cookies";
+import { verifyShortLived } from "@/lib/auth/jwt";
+import { issueDevice } from "@/lib/auth/trusted-device";
 
 const registerSchema = z
   .object({
@@ -42,6 +45,7 @@ const registerSchema = z
     displayName: z.string().max(100).optional(),
     /** Required to be true when email is omitted — explicit no-recovery ack. */
     acknowledgeNoRecovery: z.boolean().optional(),
+    googleSignup: z.boolean().optional(),
   })
   .transform((v) => ({
     ...v,
@@ -73,8 +77,36 @@ export async function POST(request: NextRequest) {
     const parsed = validateBody(body, registerSchema);
     if (parsed.error) return parsed.error;
 
-    const { username: rawUsername, email, password, displayName, acknowledgeNoRecovery } =
+    const { username: rawUsername, email, password, displayName, acknowledgeNoRecovery, googleSignup } =
       parsed.data;
+
+    // Google signup: extract email and verified flag from signed cookie
+    let googleEmail: string | undefined;
+    let googleEmailVerified = false;
+    let googleSub: string | undefined;
+    let googleName: string | undefined;
+
+    if (googleSignup) {
+      const signupToken = request.cookies.get("pf_google_signup")?.value;
+      if (!signupToken) {
+        return NextResponse.json({ error: "Invalid Google signup" }, { status: 400 });
+      }
+
+      const signupData = await verifyShortLived(signupToken);
+      if (!signupData) {
+        return NextResponse.json({ error: "Google signup token expired" }, { status: 400 });
+      }
+
+      googleEmail = signupData.email as string;
+      googleEmailVerified = signupData.emailVerified as boolean;
+      googleSub = signupData.sub as string;
+      googleName = signupData.name as string | undefined;
+
+      // Google signup forces email to be from Google
+      if (!googleEmail) {
+        return NextResponse.json({ error: "Google email not provided" }, { status: 400 });
+      }
+    }
 
     // Validate + normalise the username (lowercased + format check + reserved
     // keyword guard). validateUsername is the single authority for what a
@@ -85,10 +117,13 @@ export async function POST(request: NextRequest) {
     }
     const username = usernameCheck.value;
 
+    // Determine final email to use
+    const finalEmail = googleEmail || email;
+
     // Without an email there is no password-recovery channel. Force the user
     // to explicitly acknowledge that — zero-knowledge stance is intentional
     // (forgot password = wipe + rewrap), not a bug.
-    if (!email && acknowledgeNoRecovery !== true) {
+    if (!finalEmail && acknowledgeNoRecovery !== true) {
       return NextResponse.json(
         {
           error:
@@ -107,8 +142,8 @@ export async function POST(request: NextRequest) {
         { status: 409 }
       );
     }
-    if (email) {
-      const emailTaken = await getUserByEmail(email);
+    if (finalEmail) {
+      const emailTaken = await getUserByEmail(finalEmail);
       if (emailTaken) {
         return NextResponse.json(
           { error: "An account with this email already exists." },
@@ -127,7 +162,7 @@ export async function POST(request: NextRequest) {
         { status: 409 }
       );
     }
-    if (email && (await isIdentifierClaimed(email))) {
+    if (finalEmail && (await isIdentifierClaimed(finalEmail))) {
       return NextResponse.json(
         { error: "An account with this email already exists." },
         { status: 409 }
@@ -140,30 +175,47 @@ export async function POST(request: NextRequest) {
 
     const user = await createUser({
       username,
-      email,
+      email: finalEmail,
+      emailVerified: googleEmailVerified ? 1 : 0,
       passwordHash,
-      displayName,
+      displayName: displayName || googleName,
       kekSalt: wrapped.salt.toString("base64"),
       dekWrapped: wrapped.wrapped.toString("base64"),
       dekWrappedIv: wrapped.iv.toString("base64"),
       dekWrappedTag: wrapped.tag.toString("base64"),
     });
 
+    // Skip verify mail for Google signup (Google verified the email)
     // Welcome + verify mails are skipped entirely when the user opted out of
     // an email. Users who provided one get the existing flow.
-    if (email && user.emailVerifyToken) {
-      sendEmail(emailVerificationEmail(email, user.emailVerifyToken)).catch(() => {});
-      sendEmail(welcomeEmail(email, displayName)).catch(() => {});
+    if (finalEmail && user.emailVerifyToken && !googleSignup) {
+      sendEmail(emailVerificationEmail(finalEmail, user.emailVerifyToken)).catch(() => {});
+      sendEmail(welcomeEmail(finalEmail, displayName)).catch(() => {});
     }
 
     // Best-effort maintainer growth notification (admin DB email(s) ∪
     // FEEDBACK_EMAIL override) — fire-and-forget, never blocks the signup.
-    notifyAdminsNewSignup({ userId: user.id, username, email }).catch(() => {});
+    notifyAdminsNewSignup({ userId: user.id, username, email: finalEmail }).catch(() => {});
+
+    // Link Google identity if signing up via Google
+    if (googleSignup && googleSub) {
+      await upsertIdentity({
+        userId: user.id,
+        provider: "google",
+        subject: googleSub,
+        email: finalEmail || undefined,
+        emailVerified: googleEmailVerified ? 1 : 0,
+      });
+    }
 
     // Issue session token, and cache the DEK under its jti so this new session
     // can immediately read/write encrypted columns.
     const { token, jti } = await createSessionToken(user.id, false);
     putDEK(jti, dek, SESSION_TTL_MS, user.id);
+
+    // Issue device cookie for passwordless future re-login
+    const userAgent = request.headers.get("user-agent") || undefined;
+    const device = await issueDevice(user.id, dek, userAgent);
 
     const response = NextResponse.json(
       { success: true, userId: user.id, username },
@@ -171,6 +223,22 @@ export async function POST(request: NextRequest) {
     );
 
     setSessionCookie(response, token);
+
+    // Set device cookie if issued
+    if (device) {
+      response.cookies.set("pf_device", device.cookieValue, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: device.maxAgeSeconds,
+        path: "/api/auth",
+      });
+    }
+
+    // Clear Google signup cookie
+    if (googleSignup) {
+      response.cookies.delete("pf_google_signup");
+    }
 
     return response;
   } catch (error) {
