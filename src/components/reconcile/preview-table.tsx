@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { AlertTriangle, CheckCircle2, Sparkles } from "lucide-react";
+import { formatCurrency } from "@/lib/currency";
 
 export type ReconcileStatus = "new" | "existing" | "probable_duplicate";
 
@@ -154,6 +155,8 @@ export function ReconcilePreviewTable({
               row.accountId !== null && investmentAccountIds.has(row.accountId);
             const accountHoldings =
               row.accountId !== null ? holdingsByAccount.get(row.accountId) ?? [] : [];
+            const accountCurrency =
+              row.accountId !== null ? accounts.find((a) => a.id === row.accountId)?.currency : undefined;
             const holdingItems = [
               { value: "", label: needsHolding ? "Pick a holding…" : "— None —" },
               ...accountHoldings.map((h) => ({
@@ -207,7 +210,7 @@ export function ReconcilePreviewTable({
                 <TableCell
                   className={`text-right font-mono text-xs align-top pt-3 ${row.amount < 0 ? "text-rose-600" : "text-emerald-600"}`}
                 >
-                  {row.amount.toFixed(2)}
+                  {formatCurrency(row.amount, row.currency ?? accountCurrency ?? "USD")}
                 </TableCell>
                 <TableCell className="align-top">
                   <Combobox
