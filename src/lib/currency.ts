@@ -113,6 +113,32 @@ export function formatDate(date: string): string {
   });
 }
 
+/**
+ * Format an ISO timestamp as a local date (DD/MM/YYYY).
+ * Converts UTC timestamp to local date using the browser's timezone (Vietnam for VN users).
+ * Returns "" for invalid input.
+ */
+export function formatDateTimeLocal(iso: string): string {
+  try {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "";
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    const localDateStr = `${year}-${month}-${day}`;
+    return formatDate(localDateStr);
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Format transfer FX preview text: converted amount with currency-appropriate decimal places.
+ */
+export function fxPreviewText(converted: number, currency: string): string {
+  return converted.toFixed(currencyDecimals(currency));
+}
+
 export function getCurrentMonth(): string {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
