@@ -51,6 +51,17 @@ const EXEMPT: Record<string, string> = {
     "wipe/delete (the maintainer keeps the bug report). The privacy-sensitive " +
     "attachment pointers ARE nulled in deleteAllUserDataTx and the on-disk " +
     "files unlinked by unlinkUserUploadFiles.",
+  user_identities:
+    "REIKA auth — external provider identities survive wipe. User can re-authenticate " +
+    "with the same provider (Google, etc.) after a wipe. Identity metadata (email) " +
+    "is retained for audit/recovery purposes.",
+  user_passkeys:
+    "REIKA auth — WebAuthn passkeys survive wipe. The dekWrappedPrf PRF wrap is " +
+    "explicitly nulled in deleteAllUserDataTx (PRF binds to old DEK), but the public " +
+    "key and counter remain for re-authentication.",
+  user_recovery_codes:
+    "REIKA auth — recovery codes survive wipe. User can use existing codes to unlock " +
+    "their account after a wipe (before new codes are generated).",
 };
 
 type Column = {

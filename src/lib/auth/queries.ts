@@ -6,7 +6,7 @@
  * All functions are async for PostgreSQL Drizzle adapter via the db proxy.
  */
 
-import { db } from "@/db";
+import { db, schema } from "@/db";
 import type { DrizzleDb } from "@/db";
 import * as pgSchema from "@/db/schema-pg";
 import { eq, count, sql, inArray, and, isNull } from "drizzle-orm";
@@ -356,6 +356,276 @@ export async function completeOnboarding(userId: string) {
   await db.update(getSchema().users)
     .set({ onboardingComplete: 1, updatedAt: now })
     .where(eq(getSchema().users.id, userId));
+}
+
+// ─── User identities (external provider auth) ───────────────────────────────
+
+export interface UpsertIdentityInput {
+  userId: string;
+  provider: string;
+  subject: string;
+  email?: string | null;
+  emailVerified?: number;
+}
+
+export async function getIdentity(provider: string, subject: string) {
+  const s = getSchema();
+  return db
+    .select()
+    .from(s.userIdentities)
+    .where(and(eq(s.userIdentities.provider, provider), eq(s.userIdentities.providerSubject, subject)))
+    .limit(1)
+    .then((rows) => rows[0] ?? null);
+}
+
+export async function listIdentities(userId: string) {
+  const s = getSchema();
+  return db.select().from(s.userIdentities).where(eq(s.userIdentities.userId, userId));
+}
+
+export async function upsertIdentity(input: UpsertIdentityInput) {
+  const s = getSchema();
+  const now = new Date().toISOString();
+  return db
+    .insert(s.userIdentities)
+    .values({
+      userId: input.userId,
+      provider: input.provider,
+      providerSubject: input.subject,
+      email: input.email ?? null,
+      emailVerified: input.emailVerified ?? 0,
+      createdAt: now,
+      lastLoginAt: now,
+    })
+    .onConflictDoUpdate({
+      target: [schema.userIdentities.provider, schema.userIdentities.providerSubject],
+      set: {
+        email: input.email ?? null,
+        emailVerified: input.emailVerified ?? 0,
+        lastLoginAt: now,
+      },
+    });
+}
+
+export async function deleteIdentities(userId: string, provider?: string) {
+  const s = getSchema();
+  const where = provider
+    ? and(eq(s.userIdentities.userId, userId), eq(s.userIdentities.provider, provider))
+    : eq(s.userIdentities.userId, userId);
+  await db.delete(s.userIdentities).where(where);
+}
+
+// ─── Trusted devices ────────────────────────────────────────────────────────
+
+export interface CreateDeviceInput {
+  id: string;
+  userId: string;
+  secretHash: string;
+  dekWrapped: string;
+  label?: string;
+  expiresAt: string;
+}
+
+export async function createDevice(input: CreateDeviceInput) {
+  const s = getSchema();
+  const now = new Date().toISOString();
+  return db.insert(s.userDevices).values({
+    id: input.id,
+    userId: input.userId,
+    secretHash: input.secretHash,
+    dekWrapped: input.dekWrapped,
+    label: input.label ?? null,
+    createdAt: now,
+    lastUsedAt: now,
+    expiresAt: input.expiresAt,
+    revokedAt: null,
+  });
+}
+
+export async function getDeviceById(id: string) {
+  const s = getSchema();
+  return db
+    .select()
+    .from(s.userDevices)
+    .where(eq(s.userDevices.id, id))
+    .limit(1)
+    .then((rows) => rows[0] ?? null);
+}
+
+export interface TouchDeviceInput {
+  secretHash: string;
+  dekWrapped: string;
+  expiresAt: string;
+}
+
+export async function touchDevice(id: string, update: TouchDeviceInput) {
+  const s = getSchema();
+  const now = new Date().toISOString();
+  await db
+    .update(s.userDevices)
+    .set({
+      secretHash: update.secretHash,
+      dekWrapped: update.dekWrapped,
+      expiresAt: update.expiresAt,
+      lastUsedAt: now,
+    })
+    .where(eq(s.userDevices.id, id));
+}
+
+export async function listDevices(userId: string) {
+  const s = getSchema();
+  return db.select().from(s.userDevices).where(eq(s.userDevices.userId, userId));
+}
+
+export async function revokeDevice(userId: string, id: string) {
+  const s = getSchema();
+  const now = new Date().toISOString();
+  await db
+    .update(s.userDevices)
+    .set({ revokedAt: now })
+    .where(and(eq(s.userDevices.userId, userId), eq(s.userDevices.id, id)));
+}
+
+export async function revokeAllDevices(userId: string) {
+  const s = getSchema();
+  const now = new Date().toISOString();
+  await db.update(s.userDevices).set({ revokedAt: now }).where(eq(s.userDevices.userId, userId));
+}
+
+export async function deleteDevices(userId: string) {
+  const s = getSchema();
+  await db.delete(s.userDevices).where(eq(s.userDevices.userId, userId));
+}
+
+// ─── WebAuthn passkeys ──────────────────────────────────────────────────────
+
+export interface PasskeyRow {
+  id: string;
+  userId: string;
+  publicKey: string;
+  counter: number;
+  transports?: string | null;
+  aaguid?: string | null;
+  backedUp: number;
+  label?: string | null;
+  prfSupported: number;
+  dekWrappedPrf?: string | null;
+  createdAt: string;
+  lastUsedAt?: string | null;
+}
+
+export async function listPasskeys(userId: string) {
+  const s = getSchema();
+  return db.select().from(s.userPasskeys).where(eq(s.userPasskeys.userId, userId));
+}
+
+export async function getPasskey(id: string) {
+  const s = getSchema();
+  return db
+    .select()
+    .from(s.userPasskeys)
+    .where(eq(s.userPasskeys.id, id))
+    .limit(1)
+    .then((rows) => rows[0] ?? null);
+}
+
+export async function insertPasskey(row: PasskeyRow) {
+  const s = getSchema();
+  await db.insert(s.userPasskeys).values({
+    id: row.id,
+    userId: row.userId,
+    publicKey: row.publicKey,
+    counter: row.counter,
+    transports: row.transports ?? null,
+    aaguid: row.aaguid ?? null,
+    backedUp: row.backedUp,
+    label: row.label ?? null,
+    prfSupported: row.prfSupported,
+    dekWrappedPrf: row.dekWrappedPrf ?? null,
+    createdAt: row.createdAt,
+    lastUsedAt: row.lastUsedAt ?? null,
+  });
+}
+
+export async function updatePasskeyCounter(id: string, counter: number) {
+  const s = getSchema();
+  const now = new Date().toISOString();
+  await db
+    .update(s.userPasskeys)
+    .set({ counter, lastUsedAt: now })
+    .where(eq(s.userPasskeys.id, id));
+}
+
+export async function setPasskeyPrfWrap(id: string, wrapped: string | null) {
+  const s = getSchema();
+  await db
+    .update(s.userPasskeys)
+    .set({ dekWrappedPrf: wrapped })
+    .where(eq(s.userPasskeys.id, id));
+}
+
+export async function deletePasskey(userId: string, id: string) {
+  const s = getSchema();
+  await db
+    .delete(s.userPasskeys)
+    .where(and(eq(s.userPasskeys.userId, userId), eq(s.userPasskeys.id, id)));
+}
+
+export async function countPasskeys(userId: string): Promise<number> {
+  const s = getSchema();
+  const result = await db
+    .select({ count: count() })
+    .from(s.userPasskeys)
+    .where(eq(s.userPasskeys.userId, userId));
+  return result[0]?.count ?? 0;
+}
+
+// ─── Recovery codes ─────────────────────────────────────────────────────────
+
+export async function replaceRecoveryCodes(userId: string, codeHashes: string[]) {
+  const s = getSchema();
+  const now = new Date().toISOString();
+  // Delete old codes for this user.
+  await db.delete(s.userRecoveryCodes).where(eq(s.userRecoveryCodes.userId, userId));
+  // Insert new codes.
+  if (codeHashes.length > 0) {
+    const values = codeHashes.map((hash) => ({
+      userId,
+      codeHash: hash,
+      usedAt: null,
+      createdAt: now,
+    }));
+    await db.insert(s.userRecoveryCodes).values(values);
+  }
+}
+
+export async function consumeRecoveryCode(userId: string, codeHash: string): Promise<boolean> {
+  const s = getSchema();
+  const now = new Date().toISOString();
+  const result = await db
+    .update(s.userRecoveryCodes)
+    .set({ usedAt: now })
+    .where(
+      and(
+        eq(s.userRecoveryCodes.userId, userId),
+        eq(s.userRecoveryCodes.codeHash, codeHash),
+        isNull(s.userRecoveryCodes.usedAt),
+      ),
+    );
+  // Drizzle doesn't return row counts in all adapters; rely on database-level
+  // behavior: if no row matched the WHERE (already used, belongs to other user),
+  // the UPDATE touches zero rows. We return true only if at least one row was
+  // updated. For PostgreSQL with the pg adapter, check rowCount.
+  return (result.rowCount ?? 0) > 0;
+}
+
+export async function countUnusedRecoveryCodes(userId: string): Promise<number> {
+  const s = getSchema();
+  const result = await db
+    .select({ count: count() })
+    .from(s.userRecoveryCodes)
+    .where(and(eq(s.userRecoveryCodes.userId, userId), isNull(s.userRecoveryCodes.usedAt)));
+  return result[0]?.count ?? 0;
 }
 
 // ─── Admin queries (managed edition) ────────────────────────────────────────
@@ -958,6 +1228,14 @@ async function deleteAllUserDataTx(tx: TxClient, userId: string) {
     .delete(s.simplefinPendingTransactions)
     .where(eq(s.simplefinPendingTransactions.userId, userId));
   await tx.delete(s.passwordResetTokens).where(eq(s.passwordResetTokens.userId, userId));
+  // Auth: trusted devices (revoke all sessions on wipe), passkeys survive but
+  // PRF wraps are cleared (PRF binds to the old DEK — see user-wraps a fresh one).
+  // Identities and recovery codes survive (user can re-authenticate with same provider).
+  await tx.delete(s.userDevices).where(eq(s.userDevices.userId, userId));
+  await tx
+    .update(s.userPasskeys)
+    .set({ dekWrappedPrf: null })
+    .where(eq(s.userPasskeys.userId, userId));
   await tx.delete(s.oauthAccessTokens).where(eq(s.oauthAccessTokens.userId, userId));
   await tx.delete(s.oauthAuthorizationCodes).where(eq(s.oauthAuthorizationCodes.userId, userId));
   if (userImportEmail) {
