@@ -132,7 +132,7 @@ export function TransactionTable({
             const isAmount = c.id === "amount" || c.id === "quantity";
             const widthClass =
               c.id === "select" ? "w-10" :
-              c.id === "actions" ? "w-24" :
+              c.id === "actions" ? "w-24 whitespace-nowrap" :
               "";
             const isDragging = draggingCol === c.id;
             const sortable = isSortableColumnId(c.id);
