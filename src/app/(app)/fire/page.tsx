@@ -503,7 +503,7 @@ function FirePageContent() {
                       </ResponsiveContainer>
 
                       {/* Final value percentiles */}
-                      <div className="grid grid-cols-5 gap-2 text-center">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 text-center">
                         {([
                           { label: "Worst Case (P10)", value: mcResult.finalValues.p10, color: "text-rose-600 dark:text-rose-400" },
                           { label: "P25", value: mcResult.finalValues.p25, color: "text-amber-600 dark:text-amber-400" },

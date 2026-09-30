@@ -158,7 +158,7 @@ export default function CategorizationSettingsPage() {
           {/* Add category form */}
           {showAddCat && (
             <form onSubmit={handleAddCategory} className="space-y-3 p-3 rounded-lg border bg-muted/30">
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <Label>Name</Label>
                   <Input value={newCatForm.name} onChange={(e) => { setNewCatForm({ ...newCatForm, name: e.target.value }); setNewCatErrors({ ...newCatErrors, name: "" }); }} placeholder="Category name" />

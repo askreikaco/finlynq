@@ -134,7 +134,7 @@ function HomePurchaseTab() {
                 </ResponsiveContainer>
               </CardContent>
             </Card>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <ResultCard label="Monthly Property Tax" value={formatCurrency(result.monthlyPropertyTax, displayCurrency)} />
               <ResultCard label="Monthly Maintenance" value={formatCurrency(result.monthlyMaintenance, displayCurrency)} />
               <ResultCard label="Total Payments" value={formatCurrency(result.totalPayments, displayCurrency)} />
@@ -194,7 +194,7 @@ function ExtraSavingsTab() {
       <div className="space-y-4">
         {result && (
           <>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <ResultCard label="Future Value" value={formatCurrency(result.futureValue, displayCurrency)} color="text-emerald-600" />
               <ResultCard label="Total Contributed" value={formatCurrency(result.totalContributions, displayCurrency)} />
               <ResultCard label="Investment Growth" value={formatCurrency(result.totalGrowth, displayCurrency)} color="text-indigo-600" />

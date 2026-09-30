@@ -385,7 +385,7 @@ function LoansPageContent() {
                   </Select>
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <Label>Currency</Label>
                   <Select value={form.currency} onValueChange={(v) => setForm({ ...form, currency: v ?? displayCurrency })}>
@@ -411,7 +411,7 @@ function LoansPageContent() {
                   {errors.termMonths && <p className="text-xs text-destructive mt-1">{errors.termMonths}</p>}
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <Label>Payment</Label>
                   <Input type="number" step="0.01" placeholder="From term" value={form.paymentAmount} onChange={(e) => { setForm({ ...form, paymentAmount: e.target.value }); setErrors({ ...errors, paymentAmount: "", termMonths: "" }); }} />
