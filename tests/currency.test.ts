@@ -5,10 +5,10 @@ import {
   formatDate,
   getCurrentMonth,
   getMonthLabel,
-  todayISO,
   formatDateTimeLocal,
   fxPreviewText,
 } from "@/lib/currency";
+import { todayISO } from "@/lib/utils/date";
 
 describe("formatCurrency", () => {
   it("formats positive CAD amount", () => {
