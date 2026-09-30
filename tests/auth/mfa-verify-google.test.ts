@@ -241,6 +241,7 @@ describe("/api/auth/mfa/verify — Google linking", () => {
       mfaToken: "pending_token",
       code: "123456",
       googleLinkCookie: googleLinkToken,
+      deviceCookie: "dev_abc.oldsecret",
     });
 
     const res = await POST(req);
@@ -255,11 +256,14 @@ describe("/api/auth/mfa/verify — Google linking", () => {
     });
 
     // Verify issueDevice was called
-    expect(mockIssueDevice).toHaveBeenCalled();
+    // Existing device row must be replaced (replaceDeviceId parsed from pf_device cookie)
+    expect(mockIssueDevice).toHaveBeenCalledWith(userId, mockDek, undefined, "dev_abc");
 
     // Verify pf_device cookie is set
-    const setCookie = res.headers.get("set-cookie") || "";
-    expect(setCookie).toContain("pf_device");
+    const d = res.cookies.get("pf_device");
+    expect(d?.value).toBe("device_123.secret");
+    expect(d?.path).toBe("/api/auth");
+    expect(d?.httpOnly).toBe(true);
   });
 
   it("b) Link cookie with different pendingJti: neither upsertIdentity nor issueDevice called", async () => {

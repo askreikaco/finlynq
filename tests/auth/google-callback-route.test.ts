@@ -141,6 +141,22 @@ function makeCallbackRequest(opts: {
   });
 }
 
+function expectCookieCleared(res: Response & { cookies?: any }, name: string) {
+  const c = (res as any).cookies.get(name);
+  expect(c, `${name} must be set to cleared`).toBeDefined();
+  expect(c.value).toBe("");
+  expect(c.maxAge === 0 || (c.expires && new Date(c.expires).getTime() <= Date.now())).toBeTruthy();
+}
+
+function expectRotatedDevice(res: Response, value = "device_id.rotated_secret") {
+  const d = (res as any).cookies.get("pf_device");
+  expect(d?.value).toBe(value);
+  expect(d?.path).toBe("/api/auth");
+  expect(d?.httpOnly).toBe(true);
+  expect(d?.sameSite).toBe("lax");
+  expect(d?.maxAge).toBe(2592000);
+}
+
 describe("/api/auth/google/callback", () => {
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -167,6 +183,14 @@ describe("/api/auth/google/callback", () => {
 
     expect(res.status).toBe(307);
     expect(location).toContain("error=google_no_state");
+    expectCookieCleared(res, "pf_oauth_state");
+  });
+
+  it("n) missing code/state params → error=google_missing_params, state cookie cleared", async () => {
+    const req = makeCallbackRequest({ stateCookie: "some_state_token" });
+    const res = await GET(req);
+    expect(res.headers.get("location") || "").toContain("error=google_missing_params");
+    expectCookieCleared(res, "pf_oauth_state");
   });
 
   it("b) state param ≠ cookie state → error=google_state_mismatch", async () => {
@@ -281,6 +305,7 @@ describe("/api/auth/google/callback", () => {
     const setCookie = res.headers.get("set-cookie") || "";
     expect(setCookie).toContain("pf_session");
     expect(setCookie).toContain("pf_device");
+    expectRotatedDevice(res);
     expect(setCookie).toContain("pf_oauth_state");
   });
 
@@ -344,6 +369,8 @@ describe("/api/auth/google/callback", () => {
     const setCookie = res.headers.get("set-cookie") || "";
     expect(setCookie).toContain("pf_unlock");
     expect(setCookie).toContain("pf_device");
+    expectRotatedDevice(res);
+    expectCookieCleared(res, "pf_oauth_state");
   });
 
   it("f) identity exists, no device → step=unlock, pf_unlock and pf_google_unlock_data set", async () => {
@@ -492,6 +519,7 @@ describe("/api/auth/google/callback", () => {
 
     expect(res.status).toBe(307);
     expect(location).toContain("error=google_invalid_state");
+    expectCookieCleared(res, "pf_oauth_state");
   });
 
   it("j) Google returns error param → error=google_denied or google_server_error", async () => {
@@ -505,9 +533,10 @@ describe("/api/auth/google/callback", () => {
 
     expect(res.status).toBe(307);
     expect(location).toContain("error=google_denied");
+    expectCookieCleared(res, "pf_oauth_state");
   });
 
-  it("k) redeemDevice succeeds but issueSessionForDek throws → still returns mfa step", async () => {
+  it("k) issueSessionForDek throws after redeemDevice → error redirect still carries rotated pf_device", async () => {
     const statePayload = {
       state: "state_value",
       nonce: "nonce123",
@@ -568,6 +597,9 @@ describe("/api/auth/google/callback", () => {
     expect(res.status).toBe(307);
     // Should redirect to error instead of mfa since issueSessionForDek threw
     expect(location).toContain("error=");
+    // Rotated secret must still be delivered, otherwise the next use is a replay-revoke
+    expectRotatedDevice(res);
+    expectCookieCleared(res, "pf_oauth_state");
   });
 
   it("l) intent=link with session mismatch → error=google_link_session", async () => {

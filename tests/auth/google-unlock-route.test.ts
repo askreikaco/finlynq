@@ -17,6 +17,11 @@ import { NextRequest } from "next/server";
 process.env.PF_JWT_SECRET = "test-jwt-secret-for-vitest-32chars!!";
 process.env.DEPLOY_GENERATION = "0";
 
+vi.mock("@/lib/auth/jwt", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/auth/jwt")>("@/lib/auth/jwt");
+  return { ...actual, revokeJti: vi.fn(async () => undefined) };
+});
+
 vi.mock("@/lib/auth", () => ({
   verifyPassword: vi.fn(),
 }));
@@ -73,7 +78,7 @@ vi.mock("drizzle-orm", () => ({
 }));
 
 import { POST } from "@/app/api/auth/google/unlock/route";
-import { createSessionToken, signShortLived, verifyShortLived, _clearRevokedJtiCache } from "@/lib/auth/jwt";
+import { createSessionToken, signShortLived, verifyShortLived, revokeJti, _clearRevokedJtiCache } from "@/lib/auth/jwt";
 import * as auth from "@/lib/auth";
 import * as finishLogin from "@/lib/auth/finish-login";
 import * as queries from "@/lib/auth/queries";
@@ -84,6 +89,7 @@ const mockVerifyPassword = vi.mocked(auth.verifyPassword);
 const mockFinishPasswordLogin = vi.mocked(finishLogin.finishPasswordLogin);
 const mockUpsertIdentity = vi.mocked(queries.upsertIdentity);
 const mockIssueDevice = vi.mocked(trustedDevice.issueDevice);
+const mockRevokeJti = vi.mocked(revokeJti);
 const mockCheckRateLimit = vi.mocked(rateLimit.checkRateLimit);
 
 function makeUnlockRequest(opts: {
@@ -241,7 +247,7 @@ describe("/api/auth/google/unlock", () => {
   });
 
   it("e) finishPasswordLogin → mfa → body {mfaRequired:true}, pf_google_link set with pendingJti, issueDevice NOT called", async () => {
-    const { token: unlockToken } = await createSessionToken("user_id_123", false, {
+    const { token: unlockToken, jti: unlockJti } = await createSessionToken("user_id_123", false, {
       pending: true,
       expirationTime: "5m",
     });
@@ -274,29 +280,38 @@ describe("/api/auth/google/unlock", () => {
     // Verify issueDevice was NOT called
     expect(mockIssueDevice).not.toHaveBeenCalled();
 
-    // Verify pf_google_link cookie is set
-    const setCookie = res.headers.get("set-cookie") || "";
-    expect(setCookie).toContain("pf_google_link");
+    // Verify pf_google_link cookie is set and bound to the MFA pending jti (not the unlock jti)
+    const raw = res.cookies.get("pf_google_link")?.value;
+    expect(raw).toBeTruthy();
+    const decoded = await verifyShortLived(raw!, "google-link");
+    expect(decoded).not.toBeNull();
+    expect(decoded!.pendingJti).toBe("mfa_jti_123");
+    expect(decoded!.pendingJti).not.toBe(unlockJti);
+  });
 
-    // Verify the cookie contains the jti when decoded
-    // Extract the cookie value
-    const cookies = setCookie.split(", ");
-    let googleLinkCookie = "";
-    for (const cookie of cookies) {
-      if (cookie.includes("pf_google_link=")) {
-        const match = cookie.match(/pf_google_link=([^;]+)/);
-        if (match) {
-          googleLinkCookie = match[1];
-          break;
-        }
-      }
-    }
+  it("c2) right password but finishPasswordLogin → unlock_failed → 401, jti revoked, unlock cookies cleared", async () => {
+    const { token: unlockToken, jti: unlockJti } = await createSessionToken("user_id_123", false, {
+      pending: true,
+      expirationTime: "5m",
+    });
+    const googleDataToken = await signShortLived(
+      { userId: "user_id_123", sub: "google_sub", email: "user@test.com", emailVerified: true },
+      300,
+      "google-unlock-data"
+    );
+    mockVerifyPassword.mockResolvedValue(true);
+    mockFinishPasswordLogin.mockResolvedValue({ kind: "unlock_failed" });
 
-    if (googleLinkCookie) {
-      const decoded = await verifyShortLived(googleLinkCookie, "google-link");
-      if (decoded) {
-        expect(decoded.pendingJti).toBe("mfa_jti_123");
-      }
+    const res = await POST(
+      makeUnlockRequest({ unlockToken, googleDataToken, body: { password: "correct_password" } })
+    );
+    expect(res.status).toBe(401);
+    expect(mockRevokeJti).toHaveBeenCalledWith(unlockJti, expect.any(Date));
+    expect(mockUpsertIdentity).not.toHaveBeenCalled();
+    expect(mockIssueDevice).not.toHaveBeenCalled();
+    for (const name of ["pf_unlock", "pf_google_unlock_data"]) {
+      const c = res.cookies.get(name);
+      expect(c?.value).toBe("");
     }
   });
 
