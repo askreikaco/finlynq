@@ -137,7 +137,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Wrong password", retry: true }, { status: 401 });
     }
 
-    // Password verified — now we can link the identity, issue device, and complete login
+    // Password verified — revoke the unlock token to keep it single-use under concurrency
+    // This must happen BEFORE finishPasswordLogin to prevent concurrent replays
+    if (unlockJti && unlockExp) {
+      try {
+        const expDate = typeof unlockExp === "number"
+          ? new Date(unlockExp * 1000)
+          : new Date(Date.now() + 5 * 60 * 1000);
+        await revokeJti(unlockJti, expDate);
+      } catch {
+        // Swallow — revocation failure shouldn't block login
+      }
+    }
+
+    // Now we can link the identity, issue device, and complete login
     // Finish the login (unwrap DEK, handle MFA, etc.)
     // finishPasswordLogin expects an AuthUser with just the fields it needs
     const authUser = {
@@ -152,18 +165,7 @@ export async function POST(req: NextRequest) {
     const loginResult = await finishPasswordLogin(authUser, password);
 
     if (loginResult.kind === "unlock_failed") {
-      // Password unlock failed — revoke the pending unlock token
-      if (unlockJti && unlockExp) {
-        try {
-          const expDate = typeof unlockExp === "number"
-            ? new Date(unlockExp * 1000)
-            : new Date(Date.now() + 5 * 60 * 1000);
-          await revokeJti(unlockJti, expDate);
-        } catch {
-          // Swallow — revocation failure shouldn't block the login denial
-        }
-      }
-
+      // Password unlock failed — jti was already revoked above
       // Clear unlock cookies
       const response = NextResponse.json({ error: "Invalid password" }, { status: 401 });
       response.cookies.delete("pf_unlock");
@@ -197,12 +199,9 @@ export async function POST(req: NextRequest) {
         path: "/",
       });
 
-      // Clear unlock cookies and revoke jti
+      // Clear unlock cookies (jti already revoked)
       response.cookies.delete("pf_unlock");
       response.cookies.delete("pf_google_unlock_data");
-      if (unlockJti) {
-        await revokeJti(unlockJti, new Date(Date.now() + 10 * 60 * 1000));
-      }
 
       return response;
     }

@@ -20,6 +20,12 @@ export async function DELETE(request: NextRequest) {
   if (!auth.authenticated) return auth.response;
 
   const userId = auth.context.userId!;
+
+  // Session required (reject API-key auth)
+  if (auth.context.method !== "account") {
+    return NextResponse.json({ error: "Session required" }, { status: 403 });
+  }
+
   const url = new URL(request.url);
   const deviceId = url.searchParams.get("id");
   const revokeAll = url.searchParams.get("all") === "1";

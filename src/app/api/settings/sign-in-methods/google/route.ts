@@ -12,12 +12,27 @@ import { z } from "zod";
 import { requireAuth } from "@/lib/auth/require-auth";
 import { getUserById, deleteIdentities } from "@/lib/auth/queries";
 import { verifyPassword } from "@/lib/auth";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function DELETE(request: NextRequest) {
   const auth = await requireAuth(request);
   if (!auth.authenticated) return auth.response;
 
   const userId = auth.context.userId!;
+
+  // Session required (reject API-key auth)
+  if (auth.context.method !== "account") {
+    return NextResponse.json({ error: "Session required" }, { status: 403 });
+  }
+
+  // Rate limit per user: 5 attempts per 15 minutes
+  const rateLimit = checkRateLimit(`unlink-google:${userId}`, 5, 15 * 60 * 1000);
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: "Too many attempts. Please try again later." },
+      { status: 429 }
+    );
+  }
 
   // Parse and validate request body
   let body;

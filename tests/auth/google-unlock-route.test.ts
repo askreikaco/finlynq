@@ -451,6 +451,10 @@ describe("/api/auth/google/unlock", () => {
     const data = await res.json();
     expect(data.error).toBe("Too many requests");
 
+    // Verify verifyPassword and finishPasswordLogin were NOT called (rate limit hit before password check)
+    expect(mockVerifyPassword).not.toHaveBeenCalled();
+    expect(mockFinishPasswordLogin).not.toHaveBeenCalled();
+
     // Verify jti was revoked
     expect(mockRevokeJti).toHaveBeenCalledWith(unlockJti, expect.any(Date));
 

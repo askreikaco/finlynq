@@ -46,12 +46,17 @@ vi.mock("@/lib/auth/trusted-device", () => ({
   }),
 }));
 
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: vi.fn(),
+}));
+
 import { GET as getSignInMethods } from "@/app/api/settings/sign-in-methods/route";
 import { DELETE as deleteGoogle } from "@/app/api/settings/sign-in-methods/google/route";
 import { DELETE as deleteDevice } from "@/app/api/settings/devices/route";
 import * as requireAuth from "@/lib/auth/require-auth";
 import * as auth from "@/lib/auth";
 import * as queries from "@/lib/auth/queries";
+import * as rateLimit from "@/lib/rate-limit";
 
 const mockRequireAuth = vi.mocked(requireAuth.requireAuth);
 const mockVerifyPassword = vi.mocked(auth.verifyPassword);
@@ -61,6 +66,7 @@ const mockGetUserById = vi.mocked(queries.getUserById);
 const mockDeleteIdentities = vi.mocked(queries.deleteIdentities);
 const mockRevokeDevice = vi.mocked(queries.revokeDevice);
 const mockRevokeAllDevices = vi.mocked(queries.revokeAllDevices);
+const mockCheckRateLimit = vi.mocked(rateLimit.checkRateLimit);
 
 describe("GET /api/settings/sign-in-methods", () => {
   beforeEach(() => {
@@ -217,12 +223,52 @@ describe("DELETE /api/settings/sign-in-methods/google", () => {
     expect(res).toBe(mockResponse);
   });
 
+  it("requires session auth (rejects API-key)", async () => {
+    mockRequireAuth.mockResolvedValue({
+      authenticated: true,
+      context: { userId: "user_123", method: "api_key" },
+    } as any);
+
+    const url = new URL("http://localhost:3000/api/settings/sign-in-methods/google");
+    const req = new NextRequest(url, { method: "DELETE", body: JSON.stringify({ password: "test" }) });
+
+    const res = await deleteGoogle(req);
+    const data = await res.json();
+
+    expect(res.status).toBe(403);
+    expect(data.error).toBe("Session required");
+    expect(mockVerifyPassword).not.toHaveBeenCalled();
+    expect(mockDeleteIdentities).not.toHaveBeenCalled();
+  });
+
+  it("returns 429 when rate limit exceeded", async () => {
+    mockRequireAuth.mockResolvedValue({
+      authenticated: true,
+      context: { userId: "user_123", method: "account" },
+    } as any);
+
+    mockCheckRateLimit.mockReturnValue({ allowed: false } as any);
+
+    const url = new URL("http://localhost:3000/api/settings/sign-in-methods/google");
+    const req = new NextRequest(url, { method: "DELETE", body: JSON.stringify({ password: "test" }) });
+
+    const res = await deleteGoogle(req);
+    const data = await res.json();
+
+    expect(res.status).toBe(429);
+    expect(data.error).toBe("Too many attempts. Please try again later.");
+    expect(mockVerifyPassword).not.toHaveBeenCalled();
+    expect(mockDeleteIdentities).not.toHaveBeenCalled();
+    expect(mockCheckRateLimit).toHaveBeenCalledWith("unlink-google:user_123", 5, 900000);
+  });
+
   it("returns 401 for wrong password without calling deleteIdentities", async () => {
     mockRequireAuth.mockResolvedValue({
       authenticated: true,
-      context: { userId: "user_123" },
+      context: { userId: "user_123", method: "account" },
     } as any);
 
+    mockCheckRateLimit.mockReturnValue({ allowed: true } as any);
     mockGetUserById.mockResolvedValue({
       id: "user_123",
       passwordHash: "hashed_password",
@@ -247,8 +293,10 @@ describe("DELETE /api/settings/sign-in-methods/google", () => {
   it("deletes Google identity with correct password", async () => {
     mockRequireAuth.mockResolvedValue({
       authenticated: true,
-      context: { userId: "user_123" },
+      context: { userId: "user_123", method: "account" },
     } as any);
+
+    mockCheckRateLimit.mockReturnValue({ allowed: true } as any);
 
     mockGetUserById.mockResolvedValue({
       id: "user_123",
@@ -275,8 +323,10 @@ describe("DELETE /api/settings/sign-in-methods/google", () => {
   it("returns 400 for missing password", async () => {
     mockRequireAuth.mockResolvedValue({
       authenticated: true,
-      context: { userId: "user_123" },
+      context: { userId: "user_123", method: "account" },
     } as any);
+
+    mockCheckRateLimit.mockReturnValue({ allowed: true } as any);
 
     const url = new URL("http://localhost:3000/api/settings/sign-in-methods/google");
     const req = new NextRequest(url, {
@@ -311,10 +361,46 @@ describe("DELETE /api/settings/devices", () => {
     expect(res).toBe(mockResponse);
   });
 
+  it("requires session auth (rejects API-key)", async () => {
+    mockRequireAuth.mockResolvedValue({
+      authenticated: true,
+      context: { userId: "user_123", method: "api_key" },
+    } as any);
+
+    const url = new URL("http://localhost:3000/api/settings/devices?id=device_1");
+    const req = new NextRequest(url, { method: "DELETE" });
+
+    const res = await deleteDevice(req);
+    const data = await res.json();
+
+    expect(res.status).toBe(403);
+    expect(data.error).toBe("Session required");
+    expect(mockRevokeDevice).not.toHaveBeenCalled();
+  });
+
+  it("enforces device ownership (scoped to session user)", async () => {
+    mockRequireAuth.mockResolvedValue({
+      authenticated: true,
+      context: { userId: "user_123", method: "account" },
+    } as any);
+
+    mockRevokeDevice.mockResolvedValue(undefined as any);
+
+    const url = new URL("http://localhost:3000/api/settings/devices?id=device_1&userId=other");
+    const req = new NextRequest(url, { method: "DELETE" });
+
+    const res = await deleteDevice(req);
+    const data = await res.json();
+
+    expect(res.status).toBe(200);
+    // Must be called with session user, not the query param
+    expect(mockRevokeDevice).toHaveBeenCalledWith("user_123", "device_1");
+  });
+
   it("revokes single device with id parameter", async () => {
     mockRequireAuth.mockResolvedValue({
       authenticated: true,
-      context: { userId: "user_123" },
+      context: { userId: "user_123", method: "account" },
     } as any);
 
     mockRevokeDevice.mockResolvedValue(undefined as any);
@@ -333,7 +419,7 @@ describe("DELETE /api/settings/devices", () => {
   it("revokes all devices with all=1 parameter and clears pf_device cookie", async () => {
     mockRequireAuth.mockResolvedValue({
       authenticated: true,
-      context: { userId: "user_123" },
+      context: { userId: "user_123", method: "account" },
     } as any);
 
     mockRevokeAllDevices.mockResolvedValue(undefined as any);
@@ -353,7 +439,7 @@ describe("DELETE /api/settings/devices", () => {
   it("returns 400 when neither id nor all is provided", async () => {
     mockRequireAuth.mockResolvedValue({
       authenticated: true,
-      context: { userId: "user_123" },
+      context: { userId: "user_123", method: "account" },
     } as any);
 
     const url = new URL("http://localhost:3000/api/settings/devices");
