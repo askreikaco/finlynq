@@ -36,21 +36,23 @@ export const isReasonableAmount = (n: number): boolean =>
 
 /**
  * Compact chart-axis abbreviation — the SINGLE source of truth for
- * "k"/"m" Y-axis tick formatting (FINLYNQ-247). Deliberately bare (NO
+ * "K"/"M"/"B" Y-axis tick formatting (FINLYNQ-247). Deliberately bare (NO
  * currency symbol — currency belongs on a chart-level label/subtitle, not
  * every tick) so it composes with any chart regardless of currency.
  *
- * Rules (mirrors the pre-existing `net-worth-history-chart.tsx` `fmtAxis`):
- *   - |n| >= 1e6 → "<n/1e6 to 1 decimal>m"  (e.g. 1_240_000 → "1.2m")
- *   - |n| >= 1e4 → "<n/1e3 to 0 decimals>k" (e.g. 572345 → "572k")
- *   - |n| >= 1e3 → "<n/1e3 to 1 decimal>k"  (e.g. 1500 → "1.5k")
+ * Rules:
+ *   - |n| >= 1e9 → "<n/1e9 to 1 decimal>B"  (e.g. 2_500_000_000 → "2.5B")
+ *   - |n| >= 1e6 → "<n/1e6 to 1 decimal>M"  (e.g. 54_300_000 → "54.3M")
+ *   - |n| >= 1e4 → "<n/1e3 to 0 decimals>K" (e.g. 572345 → "572K")
+ *   - |n| >= 1e3 → "<n/1e3 to 1 decimal>K"  (e.g. 1500 → "1.5K")
  *   - else       → the rounded value as a plain string (e.g. 850 → "850")
  * Negative-safe (sign carried through, magnitude rules applied to |n|) and
  * 0-safe ("0").
  */
 export function formatCompactNumber(value: number): string {
   const abs = Math.abs(value);
-  if (abs >= 1e6) return `${(value / 1e6).toFixed(1)}m`;
-  if (abs >= 1000) return `${(value / 1000).toFixed(abs >= 10000 ? 0 : 1)}k`;
+  if (abs >= 1e9) return `${(value / 1e9).toFixed(1)}B`;
+  if (abs >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
+  if (abs >= 1000) return `${(value / 1000).toFixed(abs >= 10000 ? 0 : 1)}K`;
   return `${Math.round(value)}`;
 }

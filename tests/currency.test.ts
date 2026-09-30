@@ -97,10 +97,14 @@ describe("formatNumber", () => {
 });
 
 describe("formatDate", () => {
-  it("formats a date string", () => {
+  it("formats a date string as dd/mm/yyyy", () => {
     const result = formatDate("2024-03-15");
-    expect(result).toContain("2024");
-    expect(result).toContain("15");
+    expect(result).toBe("15/03/2024");
+  });
+
+  it("formats date with leading zeros correctly", () => {
+    const result = formatDate("2026-01-05");
+    expect(result).toBe("05/01/2026");
   });
 });
 
