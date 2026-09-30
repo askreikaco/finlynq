@@ -8,9 +8,10 @@
 --   user_passkeys — WebAuthn registration for FIDO2/Windows Hello/Touch ID
 --   user_recovery_codes — backup single-use recovery codes for account recovery
 --
--- None carry ON DELETE CASCADE to users — see src/lib/auth/queries.ts
--- `wipeUserDataAndRewrap`: identities, passkeys and recovery codes survive an
--- account wipe; devices are deleted (session rotation).
+-- All four tables carry ON DELETE CASCADE to users (account deletion removes all).
+-- On password reset (via `wipeUserDataAndRewrap` in src/lib/auth/queries.ts):
+-- identities, passkeys, and recovery codes survive; devices are deleted (session rotation);
+-- passkey PRF wraps are NULLed (cannot unlock with old DEK after wipe).
 --
 -- The runner in deploy.sh wraps the file in a transaction with the
 -- schema_migrations bookkeeping insert — do NOT add a BEGIN/COMMIT here.

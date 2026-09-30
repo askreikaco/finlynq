@@ -40,6 +40,8 @@ export interface CreateUserInput {
   dekWrapped: string;
   dekWrappedIv: string;
   dekWrappedTag: string;
+  /** Email verification status (0 or 1). Defaults to 0. Set to 1 for Google signup. */
+  emailVerified?: number;
 }
 
 export async function createUser(input: CreateUserInput) {
@@ -66,7 +68,7 @@ export async function createUser(input: CreateUserInput) {
       passwordHash: input.passwordHash,
       displayName: input.displayName ?? null,
       role: "user",
-      emailVerified: 0,
+      emailVerified: input.emailVerified ?? 0,
       emailVerifyToken: emailVerifyTokenHash,
       mfaEnabled: 0,
       mfaSecret: null,
@@ -470,6 +472,31 @@ export async function touchDevice(id: string, update: TouchDeviceInput) {
       lastUsedAt: now,
     })
     .where(eq(s.userDevices.id, id));
+}
+
+export async function rotateDeviceSecret(
+  id: string,
+  oldHash: string,
+  update: { secretHash: string; dekWrapped: string; expiresAt: string }
+): Promise<boolean> {
+  const s = getSchema();
+  const now = new Date().toISOString();
+  const result = await db
+    .update(s.userDevices)
+    .set({
+      secretHash: update.secretHash,
+      dekWrapped: update.dekWrapped,
+      expiresAt: update.expiresAt,
+      lastUsedAt: now,
+    })
+    .where(
+      and(
+        eq(s.userDevices.id, id),
+        eq(s.userDevices.secretHash, oldHash)
+      )
+    )
+    .returning({ id: s.userDevices.id });
+  return result.length > 0;
 }
 
 export async function listDevices(userId: string) {

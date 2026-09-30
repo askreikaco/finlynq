@@ -11,6 +11,7 @@ import { requireAuth } from "@/lib/auth";
 import { db, getDialect, schema } from "@/db";
 import { getUserById } from "@/lib/auth/queries";
 import { and, eq } from "drizzle-orm";
+import { isGoogleConfigured } from "@/lib/auth/google-oidc";
 
 export async function GET(request: NextRequest) {
   const auth = await requireAuth(request);
@@ -72,5 +73,6 @@ export async function GET(request: NextRequest) {
     email,
     displayName,
     displayCurrency,
+    googleEnabled: isGoogleConfigured(),
   });
 }
