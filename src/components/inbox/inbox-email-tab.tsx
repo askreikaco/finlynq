@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/select";
 import { Trash2, RefreshCw, Mail, Wand2 } from "lucide-react";
 import { safeAccountName, safeName } from "@/lib/safe-name";
-import { formatCurrency } from "@/lib/currency";
+import { formatCurrency, formatDate } from "@/lib/currency";
 import { EmailRuleDialog } from "./email-rule-dialog";
 
 type Action =
@@ -334,12 +334,12 @@ export function InboxEmailTab() {
                       <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
                         <span className="truncate">{it.fromAddress || "(unknown sender)"}</span>
                         <span>·</span>
-                        <span>{new Date(it.receivedAt).toLocaleDateString()}</span>
+                        <span>{formatDate(it.receivedAt)}</span>
                         {it.nextPurgeAt && (
                           <>
                             <span>·</span>
                             <span title="When this email is automatically deleted, based on your retention setting">
-                              purges {new Date(it.nextPurgeAt).toLocaleDateString()}
+                              purges {formatDate(it.nextPurgeAt)}
                             </span>
                           </>
                         )}

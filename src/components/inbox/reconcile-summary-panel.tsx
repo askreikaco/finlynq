@@ -24,7 +24,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
-import { formatCurrency } from "@/lib/currency";
+import { formatCurrency, formatDate } from "@/lib/currency";
 import { ChevronDown, ChevronRight, RefreshCw } from "lucide-react";
 
 export interface ReconcileSummaryApiRow {
@@ -40,13 +40,7 @@ export interface ReconcileSummaryApiRow {
 
 function fmtDate(iso: string | null): string {
   if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+  return formatDate(iso);
 }
 
 export function ReconcileSummaryPanel({

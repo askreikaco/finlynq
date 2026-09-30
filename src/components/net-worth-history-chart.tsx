@@ -25,7 +25,7 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { formatCurrency } from "@/lib/currency";
+import { formatCurrency, formatDate } from "@/lib/currency";
 import { formatCompactNumber } from "@/lib/utils/number";
 import { RebuildSnapshotsButton } from "@/components/portfolio/rebuild-snapshots-button";
 import { prepareTimeSeries } from "@/lib/chart-series";
@@ -84,13 +84,7 @@ function fmtTick(d: string, period: Period): string {
 }
 
 function fmtFullDate(d: string): string {
-  const dt = new Date(`${d}T00:00:00Z`);
-  return dt.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    timeZone: "UTC",
-  });
+  return formatDate(d);
 }
 
 function HistoryTooltip({

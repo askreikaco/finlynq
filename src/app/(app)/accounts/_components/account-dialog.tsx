@@ -374,6 +374,7 @@ export function AccountDialog({
             </SelectContent>
           </Select>
           {errors.type && <p className="text-xs text-destructive">{errors.type}</p>}
+          <p className="text-xs text-muted-foreground">Credit cards should be Liability accounts; balance = amount owed.</p>
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="account-dialog-group">Group</Label>

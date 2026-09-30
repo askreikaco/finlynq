@@ -606,7 +606,7 @@ export function registerReadsTools(server: McpServer, ctx: PgToolContext) {
         // so the #210 parity contract holds when the same override is passed.
         const nwOverlayRows = acctRows.map((r) => ({
           id: Number(r.id),
-          currency: r.currency ?? "CAD",
+          currency: r.currency ?? reporting,
           isInvestment: r.is_investment === true,
           ledgerBalance: Number(r.total),
         }));
@@ -649,12 +649,12 @@ export function registerReadsTools(server: McpServer, ctx: PgToolContext) {
         // are the same per-account rows filtered by `type`.
         const fxLookup = (from: string, to: string) => getRate(from, to, today, userId);
         const assetItems = overlay.rows
-          .map((ov, i) => ({ amount: ov.balance, currency: acctRows[i].currency ?? "CAD", type: acctRows[i].type }))
+          .map((ov, i) => ({ amount: ov.balance, currency: acctRows[i].currency ?? reporting, type: acctRows[i].type }))
           .filter((it) => it.type === "A");
         const liabItems = overlay.rows
-          .map((ov, i) => ({ amount: ov.balance, currency: acctRows[i].currency ?? "CAD", type: acctRows[i].type }))
+          .map((ov, i) => ({ amount: ov.balance, currency: acctRows[i].currency ?? reporting, type: acctRows[i].type }))
           .filter((it) => it.type !== "A");
-        const netItems = overlay.rows.map((ov, i) => ({ amount: ov.balance, currency: acctRows[i].currency ?? "CAD" }));
+        const netItems = overlay.rows.map((ov, i) => ({ amount: ov.balance, currency: acctRows[i].currency ?? reporting }));
         const aggAssets = await aggregateInReporting(assetItems, reporting, fxLookup);
         const aggLiab = await aggregateInReporting(liabItems, reporting, fxLookup);
         const aggNet = await aggregateInReporting(netItems, reporting, fxLookup);
@@ -723,7 +723,7 @@ export function registerReadsTools(server: McpServer, ctx: PgToolContext) {
       // each row's end-of-month FX rate; today's rate is a placeholder so
       // the contract shape is forward-compatible.
       const fxByCcy = new Map<string, number>();
-      for (const ccy of new Set(rows.map((r) => r.currency ?? "CAD"))) {
+      for (const ccy of new Set(rows.map((r) => r.currency ?? reporting))) {
         if (!fxByCcy.has(ccy)) {
           fxByCcy.set(ccy, await getRate(ccy, reporting, today, userId));
         }

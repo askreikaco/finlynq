@@ -40,6 +40,7 @@ import {
 import { computeGoalProgress } from "../../src/lib/goals-progress";
 import { todayISO } from "../../src/lib/utils/date";
 import { registerManageTool } from "./_consolidate";
+import { resolveReportingCurrency } from "../reporting-currency";
 
 type ToolResult = { content: Array<{ type: "text"; text: string }> };
 
@@ -91,11 +92,23 @@ export function registerGoalsTools(server: McpServer, ctx: PgToolContext) {
       }
     }
     const n = dek ? encryptName(dek, name) : { ct: null, lookup: null };
+
+    // Determine currency: linked account currency (first) else display currency.
+    let goalCurrency = await resolveReportingCurrency(db, userId, null);
+    if (resolvedIds.length > 0) {
+      const accountCurrency = await q(db, sql`
+        SELECT currency FROM accounts WHERE id = ${resolvedIds[0]} AND user_id = ${userId}
+      `);
+      if (accountCurrency.length > 0) {
+        goalCurrency = String(accountCurrency[0].currency);
+      }
+    }
+
     // Stream D Phase 4 — plaintext name column dropped. Issue #130 — dual-write
     // the legacy `goals.account_id` (first id only) AND the goal_accounts join.
     const inserted = await q(db, sql`
-      INSERT INTO goals (user_id, type, target_amount, deadline, account_id, status, name_ct, name_lookup)
-      VALUES (${userId}, ${type}, ${target_amount}, ${deadline ?? null}, ${resolvedIds[0] ?? null}, 'active', ${n.ct}, ${n.lookup})
+      INSERT INTO goals (user_id, type, target_amount, deadline, account_id, status, currency, name_ct, name_lookup)
+      VALUES (${userId}, ${type}, ${target_amount}, ${deadline ?? null}, ${resolvedIds[0] ?? null}, 'active', ${goalCurrency}, ${n.ct}, ${n.lookup})
       RETURNING id
     `);
     const goalId = Number(inserted[0]?.id);
@@ -113,7 +126,7 @@ export function registerGoalsTools(server: McpServer, ctx: PgToolContext) {
       data: {
         goalId,
         accountIds: resolvedIds,
-        message: `Goal created: "${name}" — target $${target_amount}${deadline ? ` by ${deadline}` : ""}${resolvedIds.length > 0 ? ` linked to ${resolvedIds.length} account(s)` : ""}`,
+        message: `Goal created: "${name}" — target ${target_amount} ${goalCurrency}${deadline ? ` by ${deadline}` : ""}${resolvedIds.length > 0 ? ` linked to ${resolvedIds.length} account(s)` : ""}`,
       },
     });
   }

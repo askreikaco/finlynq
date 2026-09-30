@@ -1,4 +1,9 @@
-export const todayISO = (): string => new Date().toISOString().split("T")[0];
+const pad = (n: number): string => String(n).padStart(2, "0");
+
+export const todayISO = (): string => {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
 
 export function addDays(dateStr: string, days: number): string {
   const d = new Date(dateStr + "T00:00:00Z");

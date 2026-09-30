@@ -12,13 +12,11 @@ import { Megaphone, AlertTriangle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { Announcement } from "@shared/types";
+import { formatDate } from "@/lib/currency";
 
 function fmtDate(iso: string | null): string {
   if (!iso) return "";
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime())
-    ? ""
-    : d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+  return formatDate(iso);
 }
 
 export default function WhatsNewPage() {

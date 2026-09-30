@@ -176,8 +176,9 @@ export function OnboardingWizard({
         });
       }
 
-      // Create budgets for current month
-      const month = new Date().toISOString().slice(0, 7); // YYYY-MM
+      // Create budgets for current month (local date)
+      const d = new Date();
+      const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       for (const [categoryName, amount] of Object.entries(budgetAmounts)) {
         if (amount > 0) {
           await fetch("/api/budgets/seed", {

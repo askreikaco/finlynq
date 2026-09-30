@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { AnalyticsConsent } from "@/components/analytics-consent";
 import { JsonLd, breadcrumbSchema } from "@/components/seo/json-ld";
 import { RELEASES_BY_DATE } from "@/lib/seo/releases";
+import { formatDate } from "@/lib/currency";
 
 export const metadata: Metadata = {
   title: "Releases · Finlynq",
@@ -26,15 +27,7 @@ export const metadata: Metadata = {
 };
 
 function fmtDate(iso: string): string {
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime())
-    ? iso
-    : d.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        timeZone: "UTC",
-      });
+  return formatDate(iso);
 }
 
 export default function ReleasesIndexPage() {

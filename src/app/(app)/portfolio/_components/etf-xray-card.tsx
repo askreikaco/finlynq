@@ -137,7 +137,7 @@ export function EtfXrayCard({
                             <span className="text-sm font-mono font-semibold">{s.effectiveWeight.toFixed(1)}%</span>
                           </TableCell>
                           <TableCell className="text-right">
-                            <span className="text-sm font-mono text-muted-foreground">{formatCurrency(s.effectiveValueDisplay, "CAD")}</span>
+                            <span className="text-sm font-mono text-muted-foreground">{formatCurrency(s.effectiveValueDisplay, displayCurrency)}</span>
                           </TableCell>
                           <TableCell>
                             <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
