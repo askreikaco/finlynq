@@ -189,7 +189,7 @@ describe("Trusted Device Management", () => {
         ["Mozilla Safari", "Safari"],
         ["Chrome/120", "Chrome"],
         ["Firefox/121", "Firefox"],
-        ["Edg/120", "Edge"],
+        ["Edge/120", "Edge"],
         ["Unknown Browser", "Browser"],
       ];
 
