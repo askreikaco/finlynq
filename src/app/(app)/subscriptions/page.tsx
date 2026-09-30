@@ -1,7 +1,6 @@
 "use client";
 import { addDays, todayISO } from "@/lib/utils/date";
 
-import { DevModeGuard } from "@/components/dev-mode-guard";
 
 import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -869,4 +868,4 @@ function SubscriptionsPageContent() {
   );
 }
 
-export default function SubscriptionsPage() { return <DevModeGuard><SubscriptionsPageContent /></DevModeGuard>; }
+export default function SubscriptionsPage() { return <SubscriptionsPageContent />; }

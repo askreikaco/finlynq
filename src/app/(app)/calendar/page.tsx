@@ -1,6 +1,5 @@
 "use client";
 
-import { DevModeGuard } from "@/components/dev-mode-guard";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -459,4 +458,4 @@ function CalendarPageContent() {
   );
 }
 
-export default function CalendarPage() { return <DevModeGuard><CalendarPageContent /></DevModeGuard>; }
+export default function CalendarPage() { return <CalendarPageContent />; }
