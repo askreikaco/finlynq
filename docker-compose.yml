@@ -34,6 +34,11 @@ services:
       PF_PEPPER: ${PF_PEPPER:?set PF_PEPPER in .env (>=32 chars) — generate with openssl rand -hex 32}
       # Wraps service-tier email-staged imports (>=32 chars). Module-load throws in prod if missing.
       PF_STAGING_KEY: ${PF_STAGING_KEY:?set PF_STAGING_KEY in .env (>=32 chars) — generate with openssl rand -hex 32}
+      # Google OAuth 2.0 (optional)
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      # Trusted device cookie lifetime in days (optional, default 30)
+      PF_TRUSTED_DEVICE_DAYS: ${PF_TRUSTED_DEVICE_DAYS:-30}
       NODE_ENV: production
       # Email transport: set one of RESEND_API_KEY, BREVO_API_KEY, or SMTP_HOST
       RESEND_API_KEY: ${RESEND_API_KEY:-}

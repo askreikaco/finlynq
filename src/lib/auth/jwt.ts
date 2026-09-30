@@ -334,3 +334,60 @@ export async function verifySessionToken(
 export function isPendingToken(payload: SessionPayload | null): boolean {
   return Boolean(payload?.pending);
 }
+
+// ─── Short-lived OAuth state tokens ────────────────────────────────────────
+//
+// Used for signing pf_oauth_state, pf_unlock, and pf_google_signup cookies
+// to prevent tampering. These are distinct from session JWTs (different audience,
+// shorter TTL, and no deploy-generation check).
+
+export type ShortLivedPurpose =
+  | "oauth-state"
+  | "google-unlock-data"
+  | "google-signup"
+  | "google-link";
+
+const OAUTH_STATE_AUDIENCE = "pf-oauth-state";
+const OAUTH_STATE_ISSUER = ISSUER; // Reuse session token issuer
+
+/**
+ * Sign a short-lived token for OAuth state/nonce/PKCE cookies (10 min default).
+ * Uses the same secret as session JWTs but a distinct audience to prevent
+ * cross-use (an oauth-state token can't be used as a session cookie and vice versa).
+ * The purpose claim is used to bind the token to its specific use case.
+ */
+export async function signShortLived(
+  claims: Record<string, unknown>,
+  ttlSeconds: number = 600, // 10 minutes
+  purpose: ShortLivedPurpose
+): Promise<string> {
+  const builder = new SignJWT({ ...claims, purpose })
+    .setProtectedHeader({ alg: "HS256" })
+    .setAudience(OAUTH_STATE_AUDIENCE)
+    .setIssuer(OAUTH_STATE_ISSUER)
+    .setIssuedAt()
+    .setExpirationTime(Math.floor(Date.now() / 1000) + ttlSeconds);
+  return builder.sign(getSecret());
+}
+
+/**
+ * Verify and decode a short-lived OAuth state token. Returns null if invalid,
+ * expired, has the wrong audience, wrong issuer, or wrong purpose.
+ */
+export async function verifyShortLived(
+  token: string,
+  purpose: ShortLivedPurpose
+): Promise<Record<string, unknown> | null> {
+  try {
+    const { payload } = await jwtVerify(token, getSecret(), {
+      audience: OAUTH_STATE_AUDIENCE,
+      issuer: OAUTH_STATE_ISSUER,
+    });
+    if (payload.purpose !== purpose) {
+      return null;
+    }
+    return payload;
+  } catch {
+    return null;
+  }
+}

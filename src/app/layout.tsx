@@ -50,6 +50,12 @@ export const metadata: Metadata = {
   ],
   icons: {
     icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
+    apple: "/apple-touch-icon.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Finlynq",
   },
   openGraph: {
     type: "website",

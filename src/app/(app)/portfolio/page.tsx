@@ -218,14 +218,14 @@ export default function PortfolioPage() {
   return (
     <div className="space-y-6">
       {/* ── Header ────────────────────────────────────────────── */}
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Portfolio</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             {summary.totalHoldings} holdings across {summary.totalAccounts} accounts
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {/* Phase 2 nav — realized gains + dividends dashboards. Each
               dashboard reads its own data; they're not modal extensions
               of this page, just deeper drills into the same portfolio.
