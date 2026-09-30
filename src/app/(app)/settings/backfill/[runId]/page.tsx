@@ -681,7 +681,7 @@ function DisplacedRowsTable({
   return (
     <div>
       <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Existing rows being displaced</div>
-      <div className="rounded border overflow-hidden">
+      <div className="rounded border overflow-x-auto">
         <table className="w-full text-xs">
           <thead className="bg-muted/40">
             <tr>
@@ -810,7 +810,7 @@ function ReplacementPreviewTable({
       {rows.length > 0 && (
         <div>
           <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Will become (UPDATE in place)</div>
-          <div className="rounded border overflow-hidden">
+          <div className="rounded border overflow-x-auto">
             <table className="w-full text-xs">
               <thead className="bg-muted/40">
                 <tr>
@@ -837,7 +837,7 @@ function ReplacementPreviewTable({
       {synth.length > 0 && (
         <div>
           <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">New rows (synthesized — tagged source=&apos;backfill_synth&apos;)</div>
-          <div className="rounded border border-amber-500/40 bg-amber-500/5 overflow-hidden">
+          <div className="rounded border border-amber-500/40 bg-amber-500/5 overflow-x-auto">
             <table className="w-full text-xs">
               <thead className="bg-amber-500/10">
                 <tr>
@@ -1716,7 +1716,7 @@ function WillBecomeTable({
   return (
     <div>
       <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Will become</div>
-      <div className="rounded border border-emerald-500/40 bg-emerald-500/5 overflow-hidden">
+      <div className="rounded border border-emerald-500/40 bg-emerald-500/5 overflow-x-auto">
         <table className="w-full text-xs">
           <thead className="bg-emerald-500/10">
             <tr>
@@ -1962,7 +1962,7 @@ function CoverageDashboard({ coverage, proposals }: { coverage: Coverage; propos
         {coverage.perAccount.length > 0 && (
           <div className="mt-4">
             <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Per-account breakdown</div>
-            <div className="rounded border overflow-hidden">
+            <div className="rounded border overflow-x-auto">
               <table className="w-full text-xs">
                 <thead className="bg-muted/40">
                   <tr>

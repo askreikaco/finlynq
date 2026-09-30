@@ -410,7 +410,7 @@ function ParamTable({ params, label }: { params: ApiParam[]; label: string }) {
   return (
     <div className="mt-3">
       <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{label}</p>
-      <div className="overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-700">
+      <div className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-700">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/50">
@@ -675,7 +675,7 @@ npx tsx mcp-server/index.ts
               <h3 className="mb-2 text-sm font-semibold text-zinc-500 dark:text-zinc-400">
                 Read Tools ({MCP_TOOLS.filter((t) => t.type === "read").length})
               </h3>
-              <div className="overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-700">
+              <div className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-700">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/50">
@@ -699,7 +699,7 @@ npx tsx mcp-server/index.ts
               <h3 className="mb-2 text-sm font-semibold text-zinc-500 dark:text-zinc-400">
                 Write Tools ({MCP_TOOLS.filter((t) => t.type === "write").length})
               </h3>
-              <div className="overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-700">
+              <div className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-700">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/50">

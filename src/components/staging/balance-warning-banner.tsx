@@ -83,7 +83,7 @@ export function BalanceWarningBanner({
           </Button>
         </div>
         {open && (
-          <div className="rounded-md border border-amber-200 bg-white overflow-hidden">
+          <div className="rounded-md border border-amber-200 bg-white overflow-x-auto">
             <table className="w-full text-xs">
               <thead className="bg-amber-100/60 text-amber-900">
                 <tr>
