@@ -23,7 +23,7 @@
 import crypto from "crypto";
 import { db } from "@/db";
 import { userDevices } from "@/db/schema-pg";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { authLookupHash, wrapDEKForSecret, unwrapDEKForSecret } from "@/lib/api-auth";
 
 /**
@@ -77,15 +77,19 @@ export function deviceCookieOptions(): {
  *
  * If PF_TRUSTED_DEVICE_DAYS is 0 (disabled), returns null.
  *
+ * Prunes devices to keep at most 10 non-revoked devices per user (revokes oldest by created_at).
+ *
  * @param userId - The user ID
  * @param dek - The decrypted DEK
  * @param userAgent - User-Agent header for device labeling (optional)
+ * @param replaceDeviceId - Optional device ID to revoke (if it belongs to the same user)
  * @returns { id, cookieValue, maxAgeSeconds } or null if disabled
  */
 export async function issueDevice(
   userId: string,
   dek: Buffer,
-  userAgent?: string
+  userAgent?: string,
+  replaceDeviceId?: string
 ): Promise<{ id: string; cookieValue: string; maxAgeSeconds: number } | null> {
   const days = Math.max(
     0,
@@ -94,6 +98,22 @@ export async function issueDevice(
   if (days === 0) {
     // Feature disabled
     return null;
+  }
+
+  // Revoke replaceDeviceId if provided and belongs to this user
+  if (replaceDeviceId) {
+    try {
+      const device = await db
+        .select()
+        .from(userDevices)
+        .where(eq(userDevices.id, replaceDeviceId))
+        .limit(1);
+      if (device.length > 0 && device[0].userId === userId) {
+        await revokeDevice(userId, replaceDeviceId);
+      }
+    } catch {
+      // Swallow error; continue to issue new device
+    }
   }
 
   const deviceId = crypto.randomUUID();
@@ -127,6 +147,28 @@ export async function issueDevice(
     revokedAt: null,
   });
 
+  // Prune: keep at most 10 non-revoked devices, revoke oldest by created_at
+  try {
+    const userDevicesList = await db
+      .select()
+      .from(userDevices)
+      .where(and(eq(userDevices.userId, userId), isNull(userDevices.revokedAt)));
+
+    if (userDevicesList.length > 10) {
+      // Sort by createdAt ascending, take the oldest ones to revoke
+      const sorted = userDevicesList.sort(
+        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      );
+      const countToRevoke = sorted.length - 10;
+
+      for (let i = 0; i < countToRevoke; i++) {
+        await revokeDevice(userId, sorted[i].id);
+      }
+    }
+  } catch {
+    // Swallow error; pruning is best-effort
+  }
+
   const maxAgeSeconds = days * 24 * 60 * 60;
   const cookieValue = encodeDeviceCookie(deviceId, deviceSecret);
 
@@ -147,6 +189,8 @@ export async function issueDevice(
  * On replayed/old secrets (device exists and belongs to user but secret hash
  * doesn't match), the device is revoked to prevent replay attacks.
  *
+ * Returns null immediately if PF_TRUSTED_DEVICE_DAYS is 0 (feature disabled).
+ *
  * @param cookieValue - The cookie value (id.secret format)
  * @param userId - The expected user ID
  * @returns { dek, rotatedCookieValue } or null if invalid/expired/revoked/mismatch
@@ -159,6 +203,15 @@ export async function redeemDevice(
   rotatedCookieValue: string;
   maxAgeSeconds: number;
 } | null> {
+  const days = Math.max(
+    0,
+    parseInt(process.env.PF_TRUSTED_DEVICE_DAYS || "30", 10)
+  );
+  if (days === 0) {
+    // Feature disabled
+    return null;
+  }
+
   const parsed = parseDeviceCookie(cookieValue);
   if (!parsed) return null;
 
@@ -207,10 +260,6 @@ export async function redeemDevice(
   const newSecretHash = authLookupHash(newSecret);
   const newDekWrapped = wrapDEKForSecret(dek, newSecret);
 
-  const days = Math.max(
-    0,
-    parseInt(process.env.PF_TRUSTED_DEVICE_DAYS || "30", 10)
-  );
   const newExpiresAt = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
 
   // Import rotateDeviceSecret from queries for atomic conditional rotation

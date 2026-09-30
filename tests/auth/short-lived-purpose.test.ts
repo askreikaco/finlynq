@@ -134,24 +134,5 @@ describe("Short-lived purpose-bound tokens", () => {
       expect(verified?.purpose).toBe("google-signup");
     });
 
-    it("should use default purpose when not specified in signShortLived", async () => {
-      const claims = { data: "test" };
-      // Sign without purpose (should default to "oauth-state")
-      const token = await signShortLived(claims, 600);
-      const verified = await verifyShortLived(token, "oauth-state");
-
-      expect(verified).toBeTruthy();
-      expect(verified?.purpose).toBe("oauth-state");
-    });
-
-    it("should use default purpose when not specified in verifyShortLived", async () => {
-      const claims = { data: "test" };
-      const token = await signShortLived(claims, 600, "oauth-state");
-      // Verify without purpose (should default to "oauth-state")
-      const verified = await verifyShortLived(token);
-
-      expect(verified).toBeTruthy();
-      expect(verified?.purpose).toBe("oauth-state");
-    });
   });
 });

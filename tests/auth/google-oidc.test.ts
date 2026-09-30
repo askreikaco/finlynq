@@ -38,6 +38,18 @@ vi.mock("jose", () => {
 
         const payload = JSON.parse(Buffer.from(parts[1], "base64").toString());
 
+        // Check algorithms if specified (must be RS256)
+        if (options.algorithms && !options.algorithms.includes("RS256")) {
+          throw new Error("Unsupported algorithm");
+        }
+        // If token claims HS256 but we require RS256, reject
+        if (options.algorithms?.includes("RS256")) {
+          const header = JSON.parse(Buffer.from(parts[0], "base64").toString());
+          if (header.alg === "HS256") {
+            throw new Error("Unsupported algorithm");
+          }
+        }
+
         // Check issuer
         if (
           options.issuer &&
@@ -63,6 +75,14 @@ vi.mock("jose", () => {
     }),
   };
 });
+
+// Helper to create properly base64url-encoded tokens
+function createIdToken(payload: any, headerAlg: string = "RS256"): string {
+  const header = { alg: headerAlg, typ: "JWT" };
+  const headerEncoded = Buffer.from(JSON.stringify(header)).toString("base64").replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+  const payloadEncoded = Buffer.from(JSON.stringify(payload)).toString("base64").replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+  return `${headerEncoded}.${payloadEncoded}.signature`;
+}
 
 // Clear global caches before each test
 function clearGoogleCaches() {
@@ -281,7 +301,7 @@ describe("Google OIDC", () => {
         nonce: "test-nonce",
       };
 
-      const idToken = `header.${Buffer.from(JSON.stringify(payload)).toString("base64")}.signature`;
+      const idToken = createIdToken(payload);
 
       const { verifyIdToken } = await import("@/lib/auth/google-oidc");
       const result = await verifyIdToken(idToken, "test-nonce");
@@ -309,7 +329,7 @@ describe("Google OIDC", () => {
         nonce: "wrong-nonce",
       };
 
-      const idToken = `header.${Buffer.from(JSON.stringify(payload)).toString("base64")}.signature`;
+      const idToken = createIdToken(payload);
 
       const { verifyIdToken } = await import("@/lib/auth/google-oidc");
       const result = await verifyIdToken(idToken, "expected-nonce");
@@ -381,6 +401,30 @@ describe("Google OIDC", () => {
       };
 
       const idToken = `header.${Buffer.from(JSON.stringify(payload)).toString("base64")}.signature`;
+
+      const { verifyIdToken } = await import("@/lib/auth/google-oidc");
+      const result = await verifyIdToken(idToken, "test-nonce");
+
+      expect(result).toBeNull();
+    });
+
+    it("should reject HS256-signed token (require RS256)", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => discoveryDocument,
+      });
+
+      // Create a token with HS256 algorithm header
+      const payload = {
+        sub: "google-user-id-123",
+        email: "user@example.com",
+        email_verified: true,
+        iss: "https://accounts.google.com",
+        aud: "test-client-id",
+        exp: Math.floor(Date.now() / 1000) + 3600,
+        nonce: "test-nonce",
+      };
+      const idToken = createIdToken(payload, "HS256");
 
       const { verifyIdToken } = await import("@/lib/auth/google-oidc");
       const result = await verifyIdToken(idToken, "test-nonce");

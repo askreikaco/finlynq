@@ -20,6 +20,7 @@ import { signShortLived } from "@/lib/auth/jwt";
 import { requireAuth } from "@/lib/auth";
 import crypto from "crypto";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { clientIp } from "@/lib/client-ip";
 
 /**
  * Prefetch guard: detect prefetch requests by checking for standard
@@ -69,7 +70,7 @@ export async function GET(req: NextRequest) {
   }
 
   // Rate limit by IP
-  const ip = req.headers.get("x-forwarded-for") || "0.0.0.0";
+  const ip = clientIp(req);
   const rateLimit = checkRateLimit(`google:start:${ip}`, 10, 60_000);
   if (!rateLimit.allowed) {
     return NextResponse.json(

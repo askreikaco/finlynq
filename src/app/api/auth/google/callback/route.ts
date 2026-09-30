@@ -24,6 +24,7 @@ import { redeemDevice } from "@/lib/auth/trusted-device";
 import { getUserByEmail } from "@/lib/auth/queries";
 import { issueSessionForDek } from "@/lib/auth/finish-login";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { clientIp } from "@/lib/client-ip";
 
 /**
  * Check if a URL is safe for redirect.
@@ -67,8 +68,8 @@ export async function GET(req: NextRequest) {
   }
 
   // Rate limit by IP
-  const ip = req.headers.get("x-forwarded-for") || "0.0.0.0";
-  const rateLimit = checkRateLimit(`google:callback:${ip}`, 10, 60);
+  const ip = clientIp(req);
+  const rateLimit = checkRateLimit(`google:callback:${ip}`, 10, 60_000);
   if (!rateLimit.allowed) {
     return redirectToCloud({ error: "google_rate_limit" });
   }

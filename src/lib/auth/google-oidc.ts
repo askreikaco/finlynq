@@ -231,10 +231,19 @@ export async function verifyIdToken(
     const { payload } = await jwtVerify(idToken, jwks, {
       issuer: [GOOGLE_OIDC_ISSUER, "accounts.google.com"],
       audience: clientId,
+      algorithms: ["RS256"],
     });
 
-    // Verify nonce claim
-    if (payload.nonce !== nonce) {
+    // Verify nonce claim with timing-safe comparison
+    const payloadNonce = payload.nonce as string | undefined;
+    if (!payloadNonce || payloadNonce.length !== nonce.length) {
+      console.warn("ID token nonce mismatch");
+      return null;
+    }
+    if (!crypto.timingSafeEqual(
+      Buffer.from(payloadNonce),
+      Buffer.from(nonce)
+    )) {
       console.warn("ID token nonce mismatch");
       return null;
     }

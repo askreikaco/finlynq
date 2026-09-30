@@ -359,7 +359,7 @@ const OAUTH_STATE_ISSUER = ISSUER; // Reuse session token issuer
 export async function signShortLived(
   claims: Record<string, unknown>,
   ttlSeconds: number = 600, // 10 minutes
-  purpose: ShortLivedPurpose = "oauth-state"
+  purpose: ShortLivedPurpose
 ): Promise<string> {
   const builder = new SignJWT({ ...claims, purpose })
     .setProtectedHeader({ alg: "HS256" })
@@ -376,7 +376,7 @@ export async function signShortLived(
  */
 export async function verifyShortLived(
   token: string,
-  purpose: ShortLivedPurpose = "oauth-state"
+  purpose: ShortLivedPurpose
 ): Promise<Record<string, unknown> | null> {
   try {
     const { payload } = await jwtVerify(token, getSecret(), {

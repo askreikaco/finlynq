@@ -17,6 +17,7 @@ import { verifyPassword } from "@/lib/auth";
 import { finishPasswordLogin } from "@/lib/auth/finish-login";
 import { upsertIdentity } from "@/lib/auth/queries";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { clientIp } from "@/lib/client-ip";
 
 export async function POST(req: NextRequest) {
   // Parse request body
@@ -33,8 +34,8 @@ export async function POST(req: NextRequest) {
   }
 
   // Rate limit by IP
-  const ip = req.headers.get("x-forwarded-for") || "0.0.0.0";
-  const ipLimit = checkRateLimit(`google:unlock:${ip}`, 5, 60);
+  const ip = clientIp(req);
+  const ipLimit = checkRateLimit(`google:unlock:${ip}`, 5, 60_000);
   if (!ipLimit.allowed) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
@@ -59,9 +60,15 @@ export async function POST(req: NextRequest) {
     const unlockJti = unlockPayload.jti;
     const unlockExp = unlockPayload.exp;
 
-    // Rate limit by user
+    // Rate limit by user (hourly: 10 per hour)
     const userLimit = checkRateLimit(`google:unlock:user:${userId}`, 10, 3600);
     if (!userLimit.allowed) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
+    // Rate limit by user (daily: 50 per 24h)
+    const userDailyLimit = checkRateLimit(`google:unlock:user:d:${userId}`, 50, 86400);
+    if (!userDailyLimit.allowed) {
       return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
 
@@ -93,7 +100,7 @@ export async function POST(req: NextRequest) {
       .limit(1);
 
     if (userRows.length === 0) {
-      return NextResponse.json({ error: "User not found" }, { status: 401 });
+      return NextResponse.json({ error: "Invalid password" }, { status: 401 });
     }
 
     const user = userRows[0];
@@ -192,7 +199,16 @@ export async function POST(req: NextRequest) {
     let device = null;
     if (dek) {
       const userAgent = req.headers.get("user-agent") || undefined;
-      device = await issueDevice(userId, dek, userAgent);
+      // Extract device ID from pf_device cookie to replace it
+      const pf_device = req.cookies.get("pf_device")?.value;
+      let replaceDeviceId: string | undefined;
+      if (pf_device) {
+        const parts = pf_device.split(".");
+        if (parts.length === 2) {
+          replaceDeviceId = parts[0];
+        }
+      }
+      device = await issueDevice(userId, dek, userAgent, replaceDeviceId);
     } else {
       console.error("finish-login returned null DEK for session; skipping device issuance");
     }

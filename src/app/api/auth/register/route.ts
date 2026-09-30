@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
       googleEmail = signupData.email as string;
       googleEmailVerified = signupData.emailVerified as boolean;
       googleSub = signupData.sub as string;
-      googleName = signupData.name as string | undefined;
+      googleName = (signupData.name as string | undefined)?.substring(0, 100);
 
       // Google signup forces email to be from Google
       if (!googleEmail) {
@@ -185,10 +185,11 @@ export async function POST(request: NextRequest) {
       dekWrappedTag: wrapped.tag.toString("base64"),
     });
 
-    // Skip verify mail for Google signup (Google verified the email)
+    // Skip verify mail only when Google signup with verified email.
     // Welcome + verify mails are skipped entirely when the user opted out of
     // an email. Users who provided one get the existing flow.
-    if (finalEmail && user.emailVerifyToken && !googleSignup) {
+    const skipVerifyMail = googleSignup && googleEmailVerified === true;
+    if (finalEmail && user.emailVerifyToken && !skipVerifyMail) {
       sendEmail(emailVerificationEmail(finalEmail, user.emailVerifyToken)).catch(() => {});
       sendEmail(welcomeEmail(finalEmail, displayName)).catch(() => {});
     }
@@ -213,9 +214,12 @@ export async function POST(request: NextRequest) {
     const { token, jti } = await createSessionToken(user.id, false);
     putDEK(jti, dek, SESSION_TTL_MS, user.id);
 
-    // Issue device cookie for passwordless future re-login
-    const userAgent = request.headers.get("user-agent") || undefined;
-    const device = await issueDevice(user.id, dek, userAgent);
+    // Issue device cookie for passwordless future re-login (only on Google signup)
+    let device = null;
+    if (googleSignup) {
+      const userAgent = request.headers.get("user-agent") || undefined;
+      device = await issueDevice(user.id, dek, userAgent);
+    }
 
     const response = NextResponse.json(
       { success: true, userId: user.id, username },
