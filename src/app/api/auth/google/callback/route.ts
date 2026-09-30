@@ -19,9 +19,9 @@ import {
   exchangeCode,
   verifyIdToken,
 } from "@/lib/auth/google-oidc";
-import { verifyShortLived, signShortLived, revokeJti, createSessionToken } from "@/lib/auth/jwt";
-import { redeemDevice, issueDevice } from "@/lib/auth/trusted-device";
-import { upsertIdentity, getUserByEmail } from "@/lib/auth/queries";
+import { verifyShortLived, signShortLived, createSessionToken } from "@/lib/auth/jwt";
+import { redeemDevice } from "@/lib/auth/trusted-device";
+import { getUserByEmail } from "@/lib/auth/queries";
 import { issueSessionForDek } from "@/lib/auth/finish-login";
 import { checkRateLimit } from "@/lib/rate-limit";
 
@@ -38,6 +38,18 @@ function isSafeNext(next: string | null | undefined): next is string {
 
 function redirectToCloud(query: Record<string, string>, response?: NextResponse): NextResponse {
   const url = new URL("/cloud", process.env.APP_URL || "http://localhost:3000");
+  Object.entries(query).forEach(([key, value]) => {
+    url.searchParams.set(key, value);
+  });
+  if (response) {
+    response.headers.set("Location", url.toString());
+    return response;
+  }
+  return NextResponse.redirect(url);
+}
+
+function redirectToSettings(query: Record<string, string>, response?: NextResponse): NextResponse {
+  const url = new URL("/settings/account", process.env.APP_URL || "http://localhost:3000");
   Object.entries(query).forEach(([key, value]) => {
     url.searchParams.set(key, value);
   });
@@ -128,6 +140,56 @@ export async function GET(req: NextRequest) {
   response.cookies.delete("pf_oauth_state");
 
   try {
+    // Handle intent=link early, right after ID token is verified
+    if (intent === "link") {
+      const { verifySessionTokenDetailed } = await import("@/lib/auth/jwt");
+      const { getIdentity, upsertIdentity } = await import("@/lib/auth/queries");
+      const { decideGoogleLink } = await import("@/lib/auth/google-link");
+
+      // Read and verify the current session from pf_session cookie
+      const sessionToken = req.cookies.get("pf_session")?.value;
+      let sessionUserId: string | null = null;
+
+      if (sessionToken) {
+        const { payload } = await verifySessionTokenDetailed(sessionToken);
+        // Reject pending tokens and expired/revoked tokens
+        if (payload && !payload.pending) {
+          sessionUserId = payload.sub ?? null;
+        }
+      }
+
+      // Check if this Google identity is already linked
+      const existingIdentity = await getIdentity("google", googleSub);
+
+      // Decide what to do
+      const decision = decideGoogleLink({
+        sessionUserId,
+        stateUid: uid,
+        existingIdentityUserId: existingIdentity?.userId ?? null,
+      });
+
+      // Clear the state cookie for all outcomes
+      response.cookies.delete("pf_oauth_state");
+
+      if (decision === "session_mismatch") {
+        return redirectToSettings({ error: "google_link_session" }, response);
+      } else if (decision === "already_linked_other") {
+        return redirectToSettings({ error: "google_already_linked" }, response);
+      } else if (decision === "already_linked_self") {
+        return redirectToSettings({ google: "linked" }, response);
+      } else {
+        // decision === "link" — proceed with linking
+        await upsertIdentity({
+          userId: sessionUserId!,
+          provider: "google",
+          subject: googleSub,
+          email: googleEmail,
+          emailVerified: googleEmailVerified ? 1 : 0,
+        });
+        return redirectToSettings({ google: "linked" }, response);
+      }
+    }
+
     // Check if we have an identity for this Google sub
     const { getIdentity } = await import("@/lib/auth/queries");
     const identity = await getIdentity("google", googleSub);
@@ -190,7 +252,7 @@ export async function GET(req: NextRequest) {
       }
 
       // No device or device invalid — require password unlock
-      const { token: unlockToken, jti: unlockJti } = await createSessionToken(user.id, false, {
+      const { token: unlockToken } = await createSessionToken(user.id, false, {
         expirationTime: "10m",
         pending: true,
       });
@@ -225,7 +287,7 @@ export async function GET(req: NextRequest) {
       const existingUser = await getUserByEmail(googleEmail);
       if (existingUser) {
         // Email matches — same unlock path (link written after password)
-        const { token: unlockToken, jti: unlockJti } = await createSessionToken(existingUser.id, false, {
+        const { token: unlockToken } = await createSessionToken(existingUser.id, false, {
           expirationTime: "10m",
           pending: true,
         });

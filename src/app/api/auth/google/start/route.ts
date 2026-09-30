@@ -22,15 +22,22 @@ import crypto from "crypto";
 import { checkRateLimit } from "@/lib/rate-limit";
 
 /**
- * Prefetch guard: if there's no Authorization header, this is likely
- * a prefetch request and we should return early to avoid DNS/TLS costs.
+ * Prefetch guard: detect prefetch requests by checking for standard
+ * prefetch-related headers. Returns true only when the request header
+ * contains sec-purpose, purpose, x-middleware-prefetch, or next-router-prefetch.
  */
-function isPrefetch(req: NextRequest): boolean {
-  const hasAuth = Boolean(req.headers.get("authorization"));
-  const acceptsHtml = req.headers
-    .get("accept")
-    ?.includes("text/html") ?? false;
-  return !hasAuth && acceptsHtml;
+export function isPrefetchRequest(headers: Headers): boolean {
+  const secPurpose = headers.get("sec-purpose") || "";
+  const purpose = headers.get("purpose") || "";
+  const xMiddlewarePrefetch = headers.get("x-middleware-prefetch");
+  const nextRouterPrefetch = headers.get("next-router-prefetch");
+
+  return (
+    secPurpose.toLowerCase().includes("prefetch") ||
+    purpose.toLowerCase().includes("prefetch") ||
+    xMiddlewarePrefetch !== null ||
+    nextRouterPrefetch !== null
+  );
 }
 
 /**
@@ -46,7 +53,7 @@ function isSafeNext(next: string | null | undefined): next is string {
 
 export async function GET(req: NextRequest) {
   // Guard against noisy prefetch requests
-  if (isPrefetch(req)) {
+  if (isPrefetchRequest(req.headers)) {
     return NextResponse.json(
       { error: "Not found" },
       { status: 404 }
@@ -83,6 +90,7 @@ export async function GET(req: NextRequest) {
   }
 
   // If intent=link, require authentication
+  let uid: string | undefined;
   if (intent === "link") {
     const auth = await requireAuth(req);
     if (!auth.authenticated) {
@@ -91,6 +99,7 @@ export async function GET(req: NextRequest) {
         { status: 401 }
       );
     }
+    uid = auth.context.userId;
   }
 
   // Validate next URL
@@ -117,14 +126,7 @@ export async function GET(req: NextRequest) {
     intent,
   };
   if (next) payload.next = next;
-
-  // If linking, add the current user ID
-  if (intent === "link") {
-    const auth = await requireAuth(req);
-    if (auth.authenticated) {
-      payload.uid = auth.context.userId;
-    }
-  }
+  if (uid) payload.uid = uid;
 
   const stateToken = await signShortLived(payload, 600); // 10 min
 
