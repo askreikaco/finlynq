@@ -10,7 +10,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getDialect } from "@/db";
-import { hashPassword, createSessionToken, AUTH_COOKIE } from "@/lib/auth";
+import { hashPassword, createSessionToken } from "@/lib/auth";
 import { SESSION_TTL_MS } from "@/lib/auth/jwt";
 import {
   createUser,
@@ -26,6 +26,7 @@ import { createWrappedDEKForPassword } from "@/lib/crypto/envelope";
 import { putDEK } from "@/lib/crypto/dek-cache";
 import { validatePasswordStrength } from "@/lib/auth/password-policy";
 import { validateUsername } from "@/lib/auth/username";
+import { setSessionCookie } from "@/lib/auth/cookies";
 
 const registerSchema = z
   .object({
@@ -169,13 +170,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
 
-    response.cookies.set(AUTH_COOKIE, token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24, // 24 hours
-      path: "/",
-    });
+    setSessionCookie(response, token);
 
     return response;
   } catch (error) {

@@ -19,7 +19,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getDialect } from "@/db";
-import { verifyPassword, createSessionToken, AUTH_COOKIE } from "@/lib/auth";
+import { verifyPassword, createSessionToken } from "@/lib/auth";
 import { SESSION_TTL_MS } from "@/lib/auth/jwt";
 import { getUserByIdentifier, recordSuccessfulLogin } from "@/lib/auth/queries";
 import { logApiError } from "@/lib/validate";
@@ -30,6 +30,7 @@ import { enqueueBackfillSecurities } from "@/lib/securities/backfill";
 import { enqueueUpgradeStagingEncryption } from "@/lib/email-import/upgrade-staging-encryption";
 import { enqueueProcessPendingInbox } from "@/lib/email-import/process-pending-inbox";
 import { enqueueUpgradeUserFieldEncryption } from "@/lib/crypto/upgrade-user-fields";
+import { setSessionCookie } from "@/lib/auth/cookies";
 
 export interface ZeroClickAccount {
   /** Username or email of the fixture account. HARDCODED by the caller. */
@@ -179,13 +180,7 @@ export async function zeroClickLogin(
     const host = forwardedHost ?? request.nextUrl.host;
     const proto = forwardedProto ?? request.nextUrl.protocol.replace(/:$/, "");
     const response = NextResponse.redirect(`${proto}://${host}${next}`);
-    response.cookies.set(AUTH_COOKIE, token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24,
-      path: "/",
-    });
+    setSessionCookie(response, token);
     return response;
   } catch (error) {
     await logApiError("GET", `/${account.slug}`, error);
