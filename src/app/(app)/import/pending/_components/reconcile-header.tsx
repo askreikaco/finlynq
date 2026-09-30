@@ -52,7 +52,7 @@ export function ReconcileHeader({
 }) {
   return (
     <>
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <button
             type="button"
@@ -85,7 +85,7 @@ export function ReconcileHeader({
             </p>
           )}
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Link
             href={
               accountId != null
