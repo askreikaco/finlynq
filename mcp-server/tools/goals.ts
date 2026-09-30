@@ -54,11 +54,12 @@ export function registerGoalsTools(server: McpServer, ctx: PgToolContext) {
     type: "savings" | "debt_payoff" | "investment" | "emergency_fund";
     target_amount: number;
     deadline?: string;
+    currency?: string;
     account?: string;
     account_id?: number;
     account_ids?: number[];
   }): Promise<ToolResult> {
-    const { name, type, target_amount, deadline, account, account_id, account_ids } = args;
+    const { name, type, target_amount, deadline, currency, account, account_id, account_ids } = args;
     // Resolve the canonical id list. account_ids wins; then the legacy single
     // `account`/`account_id`. FINLYNQ-267: a mistyped `account` name now REFUSES
     // the create (via resolveEntity → resolveOrReport) instead of silently
@@ -93,16 +94,18 @@ export function registerGoalsTools(server: McpServer, ctx: PgToolContext) {
     }
     const n = dek ? encryptName(dek, name) : { ct: null, lookup: null };
 
-    // Determine currency: linked account currency (first) else display currency.
-    let goalCurrency = await resolveReportingCurrency(db, userId, null);
+    // Determine currency: explicit parameter wins, then linked account (first) else display currency.
+    let linkedAccountCcy: string | null = null;
     if (resolvedIds.length > 0) {
       const accountCurrency = await q(db, sql`
         SELECT currency FROM accounts WHERE id = ${resolvedIds[0]} AND user_id = ${userId}
       `);
       if (accountCurrency.length > 0) {
-        goalCurrency = String(accountCurrency[0].currency);
+        linkedAccountCcy = String(accountCurrency[0].currency);
       }
     }
+    const displayCcy = await resolveReportingCurrency(db, userId, null);
+    const goalCurrency = currency ?? linkedAccountCcy ?? displayCcy;
 
     // Stream D Phase 4 — plaintext name column dropped. Issue #130 — dual-write
     // the legacy `goals.account_id` (first id only) AND the goal_accounts join.
@@ -140,9 +143,10 @@ export function registerGoalsTools(server: McpServer, ctx: PgToolContext) {
     deadline?: string;
     status?: "active" | "completed" | "paused";
     name?: string;
+    currency?: string;
     account_ids?: number[];
   }): Promise<ToolResult> {
-    const { goal, goal_id, target_amount, deadline, status, name, account_ids } = args;
+    const { goal, goal_id, target_amount, deadline, status, name, currency, account_ids } = args;
     // FINLYNQ-267: `goal_id` FK fast-path wins; a name resolves via the shared
     // envelope (mistyped → refuse, 2+ → ambiguous — was `fuzzyFind` silent-first).
     const rawGoals = await q(db, sql`SELECT id, name_ct FROM goals WHERE user_id = ${userId}`);
@@ -174,6 +178,7 @@ export function registerGoalsTools(server: McpServer, ctx: PgToolContext) {
     if (target_amount !== undefined) updates.push(sql`target_amount = ${target_amount}`);
     if (deadline !== undefined) updates.push(sql`deadline = ${deadline}`);
     if (status !== undefined) updates.push(sql`status = ${status}`);
+    if (currency !== undefined) updates.push(sql`currency = ${currency}`);
     // Mirror the legacy single-account column (issue #130) — first id only.
     if (account_ids !== undefined) {
       updates.push(sql`account_id = ${account_ids[0] ?? null}`);
@@ -324,6 +329,7 @@ export function registerGoalsTools(server: McpServer, ctx: PgToolContext) {
     type: z.enum(["savings", "debt_payoff", "investment", "emergency_fund"]).describe("Goal type"),
     target_amount: z.number().positive().describe("Target amount (must be > 0)"),
     deadline: ymdDate.optional().describe("Deadline (YYYY-MM-DD)"),
+    currency: z.string().regex(/^[A-Z]{3,4}$/).optional().describe("Currency code (ISO 4217; 3-4 letters). Defaults to linked account currency (if specified) else display currency."),
     account: z.string().optional().describe("Legacy single-account linker — name or alias (fuzzy matched). A mistyped/unmatched name is REFUSED (never silently unlinked). Prefer `account_id` or `account_ids`."),
     account_id: z.number().int().positive().optional().describe("Single-account linker FK fast-path — wins over the fuzzy `account` name. Prefer `account_ids` for multi-account goals."),
     account_ids: z.array(z.number().int()).optional().describe("Multi-account linker (issue #130). Goal progress sums transactions across every account id supplied. Each id must belong to the user. Empty array = unlinked (manual tracking)."),
@@ -336,6 +342,7 @@ export function registerGoalsTools(server: McpServer, ctx: PgToolContext) {
     deadline: ymdDate.optional().describe("YYYY-MM-DD"),
     status: z.enum(["active", "completed", "paused"]).optional(),
     name: z.string().optional().describe("Rename the goal"),
+    currency: z.string().regex(/^[A-Z]{3,4}$/).optional().describe("Currency code (ISO 4217; 3-4 letters). When provided, overwrites the goal's currency."),
     account_ids: z.array(z.number().int()).optional().describe("Replace the goal's linked accounts (issue #130). When supplied, the existing goal_accounts rows are deleted and replaced with the new set in a single transaction. Pass `[]` to unlink all. Omit to leave links unchanged."),
   });
   const deleteVariant = z.object({
