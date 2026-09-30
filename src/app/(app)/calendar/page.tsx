@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
+import { nextDate, prevDate } from "@/lib/utils/date";
 import {
   ChevronLeft,
   ChevronRight,
@@ -50,27 +51,6 @@ type RecurringItem = {
   nextDate: string;
 };
 
-function addFrequency(dateStr: string, frequency: string): string {
-  const d = new Date(dateStr + "T00:00:00");
-  switch (frequency) {
-    case "weekly":
-      d.setDate(d.getDate() + 7);
-      break;
-    case "biweekly":
-      d.setDate(d.getDate() + 14);
-      break;
-    case "monthly":
-      d.setMonth(d.getMonth() + 1);
-      break;
-    case "quarterly":
-      d.setMonth(d.getMonth() + 3);
-      break;
-    case "annual":
-      d.setFullYear(d.getFullYear() + 1);
-      break;
-  }
-  return d.toISOString().split("T")[0];
-}
 
 function getDaysInMonth(year: number, month: number): number {
   return new Date(year, month + 1, 0).getDate();
@@ -86,41 +66,23 @@ function generateOccurrences(
   currency: string,
   displayAmount: number,
   frequency: string,
-  nextDate: string,
+  startDate: string,
   monthStart: string,
   monthEnd: string,
   type: "bill" | "income",
   source: "subscription" | "recurring"
 ): CalendarEvent[] {
   const events: CalendarEvent[] = [];
-  let current = nextDate;
+  let current = startDate;
 
-  // Walk backwards if nextDate is after monthEnd to find earlier occurrences
-  // Walk forward from nextDate to cover the month
+  // Walk backwards if startDate is after monthEnd to find earlier occurrences
+  // Walk forward from startDate to cover the month
   // First, rewind to before monthStart
   let rewindDate = current;
   for (let i = 0; i < 60; i++) {
     if (rewindDate <= monthStart) break;
     // Go backwards
-    const d = new Date(rewindDate + "T00:00:00");
-    switch (frequency) {
-      case "weekly":
-        d.setDate(d.getDate() - 7);
-        break;
-      case "biweekly":
-        d.setDate(d.getDate() - 14);
-        break;
-      case "monthly":
-        d.setMonth(d.getMonth() - 1);
-        break;
-      case "quarterly":
-        d.setMonth(d.getMonth() - 3);
-        break;
-      case "annual":
-        d.setFullYear(d.getFullYear() - 1);
-        break;
-    }
-    rewindDate = d.toISOString().split("T")[0];
+    rewindDate = prevDate(rewindDate, frequency);
   }
 
   // Now walk forward through the month
@@ -130,7 +92,7 @@ function generateOccurrences(
     if (current >= monthStart && current <= monthEnd) {
       events.push({ date: current, name, amount, currency, displayAmount, type, source, frequency });
     }
-    current = addFrequency(current, frequency);
+    current = nextDate(current, frequency);
   }
 
   return events;

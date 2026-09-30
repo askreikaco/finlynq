@@ -23,4 +23,10 @@ Droplet files:
 | `/opt/finlynq/.deployed-sha` | last deployed commit |
 | `/opt/finlynq/docker-compose.yml` | `app.image: finlynq-custom:current` |
 
-Keep `custom` free of schema changes so upstream migrations always apply cleanly.
+Schema changes are allowed in `custom` (we ship our own features first; upstream PRs are optional). Name fork migrations `YYYYMMDD_reika_<topic>.sql` and make them additive and idempotent (`IF NOT EXISTS`) so upstream migrations keep applying cleanly.
+
+## Operational notes
+
+- **Never scale app to 2+ replicas**: in-memory rate-limit counters and DEK cache (per connection) are not shared across instances.
+- **Every deploy logs everyone out**: `DEPLOY_GENERATION` env var increments on each roll-out; session middleware rejects old tokens.
+- **`/health` checks DB only**: `SELECT 1` via the postgres connection pool; does not verify the app itself is responsive.

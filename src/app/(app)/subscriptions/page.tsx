@@ -1,4 +1,5 @@
 "use client";
+import { addDays, todayISO } from "@/lib/utils/date";
 
 import { DevModeGuard } from "@/components/dev-mode-guard";
 
@@ -331,11 +332,9 @@ function SubscriptionsPageContent() {
       });
     } else {
       // Set reminder to 7 days before next date, or 7 days from now
-      const baseDate = sub.nextDate
-        ? new Date(sub.nextDate + "T00:00:00")
-        : new Date();
-      baseDate.setDate(baseDate.getDate() - 7);
-      const reminderDate = baseDate.toISOString().split("T")[0];
+      const reminderDate = sub.nextDate
+        ? addDays(sub.nextDate, -7)
+        : addDays(todayISO(), -7);
       await fetch("/api/subscriptions", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
