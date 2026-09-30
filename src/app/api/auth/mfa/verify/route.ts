@@ -25,12 +25,14 @@ import {
   AUTH_COOKIE,
   revokeJti,
 } from "@/lib/auth";
+import { verifyShortLived } from "@/lib/auth/jwt";
 import { SESSION_TTL_MS } from "@/lib/auth/jwt";
-import { getUserById, recordSuccessfulLogin } from "@/lib/auth/queries";
-import { validateBody, safeErrorMessage } from "@/lib/validate";
+import { getUserById, recordSuccessfulLogin, upsertIdentity } from "@/lib/auth/queries";
+import { validateBody, safeErrorMessage, logApiError } from "@/lib/validate";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getDEK, putDEK, deleteDEK } from "@/lib/crypto/dek-cache";
 import { decryptField } from "@/lib/crypto/envelope";
+import { issueDevice, deviceCookieOptions } from "@/lib/auth/trusted-device";
 // Stream D Phase 4 (2026-05-03): plaintext display-name columns dropped;
 // stream-d-backfill + stream-d-phase3-null helpers deleted. FINLYNQ-198
 // (2026-06-18) retired the canonicalize login pass too.
@@ -40,7 +42,7 @@ import { enqueueProcessPendingInbox } from "@/lib/email-import/process-pending-i
 import { enqueueUpgradeUserFieldEncryption } from "@/lib/crypto/upgrade-user-fields";
 
 const verifySchema = z.object({
-  mfaPendingToken: z.string().min(1, "Pending token is required"),
+  mfaPendingToken: z.string().min(1, "Pending token is required").optional(),
   code: z.string().length(6, "Code must be 6 digits"),
 });
 
@@ -117,7 +119,19 @@ export async function POST(request: NextRequest) {
     const parsed = validateBody(body, verifySchema);
     if (parsed.error) return parsed.error;
 
-    const { mfaPendingToken, code } = parsed.data;
+    let { mfaPendingToken } = parsed.data;
+    const { code } = parsed.data;
+
+    // Task H1: If mfaPendingToken not in body, read from pf_unlock cookie
+    if (!mfaPendingToken) {
+      mfaPendingToken = request.cookies.get("pf_unlock")?.value;
+      if (!mfaPendingToken) {
+        return NextResponse.json(
+          { error: "Invalid or expired pending token. Please log in again." },
+          { status: 401 }
+        );
+      }
+    }
 
     // Verify the pending token. We use the detailed variant so we don't
     // accidentally accept a revoked/promoted pending jti for a second call.
@@ -205,6 +219,43 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Task H2: Check for pf_google_link cookie AFTER MFA verification but BEFORE
+    // promoting the pending DEK cache entry. If present, verify and link the identity,
+    // issue device, and set the pf_device cookie. Errors in linking do not fail the
+    // MFA login (catch + logApiError).
+    const googleLinkCookie = request.cookies.get("pf_google_link")?.value;
+    let issuedDevice: Awaited<ReturnType<typeof issueDevice>> = null;
+
+    if (googleLinkCookie) {
+      try {
+        const googleLinkPayload = await verifyShortLived(googleLinkCookie);
+        if (
+          googleLinkPayload &&
+          googleLinkPayload.userId === user.id &&
+          googleLinkPayload.pendingJti === pendingJti
+        ) {
+          // Valid Google link cookie — upsert the identity and issue device
+          const sub = googleLinkPayload.sub as string;
+          const email = googleLinkPayload.email as string;
+          const emailVerified = googleLinkPayload.emailVerified as boolean;
+
+          await upsertIdentity({
+            userId: user.id,
+            provider: "google",
+            subject: sub,
+            email,
+            emailVerified: emailVerified ? 1 : 0,
+          });
+
+          const userAgent = request.headers.get("user-agent") || undefined;
+          issuedDevice = await issueDevice(user.id, pendingDek, userAgent);
+        }
+      } catch (error) {
+        // Log the error but don't fail the MFA login
+        logApiError("POST", "/api/auth/mfa/verify", error, user.id);
+      }
+    }
+
     // Issue full session with MFA verified. The pending jti is denylisted
     // so the same token can't be replayed for a second /mfa/verify (or to
     // probe whether the code we just verified is still good).
@@ -233,6 +284,38 @@ export async function POST(request: NextRequest) {
       maxAge: 60 * 60 * 24, // 24 hours
       path: "/",
     });
+
+    // Set pf_device cookie if device was issued
+    if (issuedDevice) {
+      const opts = deviceCookieOptions();
+      response.cookies.set("pf_device", issuedDevice.cookieValue, {
+        httpOnly: opts.httpOnly,
+        secure: opts.secure,
+        sameSite: opts.sameSite,
+        maxAge: opts.maxAge,
+        path: opts.path,
+      });
+    }
+
+    // Clear pf_unlock (use maxAge 0 with the path it was set with)
+    response.cookies.set("pf_unlock", "", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 0,
+      path: "/",
+    });
+
+    // Clear pf_google_link if it was present
+    if (googleLinkCookie) {
+      response.cookies.set("pf_google_link", "", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 0,
+        path: "/",
+      });
+    }
 
     return response;
   } catch (error) {
