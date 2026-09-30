@@ -334,3 +334,45 @@ export async function verifySessionToken(
 export function isPendingToken(payload: SessionPayload | null): boolean {
   return Boolean(payload?.pending);
 }
+
+// ─── Short-lived OAuth state tokens ────────────────────────────────────────
+//
+// Used for signing pf_oauth_state, pf_unlock, and pf_google_signup cookies
+// to prevent tampering. These are distinct from session JWTs (different audience,
+// shorter TTL, and no deploy-generation check).
+
+const OAUTH_STATE_AUDIENCE = "pf-oauth-state";
+
+/**
+ * Sign a short-lived token for OAuth state/nonce/PKCE cookies (10 min default).
+ * Uses the same secret as session JWTs but a distinct audience to prevent
+ * cross-use (an oauth-state token can't be used as a session cookie and vice versa).
+ */
+export async function signShortLived(
+  claims: Record<string, unknown>,
+  ttlSeconds: number = 600 // 10 minutes
+): Promise<string> {
+  const builder = new SignJWT(claims)
+    .setProtectedHeader({ alg: "HS256" })
+    .setAudience(OAUTH_STATE_AUDIENCE)
+    .setIssuedAt()
+    .setExpirationTime(Math.floor(Date.now() / 1000) + ttlSeconds);
+  return builder.sign(getSecret());
+}
+
+/**
+ * Verify and decode a short-lived OAuth state token. Returns null if invalid,
+ * expired, or has the wrong audience.
+ */
+export async function verifyShortLived(
+  token: string
+): Promise<Record<string, unknown> | null> {
+  try {
+    const { payload } = await jwtVerify(token, getSecret(), {
+      audience: OAUTH_STATE_AUDIENCE,
+    });
+    return payload;
+  } catch {
+    return null;
+  }
+}
