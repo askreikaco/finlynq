@@ -25,6 +25,8 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import type { RawTransaction } from "@/lib/import-pipeline";
+import { formatCurrency } from "@/lib/currency";
+import { useDisplayCurrency } from "@/components/currency-provider";
 
 export interface InvestmentExternalAccount {
   externalId: string;
@@ -73,6 +75,7 @@ export function InvestmentStatementPreview({
   finlynqAccounts,
   onConfirm,
 }: InvestmentStatementPreviewProps) {
+  const { displayCurrency } = useDisplayCurrency();
   const [bindings, setBindings] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -177,10 +180,10 @@ export function InvestmentStatementPreview({
         {/* Totals summary */}
         <div className="flex flex-wrap gap-4 text-xs px-1">
           <span className="text-emerald-600">
-            Credits: +{totalCredits.toFixed(2)}
+            Credits: +{formatCurrency(totalCredits, displayCurrency)}
           </span>
           <span className="text-rose-600">
-            Debits: {totalDebits.toFixed(2)}
+            Debits: {formatCurrency(totalDebits, displayCurrency)}
           </span>
         </div>
 
@@ -210,7 +213,7 @@ export function InvestmentStatementPreview({
                 <span
                   className={`font-mono w-20 text-right shrink-0 ${row.amount < 0 ? "text-rose-600" : "text-emerald-600"}`}
                 >
-                  {row.amount.toFixed(2)}
+                  {formatCurrency(row.amount, row.currency ?? displayCurrency)}
                 </span>
               </div>
             ))}

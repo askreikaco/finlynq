@@ -16,6 +16,7 @@ import {
   Upload,
 } from "lucide-react";
 import type { RawTransaction } from "@/lib/import-pipeline";
+import { formatCurrency } from "@/lib/currency";
 import { ImportPreviewDialog } from "./import-preview-dialog";
 import { ConnectorMappingDialog, type MappingDialogState } from "./connector-mapping-dialog";
 import { ConnectorReconciliationDialog } from "./connector-reconciliation-dialog";
@@ -460,9 +461,9 @@ export function ConnectorTab() {
                           {zipSummary.reconciliation.rows.map((r) => (
                             <tr key={r.finlynqAccountId} className={r.matches ? "" : "text-amber-700 dark:text-amber-400"}>
                               <td className="py-0.5 pr-2">{r.accountName} <span className="text-muted-foreground">{r.currency}</span></td>
-                              <td className="py-0.5 text-right">{r.wpBalance.toFixed(2)}</td>
-                              <td className="py-0.5 text-right">{r.pfBalance.toFixed(2)}</td>
-                              <td className="py-0.5 text-right">{r.matches ? "✓" : r.diff.toFixed(2)}</td>
+                              <td className="py-0.5 text-right">{formatCurrency(r.wpBalance, r.currency)}</td>
+                              <td className="py-0.5 text-right">{formatCurrency(r.pfBalance, r.currency)}</td>
+                              <td className="py-0.5 text-right">{r.matches ? "✓" : formatCurrency(r.diff, r.currency)}</td>
                             </tr>
                           ))}
                         </tbody>

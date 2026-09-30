@@ -2748,7 +2748,7 @@ export function registerPortfolioTools(server: McpServer, ctx: PgToolContext) {
             period: "10-year historical average (approximate)",
           },
           hypothetical: {
-            message: `If your total invested ($${Math.round(totalInvested)} ${reporting} over ${Math.round(yearsHeld * 10) / 10} years) had earned ${bmInfo.annualizedReturn}% annually:`,
+            message: `If your total invested (${Math.round(totalInvested)} ${reporting} over ${Math.round(yearsHeld * 10) / 10} years) had earned ${bmInfo.annualizedReturn}% annually:`,
             finalValue: Math.round(benchmarkFinalValue * 100) / 100,
             finalValueReporting: tagAmount(benchmarkFinalValue, reporting, "reporting"),
             gain: Math.round(benchmarkGain * 100) / 100,

@@ -11,6 +11,7 @@ import { requireEncryption } from "@/lib/auth/require-encryption";
 import { validateBody, safeErrorMessage } from "@/lib/validate";
 import { getCategories, createCategory, upsertBudget } from "@/lib/queries";
 import { buildNameFields, decryptName, nameLookup } from "@/lib/crypto/encrypted-columns";
+import { getDisplayCurrency } from "@/lib/fx-service";
 
 const schema = z.object({
   categoryName: z.string().min(1),
@@ -56,7 +57,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Failed to create category" }, { status: 500 });
     }
 
-    await upsertBudget(userId, { categoryId: category.id, month, amount });
+    const displayCurrency = await getDisplayCurrency(userId);
+    await upsertBudget(userId, { categoryId: category.id, month, amount, currency: displayCurrency });
 
     return NextResponse.json({ success: true, categoryId: category.id });
   } catch (err) {

@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
+import { formatCurrency } from "@/lib/currency";
 
 interface ReconciliationRow {
   externalAccountId: string;
@@ -147,8 +148,8 @@ export function ConnectorReconciliationDialog({ open, onOpenChange }: ConnectorR
                       {row.accountName}
                       <span className="text-muted-foreground ml-1">({row.currency})</span>
                     </TableCell>
-                    <TableCell className="text-right font-mono">{row.wpBalance.toFixed(2)}</TableCell>
-                    <TableCell className="text-right font-mono">{row.pfBalance.toFixed(2)}</TableCell>
+                    <TableCell className="text-right font-mono">{formatCurrency(row.wpBalance, row.currency)}</TableCell>
+                    <TableCell className="text-right font-mono">{formatCurrency(row.pfBalance, row.currency)}</TableCell>
                     <TableCell
                       className={`text-right font-mono ${
                         row.matches ? "text-green-600 dark:text-green-400" : "text-amber-600 dark:text-amber-400"
@@ -156,10 +157,10 @@ export function ConnectorReconciliationDialog({ open, onOpenChange }: ConnectorR
                     >
                       {row.matches ? (
                         <span className="inline-flex items-center gap-1">
-                          <CheckCircle2 className="h-3 w-3" /> 0.00
+                          <CheckCircle2 className="h-3 w-3" /> {formatCurrency(0, row.currency)}
                         </span>
                       ) : (
-                        row.diff.toFixed(2)
+                        formatCurrency(row.diff, row.currency)
                       )}
                     </TableCell>
                     <TableCell className="text-right">
