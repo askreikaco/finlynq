@@ -165,6 +165,40 @@ describe("API /api/budgets", () => {
       expect(status).toBe(201);
     });
 
+    it("passes currency from request body to upsertBudget", async () => {
+      const budget = { id: 1, categoryId: 1, month: "2024-01", amount: 500, currency: "VND" };
+      mockUpsertBudget.mockReturnValue(budget);
+      const req = createMockRequest("http://localhost:3000/api/budgets", {
+        method: "POST",
+        body: { categoryId: 1, month: "2024-01", amount: 500, currency: "VND" },
+      });
+      const res = await POST(req);
+      const { status } = await parseResponse(res);
+      expect(status).toBe(201);
+      expect(mockUpsertBudget).toHaveBeenCalledWith(
+        "default",
+        expect.objectContaining({ currency: "VND" })
+      );
+    });
+
+    it("defaults to display currency when currency is not provided", async () => {
+      const budget = { id: 1, categoryId: 1, month: "2024-01", amount: 500, currency: "CAD" };
+      mockUpsertBudget.mockReturnValue(budget);
+      const req = createMockRequest("http://localhost:3000/api/budgets", {
+        method: "POST",
+        body: { categoryId: 1, month: "2024-01", amount: 500 },
+      });
+      const res = await POST(req);
+      const { status } = await parseResponse(res);
+      expect(status).toBe(201);
+      // upsertBudget is called without currency (the route passes it through as-is);
+      // the function itself defaults to display currency
+      expect(mockUpsertBudget).toHaveBeenCalledWith(
+        "default",
+        expect.objectContaining({ categoryId: 1, month: "2024-01", amount: 500 })
+      );
+    });
+
     it("returns 400 for missing fields", async () => {
       const req = createMockRequest("http://localhost:3000/api/budgets", {
         method: "POST",

@@ -115,8 +115,8 @@ export function registerTransactionsTools(server: McpServer, ctx: PgToolContext)
   type ToolResult = { content: Array<{ type: "text"; text: string }> };
 
   // ── manage_budgets op handlers (lifted VERBATIM) ───────────────────────────
-  async function opBudgetSet(args: { category?: string; category_id?: number; month: string; amount: number }): Promise<ToolResult> {
-    const { category, category_id, month, amount } = args;
+  async function opBudgetSet(args: { category?: string; category_id?: number; month: string; amount: number; currency?: string }): Promise<ToolResult> {
+    const { category, category_id, month, amount, currency: rawCurrency } = args;
     // FINLYNQ-267: `category_id` FK fast-path wins; a name resolves via the
     // shared envelope (mistyped → refuse, 2+ → ambiguous). Requires a DEK for
     // the name path (categories are encrypted post Stream D Phase 4).
@@ -127,13 +127,15 @@ export function registerTransactionsTools(server: McpServer, ctx: PgToolContext)
     if ("report" in out) return out.report;
     const cat = { id: out.id };
 
+    const currency = rawCurrency ?? (await resolveReportingCurrency(db, userId, null));
+
     const existing = await q(db, sql`SELECT id FROM budgets WHERE user_id = ${userId} AND category_id = ${cat.id} AND month = ${month}`);
     if (existing.length) {
-      await db.execute(sql`UPDATE budgets SET amount = ${amount} WHERE id = ${existing[0].id}`);
+      await db.execute(sql`UPDATE budgets SET amount = ${amount}, currency = ${currency} WHERE id = ${existing[0].id}`);
     } else {
-      await db.execute(sql`INSERT INTO budgets (user_id, category_id, month, amount) VALUES (${userId}, ${cat.id}, ${month}, ${amount})`);
+      await db.execute(sql`INSERT INTO budgets (user_id, category_id, month, amount, currency) VALUES (${userId}, ${cat.id}, ${month}, ${amount}, ${currency})`);
     }
-    return text({ success: true, data: { message: `Budget set: ${category ?? `category #${cat.id}`} = $${amount} for ${month}` } });
+    return text({ success: true, data: { message: `Budget set: ${category ?? `category #${cat.id}`} = ${amount} ${currency} for ${month}` } });
   }
 
   async function opBudgetDelete(args: { category?: string; category_id?: number; month: string }): Promise<ToolResult> {
@@ -170,6 +172,7 @@ export function registerTransactionsTools(server: McpServer, ctx: PgToolContext)
         category_id: z.number().int().positive().optional().describe("Category FK fast-path — wins over the fuzzy `category` name."),
         month: ymPeriod.describe("Month (YYYY-MM)"),
         amount: z.number().positive().describe("Budget amount (must be > 0)"),
+        currency: z.string().optional().describe("Currency code (USD, VND, etc.; defaults to your display currency)"),
       }),
       z.object({
         op: z.literal("delete"),

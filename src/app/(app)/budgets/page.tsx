@@ -31,6 +31,7 @@ type Budget = {
   categoryGroup: string;
   month: string;
   amount: number;
+  currency?: string;
   rolloverAmount?: number;
 };
 
@@ -172,6 +173,7 @@ export default function BudgetsPage() {
           categoryId: Number(form.categoryId),
           month,
           amount: parseFloat(form.amount),
+          currency: displayCurrency,
         }),
       });
       if (!res.ok) {
@@ -288,6 +290,7 @@ export default function BudgetsPage() {
           categoryId: t.categoryId,
           month,
           amount: t.amount,
+          currency: displayCurrency,
         }),
       });
       if (!res.ok) {
@@ -328,6 +331,7 @@ export default function BudgetsPage() {
             categoryId: fromBudget.categoryId,
             month,
             amount: Math.max(0, fromBudget.amount - amt),
+            currency: fromBudget.currency ?? displayCurrency,
           }),
         });
         if (!fromRes.ok) {
@@ -343,6 +347,7 @@ export default function BudgetsPage() {
           categoryId: Number(moveTo),
           month,
           amount: (toBudget?.amount ?? 0) + amt,
+          currency: toBudget?.currency ?? displayCurrency,
         }),
       });
       if (!toRes.ok) {

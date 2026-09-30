@@ -731,7 +731,9 @@ export async function upsertBudget(userId: string, data: { categoryId: number; m
     if (data.currency) update.currency = data.currency;
     return db.update(budgets).set(update).where(eq(budgets.id, existing.id)).returning().get();
   }
-  return db.insert(budgets).values({ ...data, userId, currency: data.currency ?? "CAD" }).returning().get();
+
+  const currency = data.currency ?? (await getDisplayCurrency(userId));
+  return db.insert(budgets).values({ ...data, userId, currency }).returning().get();
 }
 
 export async function deleteBudget(id: number, userId: string) {
