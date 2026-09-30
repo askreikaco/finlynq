@@ -35,6 +35,9 @@ services:
       # Wraps service-tier email-staged imports (>=32 chars). Module-load throws in prod if missing.
       PF_STAGING_KEY: ${PF_STAGING_KEY:?set PF_STAGING_KEY in .env (>=32 chars) — generate with openssl rand -hex 32}
       NODE_ENV: production
+      # Email transport: set one of RESEND_API_KEY, BREVO_API_KEY, or SMTP_HOST
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      BREVO_API_KEY: ${BREVO_API_KEY:-}
     depends_on:
       db:
         condition: service_healthy
