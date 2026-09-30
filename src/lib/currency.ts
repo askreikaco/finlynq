@@ -101,6 +101,11 @@ export function formatNumber(amount: number): string {
 }
 
 export function formatDate(date: string): string {
+  const match = date.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) {
+    const [, year, month, day] = match;
+    return `${day}/${month}/${year}`;
+  }
   return new Date(date + "T00:00:00").toLocaleDateString("en-CA", {
     year: "numeric",
     month: "short",
