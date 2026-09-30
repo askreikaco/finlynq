@@ -33,7 +33,7 @@ export function LensToast({
   saving?: boolean;
 }) {
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 rounded-lg border bg-popover shadow-2xl px-4 py-3 flex items-center gap-3 max-w-[640px]">
+    <div className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-40 rounded-lg border bg-popover shadow-2xl px-4 py-3 flex items-center gap-3 max-w-[640px]">
       <Glasses className="h-4 w-4 text-foreground shrink-0" />
       <div className="text-xs">
         <p className="font-medium">
