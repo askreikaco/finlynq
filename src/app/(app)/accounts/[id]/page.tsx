@@ -430,7 +430,7 @@ export default function AccountDetailPage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold tracking-tight">{account.name}</h1>
-            <div className="flex gap-2 mt-0.5">
+            <div className="flex flex-wrap gap-2 mt-0.5">
               <Badge variant="outline" className="text-[10px]">{account.currency}</Badge>
               <Badge variant={account.type === "A" ? "default" : "destructive"} className="text-[10px]">
                 {account.type === "A" ? "Asset" : "Liability"}
@@ -449,7 +449,7 @@ export default function AccountDetailPage() {
             Deposit/Withdrawal. Investment accounts: all 8 portfolio ops, no
             generic New transaction (per the investment-hidden-from-generic
             -dialog invariant). */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto">
           {!isInvestment && (
             <Button size="sm" onClick={openTxDialog}>
               <Receipt className="h-3.5 w-3.5 mr-1.5" /> New transaction
