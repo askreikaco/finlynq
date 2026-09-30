@@ -90,6 +90,24 @@ function createSmtpTransport(): EmailTransport {
   };
 }
 
+// ─── Parse from address helper ─────────────────────────────────────────────
+
+/**
+ * Parse a from address into name and email components.
+ * Supports both "Name <email@domain>" and bare "email@domain" formats.
+ * Exported for testing.
+ */
+export function parseFromAddress(from: string): { name?: string; email: string } {
+  const trimmed = from.trim();
+  const angleMatch = trimmed.match(/^(.+?)\s*<([^>]+)>$/);
+  if (angleMatch) {
+    const name = angleMatch[1].trim();
+    const email = angleMatch[2].trim();
+    return { name, email };
+  }
+  return { email: trimmed };
+}
+
 // ─── Resend Transport (HTTP API) ──────────────────────────────────────────────
 
 /**
@@ -128,6 +146,61 @@ function createResendTransport(): EmailTransport {
   };
 }
 
+// ─── Brevo Transport (HTTP API) ────────────────────────────────────────────
+
+/**
+ * Send via the Brevo HTTP API. Requires BREVO_API_KEY environment variable.
+ * Supports the same `from` address format as Resend. Falls back after Resend
+ * in the transport selection order, preferred over SMTP for managed deployments
+ * that use Brevo instead. Throws on non-2xx errors.
+ */
+function createBrevoTransport(): EmailTransport {
+  return {
+    async send(message) {
+      const fromStr = message.from || process.env.EMAIL_FROM || "Finlynq <noreply@finlynq.com>";
+      const parsed = parseFromAddress(fromStr);
+
+      // Brevo expects `to` as an array of objects with email
+      const toObjects = [{ email: message.to }];
+
+      const body: Record<string, unknown> = {
+        sender: {
+          ...(parsed.name ? { name: parsed.name } : {}),
+          email: parsed.email,
+        },
+        to: toObjects,
+        subject: message.subject,
+        htmlContent: message.html,
+      };
+
+      if (message.text) {
+        body.textContent = message.text;
+      }
+
+      if (message.replyTo) {
+        body.replyTo = { email: message.replyTo };
+      }
+
+      const res = await fetch("https://api.brevo.com/v3/smtp/email", {
+        method: "POST",
+        headers: {
+          "api-key": process.env.BREVO_API_KEY!,
+          "content-type": "application/json",
+          accept: "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        const detail = await res.text().catch(() => "");
+        throw new Error(
+          `Brevo API send failed (${res.status}): ${detail.slice(0, 300)}`,
+        );
+      }
+    },
+  };
+}
+
 // ─── Transport Selection ────────────────────────────────────────────────────
 
 /**
@@ -137,21 +210,25 @@ function createResendTransport(): EmailTransport {
  * transport was misconfigured. We refuse to run without a real transport in
  * prod and surface the misconfiguration as an explicit error from `sendEmail`.
  *
- * Transport priority: Resend HTTP API (RESEND_API_KEY) → SMTP (SMTP_HOST) →
- * console (dev only). Resend is preferred because it's the provider already
- * provisioned for this deployment; SMTP stays supported for self-hosters who
- * wire their own mail server.
+ * Transport priority: Resend HTTP API (RESEND_API_KEY) → Brevo HTTP API
+ * (BREVO_API_KEY) → SMTP (SMTP_HOST) → console (dev only). Resend is preferred
+ * because it's the provider already provisioned for managed deployments; Brevo
+ * is an alternative for deployments that use it; SMTP stays supported for
+ * self-hosters who wire their own mail server.
  */
 function getTransport(): EmailTransport {
   if (process.env.RESEND_API_KEY) {
     return createResendTransport();
+  }
+  if (process.env.BREVO_API_KEY) {
+    return createBrevoTransport();
   }
   if (process.env.SMTP_HOST) {
     return createSmtpTransport();
   }
   if (process.env.NODE_ENV === "production") {
     throw new Error(
-      "Email transport not configured: set RESEND_API_KEY (preferred) or SMTP_HOST in production. " +
+      "Email transport not configured: set RESEND_API_KEY (preferred), BREVO_API_KEY, or SMTP_HOST in production. " +
         "Refusing to fall back to console transport — that would log password reset tokens / verification links to stdout."
     );
   }
