@@ -207,7 +207,7 @@ export default function AdminDiagnosticsPage() {
 
   return (
     <div className="max-w-7xl space-y-6">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
             <ScrollText className="h-5 w-5 text-primary" />
@@ -225,7 +225,7 @@ export default function AdminDiagnosticsPage() {
             kept to the newest {(data?.meta.cap ?? 5000).toLocaleString()} rows.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <input
               type="checkbox"

@@ -1,6 +1,5 @@
 "use client";
 
-
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -49,7 +48,6 @@ type RecurringItem = {
   frequency: string;
   nextDate: string;
 };
-
 
 function getDaysInMonth(year: number, month: number): number {
   return new Date(year, month + 1, 0).getDate();

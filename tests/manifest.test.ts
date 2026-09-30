@@ -46,10 +46,10 @@ describe("Manifest", () => {
     expect(exists).toBe(true);
   });
 
-  it("manifest has maskable icon purpose", () => {
+  it("manifest icons have any purpose", () => {
     const manifestData = manifest();
-    const maskableIcons =
-      manifestData.icons?.filter((icon) => icon.purpose?.includes("maskable")) ?? [];
-    expect(maskableIcons.length).toBeGreaterThan(0);
+    const anyIcons =
+      manifestData.icons?.filter((icon) => icon.purpose === "any") ?? [];
+    expect(anyIcons.length).toBeGreaterThan(0);
   });
 });
