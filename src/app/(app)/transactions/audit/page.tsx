@@ -105,7 +105,7 @@ export default function CurrencyAuditPage() {
 
   return (
     <div className="space-y-5 max-w-4xl">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <Link href="/transactions" className="text-xs text-muted-foreground hover:underline inline-flex items-center gap-1 mb-2">
             <ArrowLeft className="h-3 w-3" />
