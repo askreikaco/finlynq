@@ -13,7 +13,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { AUTH_COOKIE, verifySessionTokenDetailed, revokeJti } from "@/lib/auth";
 import { deleteDEK } from "@/lib/crypto/dek-cache";
-import { revokeAllDevices, revokeDevice, deviceCookieOptions } from "@/lib/auth/trusted-device";
+import { revokeAllDevices, deviceCookieOptions } from "@/lib/auth/trusted-device";
 
 export async function POST(request: NextRequest) {
   // Read the JWT before we blank the cookie so we can target its jti.
@@ -57,28 +57,7 @@ export async function POST(request: NextRequest) {
     path: "/",
   });
 
-  // On every logout, revoke the current device if present
-  const deviceCookie = request.cookies.get("pf_device")?.value;
-  if (deviceCookie && userId) {
-    // Parse device id from cookie (format: id.secret)
-    const deviceIdMatch = deviceCookie.split(".");
-    if (deviceIdMatch.length >= 1) {
-      const deviceId = deviceIdMatch[0];
-      try {
-        await revokeDevice(userId, deviceId);
-      } catch {
-        // swallow — device revocation shouldn't block logout
-      }
-    }
-  }
-
-  // Always clear the pf_device cookie
-  response.cookies.set("pf_device", "", {
-    ...deviceCookieOptions(),
-    maxAge: 0,
-  });
-
-  // If ?everywhere=1, also revoke all trusted devices
+  // If ?everywhere=1, revoke all trusted devices and clear pf_device cookie
   const url = new URL(request.url);
   const everywhere = url.searchParams.get("everywhere") === "1";
   if (everywhere && userId) {
@@ -87,7 +66,13 @@ export async function POST(request: NextRequest) {
     } catch {
       // swallow — device revocation shouldn't block logout
     }
+    response.cookies.set("pf_device", "", {
+      ...deviceCookieOptions(),
+      maxAge: 0,
+    });
   }
+  // Normal logout: do NOT revoke the current device and do NOT clear pf_device cookie
+  // This keeps the trusted device active for re-login
 
   return response;
 }
