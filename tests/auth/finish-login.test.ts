@@ -108,6 +108,7 @@ describe("finishPasswordLogin and issueSessionForDek", () => {
       if (result.kind === "session") {
         expect(result.token).toBeTruthy();
         expect(result.jti).toBeTruthy();
+        expect(result.dek).toBeTruthy();
         expect(recordedLogins.has(testUserId)).toBe(true);
         expect(putDEKCalls.length).toBe(1);
         expect(putDEKCalls[0].userId).toBe(testUserId);
@@ -136,6 +137,7 @@ describe("finishPasswordLogin and issueSessionForDek", () => {
       expect(result.kind).toBe("mfa");
       if (result.kind === "mfa") {
         expect(result.token).toBeTruthy();
+        expect(result.dek).toBeTruthy();
         // MFA path should NOT call recordSuccessfulLogin
         expect(recordedLogins.has(testUserId)).toBe(false);
         // MFA path should cache DEK under a 5-minute TTL
@@ -162,6 +164,7 @@ describe("finishPasswordLogin and issueSessionForDek", () => {
       if (result.kind === "session") {
         expect(result.token).toBeTruthy();
         expect(result.jti).toBeTruthy();
+        expect(result.dek).toBe(dek);
       }
       expect(recordedLogins.has(testUserId)).toBe(true);
     });
@@ -180,6 +183,7 @@ describe("finishPasswordLogin and issueSessionForDek", () => {
       expect(result.kind).toBe("mfa");
       if (result.kind === "mfa") {
         expect(result.token).toBeTruthy();
+        expect(result.dek).toBe(dek);
       }
       expect(recordedLogins.has(testUserId)).toBe(false);
     });
@@ -197,6 +201,7 @@ describe("finishPasswordLogin and issueSessionForDek", () => {
       expect(result.kind).toBe("session");
       if (result.kind === "session") {
         expect(result.token).toBeTruthy();
+        expect(result.dek).toBeNull();
       }
       // putDEK should not be called when dek is null
       expect(putDEKCalls.length).toBe(0);

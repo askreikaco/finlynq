@@ -341,20 +341,30 @@ export function isPendingToken(payload: SessionPayload | null): boolean {
 // to prevent tampering. These are distinct from session JWTs (different audience,
 // shorter TTL, and no deploy-generation check).
 
+export type ShortLivedPurpose =
+  | "oauth-state"
+  | "google-unlock-data"
+  | "google-signup"
+  | "google-link";
+
 const OAUTH_STATE_AUDIENCE = "pf-oauth-state";
+const OAUTH_STATE_ISSUER = ISSUER; // Reuse session token issuer
 
 /**
  * Sign a short-lived token for OAuth state/nonce/PKCE cookies (10 min default).
  * Uses the same secret as session JWTs but a distinct audience to prevent
  * cross-use (an oauth-state token can't be used as a session cookie and vice versa).
+ * The purpose claim is used to bind the token to its specific use case.
  */
 export async function signShortLived(
   claims: Record<string, unknown>,
-  ttlSeconds: number = 600 // 10 minutes
+  ttlSeconds: number = 600, // 10 minutes
+  purpose: ShortLivedPurpose = "oauth-state"
 ): Promise<string> {
-  const builder = new SignJWT(claims)
+  const builder = new SignJWT({ ...claims, purpose })
     .setProtectedHeader({ alg: "HS256" })
     .setAudience(OAUTH_STATE_AUDIENCE)
+    .setIssuer(OAUTH_STATE_ISSUER)
     .setIssuedAt()
     .setExpirationTime(Math.floor(Date.now() / 1000) + ttlSeconds);
   return builder.sign(getSecret());
@@ -362,15 +372,20 @@ export async function signShortLived(
 
 /**
  * Verify and decode a short-lived OAuth state token. Returns null if invalid,
- * expired, or has the wrong audience.
+ * expired, has the wrong audience, wrong issuer, or wrong purpose.
  */
 export async function verifyShortLived(
-  token: string
+  token: string,
+  purpose: ShortLivedPurpose = "oauth-state"
 ): Promise<Record<string, unknown> | null> {
   try {
     const { payload } = await jwtVerify(token, getSecret(), {
       audience: OAUTH_STATE_AUDIENCE,
+      issuer: OAUTH_STATE_ISSUER,
     });
+    if (payload.purpose !== purpose) {
+      return null;
+    }
     return payload;
   } catch {
     return null;

@@ -57,6 +57,7 @@ export async function POST(req: NextRequest) {
 
     const userId = unlockPayload.sub;
     const unlockJti = unlockPayload.jti;
+    const unlockExp = unlockPayload.exp;
 
     // Rate limit by user
     const userLimit = checkRateLimit(`google:unlock:user:${userId}`, 10, 3600);
@@ -65,7 +66,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Decode Google data
-    const googleData = await verifyShortLived(googleDataToken);
+    const googleData = await verifyShortLived(googleDataToken, "google-unlock-data");
     if (!googleData) {
       return NextResponse.json({ error: "Invalid Google data" }, { status: 400 });
     }
@@ -73,6 +74,12 @@ export async function POST(req: NextRequest) {
     const googleSub = googleData.sub as string;
     const googleEmail = googleData.email as string;
     const googleEmailVerified = googleData.emailVerified as boolean;
+    const googleDataUserId = googleData.userId as string;
+
+    // Validate that the Google data userId matches the pending token's sub
+    if (googleDataUserId !== userId) {
+      return NextResponse.json({ error: "Invalid Google data" }, { status: 400 });
+    }
 
     // Fetch user
     const { db } = await import("@/db");
@@ -94,7 +101,23 @@ export async function POST(req: NextRequest) {
     // Verify password
     const passwordValid = await verifyPassword(password, user.passwordHash);
     if (!passwordValid) {
-      return NextResponse.json({ error: "Invalid password" }, { status: 401 });
+      // Wrong password — revoke the pending unlock token so it can't be replayed
+      if (unlockJti && unlockExp) {
+        try {
+          const expDate = typeof unlockExp === "number"
+            ? new Date(unlockExp * 1000)
+            : new Date(Date.now() + 5 * 60 * 1000);
+          await revokeJti(unlockJti, expDate);
+        } catch {
+          // Swallow — revocation failure shouldn't block the login denial
+        }
+      }
+
+      // Clear unlock cookies
+      const response = NextResponse.json({ error: "Invalid password" }, { status: 401 });
+      response.cookies.delete("pf_unlock");
+      response.cookies.delete("pf_google_unlock_data");
+      return response;
     }
 
     // Password verified — now we can link the identity, issue device, and complete login
@@ -127,7 +150,7 @@ export async function POST(req: NextRequest) {
         emailVerified: googleEmailVerified,
         pendingJti: unlockJti,
       };
-      const googleLinkToken = await signShortLived(googleLinkPayload, 300); // 5 min
+      const googleLinkToken = await signShortLived(googleLinkPayload, 300, "google-link"); // 5 min
 
       const response = NextResponse.json({
         mfaRequired: true,
@@ -153,19 +176,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Full session — link identity, issue device, set cookies
-    // issueSessionForDek has already cached the DEK, we just need to get it for the device cookie
-    const { deriveKEK, unwrapDEK } = await import("@/lib/crypto/envelope");
-    const kek = deriveKEK(
-      password,
-      Buffer.from(user.kekSalt || "", "base64"),
-      user.pepperVersion ?? 1
-    );
-    const dek = unwrapDEK(kek, {
-      salt: Buffer.from(user.kekSalt || "", "base64"),
-      wrapped: Buffer.from(user.dekWrapped || "", "base64"),
-      iv: Buffer.from(user.dekWrappedIv || "", "base64"),
-      tag: Buffer.from(user.dekWrappedTag || "", "base64"),
-    });
+    // issueSessionForDek has already cached the DEK in loginResult.dek
+    const dek = loginResult.dek;
 
     // Upsert the identity (link Google account)
     await upsertIdentity({
@@ -176,9 +188,14 @@ export async function POST(req: NextRequest) {
       emailVerified: googleEmailVerified ? 1 : 0,
     });
 
-    // Issue a device cookie
-    const userAgent = req.headers.get("user-agent") || undefined;
-    const device = await issueDevice(userId, dek, userAgent);
+    // Issue a device cookie only if DEK is available
+    let device = null;
+    if (dek) {
+      const userAgent = req.headers.get("user-agent") || undefined;
+      device = await issueDevice(userId, dek, userAgent);
+    } else {
+      console.error("finish-login returned null DEK for session; skipping device issuance");
+    }
 
     // Build response
     const response = NextResponse.json({ ok: true });

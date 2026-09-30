@@ -128,7 +128,7 @@ export async function GET(req: NextRequest) {
   if (next) payload.next = next;
   if (uid) payload.uid = uid;
 
-  const stateToken = await signShortLived(payload, 600); // 10 min
+  const stateToken = await signShortLived(payload, 600, "oauth-state"); // 10 min
 
   // Build the Google auth URL
   const authUrl = await buildAuthUrl({

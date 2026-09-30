@@ -228,7 +228,7 @@ export async function POST(request: NextRequest) {
 
     if (googleLinkCookie) {
       try {
-        const googleLinkPayload = await verifyShortLived(googleLinkCookie);
+        const googleLinkPayload = await verifyShortLived(googleLinkCookie, "google-link");
         if (
           googleLinkPayload &&
           googleLinkPayload.userId === user.id &&

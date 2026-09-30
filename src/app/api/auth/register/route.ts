@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Invalid Google signup" }, { status: 400 });
       }
 
-      const signupData = await verifyShortLived(signupToken);
+      const signupData = await verifyShortLived(signupToken, "google-signup");
       if (!signupData) {
         return NextResponse.json({ error: "Google signup token expired" }, { status: 400 });
       }

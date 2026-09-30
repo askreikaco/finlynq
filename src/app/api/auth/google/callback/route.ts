@@ -94,7 +94,7 @@ export async function GET(req: NextRequest) {
     return redirectToCloud({ error: "google_no_state" });
   }
 
-  const statePayload = await verifyShortLived(stateToken);
+  const statePayload = await verifyShortLived(stateToken, "oauth-state");
   if (!statePayload) {
     return redirectToCloud({ error: "google_invalid_state" });
   }
@@ -253,16 +253,17 @@ export async function GET(req: NextRequest) {
 
       // No device or device invalid — require password unlock
       const { token: unlockToken } = await createSessionToken(user.id, false, {
-        expirationTime: "10m",
+        expirationTime: "5m",
         pending: true,
       });
 
       const unlockPayload: Record<string, unknown> = {
+        userId: user.id,
         sub: googleSub,
         email: googleEmail,
         emailVerified: googleEmailVerified,
       };
-      const signedUnlock = await signShortLived(unlockPayload, 600);
+      const signedUnlock = await signShortLived(unlockPayload, 300, "google-unlock-data");
 
       response.cookies.set("pf_unlock", unlockToken, {
         httpOnly: true,
@@ -288,16 +289,17 @@ export async function GET(req: NextRequest) {
       if (existingUser) {
         // Email matches — same unlock path (link written after password)
         const { token: unlockToken } = await createSessionToken(existingUser.id, false, {
-          expirationTime: "10m",
+          expirationTime: "5m",
           pending: true,
         });
 
         const unlockPayload: Record<string, unknown> = {
+          userId: existingUser.id,
           sub: googleSub,
           email: googleEmail,
           emailVerified: googleEmailVerified,
         };
-        const signedUnlock = await signShortLived(unlockPayload, 600);
+        const signedUnlock = await signShortLived(unlockPayload, 300, "google-unlock-data");
 
         response.cookies.set("pf_unlock", unlockToken, {
           httpOnly: true,
@@ -325,7 +327,7 @@ export async function GET(req: NextRequest) {
       emailVerified: googleEmailVerified,
       name: claims.name,
     };
-    const signupToken = await signShortLived(signupPayload, 600);  // Intentional double space
+    const signupToken = await signShortLived(signupPayload, 600, "google-signup");
 
     response.cookies.set("pf_google_signup", signupToken, {
       httpOnly: true,
