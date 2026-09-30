@@ -60,21 +60,32 @@ fi
 
 # Check if the new image has any new migration files compared to the previous image
 if [ -n "$PREV" ]; then
-  PREV_MIGRATIONS=$(docker run --rm "$IMG:prev" ls scripts/migrations 2>/dev/null | sort || true)
-  NEW_MIGRATIONS=$(docker run --rm "$IMG:$SHA" ls scripts/migrations 2>/dev/null | sort || true)
+  PREV_MIGRATIONS=$(docker run --rm --entrypoint ls "$IMG:prev" /app/scripts/migrations 2>&1 | sort) || {
+    log "WARNING: could not list migrations in previous image; treating as schema change"
+    SCHEMA_CHANGE=true
+    PREV_MIGRATIONS=""
+  }
+  
+  NEW_MIGRATIONS=$(docker run --rm --entrypoint ls "$IMG:$SHA" /app/scripts/migrations 2>&1 | sort) || {
+    log "ERROR: could not list migrations in new image; treating as schema change (fail-safe)"
+    SCHEMA_CHANGE=true
+    NEW_MIGRATIONS=""
+  }
 
-  if [ "$NEW_MIGRATIONS" != "$PREV_MIGRATIONS" ]; then
-    NEW_FILES=$(comm -13 <(echo "$PREV_MIGRATIONS") <(echo "$NEW_MIGRATIONS") || true)
-    if [ -n "$NEW_FILES" ]; then
-      log "schema-changing deploy detected; rollback requires DB restore"
-      log "New migration files:"
-      echo "$NEW_FILES" | sed 's/^/  /'
-      SCHEMA_CHANGE=true
+  if [ "$SCHEMA_CHANGE" != "true" ]; then
+    if [ "$NEW_MIGRATIONS" != "$PREV_MIGRATIONS" ]; then
+      NEW_FILES=$(comm -13 <(echo "$PREV_MIGRATIONS") <(echo "$NEW_MIGRATIONS") || true)
+      if [ -n "$NEW_FILES" ]; then
+        log "schema-changing deploy detected; rollback requires DB restore"
+        log "New migration files:"
+        echo "$NEW_FILES" | sed 's/^/  /'
+        SCHEMA_CHANGE=true
+      else
+        SCHEMA_CHANGE=false
+      fi
     else
       SCHEMA_CHANGE=false
     fi
-  else
-    SCHEMA_CHANGE=false
   fi
 else
   # First deploy; no previous image to compare
@@ -82,13 +93,27 @@ else
 fi
 
 healthy() {
-  for _ in $(seq 1 120); do
-    if [ "$(docker inspect -f '{{.State.Health.Status}}' finlynq-app 2>/dev/null)" = healthy ]; then
-      return 0
+  local unhealthy_count=0
+  for i in $(seq 1 120); do
+    # Check container state first
+    local state=$(docker inspect -f '{{.State.Status}}' finlynq-app 2>/dev/null)
+    if [ "$state" = "exited" ]; then
+      log "container exited; health check failed"
+      return 1
     fi
-    # Also check if migrations are complete in the logs
-    if docker logs finlynq-app 2>/dev/null | grep -q "\[entrypoint\] Migrations complete"; then
+    
+    # Check health status
+    local health=$(docker inspect -f '{{.State.Health.Status}}' finlynq-app 2>/dev/null)
+    if [ "$health" = "healthy" ]; then
       return 0
+    elif [ "$health" = "unhealthy" ]; then
+      ((unhealthy_count++))
+      if [ "$unhealthy_count" -ge 6 ]; then
+        log "container unhealthy for 6 consecutive checks"
+        return 1
+      fi
+    else
+      unhealthy_count=0
     fi
     sleep 5
   done
