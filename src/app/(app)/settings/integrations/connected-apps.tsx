@@ -1,4 +1,3 @@
-import { formatDate as libFormatDate } from "@/lib/currency";
 "use client";
 
 /**
@@ -19,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { formatDate as libFormatDate } from "@/lib/currency";
 import { parseSaveError } from "@/lib/save-error";
 import { Plug, Loader2 } from "lucide-react";
 
