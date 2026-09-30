@@ -344,7 +344,7 @@ export default function DashboardPage() {
       {/* ============================================
           HEADER — Greeting + Profile hint
           ============================================ */}
-      <motion.div variants={itemVariants} className="flex items-center justify-between">
+      <motion.div variants={itemVariants} className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">{greeting}</h1>
           <p className="text-[13px] text-muted-foreground mt-0.5">Here&apos;s your financial overview</p>

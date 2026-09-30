@@ -374,7 +374,7 @@ export default function GoalsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Financial Goals</h1>
           <p className="text-sm text-muted-foreground mt-1">Track your savings targets and measure progress over time</p>
