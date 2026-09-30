@@ -474,6 +474,31 @@ export async function touchDevice(id: string, update: TouchDeviceInput) {
     .where(eq(s.userDevices.id, id));
 }
 
+export async function rotateDeviceSecret(
+  id: string,
+  oldHash: string,
+  update: { secretHash: string; dekWrapped: string; expiresAt: string }
+): Promise<boolean> {
+  const s = getSchema();
+  const now = new Date().toISOString();
+  const result = await db
+    .update(s.userDevices)
+    .set({
+      secretHash: update.secretHash,
+      dekWrapped: update.dekWrapped,
+      expiresAt: update.expiresAt,
+      lastUsedAt: now,
+    })
+    .where(
+      and(
+        eq(s.userDevices.id, id),
+        eq(s.userDevices.secretHash, oldHash)
+      )
+    )
+    .returning({ id: s.userDevices.id });
+  return result.length > 0;
+}
+
 export async function listDevices(userId: string) {
   const s = getSchema();
   return db.select().from(s.userDevices).where(eq(s.userDevices.userId, userId));

@@ -26,8 +26,6 @@ import { userDevices } from "@/db/schema-pg";
 import { eq, and } from "drizzle-orm";
 import { authLookupHash, wrapDEKForSecret, unwrapDEKForSecret } from "@/lib/api-auth";
 
-const PF_DEVICE_COOKIE_NAME = "pf_device";
-
 /**
  * Parse the device ID and secret from the cookie value.
  * Format: <uuid>.<base64url secret>
@@ -146,6 +144,9 @@ export async function issueDevice(
  * unwraps the DEK, and returns it along with a rotated cookie value
  * (new secret + rewrap + extend expiry).
  *
+ * On replayed/old secrets (device exists and belongs to user but secret hash
+ * doesn't match), the device is revoked to prevent replay attacks.
+ *
  * @param cookieValue - The cookie value (id.secret format)
  * @param userId - The expected user ID
  * @returns { dek, rotatedCookieValue } or null if invalid/expired/revoked/mismatch
@@ -183,7 +184,15 @@ export async function redeemDevice(
 
   // Verify secret hash (constant-time to resist timing attacks)
   const expectedHash = authLookupHash(secret);
-  if (!constantTimeEqual(device.secretHash, expectedHash)) return null;
+  if (!constantTimeEqual(device.secretHash, expectedHash)) {
+    // Replayed or old secret: revoke this device to prevent abuse
+    try {
+      await revokeDevice(userId, id);
+    } catch {
+      // swallow — we still return null to fail the redemption
+    }
+    return null;
+  }
 
   // Unwrap the DEK
   let dek: Buffer;
@@ -204,15 +213,17 @@ export async function redeemDevice(
   );
   const newExpiresAt = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
 
-  await db
-    .update(userDevices)
-    .set({
-      secretHash: newSecretHash,
-      dekWrapped: newDekWrapped,
-      lastUsedAt: now.toISOString(),
-      expiresAt: newExpiresAt.toISOString(),
-    })
-    .where(eq(userDevices.id, id));
+  // Import rotateDeviceSecret from queries for atomic conditional rotation
+  const { rotateDeviceSecret } = await import("@/lib/auth/queries");
+  const rotated = await rotateDeviceSecret(id, device.secretHash, {
+    secretHash: newSecretHash,
+    dekWrapped: newDekWrapped,
+    expiresAt: newExpiresAt.toISOString(),
+  });
+
+  // If the conditional update failed (someone else rotated first, or hash changed),
+  // treat it as a failed redemption
+  if (!rotated) return null;
 
   const maxAgeSeconds = days * 24 * 60 * 60;
   const rotatedCookieValue = encodeDeviceCookie(id, newSecret);

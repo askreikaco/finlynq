@@ -13,7 +13,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { AUTH_COOKIE, verifySessionTokenDetailed, revokeJti } from "@/lib/auth";
 import { deleteDEK } from "@/lib/crypto/dek-cache";
-import { revokeAllDevices } from "@/lib/auth/trusted-device";
+import { revokeAllDevices, revokeDevice, deviceCookieOptions } from "@/lib/auth/trusted-device";
 
 export async function POST(request: NextRequest) {
   // Read the JWT before we blank the cookie so we can target its jti.
@@ -55,6 +55,27 @@ export async function POST(request: NextRequest) {
     sameSite: "lax",
     maxAge: 0,
     path: "/",
+  });
+
+  // On every logout, revoke the current device if present
+  const deviceCookie = request.cookies.get("pf_device")?.value;
+  if (deviceCookie && userId) {
+    // Parse device id from cookie (format: id.secret)
+    const deviceIdMatch = deviceCookie.split(".");
+    if (deviceIdMatch.length >= 1) {
+      const deviceId = deviceIdMatch[0];
+      try {
+        await revokeDevice(userId, deviceId);
+      } catch {
+        // swallow — device revocation shouldn't block logout
+      }
+    }
+  }
+
+  // Always clear the pf_device cookie
+  response.cookies.set("pf_device", "", {
+    ...deviceCookieOptions(),
+    maxAge: 0,
   });
 
   // If ?everywhere=1, also revoke all trusted devices

@@ -29,6 +29,7 @@ import {
 import { validatePasswordStrength } from "@/lib/auth/password-policy";
 import { validateBody, safeErrorMessage, logApiError } from "@/lib/validate";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { revokeAllDevices } from "@/lib/auth/trusted-device";
 
 export const dynamic = "force-dynamic";
 
@@ -153,6 +154,15 @@ export async function POST(request: NextRequest) {
     }
 
     await updateUserPasswordAndWrap(userId, newHash, wrap);
+
+    // Revoke all devices so the current browser gets a new device on next login.
+    // Wrap in try/catch so a device revocation failure doesn't fail the password change.
+    try {
+      await revokeAllDevices(userId);
+    } catch (err) {
+      await logApiError("POST", "/api/settings/change-password (revokeAllDevices)", err);
+      // swallow — device revocation shouldn't block password change
+    }
 
     // The DEK itself is unchanged, so the current session (and any other
     // active sessions) keep working — no forced re-login, no cache update.

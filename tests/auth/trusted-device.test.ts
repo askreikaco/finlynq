@@ -136,6 +136,30 @@ vi.mock("@/lib/api-auth", () => {
   };
 });
 
+// Track rotateDeviceSecret calls
+const rotateDeviceSecretCalls: Array<{ id: string; oldHash: string }> = [];
+let rotateDeviceSecretShouldSucceed = true;
+
+vi.mock("@/lib/auth/queries", () => ({
+  rotateDeviceSecret: async (id: string, oldHash: string, update: any) => {
+    rotateDeviceSecretCalls.push({ id, oldHash });
+
+    // If the device exists and hash matches, succeed
+    if (mockDevices.has(id) && mockDevices.get(id)!.secretHash === oldHash && rotateDeviceSecretShouldSucceed) {
+      const device = mockDevices.get(id)!;
+      Object.assign(device, {
+        secretHash: update.secretHash,
+        dekWrapped: update.dekWrapped,
+        expiresAt: update.expiresAt,
+        lastUsedAt: new Date().toISOString(),
+      });
+      updatedDevices.push({ id, ...update });
+      return true;
+    }
+    return false;
+  },
+}));
+
 import { issueDevice, redeemDevice, revokeDevice, revokeAllDevices, deleteAllDevices } from "@/lib/auth/trusted-device";
 import { createWrappedDEKForPassword } from "@/lib/crypto/envelope";
 
@@ -146,6 +170,8 @@ describe("Trusted Device Management", () => {
     mockDevices.clear();
     insertedDevices.length = 0;
     updatedDevices.length = 0;
+    rotateDeviceSecretCalls.length = 0;
+    rotateDeviceSecretShouldSucceed = true;
     process.env.PF_TRUSTED_DEVICE_DAYS = "30";
 
     // Create a test DEK
@@ -228,6 +254,30 @@ describe("Trusted Device Management", () => {
       expect(rotated.secretHash).toBeTruthy();
     });
 
+    it("rotation should succeed when old hash matches", async () => {
+      // Issue a device
+      const issued = await issueDevice("user-123", testDek);
+      expect(issued).not.toBeNull();
+
+      const originalCookie = issued!.cookieValue;
+      const [id, secret] = originalCookie.split(".");
+      const device = mockDevices.get(id)!;
+      const oldHash = device.secretHash;
+
+      // Redeem it (which calls rotateDeviceSecret internally)
+      updatedDevices.length = 0;
+      const result = await redeemDevice(originalCookie, "user-123");
+
+      expect(result).not.toBeNull();
+      expect(result?.dek).toEqual(testDek);
+
+      // Verify the update happened with the old hash as a condition
+      expect(updatedDevices.length).toBe(1);
+      const updated = updatedDevices[0];
+      expect(updated.secretHash).not.toBe(oldHash);
+      expect(updated.secretHash).toBeTruthy();
+    });
+
     it("should return null for expired device", async () => {
       // Issue a device
       const issued = await issueDevice("user-123", testDek);
@@ -303,6 +353,39 @@ describe("Trusted Device Management", () => {
       updatedDevices.length = 0;
       const result2 = await redeemDevice(originalCookie, "user-123");
       expect(result2).toBeNull(); // Should fail because secret hash was updated
+    });
+
+    it("rotateDeviceSecret returning false should return null", async () => {
+      // Issue a device
+      const issued = await issueDevice("user-123", testDek);
+      const originalCookie = issued!.cookieValue;
+
+      // Make rotateDeviceSecret fail
+      rotateDeviceSecretShouldSucceed = false;
+
+      // Try to redeem
+      const result = await redeemDevice(originalCookie, "user-123");
+      expect(result).toBeNull();
+    });
+
+    it("replayed old secret should revoke device and return null", async () => {
+      // Issue a device
+      const issued = await issueDevice("user-123", testDek);
+      const originalCookie = issued!.cookieValue;
+      const deviceId = issued!.id;
+
+      // Redeem once (rotates secret)
+      const result1 = await redeemDevice(originalCookie, "user-123");
+      expect(result1).not.toBeNull();
+
+      // Try to use old cookie again (replayed secret)
+      updatedDevices.length = 0;
+      const result2 = await redeemDevice(originalCookie, "user-123");
+      expect(result2).toBeNull();
+
+      // Verify device was revoked
+      const device = mockDevices.get(deviceId)!;
+      expect(device.revokedAt).toBeTruthy();
     });
   });
 
