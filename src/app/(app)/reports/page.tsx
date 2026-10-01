@@ -42,8 +42,6 @@ import {
 import {
   BarChart,
   Bar,
-  AreaChart,
-  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -52,6 +50,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { PageHeader } from "@/components/mobile";
+import { IncomeExpenseTrendCard } from "@/components/reports/income-expense-trend-card";
 
 // ── Types ──
 
@@ -586,77 +585,12 @@ export default function ReportsPage() {
 
       {/* ── Trend Chart ── */}
       {trendsData && trendsData.timeseries.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
-                  <BarChart3 className="h-5 w-5" />
-                </div>
-                <div>
-                  <CardTitle className="text-base">Income vs Expenses</CardTitle>
-                  <CardDescription>{periodLabels[period]} trend &middot; {startDate} to {endDate}</CardDescription>
-                </div>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={trendsData.timeseries} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
-                  <defs>
-                    <linearGradient id="incomeGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={CHART_COLORS.positive} stopOpacity={0.3} />
-                      <stop offset="95%" stopColor={CHART_COLORS.positive} stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="expenseGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={CHART_COLORS.negative} stopOpacity={0.3} />
-                      <stop offset="95%" stopColor={CHART_COLORS.negative} stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                  <XAxis
-                    dataKey="label"
-                    className="text-xs fill-muted-foreground"
-                    tick={{ fontSize: 11 }}
-                    interval={period === "daily" ? Math.max(0, Math.floor(trendsData.timeseries.length / 12)) : 0}
-                    angle={period === "daily" ? -45 : 0}
-                    textAnchor={period === "daily" ? "end" : "middle"}
-                    height={period === "daily" ? 60 : 30}
-                  />
-                  <YAxis
-                    className="text-xs fill-muted-foreground"
-                    tick={{ fontSize: 11 }}
-                    tickFormatter={(v) => formatCompactNumber(Number(v))}
-                    width={90}
-                  />
-                  <Tooltip
-                    formatter={(v) => formatCurrency(Number(v), displayCurrency)}
-                    contentStyle={{ borderRadius: "8px", fontSize: "12px" }}
-                    labelStyle={{ fontWeight: 600, marginBottom: 4 }}
-                  />
-                  <Legend wrapperStyle={{ fontSize: "12px" }} />
-                  <Area
-                    type="monotone"
-                    dataKey="income"
-                    name="Income"
-                    stroke={CHART_COLORS.positive}
-                    fill="url(#incomeGrad)"
-                    strokeWidth={2}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="expenses"
-                    name="Expenses"
-                    stroke={CHART_COLORS.negative}
-                    fill="url(#expenseGrad)"
-                    strokeWidth={2}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
+        <IncomeExpenseTrendCard
+          timeseries={trendsData.timeseries}
+          currency={displayCurrency}
+          description={`${periodLabels[period]} trend · ${startDate} to ${endDate}`}
+          daily={period === "daily"}
+        />
       )}
 
       {/* ── Tabs ── */}

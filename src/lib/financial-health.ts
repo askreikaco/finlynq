@@ -311,118 +311,7 @@ export async function calculateFinancialHealth(
     residualValue: r.residual_value == null ? null : Number(r.residual_value),
   }));
 
-  // Built from the exported const so the rule has ONE definition (the test
-  // pins it). `t.kind IS NULL` must be spelled out: `NULL NOT IN (...)` is NULL,
-  // not true, and would silently drop every ordinary un-kinded transaction.
-  const nonDebtServiceKinds = sql.join(
-    NON_DEBT_SERVICE_KINDS.map((k) => sql`${k}`),
-    sql`, `,
-  );
-
-  // Realized payments into liability accounts NO loan points at. A positive
-  // amount on a liability is the balance moving back toward zero. Scoping to
-  // loan-less accounts is what stops a transfer into a loan account being
-  // counted twice — once scheduled, once realized. `opening_balance` /
-  // `balance_adjustment` are excluded here too: a positive opening balance on a
-  // liability is still a stated balance, not a payment (the GH #333 bug,
-  // mirrored on the other side of zero).
-  //
-  // The loan exclusion is CORRELATED ON DATE, not just on account. A loan
-  // linked to an account only covers the window from its own `start_date`
-  // onward; payments made BEFORE it was opened have no schedule describing
-  // them and must still count. Measured on dev 2026-08-23: a loan created 16
-  // days earlier suppressed that card's entire 12-month history, turning $6,600
-  // of real payments into a $58 prorated sliver and reporting DTI as 0%. The
-  // scheduled path covers `date >= start_date`; the realized path covers the
-  // rest, so the two partition the window instead of one silently eating it.
-  //
-  // NO `link_id IS NOT NULL` REQUIREMENT — that was this rewrite's own bug,
-  // caught validating on prod 2026-08-23. Only `createTransferPair` stamps a
-  // link id; a card payment that arrived by IMPORT, or was typed as two
-  // independent rows, carries none. Requiring it dropped all six of the demo's
-  // $1,100 Visa payments ($6,600 against a $3,552 balance), reporting DTI as 0%
-  // and scoring that component a perfect 100 — understating debt, which is the
-  // flattering direction nobody reports. A refund or chargeback also lands here
-  // and also genuinely reduces what is owed, so counting it is not wrong; a
-  // write-off is rare enough not to justify re-introducing a filter that
-  // silently deletes real payments.
-  const untrackedRows = asRows(await db.execute(sql`
-    SELECT a.id AS account_id,
-           a.currency AS account_currency,
-           COALESCE(t.currency, a.currency) AS currency,
-           SUM(t.amount) AS total
-    FROM transactions t
-    JOIN accounts a ON a.id = t.account_id
-    WHERE t.user_id = ${userId} AND t.date >= ${twelveStart}
-      AND a.type = 'L'
-      AND a.invisible = false
-      AND t.amount > 0
-      AND (t.kind IS NULL OR t.kind NOT IN (${nonDebtServiceKinds}))
-      AND NOT EXISTS (
-        SELECT 1 FROM loans l
-        WHERE l.user_id = ${userId} AND l.account_id = a.id
-          AND t.date >= l.start_date
-      )
-    GROUP BY a.id, a.currency, COALESCE(t.currency, a.currency)
-  `)) as Array<{
-    account_id: number | string;
-    account_currency: string | null;
-    currency: string | null;
-    total: number | string;
-  }>;
-
-  // Balance owed by each liability account at BOTH ends of the window — the
-  // input to the pay-in-full cap (see health/debt-service.ts). Liability
-  // balances are stored NEGATIVE-when-owed, so the sums are flipped below.
-  //
-  // Both endpoints, not just the opening balance: a card opened inside the
-  // window has an opening balance of 0 while genuinely carrying debt today,
-  // and capping on the opening balance alone would erase it.
-  const liabilityBalanceRows = asRows(await db.execute(sql`
-    SELECT a.id AS account_id, a.currency,
-           COALESCE(SUM(t.amount) FILTER (WHERE t.date < ${twelveStart}), 0) AS opening_balance,
-           COALESCE(SUM(t.amount), 0) AS closing_balance
-    FROM accounts a
-    LEFT JOIN transactions t
-      ON t.account_id = a.id AND t.user_id = ${userId} AND t.date <= ${today}
-    WHERE a.user_id = ${userId} AND a.type = 'L' AND a.invisible = false
-    GROUP BY a.id, a.currency
-  `)) as Array<{
-    account_id: number | string;
-    currency: string | null;
-    opening_balance: number | string;
-    closing_balance: number | string;
-  }>;
-
-  const owedByAccount = new Map<number, { start: number; end: number }>();
-  for (const r of liabilityBalanceRows) {
-    owedByAccount.set(Number(r.account_id), {
-      // Negative-when-owed → positive-when-owed; a credit balance clamps to 0.
-      start: Math.max(0, -Number(r.opening_balance)),
-      end: Math.max(0, -Number(r.closing_balance)),
-    });
-  }
-
-  // Collapse the per-(account, currency) payment rows into one entry per
-  // account, which is the grain the pay-in-full cap is applied at.
-  const untrackedByAccount = new Map<number, UntrackedLiabilityAccount>();
-  for (const r of untrackedRows) {
-    const accountId = Number(r.account_id);
-    let entry = untrackedByAccount.get(accountId);
-    if (!entry) {
-      const owed = owedByAccount.get(accountId);
-      entry = {
-        accountId,
-        currency: r.account_currency,
-        payments: [],
-        owedAtWindowStart: owed?.start ?? 0,
-        owedAtWindowEnd: owed?.end ?? 0,
-      };
-      untrackedByAccount.set(accountId, entry);
-    }
-    entry.payments.push({ currency: r.currency, total: Number(r.total) });
-  }
-  const untrackedLiabilities = [...untrackedByAccount.values()];
+  const untrackedLiabilities = await loadUntrackedLiabilities(db, userId, twelveStart, today);
 
   // Pre-resolve every rate the pure calculator will need — `convert` must be
   // synchronous, and fxFor is async.
@@ -788,4 +677,132 @@ export async function calculateFinancialHealth(
       ageOfMoneyTrendDays: aomTrend,
     },
   };
+}
+
+/**
+ * Untracked-liability inputs of the DTI numerator (see health/debt-service.ts):
+ * realized payments into liability accounts no loan points at, plus each such
+ * account's owed balance at both window endpoints (the pay-in-full cap).
+ *
+ * Exported so the Family Wealth overview computes a share owner's DTI from the
+ * SAME queries as the dashboard. Plaintext numeric columns only (DEK-free).
+ */
+export async function loadUntrackedLiabilities(
+  db: DbLike,
+  userId: string,
+  twelveStart: string,
+  today: string,
+): Promise<UntrackedLiabilityAccount[]> {
+  // Built from the exported const so the rule has ONE definition (the test
+  // pins it). `t.kind IS NULL` must be spelled out: `NULL NOT IN (...)` is NULL,
+  // not true, and would silently drop every ordinary un-kinded transaction.
+  const nonDebtServiceKinds = sql.join(
+    NON_DEBT_SERVICE_KINDS.map((k) => sql`${k}`),
+    sql`, `,
+  );
+
+  // Realized payments into liability accounts NO loan points at. A positive
+  // amount on a liability is the balance moving back toward zero. Scoping to
+  // loan-less accounts is what stops a transfer into a loan account being
+  // counted twice — once scheduled, once realized. `opening_balance` /
+  // `balance_adjustment` are excluded here too: a positive opening balance on a
+  // liability is still a stated balance, not a payment (the GH #333 bug,
+  // mirrored on the other side of zero).
+  //
+  // The loan exclusion is CORRELATED ON DATE, not just on account. A loan
+  // linked to an account only covers the window from its own `start_date`
+  // onward; payments made BEFORE it was opened have no schedule describing
+  // them and must still count. Measured on dev 2026-08-23: a loan created 16
+  // days earlier suppressed that card's entire 12-month history, turning $6,600
+  // of real payments into a $58 prorated sliver and reporting DTI as 0%. The
+  // scheduled path covers `date >= start_date`; the realized path covers the
+  // rest, so the two partition the window instead of one silently eating it.
+  //
+  // NO `link_id IS NOT NULL` REQUIREMENT — that was this rewrite's own bug,
+  // caught validating on prod 2026-08-23. Only `createTransferPair` stamps a
+  // link id; a card payment that arrived by IMPORT, or was typed as two
+  // independent rows, carries none. Requiring it dropped all six of the demo's
+  // $1,100 Visa payments ($6,600 against a $3,552 balance), reporting DTI as 0%
+  // and scoring that component a perfect 100 — understating debt, which is the
+  // flattering direction nobody reports. A refund or chargeback also lands here
+  // and also genuinely reduces what is owed, so counting it is not wrong; a
+  // write-off is rare enough not to justify re-introducing a filter that
+  // silently deletes real payments.
+  const untrackedRows = asRows(await db.execute(sql`
+    SELECT a.id AS account_id,
+           a.currency AS account_currency,
+           COALESCE(t.currency, a.currency) AS currency,
+           SUM(t.amount) AS total
+    FROM transactions t
+    JOIN accounts a ON a.id = t.account_id
+    WHERE t.user_id = ${userId} AND t.date >= ${twelveStart}
+      AND a.type = 'L'
+      AND a.invisible = false
+      AND t.amount > 0
+      AND (t.kind IS NULL OR t.kind NOT IN (${nonDebtServiceKinds}))
+      AND NOT EXISTS (
+        SELECT 1 FROM loans l
+        WHERE l.user_id = ${userId} AND l.account_id = a.id
+          AND t.date >= l.start_date
+      )
+    GROUP BY a.id, a.currency, COALESCE(t.currency, a.currency)
+  `)) as Array<{
+    account_id: number | string;
+    account_currency: string | null;
+    currency: string | null;
+    total: number | string;
+  }>;
+
+  // Balance owed by each liability account at BOTH ends of the window — the
+  // input to the pay-in-full cap (see health/debt-service.ts). Liability
+  // balances are stored NEGATIVE-when-owed, so the sums are flipped below.
+  //
+  // Both endpoints, not just the opening balance: a card opened inside the
+  // window has an opening balance of 0 while genuinely carrying debt today,
+  // and capping on the opening balance alone would erase it.
+  const liabilityBalanceRows = asRows(await db.execute(sql`
+    SELECT a.id AS account_id, a.currency,
+           COALESCE(SUM(t.amount) FILTER (WHERE t.date < ${twelveStart}), 0) AS opening_balance,
+           COALESCE(SUM(t.amount), 0) AS closing_balance
+    FROM accounts a
+    LEFT JOIN transactions t
+      ON t.account_id = a.id AND t.user_id = ${userId} AND t.date <= ${today}
+    WHERE a.user_id = ${userId} AND a.type = 'L' AND a.invisible = false
+    GROUP BY a.id, a.currency
+  `)) as Array<{
+    account_id: number | string;
+    currency: string | null;
+    opening_balance: number | string;
+    closing_balance: number | string;
+  }>;
+
+  const owedByAccount = new Map<number, { start: number; end: number }>();
+  for (const r of liabilityBalanceRows) {
+    owedByAccount.set(Number(r.account_id), {
+      // Negative-when-owed → positive-when-owed; a credit balance clamps to 0.
+      start: Math.max(0, -Number(r.opening_balance)),
+      end: Math.max(0, -Number(r.closing_balance)),
+    });
+  }
+
+  // Collapse the per-(account, currency) payment rows into one entry per
+  // account, which is the grain the pay-in-full cap is applied at.
+  const untrackedByAccount = new Map<number, UntrackedLiabilityAccount>();
+  for (const r of untrackedRows) {
+    const accountId = Number(r.account_id);
+    let entry = untrackedByAccount.get(accountId);
+    if (!entry) {
+      const owed = owedByAccount.get(accountId);
+      entry = {
+        accountId,
+        currency: r.account_currency,
+        payments: [],
+        owedAtWindowStart: owed?.start ?? 0,
+        owedAtWindowEnd: owed?.end ?? 0,
+      };
+      untrackedByAccount.set(accountId, entry);
+    }
+    entry.payments.push({ currency: r.currency, total: Number(r.total) });
+  }
+  return [...untrackedByAccount.values()];
 }

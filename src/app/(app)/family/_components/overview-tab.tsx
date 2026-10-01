@@ -6,20 +6,20 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Loader2 } from "lucide-react";
-import { formatCurrency, formatDate } from "@/lib/currency";
+import { formatDate } from "@/lib/currency";
 import { FAMILY_STRINGS } from "@/lib/family/strings";
-import type { OverviewResponse } from "./types";
+import type { MemberDto, OverviewResponse } from "./types";
 import { MfaRequiredCta } from "./mfa-required-cta";
-import { MemberCard } from "./member-card";
-import { computeHousehold, type ExcludeReason } from "./household";
+import { MemberCard, type OwnMovers } from "./member-card";
+import { computeHousehold, computeHouseholdFlows, type ExcludeReason } from "./household";
 import { errorMessage } from "./api";
 import { fill } from "./section-labels";
+import { HeadlineCards, IncomeVsExpensesCard, NetWorthOverTimeCard, type Period } from "./overview-cards";
 
-type Period = OverviewResponse["period"];
-
+/** The ranges offered (legacy 6m / 1y stay API-only). Default: this month. */
 const PERIODS: Array<{ value: Period; label: string }> = [
-  { value: "6m", label: FAMILY_STRINGS.overview_period_6m },
-  { value: "1y", label: FAMILY_STRINGS.overview_period_1y },
+  { value: "month", label: FAMILY_STRINGS.overview_period_month },
+  { value: "year", label: FAMILY_STRINGS.overview_period_year },
   { value: "all", label: FAMILY_STRINGS.overview_period_all },
 ];
 
@@ -29,13 +29,17 @@ const EXCLUDE_TEXT: Record<ExcludeReason, string> = {
   unavailable: FAMILY_STRINGS.overview_totals_excluded_unavailable,
 };
 
+const memberLabel = (m: MemberDto) => (m.relation === "me" ? FAMILY_STRINGS.overview_member_me : m.name);
+
 export function OverviewTab({ reloadKey = 0 }: { reloadKey?: number }) {
-  const [period, setPeriod] = useState<Period>("1y");
+  const [period, setPeriod] = useState<Period>("month");
+  const [selected, setSelected] = useState<string>("all");
   const [attempt, setAttempt] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mfaRequired, setMfaRequired] = useState(false);
   const [data, setData] = useState<OverviewResponse | null>(null);
+  const [movers, setMovers] = useState<OwnMovers | undefined>(undefined);
 
   useEffect(() => {
     const ctrl = new AbortController();
@@ -71,6 +75,31 @@ export function OverviewTab({ reloadKey = 0 }: { reloadKey?: number }) {
     })();
     return () => ctrl.abort();
   }, [period, attempt, reloadKey]);
+
+  // Top Gainers / Losers of the viewer's OWN portfolio: the same /api/portfolio/overview the
+  // Portfolio page reads (live prices need the owner's own session, so only "me" has them).
+  const displayCurrency = data?.displayCurrency;
+  const meHasInvestments = !!data?.members.some((m) => m.relation === "me" && m.sections.investments);
+  useEffect(() => {
+    if (!displayCurrency || !meHasInvestments) return;
+    const ctrl = new AbortController();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMovers({ status: "loading" });
+    fetch(`/api/portfolio/overview?${new URLSearchParams({ currency: displayCurrency })}`, { signal: ctrl.signal })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("failed"))))
+      .then((d: { topGainers?: unknown; topLosers?: unknown }) => {
+        if (ctrl.signal.aborted) return;
+        setMovers({
+          status: "ok",
+          gainers: Array.isArray(d.topGainers) ? d.topGainers : [],
+          losers: Array.isArray(d.topLosers) ? d.topLosers : [],
+        });
+      })
+      .catch(() => {
+        if (!ctrl.signal.aborted) setMovers({ status: "error" });
+      });
+    return () => ctrl.abort();
+  }, [displayCurrency, meHasInvestments]);
 
   if (mfaRequired) return <MfaRequiredCta />;
 
@@ -108,14 +137,43 @@ export function OverviewTab({ reloadKey = 0 }: { reloadKey?: number }) {
     );
   }
 
-  const totals = computeHousehold(data.members);
   const cur = data.displayCurrency;
-  const money = (v: number | null) => (v === null ? FAMILY_STRINGS.overview_none : formatCurrency(v, cur));
+  const shownPeriod = data.period;
+  const focus = selected === "all" ? null : data.members.find((m) => m.id === selected) ?? null;
+  const members = focus ? [focus] : data.members;
 
   return (
     <div className="space-y-6" aria-busy={loading}>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div role="group" aria-label={FAMILY_STRINGS.overview_period_label} className="flex flex-wrap gap-2">
+      {/* Toolbar: member filter + time range (wraps / scrolls on mobile) */}
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div
+          role="group"
+          aria-label={FAMILY_STRINGS.overview_member_filter_label}
+          className="flex gap-2 overflow-x-auto -mx-1 px-1 pb-1 md:pb-0"
+        >
+          <Button
+            size="sm"
+            variant={focus == null ? "default" : "outline"}
+            aria-pressed={focus == null}
+            onClick={() => setSelected("all")}
+            className="shrink-0"
+          >
+            {FAMILY_STRINGS.overview_member_filter_all}
+          </Button>
+          {data.members.map((m) => (
+            <Button
+              key={m.id}
+              size="sm"
+              variant={focus?.id === m.id ? "default" : "outline"}
+              aria-pressed={focus?.id === m.id}
+              onClick={() => setSelected(m.id)}
+              className="shrink-0 max-w-[12rem] truncate"
+            >
+              {memberLabel(m)}
+            </Button>
+          ))}
+        </div>
+        <div role="group" aria-label={FAMILY_STRINGS.overview_range_label} className="flex flex-wrap gap-2">
           {PERIODS.map((p) => (
             <Button
               key={p.value}
@@ -128,23 +186,24 @@ export function OverviewTab({ reloadKey = 0 }: { reloadKey?: number }) {
             </Button>
           ))}
         </div>
-        <div className="flex flex-wrap gap-2">
-          {data.partial && (
-            <Badge variant="outline" className="bg-amber-50 text-amber-900 border-amber-200">
-              {FAMILY_STRINGS.overview_rate_unavailable}
-            </Badge>
-          )}
-          {data.members.some((m) => m.partialReasons.includes("investment_unpriced")) && (
-            <Badge variant="outline" className="bg-amber-50 text-amber-900 border-amber-200">
-              {FAMILY_STRINGS.overview_investment_unpriced}
-            </Badge>
-          )}
-          {data.members.some((m) => m.partialReasons.includes("section_error")) && (
-            <Badge variant="outline" className="bg-red-50 text-red-900 border-red-200">
-              {FAMILY_STRINGS.overview_section_error}
-            </Badge>
-          )}
-        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2 empty:hidden">
+        {data.partial && (
+          <Badge variant="outline" className="bg-amber-50 text-amber-900 border-amber-200">
+            {FAMILY_STRINGS.overview_rate_unavailable}
+          </Badge>
+        )}
+        {data.members.some((m) => m.partialReasons.includes("investment_unpriced")) && (
+          <Badge variant="outline" className="bg-amber-50 text-amber-900 border-amber-200">
+            {FAMILY_STRINGS.overview_investment_unpriced}
+          </Badge>
+        )}
+        {data.members.some((m) => m.partialReasons.includes("section_error")) && (
+          <Badge variant="outline" className="bg-red-50 text-red-900 border-red-200">
+            {FAMILY_STRINGS.overview_section_error}
+          </Badge>
+        )}
       </div>
 
       {error && (
@@ -153,28 +212,11 @@ export function OverviewTab({ reloadKey = 0 }: { reloadKey?: number }) {
         </Alert>
       )}
 
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label={FAMILY_STRINGS.overview_kpi_net_worth} value={money(totals.net)} />
-        <KpiCard label={FAMILY_STRINGS.overview_kpi_assets} value={money(totals.assets)} />
-        <KpiCard label={FAMILY_STRINGS.overview_kpi_liabilities} value={money(totals.liabilities)} />
-        <KpiCard label={FAMILY_STRINGS.overview_kpi_members} value={String(data.members.length)} />
-      </div>
+      {focus == null && <HouseholdBlock data={data} period={shownPeriod} />}
 
-      <div className="space-y-1 text-xs text-muted-foreground" data-testid="household-note">
-        {totals.included === 0 ? (
-          <p>{FAMILY_STRINGS.overview_totals_none}</p>
-        ) : (
-          <p>{FAMILY_STRINGS.overview_kpi_note}</p>
-        )}
-        {totals.excluded.length > 0 && (
-          <p>
-            {fill(FAMILY_STRINGS.overview_totals_excluded, {
-              members: totals.excluded.map((e) => `${e.name} (${EXCLUDE_TEXT[e.reason]})`).join(", "),
-            })}
-          </p>
-        )}
-        <p>{fill(FAMILY_STRINGS.overview_converted_note, { currency: cur, date: formatDate(data.asOf) })}</p>
-      </div>
+      <p className="text-xs text-muted-foreground">
+        {fill(FAMILY_STRINGS.overview_converted_note, { currency: cur, date: formatDate(data.asOf) })}
+      </p>
 
       {data.members.some((m) => m.genericLabels) && (
         <Alert>
@@ -183,23 +225,95 @@ export function OverviewTab({ reloadKey = 0 }: { reloadKey?: number }) {
       )}
 
       <div className="grid gap-6">
-        {data.members.map((member) => (
-          <MemberCard key={member.id} member={member} displayCurrency={cur} />
+        {members.map((member) => (
+          <MemberCard
+            key={member.id}
+            member={member}
+            displayCurrency={cur}
+            period={shownPeriod}
+            asOf={data.asOf}
+            ownMovers={member.relation === "me" ? movers : undefined}
+          />
         ))}
       </div>
     </div>
   );
 }
 
-function KpiCard({ label, value }: { label: string; value: string }) {
+/** "All": household figures summed over the members that share the data with complete figures. */
+function HouseholdBlock({ data, period }: { data: OverviewResponse; period: Period }) {
+  const totals = computeHousehold(data.members);
+  const flows = computeHouseholdFlows(data.members);
+  const cur = data.displayCurrency;
+  const excludedText = (list: typeof totals.excluded, notShared = EXCLUDE_TEXT.not_shared) =>
+    fill(FAMILY_STRINGS.overview_totals_excluded, {
+      members: list
+        .map((e) => `${e.name} (${e.reason === "not_shared" ? notShared : EXCLUDE_TEXT[e.reason]})`)
+        .join(", "),
+    });
+  const notShared = FAMILY_STRINGS.overview_card_not_shared.toLowerCase();
+
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold break-words">{value}</div>
-      </CardContent>
-    </Card>
+    <section aria-labelledby="family-household-heading" className="space-y-4" data-testid="household">
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle id="family-household-heading" className="text-lg">
+            {FAMILY_STRINGS.overview_household_title}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4 px-3 sm:px-6">
+          <HeadlineCards
+            currency={cur}
+            period={period}
+            netWorth={
+              totals.net == null
+                ? { unavailable: FAMILY_STRINGS.overview_totals_none }
+                : { net: totals.net, assets: totals.assets ?? 0, liabilities: totals.liabilities ?? 0, history: totals.history }
+            }
+            flows={
+              flows.income == null || flows.expenses == null
+                ? { unavailable: FAMILY_STRINGS.overview_card_not_shared }
+                : { income: flows.income, expenses: flows.expenses, monthly: flows.monthly, daily: flows.daily, from: flows.from }
+            }
+            savingsRatePct={flows.savingsRatePct}
+            savingsUnavailable={flows.included === 0 ? FAMILY_STRINGS.overview_card_not_shared : undefined}
+            dti={flows.dti}
+            dtiUnavailable={flows.dti ? undefined : FAMILY_STRINGS.overview_card_dti_needs}
+          />
+
+          {(totals.included > 0 || flows.included > 0) && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {totals.included > 0 && (
+                <NetWorthOverTimeCard
+                  history={totals.history}
+                  currency={cur}
+                  period={period}
+                  name={FAMILY_STRINGS.overview_household_title}
+                  gradientId="nw-household"
+                />
+              )}
+              {flows.included > 0 && (
+                <IncomeVsExpensesCard
+                  series={{ from: flows.from, monthly: flows.monthly, daily: flows.daily }}
+                  period={period}
+                  currency={cur}
+                  asOf={data.asOf}
+                  idPrefix="ie-household-"
+                />
+              )}
+            </div>
+          )}
+
+          <div className="space-y-1 text-xs text-muted-foreground" data-testid="household-note">
+            {totals.included === 0 ? <p>{FAMILY_STRINGS.overview_totals_none}</p> : <p>{FAMILY_STRINGS.overview_kpi_note}</p>}
+            {totals.excluded.length > 0 && <p>{excludedText(totals.excluded)}</p>}
+            <p>{FAMILY_STRINGS.overview_household_cashflow_note}</p>
+            {flows.excluded.length > 0 && <p>{excludedText(flows.excluded, notShared)}</p>}
+            <p>{FAMILY_STRINGS.overview_household_dti_note}</p>
+            {flows.dtiExcluded.length > 0 && <p>{excludedText(flows.dtiExcluded, notShared)}</p>}
+          </div>
+        </CardContent>
+      </Card>
+    </section>
   );
 }

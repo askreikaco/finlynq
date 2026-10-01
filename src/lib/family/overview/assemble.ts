@@ -14,13 +14,12 @@ import { getUserById } from "@/lib/auth/queries";
 import { getUserPrivateKeyHex, withSectionKeys } from "../grant";
 import { loadSectionLabels } from "../label-decrypt";
 import { SECTION_LABEL_SOURCES } from "../label-registry";
-import { FAMILY_SECTIONS_V1, type FamilySection } from "../sections";
+import { FAMILY_OVERVIEW_SECTIONS, type FamilySection } from "../sections";
 import { effectiveSectionsOf, loadLiveChildren } from "../effective-sections";
-import type { NetWorthPeriod } from "../read-queries";
 import { SECTION_BUILDERS, type MemberCtx } from "./builders";
 import { loadOwnSectionLabels } from "./own-labels";
 import type { FxContext } from "./fx";
-import type { MemberDto, PartialReason } from "./dto";
+import type { MemberDto, OverviewPeriod, PartialReason } from "./dto";
 
 export interface OverviewShare {
   id: string;
@@ -37,7 +36,7 @@ export interface AssembleInput {
   viewerDek: Buffer | null;
   shares: OverviewShare[];
   fx: FxContext;
-  period: NetWorthPeriod;
+  period: OverviewPeriod;
   today: string;
 }
 
@@ -52,6 +51,7 @@ async function buildMember(
     fx: input.fx,
     today: input.today,
     period: input.period,
+    granted,
     labels,
     partial: new Set<PartialReason>(),
     generic: { used: false },
@@ -59,7 +59,9 @@ async function buildMember(
   };
   const sections: Record<string, unknown> = {};
   const unavailable: FamilySection[] = [];
-  for (const section of FAMILY_SECTIONS_V1) {
+  // Only the sections the overview renders are built: hidden ones (accounts/goals/budgets, see
+  // FAMILY_HIDDEN_SECTIONS) may still sit in old share rows but are never computed or sent.
+  for (const section of FAMILY_OVERVIEW_SECTIONS) {
     if (!granted.includes(section)) continue;
     try {
       sections[section] = await SECTION_BUILDERS[section](ctx);
@@ -75,7 +77,7 @@ async function buildMember(
     relation: base.relation,
     name: base.name,
     sections: sections as MemberDto["sections"],
-    notShared: FAMILY_SECTIONS_V1.filter((s) => !granted.includes(s)),
+    notShared: FAMILY_OVERVIEW_SECTIONS.filter((s) => !granted.includes(s)),
     unavailable,
     partial: ctx.partial.size > 0,
     partialReasons: [...ctx.partial],
@@ -101,13 +103,13 @@ export async function assembleFamilyOverview(
   // "me": the viewer's own data, every section, own labels decrypted with the viewer's own DEK.
   try {
     const own = new Map<FamilySection, Map<number, string>>();
-    for (const s of FAMILY_SECTIONS_V1) {
+    for (const s of FAMILY_OVERVIEW_SECTIONS) {
       if (SECTION_LABEL_SOURCES[s]) own.set(s, await loadOwnSectionLabels(viewerId, s, viewerDek));
     }
     members.push(
       await buildMember(
         { id: "me", relation: "me", name: "Me", ownerId: viewerId },
-        [...FAMILY_SECTIONS_V1],
+        [...FAMILY_OVERVIEW_SECTIONS],
         own,
         input,
       ),
@@ -134,6 +136,7 @@ export async function assembleFamilyOverview(
         try {
           await withSectionKeys(share.id, viewerId, privKey, db, async (keys) => {
             for (const s of granted) {
+              if (!FAMILY_OVERVIEW_SECTIONS.includes(s)) continue; // hidden: never decrypted
               if (SECTION_LABEL_SOURCES[s]) labels.set(s, await loadSectionLabels(share.ownerId, s, keys[s]));
             }
           });

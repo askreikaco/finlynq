@@ -45,6 +45,22 @@ interface Point {
   value: number;
 }
 
+export interface PerformanceDto {
+  from: string;
+  to: string;
+  series: Array<{ date: string; marketValue: number; costBasis: number }>;
+  twrr: { period: number; annualized: number };
+  mwrr: { irr: number; converged: boolean };
+  gapsFilledDays: number;
+}
+
+export interface DebtToIncomeDto {
+  pct: number | null;
+  reliable: boolean;
+  debtPayments12m: number;
+  income12m: number;
+}
+
 export interface SectionsDto {
   net_worth?: { assets: number; liabilities: number; net: number; history: Point[]; historyFxApproximation: boolean };
   accounts?: {
@@ -67,8 +83,7 @@ export interface SectionsDto {
     asOf: string | null;
     accountsPriced: number;
     accountsUnpriced: number;
-    holdings: Array<Labelled & { currency: string; quantity: number; isCrypto: boolean }>;
-    trend: Point[];
+    performance: PerformanceDto;
   };
   goals?: {
     goals: Array<
@@ -102,10 +117,14 @@ export interface SectionsDto {
     >;
   };
   cashflow?: {
+    from: string | null;
     windowMonths: number;
     income: number;
     expenses: number;
     monthly: Array<{ month: string; income: number; expenses: number }>;
+    daily: Array<{ date: string; income: number; expenses: number }>;
+    savings: { income: number; expenses: number; ratePct: number | null };
+    debtToIncome: DebtToIncomeDto | null;
   };
 }
 
@@ -124,7 +143,8 @@ export interface MemberDto {
 
 export interface OverviewResponse {
   displayCurrency: string;
-  period: "6m" | "1y" | "all";
+  /** month = month-to-date, year = year-to-date; 6m / 1y = legacy rolling windows */
+  period: "month" | "year" | "all" | "6m" | "1y";
   asOf: string;
   partial: boolean;
   members: MemberDto[];

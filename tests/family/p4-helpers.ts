@@ -204,6 +204,16 @@ export async function seedWorld(
       nativeCurrency: "USD",
       source: "cron",
     });
+    // whole-portfolio aggregate row (account_id NULL): what the /portfolio Performance card reads
+    await db.insert(portfolioSnapshots).values({
+      userId: owner.id,
+      snapDate: d,
+      accountId: null,
+      marketValue: 5000,
+      costBasis: 4000,
+      currency: "USD",
+      source: "cron",
+    });
   }
   return { ids: { checking, vnd, visa, brokerage, goal: goal.id, loan: loan.id, budgetCat: groc.id, incomeCat: sal.id } };
 }

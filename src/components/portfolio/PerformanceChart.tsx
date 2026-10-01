@@ -140,8 +140,6 @@ export function PerformanceChart({ accountId }: PerformanceChartProps) {
       .finally(() => setHoldingsLoading(false));
   }, [groupMode, period, accountId]);
 
-  const fmtPct = (v: number) => `${formatPercent(v * 100, 2)}`;
-
   const rawChartData = useMemo(() => data?.series ?? [], [data]);
   const { data: chartData, domain, spansZero } = useMemo(
     () =>
@@ -216,24 +214,7 @@ export function PerformanceChart({ accountId }: PerformanceChartProps) {
           </p>
         ) : (
           <>
-            <div className="mb-4 flex flex-wrap gap-3">
-              <Badge variant="default" className="px-3 py-1">
-                TWRR (period): {fmtPct(data.twrr.period)}
-              </Badge>
-              <Badge variant="secondary" className="px-3 py-1">
-                TWRR (annualized): {fmtPct(data.twrr.annualized)}
-              </Badge>
-              {data.mwrr.converged && (
-                <Badge variant="secondary" className="px-3 py-1">
-                  MWRR (XIRR): {fmtPct(data.mwrr.irr)}
-                </Badge>
-              )}
-              {data.gapsFilledDays > 0 && (
-                <Badge variant="destructive" className="px-3 py-1">
-                  Incomplete history: {data.gapsFilledDays} day{data.gapsFilledDays === 1 ? "" : "s"} filled
-                </Badge>
-              )}
-            </div>
+            <PerformanceBadges twrr={data.twrr} mwrr={data.mwrr} gapsFilledDays={data.gapsFilledDays} />
             {/* Axis-unit label — flips from the TWRR/value line to a per-holding
                 dollar stack in stacked mode (tc-2: "y-axis switches to $"). */}
             <p className="text-[11px] text-muted-foreground mb-1">
@@ -274,35 +255,7 @@ export function PerformanceChart({ accountId }: PerformanceChartProps) {
                     ))}
                   </AreaChart>
                 ) : (
-                  <LineChart data={chartData}>
-                    <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                    <YAxis
-                      tick={{ fontSize: 11 }}
-                      tickFormatter={(v) => formatCompactNumber(Number(v))}
-                      domain={domain}
-                    />
-                    <Tooltip
-                      formatter={(v) => formatCurrency(Number(v), data.currency)}
-                    />
-                    {spansZero && <ReferenceLine y={0} stroke="#888" />}
-                    <Line
-                      type="monotone"
-                      dataKey="marketValue"
-                      stroke="#06b6d4"
-                      strokeWidth={2}
-                      dot={false}
-                      name="Market value"
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="costBasis"
-                      stroke="#94a3b8"
-                      strokeWidth={1}
-                      strokeDasharray="3 3"
-                      dot={false}
-                      name="Cost basis"
-                    />
-                  </LineChart>
+                  <PerformanceLineChart chartData={chartData} domain={domain} spansZero={spansZero} currency={data.currency} />
                 )}
               </ResponsiveContainer>
             </div>
@@ -319,5 +272,87 @@ export function PerformanceChart({ accountId }: PerformanceChartProps) {
         )}
       </CardContent>
     </Card>
+  );
+}
+
+const fmtPct = (v: number) => `${formatPercent(v * 100, 2)}`;
+
+/** TWRR / MWRR / incomplete-history badges of the Performance card (shared with Family Wealth). */
+export function PerformanceBadges({
+  twrr,
+  mwrr,
+  gapsFilledDays,
+}: {
+  twrr: { period: number; annualized: number };
+  mwrr: { irr: number; converged: boolean };
+  gapsFilledDays: number;
+}) {
+  return (
+    <div className="mb-4 flex flex-wrap gap-3">
+      <Badge variant="default" className="px-3 py-1">
+        TWRR (period): {fmtPct(twrr.period)}
+      </Badge>
+      <Badge variant="secondary" className="px-3 py-1">
+        TWRR (annualized): {fmtPct(twrr.annualized)}
+      </Badge>
+      {mwrr.converged && (
+        <Badge variant="secondary" className="px-3 py-1">
+          MWRR (XIRR): {fmtPct(mwrr.irr)}
+        </Badge>
+      )}
+      {gapsFilledDays > 0 && (
+        <Badge variant="destructive" className="px-3 py-1">
+          Incomplete history: {gapsFilledDays} day{gapsFilledDays === 1 ? "" : "s"} filled
+        </Badge>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Market value + cost basis lines of the Performance card. Render inside a sized
+ * ResponsiveContainer; `chartData`/`domain`/`spansZero` come from prepareTimeSeries.
+ */
+export function PerformanceLineChart({
+  chartData,
+  domain,
+  spansZero,
+  currency,
+}: {
+  chartData: Array<{ date: string; marketValue: number; costBasis: number }>;
+  domain: [number, number] | ["auto", "auto"] | undefined;
+  spansZero: boolean;
+  currency: string;
+}) {
+  return (
+    <LineChart data={chartData}>
+      <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+      <YAxis
+        tick={{ fontSize: 11 }}
+        tickFormatter={(v) => formatCompactNumber(Number(v))}
+        domain={domain}
+      />
+      <Tooltip
+        formatter={(v) => formatCurrency(Number(v), currency)}
+      />
+      {spansZero && <ReferenceLine y={0} stroke="#888" />}
+      <Line
+        type="monotone"
+        dataKey="marketValue"
+        stroke="#06b6d4"
+        strokeWidth={2}
+        dot={false}
+        name="Market value"
+      />
+      <Line
+        type="monotone"
+        dataKey="costBasis"
+        stroke="#94a3b8"
+        strokeWidth={1}
+        strokeDasharray="3 3"
+        dot={false}
+        name="Cost basis"
+      />
+    </LineChart>
   );
 }

@@ -9,10 +9,29 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import FamilyPage from "@/app/(app)/family/page";
+import FamilySharePage from "@/app/(app)/family/share/page";
 import { SharingTab } from "@/app/(app)/family/_components/sharing-tab";
 import { OverviewTab } from "@/app/(app)/family/_components/overview-tab";
+import { legacySharingRedirect } from "@/app/(app)/family/_components/share-path";
 import { MFA_SETUP_HREF } from "@/lib/family/strings";
-import { FAMILY_SECTIONS_V1 } from "@/lib/family/sections";
+import { FAMILY_OVERVIEW_SECTIONS } from "@/lib/family/sections";
+
+const routerReplace = vi.hoisted(() => vi.fn());
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace: routerReplace, push: vi.fn() }),
+  usePathname: () => "/family",
+}));
+// Dashboard cards count up from 0 with framer-motion; jump straight to the value in tests.
+vi.mock("framer-motion", async (orig) => {
+  const actual = await orig<typeof import("framer-motion")>();
+  return {
+    ...actual,
+    animate: (_from: number, to: number, opts?: { onUpdate?: (v: number) => void }) => {
+      opts?.onUpdate?.(to);
+      return { stop() {} };
+    },
+  };
+});
 
 // ───────────────────────── fetch harness ─────────────────────────
 interface Call {
@@ -85,55 +104,86 @@ const nw = (net: number, assets = net + 100, liabilities = 100) => ({
   liabilities,
   net,
   history: [
-    { date: "2026-01-31", value: net - 500 },
-    { date: "2026-06-30", value: net },
+    { date: "2026-10-01", value: net - 500 },
+    { date: "2026-10-02", value: net },
   ],
   historyFxApproximation: false,
 });
 
-const ME = member({
-  sections: {
-    net_worth: nw(1000),
-    accounts: {
-      accounts: [
-        {
-          ref: "a1", label: "My Checking", labelIsGeneric: false, type: "checking", group: "Cash", archived: false,
-          currency: "USD", balance: 250, converted: 250, basis: "ledger", asOf: null,
-        },
-      ],
-      groups: [],
-    },
-    goals: {
-      goals: [
-        {
-          ref: "g1", label: "House", labelIsGeneric: false, type: "savings", status: "active", currency: "USD",
-          targetAmount: 1000, currentAmount: 250, progress: 25, remaining: 750, monthlyNeeded: 50, deadline: "2027-03-05",
-        },
-      ],
-    },
-  },
+const cashflow = (o: Record<string, unknown> = {}) => ({
+  from: "2026-10-01",
+  windowMonths: 1,
+  income: 3000,
+  expenses: 1200,
+  monthly: [{ month: "2026-10", income: 3000, expenses: 1200 }],
+  daily: [
+    { date: "2026-10-01", income: 3000, expenses: 0 },
+    { date: "2026-10-02", income: 0, expenses: 1200 },
+  ],
+  savings: { income: 3000, expenses: 1200, ratePct: 60 },
+  debtToIncome: { pct: 25, reliable: true, debtPayments12m: 9000, income12m: 36000 },
+  ...o,
 });
+
+const investments = {
+  holdingsValue: 900,
+  asOf: "2026-09-30",
+  accountsPriced: 1,
+  accountsUnpriced: 0,
+  performance: {
+    from: "2026-10-01",
+    to: "2026-10-01",
+    series: [
+      { date: "2026-09-01", marketValue: 800, costBasis: 700 },
+      { date: "2026-09-30", marketValue: 900, costBasis: 700 },
+    ],
+    twrr: { period: 0.05, annualized: 0.6 },
+    mwrr: { irr: 0.04, converged: true },
+    gapsFilledDays: 0,
+  },
+};
+
+const loans = {
+  loans: [
+    {
+      ref: "l1", label: "Car loan", labelIsGeneric: false, type: "auto", currency: "USD", principal: 10000, annualRate: 5,
+      remainingBalance: 4000, remainingBalanceConverted: 4000, balanceSource: "projection", monthlyPayment: 300, payoffDate: "2027-12-01",
+    },
+  ],
+};
+
+const ME = member({ sections: { net_worth: nw(1000), cashflow: cashflow(), investments, loans } });
 const ALICE = member({
   id: SID,
   relation: "shared",
   name: "Alice",
   sections: { net_worth: nw(2000) },
-  notShared: ["accounts", "investments", "goals", "budgets", "loans", "cashflow"],
+  notShared: ["investments", "loans", "cashflow"],
 });
 const overviewBody = (members: unknown[], o: Record<string, unknown> = {}) => ({
   displayCurrency: "USD",
-  period: "1y",
+  period: "month",
   asOf: "2026-10-01",
   partial: false,
   members,
   ...o,
+});
+const MOVERS = {
+  topGainers: [{ key: "AAPL", symbol: "AAPL", name: "Apple", image: null, dayChangeDisplay: 12, changePct: 1.2 }],
+  topLosers: [],
+};
+/** overview + the viewer's own portfolio movers (fetched for "me" only) */
+const ovRoutes = (body: unknown, extra: Record<string, Responder | Responder[]> = {}) => ({
+  "GET /api/family/overview": json(body),
+  "GET /api/portfolio/overview": json(MOVERS),
+  ...extra,
 });
 
 const share = (o: Record<string, unknown> = {}) => ({
   id: SID,
   role: "owner",
   status: "active",
-  sections: ["net_worth", "accounts"],
+  sections: ["net_worth", "loans"],
   mustShareBack: false,
   requiredBackSections: [],
   isReciprocal: false,
@@ -151,6 +201,7 @@ const STEP_UP_401 = () => json({ error: "Step-up required: provide currentPasswo
 let user: ReturnType<typeof userEvent.setup>;
 beforeEach(() => {
   user = userEvent.setup();
+  routerReplace.mockReset();
   window.history.replaceState(null, "", "/family");
 });
 afterEach(() => {
@@ -159,55 +210,113 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-// ───────────────────────── Overview ─────────────────────────
-describe("Overview tab", () => {
-  it("renders members, sections and household totals from /api/family/overview", async () => {
-    installFetch({ "GET /api/family/overview": json(overviewBody([ME, ALICE])) });
-    render(<OverviewTab />);
+const titles = (root: HTMLElement) =>
+  Array.from(root.querySelectorAll("[data-slot=card-title], .uppercase")).map((n) => n.textContent?.trim());
 
-    expect(await screen.findByText("My Checking")).toBeTruthy();
-    expect(screen.getByText("Alice")).toBeTruthy(); // shared member card title
-    expect(screen.getByText("House")).toBeTruthy();
-    expect(screen.getByText("25%")).toBeTruthy(); // progress is already 0..100
-    // household = 1000 + 2000 (both share net worth, complete data)
-    const kpi = screen.getByText("Net Worth", { selector: "div,h3,p,[data-slot=card-title]" });
-    expect(kpi).toBeTruthy();
-    expect(screen.getAllByText("$3,000.00").length).toBeGreaterThan(0);
-    expect(callsTo("GET", "/api/family/overview")[0].search).toBe("?period=1y");
+// ───────────────────────── Overview ─────────────────────────
+describe("Overview", () => {
+  it("defaults to All + This month, sends period=month, and renders the household and every member", async () => {
+    installFetch(ovRoutes(overviewBody([ME, ALICE])));
+    render(<OverviewTab />);
+    const household = await screen.findByTestId("household");
+    expect(callsTo("GET", "/api/family/overview")[0].search).toBe("?period=month");
+    expect(screen.getByRole("button", { name: "All" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "This month" }).getAttribute("aria-pressed")).toBe("true");
+    // household net worth = 1000 + 2000 (both share net worth with complete data)
+    expect(within(household).getAllByText("$3,000.00").length).toBeGreaterThan(0);
+    // household income/expenses: only ME shares cashflow; Alice is listed as left out
+    expect(within(household).getAllByText("$3,000.00").length).toBeGreaterThan(0);
+    expect(within(household).getByText("$1,200.00")).toBeTruthy();
+    expect(screen.getByTestId("household-note").textContent).toMatch(/Alice \(not shared\)/);
+    expect(screen.getByTestId("member-me")).toBeTruthy();
+    expect(screen.getByTestId(`member-${SID}`)).toBeTruthy();
     // asOf rendered dd/mm/yyyy
-    expect(screen.getByText(/01\/10\/2026/)).toBeTruthy();
+    expect(screen.getAllByText(/01\/10\/2026/).length).toBeGreaterThan(0);
   });
 
-  it("notShared sections render as 'Not shared' chips, never as 0 or an empty section", async () => {
-    installFetch({ "GET /api/family/overview": json(overviewBody([ALICE])) });
-    const { container } = render(<OverviewTab />);
-    const card = await screen.findByTestId(`member-${SID}`);
+  it("member card shows the dashboard / reports / portfolio cards and no Accounts / Goals / Budgets", async () => {
+    installFetch(ovRoutes(overviewBody([ME])));
+    render(<OverviewTab />);
+    const card = await screen.findByTestId("member-me");
+    await within(card).findByText("AAPL"); // Top Gainers from the viewer's own /api/portfolio/overview
+    const t = titles(card);
+    for (const title of [
+      "Total Net Worth", "Monthly Income", "Monthly Expenses", "Savings Rate", "Debt-to-Income",
+      "Net Worth Over Time", "Income vs Expenses", "Performance", "Top Gainers", "Top Losers", "Loans",
+    ]) {
+      expect(t.some((x) => x?.toLowerCase() === title.toLowerCase()), title).toBe(true);
+    }
+    for (const gone of ["Accounts", "Goals", "Budgets", "Investments"]) {
+      expect(t.some((x) => x === gone), gone).toBe(false);
+    }
+    expect(within(card).getByText("60%")).toBeTruthy(); // savings rate
+    expect(within(card).getByText("25%")).toBeTruthy(); // DTI
+    expect(within(card).getByText(/TWRR \(period\)/)).toBeTruthy();
+    expect(within(card).getByText("Car loan")).toBeTruthy();
+    expect(callsTo("GET", "/api/portfolio/overview")[0].search).toBe("?currency=USD");
+  });
 
-    expect(within(card).getByText("Not shared")).toBeTruthy();
-    for (const label of ["Accounts", "Investments", "Goals", "Budgets", "Loans", "Cashflow"]) {
+  it("not-shared data renders as 'Not shared' (chips + dashes), never as 0", async () => {
+    installFetch(ovRoutes(overviewBody([ALICE])));
+    render(<OverviewTab />);
+    const card = await screen.findByTestId(`member-${SID}`);
+    expect(within(card).getAllByText("Not shared").length).toBeGreaterThan(0);
+    for (const label of ["Investments", "Loans", "Cashflow"]) {
       expect(within(card).getByText(label)).toBeTruthy(); // as a chip
     }
-    // no section box (h4) for them and no zero amounts anywhere in the card
-    const headings = Array.from(card.querySelectorAll("h4")).map((h) => h.textContent);
-    expect(headings).not.toContain("Loans");
-    expect(headings).not.toContain("Accounts");
+    // no charts / performance / movers / loans for unshared sections
+    const t = titles(card);
+    for (const absent of ["Performance", "Top Gainers", "Income vs Expenses", "Loans"]) {
+      expect(t.includes(absent), absent).toBe(false);
+    }
+    expect(within(card).getByText("Needs Loans and Cashflow shared")).toBeTruthy();
     expect(card.textContent).not.toMatch(/\$0(\.00)?(?!\d)/);
-    expect(container.textContent).not.toMatch(/\b0%/);
+    expect(card.textContent).not.toMatch(/\b0%/);
+    // a shared member never triggers the viewer's own portfolio fetch
+    expect(callsTo("GET", "/api/portfolio/overview")).toHaveLength(0);
+  });
+
+  it("debt-to-income shows the not-shared state when loans are not shared, even with cashflow", async () => {
+    const bob = member({
+      id: SID2, relation: "shared", name: "Bob",
+      sections: { cashflow: cashflow({ debtToIncome: null }) }, notShared: ["net_worth", "investments", "loans"],
+    });
+    installFetch(ovRoutes(overviewBody([bob])));
+    render(<OverviewTab />);
+    const card = await screen.findByTestId(`member-${SID2}`);
+    expect(within(card).getByText("60%")).toBeTruthy();
+    expect(within(card).getByText("Needs Loans and Cashflow shared")).toBeTruthy();
+    expect(within(card).queryByText("25%")).toBeNull();
+  });
+
+  it("selecting a member shows only that member (no household block)", async () => {
+    installFetch(ovRoutes(overviewBody([ME, ALICE])));
+    render(<OverviewTab />);
+    await screen.findByTestId("household");
+    await user.click(screen.getByRole("button", { name: "Alice" }));
+    expect(screen.getByRole("button", { name: "Alice" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.queryByTestId("household")).toBeNull();
+    expect(screen.queryByTestId("member-me")).toBeNull();
+    expect(screen.getByTestId(`member-${SID}`)).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "You" }));
+    expect(screen.getByTestId("member-me")).toBeTruthy();
+    expect(screen.queryByTestId(`member-${SID}`)).toBeNull();
+    await user.click(screen.getByRole("button", { name: "All" }));
+    expect(screen.getByTestId("household")).toBeTruthy();
   });
 
   it("excludes notShared / partial members from household totals and says so", async () => {
-    const noNw = member({ id: SID2, relation: "shared", name: "Bob", sections: { goals: { goals: [] } }, notShared: ["net_worth"] });
+    const noNw = member({ id: SID2, relation: "shared", name: "Bob", sections: { loans: { loans: [] } }, notShared: ["net_worth"] });
     const partial = member({
       id: "44444444-4444-4444-8444-444444444444", relation: "shared", name: "Carol", sections: { net_worth: nw(5000) },
       partial: true, partialReasons: ["fx_rate_missing"],
     });
-    installFetch({ "GET /api/family/overview": json(overviewBody([ME, noNw, partial], { partial: true })) });
+    installFetch(ovRoutes(overviewBody([ME, noNw, partial], { partial: true })));
     render(<OverviewTab />);
-    await screen.findByText("My Checking");
-
+    const household = await screen.findByTestId("household");
     const note = screen.getByTestId("household-note");
     // only ME (1000) is counted; Carol's 5000 and Bob's missing net worth are not
-    expect(screen.getAllByText("$1,000.00").length).toBeGreaterThan(0);
+    expect(within(household).getAllByText("$1,000.00").length).toBeGreaterThan(0);
     expect(screen.queryByText("$6,000.00")).toBeNull();
     expect(note.textContent).toMatch(/Bob \(net worth not shared\)/);
     expect(note.textContent).toMatch(/Carol \(partial data\)/);
@@ -215,29 +324,22 @@ describe("Overview tab", () => {
   });
 
   it("shows a dash, not 0, when no member qualifies for the household total", async () => {
-    installFetch({ "GET /api/family/overview": json(overviewBody([member({ sections: {}, notShared: ["net_worth"] })])) });
+    installFetch(ovRoutes(overviewBody([member({ sections: {}, notShared: ["net_worth", "cashflow"] })])));
     render(<OverviewTab />);
-    expect(await screen.findByText(/No member shares complete net worth data/)).toBeTruthy();
+    expect((await screen.findAllByText(/No member shares complete net worth data/)).length).toBeGreaterThan(0);
     expect(screen.queryByText(/\$0/)).toBeNull();
   });
 
-  it("shows the generic-label hint and per-row marker when labels fell back", async () => {
+  it("generic loan labels are marked and explained", async () => {
     const generic = member({
-      sections: {
-        accounts: {
-          accounts: [
-            { ref: "a1", label: "Account #1 - checking - USD", labelIsGeneric: true, type: "checking", group: "Cash",
-              archived: false, currency: "USD", balance: 10, converted: 10, basis: "ledger", asOf: null },
-          ],
-          groups: [],
-        },
-      },
+      sections: { loans: { loans: [{ ...loans.loans[0], label: "Loan 1", labelIsGeneric: true }] } },
+      notShared: ["net_worth", "investments", "cashflow"],
       genericLabels: true,
     });
-    installFetch({ "GET /api/family/overview": json(overviewBody([generic])) });
+    installFetch(ovRoutes(overviewBody([generic])));
     render(<OverviewTab />);
     expect(await screen.findByText("Some labels encrypted — shown generically")).toBeTruthy();
-    expect(screen.getByText("Account #1 - checking - USD").getAttribute("title")).toBe("Generic labels");
+    expect(screen.getByText("Loan 1").getAttribute("title")).toBe("Generic labels");
   });
 
   it("403 mfa_required shows the 2FA CTA linking to the real 2FA settings route", async () => {
@@ -246,49 +348,53 @@ describe("Overview tab", () => {
     const link = await screen.findByRole("link", { name: "Set up 2FA" });
     expect(link.getAttribute("href")).toBe("/settings/account");
     expect(MFA_SETUP_HREF).toBe("/settings/account");
-    expect(screen.queryByText("Net Worth")).toBeNull();
+    expect(screen.queryByText("Total Net Worth")).toBeNull();
   });
 
   it("429 shows the rate limit message with a retry that refetches", async () => {
-    installFetch({
-      "GET /api/family/overview": [
-        json({ error: "Too many requests. Try again later." }, 429),
-        json(overviewBody([ME])),
-      ],
-    });
+    installFetch(ovRoutes(overviewBody([ME]), {
+      "GET /api/family/overview": [json({ error: "Too many requests. Try again later." }, 429), json(overviewBody([ME]))],
+    }));
     render(<OverviewTab />);
     expect(await screen.findByText("Too many requests. Try again later.")).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "Try again" }));
-    expect(await screen.findByText("My Checking")).toBeTruthy();
+    expect(await screen.findByTestId("member-me")).toBeTruthy();
     expect(callsTo("GET", "/api/family/overview")).toHaveLength(2);
   });
 
-  it("switching the period refetches with that period", async () => {
-    installFetch({ "GET /api/family/overview": json(overviewBody([ME])) });
+  it("the time range refetches with month / year / all", async () => {
+    installFetch(ovRoutes(overviewBody([ME])));
     render(<OverviewTab />);
-    await screen.findByText("My Checking");
-    await user.click(screen.getByRole("button", { name: "Last 6 months" }));
+    await screen.findByTestId("member-me");
+    await user.click(screen.getByRole("button", { name: "This year" }));
     await waitFor(() => expect(callsTo("GET", "/api/family/overview")).toHaveLength(2));
-    expect(callsTo("GET", "/api/family/overview")[1].search).toBe("?period=6m");
+    expect(callsTo("GET", "/api/family/overview")[1].search).toBe("?period=year");
     await user.click(screen.getByRole("button", { name: "All time" }));
     await waitFor(() => expect(callsTo("GET", "/api/family/overview")).toHaveLength(3));
     expect(callsTo("GET", "/api/family/overview")[2].search).toBe("?period=all");
+    // the old rolling windows are no longer offered in the UI
+    expect(screen.queryByRole("button", { name: "Last 6 months" })).toBeNull();
+  });
+
+  it("flow cards read naturally for the range (Income / Expenses with a caption)", async () => {
+    installFetch(ovRoutes(overviewBody([ME], { period: "year" })));
+    render(<OverviewTab />);
+    const card = await screen.findByTestId("member-me");
+    const t = titles(card).map((x) => x?.toLowerCase());
+    expect(t).toContain("income");
+    expect(t).toContain("expenses");
+    expect(t).not.toContain("monthly income");
+    expect(within(card).getAllByText(/This year/).length).toBeGreaterThan(0);
   });
 
   it("renders labels and names as text (no HTML injection)", async () => {
     const evil = "<img src=x onerror=alert(1)>";
     const m = member({
       id: SID, relation: "shared", name: evil,
-      sections: {
-        goals: {
-          goals: [
-            { ref: "g", label: evil, labelIsGeneric: false, type: "t", status: "active", currency: "USD",
-              targetAmount: 10, currentAmount: 1, progress: 10, remaining: 9, monthlyNeeded: null, deadline: null },
-          ],
-        },
-      },
+      sections: { loans: { loans: [{ ...loans.loans[0], label: evil }] } },
+      notShared: ["net_worth", "investments", "cashflow"],
     });
-    installFetch({ "GET /api/family/overview": json(overviewBody([m])) });
+    installFetch(ovRoutes(overviewBody([m])));
     const { container } = render(<OverviewTab />);
     await screen.findAllByText(evil);
     expect(container.querySelector("img")).toBeNull();
@@ -296,53 +402,55 @@ describe("Overview tab", () => {
   });
 
   it("formats money with the app helpers: VND without decimals, dates dd/mm/yyyy", async () => {
-    installFetch({
-      "GET /api/family/overview": json(overviewBody([member({ sections: { net_worth: nw(1234567000) } })], { displayCurrency: "VND" })),
-    });
+    installFetch(ovRoutes(overviewBody([member({ sections: { net_worth: nw(1234567000) }, notShared: ["investments", "loans", "cashflow"] })], { displayCurrency: "VND" })));
     render(<OverviewTab />);
     await screen.findByTestId("member-me");
     expect(screen.getAllByText(/₫\s?1,234,567,000$/).length).toBeGreaterThan(0);
     expect(screen.getByText(/Converted to VND at 01\/10\/2026 rates/)).toBeTruthy();
   });
 
-  it("charts expose a text alternative per member (net worth + investments trend)", async () => {
-    const m = member({
-      sections: {
-        net_worth: nw(1000),
-        investments: {
-          holdingsValue: 900, asOf: "2026-09-30", accountsPriced: 1, accountsUnpriced: 0,
-          holdings: [{ ref: "h", label: "VN30 ETF", labelIsGeneric: false, currency: "VND", quantity: 10, isCrypto: false }],
-          trend: [{ date: "2026-08-01", value: 800 }, { date: "2026-09-30", value: 900 }],
-        },
-      },
-    });
-    installFetch({ "GET /api/family/overview": json(overviewBody([m])) });
+  it("charts expose a text alternative per member (net worth over time)", async () => {
+    installFetch(ovRoutes(overviewBody([ME])));
     render(<OverviewTab />);
-    await screen.findByTestId("member-me");
-    const imgs = screen.getAllByRole("img");
-    const labels = imgs.map((i) => i.getAttribute("aria-label") ?? "");
-    expect(labels.some((l) => l.startsWith("Net worth trend for Minh") && l.includes("31/01/2026"))).toBe(true);
-    expect(labels.some((l) => l.startsWith("Investments trend for Minh") && l.includes("30/09/2026"))).toBe(true);
-    expect(screen.getByText("VN30 ETF")).toBeTruthy();
+    const card = await screen.findByTestId("member-me");
+    const labels = within(card).getAllByRole("img").map((i) => i.getAttribute("aria-label") ?? "");
+    expect(labels.some((l) => l.startsWith("Net Worth Over Time for Minh") && l.includes("02/10/2026"))).toBe(true);
   });
 });
 
-// ───────────────────────── Page / tabs ─────────────────────────
-describe("Family page tabs", () => {
-  it("tabs are keyboard operable (arrow keys move selection)", async () => {
-    installFetch({
-      "GET /api/family/overview": json(overviewBody([ME])),
-      "GET /api/family/manage/list": json(listBody()),
-    });
+// ───────────────────────── Page / share page ─────────────────────────
+describe("Family page", () => {
+  it("has no tabs; a Share icon in the header links to /family/share", async () => {
+    installFetch(ovRoutes(overviewBody([ME])));
     render(<FamilyPage />);
-    const overviewTab = await screen.findByRole("tab", { name: "Overview" });
-    overviewTab.focus();
-    expect(overviewTab.getAttribute("aria-selected")).toBe("true");
-    await user.keyboard("{ArrowRight}");
-    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("tab", { name: "Sharing" })));
-    await user.keyboard("{Enter}");
-    await waitFor(() => expect(screen.getByRole("tab", { name: "Sharing" }).getAttribute("aria-selected")).toBe("true"));
-    expect(await screen.findByText("I share")).toBeTruthy();
+    await screen.findByTestId("member-me");
+    expect(screen.queryByRole("tablist")).toBeNull();
+    expect(screen.queryByRole("tab")).toBeNull();
+    const link = screen.getByRole("link", { name: "Share" });
+    expect(link.getAttribute("href")).toBe("/family/share");
+    expect(routerReplace).not.toHaveBeenCalled();
+  });
+
+  it("legacy /family?tab=sharing redirects to /family/share keeping the other params", async () => {
+    window.history.replaceState(null, "", "/family?tab=sharing&x=1");
+    installFetch(ovRoutes(overviewBody([ME])));
+    render(<FamilyPage />);
+    await waitFor(() => expect(routerReplace).toHaveBeenCalledWith("/family/share?x=1"));
+  });
+
+  it("legacySharingRedirect never redirects an invite link", () => {
+    expect(legacySharingRedirect("?tab=sharing")).toBe("/family/share");
+    expect(legacySharingRedirect("?tab=overview")).toBeNull();
+    expect(legacySharingRedirect("")).toBeNull();
+    expect(legacySharingRedirect("?tab=sharing&token=abc")).toBeNull();
+  });
+
+  it("/family/share renders the sharing list with a back link to /family", async () => {
+    installFetch({ "GET /api/family/manage/list": json(listBody([share({ status: "pending" })])) });
+    render(<FamilySharePage />);
+    expect(await screen.findByText("bob@example.com")).toBeTruthy();
+    expect(screen.getByText("I share")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Back to Family Wealth" }).getAttribute("href")).toBe("/family");
   });
 });
 
@@ -382,21 +490,23 @@ describe("Invite dialog", () => {
     expect(within(dialog).getByText(/They will see your total net worth, assets and liabilities/)).toBeTruthy();
 
     await user.type(within(dialog).getByLabelText("Email address"), " Family@Example.com ");
-    await user.click(within(dialog).getByLabelText(/^Budgets/)); // uncheck budgets
+    // retired sections are not offered any more
+    for (const gone of [/^Accounts/, /^Goals/, /^Budgets/]) expect(within(dialog).queryByLabelText(gone)).toBeNull();
+    await user.click(within(dialog).getByLabelText(/^Investments/)); // uncheck investments
     await user.click(within(dialog).getByLabelText(/^Loans/)); // uncheck loans
     await user.click(within(dialog).getByLabelText("Require them to share back"));
     // disclosure follows the selection
     const disclosure = within(dialog).getByRole("region", { name: "Share disclosure" });
-    expect(within(disclosure).queryByText("Budgets")).toBeNull();
+    expect(within(disclosure).queryByText("Investments")).toBeNull();
     expect(within(disclosure).queryByText("Loans")).toBeNull();
-    expect(within(disclosure).getByText("Accounts")).toBeTruthy();
+    expect(within(disclosure).getByText("Cashflow")).toBeTruthy();
     await user.click(within(dialog).getByRole("button", { name: "Send invite" }));
 
     await waitFor(() => expect(callsTo("POST", "/api/family/manage/invite")).toHaveLength(1));
     const body = callsTo("POST", "/api/family/manage/invite")[0].body;
     expect(body).toEqual({
       viewerEmail: "Family@Example.com",
-      sections: FAMILY_SECTIONS_V1.filter((s) => s !== "budgets" && s !== "loans"),
+      sections: FAMILY_OVERVIEW_SECTIONS.filter((s) => s !== "investments" && s !== "loans"),
       mustShareBack: true,
     });
     expect(await screen.findByText("Invite sent to Family@Example.com")).toBeTruthy();
@@ -508,16 +618,16 @@ describe("Revoke, resend, change sections", () => {
 
   it("change sections, narrow: PUT without password, no prompt", async () => {
     installFetch({
-      "GET /api/family/manage/list": json(listBody([share({ sections: ["net_worth", "accounts"] })])),
+      "GET /api/family/manage/list": json(listBody([share({ sections: ["net_worth", "loans"] })])),
       "PUT /api/family/manage/update-sections": json(share({ sections: ["net_worth"] })),
     });
     render(<SharingTab />);
     await user.click(await screen.findByRole("button", { name: "Change sections" }));
     const dialog = await screen.findByRole("dialog", { name: "Change shared sections" });
     expect((within(dialog).getByLabelText(/^Net Worth/) as HTMLInputElement).checked).toBe(true);
-    expect((within(dialog).getByLabelText(/^Goals/) as HTMLInputElement).checked).toBe(false);
+    expect((within(dialog).getByLabelText(/^Investments/) as HTMLInputElement).checked).toBe(false);
     expect((within(dialog).getByRole("button", { name: "Save sections" }) as HTMLButtonElement).disabled).toBe(true); // unchanged
-    await user.click(within(dialog).getByLabelText(/^Accounts/));
+    await user.click(within(dialog).getByLabelText(/^Loans/));
     await user.click(within(dialog).getByRole("button", { name: "Save sections" }));
     expect(await screen.findByText("Sections updated")).toBeTruthy();
     expect(callsTo("PUT", "/api/family/manage/update-sections")).toHaveLength(1);
@@ -528,55 +638,74 @@ describe("Revoke, resend, change sections", () => {
   it("change sections, widen: step-up then retry with currentPassword", async () => {
     installFetch({
       "GET /api/family/manage/list": json(listBody([share({ sections: ["net_worth"] })])),
-      "PUT /api/family/manage/update-sections": [STEP_UP_401(), json(share({ sections: ["net_worth", "goals"] }))],
+      "PUT /api/family/manage/update-sections": [STEP_UP_401(), json(share({ sections: ["net_worth", "investments"] }))],
     });
     render(<SharingTab />);
     await user.click(await screen.findByRole("button", { name: "Change sections" }));
     const dialog = await screen.findByRole("dialog", { name: "Change shared sections" });
-    await user.click(within(dialog).getByLabelText(/^Goals/));
+    await user.click(within(dialog).getByLabelText(/^Investments/));
     await user.click(within(dialog).getByRole("button", { name: "Save sections" }));
     await user.type(await screen.findByLabelText("Password"), "pw-123");
     await user.click(screen.getByRole("button", { name: "Verify" }));
     expect(await screen.findByText("Sections updated")).toBeTruthy();
     const puts = callsTo("PUT", "/api/family/manage/update-sections");
     expect(puts).toHaveLength(2);
-    expect(puts[0].body).toEqual({ shareId: SID, sections: ["net_worth", "goals"] });
-    expect(puts[1].body).toEqual({ shareId: SID, sections: ["net_worth", "goals"], currentPassword: "pw-123" });
+    expect(puts[0].body).toEqual({ shareId: SID, sections: ["net_worth", "investments"] });
+    expect(puts[1].body).toEqual({ shareId: SID, sections: ["net_worth", "investments"], currentPassword: "pw-123" });
+  });
+
+  it("change sections: a retired section of an older share is not offered but is kept as-is", async () => {
+    installFetch({
+      "GET /api/family/manage/list": json(listBody([share({ sections: ["net_worth", "accounts"] })])),
+      "PUT /api/family/manage/update-sections": json(share({ sections: ["net_worth", "accounts", "loans"] })),
+    });
+    render(<SharingTab />);
+    expect(await screen.findByText(/1 of 4/)).toBeTruthy(); // counts only sections the overview shows
+    await user.click(screen.getByRole("button", { name: "Change sections" }));
+    const dialog = await screen.findByRole("dialog", { name: "Change shared sections" });
+    expect(within(dialog).queryByLabelText(/^Accounts/)).toBeNull();
+    await user.click(within(dialog).getByLabelText(/^Loans/));
+    await user.click(within(dialog).getByRole("button", { name: "Save sections" }));
+    expect(await screen.findByText("Sections updated")).toBeTruthy();
+    expect(callsTo("PUT", "/api/family/manage/update-sections")[0].body).toEqual({
+      shareId: SID,
+      sections: ["net_worth", "accounts", "loans"],
+    });
   });
 
   it("change sections: reciprocal shrink below the required minimum shows the 409 message", async () => {
     installFetch({
-      "GET /api/family/manage/list": json(listBody([share({ sections: ["net_worth", "accounts"] })])),
+      "GET /api/family/manage/list": json(listBody([share({ sections: ["net_worth", "loans"] })])),
       "PUT /api/family/manage/update-sections": json(
-        { error: "Cannot remove sections required for must-share-back", requiredSections: ["accounts"] },
+        { error: "Cannot remove sections required for must-share-back", requiredSections: ["loans"] },
         409,
       ),
     });
     render(<SharingTab />);
     await user.click(await screen.findByRole("button", { name: "Change sections" }));
     const dialog = await screen.findByRole("dialog", { name: "Change shared sections" });
-    await user.click(within(dialog).getByLabelText(/^Accounts/));
+    await user.click(within(dialog).getByLabelText(/^Loans/));
     await user.click(within(dialog).getByRole("button", { name: "Save sections" }));
-    expect(await within(dialog).findByText(/Cannot remove sections required for must-share-back \(Accounts\)/)).toBeTruthy();
+    expect(await within(dialog).findByText(/Cannot remove sections required for must-share-back \(Loans\)/)).toBeTruthy();
     expect(callsTo("PUT", "/api/family/manage/update-sections")).toHaveLength(1);
   });
 
   it("must-share-back minimum is shown as locked, checked boxes on the reciprocal share", async () => {
     const parent = share({
-      id: PARENT, role: "viewer", mustShareBack: true, requiredBackSections: ["net_worth", "accounts"],
+      id: PARENT, role: "viewer", mustShareBack: true, requiredBackSections: ["net_worth", "loans"],
       counterparty: { name: "Alice" },
     });
-    const recip = share({ isReciprocal: true, reciprocalOf: PARENT, sections: ["net_worth", "accounts", "goals"], counterparty: { email: "alice@example.com", name: "Alice" } });
+    const recip = share({ isReciprocal: true, reciprocalOf: PARENT, sections: ["net_worth", "loans", "cashflow"], counterparty: { email: "alice@example.com", name: "Alice" } });
     installFetch({ "GET /api/family/manage/list": json(listBody([recip], [parent])) });
     render(<SharingTab />);
     await user.click(await screen.findByRole("button", { name: "Change sections" }));
     const dialog = await screen.findByRole("dialog", { name: "Change shared sections" });
-    for (const re of [/^Net Worth/, /^Accounts/]) {
+    for (const re of [/^Net Worth/, /^Loans/]) {
       const box = within(dialog).getByLabelText(re) as HTMLInputElement;
       expect(box.checked).toBe(true);
       expect(box.disabled).toBe(true);
     }
-    expect((within(dialog).getByLabelText(/^Goals/) as HTMLInputElement).disabled).toBe(false);
+    expect((within(dialog).getByLabelText(/^Investments/) as HTMLInputElement).disabled).toBe(false);
   });
 });
 
@@ -628,7 +757,7 @@ describe("Re-consent", () => {
 describe("Invite deep link (?token=)", () => {
   const TOKEN = "tok_ABC123-secret_value";
   const routes = (extra: Record<string, Responder | Responder[]> = {}) => ({
-    "GET /api/family/overview": json(overviewBody([ME])),
+    ...ovRoutes(overviewBody([ME])),
     "GET /api/family/manage/list": json(listBody()),
     ...extra,
   });
@@ -691,7 +820,7 @@ describe("Invite deep link (?token=)", () => {
   it("renders nothing when there is no token", async () => {
     installFetch(routes());
     render(<FamilyPage />);
-    await screen.findByText("My Checking");
+    await screen.findByTestId("member-me");
     expect(screen.queryByRole("button", { name: "Accept invite" })).toBeNull();
   });
 });

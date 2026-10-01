@@ -195,44 +195,46 @@ describe("must-share-back re-consent when the owner widens (plan 7.4)", () => {
   const sharedMember = (body: any) => (body.members as any[]).find((m) => m.relation === "shared");
 
   it("A widens: B only receives what B reciprocates until B consents; then the new section flows", async () => {
+    // base grant: the retired "accounts" section (still a valid grant, never built on the overview);
+    // the widened section is "loans", which the overview renders with a sidecar label.
     const { A, B, parentId, childId } = await pair();
     expect(await grantSections(parentId)).toEqual(["accounts"]);
-    expect(Object.keys(sharedMember((await overview(B)).json).sections)).toEqual(["accounts"]);
+    expect(Object.keys(sharedMember((await overview(B)).json).sections)).toEqual([]);
 
-    // A widens A->B to accounts + goals
-    const w = await update(A, parentId, ["accounts", "goals"]);
+    // A widens A->B to accounts + loans
+    const w = await update(A, parentId, ["accounts", "loans"]);
     expect(w.status).toBe(200);
-    expect(w.json).toMatchObject({ sections: ["accounts", "goals"], reconsentRequired: true, reconsentSections: ["accounts", "goals"].filter((s) => s === "goals") });
-    expect((await row(parentId)).requiredBackSections).toEqual(["accounts", "goals"]);
+    expect(w.json).toMatchObject({ sections: ["accounts", "loans"], reconsentRequired: true, reconsentSections: ["loans"] });
+    expect((await row(parentId)).requiredBackSections).toEqual(["accounts", "loans"]);
 
-    // not consented: B holds no goals grant and receives no goals data
+    // not consented: B holds no loans grant and receives no loans data
     await syncFamilyLabels(db, A.id, A.dek);
     expect(await grantSections(parentId)).toEqual(["accounts"]);
     const before = await overview(B);
-    expect(Object.keys(sharedMember(before.json).sections)).toEqual(["accounts"]);
-    expect(sharedMember(before.json).notShared).toContain("goals");
-    expect(JSON.stringify(sharedMember(before.json))).not.toContain(CANARY.goal);
+    expect(Object.keys(sharedMember(before.json).sections)).toEqual([]);
+    expect(sharedMember(before.json).notShared).toContain("loans");
+    expect(JSON.stringify(sharedMember(before.json))).not.toContain(CANARY.loan);
 
     // both parties see the pending re-consent in the manage list
     const lb = await list(B);
-    expect(lb.json.incoming.find((s: any) => s.id === parentId)).toMatchObject({ reconsentRequired: true, reconsentSections: ["goals"] });
+    expect(lb.json.incoming.find((s: any) => s.id === parentId)).toMatchObject({ reconsentRequired: true, reconsentSections: ["loans"] });
     expect((await list(A)).json.outgoing.find((s: any) => s.id === parentId)).toMatchObject({ reconsentRequired: true });
 
     // B cannot shrink below what A requires (existing guard)
-    expect((await update(B, childId, ["goals"])).status).toBe(409);
+    expect((await update(B, childId, ["loans"])).status).toBe(409);
 
     // B consents = widens B->A to cover the requirement (step-up applies: fresh session here)
-    const consent = await update(B, childId, ["accounts", "goals"]);
+    const consent = await update(B, childId, ["accounts", "loans"]);
     expect(consent.status).toBe(200);
     // A offline: numbers flow, labels generic until A's next sweep seals the new grant
     const mid = sharedMember((await overview(B)).json);
-    expect(Object.keys(mid.sections).sort()).toEqual(["accounts", "goals"]);
-    expect(mid.sections.goals.goals[0].labelIsGeneric).toBe(true);
+    expect(Object.keys(mid.sections)).toEqual(["loans"]);
+    expect(mid.sections.loans.loans[0].labelIsGeneric).toBe(true);
     // A's next sweep finalizes the grant and the label
     await syncFamilyLabels(db, A.id, A.dek);
-    expect(await grantSections(parentId)).toEqual(["accounts", "goals"]);
+    expect(await grantSections(parentId)).toEqual(["accounts", "loans"]);
     const after = sharedMember((await overview(B)).json);
-    expect(after.sections.goals.goals[0].label).toBe(CANARY.goal);
+    expect(after.sections.loans.loans[0].label).toBe(CANARY.loan);
     expect((await list(B)).json.incoming.find((s: any) => s.id === parentId)).toMatchObject({ reconsentRequired: false });
   });
 

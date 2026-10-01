@@ -118,6 +118,11 @@ export interface BuildNetWorthHistoryInput {
   liveInvestmentByAccount?: Map<number, LiveAccountValue>;
   /** Today, YYYY-MM-DD (UTC). The grid never extends past this. */
   today: string;
+  /**
+   * Explicit first grid day (YYYY-MM-DD), overriding the `period` window. Used by the Family
+   * overview's calendar ranges (month-to-date / year-to-date). Ignored when `period` is "all".
+   */
+  firstDay?: string;
 }
 
 /**
@@ -301,6 +306,8 @@ export function buildNetWorthHistory(
     firstDay =
       minDate(earliestSnapDate(cashSnapshots), earliestSnapDate(snapshots)) ??
       today;
+  } else if (input.firstDay) {
+    firstDay = input.firstDay;
   } else {
     firstDay = addDaysISO(today, -PERIOD_DAYS[period]);
   }
