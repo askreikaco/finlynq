@@ -594,6 +594,44 @@ export async function updatePasskeyCounter(id: string, counter: number) {
     .where(eq(s.userPasskeys.id, id));
 }
 
+/**
+ * Atomically advance a passkey's signature counter + last_used/backed_up.
+ * Succeeds only if the stored counter is still `prevCounter` (compare-and-set),
+ * so two concurrent assertions cannot both be accepted. Returns false when the
+ * row is gone / owned by someone else / the counter moved underneath us.
+ */
+export async function advancePasskeyCounter(
+  userId: string,
+  id: string,
+  prevCounter: number,
+  newCounter: number,
+  backedUp: boolean
+): Promise<boolean> {
+  const s = getSchema();
+  const rows = await db
+    .update(s.userPasskeys)
+    .set({ counter: newCounter, lastUsedAt: new Date().toISOString(), backedUp: backedUp ? 1 : 0 })
+    .where(
+      and(
+        eq(s.userPasskeys.id, id),
+        eq(s.userPasskeys.userId, userId),
+        eq(s.userPasskeys.counter, prevCounter)
+      )
+    )
+    .returning({ id: s.userPasskeys.id });
+  return rows.length === 1;
+}
+
+export async function renamePasskey(userId: string, id: string, label: string): Promise<boolean> {
+  const s = getSchema();
+  const rows = await db
+    .update(s.userPasskeys)
+    .set({ label })
+    .where(and(eq(s.userPasskeys.userId, userId), eq(s.userPasskeys.id, id)))
+    .returning({ id: s.userPasskeys.id });
+  return rows.length === 1;
+}
+
 export async function setPasskeyPrfWrap(id: string, wrapped: string | null) {
   const s = getSchema();
   await db
@@ -602,11 +640,13 @@ export async function setPasskeyPrfWrap(id: string, wrapped: string | null) {
     .where(eq(s.userPasskeys.id, id));
 }
 
-export async function deletePasskey(userId: string, id: string) {
+export async function deletePasskey(userId: string, id: string): Promise<boolean> {
   const s = getSchema();
-  await db
+  const rows = await db
     .delete(s.userPasskeys)
-    .where(and(eq(s.userPasskeys.userId, userId), eq(s.userPasskeys.id, id)));
+    .where(and(eq(s.userPasskeys.userId, userId), eq(s.userPasskeys.id, id)))
+    .returning({ id: s.userPasskeys.id });
+  return rows.length === 1;
 }
 
 export async function countPasskeys(userId: string): Promise<number> {

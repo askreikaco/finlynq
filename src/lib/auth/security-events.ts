@@ -19,7 +19,11 @@ export type SecurityEventType =
   | "recovery_proof_failed"
   | "password_changed"
   | "device_revoked"
-  | "device_rotated";
+  | "device_rotated"
+  | "passkey_renamed"
+  | "passkey_counter_regression"
+  | "passkey_2fa_failed"
+  | "passkey_2fa_success";
 
 /**
  * Log a security event for a user.

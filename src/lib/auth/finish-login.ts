@@ -9,6 +9,7 @@ import { SESSION_TTL_MS } from "@/lib/auth/jwt";
 import {
   recordSuccessfulLogin,
   promoteUserToEncryption,
+  countPasskeys,
 } from "@/lib/auth/queries";
 import { logApiError } from "@/lib/validate";
 import { deriveKEK, unwrapDEK, wrapDEK, createWrappedDEKForPassword } from "@/lib/crypto/envelope";
@@ -159,7 +160,11 @@ export async function issueSessionForDek(
   // MFA verify can promote it to the real session without asking the user
   // to re-enter their password. If MFA verify fails or times out, the entry
   // ages out naturally.
-  if (user.mfaEnabled) {
+  // A registered passkey counts as MFA (recovery plan B5): it gates login the
+  // same way TOTP does. A DB error here propagates (login fails) rather than
+  // silently skipping the second factor.
+  const mfaRequired = Boolean(user.mfaEnabled) || (await countPasskeys(user.id)) > 0;
+  if (mfaRequired) {
     const { token: pendingToken, jti: pendingJti } = await createSessionToken(
       user.id,
       false,
