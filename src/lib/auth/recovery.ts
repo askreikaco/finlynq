@@ -16,6 +16,7 @@
  *   7. fire-and-forget: security event + passwordChanged email
  */
 
+import { db } from "@/db";
 import { deriveKEK, wrapDEK, generateSalt } from "@/lib/crypto/envelope";
 import { evictAllForUser, putDEK } from "@/lib/crypto/dek-cache";
 import { invalidateUser } from "@/lib/mcp/user-tx-cache";
@@ -90,6 +91,18 @@ export async function finalizeRecoveryReset(
 
   evictAllForUser(userId);
   invalidateUser(userId);
+
+  // Revoke all OAuth access/refresh tokens for this user
+  const { and, eq, isNull } = await import("drizzle-orm");
+  const { oauthAccessTokens: oauthTokensTable } = await import("@/db/schema-pg");
+  const now = new Date();
+  await db
+    .update(oauthTokensTable)
+    .set({ revokedAt: now })
+    .where(and(
+      eq(oauthTokensTable.userId, userId),
+      isNull(oauthTokensTable.revokedAt),
+    ));
 
   await revokeAllDevicesExcept(userId, keepDeviceId);
 

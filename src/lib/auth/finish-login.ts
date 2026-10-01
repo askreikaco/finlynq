@@ -33,8 +33,8 @@ interface AuthUser {
 
 /** Result of finishPasswordLogin and issueSessionForDek. */
 export type FinishLoginResult =
-  | { kind: "mfa"; token: string; jti: string; dek: Buffer | null }
-  | { kind: "session"; token: string; jti: string; dek: Buffer | null }
+  | { kind: "mfa"; token: string; jti: string; dek: Buffer | null; userId: string }
+  | { kind: "session"; token: string; jti: string; dek: Buffer | null; userId: string }
   | { kind: "unlock_failed" };
 
 /**
@@ -45,12 +45,14 @@ export type FinishLoginResult =
  * @param user - The authenticated user row
  * @param password - The plaintext password (used for DEK derivation)
  * @param _request - Optional NextRequest for logging context (reserved for future use)
+ * @param _options - Optional { trustDevice?: boolean } (reserved for future use)
  * @returns MFA pending token or full session token with jti
  */
 export async function finishPasswordLogin(
   user: AuthUser,
   password: string,
-  _request?: unknown
+  _request?: unknown,
+  _options?: { trustDevice?: boolean }
 ): Promise<FinishLoginResult> {
   // Derive KEK from the plaintext password, unwrap the DEK. Failure here
   // with a matching bcrypt hash would indicate a corrupted DEK envelope
@@ -166,7 +168,7 @@ export async function issueSessionForDek(
       { pending: true, expirationTime: "5m" }
     );
     if (dek) putDEK(pendingJti, dek, 5 * 60_000, user.id);
-    return { kind: "mfa", token: pendingToken, jti: pendingJti, dek };
+    return { kind: "mfa", token: pendingToken, jti: pendingJti, dek, userId: user.id };
   }
 
   // No MFA — issue full session and cache the DEK under this session's jti.
@@ -198,5 +200,5 @@ export async function issueSessionForDek(
     enqueueAutoSyncSimpleFin(user.id, dek);
   }
 
-  return { kind: "session", token, jti, dek };
+  return { kind: "session", token, jti, dek, userId: user.id };
 }

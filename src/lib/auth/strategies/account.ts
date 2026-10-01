@@ -13,11 +13,14 @@ import type { AuthStrategy, AuthResult } from "../strategy";
 const AUTH_COOKIE = "pf_session";
 
 /**
- * The single route that accepts a pending JWT (the MFA challenge step). Every
- * other route receiving a pending token gets 401 — a captured pending cookie
- * must not be replayable against dashboards or transactions (finding H-4).
+ * Routes that accept pending JWTs (the MFA challenge step). Every other route
+ * receiving a pending token gets 401 — a captured pending cookie must not be
+ * replayable against dashboards or transactions (finding H-4).
  */
-const MFA_VERIFY_PATH = "/api/auth/mfa/verify";
+const MFA_VERIFY_PATHS = new Set([
+  "/api/auth/mfa/verify",
+  "/api/auth/mfa/recovery",
+]);
 
 export class AccountStrategy implements AuthStrategy {
   readonly method = "account" as const;
@@ -67,7 +70,7 @@ export class AccountStrategy implements AuthStrategy {
       };
     }
 
-    // Pending JWTs (MFA challenge step) are only valid for /api/auth/mfa/verify.
+    // Pending JWTs (MFA challenge step) are only valid for specific MFA routes.
     // Any other route with a pending token = 401 — a captured pending cookie
     // must not access dashboards or transactions (finding H-4). The route
     // check uses `request.nextUrl.pathname` rather than headers so the gate
@@ -79,7 +82,7 @@ export class AccountStrategy implements AuthStrategy {
       } catch {
         // If we can't read the URL we treat it as not-MFA-verify and reject.
       }
-      if (pathname !== MFA_VERIFY_PATH) {
+      if (!MFA_VERIFY_PATHS.has(pathname)) {
         return {
           authenticated: false,
           response: NextResponse.json(
