@@ -1,191 +1,139 @@
 /**
  * POST /api/family/manage/invite
  *
- * Invite a new viewer to share selected sections. Creates:
- * 1. A pending share record (owner_id, viewer_email, sections)
- * 2. An invite record with a single-use 7-day token
- * 3. Sends an email to the viewer
+ * Invite a viewer by email. ALWAYS creates (or refreshes) a pending share + single-use 7-day
+ * invite and emails the address, whether or not the address belongs to a registered user, and
+ * returns the same 201 body either way (no account-existence oracle).
  *
- * Auth: Session-only (method==="account"); API key returns 403.
- * Rate limits: 10 invites per user per day, 3 invites per email per day.
- * Zod strict: no extra fields.
- *
- * On success: 201 with share ID.
- * Errors: 400 (validation), 401 (auth), 403 (API key), 409 (conflict), 429 (rate limit), 500 (email).
+ * Auth: session-only. Limits: 10/day/user, 3/day/email (identical 429 body for both).
+ * Body (strict): { viewerEmail, sections[], mustShareBack? }
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { requireAuth } from "@/lib/auth";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { and, eq, isNull, inArray } from "drizzle-orm";
 import { db } from "@/db";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { getUserById } from "@/lib/auth/queries";
 import { createShare } from "@/lib/family/share-dal";
 import { createUserKeypairIfNeeded } from "@/lib/family/grant";
 import { generateInviteToken, hashInviteToken, getInviteExpiresAt } from "@/lib/family/invite-token";
-import { familyInvites } from "@/db/schema-pg";
+import { FamilySectionSchema } from "@/lib/family/sections";
+import { familyInvites, familyShares } from "@/db/schema-pg";
 import { sendEmail, familyInviteEmail } from "@/lib/email";
+import { rateLimited, readStrictBody, requireFamilySession } from "@/lib/family/manage-guard";
 
 export const dynamic = "force-dynamic";
 
+const DAY_MS = 24 * 60 * 60_000;
+const RATE_MSG = "Invitation limit reached. Try again tomorrow.";
+
 const InviteRequestSchema = z
   .object({
-    viewerEmail: z.string().email().toLowerCase(),
-    sections: z.array(z.string()).min(1),
+    viewerEmail: z.string().trim().max(254).email().toLowerCase(),
+    sections: z.array(FamilySectionSchema).min(1),
     mustShareBack: z.boolean().optional().default(false),
   })
   .strict();
 
 export async function POST(request: NextRequest) {
-  // Step 1: Authenticate — session-only
-  const auth = await requireAuth(request);
-  if (!auth.authenticated) {
-    return auth.response;
-  }
+  const guard = await requireFamilySession(request);
+  if (!guard.ok) return guard.response;
+  const { userId: ownerId, dek: ownerDek } = guard.ctx;
 
-  if (auth.context.method !== "account") {
-    return NextResponse.json(
-      { error: "Only session authentication is allowed" },
-      { status: 403 }
-    );
-  }
+  const userRl = checkRateLimit(`family-invite-user:${ownerId}`, 10, DAY_MS);
+  if (!userRl.allowed) return rateLimited(userRl.resetAt, RATE_MSG);
 
-  const { userId: ownerId } = auth.context;
+  const body = await readStrictBody(request, InviteRequestSchema);
+  if (!body.ok) return body.response;
+  const { viewerEmail, sections, mustShareBack } = body.data;
 
-  // Step 2: Rate limits
-  const rateLimitUser = checkRateLimit(
-    `family-invite-user:${ownerId}`,
-    10,
-    24 * 60 * 60_000 // 10 per day
-  );
-  if (!rateLimitUser.allowed) {
-    return NextResponse.json(
-      { error: "Invite rate limit exceeded. Try again tomorrow." },
-      {
-        status: 429,
-        headers: { "Retry-After": String(Math.ceil((rateLimitUser.resetAt - Date.now()) / 1000)) },
-      }
-    );
-  }
+  // Same body as the per-user limit: does not reveal that OTHER owners invited this address.
+  const emailRl = checkRateLimit(`family-invite-email:${viewerEmail}`, 3, DAY_MS);
+  if (!emailRl.allowed) return rateLimited(emailRl.resetAt, RATE_MSG);
 
-  // Step 3: Parse and validate body
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
-  }
-
-  const parsed = InviteRequestSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: "Validation failed", issues: parsed.error.issues },
-      { status: 400 }
-    );
-  }
-
-  const { viewerEmail, sections, mustShareBack } = parsed.data;
-
-  // Step 4: Rate limit per email
-  const rateLimitEmail = checkRateLimit(
-    `family-invite-email:${viewerEmail}`,
-    3,
-    24 * 60 * 60_000 // 3 per day
-  );
-  if (!rateLimitEmail.allowed) {
-    // No enumeration: same response as if the email rate-limit passed but invite creation failed.
-    // Rate limits are not secret; don't leak that this email was invited before.
-    return NextResponse.json(
-      { error: "This email has received too many invitations. Try again tomorrow." },
-      {
-        status: 429,
-        headers: { "Retry-After": String(Math.ceil((rateLimitEmail.resetAt - Date.now()) / 1000)) },
-      }
-    );
-  }
-
-  // Step 5: Ensure owner has a keypair (needed for grant encryption later)
-  const ownerDek = auth.context.dek;
   if (!ownerDek) {
-    return NextResponse.json(
-      { error: "Session locked. Please sign in again." },
-      { status: 423 }
-    );
+    return NextResponse.json({ error: "Session locked. Please sign in again." }, { status: 423 });
+  }
+
+  const owner = await getUserById(ownerId);
+  if (!owner) return NextResponse.json({ error: "Internal error" }, { status: 500 });
+
+  // Keyed on the address only (never on whether an account exists for it).
+  const [existingLive] = await db
+    .select({ id: familyShares.id })
+    .from(familyShares)
+    .where(
+      and(
+        eq(familyShares.ownerId, ownerId),
+        eq(familyShares.viewerEmailLower, viewerEmail),
+        inArray(familyShares.status, ["active", "awaiting_owner_unlock"]),
+      ),
+    )
+    .limit(1);
+  if (existingLive || owner.email?.toLowerCase() === viewerEmail) {
+    return NextResponse.json({ error: "Cannot create this invitation" }, { status: 409 });
   }
 
   try {
     await createUserKeypairIfNeeded(db, ownerId, ownerDek);
-  } catch (err) {
-    console.error("[family] keypair creation failed:", err);
-    return NextResponse.json(
-      { error: "Could not set up encryption" },
-      { status: 500 }
-    );
+  } catch {
+    console.error("[family] invite: keypair setup failed");
+    return NextResponse.json({ error: "Could not set up encryption" }, { status: 500 });
   }
 
-  // Step 6: Create share and invite records
+  const token = generateInviteToken();
   let shareId: string;
   try {
-    shareId = await createShare(db, ownerId, viewerEmail, sections, mustShareBack);
-  } catch (err) {
-    console.error("[family] share creation failed:", err);
-    return NextResponse.json(
-      { error: "Could not create share" },
-      { status: 500 }
-    );
-  }
+    shareId = await db.transaction(async (tx) => {
+      // One pending share per (owner, address): re-inviting refreshes it and rotates the token.
+      const [pending] = await tx
+        .select({ id: familyShares.id })
+        .from(familyShares)
+        .where(
+          and(
+            eq(familyShares.ownerId, ownerId),
+            eq(familyShares.viewerEmailLower, viewerEmail),
+            eq(familyShares.status, "pending"),
+          ),
+        )
+        .limit(1);
 
-  // Step 7: Create invite record
-  const token = generateInviteToken();
-  const tokenHash = hashInviteToken(token);
-  const expiresAt = getInviteExpiresAt();
-
-  try {
-    await db
-      .insert(familyInvites)
-      .values({
-        shareId,
+      let id: string;
+      if (pending) {
+        id = pending.id;
+        const deduped = Array.from(new Set(sections));
+        await tx
+          .update(familyShares)
+          .set({ sections: deduped, mustShareBack, requiredBackSections: mustShareBack ? deduped : [] })
+          .where(eq(familyShares.id, id));
+        await tx.delete(familyInvites).where(and(eq(familyInvites.shareId, id), isNull(familyInvites.consumedAt)));
+      } else {
+        id = await createShare(tx, ownerId, viewerEmail, sections, mustShareBack);
+      }
+      await tx.insert(familyInvites).values({
+        shareId: id,
         emailLower: viewerEmail,
-        tokenHash,
-        expiresAt,
+        tokenHash: hashInviteToken(token),
+        expiresAt: getInviteExpiresAt(),
       });
-  } catch (err) {
-    console.error("[family] invite creation failed:", err);
-    return NextResponse.json(
-      { error: "Could not create invite" },
-      { status: 500 }
-    );
+      return id;
+    });
+  } catch {
+    console.error("[family] invite: could not create share/invite");
+    return NextResponse.json({ error: "Could not create invitation" }, { status: 500 });
   }
 
-  // Step 8: Get owner name for email
-  const owner = await getUserById(ownerId);
-  if (!owner) {
-    console.error("[family] owner not found:", ownerId);
-    return NextResponse.json(
-      { error: "Internal error" },
-      { status: 500 }
-    );
-  }
-
-  const inviterName = owner.displayName || owner.email || "Someone";
-
-  // Step 9: Send invite email
-  const acceptUrl = `${process.env.APP_URL || "http://localhost:3000"}/family/accept?token=${encodeURIComponent(token)}`;
-  const emailMsg = familyInviteEmail(inviterName, acceptUrl);
-
+  // Email failure is non-fatal and logs no token / address (resend is available).
   try {
+    const acceptUrl = `${process.env.APP_URL || "http://localhost:3000"}/family/accept?token=${encodeURIComponent(token)}`;
     await sendEmail({
-      ...emailMsg,
+      ...familyInviteEmail(owner.displayName || owner.email || "Someone", acceptUrl),
       to: viewerEmail,
     });
   } catch (err) {
-    console.error("[family] email send failed:", err);
-    // Email failure is not fatal — the invite record exists, it just won't be delivered.
-    // The user can resend from the sharing tab.
+    console.error("[family] invite email failed:", err instanceof Error ? err.name : "error");
   }
 
-  return NextResponse.json(
-    { shareId },
-    { status: 201 }
-  );
+  return NextResponse.json({ shareId }, { status: 201 });
 }

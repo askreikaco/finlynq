@@ -671,59 +671,78 @@ export function contactReplyEmail(opts: {
   };
 }
 
+/** Strip CR/LF/control chars so a user-chosen display name can never inject mail headers. */
+function oneLine(value: string): string {
+  return value.replace(/[\u0000-\u001f\u007f]+/g, " ").trim().slice(0, 80) || "Someone";
+}
+
 /**
  * Family Wealth share invitation email.
  * No key material or amounts in the email body.
  */
 export function familyInviteEmail(inviterName: string, acceptUrl: string) {
-  const safeInviterName = escapeHtml(inviterName);
+  const name = oneLine(inviterName);
   const html = baseLayout(
     `You're invited to share finances`,
-    `<p style="color:#3f3f46;line-height:1.6">${safeInviterName} has invited you to share financial data with them in Finlynq.</p>
+    `<p style="color:#3f3f46;line-height:1.6">${escapeHtml(name)} has invited you to share financial data with them in Finlynq.</p>
      <p style="color:#3f3f46;line-height:1.6">This is a one-time invitation and will expire in 7 days.</p>
      ${buttonHtml("View invitation", acceptUrl)}
      <p style="color:#71717a;font-size:13px">If the button doesn't work, copy this link:<br>
      <a href="${escapeHtml(acceptUrl)}" style="color:#2563eb;word-break:break-all">${escapeHtml(acceptUrl)}</a></p>`
   );
   return {
-    subject: `${inviterName} invited you to share finances`,
+    subject: `${name} invited you to share finances`,
     html,
-    text: `${inviterName} invited you to share finances. View the invitation: ${acceptUrl}`,
+    text: `${name} invited you to share finances. View the invitation: ${acceptUrl}`,
   };
 }
 
-/**
- * Family Wealth share accepted notification.
- */
+/** Sent to the OWNER when an invitee accepts. `viewerName` is a display name, never an email. */
 export function familyShareAcceptedEmail(viewerName: string) {
-  const safeViewerName = escapeHtml(viewerName);
+  const name = oneLine(viewerName);
   const sharingUrl = `${APP_URL()}/family`;
   const html = baseLayout(
     `Invitation accepted`,
-    `<p style="color:#3f3f46;line-height:1.6">${safeViewerName} has accepted your Family Wealth invitation.</p>
-     <p style="color:#3f3f46;line-height:1.6">You can now view shared data and manage permissions.</p>
+    `<p style="color:#3f3f46;line-height:1.6">${escapeHtml(name)} has accepted your Family Wealth invitation.</p>
+     <p style="color:#3f3f46;line-height:1.6">You can manage permissions at any time.</p>
      ${buttonHtml("Go to Family Wealth", sharingUrl)}`
   );
   return {
-    subject: `${viewerName} accepted your Family Wealth invitation`,
+    subject: `${name} accepted your Family Wealth invitation`,
     html,
-    text: `${viewerName} accepted your Family Wealth invitation. Manage sharing: ${sharingUrl}`,
+    text: `${name} accepted your Family Wealth invitation. Manage sharing: ${sharingUrl}`,
   };
 }
 
-/**
- * Family Wealth share revoked notification.
- */
+/** Sent to the VIEWER when the owner revokes. */
 export function familyShareRevokedEmail(ownerName: string) {
-  const safeOwnerName = escapeHtml(ownerName);
+  const name = oneLine(ownerName);
   const html = baseLayout(
     `Share access revoked`,
-    `<p style="color:#3f3f46;line-height:1.6">${safeOwnerName} has revoked your access to their Family Wealth data.</p>
-     <p style="color:#3f3f46;line-height:1.6">You can no longer view their shared data. Any previous data you accessed is still known to you, but you will not see new or updated data.</p>`
+    `<p style="color:#3f3f46;line-height:1.6">${escapeHtml(name)} has revoked your access to their Family Wealth data.</p>
+     <p style="color:#3f3f46;line-height:1.6">You can no longer view their shared data. Anything you saw before is still known to you, but you will not see new or updated data.</p>`
   );
   return {
-    subject: `Your access to ${ownerName}'s Family Wealth has been revoked`,
+    subject: `Your access to ${name}'s Family Wealth has been revoked`,
     html,
-    text: `Your access to ${safeOwnerName}'s Family Wealth has been revoked.`,
+    text: `Your access to ${name}'s Family Wealth has been revoked.`,
+  };
+}
+
+/** Sent to the OWNER when a viewer leaves, or when a must-share-back partner revokes (view suspended). */
+export function familyShareEndedEmail(otherName: string, kind: "left" | "suspended") {
+  const name = oneLine(otherName);
+  const msg =
+    kind === "left"
+      ? `${name} has stopped viewing your Family Wealth data.`
+      : `${name} stopped sharing back, so your view of their Family Wealth data is suspended. You can stop requiring share-back or re-invite them.`;
+  const html = baseLayout(
+    kind === "left" ? `Share ended` : `Share suspended`,
+    `<p style="color:#3f3f46;line-height:1.6">${escapeHtml(msg)}</p>`
+  );
+  return {
+    subject: kind === "left" ? `${name} left your Family Wealth share` : `Your Family Wealth view is suspended`,
+    html,
+    text: msg,
   };
 }

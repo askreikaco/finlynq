@@ -8,7 +8,7 @@
  * - Expires after 7 days
  */
 
-import { createHmac, randomBytes } from "crypto";
+import { createHmac, randomBytes, timingSafeEqual } from "crypto";
 
 const DOMAIN = "family-invite|";
 const INVITE_VALIDITY_MS = 7 * 24 * 60 * 60_000; // 7 days
@@ -34,4 +34,12 @@ export function hashInviteToken(token: string): string {
  */
 export function getInviteExpiresAt(): Date {
   return new Date(Date.now() + INVITE_VALIDITY_MS);
+}
+
+/** Constant-time comparison of two stored/derived token hashes (hex). */
+export function tokenHashesEqual(a: string, b: string): boolean {
+  const ab = Buffer.from(a, "utf8");
+  const bb = Buffer.from(b, "utf8");
+  if (ab.length !== bb.length) return false;
+  return timingSafeEqual(ab, bb);
 }

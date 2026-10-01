@@ -1,286 +1,154 @@
 /**
  * POST /api/family/manage/accept
  *
- * Accept a share invitation. The viewer (who must have the matching email)
- * accepts an invite, moving the share to "awaiting_owner_unlock" until the
- * owner's next sweep finalizes the grants.
+ * Accept an invitation. Requirements (all enforced server-side):
+ *  - session auth (api_key / oauth rejected), unlocked session (DEK present)
+ *  - the logged-in user's VERIFIED email equals the invite's email
+ *  - token matches an invite that is unconsumed and unexpired (single-use)
+ * Unknown token, foreign-email session and self-accept all return the SAME 410 body.
  *
- * If must_share_back=true, creates a reciprocal share atomically (both succeed or both fail).
+ * Effect (ONE transaction): consume invite, pending -> awaiting_owner_unlock (the owner's next
+ * sweep finalizes grants). If must_share_back: create the reciprocal share (viewer -> owner,
+ * sections = required U extra), mint viewer's section keys and seal them to the owner. Any
+ * failure rolls everything back: no partial share, grants or keys.
  *
- * Auth: Session-only (method==="account"); API key returns 403.
- * Rate limit: 10 accepts per user per 15 minutes.
- * Zod strict: no extra fields.
- *
- * On success: 200 with accepted share ID.
- * Errors: 400 (validation), 401 (auth), 403 (API key/2FA), 404 (token not found),
- *         409 (conflict), 410 (expired/consumed), 429 (rate limit), 500 (error).
+ * Body (strict): { token, shareBackSections? }  (shareBackSections only used with must_share_back)
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { requireAuth } from "@/lib/auth";
-import { checkRateLimit } from "@/lib/rate-limit";
-import { db } from "@/db";
-import { getUserById } from "@/lib/auth/queries";
-import { consumeInvite, acceptShare, getShareById } from "@/lib/family/share-dal";
-import { createUserKeypairIfNeeded, createSectionKey, sealAndStoreGrant } from "@/lib/family/grant";
-import { syncFamilyLabels } from "@/lib/family/sweep";
-import { hashInviteToken } from "@/lib/family/invite-token";
-import { type FamilySection } from "@/lib/family/sections";
-import {
-  familyInvites,
-  familyShares,
-  userKeypairs,
-} from "@/db/schema-pg";
-import { sendEmail, familyShareAcceptedEmail } from "@/lib/email";
 import { eq } from "drizzle-orm";
+import { db } from "@/db";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { getUserById } from "@/lib/auth/queries";
+import { consumeInvite, acceptShare } from "@/lib/family/share-dal";
+import { createUserKeypairIfNeeded } from "@/lib/family/grant";
+import { syncFamilyLabels } from "@/lib/family/sweep";
+import { hashInviteToken, tokenHashesEqual } from "@/lib/family/invite-token";
+import { FamilySectionSchema, type FamilySection } from "@/lib/family/sections";
+import { familyInvites, familyShares, users } from "@/db/schema-pg";
+import { sendEmail, familyShareAcceptedEmail } from "@/lib/email";
+import {
+  inviteGone,
+  isCheckViolation,
+  isUniqueViolation,
+  rateLimited,
+  readStrictBody,
+  requireFamilySession,
+} from "@/lib/family/manage-guard";
 
 export const dynamic = "force-dynamic";
 
 const AcceptRequestSchema = z
   .object({
-    token: z.string().min(1),
+    token: z.string().min(1).max(256),
+    shareBackSections: z.array(FamilySectionSchema).optional(),
   })
   .strict();
 
+class AcceptRaceError extends Error {}
+
 export async function POST(request: NextRequest) {
-  // Step 1: Authenticate — session-only
-  const auth = await requireAuth(request);
-  if (!auth.authenticated) {
-    return auth.response;
-  }
+  const guard = await requireFamilySession(request);
+  if (!guard.ok) return guard.response;
+  const { userId: viewerId, dek: viewerDek } = guard.ctx;
 
-  if (auth.context.method !== "account") {
-    return NextResponse.json(
-      { error: "Only session authentication is allowed" },
-      { status: 403 }
-    );
-  }
+  // Limit first: caps token-guessing regardless of any later outcome.
+  const rl = checkRateLimit(`family-accept:${viewerId}`, 10, 15 * 60_000);
+  if (!rl.allowed) return rateLimited(rl.resetAt, "Too many attempts. Try again later.");
 
-  const { userId: viewerId } = auth.context;
+  const body = await readStrictBody(request, AcceptRequestSchema);
+  if (!body.ok) return body.response;
+  const { token, shareBackSections } = body.data;
 
-  // Step 2: Get viewer's verified email
   const viewer = await getUserById(viewerId);
   if (!viewer || !viewer.emailVerified || !viewer.email) {
-    return NextResponse.json(
-      { error: "Email must be verified to accept shares" },
-      { status: 403 }
-    );
+    return NextResponse.json({ error: "Email must be verified to accept shares" }, { status: 403 });
   }
-
   const viewerEmailLower = viewer.email.toLowerCase();
 
-  // Step 3: Rate limit
-  const rateLimit = checkRateLimit(
-    `family-accept:${viewerId}`,
-    10,
-    15 * 60_000 // 10 per 15 minutes
-  );
-  if (!rateLimit.allowed) {
-    return NextResponse.json(
-      { error: "Accept rate limit exceeded. Try again later." },
-      {
-        status: 429,
-        headers: { "Retry-After": String(Math.ceil((rateLimit.resetAt - Date.now()) / 1000)) },
-      }
-    );
-  }
-
-  // Step 4: Parse and validate body
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
-  }
-
-  const parsed = AcceptRequestSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: "Validation failed", issues: parsed.error.issues },
-      { status: 400 }
-    );
-  }
-
-  const { token } = parsed.data;
-
-  // Step 5: Hash the token and find the invite
+  // Lookup by hash, then constant-time confirm. Email is checked BEFORE expiry/consumed so a
+  // foreign session learns nothing about a token's state.
   const tokenHash = hashInviteToken(token);
-  const [invite] = await db
-    .select()
-    .from(familyInvites)
-    .where(eq(familyInvites.tokenHash, tokenHash));
-
-  if (!invite) {
-    // No enumeration: same response as if the token was consumed/expired
-    return NextResponse.json(
-      { error: "Invitation not found or already used" },
-      { status: 410 }
-    );
+  const [invite] = await db.select().from(familyInvites).where(eq(familyInvites.tokenHash, tokenHash)).limit(1);
+  if (!invite || !tokenHashesEqual(invite.tokenHash, tokenHash)) return inviteGone();
+  if (invite.emailLower !== viewerEmailLower) return inviteGone();
+  if (invite.consumedAt) return inviteGone();
+  if (invite.expiresAt < new Date()) {
+    return NextResponse.json({ error: "Invitation expired" }, { status: 410 });
   }
 
-  // Step 6: Verify invite is valid (not expired, not consumed, email matches)
-  const now = new Date();
-  if (invite.expiresAt < now) {
-    return NextResponse.json(
-      { error: "Invitation expired" },
-      { status: 410 }
-    );
-  }
+  const [share] = await db.select().from(familyShares).where(eq(familyShares.id, invite.shareId)).limit(1);
+  if (!share || share.ownerId === viewerId || share.viewerEmailLower !== viewerEmailLower) return inviteGone();
+  if (share.status !== "pending") return inviteGone();
 
-  if (invite.consumedAt) {
-    return NextResponse.json(
-      { error: "Invitation already used" },
-      { status: 410 }
-    );
-  }
-
-  if (invite.emailLower !== viewerEmailLower) {
-    // Viewer email doesn't match invite email: no enumeration, return same as unknown invite
-    return NextResponse.json(
-      { error: "Invitation not found or already used" },
-      { status: 410 }
-    );
-  }
-
-  // Step 7: Get the share and verify state
-  const share = await getShareById(db, invite.shareId, invite.shareId);
-  if (!share) {
-    return NextResponse.json(
-      { error: "Share not found" },
-      { status: 404 }
-    );
-  }
-
-  if (share.status !== "pending") {
-    return NextResponse.json(
-      { error: "Share is no longer pending" },
-      { status: 409 }
-    );
-  }
-
-  // Step 8: Ensure viewer has DEK and keypair
-  const viewerDek = auth.context.dek;
   if (!viewerDek) {
-    return NextResponse.json(
-      { error: "Session locked. Please sign in again." },
-      { status: 423 }
-    );
+    return NextResponse.json({ error: "Session locked. Please sign in again." }, { status: 423 });
   }
 
   try {
     await createUserKeypairIfNeeded(db, viewerId, viewerDek);
-  } catch (err) {
-    console.error("[family] viewer keypair creation failed:", err);
-    return NextResponse.json(
-      { error: "Could not set up encryption" },
-      { status: 500 }
-    );
+  } catch {
+    console.error("[family] accept: keypair setup failed");
+    return NextResponse.json({ error: "Could not set up encryption" }, { status: 500 });
   }
 
-  // Step 9: Atomic transaction: consume invite, accept share, create reciprocal if needed
   try {
     await db.transaction(async (tx) => {
-      // Consume the invite (single-use)
-      const consumed = await consumeInvite(tx, invite.id, viewerEmailLower);
-      if (!consumed) {
-        throw new Error("Invite already consumed or expired");
+      if (!(await consumeInvite(tx, invite.id, viewerEmailLower))) {
+        throw new AcceptRaceError(); // consumed/expired concurrently
       }
-
-      // Accept the share (move from pending to awaiting_owner_unlock)
       await acceptShare(tx, invite.shareId, viewerId, viewerEmailLower);
 
-      // If must_share_back, create a reciprocal share
       if (share.mustShareBack) {
-        const requiredBackSections = (share.requiredBackSections || share.sections) as string[];
-
-        const [reciprocal] = await tx
-          .insert(familyShares)
-          .values({
-            ownerId: viewerId,
-            viewerEmailLower: share.ownerId, // Note: this is the viewer_email of the reciprocal
-            viewerId: share.ownerId,
-            sections: requiredBackSections,
-            allSections: false,
-            mustShareBack: false,
-            requiredBackSections: [],
-            reciprocalOf: invite.shareId,
-            status: "active", // Viewer is online now, so we can create keys immediately
-          })
-          .returning({ id: familyShares.id });
-
-        if (!reciprocal) {
-          throw new Error("Failed to create reciprocal share");
-        }
-
-        // Create section keys for the reciprocal share (sealed to owner's pubkey)
-        const [ownerKeypair] = await tx
+        const required = (share.requiredBackSections?.length ? share.requiredBackSections : share.sections) as string[];
+        const backSections = Array.from(new Set([...required, ...(shareBackSections ?? [])])) as FamilySection[];
+        const [ownerUser] = await tx
           .select()
-          .from(userKeypairs)
-          .where(eq(userKeypairs.userId, share.ownerId));
+          .from(users)
+          .where(eq(users.id, share.ownerId))
+          .limit(1);
+        if (!ownerUser?.email) throw new Error("owner missing");
 
-        if (!ownerKeypair) {
-          throw new Error("Owner has no keypair yet — cannot create reciprocal immediately");
-        }
+        // SQL trigger family_shares_min_scope_guard re-checks sections ⊇ required.
+        await tx.insert(familyShares).values({
+          ownerId: viewerId,
+          viewerId: share.ownerId,
+          viewerEmailLower: ownerUser.email.toLowerCase(),
+          sections: backSections,
+          allSections: false,
+          mustShareBack: false,
+          requiredBackSections: [],
+          reciprocalOf: share.id,
+          status: "active", // viewer is online (DEK present): keys are sealed right now
+        });
 
-        // Create and seal section keys to the owner
-        const ownerId = share.ownerId;
-        for (const section of requiredBackSections as string[]) {
-          const sectionKey = await createSectionKey(tx, viewerId, section, viewerDek, 1);
-          try {
-            await sealAndStoreGrant(
-              tx,
-              reciprocal.id,
-              section,
-              1,
-              sectionKey,
-              ownerKeypair.x25519Pub,
-              viewerId,
-              ownerId
-            );
-          } finally {
-            sectionKey.fill(0);
-          }
-        }
-
-        // Sweep labels for the reciprocal share (owner can immediately see reciprocal labels)
-        const requiredSectionsList = (requiredBackSections as string[]).filter((s): s is FamilySection =>
-          ["accounts", "net_worth", "investments", "goals", "budgets", "loans", "cashflow"].includes(s)
-        );
-        await syncFamilyLabels(tx, viewerId, viewerDek, { sections: requiredSectionsList });
+        // Mints B's section keys and seals them to the owner's public key (owner keypair was
+        // created at invite time); also promotes/provisions B's other live shares.
+        await syncFamilyLabels(tx, viewerId, viewerDek, { sections: backSections });
       }
     });
   } catch (err) {
-    console.error("[family] accept failed:", err);
-    return NextResponse.json(
-      { error: "Could not accept invitation" },
-      { status: 500 }
-    );
-  }
-
-  // Step 10: Notify the owner (if must_share_back; owner will see the reciprocal share)
-  if (share.mustShareBack) {
-    // Note: owner notification happens via must-share-back UI; no email here
-  }
-
-  // Step 11: Send confirmation email to viewer
-  const owner = await getUserById(share.ownerId);
-  if (owner) {
-    const ownerName = owner.displayName || owner.email || "Someone";
-    try {
-      const msg = familyShareAcceptedEmail(ownerName);
-      await sendEmail({
-        ...msg,
-        to: viewerEmailLower,
-      });
-    } catch (err) {
-      console.error("[family] confirmation email send failed:", err);
-      // Not fatal
+    if (err instanceof AcceptRaceError) return inviteGone();
+    if (isUniqueViolation(err) || isCheckViolation(err)) {
+      return NextResponse.json({ error: "Share conflicts with an existing share" }, { status: 409 });
     }
+    console.error("[family] accept failed:", err instanceof Error ? err.name : "error");
+    return NextResponse.json({ error: "Could not accept invitation" }, { status: 500 });
   }
 
-  return NextResponse.json(
-    { shareId: invite.shareId },
-    { status: 200 }
-  );
+  // Notify the OWNER (display name only). Non-fatal.
+  try {
+    const owner = await getUserById(share.ownerId);
+    if (owner?.email) {
+      await sendEmail({
+        ...familyShareAcceptedEmail(viewer.displayName || "Your invitee"),
+        to: owner.email,
+      });
+    }
+  } catch (err) {
+    console.error("[family] accept notification failed:", err instanceof Error ? err.name : "error");
+  }
+
+  return NextResponse.json({ shareId: invite.shareId }, { status: 200 });
 }

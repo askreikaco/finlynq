@@ -377,3 +377,34 @@ export async function markShareKeyReset(
   // Clear key grants (viewer can't unseal old keys)
   await database.delete(familyKeyGrants).where(eq(familyKeyGrants.shareId, shareId));
 }
+
+/**
+ * Owner-side finalize: promote awaiting_owner_unlock -> active for this owner's shares whose
+ * viewer already has a keypair (acceptance creates it). Called from the owner's sweep (login /
+ * manage actions), i.e. only when the owner's DEK is present so the grants can then be sealed.
+ * Returns the number of shares promoted.
+ */
+export async function promoteAwaitingShares(
+  database: DrizzleDb,
+  ownerId: string,
+): Promise<number> {
+  const awaiting = await database
+    .select({ id: familyShares.id, viewerId: familyShares.viewerId })
+    .from(familyShares)
+    .where(and(eq(familyShares.ownerId, ownerId), eq(familyShares.status, "awaiting_owner_unlock")));
+  const viewerIds = awaiting.map((r) => r.viewerId).filter((v): v is string => !!v);
+  if (viewerIds.length === 0) return 0;
+  const withKeys = await database
+    .select({ userId: userKeypairs.userId })
+    .from(userKeypairs)
+    .where(inArray(userKeypairs.userId, viewerIds));
+  const ok = new Set(withKeys.map((k) => k.userId));
+  const ids = awaiting.filter((r) => r.viewerId && ok.has(r.viewerId)).map((r) => r.id);
+  if (ids.length === 0) return 0;
+  const rows = await database
+    .update(familyShares)
+    .set({ status: "active" })
+    .where(and(inArray(familyShares.id, ids), eq(familyShares.status, "awaiting_owner_unlock")))
+    .returning({ id: familyShares.id });
+  return rows.length;
+}
