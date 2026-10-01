@@ -15,10 +15,12 @@ import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import { GroupCombobox } from "@/components/ui/group-combobox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tag, Plus, AlertTriangle, Pencil, Trash2, Check, X } from "lucide-react";
+
+const TYPE_LABELS = { E: "Expense", I: "Income", R: "Reconciliation" } as const;
+const TYPE_ORDER = ["E", "I", "R"] as const;
 
 type Category = { id: number; type: string; group: string; name: string; note: string };
 
@@ -87,7 +89,6 @@ export default function CategorizationSettingsPage() {
     e.preventDefault();
     const errs: { name?: string; group?: string } = {};
     if (!newCatForm.name.trim()) errs.name = "Name is required";
-    if (!newCatForm.group.trim()) errs.group = "Group is required";
     setNewCatErrors(errs);
     if (Object.keys(errs).length > 0) return;
 
@@ -112,15 +113,17 @@ export default function CategorizationSettingsPage() {
     }
   }
 
-  // Group categories by group
-  const grouped = new Map<string, Category[]>();
-  categories.forEach((c) => {
-    const group = c.group || "Ungrouped";
-    grouped.set(group, [...(grouped.get(group) ?? []), c]);
-  });
+  // Sections by type (E, I, R); inside each, ungrouped first then groups A-Z.
+  const sections = TYPE_ORDER.map((t) => {
+    const inType = categories.filter((c) => c.type === t);
+    const byGroup = new Map<string, Category[]>();
+    inType.forEach((c) => byGroup.set(c.group || "", [...(byGroup.get(c.group || "") ?? []), c]));
+    const groups = Array.from(byGroup.entries()).sort(([a], [b]) => (a === "" ? -1 : b === "" ? 1 : a.localeCompare(b)));
+    return { type: t, groups };
+  }).filter((s) => s.groups.length > 0);
 
   // Get unique groups for the add form
-  const uniqueGroups = Array.from(new Set(categories.map((c) => c.group).filter(Boolean)));
+  const uniqueGroups = Array.from(new Set(categories.map((c) => c.group).filter(Boolean))).sort((a, b) => a.localeCompare(b));
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -160,27 +163,23 @@ export default function CategorizationSettingsPage() {
             <form onSubmit={handleAddCategory} className="space-y-3 p-3 rounded-lg border bg-muted/30">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <Label>Name</Label>
-                  <Input value={newCatForm.name} onChange={(e) => { setNewCatForm({ ...newCatForm, name: e.target.value }); setNewCatErrors({ ...newCatErrors, name: "" }); }} placeholder="Category name" />
+                  <Input aria-label="Category name" aria-invalid={!!newCatErrors.name || undefined} className="h-11 md:h-8 text-base md:text-sm" value={newCatForm.name} onChange={(e) => { setNewCatForm({ ...newCatForm, name: e.target.value }); setNewCatErrors({ ...newCatErrors, name: "" }); }} placeholder="Category name" />
                   {newCatErrors.name && <p className="text-xs text-destructive mt-1">{newCatErrors.name}</p>}
                 </div>
                 <div>
-                  <Label>Group</Label>
-                  <Input
+                  <GroupCombobox
                     value={newCatForm.group}
-                    onChange={(e) => { setNewCatForm({ ...newCatForm, group: e.target.value }); setNewCatErrors({ ...newCatErrors, group: "" }); }}
-                    placeholder="e.g. Housing"
-                    list="cat-groups"
+                    onChange={(g) => { setNewCatForm({ ...newCatForm, group: g }); setNewCatErrors({ ...newCatErrors, group: "" }); }}
+                    options={uniqueGroups}
+                    placeholder="Group"
+                    ariaLabel="Group"
+                    invalid={!!newCatErrors.group}
                   />
-                  <datalist id="cat-groups">
-                    {uniqueGroups.map((g) => <option key={g} value={g} />)}
-                  </datalist>
                   {newCatErrors.group && <p className="text-xs text-destructive mt-1">{newCatErrors.group}</p>}
                 </div>
                 <div>
-                  <Label>Type</Label>
-                  <Select value={newCatForm.type} onValueChange={(v) => setNewCatForm({ ...newCatForm, type: v ?? "E" })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                  <Select items={TYPE_LABELS} value={newCatForm.type} onValueChange={(v) => setNewCatForm({ ...newCatForm, type: v ?? "E" })}>
+                    <SelectTrigger aria-label="Type" className="w-full h-11 md:h-8"><SelectValue placeholder="Type" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="E">Expense</SelectItem>
                       <SelectItem value="I">Income</SelectItem>
@@ -196,13 +195,17 @@ export default function CategorizationSettingsPage() {
             </form>
           )}
 
-          {/* Category list grouped */}
-          {Array.from(grouped.entries()).map(([group, cats]) => (
-            <div key={group}>
-              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{group}</h4>
-              <div className="space-y-1">
-                {cats.map((cat) => (
-                  <div key={cat.id} className="flex items-center justify-between rounded-lg px-3 py-2 hover:bg-muted/50 transition-colors group">
+          {/* Category list: type sections, group sub-headers */}
+          {sections.map(({ type, groups }) => (
+            <section key={type} data-testid={`type-section-${type}`} aria-label={TYPE_LABELS[type]}>
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{TYPE_LABELS[type]}</h3>
+              <div className="space-y-2">
+                {groups.map(([group, cats]) => (
+                  <div key={group || "__none"}>
+                    {group && <h4 className="text-xs text-muted-foreground/80 px-3 mb-1">{group}</h4>}
+                    <div className="space-y-1">
+                      {cats.map((cat) => (
+                  <div key={cat.id} className="flex items-center justify-between rounded-lg px-3 py-2 min-h-11 md:min-h-0 hover:bg-muted/50 transition-colors group">
                     {editingId === cat.id ? (
                       <div className="flex items-center gap-2 flex-1">
                         <Input
@@ -224,13 +227,8 @@ export default function CategorizationSettingsPage() {
                       </div>
                     ) : (
                       <>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm">{cat.name}</span>
-                          <Badge variant="secondary" className="text-[10px]">
-                            {cat.type === "E" ? "Expense" : cat.type === "I" ? "Income" : "Reconciliation"}
-                          </Badge>
-                        </div>
-                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span className="text-sm">{cat.name}</span>
+                        <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditingId(cat.id); setEditName(cat.name); setCatError(""); }} aria-label="Edit category">
                             <Pencil className="h-3 w-3" />
                           </Button>
@@ -241,9 +239,12 @@ export default function CategorizationSettingsPage() {
                       </>
                     )}
                   </div>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
-            </div>
+            </section>
           ))}
 
           {categories.length === 0 && (
