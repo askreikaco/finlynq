@@ -38,11 +38,13 @@ function CloudAuthPageInner() {
   // consents to the action. For zero-click full auto-login + redirect, see
   // the /try-demo route.
   const demoPrefill = searchParams.get("demo") === "1";
+  const addingAccount = searchParams.get("add") === "1";
+  const prefillEmail = searchParams.get("email") || "";
   const [tab, setTab] = useState<Tab>(initialTab);
 
   // Login form: single 'identifier' field accepts username OR email.
   const [identifier, setIdentifier] = useState(
-    demoPrefill ? "demo@finlynq.com" : "",
+    prefillEmail || (demoPrefill ? "demo@finlynq.com" : ""),
   );
 
   // Register form: username (required), email (optional), display name.
@@ -329,6 +331,22 @@ function CloudAuthPageInner() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-dot-pattern ambient-glow">
       <div className="mx-auto w-full max-w-md px-6 py-12">
+        {addingAccount && (
+          <div className="mb-6 rounded-lg border border-blue-500/30 bg-blue-500/5 px-4 py-3">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm text-blue-600 dark:text-blue-400">
+                Adding another account — you'll stay signed in.
+              </p>
+              <Link
+                href="/dashboard"
+                className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline whitespace-nowrap"
+              >
+                Cancel
+              </Link>
+            </div>
+          </div>
+        )}
+
         <Link
           href="/"
           className="mb-8 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
