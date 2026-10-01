@@ -149,6 +149,8 @@ export function toShareDto(
     mustShareBack: share.mustShareBack,
     requiredBackSections: share.requiredBackSections ?? [],
     isReciprocal: share.reciprocalOf !== null,
+    /** parent share id (both parties already know it): lets the UI pair a re-consent with its reciprocal */
+    reciprocalOf: share.reciprocalOf,
     reconsentRequired: reconsentMissing.length > 0,
     reconsentSections: reconsentMissing,
     createdAt: share.createdAt.toISOString(),
