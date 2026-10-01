@@ -17,6 +17,7 @@ import { NextRequest } from "next/server";
 export type AdminAuditAction =
   | "role_change"
   | "plan_change"
+  | "user_profile_change"
   | "inbox_triaged"
   | "inbox_promoted"
   | "inbox_deleted"

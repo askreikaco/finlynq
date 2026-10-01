@@ -2,7 +2,7 @@
  * Admin user management API (Phase 6: NS-36)
  *
  * GET  /api/admin/users â€” list all users (paginated)
- * PATCH /api/admin/users â€” update a user's role or plan
+ * PATCH /api/admin/users â€” update a user's role, plan, profile, email, 2FA
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -13,8 +13,7 @@ import {
   listUsersPage,
   isUserSortKey,
   getUserById,
-  updateUserRole,
-  updateUserPlan,
+  applyAdminUserEdit,
 } from "@/lib/auth/queries";
 import { parseTableFilters, type TableColFilter } from "@/lib/table-filters";
 
@@ -57,6 +56,7 @@ import { logAdminAction, clientIp } from "@/lib/admin-audit";
 import { getDEK } from "@/lib/crypto/dek-cache";
 import { decryptField } from "@/lib/crypto/envelope";
 import { verifyMfaCode } from "@/lib/auth";
+import { isPgErrorCode, pgErrorConstraint } from "@/lib/db-utils";
 
 export async function GET(request: NextRequest) {
   if (getDialect() !== "postgres") {
@@ -135,15 +135,28 @@ export async function GET(request: NextRequest) {
   });
 }
 
-const updateSchema = z.object({
-  userId: z.string().min(1),
-  role: z.enum(["user", "admin"]).optional(),
-  plan: z.enum(["free", "pro", "premium"]).optional(),
-  planExpiresAt: z.string().optional(),
-  // Required if the acting admin has MFA enabled â€” Finding Admin-MFA-step-up.
-  // A stale session cookie alone can no longer silently mutate other users.
-  mfaCode: z.string().length(6).optional(),
-});
+// .strict(): unknown keys (password, kekSalt, dekWrapped, ...) are a 400, never
+// silently dropped and never able to reach an UPDATE.
+const updateSchema = z
+  .object({
+    userId: z.string().min(1),
+    role: z.enum(["user", "admin"]).optional(),
+    plan: z.enum(["free", "pro", "premium"]).optional(),
+    planExpiresAt: z
+      .string()
+      .refine((v) => !Number.isNaN(Date.parse(v)), "Invalid planExpiresAt.")
+      .nullable()
+      .optional(),
+    displayName: z.string().trim().max(100).optional(),
+    username: z.string().min(3).max(32).regex(/^[a-z0-9._-]+$/).optional(),
+    email: z.string().trim().toLowerCase().email().max(254).optional(),
+    emailVerified: z.boolean().optional(),
+    disableMfa: z.boolean().optional(),
+    // Fresh TOTP of the ACTING admin (step-up): required for role change,
+    // email change and disableMfa when that admin has MFA enabled.
+    mfaCode: z.string().regex(/^\d{6}$/, "MFA code must be 6 digits.").optional(),
+  })
+  .strict();
 
 export async function PATCH(request: NextRequest) {
   if (getDialect() !== "postgres") {
@@ -155,100 +168,177 @@ export async function PATCH(request: NextRequest) {
 
   const auth = await requireAdmin(request);
   if (!auth.authenticated) return auth.response;
-  const { userId: adminUserId, sessionId } = auth.context;
+  const { userId: adminUserId, sessionId, method } = auth.context;
+
+  // API keys are scoped permission tokens and must never edit accounts
+  // (same rule as delete-account / wipe-account). Interactive session only.
+  if (method !== "account") {
+    return NextResponse.json(
+      { error: "API keys are not allowed to edit users. Sign in via the web app." },
+      { status: 403 }
+    );
+  }
 
   try {
     const body = await request.json();
     const parsed = validateBody(body, updateSchema);
     if (parsed.error) return parsed.error;
 
-    const { userId, role, plan, planExpiresAt, mfaCode } = parsed.data;
+    const {
+      userId,
+      role,
+      plan,
+      planExpiresAt,
+      displayName,
+      username,
+      email,
+      emailVerified,
+      disableMfa,
+      mfaCode,
+    } = parsed.data;
 
     const adminUser = await getUserById(adminUserId);
     if (!adminUser) {
       return NextResponse.json({ error: "Admin user not found." }, { status: 404 });
     }
-
-    // MFA step-up: if the admin has MFA enabled, require a fresh TOTP on the
-    // request. Decrypt the stored secret with the admin's session DEK.
-    if (adminUser.mfaEnabled && adminUser.mfaSecret) {
-      if (!mfaCode) {
-        return NextResponse.json(
-          { error: "MFA code required for admin mutations.", code: "MFA_REQUIRED" },
-          { status: 403 }
-        );
-      }
-      // SESSION-DEK-REQUIRED: deliberately NOT auth.context.dek. This decrypts the ADMIN's
-      // TOTP secret for a step-up check before an admin mutation; the live-session
-      // requirement is a factor, not an accident.
-      const dek = sessionId ? getDEK(sessionId, userId) : null;
-      if (!dek) {
-        return NextResponse.json(
-          { error: "Session expired. Please sign in again." },
-          { status: 423 }
-        );
-      }
-      let mfaSecret: string | null;
-      try {
-        mfaSecret = decryptField(dek, adminUser.mfaSecret);
-      } catch {
-        return NextResponse.json(
-          { error: "MFA secret could not be decrypted." },
-          { status: 500 }
-        );
-      }
-      if (!mfaSecret || !verifyMfaCode(mfaSecret, mfaCode)) {
-        return NextResponse.json(
-          { error: "Invalid MFA code." },
-          { status: 401 }
-        );
-      }
-    }
-
     const target = await getUserById(userId);
     if (!target) {
       return NextResponse.json({ error: "User not found." }, { status: 404 });
     }
+    const isSelf = userId === adminUserId;
 
-    const before = { role: target.role, plan: target.plan, planExpiresAt: target.planExpiresAt };
+    const roleChanging = role !== undefined && role !== target.role;
+    const emailChanging =
+      email !== undefined && email.toLowerCase() !== (target.email ?? "").toLowerCase();
+    // Step-up covers privilege changes and the account-takeover levers
+    // (email -> password reset, 2FA removal). Applies to self too.
+    const requiresStepUp = roleChanging || emailChanging || disableMfa === true;
 
-    if (role) await updateUserRole(userId, role);
-    if (plan) await updateUserPlan(userId, plan, planExpiresAt);
+    if (adminUser.mfaEnabled) {
+      if (requiresStepUp && !mfaCode) {
+        return NextResponse.json(
+          { error: "MFA code required for this change.", code: "MFA_REQUIRED" },
+          { status: 403 }
+        );
+      }
+      if (mfaCode) {
+        // SESSION-DEK-REQUIRED: deliberately NOT auth.context.dek. This decrypts the ADMIN's
+        // TOTP secret for a step-up check before an admin mutation; the live-session
+        // requirement is a factor, not an accident.
+        const dek = sessionId ? getDEK(sessionId, adminUserId) : null;
+        if (!dek) {
+          return NextResponse.json(
+            { error: "Session expired. Please sign in again." },
+            { status: 423 }
+          );
+        }
+        let mfaSecret: string | null = null;
+        try {
+          mfaSecret = adminUser.mfaSecret ? decryptField(dek, adminUser.mfaSecret) : null;
+        } catch {
+          mfaSecret = null;
+        }
+        // Fail closed: MFA flag on but no usable secret must not skip the check.
+        if (!mfaSecret || !verifyMfaCode(mfaSecret, mfaCode)) {
+          return NextResponse.json({ error: "Invalid MFA code." }, { status: 401 });
+        }
+      }
+    }
+
+    const mfaBeingRemoved = disableMfa === true && !!target.mfaEnabled;
+
+    const before = {
+      role: target.role,
+      plan: target.plan,
+      planExpiresAt: target.planExpiresAt,
+      displayName: target.displayName,
+      username: target.username,
+      email: target.email,
+      emailVerified: target.emailVerified,
+      mfaEnabled: target.mfaEnabled,
+    };
+
+    let result;
+    try {
+      result = await applyAdminUserEdit(userId, {
+        role,
+        plan,
+        planExpiresAt,
+        displayName,
+        username,
+        email,
+        emailVerified,
+        disableMfa: mfaBeingRemoved,
+        // Kill the target's live sessions on 2FA reset. Not for self: that
+        // would sign the acting admin out mid-request.
+        revokeSessions: mfaBeingRemoved && !isSelf,
+      });
+    } catch (err) {
+      // Uniqueness is enforced by the case-insensitive unique indexes; a
+      // concurrent writer that wins the race lands here.
+      if (isPgErrorCode(err, "23505")) {
+        const constraint = pgErrorConstraint(err) ?? "";
+        const what = constraint.includes("username") ? "Username" : "Email";
+        return NextResponse.json({ error: `${what} already taken.` }, { status: 409 });
+      }
+      throw err;
+    }
+    if (!result.ok) {
+      if (result.reason === "last_admin") {
+        return NextResponse.json({ error: "Cannot demote the last admin." }, { status: 409 });
+      }
+      return NextResponse.json({ error: "User not found." }, { status: 404 });
+    }
 
     const after = {
       role: role ?? target.role,
       plan: plan ?? target.plan,
-      planExpiresAt: planExpiresAt ?? target.planExpiresAt,
+      planExpiresAt: planExpiresAt !== undefined ? planExpiresAt : plan ? null : target.planExpiresAt,
+      displayName: displayName !== undefined ? displayName : target.displayName,
+      username: username !== undefined ? username : target.username,
+      email: email !== undefined ? email : target.email,
+      emailVerified:
+        emailVerified !== undefined ? (emailVerified ? 1 : 0) : emailChanging ? 0 : target.emailVerified,
+      mfaEnabled: mfaBeingRemoved ? 0 : target.mfaEnabled,
     };
 
-    // Finding #16 â€” audit-log the mutation. Fire-and-forget so a failed audit
-    // write doesn't block a legitimate admin op (but it is logged to server log).
-    if (role && role !== target.role) {
+    const ip = clientIp(request);
+    // Audit: role/plan values are not PII; profile/email/MFA entries carry
+    // FIELD NAMES ONLY (no username/email/displayName values).
+    if (roleChanging) {
       await logAdminAction({
-        adminUserId,
-        targetUserId: userId,
-        action: "role_change",
-        before: { role: target.role },
-        after: { role },
-        ip: clientIp(request),
+        adminUserId, targetUserId: userId, action: "role_change",
+        before: { role: target.role }, after: { role }, ip,
       });
     }
     if (plan && plan !== target.plan) {
       await logAdminAction({
-        adminUserId,
-        targetUserId: userId,
-        action: "plan_change",
+        adminUserId, targetUserId: userId, action: "plan_change",
         before: { plan: target.plan, planExpiresAt: target.planExpiresAt },
-        after: { plan, planExpiresAt: planExpiresAt ?? null },
-        ip: clientIp(request),
+        after: { plan, planExpiresAt: planExpiresAt ?? null }, ip,
+      });
+    }
+    const profileFields: string[] = [];
+    if (displayName !== undefined && displayName !== (target.displayName ?? "")) profileFields.push("displayName");
+    if (username !== undefined && username !== target.username) profileFields.push("username");
+    if (emailChanging) profileFields.push("email");
+    if (after.emailVerified !== target.emailVerified) profileFields.push("emailVerified");
+    if (mfaBeingRemoved) profileFields.push("mfaDisabled");
+    if (profileFields.length > 0) {
+      await logAdminAction({
+        adminUserId, targetUserId: userId, action: "user_profile_change",
+        before: null, after: { fields: profileFields }, ip,
       });
     }
 
-    return NextResponse.json({ success: true, before, after });
-  } catch {
-    return NextResponse.json(
-      { error: "Failed to update user." },
-      { status: 500 }
-    );
+    return NextResponse.json({
+      success: true,
+      before,
+      after,
+      selfDemoted: isSelf && roleChanging && role === "user",
+    });
+  } catch (err) {
+    console.error("[admin/users] PATCH error:", err);
+    return NextResponse.json({ error: "Failed to update user." }, { status: 500 });
   }
 }
