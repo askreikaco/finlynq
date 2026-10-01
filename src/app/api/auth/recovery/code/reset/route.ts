@@ -126,6 +126,7 @@ export async function POST(request: NextRequest) {
       newPassword,
       dek: recoveredDek,
       trustDevice: trustDevice !== false,
+      deviceCookie: request.cookies.get("pf_device")?.value,
       userAgent,
       ip,
       method: "code",

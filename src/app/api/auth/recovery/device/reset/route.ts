@@ -158,6 +158,7 @@ export async function POST(request: NextRequest) {
       dek: deviceDek,
       keepDeviceId: peeked.deviceId,
       trustDevice: true,
+      deviceCookie: request.cookies.get("pf_device")?.value,
       userAgent,
       ip,
       method: "device",
