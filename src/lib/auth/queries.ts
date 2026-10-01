@@ -507,10 +507,11 @@ export async function listDevices(userId: string) {
 export async function revokeDevice(userId: string, id: string) {
   const s = getSchema();
   const now = new Date().toISOString();
-  await db
+  const result = await db
     .update(s.userDevices)
     .set({ revokedAt: now })
     .where(and(eq(s.userDevices.userId, userId), eq(s.userDevices.id, id)));
+  return result.rowCount ?? 0;
 }
 
 export async function revokeAllDevices(userId: string) {

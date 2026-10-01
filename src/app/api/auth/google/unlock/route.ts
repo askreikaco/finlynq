@@ -145,8 +145,10 @@ export async function POST(req: NextRequest) {
           ? new Date(unlockExp * 1000)
           : new Date(Date.now() + 5 * 60 * 1000);
         await revokeJti(unlockJti, expDate);
-      } catch {
-        // Swallow — revocation failure shouldn't block login
+      } catch (error) {
+        // Revocation failure must fail closed to prevent replay
+        console.error("Failed to revoke unlock token:", error);
+        return NextResponse.json({ error: "Try again" }, { status: 503 });
       }
     }
 

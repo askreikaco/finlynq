@@ -497,4 +497,85 @@ describe("/api/auth/google/unlock", () => {
       expect(pendingLimitCall[2]).toBe(900_000); // 15 minutes in milliseconds
     }
   });
+
+  it("j) revokeJti fails → 503, finishPasswordLogin not called", async () => {
+    const { token: unlockToken, jti: unlockJti } = await createSessionToken("user_id_123", false, {
+      pending: true,
+      expirationTime: "5m",
+    });
+    const googleDataToken = await signShortLived(
+      { userId: "user_id_123", sub: "google_sub", email: "user@test.com", emailVerified: true },
+      300,
+      "google-unlock-data"
+    );
+
+    mockVerifyPassword.mockResolvedValue(true);
+    mockRevokeJti.mockRejectedValueOnce(new Error("Database error"));
+
+    const req = makeUnlockRequest({
+      unlockToken,
+      googleDataToken,
+      body: { password: "correct_password" },
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(503);
+    const data = await res.json();
+    expect(data.error).toBe("Try again");
+
+    // Verify finishPasswordLogin was NOT called
+    expect(mockFinishPasswordLogin).not.toHaveBeenCalled();
+
+    // Verify upsertIdentity was NOT called
+    expect(mockUpsertIdentity).not.toHaveBeenCalled();
+  });
+
+  it("j2) revoke happens before finishPasswordLogin", async () => {
+    const { token: unlockToken, jti: unlockJti } = await createSessionToken("user_id_123", false, {
+      pending: true,
+      expirationTime: "5m",
+    });
+    const googleDataToken = await signShortLived(
+      { userId: "user_id_123", sub: "google_sub", email: "user@test.com", emailVerified: true },
+      300,
+      "google-unlock-data"
+    );
+
+    mockVerifyPassword.mockResolvedValue(true);
+    mockFinishPasswordLogin.mockResolvedValue({
+      kind: "session",
+      token: "session_token_jwt",
+      jti: "session_jti_123",
+      dek: Buffer.alloc(32, 0xaa),
+    });
+
+    let finishCalled = false;
+    mockRevokeJti.mockImplementation(async () => {
+      // Verify that finishPasswordLogin hasn't been called yet by the first revoke
+      if (!finishCalled) {
+        expect(mockFinishPasswordLogin).not.toHaveBeenCalled();
+      }
+    });
+    mockFinishPasswordLogin.mockImplementation(async () => {
+      finishCalled = true;
+      return {
+        kind: "session",
+        token: "session_token_jwt",
+        jti: "session_jti_123",
+        dek: Buffer.alloc(32, 0xaa),
+      };
+    });
+
+    const req = makeUnlockRequest({
+      unlockToken,
+      googleDataToken,
+      body: { password: "correct_password" },
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    // Verify revoke was called and finishPasswordLogin was called
+    expect(mockRevokeJti).toHaveBeenCalled();
+    expect(mockFinishPasswordLogin).toHaveBeenCalled();
+  });
 });

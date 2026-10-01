@@ -4,7 +4,7 @@
  * Revokes a device or all devices for the current user.
  *
  * Query params:
- * - id=<deviceId> → revoke single device
+ * - id=<deviceId> → revoke single device, returns 404 if not found or not owned by user
  * - all=1 → revoke all devices and clear pf_device cookie
  *
  * Response: 200 {ok:true} | 404 {error:"Device not found"}
@@ -44,7 +44,10 @@ export async function DELETE(request: NextRequest) {
       return response;
     } else if (deviceId) {
       // Revoke single device
-      await revokeDevice(userId, deviceId);
+      const rowCount = await revokeDevice(userId, deviceId);
+      if (rowCount === 0) {
+        return NextResponse.json({ error: "Device not found" }, { status: 404 });
+      }
       return NextResponse.json({ ok: true });
     } else {
       return NextResponse.json(
