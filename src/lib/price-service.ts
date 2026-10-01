@@ -21,6 +21,7 @@ import { and, eq, gte, inArray, lte } from "drizzle-orm";
 import { todayISO } from "@/lib/utils/date";
 import { marketFetch } from "@/lib/market-fetch";
 import { toYahooSymbol } from "@/lib/securities/yahoo-symbol";
+import { isVnSymbol, vnProvider, fetchVnQuoteLive, vndirectHistory } from "@/lib/securities/vn-quote";
 
 // FINLYNQ-201: the ETF-vs-stock classification no longer relies on a hardcoded
 // ETF registry. The badge is driven by Yahoo's `quoteType`/`instrumentType`
@@ -31,7 +32,7 @@ import { toYahooSymbol } from "@/lib/securities/yahoo-symbol";
 
 const YAHOO_BASE = "https://query1.finance.yahoo.com/v8/finance";
 
-type QuoteResult = {
+export type QuoteResult = {
   symbol: string;
   price: number;
   currency: string;
@@ -281,6 +282,12 @@ async function writePriceCache(
  * (e.g. the Add-security lookup) must call this LIVE path instead.
  */
 export async function fetchQuoteLive(symbol: string): Promise<QuoteResult | null> {
+  // Try Vietnamese price provider (VNDirect or TCBS) for .VN symbols if enabled.
+  if (isVnSymbol(symbol) && vnProvider()) {
+    const vn = await fetchVnQuoteLive(symbol);
+    if (vn) return vn;
+  }
+
   try {
     const res = await marketFetch(
       `${YAHOO_BASE}/chart/${encodeURIComponent(toYahooSymbol(symbol))}?interval=1d&range=1d`,
@@ -566,6 +573,36 @@ export async function fetchQuoteAtDate(symbol: string, date: string): Promise<Qu
   // ticker with no chart data is re-fetched once PER DAY across the whole rebuild
   // walk (the FYIXX money-market re-fetch storm this guards against).
   if (isQuoteNegativelyCached(symbol)) return null;
+
+  // Try Vietnamese price provider (VNDirect) for .VN symbols if enabled.
+  if (isVnSymbol(symbol) && vnProvider()) {
+    const windowStart = addCalendarDays(date, -7);
+    const windowEnd = addCalendarDays(date, HISTORICAL_WINDOW_FORWARD_DAYS + 1);
+    const bars = await vndirectHistory(symbol, windowStart, windowEnd);
+    if (bars.length > 0) {
+      // Build forward-filled calendar rows and cache them.
+      const currency = "VND";
+      await cacheHistoricalWindow(symbol, currency, bars, date, addCalendarDays(date, HISTORICAL_WINDOW_FORWARD_DAYS));
+      // Find the last bar on or before the target date (bars are in ascending order).
+      let chosen: { date: string; close: number } | null = null;
+      for (const bar of bars) {
+        if (bar.date > date) break; // Bars are sorted ascending, stop when we pass the target
+        chosen = bar; // Keep updating to get the most recent bar <= date
+      }
+      if (chosen) {
+        return {
+          symbol,
+          price: chosen.close, // vndirectHistory returns already in VND
+          currency,
+          name: symbol.replace(/\.vn$/i, ""),
+          change: 0,
+          changePct: 0,
+          previousClose: null,
+        };
+      }
+    }
+  }
+
   try {
     // Window: 7 days BEFORE the target (so a weekend/holiday target still lands
     // on a real close) through HISTORICAL_WINDOW_FORWARD_DAYS AFTER it (capped at

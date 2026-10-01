@@ -39,6 +39,8 @@ services:
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       # Trusted device cookie lifetime in days (optional, default 30)
       PF_TRUSTED_DEVICE_DAYS: ${PF_TRUSTED_DEVICE_DAYS:-30}
+      # Vietnamese stock price provider (optional, default "vndirect" on fork; "" or unset disables)
+      PF_PRICE_PROVIDER_VN: ${PF_PRICE_PROVIDER_VN:-vndirect}
       NODE_ENV: production
       # Email transport: set one of RESEND_API_KEY, BREVO_API_KEY, or SMTP_HOST
       RESEND_API_KEY: ${RESEND_API_KEY:-}
