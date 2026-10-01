@@ -174,17 +174,20 @@ export async function POST(request: NextRequest) {
     }
 
     // Success: promote the pending session (same sequence as mfa/verify).
+    // Own copy: deleteDEK(pendingJti) zero-fills the pending buffer; sharing it
+    // would leave the session (and trusted-device wrap) with an all-zero key.
+    const sessionDek = Buffer.from(pendingDek);
     await recordSuccessfulLogin(user.id);
     const { token, jti } = await createSessionToken(user.id, true);
-    putDEK(jti, pendingDek, SESSION_TTL_MS, user.id);
+    putDEK(jti, sessionDek, SESSION_TTL_MS, user.id);
     deleteDEK(pendingJti);
     await revokeJti(pendingJti, exp);
     attemptCounter.delete(pendingJti);
 
-    enqueueBackfillSecurities(user.id, pendingDek);
-    enqueueUpgradeStagingEncryption(user.id, pendingDek);
-    enqueueUpgradeUserFieldEncryption(user.id, pendingDek);
-    enqueueProcessPendingInbox(user.id, pendingDek);
+    enqueueBackfillSecurities(user.id, sessionDek);
+    enqueueUpgradeStagingEncryption(user.id, sessionDek);
+    enqueueUpgradeUserFieldEncryption(user.id, sessionDek);
+    enqueueProcessPendingInbox(user.id, sessionDek);
 
     logSecurityEvent(user.id, "recovery_code_used", { method: "code-2fa", ip, userAgent }).catch(() => {});
 
@@ -194,7 +197,7 @@ export async function POST(request: NextRequest) {
       request,
       response,
       userId: user.id,
-      dek: pendingDek,
+      dek: sessionDek,
       trustDevice,
       routeLabel: "/api/auth/mfa/recovery/verify",
     });

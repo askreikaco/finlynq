@@ -21,6 +21,8 @@ vi.mock("@/lib/auth/queries", () => ({
     recordedLogins.add(userId);
   }),
   promoteUserToEncryption: vi.fn(),
+  // B5: a registered passkey counts as MFA at the login gate.
+  countPasskeys: vi.fn(async () => 0),
 }));
 
 vi.mock("@/lib/crypto/dek-cache", () => ({

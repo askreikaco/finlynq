@@ -594,6 +594,44 @@ export async function updatePasskeyCounter(id: string, counter: number) {
     .where(eq(s.userPasskeys.id, id));
 }
 
+/**
+ * Atomically advance a passkey's signature counter + last_used/backed_up.
+ * Succeeds only if the stored counter is still `prevCounter` (compare-and-set),
+ * so two concurrent assertions cannot both be accepted. Returns false when the
+ * row is gone / owned by someone else / the counter moved underneath us.
+ */
+export async function advancePasskeyCounter(
+  userId: string,
+  id: string,
+  prevCounter: number,
+  newCounter: number,
+  backedUp: boolean
+): Promise<boolean> {
+  const s = getSchema();
+  const rows = await db
+    .update(s.userPasskeys)
+    .set({ counter: newCounter, lastUsedAt: new Date().toISOString(), backedUp: backedUp ? 1 : 0 })
+    .where(
+      and(
+        eq(s.userPasskeys.id, id),
+        eq(s.userPasskeys.userId, userId),
+        eq(s.userPasskeys.counter, prevCounter)
+      )
+    )
+    .returning({ id: s.userPasskeys.id });
+  return rows.length === 1;
+}
+
+export async function renamePasskey(userId: string, id: string, label: string): Promise<boolean> {
+  const s = getSchema();
+  const rows = await db
+    .update(s.userPasskeys)
+    .set({ label })
+    .where(and(eq(s.userPasskeys.userId, userId), eq(s.userPasskeys.id, id)))
+    .returning({ id: s.userPasskeys.id });
+  return rows.length === 1;
+}
+
 export async function setPasskeyPrfWrap(id: string, wrapped: string | null) {
   const s = getSchema();
   await db
@@ -602,11 +640,13 @@ export async function setPasskeyPrfWrap(id: string, wrapped: string | null) {
     .where(eq(s.userPasskeys.id, id));
 }
 
-export async function deletePasskey(userId: string, id: string) {
+export async function deletePasskey(userId: string, id: string): Promise<boolean> {
   const s = getSchema();
-  await db
+  const rows = await db
     .delete(s.userPasskeys)
-    .where(and(eq(s.userPasskeys.userId, userId), eq(s.userPasskeys.id, id)));
+    .where(and(eq(s.userPasskeys.userId, userId), eq(s.userPasskeys.id, id)))
+    .returning({ id: s.userPasskeys.id });
+  return rows.length === 1;
 }
 
 export async function countPasskeys(userId: string): Promise<number> {
@@ -995,6 +1035,8 @@ export interface AdminUserRow {
   role: string;
   emailVerified: number | boolean;
   mfaEnabled: number | boolean;
+  /** At least one registered passkey (a second factor; "Reset 2FA" removes it). */
+  hasPasskey?: boolean;
   onboardingComplete: number | boolean;
   plan: string;
   planExpiresAt: string | null;
@@ -1053,6 +1095,7 @@ export async function listUsersPage(
       u.role,
       u.email_verified        AS "emailVerified",
       u.mfa_enabled           AS "mfaEnabled",
+      EXISTS (SELECT 1 FROM user_passkeys up WHERE up.user_id = u.id) AS "hasPasskey",
       u.onboarding_complete   AS "onboardingComplete",
       u.plan,
       u.plan_expires_at       AS "planExpiresAt",
@@ -1362,11 +1405,12 @@ async function deleteAllUserDataTx(tx: TxClient, userId: string) {
     .delete(s.simplefinPendingTransactions)
     .where(eq(s.simplefinPendingTransactions.userId, userId));
   await tx.delete(s.passwordResetTokens).where(eq(s.passwordResetTokens.userId, userId));
-  // Auth: trusted devices (revoke all sessions on wipe), passkeys survive but
-  // PRF wraps are cleared (PRF binds to the old DEK — user gets a fresh one).
+  // Auth: trusted devices are deleted (revoke all sessions on wipe).
   // Identities survive (user can re-authenticate with same provider).
   // Recovery code wraps are cleared (they also bind to the old DEK).
   await tx.delete(s.userDevices).where(eq(s.userDevices.userId, userId));
+  // Passkeys survive deleteAllUserDataTx (clear-all-data keeps the DEK) but PRF
+  // wraps are cleared; wipeUserDataAndRewrap additionally DELETES the passkeys.
   await tx
     .update(s.userPasskeys)
     .set({ dekWrappedPrf: null })
@@ -1437,6 +1481,13 @@ async function deleteAllUserDataTx(tx: TxClient, userId: string) {
     .where(eq(s.users.id, userId));
 }
 
+/** Delete all of a user's passkeys (second factors + their PRF wraps) inside a tx. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function deleteUserPasskeysTx(tx: any, userId: string): Promise<void> {
+  const s = getSchema();
+  await tx.delete(s.userPasskeys).where(eq(s.userPasskeys.userId, userId));
+}
+
 /**
  * Permanently wipe all user-owned data (transactions, splits, accounts,
  * categories, etc.) and swap in a fresh DEK wrapped by the new password.
@@ -1476,6 +1527,11 @@ export async function wipeUserDataAndRewrap(
       .where(and(eq(s.oauthAccessTokens.userId, userId), isNull(s.oauthAccessTokens.revokedAt)));
 
     await deleteAllUserDataTx(tx, userId);
+
+    // Passkeys are second factors (userHasSecondFactor) and their PRF wraps bind
+    // the OLD DEK. Wipe clears TOTP the same way, so delete them: a user who lost
+    // the passkey must not be locked out of the (now empty) account.
+    await deleteUserPasskeysTx(tx, userId);
 
     // Rewrap the DEK with the new password + bump encryption version so any
     // cached session DEK gets invalidated on next auth check.
@@ -1739,6 +1795,8 @@ export async function applyAdminUserEdit(
         .where(and(eq(s.passwordResetTokens.userId, userId), isNull(s.passwordResetTokens.usedAt)));
     }
     if (patch.disableMfa) {
+      // Passkeys are second factors too: "Reset 2FA" removes them (and their PRF wraps).
+      await deleteUserPasskeysTx(tx, userId);
       // Trusted devices were enrolled under the old 2FA state.
       await tx
         .update(s.userDevices)

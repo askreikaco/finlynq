@@ -100,14 +100,13 @@ describe("read-only data layer and builders", () => {
     for (const s of FAMILY_SECTIONS_V1) expect(block, s).toMatch(new RegExp(`\\b${s}:\\s*build`));
   });
 
-  it("the overview route exports GET only and the MFA gate follows the login definition (mfaEnabled, not passkeys)", () => {
+  it("the overview route exports GET only and the MFA gate shares the login definition (userHasSecondFactor: TOTP or passkey)", () => {
     const route = read("src/app/api/family/overview/route.ts");
     expect([...route.matchAll(/export\s+(?:async\s+)?function\s+(\w+)/g)].map((m) => m[1])).toEqual(["GET"]);
     const gate = read("src/lib/family/overview/gate.ts");
-    expect(gate).toMatch(/mfaEnabled/);
-    expect(gate).not.toMatch(/passkey/i);
+    expect(gate).toMatch(/userHasSecondFactor\(/);
     const login = readFileSync(path.join(ROOT, "src/lib/auth/finish-login.ts"), "utf8");
-    expect(login).toMatch(/if \(user\.mfaEnabled\)/);
+    expect(login).toMatch(/userHasSecondFactor\(/);
   });
 });
 

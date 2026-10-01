@@ -14,6 +14,7 @@ import {
   isUserSortKey,
   getUserById,
   applyAdminUserEdit,
+  countPasskeys,
 } from "@/lib/auth/queries";
 import { parseTableFilters, type TableColFilter } from "@/lib/table-filters";
 
@@ -245,7 +246,8 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
-    const mfaBeingRemoved = disableMfa === true && !!target.mfaEnabled;
+    const mfaBeingRemoved =
+      disableMfa === true && (!!target.mfaEnabled || (await countPasskeys(userId)) > 0);
 
     const before = {
       role: target.role,

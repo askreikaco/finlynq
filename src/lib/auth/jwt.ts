@@ -359,7 +359,11 @@ export type ShortLivedPurpose =
   | "google-unlock-data"
   | "google-signup"
   | "google-link"
-  | "add-account";
+  | "add-account"
+  // WebAuthn challenge tokens (recovery plan B5; src/lib/auth/webauthn.ts).
+  // Each carries the challenge + bindings and is single-use (DB-consumed).
+  | "passkey-register"
+  | "passkey-2fa";
 
 const OAUTH_STATE_AUDIENCE = "pf-oauth-state";
 const OAUTH_STATE_ISSUER = ISSUER; // Reuse session token issuer
