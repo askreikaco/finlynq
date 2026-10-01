@@ -1,7 +1,10 @@
+"use client";
+
 import { useState } from "react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -56,17 +59,13 @@ export function EditUserModal({
   const [requiresMfaCode, setRequiresMfaCode] = useState(false);
 
   const handleRoleChange = (newRole: string | null) => {
-    if (newRole && newRole !== role) {
-      setRequiresMfaCode(true);
-    }
     if (newRole) setRole(newRole);
   };
 
+  // The server decides whether step-up is needed (acting admin has MFA and the
+  // change is role / email / 2FA reset); it answers 403 MFA_REQUIRED and the
+  // code field appears. Re-submitting with the code completes the change.
   const handleResetMfa = async () => {
-    if (!requiresMfaCode && user.mfaEnabled) {
-      setRequiresMfaCode(true);
-      return;
-    }
     await handleSubmit(true);
   };
 
@@ -76,9 +75,11 @@ export function EditUserModal({
 
     try {
       const updates: Record<string, unknown> = {};
-      if (displayName !== user.displayName) updates.displayName = displayName;
-      if (username !== user.username) updates.username = username;
-      if (email !== user.email) updates.email = email;
+      // Only CHANGED fields are sent. null and "" are the same "empty" value,
+      // and an emptied username/email is never sent (the API rejects it).
+      if (displayName !== (user.displayName ?? "")) updates.displayName = displayName;
+      if (username && username !== (user.username ?? "")) updates.username = username;
+      if (email && email !== (user.email ?? "")) updates.email = email;
       if (emailVerified !== (user.emailVerified === 1)) updates.emailVerified = emailVerified;
       if (role !== user.role) updates.role = role;
       if (plan !== user.plan) updates.plan = plan;
@@ -101,6 +102,9 @@ export function EditUserModal({
       onOpenChange(false);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to update user";
+      if ((err as { code?: string } | null)?.code === "MFA_REQUIRED") {
+        setRequiresMfaCode(true);
+      }
       setError(message);
     } finally {
       setLoading(false);
@@ -112,16 +116,20 @@ export function EditUserModal({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Edit User</DialogTitle>
+          <DialogDescription>
+            Change this account&apos;s profile, role, plan or 2FA. Only the fields you change are saved.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           {error && (
             <div
               role="alert"
+              id="edit-user-error"
               className="rounded-md bg-red-50 p-3 text-sm text-red-700 border border-red-200"
             >
               <div className="flex gap-2">
-                <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+                <AlertCircle aria-hidden="true" className="h-5 w-5 flex-shrink-0 mt-0.5" />
                 <div>{error}</div>
               </div>
             </div>
@@ -131,6 +139,7 @@ export function EditUserModal({
             <Label htmlFor="displayName">Display Name</Label>
             <Input
               id="displayName"
+              aria-describedby={error ? "edit-user-error" : undefined}
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               maxLength={100}
@@ -142,6 +151,7 @@ export function EditUserModal({
             <Label htmlFor="username">Username</Label>
             <Input
               id="username"
+              aria-describedby={error ? "edit-user-error" : undefined}
               value={username}
               onChange={(e) => setUsername(e.target.value.toLowerCase())}
               pattern="[a-z0-9._-]+"
@@ -153,6 +163,7 @@ export function EditUserModal({
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
+              aria-describedby={error ? "edit-user-error" : undefined}
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -212,24 +223,28 @@ export function EditUserModal({
 
           {user.mfaEnabled ? (
             <Button
+              type="button"
               variant="outline"
               onClick={handleResetMfa}
               disabled={loading}
               className="w-full"
             >
-              Reset 2FA
+              Reset 2FA (disable two-factor)
             </Button>
           ) : null}
 
           {requiresMfaCode && (
             <div>
-              <Label htmlFor="mfaCode">MFA Code (6 digits)</Label>
+              <Label htmlFor="mfaCode">Your authenticator code (6 digits)</Label>
               <Input
                 id="mfaCode"
                 type="text"
                 value={mfaCode}
-                onChange={(e) => setMfaCode(e.target.value.slice(0, 6))}
+                onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                 maxLength={6}
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                aria-describedby={error ? "edit-user-error" : undefined}
                 placeholder="000000"
                 disabled={loading}
               />
@@ -239,13 +254,14 @@ export function EditUserModal({
 
         <DialogFooter>
           <Button
+            type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={loading}
           >
             Cancel
           </Button>
-          <Button onClick={() => handleSubmit()} disabled={loading}>
+          <Button type="button" onClick={() => handleSubmit()} disabled={loading}>
             {loading ? "Saving..." : "Save Changes"}
           </Button>
         </DialogFooter>

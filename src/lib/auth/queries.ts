@@ -1574,44 +1574,97 @@ export async function getActiveUserCounts(): Promise<ActiveUserCounts> {
 
 // ─── Admin edit user functions ───────────────────────────────────────────────
 
-export async function updateUserDisplayName(userId: string, displayName: string | null) {
-  const now = new Date().toISOString();
-  await db.update(getSchema().users)
-    .set({ displayName, updatedAt: now })
-    .where(eq(getSchema().users.id, userId));
+export interface AdminUserEditPatch {
+  role?: "user" | "admin";
+  plan?: "free" | "pro" | "premium";
+  /** undefined = untouched (null when `plan` changes), null = clear. */
+  planExpiresAt?: string | null;
+  displayName?: string;
+  username?: string;
+  email?: string;
+  /** Explicit value; when email changes and this is undefined it resets to 0. */
+  emailVerified?: boolean;
+  disableMfa?: boolean;
+  /** Also stamp users.session_not_before (kills the target's live sessions). */
+  revokeSessions?: boolean;
 }
 
-export async function updateUserUsername(userId: string, username: string) {
-  const now = new Date().toISOString();
-  await db.update(getSchema().users)
-    .set({ username, updatedAt: now })
-    .where(eq(getSchema().users.id, userId));
-}
+export type AdminUserEditResult = { ok: true } | { ok: false; reason: "last_admin" | "not_found" };
 
-export async function updateUserEmailAdmin(
+/**
+ * Apply an admin edit as ONE transaction / ONE UPDATE so nothing is half
+ * applied. Uniqueness is NOT pre-checked: a concurrent writer is caught by the
+ * case-insensitive unique indexes (users_email_lower_unique /
+ * users_username_lower_unique), which throw 23505 — the caller maps it to 409.
+ * Demoting an admin locks every admin row (FOR UPDATE) before counting, so two
+ * admins demoting each other concurrently cannot both pass the guard.
+ * Only whitelisted columns are ever set; password / kek / dek columns cannot
+ * be reached through this helper.
+ */
+export async function applyAdminUserEdit(
   userId: string,
-  email: string,
-  emailVerified?: boolean,
-) {
-  const now = new Date().toISOString();
-  await db.update(getSchema().users)
-    .set({
-      email,
-      emailVerified: emailVerified ? 1 : 0,
-      updatedAt: now,
-    })
-    .where(eq(getSchema().users.id, userId));
-}
+  patch: AdminUserEditPatch,
+): Promise<AdminUserEditResult> {
+  const s = getSchema();
+  const nowIso = new Date().toISOString();
+  return db.transaction(async (tx) => {
+    const [current] = await tx
+      .select({ id: s.users.id, role: s.users.role })
+      .from(s.users)
+      .where(eq(s.users.id, userId))
+      .for("update");
+    if (!current) return { ok: false as const, reason: "not_found" as const };
 
-export async function disableUserMfaForced(userId: string) {
-  const now = new Date().toISOString();
-  await db.update(getSchema().users)
-    .set({
-      mfaEnabled: 0,
-      mfaSecret: null,
-      updatedAt: now,
-    })
-    .where(eq(getSchema().users.id, userId));
+    if (patch.role === "user" && current.role === "admin") {
+      const admins = await tx
+        .select({ id: s.users.id })
+        .from(s.users)
+        .where(eq(s.users.role, "admin"))
+        .for("update");
+      if (admins.length <= 1) return { ok: false as const, reason: "last_admin" as const };
+    }
+
+    const set: Partial<typeof s.users.$inferInsert> = { updatedAt: nowIso };
+    if (patch.role !== undefined) set.role = patch.role;
+    if (patch.plan !== undefined) {
+      set.plan = patch.plan;
+      set.planExpiresAt = patch.planExpiresAt ?? null;
+    } else if (patch.planExpiresAt !== undefined) {
+      set.planExpiresAt = patch.planExpiresAt;
+    }
+    if (patch.displayName !== undefined) set.displayName = patch.displayName;
+    if (patch.username !== undefined) set.username = patch.username;
+    if (patch.email !== undefined) {
+      set.email = patch.email;
+      set.emailVerified = patch.emailVerified ? 1 : 0;
+      // Pending verify token was issued for the OLD address.
+      set.emailVerifyToken = null;
+    } else if (patch.emailVerified !== undefined) {
+      set.emailVerified = patch.emailVerified ? 1 : 0;
+    }
+    if (patch.disableMfa) {
+      set.mfaEnabled = 0;
+      set.mfaSecret = null;
+    }
+    if (patch.revokeSessions) set.sessionNotBefore = new Date();
+    await tx.update(s.users).set(set).where(eq(s.users.id, userId));
+
+    if (patch.email !== undefined) {
+      // Outstanding reset links were mailed to the OLD address.
+      await tx
+        .update(s.passwordResetTokens)
+        .set({ usedAt: nowIso })
+        .where(and(eq(s.passwordResetTokens.userId, userId), isNull(s.passwordResetTokens.usedAt)));
+    }
+    if (patch.disableMfa) {
+      // Trusted devices were enrolled under the old 2FA state.
+      await tx
+        .update(s.userDevices)
+        .set({ revokedAt: nowIso })
+        .where(and(eq(s.userDevices.userId, userId), isNull(s.userDevices.revokedAt)));
+    }
+    return { ok: true as const };
+  });
 }
 
 export async function countAdminUsers(): Promise<number> {

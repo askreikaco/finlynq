@@ -385,8 +385,16 @@ export default function AdminPage() {
         body: JSON.stringify({ userId: editingUser.id, ...updates }),
       });
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to update user");
+        const data = await res.json().catch(() => ({}));
+        throw Object.assign(new Error(data.error || "Failed to update user"), {
+          code: data.code as string | undefined,
+        });
+      }
+      const data = await res.json().catch(() => ({}));
+      if (data.selfDemoted) {
+        // Our own admin role is gone; every further admin call would 403.
+        window.location.assign("/");
+        return;
       }
       // Refresh the current page to show updated user
       await fetchUsers();
@@ -1099,7 +1107,7 @@ export default function AdminPage() {
         </Tabs>
       </motion.div>
 
-      {editingUser && (
+      {editingUser && editModalOpen && (
         <EditUserModal
           user={editingUser}
           open={editModalOpen}
