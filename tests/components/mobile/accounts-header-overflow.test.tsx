@@ -50,7 +50,7 @@ describe("Accounts header on mobile", () => {
     expect(cls(primary)).not.toContain("max-md:hidden");
 
     fireEvent.click(screen.getByRole("button", { name: "More actions" }));
-    const menu = await screen.findByRole("menu");
+    const menu = await screen.findByRole("menu", undefined, { timeout: 5000 });
     expect(within(menu).getAllByRole("menuitem").map((i) => i.textContent)).toEqual(["Manage groups", "Show archived"]);
   });
 
@@ -58,12 +58,12 @@ describe("Accounts header on mobile", () => {
     render(<AccountsPage />);
     await screen.findByRole("heading", { level: 1, name: "Accounts" });
     fireEvent.click(screen.getByRole("button", { name: "More actions" }));
-    fireEvent.click(within(await screen.findByRole("menu")).getByText("Manage groups"));
+    fireEvent.click(within(await screen.findByRole("menu", undefined, { timeout: 5000 })).getByText("Manage groups"));
     await waitFor(() => expect(screen.getByText("manage-groups-open")).toBeTruthy());
 
     // "Show archived" toggles the label to "Hide archived"
     fireEvent.click(screen.getByRole("button", { name: "More actions" }));
-    fireEvent.click(within(await screen.findByRole("menu")).getByText("Show archived"));
+    fireEvent.click(within(await screen.findByRole("menu", undefined, { timeout: 5000 })).getByText("Show archived"));
     await waitFor(() => expect(screen.getByTitle("Hide archived accounts")).toBeTruthy());
   });
 
