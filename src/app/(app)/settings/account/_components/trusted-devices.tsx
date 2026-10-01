@@ -42,10 +42,24 @@ export function TrustedDevices() {
   useEffect(() => {
     async function loadDevices() {
       try {
-        const res = await fetch("/api/settings/sign-in-methods");
+        // pf_device is httpOnly with path /api/auth, so the current-device id
+        // must come from an /api/auth/ endpoint and be merged here.
+        const [res, curRes] = await Promise.all([
+          fetch("/api/settings/sign-in-methods"),
+          fetch("/api/auth/device-current"),
+        ]);
+        let currentId: string | null = null;
+        if (curRes.ok) {
+          currentId = (await curRes.json()).id ?? null;
+        }
         if (res.ok) {
           const data = await res.json();
-          setDevices(data.devices || []);
+          setDevices(
+            ((data.devices || []) as Device[]).map((dev) => ({
+              ...dev,
+              current: currentId !== null && dev.id === currentId,
+            }))
+          );
         }
       } catch (err) {
         console.error("Failed to load devices:", err);
@@ -125,12 +139,14 @@ export function TrustedDevices() {
       <CardContent className="space-y-4">
         <p className="text-xs text-muted-foreground">{STRINGS.deviceNote}</p>
 
-        {message && (
-          <p className="text-sm text-emerald-600 flex items-center gap-2" role="status">
-            <Check className="h-4 w-4" />
-            {message}
-          </p>
-        )}
+        <div role="status" aria-live="polite">
+          {message && (
+            <p className="text-sm text-emerald-600 flex items-center gap-2">
+              <Check className="h-4 w-4" aria-hidden="true" />
+              {message}
+            </p>
+          )}
+        </div>
 
         {devices.length > 0 ? (
           <>
@@ -158,6 +174,7 @@ export function TrustedDevices() {
                   <Button
                     variant="ghost"
                     size="sm"
+                    aria-label={`${STRINGS.revokeButton} ${device.label}`}
                     onClick={() => handleRevokeDevice(device.id)}
                     disabled={device.current || revoking !== null}
                     className={revoking === device.id ? "opacity-60" : ""}

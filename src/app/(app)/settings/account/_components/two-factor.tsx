@@ -17,6 +17,7 @@ const STRINGS = {
   secretLabel: "Secret key",
   secretHelp: "Save this key in a safe place. You can use it to add your account to another authenticator app.",
   copyButton: "Copy secret",
+  copyFailedError: "Could not copy. Select the key and copy it manually.",
   copiedButton: "Copied!",
   codeLabel: "Verification code",
   codePlaceholder: "000000",
@@ -36,6 +37,10 @@ const STRINGS = {
   enablePrompt: "Enter the 6-digit code from your authenticator app to enable 2FA.",
   disablePrompt: "Enter the 6-digit code from your authenticator app and your password to disable 2FA.",
   statusEnabled: "2FA is enabled. Your account is protected.",
+  codeLengthError: "Code must be 6 digits",
+  passwordRequiredError: "Password is required",
+  scanLabel: "Scan with authenticator app:",
+  cancel: "Cancel",
   statusDisabled: "2FA is not enabled. Add an extra layer of protection.",
 } as const;
 
@@ -103,24 +108,31 @@ export function TwoFactor() {
       }
 
       const data = await res.json();
-      setSecret(data.secret);
 
-      // Generate QR code data URL
-      const qrDataUrl = await QRCode.toDataURL(data.uri);
-      setQrDataUrl(qrDataUrl);
+      // Generate the QR locally; only expose the secret once it succeeded.
+      const dataUrl = await QRCode.toDataURL(data.uri);
+      setSecret(data.secret);
+      setQrDataUrl(dataUrl);
       setState({ type: "enabling" });
       setStatus("");
     } catch (_err) {
+      setSecret("");
+      setQrDataUrl("");
       setError(STRINGS.genericError);
       setState({ type: "disabled" });
+      setStatus("");
     }
   }
 
   function handleCopySecret() {
     if (!secret) return;
-    navigator.clipboard.writeText(secret);
-    setSecretCopied(true);
-    setTimeout(() => setSecretCopied(false), 2000);
+    navigator.clipboard
+      .writeText(secret)
+      .then(() => {
+        setSecretCopied(true);
+        setTimeout(() => setSecretCopied(false), 2000);
+      })
+      .catch(() => setError(STRINGS.copyFailedError));
   }
 
   async function handleEnableMfa() {
@@ -128,12 +140,12 @@ export function TwoFactor() {
     setStatus("");
 
     if (!code || code.length !== 6) {
-      setError("Code must be 6 digits");
+      setError(STRINGS.codeLengthError);
       return;
     }
 
     if (!password) {
-      setError("Password is required");
+      setError(STRINGS.passwordRequiredError);
       return;
     }
 
@@ -184,12 +196,12 @@ export function TwoFactor() {
     setStatus("");
 
     if (!code || code.length !== 6) {
-      setError("Code must be 6 digits");
+      setError(STRINGS.codeLengthError);
       return;
     }
 
     if (!password) {
-      setError("Password is required");
+      setError(STRINGS.passwordRequiredError);
       return;
     }
 
@@ -318,7 +330,7 @@ export function TwoFactor() {
 
             {qrDataUrl && (
               <div className="space-y-2">
-                <p className="text-xs font-medium text-muted-foreground">Scan with authenticator app:</p>
+                <p className="text-xs font-medium text-muted-foreground">{STRINGS.scanLabel}</p>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={qrDataUrl} alt={STRINGS.qrCodeAlt} className="w-48 h-48" />
               </div>
@@ -333,6 +345,7 @@ export function TwoFactor() {
                   id="secret"
                   type="text"
                   readOnly
+                  aria-describedby="secret-help"
                   value={secret}
                   className="font-mono text-sm"
                 />
@@ -346,7 +359,7 @@ export function TwoFactor() {
                   {secretCopied ? STRINGS.copiedButton : STRINGS.copyButton}
                 </Button>
               </div>
-              <p className="text-[11px] text-muted-foreground mt-1">{STRINGS.secretHelp}</p>
+              <p id="secret-help" className="text-[11px] text-muted-foreground mt-1">{STRINGS.secretHelp}</p>
             </div>
 
             <form onSubmit={(e) => { e.preventDefault(); handleEnableMfa(); }} className="space-y-3 max-w-sm">
@@ -408,7 +421,7 @@ export function TwoFactor() {
                   setError("");
                 }}
               >
-                Cancel
+                {STRINGS.cancel}
               </Button>
             </form>
           </>

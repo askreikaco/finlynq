@@ -12,7 +12,6 @@ const STRINGS = {
   description: "Manage how you sign in to your account",
   googleSection: "Google",
   linkedAt: "Linked",
-  linkedDate: "on {{date}}",
   lastUsed: "Last used {{date}}",
   unlinkButton: "Unlink",
   linkButton: "Link Google account",
@@ -30,6 +29,7 @@ const STRINGS = {
   invalidPasswordError: "Invalid password",
   rateLimitError: "Too many attempts. Please try again later.",
   genericError: "An error occurred",
+  passwordRequiredError: "Password is required",
 } as const;
 
 interface SignInMethod {
@@ -123,7 +123,7 @@ export function SignInMethods() {
     setUnlinkError("");
 
     if (!unlinkPassword) {
-      setUnlinkError("Password is required");
+      setUnlinkError(STRINGS.passwordRequiredError);
       return;
     }
 
@@ -241,8 +241,12 @@ export function SignInMethods() {
 
         {/* Unlink dialog */}
         {showUnlinkDialog && (
-          <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
-            <p className="text-sm font-medium">{STRINGS.unlinkConfirmTitle}</p>
+          <div
+            role="group"
+            aria-labelledby="unlink-title"
+            className="rounded-lg border border-border bg-muted/30 p-4 space-y-3"
+          >
+            <p id="unlink-title" className="text-sm font-medium">{STRINGS.unlinkConfirmTitle}</p>
             <p className="text-xs text-muted-foreground">{STRINGS.unlinkConfirmMessage}</p>
 
             <div>
@@ -254,6 +258,7 @@ export function SignInMethods() {
                 type="password"
                 autoComplete="current-password"
                 placeholder={STRINGS.passwordPlaceholder}
+                autoFocus
                 value={unlinkPassword}
                 onChange={(e) => setUnlinkPassword(e.target.value)}
                 disabled={unlinking}

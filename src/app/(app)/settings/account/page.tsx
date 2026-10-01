@@ -5,7 +5,7 @@
  * Extracted from the monolith /settings/page.tsx.
  */
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -249,7 +249,9 @@ export default function AccountSettingsPage() {
 
       {/* Security Section */}
       <TwoFactor />
-      <SignInMethods />
+      <Suspense fallback={null}>
+        <SignInMethods />
+      </Suspense>
       <TrustedDevices />
       <PasskeysPlaceholder />
 
