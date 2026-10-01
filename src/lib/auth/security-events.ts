@@ -11,6 +11,7 @@ import { logApiError } from "@/lib/validate";
 
 export type SecurityEventType =
   | "recovery_code_generated"
+  | "recovery_code_used"
   | "passkey_added"
   | "passkey_removed"
   | "recovery_reset_success"

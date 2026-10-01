@@ -38,6 +38,7 @@ import {
 } from "@/lib/auth/queries";
 import { validateBody, safeErrorMessage, logApiError } from "@/lib/validate";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { applyTrustedDevicePolicy } from "@/lib/auth/login-device";
 import { finishPasswordLogin } from "@/lib/auth/finish-login";
 import { setSessionCookie } from "@/lib/auth/cookies";
 
@@ -140,7 +141,7 @@ export async function POST(request: NextRequest) {
     // Complete the login flow: unwrap DEK, handle MFA, or issue full session.
     let result;
     try {
-      result = await finishPasswordLogin(user, password, request, { trustDevice });
+      result = await finishPasswordLogin(user, password, request);
     } catch (err) {
       await logApiError("POST", "/api/auth/login", err);
       return NextResponse.json(
@@ -168,42 +169,14 @@ export async function POST(request: NextRequest) {
     const response = NextResponse.json({ success: true });
     setSessionCookie(response, result.token);
 
-    // Handle device issuance based on trustDevice flag
-    if (trustDevice !== false && result.dek) {
-      try {
-        const { issueDevice, deviceCookieOptions } = await import("@/lib/auth/trusted-device");
-        const userAgent = request.headers.get("user-agent") || undefined;
-        const issued = await issueDevice(result.userId, result.dek, userAgent);
-        if (issued) {
-          const opts = deviceCookieOptions();
-          response.cookies.set("pf_device", issued.cookieValue, {
-            httpOnly: opts.httpOnly,
-            secure: opts.secure,
-            sameSite: opts.sameSite,
-            maxAge: opts.maxAge,
-            path: opts.path,
-          });
-        }
-      } catch (err) {
-        // Device issuance failure should not fail the login
-        await logApiError("POST", "/api/auth/login (device)", err);
-      }
-    } else if (trustDevice === false) {
-      // Shared computer: delete existing device if present
-      try {
-        const { revokeDevice } = await import("@/lib/auth/trusted-device");
-        const pf_device = request.cookies.get("pf_device")?.value;
-        if (pf_device) {
-          const parts = pf_device.split(".");
-          if (parts.length === 2) {
-            await revokeDevice(result.userId, parts[0]);
-          }
-        }
-      } catch (err) {
-        // Device revocation failure should not fail the login
-        await logApiError("POST", "/api/auth/login (revoke device)", err);
-      }
-    }
+    await applyTrustedDevicePolicy({
+      request,
+      response,
+      userId: user.id,
+      dek: result.dek,
+      trustDevice,
+      routeLabel: "/api/auth/login",
+    });
 
     return response;
   } catch (error) {

@@ -7,7 +7,8 @@
  * Order:
  *   1. validate password; derive new KEK; wrap the SAME DEK
  *   2. TX (applyRecoveryRewrapTx): password+wrap, session_not_before=cutoff,
- *      burn pending email-reset tokens. Failure -> nothing changed.
+ *      burn pending email-reset tokens, revoke ALL OAuth grants (access+refresh,
+ *      unexchanged auth codes). Failure -> nothing changed.
  *   3. evict DEK cache + MCP tx cache (cutoff cache busted inside the query)
  *   4. revokeAllDevicesExcept(keepDeviceId)   (throws -> caller sees failure)
  *   5. wait until the wall clock is past the cutoff second, then mint the
@@ -16,7 +17,6 @@
  *   7. fire-and-forget: security event + passwordChanged email
  */
 
-import { db } from "@/db";
 import { deriveKEK, wrapDEK, generateSalt } from "@/lib/crypto/envelope";
 import { evictAllForUser, putDEK } from "@/lib/crypto/dek-cache";
 import { invalidateUser } from "@/lib/mcp/user-tx-cache";
@@ -91,18 +91,6 @@ export async function finalizeRecoveryReset(
 
   evictAllForUser(userId);
   invalidateUser(userId);
-
-  // Revoke all OAuth access/refresh tokens for this user
-  const { and, eq, isNull } = await import("drizzle-orm");
-  const { oauthAccessTokens: oauthTokensTable } = await import("@/db/schema-pg");
-  const now = new Date();
-  await db
-    .update(oauthTokensTable)
-    .set({ revokedAt: now })
-    .where(and(
-      eq(oauthTokensTable.userId, userId),
-      isNull(oauthTokensTable.revokedAt),
-    ));
 
   await revokeAllDevicesExcept(userId, keepDeviceId);
 

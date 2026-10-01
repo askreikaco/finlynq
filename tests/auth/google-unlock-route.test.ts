@@ -221,7 +221,6 @@ describe("/api/auth/google/unlock", () => {
       token: "session_token_jwt",
       jti: "session_jti_123",
       dek: Buffer.alloc(32, 0xaa),
-      userId: "google-unlock-data",
     });
 
     mockIssueDevice.mockResolvedValue({
@@ -274,7 +273,6 @@ describe("/api/auth/google/unlock", () => {
       token: "mfa_pending_token",
       jti: "mfa_jti_123",
       dek: Buffer.alloc(32, 0xaa),
-      userId: "google-unlock-data",
     });
 
     const req = makeUnlockRequest({
@@ -555,7 +553,6 @@ describe("/api/auth/google/unlock", () => {
       token: "session_token_jwt",
       jti: "session_jti_123",
       dek: Buffer.alloc(32, 0xaa),
-      userId: "google-unlock-data",
     });
 
     let finishCalled = false;
@@ -572,7 +569,6 @@ describe("/api/auth/google/unlock", () => {
         token: "session_token_jwt",
         jti: "session_jti_123",
         dek: Buffer.alloc(32, 0xaa),
-        userId: "google-unlock-data",
       };
     });
 
