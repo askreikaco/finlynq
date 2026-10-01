@@ -239,7 +239,7 @@ export default function AccountSettingsPage() {
   return (
     <div className="max-w-2xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Account & Security</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Account</h1>
         <p className="text-sm text-muted-foreground mt-0.5">Login, API key, privacy, and backup / restore</p>
       </div>
 
