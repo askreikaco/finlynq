@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const mockDbChain: Record<string, ReturnType<typeof vi.fn>> = {};
-const chainMethods = ["select", "from", "where", "orderBy"];
+const chainMethods = ["select", "from", "leftJoin", "where", "orderBy"];
 for (const m of chainMethods) {
   mockDbChain[m] = vi.fn().mockReturnValue(mockDbChain);
 }
@@ -18,6 +18,7 @@ vi.mock("@/db", () => ({
   }),
   schema: {
     transactions: { id: "id", date: "date", payee: "payee", amount: "amount", accountId: "accountId", categoryId: "categoryId", userId: "userId" },
+    categories: { id: "id", type: "type" },
   },
 }));
 

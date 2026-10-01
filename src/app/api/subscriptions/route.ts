@@ -169,11 +169,14 @@ export async function POST(request: NextRequest) {
           categoryId: schema.transactions.categoryId,
         })
         .from(schema.transactions)
+        .leftJoin(schema.categories, eq(schema.transactions.categoryId, schema.categories.id))
         .where(and(
           eq(schema.transactions.userId, userId),
           sql`${schema.transactions.date} >= ${cutoffStr} AND ${schema.transactions.payee} != ''`,
-          // Transfer / trade / swap legs are never subscriptions.
+          // Transfer / trade / swap legs and Reconciliation-type ('R', e.g. the
+          // canonical "Transfer") categories are never subscriptions.
           sql`${schema.transactions.linkId} IS NULL AND ${schema.transactions.tradeLinkId} IS NULL AND ${schema.transactions.swapLinkId} IS NULL`,
+          sql`(${schema.categories.type} IS NULL OR ${schema.categories.type} <> 'R')`,
         ))
         .all();
       // Payee is encrypted at rest — decrypt before running the recurring

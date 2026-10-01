@@ -26,7 +26,9 @@ export async function GET(request: NextRequest) {
 
   // Transfer, trade and swap legs are excluded: a monthly "transfer to
   // savings" recurs, but it is neither a bill nor income, and suggesting it as
-  // a subscription is noise. Dividends (holding-linked, no pair id) stay.
+  // a subscription is noise. So are rows in a Reconciliation-type ('R')
+  // category — the canonical "Transfer" category — which is how an imported
+  // but never-paired transfer looks. Dividends (holding-linked, no pair id) stay.
   const txns = await db
     .select({
       id: schema.transactions.id,
@@ -38,10 +40,12 @@ export async function GET(request: NextRequest) {
       categoryId: schema.transactions.categoryId,
     })
     .from(schema.transactions)
+    .leftJoin(schema.categories, eq(schema.transactions.categoryId, schema.categories.id))
     .where(and(
       eq(schema.transactions.userId, userId),
       sql`${schema.transactions.date} >= ${cutoffStr} AND ${schema.transactions.payee} != ''`,
       sql`${schema.transactions.linkId} IS NULL AND ${schema.transactions.tradeLinkId} IS NULL AND ${schema.transactions.swapLinkId} IS NULL`,
+      sql`(${schema.categories.type} IS NULL OR ${schema.categories.type} <> 'R')`,
     ))
     .all();
 
