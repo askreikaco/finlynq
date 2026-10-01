@@ -15,12 +15,26 @@ const DOLLAR_SYMBOLS: Record<string, string> = {
   MXN: "MX$",
 };
 
+/**
+ * ISO 4217 minor-unit count for a currency (VND/JPY/KRW → 0, USD/EUR → 2),
+ * read from Intl so zero-decimal currencies don't render a meaningless ".00".
+ * Custom / non-ISO codes that Intl rejects fall back to 2.
+ */
+export function currencyDecimals(currency: string): number {
+  try {
+    return new Intl.NumberFormat("en-CA", { style: "currency", currency })
+      .resolvedOptions().maximumFractionDigits ?? 2;
+  } catch {
+    return 2;
+  }
+}
+
 export function formatCurrency(
   amount: number,
   currency: string = "USD",
   opts?: { decimals?: number }
 ): string {
-  const decimals = opts?.decimals ?? 2;
+  const decimals = opts?.decimals ?? currencyDecimals(currency);
   const symbol = DOLLAR_SYMBOLS[currency];
   if (symbol) {
     const num = new Intl.NumberFormat("en-CA", {
