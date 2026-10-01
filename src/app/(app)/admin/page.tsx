@@ -31,6 +31,7 @@ import {
   type TableColFilter,
 } from "@/lib/table-filters";
 import { formatDateTimeLocal } from "@/lib/currency";
+import { EditUserModal } from "@/components/admin/edit-user-modal";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { Pagination } from "@/components/ui/pagination";
 
@@ -236,6 +237,8 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updatingUser, setUpdatingUser] = useState<string | null>(null);
+  const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
   // Server-driven table state. Changing any of these refetches the page.
   const [sort, setSort] = useState<{ key: string; dir: "asc" | "desc" } | null>(
     null
@@ -363,6 +366,30 @@ export default function AdminPage() {
           prev.map((u) => (u.id === userId ? { ...u, plan } : u))
         );
       }
+    } finally {
+      setUpdatingUser(null);
+    }
+  };
+  const handleEditUser = (user: AdminUser) => {
+    setEditingUser(user);
+    setEditModalOpen(true);
+  };
+
+  const handleSaveUserEdits = async (updates: Record<string, unknown>) => {
+    if (!editingUser) return;
+    setUpdatingUser(editingUser.id);
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: editingUser.id, ...updates }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to update user");
+      }
+      // Refresh the current page to show updated user
+      await fetchUsers();
     } finally {
       setUpdatingUser(null);
     }
@@ -542,6 +569,13 @@ export default function AdminPage() {
         accessor: () => null,
         render: (u) => (
           <span className="space-x-2 whitespace-nowrap">
+            <button
+              className="text-xs px-2 py-1 rounded border hover:bg-muted transition-colors disabled:opacity-50"
+              disabled={updatingUser === u.id}
+              onClick={() => handleEditUser(u)}
+            >
+              Edit
+            </button>
             <button
               className="text-xs px-2 py-1 rounded border hover:bg-muted transition-colors disabled:opacity-50"
               disabled={updatingUser === u.id}
@@ -1064,6 +1098,15 @@ export default function AdminPage() {
           </TabsContent>
         </Tabs>
       </motion.div>
+
+      {editingUser && (
+        <EditUserModal
+          user={editingUser}
+          open={editModalOpen}
+          onOpenChange={setEditModalOpen}
+          onSave={handleSaveUserEdits}
+        />
+      )}
     </motion.div>
   );
 }

@@ -140,8 +140,14 @@ const updateSchema = z.object({
   role: z.enum(["user", "admin"]).optional(),
   plan: z.enum(["free", "pro", "premium"]).optional(),
   planExpiresAt: z.string().optional(),
-  // Required if the acting admin has MFA enabled â€” Finding Admin-MFA-step-up.
+  displayName: z.string().max(100).optional(),
+  username: z.string().min(3).max(32).regex(/^[a-z0-9._-]+$/).optional(),
+  email: z.string().email().optional(),
+  emailVerified: z.boolean().optional(),
+  disableMfa: z.boolean().optional(),
+  // Required if the acting admin has MFA enabled — Finding Admin-MFA-step-up.
   // A stale session cookie alone can no longer silently mutate other users.
+  // Also required for disableMfa and role changes.
   mfaCode: z.string().length(6).optional(),
 });
 
@@ -162,46 +168,62 @@ export async function PATCH(request: NextRequest) {
     const parsed = validateBody(body, updateSchema);
     if (parsed.error) return parsed.error;
 
-    const { userId, role, plan, planExpiresAt, mfaCode } = parsed.data;
+    const { 
+      userId, 
+      role, 
+      plan, 
+      planExpiresAt, 
+      displayName,
+      username,
+      email,
+      emailVerified,
+      disableMfa,
+      mfaCode 
+    } = parsed.data;
 
     const adminUser = await getUserById(adminUserId);
     if (!adminUser) {
       return NextResponse.json({ error: "Admin user not found." }, { status: 404 });
     }
 
+    // Determine if step-up is required: role change, disableMfa
+    const requiresStepUp = (role !== undefined && role !== undefined) || disableMfa;
+
     // MFA step-up: if the admin has MFA enabled, require a fresh TOTP on the
     // request. Decrypt the stored secret with the admin's session DEK.
     if (adminUser.mfaEnabled && adminUser.mfaSecret) {
-      if (!mfaCode) {
+      if (requiresStepUp && !mfaCode) {
         return NextResponse.json(
           { error: "MFA code required for admin mutations.", code: "MFA_REQUIRED" },
           { status: 403 }
         );
       }
-      // SESSION-DEK-REQUIRED: deliberately NOT auth.context.dek. This decrypts the ADMIN's
-      // TOTP secret for a step-up check before an admin mutation; the live-session
-      // requirement is a factor, not an accident.
-      const dek = sessionId ? getDEK(sessionId, userId) : null;
-      if (!dek) {
-        return NextResponse.json(
-          { error: "Session expired. Please sign in again." },
-          { status: 423 }
-        );
-      }
-      let mfaSecret: string | null;
-      try {
-        mfaSecret = decryptField(dek, adminUser.mfaSecret);
-      } catch {
-        return NextResponse.json(
-          { error: "MFA secret could not be decrypted." },
-          { status: 500 }
-        );
-      }
-      if (!mfaSecret || !verifyMfaCode(mfaSecret, mfaCode)) {
-        return NextResponse.json(
-          { error: "Invalid MFA code." },
-          { status: 401 }
-        );
+      if (mfaCode) {
+        // SESSION-DEK-REQUIRED: deliberately NOT auth.context.dek. This decrypts the ADMIN's
+        // TOTP secret for a step-up check before an admin mutation; the live-session
+        // requirement is a factor, not an accident.
+        const dek = sessionId ? getDEK(sessionId, adminUserId) : null;
+        if (!dek) {
+          return NextResponse.json(
+            { error: "Session expired. Please sign in again." },
+            { status: 423 }
+          );
+        }
+        let mfaSecret: string | null;
+        try {
+          mfaSecret = decryptField(dek, adminUser.mfaSecret);
+        } catch {
+          return NextResponse.json(
+            { error: "MFA secret could not be decrypted." },
+            { status: 500 }
+          );
+        }
+        if (!mfaSecret || !verifyMfaCode(mfaSecret, mfaCode)) {
+          return NextResponse.json(
+            { error: "Invalid MFA code." },
+            { status: 401 }
+          );
+        }
       }
     }
 
@@ -210,18 +232,78 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "User not found." }, { status: 404 });
     }
 
-    const before = { role: target.role, plan: target.plan, planExpiresAt: target.planExpiresAt };
+    // Validate role change: check if demoting the last admin
+    if (role && role === "user" && target.role === "admin") {
+      const adminCount = await (await import("@/lib/auth/queries")).countAdminUsers();
+      if (adminCount === 1) {
+        return NextResponse.json(
+          { error: "Cannot demote the last admin." },
+          { status: 409 }
+        );
+      }
+    }
 
+    // Validate username uniqueness (case-insensitive)
+    if (username && username.toLowerCase() !== (target.username?.toLowerCase() ?? "")) {
+      const existing = await (await import("@/lib/auth/queries")).getUserByUsername(username);
+      if (existing && existing.id !== userId) {
+        return NextResponse.json(
+          { error: "Username already taken." },
+          { status: 409 }
+        );
+      }
+    }
+
+    // Validate email uniqueness (case-insensitive)
+    if (email && email.toLowerCase() !== (target.email?.toLowerCase() ?? "")) {
+      const existing = await (await import("@/lib/auth/queries")).getUserByEmail(email);
+      if (existing && existing.id !== userId) {
+        return NextResponse.json(
+          { error: "Email already taken." },
+          { status: 409 }
+        );
+      }
+    }
+
+    const before = {
+      role: target.role,
+      plan: target.plan,
+      planExpiresAt: target.planExpiresAt,
+      displayName: target.displayName,
+      username: target.username,
+      email: target.email,
+      emailVerified: target.emailVerified,
+      mfaEnabled: target.mfaEnabled,
+    };
+
+    // Perform updates
+    if (displayName !== undefined) {
+      await (await import("@/lib/auth/queries")).updateUserDisplayName(userId, displayName);
+    }
+    if (username !== undefined) {
+      await (await import("@/lib/auth/queries")).updateUserUsername(userId, username);
+    }
+    if (email !== undefined) {
+      await (await import("@/lib/auth/queries")).updateUserEmailAdmin(userId, email, emailVerified);
+    }
     if (role) await updateUserRole(userId, role);
     if (plan) await updateUserPlan(userId, plan, planExpiresAt);
+    if (disableMfa) {
+      await (await import("@/lib/auth/queries")).disableUserMfaForced(userId);
+    }
 
     const after = {
       role: role ?? target.role,
       plan: plan ?? target.plan,
       planExpiresAt: planExpiresAt ?? target.planExpiresAt,
+      displayName: displayName !== undefined ? displayName : target.displayName,
+      username: username !== undefined ? username : target.username,
+      email: email !== undefined ? email : target.email,
+      emailVerified: emailVerified !== undefined ? (emailVerified ? 1 : 0) : target.emailVerified,
+      mfaEnabled: disableMfa ? 0 : target.mfaEnabled,
     };
 
-    // Finding #16 â€” audit-log the mutation. Fire-and-forget so a failed audit
+    // Finding #16 – audit-log the mutation. Fire-and-forget so a failed audit
     // write doesn't block a legitimate admin op (but it is logged to server log).
     if (role && role !== target.role) {
       await logAdminAction({
@@ -243,12 +325,54 @@ export async function PATCH(request: NextRequest) {
         ip: clientIp(request),
       });
     }
+    if (displayName !== undefined && displayName !== target.displayName) {
+      await logAdminAction({
+        adminUserId,
+        targetUserId: userId,
+        action: "user_profile_change",
+        before: { displayName: target.displayName },
+        after: { displayName },
+        ip: clientIp(request),
+      });
+    }
+    if (username !== undefined && username !== target.username) {
+      await logAdminAction({
+        adminUserId,
+        targetUserId: userId,
+        action: "user_profile_change",
+        before: { username: target.username },
+        after: { username },
+        ip: clientIp(request),
+      });
+    }
+    if (email !== undefined && email !== target.email) {
+      await logAdminAction({
+        adminUserId,
+        targetUserId: userId,
+        action: "user_profile_change",
+        before: { email: target.email },
+        after: { email },
+        ip: clientIp(request),
+      });
+    }
+    if (disableMfa && target.mfaEnabled) {
+      await logAdminAction({
+        adminUserId,
+        targetUserId: userId,
+        action: "user_profile_change",
+        before: { mfaEnabled: 1 },
+        after: { mfaEnabled: 0 },
+        ip: clientIp(request),
+      });
+    }
 
     return NextResponse.json({ success: true, before, after });
-  } catch {
+  } catch (err) {
+    console.error("[admin/users] PATCH error:", err);
     return NextResponse.json(
       { error: "Failed to update user." },
       { status: 500 }
     );
   }
 }
+

@@ -1531,3 +1531,53 @@ export async function getActiveUserCounts(): Promise<ActiveUserCounts> {
     activeLast24Hours: Number(row?.active_24h ?? 0),
   };
 }
+
+// ─── Admin edit user functions ───────────────────────────────────────────────
+
+export async function updateUserDisplayName(userId: string, displayName: string | null) {
+  const now = new Date().toISOString();
+  await db.update(getSchema().users)
+    .set({ displayName, updatedAt: now })
+    .where(eq(getSchema().users.id, userId));
+}
+
+export async function updateUserUsername(userId: string, username: string) {
+  const now = new Date().toISOString();
+  await db.update(getSchema().users)
+    .set({ username, updatedAt: now })
+    .where(eq(getSchema().users.id, userId));
+}
+
+export async function updateUserEmailAdmin(
+  userId: string,
+  email: string,
+  emailVerified?: boolean,
+) {
+  const now = new Date().toISOString();
+  await db.update(getSchema().users)
+    .set({
+      email,
+      emailVerified: emailVerified ? 1 : 0,
+      updatedAt: now,
+    })
+    .where(eq(getSchema().users.id, userId));
+}
+
+export async function disableUserMfaForced(userId: string) {
+  const now = new Date().toISOString();
+  await db.update(getSchema().users)
+    .set({
+      mfaEnabled: 0,
+      mfaSecret: null,
+      updatedAt: now,
+    })
+    .where(eq(getSchema().users.id, userId));
+}
+
+export async function countAdminUsers(): Promise<number> {
+  const result = await db
+    .select({ count: count() })
+    .from(getSchema().users)
+    .where(eq(getSchema().users.role, "admin"));
+  return result[0]?.count ?? 0;
+}
