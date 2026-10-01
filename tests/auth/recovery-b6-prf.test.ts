@@ -848,6 +848,96 @@ describe.skipIf(!HAS_DB)("recovery B6 passkey PRF (real Postgres, real verificat
     });
   });
 
+  // ───────────────────────── adversarial review (step-2 token abuse, concurrency) ─────────────────────────
+  describe("adversarial: step-2 token binding", () => {
+    async function step2(auth: SoftAuthenticator, route: "login" | "recovery") {
+      const o = route === "login" ? (await loginOptions()).json : (await recOptions()).json;
+      const body = { token: o.token, response: auth.assert(o.options.challenge, K) };
+      const r1 = route === "login" ? await loginVerify(body) : await recReset(body);
+      expect(r1.status).toBe(200);
+      return r1.json();
+    }
+
+    it("a step-2 token (cred A) cannot be answered by another credential: same user or other user, even with that credential's own PRF", async () => {
+      const u = await mkUser();
+      const other = await mkUser();
+      const a1 = await enrollPrf(u);
+      const a2 = await enrollPrf(u);
+      const b = await enrollPrf(other);
+      for (const attacker of [a2, b]) {
+        const x = await step2(a1, "login");
+        const res = await loginVerify({
+          token: x.token,
+          response: attacker.assert(x.options.challenge, K),
+          prfOutput: attacker.prf(prfSaltB64url(attacker.id)),
+        });
+        expect(res.status).toBe(400);
+        expect(res.cookies.get("pf_session")).toBeUndefined();
+      }
+      // the legitimate credential still works with a fresh pair
+      expect((await loginOnce(a1)).status).toBe(200);
+    });
+
+    it("a login step-2 token cannot finish a recovery (and vice versa): password untouched, no session", async () => {
+      const u = await mkUser();
+      const a = await enrollPrf(u);
+      const xl = await step2(a, "login");
+      const r = await recReset({ token: xl.token, response: a.assert(xl.options.challenge, K), prfOutput: a.prf(xl.prfSalt), newPassword: NEW_PW });
+      expect(r.status).toBe(400);
+      expect(await passwordUnwrapsTo(u.id, OLD_PW)).not.toBeNull();
+      const xr = await step2(a, "recovery");
+      const l = await loginVerify({ token: xr.token, response: a.assert(xr.options.challenge, K), prfOutput: a.prf(xr.prfSalt) });
+      expect(l.status).toBe(400);
+      expect(l.cookies.get("pf_session")).toBeUndefined();
+    });
+
+    it("anonymous login/recovery tokens cannot be swapped into the user-bound finish-prf flow (no wrap written)", async () => {
+      const u = await mkUser();
+      const a = new SoftAuthenticator();
+      await register(u, a);
+      const { token: sess } = await session(u.id, u.dek);
+      for (const o of [(await loginOptions(a.id)).json, (await recOptions(a.id)).json]) {
+        const res = await finishPrf(sess, { token: o.token, response: a.assert(o.options.challenge, K), prfOutput: a.prf(o.prfSalt) });
+        expect(res.status).toBe(400);
+      }
+      expect((await passkeyRow(a.id)).dekWrappedPrf).toBeNull();
+    });
+
+    it("a prf-options token (user+session+credential bound) cannot be used at login/recovery", async () => {
+      const u = await mkUser();
+      const a = new SoftAuthenticator();
+      await register(u, a);
+      const { token: sess } = await session(u.id, u.dek);
+      const { json } = await prfOptions(sess, a.id);
+      const l = await loginVerify({ token: json.token, response: a.assert(json.options.challenge, K), prfOutput: a.prf(json.prfSalt) });
+      expect(l.status).toBe(400);
+      const json2 = (await prfOptions(sess, a.id)).json;
+      const r = await recReset({ token: json2.token, response: a.assert(json2.options.challenge, K), prfOutput: a.prf(json2.prfSalt), newPassword: NEW_PW });
+      expect(r.status).toBe(400);
+      expect(await passwordUnwrapsTo(u.id, OLD_PW)).not.toBeNull();
+    });
+
+    it("concurrent double submit of recovery: exactly one wins; DEK unchanged", async () => {
+      const u = await mkUser();
+      const a = await enrollPrf(u);
+      const { json } = await recOptions(a.id);
+      const body = { token: json.token, response: a.assert(json.options.challenge, K), prfOutput: a.prf(json.prfSalt), newPassword: NEW_PW };
+      const [x, y] = await Promise.all([recReset(body), recReset(body)]);
+      expect([x.status, y.status].sort()).toEqual([200, 400]);
+      const dek = await passwordUnwrapsTo(u.id, NEW_PW);
+      expect(dek && dek.equals(u.dek)).toBe(true);
+    });
+
+    it("concurrent double submit of discoverable step 2: exactly one session", async () => {
+      const u = await mkUser();
+      const a = await enrollPrf(u);
+      const x = await step2(a, "login");
+      const b2 = { token: x.token, response: a.assert(x.options.challenge, K), prfOutput: a.prf(x.prfSalt) };
+      const [p, q] = await Promise.all([loginVerify(b2), loginVerify(b2)]);
+      expect([p.status, q.status].sort()).toEqual([200, 400]);
+    });
+  });
+
   // ───────────────────────── wiring ─────────────────────────
   describe("wiring", () => {
     it("new routes are NOT in the CSRF bypass list; cross-origin cookie POST -> 403, same-origin passes", () => {
