@@ -41,11 +41,12 @@ afterEach(() => {
 const section = (n: RegExp) => screen.getByRole("button", { name: n });
 
 describe("settings/import accordion", () => {
-  it("renders no tablist; sections are accordion buttons, all collapsed by default", () => {
+  it("renders no tablist; /settings/import opens Import settings, the flattened sections start collapsed", async () => {
     render(<ImportSettingsPage />);
     expect(screen.queryByRole("tablist")).toBeNull();
     expect(screen.queryAllByRole("tab")).toHaveLength(0);
-    for (const n of [/Templates/, /Email Import/, /Migrate from another app/, /Investment statements/]) {
+    expect(section(/Import settings/).getAttribute("aria-expanded")).toBe("true");
+    for (const n of [/Rules/, /Templates/, /Email Import/, /Migrate from another app/, /Investment statements/]) {
       expect(section(n).getAttribute("aria-expanded")).toBe("false");
     }
     expect(screen.queryByText("templates-body")).toBeNull();

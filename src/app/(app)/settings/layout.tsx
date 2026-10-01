@@ -17,17 +17,11 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
   Settings2,
-  Shield,
-  Database,
   Tag,
   Briefcase,
-  Sliders,
   Server,
   Wrench,
-  Zap,
   Link2,
-  Upload,
-  Landmark,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -36,20 +30,11 @@ type NavItem = { href: string; label: string; icon: LucideIcon };
 // Order matches issue #57 — Developer last per user decision.
 const NAV_ITEMS: NavItem[] = [
   { href: "/settings/general", label: "General", icon: Settings2 },
-  { href: "/settings/account", label: "Account", icon: Shield },
-  { href: "/settings/data", label: "Data", icon: Database },
   { href: "/settings/categorization", label: "Categorization", icon: Tag },
-  // FINLYNQ-84 — rules moved out of /settings/categorization into their own
-  // sub-page with a multi-condition + multi-action editor.
-  { href: "/settings/rules", label: "Rules", icon: Zap },
-  { href: "/settings/import", label: "Import", icon: Upload },
-  // SimpleFIN bank feed — automated transaction pull (on-demand sync).
-  { href: "/settings/bank-feeds", label: "Banks", icon: Landmark },
   { href: "/settings/reconciliation", label: "Reconciliation", icon: Link2 },
   // Securities master (Tier 2) is folded into this page — one filterable row
   // per security; /settings/securities + /settings/holding-accounts redirect here.
   { href: "/settings/investments", label: "Investments", icon: Briefcase },
-  { href: "/settings/display", label: "Display", icon: Sliders },
   { href: "/settings/integrations", label: "Integrations", icon: Server },
   { href: "/settings/developer", label: "Developer", icon: Wrench },
 ];
@@ -59,7 +44,12 @@ const NAV_ITEMS: NavItem[] = [
 const ROUTE_GROUP: Array<{ prefix: string; group: string }> = [
   { prefix: "/settings/holding-accounts", group: "/settings/investments" },
   { prefix: "/settings/securities", group: "/settings/investments" },
-  { prefix: "/settings/dropdown-order", group: "/settings/display" },
+  { prefix: "/settings/dropdown-order", group: "/settings/general" },
+  { prefix: "/settings/display", group: "/settings/general" },
+  { prefix: "/settings/bank-feeds", group: "/settings/integrations" },
+  { prefix: "/settings/rules", group: "/settings/reconciliation" },
+  { prefix: "/settings/import", group: "/settings/reconciliation" },
+  { prefix: "/settings/data", group: "/settings/developer" },
 ];
 
 function activeHref(pathname: string): string {

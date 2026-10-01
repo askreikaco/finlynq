@@ -23,7 +23,8 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Settings2, Shield, Database, Loader2 } from "lucide-react";
+import { Settings2, Shield, Database, Loader2, Sun, Moon, Monitor } from "lucide-react";
+import { useTheme } from "next-themes";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { useFont, FONT_OPTIONS, type FontKey } from "@/components/font-provider";
 import { Combobox } from "@/components/ui/combobox";
@@ -31,6 +32,7 @@ import { useDisplayCurrencyOptions } from "@/lib/hooks/useDisplayCurrencyOptions
 import { FxOverridesSection } from "@/components/fx-overrides-section";
 import { LanguageCard } from "@/components/settings/language-card";
 import { ActiveCurrenciesSection } from "@/components/active-currencies-section";
+import { DisplaySection } from "@/components/settings/sections/display-section";
 
 type RecomputeState = { active: boolean; target: string; done: number; total: number; finished: boolean };
 
@@ -38,6 +40,7 @@ export default function GeneralSettingsPage() {
   const { displayCurrency, setDisplayCurrency } = useDisplayCurrency();
   const currencyOptions = useDisplayCurrencyOptions(displayCurrency);
   const { font, setFont } = useFont();
+  const { theme, setTheme } = useTheme();
   const [currencyError, setCurrencyError] = useState("");
   // Pending currency awaiting confirmation (Phase 3: switching re-derives every
   // transaction's stored reporting amount at historical rates).
@@ -155,6 +158,46 @@ export default function GeneralSettingsPage() {
               </SelectContent>
             </Select>
           </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <Label id="appearance-label">Appearance</Label>
+              <p className="text-xs text-muted-foreground">
+                System, light, or dark.
+              </p>
+            </div>
+            <div
+              role="radiogroup"
+              aria-labelledby="appearance-label"
+              className="inline-flex rounded-lg border p-0.5"
+            >
+              {([
+                { value: "system", label: "System", icon: Monitor },
+                { value: "light", label: "Light", icon: Sun },
+                { value: "dark", label: "Dark", icon: Moon },
+              ] as const).map(({ value, label, icon: Icon }) => {
+                const selected = (theme ?? "system") === value;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    onClick={() => setTheme(value)}
+                    className={`inline-flex min-h-11 items-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors ${
+                      selected
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {currencyError ? (
             <p className="text-sm text-destructive">{currencyError}</p>
           ) : null}
@@ -208,6 +251,8 @@ export default function GeneralSettingsPage() {
       <ActiveCurrenciesSection />
 
       <FxOverridesSection />
+
+      <DisplaySection />
 
       {/* About */}
       <Card>
