@@ -367,7 +367,9 @@ export type ShortLivedPurpose =
   // B6 (PRF): passkey login/unlock, passkey recovery, PRF-wrap enrolment.
   | "passkey-login"
   | "passkey-recovery"
-  | "passkey-prf";
+  | "passkey-prf"
+  // B7 follow-up: passkey step-up for destructive/admin actions (purpose-bound via `act`).
+  | "passkey-stepup";
 
 const OAUTH_STATE_AUDIENCE = "pf-oauth-state";
 const OAUTH_STATE_ISSUER = ISSUER; // Reuse session token issuer

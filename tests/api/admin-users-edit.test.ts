@@ -225,7 +225,9 @@ describe("disableMfa for passkey-only targets", () => {
     asAdmin();
     mockGetUserById.mockImplementation(async (id: string) =>
       id === "admin-1" ? ADMIN : id === "user-1" ? { ...TARGET, mfaEnabled: 0 } : null);
-    mockCountPasskeys.mockResolvedValue(1);
+    // The passkey belongs to the TARGET only; the acting admin has none (B7: a passkey-only
+    // admin would need a passkey step-up, covered in recovery-b7-security.test.ts).
+    mockCountPasskeys.mockImplementation(async (id: string) => (id === "user-1" ? 1 : 0));
     const res = await patch({ userId: "user-1", disableMfa: true });
     expect(res.status).toBe(200);
     expect(mockApply).toHaveBeenCalledWith("user-1", expect.objectContaining({ disableMfa: true, revokeSessions: true }));

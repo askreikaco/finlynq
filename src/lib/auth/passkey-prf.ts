@@ -186,6 +186,18 @@ export async function proveWithPasskey(opts: {
   const anonymous = bound === ANON_USER;
 
   const passkey = await getPasskey(response.id);
+  // passkey_login_failed: only when the credential names a user (an unknown
+  // credential has no account to attach the event to) and only for sign-in.
+  const loginFailed = (): PasskeyProof => {
+    if (purpose === "passkey-login" && passkey) {
+      logSecurityEvent(passkey.userId, "passkey_login_failed", {
+        method: "passkey",
+        ip: opts.ip,
+        userAgent: opts.userAgent,
+      }).catch(() => {});
+    }
+    return { kind: "fail" };
+  };
   const verdict = await verifyPasskeyAssertion({
     token: opts.token,
     purpose,
@@ -209,7 +221,7 @@ export async function proveWithPasskey(opts: {
         userAgent: opts.userAgent,
       }).catch(() => {});
     }
-    return { kind: "fail" };
+    return loginFailed();
   }
   // verifyPasskeyAssertion returned ok, so `passkey` is non-null here.
   const pk = passkey!;
@@ -219,7 +231,7 @@ export async function proveWithPasskey(opts: {
       ip: opts.ip,
       userAgent: opts.userAgent,
     }).catch(() => {});
-    return { kind: "fail" };
+    return loginFailed();
   }
 
   const wrapped = pk.dekWrappedPrf;
@@ -227,7 +239,7 @@ export async function proveWithPasskey(opts: {
   if (opts.prfOutput === undefined) {
     // Step 1 of the two-step (discoverable) flow only: a credential-scoped
     // token cannot be "re-identified" again.
-    if (!anonymous) return { kind: "fail" };
+    if (!anonymous) return loginFailed();
     if (!wrapped) return { kind: "prf_unavailable", userId: pk.userId, credentialId: pk.id };
     const next = await beginPasskeyAssertion({
       purpose,
@@ -245,7 +257,7 @@ export async function proveWithPasskey(opts: {
   }
 
   const prf = parsePrfOutput(opts.prfOutput);
-  if (!prf) return { kind: "fail" };
+  if (!prf) return loginFailed();
   try {
     if (!wrapped) return { kind: "prf_unavailable", userId: pk.userId, credentialId: pk.id };
     try {
@@ -253,7 +265,7 @@ export async function proveWithPasskey(opts: {
       return { kind: "unlocked", userId: pk.userId, credentialId: pk.id, dek };
     } catch {
       // Wrong PRF / wrap of another credential / tampered: same as any failure.
-      return { kind: "fail" };
+      return loginFailed();
     }
   } finally {
     prf.fill(0);

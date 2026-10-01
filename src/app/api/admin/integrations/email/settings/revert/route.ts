@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { passkeyStepUpSchema } from "@/lib/auth/passkey-stepup";
 import { getDialect } from "@/db";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { validateBody } from "@/lib/validate";
@@ -26,7 +27,11 @@ import {
 export const dynamic = "force-dynamic";
 
 const revertSchema = z
-  .object({ mfaCode: z.string().length(6).optional(), password: z.string().min(1).max(1024).optional() })
+  .object({
+    mfaCode: z.string().length(6).optional(),
+    password: z.string().min(1).max(1024).optional(),
+    passkeyStepUp: passkeyStepUpSchema.optional(),
+  })
   .strict();
 
 export async function POST(request: NextRequest) {

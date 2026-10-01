@@ -85,6 +85,14 @@ function ResetPasswordForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="rounded-lg border border-border bg-card px-3 py-2.5 text-xs text-foreground" data-testid="recovery-banner">
+        Have a passkey, a recovery code or a trusted device? You can reset your password{" "}
+        <strong>without losing data</strong>.{" "}
+        <Link href="/auth/forgot-password" className="font-medium underline underline-offset-2">
+          Choose another way
+        </Link>
+      </div>
+
       <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2.5 text-xs text-foreground">
         Resetting <strong>permanently erases all data in this account</strong> —
         accounts, transactions, budgets, everything. Your data is encrypted with

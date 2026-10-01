@@ -51,7 +51,7 @@ export const MAX_PASSKEYS_PER_USER = 20;
 
 export type WebAuthnChallengePurpose = Extract<
   ShortLivedPurpose,
-  "passkey-register" | "passkey-2fa" | "passkey-login" | "passkey-recovery" | "passkey-prf"
+  "passkey-register" | "passkey-2fa" | "passkey-login" | "passkey-recovery" | "passkey-prf" | "passkey-stepup"
 >;
 
 /**
@@ -144,6 +144,8 @@ export interface ChallengeBinding {
   pendingJti?: string;
   /** Credential id the token was minted for (PRF second step / enrolment). */
   credentialId?: string;
+  /** Action the token was minted for (step-up): a token for one action never satisfies another. */
+  action?: string;
 }
 
 export async function signChallengeToken(
@@ -158,6 +160,7 @@ export async function signChallengeToken(
       ...(bind.sessionId ? { sid: bind.sessionId } : {}),
       ...(bind.pendingJti ? { pjti: bind.pendingJti } : {}),
       ...(bind.credentialId ? { cid: bind.credentialId } : {}),
+      ...(bind.action ? { act: bind.action } : {}),
       jti: crypto.randomUUID(),
     },
     CHALLENGE_TTL_SECONDS,
@@ -192,13 +195,14 @@ export async function consumeChallengeToken(
 ): Promise<string | null> {
   const payload = await verifyShortLived(token, purpose);
   if (!payload) return null;
-  const { challenge, userId, sid, pjti, cid, jti, exp } = payload as Record<string, unknown>;
+  const { challenge, userId, sid, pjti, cid, act, jti, exp } = payload as Record<string, unknown>;
   if (typeof challenge !== "string" || !challenge || typeof jti !== "string" || !jti) return null;
   if (typeof exp !== "number") return null;
   if (userId !== expect.userId) return null;
   if ((expect.sessionId ?? null) !== ((sid as string | undefined) ?? null)) return null;
   if ((expect.pendingJti ?? null) !== ((pjti as string | undefined) ?? null)) return null;
   if ((expect.credentialId ?? null) !== ((cid as string | undefined) ?? null)) return null;
+  if ((expect.action ?? null) !== ((act as string | undefined) ?? null)) return null;
 
   const { db } = await import("@/db");
   const { revokedJtis } = await import("@/db/schema-pg");

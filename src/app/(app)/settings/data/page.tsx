@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Upload, FileText, Wallet, Tag, Briefcase, ArrowLeftRight, Database, Download, AlertTriangle, Trash2, History } from "lucide-react";
 import { RebuildSnapshotsButton } from "@/components/portfolio/rebuild-snapshots-button";
+import { getPasskeyStepUp } from "@/lib/client/passkey-stepup";
 
 type ImportRow = Record<string, string>;
 type ImportSection = "accounts" | "categories" | "portfolio";
@@ -82,15 +83,30 @@ export default function DataSettingsPage() {
     setDelLoading(true);
     setDelStatus("");
     try {
-      const res = await fetch("/api/auth/delete-account", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          password: delPassword,
-          confirmation: delConfirm,
-          mfaCode: delMfaCode || undefined,
-        }),
-      });
+      const send = (extra: Record<string, unknown> = {}) =>
+        fetch("/api/auth/delete-account", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            password: delPassword,
+            confirmation: delConfirm,
+            mfaCode: delMfaCode || undefined,
+            ...extra,
+          }),
+        });
+      let res = await send();
+      if (res.status === 401) {
+        // Passkey-only account: a password is not enough, confirm with a passkey and retry once.
+        const probe = await res.clone().json().catch(() => ({}));
+        if (probe?.code === "passkey-required") {
+          const step = await getPasskeyStepUp("delete-account");
+          if (!step.ok) {
+            setDelStatus(step.code === "cancelled" ? "Passkey confirmation was cancelled." : "Passkey confirmation failed.");
+            return;
+          }
+          res = await send({ passkeyStepUp: step.passkeyStepUp });
+        }
+      }
       if (res.ok) {
         // Account + session are gone — leave the app for the public home.
         window.location.href = "/";
