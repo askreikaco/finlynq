@@ -457,7 +457,11 @@ async function resolveTxAmounts(
     date?: string;
   },
   userId: string,
-  isUpdate: boolean
+  isUpdate: boolean,
+  currentTx?: {
+    enteredCurrency?: string | null;
+    enteredAmount?: number | null;
+  }
 ): Promise<{
   ok: true;
   fields: {
@@ -544,8 +548,35 @@ async function resolveTxAmounts(
   // passed a currency that doesn't match the account, that's a cross-
   // currency entry without conversion (same as today's broken behavior); we
   // preserve it for back-compat but it will get flagged by tx_currency_audit.
+  //
+  // UPDATE (amount-only): when updating an existing cross-currency transaction
+  // with only amount (no enteredAmount), keep the existing entered_amount and
+  // recompute entered_fx_rate to stay consistent. Same-currency transactions
+  // get entered_amount = amount, entered_fx_rate = 1.
   if (data.amount != null) {
     const currency = (data.currency ?? accountCurrency).toUpperCase();
+
+    // For amount-only UPDATEs with cross-currency transactions: preserve entered_amount
+    if (isUpdate && currentTx?.enteredCurrency && currentTx.enteredAmount != null) {
+      const existingEnteredCurrency = currentTx.enteredCurrency.toUpperCase();
+      const existingEnteredAmount = currentTx.enteredAmount;
+
+      if (existingEnteredCurrency !== accountCurrency && existingEnteredAmount !== 0) {
+        // Cross-currency case: keep entered_amount, recompute entered_fx_rate
+        return {
+          ok: true,
+          fields: {
+            amount: data.amount,
+            currency,
+            enteredAmount: existingEnteredAmount,
+            enteredCurrency: existingEnteredCurrency,
+            enteredFxRate: data.amount / existingEnteredAmount,
+          },
+        };
+      }
+    }
+
+    // Same-currency case (or not an update): entered = amount with rate 1
     return {
       ok: true,
       fields: {
@@ -696,7 +727,28 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const resolved = await resolveTxAmounts(data, auth.userId, true);
+    // Fetch current transaction's entered_* fields for amount-only update handling.
+    // This is used by resolveTxAmounts to keep cross-currency transactions consistent
+    // when only the amount is being updated.
+    let currentTx: { enteredCurrency?: string | null; enteredAmount?: number | null } = {};
+    if (data.amount !== undefined && data.enteredAmount === undefined && data.enteredCurrency === undefined) {
+      const curr = await db
+        .select({
+          enteredCurrency: schema.transactions.enteredCurrency,
+          enteredAmount: schema.transactions.enteredAmount,
+        })
+        .from(schema.transactions)
+        .where(
+          and(
+            eq(schema.transactions.id, id),
+            eq(schema.transactions.userId, auth.userId),
+          ),
+        )
+        .get();
+      if (curr) currentTx = curr;
+    }
+
+    const resolved = await resolveTxAmounts(data, auth.userId, true, currentTx);
     if (!resolved.ok) return resolved.response;
     Object.assign(data, resolved.fields);
 

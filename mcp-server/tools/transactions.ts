@@ -1171,7 +1171,7 @@ export function registerTransactionsTools(server: McpServer, ctx: PgToolContext)
   async function opTxUpdate(argsObj: UpdateTxArgs): Promise<ToolResult> {
       const { id, date, amount, payee, category, category_id, note, tags, portfolioHoldingId, portfolioHolding, quantity, enteredAmount, enteredCurrency } = argsObj;
       const existing = await q(db, sql`
-        SELECT t.id, t.account_id, t.category_id, t.date, t.amount, a.currency AS account_currency
+        SELECT t.id, t.account_id, t.category_id, t.date, t.amount, t.entered_amount, t.entered_currency, a.currency AS account_currency
           FROM transactions t
           LEFT JOIN accounts a ON a.id = t.account_id
          WHERE t.user_id = ${userId} AND t.id = ${id}
@@ -1184,6 +1184,9 @@ export function registerTransactionsTools(server: McpServer, ctx: PgToolContext)
       const accountCurrency = String(existing[0].account_currency ?? "CAD");
       const txAccountId = existing[0].account_id != null ? Number(existing[0].account_id) : undefined;
       const existingAmount = existing[0].amount != null ? Number(existing[0].amount) : null;
+      // Capture existing entered_* fields for amount-only update path.
+      const existingEnteredAmount = existing[0].entered_amount != null ? Number(existing[0].entered_amount) : null;
+      const existingEnteredCurrency = existing[0].entered_currency != null ? String(existing[0].entered_currency) : accountCurrency;
       // Issue #212 — capture existing category_id for the post-merge
       // sign-vs-category check below (when the patch only touches amount,
       // we still need the existing category to evaluate the invariant).
@@ -1333,9 +1336,42 @@ export function registerTransactionsTools(server: McpServer, ctx: PgToolContext)
         `);
         fieldsUpdated.push("amount", "currency", "entered_amount", "entered_currency", "entered_fx_rate");
       } else if (amount !== undefined) {
-        // Account-side-only update: leave entered_* alone.
-        await db.execute(sql`UPDATE transactions SET amount = ${amount}, updated_at = NOW() WHERE id = ${id} AND user_id = ${userId}`);
-        fieldsUpdated.push("amount");
+        // Account-side-only update: sync entered_* to keep the triple consistent.
+        // When amount changes without enteredAmount:
+        // - If entered_currency == account currency: set entered_amount = amount, entered_fx_rate = 1
+        // - If entered_currency differs: keep entered_amount, recompute entered_fx_rate = amount / entered_amount
+        let syncedEnteredAmount = existingEnteredAmount;
+        let syncedEnteredCurrency = existingEnteredCurrency;
+        let syncedEnteredFxRate = 1;
+
+        if (existingEnteredCurrency === accountCurrency) {
+          // Same-currency case: the entered side should mirror the account side
+          syncedEnteredAmount = amount;
+          syncedEnteredCurrency = accountCurrency;
+          syncedEnteredFxRate = 1;
+        } else if (existingEnteredAmount != null && existingEnteredAmount !== 0) {
+          // Cross-currency case: keep entered_amount, recompute the rate
+          syncedEnteredAmount = existingEnteredAmount;
+          syncedEnteredCurrency = existingEnteredCurrency;
+          // Guard divide-by-zero: if entered_amount is 0 or null, keep rate at 1
+          syncedEnteredFxRate = existingEnteredAmount !== 0 ? amount / existingEnteredAmount : 1;
+        } else {
+          // Fallback: no valid entered_amount to work with, mirror the account side
+          syncedEnteredAmount = amount;
+          syncedEnteredCurrency = accountCurrency;
+          syncedEnteredFxRate = 1;
+        }
+
+        await db.execute(sql`
+          UPDATE transactions
+             SET amount = ${amount},
+                 entered_amount = ${syncedEnteredAmount},
+                 entered_currency = ${syncedEnteredCurrency},
+                 entered_fx_rate = ${syncedEnteredFxRate},
+                 updated_at = NOW()
+           WHERE id = ${id} AND user_id = ${userId}
+        `);
+        fieldsUpdated.push("amount", "entered_amount", "entered_currency", "entered_fx_rate");
       }
 
       // GH #334 — a changed amount (or date, or account currency) invalidates
