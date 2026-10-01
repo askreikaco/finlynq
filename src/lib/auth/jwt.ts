@@ -125,6 +125,12 @@ export interface CreateSessionTokenOptions {
    * /api/auth/mfa/verify.
    */
   pending?: boolean;
+  /**
+   * Override the issued-at (iat) claim. Used by finalizeRecoveryReset to ensure
+   * the new session is not rejected by its own session_not_before cutoff.
+   * In seconds (Unix timestamp), must be >= now - SESSION_TTL_MS.
+   */
+  iat?: number;
 }
 
 /**
@@ -156,9 +162,16 @@ export async function createSessionToken(
     .setSubject(userId)
     .setJti(jti)
     .setIssuer(ISSUER)
-    .setAudience(AUDIENCE)
-    .setIssuedAt()
-    .setExpirationTime(options.expirationTime ?? EXPIRATION);
+    .setAudience(AUDIENCE);
+
+  // Use custom iat if provided (for recovery reset), otherwise set to now
+  if (typeof options.iat === "number") {
+    builder.setIssuedAt(options.iat);
+  } else {
+    builder.setIssuedAt();
+  }
+
+  builder.setExpirationTime(options.expirationTime ?? EXPIRATION);
   const token = await builder.sign(getSecret());
   return { token, jti };
 }

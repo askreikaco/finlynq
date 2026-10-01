@@ -29,7 +29,9 @@ import {
 import { validatePasswordStrength } from "@/lib/auth/password-policy";
 import { validateBody, safeErrorMessage, logApiError } from "@/lib/validate";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { revokeAllDevices } from "@/lib/auth/trusted-device";
+import { revokeAllDevicesExcept } from "@/lib/auth/queries";
+import { sendEmail } from "@/lib/email";
+import { escapeHtml } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 
@@ -155,13 +157,59 @@ export async function POST(request: NextRequest) {
 
     await updateUserPasswordAndWrap(userId, newHash, wrap);
 
-    // Revoke all devices so the current browser gets a new device on next login.
+    // Extract the current device ID from pf_device cookie to keep it.
+    // Parse cookie value: <uuid>.<secret>
+    let currentDeviceId: string | undefined;
+    try {
+      const deviceCookie = request.cookies.get("pf_device");
+      if (deviceCookie?.value) {
+        const parts = deviceCookie.value.split(".");
+        if (parts.length === 2) {
+          currentDeviceId = parts[0];
+        }
+      }
+    } catch {
+      // Ignore cookie parsing errors
+    }
+
+    // Revoke all devices except the current one so the current browser keeps working.
     // Wrap in try/catch so a device revocation failure doesn't fail the password change.
     try {
-      await revokeAllDevices(userId);
+      if (currentDeviceId) {
+        await revokeAllDevicesExcept(userId, currentDeviceId);
+      } else {
+        // No current device, revoke all
+        await revokeAllDevicesExcept(userId);
+      }
     } catch (err) {
-      await logApiError("POST", "/api/settings/change-password (revokeAllDevices)", err);
+      await logApiError("POST", "/api/settings/change-password (revokeAllDevicesExcept)", err);
       // swallow — device revocation shouldn't block password change
+    }
+
+    // Send password-changed email if user has email.
+    // Fire-and-forget: errors are logged but don't fail the password change.
+    try {
+      if (user.email) {
+        const displayName = (user.displayName || user.username || "User").toString();
+        await sendEmail({
+          to: user.email,
+          subject: "Your Finlynq password was changed",
+          html: `
+            <p>Hello ${escapeHtml(displayName)},</p>
+            <p>Your Finlynq account password was recently changed.</p>
+            <p>If you didn't make this change, or if you're not sure why, please contact us immediately.</p>
+            <p>
+              <a href="${process.env.APP_URL || "https://money.reika.vn"}/settings/account">
+                View your account settings
+              </a>
+            </p>
+          `,
+          text: `Your Finlynq password was changed. If this wasn't you, contact support immediately.`,
+        });
+      }
+    } catch (err) {
+      await logApiError("POST", "/api/settings/change-password (email)", err);
+      // swallow — email failure shouldn't block password change
     }
 
     // The DEK itself is unchanged, so the current session (and any other
