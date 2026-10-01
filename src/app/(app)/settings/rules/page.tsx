@@ -28,6 +28,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import {
   Zap, Plus, Trash2, AlertTriangle,
@@ -253,7 +254,6 @@ export default function RulesSettingsPage() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-medium text-sm truncate">{rule.name}</span>
                     {rule.priority > 0 && <Badge variant="secondary" className="text-[10px]">P{rule.priority}</Badge>}
-                    {!rule.isActive && <Badge variant="outline" className="text-[10px]">disabled</Badge>}
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     <strong>When:</strong> {summarizeConditions(rule.conditions ?? { all: [] }, rule.actionFKNames)}
@@ -262,10 +262,14 @@ export default function RulesSettingsPage() {
                     <strong>Then:</strong> {summarizeActions(rule.actions ?? [], rule.actionFKNames)}
                   </p>
                 </div>
-                <div className="flex gap-1 shrink-0">
-                  <Button variant="ghost" size="sm" onClick={() => handleToggle(rule)}>
-                    {rule.isActive ? "Disable" : "Enable"}
-                  </Button>
+                <div className="flex items-center gap-1 shrink-0">
+                  <span className="flex h-8 items-center px-1">
+                    <Switch
+                      checked={!!rule.isActive}
+                      onCheckedChange={() => handleToggle(rule)}
+                      aria-label={`${rule.isActive ? "Disable" : "Enable"} rule ${rule.name}`}
+                    />
+                  </span>
                   <Button variant="ghost" size="sm" onClick={() => startEditor(rule)}>
                     Edit
                   </Button>
