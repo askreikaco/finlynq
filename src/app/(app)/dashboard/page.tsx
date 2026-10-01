@@ -28,6 +28,7 @@ import { useDisplayCurrency } from "@/components/currency-provider";
 import { CurrencyAuditBanner } from "@/components/currency-audit-banner";
 import type { DashboardData, HealthData } from "./_components/types";
 import { formatPercent } from "@/lib/locale";
+import { PageHeader } from "@/components/mobile";
 
 // --- Quick Import Widget ---
 function QuickImportWidget() {
@@ -345,18 +346,23 @@ export default function DashboardPage() {
       {/* ============================================
           HEADER — Greeting + Profile hint
           ============================================ */}
-      <motion.div variants={itemVariants} className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">{greeting}</h1>
-          <p className="text-[13px] text-muted-foreground mt-0.5">Here&apos;s your financial overview</p>
-        </div>
+      <motion.div variants={itemVariants}>
+        <PageHeader
+          className="flex flex-wrap items-center justify-between gap-3"
+          title={greeting}
+          titleClassName="text-xl font-semibold tracking-tight"
+          subtitleClassName="text-[13px] text-muted-foreground mt-0.5"
+          subtitle="Here's your financial overview"
+          actions={
         <Link
           href="/settings/general"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted/60 hover:bg-muted transition-colors"
+          className="flex h-9 w-9 shrink-0 max-md:h-11 max-md:w-11 items-center justify-center rounded-full bg-muted/60 hover:bg-muted transition-colors"
           title="Settings"
         >
           <User className="h-4 w-4 text-muted-foreground" />
         </Link>
+          }
+        />
       </motion.div>
 
       {/* Currency audit banner — shown only when there are unresolved cross-currency rows */}

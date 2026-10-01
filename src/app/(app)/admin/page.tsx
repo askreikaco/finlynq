@@ -34,6 +34,7 @@ import { formatDateTimeLocal } from "@/lib/currency";
 import { EditUserModal } from "@/components/admin/edit-user-modal";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { Pagination } from "@/components/ui/pagination";
+import { PageHeader } from "@/components/mobile";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -665,7 +666,7 @@ export default function AdminPage() {
     >
       {/* Header */}
       <motion.div variants={itemVariants}>
-        <h1 className="text-2xl font-bold tracking-tight">Admin Dashboard</h1>
+        <PageHeader title="Admin Dashboard" titleClassName="text-2xl font-bold tracking-tight" />
         <p className="text-muted-foreground">
           Manage users and monitor platform usage
         </p>

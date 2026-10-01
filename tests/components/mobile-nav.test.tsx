@@ -123,6 +123,32 @@ describe("safe-area shell wiring (source)", () => {
   });
 });
 
+describe("mobile bar matches the native tab bar (mobile/src/navigation/TabNavigator.tsx)", () => {
+  // native: height 60 + inset.bottom, paddingTop 6, icon 22, label 11/600
+  it("bar row is 59px + 1px top border = native 60; the bottom inset is added via --sab (total 60 + sab)", () => {
+    render(<Nav />);
+    const row = within(bar()).getByTestId("mobile-bar-row");
+    expect(row.className).toContain("h-[59px]");
+    expect(row.className).toContain("pt-1.5");
+    expect(bar().className).toContain("pb-[var(--sab)]");
+  });
+
+  it("icons are 22px and labels 11px semibold on every tab", () => {
+    render(<Nav />);
+    for (const l of within(bar()).getAllByRole("link")) {
+      expect(l.className).toContain("text-[11px]");
+      expect(l.className).toContain("font-semibold");
+      const svg = l.querySelector("svg")!;
+      expect(svg.getAttribute("class")).toContain("size-[22px]");
+    }
+  });
+
+  it("app shell bottom padding equals the bar height + inset", () => {
+    const layout = readFileSync(join(__dirname, "../../src/app/(app)/layout.tsx"), "utf8");
+    expect(layout).toContain("pb-[calc(60px+var(--sab))]");
+  });
+});
+
 describe("no zoom on iOS (source)", () => {
   const read = (p: string) => readFileSync(join(__dirname, "../../", p), "utf8");
   it("viewport disables user scaling and globals stop double-tap / focus zoom", () => {

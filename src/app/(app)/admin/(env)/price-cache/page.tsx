@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { DataTable, type DataTableColumn, type SortDir } from "@/components/ui/data-table";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Database, RefreshCw, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
+import { PageHeader } from "@/components/mobile";
 
 type Tab = "price" | "fx";
 
@@ -289,7 +290,7 @@ export default function AdminPriceCachePage() {
         <div>
           <div className="flex items-center gap-2">
             <Database className="h-5 w-5 text-primary" />
-            <h1 className="text-2xl font-bold tracking-tight">Market-data cache</h1>
+            <PageHeader title="Market-data cache" titleClassName="text-2xl font-bold tracking-tight" />
           </div>
           <p className="text-sm text-muted-foreground mt-0.5">
             Read-only view of the server-side <code className="text-xs">price_cache</code> and{" "}

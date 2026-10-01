@@ -40,6 +40,7 @@ import IncomeExpenseForm from "@/components/portfolio/forms/IncomeExpenseForm";
 import FxConversionForm from "@/components/portfolio/forms/FxConversionForm";
 import DepositForm from "@/components/portfolio/forms/DepositForm";
 import WithdrawalForm from "@/components/portfolio/forms/WithdrawalForm";
+import { PageHeader } from "@/components/mobile";
 
 type OpKey =
   | "buy"
@@ -155,12 +156,12 @@ function PortfolioNewInner() {
   return (
     <div className="container mx-auto max-w-4xl space-y-6 p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">New portfolio operation</h1>
-          <p className="text-sm text-muted-foreground">
-            Pick the operation that matches what happened in your account.
-          </p>
-        </div>
+        <PageHeader
+            title="New portfolio operation"
+            titleClassName="text-2xl font-semibold"
+            subtitle="Pick the operation that matches what happened in your account."
+            subtitleClassName="text-sm text-muted-foreground"
+          />
         <Link
           href="/portfolio"
           className="text-sm text-muted-foreground hover:underline self-center"

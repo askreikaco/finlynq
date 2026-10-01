@@ -23,6 +23,7 @@ import { MessageCircle, Paperclip, X } from "lucide-react";
 import { FeedbackAttachmentView } from "@/components/feedback/attachment-view";
 import { validateFeedbackAttachment } from "@/lib/feedback/attachment";
 import type { FeedbackMessage, FeedbackThread } from "@shared/types";
+import { PageHeader } from "@/components/mobile";
 
 function fmtBytes(n: number): string {
   if (n < 1024) return `${n} B`;
@@ -385,7 +386,7 @@ export default function AdminFeedbackPage() {
     <div className="mx-auto max-w-3xl">
       <div className="mb-6 flex items-center gap-2">
         <MessageCircle className="h-5 w-5 text-primary" />
-        <h1 className="text-2xl font-semibold tracking-tight">Feedback</h1>
+        <PageHeader title="Feedback" titleClassName="text-2xl font-semibold tracking-tight" />
       </div>
 
       <div className="mb-4 flex flex-wrap gap-2">

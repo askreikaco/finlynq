@@ -30,6 +30,7 @@ import {
   Archive,
   FolderCog,
 } from "lucide-react";
+import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
 
 type AccountBalance = {
   accountId: number;
@@ -309,7 +310,7 @@ export default function AccountsPage() {
         className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-sm"
         onClick={() => setDialogOpen(true)}
       >
-        <Plus className="h-4 w-4 mr-1.5" /> Create Account
+        <Plus className="h-4 w-4 mr-1.5" /> <span className="max-md:hidden">Create Account</span><span className="md:hidden">Add</span>
       </Button>
       <AccountDialog
         mode="create"
@@ -333,13 +334,13 @@ export default function AccountsPage() {
     return (
       <div className="space-y-4">
         <OnboardingTips page="accounts" />
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold">Accounts</h1>
-            <p className="text-sm text-muted-foreground mt-1">Overview of your assets, liabilities, and net worth</p>
-          </div>
-          {createAccountDialog}
-        </div>
+        <PageHeader
+          className="flex flex-wrap items-center justify-between gap-3"
+          title="Accounts"
+          subtitle="Overview of your assets, liabilities, and net worth"
+          actions={createAccountDialog}
+          actionsClassName="contents"
+        />
         <EmptyState
           icon={Wallet}
           title="No accounts yet"
@@ -353,35 +354,40 @@ export default function AccountsPage() {
   return (
     <div className="space-y-4">
       <OnboardingTips page="accounts" />
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Accounts</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Overview of your assets, liabilities, and net worth
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setManageGroupsOpen(true)}
-            title="Rename, reorder, or merge account groups"
-          >
-            <FolderCog className="h-4 w-4 mr-1.5" />
-            Manage groups
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowArchived((v) => !v)}
-            title={showArchived ? "Hide archived accounts" : "Show archived accounts"}
-          >
-            <Archive className="h-4 w-4 mr-1.5" />
-            {showArchived ? "Hide archived" : "Show archived"}
-          </Button>
-          {createAccountDialog}
-        </div>
-      </div>
+      <PageHeader
+        className="flex items-center justify-between"
+        title="Accounts"
+        subtitle="Overview of your assets, liabilities, and net worth"
+        overflow={[
+          { label: "Manage groups", icon: FolderCog, onSelect: () => setManageGroupsOpen(true) },
+          { label: showArchived ? "Hide archived" : "Show archived", icon: Archive, onSelect: () => setShowArchived((v) => !v) },
+        ]}
+        actions={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              className={HEADER_DESKTOP_ONLY}
+              onClick={() => setManageGroupsOpen(true)}
+              title="Rename, reorder, or merge account groups"
+            >
+              <FolderCog className="h-4 w-4 mr-1.5" />
+              Manage groups
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className={HEADER_DESKTOP_ONLY}
+              onClick={() => setShowArchived((v) => !v)}
+              title={showArchived ? "Hide archived accounts" : "Show archived accounts"}
+            >
+              <Archive className="h-4 w-4 mr-1.5" />
+              {showArchived ? "Hide archived" : "Show archived"}
+            </Button>
+            {createAccountDialog}
+          </>
+        }
+      />
 
       <div className="grid grid-cols-2 gap-3">
         {[

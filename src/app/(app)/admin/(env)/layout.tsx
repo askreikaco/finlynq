@@ -23,6 +23,7 @@ import {
   Plug,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { PageHeader } from "@/components/mobile";
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
 
@@ -51,7 +52,7 @@ export default function EnvLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-6">
       {/* Heading */}
-      <h1 className="text-2xl font-bold text-foreground">Environment</h1>
+      <PageHeader title="Environment" titleClassName="text-2xl font-bold text-foreground" />
 
       {/* Scrollable horizontal tab row (responsive) */}
       <nav

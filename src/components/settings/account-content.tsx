@@ -16,6 +16,7 @@ import { TrustedDevices } from "@/app/(app)/settings/account/_components/trusted
 import { PasskeysCard } from "@/components/settings/passkeys-card";
 import { RevealForm } from "@/components/settings/reveal-form";
 import { RecoveryCodesCard } from "@/components/settings/recovery-codes-card";
+import { PageHeader } from "@/components/mobile";
 
 export function AccountContent() {
   // API Key — the raw key is only held in memory on first creation or
@@ -260,10 +261,12 @@ export function AccountContent() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Account</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Login, API key, privacy, and backup / restore</p>
-      </div>
+      <PageHeader
+          title="Account"
+          titleClassName="text-2xl font-bold tracking-tight"
+          subtitle={<>Login, API key, privacy, and backup / restore</>}
+          subtitleClassName="text-sm text-muted-foreground mt-0.5"
+        />
 
       {/* Security Section */}
       <TwoFactor />

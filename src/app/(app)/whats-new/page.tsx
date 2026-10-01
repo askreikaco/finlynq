@@ -13,6 +13,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { Announcement } from "@shared/types";
 import { formatDateTimeLocal } from "@/lib/currency";
+import { PageHeader } from "@/components/mobile";
 
 function fmtDate(iso: string | null): string {
   if (!iso) return "";
@@ -52,7 +53,7 @@ export default function WhatsNewPage() {
   return (
     <div className="mx-auto max-w-2xl">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">What&apos;s New</h1>
+        <PageHeader title={<>What&apos;s New</>} titleClassName="text-2xl font-semibold tracking-tight" />
         <p className="mt-1 text-sm text-muted-foreground">
           Product news, updates, and announcements.
         </p>

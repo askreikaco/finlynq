@@ -13,6 +13,7 @@
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { ReconcileHideAccountsCard } from "@/components/inbox/reconcile-hide-accounts-card";
+import { PageHeader } from "@/components/mobile";
 
 export default function ReconcileVisibilityPage() {
   return (
@@ -25,7 +26,7 @@ export default function ReconcileVisibilityPage() {
           <ChevronLeft className="h-4 w-4" />
           Import settings
         </Link>
-        <h1 className="text-2xl font-bold tracking-tight">Reconcile dropdown visibility</h1>
+        <PageHeader title="Reconcile dropdown visibility" titleClassName="text-2xl font-bold tracking-tight" />
         <p className="text-sm text-muted-foreground mt-0.5">
           Choose which accounts appear in the account picker on the Import page.
         </p>

@@ -34,6 +34,7 @@ import {
   History,
   Gauge,
 } from "lucide-react";
+import { PageHeader } from "@/components/mobile";
 
 interface SysSample {
   at: number;
@@ -411,7 +412,7 @@ export default function AdminSystemPage() {
         <div>
           <div className="flex items-center gap-2">
             <Server className="h-5 w-5 text-primary" />
-            <h1 className="text-2xl font-bold tracking-tight">Server Health</h1>
+            <PageHeader title="Server Health" titleClassName="text-2xl font-bold tracking-tight" />
             {data?.env && (
               <Badge variant="outline" className="ml-1 uppercase">
                 {data.env}

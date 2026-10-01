@@ -6,6 +6,7 @@ import { FAMILY_STRINGS } from "@/lib/family/strings";
 import { OverviewTab } from "./_components/overview-tab";
 import { SharingTab } from "./_components/sharing-tab";
 import { InviteLinkHandler } from "./_components/invite-link-handler";
+import { PageHeader } from "@/components/mobile";
 
 export default function FamilyPage() {
   const [activeTab, setActiveTab] = useState<"overview" | "sharing">("overview");
@@ -14,10 +15,12 @@ export default function FamilyPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold">{FAMILY_STRINGS.page_title}</h1>
-        <p className="text-sm text-muted-foreground mt-1">{FAMILY_STRINGS.page_description}</p>
-      </div>
+      <PageHeader
+          title={FAMILY_STRINGS.page_title}
+          titleClassName="text-2xl sm:text-3xl font-bold"
+          subtitle={FAMILY_STRINGS.page_description}
+          subtitleClassName="text-sm text-muted-foreground mt-1"
+        />
 
       <InviteLinkHandler onDone={bump} />
 

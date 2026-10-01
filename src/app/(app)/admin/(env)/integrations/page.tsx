@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Plug, CheckCircle2, AlertCircle } from "lucide-react";
 import { getPasskeyStepUp } from "@/lib/client/passkey-stepup";
+import { PageHeader } from "@/components/mobile";
 
 type Source = "db" | "env" | "none";
 type SecretField = "brevoApiKey" | "resendApiKey" | "smtpUser" | "smtpPass";
@@ -243,10 +244,8 @@ export default function AdminIntegrationsPage() {
 
   const Heading = (
     <div className="mb-6">
-      <h1 className="text-3xl font-bold mb-2 flex items-center gap-2">
-        <Plug className="w-8 h-8" />
-        Integrations
-      </h1>
+      <PageHeader title={<><Plug className="w-8 h-8" />
+        Integrations</>} titleClassName="text-3xl font-bold mb-2 flex items-center gap-2" />
     </div>
   );
 

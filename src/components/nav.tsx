@@ -403,7 +403,7 @@ export function Nav() {
   const moreActive = pathname === "/more" || pathname.startsWith("/more/");
   const mobileBar = (
     <nav aria-label="Mobile navigation" className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-sidebar border-t border-sidebar-border pb-[var(--sab)] pl-[var(--sal)] pr-[var(--sar)]">
-      <div className="flex items-stretch justify-around h-14">
+      <div className="flex h-[59px] items-stretch justify-around pt-1.5 pb-1.5" data-testid="mobile-bar-row">
         {mobileBarItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
           return (
@@ -412,11 +412,11 @@ export function Nav() {
               aria-current={isActive ? "page" : undefined}
               href={item.href}
               className={cn(
-                "flex min-w-0 flex-1 flex-col items-center gap-0.5 py-1 px-0.5 text-[10px] font-medium tracking-tight whitespace-nowrap transition-colors",
+                "flex min-w-0 flex-1 flex-col items-center justify-center gap-1 px-0.5 text-[11px] font-semibold tracking-tight whitespace-nowrap transition-colors",
                 isActive ? "text-sidebar-primary" : "text-sidebar-foreground/50"
               )}
             >
-              <item.icon className={cn("h-5 w-5", isActive && item.color)} />
+              <item.icon className={cn("size-[22px]", isActive && item.color)} />
               {item.label}
             </Link>
           );
@@ -426,11 +426,11 @@ export function Nav() {
           aria-label="More"
           aria-current={moreActive ? "page" : undefined}
           className={cn(
-            "flex min-w-0 flex-1 flex-col items-center gap-0.5 py-1 px-0.5 text-[10px] font-medium tracking-tight whitespace-nowrap transition-colors",
+            "flex min-w-0 flex-1 flex-col items-center justify-center gap-1 px-0.5 text-[11px] font-semibold tracking-tight whitespace-nowrap transition-colors",
             moreActive ? "text-sidebar-primary" : "text-sidebar-foreground/50"
           )}
         >
-          <MoreHorizontal className="h-5 w-5" />
+          <MoreHorizontal className="size-[22px]" />
           More
         </Link>
       </div>

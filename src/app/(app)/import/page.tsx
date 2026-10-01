@@ -55,6 +55,7 @@ import { InboxToCategorizeTab } from "@/components/inbox/inbox-to-categorize-tab
 import { InboxEmailTab } from "@/components/inbox/inbox-email-tab";
 import { ReconcileSummaryPanel } from "@/components/inbox/reconcile-summary-panel";
 import { takeHandoffFile } from "@/lib/import/file-handoff";
+import { PageHeader } from "@/components/mobile";
 
 interface Account {
   id: number;
@@ -320,7 +321,7 @@ function ImportPageInner() {
   if (visibleAccounts.length === 0) {
     return (
       <div className="container mx-auto p-4 space-y-3">
-        <h1 className="text-2xl font-semibold">Import</h1>
+        <PageHeader title="Import" titleClassName="text-2xl font-semibold" />
         <p className="text-sm text-muted-foreground">
           No accounts found. Create an account first to start importing.
         </p>
@@ -331,7 +332,7 @@ function ImportPageInner() {
   if (account == null) {
     return (
       <div className="container mx-auto p-4 space-y-3">
-        <h1 className="text-2xl font-semibold">Import</h1>
+        <PageHeader title="Import" titleClassName="text-2xl font-semibold" />
         <p className="text-sm text-muted-foreground">
           Pick an account to start importing.
         </p>
@@ -345,16 +346,17 @@ function ImportPageInner() {
 
   return (
     <div className="container mx-auto p-4 space-y-4">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">Import</h1>
-          <p className="text-sm text-muted-foreground">
+      <PageHeader
+        className="flex items-center justify-between flex-wrap gap-3"
+        title="Import"
+        titleClassName="text-2xl font-semibold"
+        subtitleClassName="text-sm text-muted-foreground"
+        subtitle={<>
             One surface per account. Upload a statement, then review it the way
             this account is set up — pick a lens to flip the view, or change
             the account&apos;s policy via the gear in the chip.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
+        </>}
+        actions={
           <Button
             size="sm"
             className="gap-1.5"
@@ -362,8 +364,8 @@ function ImportPageInner() {
           >
             <Upload className="h-4 w-4" /> Upload
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       {error && (
         <div className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
