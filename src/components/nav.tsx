@@ -18,6 +18,7 @@ import {
   Upload,
   Settings,
   CreditCard,
+  ChartPie,
   FlameKindling,
   GitBranch,
   MessageSquare,
@@ -81,6 +82,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     label: "Analysis",
     items: [
       { href: "/reports", label: "Reports", icon: FileText, color: ACTIVE_ACCENT, mode: "prod" },
+      { href: "/categories", label: "Categories", icon: ChartPie, color: ACTIVE_ACCENT, mode: "prod" },
       { href: "/tax", label: "Tax", icon: Calculator, color: ACTIVE_ACCENT, mode: "dev" },
     ],
   },
