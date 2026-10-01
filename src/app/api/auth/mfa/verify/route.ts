@@ -33,6 +33,7 @@ import { getDEK, putDEK, deleteDEK } from "@/lib/crypto/dek-cache";
 import { decryptField } from "@/lib/crypto/envelope";
 import { issueDevice, deviceCookieOptions } from "@/lib/auth/trusted-device";
 import { commitSession } from "@/lib/auth/session-bundle";
+import { applyTrustedDevicePolicy } from "@/lib/auth/login-device";
 // Stream D Phase 4 (2026-05-03): plaintext display-name columns dropped;
 // stream-d-backfill + stream-d-phase3-null helpers deleted. FINLYNQ-198
 // (2026-06-18) retired the canonicalize login pass too.
@@ -44,6 +45,7 @@ import { enqueueUpgradeUserFieldEncryption } from "@/lib/crypto/upgrade-user-fie
 const verifySchema = z.object({
   mfaPendingToken: z.string().min(1, "Pending token is required").optional(),
   code: z.string().length(6, "Code must be 6 digits"),
+  trustDevice: z.boolean().optional().default(true),
 });
 
 /**
@@ -120,7 +122,7 @@ export async function POST(request: NextRequest) {
     if (parsed.error) return parsed.error;
 
     let { mfaPendingToken } = parsed.data;
-    const { code } = parsed.data;
+    const { code, trustDevice } = parsed.data;
 
     // Task H1: If mfaPendingToken not in body, read from pf_unlock cookie
     if (!mfaPendingToken) {
@@ -257,7 +259,9 @@ export async function POST(request: NextRequest) {
               replaceDeviceId = parts[0];
             }
           }
-          issuedDevice = await issueDevice(user.id, pendingDek, userAgent, replaceDeviceId);
+          if (trustDevice !== false) {
+            issuedDevice = await issueDevice(user.id, pendingDek, userAgent, replaceDeviceId);
+          }
         }
       } catch (error) {
         // Log the error but don't fail the MFA login
@@ -300,6 +304,19 @@ export async function POST(request: NextRequest) {
         path: opts.path,
       });
     }
+
+    // Trusted-device policy (plan Q3): issue unless trustDevice:false. A device
+    // already issued by the google-link branch above is left alone (but
+    // trustDevice:false still revokes + clears it).
+    await applyTrustedDevicePolicy({
+      request,
+      response,
+      userId: user.id,
+      dek: pendingDek,
+      trustDevice,
+      alreadyIssued: issuedDevice !== null,
+      routeLabel: "/api/auth/mfa/verify",
+    });
 
     // Clear pf_unlock (use maxAge 0 with the path it was set with)
     response.cookies.set("pf_unlock", "", {

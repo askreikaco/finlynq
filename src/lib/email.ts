@@ -400,13 +400,14 @@ export function passwordChangedEmail(email: string, displayName?: string) {
     `<p style="color:#3f3f46;line-height:1.6">Hello ${name},</p>
      <p style="color:#3f3f46;line-height:1.6">Your Finlynq account password was just changed.</p>
      <p style="color:#3f3f46;line-height:1.6">If this was not you, sign in and review your account right away.</p>
-     ${buttonHtml("Review account", url)}`
+     ${buttonHtml("Review account", url)}
+     <p style="color:#3f3f46;line-height:1.6;margin-top:16px;font-size:13px"><strong>Also:</strong> If this wasn't you, regenerate your API key in Settings › Developer to revoke all integrations.</p>`
   );
   return {
     to: email,
     subject: "Your Finlynq password was changed",
     html,
-    text: `Your Finlynq password was changed. If this was not you, review your account: ${url}`,
+    text: `Your Finlynq password was changed. If this was not you, review your account: ${url}\n\nIf this wasn't you, also regenerate your API key in Settings › Developer.`,
   };
 }
 

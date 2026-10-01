@@ -7,7 +7,8 @@
  * Order:
  *   1. validate password; derive new KEK; wrap the SAME DEK
  *   2. TX (applyRecoveryRewrapTx): password+wrap, session_not_before=cutoff,
- *      burn pending email-reset tokens. Failure -> nothing changed.
+ *      burn pending email-reset tokens, revoke ALL OAuth grants (access+refresh,
+ *      unexchanged auth codes). Failure -> nothing changed.
  *   3. evict DEK cache + MCP tx cache (cutoff cache busted inside the query)
  *   4. revokeAllDevicesExcept(keepDeviceId)   (throws -> caller sees failure)
  *   5. wait until the wall clock is past the cutoff second, then mint the

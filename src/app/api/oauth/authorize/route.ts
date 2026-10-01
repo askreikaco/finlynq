@@ -27,7 +27,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
   const payload = await verifySessionToken(sessionToken);
-  if (!payload?.sub) {
+  // A pending (MFA-challenge) token must never mint an OAuth grant (H-4).
+  if (!payload?.sub || payload.pending) {
     return NextResponse.json({ error: "Invalid session" }, { status: 401 });
   }
   // Pull the active DEK so we can wrap it with the auth code — enables MCP

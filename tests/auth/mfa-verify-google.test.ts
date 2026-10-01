@@ -73,6 +73,7 @@ vi.mock("@/lib/validate", () => ({
   validateBody: vi.fn((body: any, _schema: any) => ({
     data: {
       code: body.code || "123456",
+      trustDevice: body.trustDevice ?? true,
     },
   })),
 }));
@@ -144,6 +145,8 @@ function makeMfaRequest(opts: {
   code?: string;
   googleLinkCookie?: string | null;
   deviceCookie?: string | null;
+  /** B3: plain MFA now issues a pf_device unless trustDevice:false; b/c opt out to isolate the google-link path. */
+  trustDevice?: boolean;
 }): NextRequest {
   const url = new URL("http://localhost:3000/api/auth/mfa/verify");
 
@@ -158,7 +161,7 @@ function makeMfaRequest(opts: {
     headers: cookieHeader ? { cookie: cookieHeader } : {},
   };
   if (opts.code) {
-    init.body = JSON.stringify({ code: opts.code });
+    init.body = JSON.stringify({ code: opts.code, ...(opts.trustDevice === undefined ? {} : { trustDevice: opts.trustDevice }) });
     init.headers = { ...init.headers as Record<string, string>, "Content-Type": "application/json" };
   }
 
@@ -326,6 +329,7 @@ describe("/api/auth/mfa/verify — Google linking", () => {
       mfaToken: "pending_token",
       code: "123456",
       googleLinkCookie: googleLinkToken,
+      trustDevice: false,
     });
 
     await POST(req);
@@ -395,6 +399,7 @@ describe("/api/auth/mfa/verify — Google linking", () => {
       mfaToken: "pending_token",
       code: "123456",
       googleLinkCookie: googleLinkToken,
+      trustDevice: false,
     });
 
     await POST(req);

@@ -38,6 +38,7 @@ import {
 } from "@/lib/auth/queries";
 import { validateBody, safeErrorMessage, logApiError } from "@/lib/validate";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { applyTrustedDevicePolicy } from "@/lib/auth/login-device";
 import { finishPasswordLogin } from "@/lib/auth/finish-login";
 import { commitSession } from "@/lib/auth/session-bundle";
 
@@ -48,10 +49,12 @@ const loginSchema = z
     identifier: z.string().min(1, "Username or email is required").max(254).optional(),
     email: z.string().min(1).max(254).optional(),
     password: z.string().min(1, "Password is required").max(256),
+    trustDevice: z.boolean().optional().default(true),
   })
   .transform((v) => ({
     identifier: (v.identifier ?? v.email ?? "").trim(),
     password: v.password,
+    trustDevice: v.trustDevice,
   }))
   .refine((v) => v.identifier.length > 0, {
     message: "Username or email is required",
@@ -89,7 +92,7 @@ export async function POST(request: NextRequest) {
     const parsed = validateBody(body, loginSchema);
     if (parsed.error) return parsed.error;
 
-    const { identifier, password } = parsed.data;
+    const { identifier, password, trustDevice } = parsed.data;
 
     // Finding #11 — also rate-limit per identifier (10/hour, 50/day). Stops a
     // distributed attacker from grinding one account via a botnet. The
@@ -165,6 +168,16 @@ export async function POST(request: NextRequest) {
     // Full session — use commitSession to handle multi-account logic (pf_add cookie)
     const response = NextResponse.json({ success: true });
     await commitSession(request, response, { token: result.token, jti: result.jti, userId: user.id });
+
+    await applyTrustedDevicePolicy({
+      request,
+      response,
+      userId: user.id,
+      dek: result.dek,
+      trustDevice,
+      routeLabel: "/api/auth/login",
+    });
+
     return response;
   } catch (error) {
     await logApiError("POST", "/api/auth/login", error);

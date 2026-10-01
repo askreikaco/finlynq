@@ -626,19 +626,41 @@ export async function replaceRecoveryCodes(
 ) {
   const s = getSchema();
   const now = new Date().toISOString();
-  // Delete old codes for this user.
-  await db.delete(s.userRecoveryCodes).where(eq(s.userRecoveryCodes.userId, userId));
-  // Insert new codes with their DEK wraps.
-  if (codes.length > 0) {
-    const values = codes.map(({ hash, dekWrapped }) => ({
-      userId,
-      codeHash: hash,
-      dekWrapped,
-      usedAt: null,
-      createdAt: now,
-    }));
-    await db.insert(s.userRecoveryCodes).values(values);
+  // One transaction (a failed insert must not leave the user with no codes) and
+  // a per-user row lock so two concurrent regenerations serialize instead of
+  // interleaving delete+insert into 20 live codes.
+  await db.transaction(async (tx) => {
+    await tx.execute(sql`SELECT id FROM users WHERE id = ${userId} FOR UPDATE`);
+    await tx.delete(s.userRecoveryCodes).where(eq(s.userRecoveryCodes.userId, userId));
+    if (codes.length > 0) {
+      await tx.insert(s.userRecoveryCodes).values(
+        codes.map(({ hash, dekWrapped }) => ({
+          userId,
+          codeHash: hash,
+          dekWrapped,
+          usedAt: null,
+          createdAt: now,
+        }))
+      );
+    }
+  });
+}
+
+/** {unused,total,createdAt} for the settings card. Never returns hashes or wraps. */
+export async function getRecoveryCodeStatus(
+  userId: string
+): Promise<{ unused: number; total: number; createdAt: string | null }> {
+  const s = getSchema();
+  const rows = await db
+    .select({ usedAt: s.userRecoveryCodes.usedAt, createdAt: s.userRecoveryCodes.createdAt })
+    .from(s.userRecoveryCodes)
+    .where(eq(s.userRecoveryCodes.userId, userId));
+  let createdAt: string | null = null;
+  for (const r of rows) {
+    const c = r.createdAt as unknown as string | null;
+    if (c && (!createdAt || c > createdAt)) createdAt = c;
   }
+  return { unused: rows.filter((r) => r.usedAt == null).length, total: rows.length, createdAt };
 }
 
 /**
@@ -697,6 +719,19 @@ export async function applyRecoveryRewrapTx(
   const s = getSchema();
   const now = new Date().toISOString();
   await db.transaction(async (tx) => {
+    // Owner decision: recovery revokes ALL of the user's OAuth grants (each row
+    // is an access+refresh pair; authorization codes not yet exchanged are
+    // burned too). FIRST statement and NO error handling: any failure here or
+    // below throws out of the transaction and rolls back the whole recovery
+    // (password/wrap/cutoff unchanged, nothing revoked).
+    await tx
+      .update(s.oauthAccessTokens)
+      .set({ revokedAt: new Date() })
+      .where(and(eq(s.oauthAccessTokens.userId, userId), isNull(s.oauthAccessTokens.revokedAt)));
+    await tx
+      .update(s.oauthAuthorizationCodes)
+      .set({ used: 1 })
+      .where(and(eq(s.oauthAuthorizationCodes.userId, userId), eq(s.oauthAuthorizationCodes.used, 0)));
     await tx
       .update(s.users)
       .set({
