@@ -114,8 +114,17 @@ export function AccountSwitcher({ compact = false }: AccountSwitcherProps) {
   };
 
   /** add-intent, then the normal login page in add mode. Returns navigated. */
-  const startAddFlow = async (email?: string): Promise<boolean> => {
-    const res = await fetch("/api/auth/add-intent", { method: "POST" });
+  const startAddFlow = async (email?: string, userId?: string): Promise<boolean> => {
+    const res = await fetch(
+      "/api/auth/add-intent",
+      userId
+        ? {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId }),
+          }
+        : { method: "POST" },
+    );
     if (res.ok) {
       hardReload(
         email ? `/cloud?add=1&email=${encodeURIComponent(email)}` : "/cloud?add=1",
@@ -137,7 +146,7 @@ export function AccountSwitcher({ compact = false }: AccountSwitcherProps) {
     run(`switch:${account.userId}`, async () => {
       if (account.status === "locked") {
         // Known to need a password again; skip the doomed switch call.
-        return startAddFlow(account.email);
+        return startAddFlow(account.email, account.userId);
       }
       const res = await fetch("/api/auth/switch", {
         method: "POST",
@@ -151,7 +160,7 @@ export function AccountSwitcher({ compact = false }: AccountSwitcherProps) {
       if (res.status === 409) {
         const data = await res.json().catch(() => ({}));
         if (data?.status === "needs_login") {
-          return startAddFlow(typeof data.email === "string" ? data.email : account.email);
+          return startAddFlow(typeof data.email === "string" ? data.email : account.email, account.userId);
         }
       }
       setMessage(

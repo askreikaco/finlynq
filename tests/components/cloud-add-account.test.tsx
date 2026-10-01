@@ -60,13 +60,24 @@ async function signIn() {
 }
 
 describe("/cloud?add=1", () => {
-  it("shows the banner naming the account that stays signed in, plus Cancel to /dashboard", async () => {
+  it("Cancel clears pf_add (DELETE add-intent) before navigating to /dashboard", async () => {
+    params = new URLSearchParams("add=1");
+    handlers["/api/auth/add-intent"] = () => ({ body: { status: "cancelled" } });
+    render(<CloudAuthPage />);
+    await screen.findByText(/stay signed in as/);
+    fireEvent.click(screen.getByRole("button", { name: /^cancel$/i }));
+    await waitFor(() => expect(hardReload).toHaveBeenCalledWith("/dashboard"));
+    const call = vi.mocked(fetch).mock.calls.find((c) => c[0] === "/api/auth/add-intent");
+    expect(call?.[1]).toMatchObject({ method: "DELETE" });
+  });
+
+  it("shows the banner naming the account that stays signed in, plus a Cancel control", async () => {
     params = new URLSearchParams("add=1");
     render(<CloudAuthPage />);
     expect(
       await screen.findByText("Adding another account — you'll stay signed in as alice@example.com"),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /^cancel$/i })).toHaveAttribute("href", "/dashboard");
+    expect(screen.getByRole("button", { name: /^cancel$/i })).toBeInTheDocument();
   });
 
   it("renders the active email as text, never as HTML", async () => {

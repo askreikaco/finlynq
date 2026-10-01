@@ -130,6 +130,16 @@ function CloudAuthPageInner() {
     };
   }, [addingAccount]);
 
+  // Cancel the add flow: clear pf_add server-side, then leave (sessions untouched).
+  const cancelAdd = async () => {
+    try {
+      await fetch("/api/auth/add-intent", { method: "DELETE" });
+    } catch {
+      // navigate anyway; pf_add expires in 10 min
+    }
+    hardReload("/dashboard");
+  };
+
   // Fetch Google config on mount
   useEffect(() => {
     const fetchConfig = async () => {
@@ -359,12 +369,14 @@ function CloudAuthPageInner() {
               <p className="text-sm text-blue-600 dark:text-blue-400 min-w-0 break-words">
                 Adding another account — you&apos;ll stay signed in as {stayEmail}
               </p>
-              <Link
-                href="/dashboard"
+              <button
+                type="button"
+                data-testid="add-cancel"
+                onClick={cancelAdd}
                 className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline whitespace-nowrap"
               >
                 Cancel
-              </Link>
+              </button>
             </div>
           </div>
         )}
