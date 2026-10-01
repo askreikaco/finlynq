@@ -21,11 +21,11 @@ describe("Navigation", () => {
     expect(subscriptionsItem?.mode).toBe("prod");
   });
 
-  it("Calendar item has prod mode enabled", () => {
-    const trackingGroup = navGroups.find((g) => g.label === "Tracking");
-    const calendarItem = trackingGroup?.items.find((i) => i.label === "Calendar");
-    expect(calendarItem).toBeTruthy();
-    expect(calendarItem?.mode).toBe("prod");
+  it("Calendar is a view of Subscriptions (upstream merge), Categories is in prod", () => {
+    const items = navGroups.flatMap((g) => g.items);
+    expect(items.find((i) => i.href === "/calendar")).toBeUndefined();
+    expect(items.find((i) => i.href === "/subscriptions")?.mode).toBe("prod");
+    expect(items.find((i) => i.href === "/categories")?.mode).toBe("prod");
   });
 
   it("Chat item remains in dev mode", () => {

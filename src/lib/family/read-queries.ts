@@ -18,12 +18,15 @@ import {
   getBudgets,
   getCashSnapshotsInRange,
   getIncomeVsExpenses,
+  getIncomeVsExpensesDaily,
   getInvestmentSnapshotsInRange,
   getPortfolioHoldings,
   getSpendingByCategoryWithReporting,
 } from "@/lib/queries";
+import { loadUntrackedLiabilities } from "@/lib/financial-health";
+import { computePortfolioPerformance } from "@/lib/portfolio/performance/compute";
 
-export { getCashSnapshotsInRange, getIncomeVsExpenses, getInvestmentSnapshotsInRange };
+export { getCashSnapshotsInRange, getIncomeVsExpenses, getIncomeVsExpensesDaily, getInvestmentSnapshotsInRange };
 export { getLinkedAccountBalances, summarizeLoan } from "@/lib/loan-summary";
 export type { LoanSummaryInput, LoanSummaryResult } from "@/lib/loan-summary";
 export { computeGoalProgress } from "@/lib/goals-progress";
@@ -185,4 +188,27 @@ export async function getOwnerLoans(ownerId: string): Promise<OwnerLoanRow[]> {
     .from(schema.loans)
     .where(and(eq(schema.loans.userId, ownerId)));
   return rows.sort((a, b) => a.id - b.id);
+}
+
+// ─── dashboard / portfolio parity inputs (Family overview cards) ──────────────────────────────
+
+export { computeDebtService } from "@/lib/health/debt-service";
+export type { DebtServiceLoan, UntrackedLiabilityAccount } from "@/lib/health/debt-service";
+export type { PortfolioPerformance } from "@/lib/portfolio/performance/compute";
+
+/**
+ * Untracked-liability inputs of the dashboard's Debt-to-Income numerator (realized payments into
+ * liability accounts no loan points at + owed balance at the window endpoints). Same queries as
+ * the dashboard (financial-health.ts); plaintext numbers only, no names.
+ */
+export function getOwnerUntrackedLiabilities(ownerId: string, windowStart: string, windowEnd: string) {
+  return loadUntrackedLiabilities(db, ownerId, windowStart, windowEnd);
+}
+
+/**
+ * Whole-portfolio performance exactly as the /portfolio Performance card computes it (aggregate
+ * portfolio_snapshots rows + TWRR + MWRR). DEK-free: numbers only.
+ */
+export function getOwnerPortfolioPerformance(ownerId: string, period: string, asOfDate: string) {
+  return computePortfolioPerformance({ userId: ownerId, period, accountId: null, asOfDate });
 }

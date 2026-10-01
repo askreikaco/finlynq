@@ -19,7 +19,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { rateLimited, requireFamilySession } from "@/lib/family/manage-guard";
 import { updateLastViewed } from "@/lib/family/share-dal";
 import { assembleFamilyOverview } from "@/lib/family/overview/assemble";
-import { serializeOverview } from "@/lib/family/overview/dto";
+import { OVERVIEW_PERIODS, serializeOverview } from "@/lib/family/overview/dto";
 import { FxContext } from "@/lib/family/overview/fx";
 import { viewerPassesMfaGate } from "@/lib/family/overview/gate";
 
@@ -33,7 +33,8 @@ const LAST_VIEWED_THROTTLE_MS = 5 * 60_000;
 const QuerySchema = z
   .object({
     currency: z.string().max(8).optional(),
-    period: z.enum(["6m", "1y", "all"]).optional().default("1y"),
+    // month = month-to-date (default), year = year-to-date, all; legacy 6m / 1y still accepted
+    period: z.enum(OVERVIEW_PERIODS).optional().default("month"),
   })
   .strict();
 

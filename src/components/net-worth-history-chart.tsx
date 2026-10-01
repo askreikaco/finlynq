@@ -36,7 +36,7 @@ import { StackedChartLegend } from "@/components/chart-stack-legend";
 import type { BreakdownMember } from "@/lib/chart-breakdown";
 import { getDisplayLocale } from "@/lib/locale";
 
-type Period = "6m" | "1y" | "all";
+export type Period = "6m" | "1y" | "all";
 
 interface NetWorthPoint {
   date: string;
@@ -114,6 +114,89 @@ function HistoryTooltip({
       </p>
       <TooltipBreakdownList rows={breakdown} currency={currency} heading="By account" />
     </div>
+  );
+}
+
+export interface NetWorthAreaChartProps {
+  /** Already prepared (prepareTimeSeries) points. */
+  series: NetWorthPoint[];
+  domain: [number, number] | ["auto", "auto"] | undefined;
+  spansZero: boolean;
+  currency: string;
+  period: Period;
+  /** True for a single-account "Balance Over Time" chart. */
+  accountScoped?: boolean;
+  /** SVG gradient id; must be unique on the page when several charts render. */
+  gradientId?: string;
+  height?: number;
+}
+
+/**
+ * The single-series "Net Worth Over Time" area chart (the non-stacked view of
+ * NetWorthHistoryChart). Exported so the Family overview renders the identical
+ * chart from its own (already-loaded) series.
+ */
+export function NetWorthAreaChart({
+  series,
+  domain,
+  spansZero,
+  currency,
+  period,
+  accountScoped = false,
+  gradientId = "nwHistGradient",
+  height = 260,
+}: NetWorthAreaChartProps) {
+  return (
+    <ResponsiveContainer width="100%" height={height}>
+      <AreaChart data={series} margin={{ top: 8, right: 4, bottom: 0, left: -10 }}>
+        <defs>
+          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#6366f1" stopOpacity={0.25} />
+            <stop offset="50%" stopColor="#6366f1" stopOpacity={0.08} />
+            <stop offset="100%" stopColor="#6366f1" stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <XAxis
+          dataKey="date"
+          fontSize={10}
+          tickLine={false}
+          axisLine={false}
+          minTickGap={48}
+          interval="preserveStartEnd"
+          tickFormatter={(d) => fmtTick(String(d), period)}
+          tick={{ fill: "var(--color-muted-foreground)" }}
+        />
+        <YAxis
+          fontSize={10}
+          tickLine={false}
+          axisLine={false}
+          width={48}
+          tick={{ fill: "var(--color-muted-foreground)" }}
+          tickFormatter={(v) => formatCompactNumber(Number(v))}
+          domain={domain}
+        />
+        <Tooltip
+          content={
+            <HistoryTooltip currency={currency} accountScoped={accountScoped} />
+          }
+          cursor={{ stroke: "var(--color-border)", strokeDasharray: "4 4" }}
+        />
+        {/* FINLYNQ-192 — visible zero line when the (single-line) series
+            crosses zero (e.g. a liability account's Balance Over Time, or
+            a net worth that dips negative). Mirrors PerformanceChart. */}
+        {spansZero && <ReferenceLine y={0} stroke="#888" />}
+        <Area
+          type="monotone"
+          dataKey="value"
+          stroke="#6366f1"
+          strokeWidth={2.5}
+          fill={`url(#${gradientId})`}
+          name={accountScoped ? "Balance" : "Net Worth"}
+          dot={false}
+          activeDot={{ r: 4, strokeWidth: 2, fill: "var(--color-card)" }}
+        />
+      </AreaChart>
+    </ResponsiveContainer>
   );
 }
 
@@ -290,8 +373,8 @@ export function NetWorthHistoryChart({
           </div>
         ) : (
           <>
+            {showStacked ? (
             <ResponsiveContainer width="100%" height={260}>
-              {showStacked ? (
                 <AreaChart data={stackedRows} margin={{ top: 8, right: 4, bottom: 0, left: -10 }}>
                   <XAxis
                     dataKey="date"
@@ -352,57 +435,17 @@ export function NetWorthHistoryChart({
                     />
                   ))}
                 </AreaChart>
-              ) : (
-              <AreaChart data={series} margin={{ top: 8, right: 4, bottom: 0, left: -10 }}>
-                <defs>
-                  <linearGradient id="nwHistGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#6366f1" stopOpacity={0.25} />
-                    <stop offset="50%" stopColor="#6366f1" stopOpacity={0.08} />
-                    <stop offset="100%" stopColor="#6366f1" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis
-                  dataKey="date"
-                  fontSize={10}
-                  tickLine={false}
-                  axisLine={false}
-                  minTickGap={48}
-                  interval="preserveStartEnd"
-                  tickFormatter={(d) => fmtTick(String(d), period)}
-                  tick={{ fill: "var(--color-muted-foreground)" }}
-                />
-                <YAxis
-                  fontSize={10}
-                  tickLine={false}
-                  axisLine={false}
-                  width={48}
-                  tick={{ fill: "var(--color-muted-foreground)" }}
-                  tickFormatter={(v) => formatCompactNumber(Number(v))}
-                  domain={domain}
-                />
-                <Tooltip
-                  content={
-                    <HistoryTooltip currency={currency} accountScoped={accountId != null} />
-                  }
-                  cursor={{ stroke: "var(--color-border)", strokeDasharray: "4 4" }}
-                />
-                {/* FINLYNQ-192 — visible zero line when the (single-line) series
-                    crosses zero (e.g. a liability account's Balance Over Time, or
-                    a net worth that dips negative). Mirrors PerformanceChart. */}
-                {spansZero && <ReferenceLine y={0} stroke="#888" />}
-                <Area
-                  type="monotone"
-                  dataKey="value"
-                  stroke="#6366f1"
-                  strokeWidth={2.5}
-                  fill="url(#nwHistGradient)"
-                  name={accountId != null ? "Balance" : "Net Worth"}
-                  dot={false}
-                  activeDot={{ r: 4, strokeWidth: 2, fill: "var(--color-card)" }}
-                />
-              </AreaChart>
-              )}
             </ResponsiveContainer>
+            ) : (
+              <NetWorthAreaChart
+                series={series}
+                domain={domain}
+                spansZero={spansZero}
+                currency={currency}
+                period={period}
+                accountScoped={accountId != null}
+              />
+            )}
             {showStacked && <StackedChartLegend legend={legend} />}
             {!data.hasInvestmentData && accountId == null && (
               <p className="text-[11px] text-muted-foreground mt-2">

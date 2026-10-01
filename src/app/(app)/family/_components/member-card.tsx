@@ -3,12 +3,20 @@
 import { useId } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { formatCurrency, formatDate, getMonthLabel } from "@/lib/currency";
+import { formatCurrency, formatDate } from "@/lib/currency";
 import { FAMILY_STRINGS } from "@/lib/family/strings";
-import type { MemberDto } from "./types";
-import { TrendChart } from "./trend-chart";
-import { fill, getSectionLabel } from "./section-labels";
 import { formatPercent } from "@/lib/locale";
+import { TopMoversCard } from "@/app/(app)/portfolio/_components/top-movers-card";
+import type { Mover } from "@/app/(app)/portfolio/_types";
+import type { MemberDto } from "./types";
+import { getSectionLabel } from "./section-labels";
+import {
+  HeadlineCards,
+  IncomeVsExpensesCard,
+  NetWorthOverTimeCard,
+  PerformanceCard,
+  type Period,
+} from "./overview-cards";
 
 const NONE = FAMILY_STRINGS.overview_none;
 
@@ -23,20 +31,69 @@ function Label({ text, generic }: { text: string; generic: boolean }) {
   );
 }
 
-export function MemberCard({ member, displayCurrency }: { member: MemberDto; displayCurrency: string }) {
-  const uid = useId().replace(/:/g, "");
+/** Today's top movers of the VIEWER's own portfolio (fetched from /api/portfolio/overview). */
+export type OwnMovers = { status: "loading" } | { status: "error" } | { status: "ok"; gainers: Mover[]; losers: Mover[] };
+
+function MoversCards({ member, movers, currency }: { member: MemberDto; movers?: OwnMovers; currency: string }) {
+  let body: { gainers?: React.ReactNode; losers?: React.ReactNode; g: Mover[]; l: Mover[] };
+  const msg = (text: string) => <p className="text-sm text-muted-foreground">{text}</p>;
+  if (member.relation !== "me") {
+    // Per-holding day change needs live prices looked up by (encrypted) symbol: owner-only.
+    const t = msg(FAMILY_STRINGS.overview_movers_shared_unavailable);
+    body = { gainers: t, losers: t, g: [], l: [] };
+  } else if (!movers || movers.status === "loading") {
+    const t = msg(FAMILY_STRINGS.overview_movers_loading);
+    body = { gainers: t, losers: t, g: [], l: [] };
+  } else if (movers.status === "error") {
+    const t = msg(FAMILY_STRINGS.overview_section_error);
+    body = { gainers: t, losers: t, g: [], l: [] };
+  } else {
+    body = {
+      gainers: movers.gainers.length === 0 ? msg(FAMILY_STRINGS.overview_movers_none) : undefined,
+      losers: movers.losers.length === 0 ? msg(FAMILY_STRINGS.overview_movers_none) : undefined,
+      g: movers.gainers,
+      l: movers.losers,
+    };
+  }
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <TopMoversCard kind="gainers" movers={body.g} currency={currency}>
+        {body.gainers}
+      </TopMoversCard>
+      <TopMoversCard kind="losers" movers={body.l} currency={currency}>
+        {body.losers}
+      </TopMoversCard>
+    </div>
+  );
+}
+
+export function MemberCard({
+  member,
+  displayCurrency,
+  period,
+  asOf,
+  ownMovers,
+}: {
+  member: MemberDto;
+  displayCurrency: string;
+  period: Period;
+  asOf: string;
+  ownMovers?: OwnMovers;
+}) {
+  const uid = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const money = (v: number | null | undefined) => (v == null ? NONE : formatCurrency(v, displayCurrency));
   const s = member.sections;
   const isMe = member.relation === "me";
+  const why = (section: "net_worth" | "cashflow" | "loans" | "investments") =>
+    member.unavailable.includes(section) ? FAMILY_STRINGS.overview_section_error : FAMILY_STRINGS.overview_card_not_shared;
+  const displayName = isMe ? FAMILY_STRINGS.overview_member_me : member.name;
 
   return (
     <Card data-testid={`member-${member.id}`}>
       <CardHeader className="border-b pb-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="min-w-0">
-            <CardTitle className="text-lg break-words">
-              {isMe ? FAMILY_STRINGS.overview_member_me : member.name}
-            </CardTitle>
+            <CardTitle className="text-lg break-words">{displayName}</CardTitle>
             {isMe && <p className="text-sm text-muted-foreground mt-1 break-words">{member.name}</p>}
           </div>
           <div className="flex flex-wrap gap-2">
@@ -50,7 +107,7 @@ export function MemberCard({ member, displayCurrency }: { member: MemberDto; dis
         </div>
       </CardHeader>
 
-      <CardContent className="pt-6 space-y-6">
+      <CardContent className="pt-6 space-y-4 px-3 sm:px-6">
         {member.error && (
           <p role="alert" className="text-sm text-red-700">
             {FAMILY_STRINGS.overview_section_error}
@@ -85,185 +142,83 @@ export function MemberCard({ member, displayCurrency }: { member: MemberDto; dis
           </div>
         )}
 
-        {s.net_worth && (
-          <SectionBox title={FAMILY_STRINGS.overview_net_worth_title}>
-            <dl className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <Stat label={FAMILY_STRINGS.overview_kpi_assets} value={money(s.net_worth.assets)} />
-              <Stat label={FAMILY_STRINGS.overview_kpi_liabilities} value={money(s.net_worth.liabilities)} />
-              <Stat label={FAMILY_STRINGS.overview_kpi_net_worth} value={money(s.net_worth.net)} />
-            </dl>
-            <div className="mt-4">
-              <TrendChart
-                title={FAMILY_STRINGS.overview_net_worth_trend}
-                memberName={member.name}
-                data={s.net_worth.history}
-                currency={displayCurrency}
-                color="#6366f1"
-                gradientId={`nw-${uid}`}
-              />
-              {s.net_worth.historyFxApproximation && s.net_worth.history.length > 1 && (
-                <p className="text-xs text-muted-foreground mt-1">{FAMILY_STRINGS.overview_history_fx_note}</p>
-              )}
-            </div>
-          </SectionBox>
-        )}
+        {!member.error && (
+          <>
+            <HeadlineCards
+              currency={displayCurrency}
+              period={period}
+              netWorth={s.net_worth ?? { unavailable: why("net_worth") }}
+              flows={s.cashflow ?? { unavailable: why("cashflow") }}
+              savingsRatePct={s.cashflow?.savings.ratePct ?? null}
+              savingsUnavailable={s.cashflow ? undefined : why("cashflow")}
+              dti={s.cashflow?.debtToIncome ?? null}
+              dtiUnavailable={s.cashflow?.debtToIncome ? undefined : FAMILY_STRINGS.overview_card_dti_needs}
+            />
 
-        {s.accounts && (
-          <SectionBox title={FAMILY_STRINGS.overview_accounts_title}>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <caption className="sr-only">{FAMILY_STRINGS.overview_accounts_title}</caption>
-                <thead>
-                  <tr className="text-left text-xs text-muted-foreground">
-                    <th scope="col" className="pb-2 pr-3 font-medium">{FAMILY_STRINGS.overview_member_table_account}</th>
-                    <th scope="col" className="pb-2 pr-3 font-medium">{FAMILY_STRINGS.overview_member_table_type}</th>
-                    <th scope="col" className="pb-2 pr-3 font-medium text-right">{FAMILY_STRINGS.overview_member_table_native}</th>
-                    <th scope="col" className="pb-2 font-medium text-right">{FAMILY_STRINGS.overview_member_table_balance}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {s.accounts.accounts.map((a) => (
-                    <tr key={a.ref} className="border-t">
-                      <th scope="row" className="py-2 pr-3 text-left font-medium break-words">
-                        <Label text={a.label} generic={a.labelIsGeneric} />
-                      </th>
-                      <td className="py-2 pr-3 text-muted-foreground">
-                        {a.type} · {a.currency}
-                      </td>
-                      <td className="py-2 pr-3 text-right text-muted-foreground whitespace-nowrap">
-                        {a.balance == null ? NONE : formatCurrency(a.balance, a.currency)}
-                      </td>
-                      <td className="py-2 text-right font-semibold whitespace-nowrap">{money(a.converted)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </SectionBox>
-        )}
-
-        {s.investments && (
-          <SectionBox title={FAMILY_STRINGS.overview_investments_title}>
-            <p className="text-xl font-semibold">{money(s.investments.holdingsValue)}</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {s.investments.accountsPriced} {FAMILY_STRINGS.overview_valued}
-              {s.investments.accountsUnpriced > 0 && `, ${s.investments.accountsUnpriced} ${FAMILY_STRINGS.overview_unpriced}`}
-              {s.investments.asOf && ` · ${FAMILY_STRINGS.overview_asof} ${formatDate(s.investments.asOf)}`}
-            </p>
-            {s.investments.holdings.length > 0 && (
-              <ul className="mt-3 space-y-1 text-sm">
-                {s.investments.holdings.map((h) => (
-                  <li key={h.ref} className="flex justify-between gap-3">
-                    <span className="break-words min-w-0">
-                      <Label text={h.label} generic={h.labelIsGeneric} />
-                    </span>
-                    <span className="text-muted-foreground whitespace-nowrap">
-                      {h.quantity} {h.currency}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+            {(s.net_worth || s.cashflow) && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {s.net_worth && (
+                  <NetWorthOverTimeCard
+                    history={s.net_worth.history}
+                    currency={displayCurrency}
+                    period={period}
+                    name={member.name}
+                    gradientId={`nw-${uid}`}
+                    note={
+                      s.net_worth.historyFxApproximation && s.net_worth.history.length > 1
+                        ? FAMILY_STRINGS.overview_history_fx_note
+                        : undefined
+                    }
+                  />
+                )}
+                {s.cashflow && (
+                  <IncomeVsExpensesCard
+                    series={s.cashflow}
+                    period={period}
+                    currency={displayCurrency}
+                    asOf={asOf}
+                    idPrefix={`ie-${uid}-`}
+                  />
+                )}
+              </div>
             )}
-            <div className="mt-4">
-              <TrendChart
-                title={FAMILY_STRINGS.overview_investments_trend}
-                memberName={member.name}
-                data={s.investments.trend}
-                currency={displayCurrency}
-                color="#10b981"
-                gradientId={`inv-${uid}`}
-              />
-            </div>
-          </SectionBox>
-        )}
 
-        {s.goals && (
-          <SectionBox title={FAMILY_STRINGS.overview_goals_title}>
-            <ul className="space-y-3">
-              {s.goals.goals.map((g) => (
-                <li key={g.ref} className="border-b pb-2 last:border-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm font-medium break-words min-w-0">
-                      <Label text={g.label} generic={g.labelIsGeneric} />
-                    </p>
-                    {g.progress !== null && <Badge variant="outline">{Math.round(g.progress)}%</Badge>}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {g.currentAmount == null ? NONE : formatCurrency(g.currentAmount, g.currency)}{" "}
-                    {FAMILY_STRINGS.overview_goal_of} {formatCurrency(g.targetAmount, g.currency)}
-                    {g.deadline && ` · ${formatDate(g.deadline)}`}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          </SectionBox>
-        )}
+            {s.investments && (
+              <>
+                <PerformanceCard performance={s.investments.performance} currency={displayCurrency} />
+                <MoversCards member={member} movers={ownMovers} currency={displayCurrency} />
+              </>
+            )}
 
-        {s.loans && (
-          <SectionBox title={FAMILY_STRINGS.overview_loans_title}>
-            <ul className="space-y-3">
-              {s.loans.loans.map((l) => (
-                <li key={l.ref} className="border-b pb-2 last:border-0">
-                  <p className="text-sm font-medium break-words">
-                    <Label text={l.label} generic={l.labelIsGeneric} />
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatPercent(l.annualRate, 2)} · {FAMILY_STRINGS.overview_loan_balance}: {money(l.remainingBalanceConverted)}
-                    {l.payoffDate && ` · ${formatDate(l.payoffDate)}`}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          </SectionBox>
-        )}
-
-        {s.budgets && (
-          <SectionBox title={`${FAMILY_STRINGS.overview_budgets_title} · ${getMonthLabel(s.budgets.month)}`}>
-            <ul className="space-y-2">
-              {s.budgets.budgets.map((b) => (
-                <li key={b.ref} className="flex items-center justify-between gap-3 border-b pb-2 last:border-0">
-                  <p className="text-sm font-medium break-words min-w-0">
-                    <Label text={b.label} generic={b.labelIsGeneric} />
-                  </p>
-                  <p className="text-sm whitespace-nowrap">
-                    {money(b.actual)} / {money(b.budgeted)}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          </SectionBox>
-        )}
-
-        {s.cashflow && (
-          <SectionBox title={FAMILY_STRINGS.overview_cashflow_title}>
-            <dl className="grid grid-cols-2 gap-4">
-              <Stat label={FAMILY_STRINGS.overview_income} value={money(s.cashflow.income)} />
-              <Stat label={FAMILY_STRINGS.overview_expenses} value={money(s.cashflow.expenses)} />
-            </dl>
-            <p className="text-xs text-muted-foreground mt-2">
-              {fill(FAMILY_STRINGS.overview_cashflow_window, { months: s.cashflow.windowMonths })}
-            </p>
-          </SectionBox>
+            {s.loans && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">{FAMILY_STRINGS.overview_loans_title}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {s.loans.loans.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">{NONE}</p>
+                  ) : (
+                    <ul className="space-y-3">
+                      {s.loans.loans.map((l) => (
+                        <li key={l.ref} className="border-b pb-2 last:border-0">
+                          <p className="text-sm font-medium break-words">
+                            <Label text={l.label} generic={l.labelIsGeneric} />
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatPercent(l.annualRate, 2)} · {FAMILY_STRINGS.overview_loan_balance}: {money(l.remainingBalanceConverted)}
+                            {l.payoffDate && ` · ${formatDate(l.payoffDate)}`}
+                          </p>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </>
         )}
       </CardContent>
     </Card>
-  );
-}
-
-function SectionBox({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="border rounded-lg p-4 bg-muted/30">
-      <h4 className="text-sm font-semibold mb-3">{title}</h4>
-      {children}
-    </section>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="text-lg font-semibold break-words">{value}</dd>
-    </div>
   );
 }

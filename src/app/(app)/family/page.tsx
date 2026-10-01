@@ -1,43 +1,51 @@
 "use client";
 
-import { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Share2 } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
 import { FAMILY_STRINGS } from "@/lib/family/strings";
 import { OverviewTab } from "./_components/overview-tab";
-import { SharingTab } from "./_components/sharing-tab";
 import { InviteLinkHandler } from "./_components/invite-link-handler";
 import { PageHeader } from "@/components/mobile";
+import { FAMILY_SHARE_PATH, legacySharingRedirect } from "./_components/share-path";
 
 export default function FamilyPage() {
-  const [activeTab, setActiveTab] = useState<"overview" | "sharing">("overview");
+  const router = useRouter();
   const [reloadKey, setReloadKey] = useState(0);
-  const bump = () => setReloadKey((k) => k + 1);
+  // Read the address bar during the first render: InviteLinkHandler's effect strips ?token=
+  // before this component's own effect runs.
+  const [initialSearch] = useState(() => (typeof window === "undefined" ? "" : window.location.search));
+
+  useEffect(() => {
+    const target = legacySharingRedirect(initialSearch);
+    if (target) router.replace(target);
+  }, [initialSearch, router]);
 
   return (
     <div className="space-y-6">
       <PageHeader
-          title={FAMILY_STRINGS.page_title}
-          titleClassName="text-2xl sm:text-3xl font-bold"
-          subtitle={FAMILY_STRINGS.page_description}
-          subtitleClassName="text-sm text-muted-foreground mt-1"
-        />
+        className="flex items-start justify-between gap-3"
+        title={FAMILY_STRINGS.page_title}
+        titleClassName="text-2xl sm:text-3xl font-bold"
+        subtitle={FAMILY_STRINGS.page_description}
+        subtitleClassName="text-sm text-muted-foreground mt-1"
+        actions={
+          <Link
+            href={FAMILY_SHARE_PATH}
+            aria-label={FAMILY_STRINGS.share_action}
+            title={FAMILY_STRINGS.share_action}
+            className={buttonVariants({ variant: "outline", size: "icon" })}
+          >
+            <Share2 className="h-4 w-4" aria-hidden="true" />
+          </Link>
+        }
+      />
 
-      <InviteLinkHandler onDone={bump} />
+      <InviteLinkHandler onDone={() => setReloadKey((k) => k + 1)} />
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "overview" | "sharing")}>
-        <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="overview">{FAMILY_STRINGS.tab_overview}</TabsTrigger>
-          <TabsTrigger value="sharing">{FAMILY_STRINGS.tab_sharing}</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview" className="space-y-6">
-          <OverviewTab reloadKey={reloadKey} />
-        </TabsContent>
-
-        <TabsContent value="sharing" className="space-y-6">
-          <SharingTab reloadKey={reloadKey} onSharesChanged={bump} />
-        </TabsContent>
-      </Tabs>
+      <OverviewTab reloadKey={reloadKey} />
     </div>
   );
 }

@@ -78,6 +78,7 @@ describe("More screen", () => {
       ["Budgets", "/budgets"],
       ["Goals", "/goals"],
       ["Reports", "/reports"],
+      ["Category report", "/categories"],
       ["Reconcile", "/import?tab=reconcile"],
       ["Categories", "/settings/categorization"],
       ["Import", "/import"],
@@ -85,7 +86,7 @@ describe("More screen", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/announcements"));
     expect(rows("tools").map((r) => r[0])).toEqual(["What's new", "Family Wealth", "Settings"]);
     expect(within(group("tools")).getByTestId("more-signout").textContent).toBe("Sign out");
-    expect(rows("explore").map((r) => r[1])).toEqual(["/subscriptions", "/calendar", "/loans"]);
+    expect(rows("explore").map((r) => r[1])).toEqual(["/subscriptions", "/loans"]);
   });
 
   it("hides What's new when there are no announcements", async () => {

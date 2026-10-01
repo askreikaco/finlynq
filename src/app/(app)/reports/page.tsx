@@ -38,12 +38,10 @@ import {
   ChevronRight,
   ChevronDown,
   Calendar,
-  Layers, Wallet } from "lucide-react";
+  Layers, Wallet, ChartColumn } from "lucide-react";
 import {
   BarChart,
   Bar,
-  AreaChart,
-  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -52,6 +50,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { PageHeader } from "@/components/mobile";
+import { IncomeExpenseTrendCard } from "@/components/reports/income-expense-trend-card";
 
 // ── Types ──
 
@@ -586,77 +585,12 @@ export default function ReportsPage() {
 
       {/* ── Trend Chart ── */}
       {trendsData && trendsData.timeseries.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
-                  <BarChart3 className="h-5 w-5" />
-                </div>
-                <div>
-                  <CardTitle className="text-base">Income vs Expenses</CardTitle>
-                  <CardDescription>{periodLabels[period]} trend &middot; {startDate} to {endDate}</CardDescription>
-                </div>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={trendsData.timeseries} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
-                  <defs>
-                    <linearGradient id="incomeGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={CHART_COLORS.positive} stopOpacity={0.3} />
-                      <stop offset="95%" stopColor={CHART_COLORS.positive} stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="expenseGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={CHART_COLORS.negative} stopOpacity={0.3} />
-                      <stop offset="95%" stopColor={CHART_COLORS.negative} stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                  <XAxis
-                    dataKey="label"
-                    className="text-xs fill-muted-foreground"
-                    tick={{ fontSize: 11 }}
-                    interval={period === "daily" ? Math.max(0, Math.floor(trendsData.timeseries.length / 12)) : 0}
-                    angle={period === "daily" ? -45 : 0}
-                    textAnchor={period === "daily" ? "end" : "middle"}
-                    height={period === "daily" ? 60 : 30}
-                  />
-                  <YAxis
-                    className="text-xs fill-muted-foreground"
-                    tick={{ fontSize: 11 }}
-                    tickFormatter={(v) => formatCompactNumber(Number(v))}
-                    width={90}
-                  />
-                  <Tooltip
-                    formatter={(v) => formatCurrency(Number(v), displayCurrency)}
-                    contentStyle={{ borderRadius: "8px", fontSize: "12px" }}
-                    labelStyle={{ fontWeight: 600, marginBottom: 4 }}
-                  />
-                  <Legend wrapperStyle={{ fontSize: "12px" }} />
-                  <Area
-                    type="monotone"
-                    dataKey="income"
-                    name="Income"
-                    stroke={CHART_COLORS.positive}
-                    fill="url(#incomeGrad)"
-                    strokeWidth={2}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="expenses"
-                    name="Expenses"
-                    stroke={CHART_COLORS.negative}
-                    fill="url(#expenseGrad)"
-                    strokeWidth={2}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
+        <IncomeExpenseTrendCard
+          timeseries={trendsData.timeseries}
+          currency={displayCurrency}
+          description={`${periodLabels[period]} trend · ${startDate} to ${endDate}`}
+          daily={period === "daily"}
+        />
       )}
 
       {/* ── Tabs ── */}
@@ -1292,6 +1226,20 @@ export default function ReportsPage() {
 const MAX_PERIOD_COLUMNS = 30;
 
 /** Muted "--" cell for zero/missing period values (avoids $0.00 noise across 30 cols). */
+/** Small chart icon next to a category name → the category view (/categories/[id]). */
+function CategoryInsightsLink({ categoryId, name }: { categoryId: number; name: string }) {
+  return (
+    <Link
+      href={`/categories/${categoryId}`}
+      className="text-muted-foreground/60 hover:text-primary"
+      title={`${name}: trends, average, top payees`}
+      aria-label={`Open ${name} category view`}
+    >
+      <ChartColumn className="h-3.5 w-3.5" />
+    </Link>
+  );
+}
+
 function PeriodCell({ value, currency, colorClass }: { value: number | undefined; currency: string; colorClass: string }) {
   if (value == null || value === 0) {
     return <TableCell className="text-right text-xs text-muted-foreground/50 font-mono">--</TableCell>;
@@ -1482,13 +1430,16 @@ function GroupRow({
                 <TableCell></TableCell>
                 <TableCell className="text-sm pl-6 text-muted-foreground">
                   {item.categoryId != null ? (
-                    <Link
-                      href={buildTxDrillUrl({ categoryId: String(item.categoryId), startDate, endDate })}
-                      className="hover:underline hover:text-foreground"
-                      title={`View ${item.name} transactions for this period`}
-                    >
-                      {item.name}
-                    </Link>
+                    <span className="inline-flex items-center gap-1.5">
+                      <Link
+                        href={buildTxDrillUrl({ categoryId: String(item.categoryId), startDate, endDate })}
+                        className="hover:underline hover:text-foreground"
+                        title={`View ${item.name} transactions for this period`}
+                      >
+                        {item.name}
+                      </Link>
+                      <CategoryInsightsLink categoryId={item.categoryId} name={item.name} />
+                    </span>
                   ) : (
                     item.name
                   )}
@@ -1553,13 +1504,16 @@ function FlatTable({
                 <TableRow key={i} className="hover:bg-muted/30">
                   <TableCell className="text-sm">
                     {item.categoryId != null ? (
-                      <Link
-                        href={buildTxDrillUrl({ categoryId: String(item.categoryId), startDate, endDate })}
-                        className="hover:underline"
-                        title={`View ${item.name} transactions for this period`}
-                      >
-                        {item.name}
-                      </Link>
+                      <span className="inline-flex items-center gap-1.5">
+                        <Link
+                          href={buildTxDrillUrl({ categoryId: String(item.categoryId), startDate, endDate })}
+                          className="hover:underline"
+                          title={`View ${item.name} transactions for this period`}
+                        >
+                          {item.name}
+                        </Link>
+                        <CategoryInsightsLink categoryId={item.categoryId} name={item.name} />
+                      </span>
                     ) : (
                       item.name
                     )}

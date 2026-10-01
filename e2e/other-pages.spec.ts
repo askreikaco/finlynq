@@ -70,7 +70,7 @@ test.describe("Import API", () => {
 });
 
 test.describe("Page HTML Responses", () => {
-  test("all 18 app pages return HTTP 200", async ({ request }) => {
+  test("all 17 app pages return HTTP 200", async ({ request }) => {
     await ensureUnlocked(request);
     const pages = [
       "/",
@@ -84,7 +84,6 @@ test.describe("Page HTML Responses", () => {
       "/goals",
       "/loans",
       "/portfolio",
-      "/calendar",
       "/fire",
       "/subscriptions",
       "/tax",

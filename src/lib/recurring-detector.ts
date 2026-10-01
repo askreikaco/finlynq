@@ -1,5 +1,7 @@
 // Feature 6: Recurring Transaction Detection
 
+import { occurrenceAt } from "@/lib/subscriptions/schedule";
+
 type Transaction = {
   id: number;
   date: string;
@@ -15,7 +17,7 @@ export type DetectedRecurring = {
   avgAmount: number;
   /** Native currency of the underlying transactions (never assumed). */
   currency: string;
-  frequency: "weekly" | "biweekly" | "monthly" | "yearly";
+  frequency: RecurringFrequency;
   count: number;
   lastDate: string;
   nextDate: string;
@@ -24,37 +26,69 @@ export type DetectedRecurring = {
   transactions: Transaction[];
 };
 
+/**
+ * Detector cadence vocabulary. "yearly" (not "annual") is kept for the
+ * /api/recurring response contract; consumers normalize through
+ * `normalizeFrequency` in lib/subscriptions/schedule.ts.
+ */
+export type RecurringFrequency = "weekly" | "biweekly" | "monthly" | "quarterly" | "semiannual" | "yearly";
+
 function daysBetween(d1: string, d2: string): number {
   return Math.abs(
     (new Date(d1 + "T00:00:00").getTime() - new Date(d2 + "T00:00:00").getTime()) / 86400000
   );
 }
 
-function guessFrequency(avgDays: number): "weekly" | "biweekly" | "monthly" | "yearly" | null {
+function guessFrequency(avgDays: number): RecurringFrequency | null {
   if (avgDays >= 5 && avgDays <= 9) return "weekly";
   if (avgDays >= 12 && avgDays <= 18) return "biweekly";
   if (avgDays >= 25 && avgDays <= 35) return "monthly";
+  if (avgDays >= 80 && avgDays <= 100) return "quarterly";
+  if (avgDays >= 170 && avgDays <= 195) return "semiannual";
   if (avgDays >= 350 && avgDays <= 380) return "yearly";
   return null;
 }
 
-function addFrequency(date: string, frequency: string): string {
-  const d = new Date(date + "T00:00:00");
-  switch (frequency) {
-    case "weekly": d.setDate(d.getDate() + 7); break;
-    case "biweekly": d.setDate(d.getDate() + 14); break;
-    case "monthly": d.setMonth(d.getMonth() + 1); break;
-    case "yearly": d.setFullYear(d.getFullYear() + 1); break;
-  }
-  return d.toISOString().split("T")[0];
+// Shared UTC, anchor-indexed schedule math (lib/subscriptions/schedule.ts).
+// The old local-midnight `setMonth` stepping overflowed Jan 31 → Mar 3.
+function addFrequency(date: string, frequency: string, periods = 1): string {
+  return occurrenceAt(date, frequency, periods);
 }
 
-export function detectRecurringTransactions(transactions: Transaction[]): DetectedRecurring[] {
+export interface DetectOptions {
+  /**
+   * When set (ISO date, normally today), drop series that have LAPSED — the
+   * next two expected payments after `lastDate` both fell before the series'
+   * reference date. A Netflix cancelled eight months ago is not a recurring
+   * payment any more, and showing it as an upcoming bill or a subscription
+   * suggestion is noise. One missed date is tolerated (a bank feed can lag a
+   * cycle).
+   *
+   * The reference date is the NEWEST transaction in the series' own
+   * account(s), capped at `asOf` — never `asOf` alone. Measured against today,
+   * a user whose imports for an account stopped in June would be told every
+   * bill on it was cancelled, which is a data-freshness problem, not a lapse.
+   */
+  asOf?: string;
+}
+
+export function detectRecurringTransactions(
+  transactions: Transaction[],
+  opts: DetectOptions = {},
+): DetectedRecurring[] {
   // Group by (payee, currency). Currency is part of the key on purpose: the
   // same payee billed in two currencies is two different recurring series, and
   // averaging their amounts together would produce a meaningless figure under
   // a single currency label.
   const groups = new Map<string, Transaction[]>();
+  // Newest transaction per account — the lapse reference (see DetectOptions).
+  const latestByAccount = new Map<number, string>();
+  if (opts.asOf) {
+    for (const t of transactions) {
+      const prev = latestByAccount.get(t.accountId);
+      if (!prev || t.date > prev) latestByAccount.set(t.accountId, t.date);
+    }
+  }
   for (const t of transactions) {
     const payeeKey = (t.payee || "").trim().toLowerCase();
     if (!payeeKey) continue;
@@ -94,6 +128,15 @@ export function detectRecurringTransactions(transactions: Transaction[]): Detect
     if (!intervalConsistent) continue;
 
     const lastDate = sorted[sorted.length - 1].date;
+    if (opts.asOf) {
+      let horizon = "";
+      for (const t of sorted) {
+        const latest = latestByAccount.get(t.accountId) ?? "";
+        if (latest > horizon) horizon = latest;
+      }
+      const reference = horizon && horizon < opts.asOf ? horizon : opts.asOf;
+      if (addFrequency(lastDate, frequency, 2) < reference) continue;
+    }
     results.push({
       payee: sorted[0].payee,
       avgAmount: Math.round(avgAmount * 100) / 100,

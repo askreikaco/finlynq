@@ -733,8 +733,10 @@ export async function upsertBudget(userId: string, data: { categoryId: number; m
     if (data.currency) update.currency = data.currency;
     return db.update(budgets).set(update).where(eq(budgets.id, existing.id)).returning().get();
   }
-
-  const currency = data.currency ?? (await getDisplayCurrency(userId));
+  // A new record's currency is never a hardcoded default (feedback #7): an
+  // omitted currency means the user's display currency — the one every budget
+  // screen shows amounts in. The old "CAD" made a USD user's 500 read as $365.
+  const currency = data.currency?.trim().toUpperCase() || (await getDisplayCurrency(userId));
   return db.insert(budgets).values({ ...data, userId, currency }).returning().get();
 }
 
@@ -968,6 +970,35 @@ export async function getIncomeVsExpenses(userId: string, startDate: string, end
     )
     .groupBy(monthExpr(transactions.date), categories.type, transactions.currency, transactions.reportingCurrency)
     .orderBy(monthExpr(transactions.date))
+    .all();
+}
+
+/**
+ * Same slices as getIncomeVsExpenses at DAY grain (`day` = YYYY-MM-DD). Used by the Family
+ * overview's month-to-date Income vs Expenses chart (the reports page's "daily" granularity).
+ */
+export async function getIncomeVsExpensesDaily(userId: string, startDate: string, endDate: string) {
+  return db
+    .select({
+      day: transactions.date,
+      type: categories.type,
+      currency: transactions.currency,
+      reportingCurrency: transactions.reportingCurrency,
+      totalAmount: sql<number>`SUM(${transactions.amount})`,
+      totalReporting: sql<number | null>`SUM(${transactions.reportingAmount})`,
+    })
+    .from(transactions)
+    .leftJoin(categories, eq(transactions.categoryId, categories.id))
+    .where(
+      and(
+        eq(transactions.userId, userId),
+        gte(transactions.date, startDate),
+        lte(transactions.date, endDate),
+        sql`${categories.type} IN ('E', 'I')`
+      )
+    )
+    .groupBy(transactions.date, categories.type, transactions.currency, transactions.reportingCurrency)
+    .orderBy(transactions.date)
     .all();
 }
 

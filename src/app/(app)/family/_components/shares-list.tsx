@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Clock, CircleSlash, AlertTriangle } from "lucide-react";
 import { FAMILY_STRINGS } from "@/lib/family/strings";
-import { FAMILY_SECTIONS_V1 } from "@/lib/family/sections";
+import { FAMILY_OVERVIEW_SECTIONS, isOverviewSection } from "@/lib/family/sections";
 import { formatDateTimeLocal } from "@/lib/currency";
 import { RevokeDialog } from "./revoke-dialog";
 import { ChangeSectionsDialog } from "./change-sections-dialog";
@@ -113,14 +113,15 @@ export function SharesList({ shares, incoming, emptyMessage, role, onChanged }: 
                         </Badge>
                         <span className="text-xs text-muted-foreground">
                           {fill(FAMILY_STRINGS.sharing_list_sections_count, {
-                            count: share.sections.length,
-                            total: FAMILY_SECTIONS_V1.length,
+                            // retired sections (accounts/goals/budgets) of older shares are not shown
+                            count: share.sections.filter(isOverviewSection).length,
+                            total: FAMILY_OVERVIEW_SECTIONS.length,
                           })}
                         </span>
                       </div>
-                      {share.sections.length > 0 && (
+                      {share.sections.some(isOverviewSection) && (
                         <p className="text-xs text-muted-foreground">
-                          {share.sections.map(getSectionLabel).join(", ")}
+                          {share.sections.filter(isOverviewSection).map(getSectionLabel).join(", ")}
                         </p>
                       )}
 

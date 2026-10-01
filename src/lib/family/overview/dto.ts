@@ -50,17 +50,19 @@ export const InvestmentsDtoSchema = z.object({
   asOf: z.string().nullable(),
   accountsPriced: z.number(),
   accountsUnpriced: z.number(),
-  holdings: z.array(
-    z.object({
-      ref,
-      label,
-      labelIsGeneric: z.boolean(),
-      currency: z.string(),
-      quantity: z.number(),
-      isCrypto: z.boolean(),
-    }),
-  ),
-  trend: z.array(z.object({ date: z.string(), value: z.number() })),
+  /**
+   * The /portfolio "Performance" card for the selected range: whole-portfolio market value and
+   * cost basis (display currency) + TWRR / MWRR (currency-free ratios), computed by the same
+   * src/lib/portfolio/performance/compute.ts as GET /api/portfolio/performance.
+   */
+  performance: z.object({
+    from: z.string(),
+    to: z.string(),
+    series: z.array(z.object({ date: z.string(), marketValue: z.number(), costBasis: z.number() })),
+    twrr: z.object({ period: z.number(), annualized: z.number() }),
+    mwrr: z.object({ irr: z.number(), converged: z.boolean() }),
+    gapsFilledDays: z.number(),
+  }),
 });
 
 export const GoalsDtoSchema = z.object({
@@ -114,11 +116,38 @@ export const BudgetsDtoSchema = z.object({
   ),
 });
 
+const flowPoint = z.object({ income: z.number(), expenses: z.number() });
+
 export const CashflowDtoSchema = z.object({
+  /** first day (YYYY-MM-DD) of the selected range; null = all time */
+  from: z.string().nullable(),
+  /** months spanned by the selected range (calendar months touched) */
   windowMonths: z.number(),
+  /** range totals (display currency); expenses as a positive magnitude */
   income: z.number(),
   expenses: z.number(),
-  monthly: z.array(z.object({ month: z.string(), income: z.number(), expenses: z.number() })),
+  monthly: z.array(flowPoint.extend({ month: z.string() })),
+  /** per-day points, only for the month-to-date range ("This month"); [] otherwise */
+  daily: z.array(flowPoint.extend({ date: z.string() })),
+  /**
+   * Savings rate over the range, dashboard formula (financial-health.ts): (income - expenses) /
+   * income with expenses summed as |slice|; null without income. Raw sums let the household
+   * total be recomputed from sums, never averaged.
+   */
+  savings: z.object({ income: z.number(), expenses: z.number(), ratePct: z.number().nullable() }),
+  /**
+   * Debt-to-income, dashboard formula: trailing-12-month debt service (scheduled loan payments +
+   * capped realized payments into loan-less liability accounts) / trailing-12-month income.
+   * null when the member does not ALSO share `loans` (never shown as 0).
+   */
+  debtToIncome: z
+    .object({
+      pct: z.number().nullable(),
+      reliable: z.boolean(),
+      debtPayments12m: z.number(),
+      income12m: z.number(),
+    })
+    .nullable(),
 });
 
 export const SectionsDtoSchema = z.object({
@@ -148,9 +177,16 @@ export const MemberDtoSchema = z.object({
   error: z.literal("unavailable").optional(),
 });
 
+/**
+ * Overview ranges: "month" (month-to-date, default), "year" (year-to-date), "all". The rolling
+ * "6m" / "1y" windows of the first release stay accepted for old clients.
+ */
+export const OVERVIEW_PERIODS = ["month", "year", "all", "6m", "1y"] as const;
+export type OverviewPeriod = (typeof OVERVIEW_PERIODS)[number];
+
 export const OverviewResponseSchema = z.object({
   displayCurrency: z.string(),
-  period: z.enum(["6m", "1y", "all"]),
+  period: z.enum(OVERVIEW_PERIODS),
   asOf: z.string(),
   partial: z.boolean(),
   members: z.array(MemberDtoSchema),

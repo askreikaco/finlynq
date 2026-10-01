@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
-  TrendingUp, BarChart3, Coins, Briefcase, Plus, Flame, Snowflake,
+  TrendingUp, BarChart3, Coins, Briefcase, Plus,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { useDevMode } from "@/hooks/use-dev-mode";
@@ -24,7 +24,8 @@ import {
   type EnrichedHolding, type EtfXrayTab, type FilterType,
 } from "./_types";
 import { usePortfolioOverview, useBenchmarks } from "./_hooks/use-portfolio";
-import { ChangeBadge, DayChange, PortfolioSkeleton } from "./_components/portfolio-ui";
+import { ChangeBadge, PortfolioSkeleton } from "./_components/portfolio-ui";
+import { TopMoversCard } from "./_components/top-movers-card";
 import { HoldingsTable } from "./_components/holdings-table";
 import { EtfXrayCard } from "./_components/etf-xray-card";
 import { AllocationCharts } from "./_components/allocation-charts";
@@ -429,56 +430,10 @@ export default function PortfolioPage() {
       {(topGainers.length > 0 || topLosers.length > 0) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {topGainers.length > 0 && (
-            <Card>
-              <CardHeader className="pb-2">
-                <div className="flex items-center gap-2">
-                  <Flame className="h-4 w-4 text-emerald-500" />
-                  <CardTitle className="text-sm font-medium">Top Gainers</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {topGainers.map(m => (
-                    <div key={m.key} className="flex items-center justify-between py-1">
-                      <div className="flex items-center gap-2">
-                        {m.image && <img src={m.image} alt="" className="h-5 w-5 rounded-full" />}
-                        <span className="text-sm font-medium">{m.symbol ?? m.name}</span>
-                        {m.name !== (m.symbol ?? m.name) && (
-                          <span className="text-xs text-muted-foreground hidden sm:inline">{m.name}</span>
-                        )}
-                      </div>
-                      <DayChange pct={m.changePct} amount={m.dayChangeDisplay} currency={displayCurrency} />
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+            <TopMoversCard kind="gainers" movers={topGainers} currency={displayCurrency} />
           )}
           {topLosers.length > 0 && (
-            <Card>
-              <CardHeader className="pb-2">
-                <div className="flex items-center gap-2">
-                  <Snowflake className="h-4 w-4 text-rose-500" />
-                  <CardTitle className="text-sm font-medium">Top Losers</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {topLosers.map(m => (
-                    <div key={m.key} className="flex items-center justify-between py-1">
-                      <div className="flex items-center gap-2">
-                        {m.image && <img src={m.image} alt="" className="h-5 w-5 rounded-full" />}
-                        <span className="text-sm font-medium">{m.symbol ?? m.name}</span>
-                        {m.name !== (m.symbol ?? m.name) && (
-                          <span className="text-xs text-muted-foreground hidden sm:inline">{m.name}</span>
-                        )}
-                      </div>
-                      <DayChange pct={m.changePct} amount={m.dayChangeDisplay} currency={displayCurrency} />
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+            <TopMoversCard kind="losers" movers={topLosers} currency={displayCurrency} />
           )}
         </div>
       )}
