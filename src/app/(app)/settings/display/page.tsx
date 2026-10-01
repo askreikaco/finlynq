@@ -17,7 +17,7 @@ export default function DisplaySettingsPage() {
   return (
     <div className="max-w-2xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Display & Ordering</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Display</h1>
         <p className="text-sm text-muted-foreground mt-0.5">Customize how lists and pickers are ordered</p>
       </div>
 

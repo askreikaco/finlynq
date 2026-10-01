@@ -39,10 +39,10 @@ import {
   Activity,
   Server,
   ScrollText,
+  Shield,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { FinlynqLogo } from "@/components/FinlynqLogo";
-import { FeedbackDialog } from "@/components/feedback-dialog";
 
 type NavItem = { href: string; label: string; icon: LucideIcon; color: string; mode?: "prod" | "dev" };
 
@@ -56,7 +56,6 @@ export const navGroups: { label: string; items: NavItem[] }[] = [
     items: [
       { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, color: ACTIVE_ACCENT, mode: "prod" },
       { href: "/whats-new", label: "What's New", icon: Megaphone, color: ACTIVE_ACCENT, mode: "prod" },
-      { href: "/connect", label: "MCP Guide", icon: Bot, color: ACTIVE_ACCENT, mode: "prod" },
       { href: "/chat", label: "AI Chat", icon: MessageSquare, color: ACTIVE_ACCENT, mode: "dev" },
     ],
   },
@@ -94,13 +93,7 @@ export const navGroups: { label: string; items: NavItem[] }[] = [
   },
 ];
 
-const toolLinks: NavItem[] = [
-  // Consolidation Phase 3 (2026-06-04): /import is now the single
-  // account-anchored money-in surface (upload + staging + reconcile tabs).
-  // The standalone /reconcile link was folded in (it's the Reconcile tab);
-  // /reconcile + /inbox + /import/reconcile redirect here (next.config.ts).
-  { href: "/import", label: "Import", icon: Upload, color: ACTIVE_ACCENT, mode: "prod" },
-  { href: "/api-docs", label: "API Docs", icon: FileText, color: ACTIVE_ACCENT, mode: "dev" },
+export const adminLinks: NavItem[] = [
   { href: "/admin", label: "Admin", icon: ShieldCheck, color: ACTIVE_ACCENT, mode: "prod" },
   { href: "/admin/inbox", label: "Admin Inbox", icon: Inbox, color: ACTIVE_ACCENT, mode: "prod" },
   { href: "/admin/email-inbox", label: "Email Oversight", icon: Mailbox, color: ACTIVE_ACCENT, mode: "prod" },
@@ -111,6 +104,15 @@ const toolLinks: NavItem[] = [
   { href: "/admin/diagnostics", label: "Diagnostics", icon: ScrollText, color: ACTIVE_ACCENT, mode: "prod" },
   { href: "/admin/announcements", label: "Announcements", icon: Megaphone, color: ACTIVE_ACCENT, mode: "prod" },
   { href: "/admin/feedback", label: "Feedback", icon: MessageCircle, color: ACTIVE_ACCENT, mode: "prod" },
+];
+
+const toolLinks: NavItem[] = [
+  // Consolidation Phase 3 (2026-06-04): /import is now the single
+  // account-anchored money-in surface (upload + staging + reconcile tabs).
+  // The standalone /reconcile link was folded in (it's the Reconcile tab);
+  // /reconcile + /inbox + /import/reconcile redirect here (next.config.ts).
+  { href: "/import", label: "Import", icon: Upload, color: ACTIVE_ACCENT, mode: "prod" },
+  { href: "/api-docs", label: "API Docs", icon: FileText, color: ACTIVE_ACCENT, mode: "dev" },
   { href: "/feedback", label: "Your feedback", icon: MessageCircle, color: ACTIVE_ACCENT, mode: "prod" },
   { href: "/settings", label: "Settings", icon: Settings, color: ACTIVE_ACCENT, mode: "prod" },
 ];
@@ -122,7 +124,7 @@ const mobileBarItems: NavItem[] = [
   { href: "/budgets", label: "Budgets", icon: PiggyBank, color: ACTIVE_ACCENT },
 ];
 
-const allFlatItems = navGroups.flatMap((g) => g.items).concat(toolLinks);
+const allFlatItems = navGroups.flatMap((g) => g.items).concat(toolLinks).concat(adminLinks);
 
 export function Nav() {
   const pathname = usePathname();
@@ -130,11 +132,12 @@ export function Nav() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+  const [adminPref, setAdminPref] = useState(false);
   const [devMode, setDevMode] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [unread, setUnread] = useState(0);
+  const [hasAnnouncements, setHasAnnouncements] = useState(true); // default to true to avoid hiding on initial load
   const [feedbackUnread, setFeedbackUnread] = useState(0);
-  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   const handleSignOut = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -148,6 +151,15 @@ export function Nav() {
     const groups: Record<string, boolean> = {};
     navGroups.forEach((g) => { if (g.label) groups[g.label] = true; });
     setOpenGroups(groups);
+
+    // Initialize admin group open state from localStorage
+    try {
+      const savedAdminOpen = localStorage.getItem("nav.adminOpen");
+      if (savedAdminOpen === "true") setAdminPref(true);
+    } catch (_e) {
+      // localStorage not available, adminOpen stays false
+    }
+
     fetch("/api/auth/session")
       .then((r) => r.json())
       .then((data) => {
@@ -160,14 +172,20 @@ export function Nav() {
       .catch(() => {});
   }, []);
 
+  // Admin group is open when the user opened it, or while on an /admin page
+  // (derived, no effect: collapsing still works, and returns to the saved pref
+  // once the user leaves /admin).
+  const adminOpen = adminPref || (isAdmin && pathname.startsWith("/admin"));
+
   // Unread announcement count for the "What's New" badge. Refetched on every
   // navigation so the badge clears after the user visits /whats-new (which
-  // marks items read server-side).
+  // marks items read server-side). Also tracks whether any announcements exist.
   useEffect(() => {
     fetch("/api/announcements")
-      .then((r) => (r.ok ? r.json() : []))
+      .then((r) => (r.ok ? r.json() : null))
       .then((list) => {
         if (Array.isArray(list)) {
+          setHasAnnouncements(list.length > 0);
           setUnread(list.filter((a: { read?: boolean }) => !a.read).length);
         }
       })
@@ -200,6 +218,16 @@ export function Nav() {
 
   const toggleGroup = (label: string) => {
     setOpenGroups((prev) => ({ ...prev, [label]: !prev[label] }));
+  };
+
+  const toggleAdminGroup = () => {
+    const next = !adminOpen;
+    setAdminPref(next);
+    try {
+      localStorage.setItem("nav.adminOpen", String(next));
+    } catch (_e) {
+      // localStorage not available, just update state
+    }
   };
 
   const renderLink = (item: NavItem, showLabel: boolean) => {
@@ -267,7 +295,11 @@ export function Nav() {
       {/* Nav groups */}
       <div className="flex-1 px-2 space-y-1 overflow-y-auto">
         {navGroups.map((group) => {
-          const visibleItems = group.items.filter((item) => devMode || item.mode !== "dev");
+          const visibleItems = group.items.filter((item) => {
+            // Hide What's New when there are no announcements
+            if (item.label === "What's New" && !hasAnnouncements) return false;
+            return devMode || item.mode !== "dev";
+          });
           if (visibleItems.length === 0) return null;
           return (
           <div key={group.label || "top"}>
@@ -296,42 +328,86 @@ export function Nav() {
       </div>
 
       {/* Bottom section */}
-      <div className="px-2 pb-3 pt-2 border-t border-sidebar-border/50 space-y-0.5">
-        {toolLinks.filter((item) => (devMode || item.mode !== "dev") && (!item.href.startsWith("/admin") || isAdmin)).map((item) => renderLink(item, !collapsed))}
-        <button
-          onClick={() => setFeedbackOpen(true)}
-          title={collapsed ? "Send feedback" : undefined}
-          className={cn(
-            "group/link relative flex items-center gap-3 rounded-lg text-[13px] font-medium transition-all duration-200 w-full",
-            collapsed ? "px-0 py-2 justify-center" : "px-3 py-2",
-            "text-sidebar-foreground/50 hover:bg-white/[0.05] hover:text-sidebar-foreground"
+      <div className="flex-col flex border-t border-sidebar-border/50">
+        {/* Scrollable tools + admin group area */}
+        <div className="flex-1 min-h-0 overflow-y-auto px-2 pt-2 pb-2 space-y-0.5">
+          {/* Regular tool links */}
+          {toolLinks.filter((item) => devMode || item.mode !== "dev").map((item) => renderLink(item, !collapsed))}
+
+          {/* Admin group (collapsible) */}
+          {isAdmin && (
+            <div>
+              {!collapsed && (
+                <button
+                  onClick={toggleAdminGroup}
+                  aria-expanded={adminOpen}
+                  aria-controls="nav-admin-links"
+                  className="flex items-center w-full px-3 mb-1 mt-3 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/30 hover:text-sidebar-foreground/50 transition-colors"
+                >
+                  <ChevronDown
+                    className={cn(
+                      "h-3 w-3 mr-1 transition-transform duration-200",
+                      !adminOpen && "-rotate-90"
+                    )}
+                  />
+                  Admin
+                </button>
+              )}
+              {collapsed && (
+                <Link
+                  href="/admin"
+                  title="Admin"
+                  aria-label="Admin"
+                  className={cn(
+                    "group/link relative flex items-center gap-3 rounded-lg text-[13px] font-medium transition-all duration-200 px-0 py-2 justify-center",
+                    pathname.startsWith("/admin")
+                      ? "bg-white/[0.08] text-sidebar-accent-foreground"
+                      : "text-sidebar-foreground/50 hover:bg-white/[0.05] hover:text-sidebar-foreground"
+                  )}
+                >
+                  {pathname.startsWith("/admin") && (
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 rounded-full bg-sidebar-primary shadow-[0_0_8px_2px] shadow-sidebar-primary/30" />
+                  )}
+                  <Shield className={cn(
+                    "h-[18px] w-[18px] shrink-0 transition-all duration-200",
+                    pathname.startsWith("/admin") ? "text-primary" : "text-sidebar-foreground/40 group-hover/link:text-sidebar-foreground/70"
+                  )} />
+                </Link>
+              )}
+              {adminOpen && !collapsed && (
+                <div id="nav-admin-links" className="space-y-0.5 max-h-[40vh] overflow-y-auto">
+                  {adminLinks.filter((item) => devMode || item.mode !== "dev").map((item) => renderLink(item, !collapsed))}
+                </div>
+              )}
+            </div>
           )}
-        >
-          <MessageCircle className="h-[18px] w-[18px] shrink-0 text-sidebar-foreground/40 group-hover/link:text-sidebar-foreground/70 group-hover/link:scale-110 transition-all duration-200" />
-          {!collapsed && <span className="truncate">Send feedback</span>}
-        </button>
-        <button
-          onClick={handleSignOut}
-          title={collapsed ? "Sign out" : undefined}
-          className={cn(
-            "group/link relative flex items-center gap-3 rounded-lg text-[13px] font-medium transition-all duration-200 w-full",
-            collapsed ? "px-0 py-2 justify-center" : "px-3 py-2",
-            "text-sidebar-foreground/50 hover:bg-white/[0.05] hover:text-sidebar-foreground"
-          )}
-        >
-          <LogOut className="h-[18px] w-[18px] shrink-0 text-sidebar-foreground/40 group-hover/link:text-sidebar-foreground/70 group-hover/link:scale-110 transition-all duration-200" />
-          {!collapsed && <span className="truncate">Sign out</span>}
-        </button>
-        <div className={cn("flex items-center mt-2", collapsed ? "justify-center" : "justify-between px-1")}>
-          <ThemeToggle />
+        </div>
+
+        {/* Fixed bottom block: Sign out, theme toggle, collapse button */}
+        <div className="shrink-0 px-2 pb-3 pt-2 border-t border-sidebar-border/50 space-y-0.5">
           <button
-            onClick={toggleCollapsed}
-            className="p-1.5 rounded-lg text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-all duration-200 hover:scale-110"
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            onClick={handleSignOut}
+            title={collapsed ? "Sign out" : undefined}
+            className={cn(
+              "group/link relative flex items-center gap-3 rounded-lg text-[13px] font-medium transition-all duration-200 w-full",
+              collapsed ? "px-0 py-2 justify-center" : "px-3 py-2",
+              "text-sidebar-foreground/50 hover:bg-white/[0.05] hover:text-sidebar-foreground"
+            )}
           >
-            {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            <LogOut className="h-[18px] w-[18px] shrink-0 text-sidebar-foreground/40 group-hover/link:text-sidebar-foreground/70 group-hover/link:scale-110 transition-all duration-200" />
+            {!collapsed && <span className="truncate">Sign out</span>}
           </button>
+          <div className={cn("flex items-center mt-2", collapsed ? "justify-center" : "justify-between px-1")}>
+            <ThemeToggle />
+            <button
+              onClick={toggleCollapsed}
+              className="p-1.5 rounded-lg text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-all duration-200 hover:scale-110"
+              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            </button>
+          </div>
         </div>
       </div>
     </nav>
@@ -385,15 +461,37 @@ export function Nav() {
         {allFlatItems
           .filter((item) => !mobileBarItems.some((m) => m.href === item.href))
           .filter((item) => devMode || item.mode !== "dev")
-          .filter((item) => !item.href.startsWith("/admin") || isAdmin)
+          .filter((item) => !item.href.startsWith("/admin"))
+          .filter((item) => item.label !== "What's New" || hasAnnouncements)
           .map((item) => renderLink(item, true))}
-        <button
-          onClick={() => { setMobileOpen(false); setFeedbackOpen(true); }}
-          className="group/link relative flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium text-sidebar-foreground/50 hover:bg-white/[0.05] hover:text-sidebar-foreground transition-all duration-200 w-full"
-        >
-          <MessageCircle className="h-[18px] w-[18px] shrink-0 text-sidebar-foreground/40 group-hover/link:text-sidebar-foreground/70 transition-all duration-200" />
-          <span className="truncate">Send feedback</span>
-        </button>
+
+        {/* Admin section in mobile panel */}
+        {isAdmin && (
+          <div>
+            <button
+              onClick={toggleAdminGroup}
+              aria-expanded={adminOpen}
+              aria-controls="nav-admin-links-mobile"
+              className="flex items-center w-full px-3 py-2 mb-1 mt-2 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/30 hover:text-sidebar-foreground/50 transition-colors"
+            >
+              <ChevronDown
+                className={cn(
+                  "h-3 w-3 mr-1 transition-transform duration-200",
+                  !adminOpen && "-rotate-90"
+                )}
+              />
+              Admin
+            </button>
+            {adminOpen && (
+              <div id="nav-admin-links-mobile" className="space-y-0.5 pl-2">
+                {adminLinks
+                  .filter((item) => devMode || item.mode !== "dev")
+                  .map((item) => renderLink(item, true))}
+              </div>
+            )}
+          </div>
+        )}
+
         <button
           onClick={() => { setMobileOpen(false); handleSignOut(); }}
           className="group/link relative flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium text-sidebar-foreground/50 hover:bg-white/[0.05] hover:text-sidebar-foreground transition-all duration-200 w-full"
@@ -410,7 +508,6 @@ export function Nav() {
       {sidebar}
       {mobileBar}
       {mobilePanel}
-      <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} />
     </>
   );
 }
