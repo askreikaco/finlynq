@@ -267,19 +267,22 @@ export async function POST(request: NextRequest) {
     // probe whether the code we just verified is still good).
     await recordSuccessfulLogin(user.id);
     const { token, jti } = await createSessionToken(user.id, true);
-    putDEK(jti, pendingDek, SESSION_TTL_MS, user.id);
+    // deleteDEK(pendingJti) below zeroes the cached pending buffer in place; the session (and the
+    // fire-and-forget sweeps) must own a copy or they would all run with an all-zero key.
+    const sessionDek = Buffer.from(pendingDek);
+    putDEK(jti, sessionDek, SESSION_TTL_MS, user.id);
     deleteDEK(pendingJti);
     const exp = expSec > 0 ? new Date(expSec * 1000) : new Date(Date.now() + 5 * 60_000);
     await revokeJti(pendingJti, exp);
     attemptCounter.delete(pendingJti);
     // Securities master (Phase C) — cluster positions under securities. See login route.
-    enqueueBackfillSecurities(user.id, pendingDek);
+    enqueueBackfillSecurities(user.id, sessionDek);
     // Staging encryption upgrade — see login route for rationale.
-    enqueueUpgradeStagingEncryption(user.id, pendingDek);
+    enqueueUpgradeStagingEncryption(user.id, sessionDek);
     // Plaintext-gap closure backstop (2026-06-01) — see login route.
-    enqueueUpgradeUserFieldEncryption(user.id, pendingDek);
+    enqueueUpgradeUserFieldEncryption(user.id, sessionDek);
     // Email-inbox sweep (Epic B5) — see login route.
-    enqueueProcessPendingInbox(user.id, pendingDek);
+    enqueueProcessPendingInbox(user.id, sessionDek);
 
     const response = NextResponse.json({ success: true });
 
@@ -305,7 +308,7 @@ export async function POST(request: NextRequest) {
       request,
       response,
       userId: user.id,
-      dek: pendingDek,
+      dek: sessionDek,
       trustDevice,
       alreadyIssued: issuedDevice !== null,
       routeLabel: "/api/auth/mfa/verify",

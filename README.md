@@ -74,6 +74,7 @@ Donation-based. No paid tiers. If Finlynq is useful to you, [GitHub Sponsors](ht
 - [docs/getting-started.md](docs/getting-started.md) — first-run setup walkthrough
 - [docs/faq.md](docs/faq.md) — common questions
 - [docs/mobile-setup.md](docs/mobile-setup.md) — connect the companion mobile app
+- [docs/family-wealth.md](docs/family-wealth.md) — Family Wealth sharing: sections, keys, lifecycle, 2FA, revoke, e2e
 - [Connect Your AI guide](https://finlynq.com/mcp-guide) — MCP architecture, tool catalog, and per-client setup
 - [CONTRIBUTING.md](CONTRIBUTING.md) — branching, commit style, PR flow
 - [SECURITY.md](SECURITY.md) — vulnerability disclosure

@@ -310,6 +310,14 @@ export async function getEmailFrom(): Promise<string> {
 // ─── Public API ─────────────────────────────────────────────────────────────
 
 export async function sendEmail(message: EmailMessage): Promise<void> {
+  // Test-only capture (e2e): append the message as one JSON line to the file named by
+  // FINLYNQ_EMAIL_CAPTURE instead of sending. Never active in production.
+  const capturePath = process.env.FINLYNQ_EMAIL_CAPTURE;
+  if (capturePath && process.env.NODE_ENV !== "production") {
+    const { appendFile } = await import("node:fs/promises");
+    await appendFile(capturePath, JSON.stringify(message) + "\n");
+    return;
+  }
   const transport = await getTransport();
   await transport.send(message);
 }
