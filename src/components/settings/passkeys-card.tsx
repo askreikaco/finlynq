@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Fingerprint, Check, AlertTriangle } from "lucide-react";
 import { formatDateTimeLocal } from "@/lib/currency";
 import { enablePasskeyPrf, registerPasskey } from "@/lib/client/passkey-prf";
+import { setPasskeyHint } from "@/lib/client/passkey-auto";
 import { getPasskeyStepUp } from "@/lib/client/passkey-stepup";
 
 const STRINGS = {
@@ -175,6 +176,7 @@ export function PasskeysCard() {
         setError(errText(v.json, STRINGS.genericError));
         return;
       }
+      setPasskeyHint();
       const id = v.json.id as string;
       let note: string = STRINGS.added2fa;
       if (v.json.needsPrfAssertion) {

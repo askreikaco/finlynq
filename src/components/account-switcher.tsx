@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { hardReload, clearPerUserStorage } from "@/lib/client/hard-reload";
+import { setPasskeyAutoSkip } from "@/lib/client/passkey-auto";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -186,6 +187,7 @@ export function AccountSwitcher({ compact = false }: AccountSwitcherProps) {
       const data = await res.json().catch(() => ({}));
       const ids = all ? accounts.map((a) => a.userId) : activeAccount ? [activeAccount.userId] : [];
       for (const id of ids) clearPerUserStorage(id);
+      setPasskeyAutoSkip();
       hardReload(!all && res.ok && data?.activeUserId ? "/dashboard" : "/");
       return true;
     });

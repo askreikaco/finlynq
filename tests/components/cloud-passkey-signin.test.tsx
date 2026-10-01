@@ -60,6 +60,7 @@ beforeEach(() => {
   params = new URLSearchParams();
   calls = [];
   localStorage.clear();
+  sessionStorage.clear();
   handlers = { "/api/auth/config": () => ({ body: { googleEnabled: false } }) };
   push.mockClear(); replace.mockClear(); refresh.mockClear(); hardReload.mockClear();
   startAuthentication.mockReset();
@@ -125,9 +126,9 @@ describe("/cloud: Sign in with a passkey", () => {
     await user.click(await screen.findByRole("button", { name: /sign in with a passkey/i }));
     expect((await screen.findByRole("alert")).textContent).toMatch(/enter your password to continue/i);
     expect(hardReload).not.toHaveBeenCalled();
-    // In new design, error triggers navigation to email flow and password focus
-    const passwordInput = await screen.findByLabelText("Password");
-    expect(passwordInput).toHaveFocus();
+    // prf_unavailable falls back to the email flow (identifier step, focused)
+    expect(await screen.findByLabelText("Email or username")).toHaveFocus();
+    expect(sessionStorage.getItem("pf-passkey-auto-skip")).toBe("1");
   });
 
   it("cancelled prompt is silent: no error, no reload", async () => {

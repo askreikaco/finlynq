@@ -6,6 +6,12 @@ import { useState, useEffect, useRef, Suspense } from "react";
 import { AnalyticsConsent } from "@/components/analytics-consent";
 import { LogoMark } from "@/components/logo-mark";
 import { hardReload } from "@/lib/client/hard-reload";
+import {
+  setPasskeyHint,
+  setPasskeyAutoSkip,
+  clearPasskeyAutoSkip,
+  isPasskeyAutoAllowed,
+} from "@/lib/client/passkey-auto";
 import { passkeyLogin, getAssertionWithPrf } from "@/lib/client/passkey-prf";
 import {
   safeNext,
@@ -15,14 +21,6 @@ import {
 
 type FlowStep = "identify" | "signin" | "signup";
 type Screen = "options" | "email";
-
-const USERNAME_CHECK_DEBOUNCE_MS = 350;
-
-type AvailabilityState =
-  | { status: "idle" }
-  | { status: "checking" }
-  | { status: "available" }
-  | { status: "unavailable"; reason: string };
 
 function CloudAuthPageInner() {
   const router = useRouter();
@@ -37,14 +35,18 @@ function CloudAuthPageInner() {
   const prefillEmail = (searchParams.get("email") || "").slice(0, 254);
   const modeParam = searchParams.get("mode");
   const tabParam = searchParams.get("tab");
+  // Signup intent: ?mode=signup, ?tab=create, or the legacy ?tab=register
+  // (landing-page CTAs and the Google signup callback still use it).
+  const signupIntent = modeParam === "signup" || tabParam === "create" || tabParam === "register";
 
   const [stayEmail, setStayEmail] = useState<string | null>(null);
 
   // Determine if email flow should open by default
   const shouldOpenEmailByDefault = Boolean(
     prefillEmail ||
-    modeParam === "signup" ||
-    tabParam === "create" ||
+    signupIntent ||
+    googleSignup ||
+    demoPrefill ||
     (googleError && googleError.startsWith("google_"))
   );
 
@@ -52,10 +54,12 @@ function CloudAuthPageInner() {
   const [screen, setScreen] = useState<Screen>(shouldOpenEmailByDefault ? "email" : "options");
 
   // Email flow step
-  const [flowStep, setFlowStep] = useState<FlowStep>("identify");
+  // ?demo=1 pre-fills the published demo credentials on the sign-in step
+  // (no auto-submit; the user still clicks Sign in).
+  const [flowStep, setFlowStep] = useState<FlowStep>(demoPrefill ? "signin" : "identify");
 
   // Identifier field (email or username)
-  const [identifier, setIdentifier] = useState(prefillEmail || "");
+  const [identifier, setIdentifier] = useState(prefillEmail || (demoPrefill ? "demo@finlynq.com" : ""));
 
   // Sign in: password only
   const [password, setPassword] = useState(demoPrefill ? "finlynq-demo" : "");
@@ -65,7 +69,8 @@ function CloudAuthPageInner() {
   const [signupConfirmPassword, setSignupConfirmPassword] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [acknowledgeNoRecovery, setAcknowledgeNoRecovery] = useState(false);
+  // Google signup only: the pending email is masked, so the user picks a username.
+  const [signupUsername, setSignupUsername] = useState("");
 
   // Error & loading
   const [error, setError] = useState("");
@@ -84,17 +89,13 @@ function CloudAuthPageInner() {
   // Passkey support
   const [passkeySupported, setPasskeySupported] = useState(false);
 
-  // Availability check
-  const [availability, setAvailability] = useState<AvailabilityState>({
-    status: "idle",
-  });
-  const checkSeqRef = useRef(0);
+  // True after a silent auto-passkey fallback: passkey becomes the primary button.
+  const [passkeyPrimary, setPasskeyPrimary] = useState(false);
 
   const [googleEnabled, setGoogleEnabled] = useState(false);
   const [unlockPassword, setUnlockPassword] = useState("");
   const [unlockEmail, setUnlockEmail] = useState("");
   const headingRef = useRef<HTMLHeadingElement>(null);
-  const [signupDisabled, setSignupDisabled] = useState(false);
   const passkeyAutoAttemptedRef = useRef(false);
 
   // Check if identifier is email
@@ -142,7 +143,6 @@ function CloudAuthPageInner() {
         const res = await fetch("/api/auth/config");
         const data = await res.json();
         setGoogleEnabled(data.googleEnabled ?? false);
-        setSignupDisabled(data.signupDisabled ?? false);
       } catch {
         setGoogleEnabled(false);
       }
@@ -150,79 +150,57 @@ function CloudAuthPageInner() {
     fetchConfig();
   }, []);
 
-  // Auto passkey for returning users
+  // Auto passkey for returning users. Runs at most once per page load
+  // (ref guard); the sessionStorage skip flag is written BEFORE the attempt so
+  // a reload mid-flow can never re-trigger it, and cleared again on success.
   useEffect(() => {
-    // Skip if:
-    // - already attempted
-    // - on options screen (will be triggered by button instead)
-    // - has google error/signup intent/add-account intent
-    // - skip flag is set
+    if (passkeyAutoAttemptedRef.current) return;
     if (
-      passkeyAutoAttemptedRef.current ||
-      screen === "options" ||
+      step !== null ||
       googleError ||
-      modeParam === "signup" ||
-      tabParam === "create" ||
+      googleSignup ||
+      signupIntent ||
+      demoPrefill ||
       addingAccount
     ) {
       return;
     }
+    if (!isPasskeyAutoAllowed()) return;
+    if (typeof window === "undefined" || typeof window.PublicKeyCredential === "undefined") return;
 
+    passkeyAutoAttemptedRef.current = true;
+    setPasskeyAutoSkip();
     let cancelled = false;
 
-    const attemptAutoPasskey = async () => {
+    (async () => {
+      setLoading(true);
       try {
-        const skipFlag = localStorage.getItem("pf-passkey-auto-skip");
-        if (skipFlag === "1") return;
-
-        const hint = localStorage.getItem("pf-passkey-hint");
-        if (hint !== "1") return;
-
-        if (typeof window === "undefined" || !window.PublicKeyCredential) return;
-
-        passkeyAutoAttemptedRef.current = true;
-
-        setLoading(true);
-        const r = await passkeyLogin({ trustDevice: !sharedComputer });
-        if (!cancelled) {
-          if (r.ok) {
-            hardReload(redirectTo);
-            return;
-          }
-          if (r.code === "prf_unavailable") {
-            setError("This passkey can't unlock your data on its own. Enter your password to continue.");
-            document.getElementById("password")?.focus();
-          }
-          // On error or cancel, set skip flag and fall back to normal screen
-          try {
-            localStorage.setItem("pf-passkey-auto-skip", "1");
-          } catch {}
-          setScreen("options");
+        const r = await passkeyLogin({ trustDevice: true });
+        if (cancelled) return;
+        if (r.ok) {
+          clearPasskeyAutoSkip();
+          hardReload(redirectTo);
+          return;
         }
-      } catch (err) {
-        if (!cancelled) {
-          const name = (err as { name?: string })?.name;
-          // Silently fall back on NotAllowedError (no user gesture)
-          if (name !== "NotAllowedError" && name !== "AbortError") {
-            setError("Passkey sign-in failed.");
-          }
-          try {
-            localStorage.setItem("pf-passkey-auto-skip", "1");
-          } catch {}
-          setScreen("options");
+        // Cancel (NotAllowedError/AbortError) and failure fall back silently.
+        setPasskeyPrimary(true);
+        if (r.code === "prf_unavailable") {
+          setError("This passkey can't unlock your data on its own. Enter your password to continue.");
+          setScreen("email");
+          setFlowStep("identify");
         }
+      } catch {
+        if (!cancelled) setPasskeyPrimary(true);
       } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        if (!cancelled) setLoading(false);
       }
-    };
+    })();
 
-    attemptAutoPasskey();
     return () => {
       cancelled = true;
     };
-  }, [screen, googleError, modeParam, tabParam, addingAccount, redirectTo, sharedComputer]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Handle query params: step, error, google signup
   useEffect(() => {
@@ -347,9 +325,6 @@ function CloudAuthPageInner() {
         setMfaPendingToken(data.mfaPendingToken);
         return;
       }
-      try {
-        localStorage.setItem("pf-passkey-hint", "1");
-      } catch {}
       hardReload(redirectTo);
     } catch {
       setError("Something went wrong. Please try again.");
@@ -381,9 +356,6 @@ function CloudAuthPageInner() {
         setError(data.error || "Verification failed");
         return;
       }
-      try {
-        localStorage.setItem("pf-passkey-hint", "1");
-      } catch {}
       hardReload(redirectTo);
     } catch {
       setError("Something went wrong. Please try again.");
@@ -424,9 +396,7 @@ function CloudAuthPageInner() {
         setError(data.error || "Passkey verification failed.");
         return;
       }
-      try {
-        localStorage.setItem("pf-passkey-hint", "1");
-      } catch {}
+      setPasskeyHint();
       hardReload(redirectTo);
     } catch (err) {
       const name = (err as { name?: string })?.name;
@@ -445,20 +415,20 @@ function CloudAuthPageInner() {
     try {
       const r = await passkeyLogin({ trustDevice: !sharedComputer });
       if (r.ok) {
-        try {
-          localStorage.setItem("pf-passkey-hint", "1");
-        } catch {}
+        setPasskeyHint();
         hardReload(redirectTo);
         return;
       }
       if (r.code === "prf_unavailable") {
         setError("This passkey can't unlock your data on its own. Enter your password to continue.");
+        setPasskeyAutoSkip();
         setScreen("email");
-        setFlowStep("signin");
-        document.getElementById("signin-password")?.focus();
+        setFlowStep("identify");
       } else if (r.code === "cancelled") {
         // Silent - user cancelled the prompt
+        setPasskeyAutoSkip();
       } else if (r.code === "failed") {
+        setPasskeyAutoSkip();
         setError("Passkey sign-in failed. Try again or use your password.");
       }
     } finally {
@@ -475,10 +445,10 @@ function CloudAuthPageInner() {
       return;
     }
 
-    if (!googleSignup && !signupEmail.trim() && !acknowledgeNoRecovery) {
-      setError(
-        "Without an email you have no way to recover a forgotten password. Tick the acknowledgement box to proceed."
-      );
+    // Email-less signup needs an explicit no-recovery acknowledgement, which
+    // this flow no longer offers: only email identifiers (or Google) reach here.
+    if (!googleSignup && !signupEmail.trim()) {
+      setError("Enter your email to create an account.");
       return;
     }
 
@@ -488,7 +458,7 @@ function CloudAuthPageInner() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          username: identifier,
+          username: googleSignup ? signupUsername : identifier,
           email: signupEmail.trim() || undefined,
           password: signupPassword,
           displayName: displayName || undefined,
@@ -501,9 +471,6 @@ function CloudAuthPageInner() {
         setError(data.error || "Registration failed");
         return;
       }
-      try {
-        localStorage.setItem("pf-passkey-hint", "1");
-      } catch {}
       hardReload(redirectTo);
     } catch {
       setError("Something went wrong. Please try again.");
@@ -542,9 +509,6 @@ function CloudAuthPageInner() {
         setMfaRequired(true);
         router.replace(`/cloud?step=mfa&redirect=${encodeURIComponent(redirectTo)}`);
       } else {
-        try {
-          localStorage.setItem("pf-passkey-hint", "1");
-        } catch {}
         hardReload(redirectTo);
       }
     } catch {
@@ -552,6 +516,17 @@ function CloudAuthPageInner() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const backToOptions = () => {
+    setScreen("options");
+    setFlowStep("identify");
+    setIdentifier("");
+    setPassword("");
+    setSignupPassword("");
+    setSignupConfirmPassword("");
+    setSignupEmail("");
+    setError("");
   };
 
   const passwordInputId = flowStep === "signin" ? "signin-password" : "signup-password";
@@ -735,7 +710,7 @@ function CloudAuthPageInner() {
             {googleEnabled && (
               <a
                 href={googleStartUrl("login", redirectTo)}
-                className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+                className={`mb-3 flex w-full items-center justify-center gap-2 rounded-xl ${passkeyPrimary ? "border border-border bg-background px-4 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-muted" : "bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"}`}
               >
                 <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -752,7 +727,7 @@ function CloudAuthPageInner() {
                 type="button"
                 onClick={handlePasskeyLogin}
                 disabled={loading}
-                className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-background px-4 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+                className={`mb-4 flex w-full items-center justify-center gap-2 rounded-xl ${passkeyPrimary ? "bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90" : "border border-border bg-background px-4 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-muted"} disabled:opacity-50`}
               >
                 {loading ? "Signing in..." : "Sign in with a passkey"}
               </button>
@@ -824,12 +799,7 @@ function CloudAuthPageInner() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    setScreen("options");
-                    setFlowStep("identify");
-                    setIdentifier("");
-                    setError("");
-                  }}
+                  onClick={backToOptions}
                   className="w-full text-center text-sm text-muted-foreground underline underline-offset-2 hover:text-foreground"
                 >
                   Back to sign-in options
@@ -894,15 +864,20 @@ function CloudAuthPageInner() {
                 >
                   {loading ? "Signing in..." : "Sign in"}
                 </button>
+                <button
+                  type="button"
+                  onClick={backToOptions}
+                  className="w-full text-center text-sm text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                >
+                  Back to sign-in options
+                </button>
               </form>
             )}
 
             {/* Sign up step */}
             {flowStep === "signup" && (
               <form onSubmit={handleRegister} className="space-y-4 w-full">
-                {signupDisabled ? (
-                  <p className="text-sm text-destructive">Sign-up is currently disabled.</p>
-                ) : (
+                {(
                   <>
                     <div className="mb-4 flex items-center gap-2 rounded-lg bg-muted px-3 py-2">
                       <span className="text-xs font-medium text-foreground truncate flex-1">{identifier}</span>
@@ -913,6 +888,7 @@ function CloudAuthPageInner() {
                           setSignupPassword("");
                           setSignupConfirmPassword("");
                           setSignupEmail("");
+                          setSignupUsername("");
                           setDisplayName("");
                           setError("");
                         }}
@@ -922,21 +898,20 @@ function CloudAuthPageInner() {
                       </button>
                     </div>
 
-                    {isEmail && (
+                    {googleSignup && (
                       <div>
                         <input
-                          id="signup-email"
-                          type="email"
-                          value={signupEmail}
-                          onChange={(e) => setSignupEmail(e.target.value)}
-                          placeholder="you@example.com"
-                          autoComplete="email"
-                          aria-label="Email"
+                          id="signup-username"
+                          type="text"
+                          value={signupUsername}
+                          onChange={(e) => setSignupUsername(e.target.value)}
+                          placeholder="Choose a username"
+                          required
+                          autoComplete="username"
+                          aria-label="Username"
                           className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                          autoFocus
                         />
-                        <p className="mt-1.5 text-xs text-muted-foreground/80">
-                          Used only for password reset. Leave it blank for full zero-knowledge, but then you&apos;ll have no way to recover a forgotten password.
-                        </p>
                       </div>
                     )}
 
@@ -952,7 +927,7 @@ function CloudAuthPageInner() {
                         autoComplete="new-password"
                         aria-label="Password"
                         className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                        autoFocus
+                        autoFocus={!googleSignup}
                       />
                     </div>
 
@@ -971,44 +946,23 @@ function CloudAuthPageInner() {
                       />
                     </div>
 
-                    <div>
-                      <input
-                        id="signup-display-name"
-                        type="text"
-                        value={displayName}
-                        onChange={(e) => setDisplayName(e.target.value)}
-                        placeholder="Your name (optional)"
-                        aria-label="Display name"
-                        className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                      />
-                    </div>
-
-                    {!isEmail && !signupEmail.trim() && (
-                      <label className="flex items-start gap-2.5 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2.5 text-xs text-amber-200/90">
-                        <input
-                          type="checkbox"
-                          checked={acknowledgeNoRecovery}
-                          onChange={(e) => setAcknowledgeNoRecovery(e.target.checked)}
-                          className="mt-0.5 h-4 w-4 shrink-0 rounded border-border bg-background accent-primary"
-                        />
-                        <span>
-                          I understand. Finlynq encrypts everything with my password, and there{`'`}s
-                          no recovery key. Forgetting it means losing all my data. Without an
-                          email I also can{`'`}t reset the password at all.
-                        </span>
-                      </label>
-                    )}
-
                     {error && (
                       <p className="text-sm text-destructive" role="alert" aria-live="assertive">{error}</p>
                     )}
 
                     <button
                       type="submit"
-                      disabled={loading || signupPassword !== signupConfirmPassword || !signupPassword || (!isEmail && !signupEmail.trim() && !acknowledgeNoRecovery)}
+                      disabled={loading || signupPassword !== signupConfirmPassword || !signupPassword || (googleSignup && !signupUsername.trim())}
                       className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
                     >
                       {loading ? "Creating account..." : "Create account"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={backToOptions}
+                      className="w-full text-center text-sm text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                    >
+                      Back to sign-in options
                     </button>
                   </>
                 )}

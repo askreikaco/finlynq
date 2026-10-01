@@ -44,6 +44,7 @@ const KEY = (m: string, u: string) => `${m} ${u}`;
 const callsTo = (m: string, u: string) => calls.filter((c) => c.method === m && c.url === u);
 
 beforeEach(() => {
+  localStorage.removeItem("pf-passkey-hint");
   calls = [];
   startRegistration.mockReset();
   startAuthentication.mockReset();
@@ -139,6 +140,7 @@ describe("PasskeysCard add", () => {
     expect(finish).toMatchObject({ token: "prf-token" });
     expect(typeof finish.prfOutput).toBe("string");
     expect(callsTo("GET", "/api/settings/passkeys").length).toBeGreaterThanOrEqual(2);
+    expect(localStorage.getItem("pf-passkey-hint")).toBe("1");
   });
 
   it("Add: no name input, one click goes straight to the WebAuthn prompt, list shows the generated name", async () => {
@@ -199,6 +201,7 @@ describe("PasskeysCard add", () => {
     await user.click(screen.getByRole("button", { name: /add a passkey/i }));
     expect(await screen.findByText(/cancelled/i)).toBeInTheDocument();
     expect(callsTo("POST", "/api/settings/passkeys/register/verify")).toHaveLength(0);
+    expect(localStorage.getItem("pf-passkey-hint")).toBeNull();
   });
 
   it("stale session: options 401 asks for the password, then retries with it", async () => {

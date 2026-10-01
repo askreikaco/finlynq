@@ -43,6 +43,7 @@ function setAccounts(list: Account[]) {
 beforeEach(() => {
   cleanup();
   push.mockClear();
+  sessionStorage.clear();
   hardReload.mockClear();
   calls = [];
   replies = {};
@@ -235,6 +236,7 @@ describe("AccountSwitcher sign out", () => {
     expect(callsTo("POST", "/api/auth/logout")).toHaveLength(1);
     expect(callsTo("POST", "/api/auth/logout?all=1")).toHaveLength(0);
     expect(push).not.toHaveBeenCalled();
+    expect(sessionStorage.getItem("pf-passkey-auto-skip")).toBe("1");
   });
 
   it("sign out of the last account: hardReload to /", async () => {
@@ -251,6 +253,7 @@ describe("AccountSwitcher sign out", () => {
     await waitFor(() => expect(hardReload).toHaveBeenCalledWith("/"));
     expect(callsTo("POST", "/api/auth/logout?all=1")).toHaveLength(1);
     expect(callsTo("POST", "/api/auth/logout")).toHaveLength(0);
+    expect(sessionStorage.getItem("pf-passkey-auto-skip")).toBe("1");
   });
 
   it("clears per-user storage of the signed-out account", async () => {

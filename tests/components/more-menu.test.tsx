@@ -26,6 +26,7 @@ let announcements: unknown[];
 let fetchMock: ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
+  sessionStorage.clear();
   replace.mockClear();
   hardReload.mockClear();
   clearPerUserStorage.mockClear();
@@ -98,6 +99,7 @@ describe("More screen", () => {
     await waitFor(() => expect(hardReload).toHaveBeenCalledWith("/"));
     expect(fetchMock).toHaveBeenCalledWith("/api/auth/logout", { method: "POST" });
     expect(clearPerUserStorage).toHaveBeenCalledWith("u1");
+    expect(sessionStorage.getItem("pf-passkey-auto-skip")).toBe("1");
   });
 
   it("does not offer Send feedback", () => {

@@ -14,6 +14,7 @@ import { getDialect } from "@/db";
 import { isIdentifierClaimed } from "@/lib/auth/queries";
 import { validateBody, logApiError } from "@/lib/validate";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { clientIp } from "@/lib/client-ip";
 
 const identifySchema = z
   .object({
@@ -35,10 +36,11 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Rate limit: 10 attempts per 60 seconds per IP
-  const ip =
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-  const ipLimit = checkRateLimit(`identify:${ip}`, 10, 60_000);
+  // Rate limit: 5 attempts per 60 seconds per IP — same budget as
+  // /api/auth/login, since this route is an existence oracle.
+  // CSRF: middleware csrfCheck covers every /api POST that rides pf_session
+  // (identify is not in CSRF_BYPASS_PATHS); the response is only { exists }.
+  const ipLimit = checkRateLimit(`identify:${clientIp(request)}`, 5, 60_000);
   if (!ipLimit.allowed) {
     return NextResponse.json(
       { error: "Too many requests. Please try again later." },
