@@ -246,7 +246,7 @@ function CategoryPageContent() {
               <CardDescription>
                 Last {months} months in {cur}
                 {stats.averageMonthly != null && ` · average ${formatCurrency(stats.averageMonthly, cur)}`}
-                {data.hasBudget && " · budget shown as a line"}
+                {data.hasBudget && " · budget in amber"}
                 {" · this month is still running"}
               </CardDescription>
             </CardHeader>
@@ -276,7 +276,17 @@ function CategoryPageContent() {
                     ))}
                   </Bar>
                   {data.hasBudget && (
-                    <Line type="stepAfter" dataKey="budget" stroke={CHART_COLORS.categories[1]} strokeWidth={2} strokeDasharray="5 4" dot={false} connectNulls isAnimationActive={false} />
+                    <Line
+                      type="stepAfter"
+                      dataKey="budget"
+                      stroke={CHART_COLORS.categories[1]}
+                      strokeWidth={2}
+                      strokeDasharray="5 4"
+                      // Dots too: a budget set for a single month is one point, which a line alone never draws.
+                      dot={{ r: 3, fill: CHART_COLORS.categories[1], strokeWidth: 0 }}
+                      connectNulls
+                      isAnimationActive={false}
+                    />
                   )}
                   {stats.averageMonthly != null && (
                     <ReferenceLine y={stats.averageMonthly} stroke="var(--color-muted-foreground)" strokeDasharray="4 4" />
