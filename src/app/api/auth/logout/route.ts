@@ -1,78 +1,147 @@
 /**
  * POST /api/auth/logout — Clear the session (managed edition).
  *
- * Wipes the user's DEK from the in-memory cache so a stolen cookie can't
- * resurrect decrypted data access after logout, AND inserts the JWT's jti
- * into the server-side `revoked_jtis` denylist so a stolen cookie can't
- * keep accessing plaintext-only routes for the remainder of the JWT exp
- * (finding H-5).
+ * Default (?all unset): revoke active session + DEK, remove from bundle,
+ * promote the next stashed account to active (if any). Return {activeUserId|null}.
  *
- * Query parameter ?everywhere=1 also revokes all trusted devices for the user.
+ * ?all=1: revoke ALL jtis in bundle + DEKs, clear both cookies, return {activeUserId:null}.
+ *
+ * ?everywhere=1: when combined with (or without) ?all, also revoke all trusted
+ * devices for the user(s) being logged out.
+ *
+ * Wipes DEKs from in-memory cache and inserts jtis into the server-side
+ * `revoked_jtis` denylist so stolen cookies can't access after logout (finding H-5).
+ *
+ * Keeps pf_device cookie on normal logout (trusted device survives); clears on
+ * ?everywhere=1.
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { AUTH_COOKIE, verifySessionTokenDetailed, revokeJti } from "@/lib/auth";
+import { AUTH_COOKIE, revokeJti } from "@/lib/auth";
 import { deleteDEK } from "@/lib/crypto/dek-cache";
 import { revokeAllDevices, deviceCookieOptions } from "@/lib/auth/trusted-device";
+import { readBundle, removeAccount } from "@/lib/auth/session-bundle";
 
 export async function POST(request: NextRequest) {
-  // Read the JWT before we blank the cookie so we can target its jti.
-  // We use the detailed variant so a deploy-rotated token is still parseable
-  // here (its claims are extractable even though it's no longer auth-valid)
-  // — best-effort eviction even on the unhappy path.
-  const token = request.cookies.get(AUTH_COOKIE)?.value;
-  let userId: string | null = null;
-  if (token) {
-    // verifySessionTokenDetailed normally bails on revoked / deploy-rotated.
-    // For logout we want the jti regardless, so we re-parse via the jose
-    // primitive even if the token is technically expired or already revoked
-    // — calling `revokeJti` on an already-revoked jti is a cheap no-op via
-    // ON CONFLICT DO NOTHING.
-    const { payload } = await verifySessionTokenDetailed(token);
-    if (payload?.jti) {
-      const exp = typeof payload.exp === "number"
-        ? new Date(payload.exp * 1000)
-        : new Date(Date.now() + 24 * 60 * 60_000);
-      // Best-effort. The DB write is awaited so a successful logout response
-      // implies the denylist entry committed before the cookie clears.
-      try {
-        await revokeJti(payload.jti, exp);
-      } catch {
-        // swallow — see revokeJti for the why
-      }
-      deleteDEK(payload.jti);
-    }
-    if (payload?.sub) {
-      userId = payload.sub;
-    }
-  }
-
-  const response = NextResponse.json({ success: true });
-
-  response.cookies.set(AUTH_COOKIE, "", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 0,
-    path: "/",
-  });
-
-  // If ?everywhere=1, revoke all trusted devices and clear pf_device cookie
   const url = new URL(request.url);
+  const logoutAll = url.searchParams.get("all") === "1";
   const everywhere = url.searchParams.get("everywhere") === "1";
-  if (everywhere && userId) {
-    try {
-      await revokeAllDevices(userId);
-    } catch {
-      // swallow — device revocation shouldn't block logout
+
+  // Read the bundle to get all tokens
+  const { active, stash } = await readBundle(request);
+
+  let activeUserId: string | null = null;
+
+  if (logoutAll) {
+    // Revoke all jtis in the bundle (active + all stash entries)
+    if (active?.jti) {
+      const exp = new Date(Date.now() + 24 * 60 * 60_000);
+      try {
+        await revokeJti(active.jti, exp);
+      } catch {
+        // swallow
+      }
+      deleteDEK(active.jti);
+
+      // If ?everywhere, revoke all devices for this user
+      if (everywhere && active.userId) {
+        try {
+          await revokeAllDevices(active.userId);
+        } catch {
+          // swallow
+        }
+      }
     }
-    response.cookies.set("pf_device", "", {
-      ...deviceCookieOptions(),
+
+    for (const entry of stash) {
+      if (entry.jti) {
+        const exp = new Date(Date.now() + 24 * 60 * 60_000);
+        try {
+          await revokeJti(entry.jti, exp);
+        } catch {
+          // swallow
+        }
+        deleteDEK(entry.jti);
+
+        // If ?everywhere, revoke all devices for this user
+        if (everywhere) {
+          try {
+            await revokeAllDevices(entry.userId);
+          } catch {
+            // swallow
+          }
+        }
+      }
+    }
+
+    // Clear both cookies
+    const response = NextResponse.json({ activeUserId: null });
+    response.cookies.set(AUTH_COOKIE, "", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 0,
+      path: "/",
+    });
+    response.cookies.set("pf_accounts", "", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/api/auth",
       maxAge: 0,
     });
-  }
-  // Normal logout: do NOT revoke the current device and do NOT clear pf_device cookie
-  // This keeps the trusted device active for re-login
 
-  return response;
+    // If ?everywhere, also clear pf_device
+    if (everywhere) {
+      response.cookies.set("pf_device", "", {
+        ...deviceCookieOptions(),
+        maxAge: 0,
+      });
+    }
+
+    return response;
+  } else {
+    // Default: revoke only the active session, promote next from stash
+    if (active?.jti) {
+      const exp = new Date(Date.now() + 24 * 60 * 60_000);
+      try {
+        await revokeJti(active.jti, exp);
+      } catch {
+        // swallow
+      }
+      deleteDEK(active.jti);
+
+      // If ?everywhere, revoke this user's devices
+      if (everywhere) {
+        try {
+          await revokeAllDevices(active.userId);
+        } catch {
+          // swallow
+        }
+      }
+    }
+
+    const response = NextResponse.json({ activeUserId });
+
+    // Remove the active user from the bundle (promotes next stashed)
+    await removeAccount(request, response, active?.userId || "");
+
+    // If ?everywhere, clear pf_device
+    if (everywhere) {
+      response.cookies.set("pf_device", "", {
+        ...deviceCookieOptions(),
+        maxAge: 0,
+      });
+    }
+
+    // Read the bundle again to get the new active user
+    const { active: newActive } = await readBundle(request);
+    if (newActive?.userId) {
+      activeUserId = newActive.userId;
+      // Update response body with new active user
+      return NextResponse.json({ activeUserId });
+    }
+
+    return response;
+  }
 }

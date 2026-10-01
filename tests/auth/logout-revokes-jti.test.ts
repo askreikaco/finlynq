@@ -50,6 +50,7 @@ vi.mock("@/db", () => ({
 }));
 vi.mock("@/db/schema-pg", () => ({
   revokedJtis: { jti: "jti", expiresAt: "expires_at" },
+  users: { id: "id", email: "email", displayName: "displayName", role: "role" },
 }));
 vi.mock("drizzle-orm", () => ({
   eq: (_col: unknown, val: unknown) => ({ __jti: val }),
@@ -57,6 +58,18 @@ vi.mock("drizzle-orm", () => ({
 
 vi.mock("@/lib/crypto/dek-cache", () => ({
   deleteDEK: vi.fn(),
+  getDEK: vi.fn(() => null),
+}));
+
+vi.mock("@/lib/auth/queries", () => ({
+  getUserById: async (id: string) => ({
+    id,
+    email: `user${id}@example.com`,
+    displayName: `User ${id}`,
+    role: "user",
+  }),
+  recordSuccessfulLogin: vi.fn(),
+  upsertIdentity: vi.fn(),
 }));
 
 import { POST as logoutPOST } from "@/app/api/auth/logout/route";

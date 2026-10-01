@@ -24,6 +24,7 @@ vi.mock("@/lib/auth/queries", () => ({
 }));
 
 vi.mock("@/lib/crypto/dek-cache", () => ({
+  getDEK: vi.fn(() => null),
   putDEK: vi.fn((sessionId: string, dek: Buffer, ttlMs: number, userId: string) => {
     putDEKCalls.push({ jti: sessionId, dek, ttl: ttlMs, userId });
   }),
