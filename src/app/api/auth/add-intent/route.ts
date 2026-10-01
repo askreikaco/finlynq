@@ -11,9 +11,14 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth/require-auth";
-import { hasNonCookieCredential, loadBundle, ADD_INTENT_COOKIE, MAX_ACCOUNTS } from "@/lib/auth/session-bundle";
+import { z } from "zod";
+import { hasNonCookieCredential, loadBundle, clearAddIntent, ADD_INTENT_COOKIE, MAX_ACCOUNTS } from "@/lib/auth/session-bundle";
 import { signShortLived } from "@/lib/auth/jwt";
 import { logApiError, safeErrorMessage } from "@/lib/validate";
+
+// Optional body: {userId} = re-sign-in of an account ALREADY in the bundle
+// (locked / needs_login). That replaces its own entry, so the cap never blocks it.
+const bodySchema = z.object({ userId: z.string().min(1).max(254) }).strict();
 
 export async function POST(request: NextRequest) {
   const authResult = await requireAuth(request);
@@ -27,7 +32,22 @@ export async function POST(request: NextRequest) {
     if (!active) {
       return NextResponse.json({ error: "Session authentication required" }, { status: 403 });
     }
-    if (1 + stash.length >= MAX_ACCOUNTS) {
+    let reauthUserId: string | null = null;
+    const raw = await request.text();
+    if (raw.trim()) {
+      let json: unknown;
+      try {
+        json = JSON.parse(raw);
+      } catch {
+        return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+      }
+      const parsed = bodySchema.safeParse(json);
+      if (!parsed.success) return NextResponse.json({ error: "Invalid body" }, { status: 400 });
+      reauthUserId = parsed.data.userId;
+    }
+    const inBundle =
+      reauthUserId !== null && (active.userId === reauthUserId || stash.some((m) => m.userId === reauthUserId));
+    if (1 + stash.length >= MAX_ACCOUNTS && !inBundle) {
       return NextResponse.json({ error: "account_cap" }, { status: 409 });
     }
 
@@ -45,4 +65,19 @@ export async function POST(request: NextRequest) {
     await logApiError("POST", "/api/auth/add-intent", error);
     return NextResponse.json({ error: safeErrorMessage(error, "Failed to initiate add account") }, { status: 500 });
   }
+}
+
+/**
+ * DELETE /api/auth/add-intent — Cancel the add flow: clears `pf_add`.
+ * Session-only + middleware CSRF (Origin/Referer) like POST. Touches no session.
+ */
+export async function DELETE(request: NextRequest) {
+  const authResult = await requireAuth(request);
+  if (!authResult.authenticated) return authResult.response;
+  if (authResult.context.method !== "account" || hasNonCookieCredential(request)) {
+    return NextResponse.json({ error: "Session authentication required" }, { status: 403 });
+  }
+  const response = NextResponse.json({ status: "cancelled" }, { headers: { "Cache-Control": "no-store" } });
+  clearAddIntent(response);
+  return response;
 }

@@ -29,7 +29,7 @@ import { putDEK, getDEK } from "@/lib/crypto/dek-cache";
 import { requireAuth } from "@/lib/auth/require-auth";
 import * as switchRoute from "@/app/api/auth/switch/route";
 import { GET as accountsGET } from "@/app/api/auth/accounts/route";
-import { POST as addIntentPOST } from "@/app/api/auth/add-intent/route";
+import { POST as addIntentPOST, DELETE as addIntentDELETE } from "@/app/api/auth/add-intent/route";
 import { POST as logoutPOST } from "@/app/api/auth/logout/route";
 import { GET as sessionGET } from "@/app/api/auth/session/route";
 import { middleware } from "@/middleware";
@@ -191,6 +191,57 @@ describe.skipIf(!HAS_DB)("multi-account B1 (real Postgres)", () => {
     expect(users).not.toContain(s[0].userId);       // oldest evicted
     expect(await isJtiRevoked(s[0].jti)).toBe(true);
     expect(getDEK(s[0].jti, s[0].userId)).toBeNull();
+  });
+
+  it("cap: re-sign-in of an account ALREADY in the bundle (locked) is allowed at 5 and replaces its own entry", async () => {
+    const jar = new Jar();
+    const s: Array<Awaited<ReturnType<typeof mkSession>>> = [];
+    for (let i = 0; i < 5; i++) {
+      s.push(await mkSession(await mkUser(), { dek: i !== 1 })); // s[1] ends up locked (no DEK)
+      if (i > 0) expect((await addIntent(jar)).status).toBe(200);
+      await login(jar, s[i]);
+    }
+    const bundle = await loadBundle(jar.req("/api/auth/x"));
+    expect(bundle.stash).toHaveLength(4);
+    expect(bundle.stash.find((m) => m.userId === s[1].userId)?.status).toBe("locked");
+    // no userId / unknown userId at cap: still blocked
+    expect((await addIntentPOST(jar.req("/api/auth/add-intent", { method: "POST" }))).status).toBe(409);
+    const stranger = await mkUser();
+    expect((await addIntentPOST(jar.req("/api/auth/add-intent", { method: "POST", body: { userId: stranger } }))).status).toBe(409);
+    // invalid body
+    expect((await addIntentPOST(jar.req("/api/auth/add-intent", { method: "POST", body: { userId: s[1].userId, x: 1 } }))).status).toBe(400);
+    // re-login of the locked member
+    const r = await addIntentPOST(jar.req("/api/auth/add-intent", { method: "POST", body: { userId: s[1].userId } }));
+    expect(r.status).toBe(200);
+    jar.apply(r as NextResponse);
+    const again = await mkSession(s[1].userId);
+    await login(jar, again);
+    expect(await activeEmailUserId(jar)).toBe(s[1].userId);
+    const users = await stashUsers(jar);
+    expect(users).toHaveLength(4);
+    expect(new Set(users).size).toBe(4);
+    for (const i of [0, 2, 3, 4]) expect(users).toContain(s[i].userId); // nobody evicted
+    expect(await isJtiRevoked(s[1].jti)).toBe(true);
+    expect(await isJtiRevoked(s[0].jti)).toBe(false);
+  });
+
+  it("DELETE add-intent clears pf_add (session-only, CSRF per middleware), sessions untouched", async () => {
+    const { jar, A, B } = await twoAccounts();
+    expect((await addIntent(jar)).status).toBe(200);
+    expect(jar.get("pf_add")).toBeDefined();
+    const r = await addIntentDELETE(jar.req("/api/auth/add-intent", { method: "DELETE" }));
+    expect(r.status).toBe(200);
+    jar.apply(r as NextResponse);
+    expect(jar.get("pf_add")).toBeUndefined();
+    expect(await activeEmailUserId(jar)).toBe(B.userId);
+    expect(await stashUsers(jar)).toEqual([A.userId]);
+    // unauthenticated + Bearer rejected
+    expect((await addIntentDELETE(new Jar().req("/api/auth/add-intent", { method: "DELETE" }))).status).toBe(401);
+    const r2 = await addIntentDELETE(new Jar().req("/api/auth/add-intent", { method: "DELETE", headers: { authorization: `Bearer ${A.token}` } }));
+    expect(r2.status).toBe(403);
+    // cross-origin cookie DELETE blocked by middleware CSRF
+    const mw = middleware(jar.req("/api/auth/add-intent", { method: "DELETE", headers: { origin: "https://evil.example" } }));
+    expect(mw?.status).toBe(403);
   });
 
   it("add-intent: unauthenticated 401; Bearer-authenticated rejected 403", async () => {
