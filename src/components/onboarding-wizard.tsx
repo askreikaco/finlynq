@@ -74,11 +74,11 @@ const ACCOUNT_PRESETS = [
 ] as const;
 
 const BUDGET_PRESETS = [
-  { category: "Groceries", amount: 600 },
-  { category: "Dining Out", amount: 300 },
-  { category: "Transportation", amount: 200 },
-  { category: "Entertainment", amount: 150 },
-  { category: "Utilities", amount: 150 },
+  { category: "Groceries", amount: 0 },
+  { category: "Dining Out", amount: 0 },
+  { category: "Transportation", amount: 0 },
+  { category: "Entertainment", amount: 0 },
+  { category: "Utilities", amount: 0 },
 ];
 
 const slideVariants = {
