@@ -1,4 +1,7 @@
-import { describe, it, expect, beforeAll, afterEach, vi } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
+
+// Pin the zone for the whole file (runner may be UTC); Node re-reads TZ on assignment.
+process.env.TZ = "Asia/Ho_Chi_Minh";
 import {
   formatCurrency,
   formatNumber,
@@ -126,11 +129,6 @@ describe("getMonthLabel", () => {
 });
 
 describe("todayISO", () => {
-  beforeAll(() => {
-    // Set timezone to Vietnam for test
-    process.env.TZ = "Asia/Ho_Chi_Minh";
-  });
-
   afterEach(() => {
     // Reset timers after each test
     vi.useRealTimers();
@@ -156,10 +154,6 @@ describe("todayISO", () => {
 });
 
 describe("formatDateTimeLocal", () => {
-  beforeAll(() => {
-    process.env.TZ = "Asia/Ho_Chi_Minh";
-  });
-
   it("converts UTC timestamp to local date in dd/mm/yyyy format", () => {
     const result = formatDateTimeLocal("2026-09-30T20:00:00Z");
     expect(result).toBe("01/10/2026");

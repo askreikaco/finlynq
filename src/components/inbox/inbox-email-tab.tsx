@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/select";
 import { Trash2, RefreshCw, Mail, Wand2 } from "lucide-react";
 import { safeAccountName, safeName } from "@/lib/safe-name";
-import { formatCurrency, formatDate, formatDateTimeLocal } from "@/lib/currency";
+import { formatCurrency, formatDateTimeLocal } from "@/lib/currency";
 import { EmailRuleDialog } from "./email-rule-dialog";
 
 type Action =

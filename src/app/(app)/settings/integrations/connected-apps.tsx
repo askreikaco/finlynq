@@ -18,7 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { formatDate as libFormatDate, formatDateTimeLocal } from "@/lib/currency";
+import { formatDateTimeLocal } from "@/lib/currency";
 import { parseSaveError } from "@/lib/save-error";
 import { Plug, Loader2 } from "lucide-react";
 
@@ -32,7 +32,7 @@ interface ConnectedApp {
 }
 
 function formatDate(iso: string): string {
-  return formatDateTimeLocal(iso) || libFormatDate(iso);
+  return formatDateTimeLocal(iso) || iso;
 }
 
 export function ConnectedApps() {

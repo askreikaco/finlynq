@@ -30,7 +30,7 @@ import {
   setColFilter,
   type TableColFilter,
 } from "@/lib/table-filters";
-import { formatDate, formatDateTimeLocal } from "@/lib/currency";
+import { formatDateTimeLocal } from "@/lib/currency";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { Pagination } from "@/components/ui/pagination";
 
