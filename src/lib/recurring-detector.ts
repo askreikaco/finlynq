@@ -58,10 +58,16 @@ function addFrequency(date: string, frequency: string, periods = 1): string {
 export interface DetectOptions {
   /**
    * When set (ISO date, normally today), drop series that have LAPSED — the
-   * last two expected payments after `lastDate` both fell before `asOf`. A
-   * Netflix cancelled eight months ago is not a recurring payment any more,
-   * and showing it as an upcoming bill or a subscription suggestion is noise.
-   * One missed date is tolerated (a bank feed can lag a cycle).
+   * next two expected payments after `lastDate` both fell before the series'
+   * reference date. A Netflix cancelled eight months ago is not a recurring
+   * payment any more, and showing it as an upcoming bill or a subscription
+   * suggestion is noise. One missed date is tolerated (a bank feed can lag a
+   * cycle).
+   *
+   * The reference date is the NEWEST transaction in the series' own
+   * account(s), capped at `asOf` — never `asOf` alone. Measured against today,
+   * a user whose imports for an account stopped in June would be told every
+   * bill on it was cancelled, which is a data-freshness problem, not a lapse.
    */
   asOf?: string;
 }
@@ -75,6 +81,14 @@ export function detectRecurringTransactions(
   // averaging their amounts together would produce a meaningless figure under
   // a single currency label.
   const groups = new Map<string, Transaction[]>();
+  // Newest transaction per account — the lapse reference (see DetectOptions).
+  const latestByAccount = new Map<number, string>();
+  if (opts.asOf) {
+    for (const t of transactions) {
+      const prev = latestByAccount.get(t.accountId);
+      if (!prev || t.date > prev) latestByAccount.set(t.accountId, t.date);
+    }
+  }
   for (const t of transactions) {
     const payeeKey = (t.payee || "").trim().toLowerCase();
     if (!payeeKey) continue;
@@ -114,7 +128,15 @@ export function detectRecurringTransactions(
     if (!intervalConsistent) continue;
 
     const lastDate = sorted[sorted.length - 1].date;
-    if (opts.asOf && addFrequency(lastDate, frequency, 2) < opts.asOf) continue;
+    if (opts.asOf) {
+      let horizon = "";
+      for (const t of sorted) {
+        const latest = latestByAccount.get(t.accountId) ?? "";
+        if (latest > horizon) horizon = latest;
+      }
+      const reference = horizon && horizon < opts.asOf ? horizon : opts.asOf;
+      if (addFrequency(lastDate, frequency, 2) < reference) continue;
+    }
     results.push({
       payee: sorted[0].payee,
       avgAmount: Math.round(avgAmount * 100) / 100,

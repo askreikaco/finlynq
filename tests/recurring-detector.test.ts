@@ -156,6 +156,22 @@ describe("detectRecurringTransactions", () => {
     // One missed cycle is tolerated (bank feeds lag).
     expect(detectRecurringTransactions(txns, { asOf: "2026-05-01" }).length).toBe(2);
   });
+
+  it("judges lapse against the account's newest transaction, not today", () => {
+    // Account 2's imports stopped in June; its bills are not "cancelled" in
+    // October just because nobody has synced it since.
+    const stale = (id: number, date: string, payee: string, amount: number) => ({ ...makeTxn(id, date, payee, amount), accountId: 2 });
+    const txns = [
+      stale(1, "2026-04-11", "Spotify", -10.99),
+      stale(2, "2026-05-11", "Spotify", -10.99),
+      stale(3, "2026-06-11", "Spotify", -10.99),
+      stale(4, "2026-06-20", "Groceries", -80),
+    ];
+    expect(detectRecurringTransactions(txns, { asOf: "2026-10-01" }).map((r) => r.payee)).toEqual(["Spotify"]);
+    // ...but a series that stopped while the account kept moving IS lapsed.
+    const moving = [...txns, stale(5, "2026-09-25", "Groceries", -75)];
+    expect(detectRecurringTransactions(moving, { asOf: "2026-10-01" })).toEqual([]);
+  });
 });
 
 describe("forecastCashFlow", () => {
