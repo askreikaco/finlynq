@@ -1,10 +1,13 @@
 /**
- * Decrypt labels from the family_labels sidecar.
- * Only callable from src/lib/family/overview/* and src/lib/family/* paths.
+ * Viewer-side label reads from the family_labels sidecar.
  *
- * Decryption is gated by the SECTION_LABEL_SOURCES allow-list:
- * only registered (owner, section, entity_type, entity_id) combinations are decryptable.
- * Unregistered columns always return null (generic label fallback).
+ * Only callable from src/lib/family/** and src/app/api/family/overview/** (eslint guard).
+ * The ONLY way a viewer obtains a name: the sidecar row is decrypted with the SECTION key that
+ * withSectionKeys() unsealed with the VIEWER's private key. The owner's DEK is never an input,
+ * and no entity row (*_ct) is read here.
+ *
+ * Gated by SECTION_LABEL_SOURCES: only the registered entity type of a section is readable.
+ * Any missing / undecryptable label yields no map entry; callers render a generic label.
  */
 
 import { and, eq } from "drizzle-orm";
@@ -12,61 +15,41 @@ import { db } from "@/db";
 import { familyLabels } from "@/db/schema-pg";
 import { decryptLabel, buildLabelAAD } from "@/lib/crypto/family-crypto";
 import { SECTION_LABEL_SOURCES } from "./label-registry";
+import type { FamilySection } from "./sections";
 
 /**
- * Decrypt a single label from the sidecar, if it exists and is in the allow-list.
- *
- * @param ownerId Owner of the label
- * @param section Section the label belongs to (e.g., "accounts", "goals")
- * @param entityType Type of entity being labeled — must match the table name (e.g., "accounts", "portfolio_holdings")
- * @param entityId ID of the entity (numeric)
- * @param sourceCt The encrypted source (should come from the entity's name_ct or similar) — unused
- * @param sectionKey The section's decryption key (unsealed from the grant)
- *
- * @returns The decrypted label, or null if not found/undecryptable/not in allow-list
+ * Decrypt every sidecar label of (owner, section) with the section key.
+ * Returns entityId -> label for rows that authenticate under (key, AAD incl. epoch).
+ * No key (grant missing / not unsealable) or an unregistered section -> empty map.
  */
-export async function decryptLabelIfAllowed(
+export async function loadSectionLabels(
   ownerId: string,
-  section: string,
-  entityType: string,
-  entityId: number,
-  sourceCt: string | null,
-  sectionKey: Buffer,
-): Promise<string | null> {
-  // Check allow-list: is this (section, entityType) combination allowed to be decrypted?
-  const source = SECTION_LABEL_SOURCES[section as keyof typeof SECTION_LABEL_SOURCES];
-  if (!source || source.table !== entityType) {
-    return null;
-  }
+  section: FamilySection,
+  sectionKey: Buffer | undefined,
+): Promise<Map<number, string>> {
+  const out = new Map<number, string>();
+  const source = SECTION_LABEL_SOURCES[section];
+  if (!source || !sectionKey) return out;
 
-  // Query the sidecar for this label
-  const [row] = await db
+  const rows = await db
     .select()
     .from(familyLabels)
     .where(
       and(
         eq(familyLabels.ownerId, ownerId),
         eq(familyLabels.section, section),
-        eq(familyLabels.entityType, entityType),
-        eq(familyLabels.entityId, entityId),
+        eq(familyLabels.entityType, source.table),
       ),
-    )
-    .limit(1);
-
-  if (!row || !row.labelCt) {
-    return null;
-  }
-
-  try {
-    const aad = buildLabelAAD(ownerId, section, entityType, entityId, row.epoch || 1);
-    const label = decryptLabel(sectionKey, row.labelCt, aad);
-    return label;
-  } catch (err) {
-    console.warn(
-      `[family] label decrypt failed: owner=${ownerId} section=${section} entity=${entityType}/${entityId}: ${
-        err instanceof Error ? err.message : "error"
-      }`,
     );
-    return null;
+
+  for (const row of rows) {
+    if (!row.labelCt) continue;
+    try {
+      const aad = buildLabelAAD(ownerId, section, source.table, row.entityId, row.epoch);
+      out.set(row.entityId, decryptLabel(sectionKey, row.labelCt, aad));
+    } catch {
+      // wrong key / stale epoch / tampered: generic label (no detail logged)
+    }
   }
+  return out;
 }

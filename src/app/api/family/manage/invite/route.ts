@@ -16,15 +16,13 @@ import { and, eq, isNull, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getUserById } from "@/lib/auth/queries";
-import { verifyPassword } from "@/lib/auth";
-import { isFreshSession } from "@/lib/auth/step-up";
 import { createShare } from "@/lib/family/share-dal";
-import { createUserKeypairIfNeeded } from "@/lib/family/grant";
+import { ensureUserKeypair } from "@/lib/family/manage-ops";
 import { generateInviteToken, hashInviteToken, getInviteExpiresAt } from "@/lib/family/invite-token";
 import { FamilySectionSchema } from "@/lib/family/sections";
 import { familyInvites, familyShares } from "@/db/schema-pg";
 import { sendEmail, familyInviteEmail } from "@/lib/email";
-import { rateLimited, readStrictBody, requireFamilySession } from "@/lib/family/manage-guard";
+import { rateLimited, readStrictBody, requireFamilySession, requireFamilyStepUp } from "@/lib/family/manage-guard";
 
 export const dynamic = "force-dynamic";
 
@@ -52,29 +50,9 @@ export async function POST(request: NextRequest) {
   if (!body.ok) return body.response;
   const { viewerEmail, sections, mustShareBack, currentPassword } = body.data;
 
-  // Step-up: require fresh session (< 10 min) OR currentPassword
-  const isFresh = isFreshSession(guard.ctx.iat);
-  if (!isFresh && !currentPassword) {
-    return NextResponse.json(
-      { error: "Step-up required: provide currentPassword or use a fresh session" },
-      { status: 401 },
-    );
-  }
-
-  // If not fresh, verify the password
-  if (!isFresh) {
-    if (!currentPassword) {
-      return NextResponse.json({ error: "Password required for step-up" }, { status: 401 });
-    }
-    const ownerUser = await getUserById(ownerId);
-    if (!ownerUser || !ownerUser.passwordHash) {
-      return NextResponse.json({ error: "Cannot verify password" }, { status: 401 });
-    }
-    const passwordValid = await verifyPassword(currentPassword, ownerUser.passwordHash);
-    if (!passwordValid) {
-      return NextResponse.json({ error: "Invalid password" }, { status: 401 });
-    }
-  }
+  // Step-up: fresh session (< 10 min) OR correct currentPassword.
+  const stepUp = await requireFamilyStepUp(guard.ctx, currentPassword);
+  if (stepUp) return stepUp;
 
   // Same body as the per-user limit: does not reveal that OTHER owners invited this address.
   const emailRl = checkRateLimit(`family-invite-email:${viewerEmail}`, 3, DAY_MS);
@@ -104,7 +82,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    await createUserKeypairIfNeeded(db, ownerId, ownerDek);
+    await ensureUserKeypair(ownerId, ownerDek);
   } catch {
     console.error("[family] invite: keypair setup failed");
     return NextResponse.json({ error: "Could not set up encryption" }, { status: 500 });

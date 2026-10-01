@@ -23,10 +23,8 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getUserById } from "@/lib/auth/queries";
-import { verifyPassword } from "@/lib/auth";
-import { isFreshSession } from "@/lib/auth/step-up";
 import { consumeInvite, acceptShare } from "@/lib/family/share-dal";
-import { createUserKeypairIfNeeded } from "@/lib/family/grant";
+import { ensureUserKeypair } from "@/lib/family/manage-ops";
 import { syncFamilyLabels } from "@/lib/family/sweep";
 import { hashInviteToken, tokenHashesEqual } from "@/lib/family/invite-token";
 import { FamilySectionSchema, type FamilySection } from "@/lib/family/sections";
@@ -39,6 +37,7 @@ import {
   rateLimited,
   readStrictBody,
   requireFamilySession,
+  requireFamilyStepUp,
 } from "@/lib/family/manage-guard";
 
 export const dynamic = "force-dynamic";
@@ -56,7 +55,7 @@ class AcceptRaceError extends Error {}
 export async function POST(request: NextRequest) {
   const guard = await requireFamilySession(request);
   if (!guard.ok) return guard.response;
-  const { userId: viewerId, dek: viewerDek, iat } = guard.ctx;
+  const { userId: viewerId, dek: viewerDek } = guard.ctx;
 
   // Limit first: caps token-guessing regardless of any later outcome.
   const rl = checkRateLimit(`family-accept:${viewerId}`, 10, 15 * 60_000);
@@ -87,30 +86,10 @@ export async function POST(request: NextRequest) {
   if (!share || share.ownerId === viewerId || share.viewerEmailLower !== viewerEmailLower) return inviteGone();
   if (share.status !== "pending") return inviteGone();
 
-  // Step-up: require fresh session (< 10 min) OR currentPassword when must_share_back is true
+  // Step-up (accept with share-back only): fresh session OR correct currentPassword.
   if (share.mustShareBack) {
-    const isFresh = isFreshSession(iat);
-    if (!isFresh && !currentPassword) {
-      return NextResponse.json(
-        { error: "Step-up required: provide currentPassword or use a fresh session" },
-        { status: 401 },
-      );
-    }
-
-    // If not fresh, verify the password
-    if (!isFresh) {
-      if (!currentPassword) {
-        return NextResponse.json({ error: "Password required for step-up" }, { status: 401 });
-      }
-      const viewerUser = await getUserById(viewerId);
-      if (!viewerUser || !viewerUser.passwordHash) {
-        return NextResponse.json({ error: "Cannot verify password" }, { status: 401 });
-      }
-      const passwordValid = await verifyPassword(currentPassword, viewerUser.passwordHash);
-      if (!passwordValid) {
-        return NextResponse.json({ error: "Invalid password" }, { status: 401 });
-      }
-    }
+    const stepUp = await requireFamilyStepUp(guard.ctx, currentPassword);
+    if (stepUp) return stepUp;
   }
 
   if (!viewerDek) {
@@ -118,7 +97,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    await createUserKeypairIfNeeded(db, viewerId, viewerDek);
+    await ensureUserKeypair(viewerId, viewerDek);
   } catch {
     console.error("[family] accept: keypair setup failed");
     return NextResponse.json({ error: "Could not set up encryption" }, { status: 500 });
