@@ -1,87 +1,69 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
 import { FAMILY_STRINGS } from "@/lib/family/strings";
+import { errorMessage, postJson } from "./api";
 
 interface RevokeDialogProps {
   shareId: string;
-  isOpen: boolean;
+  /** owner revokes; viewer leaves */
+  role: "owner" | "viewer";
   onClose: () => void;
   onSuccess: () => void;
 }
 
-export function RevokeDialog({ shareId, isOpen, onClose, onSuccess }: RevokeDialogProps) {
-  const [loading, setLoading] = useState(false);
+export function RevokeDialog({ shareId, role, onClose, onSuccess }: RevokeDialogProps) {
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleRevoke = async () => {
+  const revoke = async () => {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
     try {
-      setLoading(true);
-      setError(null);
-
-      const res = await fetch("/api/family/manage/revoke", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ shareId }),
-      });
-
+      const res = await postJson("POST", "/api/family/manage/revoke", { shareId });
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Failed to revoke share");
+        setError(await errorMessage(res, FAMILY_STRINGS.error_generic));
+        return;
       }
-
       onSuccess();
-    } catch (err) {
-      console.error("[revoke]", err);
-      setError(err instanceof Error ? err.message : FAMILY_STRINGS.error_generic);
+    } catch {
+      setError(FAMILY_STRINGS.error_network);
     } finally {
-      setLoading(false);
+      setBusy(false);
     }
   };
 
+  const isOwner = role === "owner";
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-sm">
+    <Dialog open onOpenChange={(open) => !open && !busy && onClose()}>
+      <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>{FAMILY_STRINGS.revoke_dialog_title}</DialogTitle>
-          <DialogDescription>{FAMILY_STRINGS.revoke_dialog_message}</DialogDescription>
+          <DialogTitle>{isOwner ? FAMILY_STRINGS.revoke_dialog_title : FAMILY_STRINGS.leave_dialog_title}</DialogTitle>
+          <DialogDescription>
+            {isOwner ? FAMILY_STRINGS.revoke_dialog_message : FAMILY_STRINGS.leave_dialog_message}
+          </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
+        <div className="space-y-4">
+          <div aria-live="polite">
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+          </div>
           <div className="flex gap-2 pt-2">
-            <Button
-              variant="outline"
-              onClick={onClose}
-              disabled={loading}
-              className="flex-1"
-            >
+            <Button type="button" variant="outline" onClick={onClose} disabled={busy} className="flex-1">
               {FAMILY_STRINGS.revoke_dialog_button_cancel}
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleRevoke}
-              disabled={loading}
-              className="flex-1 gap-2"
-            >
-              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-              {FAMILY_STRINGS.revoke_dialog_button_revoke}
+            <Button type="button" variant="destructive" onClick={revoke} disabled={busy} className="flex-1 gap-2">
+              {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+              {isOwner ? FAMILY_STRINGS.revoke_dialog_button_revoke : FAMILY_STRINGS.sharing_list_leave}
             </Button>
           </div>
         </div>

@@ -1,345 +1,268 @@
 "use client";
 
+import { useId } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { formatCurrency } from "@/lib/currency";
+import { formatCurrency, formatDate, getMonthLabel } from "@/lib/currency";
 import { FAMILY_STRINGS } from "@/lib/family/strings";
+import type { MemberDto } from "./types";
+import { TrendChart } from "./trend-chart";
+import { fill, getSectionLabel } from "./section-labels";
 
-interface NetWorthSection {
-  assets: number;
-  liabilities: number;
-  net: number;
-  history: Array<{ date: string; value: number }>;
-  historyFxApproximation: boolean;
-}
+const NONE = FAMILY_STRINGS.overview_none;
 
-interface AccountsSection {
-  accounts: Array<{
-    ref: string;
-    label: string;
-    labelIsGeneric: boolean;
-    type: string;
-    group: string;
-    archived: boolean;
-    currency: string;
-    balance: number | null;
-    converted: number | null;
-    basis: string;
-    asOf: string | null;
-  }>;
-  groups: Array<{ group: string; type: string; converted: number }>;
-}
-
-interface InvestmentsSection {
-  holdingsValue: number;
-  asOf: string | null;
-  accountsPriced: number;
-  accountsUnpriced: number;
-  holdings: Array<{
-    ref: string;
-    label: string;
-    labelIsGeneric: boolean;
-    currency: string;
-    quantity: number;
-    isCrypto: boolean;
-  }>;
-  trend: Array<{ date: string; value: number }>;
-}
-
-interface GoalsSection {
-  goals: Array<{
-    ref: string;
-    label: string;
-    labelIsGeneric: boolean;
-    type: string;
-    status: string;
-    currency: string;
-    targetAmount: number;
-    currentAmount: number | null;
-    progress: number | null;
-    remaining: number | null;
-    monthlyNeeded: number | null;
-    deadline: string | null;
-  }>;
-}
-
-interface LoansSection {
-  loans: Array<{
-    ref: string;
-    label: string;
-    labelIsGeneric: boolean;
-    type: string;
-    currency: string;
-    principal: number;
-    annualRate: number;
-    remainingBalance: number | null;
-    remainingBalanceConverted: number | null;
-    balanceSource: "account" | "projection" | null;
-    monthlyPayment: number | null;
-    payoffDate: string | null;
-  }>;
-}
-
-interface BudgetsSection {
-  month: string;
-  budgets: Array<{
-    ref: string;
-    label: string;
-    labelIsGeneric: boolean;
-    budgeted: number | null;
-    actual: number | null;
-  }>;
-}
-
-interface CashflowSection {
-  windowMonths: number;
-  income: number;
-  expenses: number;
-  monthly: Array<{ month: string; income: number; expenses: number }>;
-}
-
-interface MemberDto {
-  id: string;
-  relation: "me" | "shared";
-  name: string;
-  sections: {
-    net_worth?: NetWorthSection;
-    accounts?: AccountsSection;
-    investments?: InvestmentsSection;
-    goals?: GoalsSection;
-    loans?: LoansSection;
-    budgets?: BudgetsSection;
-    cashflow?: CashflowSection;
-  };
-  notShared: string[];
-  unavailable: string[];
-  partial: boolean;
-  partialReasons: string[];
-  genericLabels: boolean;
+/** Label text only (React escapes it). Generic fallback labels are muted + marked. */
+function Label({ text, generic }: { text: string; generic: boolean }) {
+  return generic ? (
+    <span className="text-muted-foreground" title={FAMILY_STRINGS.overview_generic_badge}>
+      {text}
+    </span>
+  ) : (
+    <>{text}</>
+  );
 }
 
 export function MemberCard({ member, displayCurrency }: { member: MemberDto; displayCurrency: string }) {
-  const memberLabel =
-    member.relation === "me"
-      ? FAMILY_STRINGS.overview_member_me
-      : `${FAMILY_STRINGS.overview_member_you_shared} ${member.name}`;
+  const uid = useId().replace(/:/g, "");
+  const money = (v: number | null | undefined) => (v == null ? NONE : formatCurrency(v, displayCurrency));
+  const s = member.sections;
+  const isMe = member.relation === "me";
 
   return (
-    <Card>
+    <Card data-testid={`member-${member.id}`}>
       <CardHeader className="border-b pb-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-lg">{memberLabel}</CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">{member.name}</p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="min-w-0">
+            <CardTitle className="text-lg break-words">
+              {isMe ? FAMILY_STRINGS.overview_member_me : member.name}
+            </CardTitle>
+            {isMe && <p className="text-sm text-muted-foreground mt-1 break-words">{member.name}</p>}
           </div>
-          {member.partial && (
-            <Badge variant="outline" className="bg-amber-50 text-amber-900 border-amber-200">
-              {FAMILY_STRINGS.overview_partial_flag}
-            </Badge>
-          )}
+          <div className="flex flex-wrap gap-2">
+            {member.partial && (
+              <Badge variant="outline" className="bg-amber-50 text-amber-900 border-amber-200">
+                {FAMILY_STRINGS.overview_partial_flag}
+              </Badge>
+            )}
+            {member.genericLabels && <Badge variant="outline">{FAMILY_STRINGS.overview_generic_badge}</Badge>}
+          </div>
         </div>
       </CardHeader>
 
       <CardContent className="pt-6 space-y-6">
-        {/* Not shared sections */}
+        {member.error && (
+          <p role="alert" className="text-sm text-red-700">
+            {FAMILY_STRINGS.overview_section_error}
+          </p>
+        )}
+
         {member.notShared.length > 0 && (
           <div>
             <h4 className="text-sm font-medium mb-2">{FAMILY_STRINGS.overview_not_shared}</h4>
-            <div className="flex flex-wrap gap-2">
+            <ul className="flex flex-wrap gap-2">
               {member.notShared.map((section) => (
-                <Badge key={section} variant="secondary">
-                  {getSectionLabel(section)}
-                </Badge>
+                <li key={section}>
+                  <Badge variant="secondary">{getSectionLabel(section)}</Badge>
+                </li>
               ))}
-            </div>
+            </ul>
           </div>
         )}
 
-        {/* Unavailable sections */}
         {member.unavailable.length > 0 && (
           <div>
-            <h4 className="text-sm font-medium mb-2 text-red-600">Error loading</h4>
-            <div className="flex flex-wrap gap-2">
+            <h4 className="text-sm font-medium mb-2 text-red-700">{FAMILY_STRINGS.overview_unavailable_heading}</h4>
+            <ul className="flex flex-wrap gap-2">
               {member.unavailable.map((section) => (
-                <Badge key={section} variant="outline" className="bg-red-50 text-red-900 border-red-200">
-                  {getSectionLabel(section)}
-                </Badge>
+                <li key={section}>
+                  <Badge variant="outline" className="bg-red-50 text-red-900 border-red-200">
+                    {getSectionLabel(section)}
+                  </Badge>
+                </li>
               ))}
-            </div>
+            </ul>
           </div>
         )}
 
-        {/* Net worth section */}
-        {member.sections.net_worth && (
-          <SectionCard title={FAMILY_STRINGS.overview_net_worth_title} isGeneric={member.genericLabels}>
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <p className="text-xs text-muted-foreground">{FAMILY_STRINGS.overview_kpi_assets}</p>
-                <p className="text-lg font-semibold">
-                  {formatCurrency(member.sections.net_worth.assets, displayCurrency)}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">{FAMILY_STRINGS.overview_kpi_liabilities}</p>
-                <p className="text-lg font-semibold">
-                  {formatCurrency(member.sections.net_worth.liabilities, displayCurrency)}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">{FAMILY_STRINGS.overview_kpi_net_worth}</p>
-                <p className="text-lg font-semibold">
-                  {formatCurrency(member.sections.net_worth.net, displayCurrency)}
-                </p>
-              </div>
+        {s.net_worth && (
+          <SectionBox title={FAMILY_STRINGS.overview_net_worth_title}>
+            <dl className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <Stat label={FAMILY_STRINGS.overview_kpi_assets} value={money(s.net_worth.assets)} />
+              <Stat label={FAMILY_STRINGS.overview_kpi_liabilities} value={money(s.net_worth.liabilities)} />
+              <Stat label={FAMILY_STRINGS.overview_kpi_net_worth} value={money(s.net_worth.net)} />
+            </dl>
+            <div className="mt-4">
+              <TrendChart
+                title={FAMILY_STRINGS.overview_net_worth_trend}
+                memberName={member.name}
+                data={s.net_worth.history}
+                currency={displayCurrency}
+                color="#6366f1"
+                gradientId={`nw-${uid}`}
+              />
+              {s.net_worth.historyFxApproximation && s.net_worth.history.length > 1 && (
+                <p className="text-xs text-muted-foreground mt-1">{FAMILY_STRINGS.overview_history_fx_note}</p>
+              )}
             </div>
-          </SectionCard>
+          </SectionBox>
         )}
 
-        {/* Accounts section */}
-        {member.sections.accounts && (
-          <SectionCard title={FAMILY_STRINGS.overview_accounts_title} isGeneric={member.genericLabels}>
-            <div className="space-y-3">
-              {member.sections.accounts.accounts.map((account) => (
-                <div key={account.ref} className="flex items-center justify-between pb-2 border-b last:border-0">
-                  <div>
-                    <p className="text-sm font-medium">
-                      {account.labelIsGeneric && <span className="text-muted-foreground">({account.label})</span>}
-                      {!account.labelIsGeneric && account.label}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {account.type} • {account.currency}
-                    </p>
-                  </div>
-                  <p className="text-sm font-semibold">
-                    {account.converted !== null ? formatCurrency(account.converted, displayCurrency) : "—"}
-                  </p>
-                </div>
-              ))}
+        {s.accounts && (
+          <SectionBox title={FAMILY_STRINGS.overview_accounts_title}>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <caption className="sr-only">{FAMILY_STRINGS.overview_accounts_title}</caption>
+                <thead>
+                  <tr className="text-left text-xs text-muted-foreground">
+                    <th scope="col" className="pb-2 pr-3 font-medium">{FAMILY_STRINGS.overview_member_table_account}</th>
+                    <th scope="col" className="pb-2 pr-3 font-medium">{FAMILY_STRINGS.overview_member_table_type}</th>
+                    <th scope="col" className="pb-2 pr-3 font-medium text-right">{FAMILY_STRINGS.overview_member_table_native}</th>
+                    <th scope="col" className="pb-2 font-medium text-right">{FAMILY_STRINGS.overview_member_table_balance}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {s.accounts.accounts.map((a) => (
+                    <tr key={a.ref} className="border-t">
+                      <th scope="row" className="py-2 pr-3 text-left font-medium break-words">
+                        <Label text={a.label} generic={a.labelIsGeneric} />
+                      </th>
+                      <td className="py-2 pr-3 text-muted-foreground">
+                        {a.type} · {a.currency}
+                      </td>
+                      <td className="py-2 pr-3 text-right text-muted-foreground whitespace-nowrap">
+                        {a.balance == null ? NONE : formatCurrency(a.balance, a.currency)}
+                      </td>
+                      <td className="py-2 text-right font-semibold whitespace-nowrap">{money(a.converted)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          </SectionCard>
+          </SectionBox>
         )}
 
-        {/* Investments section */}
-        {member.sections.investments && (
-          <SectionCard title={FAMILY_STRINGS.overview_investments_title} isGeneric={member.genericLabels}>
-            <div>
-              <p className="text-sm font-medium">{FAMILY_STRINGS.overview_kpi_assets}</p>
-              <p className="text-xl font-semibold">{formatCurrency(member.sections.investments.holdingsValue, displayCurrency)}</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {member.sections.investments.accountsPriced} valued,
-                {member.sections.investments.accountsUnpriced > 0 && ` ${member.sections.investments.accountsUnpriced} unpriced`}
-              </p>
+        {s.investments && (
+          <SectionBox title={FAMILY_STRINGS.overview_investments_title}>
+            <p className="text-xl font-semibold">{money(s.investments.holdingsValue)}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {s.investments.accountsPriced} {FAMILY_STRINGS.overview_valued}
+              {s.investments.accountsUnpriced > 0 && `, ${s.investments.accountsUnpriced} ${FAMILY_STRINGS.overview_unpriced}`}
+              {s.investments.asOf && ` · ${FAMILY_STRINGS.overview_asof} ${formatDate(s.investments.asOf)}`}
+            </p>
+            {s.investments.holdings.length > 0 && (
+              <ul className="mt-3 space-y-1 text-sm">
+                {s.investments.holdings.map((h) => (
+                  <li key={h.ref} className="flex justify-between gap-3">
+                    <span className="break-words min-w-0">
+                      <Label text={h.label} generic={h.labelIsGeneric} />
+                    </span>
+                    <span className="text-muted-foreground whitespace-nowrap">
+                      {h.quantity} {h.currency}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="mt-4">
+              <TrendChart
+                title={FAMILY_STRINGS.overview_investments_trend}
+                memberName={member.name}
+                data={s.investments.trend}
+                currency={displayCurrency}
+                color="#10b981"
+                gradientId={`inv-${uid}`}
+              />
             </div>
-          </SectionCard>
+          </SectionBox>
         )}
 
-        {/* Goals section */}
-        {member.sections.goals && (
-          <SectionCard title={FAMILY_STRINGS.overview_goals_title} isGeneric={member.genericLabels}>
-            <div className="space-y-3">
-              {member.sections.goals.goals.map((goal) => (
-                <div key={goal.ref} className="pb-2 border-b last:border-0">
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-sm font-medium">
-                      {goal.labelIsGeneric && <span className="text-muted-foreground">({goal.label})</span>}
-                      {!goal.labelIsGeneric && goal.label}
+        {s.goals && (
+          <SectionBox title={FAMILY_STRINGS.overview_goals_title}>
+            <ul className="space-y-3">
+              {s.goals.goals.map((g) => (
+                <li key={g.ref} className="border-b pb-2 last:border-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-medium break-words min-w-0">
+                      <Label text={g.label} generic={g.labelIsGeneric} />
                     </p>
-                    {goal.progress !== null && (
-                      <Badge variant="outline" className="text-xs">
-                        {Math.round((goal.progress / goal.targetAmount) * 100)}%
-                      </Badge>
-                    )}
+                    {g.progress !== null && <Badge variant="outline">{Math.round(g.progress)}%</Badge>}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {goal.currentAmount !== null ? formatCurrency(goal.currentAmount, displayCurrency) : "—"} of{" "}
-                    {formatCurrency(goal.targetAmount, displayCurrency)}
+                    {g.currentAmount == null ? NONE : formatCurrency(g.currentAmount, g.currency)}{" "}
+                    {FAMILY_STRINGS.overview_goal_of} {formatCurrency(g.targetAmount, g.currency)}
+                    {g.deadline && ` · ${formatDate(g.deadline)}`}
                   </p>
-                </div>
+                </li>
               ))}
-            </div>
-          </SectionCard>
+            </ul>
+          </SectionBox>
         )}
 
-        {/* Loans section */}
-        {member.sections.loans && (
-          <SectionCard title={FAMILY_STRINGS.overview_loans_title} isGeneric={member.genericLabels}>
-            <div className="space-y-3">
-              {member.sections.loans.loans.map((loan) => (
-                <div key={loan.ref} className="pb-2 border-b last:border-0">
-                  <p className="text-sm font-medium">
-                    {loan.labelIsGeneric && <span className="text-muted-foreground">({loan.label})</span>}
-                    {!loan.labelIsGeneric && loan.label}
+        {s.loans && (
+          <SectionBox title={FAMILY_STRINGS.overview_loans_title}>
+            <ul className="space-y-3">
+              {s.loans.loans.map((l) => (
+                <li key={l.ref} className="border-b pb-2 last:border-0">
+                  <p className="text-sm font-medium break-words">
+                    <Label text={l.label} generic={l.labelIsGeneric} />
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {loan.annualRate.toFixed(2)}% • Balance: {loan.remainingBalanceConverted !== null ? formatCurrency(loan.remainingBalanceConverted, displayCurrency) : "—"}
+                    {l.annualRate.toFixed(2)}% · {FAMILY_STRINGS.overview_loan_balance}: {money(l.remainingBalanceConverted)}
+                    {l.payoffDate && ` · ${formatDate(l.payoffDate)}`}
                   </p>
-                </div>
+                </li>
               ))}
-            </div>
-          </SectionCard>
+            </ul>
+          </SectionBox>
         )}
 
-        {/* Budgets section */}
-        {member.sections.budgets && (
-          <SectionCard title={FAMILY_STRINGS.overview_budgets_title} isGeneric={member.genericLabels}>
-            <div className="space-y-3">
-              {member.sections.budgets.budgets.map((budget) => (
-                <div key={budget.ref} className="flex items-center justify-between pb-2 border-b last:border-0">
-                  <p className="text-sm font-medium">
-                    {budget.labelIsGeneric && <span className="text-muted-foreground">({budget.label})</span>}
-                    {!budget.labelIsGeneric && budget.label}
+        {s.budgets && (
+          <SectionBox title={`${FAMILY_STRINGS.overview_budgets_title} · ${getMonthLabel(s.budgets.month)}`}>
+            <ul className="space-y-2">
+              {s.budgets.budgets.map((b) => (
+                <li key={b.ref} className="flex items-center justify-between gap-3 border-b pb-2 last:border-0">
+                  <p className="text-sm font-medium break-words min-w-0">
+                    <Label text={b.label} generic={b.labelIsGeneric} />
                   </p>
-                  <p className="text-sm">
-                    {budget.actual !== null ? formatCurrency(budget.actual, displayCurrency) : "—"} /{" "}
-                    {budget.budgeted !== null ? formatCurrency(budget.budgeted, displayCurrency) : "—"}
+                  <p className="text-sm whitespace-nowrap">
+                    {money(b.actual)} / {money(b.budgeted)}
                   </p>
-                </div>
+                </li>
               ))}
-            </div>
-          </SectionCard>
+            </ul>
+          </SectionBox>
         )}
 
-        {/* Cashflow section */}
-        {member.sections.cashflow && (
-          <SectionCard title={FAMILY_STRINGS.overview_cashflow_title} isGeneric={member.genericLabels}>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-xs text-muted-foreground">Income</p>
-                <p className="text-lg font-semibold">{formatCurrency(member.sections.cashflow.income, displayCurrency)}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Expenses</p>
-                <p className="text-lg font-semibold">{formatCurrency(member.sections.cashflow.expenses, displayCurrency)}</p>
-              </div>
-            </div>
-          </SectionCard>
+        {s.cashflow && (
+          <SectionBox title={FAMILY_STRINGS.overview_cashflow_title}>
+            <dl className="grid grid-cols-2 gap-4">
+              <Stat label={FAMILY_STRINGS.overview_income} value={money(s.cashflow.income)} />
+              <Stat label={FAMILY_STRINGS.overview_expenses} value={money(s.cashflow.expenses)} />
+            </dl>
+            <p className="text-xs text-muted-foreground mt-2">
+              {fill(FAMILY_STRINGS.overview_cashflow_window, { months: s.cashflow.windowMonths })}
+            </p>
+          </SectionBox>
         )}
       </CardContent>
     </Card>
   );
 }
 
-function SectionCard({ title, children, isGeneric }: { title: string; children: React.ReactNode; isGeneric?: boolean }) {
+function SectionBox({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="border rounded-lg p-4 bg-muted/30">
-      <div className="flex items-center justify-between mb-3">
-        <h4 className="text-sm font-semibold">{title}</h4>
-        {isGeneric && <Badge variant="outline" className="text-xs">Generic</Badge>}
-      </div>
+    <section className="border rounded-lg p-4 bg-muted/30">
+      <h4 className="text-sm font-semibold mb-3">{title}</h4>
       {children}
-    </div>
+    </section>
   );
 }
 
-function getSectionLabel(section: string): string {
-  const labels: Record<string, string> = {
-    net_worth: FAMILY_STRINGS.overview_net_worth_title,
-    accounts: FAMILY_STRINGS.overview_accounts_title,
-    investments: FAMILY_STRINGS.overview_investments_title,
-    goals: FAMILY_STRINGS.overview_goals_title,
-    budgets: FAMILY_STRINGS.overview_budgets_title,
-    loans: FAMILY_STRINGS.overview_loans_title,
-    cashflow: FAMILY_STRINGS.overview_cashflow_title,
-  };
-  return labels[section] || section;
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="text-lg font-semibold break-words">{value}</dd>
+    </div>
+  );
 }

@@ -4,32 +4,49 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, CheckCircle2, Clock, AlertCircle } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
+import { CheckCircle2, Clock, CircleSlash, AlertTriangle } from "lucide-react";
 import { FAMILY_STRINGS } from "@/lib/family/strings";
+import { FAMILY_SECTIONS_V1 } from "@/lib/family/sections";
+import { formatDateTimeLocal } from "@/lib/currency";
 import { RevokeDialog } from "./revoke-dialog";
-import { AcceptDeclineDialog } from "./accept-decline-dialog";
-import type { toShareDto } from "@/lib/family/manage-guard";
+import { ChangeSectionsDialog } from "./change-sections-dialog";
+import { fill, getSectionLabel } from "./section-labels";
+import { postJson, errorMessage } from "./api";
+import { ENDABLE_STATUSES, LIVE_STATUSES, type ShareDto } from "./types";
 
-type ShareDto = ReturnType<typeof toShareDto>;
+export type Notice = { kind: "success" | "error"; text: string };
 
 interface SharesListProps {
   shares: ShareDto[];
+  /** the viewer's incoming shares: lets a reciprocal share find its must-share-back minimum */
+  incoming: ShareDto[];
   emptyMessage: string;
   role: "owner" | "viewer";
-  onSharesChanged: () => void;
+  onChanged: (notice?: Notice) => void;
 }
 
-export function SharesList({ shares, emptyMessage, role, onSharesChanged }: SharesListProps) {
-  const [revokeShareId, setRevokeShareId] = useState<string | null>(null);
-  const [acceptDeclineShareId, setAcceptDeclineShareId] = useState<string | null>(null);
-  const [acceptDeclineAction, setAcceptDeclineAction] = useState<"accept" | "decline">("accept");
+const STATUS_LABEL: Record<string, string> = {
+  pending: FAMILY_STRINGS.sharing_status_pending,
+  awaiting_owner_unlock: FAMILY_STRINGS.sharing_status_awaiting_unlock,
+  active: FAMILY_STRINGS.sharing_status_active,
+  suspended: FAMILY_STRINGS.sharing_status_suspended,
+  revoked: FAMILY_STRINGS.sharing_status_revoked,
+  declined: FAMILY_STRINGS.sharing_status_declined,
+  expired: FAMILY_STRINGS.sharing_status_expired,
+  key_reset: FAMILY_STRINGS.sharing_status_key_reset,
+};
+
+function StatusIcon({ status }: { status: string }) {
+  if (status === "active") return <CheckCircle2 className="h-4 w-4 text-green-600" aria-hidden="true" />;
+  if (status === "pending" || status === "awaiting_owner_unlock") return <Clock className="h-4 w-4 text-amber-600" aria-hidden="true" />;
+  if (status === "suspended" || status === "key_reset") return <AlertTriangle className="h-4 w-4 text-amber-600" aria-hidden="true" />;
+  return <CircleSlash className="h-4 w-4 text-muted-foreground" aria-hidden="true" />;
+}
+
+export function SharesList({ shares, incoming, emptyMessage, role, onChanged }: SharesListProps) {
+  const [revokeId, setRevokeId] = useState<string | null>(null);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [resending, setResending] = useState<string | null>(null);
 
   if (shares.length === 0) {
     return (
@@ -41,51 +58,151 @@ export function SharesList({ shares, emptyMessage, role, onSharesChanged }: Shar
     );
   }
 
+  const editing = shares.find((s) => s.id === editId) ?? null;
+  const lockedFor = (s: ShareDto) => {
+    if (!s.reciprocalOf) return [];
+    const parent = incoming.find((p) => p.id === s.reciprocalOf);
+    return parent && parent.mustShareBack && (LIVE_STATUSES as readonly string[]).includes(parent.status)
+      ? parent.requiredBackSections
+      : [];
+  };
+
+  const resend = async (id: string) => {
+    if (resending) return;
+    setResending(id);
+    try {
+      const res = await postJson("POST", "/api/family/manage/resend", { shareId: id });
+      if (!res.ok) {
+        onChanged({ kind: "error", text: await errorMessage(res) });
+        return;
+      }
+      onChanged({ kind: "success", text: FAMILY_STRINGS.sharing_notice_resent });
+    } catch {
+      onChanged({ kind: "error", text: FAMILY_STRINGS.error_network });
+    } finally {
+      setResending(null);
+    }
+  };
+
   return (
     <>
-      <div className="grid gap-4">
-        {shares.map((share) => (
-          <ShareCard
-            key={share.id}
-            share={share}
-            role={role}
-            onRevoke={(id) => setRevokeShareId(id)}
-            onAccept={(id) => {
-              setAcceptDeclineShareId(id);
-              setAcceptDeclineAction("accept");
-            }}
-            onDecline={(id) => {
-              setAcceptDeclineShareId(id);
-              setAcceptDeclineAction("decline");
-            }}
-            _onSharesChanged={onSharesChanged}
-          />
-        ))}
-      </div>
+      <ul className="grid gap-4" aria-label={role === "owner" ? FAMILY_STRINGS.sharing_outgoing_title : FAMILY_STRINGS.sharing_incoming_title}>
+        {shares.map((share) => {
+          const canEnd = (ENDABLE_STATUSES as readonly string[]).includes(share.status);
+          const canEdit = role === "owner" && (LIVE_STATUSES as readonly string[]).includes(share.status);
+          const canResend = role === "owner" && share.status === "pending";
+          return (
+            <li key={share.id}>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <div className="min-w-0">
+                        <p className="font-medium break-words">
+                          {role === "owner" ? share.counterparty.email : share.counterparty.name}
+                        </p>
+                        {role === "owner" && share.counterparty.name && (
+                          <p className="text-sm text-muted-foreground break-words">{share.counterparty.name}</p>
+                        )}
+                      </div>
 
-      {/* Revoke dialog */}
-      {revokeShareId && (
+                      <div className="flex flex-wrap gap-2 items-center">
+                        <Badge variant="outline" className="gap-1.5">
+                          <StatusIcon status={share.status} />
+                          {STATUS_LABEL[share.status] ?? share.status}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {fill(FAMILY_STRINGS.sharing_list_sections_count, {
+                            count: share.sections.length,
+                            total: FAMILY_SECTIONS_V1.length,
+                          })}
+                        </span>
+                      </div>
+                      {share.sections.length > 0 && (
+                        <p className="text-xs text-muted-foreground">
+                          {share.sections.map(getSectionLabel).join(", ")}
+                        </p>
+                      )}
+
+                      <dl className="text-xs text-muted-foreground space-y-0.5">
+                        <div>
+                          <dt className="inline">{FAMILY_STRINGS.sharing_list_created_at}: </dt>
+                          <dd className="inline">{formatDateTimeLocal(share.createdAt)}</dd>
+                        </div>
+                        {share.acceptedAt && (
+                          <div>
+                            <dt className="inline">{FAMILY_STRINGS.sharing_list_accepted_at}: </dt>
+                            <dd className="inline">{formatDateTimeLocal(share.acceptedAt)}</dd>
+                          </div>
+                        )}
+                        {share.lastViewedAt && (
+                          <div>
+                            <dt className="inline">{FAMILY_STRINGS.sharing_list_last_viewed}: </dt>
+                            <dd className="inline">{formatDateTimeLocal(share.lastViewedAt)}</dd>
+                          </div>
+                        )}
+                      </dl>
+
+                      {share.mustShareBack && (
+                        <p className="text-xs font-medium text-blue-700 dark:text-blue-300">
+                          {fill(FAMILY_STRINGS.sharing_list_must_share_back, {
+                            sections: share.requiredBackSections.map(getSectionLabel).join(", "),
+                          })}
+                        </p>
+                      )}
+                      {role === "owner" && share.reconsentRequired && (
+                        <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                          {fill(FAMILY_STRINGS.sharing_list_reconsent_waiting, {
+                            sections: share.reconsentSections.map(getSectionLabel).join(", "),
+                          })}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      {canEdit && (
+                        <Button size="sm" variant="outline" onClick={() => setEditId(share.id)}>
+                          {FAMILY_STRINGS.sharing_list_edit_sections}
+                        </Button>
+                      )}
+                      {canResend && (
+                        <Button size="sm" variant="outline" disabled={resending === share.id} onClick={() => resend(share.id)}>
+                          {FAMILY_STRINGS.sharing_list_resend}
+                        </Button>
+                      )}
+                      {canEnd && (
+                        <Button size="sm" variant="outline" className="text-destructive" onClick={() => setRevokeId(share.id)}>
+                          {role === "owner" ? FAMILY_STRINGS.sharing_list_revoke : FAMILY_STRINGS.sharing_list_leave}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </li>
+          );
+        })}
+      </ul>
+
+      {revokeId && (
         <RevokeDialog
-          shareId={revokeShareId}
-          isOpen={true}
-          onClose={() => setRevokeShareId(null)}
+          shareId={revokeId}
+          role={role}
+          onClose={() => setRevokeId(null)}
           onSuccess={() => {
-            setRevokeShareId(null);
-            onSharesChanged();
+            setRevokeId(null);
+            onChanged({ kind: "success", text: FAMILY_STRINGS.sharing_notice_revoked });
           }}
         />
       )}
-
-      {/* Accept/Decline dialog */}
-      {acceptDeclineShareId && (
-        <AcceptDeclineDialog
-          shareId={acceptDeclineShareId}
-          action={acceptDeclineAction}
-          isOpen={true}
-          onClose={() => setAcceptDeclineShareId(null)}
-          onSuccess={() => {
-            setAcceptDeclineShareId(null);
-            onSharesChanged();
+      {editing && (
+        <ChangeSectionsDialog
+          share={editing}
+          lockedSections={lockedFor(editing)}
+          onClose={() => setEditId(null)}
+          onSaved={() => {
+            setEditId(null);
+            onChanged({ kind: "success", text: FAMILY_STRINGS.sharing_notice_sections_updated });
           }}
         />
       )}
@@ -93,163 +210,3 @@ export function SharesList({ shares, emptyMessage, role, onSharesChanged }: Shar
   );
 }
 
-function ShareCard({
-  share,
-  role,
-  onRevoke,
-  onAccept,
-  onDecline,
-  _onSharesChanged,
-}: {
-  share: ShareDto;
-  role: "owner" | "viewer";
-  onRevoke: (id: string) => void;
-  onAccept: (id: string) => void;
-  onDecline: (id: string) => void;
-  _onSharesChanged: () => void;
-}) {
-  const statusIcon = {
-    pending: <Clock className="h-5 w-5 text-amber-600" />,
-    awaiting_owner_unlock: <Clock className="h-5 w-5 text-amber-600" />,
-    active: <CheckCircle2 className="h-5 w-5 text-green-600" />,
-    suspended: <AlertCircle className="h-5 w-5 text-red-600" />,
-    revoked: <AlertCircle className="h-5 w-5 text-gray-400" />,
-    declined: <AlertCircle className="h-5 w-5 text-gray-400" />,
-    expired: <AlertCircle className="h-5 w-5 text-gray-400" />,
-    key_reset: <AlertCircle className="h-5 w-5 text-amber-600" />,
-  };
-
-  const statusLabel = {
-    pending: FAMILY_STRINGS.sharing_status_pending,
-    awaiting_owner_unlock: FAMILY_STRINGS.sharing_status_awaiting_unlock,
-    active: FAMILY_STRINGS.sharing_status_active,
-    suspended: FAMILY_STRINGS.sharing_status_suspended,
-    revoked: FAMILY_STRINGS.sharing_status_revoked,
-    declined: FAMILY_STRINGS.sharing_status_declined,
-    expired: FAMILY_STRINGS.sharing_status_expired,
-    key_reset: FAMILY_STRINGS.sharing_status_key_reset,
-  };
-
-  const isActive = ["active", "awaiting_owner_unlock"].includes(share.status);
-  const isPending = share.status === "pending" && role === "viewer";
-
-  return (
-    <Card>
-      <CardContent className="pt-6">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1 space-y-2">
-            {/* Counterparty info */}
-            <div>
-              <p className="font-medium">
-                {share.role === "owner" && "email" in share.counterparty
-                  ? share.counterparty.email
-                  : share.counterparty.name}
-              </p>
-              {"email" in share.counterparty && share.counterparty.name && (
-                <p className="text-sm text-muted-foreground">{share.counterparty.name}</p>
-              )}
-            </div>
-
-            {/* Status and sections */}
-            <div className="flex flex-wrap gap-2 items-center">
-              <Badge variant="outline" className="flex items-center gap-2">
-                {statusIcon[share.status as keyof typeof statusIcon]}
-                {statusLabel[share.status as keyof typeof statusLabel]}
-              </Badge>
-              {share.sections.length > 0 && (
-                <span className="text-xs text-muted-foreground">
-                  {share.sections.length} of 7 sections
-                </span>
-              )}
-            </div>
-
-            {/* Dates */}
-            <div className="text-xs text-muted-foreground space-y-1">
-              {share.createdAt && (
-                <div>
-                  {FAMILY_STRINGS.sharing_list_created_at}:{" "}
-                  {new Date(share.createdAt).toLocaleDateString()}
-                </div>
-              )}
-              {share.acceptedAt && (
-                <div>
-                  {FAMILY_STRINGS.sharing_list_accepted_at}:{" "}
-                  {new Date(share.acceptedAt).toLocaleDateString()}
-                </div>
-              )}
-              {share.lastViewedAt && (
-                <div>
-                  {FAMILY_STRINGS.sharing_list_last_viewed}:{" "}
-                  {new Date(share.lastViewedAt).toLocaleDateString()}
-                </div>
-              )}
-            </div>
-
-            {/* Must share back info */}
-            {share.mustShareBack && (
-              <div className="text-xs text-blue-600 font-medium">
-                Must share back: {share.requiredBackSections?.join(", ") || "all sections"}
-              </div>
-            )}
-
-            {/* Re-consent required */}
-            {share.reconsentRequired && (
-              <div className="text-xs text-amber-600 font-medium">
-                Changes require approval: {share.reconsentSections?.join(", ")}
-              </div>
-            )}
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center gap-2">
-            {isPending && (
-              <>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => onDecline(share.id)}
-                >
-                  {FAMILY_STRINGS.sharing_list_decline}
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() => onAccept(share.id)}
-                >
-                  {FAMILY_STRINGS.sharing_list_accept}
-                </Button>
-              </>
-            )}
-            {isActive && (
-              <DropdownMenu>
-                <DropdownMenuTrigger render={<Button size="sm" variant="ghost" className="h-8 w-8 p-0" />}>
-                  <MoreHorizontal className="h-4 w-4" />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {role === "owner" && (
-                    <>
-                      <DropdownMenuItem onClick={() => {}}>
-                        {FAMILY_STRINGS.sharing_list_edit_sections}
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                    </>
-                  )}
-                  {role === "owner" && (
-                    <DropdownMenuItem onClick={() => {}}>
-                      {FAMILY_STRINGS.sharing_list_resend}
-                    </DropdownMenuItem>
-                  )}
-                  <DropdownMenuItem
-                    onClick={() => onRevoke(share.id)}
-                    className="text-red-600"
-                  >
-                    {FAMILY_STRINGS.sharing_list_revoke}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
