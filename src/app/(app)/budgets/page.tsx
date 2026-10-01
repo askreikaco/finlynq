@@ -1,5 +1,4 @@
 "use client";
-import { PageHeader } from "@/components/mobile";
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
@@ -25,6 +24,7 @@ import {
   AlertTriangle, ArrowDownRight, Copy,
 } from "lucide-react";
 import { AmountInput } from "@/components/amount-input";
+import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
 
 type Budget = {
   id: number;
@@ -412,16 +412,23 @@ export default function BudgetsPage() {
     <div className="space-y-6">
       <OnboardingTips page="budgets" />
       {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Budgets</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Set spending limits and track how you&apos;re doing each month.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
+      <PageHeader
+        className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
+        title="Budgets"
+        subtitle="Set spending limits and track how you're doing each month."
+        actionsClassName="flex flex-wrap items-center gap-2"
+        overflow={[
+          mode === "traditional"
+            ? { label: "Switch to Envelope mode", icon: Wallet, onSelect: () => setMode("envelope") }
+            : { label: "Switch to Traditional mode", icon: LayoutGrid, onSelect: () => setMode("traditional") },
+          ...(budgets.length > 0 ? [{ label: "Save Template", icon: Save, onSelect: () => setTemplateDialogOpen(true) }] : []),
+          ...(templateNames.length > 0 ? [{ label: "Apply Template", icon: FileDown, onSelect: () => setApplyTemplateDialogOpen(true) }] : []),
+          ...(mode === "envelope" && budgets.length >= 2 ? [{ label: "Move Money", icon: ArrowRightLeft, onSelect: () => setMoveMoneyDialogOpen(true) }] : []),
+        ]}
+        actions={
+        <>
           {/* Mode toggle */}
-          <div className="inline-flex items-center rounded-lg border bg-background p-0.5 shadow-sm">
+          <div className="inline-flex items-center rounded-lg border bg-background p-0.5 shadow-sm max-md:hidden">
             <button
               className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-150 flex items-center gap-1.5 ${
                 mode === "traditional"
@@ -451,7 +458,7 @@ export default function BudgetsPage() {
           {/* Template buttons */}
           {budgets.length > 0 && (
             <Dialog open={templateDialogOpen} onOpenChange={setTemplateDialogOpen}>
-              <DialogTrigger render={<Button variant="outline" size="sm" />}>
+              <DialogTrigger render={<Button variant="outline" size="sm" className={HEADER_DESKTOP_ONLY} />}>
                 <Save className="h-4 w-4 mr-1" /> Save Template
               </DialogTrigger>
               <DialogContent>
@@ -484,7 +491,7 @@ export default function BudgetsPage() {
 
           {templateNames.length > 0 && (
             <Dialog open={applyTemplateDialogOpen} onOpenChange={(open) => { setApplyTemplateDialogOpen(open); if (open) setCopyError(""); }}>
-              <DialogTrigger render={<Button variant="outline" size="sm" />}>
+              <DialogTrigger render={<Button variant="outline" size="sm" className={HEADER_DESKTOP_ONLY} />}>
                 <FileDown className="h-4 w-4 mr-1" /> Apply Template
               </DialogTrigger>
               <DialogContent>
@@ -532,7 +539,7 @@ export default function BudgetsPage() {
           {/* Move Money (envelope mode) */}
           {mode === "envelope" && budgets.length >= 2 && (
             <Dialog open={moveMoneyDialogOpen} onOpenChange={(open) => { setMoveMoneyDialogOpen(open); if (!open) setMoveError(""); }}>
-              <DialogTrigger render={<Button variant="outline" size="sm" />}>
+              <DialogTrigger render={<Button variant="outline" size="sm" className={HEADER_DESKTOP_ONLY} />}>
                 <ArrowRightLeft className="h-4 w-4 mr-1" /> Move Money
               </DialogTrigger>
               <DialogContent>
@@ -635,8 +642,9 @@ export default function BudgetsPage() {
               </form>
             </DialogContent>
           </Dialog>
-        </div>
-      </div>
+        </>
+        }
+      />
 
       {/* Month nav */}
       <div className="inline-flex items-center gap-2 rounded-xl bg-muted/50 px-2 py-1.5">

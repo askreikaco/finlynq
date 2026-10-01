@@ -430,7 +430,7 @@ export default function AccountDetailPage() {
         titleClassName="text-2xl font-bold tracking-tight"
         actionsClassName="flex flex-wrap items-center gap-1.5 w-full sm:w-auto"
         lead={
-          <div className={`h-10 w-10 rounded-xl flex items-center justify-center text-sm font-bold ${account.type === "A" ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
+          <div className={`h-10 w-10 shrink-0 rounded-xl flex items-center justify-center text-sm font-bold ${account.type === "A" ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
             {(account.name ?? "?").charAt(0)}
           </div>
         }

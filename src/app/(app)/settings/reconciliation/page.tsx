@@ -1,5 +1,4 @@
 "use client";
-import { PageHeader } from "@/components/mobile";
 
 /**
  * /settings/reconciliation — fuzzy-match thresholds + Rules + Import sections.
@@ -27,6 +26,7 @@ import { useOpenSection } from "@/components/settings/use-open-section";
 import { AmountInput } from "@/components/amount-input";
 import { RulesSection } from "@/components/settings/sections/rules-section";
 import { ImportSection } from "@/components/settings/sections/import-section";
+import { PageHeader } from "@/components/mobile";
 
 interface Thresholds {
   dateToleranceDays: number;
@@ -123,10 +123,10 @@ export default function ReconciliationSettingsPage() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Reconciliation</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          Tune how the{" "}
+      <PageHeader
+          title="Reconciliation"
+          titleClassName="text-2xl font-bold tracking-tight"
+          subtitle={<>Tune how the{" "}
           <Link
             href="/reconcile"
             className="underline underline-offset-2 inline-flex items-center gap-1"
@@ -136,9 +136,9 @@ export default function ReconciliationSettingsPage() {
             <ExternalLink className="h-3 w-3" />
           </Link>{" "}
           page surfaces fuzzy matches between bank-ledger rows and
-          transactions.
-        </p>
-      </div>
+          transactions.</>}
+          subtitleClassName="text-sm text-muted-foreground mt-0.5"
+        />
 
       <Card>
         <CardHeader>

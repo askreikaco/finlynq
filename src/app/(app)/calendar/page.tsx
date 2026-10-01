@@ -1,5 +1,4 @@
 "use client";
-import { PageHeader } from "@/components/mobile";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,6 +16,7 @@ import {
   CalendarDays,
 } from "lucide-react";
 import { formatDateNames, getDisplayLocale, weekdayShortNames } from "@/lib/locale";
+import { PageHeader } from "@/components/mobile";
 
 type CalendarEvent = {
   date: string;
@@ -234,12 +234,12 @@ function CalendarPageContent() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold">Bill Calendar</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          View expected bills and income throughout the month
-        </p>
-      </div>
+      <PageHeader
+          title="Bill Calendar"
+          titleClassName="text-2xl font-bold"
+          subtitle="View expected bills and income throughout the month"
+          subtitleClassName="text-sm text-muted-foreground mt-1"
+        />
 
       {/* Month navigation */}
       <div className="flex items-center justify-between">

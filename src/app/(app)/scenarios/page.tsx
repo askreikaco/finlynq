@@ -1,5 +1,4 @@
 "use client";
-import { PageHeader } from "@/components/mobile";
 
 import { DevModeGuard } from "@/components/dev-mode-guard";
 
@@ -19,6 +18,7 @@ import {
 } from "recharts";
 import { Home, PiggyBank, CreditCard, TrendingUp, Calculator } from "lucide-react";
 import { AmountInput } from "@/components/amount-input";
+import { PageHeader } from "@/components/mobile";
 
 // --- Types ---
 type HomePurchaseResult = {
@@ -520,12 +520,12 @@ function IncomeChangeTab() {
 function ScenariosPageContent() {
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Scenario Planner</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Model financial decisions and see their long-term impact
-        </p>
-      </div>
+      <PageHeader
+          title="Scenario Planner"
+          titleClassName="text-2xl font-bold"
+          subtitle="Model financial decisions and see their long-term impact"
+          subtitleClassName="text-sm text-muted-foreground mt-1"
+        />
 
       <Tabs defaultValue="home-purchase">
         <TabsList>

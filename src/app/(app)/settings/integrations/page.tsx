@@ -1,5 +1,4 @@
 "use client";
-import { PageHeader } from "@/components/mobile";
 
 /**
  * /settings/integrations — MCP setup guide + Connected apps + Bank feeds.
@@ -20,6 +19,7 @@ import { ConnectedApps } from "./connected-apps";
 import { BankFeedsSection } from "@/components/settings/sections/bank-feeds-section";
 import { useOpenSection } from "@/components/settings/use-open-section";
 import { isMcpConnected } from "@/lib/mcp/connected";
+import { PageHeader } from "@/components/mobile";
 
 interface ConnectedAppsData {
   apps: { id: number }[];
@@ -59,10 +59,12 @@ export default function IntegrationsSettingsPage() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Integrations</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">External tools and bank connections</p>
-      </div>
+      <PageHeader
+          title="Integrations"
+          titleClassName="text-2xl font-bold tracking-tight"
+          subtitle="External tools and bank connections"
+          subtitleClassName="text-sm text-muted-foreground mt-0.5"
+        />
 
       {loaded && !isConnected && (
         <Card className="border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30">
