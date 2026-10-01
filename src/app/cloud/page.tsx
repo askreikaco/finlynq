@@ -13,9 +13,9 @@ import {
   googleErrorMessage,
 } from "@/lib/auth/google-ui";
 
-type Tab = "login" | "register";
+type FlowStep = "identify" | "signin" | "signup";
+type Screen = "options" | "email";
 
-// Live availability check is debounced; this is the wait period.
 const USERNAME_CHECK_DEBOUNCE_MS = 350;
 
 type AvailabilityState =
@@ -27,48 +27,64 @@ type AvailabilityState =
 function CloudAuthPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialTab = searchParams.get("tab") === "register" ? "register" : "login";
   const redirectTo = safeNext(searchParams.get("redirect") ?? searchParams.get("next"));
   const stepParam = searchParams.get("step");
   const step: "unlock" | "mfa" | null = stepParam === "unlock" || stepParam === "mfa" ? stepParam : null;
   const googleError = searchParams.get("error");
-  const googleSignup = searchParams.get("google") === "1" && initialTab === "register";
-  // ?demo=1 pre-fills the login form with the published demo credentials so
-  // a marketing link can drop users one click away from Sign In. Reuses the
-  // normal /api/auth/login path (no auto-submit) so the user explicitly
-  // consents to the action. For zero-click full auto-login + redirect, see
-  // the /try-demo route.
+  const googleSignup = searchParams.get("google") === "1";
   const demoPrefill = searchParams.get("demo") === "1";
   const addingAccount = searchParams.get("add") === "1";
   const prefillEmail = (searchParams.get("email") || "").slice(0, 254);
-  // Email of the account that stays signed in during an add flow (text only).
-  const [stayEmail, setStayEmail] = useState<string | null>(null);
-  const [tab, setTab] = useState<Tab>(initialTab);
+  const modeParam = searchParams.get("mode");
+  const tabParam = searchParams.get("tab");
 
-  // Login form: single 'identifier' field accepts username OR email.
-  const [identifier, setIdentifier] = useState(
-    prefillEmail || (demoPrefill ? "demo@finlynq.com" : ""),
+  const [stayEmail, setStayEmail] = useState<string | null>(null);
+
+  // Determine if email flow should open by default
+  const shouldOpenEmailByDefault = Boolean(
+    prefillEmail ||
+    modeParam === "signup" ||
+    tabParam === "create" ||
+    (googleError && googleError.startsWith("google_"))
   );
 
-  // Register form: username (required), email (optional), display name.
-  const [username, setUsername] = useState("");
-  const [registerEmail, setRegisterEmail] = useState("");
+  // Screen state
+  const [screen, setScreen] = useState<Screen>(shouldOpenEmailByDefault ? "email" : "options");
+
+  // Email flow step
+  const [flowStep, setFlowStep] = useState<FlowStep>("identify");
+
+  // Identifier field (email or username)
+  const [identifier, setIdentifier] = useState(prefillEmail || "");
+
+  // Sign in: password only
+  const [password, setPassword] = useState(demoPrefill ? "finlynq-demo" : "");
+
+  // Sign up: password, confirm, display name, and email
+  const [signupPassword, setSignupPassword] = useState("");
+  const [signupConfirmPassword, setSignupConfirmPassword] = useState("");
+  const [signupEmail, setSignupEmail] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [acknowledgeNoRecovery, setAcknowledgeNoRecovery] = useState(false);
 
-  const [password, setPassword] = useState(demoPrefill ? "finlynq-demo" : "");
-  const [displayName, setDisplayName] = useState("");
+  // Error & loading
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // MFA
   const [mfaRequired, setMfaRequired] = useState(false);
   const [mfaPendingToken, setMfaPendingToken] = useState("");
   const [mfaCode, setMfaCode] = useState("");
-  // 2FA step: authenticator code (default) or a one-time recovery code.
   const [mfaMode, setMfaMode] = useState<"totp" | "recovery">("totp");
   const [recoveryCode, setRecoveryCode] = useState("");
-  // "This is a shared computer": no trusted-device cookie is issued (trustDevice:false).
+
+  // Shared computer
   const [sharedComputer, setSharedComputer] = useState(false);
+
+  // Passkey support
   const [passkeySupported, setPasskeySupported] = useState(false);
 
+  // Availability check
   const [availability, setAvailability] = useState<AvailabilityState>({
     status: "idle",
   });
@@ -78,46 +94,13 @@ function CloudAuthPageInner() {
   const [unlockPassword, setUnlockPassword] = useState("");
   const [unlockEmail, setUnlockEmail] = useState("");
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const [signupDisabled, setSignupDisabled] = useState(false);
+  const passkeyAutoAttemptedRef = useRef(false);
 
-  // Debounced live check against /api/auth/username-check. We bump a
-  // sequence number on each fire so a slow earlier response can't overwrite
-  // the result of a later input.
-  useEffect(() => {
-    if (tab !== "register") {
-      setAvailability({ status: "idle" });
-      return;
-    }
-    const value = username.trim();
-    if (value.length === 0) {
-      setAvailability({ status: "idle" });
-      return;
-    }
-    setAvailability({ status: "checking" });
-    const seq = ++checkSeqRef.current;
-    const timer = setTimeout(async () => {
-      try {
-        const r = await fetch(
-          `/api/auth/username-check?u=${encodeURIComponent(value)}`
-        );
-        const data = await r.json();
-        if (seq !== checkSeqRef.current) return;
-        if (data.available) {
-          setAvailability({ status: "available" });
-        } else {
-          setAvailability({
-            status: "unavailable",
-            reason: data.error ?? "Unavailable",
-          });
-        }
-      } catch {
-        if (seq !== checkSeqRef.current) return;
-        setAvailability({ status: "idle" });
-      }
-    }, USERNAME_CHECK_DEBOUNCE_MS);
-    return () => clearTimeout(timer);
-  }, [username, tab]);
+  // Check if identifier is email
+  const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier);
 
-  // Add-account mode: learn who stays signed in (banner copy).
+  // Add-account mode
   useEffect(() => {
     if (!addingAccount) return;
     let cancelled = false;
@@ -137,7 +120,7 @@ function CloudAuthPageInner() {
     };
   }, [addingAccount]);
 
-  // Cancel the add flow: clear pf_add server-side, then leave (sessions untouched).
+  // Cancel the add flow
   const cancelAdd = async () => {
     try {
       await fetch("/api/auth/add-intent", { method: "DELETE" });
@@ -147,24 +130,99 @@ function CloudAuthPageInner() {
     hardReload("/dashboard");
   };
 
-  // Passkeys need the WebAuthn API; feature-detect after mount (SSR-safe).
+  // Passkeys feature detection
   useEffect(() => {
     setPasskeySupported(typeof window !== "undefined" && typeof window.PublicKeyCredential !== "undefined");
   }, []);
 
-  // Fetch Google config on mount
+  // Fetch config
   useEffect(() => {
     const fetchConfig = async () => {
       try {
         const res = await fetch("/api/auth/config");
         const data = await res.json();
         setGoogleEnabled(data.googleEnabled ?? false);
+        setSignupDisabled(data.signupDisabled ?? false);
       } catch {
         setGoogleEnabled(false);
       }
     };
     fetchConfig();
   }, []);
+
+  // Auto passkey for returning users
+  useEffect(() => {
+    // Skip if:
+    // - already attempted
+    // - on options screen (will be triggered by button instead)
+    // - has google error/signup intent/add-account intent
+    // - skip flag is set
+    if (
+      passkeyAutoAttemptedRef.current ||
+      screen === "options" ||
+      googleError ||
+      modeParam === "signup" ||
+      tabParam === "create" ||
+      addingAccount
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const attemptAutoPasskey = async () => {
+      try {
+        const skipFlag = localStorage.getItem("pf-passkey-auto-skip");
+        if (skipFlag === "1") return;
+
+        const hint = localStorage.getItem("pf-passkey-hint");
+        if (hint !== "1") return;
+
+        if (typeof window === "undefined" || !window.PublicKeyCredential) return;
+
+        passkeyAutoAttemptedRef.current = true;
+
+        setLoading(true);
+        const r = await passkeyLogin({ trustDevice: !sharedComputer });
+        if (!cancelled) {
+          if (r.ok) {
+            hardReload(redirectTo);
+            return;
+          }
+          if (r.code === "prf_unavailable") {
+            setError("This passkey can't unlock your data on its own. Enter your password to continue.");
+            document.getElementById("password")?.focus();
+          }
+          // On error or cancel, set skip flag and fall back to normal screen
+          try {
+            localStorage.setItem("pf-passkey-auto-skip", "1");
+          } catch {}
+          setScreen("options");
+        }
+      } catch (err) {
+        if (!cancelled) {
+          const name = (err as { name?: string })?.name;
+          // Silently fall back on NotAllowedError (no user gesture)
+          if (name !== "NotAllowedError" && name !== "AbortError") {
+            setError("Passkey sign-in failed.");
+          }
+          try {
+            localStorage.setItem("pf-passkey-auto-skip", "1");
+          } catch {}
+          setScreen("options");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    attemptAutoPasskey();
+    return () => {
+      cancelled = true;
+    };
+  }, [screen, googleError, modeParam, tabParam, addingAccount, redirectTo, sharedComputer]);
 
   // Handle query params: step, error, google signup
   useEffect(() => {
@@ -174,11 +232,10 @@ function CloudAuthPageInner() {
       setError(googleErrorMessage(googleError));
       // Strip error from URL
       const qs = new URLSearchParams();
-      if (tab === "register") qs.set("tab", "register");
       if (redirectTo !== "/dashboard") qs.set("redirect", redirectTo);
       router.replace(`/cloud${qs.toString() ? `?${qs}` : ""}`);
     }
-  }, [step, googleError, tab, redirectTo, router]);
+  }, [step, googleError, redirectTo, router]);
 
   // Fetch pending Google data for signup prefill
   useEffect(() => {
@@ -192,8 +249,10 @@ function CloudAuthPageInner() {
         }
         const data = await res.json();
         if (data.kind === "signup") {
-          setRegisterEmail(data.email ?? "");
+          setIdentifier(data.email ?? "");
+          setSignupEmail(data.email ?? "");
           setDisplayName(data.name ?? "");
+          setFlowStep("signup");
         }
       } catch {
         setError(googleErrorMessage("google_no_state"));
@@ -227,6 +286,47 @@ function CloudAuthPageInner() {
     }
   }, [step]);
 
+  // Handle identify: check if email/username exists
+  const handleIdentify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    if (!identifier.trim()) {
+      setError("Please enter an email or username");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/identify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier: identifier.trim() }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error || "Something went wrong");
+        return;
+      }
+
+      const data = await res.json();
+      if (data.exists) {
+        setFlowStep("signin");
+      } else {
+        if (isEmail) {
+          setSignupEmail(identifier.trim());
+          setFlowStep("signup");
+        } else {
+          setError("No account with that username. Use your email to create one.");
+        }
+      }
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -235,7 +335,6 @@ function CloudAuthPageInner() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // trustDevice defaults to true server-side; only the opt-out is sent.
         body: JSON.stringify({ identifier, password, ...(sharedComputer ? { trustDevice: false } : {}) }),
       });
       const data = await res.json();
@@ -248,6 +347,9 @@ function CloudAuthPageInner() {
         setMfaPendingToken(data.mfaPendingToken);
         return;
       }
+      try {
+        localStorage.setItem("pf-passkey-hint", "1");
+      } catch {}
       hardReload(redirectTo);
     } catch {
       setError("Something went wrong. Please try again.");
@@ -266,7 +368,6 @@ function CloudAuthPageInner() {
         code: recovery ? recoveryCode.trim() : mfaCode,
         ...(sharedComputer ? { trustDevice: false } : {}),
       };
-      // Only include mfaPendingToken if it's a non-empty string
       if (mfaPendingToken) {
         body.mfaPendingToken = mfaPendingToken;
       }
@@ -280,6 +381,9 @@ function CloudAuthPageInner() {
         setError(data.error || "Verification failed");
         return;
       }
+      try {
+        localStorage.setItem("pf-passkey-hint", "1");
+      } catch {}
       hardReload(redirectTo);
     } catch {
       setError("Something went wrong. Please try again.");
@@ -288,7 +392,7 @@ function CloudAuthPageInner() {
     }
   };
 
-  // 2FA step: passkey assertion (mfa/webauthn/options -> verify).
+  // 2FA step: passkey assertion
   const handleMfaPasskey = async () => {
     setError("");
     setLoading(true);
@@ -320,10 +424,12 @@ function CloudAuthPageInner() {
         setError(data.error || "Passkey verification failed.");
         return;
       }
+      try {
+        localStorage.setItem("pf-passkey-hint", "1");
+      } catch {}
       hardReload(redirectTo);
     } catch (err) {
       const name = (err as { name?: string })?.name;
-      // Cancelled prompt: stay on the step silently.
       if (name !== "NotAllowedError" && name !== "AbortError") {
         setError("Passkey verification failed.");
       }
@@ -332,23 +438,29 @@ function CloudAuthPageInner() {
     }
   };
 
-  // Sign in with a passkey (no password). prf_unavailable -> continue with the password.
+  // Sign in with a passkey (no password).
   const handlePasskeyLogin = async () => {
     setError("");
     setLoading(true);
     try {
       const r = await passkeyLogin({ trustDevice: !sharedComputer });
       if (r.ok) {
+        try {
+          localStorage.setItem("pf-passkey-hint", "1");
+        } catch {}
         hardReload(redirectTo);
         return;
       }
       if (r.code === "prf_unavailable") {
         setError("This passkey can't unlock your data on its own. Enter your password to continue.");
-        document.getElementById("password")?.focus();
+        setScreen("email");
+        setFlowStep("signin");
+        document.getElementById("signin-password")?.focus();
+      } else if (r.code === "cancelled") {
+        // Silent - user cancelled the prompt
       } else if (r.code === "failed") {
         setError("Passkey sign-in failed. Try again or use your password.");
       }
-      // cancelled: silent
     } finally {
       setLoading(false);
     }
@@ -357,26 +469,31 @@ function CloudAuthPageInner() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    // Last-mile guard. The server enforces this too, but failing fast in the
-    // UI avoids a roundtrip and keeps the message inline.
-    if (!googleSignup && !registerEmail.trim() && !acknowledgeNoRecovery) {
+
+    if (signupPassword !== signupConfirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
+    if (!googleSignup && !signupEmail.trim() && !acknowledgeNoRecovery) {
       setError(
         "Without an email you have no way to recover a forgotten password. Tick the acknowledgement box to proceed."
       );
       return;
     }
+
     setLoading(true);
     try {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          username,
-          email: registerEmail.trim() || undefined,
-          password,
+          username: identifier,
+          email: signupEmail.trim() || undefined,
+          password: signupPassword,
           displayName: displayName || undefined,
           googleSignup: googleSignup || undefined,
-          acknowledgeNoRecovery: !googleSignup && !registerEmail.trim() ? true : undefined,
+          acknowledgeNoRecovery: !googleSignup && !signupEmail.trim() ? true : undefined,
         }),
       });
       const data = await res.json();
@@ -384,6 +501,9 @@ function CloudAuthPageInner() {
         setError(data.error || "Registration failed");
         return;
       }
+      try {
+        localStorage.setItem("pf-passkey-hint", "1");
+      } catch {}
       hardReload(redirectTo);
     } catch {
       setError("Something went wrong. Please try again.");
@@ -391,18 +511,6 @@ function CloudAuthPageInner() {
       setLoading(false);
     }
   };
-
-  const usernameHelpId = "username-help";
-  const showAck = tab === "register" && !googleSignup && registerEmail.trim().length === 0;
-  const submitDisabled =
-    loading ||
-    (tab === "register" &&
-      (availability.status === "checking" ||
-        availability.status === "unavailable" ||
-        username.trim().length === 0 ||
-        (showAck && !acknowledgeNoRecovery) ||
-        !password)) ||
-    (step === "unlock" && (!unlockPassword || loading));
 
   const handleUnlock = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -434,6 +542,9 @@ function CloudAuthPageInner() {
         setMfaRequired(true);
         router.replace(`/cloud?step=mfa&redirect=${encodeURIComponent(redirectTo)}`);
       } else {
+        try {
+          localStorage.setItem("pf-passkey-hint", "1");
+        } catch {}
         hardReload(redirectTo);
       }
     } catch {
@@ -443,11 +554,13 @@ function CloudAuthPageInner() {
     }
   };
 
+  const passwordInputId = flowStep === "signin" ? "signin-password" : "signup-password";
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-dot-pattern ambient-glow">
-      <div className="mx-auto w-full max-w-md px-6 py-12">
+    <div className="flex min-h-screen items-center justify-center bg-dot-pattern ambient-glow" style={{ paddingTop: "max(var(--sat, 0px), 1rem)", paddingBottom: "max(var(--sab, 0px), 1rem)" }}>
+      <div className="mx-auto w-full max-w-sm px-6 py-12 flex flex-col items-center justify-center">
         {addingAccount && stayEmail && (
-          <div className="mb-6 rounded-lg border border-blue-500/30 bg-blue-500/5 px-4 py-3">
+          <div className="mb-6 rounded-lg border border-blue-500/30 bg-blue-500/5 px-4 py-3 w-full">
             <div className="flex items-center justify-between gap-2">
               <p className="text-sm text-blue-600 dark:text-blue-400 min-w-0 break-words">
                 Adding another account — you&apos;ll stay signed in as {stayEmail}
@@ -464,35 +577,23 @@ function CloudAuthPageInner() {
           </div>
         )}
 
-        <Link
-          href="/"
-          className="mb-8 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-        >
-          ← Back
-        </Link>
-
         <div className="mb-6 flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-primary/30 bg-primary/10">
           <span className="[&_svg]:h-9 [&_svg]:w-9">
             <LogoMark />
           </span>
         </div>
 
-        <h1 className="mb-2 text-3xl font-bold tracking-tight text-foreground">
-          {tab === "register" ? "Create your free Finlynq account" : "Welcome back"}
+        <h1 className="mb-2 text-center text-3xl font-bold tracking-tight text-foreground">
+          {flowStep === "signup" ? "Create your account" : "Welcome back"}
         </h1>
-        <p className="mb-8 text-muted-foreground">
-          {tab === "register"
+        <p className="mb-8 text-center text-muted-foreground">
+          {flowStep === "signup"
             ? "Sign up to track your money here and analyze it anywhere. Your data follows you to any device."
             : "Sign in to your account. Your data follows you to any device."}
         </p>
-        {tab === "register" && (
-          <p className="mb-8 -mt-6 text-xs text-muted-foreground/80">
-            Free forever. AGPL v3. Encrypted with your password.
-          </p>
-        )}
 
         {step === "unlock" && !mfaRequired ? (
-          <form onSubmit={handleUnlock} className="space-y-4">
+          <form onSubmit={handleUnlock} className="space-y-4 w-full">
             <h2
               ref={headingRef}
               tabIndex={-1}
@@ -509,18 +610,16 @@ function CloudAuthPageInner() {
               </p>
             )}
             <div>
-              <label htmlFor="google-unlock-password" className="mb-1.5 block text-sm font-medium text-foreground">
-                Password
-              </label>
               <input
                 id="google-unlock-password"
                 type="password"
                 value={unlockPassword}
                 onChange={(e) => setUnlockPassword(e.target.value)}
-                placeholder="Your password"
+                placeholder="Password"
                 required
                 autoComplete="current-password"
                 autoFocus
+                aria-label="Password"
                 className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
@@ -544,7 +643,7 @@ function CloudAuthPageInner() {
             </div>
           </form>
         ) : mfaRequired ? (
-          <form onSubmit={handleMfaVerify} className="space-y-4">
+          <form onSubmit={handleMfaVerify} className="space-y-4 w-full">
             <div className="rounded-xl border border-border bg-card p-5">
               <h2
                 ref={headingRef}
@@ -630,247 +729,57 @@ function CloudAuthPageInner() {
               </button>
             </div>
           </form>
-        ) : (
+        ) : screen === "options" ? (
+          // Default options screen
           <>
-            {demoPrefill && tab === "login" && (
-              <div className="mb-6 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2.5 text-xs text-foreground/90">
-                Demo credentials are pre-filled. Just click <strong>Sign In</strong> to
-                enter the public demo. Data resets nightly.
-              </div>
+            {googleEnabled && (
+              <a
+                href={googleStartUrl("login", redirectTo)}
+                className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                </svg>
+                Continue with Google
+              </a>
             )}
 
-            {googleEnabled && step === null && (
-              <>
-                <a
-                  href={googleStartUrl("login", redirectTo)}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-background px-4 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
-                >
-                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-                  </svg>
-                  Continue with Google
-                </a>
-                <div className="mb-4 flex items-center gap-3">
-                  <div className="flex-1 border-t border-border" />
-                  <span className="text-xs text-muted-foreground">or</span>
-                  <div className="flex-1 border-t border-border" />
-                </div>
-              </>
-            )}
-
-            {step === null && tab === "login" && passkeySupported && (
+            {passkeySupported && (
               <button
                 type="button"
                 onClick={handlePasskeyLogin}
                 disabled={loading}
                 className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-background px-4 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-muted disabled:opacity-50"
               >
-                Sign in with a passkey
+                {loading ? "Signing in..." : "Sign in with a passkey"}
               </button>
             )}
 
-            {/* Tab switcher */}
-            {step === null && (
-            <div className="mb-6 flex rounded-xl border border-border bg-muted p-1">
-              <button
-                onClick={() => { setTab("login"); setError(""); }}
-                className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                  tab === "login"
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Sign In
-              </button>
-              <button
-                onClick={() => { setTab("register"); setError(""); }}
-                className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                  tab === "register"
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Create Account
-              </button>
-            </div>
+            <label className="mb-4 flex items-center gap-2 text-xs text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={sharedComputer}
+                onChange={(e) => setSharedComputer(e.target.checked)}
+                className="h-4 w-4 rounded border-border bg-background accent-primary"
+              />
+              This is a shared computer
+            </label>
+
+            {error && (
+              <p className="mb-4 text-sm text-destructive" role="alert" aria-live="assertive">{error}</p>
             )}
 
-            {step === null && (
-            <form
-              onSubmit={tab === "login" ? handleLogin : handleRegister}
-              className="space-y-4"
+            <button
+              type="button"
+              onClick={() => setScreen("email")}
+              className="text-center text-sm text-muted-foreground underline underline-offset-2 hover:text-foreground"
             >
-              {tab === "register" && (
-                <>
-                  <div>
-                    <label htmlFor="displayName" className="mb-1.5 block text-sm font-medium text-foreground">
-                      Display Name
-                    </label>
-                    <input
-                      id="displayName"
-                      type="text"
-                      value={displayName}
-                      onChange={(e) => setDisplayName(e.target.value)}
-                      placeholder="Your name (optional)"
-                      className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                    />
-                  </div>
+              Use email instead
+            </button>
 
-                  <div>
-                    <label htmlFor="username" className="mb-1.5 block text-sm font-medium text-foreground">
-                      Username
-                    </label>
-                    <input
-                      id="username"
-                      type="text"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      placeholder="e.g. cool-dragon-99 or anon@madeup.fake"
-                      required
-                      autoComplete="username"
-                      aria-describedby={usernameHelpId}
-                      className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                      autoFocus
-                    />
-                    <p
-                      id={usernameHelpId}
-                      className="mt-1.5 text-xs text-muted-foreground/80"
-                    >
-                      3 to 254 chars. Letters, digits, and{" "}
-                      <span className="font-mono">. @ + _ -</span>. Pick something that hides your
-                      identity if your data ever leaks.
-                    </p>
-                    {availability.status === "checking" && (
-                      <p className="mt-1 text-xs text-muted-foreground">Checking…</p>
-                    )}
-                    {availability.status === "available" && (
-                      <p className="mt-1 text-xs text-emerald-500">Available</p>
-                    )}
-                    {availability.status === "unavailable" && (
-                      <p className="mt-1 text-xs text-destructive">{availability.reason}</p>
-                    )}
-                  </div>
-                </>
-              )}
-
-              {tab === "login" && (
-                <div>
-                  <label htmlFor="identifier" className="mb-1.5 block text-sm font-medium text-foreground">
-                    Username or email
-                  </label>
-                  <input
-                    id="identifier"
-                    type="text"
-                    value={identifier}
-                    onChange={(e) => setIdentifier(e.target.value)}
-                    placeholder="username or you@example.com"
-                    required
-                    autoComplete="username"
-                    className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                    autoFocus
-                  />
-                </div>
-              )}
-
-              {tab === "register" && (
-                <div>
-                  <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-foreground">
-                    Email {!googleSignup && <span className="text-muted-foreground/70 font-normal">(optional)</span>}
-                  </label>
-                  <input
-                    id="email"
-                    type="email"
-                    value={registerEmail}
-                    onChange={(e) => setRegisterEmail(e.target.value)}
-                    readOnly={googleSignup}
-                    placeholder="you@example.com"
-                    autoComplete="email"
-                    className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
-                  />
-                  <p className="mt-1.5 text-xs text-muted-foreground/80">
-                    {googleSignup
-                      ? "From your Google account"
-                      : "Used only for password reset. Leave it blank for full zero-knowledge, but then you’ll have no way to recover a forgotten password."
-                    }
-                  </p>
-                </div>
-              )}
-
-              <div>
-                <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-foreground">
-                  Password
-                </label>
-                <input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder={tab === "register" ? "At least 12 characters" : "Your password"}
-                  required
-                  minLength={tab === "register" ? 12 : 1}
-                  autoComplete={tab === "register" ? "new-password" : "current-password"}
-                  className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                />
-                {tab === "login" && (
-                  <Link
-                    href="/auth/forgot-password"
-                    prefetch={false}
-                    className="mt-1.5 inline-block text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
-                  >
-                    Forgot password?
-                  </Link>
-                )}
-              </div>
-
-              {tab === "login" && (
-                <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <input
-                    type="checkbox"
-                    checked={sharedComputer}
-                    onChange={(e) => setSharedComputer(e.target.checked)}
-                    className="h-4 w-4 rounded border-border bg-background accent-primary"
-                  />
-                  This is a shared computer
-                </label>
-              )}
-
-              {showAck && (
-                <label className="flex items-start gap-2.5 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2.5 text-xs text-amber-200/90">
-                  <input
-                    type="checkbox"
-                    checked={acknowledgeNoRecovery}
-                    onChange={(e) => setAcknowledgeNoRecovery(e.target.checked)}
-                    className="mt-0.5 h-4 w-4 shrink-0 rounded border-border bg-background accent-primary"
-                  />
-                  <span>
-                    I understand. Finlynq encrypts everything with my password, and there{`’`}s
-                    no recovery key. Forgetting it means losing all my data. Without an
-                    email I also can{`’`}t reset the password at all.
-                  </span>
-                </label>
-              )}
-
-              {error && (
-                <p className="text-sm text-destructive" role="alert" aria-live="assertive">{error}</p>
-              )}
-
-              <button
-                type="submit"
-                disabled={submitDisabled}
-                className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
-              >
-                {loading
-                  ? tab === "login" ? "Signing in..." : "Creating account..."
-                  : tab === "login" ? "Sign In" : "Create Account"
-                }
-              </button>
-            </form>
-            )}
-
-            {step === null && (
             <p className="mt-6 text-center text-sm text-muted-foreground">
               Just looking?{" "}
               <Link
@@ -882,6 +791,228 @@ function CloudAuthPageInner() {
               </Link>
               . No signup, resets nightly.
             </p>
+          </>
+        ) : (
+          // Email flow screen
+          <>
+            {/* Identify step */}
+            {flowStep === "identify" && (
+              <form onSubmit={handleIdentify} className="space-y-4 w-full">
+                <div>
+                  <input
+                    id="identifier"
+                    type="text"
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
+                    placeholder="Email or username"
+                    required
+                    autoComplete="username"
+                    aria-label="Email or username"
+                    className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                    autoFocus
+                  />
+                </div>
+                {error && (
+                  <p className="text-sm text-destructive" role="alert" aria-live="assertive">{error}</p>
+                )}
+                <button
+                  type="submit"
+                  disabled={loading || !identifier.trim()}
+                  className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+                >
+                  {loading ? "Checking..." : "Continue"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setScreen("options");
+                    setFlowStep("identify");
+                    setIdentifier("");
+                    setError("");
+                  }}
+                  className="w-full text-center text-sm text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                >
+                  Back to sign-in options
+                </button>
+              </form>
+            )}
+
+            {/* Sign in step */}
+            {flowStep === "signin" && (
+              <form onSubmit={handleLogin} className="space-y-4 w-full">
+                <div className="mb-4 flex items-center gap-2 rounded-lg bg-muted px-3 py-2">
+                  <span className="text-xs font-medium text-foreground truncate flex-1">{identifier}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFlowStep("identify");
+                      setPassword("");
+                      setError("");
+                    }}
+                    className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground whitespace-nowrap"
+                  >
+                    Change
+                  </button>
+                </div>
+                <div>
+                  <input
+                    id={passwordInputId}
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Password"
+                    required
+                    autoComplete="current-password"
+                    aria-label="Password"
+                    className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                    autoFocus
+                  />
+                  <Link
+                    href="/auth/forgot-password"
+                    prefetch={false}
+                    className="mt-1.5 inline-block text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
+                <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={sharedComputer}
+                    onChange={(e) => setSharedComputer(e.target.checked)}
+                    className="h-4 w-4 rounded border-border bg-background accent-primary"
+                  />
+                  This is a shared computer
+                </label>
+                {error && (
+                  <p className="text-sm text-destructive" role="alert" aria-live="assertive">{error}</p>
+                )}
+                <button
+                  type="submit"
+                  disabled={loading || !password}
+                  className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+                >
+                  {loading ? "Signing in..." : "Sign in"}
+                </button>
+              </form>
+            )}
+
+            {/* Sign up step */}
+            {flowStep === "signup" && (
+              <form onSubmit={handleRegister} className="space-y-4 w-full">
+                {signupDisabled ? (
+                  <p className="text-sm text-destructive">Sign-up is currently disabled.</p>
+                ) : (
+                  <>
+                    <div className="mb-4 flex items-center gap-2 rounded-lg bg-muted px-3 py-2">
+                      <span className="text-xs font-medium text-foreground truncate flex-1">{identifier}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFlowStep("identify");
+                          setSignupPassword("");
+                          setSignupConfirmPassword("");
+                          setSignupEmail("");
+                          setDisplayName("");
+                          setError("");
+                        }}
+                        className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground whitespace-nowrap"
+                      >
+                        Change
+                      </button>
+                    </div>
+
+                    {isEmail && (
+                      <div>
+                        <input
+                          id="signup-email"
+                          type="email"
+                          value={signupEmail}
+                          onChange={(e) => setSignupEmail(e.target.value)}
+                          placeholder="you@example.com"
+                          autoComplete="email"
+                          aria-label="Email"
+                          className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                        />
+                        <p className="mt-1.5 text-xs text-muted-foreground/80">
+                          Used only for password reset. Leave it blank for full zero-knowledge, but then you&apos;ll have no way to recover a forgotten password.
+                        </p>
+                      </div>
+                    )}
+
+                    <div>
+                      <input
+                        id={passwordInputId}
+                        type="password"
+                        value={signupPassword}
+                        onChange={(e) => setSignupPassword(e.target.value)}
+                        placeholder="At least 12 characters"
+                        required
+                        minLength={12}
+                        autoComplete="new-password"
+                        aria-label="Password"
+                        className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                        autoFocus
+                      />
+                    </div>
+
+                    <div>
+                      <input
+                        id="signup-confirm-password"
+                        type="password"
+                        value={signupConfirmPassword}
+                        onChange={(e) => setSignupConfirmPassword(e.target.value)}
+                        placeholder="Confirm password"
+                        required
+                        minLength={12}
+                        autoComplete="new-password"
+                        aria-label="Confirm password"
+                        className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <input
+                        id="signup-display-name"
+                        type="text"
+                        value={displayName}
+                        onChange={(e) => setDisplayName(e.target.value)}
+                        placeholder="Your name (optional)"
+                        aria-label="Display name"
+                        className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                      />
+                    </div>
+
+                    {!isEmail && !signupEmail.trim() && (
+                      <label className="flex items-start gap-2.5 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2.5 text-xs text-amber-200/90">
+                        <input
+                          type="checkbox"
+                          checked={acknowledgeNoRecovery}
+                          onChange={(e) => setAcknowledgeNoRecovery(e.target.checked)}
+                          className="mt-0.5 h-4 w-4 shrink-0 rounded border-border bg-background accent-primary"
+                        />
+                        <span>
+                          I understand. Finlynq encrypts everything with my password, and there{`'`}s
+                          no recovery key. Forgetting it means losing all my data. Without an
+                          email I also can{`'`}t reset the password at all.
+                        </span>
+                      </label>
+                    )}
+
+                    {error && (
+                      <p className="text-sm text-destructive" role="alert" aria-live="assertive">{error}</p>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={loading || signupPassword !== signupConfirmPassword || !signupPassword || (!isEmail && !signupEmail.trim() && !acknowledgeNoRecovery)}
+                      className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+                    >
+                      {loading ? "Creating account..." : "Create account"}
+                    </button>
+                  </>
+                )}
+              </form>
             )}
           </>
         )}
