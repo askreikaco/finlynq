@@ -47,6 +47,8 @@ function providerOf(url: string): string {
     if (host.includes("yahoo")) return "yahoo";
     if (host.includes("coingecko")) return "coingecko";
     if (host.includes("stooq")) return "stooq";
+    if (host.includes("tcbs")) return "tcbs";
+    if (host.includes("vndirect")) return "vndirect";
     return host;
   } catch {
     return "?";

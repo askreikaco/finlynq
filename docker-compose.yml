@@ -34,6 +34,8 @@ services:
       PF_PEPPER: ${PF_PEPPER:?set PF_PEPPER in .env (>=32 chars) — generate with openssl rand -hex 32}
       # Wraps service-tier email-staged imports (>=32 chars). Module-load throws in prod if missing.
       PF_STAGING_KEY: ${PF_STAGING_KEY:?set PF_STAGING_KEY in .env (>=32 chars) — generate with openssl rand -hex 32}
+      # (optional) Vietnamese stock price provider: "vndirect" or "tcbs". Unset = use Yahoo fallback.
+      PF_PRICE_PROVIDER_VN: ${PF_PRICE_PROVIDER_VN:-}
       NODE_ENV: production
     depends_on:
       db:
