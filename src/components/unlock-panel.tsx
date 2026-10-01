@@ -57,7 +57,7 @@ export function UnlockPanel({ onDismiss }: { onDismiss: () => void }) {
     <div
       role="alertdialog"
       aria-label="Unlock your data"
-      className="fixed inset-x-0 top-0 z-50 flex flex-wrap items-center justify-center gap-3 border-b border-amber-500/40 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-100"
+      className="fixed inset-x-0 top-0 z-50 flex flex-wrap items-center justify-center gap-3 border-b border-amber-500/40 bg-amber-50 px-[max(1rem,var(--sal))] pb-3 pt-[calc(0.75rem+var(--sat))] text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-100"
     >
       <span>Your data is locked. Unlock it to make changes.</span>
       {supported && (
