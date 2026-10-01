@@ -49,6 +49,14 @@ export const accounts = pgTable("accounts", {
   // scripts/migrate-accounts-is-investment.sql backfills the flag from any
   // account that already has at least one portfolio_holdings row.
   isInvestment: boolean("is_investment").notNull().default(false),
+  // Invisible accounts (2026-10-07). When true the account is hidden from
+  // EVERY metric/total — net worth (current + history), total assets /
+  // liabilities, reports' balance sheet, FX exposure, health score, recap,
+  // family overview, MCP + mobile totals. It stays listed/editable on the
+  // Accounts page and keeps its transactions. Independent of `archived`
+  // (which deliberately stays IN net worth). `getAccountBalances` excludes
+  // invisible rows by default. See 20261007_reika_account_invisible.sql.
+  invisible: boolean("invisible").notNull().default(false),
   // Reconcile v4 Phase 1 (2026-05-27) — per-account pipeline policy.
   // 'auto' = rules fire at upload, rows land directly in ledger.
   // 'approve' = bank-write automatic, ledger commit needs one click.

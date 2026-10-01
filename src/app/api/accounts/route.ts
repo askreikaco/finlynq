@@ -22,6 +22,8 @@ const postSchema = z.object({
   note: z.string().optional(),
   alias: z.string().max(64).trim().optional(),
   isInvestment: z.boolean().optional(),
+  // Hidden from every metric/total; stays listed. See src/lib/account-visibility.ts.
+  invisible: z.boolean().optional(),
 });
 
 const putSchema = z.object({
@@ -34,6 +36,8 @@ const putSchema = z.object({
   archived: z.boolean().optional(),
   alias: z.string().max(64).trim().nullable().optional(),
   isInvestment: z.boolean().optional(),
+  // Hidden from every metric/total; stays listed. See src/lib/account-visibility.ts.
+  invisible: z.boolean().optional(),
 });
 
 export async function GET(request: NextRequest) {

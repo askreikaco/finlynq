@@ -59,7 +59,9 @@ export async function GET(request: NextRequest) {
       eq(schema.accounts.userId, userId),
       // GH #307 — shared canonical cash-group set (was a hardcoded
       // "Banks"/"Cash Accounts" subset that missed Checking/Savings/Cash).
-      inArray(schema.accounts.group, [...CASH_GROUP_NAMES])
+      inArray(schema.accounts.group, [...CASH_GROUP_NAMES]),
+      // Invisible accounts never count toward a starting balance / metric.
+      eq(schema.accounts.invisible, false),
     ))
     .all();
 

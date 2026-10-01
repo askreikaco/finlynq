@@ -54,7 +54,10 @@ export async function GET(request: NextRequest) {
     // Raw ledger balance per account — COALESCE(SUM(transactions.amount), 0).
     // For investment accounts this is net contributions, NOT market value; the
     // overlay below marks those to market (FINLYNQ-196).
-    const ledgerBalances = await getAccountBalances(userId);
+    // `includeInvisible`: reconcile is bookkeeping, not a metric — an
+    // invisible account is still reconciled and must show its real balance
+    // (the default would drop it and render 0).
+    const ledgerBalances = await getAccountBalances(userId, { includeInvisible: true });
 
     const [summary, hidden] = await Promise.all([
       getReconcileSummary(userId),

@@ -700,7 +700,9 @@ const handleForecast: IntentHandler = async (msg, ctx) => {
           eq(schema.accounts.userId, ctx.userId),
           // GH #307 — shared canonical cash-group set (was a hardcoded
           // "Banks"/"Cash Accounts" subset that missed Checking/Savings/Cash).
-          inArray(schema.accounts.group, [...CASH_GROUP_NAMES])
+          inArray(schema.accounts.group, [...CASH_GROUP_NAMES]),
+          // Invisible accounts never count toward a spendable total.
+          eq(schema.accounts.invisible, false),
         )
       )
       .all();
@@ -787,7 +789,8 @@ const handleSummary: IntentHandler = async (_msg, ctx) => {
     })
     .from(schema.accounts)
     .leftJoin(schema.transactions, eq(schema.accounts.id, schema.transactions.accountId))
-    .where(eq(schema.accounts.userId, ctx.userId))
+    // Invisible accounts never reach a net-worth figure.
+    .where(and(eq(schema.accounts.userId, ctx.userId), eq(schema.accounts.invisible, false)))
     .groupBy(schema.accounts.id, schema.accounts.type)
     .all();
 

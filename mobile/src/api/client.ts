@@ -369,7 +369,9 @@ async function composeDashboard(): Promise<ApiResponse<DashboardData>> {
     });
   }
 
-  const balances = raw.balances ?? [];
+  // Invisible accounts ride along in the payload (listing) but never count
+  // toward any total — mirrors the web dashboard.
+  const balances = (raw.balances ?? []).filter((b) => b.invisible !== true);
   const balVal = (b: AccountBalance) => b.convertedBalance ?? b.balance ?? 0;
   const totalAssets = balances
     .filter((b) => b.accountType === "A")

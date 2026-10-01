@@ -338,6 +338,8 @@ export interface AccountBalance {
   displayCurrency: string;
   isInvestment?: boolean;
   holdingsValue?: number;
+  /** Hidden from every metric/total (net worth, totals…); listed only. */
+  invisible?: boolean;
 }
 
 // --- Portfolio overview (GET /api/portfolio/overview) ---

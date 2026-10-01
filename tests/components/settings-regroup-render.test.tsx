@@ -1,7 +1,7 @@
 /**
  * @vitest-environment jsdom
  * Folded settings pages: old URL renders the parent in place with the right
- * accordion section open (no redirect); Clear All Data keeps its 3-step confirm.
+ * section open / scrolled into view (no redirect); Clear All Data keeps its 3-step confirm.
  */
 import "@testing-library/jest-dom";
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
@@ -14,12 +14,19 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 vi.mock("@/components/settings/sections/rules-section", () => ({ RulesSection: () => <div>rules-body</div> }));
-vi.mock("@/components/settings/sections/import-section", () => ({ ImportSection: () => null }));
+vi.mock("@/components/settings/sections/import-section", () => ({
+  ImportSettingsCard: () => <div id="import-settings">import-body</div>,
+  ImportTemplatesItem: () => null,
+  ImportEmailItem: () => null,
+  ImportMigrateItem: () => null,
+  ImportStatementsItem: () => null,
+}));
 vi.mock("@/components/settings/sections/bank-feeds-section", () => ({ BankFeedsSection: () => <div>banks-body</div> }));
 vi.mock("@/components/portfolio/rebuild-snapshots-button", () => ({ RebuildSnapshotsButton: () => null }));
 vi.mock("../../src/app/(app)/settings/integrations/connected-apps", () => ({ ConnectedApps: () => null }));
 
 import RulesPage from "@/app/(app)/settings/rules/page";
+import ImportPage from "@/app/(app)/settings/import/page";
 import ReconPage from "@/app/(app)/settings/reconciliation/page";
 import BankFeedsPage from "@/app/(app)/settings/bank-feeds/page";
 import IntegrationsPage from "@/app/(app)/settings/integrations/page";
@@ -38,18 +45,27 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 describe("old paths render the parent with the section open", () => {
-  it("/settings/rules -> Reconciliation, Rules open and scrolled into view", async () => {
+  it("/settings/rules -> Reconciliation scrolled to the Rules card", async () => {
     mockPath = "/settings/rules";
     render(<RulesPage />);
     expect(await screen.findByText("rules-body")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Rules/ })).toHaveAttribute("aria-expanded", "true");
     await waitFor(() => expect(Element.prototype.scrollIntoView).toHaveBeenCalled());
+    expect(vi.mocked(Element.prototype.scrollIntoView).mock.contexts[0]).toHaveAttribute("id", "rules");
   });
-  it("/settings/reconciliation keeps Rules collapsed", () => {
+  it("/settings/import -> Reconciliation scrolled to the Import settings card", async () => {
+    mockPath = "/settings/import";
+    render(<ImportPage />);
+    expect(await screen.findByText("import-body")).toBeInTheDocument();
+    await waitFor(() => expect(Element.prototype.scrollIntoView).toHaveBeenCalled());
+    expect(vi.mocked(Element.prototype.scrollIntoView).mock.contexts[0]).toHaveAttribute("id", "import-settings");
+  });
+  it("/settings/reconciliation shows Import settings + Rules as cards, no scroll", () => {
     mockPath = "/settings/reconciliation";
     render(<ReconPage />);
-    expect(screen.getByRole("button", { name: /Rules/ })).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByText("rules-body")).toBeNull();
+    expect(screen.getByText("import-body")).toBeInTheDocument();
+    expect(screen.getByText("rules-body")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Rules/ })).toBeNull();
+    expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled();
   });
   it("/settings/bank-feeds -> Integrations, Bank feeds open", async () => {
     mockPath = "/settings/bank-feeds";

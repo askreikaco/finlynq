@@ -39,6 +39,7 @@ export type AccountDialogAccount = {
   alias?: string | null;
   isInvestment?: boolean;
   archived?: boolean;
+  invisible?: boolean;
 };
 
 /** An extra (edit-only) tab — Reconciliation / Import / Cash sleeves. Rendered
@@ -53,6 +54,7 @@ type FormState = {
   currency: string;
   note: string;
   isInvestment: boolean;
+  invisible: boolean;
   obAmount: string;
   obDate: string;
 };
@@ -66,6 +68,7 @@ function blankForm(defaultCurrency: string): FormState {
     currency: defaultCurrency,
     note: "",
     isInvestment: false,
+    invisible: false,
     obAmount: "",
     obDate: todayISO(),
   };
@@ -80,6 +83,7 @@ function formFromAccount(a: AccountDialogAccount): FormState {
     currency: a.currency,
     note: a.note ?? "",
     isInvestment: a.isInvestment === true,
+    invisible: a.invisible === true,
     obAmount: "",
     obDate: todayISO(),
   };
@@ -203,6 +207,7 @@ export function AccountDialog({
         note: form.note.trim(),
         alias: form.alias.trim() || (isEdit ? null : undefined),
         isInvestment: form.isInvestment,
+        invisible: form.invisible,
       };
 
       let accountId: number;
@@ -463,6 +468,22 @@ export function AccountDialog({
           When enabled, every transaction in this account must reference a portfolio holding (a security or
           the auto-created &quot;Cash&quot; sleeve). Turning this on now will reassign any unattributed
           transactions to this account&apos;s Cash holding.
+        </p>
+      </div>
+
+      <div className="space-y-1.5">
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="account-dialog-invisible"
+            checked={form.invisible}
+            onChange={(e) => setForm({ ...form, invisible: e.target.checked })}
+            className="h-4 w-4 rounded border-input"
+          />
+          <Label htmlFor="account-dialog-invisible" className="cursor-pointer">Invisible</Label>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Hidden from net worth, totals, reports and metrics. The account and its transactions stay here.
         </p>
       </div>
 

@@ -285,7 +285,19 @@ async function handleGet(request: NextRequest) {
     // `accountNameById` map below — built from these same rows — had no entry,
     // so an archived account that DID reach the series (investment snapshots
     // never filtered archived) rendered in the breakdown as "Account #609".
-    const balances = await getAccountBalances(userId, { includeArchived: true });
+    //
+    // Invisible accounts: fetched (so an invisible account's OWN per-account
+    // chart still gets its live override + name) but dropped from the
+    // whole-portfolio series, matching the snapshot readers above which skip
+    // them on the aggregate (no accountId) path. Without the drop the right
+    // edge would re-add today's invisible balance (a cliff), and the
+    // investment orphan check would see live values with no snapshots.
+    const allBalances = await getAccountBalances(userId, {
+      includeArchived: true,
+      includeInvisible: true,
+    });
+    const balances =
+      accountId != null ? allBalances : allBalances.filter((b) => !b.invisible);
     const investmentAccountIds = new Set(
       balances.filter((b) => Boolean(b.isInvestment)).map((b) => b.accountId),
     );
@@ -366,7 +378,7 @@ async function handleGet(request: NextRequest) {
     // top-10 + "Other" residual so the tooltip can render it directly. The
     // pure core stays name-free (no DEK); naming + ranking happen here.
     const accountNameById = new Map<number, string>();
-    for (const b of balances) {
+    for (const b of allBalances) {
       const name = decryptName((b as { accountNameCt?: string | null }).accountNameCt, dek, null);
       const alias = decryptName((b as { aliasCt?: string | null }).aliasCt, dek, null);
       accountNameById.set(b.accountId, safeAccountName({ id: b.accountId, name, alias }));

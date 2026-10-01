@@ -59,8 +59,10 @@ export function registerAccountsTools(server: McpServer, ctx: PgToolContext) {
     currency?: string;
     note?: string;
     alias?: string;
+    invisible?: boolean;
   }): Promise<ToolResult> {
     const { name, type, group, currency, note, alias } = args;
+    const invisible = args.invisible === true;
     // Stream D Phase 4 — plaintext name dropped; lookup-only collision check.
     const lookup = dek ? nameLookup(dek, name) : null;
     if (!lookup) return err("Cannot create account without an unlocked DEK (Stream D Phase 4).");
@@ -87,16 +89,16 @@ export function registerAccountsTools(server: McpServer, ctx: PgToolContext) {
     const result = await q(db, sql`
       INSERT INTO accounts (
         user_id, type, "group", currency, note,
-        name_ct, name_lookup, alias_ct, alias_lookup
+        name_ct, name_lookup, alias_ct, alias_lookup, invisible
       )
       VALUES (
         ${userId}, ${type}, ${resolvedGroup}, ${resolvedCurrency}, ${encNote(note)},
-        ${nameEnc.ct}, ${nameEnc.lookup}, ${aliasEnc.ct}, ${aliasEnc.lookup}
+        ${nameEnc.ct}, ${nameEnc.lookup}, ${aliasEnc.ct}, ${aliasEnc.lookup}, ${invisible}
       )
       RETURNING id
     `);
 
-    return text({ success: true, data: { accountId: result[0]?.id, message: `Account "${name}" created (${type === "A" ? "asset" : "liability"}, ${resolvedCurrency})${aliasValue ? `, alias "${aliasValue}"` : ""}` } });
+    return text({ success: true, data: { accountId: result[0]?.id, invisible, message: `Account "${name}" created (${type === "A" ? "asset" : "liability"}, ${resolvedCurrency})${aliasValue ? `, alias "${aliasValue}"` : ""}${invisible ? ", invisible (excluded from net worth and totals)" : ""}` } });
   }
 
   // ── op: update — lifted VERBATIM from update_account ───────────────────────
@@ -109,8 +111,9 @@ export function registerAccountsTools(server: McpServer, ctx: PgToolContext) {
     currency?: string;
     note?: string;
     alias?: string;
+    invisible?: boolean;
   }): Promise<ToolResult> {
-    const { accountId, account, name, type, group, currency, note, alias } = args;
+    const { accountId, account, name, type, group, currency, note, alias, invisible } = args;
     if (accountId == null && (account == null || account === "")) {
       return err("Pass `accountId` (numeric) or `account` (name/alias) to identify the account.");
     }
@@ -183,6 +186,7 @@ export function registerAccountsTools(server: McpServer, ctx: PgToolContext) {
       const a = encryptName(dek, aliasValue);
       updates.push(sql`alias_ct = ${a.ct}`, sql`alias_lookup = ${a.lookup}`);
     }
+    if (invisible !== undefined) updates.push(sql`invisible = ${invisible}`);
     if (!updates.length) return err("No fields to update");
 
     const result = await db.execute(
@@ -197,7 +201,7 @@ export function registerAccountsTools(server: McpServer, ctx: PgToolContext) {
     const acctNameLabel = (acct.name as string | undefined) ?? "<encrypted>";
     const acctIdLabel = Number(acct.id);
     if (affected === 0) return err(`Account #${acctIdLabel} ("${acctNameLabel}") not found or not owned by this user`);
-    return text({ success: true, data: { accountId: acctIdLabel, message: `Account #${acctIdLabel} ("${acctNameLabel}") updated` } });
+    return text({ success: true, data: { accountId: acctIdLabel, ...(invisible !== undefined ? { invisible } : {}), message: `Account #${acctIdLabel} ("${acctNameLabel}") updated` } });
   }
 
   // ── op: delete — lifted VERBATIM from delete_account (withConfirmation) ─────
@@ -394,7 +398,7 @@ export function registerAccountsTools(server: McpServer, ctx: PgToolContext) {
   registerManageTool(
     server,
     "manage_accounts",
-    "Manage financial accounts: `op` selects add / update / delete / set_mode. add: create an account (name/type A|L, optional currency/group/alias). update: change name/type/group/currency/note/alias (exact `accountId` or fuzzy `account`). delete: only possible while nothing references the account — transactions, holdings, loans, goals, subscriptions, recurring transactions, splits, snapshots and staged imports each block it, and the call is refused naming the counts (archive the account in the web app instead). TWO-STEP when a token is required (preview cascade counts, then commit); a clean empty account deletes directly. set_mode: set the import pipeline mode (auto|approve|manual).",
+    "Manage financial accounts: `op` selects add / update / delete / set_mode. add: create an account (name/type A|L, optional currency/group/alias). update: change name/type/group/currency/note/alias/invisible (exact `accountId` or fuzzy `account`). `invisible: true` hides an account from every total/metric while keeping it listed. delete: only possible while nothing references the account — transactions, holdings, loans, goals, subscriptions, recurring transactions, splits, snapshots and staged imports each block it, and the call is refused naming the counts (archive the account in the web app instead). TWO-STEP when a token is required (preview cascade counts, then commit); a clean empty account deletes directly. set_mode: set the import pipeline mode (auto|approve|manual).",
     z.discriminatedUnion("op", [
       z.object({
         op: z.literal("add"),
@@ -404,6 +408,7 @@ export function registerAccountsTools(server: McpServer, ctx: PgToolContext) {
         currency: supportedCurrencyEnum.optional().describe("ISO 4217 currency code (defaults to your display currency). Issue #206: any currency in SUPPORTED_CURRENCIES is accepted; FX engine triangulates through USD."),
         note: z.string().optional().describe("Optional note"),
         alias: z.string().max(64).optional().describe("Optional short alias used to match the account when receipts or imports reference it by a non-canonical name (e.g. last 4 digits of a card, or a receipt label)."),
+        invisible: z.boolean().optional().describe("When true the account is hidden from net worth, totals, reports and metrics (it stays listed and keeps its transactions). Default false."),
       }),
       z.object({
         op: z.literal("update"),
@@ -415,6 +420,7 @@ export function registerAccountsTools(server: McpServer, ctx: PgToolContext) {
         currency: supportedCurrencyEnum.optional().describe("New ISO 4217 currency code (issue #206: full SUPPORTED_CURRENCIES list)."),
         note: z.string().optional().describe("New note"),
         alias: z.string().max(64).optional().describe("New alias — short shorthand used to match receipts/imports. Pass an empty string to clear."),
+        invisible: z.boolean().optional().describe("true hides the account from net worth, totals, reports and metrics (it stays listed and keeps its transactions); false makes it count again."),
       }),
       z.object({
         op: z.literal("delete"),

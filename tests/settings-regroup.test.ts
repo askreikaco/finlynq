@@ -1,13 +1,22 @@
 import { describe, it, expect } from "vitest";
 import { sectionFromPath, sectionFromUrl, type OpenSectionConfig } from "@/components/settings/use-open-section";
+import { movedImportHref } from "@/components/settings/moved-import";
 
 const RECON: OpenSectionConfig = {
   byPath: [
     { prefix: "/settings/rules", section: "rules" },
     { prefix: "/settings/import", section: "import-settings" },
   ],
-  valid: ["rules", "import-settings", "templates", "email", "migrate", "statements"],
-  alias: { connect: "migrate", import: "import-settings" },
+  valid: ["rules", "import-settings", "templates"],
+  alias: { import: "import-settings" },
+};
+
+const INTEGRATIONS: OpenSectionConfig = {
+  byPath: [
+    { prefix: "/settings/bank-feeds", section: "bank-feeds" },
+    { prefix: "/connect", section: "connect" },
+  ],
+  valid: ["bank-feeds", "connect", "email", "migrate", "statements"],
   providerSection: "migrate",
 };
 
@@ -18,12 +27,24 @@ describe("old-path -> open section mapping", () => {
     expect(sectionFromPath("/settings/import/reconcile-visibility", RECON)).toBe("import-settings");
     expect(sectionFromPath("/settings/reconciliation", RECON)).toBeNull();
   });
-  it("?tab=, legacy connect, #hash and ?provider= refine it", () => {
-    expect(sectionFromUrl("?tab=email", "", RECON)).toBe("email");
-    expect(sectionFromUrl("?tab=connect", "", RECON)).toBe("migrate");
-    expect(sectionFromUrl("", "#statements", RECON)).toBe("statements");
-    expect(sectionFromUrl("?provider=moneypro", "", RECON)).toBe("migrate");
+  it("?tab= and #hash refine it", () => {
+    expect(sectionFromUrl("?tab=templates", "", RECON)).toBe("templates");
+    expect(sectionFromUrl("?tab=import", "", RECON)).toBe("import-settings");
     expect(sectionFromUrl("?tab=bogus", "", RECON)).toBeNull();
+    expect(sectionFromPath("/connect", INTEGRATIONS)).toBe("connect");
+    expect(sectionFromUrl("?tab=email", "", INTEGRATIONS)).toBe("email");
+    expect(sectionFromUrl("", "#statements", INTEGRATIONS)).toBe("statements");
+    expect(sectionFromUrl("?provider=moneypro", "", INTEGRATIONS)).toBe("migrate");
+  });
+  it("legacy Import deep links forward to Integrations", () => {
+    expect(movedImportHref("?tab=email", "")).toBe("/settings/integrations?tab=email");
+    expect(movedImportHref("?tab=connect", "")).toBe("/settings/integrations?tab=migrate");
+    expect(movedImportHref("", "#statements")).toBe("/settings/integrations?tab=statements");
+    expect(movedImportHref("?provider=moneypro", "")).toBe(
+      "/settings/integrations?tab=migrate&provider=moneypro",
+    );
+    expect(movedImportHref("?tab=templates", "")).toBeNull();
+    expect(movedImportHref("", "")).toBeNull();
   });
 });
 
@@ -53,6 +74,16 @@ describe("Settings Reorganization - Code Structure", () => {
       expect(typeof mod.default).toBe("function");
     });
 
+    it("/settings/dropdown-order renders its parent in place", async () => {
+      const mod = await import("@/app/(app)/settings/dropdown-order/page");
+      expect(typeof mod.default).toBe("function");
+    });
+
+    it("/settings/about exists", async () => {
+      const mod = await import("@/app/(app)/settings/about/page");
+      expect(typeof mod.default).toBe("function");
+    });
+
     it("/settings/data renders its parent in place", async () => {
       const mod = await import("@/app/(app)/settings/data/page");
       expect(mod.default).toBeDefined();
@@ -61,10 +92,17 @@ describe("Settings Reorganization - Code Structure", () => {
   });
 
   describe("Section components are implemented", () => {
-    it("ImportSection exports a React component", async () => {
+    it("import-section exports its card and accordion items", async () => {
       const mod = await import("@/components/settings/sections/import-section");
-      expect(mod.ImportSection).toBeDefined();
-      expect(typeof mod.ImportSection).toBe("function");
+      for (const name of [
+        "ImportSettingsCard",
+        "ImportTemplatesItem",
+        "ImportEmailItem",
+        "ImportMigrateItem",
+        "ImportStatementsItem",
+      ] as const) {
+        expect(typeof mod[name]).toBe("function");
+      }
     });
 
     it("DataSection exports a React component", async () => {
@@ -135,14 +173,14 @@ describe("Settings Reorganization - Code Structure", () => {
   });
 
   describe("Reconciliation page has accordion sections", () => {
-    it("ReconciliationPage has rules and import accordion items", async () => {
+    it("ReconciliationPage has Import settings + Rules cards and Import Templates", async () => {
       const mod = await import("@/app/(app)/settings/reconciliation/page");
       const src = mod.default.toString();
 
-      expect(src).toContain("rules");
-      expect(src).toContain("import");
+      expect(src).toContain("ImportSettingsCard");
       expect(src).toContain("RulesSection");
-      expect(src).toContain("ImportSection");
+      expect(src).toContain("ImportTemplatesItem");
+      expect(src).not.toContain("ImportEmailItem");
     });
   });
 
@@ -153,6 +191,9 @@ describe("Settings Reorganization - Code Structure", () => {
 
       expect(src).toContain("bank-feeds");
       expect(src).toContain("BankFeedsSection");
+      expect(src).toContain("ImportEmailItem");
+      expect(src).toContain("ImportMigrateItem");
+      expect(src).toContain("ImportStatementsItem");
     });
   });
 
@@ -183,43 +224,33 @@ describe("Settings Reorganization - Code Structure", () => {
     });
   });
 
-  describe("Import section has all required functionality", () => {
-    it("ImportSection has confirm mapping toggle", async () => {
-      const mod = await import("@/components/settings/sections/import-section");
-      const src = mod.ImportSection.toString();
-      expect(src).toContain("confirmCsvMapping");
+  describe("Import pieces keep all required functionality", () => {
+    const src = async (name: "ImportSettingsCard" | "ImportTemplatesItem" | "ImportEmailItem" | "ImportMigrateItem" | "ImportStatementsItem") =>
+      (await import("@/components/settings/sections/import-section"))[name].toString();
+
+    it("Import settings has confirm mapping toggle", async () => {
+      expect(await src("ImportSettingsCard")).toContain("confirmCsvMapping");
     });
 
-    it("ImportSection has email import config", async () => {
-      const mod = await import("@/components/settings/sections/import-section");
-      const src = mod.ImportSection.toString();
-      expect(src).toContain("importEmail");
+    it("Import via Email has the address and email rules manager", async () => {
+      const s = await src("ImportEmailItem");
+      expect(s).toContain("importEmail");
+      expect(s).toContain("EmailRulesManager");
     });
 
-    it("ImportSection has template manager", async () => {
-      const mod = await import("@/components/settings/sections/import-section");
-      const src = mod.ImportSection.toString();
-      expect(src).toContain("TemplateManager");
+    it("Import Templates has template manager", async () => {
+      expect(await src("ImportTemplatesItem")).toContain("TemplateManager");
     });
 
-    it("ImportSection has migration providers", async () => {
-      const mod = await import("@/components/settings/sections/import-section");
-      const src = mod.ImportSection.toString();
-      expect(src).toContain("ConnectorTab");
-      expect(src).toContain("MoneyProConnectorTab");
-      expect(src).toContain("GenericCsvConnectorTab");
+    it("Import via another app has migration providers", async () => {
+      const s = await src("ImportMigrateItem");
+      expect(s).toContain("ConnectorTab");
+      expect(s).toContain("MoneyProConnectorTab");
+      expect(s).toContain("GenericCsvConnectorTab");
     });
 
-    it("ImportSection has investment statements", async () => {
-      const mod = await import("@/components/settings/sections/import-section");
-      const src = mod.ImportSection.toString();
-      expect(src).toContain("InvestmentStatementImporter");
-    });
-
-    it("ImportSection has email rules manager", async () => {
-      const mod = await import("@/components/settings/sections/import-section");
-      const src = mod.ImportSection.toString();
-      expect(src).toContain("EmailRulesManager");
+    it("Import Investment Statement has the importer", async () => {
+      expect(await src("ImportStatementsItem")).toContain("InvestmentStatementImporter");
     });
   });
 
