@@ -22,7 +22,7 @@ import { randomUUID } from "crypto";
 import { db, schema } from "@/db";
 import { eq } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth/require-admin";
-import { sendEmail, contactReplyEmail } from "@/lib/email";
+import { sendEmail, contactReplyEmail, getEmailFrom } from "@/lib/email";
 import { safeErrorMessage } from "@/lib/validate";
 
 export const dynamic = "force-dynamic";
@@ -30,9 +30,8 @@ export const dynamic = "force-dynamic";
 /** Loose RFC-ish address check — just enough to avoid handing garbage to Resend. */
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-/** The verified sending domain, derived from EMAIL_FROM (default finlynq.com). */
-function verifiedSendingDomain(): string {
-  const from = process.env.EMAIL_FROM || "Finlynq <noreply@finlynq.com>";
+/** The verified sending domain, derived from the resolved From (DB > EMAIL_FROM; default finlynq.com). */
+function verifiedSendingDomain(from: string): string {
   const m = /<([^>]+)>/.exec(from);
   const addr = (m ? m[1] : from).trim();
   const domain = addr.split("@")[1];
@@ -77,11 +76,10 @@ export async function POST(
 
   // Send FROM the mailbox address only if it's on the verified domain.
   const mailbox = (row.toAddress || "").trim().toLowerCase();
+  const defaultFrom = await getEmailFrom();
   const onVerifiedDomain =
-    EMAIL_RE.test(mailbox) && mailbox.endsWith(`@${verifiedSendingDomain()}`);
-  const from = onVerifiedDomain
-    ? `Finlynq <${mailbox}>`
-    : process.env.EMAIL_FROM || "Finlynq <noreply@finlynq.com>";
+    EMAIL_RE.test(mailbox) && mailbox.endsWith(`@${verifiedSendingDomain(defaultFrom)}`);
+  const from = onVerifiedDomain ? `Finlynq <${mailbox}>` : defaultFrom;
   const replyTo = onVerifiedDomain ? mailbox : undefined;
 
   const baseSubject = row.subject?.trim() || "(no subject)";

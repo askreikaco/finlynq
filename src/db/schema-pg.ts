@@ -2761,3 +2761,16 @@ export const backfillAudit = pgTable("backfill_audit", {
 }, (t) => [
   index("backfill_audit_proposal_idx").on(t.proposalId),
 ]);
+
+// ─── System settings (admin-editable server config) ─────────────────────────
+//
+// Key/value store for settings an admin edits from the UI (email transport
+// first — src/lib/system-settings.ts). `value_ct` is ALWAYS an `ss1:` envelope
+// ciphertext keyed by a server secret (system-settings-envelope.ts), never a
+// user DEK. Mirrors scripts/migrations/20261004_reika_system_settings.sql.
+export const systemSettings = pgTable("system_settings", {
+  key: text("key").primaryKey(),
+  valueCt: text("value_ct").notNull(),
+  updatedBy: text("updated_by"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
