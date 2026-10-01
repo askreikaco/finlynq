@@ -91,6 +91,8 @@ export function safeNext(
   if (!next.startsWith("/")) return fallback;
   if (next.startsWith("//")) return fallback;
   if (next.includes("\\")) return fallback;
+  // Browsers strip tab/CR/LF inside URLs ("/\t/evil.com" -> "//evil.com").
+  if (/[\u0000-\u001f\u007f]/.test(next)) return fallback;
   return next;
 }
 

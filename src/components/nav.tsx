@@ -28,7 +28,6 @@ import {
   X,
   MoreHorizontal,
   ShieldCheck,
-  LogOut,
   Inbox,
   Mailbox,
   Megaphone,
@@ -38,7 +37,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { FinlynqLogo } from "@/components/FinlynqLogo";
-import { hardReload } from "@/lib/client/hard-reload";
+import { AccountSwitcher } from "@/components/account-switcher";
 
 type NavItem = { href: string; label: string; icon: LucideIcon; color: string; mode?: "prod" | "dev"; activePrefixes?: string[] };
 
@@ -130,11 +129,6 @@ export function Nav() {
   const [hasAnnouncements, setHasAnnouncements] = useState(true); // default to true to avoid hiding on initial load
   const [feedbackUnread, setFeedbackUnread] = useState(0);
 
-  const handleSignOut = async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
-    // Full page load: no SWR/React state from this account may survive.
-    hardReload("/");
-  };
 
   useEffect(() => {
     const saved = localStorage.getItem("pf-sidebar-collapsed");
@@ -384,20 +378,9 @@ export function Nav() {
           )}
         </div>
 
-        {/* Fixed bottom block: Sign out, theme toggle, collapse button */}
+        {/* Fixed bottom block: Account switcher, theme toggle, collapse button */}
         <div className="shrink-0 px-2 pb-3 pt-2 border-t border-sidebar-border/50 space-y-0.5">
-          <button
-            onClick={handleSignOut}
-            title={collapsed ? "Sign out" : undefined}
-            className={cn(
-              "group/link relative flex items-center gap-3 rounded-lg text-[13px] font-medium transition-all duration-200 w-full",
-              collapsed ? "px-0 py-2 justify-center" : "px-3 py-2",
-              "text-sidebar-foreground/50 hover:bg-white/[0.05] hover:text-sidebar-foreground"
-            )}
-          >
-            <LogOut className="h-[18px] w-[18px] shrink-0 text-sidebar-foreground/40 group-hover/link:text-sidebar-foreground/70 group-hover/link:scale-110 transition-all duration-200" />
-            {!collapsed && <span className="truncate">Sign out</span>}
-          </button>
+          <AccountSwitcher compact={collapsed} />
           <div className={cn("flex items-center mt-2", collapsed ? "justify-center" : "justify-between px-1")}>
             <ThemeToggle />
             <button
@@ -493,13 +476,11 @@ export function Nav() {
           </div>
         )}
 
-        <button
-          onClick={() => { setMobileOpen(false); handleSignOut(); }}
-          className="group/link relative flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium text-sidebar-foreground/50 hover:bg-white/[0.05] hover:text-sidebar-foreground transition-all duration-200 w-full"
-        >
-          <LogOut className="h-[18px] w-[18px] shrink-0 text-sidebar-foreground/40 group-hover/link:text-sidebar-foreground/70 transition-all duration-200" />
-          <span className="truncate">Sign out</span>
-        </button>
+        <div className="border-t border-sidebar-border/50 pt-3 mt-3">
+          <div onClick={() => setMobileOpen(false)}>
+            <AccountSwitcher compact={false} />
+          </div>
+        </div>
       </div>
     </div>
   );
