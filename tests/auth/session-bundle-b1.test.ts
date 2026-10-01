@@ -484,8 +484,12 @@ describe.skipIf(!HAS_DB)("multi-account B1 (real Postgres)", () => {
     ]) {
       expect(fs.readFileSync(path.join(root, rel), "utf8"), rel).toMatch(/commitSession\(/);
     }
-    // finalizeRecoveryReset has no cookie-writing caller yet; when one is added it must commitSession.
+    // Every cookie-writing caller of finalizeRecoveryReset must commitSession (B4: code + device routes).
     const callers = files.filter((f) => !f.endsWith("recovery.ts") && /finalizeRecoveryReset\(/.test(fs.readFileSync(f, "utf8")));
-    expect(callers).toEqual([]);
+    expect(callers.map((f) => path.relative(root, f)).sort()).toEqual([
+      "app/api/auth/recovery/code/reset/route.ts",
+      "app/api/auth/recovery/device/reset/route.ts",
+    ]);
+    for (const f of callers) expect(fs.readFileSync(f, "utf8"), f).toMatch(/commitSession\(/);
   });
 });
