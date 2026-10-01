@@ -49,6 +49,7 @@ import {
 } from "@/components/ui/select";
 import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
 import { Badge } from "@/components/ui/badge";
+import { AmountInput } from "@/components/amount-input";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { formatCurrency, formatDate, currencyDecimals, fxPreviewText } from "@/lib/currency";
 import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
@@ -1233,11 +1234,10 @@ export function TransactionDialog({
               </div>
               <div className="space-y-1.5">
                 <Label>Amount</Label>
-                <Input
-                  type="number"
+                <AmountInput
                   step="0.01"
                   value={form.amount}
-                  onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                  onValueChange={(v) => setForm({ ...form, amount: v })}
                   placeholder="-50.00"
                   required
                 />
@@ -1730,14 +1730,13 @@ export function TransactionDialog({
               </div>
               <div className="space-y-1.5">
                 <Label>Amount sent</Label>
-                <Input
-                  type="number"
+                <AmountInput
                   step="0.01"
                   min="0"
                   value={transferForm.amount}
-                  onChange={(e) => {
+                  onValueChange={(v) => {
                     setTransferReceivedTouched(false);
-                    setTransferForm({ ...transferForm, amount: e.target.value });
+                    setTransferForm({ ...transferForm, amount: v });
                   }}
                   placeholder="100.00"
                   required

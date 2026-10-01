@@ -4,6 +4,7 @@ import { AnnouncementBanner } from "@/components/announcement-banner";
 import { PromptGate } from "@/components/prompt-gate";
 import { CurrencyProvider } from "@/components/currency-provider";
 import { DropdownOrderProvider } from "@/components/dropdown-order-provider";
+import { LanguageProvider } from "@/components/language-provider";
 import { FontProvider } from "@/components/font-provider";
 import { ReportingRecomputeIndicator } from "@/components/reporting-recompute-indicator";
 
@@ -13,6 +14,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <CurrencyProvider>
         <DropdownOrderProvider>
         <FontProvider>
+        <LanguageProvider>
         <div className="relative flex min-h-screen flex-col">
           <AnnouncementBanner />
           <PromptGate />
@@ -30,6 +32,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </main>
           </div>
         </div>
+        </LanguageProvider>
         </FontProvider>
         </DropdownOrderProvider>
       </CurrencyProvider>

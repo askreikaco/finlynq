@@ -36,6 +36,7 @@ import {
 } from "@/lib/chart-stack";
 import { StackedChartLegend } from "@/components/chart-stack-legend";
 import { StackedAreaTooltip } from "@/components/chart-stack-tooltip";
+import { formatPercent } from "@/lib/locale";
 
 type Period = "1m" | "3m" | "6m" | "ytd" | "1y" | "all";
 /** FINLYNQ-172 — stacked grouping mode (was a boolean in FINLYNQ-129). */
@@ -139,7 +140,7 @@ export function PerformanceChart({ accountId }: PerformanceChartProps) {
       .finally(() => setHoldingsLoading(false));
   }, [groupMode, period, accountId]);
 
-  const fmtPct = (v: number) => `${(v * 100).toFixed(2)}%`;
+  const fmtPct = (v: number) => `${formatPercent(v * 100, 2)}`;
 
   const rawChartData = useMemo(() => data?.series ?? [], [data]);
   const { data: chartData, domain, spansZero } = useMemo(

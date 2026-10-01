@@ -28,6 +28,7 @@ import {
 import { ColumnFilterPopover } from "./column-filter-popover";
 import { SplitBadge } from "./split-badge";
 import type { Transaction, Account, Category, ColFilterShape, SortPref, ColumnPref } from "../_types";
+import { getDisplayLocale } from "@/lib/locale";
 
 const COLUMN_LABELS = SHARED_COLUMN_LABELS;
 const TOGGLEABLE_COLUMNS = new Set<ColumnId>(SHARED_TOGGLEABLE_COLUMN_IDS);
@@ -299,7 +300,7 @@ export function TransactionTable({
                   return (
                     <TableCell key={c.id} className="text-right font-mono text-xs text-muted-foreground">
                       {t.quantity != null && t.quantity !== 0
-                        ? t.quantity.toLocaleString("en-CA", {
+                        ? t.quantity.toLocaleString(getDisplayLocale(), {
                             minimumFractionDigits: 0,
                             maximumFractionDigits: t.quantity % 1 === 0 ? 0 : 4,
                           })

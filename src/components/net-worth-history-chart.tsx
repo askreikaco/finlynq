@@ -34,6 +34,7 @@ import { StackedAreaTooltip } from "@/components/chart-stack-tooltip";
 import { buildStackedSeries, type StackPoint } from "@/lib/chart-stack";
 import { StackedChartLegend } from "@/components/chart-stack-legend";
 import type { BreakdownMember } from "@/lib/chart-breakdown";
+import { getDisplayLocale } from "@/lib/locale";
 
 type Period = "6m" | "1y" | "all";
 
@@ -76,7 +77,7 @@ const PERIODS: { key: Period; label: string }[] = [
 function fmtTick(d: string, period: Period): string {
   const dt = new Date(`${d}T00:00:00Z`);
   return dt.toLocaleDateString(
-    "en-US",
+    getDisplayLocale(),
     period === "all"
       ? { month: "short", year: "2-digit", timeZone: "UTC" }
       : { month: "short", day: "numeric", timeZone: "UTC" },

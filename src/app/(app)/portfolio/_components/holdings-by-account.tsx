@@ -22,6 +22,8 @@ import { safeName } from "@/lib/safe-name";
 import { DayChange } from "./portfolio-ui";
 import { holdingDescription } from "./holding-description";
 import { ASSET_TYPE_CONFIG, type EnrichedHolding } from "../_types";
+import { getDisplayLocale } from "@/lib/locale";
+import { formatPercent } from "@/lib/locale";
 
 export function HoldingsByAccount({
   accountGroups,
@@ -219,7 +221,7 @@ export function HoldingsByAccount({
                                 </TableCell>
                                 <TableCell className={`text-right font-mono text-sm ${hasMetrics && h.quantity != null && h.quantity < 0 ? "text-rose-600 dark:text-rose-400" : ""}`}>
                                   {hasMetrics && h.quantity != null
-                                    ? h.quantity.toLocaleString("en-CA", { minimumFractionDigits: 0, maximumFractionDigits: h.quantity % 1 === 0 ? 0 : 4 })
+                                    ? h.quantity.toLocaleString(getDisplayLocale(), { minimumFractionDigits: 0, maximumFractionDigits: h.quantity % 1 === 0 ? 0 : 4 })
                                     : <span className="text-muted-foreground text-xs">--</span>}
                                 </TableCell>
                                 {/* FINLYNQ-279: this panel always renders Mkt Value in the
@@ -258,7 +260,7 @@ export function HoldingsByAccount({
                                           </p>
                                           {pct != null && (
                                             <p className={`text-[10px] font-mono ${pct >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
-                                              {pct >= 0 ? "+" : ""}{pct.toFixed(2)}%
+                                              {pct >= 0 ? "+" : ""}{formatPercent(pct, 2)}
                                             </p>
                                           )}
                                         </div>

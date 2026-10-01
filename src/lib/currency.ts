@@ -1,3 +1,5 @@
+import { formatDateNames, formatNumericDate, getDisplayLocale } from "@/lib/locale";
+
 /**
  * Custom symbols for the "dollar family" so CAD renders as `C$` and USD as the
  * bare `$`. `Intl.NumberFormat` can only produce `$` / `CA$` / `CAD` for CAD —
@@ -22,7 +24,7 @@ const DOLLAR_SYMBOLS: Record<string, string> = {
  */
 export function currencyDecimals(currency: string): number {
   try {
-    return new Intl.NumberFormat("en-CA", { style: "currency", currency })
+    return new Intl.NumberFormat(getDisplayLocale(), { style: "currency", currency })
       .resolvedOptions().maximumFractionDigits ?? 2;
   } catch {
     return 2;
@@ -37,14 +39,14 @@ export function formatCurrency(
   const decimals = opts?.decimals ?? currencyDecimals(currency);
   const symbol = DOLLAR_SYMBOLS[currency];
   if (symbol) {
-    const num = new Intl.NumberFormat("en-CA", {
+    const num = new Intl.NumberFormat(getDisplayLocale(), {
       minimumFractionDigits: decimals,
       maximumFractionDigits: decimals,
     }).format(Math.abs(amount));
     return `${amount < 0 ? "-" : ""}${symbol}${num}`;
   }
   try {
-    return new Intl.NumberFormat("en-CA", {
+    return new Intl.NumberFormat(getDisplayLocale(), {
       style: "currency",
       currency,
       minimumFractionDigits: decimals,
@@ -57,7 +59,7 @@ export function formatCurrency(
     // `RangeError: Invalid currency code` for codes that aren't well-formed
     // ISO 4217 (e.g. a 4-letter "TEST"). Fall back to a plain decimal with the
     // code as a prefix so a custom-currency row never crashes the page.
-    const num = new Intl.NumberFormat("en-CA", {
+    const num = new Intl.NumberFormat(getDisplayLocale(), {
       minimumFractionDigits: decimals,
       maximumFractionDigits: decimals,
     }).format(Math.abs(amount));
@@ -94,7 +96,7 @@ export function formatCurrencyAdaptive(value: number, currency: string): string 
 }
 
 export function formatNumber(amount: number): string {
-  return new Intl.NumberFormat("en-CA", {
+  return new Intl.NumberFormat(getDisplayLocale(), {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(amount);
@@ -104,9 +106,9 @@ export function formatDate(date: string): string {
   const match = date.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (match) {
     const [, year, month, day] = match;
-    return `${day}/${month}/${year}`;
+    return formatNumericDate(year, month, day);
   }
-  return new Date(date + "T00:00:00").toLocaleDateString("en-CA", {
+  return formatDateNames(new Date(date + "T00:00:00"), {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -147,5 +149,5 @@ export function getCurrentMonth(): string {
 export function getMonthLabel(month: string): string {
   const [year, m] = month.split("-");
   const date = new Date(parseInt(year), parseInt(m) - 1);
-  return date.toLocaleDateString("en-CA", { year: "numeric", month: "short" });
+  return formatDateNames(date, { year: "numeric", month: "short" });
 }
