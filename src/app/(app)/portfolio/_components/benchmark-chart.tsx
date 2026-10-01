@@ -18,6 +18,8 @@ import { ColorDot } from "@/components/csp-safe-bar";
 import { GlassTooltip } from "./portfolio-ui";
 import type { BenchmarkData } from "../_types";
 import { prepareTimeSeries } from "@/lib/chart-series";
+import { formatDateNames } from "@/lib/locale";
+import { formatPercent } from "@/lib/locale";
 
 // ── Helper ──────────────────────────────────────────────────────────
 export function buildBenchmarkChartData(benchmarks: BenchmarkData[]): Record<string, unknown>[] {
@@ -98,7 +100,7 @@ export function BenchmarkChart({
                   axisLine={false}
                   tickFormatter={v => {
                     const d = new Date(v + "T00:00:00");
-                    return d.toLocaleDateString("en-CA", { month: "short", year: "2-digit" });
+                    return formatDateNames(d, { month: "short", year: "2-digit" });
                   }}
                   interval="preserveStartEnd"
                 />
@@ -110,7 +112,7 @@ export function BenchmarkChart({
                   domain={domain}
                 />
                 <Tooltip
-                  content={<GlassTooltip formatter={(v) => `${Number(v) > 0 ? "+" : ""}${Number(v).toFixed(2)}%`} />}
+                  content={<GlassTooltip formatter={(v) => `${Number(v) > 0 ? "+" : ""}${formatPercent(Number(v), 2)}`} />}
                   labelFormatter={label => {
                     return formatDate(String(label));
                   }}
@@ -136,7 +138,7 @@ export function BenchmarkChart({
                   <div className="min-w-0 flex-1">
                     <p className="text-xs text-muted-foreground truncate">{b.name}</p>
                     <p className={`text-sm font-mono font-semibold ${b.returnPct >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
-                      {b.returnPct >= 0 ? "+" : ""}{b.returnPct.toFixed(2)}%
+                      {b.returnPct >= 0 ? "+" : ""}{formatPercent(b.returnPct, 2)}
                     </p>
                   </div>
                 </div>

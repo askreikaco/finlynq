@@ -29,6 +29,7 @@ import { useFont, FONT_OPTIONS, type FontKey } from "@/components/font-provider"
 import { Combobox } from "@/components/ui/combobox";
 import { useDisplayCurrencyOptions } from "@/lib/hooks/useDisplayCurrencyOptions";
 import { FxOverridesSection } from "@/components/fx-overrides-section";
+import { LanguageCard } from "@/components/settings/language-card";
 import { ActiveCurrenciesSection } from "@/components/active-currencies-section";
 
 type RecomputeState = { active: boolean; target: string; done: number; total: number; finished: boolean };
@@ -201,6 +202,8 @@ export default function GeneralSettingsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <LanguageCard />
 
       <ActiveCurrenciesSection />
 

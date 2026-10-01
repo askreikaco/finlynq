@@ -29,6 +29,7 @@ import { EtfXrayCard } from "./_components/etf-xray-card";
 import { AllocationCharts } from "./_components/allocation-charts";
 import { BenchmarkChart } from "./_components/benchmark-chart";
 import { HoldingsByAccount } from "./_components/holdings-by-account";
+import { formatPercent } from "@/lib/locale";
 
 // ── Main Page ───────────────────────────────────────────────────────
 export default function PortfolioPage() {
@@ -383,7 +384,7 @@ export default function PortfolioPage() {
                   {summary.totalUnrealizedGainDisplay >= 0 ? "+" : ""}{formatCurrency(summary.totalUnrealizedGainDisplay, displayCurrency)}
                 </p>
                 <p className={`text-xs font-mono ${summary.totalUnrealizedGainPct >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
-                  {summary.totalUnrealizedGainPct >= 0 ? "+" : ""}{summary.totalUnrealizedGainPct.toFixed(2)}%
+                  {summary.totalUnrealizedGainPct >= 0 ? "+" : ""}{formatPercent(summary.totalUnrealizedGainPct, 2)}
                 </p>
               </div>
               {/* Realized G/L */}
@@ -407,7 +408,7 @@ export default function PortfolioPage() {
                   {summary.totalReturnDisplay >= 0 ? "+" : ""}{formatCurrency(summary.totalReturnDisplay, displayCurrency)}
                 </p>
                 <p className={`text-xs font-mono ${summary.totalReturnPct >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
-                  {summary.totalReturnPct >= 0 ? "+" : ""}{summary.totalReturnPct.toFixed(2)}%
+                  {summary.totalReturnPct >= 0 ? "+" : ""}{formatPercent(summary.totalReturnPct, 2)}
                 </p>
               </div>
             </div>

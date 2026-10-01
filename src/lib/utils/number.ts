@@ -1,3 +1,5 @@
+import { formatFixed } from "@/lib/locale";
+
 /**
  * Shared numeric utilities.
  *
@@ -51,8 +53,8 @@ export const isReasonableAmount = (n: number): boolean =>
  */
 export function formatCompactNumber(value: number): string {
   const abs = Math.abs(value);
-  if (abs >= 1e9) return `${(value / 1e9).toFixed(1)}B`;
-  if (abs >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
-  if (abs >= 1000) return `${(value / 1000).toFixed(abs >= 10000 ? 0 : 1)}K`;
+  if (abs >= 1e9) return `${formatFixed(value / 1e9, 1)}B`;
+  if (abs >= 1e6) return `${formatFixed(value / 1e6, 1)}M`;
+  if (abs >= 1000) return `${formatFixed(value / 1000, abs >= 10000 ? 0 : 1)}K`;
   return `${Math.round(value)}`;
 }

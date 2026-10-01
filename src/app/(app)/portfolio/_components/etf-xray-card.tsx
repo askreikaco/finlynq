@@ -24,6 +24,7 @@ import { ColorDot, CspSafeColorBar } from "@/components/csp-safe-bar";
 import { ExposurePieTooltip } from "./portfolio-ui";
 import { exportStocksToCSV } from "./csv";
 import { SECTOR_COLORS, type EtfXrayTab, type OverviewData } from "../_types";
+import { formatPercent } from "@/lib/locale";
 
 type ExposureRow = { name: string; pct: number; color: string };
 
@@ -134,7 +135,7 @@ export function EtfXrayCard({
                           </TableCell>
                           <TableCell className="text-xs text-muted-foreground">{s.country}</TableCell>
                           <TableCell className="text-right">
-                            <span className="text-sm font-mono font-semibold">{s.effectiveWeight.toFixed(1)}%</span>
+                            <span className="text-sm font-mono font-semibold">{formatPercent(s.effectiveWeight, 1)}</span>
                           </TableCell>
                           <TableCell className="text-right">
                             <span className="text-sm font-mono text-muted-foreground">{formatCurrency(s.effectiveValueDisplay, displayCurrency)}</span>
@@ -170,7 +171,7 @@ export function EtfXrayCard({
               return (
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                   <p className="text-xs text-muted-foreground">
-                    {etfXray.aggregatedStocks.length} stocks · Total weight: {totalWeight.toFixed(1)}%
+                    {etfXray.aggregatedStocks.length} stocks · Total weight: {formatPercent(totalWeight, 1)}
                   </p>
                   <div className="flex items-center gap-2">
                     {totalPages > 1 && (

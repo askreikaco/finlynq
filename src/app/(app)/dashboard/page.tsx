@@ -27,6 +27,7 @@ import { useDevMode } from "@/hooks/use-dev-mode";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { CurrencyAuditBanner } from "@/components/currency-audit-banner";
 import type { DashboardData, HealthData } from "./_components/types";
+import { formatPercent } from "@/lib/locale";
 
 // --- Quick Import Widget ---
 function QuickImportWidget() {
@@ -401,12 +402,12 @@ export default function DashboardPage() {
                       {momChange >= 0 ? (
                         <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-emerald-600 bg-emerald-100/80 dark:bg-emerald-950/60 dark:text-emerald-400 px-2.5 py-0.5 rounded-full">
                           <ArrowUpRight className="h-3 w-3" />
-                          +{momPct.toFixed(1)}%
+                          +{formatPercent(momPct, 1)}
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-rose-600 bg-rose-100/80 dark:bg-rose-950/60 dark:text-rose-400 px-2.5 py-0.5 rounded-full">
                           <ArrowDownRight className="h-3 w-3" />
-                          {momPct.toFixed(1)}%
+                          {formatPercent(momPct, 1)}
                         </span>
                       )}
                       <span className="text-[11px] text-muted-foreground">

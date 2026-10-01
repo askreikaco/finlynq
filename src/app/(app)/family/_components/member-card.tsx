@@ -8,6 +8,7 @@ import { FAMILY_STRINGS } from "@/lib/family/strings";
 import type { MemberDto } from "./types";
 import { TrendChart } from "./trend-chart";
 import { fill, getSectionLabel } from "./section-labels";
+import { formatPercent } from "@/lib/locale";
 
 const NONE = FAMILY_STRINGS.overview_none;
 
@@ -207,7 +208,7 @@ export function MemberCard({ member, displayCurrency }: { member: MemberDto; dis
                     <Label text={l.label} generic={l.labelIsGeneric} />
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {l.annualRate.toFixed(2)}% · {FAMILY_STRINGS.overview_loan_balance}: {money(l.remainingBalanceConverted)}
+                    {formatPercent(l.annualRate, 2)} · {FAMILY_STRINGS.overview_loan_balance}: {money(l.remainingBalanceConverted)}
                     {l.payoffDate && ` · ${formatDate(l.payoffDate)}`}
                   </p>
                 </li>

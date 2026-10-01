@@ -12,6 +12,7 @@ import { ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/currency";
 import { ColorDot } from "@/components/csp-safe-bar";
+import { formatPercent } from "@/lib/locale";
 
 // ── Tooltip Components ──────────────────────────────────────────────
 export function GlassTooltip({
@@ -62,7 +63,7 @@ export function ChangeBadge({ value, className = "" }: { value: number | null; c
   return (
     <span className={`inline-flex items-center gap-0.5 font-mono text-sm font-medium ${isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"} ${className}`}>
       {isPositive ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
-      {Math.abs(value).toFixed(2)}%
+      {formatPercent(Math.abs(value), 2)}
     </span>
   );
 }

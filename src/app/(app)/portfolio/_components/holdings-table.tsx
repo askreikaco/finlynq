@@ -30,6 +30,8 @@ import {
   type FilterType,
   type OverviewData,
 } from "../_types";
+import { getDisplayLocale } from "@/lib/locale";
+import { formatPercent } from "@/lib/locale";
 
 type SortField =
   | "name"
@@ -304,7 +306,7 @@ export function HoldingsTable({
                       </TableCell>
                       <TableCell className={`text-right font-mono text-sm ${r.totalQty < 0 ? "text-rose-600 dark:text-rose-400" : ""}`}>
                         {r.totalQty !== 0
-                          ? r.totalQty.toLocaleString("en-CA", { minimumFractionDigits: 0, maximumFractionDigits: magnitudeDecimals(r.totalQty) })
+                          ? r.totalQty.toLocaleString(getDisplayLocale(), { minimumFractionDigits: 0, maximumFractionDigits: magnitudeDecimals(r.totalQty) })
                           : <span className="text-muted-foreground text-xs">--</span>}
                       </TableCell>
                       <TableCell className="text-right font-mono text-sm">
@@ -331,7 +333,7 @@ export function HoldingsTable({
                       <TableCell className="text-right font-mono text-sm">
                         {r.dayChangePct != null ? (
                           <span className={`${r.dayChangePct >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
-                            {r.dayChangePct >= 0 ? "+" : ""}{r.dayChangePct.toFixed(2)}%
+                            {r.dayChangePct >= 0 ? "+" : ""}{formatPercent(r.dayChangePct, 2)}
                           </span>
                         ) : <span className="text-muted-foreground text-xs">--</span>}
                       </TableCell>
@@ -345,7 +347,7 @@ export function HoldingsTable({
                       <TableCell className="text-right font-mono text-sm">
                         {r.unrealizedGainPct != null ? (
                           <span className={`font-medium ${r.unrealizedGainPct >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
-                            {r.unrealizedGainPct >= 0 ? "+" : ""}{r.unrealizedGainPct.toFixed(2)}%
+                            {r.unrealizedGainPct >= 0 ? "+" : ""}{formatPercent(r.unrealizedGainPct, 2)}
                           </span>
                         ) : <span className="text-muted-foreground text-xs">--</span>}
                       </TableCell>
@@ -379,7 +381,7 @@ export function HoldingsTable({
                             </div>
                             <div>
                               <p className="text-muted-foreground">% of Portfolio</p>
-                              <p className="font-medium">{r.pctOfPortfolio != null ? `${r.pctOfPortfolio.toFixed(2)}%` : "--"}</p>
+                              <p className="font-medium">{r.pctOfPortfolio != null ? `${formatPercent(r.pctOfPortfolio, 2)}` : "--"}</p>
                             </div>
                             <div>
                               <p className="text-muted-foreground">Cost Basis</p>
@@ -396,7 +398,7 @@ export function HoldingsTable({
                               <p className={`font-medium font-mono ${totalReturn >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
                                 {totalReturn !== 0 ? `${totalReturn >= 0 ? "+" : ""}${formatCurrencyAdaptive(totalReturn, ccy)}` : "--"}
                                 {r.totalReturnPct != null && (
-                                  <span className="ml-1 text-[10px]">({r.totalReturnPct >= 0 ? "+" : ""}{r.totalReturnPct.toFixed(1)}%)</span>
+                                  <span className="ml-1 text-[10px]">({r.totalReturnPct >= 0 ? "+" : ""}{formatPercent(r.totalReturnPct, 1)})</span>
                                 )}
                               </p>
                             </div>
@@ -459,7 +461,7 @@ export function HoldingsTable({
                                         </TableCell>
                                         <TableCell className={`text-right font-mono text-xs ${hasMetrics && h.quantity != null && h.quantity < 0 ? "text-rose-600 dark:text-rose-400" : ""}`}>
                                           {hasMetrics && h.quantity != null
-                                            ? h.quantity.toLocaleString("en-CA", { minimumFractionDigits: 0, maximumFractionDigits: magnitudeDecimals(h.quantity) })
+                                            ? h.quantity.toLocaleString(getDisplayLocale(), { minimumFractionDigits: 0, maximumFractionDigits: magnitudeDecimals(h.quantity) })
                                             : <span className="text-muted-foreground">--</span>}
                                           {hasMetrics && h.quantity != null && h.quantity < 0 && (
                                             <span className="ml-1 text-[9px] uppercase tracking-wider text-rose-500" title="Short position">short</span>

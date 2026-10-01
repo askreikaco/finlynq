@@ -15,6 +15,7 @@ import {
   TrendingUp,
   CalendarDays,
 } from "lucide-react";
+import { formatDateNames, getDisplayLocale, weekdayShortNames } from "@/lib/locale";
 
 type CalendarEvent = {
   date: string;
@@ -214,12 +215,12 @@ function CalendarPageContent() {
 
   const daysInMonth = getDaysInMonth(currentYear, currentMonth);
   const firstDay = getFirstDayOfWeek(currentYear, currentMonth);
-  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const dayNames = weekdayShortNames();
 
-  const monthLabel = new Date(currentYear, currentMonth).toLocaleDateString(
-    "en-CA",
-    { year: "numeric", month: "long" }
-  );
+  const monthLabel = formatDateNames(new Date(currentYear, currentMonth), {
+    year: "numeric",
+    month: "long",
+  });
 
   const today = new Date();
   const isToday = (day: number) =>
@@ -329,7 +330,7 @@ function CalendarPageContent() {
                 currentYear,
                 currentMonth,
                 selectedDay
-              ).toLocaleDateString("en-CA", {
+              ).toLocaleDateString(getDisplayLocale(), {
                 weekday: "long",
                 month: "long",
                 day: "numeric",
