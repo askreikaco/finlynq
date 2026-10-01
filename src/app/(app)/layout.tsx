@@ -19,7 +19,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <ReportingRecomputeIndicator />
           <div className="flex flex-1">
             <Nav />
-            <main className="flex-1 overflow-x-hidden overflow-y-auto min-w-0 pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0 bg-dot-pattern ambient-glow">
+            <main className="flex-1 overflow-x-hidden overflow-y-auto min-w-0 pb-[calc(4rem+var(--sab))] md:pb-0 bg-dot-pattern ambient-glow">
               {/* FINLYNQ-52: no width cap on the (app) shell — content fills
                   the viewport to the right of the sidebar. Per-page wrappers
                   may still impose their own readability cap (e.g. settings,

@@ -487,7 +487,7 @@ function ChatPageContent() {
       )}
 
       {/* Input area */}
-      <div className="shrink-0 border-t border-border bg-background/80 backdrop-blur-sm px-4 md:px-6 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:pb-3">
+      <div className="shrink-0 border-t border-border bg-background/80 backdrop-blur-sm px-4 md:px-6 py-3 pb-[calc(0.75rem+var(--sab))] md:pb-3">
         {/* Quick suggestions when there are messages */}
         {messages.length > 0 && !loading && (
           <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-none mb-1">
