@@ -24,6 +24,7 @@ import { Accordion, AccordionItem } from "@/components/ui/accordion";
 import { Link2 as Link2Icon, ExternalLink, Zap, Mail } from "lucide-react";
 import { AmountInput } from "@/components/amount-input";
 import { RulesSection } from "@/components/settings/sections/rules-section";
+import { ImportSection } from "@/components/settings/sections/import-section";
 
 interface Thresholds {
   dateToleranceDays: number;
@@ -231,7 +232,7 @@ export default function ReconciliationSettingsPage({ initialSection, queryString
           description="Templates, email config, migration"
         >
           <div id="import">
-            <p className="text-sm text-muted-foreground">Import section (under development)</p>
+            <ImportSection />
           </div>
         </AccordionItem>
       </Accordion>
