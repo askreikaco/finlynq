@@ -164,7 +164,9 @@ const EXPLICIT = new Set<string>(
 );
 
 /** Tables carrying a `user_id` column — i.e. the per-user surface. */
-const USER_TABLES = TABLES.filter((t) => t.columns.some((c) => c.sqlName === "user_id"));
+const USER_TABLES = TABLES.filter((t) =>
+  t.columns.some((c) => c.sqlName === "user_id" || c.sqlName === "owner_id" || c.sqlName === "viewer_id"),
+);
 
 /**
  * Fixpoint: a table is covered if it is deleted explicitly, or cascades to a
@@ -222,6 +224,16 @@ describe("deleteAllUserDataTx table coverage", () => {
         `tx.delete(s.<table>) to deleteAllUserDataTx, or document an ` +
         `exemption in EXEMPT here:\n  ${uncovered.join("\n  ")}`,
     ).toEqual([]);
+  });
+
+  it("covers the Family Wealth tables (owner_id/viewer_id keyed)", () => {
+    for (const v of ["familyShares", "familyLabels", "familySectionKeys", "userKeypairs"]) {
+      expect(EXPLICIT.has(v), `${v} must be deleted explicitly`).toBe(true);
+    }
+    for (const v of ["familyInvites", "familyKeyGrants"]) {
+      expect(COVERED.has(v), `${v} must be covered via cascade from familyShares`).toBe(true);
+    }
+    expect(USER_TABLES.map((t) => t.variable)).toContain("familyShares");
   });
 
   it("keeps the regression tables explicitly covered", () => {

@@ -9,7 +9,7 @@
 import { db, schema } from "@/db";
 import type { DrizzleDb } from "@/db";
 import * as pgSchema from "@/db/schema-pg";
-import { eq, count, sql, inArray, and, isNull } from "drizzle-orm";
+import { eq, count, sql, inArray, and, isNull, or } from "drizzle-orm";
 import { normalizeDbRows } from "@/lib/db-utils";
 import type { TableColFilter } from "@/lib/table-filters";
 import crypto from "crypto";
@@ -1291,6 +1291,17 @@ async function deleteAllUserDataTx(tx: TxClient, userId: string) {
   // so a wipe left the keys behind. Belongs in the shared body like everything
   // else — see the header note about the two paths never drifting.
   await tx.delete(s.mcpIdempotencyKeys).where(eq(s.mcpIdempotencyKeys.userId, userId));
+
+  // Family Wealth (P1). Explicit deletes: a wipe KEEPS the users row, so FK
+  // cascades off users never fire. One statement for owner OR viewer rows;
+  // family_invites / family_key_grants cascade off family_shares and a
+  // reciprocal child cascades off its parent (reciprocal_of ON DELETE CASCADE).
+  await tx
+    .delete(s.familyShares)
+    .where(or(eq(s.familyShares.ownerId, userId), eq(s.familyShares.viewerId, userId)));
+  await tx.delete(s.familyLabels).where(eq(s.familyLabels.ownerId, userId));
+  await tx.delete(s.familySectionKeys).where(eq(s.familySectionKeys.ownerId, userId));
+  await tx.delete(s.userKeypairs).where(eq(s.userKeypairs.userId, userId));
 
   // settings last — it holds the api_key/api_key_dek/email_webhook_* rows and
   // we also just read the import_email from here above.

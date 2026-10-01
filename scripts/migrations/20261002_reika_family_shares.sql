@@ -21,8 +21,8 @@ CREATE TABLE IF NOT EXISTS family_shares (
   sections TEXT[] NOT NULL,
   all_sections BOOLEAN NOT NULL DEFAULT false,
   must_share_back BOOLEAN NOT NULL DEFAULT false,
-  required_back_sections TEXT[] DEFAULT '{}',
-  reciprocal_of UUID REFERENCES family_shares(id),
+  required_back_sections TEXT[] NOT NULL DEFAULT '{}',
+  reciprocal_of UUID REFERENCES family_shares(id) ON DELETE CASCADE,
   status TEXT NOT NULL DEFAULT 'pending'
     CHECK (status IN ('pending','awaiting_owner_unlock','active','suspended','revoked','declined','expired','key_reset')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -32,11 +32,11 @@ CREATE TABLE IF NOT EXISTS family_shares (
   last_viewed_at TIMESTAMPTZ,
   CONSTRAINT owner_not_viewer CHECK (owner_id <> viewer_id),
   CONSTRAINT sections_not_empty CHECK (cardinality(sections) > 0 OR all_sections),
-  CONSTRAINT owner_viewer_live_unique UNIQUE (owner_id, viewer_id) WHERE status IN ('active','awaiting_owner_unlock','pending'),
   FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (viewer_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS family_shares_owner_viewer_live_uniq ON family_shares(owner_id, viewer_id) WHERE status IN ('active','awaiting_owner_unlock','pending');
 CREATE INDEX IF NOT EXISTS family_shares_owner_idx ON family_shares(owner_id);
 CREATE INDEX IF NOT EXISTS family_shares_viewer_idx ON family_shares(viewer_id);
 CREATE INDEX IF NOT EXISTS family_shares_status_idx ON family_shares(status);
@@ -56,8 +56,9 @@ BEGIN
       FROM family_shares WHERE id = NEW.reciprocal_of;
 
       IF parent_status IN ('active', 'awaiting_owner_unlock') THEN
-        IF NOT (NEW.sections @> parent_required) THEN
-          RAISE EXCEPTION 'reciprocal share sections must include required_back_sections';
+        IF NOT (NEW.sections @> COALESCE(parent_required, '{}'::TEXT[])) THEN
+          RAISE EXCEPTION 'reciprocal share sections must include required_back_sections'
+            USING ERRCODE = 'check_violation';
         END IF;
       END IF;
     END;

@@ -64,15 +64,9 @@ const VALID_TRANSITIONS: Record<FamilyShareStatus, FamilyShareStatus[]> = {
     "revoked",    // terminated permanently
     "key_reset",  // owner reset keys
   ],
-  revoked: [
-    "pending", // re-share (creates new row, but logically "start over")
-  ],
-  declined: [
-    "pending", // re-share (creates new row)
-  ],
-  expired: [
-    "pending", // re-share (creates new row)
-  ],
+  revoked: [], // terminal: a re-share creates a NEW row
+  declined: [], // terminal: a re-share creates a NEW row
+  expired: [], // terminal: a re-share creates a NEW row
   key_reset: [
     "active",  // labels swept, back to normal operation
   ],

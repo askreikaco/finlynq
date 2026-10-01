@@ -11,6 +11,11 @@ import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
+  createShare, getShareById, getOwnerShares, getViewerShares, updateShareStatus,
+  revokeShare, acceptShare, consumeInvite, getShareKeyGrants, updateLastViewed,
+  deleteUserFamilyData,
+} from "@/lib/family/share-dal";
+import {
   bootstrapFamilyTestDb,
   resetFamilyTestDb,
   shutdownFamilyTestDb,
@@ -19,7 +24,40 @@ import {
   getTestShare,
 } from "./family-fixtures";
 
-describe("Family Wealth P1", () => {
+/** SQLSTATE of the error thrown by fn (drizzle wraps pg errors in .cause). */
+async function pgCode(fn: () => Promise<unknown>): Promise<string | undefined> {
+  try {
+    await fn();
+  } catch (e) {
+    const err = e as { cause?: { code?: string }; code?: string };
+    return err.cause?.code ?? err.code ?? "no-code";
+  }
+  return undefined;
+}
+
+const pgArr = (a: string[]) => `{${a.join(",")}}`;
+
+async function insertShare(o: {
+  id?: string;
+  owner: string;
+  viewer?: string | null;
+  email: string;
+  sections: string[];
+  status?: string;
+  reciprocalOf?: string | null;
+  required?: string[];
+}): Promise<string> {
+  const r = await db.execute(sql`
+    INSERT INTO family_shares (id, owner_id, viewer_id, viewer_email_lower, sections,
+      status, reciprocal_of, required_back_sections, must_share_back)
+    VALUES (COALESCE(${o.id ?? null}::uuid, gen_random_uuid()), ${o.owner}, ${o.viewer ?? null}, ${o.email},
+      ${pgArr(o.sections)}::TEXT[], ${o.status ?? "pending"}, ${o.reciprocalOf ?? null}::uuid,
+      ${pgArr(o.required ?? [])}::TEXT[], ${(o.required ?? []).length > 0})
+    RETURNING id`);
+  return (r.rows[0] as { id: string }).id;
+}
+
+describe.skipIf(!process.env.DATABASE_URL)("Family Wealth P1", () => {
   beforeAll(async () => {
     await bootstrapFamilyTestDb();
   });
@@ -146,7 +184,7 @@ describe("Family Wealth P1", () => {
       `);
 
       // Try to insert reciprocal with insufficient sections — should fail
-      await expect(async () => {
+      expect(await pgCode(async () => {
         await db.execute(sql`
           INSERT INTO family_shares (
             id, owner_id, viewer_email_lower, sections, status, reciprocal_of, must_share_back
@@ -160,7 +198,7 @@ describe("Family Wealth P1", () => {
             false
           )
         `);
-      }).rejects.toThrow();
+      })).toBe("23514");
     });
 
     it("allows reciprocal share with sufficient sections", async () => {
@@ -257,7 +295,7 @@ describe("Family Wealth P1", () => {
     it("enforces sections not empty constraint", async () => {
       const owner = await createTestUser("owner@example.com");
 
-      expect(async () => {
+      expect(await pgCode(async () => {
         await db.execute(sql`
           INSERT INTO family_shares (
             id, owner_id, viewer_email_lower, sections, status
@@ -269,13 +307,13 @@ describe("Family Wealth P1", () => {
             'pending'
           )
         `);
-      }).rejects.toThrow();
+      })).toBe("23514");
     });
 
     it("enforces owner_not_viewer constraint", async () => {
       const owner = await createTestUser("owner@example.com");
 
-      expect(async () => {
+      expect(await pgCode(async () => {
         await db.execute(sql`
           INSERT INTO family_shares (
             id, owner_id, viewer_id, viewer_email_lower, sections, status
@@ -288,13 +326,13 @@ describe("Family Wealth P1", () => {
             'pending'
           )
         `);
-      }).rejects.toThrow();
+      })).toBe("23514");
     });
 
     it("enforces status values constraint", async () => {
       const owner = await createTestUser("owner@example.com");
 
-      expect(async () => {
+      expect(await pgCode(async () => {
         await db.execute(sql`
           INSERT INTO family_shares (
             id, owner_id, viewer_email_lower, sections, status
@@ -306,7 +344,7 @@ describe("Family Wealth P1", () => {
             'invalid_status'
           )
         `);
-      }).rejects.toThrow();
+      })).toBe("23514");
     });
   });
 
@@ -406,6 +444,192 @@ describe("Family Wealth P1", () => {
         SELECT * FROM family_section_keys WHERE owner_id = ${owner}
       `);
       expect(keys.rows.length).toBe(0);
+    });
+  });
+  describe("Min-section trigger semantics (DB)", () => {
+    async function pair(parentStatus = "active") {
+      const a = await createTestUser("a@example.com");
+      const b = await createTestUser("b@example.com");
+      const parent = await insertShare({
+        owner: a, viewer: b, email: "b@example.com",
+        sections: ["accounts", "loans"], required: ["accounts", "loans"], status: parentStatus,
+      });
+      return { a, b, parent };
+    }
+
+    it("rejects a strict subset (check_violation) and a partial overlap", async () => {
+      const { a, b, parent } = await pair();
+      for (const sections of [["accounts"], ["accounts", "goals"]]) {
+        expect(
+          await pgCode(() =>
+            insertShare({ owner: b, viewer: a, email: "a@example.com", sections, reciprocalOf: parent }),
+          ),
+        ).toBe("23514");
+      }
+    });
+
+    it("accepts exact and superset; widening after creation is allowed", async () => {
+      const { a, b, parent } = await pair();
+      const child = await insertShare({
+        owner: b, viewer: a, email: "a@example.com",
+        sections: ["accounts", "loans"], reciprocalOf: parent,
+      });
+      await db.execute(sql`UPDATE family_shares SET sections = ${pgArr(["accounts", "loans", "goals"])}::TEXT[] WHERE id = ${child}`);
+      expect((await getTestShare(child)).sections).toEqual(["accounts", "loans", "goals"]);
+    });
+
+    it("rejects shrinking the reciprocal below required while parent is live", async () => {
+      const { a, b, parent } = await pair();
+      const child = await insertShare({
+        owner: b, viewer: a, email: "a@example.com",
+        sections: ["accounts", "loans"], reciprocalOf: parent,
+      });
+      expect(
+        await pgCode(() => db.execute(sql`UPDATE family_shares SET sections = ${pgArr(["accounts"])}::TEXT[] WHERE id = ${child}`)),
+      ).toBe("23514");
+    });
+
+    it("revoking the parent lifts the constraint", async () => {
+      const { a, b, parent } = await pair();
+      const child = await insertShare({
+        owner: b, viewer: a, email: "a@example.com",
+        sections: ["accounts", "loans"], reciprocalOf: parent,
+      });
+      await db.execute(sql`UPDATE family_shares SET status = 'revoked' WHERE id = ${parent}`);
+      await db.execute(sql`UPDATE family_shares SET sections = ${pgArr(["accounts"])}::TEXT[] WHERE id = ${child}`);
+      expect((await getTestShare(child)).sections).toEqual(["accounts"]);
+    });
+
+    it("one live share per owner->viewer pair; a revoked one does not block", async () => {
+      const a = await createTestUser("a@example.com");
+      const b = await createTestUser("b@example.com");
+      await insertShare({ owner: a, viewer: b, email: "b@example.com", sections: ["accounts"], status: "active" });
+      expect(
+        await pgCode(() => insertShare({ owner: a, viewer: b, email: "b@example.com", sections: ["goals"] })),
+      ).toBe("23505");
+      await insertShare({ owner: a, viewer: b, email: "b@example.com", sections: ["goals"], status: "revoked" });
+    });
+
+    it("reciprocal_of cascades: deleting a parent removes the child", async () => {
+      const { a, b, parent } = await pair();
+      const child = await insertShare({
+        owner: b, viewer: a, email: "a@example.com",
+        sections: ["accounts", "loans"], reciprocalOf: parent,
+      });
+      await db.execute(sql`DELETE FROM family_shares WHERE id = ${parent}`);
+      expect(await getTestShare(child)).toBeNull();
+    });
+  });
+
+  describe("Share DAL (DB, actor scoped)", () => {
+    it("getOwnerShares / getViewerShares never return other users' shares", async () => {
+      const a = await createTestUser("a@example.com");
+      const b = await createTestUser("b@example.com");
+      const c = await createTestUser("c@example.com");
+      const ab = await insertShare({ owner: a, viewer: b, email: "b@example.com", sections: ["accounts"], status: "active" });
+      const cb = await insertShare({ owner: c, viewer: b, email: "b@example.com", sections: ["goals"], status: "active" });
+      expect((await getOwnerShares(db, a)).map((s) => s.id)).toEqual([ab]);
+      expect((await getOwnerShares(db, c)).map((s) => s.id)).toEqual([cb]);
+      expect((await getViewerShares(db, b)).map((s) => s.id).sort()).toEqual([ab, cb].sort());
+      expect(await getViewerShares(db, a)).toEqual([]);
+    });
+
+    it("by-id functions refuse a third party", async () => {
+      const a = await createTestUser("a@example.com");
+      const b = await createTestUser("b@example.com");
+      const x = await createTestUser("x@example.com");
+      const id = await insertShare({ owner: a, viewer: b, email: "b@example.com", sections: ["accounts"], status: "active" });
+      expect(await getShareById(db, id, x)).toBeNull();
+      expect(await getShareById(db, id, a)).not.toBeNull();
+      expect(await getShareById(db, id, b)).not.toBeNull();
+      await expect(updateShareStatus(db, id, "suspended", x)).rejects.toThrow(/not found/);
+      await expect(revokeShare(db, id, x)).rejects.toThrow(/not found/);
+      expect(await getShareKeyGrants(db, id, x)).toEqual([]);
+      await updateLastViewed(db, id, x);
+      expect((await getTestShare(id)).last_viewed_at).toBeNull();
+      await updateLastViewed(db, id, b);
+      expect((await getTestShare(id)).last_viewed_at).not.toBeNull();
+      expect((await getTestShare(id)).status).toBe("active");
+    });
+
+    it("status guard: illegal transitions throw and leave the row unchanged", async () => {
+      const a = await createTestUser("a@example.com");
+      const b = await createTestUser("b@example.com");
+      const id = await insertShare({ owner: a, viewer: b, email: "b@example.com", sections: ["accounts"], status: "active" });
+      await expect(updateShareStatus(db, id, "pending", a)).rejects.toThrow(/Invalid transition/);
+      await revokeShare(db, id, a);
+      const row = await getTestShare(id);
+      expect(row.status).toBe("revoked");
+      expect(row.revoked_by).toBe(a);
+      await expect(updateShareStatus(db, id, "active", a)).rejects.toThrow(/Invalid transition/);
+      await expect(revokeShare(db, id, a)).rejects.toThrow(/Invalid transition/);
+      expect((await getTestShare(id)).status).toBe("revoked");
+    });
+
+    it("revoke deletes key grants", async () => {
+      const a = await createTestUser("a@example.com");
+      const b = await createTestUser("b@example.com");
+      const id = await insertShare({ owner: a, viewer: b, email: "b@example.com", sections: ["accounts"], status: "active" });
+      await db.execute(sql`INSERT INTO family_key_grants (share_id, section) VALUES (${id}, 'accounts')`);
+      expect((await getShareKeyGrants(db, id, a)).length).toBe(1);
+      await revokeShare(db, id, b);
+      expect(await getShareKeyGrants(db, id, a)).toEqual([]);
+    });
+
+    it("acceptShare: pending + matching email only; cannot revive terminal shares", async () => {
+      const a = await createTestUser("a@example.com");
+      const b = await createTestUser("b@example.com");
+      const x = await createTestUser("x@example.com");
+      const id = await createShare(db, a, "b@example.com", ["accounts"]);
+      await expect(acceptShare(db, id, x, "x@example.com")).rejects.toThrow(/cannot be accepted/);
+      await expect(acceptShare(db, id, a, "b@example.com")).rejects.toThrow(/cannot be accepted/);
+      await acceptShare(db, id, b, "b@example.com");
+      expect((await getTestShare(id)).status).toBe("awaiting_owner_unlock");
+      expect((await getTestShare(id)).viewer_id).toBe(b);
+      await expect(acceptShare(db, id, b, "b@example.com")).rejects.toThrow(/cannot be accepted/);
+      await revokeShare(db, id, a);
+      await expect(acceptShare(db, id, b, "b@example.com")).rejects.toThrow(/cannot be accepted/);
+      expect((await getTestShare(id)).status).toBe("revoked");
+    });
+
+    it("createShare validates sections against the allow-list", async () => {
+      const a = await createTestUser("a@example.com");
+      await expect(createShare(db, a, "b@example.com", ["payee"])).rejects.toThrow();
+      await expect(createShare(db, a, "b@example.com", [])).rejects.toThrow();
+      const id = await createShare(db, a, "b@example.com", ["accounts", "accounts"], true);
+      const row = await getTestShare(id);
+      expect(row.sections).toEqual(["accounts"]);
+      expect(row.required_back_sections).toEqual(["accounts"]);
+    });
+
+    it("consumeInvite: single-use, email-bound, unexpired", async () => {
+      const a = await createTestUser("a@example.com");
+      const id = await createShare(db, a, "b@example.com", ["accounts"]);
+      const r = await db.execute(sql`INSERT INTO family_invites (share_id, email_lower, token_hash, expires_at)
+        VALUES (${id}, 'b@example.com', 'h1', NOW() + interval '1 day'),
+               (${id}, 'b@example.com', 'h2', NOW() - interval '1 day') RETURNING id, token_hash`);
+      const rows = r.rows as { id: string; token_hash: string }[];
+      const live = rows.find((x) => x.token_hash === "h1")!.id;
+      const old = rows.find((x) => x.token_hash === "h2")!.id;
+      expect(await consumeInvite(db, live, "x@example.com")).toBe(false);
+      expect(await consumeInvite(db, old, "b@example.com")).toBe(false);
+      expect(await consumeInvite(db, live, "b@example.com")).toBe(true);
+      expect(await consumeInvite(db, live, "b@example.com")).toBe(false);
+    });
+
+    it("deleteUserFamilyData removes owner+viewer shares, reciprocal pairs, keys, labels", async () => {
+      const a = await createTestUser("a@example.com");
+      const b = await createTestUser("b@example.com");
+      const parent = await insertShare({ owner: a, viewer: b, email: "b@example.com", sections: ["accounts"], status: "active" });
+      await insertShare({ owner: b, viewer: a, email: "a@example.com", sections: ["accounts"], reciprocalOf: parent });
+      await db.execute(sql`INSERT INTO family_section_keys (owner_id, section, key_wrapped) VALUES (${a}, 'accounts', 'k')`);
+      await db.execute(sql`INSERT INTO family_labels (owner_id, section, entity_type, entity_id, label_ct) VALUES (${a}, 'accounts', 'accounts', 1, 'x')`);
+      await db.execute(sql`INSERT INTO user_keypairs (user_id, x25519_pub, priv_wrapped) VALUES (${a}, 'p', 'w')`);
+      await deleteUserFamilyData(db, a);
+      for (const t of ["family_shares", "family_section_keys", "family_labels", "user_keypairs"]) {
+        const r = await db.execute(sql.raw(`SELECT count(*)::int AS n FROM ${t}`));
+        expect((r.rows[0] as { n: number }).n).toBe(0);
+      }
     });
   });
 });

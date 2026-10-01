@@ -27,6 +27,7 @@ import {
   real,
   smallint,
 } from "drizzle-orm/pg-core";
+import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
 export const accounts = pgTable("accounts", {
@@ -2777,8 +2778,8 @@ export const familyShares = pgTable(
     sections: text("sections").array().notNull(),
     allSections: boolean("all_sections").notNull().default(false),
     mustShareBack: boolean("must_share_back").notNull().default(false),
-    requiredBackSections: text("required_back_sections").array().default(sql`'{}'`),
-    reciprocalOf: uuid("reciprocal_of"),
+    requiredBackSections: text("required_back_sections").array().notNull().default(sql`'{}'`),
+    reciprocalOf: uuid("reciprocal_of").references((): AnyPgColumn => familyShares.id, { onDelete: "cascade" }),
     status: text("status").notNull().default("pending").$type<
       | "pending"
       | "awaiting_owner_unlock"

@@ -50,8 +50,7 @@ CREATE TABLE IF NOT EXISTS family_key_grants (
   status TEXT NOT NULL DEFAULT 'ready'
     CHECK (status IN ('ready','awaiting_keys')),
   PRIMARY KEY (share_id, section),
-  FOREIGN KEY (share_id) REFERENCES family_shares(id) ON DELETE CASCADE,
-  FOREIGN KEY (viewer_wrapped) REFERENCES family_section_keys(owner_id) ON DELETE CASCADE
+  FOREIGN KEY (share_id) REFERENCES family_shares(id) ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS family_key_grants_share_idx ON family_key_grants(share_id);

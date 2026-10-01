@@ -81,6 +81,7 @@ export async function createTestUser(email: string = "test@example.com"): Promis
   return userId;
 }
 
+const toPgArr = (a: string[]) => `{${a.join(",")}}`;
 /**
  * Create a test family share.
  * @returns share ID (UUID string)
@@ -99,10 +100,10 @@ export async function createTestShare(
       ${shareId},
       ${ownerId},
       ${viewerEmailLower},
-      ${JSON.stringify(sections)}::TEXT[],
+      ${toPgArr(sections)}::TEXT[],
       'pending',
       ${mustShareBack},
-      ${mustShareBack ? JSON.stringify(sections) : "'{}'"}::TEXT[]
+      ${mustShareBack ? toPgArr(sections) : "{}"}::TEXT[]
     )
   `);
   return shareId;
