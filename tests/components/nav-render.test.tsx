@@ -84,6 +84,39 @@ describe("Nav admin group", () => {
     expect(await screen.findByText("Admin Inbox")).toBeTruthy();
     expect(adminToggle()!.getAttribute("aria-expanded")).toBe("true");
   });
+
+  it("admin user on /admin/system shows Environment link active, no old admin links", async () => {
+    mockPath = "/admin/system";
+    mockFetch({ admin: true });
+    render(<Nav />);
+
+    const envLink = await screen.findByRole("link", { name: /Environment/i });
+    expect(envLink.getAttribute("href")).toBe("/admin/env");
+    expect(envLink.getAttribute("aria-current")).toBe("page");
+
+    // Old links should not exist
+    expect(screen.queryByText("Diagnostics")).toBeNull();
+    expect(screen.queryByText("Rate Cache")).toBeNull();
+    expect(screen.queryByText("API Log")).toBeNull();
+    expect(screen.queryByText("Server Health")).toBeNull();
+  });
+
+  it("admin on /admin/system with group open, clicking toggle collapses it", async () => {
+    mockPath = "/admin/system";
+    localStorage.setItem("nav.adminOpen", "true");
+    mockFetch({ admin: true });
+    render(<Nav />);
+
+    const btn = await screen.findByRole("button", { name: /^admin$/i });
+    expect(btn.getAttribute("aria-expanded")).toBe("true");
+    expect(screen.getByText("Email Oversight")).toBeTruthy();
+
+    fireEvent.click(btn);
+
+    expect(btn.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByText("Email Oversight")).toBeNull();
+    expect(localStorage.getItem("nav.adminOpen")).toBe("false");
+  });
 });
 
 describe("Nav What's New", () => {

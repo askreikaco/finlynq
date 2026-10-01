@@ -183,13 +183,15 @@ describe("routes and structure", () => {
       const p = path.join(ROOT, f);
       if (existsSync(p)) expect(readFileSync(p, "utf8")).not.toMatch(/["'`]\/admin\/email["'`]/);
     }
-    expect(existsSync(path.join(ROOT, "src/app/(app)/admin/integrations/page.tsx"))).toBe(true);
+    expect(existsSync(path.join(ROOT, "src/app/(app)/admin/(env)/integrations/page.tsx"))).toBe(true);
     expect(existsSync(path.join(ROOT, "src/app/api/admin/integrations/email/route.ts"))).toBe(true);
   });
 
-  it("nav has the Integrations link to /admin/integrations", () => {
+  it("nav has the Environment link covering /admin/integrations", () => {
     const src = readFileSync(path.join(ROOT, "src/components/nav.tsx"), "utf8");
-    expect(src).toMatch(/href: "\/admin\/integrations", label: "Integrations", icon: Plug/);
+    expect(src).toMatch(/href: "\/admin\/env", label: "Environment"/);
+    expect(src).toMatch(/\/admin\/integrations/);
+    expect(src).toMatch(/activePrefixes/);
     expect(src).not.toMatch(/href: "\/admin\/email"/);
     expect(navGroups).toBeTruthy();
   });

@@ -4,7 +4,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor, cleanup } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import Page from "@/app/(app)/admin/integrations/page";
+import Page from "@/app/(app)/admin/(env)/integrations/page";
 
 type Call = { url: string; method: string; body: Record<string, unknown> | null };
 
