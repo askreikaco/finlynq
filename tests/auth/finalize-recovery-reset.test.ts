@@ -147,6 +147,15 @@ describe.skipIf(!HAS_DB)("finalizeRecoveryReset (real Postgres)", () => {
     expect(redeemed!.dek.equals(dek)).toBe(true);
   }, 30_000);
 
+  it("with trustDevice:false the kept device is the ONLY survivor (exclusion filter honoured)", async () => {
+    const { id, dek } = await mkUser();
+    const keep = (await issueDevice(id, dek))!;
+    const d2 = (await issueDevice(id, dek))!;
+    await finalizeRecoveryReset({ userId: id, newPassword: NEW_PW, dek, keepDeviceId: keep.id, trustDevice: false });
+    expect((await devRow(keep.id)).revokedAt).toBeNull();
+    expect((await devRow(d2.id)).revokedAt).not.toBeNull();
+  }, 30_000);
+
   it("without keepDeviceId every old device is revoked; trustDevice:false issues no new device", async () => {
     const { id, dek } = await mkUser();
     const d1 = (await issueDevice(id, dek))!;
