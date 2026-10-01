@@ -39,6 +39,8 @@ services:
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       # Trusted device cookie lifetime in days (optional, default 30)
       PF_TRUSTED_DEVICE_DAYS: ${PF_TRUSTED_DEVICE_DAYS:-30}
+      # Skip landing page: redirect "/" to /dashboard (logged in) or /cloud (logged out)
+      PF_ROOT_REDIRECT: ${PF_ROOT_REDIRECT:-1}
       NODE_ENV: production
       # Email transport: set one of RESEND_API_KEY, BREVO_API_KEY, or SMTP_HOST
       RESEND_API_KEY: ${RESEND_API_KEY:-}
