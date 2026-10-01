@@ -1,7 +1,8 @@
 /**
  * /api/settings/connected-apps — per-user OAuth grant management (FINLYNQ-154).
  *
- *   GET    — list the user's live OAuth grants (client name, scope, created_at).
+ *   GET    — list the user's live OAuth grants (client name, scope, created_at)
+ *            and MCP API key last-used timestamp.
  *   DELETE — revoke ONE grant by its row id (?id=N). Kills the access + refresh
  *            sides of that grant at once (one row holds both).
  *
@@ -12,12 +13,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth/require-auth";
 import { listConnectedApps, revokeGrantById } from "@/lib/oauth";
+import { db } from "@/db";
+import { users } from "@/db/schema-pg";
+import { eq } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   const auth = await requireAuth(request);
   if (!auth.authenticated) return auth.response;
   const apps = await listConnectedApps(auth.context.userId);
-  return NextResponse.json({ apps });
+
+  // Fetch MCP API key last-used timestamp
+  const userRow = await db
+    .select({ mcpApiKeyLastUsedAt: users.mcpApiKeyLastUsedAt })
+    .from(users)
+    .where(eq(users.id, auth.context.userId))
+    .limit(1);
+
+  const mcpApiKeyLastUsedAt = userRow[0]?.mcpApiKeyLastUsedAt
+    ? userRow[0].mcpApiKeyLastUsedAt.toISOString()
+    : null;
+
+  return NextResponse.json({ apps, mcpApiKeyLastUsedAt });
 }
 
 export async function DELETE(request: NextRequest) {

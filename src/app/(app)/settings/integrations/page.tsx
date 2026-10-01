@@ -4,8 +4,10 @@
  * /settings/integrations — MCP setup guide + Connected apps (FINLYNQ-154 —
  * per-user OAuth grant list + revoke).
  *
- * Shows an MCP setup guide card when no apps are connected; hides it once
- * the user has connected at least one MCP client like Claude or ChatGPT.
+ * Shows an MCP setup guide card when no apps are connected and no API key has
+ * been used recently. Hides it once the user has connected via OAuth or used
+ * an MCP API key within the last 30 days. Provides a "Show setup guide" link
+ * when the guide is hidden.
  */
 
 import Link from "next/link";
@@ -14,28 +16,37 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Zap } from "lucide-react";
 import { ConnectedApps } from "./connected-apps";
+import { isMcpConnected } from "@/lib/mcp/connected";
+
+interface ConnectedAppsData {
+  apps: { id: number }[];
+  mcpApiKeyLastUsedAt: string | null;
+}
 
 export default function IntegrationsSettingsPage() {
-  const [hasApps, setHasApps] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    // `connected-apps` lists OAuth grants only. An API-key-only MCP user has no
-    // grant, so they intentionally still see the guide card (owner decision).
+    // Fetch both OAuth apps and API key last-used timestamp.
     // The card renders only after a SUCCESSFUL fetch (never on error).
-    const checkApps = async () => {
+    const checkConnected = async () => {
       try {
         const res = await fetch("/api/settings/connected-apps");
         if (res.ok) {
-          const data = await res.json();
-          setHasApps(Array.isArray(data.apps) && data.apps.length > 0);
+          const data: ConnectedAppsData = await res.json();
+          const connected = isMcpConnected(
+            data.apps || [],
+            data.mcpApiKeyLastUsedAt || null
+          );
+          setIsConnected(connected);
           setLoaded(true);
         }
       } catch {
         // leave `loaded` false: no card on failure
       }
     };
-    checkApps();
+    checkConnected();
   }, []);
 
   return (
@@ -45,7 +56,7 @@ export default function IntegrationsSettingsPage() {
         <p className="text-sm text-muted-foreground mt-0.5">External tools that connect to your data</p>
       </div>
 
-      {loaded && !hasApps && (
+      {loaded && !isConnected && (
         <Card className="border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30">
           <CardHeader>
             <div className="flex items-start gap-3">
@@ -71,6 +82,14 @@ export default function IntegrationsSettingsPage() {
       )}
 
       <ConnectedApps />
+
+      {loaded && isConnected && (
+        <div className="text-center text-sm text-muted-foreground">
+          <Link href="/connect" className="text-primary hover:underline">
+            Show setup guide
+          </Link>
+        </div>
+      )}
     </div>
   );
 }
