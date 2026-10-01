@@ -29,6 +29,7 @@ interface AdminUser {
   role: string;
   emailVerified: number;
   mfaEnabled: number;
+  hasPasskey?: boolean;
   plan: string;
   planExpiresAt: string | null;
 }
@@ -221,7 +222,7 @@ export function EditUserModal({
             />
           </div>
 
-          {user.mfaEnabled ? (
+          {user.mfaEnabled || user.hasPasskey ? (
             <Button
               type="button"
               variant="outline"

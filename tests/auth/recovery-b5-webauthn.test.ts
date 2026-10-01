@@ -688,6 +688,22 @@ describe.skipIf(!HAS_DB)("recovery B5 WebAuthn (real Postgres, real verification
     });
   });
 
+  describe("wipe (email reset) removes passkeys so a lost passkey cannot lock the user out", () => {
+    it("passkey user -> wipeUserDataAndRewrap -> no passkey rows, login is no longer gated by a passkey", async () => {
+      const { wipeUserDataAndRewrap } = await import("@/lib/auth/queries");
+      const u = await mkUser();
+      await enroll(u);
+      await db.update(s.userPasskeys).set({ dekWrappedPrf: "wrap" }).where(eq(s.userPasskeys.userId, u.id));
+      const other = await mkUser();
+      await enroll(other);
+      expect((await issueSessionForDek((await getUserById(u.id))! as never, Buffer.from(u.dek))).kind).toBe("mfa");
+      await wipeUserDataAndRewrap(u.id, "newhash", { kekSalt: "a", dekWrapped: "b", dekWrappedIv: "c", dekWrappedTag: "d" });
+      expect(await passkeyRows(u.id)).toHaveLength(0);
+      expect(await passkeyRows(other.id)).toHaveLength(1); // other accounts untouched
+      expect((await issueSessionForDek((await getUserById(u.id))! as never, Buffer.from(u.dek))).kind).toBe("session");
+    });
+  });
+
   describe("RP config", () => {
     it("derives rpID/origin from APP_URL; refuses wildcard / http / foreign-host origins", async () => {
       const { getRpConfig } = await import("@/lib/auth/webauthn");

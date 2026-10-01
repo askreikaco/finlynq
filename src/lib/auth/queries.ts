@@ -1035,6 +1035,8 @@ export interface AdminUserRow {
   role: string;
   emailVerified: number | boolean;
   mfaEnabled: number | boolean;
+  /** At least one registered passkey (a second factor; "Reset 2FA" removes it). */
+  hasPasskey?: boolean;
   onboardingComplete: number | boolean;
   plan: string;
   planExpiresAt: string | null;
@@ -1093,6 +1095,7 @@ export async function listUsersPage(
       u.role,
       u.email_verified        AS "emailVerified",
       u.mfa_enabled           AS "mfaEnabled",
+      EXISTS (SELECT 1 FROM user_passkeys up WHERE up.user_id = u.id) AS "hasPasskey",
       u.onboarding_complete   AS "onboardingComplete",
       u.plan,
       u.plan_expires_at       AS "planExpiresAt",
@@ -1402,15 +1405,14 @@ async function deleteAllUserDataTx(tx: TxClient, userId: string) {
     .delete(s.simplefinPendingTransactions)
     .where(eq(s.simplefinPendingTransactions.userId, userId));
   await tx.delete(s.passwordResetTokens).where(eq(s.passwordResetTokens.userId, userId));
-  // Auth: trusted devices (revoke all sessions on wipe), passkeys survive but
-  // PRF wraps are cleared (PRF binds to the old DEK — user gets a fresh one).
+  // Auth: trusted devices are deleted; passkeys are deleted (see below).
   // Identities survive (user can re-authenticate with same provider).
   // Recovery code wraps are cleared (they also bind to the old DEK).
   await tx.delete(s.userDevices).where(eq(s.userDevices.userId, userId));
-  await tx
-    .update(s.userPasskeys)
-    .set({ dekWrappedPrf: null })
-    .where(eq(s.userPasskeys.userId, userId));
+  // Passkeys are login second factors (userHasSecondFactor) and their PRF wraps
+  // bind the OLD DEK. Wipe clears TOTP the same way, so a user who lost the
+  // passkey is not locked out of the (now empty) account: DELETE the rows.
+  await tx.delete(s.userPasskeys).where(eq(s.userPasskeys.userId, userId));
   await tx
     .update(s.userRecoveryCodes)
     .set({ dekWrapped: null, usedAt: now })
@@ -1779,6 +1781,8 @@ export async function applyAdminUserEdit(
         .where(and(eq(s.passwordResetTokens.userId, userId), isNull(s.passwordResetTokens.usedAt)));
     }
     if (patch.disableMfa) {
+      // Passkeys are second factors too: "Reset 2FA" removes them (and their PRF wraps).
+      await tx.delete(s.userPasskeys).where(eq(s.userPasskeys.userId, userId));
       // Trusted devices were enrolled under the old 2FA state.
       await tx
         .update(s.userDevices)

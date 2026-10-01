@@ -9,6 +9,7 @@ import * as pg from "@/db/schema-pg";
 const selects: unknown[][] = [];
 const updates: { table: unknown; set: Record<string, unknown> }[] = [];
 const forCalls: string[] = [];
+const deletes: unknown[] = [];
 
 function makeTx() {
   return {
@@ -22,6 +23,12 @@ function makeTx() {
       };
       return chain;
     },
+    delete: (table: unknown) => ({
+      where: () => {
+        deletes.push(table);
+        return Promise.resolve();
+      },
+    }),
     update: (table: unknown) => ({
       set: (set: Record<string, unknown>) => ({
         where: () => {
@@ -42,7 +49,7 @@ vi.mock("@/db", () => ({
 import { applyAdminUserEdit } from "@/lib/auth/queries";
 
 beforeEach(() => {
-  selects.length = 0; updates.length = 0; forCalls.length = 0;
+  selects.length = 0; updates.length = 0; forCalls.length = 0; deletes.length = 0;
 });
 
 const userUpdate = () => updates.find((u) => u.table === pg.users)!;
@@ -109,6 +116,14 @@ describe("applyAdminUserEdit", () => {
     expect(userUpdate().set).toMatchObject({ mfaEnabled: 0, mfaSecret: null });
     expect(userUpdate().set.sessionNotBefore).toBeInstanceOf(Date);
     expect(updates.some((u) => u.table === pg.userDevices && u.set.revokedAt)).toBe(true);
+    // passkeys are second factors: Reset 2FA deletes them
+    expect(deletes).toContain(pg.userPasskeys);
+  });
+
+  it("without disableMfa passkeys are never deleted", async () => {
+    selects.push([{ id: "u", role: "user" }]);
+    await applyAdminUserEdit("u", { displayName: "x" });
+    expect(deletes).toHaveLength(0);
   });
 
   it("no revokeSessions -> session cutoff untouched", async () => {

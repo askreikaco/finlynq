@@ -13,11 +13,13 @@ vi.mock("@/db", () => ({ getDialect: vi.fn(() => "postgres") }));
 
 const mockGetUserById = vi.fn();
 const mockApply = vi.fn();
+const mockCountPasskeys = vi.fn();
 vi.mock("@/lib/auth/queries", () => ({
   getUserById: (...a: unknown[]) => mockGetUserById(...a),
   applyAdminUserEdit: (...a: unknown[]) => mockApply(...a),
   listUsersPage: vi.fn(),
   isUserSortKey: vi.fn(),
+  countPasskeys: (...a: unknown[]) => mockCountPasskeys(...a),
 }));
 
 const mockRequireAdmin = vi.fn();
@@ -215,6 +217,27 @@ describe("disableMfa", () => {
     mockGetUserById.mockImplementation(async (id: string) => ({ ...ADMIN, id, mfaEnabled: 1, mfaSecret: "enc" }));
     await patch({ userId: "admin-1", disableMfa: true, mfaCode: "123456" });
     expect(mockApply).toHaveBeenCalledWith("admin-1", expect.objectContaining({ disableMfa: true, revokeSessions: false }));
+  });
+});
+
+describe("disableMfa for passkey-only targets", () => {
+  it("target with a passkey but no TOTP: reset is applied (passkeys are removed by applyAdminUserEdit)", async () => {
+    asAdmin();
+    mockGetUserById.mockImplementation(async (id: string) =>
+      id === "admin-1" ? ADMIN : id === "user-1" ? { ...TARGET, mfaEnabled: 0 } : null);
+    mockCountPasskeys.mockResolvedValue(1);
+    const res = await patch({ userId: "user-1", disableMfa: true });
+    expect(res.status).toBe(200);
+    expect(mockApply).toHaveBeenCalledWith("user-1", expect.objectContaining({ disableMfa: true, revokeSessions: true }));
+  });
+
+  it("target with neither TOTP nor passkey: disableMfa is a no-op flag (false)", async () => {
+    asAdmin();
+    mockGetUserById.mockImplementation(async (id: string) =>
+      id === "admin-1" ? ADMIN : id === "user-1" ? { ...TARGET, mfaEnabled: 0 } : null);
+    mockCountPasskeys.mockResolvedValue(0);
+    await patch({ userId: "user-1", disableMfa: true });
+    expect(mockApply).toHaveBeenCalledWith("user-1", expect.objectContaining({ disableMfa: false }));
   });
 });
 
