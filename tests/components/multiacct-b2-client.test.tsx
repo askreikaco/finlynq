@@ -63,6 +63,9 @@ beforeEach(() => {
       if (gate) await gate;
       return json({ authenticated: !!sessionUserId, userId: sessionUserId, isAdmin: false });
     }
+    if (url === "/api/auth/accounts") return json([
+      { userId: "user-1", email: "me@example.com", displayName: "Me", active: true, status: "active" },
+    ]);
     if (url.startsWith("/api/spotlight")) return json({ items: [
       { id: "s1", type: "t", severity: "info", title: "Item one", description: "d", actionUrl: "/x" },
       { id: "s2", type: "t", severity: "info", title: "Item two", description: "d", actionUrl: "/y" },
@@ -100,7 +103,9 @@ describe("user-storage helpers", () => {
 describe("hardReload is used for sign-out", () => {
   it("Nav sign-out POSTs /api/auth/logout then hardReload('/') (no router push/refresh)", async () => {
     render(<Nav />);
-    fireEvent.click((await screen.findAllByText("Sign out"))[0]);
+    // Sign-out now lives in the AccountSwitcher menu (opened from the nav footer).
+    fireEvent.click((await screen.findAllByRole("button", { name: /account menu/i }))[0]);
+    fireEvent.click(await screen.findByRole("menuitem", { name: /sign out of this account/i }));
     await waitFor(() => expect(hardReload).toHaveBeenCalledWith("/"));
     expect(fetchLog).toContain("POST /api/auth/logout");
   });

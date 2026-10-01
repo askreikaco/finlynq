@@ -39,7 +39,9 @@ function CloudAuthPageInner() {
   // the /try-demo route.
   const demoPrefill = searchParams.get("demo") === "1";
   const addingAccount = searchParams.get("add") === "1";
-  const prefillEmail = searchParams.get("email") || "";
+  const prefillEmail = (searchParams.get("email") || "").slice(0, 254);
+  // Email of the account that stays signed in during an add flow (text only).
+  const [stayEmail, setStayEmail] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>(initialTab);
 
   // Login form: single 'identifier' field accepts username OR email.
@@ -107,6 +109,26 @@ function CloudAuthPageInner() {
     }, USERNAME_CHECK_DEBOUNCE_MS);
     return () => clearTimeout(timer);
   }, [username, tab]);
+
+  // Add-account mode: learn who stays signed in (banner copy).
+  useEffect(() => {
+    if (!addingAccount) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/auth/accounts");
+        if (!res.ok) return;
+        const list = await res.json();
+        const active = Array.isArray(list) ? list.find((a: { active?: boolean }) => a?.active) : null;
+        if (!cancelled && active && typeof active.email === "string") setStayEmail(active.email);
+      } catch {
+        // no banner without a known active account
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [addingAccount]);
 
   // Fetch Google config on mount
   useEffect(() => {
@@ -331,11 +353,11 @@ function CloudAuthPageInner() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-dot-pattern ambient-glow">
       <div className="mx-auto w-full max-w-md px-6 py-12">
-        {addingAccount && (
+        {addingAccount && stayEmail && (
           <div className="mb-6 rounded-lg border border-blue-500/30 bg-blue-500/5 px-4 py-3">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-sm text-blue-600 dark:text-blue-400">
-                Adding another account — you'll stay signed in.
+              <p className="text-sm text-blue-600 dark:text-blue-400 min-w-0 break-words">
+                Adding another account — you&apos;ll stay signed in as {stayEmail}
               </p>
               <Link
                 href="/dashboard"
