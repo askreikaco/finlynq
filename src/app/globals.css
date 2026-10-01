@@ -508,20 +508,6 @@ html {
   min-height: calc(100vh - var(--sat));
 }
 
-/* Fixed status-bar backdrop: opaque strip behind the clock so scrolled
-   content never shows through the translucent status bar. Rendered once in
-   the root layout. Below dialogs/drawers (z-40/50), above page content. */
-.safe-top-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: var(--sat);
-  z-index: 30;
-  pointer-events: none;
-  background: var(--background);
-}
-
 /* For fixed/sticky elements anchored to the top edge. */
 @utility top-safe {
   top: var(--sat);

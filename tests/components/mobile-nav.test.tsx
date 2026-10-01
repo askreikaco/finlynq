@@ -103,12 +103,13 @@ describe("safe-area shell wiring (source)", () => {
     expect(css).toContain("--sal: env(safe-area-inset-left");
     expect(css).toContain("--sar: env(safe-area-inset-right");
     expect(css).toMatch(/body\s*\{[^}]*padding-top:\s*var\(--sat\)/);
-    expect(css).toMatch(/\.safe-top-backdrop\s*\{[^}]*height:\s*var\(--sat\)/);
+    // Owner 2026-10-01: no solid strip behind the status bar (top padding only).
+    expect(css).not.toContain(".safe-top-backdrop");
   });
 
-  it("root layout renders the status-bar backdrop and keeps cover + translucent", () => {
+  it("root layout renders NO status-bar backdrop and keeps cover + translucent", () => {
     const l = read("src/app/layout.tsx");
-    expect(l).toContain('className="safe-top-backdrop"');
+    expect(l).not.toContain("safe-top-backdrop");
     expect(l).toContain('viewportFit: "cover"');
     expect(l).toContain('statusBarStyle: "black-translucent"');
   });
