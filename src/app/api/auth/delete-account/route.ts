@@ -30,6 +30,7 @@ import { getDEK, evictAllForUser } from "@/lib/crypto/dek-cache";
 import { invalidateUser as invalidateUserTxCache } from "@/lib/mcp/user-tx-cache";
 import { validateBody, safeErrorMessage } from "@/lib/validate";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { stepUpMethodFor, verifyPasskeyStepUp, passkeyStepUpSchema } from "@/lib/auth/passkey-stepup";
 
 const deleteSchema = z.object({
   password: z.string().min(1, "Password is required"),
@@ -41,6 +42,11 @@ const deleteSchema = z.object({
    * schema so users without MFA can call with the existing two-field shape.
    */
   mfaCode: z.string().length(6, "Code must be 6 digits").optional(),
+  /**
+   * Required when the only second factor is a passkey: a fresh assertion
+   * from POST /api/auth/step-up/passkey/options (action "delete-account").
+   */
+  passkeyStepUp: passkeyStepUpSchema.optional(),
 });
 
 /**
@@ -153,6 +159,31 @@ export async function POST(request: NextRequest) {
           { error: "Invalid MFA code." },
           { status: 401 }
         );
+      }
+    }
+
+    // Passkey-only user (no usable TOTP): a password alone is not enough, a
+    // fresh UV passkey assertion bound to this session + action is required.
+    if ((await stepUpMethodFor(user)) === "passkey") {
+      if (!parsed.data.passkeyStepUp) {
+        return NextResponse.json(
+          {
+            error: "Passkey verification is required to delete the account.",
+            code: "passkey-required",
+          },
+          { status: 401 }
+        );
+      }
+      const passkeyOk = await verifyPasskeyStepUp({
+        userId,
+        sessionId,
+        action: "delete-account",
+        input: parsed.data.passkeyStepUp,
+        ip,
+        userAgent: request.headers.get("user-agent") ?? undefined,
+      });
+      if (!passkeyOk) {
+        return NextResponse.json({ error: "Passkey verification failed." }, { status: 401 });
       }
     }
 

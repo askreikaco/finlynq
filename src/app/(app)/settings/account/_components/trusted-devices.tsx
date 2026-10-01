@@ -15,6 +15,9 @@ const STRINGS = {
   lastUsedLabel: "Last used",
   revokeButton: "Revoke",
   revokeAllButton: "Revoke all devices",
+  signOutOthersButton: "Sign out other devices",
+  signOutOthersConfirm: "Sign out every other device? They will need to sign in again. This device stays signed in.",
+  signOutOthersSuccess: "Other devices signed out",
   revokeAllConfirm: "Are you sure? You'll need to sign in again on all devices.",
   revoking: "Revoking…",
   noDevices: "No trusted devices",
@@ -35,7 +38,7 @@ interface Device {
 export function TrustedDevices() {
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
-  const [revoking, setRevoking] = useState<string | "all" | null>(null);
+  const [revoking, setRevoking] = useState<string | "all" | "others" | null>(null);
   const [message, setMessage] = useState("");
 
   // Load devices
@@ -119,6 +122,31 @@ export function TrustedDevices() {
     }
   }
 
+  async function handleSignOutOthers() {
+    if (!window.confirm(STRINGS.signOutOthersConfirm)) {
+      return;
+    }
+    const others = devices.filter((d) => !d.current);
+    setRevoking("others");
+    setMessage("");
+    try {
+      // One DELETE per device id (existing endpoint): ?all=1 would also revoke THIS device.
+      const results = await Promise.all(
+        others.map((d) =>
+          fetch(`/api/settings/devices?id=${encodeURIComponent(d.id)}`, { method: "DELETE" }).then(
+            (r) => ({ id: d.id, ok: r.ok }),
+            () => ({ id: d.id, ok: false })
+          )
+        )
+      );
+      const revoked = new Set(results.filter((r) => r.ok).map((r) => r.id));
+      setDevices((list) => list.filter((d) => !revoked.has(d.id)));
+      setMessage(revoked.size === others.length ? STRINGS.signOutOthersSuccess : STRINGS.genericError);
+    } finally {
+      setRevoking(null);
+    }
+  }
+
   if (loading) {
     return null;
   }
@@ -185,16 +213,23 @@ export function TrustedDevices() {
               ))}
             </div>
 
-            {devices.length > 1 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRevokeAllDevices}
-                disabled={revoking !== null}
-              >
-                {revoking === "all" ? STRINGS.revoking : STRINGS.revokeAllButton}
-              </Button>
-            )}
+            <div className="flex flex-wrap gap-2">
+              {devices.some((d) => !d.current) && (
+                <Button variant="outline" size="sm" onClick={handleSignOutOthers} disabled={revoking !== null}>
+                  {revoking === "others" ? STRINGS.revoking : STRINGS.signOutOthersButton}
+                </Button>
+              )}
+              {devices.length > 1 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRevokeAllDevices}
+                  disabled={revoking !== null}
+                >
+                  {revoking === "all" ? STRINGS.revoking : STRINGS.revokeAllButton}
+                </Button>
+              )}
+            </div>
           </>
         ) : (
           <p className="text-xs text-muted-foreground">{STRINGS.noDevices}</p>

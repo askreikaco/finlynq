@@ -1,6 +1,8 @@
 /**
  * PATCH  /api/settings/passkeys/[id] — rename (web session; ownership enforced).
- * DELETE /api/settings/passkeys/[id] — remove (web session + step-up).
+ * DELETE /api/settings/passkeys/[id] — remove (web session + step-up; plus a
+ *   second-factor proof — TOTP or a passkey assertion for action
+ *   "passkey-remove" — when the session is not mfa-verified).
  *
  * A passkey that belongs to another account is indistinguishable from a
  * missing one (404). Deleting a passkey never touches other accounts' rows
@@ -15,6 +17,9 @@ import { validateBody, logApiError } from "@/lib/validate";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { logSecurityEvent } from "@/lib/auth/security-events";
 import { clientIp } from "@/lib/client-ip";
+import { verifyPasskeyStepUp, passkeyStepUpSchema } from "@/lib/auth/passkey-stepup";
+import { verifyMfaCode } from "@/lib/auth/mfa";
+import { decryptField } from "@/lib/crypto/envelope";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +27,13 @@ const NOT_FOUND = () => NextResponse.json({ error: "Passkey not found." }, { sta
 const idSchema = z.string().min(1).max(1024);
 
 const renameSchema = z.object({ label: z.string().trim().min(1).max(60) });
-const deleteSchema = z.object({ currentPassword: z.string().min(1).max(256).optional() });
+const deleteSchema = z.object({
+  currentPassword: z.string().min(1).max(256).optional(),
+  // Second-factor proof, required when the session is NOT mfa-verified
+  // (a session that never passed 2FA, e.g. minted before the passkey existed).
+  totpCode: z.string().regex(/^\d{6}$/).optional(),
+  passkeyStepUp: passkeyStepUpSchema.optional(),
+});
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -59,7 +70,7 @@ export async function DELETE(request: NextRequest, { params }: Ctx) {
   }
   const auth = await requireWebSession(request);
   if (!auth.ok) return auth.response;
-  const { userId, iat } = auth.context;
+  const { userId, iat, sessionId, mfaVerified, dek } = auth.context;
   const rl = checkRateLimit(`passkey-delete:${userId}`, 20, 60 * 60 * 1000);
   if (!rl.allowed) {
     return NextResponse.json({ error: "Too many attempts. Please try again later." }, { status: 429 });
@@ -85,6 +96,57 @@ export async function DELETE(request: NextRequest, { params }: Ctx) {
       label: "passkey-stepup",
     });
     if (denied) return denied;
+
+    // Second-factor proof for sessions that never passed 2FA: a stolen
+    // password-only session must not be able to strip the account's passkeys.
+    if (!mfaVerified) {
+      const proofRl = checkRateLimit(`passkey-remove-2fa:${userId}`, 10, 60 * 60 * 1000);
+      if (!proofRl.allowed) {
+        return NextResponse.json({ error: "Too many attempts. Please try again later." }, { status: 429 });
+      }
+      const hasTotp = Boolean(user.mfaEnabled && user.mfaSecret);
+      let proven = false;
+      if (parsed.data.totpCode && hasTotp) {
+        if (!dek) {
+          return NextResponse.json(
+            { error: "session_locked", message: "Your session needs to be unlocked. Please log in again." },
+            { status: 423 }
+          );
+        }
+        try {
+          const secret = decryptField(dek, user.mfaSecret as string);
+          proven = Boolean(secret && verifyMfaCode(secret, parsed.data.totpCode));
+        } catch {
+          proven = false;
+        }
+      } else if (parsed.data.passkeyStepUp) {
+        proven = await verifyPasskeyStepUp({
+          userId,
+          sessionId,
+          action: "passkey-remove",
+          input: parsed.data.passkeyStepUp,
+          ip: clientIp(request),
+          userAgent: request.headers.get("user-agent") ?? undefined,
+        });
+      } else {
+        return NextResponse.json(
+          {
+            error: "Second-factor verification is required to remove a passkey.",
+            code: "second-factor-required",
+            methods: [...(hasTotp ? ["totp"] : []), "passkey"],
+          },
+          { status: 401 }
+        );
+      }
+      if (!proven) {
+        logSecurityEvent(userId, "recovery_proof_failed", {
+          method: "passkey-remove-2fa",
+          ip: clientIp(request),
+          userAgent: request.headers.get("user-agent") ?? undefined,
+        }).catch(() => {});
+        return NextResponse.json({ error: "Second-factor verification failed." }, { status: 401 });
+      }
+    }
 
     if (!(await deletePasskey(userId, id.data))) return NOT_FOUND();
     logSecurityEvent(userId, "passkey_removed", {

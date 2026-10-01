@@ -57,9 +57,9 @@ export async function PUT(request: NextRequest) {
   if (body === BAD) return badJson();
   const parsed = validateBody(body, settingsSchema);
   if (parsed.error) return parsed.error;
-  const { mfaCode, password, testTo, ...rest } = parsed.data;
+  const { mfaCode, password, passkeyStepUp, testTo, ...rest } = parsed.data;
 
-  const stepUpFail = await verifyStepUp(auth.context, { mfaCode, password });
+  const stepUpFail = await verifyStepUp(auth.context, { mfaCode, password, passkeyStepUp });
   if (stepUpFail) return stepUpFail;
 
   const changes: EmailChanges = {};

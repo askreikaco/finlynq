@@ -6,6 +6,7 @@ import { useState, useEffect, useRef, Suspense } from "react";
 import { AnalyticsConsent } from "@/components/analytics-consent";
 import { LogoMark } from "@/components/logo-mark";
 import { hardReload } from "@/lib/client/hard-reload";
+import { passkeyLogin, getAssertionWithPrf } from "@/lib/client/passkey-prf";
 import {
   safeNext,
   googleStartUrl,
@@ -61,6 +62,12 @@ function CloudAuthPageInner() {
   const [mfaRequired, setMfaRequired] = useState(false);
   const [mfaPendingToken, setMfaPendingToken] = useState("");
   const [mfaCode, setMfaCode] = useState("");
+  // 2FA step: authenticator code (default) or a one-time recovery code.
+  const [mfaMode, setMfaMode] = useState<"totp" | "recovery">("totp");
+  const [recoveryCode, setRecoveryCode] = useState("");
+  // "This is a shared computer": no trusted-device cookie is issued (trustDevice:false).
+  const [sharedComputer, setSharedComputer] = useState(false);
+  const [passkeySupported, setPasskeySupported] = useState(false);
 
   const [availability, setAvailability] = useState<AvailabilityState>({
     status: "idle",
@@ -139,6 +146,11 @@ function CloudAuthPageInner() {
     }
     hardReload("/dashboard");
   };
+
+  // Passkeys need the WebAuthn API; feature-detect after mount (SSR-safe).
+  useEffect(() => {
+    setPasskeySupported(typeof window !== "undefined" && typeof window.PublicKeyCredential !== "undefined");
+  }, []);
 
   // Fetch Google config on mount
   useEffect(() => {
@@ -223,7 +235,8 @@ function CloudAuthPageInner() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ identifier, password }),
+        // trustDevice defaults to true server-side; only the opt-out is sent.
+        body: JSON.stringify({ identifier, password, ...(sharedComputer ? { trustDevice: false } : {}) }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -248,12 +261,16 @@ function CloudAuthPageInner() {
     setError("");
     setLoading(true);
     try {
-      const body: Record<string, unknown> = { code: mfaCode };
+      const recovery = mfaMode === "recovery";
+      const body: Record<string, unknown> = {
+        code: recovery ? recoveryCode.trim() : mfaCode,
+        ...(sharedComputer ? { trustDevice: false } : {}),
+      };
       // Only include mfaPendingToken if it's a non-empty string
       if (mfaPendingToken) {
         body.mfaPendingToken = mfaPendingToken;
       }
-      const res = await fetch("/api/auth/mfa/verify", {
+      const res = await fetch(recovery ? "/api/auth/mfa/recovery/verify" : "/api/auth/mfa/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -266,6 +283,72 @@ function CloudAuthPageInner() {
       hardReload(redirectTo);
     } catch {
       setError("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 2FA step: passkey assertion (mfa/webauthn/options -> verify).
+  const handleMfaPasskey = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      const pending = mfaPendingToken ? { mfaPendingToken } : {};
+      const optRes = await fetch("/api/auth/mfa/webauthn/options", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(pending),
+      });
+      const opt = await optRes.json().catch(() => ({}));
+      if (!optRes.ok) {
+        setError(opt.error || "Passkey verification failed.");
+        return;
+      }
+      const assertion = await getAssertionWithPrf(opt.options, null);
+      const res = await fetch("/api/auth/mfa/webauthn/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...pending,
+          token: opt.token,
+          response: assertion.response,
+          ...(sharedComputer ? { trustDevice: false } : {}),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || "Passkey verification failed.");
+        return;
+      }
+      hardReload(redirectTo);
+    } catch (err) {
+      const name = (err as { name?: string })?.name;
+      // Cancelled prompt: stay on the step silently.
+      if (name !== "NotAllowedError" && name !== "AbortError") {
+        setError("Passkey verification failed.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Sign in with a passkey (no password). prf_unavailable -> continue with the password.
+  const handlePasskeyLogin = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      const r = await passkeyLogin({ trustDevice: !sharedComputer });
+      if (r.ok) {
+        hardReload(redirectTo);
+        return;
+      }
+      if (r.code === "prf_unavailable") {
+        setError("This passkey can't unlock your data on its own. Enter your password to continue.");
+        document.getElementById("password")?.focus();
+      } else if (r.code === "failed") {
+        setError("Passkey sign-in failed. Try again or use your password.");
+      }
+      // cancelled: silent
     } finally {
       setLoading(false);
     }
@@ -470,32 +553,82 @@ function CloudAuthPageInner() {
               >
                 Two-Factor Authentication
               </h2>
-              <p className="mb-4 text-sm text-muted-foreground">
-                Enter the 6-digit code from your authenticator app.
-              </p>
-              <input
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]{6}"
-                maxLength={6}
-                value={mfaCode}
-                onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ""))}
-                placeholder="000000"
-                aria-label="Authentication code"
-                className="w-full rounded-lg border border-border bg-background px-4 py-3 text-center text-2xl font-mono tracking-[0.5em] text-foreground placeholder:text-muted-foreground/40 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                autoFocus
-              />
+              {mfaMode === "totp" ? (
+                <>
+                  <p className="mb-4 text-sm text-muted-foreground">
+                    Enter the 6-digit code from your authenticator app.
+                  </p>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]{6}"
+                    maxLength={6}
+                    value={mfaCode}
+                    onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ""))}
+                    placeholder="000000"
+                    aria-label="Authentication code"
+                    className="w-full rounded-lg border border-border bg-background px-4 py-3 text-center text-2xl font-mono tracking-[0.5em] text-foreground placeholder:text-muted-foreground/40 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                    autoFocus
+                  />
+                </>
+              ) : (
+                <>
+                  <p className="mb-4 text-sm text-muted-foreground">
+                    Enter one of your recovery codes. Each code works once.
+                  </p>
+                  <input
+                    type="text"
+                    value={recoveryCode}
+                    onChange={(e) => setRecoveryCode(e.target.value.toUpperCase().replace(/[^A-Z0-9-\s]/g, ""))}
+                    placeholder="XXXXX-XXXXX-XXXXX-XXXXX"
+                    aria-label="Recovery code"
+                    autoComplete="off"
+                    autoCapitalize="characters"
+                    spellCheck={false}
+                    className="w-full rounded-lg border border-border bg-background px-4 py-3 text-center font-mono text-base tracking-wider text-foreground placeholder:text-muted-foreground/40 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                    autoFocus
+                  />
+                </>
+              )}
             </div>
             {error && (
               <p className="text-sm text-destructive" role="alert" aria-live="assertive">{error}</p>
             )}
             <button
               type="submit"
-              disabled={loading || mfaCode.length !== 6}
+              disabled={loading || (mfaMode === "totp" ? mfaCode.length !== 6 : recoveryCode.replace(/[^A-Z0-9]/g, "").length < 20)}
               className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
             >
               {loading ? "Verifying..." : "Verify"}
             </button>
+            <label className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={sharedComputer}
+                onChange={(e) => setSharedComputer(e.target.checked)}
+                className="h-4 w-4 rounded border-border bg-background accent-primary"
+              />
+              This is a shared computer
+            </label>
+            <div className="flex flex-col items-center gap-2 text-sm">
+              {passkeySupported && (
+                <button
+                  type="button"
+                  onClick={handleMfaPasskey}
+                  disabled={loading}
+                  className="text-muted-foreground underline underline-offset-2 hover:text-foreground disabled:opacity-50"
+                >
+                  Use a passkey
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => { setMfaMode(mfaMode === "totp" ? "recovery" : "totp"); setError(""); }}
+                className="text-muted-foreground underline underline-offset-2 hover:text-foreground"
+              >
+                {mfaMode === "totp" ? "Use a recovery code" : "Use an authenticator code"}
+              </button>
+            </div>
           </form>
         ) : (
           <>
@@ -526,6 +659,17 @@ function CloudAuthPageInner() {
                   <div className="flex-1 border-t border-border" />
                 </div>
               </>
+            )}
+
+            {step === null && tab === "login" && passkeySupported && (
+              <button
+                type="button"
+                onClick={handlePasskeyLogin}
+                disabled={loading}
+                className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-background px-4 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+              >
+                Sign in with a passkey
+              </button>
             )}
 
             {/* Tab switcher */}
@@ -680,6 +824,18 @@ function CloudAuthPageInner() {
                   </Link>
                 )}
               </div>
+
+              {tab === "login" && (
+                <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={sharedComputer}
+                    onChange={(e) => setSharedComputer(e.target.checked)}
+                    className="h-4 w-4 rounded border-border bg-background accent-primary"
+                  />
+                  This is a shared computer
+                </label>
+              )}
 
               {showAck && (
                 <label className="flex items-start gap-2.5 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2.5 text-xs text-amber-200/90">

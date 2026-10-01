@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Plug, CheckCircle2, AlertCircle } from "lucide-react";
+import { getPasskeyStepUp } from "@/lib/client/passkey-stepup";
 
 type Source = "db" | "env" | "none";
 type SecretField = "brevoApiKey" | "resendApiKey" | "smtpUser" | "smtpPass";
@@ -24,7 +25,7 @@ interface EmailStatus {
   configured: { brevo: boolean; resend: boolean; smtp: boolean };
   sources: Record<string, Source>;
   values: { provider: string; from: string; smtpHost: string; smtpPort: number | null };
-  stepUp: "mfa" | "password";
+  stepUp: "mfa" | "password" | "passkey";
   canRevert: boolean;
 }
 
@@ -150,7 +151,15 @@ export default function AdminIntegrationsPage() {
     return c;
   };
 
-  const stepPayload = () => (status?.stepUp === "password" ? { password: stepValue } : { mfaCode: stepValue });
+  // Passkey-only admin: a fresh passkey assertion (single use per request) replaces the typed code.
+  const stepPayload = async (): Promise<Record<string, unknown> | null> => {
+    if (status?.stepUp === "passkey") {
+      const r = await getPasskeyStepUp("admin-email-integration");
+      return r.ok ? { passkeyStepUp: r.passkeyStepUp } : null;
+    }
+    return status?.stepUp === "password" ? { password: stepValue } : { mfaCode: stepValue };
+  };
+  const stepReady = status?.stepUp === "passkey" || !!stepValue;
 
   const submitSave = async (withTest: boolean) => {
     if (!status) return;
@@ -164,12 +173,17 @@ export default function AdminIntegrationsPage() {
     setSaveNotice(null);
     setSaveTestResult(null);
     try {
+      const step = await stepPayload();
+      if (!step) {
+        setSaveNotice({ ok: false, message: "Passkey confirmation was cancelled or failed" });
+        return;
+      }
       const res = await fetch("/api/admin/integrations/email/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...changes,
-          ...stepPayload(),
+          ...step,
           ...(withTest && saveTestTo.trim() ? { testTo: saveTestTo.trim() } : {}),
         }),
       });
@@ -201,10 +215,15 @@ export default function AdminIntegrationsPage() {
     setSaveNotice(null);
     setSaveTestResult(null);
     try {
+      const step = await stepPayload();
+      if (!step) {
+        setSaveNotice({ ok: false, message: "Passkey confirmation was cancelled or failed" });
+        return;
+      }
       const res = await fetch("/api/admin/integrations/email/settings/revert", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(stepPayload()),
+        body: JSON.stringify(step),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -388,17 +407,23 @@ export default function AdminIntegrationsPage() {
 
                 {stepOpen ? (
                   <div className="space-y-3 rounded-lg border p-4" role="group" aria-label="Confirm">
-                    <Label htmlFor="email-step-up">
-                      {status.stepUp === "password" ? "Confirm with your password" : "Confirm with your 6-digit authenticator code"}
-                    </Label>
-                    <Input
-                      id="email-step-up"
-                      type={status.stepUp === "password" ? "password" : "text"}
-                      inputMode={status.stepUp === "password" ? undefined : "numeric"}
-                      autoComplete="one-time-code"
-                      value={stepValue}
-                      onChange={(e) => setStepValue(e.target.value)}
-                    />
+                    {status.stepUp === "passkey" ? (
+                      <p className="text-sm">You will be asked to confirm with your passkey.</p>
+                    ) : (
+                      <>
+                        <Label htmlFor="email-step-up">
+                          {status.stepUp === "password" ? "Confirm with your password" : "Confirm with your 6-digit authenticator code"}
+                        </Label>
+                        <Input
+                          id="email-step-up"
+                          type={status.stepUp === "password" ? "password" : "text"}
+                          inputMode={status.stepUp === "password" ? undefined : "numeric"}
+                          autoComplete="one-time-code"
+                          value={stepValue}
+                          onChange={(e) => setStepValue(e.target.value)}
+                        />
+                      </>
+                    )}
                     {stepOpen === "save" && (
                       <div className="space-y-2">
                         <Label htmlFor="email-save-test-to">Send test to (optional)</Label>
@@ -408,15 +433,15 @@ export default function AdminIntegrationsPage() {
                     <div className="flex gap-2">
                       {stepOpen === "save" ? (
                         <>
-                          <Button type="button" disabled={busy || !stepValue} onClick={() => submitSave(false)}>
+                          <Button type="button" disabled={busy || !stepReady} onClick={() => submitSave(false)}>
                             Confirm save
                           </Button>
-                          <Button type="button" variant="secondary" disabled={busy || !stepValue || !saveTestTo.trim()} onClick={() => submitSave(true)}>
+                          <Button type="button" variant="secondary" disabled={busy || !stepReady || !saveTestTo.trim()} onClick={() => submitSave(true)}>
                             Save &amp; send test
                           </Button>
                         </>
                       ) : (
-                        <Button type="button" disabled={busy || !stepValue} onClick={submitRevert}>
+                        <Button type="button" disabled={busy || !stepReady} onClick={submitRevert}>
                           Confirm revert
                         </Button>
                       )}

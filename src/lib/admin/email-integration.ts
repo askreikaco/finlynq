@@ -19,6 +19,7 @@ import {
 } from "@/lib/email";
 import { EMAIL_FIELDS, type EmailField } from "@/lib/system-settings";
 import type { AuthContext } from "@/lib/auth/strategy";
+import { stepUpMethodFor, verifyPasskeyStepUp, passkeyStepUpSchema, type PasskeyStepUpInput } from "@/lib/auth/passkey-stepup";
 
 export const TEST_SEND_LIMIT = { max: 5, windowMs: 10 * 60_000 };
 export const SETTINGS_LIMIT = { max: 10, windowMs: 60 * 60_000 };
@@ -31,11 +32,14 @@ export function requireInteractiveSession(ctx: AuthContext): NextResponse | null
   return null;
 }
 
-export type StepUpKind = "mfa" | "password";
+export type StepUpKind = "mfa" | "password" | "passkey";
 
+/** TOTP admins: "mfa"; passkey-only admins: "passkey" (assertion); others: "password". */
 export async function stepUpKindFor(userId: string): Promise<StepUpKind> {
   const u = await getUserById(userId);
-  return u?.mfaEnabled && u?.mfaSecret ? "mfa" : "password";
+  if (!u) return "password";
+  const m = await stepUpMethodFor(u);
+  return m === "totp" ? "mfa" : m === "passkey" ? "passkey" : "password";
 }
 
 /**
@@ -45,10 +49,28 @@ export async function stepUpKindFor(userId: string): Promise<StepUpKind> {
  */
 export async function verifyStepUp(
   ctx: AuthContext,
-  input: { mfaCode?: string; password?: string },
+  input: { mfaCode?: string; password?: string; passkeyStepUp?: PasskeyStepUpInput },
 ): Promise<NextResponse | null> {
   const admin = await getUserById(ctx.userId);
   if (!admin) return NextResponse.json({ error: "Admin user not found." }, { status: 404 });
+
+  // Passkey-only admin: a fresh UV assertion bound to this session + action
+  // (a password alone is not accepted).
+  if ((await stepUpMethodFor(admin)) === "passkey") {
+    if (!input.passkeyStepUp) {
+      return NextResponse.json(
+        { error: "Passkey verification required for settings changes.", code: "PASSKEY_REQUIRED" },
+        { status: 403 },
+      );
+    }
+    const ok = await verifyPasskeyStepUp({
+      userId: ctx.userId,
+      sessionId: ctx.sessionId,
+      action: "admin-email-integration",
+      input: input.passkeyStepUp,
+    });
+    return ok ? null : NextResponse.json({ error: "Passkey verification failed." }, { status: 401 });
+  }
 
   if (admin.mfaEnabled && admin.mfaSecret) {
     if (!input.mfaCode) {
@@ -116,6 +138,7 @@ export const settingsSchema = z
     smtpPass: plainSecret.nullable().optional(),
     mfaCode: z.string().length(6).optional(),
     password: z.string().min(1).max(1024).optional(),
+    passkeyStepUp: passkeyStepUpSchema.optional(),
     testTo: z.string().email().optional(),
   })
   .strict();

@@ -57,6 +57,7 @@ import { logAdminAction, clientIp } from "@/lib/admin-audit";
 import { getDEK } from "@/lib/crypto/dek-cache";
 import { decryptField } from "@/lib/crypto/envelope";
 import { verifyMfaCode } from "@/lib/auth";
+import { stepUpMethodFor, verifyPasskeyStepUp, passkeyStepUpSchema } from "@/lib/auth/passkey-stepup";
 import { isPgErrorCode, pgErrorConstraint } from "@/lib/db-utils";
 
 export async function GET(request: NextRequest) {
@@ -156,6 +157,9 @@ const updateSchema = z
     // Fresh TOTP of the ACTING admin (step-up): required for role change,
     // email change and disableMfa when that admin has MFA enabled.
     mfaCode: z.string().regex(/^\d{6}$/, "MFA code must be 6 digits.").optional(),
+    // Passkey-only admin (no TOTP): fresh assertion from POST
+    // /api/auth/step-up/passkey/options (action "admin-user-update").
+    passkeyStepUp: passkeyStepUpSchema.optional(),
   })
   .strict();
 
@@ -196,6 +200,7 @@ export async function PATCH(request: NextRequest) {
       emailVerified,
       disableMfa,
       mfaCode,
+      passkeyStepUp,
     } = parsed.data;
 
     const adminUser = await getUserById(adminUserId);
@@ -244,6 +249,24 @@ export async function PATCH(request: NextRequest) {
           return NextResponse.json({ error: "Invalid MFA code." }, { status: 401 });
         }
       }
+    }
+
+    if (!adminUser.mfaEnabled && requiresStepUp && (await stepUpMethodFor(adminUser)) === "passkey") {
+      if (!passkeyStepUp) {
+        return NextResponse.json(
+          { error: "Passkey verification required for this change.", code: "PASSKEY_REQUIRED" },
+          { status: 403 }
+        );
+      }
+      const ok = await verifyPasskeyStepUp({
+        userId: adminUserId,
+        sessionId: sessionId ?? null,
+        action: "admin-user-update",
+        input: passkeyStepUp,
+        ip: clientIp(request) ?? undefined,
+        userAgent: request.headers.get("user-agent") ?? undefined,
+      });
+      if (!ok) return NextResponse.json({ error: "Passkey verification failed." }, { status: 401 });
     }
 
     const mfaBeingRemoved =

@@ -13,7 +13,8 @@ import { Key, RefreshCw, Eye, EyeOff, FileText, Check, Shield, Lock, Mail, Downl
 import { TwoFactor } from "./_components/two-factor";
 import { SignInMethods } from "./_components/sign-in-methods";
 import { TrustedDevices } from "./_components/trusted-devices";
-import { PasskeysPlaceholder } from "./_components/passkeys-placeholder";
+import { PasskeysCard } from "@/components/settings/passkeys-card";
+import { RecoveryCodesCard } from "@/components/settings/recovery-codes-card";
 
 export default function AccountSettingsPage() {
   // API Key — the raw key is only held in memory on first creation or
@@ -253,7 +254,8 @@ export default function AccountSettingsPage() {
         <SignInMethods />
       </Suspense>
       <TrustedDevices />
-      <PasskeysPlaceholder />
+      <PasskeysCard />
+      <RecoveryCodesCard />
 
       {/* Change Password — managed mode only. */}
       {meLoaded && me?.username && (

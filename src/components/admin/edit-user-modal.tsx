@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AlertCircle } from "lucide-react";
+import { getPasskeyStepUp } from "@/lib/client/passkey-stepup";
 
 interface AdminUser {
   id: string;
@@ -97,7 +98,18 @@ export function EditUserModal({
 
       if (mfaCode) updates.mfaCode = mfaCode;
 
-      await onSave(updates);
+      try {
+        await onSave(updates);
+      } catch (err) {
+        // Passkey-only admin: confirm with a passkey assertion and retry once.
+        if ((err as { code?: string } | null)?.code !== "PASSKEY_REQUIRED") throw err;
+        const step = await getPasskeyStepUp("admin-user-update");
+        if (!step.ok) {
+          setError(step.code === "cancelled" ? "Passkey confirmation was cancelled." : "Passkey confirmation failed.");
+          return;
+        }
+        await onSave({ ...updates, passkeyStepUp: step.passkeyStepUp });
+      }
       setMfaCode("");
       setRequiresMfaCode(false);
       onOpenChange(false);

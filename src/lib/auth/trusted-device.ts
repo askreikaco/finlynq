@@ -281,13 +281,14 @@ export async function issueDevice(
 
 /**
  * Peek at a device to check if it's valid, without unwrapping, rotating or
- * revoking anything. With userId: the entry owned by that user; without: the
- * first valid entry. Every entry is verified independently (secret, expiry,
- * revocation, owner).
+ * revoking anything. With userId: the entry owned by that user; with deviceId:
+ * that specific entry; without either: the first valid entry. Every entry is
+ * verified independently (secret, expiry, revocation, owner).
  */
 export async function peekDevice(
   cookieValue: string | undefined,
-  userId?: string
+  userId?: string,
+  deviceId?: string
 ): Promise<
   | { valid: true; userId: string; deviceId: string; label: string | null; needsProof: "totp" | "code" | null }
   | { valid: false }
@@ -299,10 +300,32 @@ export async function peekDevice(
   if (days === 0) return { valid: false };
 
   const loaded = await loadEntries(cookieValue);
-  const hit = loaded.find((l) => l.state === "ok" && (userId === undefined || l.row!.userId === userId));
+  const hit = loaded.find(
+    (l) =>
+      l.state === "ok" &&
+      (userId === undefined || l.row!.userId === userId) &&
+      (deviceId === undefined || l.entry.id === deviceId)
+  );
   if (!hit) return { valid: false };
   // (B2 doesn't implement proof requirements; B3 will add that)
   return { valid: true, userId: hit.row!.userId, deviceId: hit.row!.id, label: hit.row!.label, needsProof: null };
+}
+
+/**
+ * Every VALID entry in the pf_device list (live row + matching secret), in
+ * cookie order, for the recovery account picker. Entries that fail
+ * verification (unknown, revoked, expired, wrong secret) are never listed:
+ * without a valid device secret nothing about an account is revealed.
+ */
+export async function listValidDevices(
+  cookieValue: string | undefined
+): Promise<Array<{ userId: string; deviceId: string; label: string | null }>> {
+  const days = Math.max(0, parseInt(process.env.PF_TRUSTED_DEVICE_DAYS || "30", 10));
+  if (days === 0) return [];
+  const loaded = await loadEntries(cookieValue);
+  return loaded
+    .filter((l) => l.state === "ok")
+    .map((l) => ({ userId: l.row!.userId, deviceId: l.row!.id, label: l.row!.label }));
 }
 
 /**

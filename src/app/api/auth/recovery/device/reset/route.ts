@@ -43,6 +43,10 @@ import { logSecurityEvent } from "@/lib/auth/security-events";
 import crypto from "crypto";
 
 const resetSchema = z.object({
+  // Account picked from device/check's `accounts` (this browser may hold several
+  // device entries). Absent = the first valid entry. Never trusted by itself:
+  // peekDevice still verifies that entry's secret.
+  deviceId: z.string().regex(/^[A-Za-z0-9-]{1,64}$/).optional(),
   newPassword: z.string().min(1).max(256),
   proof: z
     .object({
@@ -71,14 +75,14 @@ export async function POST(request: NextRequest) {
     const parsed = validateBody(await request.json(), resetSchema);
     if (parsed.error) return fail();
 
-    const { newPassword, proof } = parsed.data;
+    const { newPassword, proof, deviceId: pickedDeviceId } = parsed.data;
     const deviceCookie = request.cookies.get("pf_device")?.value;
     if (!deviceCookie) return fail();
 
     // Possession check FIRST (id + secret hash, read-only). Everything below,
     // including the 401 proof-required and the per-device limiter, is only
     // reachable with a valid device secret, so none of it is an oracle.
-    const peeked = await peekDevice(deviceCookie);
+    const peeked = await peekDevice(deviceCookie, undefined, pickedDeviceId);
     if (!peeked.valid) return fail();
 
     const deviceRateLimit = checkRateLimit(`recovery-device-reset-device:${peeked.deviceId}`, 5, 60 * 60_000);
