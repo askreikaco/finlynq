@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, ArrowRight, Loader2 } from "lucide-react";
+import { PageHeader } from "@/components/mobile";
 
 type Mode = "refuse_orphans" | "synthesize_orphans";
 type ScopeChoice = "all" | "accounts" | "date_range";
@@ -111,13 +112,13 @@ export default function BackfillWizardPage() {
 
   return (
     <div className="max-w-3xl mx-auto p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Backfill transactions</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          One-time fix for imported transactions so realized gains and lot tracking work correctly.
-          Won&apos;t change your account balances.
-        </p>
-      </div>
+      <PageHeader
+          title="Backfill transactions"
+          titleClassName="text-2xl font-semibold"
+          subtitle={<>One-time fix for imported transactions so realized gains and lot tracking work correctly.
+          Won&apos;t change your account balances.</>}
+          subtitleClassName="text-sm text-muted-foreground mt-1"
+        />
 
       <CashSleeveSymbolFix />
 

@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/currency";
 import { safeName } from "@/lib/safe-name";
 import { Landmark, Loader2, RefreshCw, CheckCircle2, ExternalLink, Link2, Plus, Clock, AlertTriangle } from "lucide-react";
+import { PageHeader } from "@/components/mobile";
 
 /** Mirrors SimplefinSyncStatus (src/lib/external-import/simplefin-sync-status.ts). */
 interface SyncStatus {
@@ -274,12 +275,12 @@ export default function BankFeedsSettingsPage() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Banks</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          Pull transactions automatically from your bank via SimpleFIN
-        </p>
-      </div>
+      <PageHeader
+          title="Banks"
+          titleClassName="text-2xl font-bold tracking-tight"
+          subtitle="Pull transactions automatically from your bank via SimpleFIN"
+          subtitleClassName="text-sm text-muted-foreground mt-0.5"
+        />
 
       <Card>
         <CardHeader>

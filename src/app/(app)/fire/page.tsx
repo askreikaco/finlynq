@@ -17,6 +17,7 @@ import {
 } from "recharts";
 import { Flame, Target, TrendingUp, Calendar, Wallet, Dice5 } from "lucide-react";
 import { CHART_COLORS } from "@/lib/chart-colors";
+import { PageHeader } from "@/components/mobile";
 
 type FireResult = {
   fireNumber: number;
@@ -199,9 +200,7 @@ function FirePageContent() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Flame className="h-6 w-6 text-orange-500" /> FIRE Calculator
-        </h1>
+        <PageHeader title={<><Flame className="h-6 w-6 text-orange-500" /> FIRE Calculator</>} titleClassName="text-2xl font-bold flex items-center gap-2" />
         <p className="text-sm text-muted-foreground mt-1">
           Calculate your Financial Independence, Retire Early number and timeline
         </p>

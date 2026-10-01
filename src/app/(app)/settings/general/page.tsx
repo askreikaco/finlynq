@@ -30,6 +30,7 @@ import { Combobox } from "@/components/ui/combobox";
 import { useDisplayCurrencyOptions } from "@/lib/hooks/useDisplayCurrencyOptions";
 import { FxOverridesSection } from "@/components/fx-overrides-section";
 import { ActiveCurrenciesSection } from "@/components/active-currencies-section";
+import { PageHeader } from "@/components/mobile";
 
 type RecomputeState = { active: boolean; target: string; done: number; total: number; finished: boolean };
 
@@ -92,10 +93,12 @@ export default function GeneralSettingsPage() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">General</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Display preferences, currencies, and about</p>
-      </div>
+      <PageHeader
+          title="General"
+          titleClassName="text-2xl font-bold tracking-tight"
+          subtitle="Display preferences, currencies, and about"
+          subtitleClassName="text-sm text-muted-foreground mt-0.5"
+        />
 
       {/* Display Preferences */}
       <Card>

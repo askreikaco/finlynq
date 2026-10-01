@@ -33,6 +33,7 @@ import {
   type DropdownOrderEntry,
 } from "@/lib/dropdown-order";
 import { SUPPORTED_FIAT_CURRENCIES, currencyLabel } from "@/lib/fx/supported-currencies";
+import { PageHeader } from "@/components/mobile";
 
 type Item = { key: DropdownOrderEntry; label: string; subLabel?: string };
 
@@ -246,14 +247,14 @@ export default function DropdownOrderPage() {
   return (
     <div className="max-w-3xl space-y-6">
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Dropdown Ordering</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Pin frequently-used items to the top of each Combobox. The
+        <PageHeader
+            title="Dropdown Ordering"
+            titleClassName="text-2xl font-bold tracking-tight"
+            subtitle={<>Pin frequently-used items to the top of each Combobox. The
             rest fall back to alphabetical order. New items added later
-            appear unpinned automatically.
-          </p>
-        </div>
+            appear unpinned automatically.</>}
+            subtitleClassName="text-sm text-muted-foreground mt-0.5"
+          />
         <Button variant="outline" size="sm" onClick={reload} disabled={loading || saving}>
           <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? "animate-spin" : ""}`} />
           Refresh

@@ -19,6 +19,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/error-state";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { parseSaveError } from "@/lib/save-error";
+import { PageHeader } from "@/components/mobile";
 
 type Goal = {
   id: number; name: string; type: string; targetAmount: number; currentAmount: number;
@@ -374,11 +375,12 @@ export default function GoalsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">Financial Goals</h1>
-          <p className="text-sm text-muted-foreground mt-1">Track your savings targets and measure progress over time</p>
-        </div>
+      <PageHeader
+        className="flex flex-wrap items-center justify-between gap-3"
+        title="Financial Goals"
+        subtitle="Track your savings targets and measure progress over time"
+        actionsClassName="contents"
+        actions={
         <Dialog open={addOpen} onOpenChange={(o) => { setAddOpen(o); if (!o) setSeedForm(emptyForm(displayCurrency)); }}>
           <DialogTrigger render={<Button />}><Plus className="h-4 w-4 mr-1" /> Add Goal</DialogTrigger>
           <DialogContent>
@@ -393,7 +395,8 @@ export default function GoalsPage() {
             />
           </DialogContent>
         </Dialog>
-      </div>
+        }
+      />
 
       {/* Edit dialog — issue #130 */}
       <Dialog open={editGoal !== null} onOpenChange={(o) => { if (!o) setEditGoal(null); }}>

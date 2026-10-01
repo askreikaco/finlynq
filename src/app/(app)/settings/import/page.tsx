@@ -54,6 +54,7 @@ import { GenericCsvConnectorTab } from "@/app/(app)/import/components/generic-cs
 import { InvestmentStatementImporter } from "@/app/(app)/import/components/investment-statement-importer";
 import { EmailRulesManager } from "@/components/inbox/email-rules-manager";
 import type { ImportTemplate } from "@/lib/import-templates";
+import { PageHeader } from "@/components/mobile";
 
 type ImportProvider = "wealthposition" | "moneypro" | "generic-csv";
 
@@ -228,17 +229,17 @@ export default function ImportSettingsPage() {
 
   return (
     <div className="max-w-3xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Import</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          Manage CSV templates and your email-import address, or migrate your
+      <PageHeader
+          title="Import"
+          titleClassName="text-2xl font-bold tracking-tight"
+          subtitle={<>Manage CSV templates and your email-import address, or migrate your
           full history from another app. To upload a bank statement, use the{" "}
           <a href="/import" className="underline hover:text-foreground">
             Import page
           </a>
-          .
-        </p>
-      </div>
+          .</>}
+          subtitleClassName="text-sm text-muted-foreground mt-0.5"
+        />
 
       {/* §B (2026-06-04) — per-user default for CSV mapping confirmation. */}
       <Card>

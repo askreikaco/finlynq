@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { Calculator, PiggyBank, GraduationCap, Percent, ArrowRight, Lightbulb } from "lucide-react";
+import { PageHeader } from "@/components/mobile";
 
 type TaxData = {
   tfsa: { totalRoom: number; used: number; remaining: number; currentYearLimit: number };
@@ -60,7 +61,7 @@ function TaxPageContent() {
   if (loadError) return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Tax Optimization</h1>
+        <PageHeader title="Tax Optimization" titleClassName="text-2xl font-bold tracking-tight" />
       </div>
       <Card>
         <CardContent className="py-10 text-center text-sm text-muted-foreground">
@@ -83,10 +84,12 @@ function TaxPageContent() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Tax Optimization</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Maximize your tax-advantaged accounts and minimize your tax bill</p>
-      </div>
+      <PageHeader
+          title="Tax Optimization"
+          titleClassName="text-2xl font-bold tracking-tight"
+          subtitle="Maximize your tax-advantaged accounts and minimize your tax bill"
+          subtitleClassName="text-sm text-muted-foreground mt-0.5"
+        />
 
       {/* Contribution Room */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

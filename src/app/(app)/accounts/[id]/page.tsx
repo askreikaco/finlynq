@@ -50,6 +50,7 @@ import {
   type DialogHolding,
 } from "@/components/transactions/transaction-dialog";
 import { TransactionsWorkspace } from "../../transactions/_components/transactions-workspace";
+import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
 
 type Account = {
   id: number;
@@ -423,13 +424,17 @@ export default function AccountDetailPage() {
         <ArrowLeft className="h-4 w-4" /> Back to Accounts
       </Link>
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
+      <PageHeader
+        className="flex flex-wrap items-center justify-between gap-3"
+        title={account.name}
+        titleClassName="text-2xl font-bold tracking-tight"
+        actionsClassName="flex flex-wrap items-center gap-1.5 w-full sm:w-auto"
+        lead={
           <div className={`h-10 w-10 rounded-xl flex items-center justify-center text-sm font-bold ${account.type === "A" ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
             {(account.name ?? "?").charAt(0)}
           </div>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">{account.name}</h1>
+        }
+        belowTitle={
             <div className="flex flex-wrap gap-2 mt-0.5">
               <Badge variant="outline" className="text-[10px]">{account.currency}</Badge>
               <Badge variant={account.type === "A" ? "default" : "destructive"} className="text-[10px]">
@@ -442,23 +447,25 @@ export default function AccountDetailPage() {
                 <Badge variant="secondary" className="text-[10px]">Archived</Badge>
               )}
             </div>
-          </div>
-        </div>
-
-        {/* Quick-actions (FINLYNQ-227). Normal accounts: New transaction +
-            Deposit/Withdrawal. Investment accounts: all 8 portfolio ops, no
-            generic New transaction (per the investment-hidden-from-generic
-            -dialog invariant). */}
-        <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto">
+        }
+        overflow={[
+          ...(isInvestment ? INVESTMENT_OPS : normalInvestmentOps).map((o) => ({
+            label: o.label,
+            onSelect: () => router.push(opHref(o.op)),
+          })),
+          { label: "Edit", icon: Pencil, onSelect: () => openEdit("details") },
+        ]}
+        actions={
+        <>
           {!isInvestment && (
             <Button size="sm" onClick={openTxDialog}>
-              <Receipt className="h-3.5 w-3.5 mr-1.5" /> New transaction
+              <Receipt className="h-3.5 w-3.5 mr-1.5" /> <span className="max-md:hidden">New transaction</span><span className="md:hidden">Add</span>
             </Button>
           )}
           <DropdownMenu>
             <DropdownMenuTrigger
               render={
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className={HEADER_DESKTOP_ONLY}>
                   <TrendingUp className="h-3.5 w-3.5 mr-1.5" /> Investment transaction
                   <ChevronDown className="h-3.5 w-3.5 ml-1.5" />
                 </Button>
@@ -480,11 +487,12 @@ export default function AccountDetailPage() {
               </DropdownMenuGroup>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button variant="outline" size="sm" onClick={() => openEdit("details")}>
+          <Button variant="outline" size="sm" className={HEADER_DESKTOP_ONLY} onClick={() => openEdit("details")}>
             <Pencil className="h-3.5 w-3.5 mr-1.5" /> Edit
           </Button>
-        </div>
-      </div>
+        </>
+        }
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>

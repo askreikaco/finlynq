@@ -37,6 +37,7 @@ import { exportCsv, type CsvColumn } from "@/lib/csv-export";
 import { todayISO } from "@/lib/utils/date";
 import { LotReallocationNotice } from "@/components/portfolio/lot-reallocation-notice";
 import type { LotReallocationPreview } from "@/lib/portfolio/lots/types";
+import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
 
 /**
  * TransactionsWorkspace — the full transactions surface (filters, per-column
@@ -621,12 +622,27 @@ export function TransactionsWorkspace({
       {showHeader && (
         <>
           <OnboardingTips page="transactions" />
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h1 className="text-2xl font-bold">Transactions</h1>
-              <p className="text-sm text-muted-foreground mt-0.5">Manage and track all your financial transactions</p>
-            </div>
-            <div className="flex flex-wrap items-center gap-1.5">
+          <PageHeader
+            className="flex flex-wrap items-center justify-between gap-3"
+            title="Transactions"
+            subtitle="Manage and track all your financial transactions"
+            titleClassName="text-2xl font-bold"
+            subtitleClassName="text-sm text-muted-foreground mt-0.5"
+            actionsClassName="flex flex-wrap items-center gap-1.5"
+            overflow={[
+          { label: "Transfer", icon: ArrowRightLeft, onSelect: () => { setDialogInitial({ kind: "transfer-create" }); setDialogOpen(true); } },
+          { label: "Buy", onSelect: () => router.push("/portfolio/new?op=buy") },
+          { label: "Sell", onSelect: () => router.push("/portfolio/new?op=sell") },
+          { label: "Swap", onSelect: () => router.push("/portfolio/new?op=swap") },
+          { label: "In-kind transfer", onSelect: () => router.push("/portfolio/new?op=transfer") },
+          { label: "Income / expense", onSelect: () => router.push("/portfolio/new?op=income-expense") },
+          { label: "FX conversion", onSelect: () => router.push("/portfolio/new?op=fx-conversion") },
+          { label: "Brokerage deposit", onSelect: () => router.push("/portfolio/new?op=deposit") },
+          { label: "Brokerage withdrawal", onSelect: () => router.push("/portfolio/new?op=withdrawal") },
+          { label: "Investment Transactions", icon: TrendingUp, onSelect: () => router.push("/portfolio/new") },
+            ]}
+            actions={
+            <>
               {/* Split button: main click → quick Transaction dialog. Chevron →
                   dropdown with every kind (Transfer + the 6 portfolio operations).
                   Phase 2 portfolio-ops UX (2026-05-25). */}
@@ -637,7 +653,7 @@ export function TransactionsWorkspace({
                   setDialogOpen(true);
                 }}
               >
-                <Plus className="h-4 w-4 mr-2" /> Add Transaction
+                <Plus className="h-4 w-4 mr-2" /> <span className="max-md:hidden">Add Transaction</span><span className="md:hidden">Add</span>
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger
@@ -645,6 +661,7 @@ export function TransactionsWorkspace({
                     <Button
                       variant="outline"
                       size="icon"
+                      className={HEADER_DESKTOP_ONLY}
                       aria-label="More transaction types"
                     >
                       <ChevronDown className="h-4 w-4" />
@@ -703,12 +720,14 @@ export function TransactionsWorkspace({
               </DropdownMenu>
               <Button
                 variant="outline"
+                className={HEADER_DESKTOP_ONLY}
                 onClick={() => router.push("/portfolio/new")}
               >
                 <TrendingUp className="h-4 w-4 mr-2" /> Investment Transactions
               </Button>
-            </div>
-          </div>
+            </>
+            }
+          />
         </>
       )}
       {/* Add/edit dialog is always mounted — startEdit opens it even when the

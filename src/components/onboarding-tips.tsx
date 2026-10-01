@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Lightbulb, ArrowRight } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { X, Lightbulb, ArrowRight, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useSessionUserId, readUserItem, writeUserItem } from "@/lib/client/user-storage";
@@ -93,6 +94,8 @@ const TIPS_BY_PAGE: Record<string, OnboardingTip[]> = {
 export function OnboardingTips({ page }: OnboardingTipsProps) {
   const [dismissed, setDismissedState] = useState<Set<string>>(new Set());
   const [mounted, setMounted] = useState(false);
+  // Mobile (<md): collapsed to a one-line "Tips (n)" chip until tapped. Not persisted; dismissal is.
+  const [expanded, setExpanded] = useState(false);
 
   const { userId, ready } = useSessionUserId();
 
@@ -124,23 +127,36 @@ export function OnboardingTips({ page }: OnboardingTipsProps) {
     <motion.div
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50/50 dark:bg-indigo-950/20 p-4 space-y-3"
+      data-testid="onboarding-tips-compact"
+      className={cn(
+        "rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50/50 dark:bg-indigo-950/20 p-4 space-y-3",
+        "max-md:px-3 max-md:py-1 max-md:space-y-0",
+        expanded && "max-md:py-2 max-md:space-y-3",
+      )}
     >
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <button
+          type="button"
+          aria-expanded={expanded}
+          onClick={() => setExpanded((v) => !v)}
+          className="flex items-center gap-2 text-left max-md:min-h-11 md:pointer-events-none md:cursor-default"
+        >
           <Lightbulb className="h-4 w-4 text-indigo-500" />
           <span className="text-sm font-medium text-indigo-700 dark:text-indigo-300">
-            Tips for getting started
+            <span className="md:hidden">Tips ({tips.length})</span>
+            <span className="max-md:hidden">Tips for getting started</span>
           </span>
-        </div>
+          <ChevronDown className={cn("h-4 w-4 text-indigo-500 md:hidden transition-transform", expanded && "rotate-180")} aria-hidden />
+        </button>
         <button
           onClick={dismissAll}
-          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors max-md:min-h-11 max-md:px-2"
         >
           Dismiss all
         </button>
       </div>
 
+      <div className={cn(!expanded && "max-md:hidden", "space-y-3")}>
       <AnimatePresence>
         {tips.map((tip) => (
           <motion.div
@@ -164,13 +180,15 @@ export function OnboardingTips({ page }: OnboardingTipsProps) {
             </div>
             <button
               onClick={() => dismiss(tip.id)}
-              className="text-muted-foreground hover:text-foreground shrink-0"
+              aria-label="Dismiss tip"
+              className="text-muted-foreground hover:text-foreground shrink-0 max-md:p-3 max-md:-m-3"
             >
               <X className="h-3.5 w-3.5" />
             </button>
           </motion.div>
         ))}
       </AnimatePresence>
+      </div>
     </motion.div>
   );
 }

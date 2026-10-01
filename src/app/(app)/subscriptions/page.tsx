@@ -45,6 +45,7 @@ import { PageSkeleton } from "@/components/page-skeleton";
 import { parseSaveError } from "@/lib/save-error";
 import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
 import { useDisplayCurrency } from "@/components/currency-provider";
+import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
 
 type Subscription = {
   id: number;
@@ -552,15 +553,15 @@ function SubscriptionsPageContent() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">Subscriptions</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Track recurring subscriptions and set cancel reminders
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleDetect} disabled={detecting}>
+      <PageHeader
+        className="flex flex-wrap items-center justify-between gap-3"
+        title="Subscriptions"
+        subtitle="Track recurring subscriptions and set cancel reminders"
+        actionsClassName="flex gap-2"
+        overflow={[{ label: detecting ? "Detecting..." : "Auto-detect", icon: Zap, onSelect: handleDetect, disabled: detecting }]}
+        actions={
+        <>
+          <Button variant="outline" className={HEADER_DESKTOP_ONLY} onClick={handleDetect} disabled={detecting}>
             <Zap className="h-4 w-4 mr-1" />
             {detecting ? "Detecting..." : "Auto-detect"}
           </Button>
@@ -715,8 +716,9 @@ function SubscriptionsPageContent() {
               </form>
             </DialogContent>
           </Dialog>
-        </div>
-      </div>
+        </>
+        }
+      />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

@@ -40,6 +40,7 @@ import {
   type RuleSeed,
 } from "@/components/rules/rule-editor-dialog";
 import type { Condition, Action } from "@/lib/rules/schema";
+import { PageHeader } from "@/components/mobile";
 
 type RuleRow = {
   id: number;
@@ -205,13 +206,13 @@ export default function RulesSettingsPage() {
 
   return (
     <div className="max-w-3xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Rules</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          Auto-categorize and transform transactions with multi-condition rules.
-          See <a href="/docs/transaction-rules-v2" className="underline hover:text-foreground">the docs</a> for the full action list.
-        </p>
-      </div>
+      <PageHeader
+          title="Rules"
+          titleClassName="text-2xl font-bold tracking-tight"
+          subtitle={<>Auto-categorize and transform transactions with multi-condition rules.
+          See <a href="/docs/transaction-rules-v2" className="underline hover:text-foreground">the docs</a> for the full action list.</>}
+          subtitleClassName="text-sm text-muted-foreground mt-0.5"
+        />
 
       <Card>
         <CardHeader>

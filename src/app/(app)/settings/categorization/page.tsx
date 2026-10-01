@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tag, Plus, AlertTriangle, Pencil, Trash2, Check, X } from "lucide-react";
+import { PageHeader } from "@/components/mobile";
 
 type Category = { id: number; type: string; group: string; name: string; note: string };
 
@@ -124,10 +125,12 @@ export default function CategorizationSettingsPage() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Categorization</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Manage transaction categories. Auto-categorization rules live in <a href="/settings/rules" className="underline hover:text-foreground">Rules</a>.</p>
-      </div>
+      <PageHeader
+          title="Categorization"
+          titleClassName="text-2xl font-bold tracking-tight"
+          subtitle={<>Manage transaction categories. Auto-categorization rules live in <a href="/settings/rules" className="underline hover:text-foreground">Rules</a>.</>}
+          subtitleClassName="text-sm text-muted-foreground mt-0.5"
+        />
 
       {/* Category Management */}
       <Card>

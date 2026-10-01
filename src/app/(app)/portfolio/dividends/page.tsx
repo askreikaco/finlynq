@@ -31,6 +31,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Download } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
+import { PageHeader } from "@/components/mobile";
 
 interface CurrencyCell {
   amount: number;
@@ -135,13 +136,13 @@ export default function DividendsPage() {
   return (
     <div className="container mx-auto space-y-6 p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">Dividend income</h1>
-          <p className="text-sm text-muted-foreground">
-            Every transaction categorized as Dividends, including reinvestments and
-            withholding-tax entries.
-          </p>
-        </div>
+        <PageHeader
+            title="Dividend income"
+            titleClassName="text-2xl font-semibold"
+            subtitle={<>Every transaction categorized as Dividends, including reinvestments and
+            withholding-tax entries.</>}
+            subtitleClassName="text-sm text-muted-foreground"
+          />
         <div className="flex gap-2">
           <Link href="/portfolio" className="text-sm text-muted-foreground hover:underline self-center">
             ← Overview

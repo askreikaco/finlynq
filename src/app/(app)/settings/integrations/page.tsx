@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Zap } from "lucide-react";
 import { ConnectedApps } from "./connected-apps";
 import { isMcpConnected } from "@/lib/mcp/connected";
+import { PageHeader } from "@/components/mobile";
 
 interface ConnectedAppsData {
   apps: { id: number }[];
@@ -51,10 +52,12 @@ export default function IntegrationsSettingsPage() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Integrations</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">External tools that connect to your data</p>
-      </div>
+      <PageHeader
+          title="Integrations"
+          titleClassName="text-2xl font-bold tracking-tight"
+          subtitle="External tools that connect to your data"
+          subtitleClassName="text-sm text-muted-foreground mt-0.5"
+        />
 
       {loaded && !isConnected && (
         <Card className="border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30">

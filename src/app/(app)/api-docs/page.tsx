@@ -3,6 +3,7 @@
 import { DevModeGuard } from "@/components/dev-mode-guard";
 
 import { useState } from "react";
+import { PageHeader } from "@/components/mobile";
 
 // ============ API ROUTE DEFINITIONS ============
 
@@ -563,7 +564,7 @@ function ApiDocsPageContent() {
       <div className="mx-auto max-w-4xl px-6 py-12">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-50">API Documentation</h1>
+          <PageHeader title="API Documentation" titleClassName="text-3xl font-bold text-zinc-900 dark:text-zinc-50" />
           <p className="mt-2 text-zinc-600 dark:text-zinc-400">
             PF exposes both a REST API (Next.js routes) and an MCP server for AI assistant integration.
             All data is local — no external services required.

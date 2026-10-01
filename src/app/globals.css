@@ -27,6 +27,8 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-pos: var(--chart-2);
+  --color-neg: var(--destructive);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -187,6 +189,20 @@ html {
   font-family: var(--font-geist-mono);
 }
 
+/* Mobile (<md): amounts use the system sans (tabular figures), like the native app. */
+@media (width < 48rem) {
+  .tabular-nums, [data-value] {
+    font-family: var(--font-sans);
+  }
+  /* Existing amounts are styled with the Tailwind `font-mono` class: same switch inside the app
+     shell, except real code (pre/code/kbd/samp), key/URL displays (.break-all/.select-all) and
+     anything tagged data-keep-mono. Tabular figures keep columns of numbers aligned. */
+  main .font-mono:not(pre, code, kbd, samp, textarea, input, .break-all, .select-all, [data-keep-mono]):not(pre *, code *) {
+    font-family: var(--font-sans);
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+}
+
 /* ═══════════════════════════════════════════════
    BACKGROUND TEXTURES
    ═══════════════════════════════════════════════ */
@@ -198,6 +214,12 @@ html {
 }
 .dark .bg-dot-pattern {
   background-image: radial-gradient(oklch(0.30 0.02 265 / 18%) 1px, transparent 1px);
+}
+
+/* Flat background below md (native parity): no dot grid, no glow. */
+@media (width < 48rem) {
+  .bg-dot-pattern { background-image: none !important; }
+  .ambient-glow::after { display: none !important; }
 }
 
 /* SVG noise texture overlay — gives dark surfaces a tactile, photographic quality */

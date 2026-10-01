@@ -22,6 +22,7 @@ import { ErrorState } from "@/components/error-state";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { parseSaveError } from "@/lib/save-error";
 import { CspSafeBar } from "@/components/csp-safe-bar";
+import { PageHeader } from "@/components/mobile";
 
 type Loan = {
   id: number; name: string; type: string; principal: number; annualRate: number;
@@ -348,11 +349,13 @@ function LoansPageContent() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">Loans & Debt</h1>
-          <p className="text-sm text-muted-foreground mt-1">Track balances, amortization schedules, and payoff strategies</p>
-        </div>
+      <PageHeader
+        className="flex flex-wrap items-center justify-between gap-3"
+        title="Loans & Debt"
+        subtitle="Track balances, amortization schedules, and payoff strategies"
+        actionsClassName="contents"
+        actions={
+        <>
         {/* Opening is routed through openCreate/openEdit rather than a
             DialogTrigger, so the form is seeded before the dialog paints.
             `displayCurrency` starts at the USD default and only resolves once
@@ -472,7 +475,9 @@ function LoansPageContent() {
             </form>
           </DialogContent>
         </Dialog>
-      </div>
+        </>
+        }
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>

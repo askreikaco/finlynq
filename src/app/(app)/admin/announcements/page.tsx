@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Megaphone, Pencil, Trash2, Plus } from "lucide-react";
+import { PageHeader } from "@/components/mobile";
 
 interface AdminAnnouncement {
   id: number;
@@ -149,7 +150,7 @@ export default function AdminAnnouncementsPage() {
     <div className="mx-auto max-w-3xl">
       <div className="mb-6 flex items-center gap-2">
         <Megaphone className="h-5 w-5 text-primary" />
-        <h1 className="text-2xl font-semibold tracking-tight">Announcements</h1>
+        <PageHeader title="Announcements" titleClassName="text-2xl font-semibold tracking-tight" />
       </div>
 
       {error && <p className="mb-4 text-sm text-destructive">{error}</p>}

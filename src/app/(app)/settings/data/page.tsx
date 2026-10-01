@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Upload, FileText, Wallet, Tag, Briefcase, ArrowLeftRight, Database, Download, AlertTriangle, Trash2, History } from "lucide-react";
 import { RebuildSnapshotsButton } from "@/components/portfolio/rebuild-snapshots-button";
 import { getPasskeyStepUp } from "@/lib/client/passkey-stepup";
+import { PageHeader } from "@/components/mobile";
 
 type ImportRow = Record<string, string>;
 type ImportSection = "accounts" | "categories" | "portfolio";
@@ -343,10 +344,12 @@ export default function DataSettingsPage() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Data</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Import, export, and manage your data</p>
-      </div>
+      <PageHeader
+          title="Data"
+          titleClassName="text-2xl font-bold tracking-tight"
+          subtitle="Import, export, and manage your data"
+          subtitleClassName="text-sm text-muted-foreground mt-0.5"
+        />
 
       {/* CSV Import */}
       <Card>

@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/currency";
 import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
 import { ArrowLeft, AlertTriangle, RefreshCw, Check, X } from "lucide-react";
+import { PageHeader } from "@/components/mobile";
 
 type AuditRow = {
   id: number;
@@ -111,7 +112,7 @@ export default function CurrencyAuditPage() {
             <ArrowLeft className="h-3 w-3" />
             Back to Transactions
           </Link>
-          <h1 className="text-xl font-semibold tracking-tight">Currency Review</h1>
+          <PageHeader title="Currency Review" titleClassName="text-xl font-semibold tracking-tight" />
           <p className="text-sm text-muted-foreground mt-1">
             Transactions with a currency that doesn&apos;t match their account&apos;s currency.
             These were flagged when we added the entered/account/reporting model — they need

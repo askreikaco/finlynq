@@ -12,14 +12,17 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Settings2 } from "lucide-react";
+import { PageHeader } from "@/components/mobile";
 
 export default function DisplaySettingsPage() {
   return (
     <div className="max-w-2xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Display</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Customize how lists and pickers are ordered</p>
-      </div>
+      <PageHeader
+          title="Display"
+          titleClassName="text-2xl font-bold tracking-tight"
+          subtitle="Customize how lists and pickers are ordered"
+          subtitleClassName="text-sm text-muted-foreground mt-0.5"
+        />
 
       <Card>
         <CardHeader>

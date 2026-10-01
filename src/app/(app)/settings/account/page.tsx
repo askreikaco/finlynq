@@ -15,6 +15,7 @@ import { SignInMethods } from "./_components/sign-in-methods";
 import { TrustedDevices } from "./_components/trusted-devices";
 import { PasskeysCard } from "@/components/settings/passkeys-card";
 import { RecoveryCodesCard } from "@/components/settings/recovery-codes-card";
+import { PageHeader } from "@/components/mobile";
 
 export default function AccountSettingsPage() {
   // API Key — the raw key is only held in memory on first creation or
@@ -243,10 +244,12 @@ export default function AccountSettingsPage() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Account</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Login, API key, privacy, and backup / restore</p>
-      </div>
+      <PageHeader
+          title="Account"
+          titleClassName="text-2xl font-bold tracking-tight"
+          subtitle={<>Login, API key, privacy, and backup / restore</>}
+          subtitleClassName="text-sm text-muted-foreground mt-0.5"
+        />
 
       {/* Security Section */}
       <TwoFactor />
