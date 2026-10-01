@@ -60,8 +60,11 @@ const EXEMPT: Record<string, string> = {
     "explicitly nulled in deleteAllUserDataTx (PRF binds to old DEK), but the public " +
     "key and counter remain for re-authentication.",
   user_recovery_codes:
-    "REIKA auth — recovery codes survive wipe. User can use existing codes to unlock " +
-    "their account after a wipe (before new codes are generated).",
+    "REIKA auth — rows kept on wipe, but deleteAllUserDataTx NULLs unused dek_wrapped " +
+    "and marks them used (wraps bind to the old DEK). Removed on account delete via FK cascade.",
+  user_security_events:
+    "REIKA auth audit log — exempt from data WIPE only. Removed on account delete " +
+    "via ON DELETE CASCADE from users.",
 };
 
 type Column = {

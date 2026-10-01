@@ -520,6 +520,15 @@ export async function revokeAllDevices(userId: string) {
   await db.update(s.userDevices).set({ revokedAt: now }).where(eq(s.userDevices.userId, userId));
 }
 
+export async function revokeAllDevicesExcept(userId: string, keepDeviceId?: string) {
+  const s = getSchema();
+  const now = new Date().toISOString();
+  const whereClause = keepDeviceId
+    ? and(eq(s.userDevices.userId, userId), sql`${s.userDevices.id} != ${keepDeviceId}`)
+    : eq(s.userDevices.userId, userId);
+  await db.update(s.userDevices).set({ revokedAt: now }).where(whereClause);
+}
+
 export async function deleteDevices(userId: string) {
   const s = getSchema();
   await db.delete(s.userDevices).where(eq(s.userDevices.userId, userId));
@@ -610,16 +619,20 @@ export async function countPasskeys(userId: string): Promise<number> {
 
 // ─── Recovery codes ─────────────────────────────────────────────────────────
 
-export async function replaceRecoveryCodes(userId: string, codeHashes: string[]) {
+export async function replaceRecoveryCodes(
+  userId: string,
+  codes: Array<{ hash: string; dekWrapped: string }>
+) {
   const s = getSchema();
   const now = new Date().toISOString();
   // Delete old codes for this user.
   await db.delete(s.userRecoveryCodes).where(eq(s.userRecoveryCodes.userId, userId));
-  // Insert new codes.
-  if (codeHashes.length > 0) {
-    const values = codeHashes.map((hash) => ({
+  // Insert new codes with their DEK wraps.
+  if (codes.length > 0) {
+    const values = codes.map(({ hash, dekWrapped }) => ({
       userId,
       codeHash: hash,
+      dekWrapped,
       usedAt: null,
       createdAt: now,
     }));
@@ -627,24 +640,29 @@ export async function replaceRecoveryCodes(userId: string, codeHashes: string[])
   }
 }
 
-export async function consumeRecoveryCode(userId: string, codeHash: string): Promise<boolean> {
-  const s = getSchema();
+/**
+ * Atomically burn one unused recovery code and return its DEK wrap.
+ * One statement: a FOR UPDATE select captures the OLD wrap (RETURNING alone
+ * would show the NULLed new row), the UPDATE re-checks used_at IS NULL, so
+ * exactly one concurrent caller gets a row. Scoped by user_id.
+ * Returns null if used / wrong user / unknown hash / row without a wrap.
+ */
+export async function consumeRecoveryCode(userId: string, codeHash: string): Promise<string | null> {
   const now = new Date().toISOString();
-  const result = await db
-    .update(s.userRecoveryCodes)
-    .set({ usedAt: now })
-    .where(
-      and(
-        eq(s.userRecoveryCodes.userId, userId),
-        eq(s.userRecoveryCodes.codeHash, codeHash),
-        isNull(s.userRecoveryCodes.usedAt),
-      ),
-    );
-  // Drizzle doesn't return row counts in all adapters; rely on database-level
-  // behavior: if no row matched the WHERE (already used, belongs to other user),
-  // the UPDATE touches zero rows. We return true only if at least one row was
-  // updated. For PostgreSQL with the pg adapter, check rowCount.
-  return (result.rowCount ?? 0) > 0;
+  const res = await db.execute(sql`
+    WITH target AS (
+      SELECT id, dek_wrapped FROM user_recovery_codes
+      WHERE user_id = ${userId} AND code_hash = ${codeHash} AND used_at IS NULL
+      FOR UPDATE
+    )
+    UPDATE user_recovery_codes c
+    SET used_at = ${now}, dek_wrapped = NULL
+    FROM target
+    WHERE c.id = target.id AND c.used_at IS NULL
+    RETURNING target.dek_wrapped AS dek_wrapped
+  `);
+  const rows = (res as unknown as { rows?: Array<{ dek_wrapped: string | null }> }).rows ?? [];
+  return rows[0]?.dek_wrapped ?? null;
 }
 
 export async function countUnusedRecoveryCodes(userId: string): Promise<number> {
@@ -654,6 +672,22 @@ export async function countUnusedRecoveryCodes(userId: string): Promise<number> 
     .from(s.userRecoveryCodes)
     .where(and(eq(s.userRecoveryCodes.userId, userId), isNull(s.userRecoveryCodes.usedAt)));
   return result[0]?.count ?? 0;
+}
+
+// ─── Session cutoff ─────────────────────────────────────────────────────────
+
+export async function setSessionNotBefore(userId: string, cutoff: Date) {
+  const s = getSchema();
+  await db.update(s.users).set({ sessionNotBefore: cutoff }).where(eq(s.users.id, userId));
+}
+
+export async function getSessionNotBefore(userId: string): Promise<Date | null> {
+  const s = getSchema();
+  const result = await db
+    .select({ sessionNotBefore: s.users.sessionNotBefore })
+    .from(s.users)
+    .where(eq(s.users.id, userId));
+  return result[0]?.sessionNotBefore ?? null;
 }
 
 // ─── Admin queries (managed edition) ────────────────────────────────────────
@@ -1100,6 +1134,7 @@ async function unlinkUserUploadFiles(userId: string) {
 async function deleteAllUserDataTx(tx: TxClient, userId: string) {
   const s = getSchema();
   const BATCH = 900;
+  const now = new Date().toISOString();
 
   // Delete user-scoped rows in FK-safe order. transaction_splits has no
   // user_id column — filter via the user's transaction IDs first.
@@ -1257,13 +1292,18 @@ async function deleteAllUserDataTx(tx: TxClient, userId: string) {
     .where(eq(s.simplefinPendingTransactions.userId, userId));
   await tx.delete(s.passwordResetTokens).where(eq(s.passwordResetTokens.userId, userId));
   // Auth: trusted devices (revoke all sessions on wipe), passkeys survive but
-  // PRF wraps are cleared (PRF binds to the old DEK — see user-wraps a fresh one).
-  // Identities and recovery codes survive (user can re-authenticate with same provider).
+  // PRF wraps are cleared (PRF binds to the old DEK — user gets a fresh one).
+  // Identities survive (user can re-authenticate with same provider).
+  // Recovery code wraps are cleared (they also bind to the old DEK).
   await tx.delete(s.userDevices).where(eq(s.userDevices.userId, userId));
   await tx
     .update(s.userPasskeys)
     .set({ dekWrappedPrf: null })
     .where(eq(s.userPasskeys.userId, userId));
+  await tx
+    .update(s.userRecoveryCodes)
+    .set({ dekWrapped: null, usedAt: now })
+    .where(and(eq(s.userRecoveryCodes.userId, userId), isNull(s.userRecoveryCodes.usedAt)));
   await tx.delete(s.oauthAccessTokens).where(eq(s.oauthAccessTokens.userId, userId));
   await tx.delete(s.oauthAuthorizationCodes).where(eq(s.oauthAuthorizationCodes.userId, userId));
   if (userImportEmail) {

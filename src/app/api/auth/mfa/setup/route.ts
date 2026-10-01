@@ -76,6 +76,15 @@ export async function POST(request: NextRequest) {
       case "enable": {
         const { secret, code, currentPassword } = parsed.data;
 
+        // Already enrolled: re-enrolling must go through disable first, so a
+        // stale UI cannot silently replace the TOTP seed.
+        if (user.mfaEnabled) {
+          return NextResponse.json(
+            { error: "MFA is already enabled. Disable it first." },
+            { status: 409 }
+          );
+        }
+
         // Per-user 5/hr rate limit. Same key for enable and disable so a
         // toggle-flood is throttled together. We hit this BEFORE the password
         // check so a brute-force attempt against one user's password also
