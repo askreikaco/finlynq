@@ -363,7 +363,11 @@ export type ShortLivedPurpose =
   // WebAuthn challenge tokens (recovery plan B5; src/lib/auth/webauthn.ts).
   // Each carries the challenge + bindings and is single-use (DB-consumed).
   | "passkey-register"
-  | "passkey-2fa";
+  | "passkey-2fa"
+  // B6 (PRF): passkey login/unlock, passkey recovery, PRF-wrap enrolment.
+  | "passkey-login"
+  | "passkey-recovery"
+  | "passkey-prf";
 
 const OAUTH_STATE_AUDIENCE = "pf-oauth-state";
 const OAUTH_STATE_ISSUER = ISSUER; // Reuse session token issuer

@@ -23,7 +23,10 @@ export type SecurityEventType =
   | "passkey_renamed"
   | "passkey_counter_regression"
   | "passkey_2fa_failed"
-  | "passkey_2fa_success";
+  | "passkey_2fa_success"
+  | "passkey_prf_enabled"
+  | "passkey_login_success"
+  | "passkey_login_failed";
 
 /**
  * Log a security event for a user.

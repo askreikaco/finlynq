@@ -21,8 +21,9 @@
  *    caller can never raise a clone alarm) and report a typed result.
  *    Semantics identical to the spec: stored>0 or new>0 requires new>stored.
  *
- * PRF (B6) is not handled here; the verify helpers return everything B6 needs
- * (credential, flags, extension results are left to the caller via `response`).
+ * PRF is NOT handled here and is never read from `response`: the wrap/unwrap
+ * lives in passkey-prf.ts, which receives the PRF output as a separate field
+ * and only ever uses it as key material (never as proof of anything).
  */
 
 import crypto from "crypto";
@@ -48,7 +49,19 @@ export const CHALLENGE_TTL_SECONDS = 5 * 60;
 /** Hard cap on passkeys per account. */
 export const MAX_PASSKEYS_PER_USER = 20;
 
-export type WebAuthnChallengePurpose = Extract<ShortLivedPurpose, "passkey-register" | "passkey-2fa">;
+export type WebAuthnChallengePurpose = Extract<
+  ShortLivedPurpose,
+  "passkey-register" | "passkey-2fa" | "passkey-login" | "passkey-recovery" | "passkey-prf"
+>;
+
+/**
+ * Binding userId of an ANONYMOUS challenge (discoverable login / recovery:
+ * the user is unknown until the assertion names a credential). Never a valid
+ * user id (users.id is a uuid). Only passkey-login / passkey-recovery
+ * issue it; every other flow binds a real user, so an anonymous token can never
+ * satisfy a user-bound expectation and vice versa (equality check).
+ */
+export const ANON_USER = "-";
 
 // ─── RP config ──────────────────────────────────────────────────────────────
 
@@ -129,6 +142,8 @@ export interface ChallengeBinding {
   sessionId?: string;
   /** Pending-MFA jti the token was minted for (2FA flow). */
   pendingJti?: string;
+  /** Credential id the token was minted for (PRF second step / enrolment). */
+  credentialId?: string;
 }
 
 export async function signChallengeToken(
@@ -142,11 +157,27 @@ export async function signChallengeToken(
       userId: bind.userId,
       ...(bind.sessionId ? { sid: bind.sessionId } : {}),
       ...(bind.pendingJti ? { pjti: bind.pendingJti } : {}),
+      ...(bind.credentialId ? { cid: bind.credentialId } : {}),
       jti: crypto.randomUUID(),
     },
     CHALLENGE_TTL_SECONDS,
     purpose
   );
+}
+
+/**
+ * Read the signed userId binding of a challenge token WITHOUT consuming it
+ * (null if invalid / wrong purpose / expired). Lets a route that serves both
+ * an anonymous first step and a user-bound second step pick the right
+ * expectation; the real consume + verification still happens afterwards.
+ */
+export async function peekChallengeUserId(
+  token: string,
+  purpose: WebAuthnChallengePurpose
+): Promise<string | null> {
+  const payload = await verifyShortLived(token, purpose);
+  const userId = payload?.userId;
+  return typeof userId === "string" && userId ? userId : null;
 }
 
 /**
@@ -161,12 +192,13 @@ export async function consumeChallengeToken(
 ): Promise<string | null> {
   const payload = await verifyShortLived(token, purpose);
   if (!payload) return null;
-  const { challenge, userId, sid, pjti, jti, exp } = payload as Record<string, unknown>;
+  const { challenge, userId, sid, pjti, cid, jti, exp } = payload as Record<string, unknown>;
   if (typeof challenge !== "string" || !challenge || typeof jti !== "string" || !jti) return null;
   if (typeof exp !== "number") return null;
   if (userId !== expect.userId) return null;
   if ((expect.sessionId ?? null) !== ((sid as string | undefined) ?? null)) return null;
   if ((expect.pendingJti ?? null) !== ((pjti as string | undefined) ?? null)) return null;
+  if ((expect.credentialId ?? null) !== ((cid as string | undefined) ?? null)) return null;
 
   const { db } = await import("@/db");
   const { revokedJtis } = await import("@/db/schema-pg");
@@ -307,7 +339,10 @@ export async function verifyPasskeyAssertion(opts: {
   if (!challenge) return { ok: false, reason: "bad_token" };
 
   const { passkey, response } = opts;
-  if (!passkey || passkey.userId !== opts.binding.userId || passkey.id !== response.id) {
+  // ANON binding (discoverable flows): the credential names the user; every
+  // other binding must match the credential's owner exactly.
+  const anonymous = opts.binding.userId === ANON_USER;
+  if (!passkey || passkey.id !== response.id || (!anonymous && passkey.userId !== opts.binding.userId)) {
     return { ok: false, reason: "wrong_owner" };
   }
   // userHandle (when the authenticator returns one) must be this user's id.

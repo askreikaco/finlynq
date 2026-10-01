@@ -481,14 +481,16 @@ describe.skipIf(!HAS_DB)("multi-account B1 (real Postgres)", () => {
     for (const rel of [
       "app/api/auth/login/route.ts", "app/api/auth/mfa/verify/route.ts", "app/api/auth/register/route.ts",
       "app/api/auth/google/callback/route.ts", "app/api/auth/google/unlock/route.ts", "lib/auth/zero-click-login.ts",
+      "app/api/auth/passkey/login/verify/route.ts",
     ]) {
       expect(fs.readFileSync(path.join(root, rel), "utf8"), rel).toMatch(/commitSession\(/);
     }
-    // Every cookie-writing caller of finalizeRecoveryReset must commitSession (B4: code + device routes).
+    // Every cookie-writing caller of finalizeRecoveryReset must commitSession (B4: code + device routes; B6: passkey route).
     const callers = files.filter((f) => !f.endsWith("recovery.ts") && /finalizeRecoveryReset\(/.test(fs.readFileSync(f, "utf8")));
     expect(callers.map((f) => path.relative(root, f)).sort()).toEqual([
       "app/api/auth/recovery/code/reset/route.ts",
       "app/api/auth/recovery/device/reset/route.ts",
+      "app/api/auth/recovery/passkey/reset/route.ts",
     ]);
     for (const f of callers) expect(fs.readFileSync(f, "utf8"), f).toMatch(/commitSession\(/);
   });
