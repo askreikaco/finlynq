@@ -1,0 +1,70 @@
+/**
+ * PUT /api/family/manage/update-sections
+ *
+ * Owner replaces the sections of a share (widen and/or narrow) in ONE transaction:
+ *  - widening seals ONLY the added sections, ONLY to this share's viewer
+ *  - narrowing rotates every dropped section the viewer held a key for, then re-seals the rest
+ *  - a reciprocal share cannot shrink below its must-share-back parent's requirement (409)
+ *
+ * Auth: session-only, owner only. Body (strict): { shareId, sections[] }
+ */
+
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { getUserById } from "@/lib/auth/queries";
+import { updateFamilyShareSections } from "@/lib/family/manage-ops";
+import { FamilySectionSchema } from "@/lib/family/sections";
+import { manageLimit, readStrictBody, requireFamilySession, toShareDto } from "@/lib/family/manage-guard";
+
+export const dynamic = "force-dynamic";
+
+const UpdateSectionsSchema = z
+  .object({
+    shareId: z.string().uuid(),
+    sections: z.array(FamilySectionSchema).min(1),
+  })
+  .strict();
+
+export async function PUT(request: NextRequest) {
+  const guard = await requireFamilySession(request);
+  if (!guard.ok) return guard.response;
+  const { userId: ownerId, dek } = guard.ctx;
+
+  const limited = manageLimit(ownerId);
+  if (limited) return limited;
+
+  const body = await readStrictBody(request, UpdateSectionsSchema);
+  if (!body.ok) return body.response;
+
+  let result;
+  try {
+    result = await updateFamilyShareSections({
+      shareId: body.data.shareId,
+      ownerId,
+      sections: body.data.sections,
+      ownerDek: dek,
+    });
+  } catch {
+    console.error("[family] update-sections failed (rolled back)");
+    return NextResponse.json({ error: "Could not update sections" }, { status: 500 });
+  }
+
+  if (!result.ok) {
+    switch (result.code) {
+      case "not_found":
+        return NextResponse.json({ error: "Share not found" }, { status: 404 });
+      case "locked":
+        return NextResponse.json({ error: "Session locked. Please sign in again." }, { status: 423 });
+      case "required_back":
+        return NextResponse.json(
+          { error: "Cannot remove sections required for must-share-back", requiredSections: result.requiredSections },
+          { status: 409 },
+        );
+      default:
+        return NextResponse.json({ error: "Share cannot be changed in its current state" }, { status: 409 });
+    }
+  }
+
+  const viewer = result.share.viewerId ? await getUserById(result.share.viewerId) : null;
+  return NextResponse.json(toShareDto(result.share, "owner", viewer?.displayName ?? null), { status: 200 });
+}

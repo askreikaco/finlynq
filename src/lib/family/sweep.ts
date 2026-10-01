@@ -29,6 +29,7 @@ import {
   portfolioHoldings,
 } from "@/db/schema-pg";
 import { SECTION_LABEL_SOURCES } from "./label-registry";
+import { promoteAwaitingShares } from "./share-dal";
 import { type FamilySection, FAMILY_SECTIONS_V1 } from "./sections";
 import { encryptLabel, hashLabel, buildLabelAAD, constantTimeEqual } from "@/lib/crypto/family-crypto";
 import { decryptField } from "@/lib/crypto/envelope";
@@ -97,6 +98,9 @@ export async function syncFamilyLabels(
         await rotateEpoch(tx, ownerId, section, dek);
       }
     }
+
+    // Owner is present (DEK in hand): finalize invitees who accepted while the owner was offline.
+    await promoteAwaitingShares(tx, ownerId);
 
     const liveSections = await provisionGrants(tx, ownerId, dek, options?.sections);
 
