@@ -34,6 +34,8 @@ export interface AuthContext {
   dek: Buffer | null;
   /** JWT `jti` (session ID) — used to invalidate the DEK cache on logout. */
   sessionId: string | null;
+  /** JWT `iat` (issued-at) claim in seconds. Used for step-up freshness check. */
+  iat?: number;
 }
 
 /** Result of an authentication attempt */

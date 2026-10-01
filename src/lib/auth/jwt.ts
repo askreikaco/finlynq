@@ -312,6 +312,19 @@ export async function verifySessionTokenDetailed(
     if (session.jti && (await isJtiRevoked(session.jti))) {
       return { payload: null, reason: "revoked" };
     }
+    // Per-user session cutoff (users.session_not_before, set by recovery /
+    // admin force-logout). Applies to EVERY session-token consumer because
+    // they all funnel through this function. FAIL CLOSED: if the cutoff
+    // cannot be read the token is treated as invalid (normal re-login path).
+    try {
+      const { getSessionCutoffCached, isSessionRevokedByCutoff } = await import("./session-cutoff");
+      const cutoff = await getSessionCutoffCached(session.sub);
+      if (isSessionRevokedByCutoff(session.iat, cutoff)) {
+        return { payload: null, reason: "revoked" };
+      }
+    } catch {
+      return { payload: null, reason: "invalid-token" };
+    }
     return { payload: session };
   } catch {
     return { payload: null, reason: "invalid-token" };

@@ -29,7 +29,10 @@ import {
 import { validatePasswordStrength } from "@/lib/auth/password-policy";
 import { validateBody, safeErrorMessage, logApiError } from "@/lib/validate";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { revokeAllDevices } from "@/lib/auth/trusted-device";
+import { revokeAllDevicesExcept } from "@/lib/auth/queries";
+import { sendEmail, passwordChangedEmail } from "@/lib/email";
+import { logSecurityEvent } from "@/lib/auth/security-events";
+import { parseDeviceIdFromCookie as parseCurrentDeviceId } from "@/lib/auth/trusted-device";
 
 export const dynamic = "force-dynamic";
 
@@ -155,13 +158,29 @@ export async function POST(request: NextRequest) {
 
     await updateUserPasswordAndWrap(userId, newHash, wrap);
 
-    // Revoke all devices so the current browser gets a new device on next login.
-    // Wrap in try/catch so a device revocation failure doesn't fail the password change.
+    // Keep the current browser's trusted device (cookie `<uuid>.<secret>`),
+    // revoke every other one. No/garbled cookie -> revoke all.
+    // Best-effort: a revocation failure must not fail the password change.
     try {
-      await revokeAllDevices(userId);
+      const currentDeviceId = parseCurrentDeviceId(request.cookies.get("pf_device")?.value);
+      await revokeAllDevicesExcept(userId, currentDeviceId);
     } catch (err) {
-      await logApiError("POST", "/api/settings/change-password (revokeAllDevices)", err);
-      // swallow — device revocation shouldn't block password change
+      await logApiError("POST", "/api/settings/change-password (revokeAllDevicesExcept)", err);
+    }
+
+    logSecurityEvent(userId, "password_changed", {
+      method: "settings",
+      userAgent: request.headers.get("user-agent") ?? undefined,
+    }).catch(() => {});
+
+    // Fire-and-forget notification; failure never fails the change.
+    if (user.email) {
+      try {
+        const displayName = (user.displayName || user.username || "").toString() || undefined;
+        await sendEmail(passwordChangedEmail(user.email, displayName));
+      } catch (err) {
+        await logApiError("POST", "/api/settings/change-password (email)", err);
+      }
     }
 
     // The DEK itself is unchanged, so the current session (and any other

@@ -8,6 +8,12 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
+
+// Cutoff lookup hits the DB (fail-closed); these suites have no DB, so pin "no cutoff".
+vi.mock("@/lib/auth/session-cutoff", async (orig) => ({
+  ...(await orig<typeof import("@/lib/auth/session-cutoff")>()),
+  getSessionCutoffCached: async () => null,
+}));
 import { NextRequest } from "next/server";
 
 // Set a stable JWT secret so signing/verifying works in-process.

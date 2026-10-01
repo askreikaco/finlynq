@@ -1,9 +1,10 @@
 /**
  * POST /api/settings/change-password — Device revocation on password change.
  *
- * After a password change, all trusted devices are revoked so the current
- * browser gets a fresh device on next login.
- * A failure in device revocation should not fail the password change itself.
+ * After a password change every trusted device EXCEPT the current browser's
+ * (pf_device cookie `<uuid>.<secret>`) is revoked (owner decision, recovery B2).
+ * No/garbled cookie -> all revoked. A failure in device revocation, the
+ * security event, or the email must not fail the password change itself.
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -16,15 +17,30 @@ vi.mock("@/db", () => ({
 const mockGetUserById = vi.fn();
 const mockUpdateUserPasswordAndWrap = vi.fn();
 const mockRevokeAllDevices = vi.fn();
+const mockSendEmail = vi.fn();
+const mockLogEvent = vi.fn();
 
 vi.mock("@/lib/auth/queries", () => ({
   getUserById: (...a: unknown[]) => mockGetUserById(...a),
   updateUserPasswordAndWrap: (...a: unknown[]) =>
     mockUpdateUserPasswordAndWrap(...a),
+  revokeAllDevicesExcept: (...a: unknown[]) => mockRevokeAllDevices(...a),
 }));
 
 vi.mock("@/lib/auth/trusted-device", () => ({
-  revokeAllDevices: (...a: unknown[]) => mockRevokeAllDevices(...a),
+  parseDeviceIdFromCookie: (v: string | undefined) => {
+    const p = v?.split(".");
+    return p && p.length === 2 ? p[0] : undefined;
+  },
+}));
+
+vi.mock("@/lib/email", () => ({
+  sendEmail: (...a: unknown[]) => mockSendEmail(...a),
+  passwordChangedEmail: (to: string) => ({ to, subject: "s", html: "h", text: "t" }),
+}));
+
+vi.mock("@/lib/auth/security-events", () => ({
+  logSecurityEvent: (...a: unknown[]) => mockLogEvent(...a),
 }));
 
 vi.mock("@/lib/auth/require-auth", async () => {
@@ -106,10 +122,12 @@ beforeEach(() => {
   });
   mockUpdateUserPasswordAndWrap.mockResolvedValue(undefined);
   mockRevokeAllDevices.mockResolvedValue(undefined);
+  mockSendEmail.mockResolvedValue(undefined);
+  mockLogEvent.mockResolvedValue(undefined);
 });
 
 describe("POST /api/settings/change-password — Device revocation", () => {
-  it("should call revokeAllDevices after successful password change", async () => {
+  it("revokes all devices (no keep id) when no pf_device cookie", async () => {
     const req = createMockRequest(
       "http://localhost:3000/api/settings/change-password",
       {
@@ -127,11 +145,67 @@ describe("POST /api/settings/change-password — Device revocation", () => {
     expect(status).toBe(200);
     expect(data).toMatchObject({ success: true });
 
-    // Verify revokeAllDevices was called with the user ID
-    expect(mockRevokeAllDevices).toHaveBeenCalledWith("test-user-123");
+    // Missing cookie -> keep nothing
+    expect(mockRevokeAllDevices).toHaveBeenCalledWith("test-user-123", undefined);
   });
 
-  it("should not fail password change if revokeAllDevices throws", async () => {
+  it("keeps the current device (id from pf_device cookie) and revokes the rest", async () => {
+    const req = createMockRequest(
+      "http://localhost:3000/api/settings/change-password",
+      {
+        method: "POST",
+        body: { currentPassword: "CurrentPassword123!@#", newPassword: "NewPassword456!@#$%" },
+        headers: { cookie: "pf_device=dev-current-id.somesecret" },
+      }
+    );
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    expect(mockRevokeAllDevices).toHaveBeenCalledTimes(1);
+    expect(mockRevokeAllDevices).toHaveBeenCalledWith("test-user-123", "dev-current-id");
+  });
+
+  it("garbled pf_device cookie -> all revoked", async () => {
+    const req = createMockRequest(
+      "http://localhost:3000/api/settings/change-password",
+      {
+        method: "POST",
+        body: { currentPassword: "CurrentPassword123!@#", newPassword: "NewPassword456!@#$%" },
+        headers: { cookie: "pf_device=nodothere" },
+      }
+    );
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    expect(mockRevokeAllDevices).toHaveBeenCalledWith("test-user-123", undefined);
+  });
+
+  it("sends the password-changed email only when users.email is set, and email failure does not fail", async () => {
+    const mk = () => createMockRequest("http://localhost:3000/api/settings/change-password", {
+      method: "POST",
+      body: { currentPassword: "CurrentPassword123!@#", newPassword: "NewPassword456!@#$%" },
+    });
+    let res = await POST(mk());
+    expect(res.status).toBe(200);
+    expect(mockSendEmail).not.toHaveBeenCalled();
+
+    mockGetUserById.mockResolvedValue({
+      id: "test-user-123", email: "a@b.co", passwordHash: "h",
+      kekSalt: Buffer.alloc(16, 0xff).toString("base64"),
+      dekWrapped: Buffer.alloc(48, 0xcc).toString("base64"),
+      dekWrappedIv: Buffer.alloc(12, 0xdd).toString("base64"),
+      dekWrappedTag: Buffer.alloc(16, 0xee).toString("base64"),
+      pepperVersion: 1,
+    });
+    res = await POST(mk());
+    expect(res.status).toBe(200);
+    expect(mockSendEmail).toHaveBeenCalledTimes(1);
+    expect(mockLogEvent).toHaveBeenCalledWith("test-user-123", "password_changed", expect.anything());
+
+    mockSendEmail.mockRejectedValueOnce(new Error("smtp down"));
+    res = await POST(mk());
+    expect(res.status).toBe(200);
+  });
+
+  it("should not fail password change if revokeAllDevicesExcept throws", async () => {
     // Make revokeAllDevices throw an error
     mockRevokeAllDevices.mockRejectedValueOnce(
       new Error("Database connection failed")
@@ -188,7 +262,7 @@ describe("POST /api/settings/change-password — Device revocation", () => {
     expect(status).toBe(200);
     expect(data).toMatchObject({ success: true });
 
-    // Verify revokeAllDevices was called even for pre-encryption accounts
-    expect(mockRevokeAllDevices).toHaveBeenCalledWith("test-user-123");
+    // Verify devices were revoked even for pre-encryption accounts
+    expect(mockRevokeAllDevices).toHaveBeenCalledWith("test-user-123", undefined);
   });
 });

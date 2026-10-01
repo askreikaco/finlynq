@@ -392,6 +392,24 @@ export function passwordResetEmail(email: string, token: string) {
   };
 }
 
+export function passwordChangedEmail(email: string, displayName?: string) {
+  const url = `${APP_URL()}/settings/account`;
+  const name = displayName ? escapeHtml(displayName) : "there";
+  const html = baseLayout(
+    "Your password was changed",
+    `<p style="color:#3f3f46;line-height:1.6">Hello ${name},</p>
+     <p style="color:#3f3f46;line-height:1.6">Your Finlynq account password was just changed.</p>
+     <p style="color:#3f3f46;line-height:1.6">If this was not you, sign in and review your account right away.</p>
+     ${buttonHtml("Review account", url)}`
+  );
+  return {
+    to: email,
+    subject: "Your Finlynq password was changed",
+    html,
+    text: `Your Finlynq password was changed. If this was not you, review your account: ${url}`,
+  };
+}
+
 export function welcomeEmail(email: string, displayName?: string) {
   const rawName = displayName || "there";
   const safeName = escapeHtml(rawName);

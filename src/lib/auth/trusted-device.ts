@@ -36,6 +36,13 @@ function parseDeviceCookie(cookieValue: string): { id: string; secret: string } 
   return { id: parts[0], secret: parts[1] };
 }
 
+/** Device id from a pf_device cookie value, or undefined if absent/garbled. */
+export function parseDeviceIdFromCookie(cookieValue: string | undefined): string | undefined {
+  if (!cookieValue) return undefined;
+  const parsed = parseDeviceCookie(cookieValue);
+  return parsed?.id || undefined;
+}
+
 /**
  * Encode device ID and secret into the cookie value.
  */
@@ -180,6 +187,140 @@ export async function issueDevice(
 }
 
 /**
+ * Peek at a device to check if it's valid, without unwrapping or rotating.
+ * Used to check device availability before prompting for additional proof.
+ *
+ * Returns { valid: true, label?, needsProof } or { valid: false }.
+ */
+export async function peekDevice(
+  cookieValue: string,
+  userId?: string
+): Promise<
+  | { valid: true; userId: string; deviceId: string; label: string | null; needsProof: "totp" | "code" | null }
+  | { valid: false }
+> {
+  const days = Math.max(
+    0,
+    parseInt(process.env.PF_TRUSTED_DEVICE_DAYS || "30", 10)
+  );
+  if (days === 0) {
+    return { valid: false };
+  }
+
+  const parsed = parseDeviceCookie(cookieValue);
+  if (!parsed) return { valid: false };
+
+  const { id, secret } = parsed;
+
+  // Look up the device
+  const rows = await db
+    .select()
+    .from(userDevices)
+    .where(eq(userDevices.id, id))
+    .limit(1);
+
+  if (rows.length === 0) return { valid: false };
+  const device = rows[0];
+
+  // Verify user match (when the caller already knows the user)
+  if (userId !== undefined && device.userId !== userId) return { valid: false };
+
+  // The secret must verify too: a bare device id (listable in settings) must
+  // not confirm a device exists. Read-only: never consumes, rotates or revokes.
+  if (!constantTimeEqual(device.secretHash, authLookupHash(secret))) return { valid: false };
+
+  // Check expiry and revocation
+  const now = new Date();
+  if (device.expiresAt && new Date(device.expiresAt) <= now) return { valid: false };
+  if (device.revokedAt) return { valid: false };
+
+  // Device is valid; check what proof is needed
+  // (B2 doesn't implement proof requirements; B3 will add that)
+  return { valid: true, userId: device.userId, deviceId: device.id, label: device.label, needsProof: null };
+}
+
+/**
+ * Redeem a device cookie for DEK access without rotating.
+ *
+ * Validates the device (exists, not expired, not revoked, matches user),
+ * unwraps the DEK, and returns it WITHOUT changing the secret.
+ *
+ * Returns null immediately if PF_TRUSTED_DEVICE_DAYS is 0 (feature disabled).
+ *
+ * @param cookieValue - The cookie value (id.secret format)
+ * @param userId - The expected user ID
+ * @returns { dek, cookieValue } or null if invalid/expired/revoked/mismatch
+ */
+export async function redeemDeviceWithoutRotate(
+  cookieValue: string,
+  userId: string
+): Promise<{
+  dek: Buffer;
+  cookieValue: string;
+  maxAgeSeconds: number;
+} | null> {
+  const days = Math.max(
+    0,
+    parseInt(process.env.PF_TRUSTED_DEVICE_DAYS || "30", 10)
+  );
+  if (days === 0) {
+    return null;
+  }
+
+  const parsed = parseDeviceCookie(cookieValue);
+  if (!parsed) return null;
+
+  const { id, secret } = parsed;
+
+  // Look up the device
+  const rows = await db
+    .select()
+    .from(userDevices)
+    .where(eq(userDevices.id, id))
+    .limit(1);
+
+  if (rows.length === 0) return null;
+  const device = rows[0];
+
+  // Verify user match
+  if (device.userId !== userId) return null;
+
+  // Check expiry and revocation
+  const now = new Date();
+  if (device.expiresAt && new Date(device.expiresAt) <= now) return null;
+  if (device.revokedAt) return null;
+
+  // Verify secret hash (constant-time to resist timing attacks)
+  const expectedHash = authLookupHash(secret);
+  if (!constantTimeEqual(device.secretHash, expectedHash)) {
+    // Replayed or old secret: revoke this device to prevent abuse
+    try {
+      await revokeDevice(userId, id);
+    } catch {
+      // swallow — we still return null to fail the redemption
+    }
+    return null;
+  }
+
+  // Unwrap the DEK
+  let dek: Buffer;
+  try {
+    dek = unwrapDEKForSecret(device.dekWrapped, secret);
+  } catch {
+    return null;
+  }
+
+  // Return DEK without rotating the secret
+  const maxAgeSeconds = days * 24 * 60 * 60;
+
+  return {
+    dek,
+    cookieValue,
+    maxAgeSeconds,
+  };
+}
+
+/**
  * Redeem a device cookie for DEK access.
  *
  * Validates the device (exists, not expired, not revoked, matches user),
@@ -310,6 +451,96 @@ export async function revokeAllDevices(userId: string): Promise<void> {
  */
 export async function deleteAllDevices(userId: string): Promise<void> {
   await db.delete(userDevices).where(eq(userDevices.userId, userId));
+}
+
+/**
+ * Rotate a device: generate a new secret, rewrap the DEK, extend expiry.
+ * Returns the new cookie value or null if the device is invalid/revoked.
+ *
+ * Used by recovery flows that want to keep and refresh a trusted device.
+ * The old secret becomes invalid (attempting to use it will be treated as a replay attack).
+ */
+export async function rotateDevice(
+  cookieValue: string,
+  userId: string
+): Promise<{ rotatedCookieValue: string; maxAgeSeconds: number } | null> {
+  const days = Math.max(
+    0,
+    parseInt(process.env.PF_TRUSTED_DEVICE_DAYS || "30", 10)
+  );
+  if (days === 0) {
+    return null;
+  }
+
+  const parsed = parseDeviceCookie(cookieValue);
+  if (!parsed) return null;
+
+  const { id, secret } = parsed;
+
+  // Look up the device
+  const rows = await db
+    .select()
+    .from(userDevices)
+    .where(eq(userDevices.id, id))
+    .limit(1);
+
+  if (rows.length === 0) return null;
+  const device = rows[0];
+
+  // Verify user match
+  if (device.userId !== userId) return null;
+
+  // Check expiry and revocation
+  const now = new Date();
+  if (device.expiresAt && new Date(device.expiresAt) <= now) return null;
+  if (device.revokedAt) return null;
+
+  // Verify secret hash (constant-time to resist timing attacks)
+  const expectedHash = authLookupHash(secret);
+  if (!constantTimeEqual(device.secretHash, expectedHash)) {
+    // Replayed or old secret: revoke this device to prevent abuse
+    try {
+      await revokeDevice(userId, id);
+    } catch {
+      // swallow — we still return null to fail the rotation
+    }
+    return null;
+  }
+
+  // Unwrap the DEK
+  let dek: Buffer;
+  try {
+    dek = unwrapDEKForSecret(device.dekWrapped, secret);
+  } catch {
+    return null;
+  }
+
+  // Rotate: generate new secret, rewrap, update row
+  const newSecret = crypto.randomBytes(32).toString("base64url");
+  const newSecretHash = authLookupHash(newSecret);
+  const newDekWrapped = wrapDEKForSecret(dek, newSecret);
+
+  const newExpiresAt = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+
+  // Import rotateDeviceSecret from queries for atomic conditional rotation
+  const { rotateDeviceSecret } = await import("@/lib/auth/queries");
+  const rotated = await rotateDeviceSecret(id, device.secretHash, {
+    secretHash: newSecretHash,
+    dekWrapped: newDekWrapped,
+    expiresAt: newExpiresAt.toISOString(),
+  });
+
+  // If the conditional update failed (someone else rotated first, or hash changed),
+  // treat it as a failed rotation
+  if (!rotated) return null;
+
+  const maxAgeSeconds = days * 24 * 60 * 60;
+  const rotatedCookieValue = encodeDeviceCookie(id, newSecret);
+
+  return {
+    rotatedCookieValue,
+    maxAgeSeconds,
+  };
 }
 
 /**

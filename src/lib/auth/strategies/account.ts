@@ -111,6 +111,7 @@ export class AccountStrategy implements AuthStrategy {
         mfaVerified: payload.mfa ?? false,
         dek,
         sessionId,
+        iat: payload.iat as number | undefined,
       },
     };
   }
