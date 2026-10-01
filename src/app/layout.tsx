@@ -115,7 +115,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className="antialiased noise-bg">
         <JsonLd data={organizationSchema()} />
         {/* iOS standalone PWA: opaque strip behind the translucent status bar. */}
-        <div className="safe-top-backdrop" aria-hidden="true" data-testid="safe-top-backdrop" />
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
