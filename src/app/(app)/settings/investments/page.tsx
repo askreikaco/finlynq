@@ -73,6 +73,7 @@ import {
 } from "lucide-react";
 import { resolveTickerAdvisory } from "@/lib/securities/ticker-advisories";
 import { ManagePricesDialog } from "./_components/manage-prices-dialog";
+import { PageHeader } from "@/components/mobile";
 
 type SecurityAccount = {
   accountId: number;
@@ -780,12 +781,12 @@ export default function InvestmentsSettingsPage() {
   return (
     <div className="max-w-5xl space-y-6">
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Investments</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Your securities, and how they map to your accounts.
-          </p>
-        </div>
+        <PageHeader
+            title="Investments"
+            titleClassName="text-2xl font-bold tracking-tight"
+            subtitle="Your securities, and how they map to your accounts."
+            subtitleClassName="text-sm text-muted-foreground mt-0.5"
+          />
       </div>
 
       {toast && (

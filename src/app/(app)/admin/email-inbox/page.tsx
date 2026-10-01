@@ -25,6 +25,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Mailbox, RefreshCw, Lock, Users } from "lucide-react";
+import { PageHeader } from "@/components/mobile";
 
 interface ByUser {
   userId: string;
@@ -144,7 +145,7 @@ export default function AdminEmailInboxPage() {
         <div>
           <div className="flex items-center gap-2">
             <Mailbox className="h-5 w-5 text-primary" />
-            <h1 className="text-2xl font-bold tracking-tight">Imported Email Oversight</h1>
+            <PageHeader title="Imported Email Oversight" titleClassName="text-2xl font-bold tracking-tight" />
           </div>
           <p className="text-sm text-muted-foreground mt-0.5">
             Cross-user view of inbound email-import rows. Metadata is always

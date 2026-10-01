@@ -1,0 +1,77 @@
+/**
+ * @vitest-environment jsdom
+ */
+import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
+import React from "react";
+import { render, screen, cleanup, fireEvent, within, waitFor } from "@testing-library/react";
+
+vi.mock("next/link", () => ({
+  default: ({ children, href, ...p }: React.PropsWithChildren<{ href: string }>) => React.createElement("a", { href, ...p }, children),
+}));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }), usePathname: () => "/accounts" }));
+vi.mock("@/components/currency-provider", () => ({ useDisplayCurrency: () => ({ displayCurrency: "VND" }) }));
+vi.mock("@/components/dropdown-order-provider", () => ({
+  useDropdownOrder: () => <T,>(items: T[]) => items,
+}));
+vi.mock("@/components/onboarding-tips", () => ({ OnboardingTips: () => null }));
+vi.mock("@/app/(app)/accounts/_components/account-dialog", () => ({ AccountDialog: () => null }));
+vi.mock("@/app/(app)/accounts/_components/manage-groups-dialog", () => ({
+  ManageGroupsDialog: ({ open }: { open: boolean }) => (open ? <div role="dialog">manage-groups-open</div> : null),
+}));
+
+import AccountsPage from "@/app/(app)/accounts/page";
+
+const balances = [
+  { accountId: 1, accountName: "TCB", accountType: "A", accountGroup: "Cash", currency: "VND", balance: 100, convertedBalance: 100 },
+  { accountId: 2, accountName: "Old", accountType: "A", accountGroup: "Cash", currency: "VND", balance: 5, convertedBalance: 5, archived: true },
+];
+
+beforeEach(() => {
+  vi.stubGlobal("fetch", vi.fn(async (url: string) => ({
+    ok: true,
+    json: async () => (String(url).includes("/api/dashboard") ? { balances } : {}),
+  })));
+});
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
+
+const cls = (el: Element) => el.className.toString().split(/\s+/);
+
+describe("Accounts header on mobile", () => {
+  it("secondary actions are desktop-only inline; the primary pill stays; overflow lists them", async () => {
+    render(<AccountsPage />);
+    await screen.findByRole("heading", { level: 1, name: "Accounts" });
+
+    const manageInline = screen.getByTitle("Rename, reorder, or merge account groups");
+    const archivedInline = screen.getByTitle("Show archived accounts");
+    expect(cls(manageInline)).toContain("max-md:hidden");
+    expect(cls(archivedInline)).toContain("max-md:hidden");
+
+    const primary = screen.getByRole("button", { name: /Create Account|Add/ });
+    expect(cls(primary)).not.toContain("max-md:hidden");
+
+    fireEvent.click(screen.getByRole("button", { name: "More actions" }));
+    const menu = await screen.findByRole("menu");
+    expect(within(menu).getAllByRole("menuitem").map((i) => i.textContent)).toEqual(["Manage groups", "Show archived"]);
+  });
+
+  it("overflow items run the same handlers as the inline buttons", async () => {
+    render(<AccountsPage />);
+    await screen.findByRole("heading", { level: 1, name: "Accounts" });
+    fireEvent.click(screen.getByRole("button", { name: "More actions" }));
+    fireEvent.click(within(await screen.findByRole("menu")).getByText("Manage groups"));
+    await waitFor(() => expect(screen.getByText("manage-groups-open")).toBeTruthy());
+
+    // "Show archived" toggles the label to "Hide archived"
+    fireEvent.click(screen.getByRole("button", { name: "More actions" }));
+    fireEvent.click(within(await screen.findByRole("menu")).getByText("Show archived"));
+    await waitFor(() => expect(screen.getByTitle("Hide archived accounts")).toBeTruthy());
+  });
+
+  it("desktop title/subtitle markup: original 24/bold classes behind md:", async () => {
+    render(<AccountsPage />);
+    const h1 = await screen.findByRole("heading", { level: 1, name: "Accounts" });
+    expect(cls(h1)).toEqual(expect.arrayContaining(["md:text-2xl", "md:font-bold"]));
+    const sub = screen.getByText("Overview of your assets, liabilities, and net worth");
+    expect(cls(sub)).toEqual(expect.arrayContaining(["hidden", "md:block"]));
+  });
+});

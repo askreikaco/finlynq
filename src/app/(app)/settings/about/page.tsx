@@ -5,13 +5,12 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Shield, Database } from "lucide-react";
+import { PageHeader } from "@/components/mobile";
 
 export default function AboutSettingsPage() {
   return (
     <div className="max-w-2xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">About</h1>
-      </div>
+      <PageHeader title="About" titleClassName="text-2xl font-bold tracking-tight" />
 
       <Card>
         <CardHeader>

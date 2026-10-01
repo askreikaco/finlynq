@@ -30,6 +30,7 @@ import { Download, ArrowDownLeft, ArrowUpLeft, RefreshCw, Coins } from "lucide-r
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { exportCsv, type CsvColumn } from "@/lib/csv-export";
+import { PageHeader } from "@/components/mobile";
 
 // Phase 3 follow-up (2026-05-26): short_close = a Buy that covered a short
 // position; gain inverts (cost − buy_price). short_open = the audit-marker
@@ -318,12 +319,12 @@ export default function RealizedGainsPage() {
   return (
     <div className="container mx-auto space-y-6 p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">Realized gains</h1>
-          <p className="text-sm text-muted-foreground">
-            Lot-level realized gain on every closed sell / transfer-out, per (holding, account).
-          </p>
-        </div>
+        <PageHeader
+            title="Realized gains"
+            titleClassName="text-2xl font-semibold"
+            subtitle={<>Lot-level realized gain on every closed sell / transfer-out, per (holding, account).</>}
+            subtitleClassName="text-sm text-muted-foreground"
+          />
         <div className="flex gap-2">
           <Link href="/portfolio" className="text-sm text-muted-foreground hover:underline self-center">
             ← Overview

@@ -16,6 +16,7 @@ import {
 } from "@/components/holdings/holding-edit-form";
 import { PerformanceChart } from "@/components/portfolio/PerformanceChart";
 import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 import {
   ASSET_TYPE_CONFIG, REGION_COLORS, SECTOR_COLORS,
@@ -30,6 +31,7 @@ import { AllocationCharts } from "./_components/allocation-charts";
 import { BenchmarkChart } from "./_components/benchmark-chart";
 import { HoldingsByAccount } from "./_components/holdings-by-account";
 import { formatPercent } from "@/lib/locale";
+import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
 
 // ── Main Page ───────────────────────────────────────────────────────
 export default function PortfolioPage() {
@@ -219,30 +221,28 @@ export default function PortfolioPage() {
   return (
     <div className="space-y-6">
       {/* ── Header ────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Portfolio</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {summary.totalHoldings} holdings across {summary.totalAccounts} accounts
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Phase 2 nav — realized gains + dividends dashboards. Each
-              dashboard reads its own data; they're not modal extensions
-              of this page, just deeper drills into the same portfolio.
-              `buttonVariants` styles a plain Link as a button — Button
-              itself uses base-ui ButtonPrimitive which doesn't accept
-              asChild per shadcn v4 (uses `render` prop instead, but
-              that's not wired here yet). */}
+      <PageHeader
+        className="flex flex-wrap items-center justify-between gap-3"
+        title="Portfolio"
+        titleClassName="text-2xl font-bold tracking-tight"
+        subtitleClassName="text-sm text-muted-foreground mt-0.5"
+        subtitle={`${summary.totalHoldings} holdings across ${summary.totalAccounts} accounts`}
+        actionsClassName="flex flex-wrap items-center gap-2"
+        overflow={[
+          { label: "Realized gains", href: "/portfolio/realized-gains" },
+          { label: "Dividends", href: "/portfolio/dividends" },
+        ]}
+        actions={
+        <>
           <Link
             href="/portfolio/realized-gains"
-            className={buttonVariants({ variant: "outline", size: "sm" })}
+            className={cn(buttonVariants({ variant: "outline", size: "sm" }), HEADER_DESKTOP_ONLY)}
           >
             Realized gains
           </Link>
           <Link
             href="/portfolio/dividends"
-            className={buttonVariants({ variant: "outline", size: "sm" })}
+            className={cn(buttonVariants({ variant: "outline", size: "sm" }), HEADER_DESKTOP_ONLY)}
           >
             Dividends
           </Link>
@@ -253,10 +253,11 @@ export default function PortfolioPage() {
             href="/settings/investments"
             className={buttonVariants({ size: "sm" })}
           >
-            <Plus className="h-4 w-4 mr-1.5" /> Add holding
+            <Plus className="h-4 w-4 mr-1.5" /> <span className="max-md:hidden">Add holding</span><span className="md:hidden">Add</span>
           </Link>
-        </div>
-      </div>
+        </>
+        }
+      />
 
       {/* Phase 3 performance chart — TWRR/MWRR + daily value series.
           Empty-state copy in the component explains how to populate

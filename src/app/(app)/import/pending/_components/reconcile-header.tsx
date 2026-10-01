@@ -24,6 +24,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { StagedDetail } from "../_types";
+import { PageHeader } from "@/components/mobile";
 
 export function ReconcileHeader({
   detail,
@@ -62,13 +63,11 @@ export function ReconcileHeader({
             <ArrowLeft className="h-4 w-4" />
             Back to Pending Imports
           </button>
-          <h1 className="text-xl font-semibold tracking-tight">
-            {detail
+          <PageHeader title={detail
               ? detail.staged.source === "upload"
                 ? detail.staged.originalFilename || "Uploaded file"
                 : detail.staged.subject || "(no subject)"
-              : "Loading…"}
-          </h1>
+              : "Loading…"} titleClassName="text-xl font-semibold tracking-tight" />
           {detail && (
             <p className="text-xs text-muted-foreground mt-0.5">
               {detail.staged.source === "upload" && detail.staged.fileFormat

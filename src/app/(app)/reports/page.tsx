@@ -51,6 +51,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { PageHeader } from "@/components/mobile";
 
 // ── Types ──
 
@@ -405,12 +406,12 @@ export default function ReportsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Financial Reports</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          Analyze income, expenses, cash flow, and trends across any time period
-        </p>
-      </div>
+      <PageHeader
+          title="Financial Reports"
+          titleClassName="text-2xl font-bold tracking-tight"
+          subtitle="Analyze income, expenses, cash flow, and trends across any time period"
+          subtitleClassName="text-sm text-muted-foreground mt-0.5"
+        />
 
       {/* ── Filters Bar ── */}
       <Card className="bg-muted/30 border-dashed">

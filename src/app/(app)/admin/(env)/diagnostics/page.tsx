@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ScrollText, RefreshCw, Trash2 } from "lucide-react";
+import { PageHeader } from "@/components/mobile";
 
 interface Row {
   id: number;
@@ -211,7 +212,7 @@ export default function AdminDiagnosticsPage() {
         <div>
           <div className="flex items-center gap-2">
             <ScrollText className="h-5 w-5 text-primary" />
-            <h1 className="text-2xl font-bold tracking-tight">Diagnostics log</h1>
+            <PageHeader title="Diagnostics log" titleClassName="text-2xl font-bold tracking-tight" />
             {data?.meta.env && (
               <Badge variant="outline" className="ml-1 uppercase">
                 {data.meta.env}

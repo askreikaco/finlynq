@@ -18,6 +18,7 @@ const OPEN_SECTIONS = {
   byPath: [{ prefix: "/settings/data", section: "data" }],
   valid: ["data"],
 };
+import { PageHeader } from "@/components/mobile";
 
 export default function DeveloperSettingsPage() {
   const [devMode, setDevMode] = useState(false);
@@ -58,10 +59,12 @@ export default function DeveloperSettingsPage() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Developer</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Advanced and experimental features</p>
-      </div>
+      <PageHeader
+          title="Developer"
+          titleClassName="text-2xl font-bold tracking-tight"
+          subtitle="Advanced and experimental features"
+          subtitleClassName="text-sm text-muted-foreground mt-0.5"
+        />
 
       <Card>
         <CardHeader>

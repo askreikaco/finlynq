@@ -28,6 +28,7 @@ import type {
   FeedbackThread,
   FeedbackThreadSummary,
 } from "@shared/types";
+import { PageHeader } from "@/components/mobile";
 
 function fmtBytes(n: number): string {
   if (n < 1024) return `${n} B`;
@@ -346,12 +347,12 @@ export default function FeedbackPage() {
   return (
     <div className="mx-auto max-w-2xl">
       <div className="mb-6 flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Your feedback</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Track your reports and follow up on replies from the team.
-          </p>
-        </div>
+        <PageHeader
+            title="Your feedback"
+            titleClassName="text-2xl font-semibold tracking-tight"
+            subtitle="Track your reports and follow up on replies from the team."
+            subtitleClassName="mt-1 text-sm text-muted-foreground"
+          />
         <Button onClick={() => setSendOpen(true)}>Send feedback</Button>
       </div>
 

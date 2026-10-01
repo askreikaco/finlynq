@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, CheckCircle2, Loader2, RefreshCw, Undo2 } from "lucide-react";
+import { PageHeader } from "@/components/mobile";
 
 // MUST stay in sync with the CHECK constraint on
 // backfill_proposals.chosen_kind (migration 20260609), with OverrideKind
@@ -299,12 +300,12 @@ export default function BackfillReviewPage({ params }: { params: Promise<{ runId
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">Backfill review</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {proposals.length} proposal(s) · {approvedCount} approved · {appliedCount} applied
-          </p>
-        </div>
+        <PageHeader
+            title="Backfill review"
+            titleClassName="text-2xl font-semibold"
+            subtitle={<>{proposals.length} proposal(s) · {approvedCount} approved · {appliedCount} applied</>}
+            subtitleClassName="text-sm text-muted-foreground mt-1"
+          />
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => router.push("/settings/backfill")}>
             <RefreshCw className="size-4 mr-2" /> New run
