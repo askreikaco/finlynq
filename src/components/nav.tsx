@@ -127,6 +127,7 @@ export function Nav() {
   const [adminPref, setAdminPref] = useState<boolean | null>(null);
   const [devMode, setDevMode] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [familyEnabled, setFamilyEnabled] = useState(true); // FAMILY_WEALTH_ENABLED (default on)
   const [unread, setUnread] = useState(0);
   const [hasAnnouncements, setHasAnnouncements] = useState(true); // default to true to avoid hiding on initial load
   const [feedbackUnread, setFeedbackUnread] = useState(0);
@@ -153,6 +154,7 @@ export function Nav() {
       .then((r) => r.json())
       .then((data) => {
         setIsAdmin(data.isAdmin === true);
+        if (data.familyWealthEnabled === false) setFamilyEnabled(false);
       })
       .catch(() => {});
     fetch("/api/settings/dev-mode")
@@ -295,6 +297,7 @@ export function Nav() {
           const visibleItems = group.items.filter((item) => {
             // Hide What's New when there are no announcements
             if (item.label === "What's New" && !hasAnnouncements) return false;
+            if (item.href === "/family" && !familyEnabled) return false;
             return devMode || item.mode !== "dev";
           });
           if (visibleItems.length === 0) return null;
@@ -449,6 +452,7 @@ export function Nav() {
           .filter((item) => devMode || item.mode !== "dev")
           .filter((item) => !item.href.startsWith("/admin"))
           .filter((item) => item.label !== "What's New" || hasAnnouncements)
+          .filter((item) => item.href !== "/family" || familyEnabled)
           .map((item) => renderLink(item, true))}
 
         {/* Admin section in mobile panel */}

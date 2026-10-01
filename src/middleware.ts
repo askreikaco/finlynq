@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getRequestOrigins } from "@/lib/request-origins";
+import { isFamilyWealthEnabled, isFamilyWealthPath } from "@/lib/family/flag";
 
 /**
  * Allowed origins for managed (hosted) mode.
@@ -279,6 +280,14 @@ export function middleware(request: NextRequest) {
     return new NextResponse(null, { status: 204 });
   }
 
+  // FAMILY_WEALTH_ENABLED=0 kill switch: the feature does not exist (404) for pages and API.
+  if (isFamilyWealthPath(request.nextUrl.pathname) && !isFamilyWealthEnabled()) {
+    if (request.nextUrl.pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    return NextResponse.rewrite(new URL("/family-wealth-disabled", request.url), { status: 404 });
+  }
+
   // Family Wealth overview is a read-only endpoint: any non-GET/HEAD method is refused here,
   // before auth, CSRF or the route (defense in depth next to the route exporting GET only).
   if (
@@ -508,8 +517,15 @@ export function middleware(request: NextRequest) {
   // Prevent MIME type sniffing
   response.headers.set("X-Content-Type-Options", "nosniff");
 
-  // Referrer policy
-  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  // Referrer policy. The Family Wealth invite link carries a single-use token in the query string
+  // (/family/accept?token=...): its pages send no Referer at all, so the token never reaches a
+  // subresource/RSC request, an access-log Referer column or the sign-in redirect's requests.
+  response.headers.set(
+    "Referrer-Policy",
+    pathname === "/family" || pathname.startsWith("/family/")
+      ? "no-referrer"
+      : "strict-origin-when-cross-origin"
+  );
 
   // Permissions policy — disable unnecessary browser features
   response.headers.set(
