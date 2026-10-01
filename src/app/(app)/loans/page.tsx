@@ -16,7 +16,7 @@ import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from "recharts";
-import { Plus, Pencil, Trash2, Landmark, CreditCard, FileText, Calendar } from "lucide-react";
+import { Plus, Pencil, Trash2, Landmark, CreditCard, FileText, Calendar, CheckCircle2 } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { ErrorState } from "@/components/error-state";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -24,6 +24,8 @@ import { parseSaveError } from "@/lib/save-error";
 import { CspSafeBar } from "@/components/csp-safe-bar";
 import { AmountInput } from "@/components/amount-input";
 import { PageHeader } from "@/components/mobile";
+import { Accordion, AccordionItem } from "@/components/ui/accordion";
+import { isLoanCompleted } from "@/lib/loan-status";
 
 type Loan = {
   id: number; name: string; type: string; principal: number; annualRate: number;
@@ -339,11 +341,70 @@ function LoansPageContent() {
   // "$" is an ~80x overstatement. `*Display` is null only for a row the server
   // couldn't schedule (dataIntegrity), which contributes nothing either way.
   const totalDebt = loans.reduce((s, l) => s + (l.remainingBalanceDisplay ?? 0), 0);
+  // Paid-off loans sit in a collapsed "Completed" accordion and pay nothing.
+  const activeLoans = loans.filter((l) => !isLoanCompleted(l));
+  const completedLoans = loans.filter(isLoanCompleted);
   // Monthly-equivalent so weekly/quarterly/annual loans sum comparably.
-  const totalMonthly = loans.reduce((s, l) => s + (l.monthlyEquivalentPaymentDisplay ?? 0), 0);
+  const totalMonthly = activeLoans.reduce((s, l) => s + (l.monthlyEquivalentPaymentDisplay ?? 0), 0);
   // Whether any loan is booked in something other than the display currency —
   // drives the "converted at today's rate" caveat on the two total tiles.
   const hasForeignLoan = loans.some((l) => l.currency && l.currency !== displayCurrency);
+
+  const renderLoan = (loan: Loan) => {
+        const paidPct = loan.principal > 0 ? ((loan.principal - loan.remainingBalance) / loan.principal) * 100 : 0;
+        const borderClass = LOAN_TYPE_COLORS[loan.type] || "border-l-gray-400";
+        const badgeClass = LOAN_TYPE_BADGE_COLORS[loan.type] || "";
+        return (
+          <Card key={loan.id} className={`border-l-4 ${borderClass}`}>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CardTitle>{loan.name}</CardTitle>
+                  <Badge variant="secondary" className={badgeClass}>{loan.type}</Badge>
+                  {loan.currency !== displayCurrency && (
+                    <Badge variant="outline" className="font-mono text-xs">{loan.currency}</Badge>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => viewAmortization(loan)}>View Schedule</Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Edit loan ${loan.name}`} onClick={() => openEdit(loan)}><Pencil className="h-4 w-4" /></Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" aria-label={`Delete loan ${loan.name}`} onClick={() => setDeleteId(loan.id)}><Trash2 className="h-4 w-4" /></Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+                <div>
+                  <p className="text-xs text-muted-foreground">Remaining{loan.balanceSource === "account" && <span className="ml-1 text-emerald-600" title={`Live balance from ${loan.accountName ?? "linked account"}`}>· from account</span>}</p>
+                  <p className="font-mono font-bold text-rose-600">{formatCurrency(loan.remainingBalance, loan.currency)}</p>
+                  {loan.currency !== displayCurrency && loan.remainingBalanceDisplay != null && (
+                    <p className="text-xs text-muted-foreground font-mono">≈ {formatCurrency(loan.remainingBalanceDisplay, displayCurrency)}</p>
+                  )}
+                </div>
+                <div><p className="text-xs text-muted-foreground">{FREQUENCY_LABELS[loan.paymentFrequency] ?? "Payment"}</p><p className="font-mono">{formatCurrency(loan.paymentPerPeriod ?? loan.monthlyPayment, loan.currency)}</p></div>
+                <div><p className="text-xs text-muted-foreground">Rate</p><p className="font-mono">{loan.annualRate}%</p></div>
+                <div><p className="text-xs text-muted-foreground">Total Interest</p><p className="font-mono">{formatCurrency(loan.totalInterest, loan.currency)}</p></div>
+                <div>
+                  <p className="text-xs text-muted-foreground">{loan.type === "lease" ? "Term end" : "Payoff"}</p>
+                  <p className="font-mono">{loan.payoffDate}</p>
+                  {loan.type === "lease" && loan.residualValue != null && loan.residualValue > 0 && (
+                    <p className="text-xs text-muted-foreground">residual {formatCurrency(loan.residualValue, loan.currency)}</p>
+                  )}
+                </div>
+              </div>
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs"><span>Principal paid: {formatCurrency(loan.principalPaid, loan.currency)}</span><span>{Math.round(paidPct)}%</span></div>
+                <CspSafeBar
+                  percent={paidPct}
+                  className="bg-rose-200"
+                  fillClassName="bg-emerald-500"
+                  ariaLabel={`Loan ${loan.name} paid`}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        );
+  };
 
   if (loading) return <LoansSkeleton />;
   if (loadError) return <ErrorState title="Couldn't load loans" message="We couldn't load your loans. Please try again." onRetry={() => { setLoading(true); load(); }} />;
@@ -518,7 +579,7 @@ function LoansPageContent() {
               <CardTitle className="text-sm text-muted-foreground">Active Loans</CardTitle>
             </div>
           </CardHeader>
-          <CardContent><p className="text-2xl font-bold">{loans.length}</p></CardContent>
+          <CardContent><p className="text-2xl font-bold">{activeLoans.length}</p></CardContent>
         </Card>
       </div>
 
@@ -533,61 +594,21 @@ function LoansPageContent() {
       )}
 
       {/* Loan cards */}
-      {loans.map((loan) => {
-        const paidPct = loan.principal > 0 ? ((loan.principal - loan.remainingBalance) / loan.principal) * 100 : 0;
-        const borderClass = LOAN_TYPE_COLORS[loan.type] || "border-l-gray-400";
-        const badgeClass = LOAN_TYPE_BADGE_COLORS[loan.type] || "";
-        return (
-          <Card key={loan.id} className={`border-l-4 ${borderClass}`}>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <CardTitle>{loan.name}</CardTitle>
-                  <Badge variant="secondary" className={badgeClass}>{loan.type}</Badge>
-                  {loan.currency !== displayCurrency && (
-                    <Badge variant="outline" className="font-mono text-xs">{loan.currency}</Badge>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => viewAmortization(loan)}>View Schedule</Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Edit loan ${loan.name}`} onClick={() => openEdit(loan)}><Pencil className="h-4 w-4" /></Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" aria-label={`Delete loan ${loan.name}`} onClick={() => setDeleteId(loan.id)}><Trash2 className="h-4 w-4" /></Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
-                <div>
-                  <p className="text-xs text-muted-foreground">Remaining{loan.balanceSource === "account" && <span className="ml-1 text-emerald-600" title={`Live balance from ${loan.accountName ?? "linked account"}`}>· from account</span>}</p>
-                  <p className="font-mono font-bold text-rose-600">{formatCurrency(loan.remainingBalance, loan.currency)}</p>
-                  {loan.currency !== displayCurrency && loan.remainingBalanceDisplay != null && (
-                    <p className="text-xs text-muted-foreground font-mono">≈ {formatCurrency(loan.remainingBalanceDisplay, displayCurrency)}</p>
-                  )}
-                </div>
-                <div><p className="text-xs text-muted-foreground">{FREQUENCY_LABELS[loan.paymentFrequency] ?? "Payment"}</p><p className="font-mono">{formatCurrency(loan.paymentPerPeriod ?? loan.monthlyPayment, loan.currency)}</p></div>
-                <div><p className="text-xs text-muted-foreground">Rate</p><p className="font-mono">{loan.annualRate}%</p></div>
-                <div><p className="text-xs text-muted-foreground">Total Interest</p><p className="font-mono">{formatCurrency(loan.totalInterest, loan.currency)}</p></div>
-                <div>
-                  <p className="text-xs text-muted-foreground">{loan.type === "lease" ? "Term end" : "Payoff"}</p>
-                  <p className="font-mono">{loan.payoffDate}</p>
-                  {loan.type === "lease" && loan.residualValue != null && loan.residualValue > 0 && (
-                    <p className="text-xs text-muted-foreground">residual {formatCurrency(loan.residualValue, loan.currency)}</p>
-                  )}
-                </div>
-              </div>
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs"><span>Principal paid: {formatCurrency(loan.principalPaid, loan.currency)}</span><span>{Math.round(paidPct)}%</span></div>
-                <CspSafeBar
-                  percent={paidPct}
-                  className="bg-rose-200"
-                  fillClassName="bg-emerald-500"
-                  ariaLabel={`Loan ${loan.name} paid`}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })}
+      {activeLoans.map(renderLoan)}
+
+      {/* Paid-off loans: collapsed by default */}
+      {completedLoans.length > 0 && (
+        <Accordion defaultValue={null}>
+          <AccordionItem
+            value="completed"
+            icon={<CheckCircle2 className="h-4 w-4" />}
+            title={`Completed (${completedLoans.length})`}
+            description="Paid-off loans"
+          >
+            <div className="space-y-6">{completedLoans.map(renderLoan)}</div>
+          </AccordionItem>
+        </Accordion>
+      )}
 
       {/* Amortization detail modal */}
       {selectedLoan && amort && (
