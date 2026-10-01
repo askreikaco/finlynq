@@ -2337,5 +2337,8 @@ INSERT INTO schema_migrations (version) VALUES
   ('20260701_simplefin_pending_transactions'),
   ('20260711_incoming_email_replies'),
   ('20260711_staged_import_content_hash'),
-  ('20260721_drop_mcp_uploads')
+  ('20260721_drop_mcp_uploads'),
+  ('20261002_reika_family_shares'),
+  ('20261002_reika_family_invites'),
+  ('20261003_reika_family_keys')
 ON CONFLICT (version) DO NOTHING;
