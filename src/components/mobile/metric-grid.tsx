@@ -1,36 +1,28 @@
-"use client";
-
 import { StatTile } from "./stat-tile";
-import { Amount } from "./amount";
+import { Amount, type AmountTone } from "./amount";
 
 export interface MetricItem {
   label: string;
   value: number;
+  /** Given → rendered as money (formatCurrency); omitted → plain integer count. */
   currency?: string;
-  className?: string;
+  tone?: AmountTone;
+  showSign?: boolean;
 }
 
-interface MetricGridProps {
-  metrics: MetricItem[];
-}
-
-export function MetricGrid({ metrics }: MetricGridProps) {
+/** 2-column grid of compact stat tiles. */
+export function MetricGrid({ metrics }: { metrics: MetricItem[] }) {
   return (
-    <div className="grid grid-cols-2 gap-3">
-      {metrics.map((metric, index) => (
+    <div data-slot="metric-grid" className="grid grid-cols-2 gap-3">
+      {metrics.map((m) => (
         <StatTile
-          key={index}
-          label={metric.label}
+          key={m.label}
+          label={m.label}
           value={
-            metric.currency ? (
-              <Amount
-                value={metric.value}
-                currency={metric.currency}
-                size="md"
-                className={metric.className}
-              />
+            m.currency ? (
+              <Amount value={m.value} currency={m.currency} size="md" tone={m.tone ?? "none"} showSign={m.showSign} />
             ) : (
-              <span className={metric.className}>{metric.value}</span>
+              <span className="tabular-nums text-[15px] font-semibold">{m.value}</span>
             )
           }
         />

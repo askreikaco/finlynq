@@ -1,190 +1,142 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
-import { ChevronUp, ChevronDown } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { DASHBOARD_CARDS, normalizeLayout, type DashboardLayout } from "@/lib/dashboard-layout";
 
-export interface DashboardCard {
-  id: string;
-  title: string;
-  defaultVisible: boolean;
-}
+export type DashboardCard = (typeof DASHBOARD_CARDS)[number];
 
-const DASHBOARD_CARDS: DashboardCard[] = [
-  { id: "net-worth", title: "Net Worth", defaultVisible: true },
-  { id: "health-score", title: "Health Score", defaultVisible: true },
-  { id: "this-month", title: "This Month", defaultVisible: true },
-  { id: "budget-progress", title: "Budget Progress", defaultVisible: true },
-  { id: "recent-transactions", title: "Recent Transactions", defaultVisible: true },
-  { id: "action-center", title: "Action Center", defaultVisible: true },
-  { id: "insights", title: "Insights", defaultVisible: true },
-  { id: "income-expense-chart", title: "Income & Expenses Chart", defaultVisible: true },
-  { id: "spending-category-chart", title: "Spending by Category", defaultVisible: true },
-  { id: "weekly-recap", title: "Weekly Recap", defaultVisible: true },
-  { id: "available-to-spend", title: "Available to Spend", defaultVisible: true },
-  { id: "quick-import", title: "Quick Import", defaultVisible: true },
-  { id: "key-metrics", title: "Key Metrics", defaultVisible: true },
-  { id: "tips", title: "Tips", defaultVisible: true },
-];
+const MOVE_BTN =
+  "flex size-11 shrink-0 items-center justify-center rounded-lg border border-border bg-background outline-none transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-40";
 
-interface CustomizeDashboardSheetProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  order: string[];
-  hidden: string[];
-  onSave: (order: string[], hidden: string[]) => Promise<void>;
-}
-
+/**
+ * Home customisation: every dashboard card with a show/hide Switch and 44px up/down
+ * buttons (keyboard + touch friendly reorder). Save persists via `onSave`; "Reset to
+ * default" persists the default layout immediately via `onReset`.
+ * `availableIds` limits the listed cards (e.g. dev-only cards when dev mode is off);
+ * unlisted cards keep their saved position/visibility.
+ */
 export function CustomizeDashboardSheet({
   open,
   onOpenChange,
-  order,
-  hidden,
+  layout,
+  availableIds,
   onSave,
-}: CustomizeDashboardSheetProps) {
-  const [localOrder, setLocalOrder] = useState(order);
-  const [localHidden, setLocalHidden] = useState(new Set(hidden));
-  const [isSaving, setIsSaving] = useState(false);
+  onReset,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  layout: DashboardLayout;
+  availableIds?: readonly string[];
+  onSave: (layout: DashboardLayout) => Promise<void>;
+  onReset: () => Promise<void>;
+}) {
+  const [order, setOrder] = useState<string[]>(layout.order);
+  const [hidden, setHidden] = useState<Set<string>>(new Set(layout.hidden));
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleToggleCard = (cardId: string) => {
-    setLocalHidden((prev) => {
+  // Re-seed from the saved layout every time the sheet opens.
+  useEffect(() => {
+    if (!open) return;
+    setOrder(layout.order);
+    setHidden(new Set(layout.hidden));
+    setError(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  const avail = new Set(availableIds ?? DASHBOARD_CARDS.map((c) => c.id));
+  const shown = order.filter((id) => avail.has(id));
+  const title = (id: string) => DASHBOARD_CARDS.find((c) => c.id === id)?.title ?? id;
+
+  function toggle(id: string) {
+    setHidden((prev) => {
       const next = new Set(prev);
-      if (next.has(cardId)) {
-        next.delete(cardId);
-      } else {
-        next.add(cardId);
-      }
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
-  };
+  }
 
-  const handleMoveUp = (index: number) => {
-    if (index > 0) {
-      const newOrder = [...localOrder];
-      [newOrder[index - 1], newOrder[index]] = [newOrder[index], newOrder[index - 1]];
-      setLocalOrder(newOrder);
-    }
-  };
+  // Swap with the neighbouring *listed* card (unlisted dev-only cards are skipped over).
+  function move(id: string, dir: -1 | 1) {
+    const i = shown.indexOf(id);
+    const other = shown[i + dir];
+    if (other === undefined) return;
+    setOrder((prev) => {
+      const next = [...prev];
+      const a = next.indexOf(id);
+      const b = next.indexOf(other);
+      [next[a], next[b]] = [next[b], next[a]];
+      return next;
+    });
+  }
 
-  const handleMoveDown = (index: number) => {
-    if (index < localOrder.length - 1) {
-      const newOrder = [...localOrder];
-      [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
-      setLocalOrder(newOrder);
-    }
-  };
-
-  const handleReset = async () => {
-    if (confirm("Reset dashboard to default layout?")) {
-      setLocalOrder(DASHBOARD_CARDS.map((c) => c.id));
-      setLocalHidden(new Set());
-      try {
-        setIsSaving(true);
-        await onSave(
-          DASHBOARD_CARDS.map((c) => c.id),
-          []
-        );
-        onOpenChange(false);
-      } finally {
-        setIsSaving(false);
-      }
-    }
-  };
-
-  const handleSave = async () => {
+  async function run(fn: () => Promise<void>) {
+    setBusy(true);
+    setError(null);
     try {
-      setIsSaving(true);
-      await onSave(localOrder, Array.from(localHidden));
+      await fn();
       onOpenChange(false);
+    } catch {
+      setError("Couldn't save your layout. Please try again.");
     } finally {
-      setIsSaving(false);
+      setBusy(false);
     }
-  };
+  }
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="max-sm:inset-0 max-sm:left-0 max-sm:right-0 max-sm:top-0 max-sm:bottom-0 max-sm:w-full max-sm:translate-x-0 max-sm:rounded-none flex flex-col">
-        <SheetHeader className="max-sm:mb-4">
-          <SheetTitle>Customize Dashboard</SheetTitle>
+      <SheetContent
+        side="bottom"
+        className={cn(
+          "max-h-[90dvh] rounded-t-2xl",
+          "sm:data-[side=bottom]:inset-x-auto sm:data-[side=bottom]:right-6 sm:data-[side=bottom]:left-auto sm:data-[side=bottom]:w-[28rem] sm:data-[side=bottom]:rounded-xl sm:data-[side=bottom]:border",
+        )}
+      >
+        <SheetHeader>
+          <SheetTitle className="text-lg font-bold">Customize home</SheetTitle>
+          <SheetDescription>Show, hide and reorder the cards on your dashboard.</SheetDescription>
         </SheetHeader>
 
-        <div className="flex-1 overflow-auto space-y-2">
-          {localOrder.map((cardId, index) => {
-            const card = DASHBOARD_CARDS.find((c) => c.id === cardId);
-            if (!card) return null;
-
-            const isHidden = localHidden.has(cardId);
+        <ul data-slot="customize-list" className="min-h-0 flex-1 space-y-2 overflow-y-auto px-4">
+          {shown.map((id, i) => {
+            const isHidden = hidden.has(id);
+            const name = title(id);
             return (
-              <div
-                key={cardId}
-                className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3">
-                    <Switch
-                      checked={!isHidden}
-                      onCheckedChange={() => handleToggleCard(cardId)}
-                      aria-label={`${isHidden ? "Show" : "Hide"} ${card.title}`}
-                    />
-                    <span className={`text-sm ${isHidden ? "text-muted-foreground line-through" : "text-foreground"}`}>
-                      {card.title}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex gap-1 ml-2">
-                  <button
-                    onClick={() => handleMoveUp(index)}
-                    disabled={index === 0}
-                    className="h-10 w-10 flex items-center justify-center rounded border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
-                    aria-label={`Move ${card.title} up`}
-                  >
-                    <ChevronUp className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => handleMoveDown(index)}
-                    disabled={index === localOrder.length - 1}
-                    className="h-10 w-10 flex items-center justify-center rounded border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
-                    aria-label={`Move ${card.title} down`}
-                  >
-                    <ChevronDown className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
+              <li key={id} data-card-id={id} className="flex items-center gap-3 rounded-xl border border-border/60 bg-card p-2 pl-3">
+                <Switch checked={!isHidden} onCheckedChange={() => toggle(id)} aria-label={name} />
+                <span className={cn("min-w-0 flex-1 truncate text-sm font-medium", isHidden && "text-muted-foreground")}>{name}</span>
+                <button type="button" className={MOVE_BTN} disabled={i === 0} onClick={() => move(id, -1)} aria-label={`Move ${name} up`}>
+                  <ChevronUp className="size-4" aria-hidden />
+                </button>
+                <button type="button" className={MOVE_BTN} disabled={i === shown.length - 1} onClick={() => move(id, 1)} aria-label={`Move ${name} down`}>
+                  <ChevronDown className="size-4" aria-hidden />
+                </button>
+              </li>
             );
           })}
-        </div>
+        </ul>
 
-        <div className="flex gap-2 pt-4 border-t max-sm:flex-col-reverse">
-          <Button
-            variant="outline"
-            onClick={handleReset}
-            disabled={isSaving}
-            className="max-sm:w-full"
-          >
+        {error ? (
+          <p role="alert" className="px-4 text-sm text-neg">
+            {error}
+          </p>
+        ) : null}
+        <div className="flex flex-col gap-2 border-t p-4 sm:flex-row-reverse">
+          <Button className="min-h-11 flex-1" disabled={busy} onClick={() => run(() => onSave(normalizeLayout({ order, hidden: [...hidden] })))}>
+            {busy ? "Saving..." : "Save"}
+          </Button>
+          <Button variant="outline" className="min-h-11 flex-1" disabled={busy} onClick={() => run(onReset)}>
             Reset to default
           </Button>
-          <div className="flex-1 flex gap-2 max-sm:flex-col">
-            <Button
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={isSaving}
-              className="max-sm:w-full"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="max-sm:w-full"
-            >
-              {isSaving ? "Saving..." : "Save"}
-            </Button>
-          </div>
         </div>
       </SheetContent>
     </Sheet>
   );
 }
+

@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { formatCurrency, getCurrentMonth, getMonthLabel } from "@/lib/currency";
 import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
 import { Sparkline } from "@/components/sparkline";
-import { DollarSign, ArrowUpRight, ArrowDownRight, TrendingUp, CreditCard, Target, User, Upload, FileUp } from "lucide-react";
+import { DollarSign, ArrowUpRight, ArrowDownRight, TrendingUp, CreditCard, Target, User, Upload, FileUp, SlidersHorizontal, ChevronUp, ChevronDown } from "lucide-react";
 import { motion } from "framer-motion";
 import { AnimatedNumber } from "./_components/animated-number";
 import { StatCard } from "./_components/stat-card";
@@ -28,7 +28,11 @@ import { useDisplayCurrency } from "@/components/currency-provider";
 import { CurrencyAuditBanner } from "@/components/currency-audit-banner";
 import type { DashboardData, HealthData } from "./_components/types";
 import { formatPercent } from "@/lib/locale";
-import { PageHeader } from "@/components/mobile";
+import { PageHeader, HEADER_DESKTOP_ONLY, CustomizeDashboardSheet } from "@/components/mobile";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { DASHBOARD_CARDS } from "@/lib/dashboard-layout";
+import { useDashboardLayout } from "./_components/use-dashboard-layout";
 
 // --- Quick Import Widget ---
 function QuickImportWidget() {
@@ -122,6 +126,10 @@ export default function DashboardPage() {
   const [health, setHealth] = useState<HealthData | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [userInfo, setUserInfo] = useState<{ email: string; displayName?: string } | null>(null);
+  const { layout, ready: layoutReady, save: saveLayout, reset: resetLayout } = useDashboardLayout();
+  const [customizeOpen, setCustomizeOpen] = useState(false);
+  // Below md the secondary cards ("extra insights") sit behind a disclosure.
+  const [showMore, setShowMore] = useState(false);
 
   useEffect(() => {
     if (currencyLoading) return; // wait until provider has read settings
@@ -159,7 +167,7 @@ export default function DashboardPage() {
     e.currentTarget.style.setProperty("--mouse-y", `${e.clientY - rect.top}px`);
   }, []);
 
-  if (!data) return <DashboardSkeleton />;
+  if (!data || !layoutReady) return <DashboardSkeleton />;
 
   // --- Compute derived data ---
   const hour = new Date().getHours();
@@ -328,6 +336,171 @@ export default function DashboardPage() {
     },
   ];
 
+  // --- Card registry: every dashboard card keyed by its stable id (see
+  // src/lib/dashboard-layout.ts). `group` cards that sit next to each other in the saved
+  // order share the original responsive grid wrapper, so the default order renders the
+  // exact same grids as before customisation.
+  const heroNode = (grouped: boolean) => (
+    <motion.div key="net-worth" variants={itemVariants} className={grouped ? "lg:col-span-2" : undefined}>
+      <Link href="/accounts">
+        <Card
+          className="relative overflow-hidden group cursor-pointer card-hover mouse-glow hover:scale-[1.005] transition-transform duration-300 rounded-2xl"
+          onMouseMove={handleMouseMove}
+        >
+          {/* Decorative gradient orbs */}
+          <div className="absolute -top-20 -right-20 w-48 h-48 rounded-full bg-indigo-500/8 blur-3xl dark:bg-indigo-400/5 pointer-events-none" />
+          <div className="absolute -bottom-16 -left-16 w-40 h-40 rounded-full bg-violet-500/6 blur-3xl dark:bg-violet-400/4 pointer-events-none" />
+
+          <CardContent className="relative pt-6 pb-6 px-6">
+            <div className="flex items-start justify-between">
+              <div className="space-y-3">
+                {/* Label */}
+                <p className="text-xs font-medium text-muted-foreground tracking-wide uppercase">
+                  Total Net Worth
+                </p>
+
+                {/* Big number */}
+                <p className="text-4xl md:text-5xl font-bold tracking-tight hero-number leading-none">
+                  <AnimatedNumber value={totalNetWorth} currency={apiDisplayCurrency} />
+                </p>
+
+                {/* Change pill */}
+                <div className="flex items-center gap-2.5 mt-1">
+                  {momChange >= 0 ? (
+                    <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-emerald-600 bg-emerald-100/80 dark:bg-emerald-950/60 dark:text-emerald-400 px-2.5 py-0.5 rounded-full">
+                      <ArrowUpRight className="h-3 w-3" />
+                      +{formatPercent(momPct, 1)}
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-rose-600 bg-rose-100/80 dark:bg-rose-950/60 dark:text-rose-400 px-2.5 py-0.5 rounded-full">
+                      <ArrowDownRight className="h-3 w-3" />
+                      {formatPercent(momPct, 1)}
+                    </span>
+                  )}
+                  <span className="text-[11px] text-muted-foreground">
+                    {momChange >= 0 ? "+" : ""}{formatCurrency(momChange, apiDisplayCurrency)} vs last month
+                  </span>
+                </div>
+              </div>
+
+              {/* Mini sparkline */}
+              <div className="hidden md:block w-40 h-20 opacity-50 group-hover:opacity-100 transition-opacity duration-300">
+                <Sparkline data={nwSparkline} color="#6366f1" labels={nwSparkLabels} currency={apiDisplayCurrency} />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </Link>
+    </motion.div>
+  );
+
+  type CardDef = {
+    /** Adjacent cards with the same group share this wrapper's grid classes. */
+    group?: { key: string; className: string };
+    /** Collapsed under "More insights" below md (always visible at md+). */
+    extra?: boolean;
+    render: (ctx: { grouped: boolean }) => React.ReactNode;
+  };
+  const HERO_GRID = { key: "hero", className: "grid grid-cols-1 lg:grid-cols-3 gap-4" };
+  const ROW3_GRID = { key: "row3", className: "grid grid-cols-1 lg:grid-cols-3 gap-5" };
+  const CHARTS_GRID = { key: "charts", className: "grid grid-cols-1 lg:grid-cols-2 gap-5" };
+  const SPEND_GRID = { key: "spend", className: "grid grid-cols-1 lg:grid-cols-3 gap-5" };
+
+  const CARDS: Record<string, CardDef> = {
+    "onboarding-tips": {
+      // Onboarding tips for first-time users
+      render: () => (
+        <motion.div key="onboarding-tips" variants={itemVariants}>
+          <OnboardingTips page="dashboard" />
+        </motion.div>
+      ),
+    },
+    "net-worth": { group: HERO_GRID, render: ({ grouped }) => heroNode(grouped) },
+    "health-score": { group: HERO_GRID, render: () => <HealthScoreCard key="health-score" health={health} /> },
+    "summary-stats": {
+      render: () => (
+        <div key="summary-stats" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {summaryCards.map((card) =>
+            card.label === "Net Worth" ? (
+              // The hero card above already shows net worth: drop the duplicate tile below md.
+              <div key={card.label} className="hidden md:contents">
+                <StatCard {...card} currency={apiDisplayCurrency} />
+              </div>
+            ) : (
+              <StatCard key={card.label} {...card} currency={apiDisplayCurrency} />
+            ),
+          )}
+        </div>
+      ),
+    },
+    // Key ratios: Savings Rate + DTI (FINLYNQ-291) from the same /api/health-score payload.
+    "key-metrics": { render: () => <KeyMetrics key="key-metrics" health={health} /> },
+    // Accurate merged series: cash live from transactions + investments from stored
+    // snapshots; latest point matches the hero. plan/net-worth-over-time.md Part A.
+    "net-worth-history": {
+      render: () => (
+        <motion.div key="net-worth-history" variants={itemVariants}>
+          <NetWorthHistoryChart />
+        </motion.div>
+      ),
+    },
+    "action-center": { group: ROW3_GRID, render: () => <ActionCenter key="action-center" /> },
+    "weekly-recap": { group: ROW3_GRID, extra: true, render: () => <WeeklyRecap key="weekly-recap" /> },
+    "quick-import": { group: ROW3_GRID, extra: true, render: () => <QuickImport key="quick-import" /> },
+    "income-expense-chart": {
+      group: CHARTS_GRID,
+      extra: true,
+      render: () => <IncomeExpenseChart key="income-expense-chart" data={incExpData} currency={apiDisplayCurrency} />,
+    },
+    "spending-category-chart": {
+      group: CHARTS_GRID,
+      extra: true,
+      render: () => <SpendingCategoryChart key="spending-category-chart" data={spendingData} currency={apiDisplayCurrency} />,
+    },
+    "available-to-spend": {
+      group: SPEND_GRID,
+      extra: true,
+      render: () => (
+        <AvailableToSpend
+          key="available-to-spend"
+          income={lastMonthIncome}
+          expenses={lastMonthExpenses}
+          currency={apiDisplayCurrency}
+          monthLabel={lastMonthKey ? getMonthLabel(lastMonthKey) : undefined}
+        />
+      ),
+    },
+    insights: { extra: true, render: () => <InsightsSection key="insights" currency={apiDisplayCurrency} /> },
+  };
+
+  // Saved order, minus hidden cards, minus dev-only cards when dev mode is off.
+  const devOnly = new Set(DASHBOARD_CARDS.filter((c) => c.devOnly).map((c) => c.id));
+  const visibleIds = layout.order.filter((id) => CARDS[id] && !layout.hidden.includes(id) && (devMode || !devOnly.has(id)));
+  const availableIds = DASHBOARD_CARDS.filter((c) => devMode || !c.devOnly).map((c) => c.id);
+
+  // Coalesce neighbours sharing a group into one wrapper (original grid markup).
+  type Run = { group?: CardDef["group"]; ids: string[] };
+  const runs: Run[] = [];
+  for (const id of visibleIds) {
+    const g = CARDS[id].group;
+    const last = runs[runs.length - 1];
+    if (g && last?.group?.key === g.key) last.ids.push(id);
+    else runs.push({ group: g, ids: [id] });
+  }
+  const hasExtra = visibleIds.some((id) => CARDS[id].extra);
+  const extraClass = (extra?: boolean) => (extra ? (showMore ? "contents" : "hidden md:contents") : undefined);
+  const renderCard = (id: string, grouped: boolean) => {
+    const def = CARDS[id];
+    const node = def.render({ grouped });
+    return def.extra ? (
+      <div key={id} data-card-id={id} className={extraClass(true)}>
+        {node}
+      </div>
+    ) : (
+      node
+    );
+  };
+
   return (
     <>
       {showOnboarding && userInfo && (
@@ -344,7 +517,7 @@ export default function DashboardPage() {
       animate="visible"
     >
       {/* ============================================
-          HEADER — Greeting + Profile hint
+          HEADER — Greeting + Customize + Profile hint
           ============================================ */}
       <motion.div variants={itemVariants}>
         <PageHeader
@@ -353,7 +526,19 @@ export default function DashboardPage() {
           titleClassName="text-xl font-semibold tracking-tight"
           subtitleClassName="text-[13px] text-muted-foreground mt-0.5"
           subtitle="Here's your financial overview"
+          overflow={[{ label: "Customize", icon: SlidersHorizontal, onSelect: () => setCustomizeOpen(true) }]}
           actions={
+        <>
+        <Button
+          variant="outline"
+          size="sm"
+          className={HEADER_DESKTOP_ONLY}
+          onClick={() => setCustomizeOpen(true)}
+          title="Show, hide and reorder dashboard cards"
+        >
+          <SlidersHorizontal className="h-4 w-4 mr-1.5" />
+          Customize
+        </Button>
         <Link
           href="/settings/general"
           className="flex h-9 w-9 shrink-0 max-md:h-11 max-md:w-11 items-center justify-center rounded-full bg-muted/60 hover:bg-muted transition-colors"
@@ -361,6 +546,7 @@ export default function DashboardPage() {
         >
           <User className="h-4 w-4 text-muted-foreground" />
         </Link>
+        </>
           }
         />
       </motion.div>
@@ -370,125 +556,42 @@ export default function DashboardPage() {
         <CurrencyAuditBanner />
       </motion.div>
 
-      {/* Onboarding tips for first-time users */}
-      <motion.div variants={itemVariants}>
-        <OnboardingTips page="dashboard" />
-      </motion.div>
-
-      {/* ============================================
-          ROW 1 — Hero Net Worth + Health Score
-          ============================================ */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Hero Card */}
-        <motion.div variants={itemVariants} className="lg:col-span-2">
-          <Link href="/accounts">
-            <Card
-              className="relative overflow-hidden group cursor-pointer card-hover mouse-glow hover:scale-[1.005] transition-transform duration-300 rounded-2xl"
-              onMouseMove={handleMouseMove}
-            >
-              {/* Decorative gradient orbs */}
-              <div className="absolute -top-20 -right-20 w-48 h-48 rounded-full bg-indigo-500/8 blur-3xl dark:bg-indigo-400/5 pointer-events-none" />
-              <div className="absolute -bottom-16 -left-16 w-40 h-40 rounded-full bg-violet-500/6 blur-3xl dark:bg-violet-400/4 pointer-events-none" />
-
-              <CardContent className="relative pt-6 pb-6 px-6">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-3">
-                    {/* Label */}
-                    <p className="text-xs font-medium text-muted-foreground tracking-wide uppercase">
-                      Total Net Worth
-                    </p>
-
-                    {/* Big number */}
-                    <p className="text-4xl md:text-5xl font-bold tracking-tight hero-number leading-none">
-                      <AnimatedNumber value={totalNetWorth} currency={apiDisplayCurrency} />
-                    </p>
-
-                    {/* Change pill */}
-                    <div className="flex items-center gap-2.5 mt-1">
-                      {momChange >= 0 ? (
-                        <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-emerald-600 bg-emerald-100/80 dark:bg-emerald-950/60 dark:text-emerald-400 px-2.5 py-0.5 rounded-full">
-                          <ArrowUpRight className="h-3 w-3" />
-                          +{formatPercent(momPct, 1)}
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-rose-600 bg-rose-100/80 dark:bg-rose-950/60 dark:text-rose-400 px-2.5 py-0.5 rounded-full">
-                          <ArrowDownRight className="h-3 w-3" />
-                          {formatPercent(momPct, 1)}
-                        </span>
-                      )}
-                      <span className="text-[11px] text-muted-foreground">
-                        {momChange >= 0 ? "+" : ""}{formatCurrency(momChange, apiDisplayCurrency)} vs last month
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Mini sparkline */}
-                  <div className="hidden md:block w-40 h-20 opacity-50 group-hover:opacity-100 transition-opacity duration-300">
-                    <Sparkline data={nwSparkline} color="#6366f1" labels={nwSparkLabels} currency={apiDisplayCurrency} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-        </motion.div>
-
-        {/* Health Score */}
-        <HealthScoreCard health={health} />
-      </div>
-
-      {/* ============================================
-          ROW 2 — 4 Metric Cards
-          ============================================ */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {summaryCards.map((card) => (
-          <StatCard key={card.label} {...card} currency={apiDisplayCurrency} />
-        ))}
-      </div>
-
-      {/* ============================================
-          ROW 2.25 — Key ratios: Savings Rate + DTI (FINLYNQ-291)
-          Standalone headline figures (previously buried as 0-100 sub-scores
-          inside the Financial Health card). Fed by the same /api/health-score
-          payload the Health card uses.
-          ============================================ */}
-      <KeyMetrics health={health} />
-
-      {/* ============================================
-          ROW 2.5 — Net Worth Over Time (always visible)
-          Accurate merged series: cash live from transactions + investments
-          from stored snapshots; latest point matches the hero above.
-          plan/net-worth-over-time.md Part A.
-          ============================================ */}
-      <motion.div variants={itemVariants}>
-        <NetWorthHistoryChart />
-      </motion.div>
-
-      {/* ============================================
-          ROW 3 — Action Center + Weekly Recap + Quick Import
-          ============================================ */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <ActionCenter />
-        <WeeklyRecap />
-        <QuickImport />
-      </div>
-
-      {/* ============================================
-          ROW 4–6 — Dev-only: Charts, Available to Spend, Insights
-          ============================================ */}
-      {devMode && (
-        <>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            <IncomeExpenseChart data={incExpData} currency={apiDisplayCurrency} />
-            <SpendingCategoryChart data={spendingData} currency={apiDisplayCurrency} />
+      {/* Cards, in the user's saved order (default = the original dashboard order). */}
+      {runs.map((run) => {
+        if (!run.group) return renderCard(run.ids[0], false);
+        const allExtra = run.ids.every((id) => CARDS[id].extra);
+        return (
+          <div
+            key={run.ids.join("+")}
+            className={cn(run.group.className, allExtra && !showMore && "max-md:hidden")}
+          >
+            {run.ids.map((id) => renderCard(id, run.ids.length > 1))}
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-            <AvailableToSpend income={lastMonthIncome} expenses={lastMonthExpenses} currency={apiDisplayCurrency} monthLabel={lastMonthKey ? getMonthLabel(lastMonthKey) : undefined} />
-          </div>
-          <InsightsSection currency={apiDisplayCurrency} />
-        </>
+        );
+      })}
+
+      {hasExtra && (
+        <button
+          type="button"
+          data-slot="more-insights-toggle"
+          aria-expanded={showMore}
+          onClick={() => setShowMore((v) => !v)}
+          className="md:hidden flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl border border-border/60 text-sm font-semibold text-muted-foreground outline-none hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50"
+        >
+          {showMore ? "Fewer insights" : "More insights"}
+          {showMore ? <ChevronUp className="size-4" aria-hidden /> : <ChevronDown className="size-4" aria-hidden />}
+        </button>
       )}
-
     </motion.div>
+
+      <CustomizeDashboardSheet
+        open={customizeOpen}
+        onOpenChange={setCustomizeOpen}
+        layout={layout}
+        availableIds={availableIds}
+        onSave={saveLayout}
+        onReset={resetLayout}
+      />
     </>
   );
 }

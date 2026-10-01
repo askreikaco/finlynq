@@ -1,61 +1,31 @@
-"use client";
-
 import { SectionCard } from "./section-card";
+import { SectionLabel } from "./section-label";
 import { Amount } from "./amount";
 import { StatTile } from "./stat-tile";
 
-interface NetWorthHeroProps {
-  totalAssets: number;
-  totalLiabilities: number;
-  currency: string;
-}
-
+/**
+ * Net worth hero: total + Assets / Liabilities tiles. `totalLiabilities` is the signed
+ * (normally negative) sum, so net worth = assets + liabilities (same as the dashboard hero).
+ */
 export function NetWorthHero({
   totalAssets,
   totalLiabilities,
   currency,
-}: NetWorthHeroProps) {
+}: {
+  totalAssets: number;
+  totalLiabilities: number;
+  currency: string;
+}) {
   const netWorth = totalAssets + totalLiabilities;
-
   return (
-    <SectionCard>
-      <div className="space-y-4">
-        <div>
-          <p className="text-xs font-medium text-muted-foreground tracking-wide uppercase mb-2">
-            Net Worth
-          </p>
-          <Amount
-            value={netWorth}
-            currency={currency}
-            size="hero"
-            className="text-[28px] font-extrabold tracking-tight"
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <StatTile
-            label="Assets"
-            value={
-              <Amount
-                value={totalAssets}
-                currency={currency}
-                size="md"
-                className="text-emerald-600 dark:text-emerald-400"
-              />
-            }
-          />
-          <StatTile
-            label="Liabilities"
-            value={
-              <Amount
-                value={totalLiabilities}
-                currency={currency}
-                size="md"
-                className={totalLiabilities >= 0 ? "text-muted-foreground" : "text-rose-600 dark:text-rose-400"}
-              />
-            }
-          />
-        </div>
+    <SectionCard data-slot="net-worth-hero" className="space-y-4">
+      <div>
+        <SectionLabel>Net worth</SectionLabel>
+        <Amount value={netWorth} currency={currency} size="hero" tone="none" className="mt-1 block" />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <StatTile label="Assets" value={<Amount value={totalAssets} currency={currency} size="lg" tone="pos" />} />
+        <StatTile label="Liabilities" value={<Amount value={totalLiabilities} currency={currency} size="lg" tone={totalLiabilities < 0 ? "neg" : "muted"} />} />
       </div>
     </SectionCard>
   );

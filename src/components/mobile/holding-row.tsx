@@ -1,66 +1,35 @@
-"use client";
-
+import { formatPercent } from "@/lib/locale";
 import { ListRow } from "./list-row";
 import { Amount } from "./amount";
-import { formatPercent } from "@/lib/locale";
 
-interface HoldingRowProps {
-  id: string;
-  name: string;
-  ticker?: string;
-  marketValue: number;
-  unrealizedPct: number;
-  currency: string;
-  onClick: () => void;
-}
-
+/**
+ * Portfolio holding as a native row: Name | Market value + Unrealized % (text-pos / text-neg).
+ * Everything else (qty, avg cost, price, cost basis, realized, accounts) lives in the
+ * DetailSheet opened by `onPress`. `unrealizedPct` null (cash, no cost basis) → no % line.
+ */
 export function HoldingRow({
-  id,
   name,
-  ticker,
   marketValue,
   unrealizedPct,
   currency,
-  onClick,
-}: HoldingRowProps) {
-  const isPositive = unrealizedPct >= 0;
-  const subtitle = ticker || undefined;
-
-  const icon = (
-    <div className="h-9 w-9 shrink-0 flex items-center justify-center rounded-[8px] bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 text-xs font-bold">
-      {ticker ? ticker.substring(0, 2).toUpperCase() : "H"}
-    </div>
-  );
-
+  onPress,
+}: {
+  name: string;
+  marketValue: number;
+  unrealizedPct: number | null;
+  currency: string;
+  onPress: () => void;
+}) {
+  const hasPct = unrealizedPct != null && Number.isFinite(unrealizedPct);
   return (
-    <button
-      key={id}
-      onClick={onClick}
-      className="w-full text-left"
-      type="button"
-    >
-      <ListRow
-        leading={icon}
-        title={name}
-        subtitle={subtitle}
-        value={
-          <div className="flex flex-col items-end gap-1">
-            <Amount
-              value={marketValue}
-              currency={currency}
-              size="md"
-              className="font-mono font-semibold"
-            />
-            <span
-              className={`font-mono text-xs font-medium ${
-                isPositive ? "text-pos" : "text-neg"
-              }`}
-            >
-              {isPositive ? "+" : ""}{formatPercent(unrealizedPct, 2)}
-            </span>
-          </div>
-        }
-      />
-    </button>
+    <ListRow
+      initials={name.slice(0, 2).toUpperCase()}
+      title={name}
+      value={<Amount value={marketValue} currency={currency} tone="none" />}
+      secondary={hasPct ? `${unrealizedPct >= 0 ? "+" : ""}${formatPercent(unrealizedPct, 2)}` : undefined}
+      secondaryTone={hasPct ? (unrealizedPct >= 0 ? "pos" : "neg") : "muted"}
+      onPress={onPress}
+      aria-label={name}
+    />
   );
 }
