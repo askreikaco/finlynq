@@ -255,7 +255,11 @@ export async function backfillInvestmentAccount(
   const cashHoldingId = await getOrCreateCashHolding(userId, accountId, dek);
   const result = await db
     .update(schema.transactions)
-    .set({ portfolioHoldingId: cashHoldingId, updatedAt: sql`NOW()` })
+    .set({
+      portfolioHoldingId: cashHoldingId,
+      quantity: sql`COALESCE(${schema.transactions.quantity}, ${schema.transactions.amount})`,
+      updatedAt: sql`NOW()`,
+    })
     .where(
       and(
         eq(schema.transactions.userId, userId),
@@ -265,6 +269,21 @@ export async function backfillInvestmentAccount(
     )
     .returning({ id: schema.transactions.id });
   const reassignedCount = Array.isArray(result) ? result.length : 0;
+
+  // Repair: idempotent UPDATE to handle accounts that were already backfilled
+  // with null quantity. Sets quantity = amount WHERE quantity IS NULL, scoped
+  // to the user and the cash holding.
+  await db
+    .update(schema.transactions)
+    .set({ quantity: sql`${schema.transactions.amount}`, updatedAt: sql`NOW()` })
+    .where(
+      and(
+        eq(schema.transactions.userId, userId),
+        eq(schema.transactions.portfolioHoldingId, cashHoldingId),
+        sql`${schema.transactions.quantity} IS NULL`,
+      ),
+    );
+
   return { cashHoldingId, reassignedCount };
 }
 
