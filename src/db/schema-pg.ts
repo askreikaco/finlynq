@@ -1005,6 +1005,10 @@ export const users = pgTable(
     // per docs/migrations.md (code-first, then SQL). This schema is safe to
     // run while the column still exists — Drizzle selects explicit columns and
     // the column's NOT NULL DEFAULT 'USD' covers any inserts in the gap.
+    // Recovery: per-user session cutoff. Tokens with iat <= floor(cutoff_s) are
+    // rejected (see src/lib/auth/session-cutoff.ts). Replacement session must be
+    // minted with iat = floor(cutoff_s)+1.
+    sessionNotBefore: timestamp("session_not_before", { withTimezone: true }),
     createdAt: text("created_at").notNull(),
     updatedAt: text("updated_at").notNull(),
   },
@@ -1087,6 +1091,7 @@ export const userPasskeys = pgTable("user_passkeys", {
   label: text("label"),
   prfSupported: integer("prf_supported").notNull().default(0), // PRF extension available
   dekWrappedPrf: text("dek_wrapped_prf"), // AES-GCM(PRF(secret), device_dek) for hybrid flow
+  prfSaltVersion: integer("prf_salt_version").notNull().default(1), // Future PRF salt rotation support
   createdAt: text("created_at").notNull(),
   lastUsedAt: text("last_used_at"),
 }, (t) => [
@@ -1100,11 +1105,27 @@ export const userRecoveryCodes = pgTable("user_recovery_codes", {
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   codeHash: text("code_hash").notNull(), // SHA-256 of recovery code
+  dekWrapped: text("dek_wrapped"), // AES-GCM(code_secret, DEK) — NULL when used/regenerated
   usedAt: text("used_at"), // Nullable; NULL = unused
   createdAt: text("created_at").notNull(),
 }, (t) => [
   uniqueIndex("user_recovery_codes_hash_unique").on(t.codeHash),
   index("idx_user_recovery_codes_user_id").on(t.userId),
+]);
+
+/** Security events audit log — password changes, passkey additions, recovery attempts, etc. */
+export const userSecurityEvents = pgTable("user_security_events", {
+  id: bigint("id", { mode: "number" }).primaryKey().generatedByDefaultAsIdentity(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  event: text("event").notNull(), // recovery_code_generated | passkey_added | passkey_removed | recovery_reset_success | recovery_reset_failed | recovery_proof_failed | password_changed
+  method: text("method"), // totp | code | passkey | device | password
+  ip: text("ip"), // Client IP address
+  userAgent: text("user_agent"), // Client User-Agent header
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  index("idx_user_security_events_user_id_created").on(t.userId, t.createdAt.desc()),
 ]);
 
 export const contributionRoom = pgTable("contribution_room", {

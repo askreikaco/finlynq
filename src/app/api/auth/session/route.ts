@@ -31,6 +31,7 @@ export async function GET(request: NextRequest) {
   let email: string | null = null;
   let displayName: string | null = null;
   let displayCurrency = "USD";
+  let mfaEnabled = false;
   if (getDialect() === "postgres" && auth.context.userId) {
     const user = await getUserById(auth.context.userId).catch(() => null);
     onboardingComplete = Boolean(user?.onboardingComplete);
@@ -38,6 +39,7 @@ export async function GET(request: NextRequest) {
     username = user?.username ?? null;
     email = user?.email ?? null;
     displayName = user?.displayName ?? null;
+    mfaEnabled = Boolean(user?.mfaEnabled);
 
     // Display currency from settings — single round-trip on first paint.
     const row = await db
@@ -73,6 +75,7 @@ export async function GET(request: NextRequest) {
     email,
     displayName,
     displayCurrency,
+    mfaEnabled,
     googleEnabled: isGoogleConfigured(),
   });
 }
