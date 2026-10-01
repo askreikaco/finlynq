@@ -119,7 +119,7 @@ describe("safe-area shell wiring (source)", () => {
     expect(read("src/components/ui/sheet.tsx")).toContain("pt-[var(--sat)]");
     expect(read("src/components/ui/dialog.tsx")).toContain("var(--sat)");
     expect(read("src/components/inbox/upload-drawer.tsx")).toContain("pt-safe");
-    expect(read("src/app/(app)/settings/layout.tsx")).toContain("sticky top-[calc(1.5rem+var(--sat))]");
+    expect(read("src/components/settings-shell.tsx")).toContain("sticky top-[calc(1.5rem+var(--sat))]");
   });
 });
 

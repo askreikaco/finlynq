@@ -1,12 +1,13 @@
 "use client";
 
 /**
- * /settings/integrations — MCP setup guide + Connected apps + Bank feeds.
+ * /settings/integrations — MCP setup + Connected apps + Bank feeds.
  *
- * Shows an MCP setup guide card when no apps are connected and no API key has
+ * Shows an MCP setup card when no apps are connected and no API key has
  * been used recently. Hides it once the user has connected via OAuth or used
- * an MCP API key within the last 30 days. Also includes the SimpleFIN bank
- * feed section in an accordion.
+ * an MCP API key within the last 30 days. The "Connect your AI" guide (the
+ * in-app MCP guide, also at /connect) and the SimpleFIN bank feed are
+ * accordion sections.
  */
 
 import Link from "next/link";
@@ -14,7 +15,8 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
-import { Zap, Landmark } from "lucide-react";
+import { Zap, Landmark, Bot } from "lucide-react";
+import { McpGuide } from "@/components/mcp-guide/mcp-guide";
 import { ConnectedApps } from "./connected-apps";
 import { BankFeedsSection } from "@/components/settings/sections/bank-feeds-section";
 import { useOpenSection } from "@/components/settings/use-open-section";
@@ -25,10 +27,14 @@ interface ConnectedAppsData {
   mcpApiKeyLastUsedAt: string | null;
 }
 
-// /settings/bank-feeds renders this page in place with Bank feeds open.
+// Old URLs render this page in place with their section open: /settings/bank-feeds
+// -> Bank feeds, /connect -> Connect your AI (MCP guide).
 const OPEN_SECTIONS = {
-  byPath: [{ prefix: "/settings/bank-feeds", section: "bank-feeds" }],
-  valid: ["bank-feeds"],
+  byPath: [
+    { prefix: "/settings/bank-feeds", section: "bank-feeds" },
+    { prefix: "/connect", section: "connect" },
+  ],
+  valid: ["bank-feeds", "connect"],
 };
 
 export default function IntegrationsSettingsPage() {
@@ -79,7 +85,7 @@ export default function IntegrationsSettingsPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <Link href="/connect">
+            <Link href="/connect" onClick={(e) => { e.preventDefault(); setTab("connect"); }}>
               <Button variant="outline" className="border-amber-300 hover:bg-amber-100 dark:border-amber-800 dark:hover:bg-amber-900/50">
                 View MCP Guide
               </Button>
@@ -91,6 +97,16 @@ export default function IntegrationsSettingsPage() {
       <ConnectedApps />
 
       <Accordion value={tab} onValueChange={setTab}>
+        <AccordionItem
+          value="connect"
+          icon={<Bot className="h-4 w-4" />}
+          title="Connect your AI"
+          description="MCP setup guide for Claude, ChatGPT, Cursor and other clients"
+        >
+          <div id="connect">
+            <McpGuide embedded />
+          </div>
+        </AccordionItem>
         <AccordionItem
           value="bank-feeds"
           icon={<Landmark className="h-4 w-4" />}
@@ -105,7 +121,11 @@ export default function IntegrationsSettingsPage() {
 
       {loaded && isConnected && (
         <div className="text-center text-sm text-muted-foreground">
-          <Link href="/connect" className="text-primary hover:underline">
+          <Link
+            href="/connect"
+            onClick={(e) => { e.preventDefault(); setTab("connect"); }}
+            className="text-primary hover:underline"
+          >
             Show setup guide
           </Link>
         </div>
