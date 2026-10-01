@@ -312,3 +312,52 @@ export async function deleteUserFamilyData(
   await database.delete(familySectionKeys).where(eq(familySectionKeys.ownerId, userId));
   await database.delete(familyLabels).where(eq(familyLabels.ownerId, userId));
 }
+
+/**
+ * Finalize awaiting_keys grants (P2).
+ * Called after owner logs in: converts status from 'awaiting_keys' to 'ready'
+ * for viewers who now have keypairs (viewer accepted the share).
+ *
+ * This allows viewers to unseal section keys they couldn't access before.
+ */
+export async function finalizeGrants(
+  database: DrizzleDb,
+  shareId: string,
+): Promise<number> {
+  const rows = await database
+    .update(familyKeyGrants)
+    .set({ status: "ready" })
+    .where(
+      and(
+        eq(familyKeyGrants.shareId, shareId),
+        eq(familyKeyGrants.status, "awaiting_keys"),
+      ),
+    )
+    .returning({ shareId: familyKeyGrants.shareId });
+
+  return rows.length;
+}
+
+/**
+ * Mark a share as key_reset (after password reset).
+ * Clears key_grants for this share; labels become generic until owner sweeps.
+ */
+export async function markShareKeyReset(
+  database: DrizzleDb,
+  shareId: string,
+  actorId: string,
+): Promise<void> {
+  // Update share status to key_reset
+  const [updated] = await database
+    .update(familyShares)
+    .set({ status: "key_reset" })
+    .where(and(eq(familyShares.id, shareId), actorOnShare(actorId)))
+    .returning({ id: familyShares.id });
+
+  if (!updated) {
+    throw new Error(`Share ${shareId} not found or not visible to ${actorId}`);
+  }
+
+  // Clear key grants (viewer can't unseal old keys)
+  await database.delete(familyKeyGrants).where(eq(familyKeyGrants.shareId, shareId));
+}

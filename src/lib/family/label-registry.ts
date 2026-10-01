@@ -59,6 +59,19 @@ export function getRegisteredSource(section: string): {
 }
 
 /**
+ * Entity types eligible for label decryption per section.
+ */
+export const SECTION_ENTITY_TYPES: Record<FamilySection, string[]> = {
+  net_worth: [],
+  accounts: ["accounts"],
+  investments: ["portfolio_holdings"],
+  goals: ["goals"],
+  budgets: ["categories"],
+  loans: ["loans"],
+  cashflow: ["categories"],
+};
+
+/**
  * Extract the label name from a database row via the registered column.
  * Returns the decrypted label, or a generic fallback if no label found.
  *
