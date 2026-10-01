@@ -7,23 +7,20 @@
  * and for .VN symbols when the VN provider is unset or fails.
  */
 
+import type { QuoteResult } from "@/lib/price-service";
 import { marketFetch } from "@/lib/market-fetch";
 
 const QUOTE_FETCH_TIMEOUT_MS = 4000;
 
-// Type imported from price-service: QuoteResult is the return type for both live and historical quotes.
-// Defined here so it can be used by vn-quote functions.
-export interface QuoteResult {
-  symbol: string;
-  price: number;
-  currency: string;
-  name: string;
-  change: number;
-  changePct: number;
-  marketCap?: number;
-  previousClose?: number | null;
-  quoteType?: string | null;
+// Per-process memo for full historical ranges, keyed by symbol.
+// Stores the full range fetched and a TTL for cache validation.
+interface HistoryMemo {
+  fetchedAt: number;
+  bars: Array<{ date: string; close: number }>;
 }
+const historyMemo = new Map<string, HistoryMemo>();
+const HISTORY_MEMO_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
+const HISTORY_MEMO_ERROR_TTL_MS = 10 * 60 * 1000; // 10 minutes for errors
 
 /**
  * Check if a symbol is a Vietnamese stock (.VN suffix).
@@ -104,6 +101,7 @@ export async function vndirectQuote(symbol: string): Promise<QuoteResult | null>
  * Symbol should be without the .VN suffix (e.g. "HPG").
  * Returns QuoteResult with price in VND, or null on error.
  * NOTE: This endpoint is currently blocked by Cloudflare on most networks.
+ * Unverified: TCBS bars order and data format behind Cloudflare challenge.
  */
 export async function tcbsQuote(symbol: string): Promise<QuoteResult | null> {
   try {
@@ -121,8 +119,8 @@ export async function tcbsQuote(symbol: string): Promise<QuoteResult | null> {
 
     const closes = bars.c as number[];
     if (closes.length === 0) return null;
-    // TCBS returns closes with most recent first (index 0)
-    const price = closes[0];
+    // TCBS returns closes in ascending order; take the last (most recent) element
+    const price = closes[closes.length - 1];
     if (typeof price !== "number" || !(price > 0)) return null;
 
     // TCBS prices are already in VND (not thousands).
@@ -131,7 +129,7 @@ export async function tcbsQuote(symbol: string): Promise<QuoteResult | null> {
 
     let previousClose: number | null = null;
     if (closes.length >= 2) {
-      const prevPrice = closes[1];
+      const prevPrice = closes[closes.length - 2];
       if (typeof prevPrice === "number" && prevPrice > 0) {
         previousClose = Math.floor(prevPrice + 0.5);
       }
@@ -175,7 +173,10 @@ export async function fetchVnQuoteLive(symbol: string): Promise<QuoteResult | nu
 
 /**
  * Fetch historical daily closes from VNDirect for a date range.
- * Returns an array of { date: "YYYY-MM-DD", close: number (in thousands) }.
+ * Uses a per-process memo to fetch the full range (since 2013-01-01) once and serve
+ * windowed requests from cache (12-hour TTL). Memoises errors for 10 minutes to avoid
+ * hammering the API on transient failures.
+ * Returns an array of { date: "YYYY-MM-DD", close: number (in VND) } sorted ascending by date.
  * Used by fetchQuoteAtDate to populate price_cache with a window of history.
  */
 export async function vndirectHistory(
@@ -185,31 +186,61 @@ export async function vndirectHistory(
 ): Promise<Array<{ date: string; close: number }>> {
   try {
     const baseSymbol = symbol.replace(/\.vn$/i, "");
-    // VNDirect historical query: q=code:X~date:gte:YYYY-MM-DD&sort=date&size=N
-    const url = `https://api-finfo.vndirect.com.vn/v4/stock_prices?q=code:${encodeURIComponent(baseSymbol)}~date:gte:${fromDate}&sort=date&size=500`;
+    const now = Date.now();
+
+    // Check memo for this symbol
+    const memoEntry = historyMemo.get(baseSymbol);
+    if (memoEntry) {
+      const age = now - memoEntry.fetchedAt;
+      const ttl = memoEntry.bars.length > 0 ? HISTORY_MEMO_TTL_MS : HISTORY_MEMO_ERROR_TTL_MS;
+      if (age < ttl) {
+        // Return cached data (may be empty array for errors)
+        return memoEntry.bars.filter((bar) => bar.date >= fromDate && bar.date <= toDate);
+      }
+    }
+
+    // Fetch full range: from 2013-01-01 to today. VNDirect returns newest first.
+    const today = new Date().toISOString().slice(0, 10);
+    const url = `https://api-finfo.vndirect.com.vn/v4/stock_prices?q=code:${encodeURIComponent(baseSymbol)}~date:gte:2013-01-01~date:lte:${today}&sort=date&size=5000`;
     const res = await marketFetch(url, {
       headers: { "User-Agent": "Mozilla/5.0" },
       signal: AbortSignal.timeout(QUOTE_FETCH_TIMEOUT_MS),
     });
-    if (!res.ok) return [];
+    if (!res.ok) {
+      // Memoize error (empty array) for 10 minutes
+      historyMemo.set(baseSymbol, { fetchedAt: now, bars: [] });
+      return [];
+    }
+
     const data = await res.json();
     const bars = data.data ?? [];
-    if (!Array.isArray(bars)) return [];
+    if (!Array.isArray(bars)) {
+      historyMemo.set(baseSymbol, { fetchedAt: now, bars: [] });
+      return [];
+    }
 
+    // Convert to VND (close is in thousands) and sort ascending by date
     const out: Array<{ date: string; close: number }> = [];
     for (const bar of bars) {
       const date = bar.date as string;
       const price = bar.close as number;
       if (typeof date === "string" && typeof price === "number" && price > 0) {
-        // Only include bars within the requested range.
-        if (date >= fromDate && date <= toDate) {
-          // VNDirect returns prices in thousands; keep as-is for cacheHistoricalWindow.
-          out.push({ date, close: price });
-        }
+        // Convert from thousands to VND
+        out.push({ date, close: Math.round(price * 1000) });
       }
     }
-    return out;
+    // VNDirect returns newest first (descending); sort ascending
+    out.sort((a, b) => a.date.localeCompare(b.date));
+
+    // Memoize the full range
+    historyMemo.set(baseSymbol, { fetchedAt: now, bars: out });
+
+    // Return only the requested window
+    return out.filter((bar) => bar.date >= fromDate && bar.date <= toDate);
   } catch {
+    // Memoize error (empty array) for 10 minutes to avoid API hammering
+    const baseSymbol = symbol.replace(/\.vn$/i, "");
+    historyMemo.set(baseSymbol, { fetchedAt: Date.now(), bars: [] });
     return [];
   }
 }

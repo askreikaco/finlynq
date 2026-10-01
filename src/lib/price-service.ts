@@ -592,7 +592,7 @@ export async function fetchQuoteAtDate(symbol: string, date: string): Promise<Qu
       if (chosen) {
         return {
           symbol,
-          price: Math.round(chosen.close * 1000), // VNDirect returns thousands, convert to VND
+          price: chosen.close, // vndirectHistory returns already in VND
           currency,
           name: symbol.replace(/\.vn$/i, ""),
           change: 0,

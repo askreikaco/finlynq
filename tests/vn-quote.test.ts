@@ -462,7 +462,9 @@ describe("Vietnamese stock price provider (vn-quote)", () => {
     );
     expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining("ticker=PVS"), expect.any(Object));
     expect(q).toBeDefined();
-    expect(q!.price).toBe(34); // TCBS: c[0] is latest close = 33.5, floor(33.5 + 0.5) = 34
+    // TCBS closes = [33.5, 33.4] in ascending order, last element (latest) is 33.4
+    // floor(33.4 + 0.5) = floor(33.9) = 33
+    expect(q!.price).toBe(33);
     expect(q!.currency).toBe("VND");
   });
 
@@ -470,13 +472,14 @@ describe("Vietnamese stock price provider (vn-quote)", () => {
   it("uses vndirectHistory for fetchQuoteAtDate on a .VN symbol", async () => {
     process.env.PF_PRICE_PROVIDER_VN = "vndirect";
     const queryDate = "2026-09-15";
+    // VNDirect API returns newest first (descending order)
     fetchSpy.mockResolvedValue({
       ok: true,
       json: async () => ({
         data: [
-          { code: "PVS", date: "2026-09-13", close: 33.0 },
-          { code: "PVS", date: "2026-09-14", close: 33.1 },
           { code: "PVS", date: "2026-09-15", close: 33.2 },
+          { code: "PVS", date: "2026-09-14", close: 33.1 },
+          { code: "PVS", date: "2026-09-13", close: 33.0 },
         ],
       }),
     });
@@ -484,14 +487,21 @@ describe("Vietnamese stock price provider (vn-quote)", () => {
     const q = await fetchQuoteAtDate("PVS.VN", queryDate);
 
     // Should call vndirectHistory (VNDirect API)
-    expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining("api-finfo.vndirect.com.vn"), expect.any(Object));
+    const vndirectCalls = fetchSpy.mock.calls.filter((call: unknown[]) =>
+      (call[0] as string).includes("api-finfo.vndirect.com.vn")
+    );
+    expect(vndirectCalls.length).toBeGreaterThan(0);
+    // Verify URL contains date:lte: bound
+    expect(vndirectCalls[0][0]).toContain("date:lte:");
+
     // Should NOT call Yahoo for this .VN symbol
     const yahooCalls = fetchSpy.mock.calls.filter((call: unknown[]) =>
       (call[0] as string).includes("query1.finance.yahoo.com")
     );
     expect(yahooCalls).toHaveLength(0);
 
-    // Result should be the price on or before queryDate: 33.2 * 1000
+    // Result should be the price on or before queryDate: 33.2 * 1000 = 33200 VND
+    // vndirectHistory returns in VND already, so price should be 33200
     expect(q).toBeDefined();
     expect(q!.price).toBe(33200);
   });
@@ -531,6 +541,70 @@ describe("Vietnamese stock price provider (vn-quote)", () => {
     expect(fetchSpy).toHaveBeenCalledTimes(2);
     expect(q).toBeDefined();
     expect(q!.price).toBe(99);
+  });
+
+  // TC 8c: Provider unset for fetchQuoteAtDate → no VNDirect call
+  it("with flag unset, fetchQuoteAtDate makes no vndirect call for .VN", async () => {
+    // process.env.PF_PRICE_PROVIDER_VN is already unset
+    fetchSpy.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        chart: {
+          result: [
+            {
+              meta: {
+                regularMarketPrice: 33200,
+                currency: "VND",
+                shortName: "PVS",
+              },
+              timestamp: [Math.floor(new Date("2026-09-15").getTime() / 1000)],
+              indicators: {
+                quote: [{ close: [33200] }],
+              },
+            },
+          ],
+        },
+      }),
+    });
+
+    await fetchQuoteAtDate("PVS.VN", "2026-09-15");
+
+    // Should call Yahoo, not VNDirect
+    expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining("query1.finance.yahoo.com"), expect.any(Object));
+    const vndirectCalls = fetchSpy.mock.calls.filter((call: unknown[]) =>
+      (call[0] as string).includes("vndirect")
+    );
+    expect(vndirectCalls).toHaveLength(0);
+  });
+
+  // TC 9: Memo — two history requests for same symbol cause exactly 1 VNDirect fetch
+  it("memo: two history requests for same symbol cause exactly 1 vndirect fetch", async () => {
+    process.env.PF_PRICE_PROVIDER_VN = "vndirect";
+    fetchSpy.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        data: [
+          { code: "MWG", date: "2026-09-15", close: 75.0 },
+          { code: "MWG", date: "2026-09-14", close: 74.9 },
+        ],
+      }),
+    });
+
+    // First request for MWG on 2026-09-15
+    await fetchQuoteAtDate("MWG.VN", "2026-09-15");
+    const vndirectCallsAfterFirst = fetchSpy.mock.calls.filter((call: unknown[]) =>
+      (call[0] as string).includes("vndirect")
+    ).length;
+
+    // Second request for same symbol on different date (within memo TTL, should not fetch)
+    await fetchQuoteAtDate("MWG.VN", "2026-09-14");
+    const vndirectCallsAfterSecond = fetchSpy.mock.calls.filter((call: unknown[]) =>
+      (call[0] as string).includes("vndirect")
+    ).length;
+
+    // Should have made exactly 1 VNDirect call total (second request served from memo)
+    expect(vndirectCallsAfterFirst).toBe(1);
+    expect(vndirectCallsAfterSecond).toBe(1); // No additional fetch
   });
 
   // ── Mutation proofs ────────────────────────────────────────────────────────
@@ -639,5 +713,131 @@ describe("Vietnamese stock price provider (vn-quote)", () => {
     expect(fetchSpy).toHaveBeenCalledTimes(2); // VNDirect + Yahoo
     expect(q).toBeDefined(); // WITH fallback: got a price
     // Removing fallback: would return null on VNDirect error, failing this test.
+  });
+
+  // MP-f: Remove ascending sort → bars in wrong order, chosen date wrong
+  it("[MUTATION PROOF] ascending sort: history sorted ascending by date", async () => {
+    process.env.PF_PRICE_PROVIDER_VN = "vndirect";
+    // API returns newest first (descending)
+    fetchSpy.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        data: [
+          { code: "VOS", date: "2026-09-15", close: 12.6 },
+          { code: "VOS", date: "2026-09-14", close: 12.5 },
+        ],
+      }),
+    });
+
+    const q = await fetchQuoteAtDate("VOS.VN", "2026-09-14");
+
+    // Should get the price for 2026-09-14 (12.5 * 1000 = 12500)
+    expect(q).toBeDefined();
+    expect(q!.price).toBe(12500);
+    // Removing sort: bars stay in newest-first order, selection logic breaks
+  });
+
+  // MP-g: Restore ×1000 in price-service → double multiplication
+  it("[MUTATION PROOF] units: vndirectHistory returns VND not thousands", async () => {
+    process.env.PF_PRICE_PROVIDER_VN = "vndirect";
+    fetchSpy.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        data: [{ code: "HDB", date: "2026-09-15", close: 32.2 }],
+      }),
+    });
+
+    const q = await fetchQuoteAtDate("HDB.VN", "2026-09-15");
+
+    // vndirectHistory returns 32.2 * 1000 = 32200 (VND)
+    // price-service should use it as-is, not multiply again
+    expect(q).toBeDefined();
+    expect(q!.price).toBe(32200); // NOT 32200000
+    // Restoring ×1000 would give 32200000, failing this test
+  });
+
+  // MP-h: Drop lte bound → fetch unbounded or wrong range
+  it("[MUTATION PROOF] lte bound: URL contains date:lte: limit", async () => {
+    process.env.PF_PRICE_PROVIDER_VN = "vndirect";
+    fetchSpy.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        data: [{ code: "FPT", date: "2026-09-15", close: 56.0 }],
+      }),
+    });
+
+    await fetchQuoteAtDate("FPT.VN", "2026-09-15");
+
+    const vndirectCalls = fetchSpy.mock.calls.filter((call: unknown[]) =>
+      (call[0] as string).includes("vndirect")
+    );
+    expect(vndirectCalls.length).toBeGreaterThan(0);
+    // Verify lte bound is present
+    expect(vndirectCalls[0][0]).toContain("date:lte:");
+    // Dropping lte: URL becomes unbounded or missing upper limit
+  });
+
+  // MP-i: Remove memo → every request fetches
+  it("[MUTATION PROOF] memo: memo prevents repeated VNDirect calls", async () => {
+    process.env.PF_PRICE_PROVIDER_VN = "vndirect";
+    fetchSpy.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        data: [{ code: "VRE", date: "2026-09-15", close: 65.5 }],
+      }),
+    });
+
+    // First call for VRE on 2026-09-15
+    await fetchQuoteAtDate("VRE.VN", "2026-09-15");
+    const vndCallsAfter1st = fetchSpy.mock.calls.filter((call: unknown[]) =>
+      (call[0] as string).includes("vndirect")
+    ).length;
+
+    // Second call for same symbol on different date
+    await fetchQuoteAtDate("VRE.VN", "2026-09-14");
+    const vndCallsAfter2nd = fetchSpy.mock.calls.filter((call: unknown[]) =>
+      (call[0] as string).includes("vndirect")
+    ).length;
+
+    // Should have made exactly 1 VNDirect call (memo serves second call)
+    expect(vndCallsAfter1st).toBe(1);
+    expect(vndCallsAfter2nd).toBe(1); // No additional fetch
+    // Removing memo: vndCallsAfter2nd would be 2, failing this test
+  });
+
+  // MP-j: Remove flag check in price-service → .VN goes to VN provider when disabled
+  it("[MUTATION PROOF] flag check in fetchQuoteAtDate: unset flag skips VN provider", async () => {
+    // Unset the flag explicitly
+    delete process.env.PF_PRICE_PROVIDER_VN;
+    fetchSpy.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        chart: {
+          result: [
+            {
+              meta: {
+                regularMarketPrice: 25000,
+                currency: "VND",
+                shortName: "TCB",
+              },
+              timestamp: [Math.floor(new Date("2026-09-15").getTime() / 1000)],
+              indicators: {
+                quote: [{ close: [25000] }],
+              },
+            },
+          ],
+        },
+      }),
+    });
+
+    await fetchQuoteAtDate("TCB.VN", "2026-09-15");
+
+    // Should call Yahoo, not VNDirect
+    expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining("query1.finance.yahoo.com"), expect.any(Object));
+    const vndirectCalls = fetchSpy.mock.calls.filter((call: unknown[]) =>
+      (call[0] as string).includes("vndirect")
+    );
+    expect(vndirectCalls).toHaveLength(0);
+    // Removing flag check: vndirectHistory is called even when flag is unset
   });
 });
