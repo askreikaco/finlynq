@@ -25,7 +25,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Accordion, AccordionItem } from "@/components/ui/accordion";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -62,8 +63,8 @@ export default function ImportSettingsPage() {
   const [templates, setTemplates] = useState<ImportTemplate[]>([]);
   // "Migrate from another app" tab — which provider's flow is open.
   const [provider, setProvider] = useState<ImportProvider | null>(null);
-  // Active tab (controlled so it's deep-linkable via ?tab=).
-  const [tab, setTab] = useState("templates");
+  // Open accordion section (null = all collapsed); deep-linkable via ?tab= or #hash.
+  const [tab, setTab] = useState<string | null>(null);
 
   // Email state
   const [importEmail, setImportEmail] = useState<string | null>(null);
@@ -93,7 +94,7 @@ export default function ImportSettingsPage() {
   // an alias so old links/bookmarks keep working.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const t = params.get("tab");
+    const t = params.get("tab") ?? window.location.hash.replace(/^#/, "");
     if (t && ["templates", "email", "migrate", "connect", "statements"].includes(t)) {
       setTab(t === "connect" ? "migrate" : t);
     }
@@ -264,7 +265,7 @@ export default function ImportSettingsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-sm font-medium">
                 {confirmCsvMapping
@@ -277,19 +278,12 @@ export default function ImportSettingsPage() {
                   : "Accounts import silently using the detected mapping. Pick “Ask me to confirm first” in an account’s import preview to turn confirmation back on for it."}
               </p>
             </div>
-            <Button
-              variant={confirmCsvMapping ? "default" : "outline"}
-              size="sm"
-              onClick={toggleConfirmCsvMapping}
+            <Switch
+              checked={confirmCsvMapping}
+              onCheckedChange={() => void toggleConfirmCsvMapping()}
               disabled={confirmCsvLoading}
-            >
-              {confirmCsvMapping ? (
-                <ToggleRight className="h-4 w-4 mr-1.5" />
-              ) : (
-                <ToggleLeft className="h-4 w-4 mr-1.5" />
-              )}
-              {confirmCsvMapping ? "Disable" : "Enable"}
-            </Button>
+              aria-label="Confirm field mapping before importing"
+            />
           </div>
         </CardContent>
       </Card>
@@ -331,34 +325,15 @@ export default function ImportSettingsPage() {
         </CardContent>
       </Card>
 
-      <Tabs value={tab} onValueChange={(v) => setTab(v ?? "templates")}>
-        <TabsList>
-          <TabsTrigger value="templates">
-            <BookTemplate className="h-4 w-4 mr-1.5" />
-            Templates
-            {templates.length > 0 && (
-              <span className="ml-1.5 text-[10px] bg-muted rounded-full px-1.5 py-0.5 font-mono">
-                {templates.length}
-              </span>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="email">
-            <Mail className="h-4 w-4 mr-1.5" />
-            Email Import
-          </TabsTrigger>
-          <TabsTrigger value="migrate">
-            <LinkIcon className="h-4 w-4 mr-1.5" />
-            Migrate from another app
-          </TabsTrigger>
-          <TabsTrigger value="statements">
-            <Landmark className="h-4 w-4 mr-1.5" />
-            Investment statements
-          </TabsTrigger>
-        </TabsList>
-
+      <Accordion value={tab} onValueChange={setTab}>
         {/* Templates */}
-        <TabsContent value="templates">
-          <div className="space-y-4 mt-4" id="templates">
+        <AccordionItem
+          value="templates"
+          icon={<BookTemplate className="h-4 w-4" />}
+          title="Templates"
+          description="Saved CSV column mappings per bank"
+        >
+          <div className="space-y-4" id="templates">
             <p className="text-sm text-muted-foreground">
               Templates save your CSV column mappings so future uploads from the
               same bank are automatically recognized. Upload a CSV and click{" "}
@@ -390,11 +365,16 @@ export default function ImportSettingsPage() {
               }}
             />
           </div>
-        </TabsContent>
+        </AccordionItem>
 
         {/* Email Import */}
-        <TabsContent value="email">
-          <div className="space-y-4 mt-4" id="email">
+        <AccordionItem
+          value="email"
+          icon={<Mail className="h-4 w-4" />}
+          title="Email Import"
+          description="Your import address, retention and email rules"
+        >
+          <div className="space-y-4" id="email">
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
@@ -523,11 +503,16 @@ export default function ImportSettingsPage() {
 
             <EmailRulesManager />
           </div>
-        </TabsContent>
+        </AccordionItem>
 
         {/* Migrate from another app — per-source submenu */}
-        <TabsContent value="migrate">
-          <div className="mt-4 space-y-4" id="migrate">
+        <AccordionItem
+          value="migrate"
+          icon={<LinkIcon className="h-4 w-4" />}
+          title="Migrate from another app"
+          description="One-time move of your full ledger"
+        >
+          <div className="space-y-4" id="migrate">
             {provider === null ? (
               <>
                 <p className="text-sm text-muted-foreground">
@@ -608,15 +593,20 @@ export default function ImportSettingsPage() {
               </>
             )}
           </div>
-        </TabsContent>
+        </AccordionItem>
 
         {/* Investment statements (IBKR XML / multi-account OFX/QFX) */}
-        <TabsContent value="statements">
-          <div className="mt-4" id="statements">
+        <AccordionItem
+          value="statements"
+          icon={<Landmark className="h-4 w-4" />}
+          title="Investment statements"
+          description="IBKR XML or multi-account OFX/QFX"
+        >
+          <div id="statements">
             <InvestmentStatementImporter />
           </div>
-        </TabsContent>
-      </Tabs>
+        </AccordionItem>
+      </Accordion>
     </div>
   );
 }
