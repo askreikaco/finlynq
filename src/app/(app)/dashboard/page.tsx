@@ -29,6 +29,7 @@ import { CurrencyAuditBanner } from "@/components/currency-audit-banner";
 import type { DashboardData, HealthData } from "./_components/types";
 import { formatPercent } from "@/lib/locale";
 import { PageHeader } from "@/components/mobile";
+import { sumAssetsLiabilities } from "@/lib/account-visibility";
 
 // --- Quick Import Widget ---
 function QuickImportWidget() {
@@ -170,13 +171,12 @@ export default function DashboardPage() {
   // returns convertedBalance + displayCurrency on each row.
   const balances = data.balances ?? [];
   const apiDisplayCurrency = data.displayCurrency ?? displayCurrency;
-  const totalAssets = balances
-    .filter((b) => b.accountType === "A")
-    .reduce((s, b) => s + (b.convertedBalance ?? b.balance), 0);
-  const totalLiabilities = balances
-    .filter((b) => b.accountType === "L")
-    .reduce((s, b) => s + (b.convertedBalance ?? b.balance), 0);
-  const totalNetWorth = totalAssets + totalLiabilities;
+  // Invisible accounts ride along in the payload (the Accounts list needs
+  // them) but never count toward the hero totals.
+  const { totalAssets, netWorth: totalNetWorth } = sumAssetsLiabilities(
+    balances,
+    (b) => b.convertedBalance ?? b.balance,
+  );
 
   // Income vs Expenses monthly data — totals are summed across currencies
   // server-side (raw native amounts) and converted at the dashboard level

@@ -468,7 +468,7 @@ export function registerCoreTools(server: McpServer, sqlite: PgCompatDb, opts: C
     async ({ currency, months, reportingCurrency }) => {
       const reporting = await resolveReportingCurrencyStdio(sqlite, userId, reportingCurrency);
       if (!months || months <= 0) {
-        let query = `SELECT a.type, a.currency, COALESCE(SUM(t.amount), 0) as total FROM accounts a LEFT JOIN transactions t ON a.id = t.account_id AND t.user_id = ? WHERE a.user_id = ?`;
+        let query = `SELECT a.type, a.currency, COALESCE(SUM(t.amount), 0) as total FROM accounts a LEFT JOIN transactions t ON a.id = t.account_id AND t.user_id = ? WHERE a.user_id = ? AND a.invisible = false`; // invisible accounts never reach net worth
         const params: (string | number)[] = [userId, userId];
         if (currency && currency !== "all") { query += " AND a.currency = ?"; params.push(currency); }
         query += " GROUP BY a.type, a.currency";
@@ -487,13 +487,13 @@ export function registerCoreTools(server: McpServer, sqlite: PgCompatDb, opts: C
       startDate.setMonth(startDate.getMonth() - months);
       const startStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, "0")}-01`;
 
-      let query = `SELECT strftime('%Y-%m', t.date) as month, a.currency, SUM(t.amount) as total FROM transactions t LEFT JOIN accounts a ON t.account_id = a.id WHERE t.user_id = ? AND t.date >= ?`;
+      let query = `SELECT strftime('%Y-%m', t.date) as month, a.currency, SUM(t.amount) as total FROM transactions t LEFT JOIN accounts a ON t.account_id = a.id WHERE t.user_id = ? AND t.date >= ? AND COALESCE(a.invisible, false) = false`;
       const params: (string | number)[] = [userId, startStr];
       if (currency && currency !== "all") { query += " AND a.currency = ?"; params.push(currency); }
       query += " GROUP BY strftime('%Y-%m', t.date), a.currency ORDER BY month";
       const rows = await sqlite.prepare(query).all(...params) as { month: string; currency: string; total: number }[];
 
-      let baselineQuery = `SELECT a.currency, COALESCE(SUM(t.amount), 0) as total FROM transactions t LEFT JOIN accounts a ON t.account_id = a.id WHERE t.user_id = ? AND t.date < ?`;
+      let baselineQuery = `SELECT a.currency, COALESCE(SUM(t.amount), 0) as total FROM transactions t LEFT JOIN accounts a ON t.account_id = a.id WHERE t.user_id = ? AND t.date < ? AND COALESCE(a.invisible, false) = false`;
       const baseParams: (string | number)[] = [userId, startStr];
       if (currency && currency !== "all") { baselineQuery += " AND a.currency = ?"; baseParams.push(currency); }
       baselineQuery += " GROUP BY a.currency";

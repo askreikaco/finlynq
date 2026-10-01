@@ -184,7 +184,8 @@ export async function GET(request: NextRequest) {
     // (requireAuth, DEK present) so the overlay can price holdings; a DEK-null
     // caller degrades to the ledger balance per the overlay's own guard. Cash
     // accounts keep their ledger balance. includeArchived preserves the prior
-    // account set (the old bespoke query had no archived filter).
+    // account set (the old bespoke query had no archived filter). Invisible
+    // accounts are excluded (getAccountBalances default).
     const ledgerBalances = await getAccountBalances(userId, { includeArchived: true });
     const overlay = await applyInvestmentMarketOverlay(
       ledgerBalances.map((b) => ({

@@ -79,7 +79,10 @@ export default function AccountsScreen({ navigation }: Props) {
   }, [isFocused, fetchAccounts]);
 
   const displayCurrency = balances[0]?.displayCurrency ?? "CAD";
-  const netWorth = balances.reduce((s, b) => s + (b.convertedBalance ?? b.balance), 0);
+  // Invisible accounts stay listed but never count toward the net-worth hero.
+  const netWorth = balances
+    .filter((b) => b.invisible !== true)
+    .reduce((s, b) => s + (b.convertedBalance ?? b.balance), 0);
   const sections = groupAccounts(balances);
 
   if (loading) {
@@ -159,6 +162,7 @@ export default function AccountsScreen({ navigation }: Props) {
                     <Text style={[styles.accountMeta, { color: colors.mutedForeground }]}>
                       {item.currency}
                       {item.accountType === "L" ? " · Liability" : ""}
+                      {item.invisible === true ? " · Invisible" : ""}
                     </Text>
                   </View>
                 </View>

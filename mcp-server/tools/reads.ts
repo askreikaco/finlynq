@@ -90,23 +90,25 @@ export function registerReadsTools(server: McpServer, ctx: PgToolContext) {
     async ({ currency, reportingCurrency, basis }) => {
       const raw = await q(db, sql`
         SELECT a.id, a.name_ct, a.alias_ct, a.type, a."group", a.currency,
-               a.is_investment,
+               a.is_investment, a.invisible,
                COALESCE(SUM(t.amount), 0) AS balance
         FROM accounts a
         LEFT JOIN transactions t ON a.id = t.account_id AND t.user_id = ${userId}
         WHERE a.user_id = ${userId}
           ${currency && currency !== "all" ? sql`AND a.currency = ${currency}` : sql``}
-        GROUP BY a.id, a.name_ct, a.alias_ct, a.type, a."group", a.currency, a.is_investment
+        GROUP BY a.id, a.name_ct, a.alias_ct, a.type, a."group", a.currency, a.is_investment, a.invisible
         ORDER BY a.type, a."group", a.id
       `);
       // Stream D: decrypt name + alias before returning. Drop the internal
       // _ct columns AND the raw is_investment flag from the response (the
       // overlay re-surfaces a typed `isInvestment` instead).
+      // `invisible` is re-surfaced as a typed boolean on every row below.
       const decrypted = decryptNameish(raw, dek).map((r) => {
-        const { name_ct, alias_ct, is_investment, ...rest } = r;
-        void name_ct; void alias_ct; void is_investment;
+        const { name_ct, alias_ct, is_investment, invisible, ...rest } = r;
+        void name_ct; void alias_ct; void is_investment; void invisible;
         return rest;
       });
+      const isInvisible = (i: number) => raw[i]?.invisible === true;
 
       // FINLYNQ-151 — value investment accounts at market (matching the web
       // "account with holdings = holdings.value" invariant). DEK-gated: the
@@ -157,6 +159,14 @@ export function registerReadsTools(server: McpServer, ctx: PgToolContext) {
         reporting,
         (from, to) => getRate(from, to, today, userId),
       );
+      // Invisible accounts stay LISTED (flagged `invisible: true`) but never
+      // reach `totalReporting`. Same round-once semantic as the helper: sum
+      // the raw (unrounded) legs, round the grand total once.
+      let visibleTotalRaw = 0;
+      agg.perItem.forEach((it, i) => {
+        if (!isInvisible(i)) visibleTotalRaw += Number(it.amount) * it.fx;
+      });
+      const totalReporting = roundMoney(visibleTotalRaw, reporting);
 
       const enriched = decrypted.map((r, i) => {
         const ov = overlay.rows[i];
@@ -172,6 +182,7 @@ export function registerReadsTools(server: McpServer, ctx: PgToolContext) {
           balanceTagged: tagAmount(rawBalance, ccy, "account"),
           balanceReporting: tagAmount(reportingAmount, reporting, "reporting"),
           isInvestment: ov.isInvestment,
+          invisible: isInvisible(i),
           // FINLYNQ-268: uniform `basis` field; `balanceBasis` retained as a
           // deprecated alias through v4.1 (dual-emit, decision 2).
           basis: ov.balanceBasis,
@@ -192,7 +203,7 @@ export function registerReadsTools(server: McpServer, ctx: PgToolContext) {
       return dataResponse({
         accounts: enriched,
         reportingCurrency: reporting,
-        totalReporting: tagAmount(agg.totalReporting, reporting, "reporting"),
+        totalReporting: tagAmount(totalReporting, reporting, "reporting"),
         ...(overlay.note ? { note: overlay.note } : {}),
       });
     }
@@ -593,6 +604,9 @@ export function registerReadsTools(server: McpServer, ctx: PgToolContext) {
           FROM accounts a
           LEFT JOIN transactions t ON a.id = t.account_id AND t.user_id = ${userId}
           WHERE a.user_id = ${userId}
+            -- Invisible accounts never reach net worth. get_account_balances
+            -- lists them but skips them in totalReporting, so #210 parity holds.
+            AND a.invisible = false
             ${currency && currency !== "all" ? sql`AND a.currency = ${currency}` : sql``}
           GROUP BY a.id, a.type, a.currency, a."group", a.is_investment
           ORDER BY a.type, a."group", a.id
@@ -701,6 +715,7 @@ export function registerReadsTools(server: McpServer, ctx: PgToolContext) {
         FROM transactions t
         LEFT JOIN accounts a ON t.account_id = a.id
         WHERE t.user_id = ${userId} AND t.date >= ${startStr}
+          AND COALESCE(a.invisible, false) = false
           ${currency && currency !== "all" ? sql`AND a.currency = ${currency}` : sql``}
         GROUP BY TO_CHAR(t.date::date, 'YYYY-MM'), a.currency
         ORDER BY month
@@ -711,6 +726,7 @@ export function registerReadsTools(server: McpServer, ctx: PgToolContext) {
         FROM transactions t
         LEFT JOIN accounts a ON t.account_id = a.id
         WHERE t.user_id = ${userId} AND t.date < ${startStr}
+          AND COALESCE(a.invisible, false) = false
           ${currency && currency !== "all" ? sql`AND a.currency = ${currency}` : sql``}
         GROUP BY a.currency
       `) as { currency: string; total: number }[];
@@ -1248,9 +1264,9 @@ export function registerReadsTools(server: McpServer, ctx: PgToolContext) {
       // dropped the app's own Checking/Savings/Cash defaults). `accountFilter`
       // overrides.
       const allAccountsRaw = await q(db, sql`
-        SELECT a.id, a.currency, a."group" AS account_group, a.is_investment
+        SELECT a.id, a.currency, a."group" AS account_group, a.is_investment, a.invisible
         FROM accounts a WHERE a.user_id = ${userId}
-      `) as { id: number; currency: string | null; account_group: string | null; is_investment: boolean | null }[];
+      `) as { id: number; currency: string | null; account_group: string | null; is_investment: boolean | null; invisible: boolean | null }[];
 
       const includeSet = accountFilter?.include ? new Set(accountFilter.include) : null;
       const excludeSet = accountFilter?.exclude ? new Set(accountFilter.exclude) : null;
@@ -1265,6 +1281,9 @@ export function registerReadsTools(server: McpServer, ctx: PgToolContext) {
         } else {
           inc = isCashGroup(a.account_group) || (includeInvestments && a.is_investment === true);
           if (excludeSet && excludeSet.has(a.id)) inc = false;
+          // Invisible accounts are out of the DEFAULT scope (they never reach
+          // a metric); an explicit `accountFilter.include` still honours them.
+          if (a.invisible === true) inc = false;
         }
         if (inc) inScope.push(a); else outOfScope.push(a);
       }

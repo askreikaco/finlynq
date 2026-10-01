@@ -92,17 +92,22 @@ describe("archived accounts stay in the net-worth money math", () => {
   });
 });
 
+// The options object may carry more flags (e.g. `includeInvisible: true` on
+// the list-shaped payloads) — what matters is that `includeArchived: true` is
+// in the SAME getAccountBalances call.
+const BALANCES_WITH_ARCHIVED = /getAccountBalances\(userId, \{[^}]*\bincludeArchived: true\b[^}]*\}\)/;
+
 describe("archived accounts reach the surfaces that show money", () => {
   it("the dashboard balances query always includes archived accounts", () => {
     const route = read("src/app/api/dashboard/route.ts");
-    expect(route).toContain("getAccountBalances(userId, { includeArchived: true })");
+    expect(route).toMatch(BALANCES_WITH_ARCHIVED);
   });
 
   it("the net-worth-history live override includes archived accounts", () => {
     // It feeds BOTH today's point and the breakdown's accountId → name map;
     // without archived rows an archived account rendered as "Account #609".
     const route = read("src/app/api/net-worth-history/route.ts");
-    expect(route).toContain("getAccountBalances(userId, { includeArchived: true })");
+    expect(route).toMatch(BALANCES_WITH_ARCHIVED);
   });
 
   it("the account detail page asks for archived accounts", () => {

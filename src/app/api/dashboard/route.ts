@@ -57,7 +57,15 @@ async function handleGet(request: NextRequest) {
 
     const rateMap = await getRateMap(displayCurrency, userId);
 
-    const rawBalances = await getAccountBalances(userId, { includeArchived: true });
+    // Invisible accounts ARE returned (each row carries `invisible`) because
+    // this endpoint also feeds the Accounts list and the account detail page,
+    // where they stay visible + editable. Every consumer that SUMS these rows
+    // (dashboard hero, accounts summary, mobile, FIRE defaults) must skip
+    // `invisible` rows — see `excludeInvisible` in src/lib/account-visibility.ts.
+    const rawBalances = await getAccountBalances(userId, {
+      includeArchived: true,
+      includeInvisible: true,
+    });
     // Stream D: decrypt accountName + alias before display / currency conversion.
     const balances = decryptNamedRows(rawBalances, dek, {
       accountNameCt: "accountName",
