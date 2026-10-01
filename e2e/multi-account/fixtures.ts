@@ -154,7 +154,16 @@ export async function freshIp(context: BrowserContext) {
   await context.setExtraHTTPHeaders({ "x-forwarded-for": randomIp() });
 }
 
+/** next dev: a submit before hydration would be a native GET form post. Wait for React to own the form. */
+export async function waitForHydration(page: Page) {
+  await page.waitForFunction(() => {
+    const f = document.querySelector("form");
+    return !!f && Object.keys(f).some((k) => k.startsWith("__reactProps"));
+  });
+}
+
 export async function loginForm(page: Page, user: TestUser) {
+  await waitForHydration(page);
   await freshIp(page.context());
   await page.getByPlaceholder(/username or/i).fill(user.email);
   await page.locator('input[type="password"]').fill(user.password);

@@ -11,6 +11,7 @@ import {
   accountsList,
   session,
   freshIp,
+  waitForHydration,
   expectHardReload,
   MAX_ACCOUNTS,
   type TestUser,
@@ -19,6 +20,7 @@ import {
 test.describe.configure({ mode: "serial" });
 
 test("cap: 5 accounts, 6th add blocked; cancel clears pf_add; locked account re-login allowed at the cap", async ({ page, context, srv, baseURL }) => {
+  test.setTimeout(420_000);
   const users: TestUser[] = [];
   for (let i = 0; i < MAX_ACCOUNTS; i++) users.push(await registerUser(baseURL!, `u${i}`));
   const [U1, U2, U3, U4, U5] = users;
@@ -84,8 +86,10 @@ test("cap: 5 accounts, 6th add blocked; cancel clears pf_add; locked account re-
   const target = U2;
   await openMenu(page);
   await page.getByRole("menuitem", { name: new RegExp(target.email.replace(/[.+]/g, "\\$&")) }).click();
-  await page.waitForURL(/\/cloud\?add=1/);
+  // re-login of a bundle member must NOT be refused with the cap message
+  await expect(page).toHaveURL(/\/cloud\?add=1/, { timeout: 30_000 });
   await expect(page.getByPlaceholder(/username or/i)).toHaveValue(target.email);
+  await waitForHydration(page);
   await freshIp(context);
   await page.locator('input[type="password"]').fill(target.password);
   await page.locator('form button[type="submit"]').click();

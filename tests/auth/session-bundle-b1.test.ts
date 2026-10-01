@@ -170,6 +170,23 @@ describe.skipIf(!HAS_DB)("multi-account B1 (real Postgres)", () => {
     expect(await isJtiRevoked(A2.jti)).toBe(true);
   });
 
+  it("loadBundle dedupes: a hand-built stash with a second token for the same user / for the ACTIVE user collapses to one entry each", async () => {
+    const jar = new Jar();
+    const A = await mkSession(await mkUser());
+    const B = await mkSession(await mkUser());
+    const B2 = await mkSession(B.userId);
+    const A2 = await mkSession(A.userId);
+    jar.set("pf_session", A.token);
+    const raw = Buffer.from(JSON.stringify([B, B2, A2].map((x) => ({ t: x.token })))).toString("base64url");
+    jar.set("pf_accounts", raw, "/api/auth");
+    const b = await loadBundle(jar.req("/api/auth/accounts"));
+    expect(b.active?.userId).toBe(A.userId);
+    expect(b.stash.map((m) => m.userId)).toEqual([B.userId]);
+    expect(b.stash[0].jti).toBe(B.jti); // first (MRU) entry wins
+    expect(b.droppedLive.map((m) => m.jti).sort()).toEqual([B2.jti, A2.jti].sort());
+    expect(b.pruned).toBe(true);
+  });
+
   it("cap: add-intent 409 at 5 accounts; commit race evicts+revokes the OLDEST (stash max 4)", async () => {
     const jar = new Jar();
     const s = [];

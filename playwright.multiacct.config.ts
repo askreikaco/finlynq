@@ -8,6 +8,7 @@
  *   (MA_E2E_CHROMIUM=<path> optional: pre-installed Chromium executable)
  *
  * Never reads .env. Refuses to run unless the DB name ends in `_test`.
+ * Do NOT run it concurrently with the vitest DB suites on the same database (they reset tables).
  */
 import { defineConfig } from "@playwright/test";
 
