@@ -14,6 +14,7 @@ import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
 import { formatCurrency } from "@/lib/currency";
 import { unrecordedBankRowSql } from "@/lib/reconcile/unrecorded-rows";
 import { getReconcileHiddenAccountIds } from "@/lib/reconcile/hidden-accounts";
+import { advanceStaleSubscriptionDatesSafe } from "@/lib/subscriptions/advance-next-dates";
 
 const { accounts, categories, transactions, budgets, goals, subscriptions } = schema;
 
@@ -176,7 +177,7 @@ async function getUpcomingLargeBills(
         severity: "warning",
         title: `${subName} due${days <= 1 ? " tomorrow" : ` in ${days} days`}`,
         description: `${formatCurrency(amount, fx.displayCurrency)} ${sub.frequency} payment`,
-        actionUrl: "/transactions",
+        actionUrl: "/subscriptions",
         amount,
         currency: fx.displayCurrency,
       });
@@ -514,7 +515,7 @@ async function getUpcomingSubscriptions(
         severity: "info" as SpotlightSeverity,
         title: `${subName} renewing${days <= 1 ? " tomorrow" : ` in ${days} days`}`,
         description: `${formatCurrency(amount, fx.displayCurrency)} ${s.frequency}`,
-        actionUrl: "/transactions",
+        actionUrl: "/subscriptions",
         amount,
         currency: fx.displayCurrency,
       };
@@ -640,6 +641,10 @@ export async function getSpotlightItems(userId: string, dek: Buffer | null = nul
   const displayCurrency = await getDisplayCurrency(userId);
   const rateMap = await getRateMap(displayCurrency, userId);
   const fx: RateCtx = { displayCurrency, rateMap };
+
+  // The large-bill and renewal builders window on `next_date`; a date that has
+  // already passed would never match again, so roll stale ones forward first.
+  await advanceStaleSubscriptionDatesSafe(db, userId);
 
   const [
     overspent,

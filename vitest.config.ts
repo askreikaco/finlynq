@@ -25,11 +25,9 @@ const QUARANTINE = [
   "tests/api/monte-carlo.test.ts",
   "tests/api/onboarding.test.ts",
   "tests/api/portfolio.test.ts",
-  "tests/api/recurring.test.ts",
   "tests/api/reports.test.ts",
   "tests/api/scenarios.test.ts",
   "tests/api/snapshots.test.ts",
-  "tests/api/subscriptions.test.ts",
   "tests/api/tax.test.ts",
   "tests/api/transactions.test.ts",
   // Auth suites (vi.mock export drift, stale expectations)

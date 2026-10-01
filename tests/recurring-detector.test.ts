@@ -112,6 +112,66 @@ describe("detectRecurringTransactions", () => {
     const result = detectRecurringTransactions(txns);
     expect(result[0].payee).toBe("Big");
   });
+
+  // Subscriptions merge (2026-10) — longer cadences + lapsed series.
+  it("detects quarterly and semi-annual series", () => {
+    const txns = [
+      makeTxn(1, "2025-01-10", "Water", -90),
+      makeTxn(2, "2025-04-10", "Water", -92),
+      makeTxn(3, "2025-07-10", "Water", -88),
+      makeTxn(4, "2024-03-01", "Car insurance", -600),
+      makeTxn(5, "2024-09-01", "Car insurance", -600),
+      makeTxn(6, "2025-03-01", "Car insurance", -610),
+    ];
+    const result = detectRecurringTransactions(txns);
+    expect(result.find((r) => r.payee === "Water")?.frequency).toBe("quarterly");
+    expect(result.find((r) => r.payee === "Water")?.nextDate).toBe("2025-10-10");
+    expect(result.find((r) => r.payee === "Car insurance")?.frequency).toBe("semiannual");
+    expect(result.find((r) => r.payee === "Car insurance")?.nextDate).toBe("2025-09-01");
+  });
+
+  it("computes the next date without month-end overflow", () => {
+    const txns = [
+      makeTxn(1, "2024-10-31", "Rent", -1000),
+      makeTxn(2, "2024-11-30", "Rent", -1000),
+      makeTxn(3, "2024-12-31", "Rent", -1000),
+      makeTxn(4, "2025-01-31", "Rent", -1000),
+    ];
+    // Old local-time setMonth stepping turned Jan 31 + 1 month into Mar 3.
+    expect(detectRecurringTransactions(txns)[0].nextDate).toBe("2025-02-28");
+  });
+
+  it("drops a lapsed series when asOf is given (two expected payments missed)", () => {
+    const txns = [
+      makeTxn(1, "2026-01-15", "Old streaming", -9.99),
+      makeTxn(2, "2026-02-15", "Old streaming", -9.99),
+      makeTxn(3, "2026-03-15", "Old streaming", -9.99),
+      makeTxn(4, "2026-07-15", "Current", -5),
+      makeTxn(5, "2026-08-15", "Current", -5),
+      makeTxn(6, "2026-09-15", "Current", -5),
+    ];
+    expect(detectRecurringTransactions(txns).length).toBe(2);
+    const live = detectRecurringTransactions(txns, { asOf: "2026-10-01" });
+    expect(live.map((r) => r.payee)).toEqual(["Current"]);
+    // One missed cycle is tolerated (bank feeds lag).
+    expect(detectRecurringTransactions(txns, { asOf: "2026-05-01" }).length).toBe(2);
+  });
+
+  it("judges lapse against the account's newest transaction, not today", () => {
+    // Account 2's imports stopped in June; its bills are not "cancelled" in
+    // October just because nobody has synced it since.
+    const stale = (id: number, date: string, payee: string, amount: number) => ({ ...makeTxn(id, date, payee, amount), accountId: 2 });
+    const txns = [
+      stale(1, "2026-04-11", "Spotify", -10.99),
+      stale(2, "2026-05-11", "Spotify", -10.99),
+      stale(3, "2026-06-11", "Spotify", -10.99),
+      stale(4, "2026-06-20", "Groceries", -80),
+    ];
+    expect(detectRecurringTransactions(txns, { asOf: "2026-10-01" }).map((r) => r.payee)).toEqual(["Spotify"]);
+    // ...but a series that stopped while the account kept moving IS lapsed.
+    const moving = [...txns, stale(5, "2026-09-25", "Groceries", -75)];
+    expect(detectRecurringTransactions(moving, { asOf: "2026-10-01" })).toEqual([]);
+  });
 });
 
 describe("forecastCashFlow", () => {
