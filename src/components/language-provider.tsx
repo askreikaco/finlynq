@@ -68,11 +68,16 @@ function writeCache(c: Cache) {
  * `key=locale` only changes if the user (or another device) really changed
  * the language / display currency, never on a normal page load.
  */
+export const LANGUAGE_READY_TIMEOUT_MS = 1500;
+
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [pref, setPrefState] = useState<LanguagePref>(DEFAULT_LANGUAGE_PREF);
   const [prefLoaded, setPrefLoaded] = useState(false);
   const [cache, setCache] = useState<Cache | null>(null);
   const [cacheChecked, setCacheChecked] = useState(false);
+  // Never blank the app on a slow/hung settings fetch: render with the best
+  // guess after this delay (a later real change still remounts once).
+  const [gaveUp, setGaveUp] = useState(false);
   const [browserLang, setBrowserLang] = useState<string | null>(null);
   const { displayCurrency, isLoading } = useDisplayCurrency();
 
@@ -80,7 +85,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const liveCurReady = !isLoading;
   const effPref = livePrefReady ? pref : cache?.pref ?? DEFAULT_LANGUAGE_PREF;
   const effCur = liveCurReady ? displayCurrency : cache?.cur ?? null;
-  const ready = cacheChecked && ((livePrefReady && liveCurReady) || cache !== null);
+  const ready = cacheChecked && ((livePrefReady && liveCurReady) || cache !== null || gaveUp);
   const locale = resolveDisplayLocale(effPref, effCur, browserLang);
 
   // Keep module state in sync during render so children formatted in this
@@ -92,6 +97,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     setCache(readCache());
     setCacheChecked(true);
     let cancelled = false;
+    const giveUp = setTimeout(() => setGaveUp(true), LANGUAGE_READY_TIMEOUT_MS);
     fetch("/api/settings/language")
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
@@ -103,6 +109,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       });
     return () => {
       cancelled = true;
+      clearTimeout(giveUp);
     };
   }, []);
 

@@ -54,4 +54,17 @@ describe("LanguageProvider first load", () => {
     await waitFor(() => expect(screen.getByTestId("loc").textContent).toBe("en-CA"));
     expect(mounts).toBe(1);
   });
+  it("hung settings fetch: still renders after the safety timeout (never a blank app)", async () => {
+    vi.useFakeTimers();
+    try {
+      vi.stubGlobal("fetch", vi.fn(() => new Promise(() => {})));
+      render(tree());
+      await act(async () => {});
+      expect(screen.queryByTestId("loc")).toBeNull();
+      await act(async () => { vi.advanceTimersByTime(1600); });
+      expect(screen.getByTestId("loc")).toBeTruthy();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
