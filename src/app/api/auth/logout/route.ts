@@ -1,78 +1,42 @@
 /**
- * POST /api/auth/logout — Clear the session (managed edition).
+ * POST /api/auth/logout — Sign out (managed edition).
  *
- * Wipes the user's DEK from the in-memory cache so a stolen cookie can't
- * resurrect decrypted data access after logout, AND inserts the JWT's jti
- * into the server-side `revoked_jtis` denylist so a stolen cookie can't
- * keep accessing plaintext-only routes for the remainder of the JWT exp
- * (finding H-5).
- *
- * Query parameter ?everywhere=1 also revokes all trusted devices for the user.
+ * Default: revoke the ACTIVE account only (denylist its jti + wipe its DEK) and
+ * promote the next still-switchable stashed account to active; the last
+ * account out clears everything. ?all=1: revoke every jti in the bundle,
+ * wipe every DEK, clear both cookies.
+ * ?everywhere=1: also revoke trusted devices (active user; every bundle
+ * user with all=1) and clear pf_device. pf_device is otherwise kept.
+ * Response: {success:true, activeUserId|null}. Never returns tokens.
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { AUTH_COOKIE, verifySessionTokenDetailed, revokeJti } from "@/lib/auth";
-import { deleteDEK } from "@/lib/crypto/dek-cache";
 import { revokeAllDevices, deviceCookieOptions } from "@/lib/auth/trusted-device";
+import { logoutBundle } from "@/lib/auth/session-bundle";
 
 export async function POST(request: NextRequest) {
-  // Read the JWT before we blank the cookie so we can target its jti.
-  // We use the detailed variant so a deploy-rotated token is still parseable
-  // here (its claims are extractable even though it's no longer auth-valid)
-  // — best-effort eviction even on the unhappy path.
-  const token = request.cookies.get(AUTH_COOKIE)?.value;
-  let userId: string | null = null;
-  if (token) {
-    // verifySessionTokenDetailed normally bails on revoked / deploy-rotated.
-    // For logout we want the jti regardless, so we re-parse via the jose
-    // primitive even if the token is technically expired or already revoked
-    // — calling `revokeJti` on an already-revoked jti is a cheap no-op via
-    // ON CONFLICT DO NOTHING.
-    const { payload } = await verifySessionTokenDetailed(token);
-    if (payload?.jti) {
-      const exp = typeof payload.exp === "number"
-        ? new Date(payload.exp * 1000)
-        : new Date(Date.now() + 24 * 60 * 60_000);
-      // Best-effort. The DB write is awaited so a successful logout response
-      // implies the denylist entry committed before the cookie clears.
-      try {
-        await revokeJti(payload.jti, exp);
-      } catch {
-        // swallow — see revokeJti for the why
-      }
-      deleteDEK(payload.jti);
-    }
-    if (payload?.sub) {
-      userId = payload.sub;
-    }
-  }
-
-  const response = NextResponse.json({ success: true });
-
-  response.cookies.set(AUTH_COOKIE, "", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 0,
-    path: "/",
-  });
-
-  // If ?everywhere=1, revoke all trusted devices and clear pf_device cookie
   const url = new URL(request.url);
+  const all = url.searchParams.get("all") === "1";
   const everywhere = url.searchParams.get("everywhere") === "1";
-  if (everywhere && userId) {
-    try {
-      await revokeAllDevices(userId);
-    } catch {
-      // swallow — device revocation shouldn't block logout
-    }
-    response.cookies.set("pf_device", "", {
-      ...deviceCookieOptions(),
-      maxAge: 0,
-    });
-  }
-  // Normal logout: do NOT revoke the current device and do NOT clear pf_device cookie
-  // This keeps the trusted device active for re-login
 
-  return response;
+  const response = NextResponse.json({ success: true, activeUserId: null as string | null });
+  const { activeUserId, revoked, loggedOut } = await logoutBundle(request, response, { all });
+
+  if (everywhere) {
+    // all=1 -> every user in the bundle; otherwise the account being signed out.
+    const users = new Set(all ? revoked.map((m) => m.userId) : loggedOut ? [loggedOut.userId] : []);
+    for (const userId of users) {
+      try {
+        await revokeAllDevices(userId);
+      } catch {
+        // swallow — device revocation must not block logout
+      }
+    }
+    response.cookies.set("pf_device", "", { ...deviceCookieOptions(), maxAge: 0 });
+  }
+
+  // Rebuild body now that the outcome is known (cookies already on `response`).
+  const out = NextResponse.json({ success: true, activeUserId });
+  for (const c of response.cookies.getAll()) out.cookies.set(c);
+  return out;
 }

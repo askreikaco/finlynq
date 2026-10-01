@@ -358,7 +358,8 @@ export type ShortLivedPurpose =
   | "oauth-state"
   | "google-unlock-data"
   | "google-signup"
-  | "google-link";
+  | "google-link"
+  | "add-account";
 
 const OAUTH_STATE_AUDIENCE = "pf-oauth-state";
 const OAUTH_STATE_ISSUER = ISSUER; // Reuse session token issuer

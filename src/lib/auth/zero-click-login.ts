@@ -30,7 +30,7 @@ import { enqueueBackfillSecurities } from "@/lib/securities/backfill";
 import { enqueueUpgradeStagingEncryption } from "@/lib/email-import/upgrade-staging-encryption";
 import { enqueueProcessPendingInbox } from "@/lib/email-import/process-pending-inbox";
 import { enqueueUpgradeUserFieldEncryption } from "@/lib/crypto/upgrade-user-fields";
-import { setSessionCookie } from "@/lib/auth/cookies";
+import { commitSession, loadBundle } from "@/lib/auth/session-bundle";
 
 export interface ZeroClickAccount {
   /** Username or email of the fixture account. HARDCODED by the caller. */
@@ -80,6 +80,21 @@ export async function zeroClickLogin(
     secPurpose.includes("prefetch");
   if (isPrefetch) {
     return new NextResponse(null, { status: 204 });
+  }
+
+  // Multi-account guard: a GET must never silently swap a signed-in browser's
+  // identity (also not into the stash). If a valid, non-pending session already
+  // exists, do no auth work and set no cookie — just continue to `next`.
+  if (request.cookies.get("pf_session")?.value) {
+    const { active } = await loadBundle(request);
+    if (active) {
+      const nextParam = request.nextUrl.searchParams.get("next");
+      const target = isSafeNext(nextParam) ? nextParam : account.defaultNext;
+      const fHost = request.headers.get("x-forwarded-host") ?? request.nextUrl.host;
+      const fProto =
+        request.headers.get("x-forwarded-proto") ?? request.nextUrl.protocol.replace(/:$/, "");
+      return NextResponse.redirect(`${fProto}://${fHost}${target}`);
+    }
   }
 
   if (getDialect() !== "postgres") {
@@ -180,7 +195,7 @@ export async function zeroClickLogin(
     const host = forwardedHost ?? request.nextUrl.host;
     const proto = forwardedProto ?? request.nextUrl.protocol.replace(/:$/, "");
     const response = NextResponse.redirect(`${proto}://${host}${next}`);
-    setSessionCookie(response, token);
+    await commitSession(request, response, { token, jti, userId: user.id });
     return response;
   } catch (error) {
     await logApiError("GET", `/${account.slug}`, error);

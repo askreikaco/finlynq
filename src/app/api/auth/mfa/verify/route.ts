@@ -22,7 +22,6 @@ import {
   verifySessionTokenDetailed,
   verifyMfaCode,
   createSessionToken,
-  AUTH_COOKIE,
   revokeJti,
 } from "@/lib/auth";
 import { verifyShortLived } from "@/lib/auth/jwt";
@@ -33,6 +32,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { getDEK, putDEK, deleteDEK } from "@/lib/crypto/dek-cache";
 import { decryptField } from "@/lib/crypto/envelope";
 import { issueDevice, deviceCookieOptions } from "@/lib/auth/trusted-device";
+import { commitSession } from "@/lib/auth/session-bundle";
 // Stream D Phase 4 (2026-05-03): plaintext display-name columns dropped;
 // stream-d-backfill + stream-d-phase3-null helpers deleted. FINLYNQ-198
 // (2026-06-18) retired the canonicalize login pass too.
@@ -286,13 +286,8 @@ export async function POST(request: NextRequest) {
 
     const response = NextResponse.json({ success: true });
 
-    response.cookies.set(AUTH_COOKIE, token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24, // 24 hours
-      path: "/",
-    });
+    // Use commitSession to handle multi-account logic (pf_add cookie)
+    await commitSession(request, response, { token, jti, userId: user.id });
 
     // Set pf_device cookie if device was issued
     if (issuedDevice) {

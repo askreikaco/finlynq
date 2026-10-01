@@ -39,7 +39,7 @@ import {
 import { validateBody, safeErrorMessage, logApiError } from "@/lib/validate";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { finishPasswordLogin } from "@/lib/auth/finish-login";
-import { setSessionCookie } from "@/lib/auth/cookies";
+import { commitSession } from "@/lib/auth/session-bundle";
 
 // Accept either {identifier, password} (preferred) OR {email, password}
 // (legacy clients). Both shapes normalise to an `identifier` string.
@@ -162,9 +162,9 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Full session — set the cookie and return success.
+    // Full session — use commitSession to handle multi-account logic (pf_add cookie)
     const response = NextResponse.json({ success: true });
-    setSessionCookie(response, result.token);
+    await commitSession(request, response, { token: result.token, jti: result.jti, userId: user.id });
     return response;
   } catch (error) {
     await logApiError("POST", "/api/auth/login", error);

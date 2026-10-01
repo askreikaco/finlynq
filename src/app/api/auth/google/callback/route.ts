@@ -23,6 +23,7 @@ import { verifyShortLived, signShortLived, createSessionToken } from "@/lib/auth
 import { redeemDevice, deviceCookieOptions } from "@/lib/auth/trusted-device";
 import { getUserByEmail } from "@/lib/auth/queries";
 import { issueSessionForDek } from "@/lib/auth/finish-login";
+import { commitSession } from "@/lib/auth/session-bundle";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { clientIp } from "@/lib/client-ip";
 
@@ -228,13 +229,7 @@ export async function GET(req: NextRequest) {
           const result = await issueSessionForDek(user, redeemed.dek);
           if (result.kind === "session") {
             // Set session cookie
-            response.cookies.set("pf_session", result.token, {
-              httpOnly: true,
-              secure: process.env.NODE_ENV === "production",
-              sameSite: "lax",
-              maxAge: 24 * 60 * 60, // 24h
-              path: "/",
-            });
+            await commitSession(req, response, { token: result.token, jti: result.jti, userId: user.id });
             return redirectToCloudWithNextUrl(response, next);
           } else if (result.kind === "mfa") {
             // MFA required — set unlock cookie

@@ -16,6 +16,7 @@ import { verifyShortLived, revokeJti } from "@/lib/auth/jwt";
 import { issueDevice } from "@/lib/auth/trusted-device";
 import { verifyPassword } from "@/lib/auth";
 import { finishPasswordLogin } from "@/lib/auth/finish-login";
+import { commitSession } from "@/lib/auth/session-bundle";
 import { upsertIdentity } from "@/lib/auth/queries";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { clientIp } from "@/lib/client-ip";
@@ -243,13 +244,7 @@ export async function POST(req: NextRequest) {
     const response = NextResponse.json({ ok: true });
 
     // Set session cookie
-    response.cookies.set("pf_session", loginResult.token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 24 * 60 * 60, // 24h
-      path: "/",
-    });
+    await commitSession(req, response, { token: loginResult.token, jti: loginResult.jti, userId });
 
     // Set device cookie if issued
     if (device) {
