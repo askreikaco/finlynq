@@ -1,6 +1,6 @@
 # Multi-account switcher
 
-Several accounts signed in at once in one browser, one active at a time, one-click switch. Managed (Postgres) edition only. Code: `src/lib/auth/session-bundle.ts`, `src/app/api/auth/{accounts,switch,add-intent,logout}`, `src/components/account-switcher.tsx`, `src/lib/client/{hard-reload,user-storage}.ts`.
+Several accounts signed in at once in one browser, one active at a time, one-click switch. Managed (Postgres) edition only. Code: `src/lib/auth/session-bundle.ts`, `src/app/api/auth/{accounts,switch,add-intent,logout}`, `src/components/{account-switcher,manage-accounts}.tsx`, `src/lib/client/{hard-reload,user-storage,use-account-actions,account-page,hidden-accounts}.ts`. UI: More "Account" list / desktop dropdown (visible accounts, Add, Manage) and `/manage-accounts` (per-device show/hide in localStorage `pf-hidden-accounts`, remove = switch-then-logout since logout only revokes the active account, sign out of all).
 
 ## Cookies
 
@@ -51,7 +51,7 @@ Per-user localStorage of the signed-out account(s) is cleared by the client.
 
 ## Tests
 
-- vitest (real Postgres `*_test`): `tests/auth/session-bundle-b1.test.ts`, `tests/auth/multi-device-b2.test.ts`, `tests/auth/dek-cache.test.ts`, `tests/components/account-switcher.test.tsx`, `tests/components/cloud-add-account.test.tsx`.
+- vitest (real Postgres `*_test`): `tests/auth/session-bundle-b1.test.ts`, `tests/auth/multi-device-b2.test.ts`, `tests/auth/dek-cache.test.ts`, `tests/components/account-switcher.test.tsx`, `tests/components/manage-accounts.test.tsx`, `tests/components/cloud-add-account.test.tsx`.
 - Playwright e2e: `e2e/multi-account/*.spec.ts` with `playwright.multiacct.config.ts`. Starts its own `next dev --webpack` on a free port against a `*_test` DB with throwaway secrets (never reads `.env`); can restart the server to evict all DEKs.
   ```
   DATABASE_URL=postgresql://USER:PW@127.0.0.1:55432/ma4_test node scripts/run-migrations.mjs
