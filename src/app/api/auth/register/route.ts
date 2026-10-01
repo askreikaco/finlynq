@@ -27,7 +27,7 @@ import { createWrappedDEKForPassword } from "@/lib/crypto/envelope";
 import { putDEK } from "@/lib/crypto/dek-cache";
 import { validatePasswordStrength } from "@/lib/auth/password-policy";
 import { validateUsername } from "@/lib/auth/username";
-import { setSessionCookie } from "@/lib/auth/cookies";
+import { commitSession } from "@/lib/auth/session-bundle";
 import { verifyShortLived } from "@/lib/auth/jwt";
 import { issueDevice } from "@/lib/auth/trusted-device";
 
@@ -226,7 +226,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
 
-    setSessionCookie(response, token);
+    await commitSession(request, response, { token, jti, userId: user.id });
 
     // Set device cookie if issued
     if (device) {

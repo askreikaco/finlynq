@@ -1,390 +1,491 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
- * Multi-account switcher B1 tests.
- *
- * Tests cover:
- * - Session bundle read/commit/activate/remove
- * - Cookie flags and Path attributes
- * - De-duplication on re-login
- * - Cap enforcement (5 total)
- * - Token verification (expired/revoked/session_not_before pruned)
- * - Switch atomicity
- * - Logout auto-switch to next stashed account
+ * Multi-account switcher B1 — bundle helper + routes against REAL Postgres
+ * (*_test DB; skipped otherwise). Plan §7.
  */
-
-import { describe, it, expect, beforeAll, afterEach } from "vitest";
-import { NextRequest, NextResponse } from "next/server";
+import { describe, it, expect, beforeAll, beforeEach, vi } from "vitest";
 import crypto from "crypto";
-import { eq } from "drizzle-orm";
+import fs from "fs";
+import path from "path";
+import { NextRequest, NextResponse } from "next/server";
+import { SignJWT } from "jose";
 
-process.env.PF_TRUSTED_DEVICE_DAYS = "30";
+process.env.PF_JWT_SECRET = "test-jwt-secret-for-vitest-32chars!!";
+process.env.DEPLOY_GENERATION = "0";
+
+vi.mock("@/lib/auth/jwt", async (orig) => {
+  const real = await orig<typeof import("@/lib/auth/jwt")>();
+  return { ...real, createSessionToken: vi.fn(real.createSessionToken) };
+});
 
 import { bootstrapTestDb } from "../helpers/portfolio-fixtures";
 import { db, schema as s } from "@/db";
-import { createUser } from "@/lib/auth/queries";
-import {
-  createSessionToken,
-  SESSION_TTL_MS,
-  revokeJti,
-  _clearRevokedJtiCache,
-} from "@/lib/auth/jwt";
-import {
-  readBundle,
-  commitSession,
-  activate,
-  removeAccount,
-  resolveSessionToken,
-} from "@/lib/auth/session-bundle";
-import { putDEK, evictAllForUser } from "@/lib/crypto/dek-cache";
+import { eq } from "drizzle-orm";
+import { createUser, setSessionNotBefore } from "@/lib/auth/queries";
+import { createSessionToken, signShortLived, _clearRevokedJtiCache, isJtiRevoked, SESSION_TTL_MS } from "@/lib/auth/jwt";
+import { _clearSessionCutoffCache, bustSessionCutoff } from "@/lib/auth/session-cutoff";
+import { commitSession, loadBundle } from "@/lib/auth/session-bundle";
+import { putDEK, getDEK } from "@/lib/crypto/dek-cache";
+import { requireAuth } from "@/lib/auth/require-auth";
+import * as switchRoute from "@/app/api/auth/switch/route";
+import { GET as accountsGET } from "@/app/api/auth/accounts/route";
+import { POST as addIntentPOST } from "@/app/api/auth/add-intent/route";
+import { POST as logoutPOST } from "@/app/api/auth/logout/route";
+import { GET as sessionGET } from "@/app/api/auth/session/route";
+import { middleware } from "@/middleware";
 
 const HAS_DB = /\/[^/]*_test([?#]|$)/.test(process.env.DATABASE_URL ?? process.env.PF_DATABASE_URL ?? "");
+const SECRET = new TextEncoder().encode(process.env.PF_JWT_SECRET!);
 
-async function createTestUser() {
-  const u = await createUser({
-    username: "bu" + crypto.randomUUID(),
-    passwordHash: "h",
-    kekSalt: "a",
-    dekWrapped: "b",
-    dekWrappedIv: "c",
-    dekWrappedTag: "d",
-  } as any);
-  return u.id as string;
-}
-
-/**
- * Simulate a NextRequest with cookies set.
- */
-function mockRequest(cookies: Record<string, string>): NextRequest {
-  const url = new URL("http://localhost/api/auth/test");
-  const req = new NextRequest(url);
-
-  // Manually set cookies (NextRequest.cookies is read-only, so we override via constructor)
-  // For testing, we'll use a helper that constructs cookies in the request
-  const cookieHeader = Object.entries(cookies)
-    .map(([k, v]) => `${k}=${v}`)
-    .join("; ");
-
-  return new NextRequest(url, {
-    headers: { cookie: cookieHeader },
-  });
-}
-
-/**
- * Extract cookies set on a NextResponse.
- * Parse the Set-Cookie header to extract cookie names and values.
- */
-function extractResponseCookies(res: NextResponse): Record<string, string> {
-  const cookies: Record<string, string> = {};
-  const setCookieHeader = res.headers.get("set-cookie");
-  if (!setCookieHeader) return cookies;
-
-  // Each cookie starts with name=value, followed by ; and attributes
-  // We extract up to the first semicolon or the end of string
-  const knownCookies = ["pf_session", "pf_accounts", "pf_add"];
-  for (const cookieName of knownCookies) {
-    const pattern = new RegExp(`\\b${cookieName}=([^;]*)`);
-    const match = pattern.exec(setCookieHeader);
-    if (match) {
-      cookies[cookieName] = match[1];
+// ─── tiny cookie jar honouring Path ─────────────────────────────────────────
+class Jar {
+  ip = `10.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}`;
+  m = new Map<string, { value: string; path: string }>();
+  apply(res: NextResponse) {
+    for (const c of res.cookies.getAll()) {
+      if (!c.value || c.maxAge === 0) this.m.delete(c.name);
+      else this.m.set(c.name, { value: c.value, path: c.path ?? "/" });
     }
   }
-  return cookies;
+  header(pathname: string) {
+    return [...this.m.entries()]
+      .filter(([, v]) => pathname === v.path || pathname.startsWith(v.path === "/" ? "/" : v.path + "/") || v.path === "/")
+      .map(([k, v]) => `${k}=${v.value}`)
+      .join("; ");
+  }
+  get(name: string) { return this.m.get(name)?.value; }
+  set(name: string, value: string, p = "/") { this.m.set(name, { value, path: p }); }
+  req(pathname: string, init: { method?: string; headers?: Record<string, string>; body?: unknown } = {}) {
+    const headers: Record<string, string> = { "x-forwarded-for": this.ip, ...(init.headers ?? {}) };
+    const ck = this.header(pathname);
+    if (ck) headers.cookie = ck;
+    if (init.body !== undefined) headers["content-type"] ??= "application/json";
+    return new NextRequest(new URL(pathname, "http://localhost"), {
+      method: init.method ?? "GET",
+      headers,
+      body: init.body === undefined ? undefined : JSON.stringify(init.body),
+    });
+  }
 }
 
-describe.skipIf(!HAS_DB)("session-bundle B1 (real Postgres)", () => {
-  beforeAll(async () => {
-    await bootstrapTestDb();
-  }, 30_000);
+async function mkUser(role?: string) {
+  const u = await createUser({
+    username: "mu" + crypto.randomUUID(),
+    email: `${crypto.randomUUID()}@ex.test`,
+    passwordHash: "h", kekSalt: "a", dekWrapped: "b", dekWrappedIv: "c", dekWrappedTag: "d",
+  } as any);
+  if (role) await db.update(s.users).set({ role } as any).where(eq(s.users.id, u.id));
+  return u.id as string;
+}
+async function mkSession(userId: string, opts: { dek?: boolean; pending?: boolean } = {}) {
+  const dekBuf = crypto.randomBytes(32);
+  const { token, jti } = opts.pending
+    ? await createSessionToken(userId, false, { expirationTime: "5m", pending: true })
+    : await createSessionToken(userId, true);
+  if (opts.dek !== false && !opts.pending) putDEK(jti, dekBuf, SESSION_TTL_MS, userId);
+  return { token, jti, userId, dek: dekBuf };
+}
+/** Login-commit helper: performs commitSession on a response, applies to jar. */
+async function login(jar: Jar, s: { token: string; jti: string; userId: string }) {
+  const res = NextResponse.json({ ok: true });
+  await commitSession(jar.req("/api/auth/login", { method: "POST", body: {} }), res, s);
+  jar.apply(res);
+  return res;
+}
+async function addIntent(jar: Jar) {
+  const r = await addIntentPOST(jar.req("/api/auth/add-intent", { method: "POST" }));
+  jar.apply(r as NextResponse);
+  return r;
+}
+async function activeEmailUserId(jar: Jar) {
+  const r = await sessionGET(jar.req("/api/auth/session"));
+  return (await r.json()).userId as string | null;
+}
+const post = (jar: Jar, userId: string, extra: Record<string, string> = {}) =>
+  switchRoute.POST(jar.req("/api/auth/switch", { method: "POST", body: { userId }, headers: extra }));
+const stashUsers = async (jar: Jar) => (await loadBundle(jar.req("/api/auth/accounts"))).stash.map((m) => m.userId);
 
-  afterEach(() => {
-    _clearRevokedJtiCache();
+describe.skipIf(!HAS_DB)("multi-account B1 (real Postgres)", () => {
+  beforeAll(async () => { await bootstrapTestDb(); }, 30_000);
+  beforeEach(() => { _clearRevokedJtiCache(); _clearSessionCutoffCache(); });
+
+  /** Signed in as A, then added B (B active, A stashed). */
+  async function twoAccounts() {
+    const jar = new Jar();
+    const A = await mkSession(await mkUser());
+    const B = await mkSession(await mkUser("admin"));
+    await login(jar, A);
+    expect((await addIntent(jar)).status).toBe(200);
+    await login(jar, B);
+    return { jar, A, B };
+  }
+
+  // ── bundle / commit ───────────────────────────────────────────────────────
+  it("plain login: sets pf_session (HttpOnly, Lax, Path=/), no stash; cookie flags", async () => {
+    const jar = new Jar();
+    const A = await mkSession(await mkUser());
+    const res = await login(jar, A);
+    const c = res.cookies.get("pf_session")!;
+    expect(c.httpOnly).toBe(true); expect(c.sameSite).toBe("lax"); expect(c.path).toBe("/");
+    expect(jar.get("pf_accounts")).toBeUndefined();
+    expect(await activeEmailUserId(jar)).toBe(A.userId);
   });
 
-  it("resolveSessionToken: valid token returns ok with DEK", async () => {
-    const userId = await createTestUser();
-    const dek = crypto.randomBytes(32);
-    const { token, jti } = await createSessionToken(userId, true);
-    putDEK(jti, dek, SESSION_TTL_MS, userId);
-
-    const result = await resolveSessionToken(token);
-    expect(result.userId).toBe(userId);
-    expect(result.jti).toBe(jti);
-    expect(result.dekPresent).toBe(true);
-    expect(result.status).toBe("ok");
+  it("add flow: old active -> stash (Path=/api/auth, HttpOnly), new active, pf_add cleared", async () => {
+    const { jar, A, B } = await twoAccounts();
+    expect(jar.m.get("pf_accounts")!.path).toBe("/api/auth");
+    expect(jar.get("pf_add")).toBeUndefined();
+    expect(await activeEmailUserId(jar)).toBe(B.userId);
+    expect(await stashUsers(jar)).toEqual([A.userId]);
   });
 
-  it("resolveSessionToken: token without DEK returns locked", async () => {
-    const userId = await createTestUser();
-    const { token, jti } = await createSessionToken(userId, true);
-    // No putDEK call
-
-    const result = await resolveSessionToken(token);
-    expect(result.userId).toBe(userId);
-    expect(result.jti).toBe(jti);
-    expect(result.dekPresent).toBe(false);
-    expect(result.status).toBe("locked");
+  it("forged / unbound / missing pf_add => legacy replace (old active NOT stashed)", async () => {
+    for (const mode of ["garbage", "other-jti", "wrong-purpose"]) {
+      const jar = new Jar();
+      const A = await mkSession(await mkUser());
+      await login(jar, A);
+      if (mode === "garbage") jar.set("pf_add", "x.y.z", "/api/auth");
+      if (mode === "other-jti") jar.set("pf_add", await signShortLived({ activeJti: "not-mine" }, 600, "add-account"), "/api/auth");
+      if (mode === "wrong-purpose") jar.set("pf_add", await signShortLived({ activeJti: A.jti }, 600, "google-link"), "/api/auth");
+      const B = await mkSession(await mkUser());
+      await login(jar, B);
+      expect(await stashUsers(jar), mode).toEqual([]);
+      expect(await activeEmailUserId(jar)).toBe(B.userId);
+    }
   });
 
-  it("resolveSessionToken: revoked token returns revoked", async () => {
-    const userId = await createTestUser();
-    const { token, jti } = await createSessionToken(userId, true);
-    const exp = new Date(Date.now() + 24 * 60 * 60 * 1000);
-    await revokeJti(jti, exp);
-
-    const result = await resolveSessionToken(token);
-    expect(result.status).toBe("revoked");
+  it("re-login same account REPLACES its entry (no duplicate) and revokes the old jti", async () => {
+    const { jar, A, B } = await twoAccounts(); // active B, stash [A]
+    expect((await addIntent(jar)).status).toBe(200);
+    const A2 = await mkSession(A.userId);
+    await login(jar, A2);
+    expect(await activeEmailUserId(jar)).toBe(A.userId);
+    expect(await stashUsers(jar)).toEqual([B.userId]); // A not duplicated in stash
+    expect(await isJtiRevoked(A.jti)).toBe(true);
+    // same-user re-login while that user is active also replaces
+    expect((await addIntent(jar)).status).toBe(200);
+    const A3 = await mkSession(A.userId);
+    await login(jar, A3);
+    expect(await stashUsers(jar)).toEqual([B.userId]);
+    expect(await isJtiRevoked(A2.jti)).toBe(true);
   });
 
-  it("readBundle: empty request returns active=null, stash=[]", async () => {
-    const req = mockRequest({});
-    const bundle = await readBundle(req);
-    expect(bundle.active).toBeNull();
-    expect(bundle.stash).toEqual([]);
+  it("cap: add-intent 409 at 5 accounts; commit race evicts+revokes the OLDEST (stash max 4)", async () => {
+    const jar = new Jar();
+    const s = [];
+    for (let i = 0; i < 5; i++) {
+      s.push(await mkSession(await mkUser()));
+      if (i > 0) expect((await addIntent(jar)).status).toBe(200);
+      await login(jar, s[i]);
+    }
+    expect((await loadBundle(jar.req("/api/auth/x"))).stash).toHaveLength(4);
+    const r = await addIntentPOST(jar.req("/api/auth/add-intent", { method: "POST" }));
+    expect(r.status).toBe(409);
+    expect((await r.json()).error).toBe("account_cap");
+    // forced commit past cap (race): valid pf_add minted earlier
+    jar.set("pf_add", await signShortLived({ activeJti: s[4].jti }, 600, "add-account"), "/api/auth");
+    const s6 = await mkSession(await mkUser());
+    await login(jar, s6);
+    const users = await stashUsers(jar);
+    expect(users).toHaveLength(4);
+    expect(users).not.toContain(s[0].userId);       // oldest evicted
+    expect(await isJtiRevoked(s[0].jti)).toBe(true);
+    expect(getDEK(s[0].jti, s[0].userId)).toBeNull();
   });
 
-  it("commitSession: simple login sets active cookie, clears stash", async () => {
-    const userId = await createTestUser();
-    const dek = crypto.randomBytes(32);
-    const { token, jti } = await createSessionToken(userId, true);
-    putDEK(jti, dek, SESSION_TTL_MS, userId);
-
-    const req = mockRequest({});
-    const res = NextResponse.json({ ok: true });
-    await commitSession(req, res, { token, jti, userId });
-
-    const cookies = extractResponseCookies(res);
-    expect(cookies["pf_session"]).toBe(token);
-    // Empty stash should be "" or not present
-    expect(cookies["pf_accounts"] == null || cookies["pf_accounts"] === "").toBe(true);
+  it("add-intent: unauthenticated 401; Bearer-authenticated rejected 403", async () => {
+    const r = await addIntentPOST(new Jar().req("/api/auth/add-intent", { method: "POST" }));
+    expect(r.status).toBe(401);
+    const A = await mkSession(await mkUser());
+    const r2 = await addIntentPOST(new Jar().req("/api/auth/add-intent", { method: "POST", headers: { authorization: `Bearer ${A.token}` } }));
+    expect(r2.status).toBe(403);
   });
 
-  it("commitSession with pf_add: moves old active to stash", async () => {
-    const u1 = await createTestUser();
-    const u2 = await createTestUser();
-    const dek1 = crypto.randomBytes(32);
-    const dek2 = crypto.randomBytes(32);
+  // ── switch ────────────────────────────────────────────────────────────────
+  it("switch changes the active user (session route before/after) and moves old active into stash", async () => {
+    const { jar, A, B } = await twoAccounts();
+    expect(await activeEmailUserId(jar)).toBe(B.userId);
+    const r = await post(jar, A.userId);
+    expect(r.status).toBe(200);
+    jar.apply(r as NextResponse);
+    expect(await activeEmailUserId(jar)).toBe(A.userId);
+    expect(await stashUsers(jar)).toEqual([B.userId]);
+    expect(jar.m.get("pf_session")!.path).toBe("/");
+  });
 
-    // First login
-    const { token: token1, jti: jti1 } = await createSessionToken(u1, true);
-    putDEK(jti1, dek1, SESSION_TTL_MS, u1);
+  it("switch to an account NOT in the bundle -> 404 identical to an unknown id", async () => {
+    const { jar } = await twoAccounts();
+    const other = await mkSession(await mkUser());
+    const r1 = await post(jar, other.userId);
+    const r2 = await post(jar, crypto.randomUUID());
+    expect(r1.status).toBe(404); expect(r2.status).toBe(404);
+    expect(await r1.json()).toEqual(await r2.json());
+  });
 
-    // Second login with pf_add intent
-    const { token: token2, jti: jti2 } = await createSessionToken(u2, true);
-    putDEK(jti2, dek2, SESSION_TTL_MS, u2);
+  it("switch never mints a token and never returns one; Set-Cookie only pf_session/pf_accounts", async () => {
+    const { jar, A } = await twoAccounts();
+    (createSessionToken as any).mockClear();
+    const r = await post(jar, A.userId);
+    expect(createSessionToken).not.toHaveBeenCalled();
+    const body = JSON.stringify(await r.clone().json());
+    expect(body).not.toMatch(/eyJ/);
+    expect(body).toBe('{"status":"switched"}');
+    expect(r.headers.get("cache-control")).toBe("no-store");
+    expect(new Set((r as NextResponse).cookies.getAll().map((c) => c.name))).toEqual(new Set(["pf_session", "pf_accounts"]));
+  });
 
-    // Mock request with first token active + pf_add cookie
-    const addIntentToken = "dummy-add-intent-token";
-    const req = mockRequest({
-      pf_session: token1,
-      pf_add: addIntentToken,
+  it("tampered bundle (garbage / bad signature / foreign secret / alg none) is ignored and cleared", async () => {
+    const { jar, A, B } = await twoAccounts();
+    const forged = await new SignJWT({ mfa: true, gen: "0" }).setProtectedHeader({ alg: "HS256" })
+      .setSubject(A.userId).setJti(crypto.randomUUID()).setIssuer("pf-auth").setAudience("pf-app")
+      .setIssuedAt().setExpirationTime("1h").sign(new TextEncoder().encode("a-different-secret-32-chars-minimum!!"));
+    const enc = (ts: string[]) => Buffer.from(JSON.stringify(ts.map((t) => ({ t })))).toString("base64url");
+    const goodTail = A.token.split(".")[2];
+    for (const v of ["!!!notbase64!!!", enc([forged]), enc([A.token.replace(goodTail, "AAAA" + goodTail.slice(4))]), enc(["a.b.c"]), Buffer.from("{}").toString("base64url")]) {
+      jar.set("pf_accounts", v, "/api/auth");
+      const r = await post(jar, A.userId);
+      expect(r.status).toBe(404);
+      expect(await stashUsers(jar)).toEqual([]);
+      expect(await activeEmailUserId(jar)).toBe(B.userId); // active untouched
+    }
+  });
+
+  it("dead entries pruned from the cookie: revoked, session_not_before, gen mismatch, pending, expired", async () => {
+    const jar = new Jar();
+    const act = await mkSession(await mkUser());
+    await login(jar, act);
+    const mk = async (fn: (u: string) => Promise<string>) => { const u = await mkUser(); return { u, t: await fn(u) }; };
+    const cut = await mk(async (u) => (await mkSession(u)).token);
+    const rev = await mk(async (u) => { const s = await mkSession(u); const { revokeJti } = await import("@/lib/auth/jwt"); await revokeJti(s.jti, new Date(Date.now() + 3600e3)); return s.token; });
+    const gen = await mk(async (u) => { const j = crypto.randomUUID(); putDEK(j, crypto.randomBytes(32), 1e6, u); return new SignJWT({ mfa: true, gen: "stale" }).setProtectedHeader({ alg: "HS256" }).setSubject(u).setJti(j).setIssuer("pf-auth").setAudience("pf-app").setIssuedAt().setExpirationTime("1h").sign(SECRET); });
+    const pend = await mk(async (u) => (await mkSession(u, { pending: true })).token);
+    const exp = await mk(async (u) => { const j = crypto.randomUUID(); putDEK(j, crypto.randomBytes(32), 1e6, u); return new SignJWT({ mfa: true, gen: "0" }).setProtectedHeader({ alg: "HS256" }).setSubject(u).setJti(j).setIssuer("pf-auth").setAudience("pf-app").setIssuedAt(Math.floor(Date.now() / 1000) - 7200).setExpirationTime(Math.floor(Date.now() / 1000) - 3600).sign(SECRET); });
+    const live = await mkSession(await mkUser());
+    await setSessionNotBefore(cut.u, new Date(Date.now() + 60_000)); bustSessionCutoff(cut.u);
+    const enc = Buffer.from(JSON.stringify([cut.t, rev.t, gen.t, pend.t, exp.t, live.token].map((t) => ({ t })))).toString("base64url");
+    jar.set("pf_accounts", enc, "/api/auth");
+
+    for (const target of [cut.u, rev.u, gen.u, pend.u, exp.u]) {
+      const r = await post(jar, target);
+      expect(r.status).toBe(404);
+    }
+    const r = await accountsGET(jar.req("/api/auth/accounts"));
+    jar.apply(r as NextResponse);
+    expect(await stashUsers(jar)).toEqual([live.userId]);
+    const list = await r.json();
+    expect(list.map((a: any) => a.userId).sort()).toEqual([act.userId, live.userId].sort());
+  });
+
+  it("DEK evicted for the target -> 409 needs_login, entry kept, nothing switched, no tokens in body", async () => {
+    const { jar, A, B } = await twoAccounts();
+    const { deleteDEK } = await import("@/lib/crypto/dek-cache");
+    deleteDEK(A.jti);
+    const r = await post(jar, A.userId);
+    expect(r.status).toBe(409);
+    const body = await r.json();
+    expect(body.status).toBe("needs_login");
+    expect(Object.keys(body).sort()).toEqual(["email", "googleLinked", "hasPassword", "status"]);
+    expect(JSON.stringify(body)).not.toMatch(/eyJ/);
+    jar.apply(r as NextResponse);
+    expect(await activeEmailUserId(jar)).toBe(B.userId);
+  });
+
+  it("recovery-style session_not_before on the stashed user: not switchable + pruned", async () => {
+    const { jar, A, B } = await twoAccounts();
+    await setSessionNotBefore(A.userId, new Date(Date.now() + 60_000)); bustSessionCutoff(A.userId);
+    const r = await post(jar, A.userId);
+    expect(r.status).toBe(404);
+    jar.apply(r as NextResponse);
+    expect(jar.get("pf_accounts")).toBeUndefined();
+    expect(await activeEmailUserId(jar)).toBe(B.userId);
+  });
+
+  it("switch: only POST is exported; non-JSON content-type 415; Bearer/API-key credentials 403", async () => {
+    expect(Object.keys(switchRoute).filter((k) => /^(GET|PUT|PATCH|DELETE|HEAD|OPTIONS|POST)$/.test(k))).toEqual(["POST"]);
+    const { jar, A } = await twoAccounts();
+    const r = await switchRoute.POST(jar.req("/api/auth/switch", { method: "POST", body: { userId: A.userId }, headers: { "content-type": "text/plain" } }));
+    expect(r.status).toBe(415);
+    const r2 = await post(jar, A.userId, { authorization: "Bearer x" });
+    expect([401, 403]).toContain(r2.status);
+    const r3 = await post(jar, A.userId, { "x-api-key": "pf_zzz" });
+    expect([401, 403]).toContain(r3.status);
+  });
+
+  it("switch: strict body (extra key / index rejected)", async () => {
+    const { jar, A } = await twoAccounts();
+    const r = await switchRoute.POST(jar.req("/api/auth/switch", { method: "POST", body: { userId: A.userId, index: 0 } }));
+    expect(r.status).toBe(400);
+  });
+
+  it("switch: CSRF — cross-origin POST with session cookie is 403 at middleware; same-origin passes", async () => {
+    const { jar } = await twoAccounts();
+    const evil = middleware(jar.req("/api/auth/switch", { method: "POST", body: { userId: "x" }, headers: { origin: "https://evil.example" } }));
+    expect(evil.status).toBe(403);
+    const none = middleware(jar.req("/api/auth/switch", { method: "POST", body: { userId: "x" } }));
+    expect(none.status).toBe(403);
+    const ok = middleware(jar.req("/api/auth/switch", { method: "POST", body: { userId: "x" }, headers: { origin: "http://localhost" } }));
+    expect(ok.status).not.toBe(403);
+    // same for add-intent + logout
+    for (const p of ["/api/auth/add-intent", "/api/auth/logout"]) {
+      expect(middleware(jar.req(p, { method: "POST", headers: { origin: "https://evil.example" } })).status).toBe(403);
+    }
+  });
+
+  it("switch: rate limited (429)", async () => {
+    const { jar, A } = await twoAccounts();
+    let last = 0;
+    for (let i = 0; i < 40; i++) {
+      const r = await post(jar, crypto.randomUUID());
+      last = r.status;
+      if (last === 429) break;
+    }
+    expect(last).toBe(429);
+    void A;
+  });
+
+  it("list: only {userId,email,displayName,isAdmin,active,status}; no tokens/jti anywhere; no-store", async () => {
+    const { jar, A, B } = await twoAccounts();
+    const r = await accountsGET(jar.req("/api/auth/accounts"));
+    const text = await r.text();
+    expect(text).not.toMatch(/eyJ/);
+    expect(text).not.toContain(A.jti); expect(text).not.toContain(B.jti);
+    const list = JSON.parse(text);
+    expect(list).toHaveLength(2);
+    for (const a of list) expect(Object.keys(a).sort()).toEqual(["active", "displayName", "email", "isAdmin", "status", "userId"]);
+    expect(list.find((a: any) => a.active).userId).toBe(B.userId);
+    expect(list.find((a: any) => a.active).isAdmin).toBe(true);
+    expect(r.headers.get("cache-control")).toBe("no-store");
+  });
+
+  // ── isolation ─────────────────────────────────────────────────────────────
+  it("pf_accounts alone (no pf_session) never authenticates a data route; stash not sent outside /api/auth", async () => {
+    const { jar } = await twoAccounts();
+    expect(jar.header("/api/accounts")).not.toContain("pf_accounts");
+    expect(jar.header("/api/auth/switch")).toContain("pf_accounts");
+    const only = new Jar();
+    only.set("pf_accounts", jar.get("pf_accounts")!, "/");
+    const r = await requireAuth(only.req("/api/accounts"));
+    expect(r.authenticated).toBe(false);
+  });
+
+  it("DEK of A is never served while B is active (and across a switch round-trip)", async () => {
+    const { jar, A, B } = await twoAccounts();
+    const ctxB = await requireAuth(jar.req("/api/accounts"));
+    expect(ctxB.authenticated && ctxB.context.userId).toBe(B.userId);
+    expect(ctxB.authenticated && ctxB.context.dek!.equals(B.dek)).toBe(true);
+    expect(ctxB.authenticated && ctxB.context.dek!.equals(A.dek)).toBe(false);
+    // cache is keyed (jti,userId): cross-user lookups are null in both directions
+    expect(getDEK(A.jti, B.userId)).toBeNull();
+    expect(getDEK(B.jti, A.userId)).toBeNull();
+    jar.apply((await post(jar, A.userId)) as NextResponse);
+    const ctxA = await requireAuth(jar.req("/api/accounts"));
+    expect(ctxA.authenticated && ctxA.context.dek!.equals(A.dek)).toBe(true);
+    expect(ctxA.authenticated && ctxA.context.dek!.equals(B.dek)).toBe(false);
+  });
+
+  it("a session token for user B with A's jti never resolves A's DEK (cache keyed by jti AND userId)", async () => {
+    const A = await mkSession(await mkUser());
+    const B = await mkUser();
+    const forged = await new SignJWT({ mfa: true, gen: "0" }).setProtectedHeader({ alg: "HS256" })
+      .setSubject(B).setJti(A.jti).setIssuer("pf-auth").setAudience("pf-app").setIssuedAt().setExpirationTime("1h").sign(SECRET);
+    const jar = new Jar(); jar.set("pf_session", forged);
+    const r = await requireAuth(jar.req("/api/accounts"));
+    expect(r.authenticated && r.context.dek).toBeNull();
+  });
+
+  // ── logout ────────────────────────────────────────────────────────────────
+  it("logout active -> next account becomes active; old jti revoked + DEK wiped; others valid", async () => {
+    const { jar, A, B } = await twoAccounts();
+    const r = await logoutPOST(jar.req("/api/auth/logout", { method: "POST" }));
+    expect(await r.clone().json()).toEqual({ success: true, activeUserId: A.userId });
+    jar.apply(r as NextResponse);
+    expect(await activeEmailUserId(jar)).toBe(A.userId);
+    expect(await isJtiRevoked(B.jti)).toBe(true);
+    expect(getDEK(B.jti, B.userId)).toBeNull();
+    expect(await isJtiRevoked(A.jti)).toBe(false);
+    expect(getDEK(A.jti, A.userId)).not.toBeNull();
+    expect(await stashUsers(jar)).toEqual([]);
+    expect(jar.get("pf_accounts")).toBeUndefined();
+  });
+
+  it("logout of the LAST account clears everything and revokes its jti", async () => {
+    const jar = new Jar();
+    const A = await mkSession(await mkUser());
+    await login(jar, A);
+    const r = await logoutPOST(jar.req("/api/auth/logout", { method: "POST" }));
+    expect((await r.clone().json()).activeUserId).toBeNull();
+    jar.apply(r as NextResponse);
+    expect(jar.get("pf_session")).toBeUndefined();
+    expect(jar.get("pf_accounts")).toBeUndefined();
+    expect(await isJtiRevoked(A.jti)).toBe(true);
+  });
+
+  it("logout all: every jti revoked, every DEK wiped, both cookies cleared", async () => {
+    const { jar, A, B } = await twoAccounts();
+    const C = await mkSession(await mkUser());
+    await addIntent(jar); await login(jar, C);
+    const r = await logoutPOST(jar.req("/api/auth/logout?all=1", { method: "POST" }));
+    expect((await r.clone().json()).activeUserId).toBeNull();
+    jar.apply(r as NextResponse);
+    expect(jar.m.size).toBe(0);
+    for (const s of [A, B, C]) {
+      expect(await isJtiRevoked(s.jti)).toBe(true);
+      expect(getDEK(s.jti, s.userId)).toBeNull();
+    }
+  });
+
+  it("logout active with only a DEK-less (unusable) stash left: clears everything, revokes leftovers", async () => {
+    const { jar, A } = await twoAccounts();
+    const { deleteDEK } = await import("@/lib/crypto/dek-cache");
+    deleteDEK(A.jti);
+    const r = await logoutPOST(jar.req("/api/auth/logout", { method: "POST" }));
+    expect((await r.clone().json()).activeUserId).toBeNull();
+    jar.apply(r as NextResponse);
+    expect(jar.m.size).toBe(0);
+    expect(await isJtiRevoked(A.jti)).toBe(true);
+  });
+
+  it("logout keeps pf_device by default; ?everywhere=1 clears it", async () => {
+    const { jar } = await twoAccounts();
+    const r = await logoutPOST(jar.req("/api/auth/logout", { method: "POST" }));
+    expect((r as NextResponse).cookies.get("pf_device")).toBeUndefined();
+    const { jar: j2 } = await twoAccounts();
+    const r2 = await logoutPOST(j2.req("/api/auth/logout?everywhere=1", { method: "POST" }));
+    expect((r2 as NextResponse).cookies.get("pf_device")?.maxAge).toBe(0);
+  });
+
+  // ── wiring ────────────────────────────────────────────────────────────────
+  it("zero-click guard: valid active session => no cookie set, no token minted, redirect to next", async () => {
+    const { zeroClickLogin } = await import("@/lib/auth/zero-click-login");
+    const jar = new Jar();
+    const A = await mkSession(await mkUser());
+    await login(jar, A);
+    (createSessionToken as any).mockClear();
+    const res = await zeroClickLogin(jar.req("/try-demo?next=/dashboard"), { slug: "try-demo", identifier: "x", password: "y", seedHint: "", defaultNext: "/dashboard" } as any);
+    expect(createSessionToken).not.toHaveBeenCalled();
+    expect(res.cookies.getAll()).toHaveLength(0);
+    expect(res.status).toBeGreaterThanOrEqual(300);
+    expect(res.status).toBeLessThan(400);
+  });
+
+  it("every session-cookie writer routes through commitSession; nothing else writes pf_session", () => {
+    const root = path.resolve(__dirname, "../../src");
+    const files: string[] = [];
+    const walk = (d: string) => { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); if (e.isDirectory()) walk(p); else if (/\.(ts|tsx)$/.test(e.name)) files.push(p); } };
+    walk(root);
+    const offenders = files.filter((f) => {
+      const t = fs.readFileSync(f, "utf8");
+      return !f.endsWith("session-bundle.ts") && /cookies\s*\.\s*set\(\s*(["']pf_session["']|AUTH_COOKIE)/.test(t);
     });
-
-    const res = NextResponse.json({ ok: true });
-    await commitSession(req, res, { token: token2, jti: jti2, userId: u2 });
-
-    const cookies = extractResponseCookies(res);
-    expect(cookies["pf_session"]).toBe(token2);
-    // stash should contain token1
-    expect(cookies["pf_accounts"]).toBeDefined();
-    expect(cookies["pf_add"]).toBe(""); // Cleared with maxAge 0
-  });
-
-  it("activate: promotes stashed user to active", async () => {
-    const u1 = await createTestUser();
-    const u2 = await createTestUser();
-    const dek1 = crypto.randomBytes(32);
-    const dek2 = crypto.randomBytes(32);
-
-    const { token: t1, jti: jti1 } = await createSessionToken(u1, true);
-    const { token: t2, jti: jti2 } = await createSessionToken(u2, true);
-    putDEK(jti1, dek1, SESSION_TTL_MS, u1);
-    putDEK(jti2, dek2, SESSION_TTL_MS, u2);
-
-    // Simulate state: t1 active, t2 in stash
-    const stashEncoded = Buffer.from(JSON.stringify([{ t: t2 }]), "utf-8").toString("base64url");
-    const req = mockRequest({
-      pf_session: t1,
-      pf_accounts: stashEncoded,
-    });
-
-    const res = NextResponse.json({ ok: true });
-    await activate(req, res, u2);
-
-    const cookies = extractResponseCookies(res);
-    expect(cookies["pf_session"]).toBe(t2);
-    // t1 should be in stash now (will be non-empty base64url string)
-    expect(cookies["pf_accounts"]).toBeTruthy();
-    // Verify it's valid base64url and contains t1
-    const stashDecoded = JSON.parse(Buffer.from(cookies["pf_accounts"], "base64url").toString());
-    expect(Array.isArray(stashDecoded)).toBe(true);
-    expect(stashDecoded.some((e: any) => e.t === t1)).toBe(true);
-  });
-
-  it("activate: throws if user not in stash", async () => {
-    const u1 = await createTestUser();
-    const u2 = await createTestUser();
-    const dek1 = crypto.randomBytes(32);
-    const { token: t1, jti: jti1 } = await createSessionToken(u1, true);
-    putDEK(jti1, dek1, SESSION_TTL_MS, u1);
-
-    const req = mockRequest({ pf_session: t1 });
-    const res = NextResponse.json({ ok: true });
-
-    // u2 is not in stash
-    await expect(activate(req, res, u2)).rejects.toThrow("not in stash");
-  });
-
-  it("removeAccount: removes from stash", async () => {
-    const u1 = await createTestUser();
-    const u2 = await createTestUser();
-    const dek1 = crypto.randomBytes(32);
-    const dek2 = crypto.randomBytes(32);
-
-    const { token: t1, jti: jti1 } = await createSessionToken(u1, true);
-    const { token: t2, jti: jti2 } = await createSessionToken(u2, true);
-    putDEK(jti1, dek1, SESSION_TTL_MS, u1);
-    putDEK(jti2, dek2, SESSION_TTL_MS, u2);
-
-    const stashEncoded = Buffer.from(JSON.stringify([{ t: t2 }]), "utf-8").toString("base64url");
-    const req = mockRequest({
-      pf_session: t1,
-      pf_accounts: stashEncoded,
-    });
-
-    const res = NextResponse.json({ ok: true });
-    await removeAccount(req, res, u2);
-
-    const setCookieHeader = res.headers.get("set-cookie") || "";
-    // pf_accounts should be cleared (MaxAge=0)
-    expect(setCookieHeader).toContain("pf_accounts=");
-    expect(setCookieHeader).toContain("Max-Age=0");
-  });
-
-  it("removeAccount: on active removal, promotes next from stash", async () => {
-    const u1 = await createTestUser();
-    const u2 = await createTestUser();
-    const dek1 = crypto.randomBytes(32);
-    const dek2 = crypto.randomBytes(32);
-
-    const { token: t1, jti: jti1 } = await createSessionToken(u1, true);
-    const { token: t2, jti: jti2 } = await createSessionToken(u2, true);
-    putDEK(jti1, dek1, SESSION_TTL_MS, u1);
-    putDEK(jti2, dek2, SESSION_TTL_MS, u2);
-
-    const stashEncoded = Buffer.from(JSON.stringify([{ t: t2 }]), "utf-8").toString("base64url");
-    const req = mockRequest({
-      pf_session: t1,
-      pf_accounts: stashEncoded,
-    });
-
-    const res = NextResponse.json({ ok: true });
-    await removeAccount(req, res, u1); // Remove active user
-
-    const cookies = extractResponseCookies(res);
-    expect(cookies["pf_session"]).toBe(t2); // t2 promoted
-    expect(cookies["pf_accounts"] == null || cookies["pf_accounts"] === "").toBe(true); // Stash empty
-  });
-
-  it("cookie flags: pf_session is httpOnly, SameSite=Lax, Path=/", async () => {
-    const userId = await createTestUser();
-    const { token, jti } = await createSessionToken(userId, true);
-    const dek = crypto.randomBytes(32);
-    putDEK(jti, dek, SESSION_TTL_MS, userId);
-
-    const req = mockRequest({});
-    const res = NextResponse.json({ ok: true });
-    await commitSession(req, res, { token, jti, userId });
-
-    const setCookieHeader = res.headers.get("set-cookie") || "";
-    expect(setCookieHeader.toLowerCase()).toContain("httponly");
-    expect(setCookieHeader.toLowerCase()).toContain("samesite=lax");
-    expect(setCookieHeader).toContain("Path=/");
-  });
-
-  it("cookie flags: pf_accounts is httpOnly, SameSite=Lax, Path=/api/auth", async () => {
-    const u1 = await createTestUser();
-    const u2 = await createTestUser();
-    const dek2 = crypto.randomBytes(32);
-
-    const { token: t1, jti: jti1 } = await createSessionToken(u1, true);
-    const { token: t2, jti: jti2 } = await createSessionToken(u2, true);
-    putDEK(jti1, crypto.randomBytes(32), SESSION_TTL_MS, u1);
-    putDEK(jti2, dek2, SESSION_TTL_MS, u2);
-
-    const addIntentToken = "dummy";
-    const req = mockRequest({
-      pf_session: t1,
-      pf_add: addIntentToken,
-    });
-
-    const res = NextResponse.json({ ok: true });
-    await commitSession(req, res, { token: t2, jti: jti2, userId: u2 });
-
-    const setCookieHeader = res.headers.get("set-cookie") || "";
-    expect(setCookieHeader.toLowerCase()).toContain("httponly");
-    expect(setCookieHeader.toLowerCase()).toContain("samesite=lax");
-    expect(setCookieHeader).toContain("Path=/api/auth");
-  });
-
-  it("cap enforcement: 5 total accounts (1 active + 4 stash)", async () => {
-    // This test would require creating 5 users and testing cap enforcement
-    // For brevity, we test the add-intent route logic instead
-    const u1 = await createTestUser();
-    const dek1 = crypto.randomBytes(32);
-    const { token: t1, jti: jti1 } = await createSessionToken(u1, true);
-    putDEK(jti1, dek1, SESSION_TTL_MS, u1);
-
-    const req = mockRequest({ pf_session: t1 });
-    const bundle = await readBundle(req);
-    expect(bundle.active?.userId).toBe(u1);
-    expect(bundle.stash.length).toBe(0);
-    expect(bundle.active ? 1 : 0 + bundle.stash.length).toBeLessThanOrEqual(5);
-  });
-
-  it("de-duplication: re-login same user replaces stashed entry", async () => {
-    const userId = await createTestUser();
-    const otherUserId = await createTestUser();
-    const dek1 = crypto.randomBytes(32);
-    const dek2 = crypto.randomBytes(32);
-    const dek3 = crypto.randomBytes(32);
-
-    // First login as userId (active)
-    const { token: t1, jti: jti1 } = await createSessionToken(userId, true);
-    putDEK(jti1, dek1, SESSION_TTL_MS, userId);
-
-    const req1 = mockRequest({});
-    const res1 = NextResponse.json({ ok: true });
-    await commitSession(req1, res1, { token: t1, jti: jti1, userId });
-    const cookies1 = extractResponseCookies(res1);
-
-    // Login as another user with pf_add
-    const { token: t2, jti: jti2 } = await createSessionToken(otherUserId, true);
-    putDEK(jti2, dek2, SESSION_TTL_MS, otherUserId);
-
-    const addIntentToken = "dummy";
-    const req2 = mockRequest({
-      pf_session: cookies1["pf_session"],
-      pf_add: addIntentToken,
-    });
-    const res2 = NextResponse.json({ ok: true });
-    await commitSession(req2, res2, { token: t2, jti: jti2, userId: otherUserId });
-    const cookies2 = extractResponseCookies(res2);
-
-    // Now re-login as userId (who is now in stash) with pf_add
-    // This should remove userId from stash and replace it with the new token
-    const { token: t3, jti: jti3 } = await createSessionToken(userId, true);
-    putDEK(jti3, dek3, SESSION_TTL_MS, userId);
-
-    const req3 = mockRequest({
-      pf_session: cookies2["pf_session"],
-      pf_add: addIntentToken,
-    });
-    const res3 = NextResponse.json({ ok: true });
-    await commitSession(req3, res3, { token: t3, jti: jti3, userId });
-    const cookies3 = extractResponseCookies(res3);
-
-    const bundle = await readBundle(mockRequest({ pf_session: cookies3["pf_session"], pf_accounts: cookies3["pf_accounts"] || "" }));
-    // userId should appear exactly once (in stash as the new token)
-    const userIdEntries = (bundle.active?.userId === userId ? 1 : 0) + bundle.stash.filter((e) => e.userId === userId).length;
-    expect(userIdEntries).toBe(1);
+    expect(offenders).toEqual([]);
+    for (const rel of [
+      "app/api/auth/login/route.ts", "app/api/auth/mfa/verify/route.ts", "app/api/auth/register/route.ts",
+      "app/api/auth/google/callback/route.ts", "app/api/auth/google/unlock/route.ts", "lib/auth/zero-click-login.ts",
+    ]) {
+      expect(fs.readFileSync(path.join(root, rel), "utf8"), rel).toMatch(/commitSession\(/);
+    }
+    // finalizeRecoveryReset has no cookie-writing caller yet; when one is added it must commitSession.
+    const callers = files.filter((f) => !f.endsWith("recovery.ts") && /finalizeRecoveryReset\(/.test(fs.readFileSync(f, "utf8")));
+    expect(callers).toEqual([]);
   });
 });

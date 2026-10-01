@@ -1,25 +1,24 @@
 /**
- * POST /api/auth/switch — Switch to a stashed account.
+ * POST /api/auth/switch — Switch the active account to a stashed one.
  *
- * Requires session-only auth (method==="account", not pending).
- * Body: {userId} (Zod strict)
+ * POST only (other methods 405 by the framework). Session-cookie auth only
+ * (no Bearer / API key). Middleware Origin/Referer CSRF check applies (route
+ * is NOT in CSRF_BYPASS_PATHS); Content-Type must be JSON.
+ * Body: {userId} strict.
  *
- * Pre-condition: target must be in stash, verified, and have DEK cached.
- * - If not in stash: 404 (same error as unknown user for OPSEC)
- * - If expired/revoked/gen-mismatch/session_not_before/DEK-evicted: 409 + needs_login
- * - If pending: 404 (unreachable — pending can't be in stash, only active during MFA)
- *
- * On success: atomically swap active ↔ stash, return {status:"switched"}
- * Client hard-reloads to /dashboard or /cloud.
- *
- * CSRF: middleware Origin/Referer check applies (rides pf_session).
- * Rate limit: 30 per 60s per active user, 60 per minute per IP.
+ * The target token is RE-VERIFIED on every switch (signature, deploy-gen,
+ * revocation denylist, session_not_before cutoff, exp) and its DEK must still
+ * be cached. This route never mints a token and never returns one.
+ *   not in bundle / unknown -> 404 (identical body)
+ *   dead (expired/revoked/cutoff) -> pruned, then 404 (same as unknown)
+ *   DEK evicted -> 409 needs_login
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAuth } from "@/lib/auth/require-auth";
-import { readBundle, activate } from "@/lib/auth/session-bundle";
+import { activate, applySwitch, hasNonCookieCredential, writeStash } from "@/lib/auth/session-bundle";
+import { getUserById, listIdentities } from "@/lib/auth/queries";
 import { validateBody, safeErrorMessage, logApiError } from "@/lib/validate";
 import { checkRateLimit } from "@/lib/rate-limit";
 
@@ -29,111 +28,81 @@ const switchSchema = z
   })
   .strict();
 
+const NOT_FOUND = { error: "Account not found or not available" };
+
 export async function POST(request: NextRequest) {
-  // Require session-only auth (method==="account", not pending)
   const authResult = await requireAuth(request);
-  if (!authResult.authenticated) {
-    return authResult.response;
-  }
-
-  // Only allow account strategy (session cookies), not API keys
+  if (!authResult.authenticated) return authResult.response;
   const auth = authResult.context;
-  if (auth?.method !== "account") {
-    return NextResponse.json(
-      { error: "Session authentication required" },
-      { status: 403 }
-    );
+  if (auth.method !== "account" || hasNonCookieCredential(request)) {
+    return NextResponse.json({ error: "Session authentication required" }, { status: 403 });
   }
-  // Note: AccountStrategy already rejects pending tokens before returning to us
 
-  // Rate limit: per active user
+  const ctype = request.headers.get("content-type") ?? "";
+  if (!ctype.toLowerCase().startsWith("application/json")) {
+    return NextResponse.json({ error: "Content-Type must be application/json" }, { status: 415 });
+  }
+
   const userLimit = checkRateLimit(`switch:${auth.userId}`, 30, 60_000);
   if (!userLimit.allowed) {
     return NextResponse.json(
       { error: "Too many switch attempts. Please try again later." },
-      {
-        status: 429,
-        headers: {
-          "Retry-After": String(Math.ceil((userLimit.resetAt - Date.now()) / 1000)),
-        },
-      }
+      { status: 429, headers: { "Retry-After": String(Math.ceil((userLimit.resetAt - Date.now()) / 1000)) } },
     );
   }
-
-  // Rate limit: per IP
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
   const ipLimit = checkRateLimit(`switch:ip:${ip}`, 60, 60_000);
   if (!ipLimit.allowed) {
     return NextResponse.json(
       { error: "Too many switch attempts from this IP. Please try again later." },
-      {
-        status: 429,
-        headers: {
-          "Retry-After": String(Math.ceil((ipLimit.resetAt - Date.now()) / 1000)),
-        },
-      }
+      { status: 429, headers: { "Retry-After": String(Math.ceil((ipLimit.resetAt - Date.now()) / 1000)) } },
     );
   }
 
   try {
-    const body = await request.json();
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    }
     const parsed = validateBody(body, switchSchema);
     if (parsed.error) return parsed.error;
+    const targetUserId = parsed.data.userId;
 
-    const { userId: targetUserId } = parsed.data;
+    const noStore = { "Cache-Control": "no-store" };
+    const outcome = await activate(request, targetUserId);
 
-    // Read bundle to check if target is in stash
-    const { active: _active, stash } = await readBundle(request);
-
-    const targetEntry = stash.find((e) => e.userId === targetUserId);
-    if (!targetEntry) {
-      // Not found in stash. Return 404 with same body as unknown user (OPSEC).
-      // If activeUser is in stash somehow, fail closed.
-      return NextResponse.json(
-        { error: "Account not found or not available" },
-        { status: 404 }
-      );
+    if (outcome.result === "not_found") {
+      const nf = NextResponse.json(NOT_FOUND, { status: 404, headers: noStore });
+      if (outcome.stash) writeStash(nf, outcome.stash);
+      return nf;
     }
-
-    // Verify the target token is still valid (not pending, not expired, etc.)
-    // If DEK is missing (status=locked), treat as needs_login (2h idle eviction).
-    if (targetEntry.status !== "ok" && targetEntry.status !== "locked") {
-      // expired/revoked/pending/gen-mismatch
-      // Prune it and return needs_login
-      return NextResponse.json(
+    if (outcome.result === "needs_login") {
+      const user = await getUserById(targetUserId).catch(() => null);
+      let googleLinked = false;
+      try {
+        googleLinked = (await listIdentities(targetUserId)).some((i) => i.provider === "google");
+      } catch {
+        /* advisory only */
+      }
+      const nl = NextResponse.json(
         {
           status: "needs_login",
-          email: targetEntry.email,
-          hasPassword: true, // Assume true for now; could query DB for exact state
-          googleLinked: false, // Would need to query DB
+          email: user?.email ?? null,
+          hasPassword: Boolean(user?.passwordHash),
+          googleLinked,
         },
-        { status: 409 }
+        { status: 409, headers: noStore },
       );
+      if (outcome.stash) writeStash(nl, outcome.stash);
+      return nl;
     }
-
-    // If status=locked, the DEK is missing — same as needs_login (2h idle eviction)
-    if (targetEntry.status === "locked") {
-      return NextResponse.json(
-        {
-          status: "needs_login",
-          email: targetEntry.email,
-          hasPassword: true,
-          googleLinked: false,
-        },
-        { status: 409 }
-      );
-    }
-
-    // Status is "ok" — DEK is cached. Perform the switch.
-    const response = NextResponse.json({ status: "switched" });
-    await activate(request, response, targetUserId);
-
+    const response = NextResponse.json({ status: "switched" }, { headers: noStore });
+    applySwitch(response, outcome);
     return response;
   } catch (error) {
     await logApiError("POST", "/api/auth/switch", error);
-    return NextResponse.json(
-      { error: safeErrorMessage(error, "Switch failed") },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: safeErrorMessage(error, "Switch failed") }, { status: 500 });
   }
 }

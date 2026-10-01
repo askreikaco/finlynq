@@ -21,7 +21,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { getDialect } from "@/db";
-import { AUTH_COOKIE, verifyPassword, verifyMfaCode } from "@/lib/auth";
+import { verifyPassword, verifyMfaCode } from "@/lib/auth";
+import { dropActiveAndPromote } from "@/lib/auth/session-bundle";
 import { requireAuth } from "@/lib/auth/require-auth";
 import { getUserById, deleteUserAccount } from "@/lib/auth/queries";
 import { decryptField } from "@/lib/crypto/envelope";
@@ -172,13 +173,9 @@ export async function POST(request: NextRequest) {
       success: true,
       message: "Account deleted.",
     });
-    response.cookies.set(AUTH_COOKIE, "", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 0,
-      path: "/",
-    });
+    // Multi-account: drop only this (deleted) account from the browser bundle
+    // and promote the next signed-in one; clears pf_session when none remain.
+    await dropActiveAndPromote(request, response);
     return response;
   } catch (error) {
     return NextResponse.json(

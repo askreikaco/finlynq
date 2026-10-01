@@ -1,63 +1,29 @@
 /**
- * GET /api/auth/accounts — List active and stashed accounts.
+ * GET /api/auth/accounts — List the browser's signed-in accounts.
  *
- * Returns [{userId, email, displayName, isAdmin, active, status}] from the bundle.
- * Requires session-only auth (method==="account"). Tokens/JTI are never returned.
- * Stashed entries with status "locked" (DEK evicted) are included.
- * No cache headers (fresh on every request).
+ * Session-cookie auth only. Returns [{userId,email,displayName,isAdmin,active,status}]
+ * with identity from the DB. NEVER returns tokens, jtis or any credential
+ * material. Dead/tampered stash entries are pruned from the cookie.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth/require-auth";
-import { readBundle } from "@/lib/auth/session-bundle";
+import { hasNonCookieCredential, listAccounts, writeStash } from "@/lib/auth/session-bundle";
 
 export async function GET(request: NextRequest) {
-  // Require session-only auth (no API keys, no Bearer tokens)
   const authResult = await requireAuth(request);
-  if (!authResult.authenticated) {
-    return authResult.response;
-  }
-
-  // Only allow account strategy (session cookies), not API keys
-  if (authResult.context?.method !== "account") {
-    return NextResponse.json(
-      { error: "Session authentication required" },
-      { status: 403 }
-    );
+  if (!authResult.authenticated) return authResult.response;
+  if (authResult.context.method !== "account" || hasNonCookieCredential(request)) {
+    return NextResponse.json({ error: "Session authentication required" }, { status: 403 });
   }
 
   try {
-    const { active, stash } = await readBundle(request);
-
-    const accounts = [];
-    if (active) {
-      accounts.push({
-        userId: active.userId,
-        email: active.email,
-        displayName: active.displayName,
-        isAdmin: active.isAdmin,
-        active: true,
-        status: active.status,
-      });
-    }
-
-    for (const entry of stash) {
-      accounts.push({
-        userId: entry.userId,
-        email: entry.email,
-        displayName: entry.displayName,
-        isAdmin: entry.isAdmin,
-        active: false,
-        status: entry.status,
-      });
-    }
-
-    return NextResponse.json(accounts);
+    const { accounts, bundle } = await listAccounts(request);
+    const response = NextResponse.json(accounts, { headers: { "Cache-Control": "no-store" } });
+    if (bundle.pruned) writeStash(response, bundle.stash.map((m) => m.token));
+    return response;
   } catch (error) {
-    console.error("[/api/auth/accounts]", error);
-    return NextResponse.json(
-      { error: "Failed to fetch accounts" },
-      { status: 500 }
-    );
+    console.error("[/api/auth/accounts]", error instanceof Error ? error.message : "error");
+    return NextResponse.json({ error: "Failed to fetch accounts" }, { status: 500 });
   }
 }
