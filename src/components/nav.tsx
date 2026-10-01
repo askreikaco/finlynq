@@ -297,18 +297,6 @@ export function Nav() {
       <div className="px-2 pb-3 pt-2 border-t border-sidebar-border/50 space-y-0.5">
         {toolLinks.filter((item) => (devMode || item.mode !== "dev") && (!item.href.startsWith("/admin") || isAdmin)).map((item) => renderLink(item, !collapsed))}
         <button
-          onClick={() => setFeedbackOpen(true)}
-          title={collapsed ? "Send feedback" : undefined}
-          className={cn(
-            "group/link relative flex items-center gap-3 rounded-lg text-[13px] font-medium transition-all duration-200 w-full",
-            collapsed ? "px-0 py-2 justify-center" : "px-3 py-2",
-            "text-sidebar-foreground/50 hover:bg-white/[0.05] hover:text-sidebar-foreground"
-          )}
-        >
-          <MessageCircle className="h-[18px] w-[18px] shrink-0 text-sidebar-foreground/40 group-hover/link:text-sidebar-foreground/70 group-hover/link:scale-110 transition-all duration-200" />
-          {!collapsed && <span className="truncate">Send feedback</span>}
-        </button>
-        <button
           onClick={handleSignOut}
           title={collapsed ? "Sign out" : undefined}
           className={cn(
@@ -385,13 +373,6 @@ export function Nav() {
           .filter((item) => devMode || item.mode !== "dev")
           .filter((item) => !item.href.startsWith("/admin") || isAdmin)
           .map((item) => renderLink(item, true))}
-        <button
-          onClick={() => { setMobileOpen(false); setFeedbackOpen(true); }}
-          className="group/link relative flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium text-sidebar-foreground/50 hover:bg-white/[0.05] hover:text-sidebar-foreground transition-all duration-200 w-full"
-        >
-          <MessageCircle className="h-[18px] w-[18px] shrink-0 text-sidebar-foreground/40 group-hover/link:text-sidebar-foreground/70 transition-all duration-200" />
-          <span className="truncate">Send feedback</span>
-        </button>
         <button
           onClick={() => { setMobileOpen(false); handleSignOut(); }}
           className="group/link relative flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium text-sidebar-foreground/50 hover:bg-white/[0.05] hover:text-sidebar-foreground transition-all duration-200 w-full"
