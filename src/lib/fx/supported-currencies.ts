@@ -10,7 +10,7 @@
 export const SUPPORTED_FIAT_CURRENCIES = [
   "USD", "CAD", "EUR", "GBP", "JPY", "AUD", "CHF", "NZD", "CNY", "HKD", "SGD",
   "SEK", "NOK", "DKK", "PLN", "CZK", "HUF", "RON", "TRY", "ILS", "ZAR",
-  "INR", "KRW", "THB", "IDR", "MYR", "PHP", "MXN", "BRL", "ARS", "COP", "CLP",
+  "INR", "KRW", "THB", "IDR", "MYR", "PHP", "MXN", "BRL", "ARS", "COP", "CLP", "VND",
 ] as const;
 
 export const SUPPORTED_CRYPTO_CURRENCIES = ["BTC", "ETH", "USDC", "USDT"] as const;
@@ -64,7 +64,7 @@ export const ADDITIONAL_REPORTABLE_CURRENCIES = [
   "NIO", "NPR", "OMR", "PAB", "PEN", "PGK", "PKR", "PYG", "QAR", "RSD",
   "RUB", "RWF", "SAR", "SBD", "SCR", "SDG", "SLE", "SOS", "SRD", "STN",
   "SVC", "SYP", "SZL", "TJS", "TMT", "TND", "TOP", "TTD", "TWD", "TZS",
-  "UAH", "UGX", "UYU", "UZS", "VES", "VND", "VUV", "WST", "XAF", "XCD",
+  "UAH", "UGX", "UYU", "UZS", "VES", "VUV", "WST", "XAF", "XCD",
   "XOF", "XPF", "YER", "ZMW",
 ] as const;
 
