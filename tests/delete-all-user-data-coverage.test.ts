@@ -62,6 +62,10 @@ const EXEMPT: Record<string, string> = {
   user_recovery_codes:
     "REIKA auth — recovery codes survive wipe. User can use existing codes to unlock " +
     "their account after a wipe (before new codes are generated).",
+  user_security_events:
+    "REIKA auth audit log — survives wipe/delete (account recovery audit trail). " +
+    "Security events are maintainer-owned records of authentication events, password " +
+    "changes, and recovery attempts. They survive account operations for forensics.",
 };
 
 type Column = {
