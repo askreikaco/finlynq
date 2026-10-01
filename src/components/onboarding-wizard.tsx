@@ -271,7 +271,7 @@ export function OnboardingWizard({
   }, [step]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm" role="presentation">
+    <div className="fixed inset-0 z-50 flex items-center justify-center pt-safe px-safe bg-background/80 backdrop-blur-sm" role="presentation">
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}

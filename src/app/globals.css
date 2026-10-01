@@ -129,6 +129,13 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* iOS standalone PWA (viewport-fit=cover + black-translucent status bar):
+       the page draws under the notch/status bar/home indicator sides. Reserve
+       the insets once here so every full-page surface (auth, public, shell)
+       is shifted clear. All insets resolve to 0 on desktop and in browsers. */
+    padding-top: var(--sat);
+    padding-left: var(--sal);
+    padding-right: var(--sar);
   }
   html {
     @apply font-sans scroll-smooth;
@@ -483,4 +490,46 @@ html {
 }
 .dark ::selection {
   background: oklch(0.65 0.20 265 / 25%);
+}
+
+/* ── Safe-area insets (iOS home-screen PWA) ───────────────────────────────
+   Single source of truth. Use var(--sat) / var(--sab) / var(--sal) / var(--sar)
+   or the utilities below instead of raw env(...). */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+}
+
+/* Body already carries the top padding, so full-height roots subtract it to
+   avoid a phantom scroll. Unlayered on purpose (beats the utilities layer). */
+.min-h-screen {
+  min-height: calc(100vh - var(--sat));
+}
+
+/* Fixed status-bar backdrop: opaque strip behind the clock so scrolled
+   content never shows through the translucent status bar. Rendered once in
+   the root layout. Below dialogs/drawers (z-40/50), above page content. */
+.safe-top-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--sat);
+  z-index: 30;
+  pointer-events: none;
+  background: var(--background);
+}
+
+/* For fixed/sticky elements anchored to the top edge. */
+@utility top-safe {
+  top: var(--sat);
+}
+@utility pt-safe {
+  padding-top: var(--sat);
+}
+@utility px-safe {
+  padding-left: var(--sal);
+  padding-right: var(--sar);
 }

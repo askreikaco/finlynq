@@ -698,7 +698,7 @@ export function UploadDrawer({
         className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
         onClick={() => onOpenChange(false)}
       />
-      <div className="fixed right-0 top-0 z-50 h-full w-full max-w-md border-l bg-background shadow-2xl flex flex-col">
+      <div className="fixed right-0 top-0 z-50 h-full w-full max-w-md pt-safe pr-[var(--sar)] pb-[var(--sab)] border-l bg-background shadow-2xl flex flex-col">
         <div className="flex items-center justify-between border-b px-5 py-4">
           <div>
             <h2 className="text-base font-semibold">Upload to {accountLabel}</h2>
