@@ -37,6 +37,7 @@ import { cn } from "@/lib/utils";
 import { adminLinks } from "@/components/nav";
 import { AccountSwitcher } from "@/components/account-switcher";
 import { hardReload, clearPerUserStorage } from "@/lib/client/hard-reload";
+import { setPasskeyAutoSkip } from "@/lib/client/passkey-auto";
 
 export type MoreRow = { href: string; label: string; icon: LucideIcon; id: string };
 export type MoreGroup = { id: string; header?: string; rows: MoreRow[] };
@@ -219,6 +220,7 @@ export function MoreMenu() {
       }
       const data = await res.json().catch(() => ({}));
       if (activeId) clearPerUserStorage(activeId);
+      setPasskeyAutoSkip();
       hardReload(res.ok && data?.activeUserId ? "/dashboard" : "/");
     } catch {
       busy.current = false;

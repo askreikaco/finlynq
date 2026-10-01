@@ -32,6 +32,7 @@ let replies: Record<string, { status?: number; body?: unknown }>;
 beforeEach(() => {
   cleanup();
   localStorage.clear();
+  sessionStorage.clear();
   hardReload.mockClear();
   calls = [];
   replies = { "GET /api/auth/accounts": { body: list } };
@@ -127,6 +128,8 @@ describe("ManageAccounts", () => {
     await user.click(await screen.findByRole("button", { name: /^sign out of all$/i }));
     await waitFor(() => expect(hardReload).toHaveBeenCalledWith("/"));
     expect(to("POST", "/api/auth/logout?all=1")).toHaveLength(1);
+    // Signing out must not bounce straight back in via the auto passkey prompt.
+    expect(sessionStorage.getItem("pf-passkey-auto-skip")).toBe("1");
   });
 
   it("Add another account uses the add-intent flow", async () => {

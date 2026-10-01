@@ -60,6 +60,7 @@ beforeEach(() => {
   params = new URLSearchParams();
   calls = [];
   localStorage.clear();
+  sessionStorage.clear();
   handlers = { "/api/auth/config": () => ({ body: { googleEnabled: false } }) };
   push.mockClear(); replace.mockClear(); refresh.mockClear(); hardReload.mockClear();
   startAuthentication.mockReset();
@@ -125,7 +126,9 @@ describe("/cloud: Sign in with a passkey", () => {
     await user.click(await screen.findByRole("button", { name: /sign in with a passkey/i }));
     expect((await screen.findByRole("alert")).textContent).toMatch(/enter your password to continue/i);
     expect(hardReload).not.toHaveBeenCalled();
-    expect(document.activeElement).toBe(document.getElementById("password"));
+    // prf_unavailable falls back to the email flow (identifier step, focused)
+    expect(await screen.findByLabelText("Email or username")).toHaveFocus();
+    expect(sessionStorage.getItem("pf-passkey-auto-skip")).toBe("1");
   });
 
   it("cancelled prompt is silent: no error, no reload", async () => {
@@ -167,15 +170,23 @@ describe("/cloud: shared computer", () => {
   });
 
   it("checked -> password login sends trustDevice:false; unchecked leaves the body unchanged", async () => {
+    const user = userEvent.setup();
+    handlers["/api/auth/identify"] = () => ({ body: { exists: true } });
     handlers["/api/auth/login"] = () => ({ body: { ok: true } });
-    const fill = () => {
-      fireEvent.change(document.getElementById("identifier")!, { target: { value: "bob" } });
-      fireEvent.change(document.getElementById("password")!, { target: { value: "secret-pass" } });
-    };
     render(<CloudAuthPage />);
-    fill();
-    fireEvent.click(screen.getByLabelText(/this is a shared computer/i));
-    fireEvent.submit(document.getElementById("password")!.closest("form")!);
+    // Navigate to email flow
+    await user.click(screen.getByText("Use email instead"));
+    // Enter identifier and continue
+    const identifierInput = await screen.findByLabelText("Email or username");
+    await user.type(identifierInput, "bob");
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    // Enter password
+    const passwordInput = await screen.findByPlaceholderText("Password");
+    await user.type(passwordInput, "secret-pass");
+    // Check shared computer and submit
+    const sharedCheckbox = screen.getByLabelText(/this is a shared computer/i);
+    await user.click(sharedCheckbox);
+    await user.click(screen.getByRole("button", { name: "Sign in" }));
     await waitFor(() => expect(bodiesOf("/api/auth/login")).toHaveLength(1));
     expect(lastBody("/api/auth/login")).toEqual({ identifier: "bob", password: "secret-pass", trustDevice: false });
   });
@@ -183,11 +194,20 @@ describe("/cloud: shared computer", () => {
 
 describe("/cloud: 2FA step", () => {
   async function toMfaStep(token = "pend-1") {
+    handlers["/api/auth/identify"] = () => ({ body: { exists: true } });
     handlers["/api/auth/login"] = () => ({ body: { mfaRequired: true, mfaPendingToken: token } });
     render(<CloudAuthPage />);
-    fireEvent.change(document.getElementById("identifier")!, { target: { value: "bob" } });
-    fireEvent.change(document.getElementById("password")!, { target: { value: "secret-pass" } });
-    fireEvent.submit(document.getElementById("password")!.closest("form")!);
+    // Navigate to email flow
+    fireEvent.click(screen.getByText("Use email instead"));
+    // Enter identifier and continue
+    const identifierInput = await screen.findByLabelText("Email or username");
+    fireEvent.change(identifierInput, { target: { value: "bob" } });
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    // Enter password and sign in
+    const passwordInput = await screen.findByPlaceholderText("Password");
+    fireEvent.change(passwordInput, { target: { value: "secret-pass" } });
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+    // Wait for MFA step
     await screen.findByLabelText("Authentication code");
   }
 

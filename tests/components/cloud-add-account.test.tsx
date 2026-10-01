@@ -28,6 +28,8 @@ const ACTIVE = [
 ];
 
 beforeEach(() => {
+  localStorage.clear();
+  sessionStorage.clear();
   params = new URLSearchParams();
   push.mockClear();
   replace.mockClear();
@@ -52,11 +54,16 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+// Identifier-first: open the email flow, identify (exists), then sign in.
 async function signIn() {
-  const id = await screen.findByPlaceholderText(/username or/i);
+  handlers["/api/auth/identify"] = () => ({ body: { exists: true } });
+  fireEvent.click(await screen.findByText("Use email instead"));
+  const id = await screen.findByPlaceholderText(/email or username/i);
   fireEvent.change(id, { target: { value: "bob" } });
-  fireEvent.change(document.querySelector('input[type="password"]')!, { target: { value: "pw12345678" } });
-  fireEvent.submit(id.closest("form")!);
+  fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+  const pw = await screen.findByPlaceholderText("Password");
+  fireEvent.change(pw, { target: { value: "pw12345678" } });
+  fireEvent.submit(pw.closest("form")!);
 }
 
 describe("/cloud?add=1", () => {
@@ -92,7 +99,7 @@ describe("/cloud?add=1", () => {
 
   it("no banner without ?add=1 (and no accounts request)", async () => {
     render(<CloudAuthPage />);
-    await screen.findByPlaceholderText(/username or/i);
+    await screen.findByText("Use email instead");
     await new Promise((r) => setTimeout(r, 20));
     expect(screen.queryByText(/Adding another account/)).toBeNull();
     expect(vi.mocked(fetch).mock.calls.some((c) => c[0] === "/api/auth/accounts")).toBe(false);
@@ -101,7 +108,7 @@ describe("/cloud?add=1", () => {
   it("no banner for ?add=0", async () => {
     params = new URLSearchParams("add=0");
     render(<CloudAuthPage />);
-    await screen.findByPlaceholderText(/username or/i);
+    await screen.findByText("Use email instead");
     await new Promise((r) => setTimeout(r, 20));
     expect(screen.queryByText(/Adding another account/)).toBeNull();
   });
@@ -110,22 +117,46 @@ describe("/cloud?add=1", () => {
     params = new URLSearchParams("add=1");
     handlers["/api/auth/accounts"] = () => ({ status: 401, body: {} });
     render(<CloudAuthPage />);
-    await screen.findByPlaceholderText(/username or/i);
+    await screen.findByText("Use email instead");
     await new Promise((r) => setTimeout(r, 20));
     expect(screen.queryByText(/Adding another account/)).toBeNull();
+  });
+
+  it("add flow never auto-starts a passkey even with the hint set", async () => {
+    localStorage.setItem("pf-passkey-hint", "1");
+    vi.stubGlobal("PublicKeyCredential", function PublicKeyCredential() {});
+    params = new URLSearchParams("add=1");
+    render(<CloudAuthPage />);
+    await screen.findByText(/stay signed in as/);
+    await new Promise((r) => setTimeout(r, 30));
+    expect(vi.mocked(fetch).mock.calls.some((c) => String(c[0]).includes("passkey"))).toBe(false);
+    expect(hardReload).not.toHaveBeenCalled();
+  });
+
+  it("add flow: login body is unchanged and the redirect is honoured", async () => {
+    params = new URLSearchParams({ add: "1", email: "bob@example.com" });
+    render(<CloudAuthPage />);
+    handlers["/api/auth/identify"] = () => ({ body: { exists: true } });
+    fireEvent.click(await screen.findByRole("button", { name: "Continue" }));
+    const pw = await screen.findByPlaceholderText("Password");
+    fireEvent.change(pw, { target: { value: "pw12345678" } });
+    fireEvent.submit(pw.closest("form")!);
+    await waitFor(() => expect(hardReload).toHaveBeenCalledWith("/dashboard"));
+    const login = vi.mocked(fetch).mock.calls.find((c) => c[0] === "/api/auth/login");
+    expect(JSON.parse(String(login![1]!.body))).toStrictEqual({ identifier: "bob@example.com", password: "pw12345678" });
   });
 
   it("prefills the identifier from ?email= as a plain value", async () => {
     params = new URLSearchParams({ add: "1", email: "bob+x@example.com" });
     render(<CloudAuthPage />);
-    const id = (await screen.findByPlaceholderText(/username or/i)) as HTMLInputElement;
+    const id = (await screen.findByPlaceholderText(/email or username/i)) as HTMLInputElement;
     expect(id.value).toBe("bob+x@example.com");
   });
 
   it("an HTML-looking ?email= is inert text in the input", async () => {
     params = new URLSearchParams({ add: "1", email: '"><img src=x onerror=alert(1)>' });
     render(<CloudAuthPage />);
-    const id = (await screen.findByPlaceholderText(/username or/i)) as HTMLInputElement;
+    const id = (await screen.findByPlaceholderText(/email or username/i)) as HTMLInputElement;
     expect(id.value).toContain("<img");
     expect(document.querySelector("img[src='x']")).toBeNull();
   });

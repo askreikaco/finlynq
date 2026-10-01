@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { hardReload, clearPerUserStorage } from "@/lib/client/hard-reload";
+import { setPasskeyAutoSkip } from "@/lib/client/passkey-auto";
 import { ACCOUNT_PAGE_HREF } from "@/lib/client/account-page";
 import { readHiddenAccounts, writeHiddenAccounts } from "@/lib/client/hidden-accounts";
 
@@ -198,6 +199,7 @@ export function useAccountActions() {
       const data = await res.json().catch(() => ({}));
       clearPerUserStorage(account.userId);
       writeHiddenAccounts(readHiddenAccounts().filter((id) => id !== account.userId));
+      setPasskeyAutoSkip();
       hardReload(res.ok && data?.activeUserId ? "/dashboard" : "/");
       return true;
     });
@@ -210,6 +212,7 @@ export function useAccountActions() {
         return false;
       }
       for (const a of accounts) clearPerUserStorage(a.userId);
+      setPasskeyAutoSkip();
       hardReload("/");
       return true;
     });
