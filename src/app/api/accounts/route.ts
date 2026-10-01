@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { enqueueFamilySweep } from "@/lib/family/sweep";
 import { getAccounts, getAccountById, createAccount, updateAccount, deleteAccount } from "@/lib/queries";
 import { requireAuth } from "@/lib/auth/require-auth";
 import { requireEncryption } from "@/lib/auth/require-encryption";
@@ -80,6 +81,8 @@ export async function POST(request: NextRequest) {
         await logApiError("POST-backfill", "/api/accounts", e, userId);
       }
     }
+    // Family sidecar label sync: fire-and-forget, never blocks/fails the edit.
+    enqueueFamilySweep(userId, dek, { entity: "accounts" });
     return NextResponse.json(account, { status: 201 });
   } catch (error: unknown) {
     await logApiError("POST", "/api/accounts", error, userId);
@@ -131,6 +134,8 @@ export async function PUT(request: NextRequest) {
         );
       }
     }
+    // Family sidecar label sync: fire-and-forget, never blocks/fails the edit.
+    enqueueFamilySweep(userId, dek, { entity: "accounts" });
     return NextResponse.json(account);
   } catch (error: unknown) {
     await logApiError("PUT", "/api/accounts", error, userId);

@@ -134,7 +134,7 @@ describe("Family P2: Key Crypto and Sidecar Sync", () => {
     const viewerId = randomUUID();
     const aad = buildGrantAAD(shareId, ownerId, viewerId, "accounts", 1);
 
-    let sealed = sealKey(sectionKey, publicKey, aad);
+    const sealed = sealKey(sectionKey, publicKey, aad);
 
     // Tamper with the ciphertext by flipping a bit
     const tampered = Buffer.from(sealed, "base64");
@@ -192,7 +192,7 @@ describe("Family P2: Key Crypto and Sidecar Sync", () => {
     const label = "My Savings Account";
     const aad = "owner1|accounts|accounts|5|1";
 
-    let encrypted = encryptLabel(sectionKey, label, aad);
+    const encrypted = encryptLabel(sectionKey, label, aad);
 
     // Tamper with ciphertext
     const tampered = Buffer.from(encrypted, "base64");
@@ -325,6 +325,8 @@ describe("Family P2: Key Crypto and Sidecar Sync", () => {
     const ownerId = await createTestUser("owner@example.com");
     const viewerEmail = "viewer@example.com";
     const shareId = await createTestShare(ownerId, viewerEmail, ["accounts"]);
+    // Finalization only applies to live shares (negative cases: family-p2-review.test.ts)
+    await db.update(familyShares).set({ status: "active" }).where(eq(familyShares.id, shareId));
 
     // Manually insert an awaiting_keys grant
     await db
@@ -359,6 +361,8 @@ describe("Family P2: Key Crypto and Sidecar Sync", () => {
     const ownerId = await createTestUser("owner@example.com");
     const viewerEmail = "viewer@example.com";
     const shareId = await createTestShare(ownerId, viewerEmail, ["accounts"]);
+    // key_reset is only a valid transition from live/suspended shares
+    await db.update(familyShares).set({ status: "active" }).where(eq(familyShares.id, shareId));
 
     // Manually insert a grant
     await db

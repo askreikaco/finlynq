@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { enqueueFamilySweep } from "@/lib/family/sweep";
 import { db, schema, withDbTransaction } from "@/db";
 import { eq, and, inArray } from "drizzle-orm";
 import { requireAuth } from "@/lib/auth/require-auth";
@@ -245,6 +246,8 @@ export async function POST(request: NextRequest) {
     const goal = newId
       ? (await db.select().from(schema.goals).where(eq(schema.goals.id, newId)))[0]
       : null;
+    // Family sidecar label sync: fire-and-forget, never blocks/fails the edit.
+    enqueueFamilySweep(userId, dek, { entity: "goals" });
     return NextResponse.json({ ...goal, accountIds }, { status: 201 });
   } catch (error: unknown) {
     return NextResponse.json({ error: safeErrorMessage(error, "Failed") }, { status: 500 });
@@ -312,6 +315,10 @@ export async function PUT(request: NextRequest) {
       }
       return goalRows[0];
     });
+
+    // Family sidecar label sync: fire-and-forget, never blocks/fails the edit.
+
+    enqueueFamilySweep(userId, dek, { entity: "goals" });
 
     return NextResponse.json(goal);
   } catch (error: unknown) {

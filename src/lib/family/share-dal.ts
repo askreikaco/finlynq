@@ -11,7 +11,7 @@
  * - All operations assume caller has authenticated
  */
 
-import { and, eq, gt, isNull, or } from "drizzle-orm";
+import { and, eq, gt, inArray, isNull, or } from "drizzle-orm";
 import { type DrizzleDb } from "@/db";
 import {
   familyShares,
@@ -315,15 +315,24 @@ export async function deleteUserFamilyData(
 
 /**
  * Finalize awaiting_keys grants (P2).
- * Called after owner logs in: converts status from 'awaiting_keys' to 'ready'
- * for viewers who now have keypairs (viewer accepted the share).
- *
- * This allows viewers to unseal section keys they couldn't access before.
+ * Converts 'awaiting_keys' -> 'ready' ONLY while the share itself is live
+ * (active / awaiting_owner_unlock). Revoked, suspended, declined, expired, key_reset and
+ * pending shares are never finalized. Key material is sealed by provisionGrants (owner session);
+ * this only flips the status marker, and a grant without key_sealed still yields no key.
  */
 export async function finalizeGrants(
   database: DrizzleDb,
   shareId: string,
 ): Promise<number> {
+  const [share] = await database
+    .select({ status: familyShares.status })
+    .from(familyShares)
+    .where(eq(familyShares.id, shareId))
+    .limit(1);
+  if (!share || (share.status !== "active" && share.status !== "awaiting_owner_unlock")) {
+    return 0;
+  }
+
   const rows = await database
     .update(familyKeyGrants)
     .set({ status: "ready" })
@@ -351,11 +360,18 @@ export async function markShareKeyReset(
   const [updated] = await database
     .update(familyShares)
     .set({ status: "key_reset" })
-    .where(and(eq(familyShares.id, shareId), actorOnShare(actorId)))
+    .where(
+      and(
+        eq(familyShares.id, shareId),
+        actorOnShare(actorId),
+        // Only states with a valid ->key_reset transition: never resurrect revoked/declined/expired.
+        inArray(familyShares.status, ["awaiting_owner_unlock", "active", "suspended"]),
+      ),
+    )
     .returning({ id: familyShares.id });
 
   if (!updated) {
-    throw new Error(`Share ${shareId} not found or not visible to ${actorId}`);
+    throw new Error(`Share ${shareId} not found, not visible to ${actorId}, or not resettable`);
   }
 
   // Clear key grants (viewer can't unseal old keys)

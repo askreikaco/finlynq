@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { enqueueFamilySweep } from "@/lib/family/sweep";
 import { and, eq, sql } from "drizzle-orm";
 import { db, schema } from "@/db";
 import { getPortfolioHoldings } from "@/lib/queries";
@@ -134,6 +135,8 @@ export async function POST(request: NextRequest) {
           );
         throw pairingErr;
       }
+      // Family sidecar label sync: fire-and-forget, never blocks/fails the edit.
+      enqueueFamilySweep(auth.userId, auth.dek, { entity: "portfolio_holdings" });
       return NextResponse.json(holding, { status: 201 });
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error);
@@ -268,6 +271,8 @@ export async function PUT(request: NextRequest) {
         .get();
       // GC the prior security if this edit left it backing zero positions.
       if (securityIdChanged) await gcOrphanSecurity(auth.userId, existing.securityId);
+      // Family sidecar label sync: fire-and-forget, never blocks/fails the edit.
+      enqueueFamilySweep(auth.userId, auth.dek, { entity: "portfolio_holdings" });
       return NextResponse.json(updated);
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error);

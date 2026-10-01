@@ -29,6 +29,7 @@
  * See plan/encryption-plaintext-gaps.md Phase 5.
  */
 
+import { enqueueFamilySweep } from "@/lib/family/sweep";
 import { sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { encryptField, isEncrypted } from "@/lib/crypto/envelope";
@@ -77,6 +78,9 @@ function userScopeCondition(entry: UserEncryptedColumn, userId: string): SQL {
  * login response returns immediately. Any error is logged and swallowed.
  */
 export function enqueueUpgradeUserFieldEncryption(userId: string, dek: Buffer): void {
+  // Family Wealth login sweep: all three login paths (password, MFA, zero-click) call this
+  // function. Fire-and-forget; no-op unless the user has live outgoing shares / family keys.
+  enqueueFamilySweep(userId, dek);
   queueMicrotask(() => {
     upgradeUserFieldEncryption(userId, dek).catch((err) => {
       console.warn("[upgrade-user-fields] failed", {
