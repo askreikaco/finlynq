@@ -7,12 +7,14 @@
  *  - token matches an invite that is unconsumed and unexpired (single-use)
  * Unknown token, foreign-email session and self-accept all return the SAME 410 body.
  *
+ * Step-up: required when must_share_back is true (creating a reciprocal share).
+ *
  * Effect (ONE transaction): consume invite, pending -> awaiting_owner_unlock (the owner's next
  * sweep finalizes grants). If must_share_back: create the reciprocal share (viewer -> owner,
  * sections = required U extra), mint viewer's section keys and seal them to the owner. Any
  * failure rolls everything back: no partial share, grants or keys.
  *
- * Body (strict): { token, shareBackSections? }  (shareBackSections only used with must_share_back)
+ * Body (strict): { token, shareBackSections?, currentPassword? }  (shareBackSections only used with must_share_back)
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -21,6 +23,8 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getUserById } from "@/lib/auth/queries";
+import { verifyPassword } from "@/lib/auth";
+import { isFreshSession } from "@/lib/auth/step-up";
 import { consumeInvite, acceptShare } from "@/lib/family/share-dal";
 import { createUserKeypairIfNeeded } from "@/lib/family/grant";
 import { syncFamilyLabels } from "@/lib/family/sweep";
@@ -43,6 +47,7 @@ const AcceptRequestSchema = z
   .object({
     token: z.string().min(1).max(256),
     shareBackSections: z.array(FamilySectionSchema).optional(),
+    currentPassword: z.string().optional(),
   })
   .strict();
 
@@ -51,7 +56,7 @@ class AcceptRaceError extends Error {}
 export async function POST(request: NextRequest) {
   const guard = await requireFamilySession(request);
   if (!guard.ok) return guard.response;
-  const { userId: viewerId, dek: viewerDek } = guard.ctx;
+  const { userId: viewerId, dek: viewerDek, iat } = guard.ctx;
 
   // Limit first: caps token-guessing regardless of any later outcome.
   const rl = checkRateLimit(`family-accept:${viewerId}`, 10, 15 * 60_000);
@@ -59,7 +64,7 @@ export async function POST(request: NextRequest) {
 
   const body = await readStrictBody(request, AcceptRequestSchema);
   if (!body.ok) return body.response;
-  const { token, shareBackSections } = body.data;
+  const { token, shareBackSections, currentPassword } = body.data;
 
   const viewer = await getUserById(viewerId);
   if (!viewer || !viewer.emailVerified || !viewer.email) {
@@ -81,6 +86,32 @@ export async function POST(request: NextRequest) {
   const [share] = await db.select().from(familyShares).where(eq(familyShares.id, invite.shareId)).limit(1);
   if (!share || share.ownerId === viewerId || share.viewerEmailLower !== viewerEmailLower) return inviteGone();
   if (share.status !== "pending") return inviteGone();
+
+  // Step-up: require fresh session (< 10 min) OR currentPassword when must_share_back is true
+  if (share.mustShareBack) {
+    const isFresh = isFreshSession(iat);
+    if (!isFresh && !currentPassword) {
+      return NextResponse.json(
+        { error: "Step-up required: provide currentPassword or use a fresh session" },
+        { status: 401 },
+      );
+    }
+
+    // If not fresh, verify the password
+    if (!isFresh) {
+      if (!currentPassword) {
+        return NextResponse.json({ error: "Password required for step-up" }, { status: 401 });
+      }
+      const viewerUser = await getUserById(viewerId);
+      if (!viewerUser || !viewerUser.passwordHash) {
+        return NextResponse.json({ error: "Cannot verify password" }, { status: 401 });
+      }
+      const passwordValid = await verifyPassword(currentPassword, viewerUser.passwordHash);
+      if (!passwordValid) {
+        return NextResponse.json({ error: "Invalid password" }, { status: 401 });
+      }
+    }
+  }
 
   if (!viewerDek) {
     return NextResponse.json({ error: "Session locked. Please sign in again." }, { status: 423 });

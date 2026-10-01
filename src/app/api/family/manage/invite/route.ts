@@ -6,7 +6,8 @@
  * returns the same 201 body either way (no account-existence oracle).
  *
  * Auth: session-only. Limits: 10/day/user, 3/day/email (identical 429 body for both).
- * Body (strict): { viewerEmail, sections[], mustShareBack? }
+ * Step-up: requires fresh session (< 10 min) OR currentPassword in body.
+ * Body (strict): { viewerEmail, sections[], mustShareBack?, currentPassword? }
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -15,6 +16,8 @@ import { and, eq, isNull, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getUserById } from "@/lib/auth/queries";
+import { verifyPassword } from "@/lib/auth";
+import { isFreshSession } from "@/lib/auth/step-up";
 import { createShare } from "@/lib/family/share-dal";
 import { createUserKeypairIfNeeded } from "@/lib/family/grant";
 import { generateInviteToken, hashInviteToken, getInviteExpiresAt } from "@/lib/family/invite-token";
@@ -33,6 +36,7 @@ const InviteRequestSchema = z
     viewerEmail: z.string().trim().max(254).email().toLowerCase(),
     sections: z.array(FamilySectionSchema).min(1),
     mustShareBack: z.boolean().optional().default(false),
+    currentPassword: z.string().optional(),
   })
   .strict();
 
@@ -46,7 +50,31 @@ export async function POST(request: NextRequest) {
 
   const body = await readStrictBody(request, InviteRequestSchema);
   if (!body.ok) return body.response;
-  const { viewerEmail, sections, mustShareBack } = body.data;
+  const { viewerEmail, sections, mustShareBack, currentPassword } = body.data;
+
+  // Step-up: require fresh session (< 10 min) OR currentPassword
+  const isFresh = isFreshSession(guard.ctx.iat);
+  if (!isFresh && !currentPassword) {
+    return NextResponse.json(
+      { error: "Step-up required: provide currentPassword or use a fresh session" },
+      { status: 401 },
+    );
+  }
+
+  // If not fresh, verify the password
+  if (!isFresh) {
+    if (!currentPassword) {
+      return NextResponse.json({ error: "Password required for step-up" }, { status: 401 });
+    }
+    const ownerUser = await getUserById(ownerId);
+    if (!ownerUser || !ownerUser.passwordHash) {
+      return NextResponse.json({ error: "Cannot verify password" }, { status: 401 });
+    }
+    const passwordValid = await verifyPassword(currentPassword, ownerUser.passwordHash);
+    if (!passwordValid) {
+      return NextResponse.json({ error: "Invalid password" }, { status: 401 });
+    }
+  }
 
   // Same body as the per-user limit: does not reveal that OTHER owners invited this address.
   const emailRl = checkRateLimit(`family-invite-email:${viewerEmail}`, 3, DAY_MS);
