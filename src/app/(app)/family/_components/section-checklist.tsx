@@ -3,7 +3,7 @@
 import { useId } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { FAMILY_SECTIONS_V1, type FamilySection } from "@/lib/family/sections";
+import { FAMILY_OVERVIEW_SECTIONS, type FamilySection } from "@/lib/family/sections";
 import { FAMILY_STRINGS } from "@/lib/family/strings";
 import { getSectionDescription, getSectionLabel } from "./section-labels";
 
@@ -16,11 +16,15 @@ interface Props {
   disabled?: boolean;
 }
 
-/** Accessible sections checklist: fieldset/legend, one labelled checkbox per registry section. */
+/**
+ * Accessible sections checklist: fieldset/legend, one labelled checkbox per OVERVIEW section.
+ * Retired sections (accounts/goals/budgets) are never offered; if an existing share or a
+ * must-share-back minimum already contains one, it is carried through `selected` untouched.
+ */
 export function SectionChecklist({ legend, selected, onChange, locked, disabled }: Props) {
   const uid = useId();
   const isLocked = (s: FamilySection) => locked?.has(s) ?? false;
-  const allSelected = FAMILY_SECTIONS_V1.every((s) => selected.has(s));
+  const allSelected = FAMILY_OVERVIEW_SECTIONS.every((s) => selected.has(s) || isLocked(s));
 
   const toggle = (s: FamilySection, checked: boolean) => {
     const next = new Set(selected);
@@ -38,7 +42,11 @@ export function SectionChecklist({ legend, selected, onChange, locked, disabled 
           checked={allSelected}
           disabled={disabled}
           onCheckedChange={(checked) =>
-            onChange(checked ? new Set(FAMILY_SECTIONS_V1) : new Set(FAMILY_SECTIONS_V1.filter(isLocked)))
+            onChange(
+              checked
+                ? new Set([...selected, ...FAMILY_OVERVIEW_SECTIONS])
+                : new Set([...selected].filter((s) => !FAMILY_OVERVIEW_SECTIONS.includes(s) || isLocked(s))),
+            )
           }
         />
         <Label htmlFor={`${uid}-all`} className="font-medium cursor-pointer">
@@ -46,7 +54,7 @@ export function SectionChecklist({ legend, selected, onChange, locked, disabled 
         </Label>
       </div>
       <div className="space-y-2 pl-4 sm:pl-6 border-l-2 border-muted">
-        {FAMILY_SECTIONS_V1.map((s) => (
+        {FAMILY_OVERVIEW_SECTIONS.map((s) => (
           <div key={s} className="flex items-start gap-2">
             <Checkbox
               id={`${uid}-${s}`}

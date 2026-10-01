@@ -37,7 +37,7 @@ import { getOrCreateApiKey } from "@/lib/api-auth";
 import { decryptLabel, buildLabelAAD, unsealKey, buildGrantAAD } from "@/lib/crypto/family-crypto";
 import { getUserPrivateKeyHex, withSectionKeys } from "@/lib/family/grant";
 import { syncFamilyLabels } from "@/lib/family/sweep";
-import { FAMILY_SECTIONS_V1, type FamilySection } from "@/lib/family/sections";
+import { FAMILY_OVERVIEW_SECTIONS, FAMILY_SECTIONS_V1, isOverviewSection, type FamilySection } from "@/lib/family/sections";
 import { bootstrapFamilyTestDb, resetFamilyTestDb, shutdownFamilyTestDb } from "./family-fixtures";
 import {
   CANARY,
@@ -58,9 +58,10 @@ import { GET as overviewGET } from "@/app/api/family/overview/route";
 import { POST as invitePOST } from "@/app/api/family/manage/invite/route";
 import { POST as acceptPOST } from "@/app/api/family/manage/accept/route";
 import { GET as reportsGET } from "@/app/api/reports/route";
-import { GET as goalsGET } from "@/app/api/goals/route";
 import { GET as loansGET } from "@/app/api/loans/route";
 import { GET as dashboardGET } from "@/app/api/dashboard/route";
+import { GET as healthGET } from "@/app/api/health-score/route";
+import { GET as performanceGET } from "@/app/api/portfolio/performance/route";
 import { middleware } from "@/middleware";
 import { NextRequest } from "next/server";
 
@@ -103,22 +104,22 @@ async function rawShare(ownerId: string, viewer: TU, sections: string[], status:
 
 const shared = (body: any) => (body.members as any[]).find((m) => m.relation === "shared");
 const me = (body: any) => (body.members as any[]).find((m) => m.relation === "me");
-const byLabel = (rows: any[], label: string) => rows.find((r) => r.label === label);
 
 // ───────────────────────────────────────────────────────────────────────────────────────────────
-describe("real numbers + decrypted labels match the owner's own API (sections net_worth + accounts)", () => {
-  it("returns the owner's balance-sheet figures, converted VND, sidecar labels, and nothing else", async () => {
+describe("real numbers + decrypted labels match the owner's own API", () => {
+  it("returns the owner's balance-sheet figures, converted VND, and nothing else (a retired 'accounts' grant is ignored)", async () => {
     const A = await mkUser("owner", { name: "Alice" });
     const B = await mkUser("viewer", { mfa: true });
     await seedWorld(A);
+    // an older share that still carries the retired "accounts" section: valid, but never built or sent
     await activeShare(A, B, ["net_worth", "accounts"]);
 
-    const ov = await overview(B);
+    const ov = await overview(B, "?period=1y");
     expect(ov.status).toBe(200);
     const m = shared(ov.json);
     expect(m.name).toBe("Alice");
-    expect(Object.keys(m.sections).sort()).toEqual(["accounts", "net_worth"]);
-    expect(m.notShared).toEqual(FAMILY_SECTIONS_V1.filter((s) => s !== "net_worth" && s !== "accounts"));
+    expect(Object.keys(m.sections)).toEqual(["net_worth"]);
+    expect(m.notShared).toEqual(FAMILY_OVERVIEW_SECTIONS.filter((s) => s !== "net_worth"));
     expect(m.partial).toBe(false);
     expect(m.genericLabels).toBe(false);
 
@@ -131,24 +132,9 @@ describe("real numbers + decrypted labels match the owner's own API (sections ne
     expect(bs.json.totalAssets).toBe(3630 + 100); // 3630 USD + 2,500,000 VND @ 0.00004
     expect(bs.json.totalLiabilities).toBe(300);
 
-    const ownerRows = [...bs.json.assets, ...bs.json.liabilities] as any[];
-    const accs = m.sections.accounts.accounts as any[];
-    expect(accs.map((a) => a.label).sort()).toEqual(["Checking", "Savings VND", "Visa"]);
-    for (const a of accs) {
-      const o = ownerRows.find((r) => r.accountName === a.label);
-      expect(o, a.label).toBeTruthy();
-      expect(Math.abs(a.converted)).toBe(o.convertedBalance);
-      expect(a.labelIsGeneric).toBe(false);
-      expect(a.basis).toBe("ledger");
-    }
-    expect(byLabel(accs, "Savings VND")).toMatchObject({ currency: "VND", balance: 2_500_000, converted: 100, group: "Banking", type: "A" });
-    expect(byLabel(accs, "Visa")).toMatchObject({ type: "L", balance: -300, converted: -300 });
-    expect(m.sections.accounts.groups).toEqual(
-      expect.arrayContaining([
-        { group: "Banking", type: "A", converted: 3730 },
-        { group: "Credit Cards", type: "L", converted: -300 },
-      ]),
-    );
+    // the retired accounts section: no account rows, no account names
+    expect(m.sections.accounts).toBeUndefined();
+    for (const name of ["Checking", "Savings VND", "Visa"]) expect(ov.text).not.toContain(name);
 
     // history: last point equals today's net worth (live cash override)
     const hist = m.sections.net_worth.history as Array<{ date: string; value: number }>;
@@ -168,7 +154,7 @@ describe("real numbers + decrypted labels match the owner's own API (sections ne
     expect(me(ov.json)).toMatchObject({ id: "me", name: "Me" });
   });
 
-  it("goals / loans / budgets / cashflow / investments match the owner's own APIs", async () => {
+  it("loans / cashflow (+ savings rate, DTI) / investments match the owner's own APIs; goals & budgets are not sent", async () => {
     const A = await mkUser("owner", { name: "Alice" });
     const B = await mkUser("viewer", { mfa: true });
     const world = await seedWorld(A);
@@ -177,17 +163,12 @@ describe("real numbers + decrypted labels match the owner's own API (sections ne
     const ov = await overview(B);
     expect(ov.status).toBe(200);
     const m = shared(ov.json);
-    expect(Object.keys(m.sections).sort()).toEqual([...FAMILY_SECTIONS_V1].sort());
+    expect(Object.keys(m.sections).sort()).toEqual([...FAMILY_OVERVIEW_SECTIONS].sort());
     expect(m.notShared).toEqual([]);
-
-    const og = (await call(goalsGET, req("/api/goals", "GET", A))).json as any[];
-    const g = m.sections.goals.goals[0];
-    const ogoal = og.find((x) => x.name === CANARY.goal)!;
-    expect(g.label).toBe(CANARY.goal);
-    expect(g.currentAmount).toBe(ogoal.currentAmount);
-    expect(g.progress).toBe(ogoal.progress);
-    expect(g.remaining).toBe(ogoal.remaining);
-    expect(g.currentAmount).toBe(3630);
+    expect(m.sections.goals).toBeUndefined();
+    expect(m.sections.budgets).toBeUndefined();
+    expect(ov.text).not.toContain(CANARY.goal);
+    expect(ov.text).not.toContain(CANARY.category);
 
     const ol = (await call(loansGET, req("/api/loans", "GET", A))).json as any[];
     const l = m.sections.loans.loans[0];
@@ -206,30 +187,50 @@ describe("real numbers + decrypted labels match the owner's own API (sections ne
     expect(m.sections.cashflow.income).toBe(dI);
     expect(m.sections.cashflow.expenses).toBe(-dE);
     expect(m.sections.cashflow.monthly).toEqual([{ month: monthKey, income: 3000, expenses: 120 }]);
+    expect(m.sections.cashflow.from).toBe(`${monthKey}-01`); // default range: this month
+    expect(m.sections.cashflow.savings).toEqual({ income: 3000, expenses: 120, ratePct: 96 });
 
-    expect(m.sections.budgets.month).toBe(monthKey);
-    expect(m.sections.budgets.budgets).toEqual([
-      expect.objectContaining({ label: CANARY.category, budgeted: 400, actual: 120, labelIsGeneric: false }),
-    ]);
+    // Debt-to-Income: the dashboard's own figure (loans + cashflow both shared)
+    const hs = (await call(healthGET, req("/api/health-score", "GET", A))).json as any;
+    expect(m.sections.cashflow.debtToIncome.pct).toBe(hs.dti.pct);
+    expect(m.sections.cashflow.debtToIncome.reliable).toBe(hs.dti.reliable);
+
     expect(world.ids.budgetCat).toBeGreaterThan(0);
-    expect(m.sections.investments.holdings).toEqual([]);
+    expect(m.sections.investments.performance.series).toEqual([]);
   });
 
-  it("investments: latest stored market snapshot (DEK-free), holdings with sidecar label, not the ledger sum", async () => {
+  it("DTI is not computed when loans are not shared (null, never 0)", async () => {
+    const A = await mkUser("owner");
+    const B = await mkUser("viewer", { mfa: true });
+    await seedWorld(A);
+    await activeShare(A, B, ["cashflow"]);
+    const m = shared((await overview(B)).json);
+    expect(m.sections.cashflow.debtToIncome).toBeNull();
+    expect(m.sections.cashflow.income).toBe(3000);
+  });
+
+  it("investments: latest stored market snapshot (DEK-free) + the /portfolio Performance card, not the ledger sum", async () => {
     const A = await mkUser("owner");
     const B = await mkUser("viewer", { mfa: true });
     await seedWorld(A, { brokerage: true });
-    await activeShare(A, B, ["net_worth", "accounts", "investments"]);
-    const m = shared((await overview(B)).json);
+    await activeShare(A, B, ["net_worth", "investments"]);
+    const ov = await overview(B, "?period=all");
+    const m = shared(ov.json);
     const inv = m.sections.investments;
     expect(inv.holdingsValue).toBe(5000);
     expect(inv).toMatchObject({ accountsPriced: 1, accountsUnpriced: 0 });
-    expect(inv.holdings).toEqual([
-      expect.objectContaining({ label: CANARY.holding, quantity: 10, currency: "USD", labelIsGeneric: false }),
-    ]);
-    const brk = byLabel(m.sections.accounts.accounts, "Brokerage");
-    expect(brk).toMatchObject({ balance: 5000, converted: 5000, basis: "market_snapshot" });
     expect(m.sections.net_worth.assets).toBe(3630 + 100 + 5000);
+    // the /portfolio Performance card: same series + returns as the owner's own endpoint
+    const own = (await call(performanceGET, req("/api/portfolio/performance?period=all", "GET", A))).json as any;
+    expect(inv.performance.series).toEqual(
+      own.data.series.map((p: any) => ({ date: p.date, marketValue: p.marketValue, costBasis: p.costBasis })),
+    );
+    expect(inv.performance.series).toHaveLength(1);
+    expect(inv.performance.twrr).toEqual({ period: own.data.twrr.period, annualized: own.data.twrr.annualized });
+    expect(inv.performance.mwrr).toEqual(own.data.mwrr);
+    // no holding names / quantities are sent any more
+    expect(ov.text).not.toContain(CANARY.holding);
+    expect(inv.holdings).toBeUndefined();
     // symbols are ciphertext: never in the response
     expect(JSON.stringify(m)).not.toContain("CNRY");
   });
@@ -239,9 +240,8 @@ describe("real numbers + decrypted labels match the owner's own API (sections ne
     const B = await mkUser("viewer", { mfa: true });
     await seedWorld(A, { brokerage: true });
     await db.execute(sql`TRUNCATE TABLE portfolio_snapshots`);
-    await activeShare(A, B, ["net_worth", "accounts", "investments"]);
+    await activeShare(A, B, ["net_worth", "investments"]);
     const m = shared((await overview(B)).json);
-    expect(byLabel(m.sections.accounts.accounts, "Brokerage")).toMatchObject({ balance: null, converted: null, basis: "unpriced" });
     expect(m.partial).toBe(true);
     expect(m.partialReasons).toContain("investment_unpriced");
     expect(m.sections.net_worth.assets).toBe(3630 + 100);
@@ -268,8 +268,9 @@ describe("section filter x share state matrix (generated from FAMILY_SECTIONS_V1
         const ov = await overview(B);
         expect(ov.status).toBe(200);
         const m = shared(ov.json);
-        expect(Object.keys(m.sections).sort()).toEqual([...granted].sort());
-        expect(m.notShared).toEqual(FAMILY_SECTIONS_V1.filter((x) => !granted.includes(x)));
+        // retired sections (accounts / goals / budgets) are never built nor listed as notShared
+        expect(Object.keys(m.sections).sort()).toEqual(granted.filter(isOverviewSection).sort());
+        expect(m.notShared).toEqual(FAMILY_OVERVIEW_SECTIONS.filter((x) => !granted.includes(x)));
         expect(m.unavailable).toEqual([]);
         // without sealed grants the numbers still flow, labels are generic (never the real name)
         expect(ov.text).not.toContain(CANARY.goal);
@@ -309,11 +310,11 @@ describe("section filter x share state matrix (generated from FAMILY_SECTIONS_V1
     const A = await mkUser("owner");
     const B = await mkUser("viewer", { mfa: true });
     await seedWorld(A);
-    await rawShare(A.id, B, ["accounts"], "active");
+    await rawShare(A.id, B, ["loans"], "active");
     const m = shared((await overview(B)).json);
     expect(m.genericLabels).toBe(true);
-    expect((m.sections.accounts.accounts as any[]).map((a) => a.label).sort()).toEqual(["Account 1", "Account 2", "Account 3"]);
-    expect((m.sections.accounts.accounts as any[]).every((a) => a.labelIsGeneric)).toBe(true);
+    expect((m.sections.loans.loans as any[]).map((l) => l.label)).toEqual(["Loan 1"]);
+    expect((m.sections.loans.loans as any[]).every((l) => l.labelIsGeneric)).toBe(true);
   });
 });
 
@@ -324,24 +325,24 @@ describe("label keys: only the viewer's own private key opens only the granted s
     const B = await mkUser("viewerb", { mfa: true });
     const C = await mkUser("viewerc", { mfa: true });
     await seedWorld(A);
-    const sB = await activeShare(A, B, ["accounts"]);
+    const sB = await activeShare(A, B, ["loans"]);
     const sC = await activeShare(A, C, ["goals"]);
 
-    // B sees account labels, no goals; C the reverse
+    // B sees the loan label; C was granted only the retired goals section: nothing is built for it
     const mb = shared((await overview(B)).json);
-    expect(Object.keys(mb.sections)).toEqual(["accounts"]);
-    expect(mb.sections.accounts.accounts.map((a: any) => a.label).sort()).toEqual(["Checking", "Savings VND", "Visa"]);
-    const mc = shared((await overview(C)).json);
-    expect(Object.keys(mc.sections)).toEqual(["goals"]);
-    expect(mc.sections.goals.goals[0].label).toBe(CANARY.goal);
-    expect((await overview(C)).text).not.toContain("Checking");
+    expect(Object.keys(mb.sections)).toEqual(["loans"]);
+    expect(mb.sections.loans.loans.map((l: any) => l.label)).toEqual([CANARY.loan]);
+    const ovC = await overview(C);
+    expect(Object.keys(shared(ovC.json).sections)).toEqual([]);
+    expect(ovC.text).not.toContain(CANARY.goal);
+    expect(ovC.text).not.toContain(CANARY.loan);
 
     // crypto taint: B's private key + B's section keys cannot open the goals sidecar
     const privB = (await getUserPrivateKeyHex(db, B.id, B.dek))!;
     const goalRow = (await db.select().from(familyLabels).where(and(eq(familyLabels.ownerId, A.id), eq(familyLabels.section, "goals"))))[0];
     await withSectionKeys(sB, B.id, privB, db, async (keys) => {
-      expect(Object.keys(keys)).toEqual(["accounts"]);
-      expect(() => decryptLabel(keys.accounts, goalRow.labelCt, buildLabelAAD(A.id, "goals", "goals", goalRow.entityId, goalRow.epoch))).toThrow();
+      expect(Object.keys(keys)).toEqual(["loans"]);
+      expect(() => decryptLabel(keys.loans, goalRow.labelCt, buildLabelAAD(A.id, "goals", "goals", goalRow.entityId, goalRow.epoch))).toThrow();
     });
     // C's private key cannot unseal B's grant
     const privC = (await getUserPrivateKeyHex(db, C.id, C.dek))!;
@@ -349,34 +350,32 @@ describe("label keys: only the viewer's own private key opens only the granted s
     expect(() => unsealKey(gB.keySealed!, privC, buildGrantAAD(sB, A.id, B.id, gB.section, gB.epoch))).toThrow();
     expect(() => unsealKey(gB.keySealed!, privC, buildGrantAAD(sC, A.id, C.id, gB.section, gB.epoch))).toThrow();
 
-    // missing sidecar row for one account => that account is generic, the others keep real labels
-    const accRows = await db.select().from(familyLabels).where(and(eq(familyLabels.ownerId, A.id), eq(familyLabels.section, "accounts")));
-    await db.delete(familyLabels).where(and(eq(familyLabels.ownerId, A.id), eq(familyLabels.section, "accounts"), eq(familyLabels.entityId, accRows[0].entityId)));
-    const m2 = shared((await overview(B)).json);
-    const labels = m2.sections.accounts.accounts as any[];
-    expect(labels.filter((a) => a.labelIsGeneric)).toHaveLength(1);
-    expect(labels.filter((a) => !a.labelIsGeneric)).toHaveLength(2);
-    expect(m2.genericLabels).toBe(true);
-
     // a row from a foreign epoch (tampered AAD) is undecryptable => generic, not an error
-    await db.update(familyLabels).set({ epoch: 99 }).where(and(eq(familyLabels.ownerId, A.id), eq(familyLabels.section, "accounts")));
+    await db.update(familyLabels).set({ epoch: 99 }).where(and(eq(familyLabels.ownerId, A.id), eq(familyLabels.section, "loans")));
     const m3 = shared((await overview(B)).json);
-    expect((m3.sections.accounts.accounts as any[]).every((a) => a.labelIsGeneric)).toBe(true);
-    expect(m3.sections.accounts.accounts.map((a: any) => a.label).sort()).toEqual(["Account 1", "Account 2", "Account 3"]);
+    expect((m3.sections.loans.loans as any[]).every((l) => l.labelIsGeneric)).toBe(true);
+    expect(m3.sections.loans.loans.map((l: any) => l.label)).toEqual(["Loan 1"]);
+    expect(m3.genericLabels).toBe(true);
+
+    // missing sidecar row => generic label
+    await db.delete(familyLabels).where(and(eq(familyLabels.ownerId, A.id), eq(familyLabels.section, "loans")));
+    const m2 = shared((await overview(B)).json);
+    expect((m2.sections.loans.loans as any[]).every((l) => l.labelIsGeneric)).toBe(true);
+    expect(m2.genericLabels).toBe(true);
   });
 
   it("a locked viewer session (no DEK) still gets numbers, with generic labels", async () => {
     const A = await mkUser("owner");
     const B = await mkUser("viewer", { mfa: true });
     await seedWorld(A);
-    await activeShare(A, B, ["accounts", "net_worth"]);
+    await activeShare(A, B, ["loans", "net_worth"]);
     const lockedToken = (await createSessionToken(B.id, true)).token; // never put into the DEK cache
     const ov = await overview({ ...B, token: lockedToken });
     expect(ov.status).toBe(200);
     const m = shared(ov.json);
     expect(m.sections.net_worth.net).toBe(3630 + 100 - 300);
     expect(m.genericLabels).toBe(true);
-    expect(ov.text).not.toContain("Checking");
+    expect(ov.text).not.toContain(CANARY.loan);
   });
 
   it("the viewer's own data ('me') carries real labels decrypted with the viewer's own DEK", async () => {
@@ -384,9 +383,8 @@ describe("label keys: only the viewer's own private key opens only the granted s
     await seedWorld(B);
     const ov = await overview(B);
     const mm = me(ov.json);
-    expect(Object.keys(mm.sections).sort()).toEqual([...FAMILY_SECTIONS_V1].sort());
-    expect(mm.sections.accounts.accounts.map((a: any) => a.label).sort()).toEqual(["Checking", "Savings VND", "Visa"]);
-    expect(mm.sections.goals.goals[0].label).toBe(CANARY.goal);
+    expect(Object.keys(mm.sections).sort()).toEqual([...FAMILY_OVERVIEW_SECTIONS].sort());
+    expect(mm.sections.loans.loans[0].label).toBe(CANARY.loan);
     expect(mm.notShared).toEqual([]);
   });
 });
@@ -521,7 +519,7 @@ describe("auth methods, write methods, rate limit, strict query", () => {
 
 // ───────────────────────────────────────────────────────────────────────────────────────────────
 describe("FX into the viewer's display currency (never a silent 1:1)", () => {
-  it("converts every account to the viewer's display currency at the viewer's rates", async () => {
+  it("converts net worth to the viewer's display currency at the viewer's rates", async () => {
     const A = await mkUser("owner");
     const B = await mkUser("viewer", { mfa: true });
     await seedWorld(A);
@@ -530,10 +528,7 @@ describe("FX into the viewer's display currency (never a silent 1:1)", () => {
     const ov = await overview(B);
     expect(ov.json.displayCurrency).toBe("EUR");
     const m = shared(ov.json);
-    const accs = m.sections.accounts.accounts as any[];
-    expect(byLabel(accs, "Checking")).toMatchObject({ balance: 3630, currency: "USD", converted: 2904 }); // 3630 / 1.25
-    expect(byLabel(accs, "Savings VND").converted).toBe(80); // 2,500,000 * 0.00004 / 1.25
-    expect(byLabel(accs, "Visa").converted).toBe(-240);
+    // 3630 / 1.25 + 2,500,000 * 0.00004 / 1.25 = 2904 + 80; Visa 300 / 1.25 = 240
     expect(m.sections.net_worth).toMatchObject({ assets: 2984, liabilities: 240, net: 2744 });
     expect(m.partial).toBe(false);
   });
@@ -549,8 +544,6 @@ describe("FX into the viewer's display currency (never a silent 1:1)", () => {
     expect(m.partial).toBe(true);
     expect(m.partialReasons).toContain("fx_rate_missing");
     expect(ov.json.partial).toBe(true);
-    const mystery = byLabel(m.sections.accounts.accounts, "Mystery");
-    expect(mystery).toMatchObject({ balance: 777_777, currency: "ZZZ", converted: null });
     expect(m.sections.net_worth.assets).toBe(3630 + 100); // 777,777 NOT added as if 1 ZZZ = 1 USD
     expect(ov.text).not.toContain("778");
   });
@@ -596,12 +589,12 @@ describe("response contains only the DTO: no key material, no user/db ids, no ci
     const B = await mkUser("viewer", { mfa: true });
     await seedWorld(A);
     await db.execute(sql`UPDATE loans SET start_date = 'not-a-date'`); // legacy bad row: summarized as integrity row
-    await activeShare(A, B, ["loans", "accounts"]);
+    await activeShare(A, B, ["loans", "net_worth"]);
     const ov = await overview(B);
     expect(ov.status).toBe(200);
     const m = shared(ov.json);
     expect(m.sections.loans.loans[0]).toMatchObject({ remainingBalance: null, monthlyPayment: null });
-    expect(m.sections.accounts.accounts).toHaveLength(3);
+    expect(m.sections.net_worth.net).toBe(3630 + 100 - 300);
   });
 });
 

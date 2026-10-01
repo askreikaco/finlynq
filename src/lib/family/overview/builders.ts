@@ -19,33 +19,40 @@
 import type { FamilySection } from "../sections";
 import {
   buildNetWorthHistory,
+  computeDebtService,
   computeGoalProgress,
   convertReportingSlice,
   getCashSnapshotsInRange,
   getIncomeVsExpenses,
+  getIncomeVsExpensesDaily,
   getInvestmentSnapshotsInRange,
   getLinkedAccountBalances,
   getOwnerAccountBalances,
   getOwnerBudgets,
   getOwnerGoals,
-  getOwnerHoldings,
   getOwnerLoans,
+  getOwnerPortfolioPerformance,
   getOwnerSpendSlices,
+  getOwnerUntrackedLiabilities,
   summarizeLoan,
   type AccountSnapshot,
+  type DebtServiceLoan,
   type LiveAccountValue,
-  type NetWorthPeriod,
   type OwnerAccountRow,
+  type OwnerLoanRow,
   type SpendSlice,
+  type UntrackedLiabilityAccount,
 } from "../read-queries";
 import type { FxContext } from "./fx";
-import type { PartialReason, SectionsDto } from "./dto";
+import type { OverviewPeriod, PartialReason, SectionsDto } from "./dto";
 
 export interface MemberCtx {
   ownerId: string;
   fx: FxContext;
   today: string;
-  period: NetWorthPeriod;
+  period: OverviewPeriod;
+  /** sections this member grants the viewer (cross-section cards such as DTI check it) */
+  granted: readonly FamilySection[];
   /** section -> (entity id -> decrypted label). Missing entries render as generic labels. */
   labels: Map<FamilySection, Map<number, string>>;
   partial: Set<PartialReason>;
@@ -60,6 +67,77 @@ function labelOf(ctx: MemberCtx, section: FamilySection, id: number, ordinal: nu
   if (found) return { label: found, labelIsGeneric: false };
   ctx.generic.used = true;
   return { label: `${noun} ${ordinal}`, labelIsGeneric: true };
+}
+
+// ─── ranges (pure) ─────────────────────────────────────────────────────────────────────────────
+
+const pad2 = (n: number) => String(n).padStart(2, "0");
+
+/** First day of the month `back` months before today's month (UTC, YYYY-MM-01). */
+function monthStart(today: string, back: number): string {
+  const [y, m] = today.split("-").map(Number);
+  const d = new Date(Date.UTC(y, m - 1 - back, 1));
+  return `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-01`;
+}
+
+/**
+ * First day of the selected range for flow figures (cashflow, savings rate, Income vs Expenses);
+ * null = all time. "month" = month-to-date, "year" = year-to-date; the legacy rolling windows keep
+ * their calendar-month alignment (6 / 12 months incl. the current one).
+ */
+export function rangeStart(period: OverviewPeriod, today: string): string | null {
+  switch (period) {
+    case "month":
+      return `${today.slice(0, 7)}-01`;
+    case "year":
+      return `${today.slice(0, 4)}-01-01`;
+    case "6m":
+      return monthStart(today, 5);
+    case "1y":
+      return monthStart(today, 11);
+    case "all":
+      return null;
+  }
+}
+
+/** buildNetWorthHistory window for a range: calendar ranges start on their first day. */
+export function historyWindow(
+  period: OverviewPeriod,
+  today: string,
+): { period: "6m" | "1y" | "all"; firstDay?: string } {
+  if (period === "6m" || period === "1y" || period === "all") return { period };
+  return { period: "1y", firstDay: rangeStart(period, today) as string };
+}
+
+/** /api/portfolio/performance period key for a range (mtd = month-to-date). */
+export function performancePeriodKey(period: OverviewPeriod): string {
+  return period === "month" ? "mtd" : period === "year" ? "ytd" : period;
+}
+
+/** Calendar months touched from `from` (YYYY-MM-DD) to today, inclusive. */
+export function monthsSpanned(from: string, today: string): number {
+  const [fy, fm] = from.split("-").map(Number);
+  const [ty, tm] = today.split("-").map(Number);
+  return Math.max(1, (ty - fy) * 12 + (tm - fm) + 1);
+}
+
+/** Even-stride downsample that always keeps the first and the last point. */
+export function downsample<T>(points: T[], max: number): T[] {
+  if (points.length <= max || max < 2) return points;
+  const out: T[] = [];
+  const step = (points.length - 1) / (max - 1);
+  for (let i = 0; i < max; i++) out.push(points[Math.round(i * step)]);
+  return out;
+}
+
+/** Savings rate exactly as the dashboard (financial-health.ts): round((I - E) / I * 100), null without income. */
+export function savingsRatePct(income: number, expenses: number): number | null {
+  return income > 0 ? Math.round(((income - expenses) / income) * 100) : null;
+}
+
+/** Debt-to-income exactly as the dashboard: round(debt12m / income12m * 100), null without income. */
+export function dtiPct(debtPayments12m: number, income12m: number): number | null {
+  return income12m > 0 ? Math.round((debtPayments12m / income12m) * 100) : null;
 }
 
 // ─── valuation (shared by net_worth, accounts, investments, goals) ─────────────────────────────
@@ -184,7 +262,7 @@ export async function buildNetWorth(ctx: MemberCtx): Promise<NonNullable<Section
     liveCash.set(v.row.id, { value: v.balance, currency: v.row.currency });
   }
   const hist = buildNetWorthHistory({
-    period: ctx.period,
+    ...historyWindow(ctx.period, ctx.today),
     displayCurrency: ctx.fx.display,
     rateMap: ctx.fx.map,
     cashSnapshots: cash.filter(usable),
@@ -236,6 +314,9 @@ export async function buildAccounts(ctx: MemberCtx): Promise<NonNullable<Section
 
 // ─── investments ───────────────────────────────────────────────────────────────────────────────
 
+/** Points kept per performance series (the /portfolio chart itself plots at most 200). */
+const MAX_PERFORMANCE_POINTS = 400;
+
 export async function buildInvestments(ctx: MemberCtx): Promise<NonNullable<SectionsDto["investments"]>> {
   const vals = (await valuation(ctx)).filter((v) => v.row.isInvestment);
   let value = 0;
@@ -253,31 +334,34 @@ export async function buildInvestments(ctx: MemberCtx): Promise<NonNullable<Sect
     if (v.asOf && (!asOf || v.asOf > asOf)) asOf = v.asOf;
   }
 
-  const holdingsRaw = (await getOwnerHoldings(ctx.ownerId)).filter((h) => !h.isCash && Math.abs(h.quantity) > 1e-9);
-  const holdings = holdingsRaw.map((h, i) => {
-    const l = labelOf(ctx, "investments", h.id, i + 1, "Holding");
-    return {
-      ref: `h${i + 1}`,
-      label: l.label,
-      labelIsGeneric: l.labelIsGeneric,
-      currency: h.currency,
-      quantity: h.quantity,
-      isCrypto: h.isCrypto,
-    };
-  });
+  // The /portfolio Performance card, run for the owner (aggregate snapshot rows, DEK-free).
+  const perf = await getOwnerPortfolioPerformance(ctx.ownerId, performancePeriodKey(ctx.period), ctx.today);
+  await ctx.fx.prepare(perf.series.map((p) => p.currency));
+  const series: Array<{ date: string; marketValue: number; costBasis: number }> = [];
+  for (const p of perf.series) {
+    const marketValue = ctx.fx.convert(p.marketValue, p.currency);
+    const costBasis = ctx.fx.convert(p.costBasis, p.currency);
+    if (marketValue == null || costBasis == null) {
+      ctx.partial.add("fx_rate_missing");
+      continue;
+    }
+    series.push({ date: p.date, marketValue, costBasis });
+  }
 
-  const invRaw = await invSnapshots(ctx);
-  await ctx.fx.prepare(invRaw.map((s) => s.currency));
-  const trend = buildNetWorthHistory({
-    period: ctx.period,
-    displayCurrency: ctx.fx.display,
-    rateMap: ctx.fx.map,
-    cashSnapshots: [],
-    snapshots: invRaw.filter((s) => ctx.fx.rate(s.currency) != null),
-    today: ctx.today,
-  }).series.map((p) => ({ date: p.date, value: r2(p.value) }));
-
-  return { holdingsValue: r2(value), asOf, accountsPriced: priced, accountsUnpriced: unpriced, holdings, trend };
+  return {
+    holdingsValue: r2(value),
+    asOf,
+    accountsPriced: priced,
+    accountsUnpriced: unpriced,
+    performance: {
+      from: perf.from,
+      to: perf.to,
+      series: downsample(series, MAX_PERFORMANCE_POINTS),
+      twrr: { period: perf.twrr.period, annualized: perf.twrr.annualized },
+      mwrr: { irr: perf.mwrr.irr, converged: perf.mwrr.converged },
+      gapsFilledDays: perf.gapsFilledDays,
+    },
+  };
 }
 
 // ─── goals ─────────────────────────────────────────────────────────────────────────────────────
@@ -399,27 +483,43 @@ export async function buildBudgets(ctx: MemberCtx): Promise<NonNullable<Sections
   return { month, budgets: out };
 }
 
-// ─── cashflow ──────────────────────────────────────────────────────────────────────────────────
+// ─── cashflow (+ savings rate, debt-to-income) ────────────────────────────────────────────────
 
-const WINDOW_MONTHS = 12;
+type FlowRow = {
+  type: string | null;
+  currency: string | null;
+  reportingCurrency: string | null;
+  totalAmount: number | string | null;
+  totalReporting: number | string | null;
+};
+
+function flowValue(fx: FxContext, r: FlowRow): number | null {
+  return sliceValue(fx, {
+    categoryId: null,
+    currency: r.currency,
+    reportingCurrency: r.reportingCurrency,
+    totalAmount: r.totalAmount == null ? null : Number(r.totalAmount),
+    totalReporting: r.totalReporting == null ? null : Number(r.totalReporting),
+  });
+}
 
 export async function buildCashflow(ctx: MemberCtx): Promise<NonNullable<SectionsDto["cashflow"]>> {
-  const [y, m] = ctx.today.split("-").map(Number);
-  const first = new Date(Date.UTC(y, m - 1 - (WINDOW_MONTHS - 1), 1));
-  const start = first.toISOString().slice(0, 10);
-  const rows = await getIncomeVsExpenses(ctx.ownerId, start, `${ctx.today.slice(0, 7)}-31`);
-  await ctx.fx.prepare(rows.map((r) => r.currency));
+  const from = rangeStart(ctx.period, ctx.today);
+  const end = `${ctx.today.slice(0, 7)}-31`;
+  const [rows, dailyRows] = await Promise.all([
+    getIncomeVsExpenses(ctx.ownerId, from ?? "1900-01-01", end),
+    ctx.period === "month" ? getIncomeVsExpensesDaily(ctx.ownerId, from as string, end) : Promise.resolve([]),
+  ]);
+  await ctx.fx.prepare([...rows, ...dailyRows].map((r) => r.currency));
+
   const months = new Map<string, { income: number; expenses: number }>();
   let income = 0;
   let expenses = 0;
+  // dashboard savings-rate basis: expenses summed as |slice| (financial-health.ts)
+  let savingsIncome = 0;
+  let savingsExpenses = 0;
   for (const r of rows) {
-    const v = sliceValue(ctx.fx, {
-      categoryId: null,
-      currency: r.currency,
-      reportingCurrency: r.reportingCurrency,
-      totalAmount: r.totalAmount == null ? null : Number(r.totalAmount),
-      totalReporting: r.totalReporting == null ? null : Number(r.totalReporting),
-    });
+    const v = flowValue(ctx.fx, r);
     if (v == null) {
       ctx.partial.add("fx_rate_missing");
       continue;
@@ -428,16 +528,116 @@ export async function buildCashflow(ctx: MemberCtx): Promise<NonNullable<Section
     if (r.type === "I") {
       cur.income += v;
       income += v;
+      savingsIncome += v;
     } else {
       cur.expenses += -v;
       expenses += -v;
+      savingsExpenses += Math.abs(v);
     }
     months.set(r.month, cur);
   }
   const monthly = [...months.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([month, v]) => ({ month, income: r2(v.income), expenses: r2(v.expenses) }));
-  return { windowMonths: WINDOW_MONTHS, income: r2(income), expenses: r2(expenses), monthly };
+
+  const days = new Map<string, { income: number; expenses: number }>();
+  for (const r of dailyRows) {
+    const v = flowValue(ctx.fx, r);
+    if (v == null) continue; // already flagged by the monthly pass (same slices)
+    const cur = days.get(r.day) ?? { income: 0, expenses: 0 };
+    if (r.type === "I") cur.income += v;
+    else cur.expenses += -v;
+    days.set(r.day, cur);
+  }
+  const daily = [...days.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, v]) => ({ date, income: r2(v.income), expenses: r2(v.expenses) }));
+
+  const windowMonths = from
+    ? monthsSpanned(from, ctx.today)
+    : monthly.length > 0
+      ? monthsSpanned(`${monthly[0].month}-01`, ctx.today)
+      : 0;
+
+  return {
+    from,
+    windowMonths,
+    income: r2(income),
+    expenses: r2(expenses),
+    monthly,
+    daily,
+    savings: {
+      income: r2(savingsIncome),
+      expenses: r2(savingsExpenses),
+      ratePct: savingsRatePct(savingsIncome, savingsExpenses),
+    },
+    // DTI discloses debt service: only when the member ALSO shares loans.
+    debtToIncome: ctx.granted.includes("loans") ? await buildDebtToIncome(ctx) : null,
+  };
+}
+
+function toDebtLoan(l: OwnerLoanRow): DebtServiceLoan {
+  return {
+    id: l.id,
+    accountId: l.accountId,
+    currency: l.currency ?? null,
+    principal: Number(l.principal),
+    annualRate: Number(l.annualRate),
+    termMonths: l.termMonths == null ? null : Number(l.termMonths),
+    startDate: String(l.startDate),
+    paymentAmount: l.paymentAmount == null ? null : Number(l.paymentAmount),
+    paymentFrequency: l.paymentFrequency ?? null,
+    extraPayment: l.extraPayment == null ? null : Number(l.extraPayment),
+    residualValue: l.residualValue == null ? null : Number(l.residualValue),
+  };
+}
+
+/**
+ * The dashboard's Debt-to-Income (financial-health.ts + health/debt-service.ts) for the owner:
+ * trailing-12-month debt service / trailing-12-month income, converted at the VIEWER's rates.
+ * A missing rate yields pct null + partial (never a 1:1 conversion).
+ */
+async function buildDebtToIncome(ctx: MemberCtx): Promise<NonNullable<NonNullable<SectionsDto["cashflow"]>["debtToIncome"]>> {
+  const [y, m, d] = ctx.today.split("-").map(Number);
+  const twelveStart = new Date(Date.UTC(y - 1, m - 1, d)).toISOString().slice(0, 10);
+  const [incomeRows, loans, untracked] = await Promise.all([
+    getIncomeVsExpenses(ctx.ownerId, twelveStart, "9999-12-31"),
+    getOwnerLoans(ctx.ownerId),
+    getOwnerUntrackedLiabilities(ctx.ownerId, twelveStart, ctx.today),
+  ]);
+  const debtLoans = loans.map(toDebtLoan);
+  const debtCcys = [
+    ...debtLoans.map((l) => l.currency),
+    ...untracked.flatMap((a: UntrackedLiabilityAccount) => [a.currency, ...a.payments.map((p) => p.currency)]),
+  ].map((c) => c ?? ctx.fx.display);
+  await ctx.fx.prepare([...incomeRows.map((r) => r.currency), ...debtCcys]);
+
+  let fxMissing = debtCcys.some((c) => ctx.fx.rate(c) == null);
+  let income12m = 0;
+  for (const r of incomeRows) {
+    if (r.type !== "I") continue;
+    const v = flowValue(ctx.fx, r);
+    if (v == null) fxMissing = true;
+    else income12m += v;
+  }
+  if (fxMissing) {
+    ctx.partial.add("fx_rate_missing");
+    return { pct: null, reliable: true, debtPayments12m: 0, income12m: 0 };
+  }
+
+  const service = computeDebtService({
+    loans: debtLoans,
+    untrackedLiabilities: untracked,
+    windowStart: twelveStart,
+    windowEnd: ctx.today,
+    convert: (amount, currency) => amount * (ctx.fx.rate(currency ?? ctx.fx.display) as number),
+  });
+  return {
+    pct: dtiPct(service.total, income12m),
+    reliable: service.reliable,
+    debtPayments12m: r2(service.total),
+    income12m: r2(income12m),
+  };
 }
 
 /** Registry dispatch: one builder per FAMILY_SECTIONS_V1 entry (exhaustive by type). */

@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
 import { FAMILY_STRINGS } from "@/lib/family/strings";
-import { FAMILY_SECTIONS_V1, type FamilySection } from "@/lib/family/sections";
+import { FAMILY_OVERVIEW_SECTIONS, type FamilySection } from "@/lib/family/sections";
 import { SectionChecklist } from "./section-checklist";
 import { getSectionDescription, getSectionLabel } from "./section-labels";
 import { useStepUp } from "./use-step-up";
@@ -22,13 +22,13 @@ interface InviteDialogProps {
 
 export function InviteDialog({ onClose, onSuccess }: InviteDialogProps) {
   const [email, setEmail] = useState("");
-  const [selected, setSelected] = useState<Set<FamilySection>>(new Set(FAMILY_SECTIONS_V1));
+  const [selected, setSelected] = useState<Set<FamilySection>>(new Set(FAMILY_OVERVIEW_SECTIONS));
   const [mustShareBack, setMustShareBack] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const stepUp = useStepUp();
 
-  const sections = FAMILY_SECTIONS_V1.filter((s) => selected.has(s));
+  const sections = FAMILY_OVERVIEW_SECTIONS.filter((s) => selected.has(s));
 
   const submit = async (e?: React.FormEvent) => {
     e?.preventDefault();

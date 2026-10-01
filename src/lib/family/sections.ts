@@ -33,6 +33,23 @@ export const FAMILY_SECTIONS_V1 = [
 export type FamilySection = (typeof FAMILY_SECTIONS_V1)[number];
 
 /**
+ * Sections retired from the Family overview (2026-10): no longer offered in the share /
+ * change-sections checklists, not built by the overview endpoint and not rendered. They stay in
+ * FAMILY_SECTIONS_V1 (zod enum, CHECK constraints, label registry) so existing share rows that
+ * contain them remain valid; they are simply ignored by the overview.
+ */
+export const FAMILY_HIDDEN_SECTIONS: readonly FamilySection[] = ["accounts", "goals", "budgets"];
+
+/** Sections the Family overview builds, renders and offers for new shares (registry order). */
+export const FAMILY_OVERVIEW_SECTIONS: readonly FamilySection[] = FAMILY_SECTIONS_V1.filter(
+  (s) => !FAMILY_HIDDEN_SECTIONS.includes(s),
+);
+
+export function isOverviewSection(s: string): s is FamilySection {
+  return FAMILY_OVERVIEW_SECTIONS.includes(s as FamilySection);
+}
+
+/**
  * Zod enum for validation, form handling, and API contracts.
  */
 export const FamilySectionSchema = z.enum(FAMILY_SECTIONS_V1);
@@ -56,11 +73,11 @@ export const SECTION_DISPLAY_NAMES: Record<FamilySection, string> = {
 export const SECTION_DESCRIPTIONS: Record<FamilySection, string> = {
   net_worth: "Total net worth, assets, and liabilities + historical trend",
   accounts: "Account list with names, types, and balances",
-  investments: "Investment holdings, allocation, and performance",
+  investments: "Investment performance (value, cost basis, returns)",
   goals: "Savings goals with targets and progress",
   budgets: "Budget categories with spending vs targets",
   loans: "Loans with balances and payoff schedules",
-  cashflow: "Monthly income and expense summary",
+  cashflow: "Monthly income, expenses and savings rate",
 };
 
 /**

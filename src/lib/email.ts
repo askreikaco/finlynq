@@ -709,7 +709,7 @@ export function familyInviteEmail(inviterName: string, acceptUrl: string) {
 /** Sent to the OWNER when an invitee accepts. `viewerName` is a display name, never an email. */
 export function familyShareAcceptedEmail(viewerName: string) {
   const name = oneLine(viewerName);
-  const sharingUrl = `${APP_URL()}/family`;
+  const sharingUrl = `${APP_URL()}/family/share`;
   const html = baseLayout(
     `Invitation accepted`,
     `<p style="color:#3f3f46;line-height:1.6">${escapeHtml(name)} has accepted your Family Wealth invitation.</p>

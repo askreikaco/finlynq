@@ -34,10 +34,23 @@ function toneForDti(pct: number): string {
  * the anomaly backstop). Data is passed down from the dashboard page (which
  * already fetches `/api/health-score`), so this adds no extra request.
  */
-export function KeyMetrics({ health }: { health: HealthData | null }) {
+export type KeyMetricsData = Pick<HealthData, "savingsRatePct" | "dti">;
+
+export interface KeyMetricsProps {
+  health: KeyMetricsData | null;
+  /** Window caption of the savings rate (dashboard: "last 3 months"). */
+  savingsWindow?: string;
+  /**
+   * Per-metric "can't be shown" reason (Family overview: section not shared). The cell then reads
+   * "—" in the neutral tone with this text, never a computed or zero figure.
+   */
+  unavailable?: { savings?: string; dti?: string };
+}
+
+export function KeyMetrics({ health, savingsWindow = "last 3 months", unavailable }: KeyMetricsProps) {
   const loading = health === null;
-  const savings = health?.savingsRatePct ?? null;
-  const dtiPct = health?.dti?.pct ?? null;
+  const savings = unavailable?.savings ? null : (health?.savingsRatePct ?? null);
+  const dtiPct = unavailable?.dti ? null : (health?.dti?.pct ?? null);
   const dtiReliable = health?.dti?.reliable ?? true;
 
   const cells = [
@@ -47,7 +60,7 @@ export function KeyMetrics({ health }: { health: HealthData | null }) {
       icon: PiggyBank,
       value: savings != null ? `${savings}%` : "—",
       tone: savings != null ? toneForSavings(savings) : NEUTRAL,
-      sub: savings != null ? "of income saved · last 3 months" : "No income data yet",
+      sub: unavailable?.savings ?? (savings != null ? `of income saved · ${savingsWindow}` : "No income data yet"),
     },
     {
       key: "dti",
@@ -60,8 +73,8 @@ export function KeyMetrics({ health }: { health: HealthData | null }) {
       // carries, so the figure is the CORRECTED one. Greying it out would tell
       // the user to distrust the better number.
       tone: dtiPct == null ? NEUTRAL : toneForDti(dtiPct),
-      sub:
-        dtiPct == null
+      sub: unavailable?.dti ??
+        (dtiPct == null
           ? "No income data yet"
           : dtiReliable
             ? "debt payments vs income · last 12 months"
@@ -69,7 +82,7 @@ export function KeyMetrics({ health }: { health: HealthData | null }) {
             // capped at the balance it carries because payments exceeded it —
             // the pay-in-full case. Say that, rather than the old "go check
             // your data", which pointed the user at nothing actionable.
-            : "cards paid in full excluded · last 12 months",
+            : "cards paid in full excluded · last 12 months"),
     },
   ];
 

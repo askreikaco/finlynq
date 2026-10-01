@@ -6,11 +6,10 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatCurrency, getCurrentMonth, getMonthLabel } from "@/lib/currency";
 import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
-import { Sparkline } from "@/components/sparkline";
-import { DollarSign, ArrowUpRight, ArrowDownRight, TrendingUp, CreditCard, Target, User, Upload, FileUp } from "lucide-react";
+import { DollarSign, TrendingUp, CreditCard, Target, User, Upload, FileUp } from "lucide-react";
 import { motion } from "framer-motion";
-import { AnimatedNumber } from "./_components/animated-number";
 import { StatCard } from "./_components/stat-card";
+import { NetWorthHeroCard } from "./_components/net-worth-hero-card";
 import { HealthScoreCard } from "./_components/health-score-card";
 import { KeyMetrics } from "./_components/key-metrics";
 import { ActionCenter } from "./_components/action-center";
@@ -27,7 +26,6 @@ import { useDevMode } from "@/hooks/use-dev-mode";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { CurrencyAuditBanner } from "@/components/currency-audit-banner";
 import type { DashboardData, HealthData } from "./_components/types";
-import { formatPercent } from "@/lib/locale";
 import { PageHeader } from "@/components/mobile";
 
 // --- Quick Import Widget ---
@@ -381,55 +379,17 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Hero Card */}
         <motion.div variants={itemVariants} className="lg:col-span-2">
-          <Link href="/accounts">
-            <Card
-              className="relative overflow-hidden group cursor-pointer card-hover mouse-glow hover:scale-[1.005] transition-transform duration-300 rounded-2xl"
-              onMouseMove={handleMouseMove}
-            >
-              {/* Decorative gradient orbs */}
-              <div className="absolute -top-20 -right-20 w-48 h-48 rounded-full bg-indigo-500/8 blur-3xl dark:bg-indigo-400/5 pointer-events-none" />
-              <div className="absolute -bottom-16 -left-16 w-40 h-40 rounded-full bg-violet-500/6 blur-3xl dark:bg-violet-400/4 pointer-events-none" />
-
-              <CardContent className="relative pt-6 pb-6 px-6">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-3">
-                    {/* Label */}
-                    <p className="text-xs font-medium text-muted-foreground tracking-wide uppercase">
-                      Total Net Worth
-                    </p>
-
-                    {/* Big number */}
-                    <p className="text-4xl md:text-5xl font-bold tracking-tight hero-number leading-none">
-                      <AnimatedNumber value={totalNetWorth} currency={apiDisplayCurrency} />
-                    </p>
-
-                    {/* Change pill */}
-                    <div className="flex items-center gap-2.5 mt-1">
-                      {momChange >= 0 ? (
-                        <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-emerald-600 bg-emerald-100/80 dark:bg-emerald-950/60 dark:text-emerald-400 px-2.5 py-0.5 rounded-full">
-                          <ArrowUpRight className="h-3 w-3" />
-                          +{formatPercent(momPct, 1)}
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-rose-600 bg-rose-100/80 dark:bg-rose-950/60 dark:text-rose-400 px-2.5 py-0.5 rounded-full">
-                          <ArrowDownRight className="h-3 w-3" />
-                          {formatPercent(momPct, 1)}
-                        </span>
-                      )}
-                      <span className="text-[11px] text-muted-foreground">
-                        {momChange >= 0 ? "+" : ""}{formatCurrency(momChange, apiDisplayCurrency)} vs last month
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Mini sparkline */}
-                  <div className="hidden md:block w-40 h-20 opacity-50 group-hover:opacity-100 transition-opacity duration-300">
-                    <Sparkline data={nwSparkline} color="#6366f1" labels={nwSparkLabels} currency={apiDisplayCurrency} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
+          <NetWorthHeroCard
+            href="/accounts"
+            onMouseMove={handleMouseMove}
+            value={totalNetWorth}
+            currency={apiDisplayCurrency}
+            change={momChange}
+            changePct={momPct}
+            changeCaption="vs last month"
+            sparkData={nwSparkline}
+            sparkLabels={nwSparkLabels}
+          />
         </motion.div>
 
         {/* Health Score */}
