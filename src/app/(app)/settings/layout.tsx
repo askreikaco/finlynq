@@ -118,7 +118,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
         aria-label="Settings sections"
         className="hidden md:block w-56 shrink-0"
       >
-        <div className="sticky top-6">
+        <div className="sticky top-[calc(1.5rem+var(--sat))]">
           <p className="px-3 mb-2 text-[10px] font-semibold tracking-widest uppercase text-muted-foreground">
             Settings
           </p>

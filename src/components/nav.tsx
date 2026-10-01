@@ -25,7 +25,6 @@ import {
   ChevronLeft,
   ChevronDown,
   ChevronRight,
-  X,
   MoreHorizontal,
   ShieldCheck,
   Inbox,
@@ -110,19 +109,18 @@ const toolLinks: NavItem[] = [
   { href: "/settings", label: "Settings", icon: Settings, color: ACTIVE_ACCENT, mode: "prod" },
 ];
 
-const mobileBarItems: NavItem[] = [
+export const mobileBarItems: NavItem[] = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard, color: ACTIVE_ACCENT },
-  { href: "/transactions", label: "Txns", icon: ArrowLeftRight, color: ACTIVE_ACCENT },
-  { href: "/import", label: "Import", icon: Upload, color: ACTIVE_ACCENT },
-  { href: "/budgets", label: "Budgets", icon: PiggyBank, color: ACTIVE_ACCENT },
+  { href: "/accounts", label: "Accounts", icon: Wallet, color: ACTIVE_ACCENT },
+  { href: "/portfolio", label: "Portfolio", icon: TrendingUp, color: ACTIVE_ACCENT },
+  { href: "/transactions", label: "Transactions", icon: ArrowLeftRight, color: ACTIVE_ACCENT },
 ];
 
-const allFlatItems = navGroups.flatMap((g) => g.items).concat(toolLinks).concat(adminLinks);
+export const allFlatItems = navGroups.flatMap((g) => g.items).concat(toolLinks).concat(adminLinks);
 
 export function Nav() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
   const [adminPref, setAdminPref] = useState<boolean | null>(null);
   const [devMode, setDevMode] = useState(false);
@@ -238,7 +236,6 @@ export function Nav() {
         href={item.href}
         title={!showLabel ? item.label : undefined}
         aria-current={isActive ? "page" : undefined}
-        onClick={() => setMobileOpen(false)}
         className={cn(
           "group/link relative flex items-center gap-3 rounded-lg text-[13px] font-medium transition-all duration-200",
           showLabel ? "px-3 py-2" : "px-0 py-2 justify-center",
@@ -274,7 +271,7 @@ export function Nav() {
     <nav
       aria-label="Main navigation"
       className={cn(
-        "hidden md:flex flex-col bg-sidebar h-screen sticky top-0 border-r border-sidebar-border/50 transition-[width] duration-200 ease-in-out overflow-hidden",
+        "hidden md:flex flex-col bg-sidebar h-[calc(100vh-var(--sat))] sticky top-safe border-r border-sidebar-border/50 transition-[width] duration-200 ease-in-out overflow-hidden",
         collapsed ? "w-14" : "w-60"
       )}
     >
@@ -403,17 +400,19 @@ export function Nav() {
   );
 
   // Mobile bottom bar
+  const moreActive = pathname === "/more" || pathname.startsWith("/more/");
   const mobileBar = (
-    <nav aria-label="Mobile navigation" className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-sidebar border-t border-sidebar-border pb-[env(safe-area-inset-bottom)]">
-      <div className="flex items-center justify-around h-14">
+    <nav aria-label="Mobile navigation" className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-sidebar border-t border-sidebar-border pb-[var(--sab)] pl-[var(--sal)] pr-[var(--sar)]">
+      <div className="flex items-stretch justify-around h-14">
         {mobileBarItems.map((item) => {
-          const isActive = pathname.startsWith(item.href);
+          const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
           return (
             <Link
               key={item.href}
+              aria-current={isActive ? "page" : undefined}
               href={item.href}
               className={cn(
-                "flex flex-col items-center gap-0.5 py-1 px-3 text-[10px] font-medium transition-colors",
+                "flex min-w-0 flex-1 flex-col items-center gap-0.5 py-1 px-0.5 text-[10px] font-medium tracking-tight whitespace-nowrap transition-colors",
                 isActive ? "text-sidebar-primary" : "text-sidebar-foreground/50"
               )}
             >
@@ -422,80 +421,26 @@ export function Nav() {
             </Link>
           );
         })}
-        <button
-          onClick={() => setMobileOpen(!mobileOpen)}
-          aria-expanded={mobileOpen}
-          aria-label="Show all pages"
+        <Link
+          href="/more"
+          aria-label="More"
+          aria-current={moreActive ? "page" : undefined}
           className={cn(
-            "flex flex-col items-center gap-0.5 py-1 px-3 text-[10px] font-medium transition-colors",
-            mobileOpen ? "text-sidebar-primary" : "text-sidebar-foreground/50"
+            "flex min-w-0 flex-1 flex-col items-center gap-0.5 py-1 px-0.5 text-[10px] font-medium tracking-tight whitespace-nowrap transition-colors",
+            moreActive ? "text-sidebar-primary" : "text-sidebar-foreground/50"
           )}
         >
-          {mobileOpen ? <X className="h-5 w-5" /> : <MoreHorizontal className="h-5 w-5" />}
+          <MoreHorizontal className="h-5 w-5" />
           More
-        </button>
+        </Link>
       </div>
     </nav>
-  );
-
-  // Mobile slide-up panel (all pages + sign out)
-  const mobilePanel = mobileOpen && (
-    <div className="md:hidden fixed inset-0 z-40">
-      <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} aria-hidden="true" />
-      <div className="absolute bottom-[calc(3.5rem+env(safe-area-inset-bottom))] left-0 right-0 bg-sidebar border-t border-sidebar-border rounded-t-xl max-h-[70vh] overflow-y-auto p-4 space-y-1 animate-in slide-in-from-bottom duration-200">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-sm font-semibold text-sidebar-foreground">All Pages</span>
-          <ThemeToggle />
-        </div>
-        {allFlatItems
-          .filter((item) => !mobileBarItems.some((m) => m.href === item.href))
-          .filter((item) => devMode || item.mode !== "dev")
-          .filter((item) => !item.href.startsWith("/admin"))
-          .filter((item) => item.label !== "What's New" || hasAnnouncements)
-          .filter((item) => item.href !== "/family" || familyEnabled)
-          .map((item) => renderLink(item, true))}
-
-        {/* Admin section in mobile panel */}
-        {isAdmin && (
-          <div>
-            <button
-              onClick={toggleAdminGroup}
-              aria-expanded={adminOpen}
-              aria-controls="nav-admin-links-mobile"
-              className="flex items-center w-full px-3 py-2 mb-1 mt-2 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/30 hover:text-sidebar-foreground/50 transition-colors"
-            >
-              <ChevronDown
-                className={cn(
-                  "h-3 w-3 mr-1 transition-transform duration-200",
-                  !adminOpen && "-rotate-90"
-                )}
-              />
-              Admin
-            </button>
-            {adminOpen && (
-              <div id="nav-admin-links-mobile" className="space-y-0.5 pl-2">
-                {adminLinks
-                  .filter((item) => devMode || item.mode !== "dev")
-                  .map((item) => renderLink(item, true))}
-              </div>
-            )}
-          </div>
-        )}
-
-        <div className="border-t border-sidebar-border/50 pt-3 mt-3">
-          <div onClick={() => setMobileOpen(false)}>
-            <AccountSwitcher compact={false} />
-          </div>
-        </div>
-      </div>
-    </div>
   );
 
   return (
     <>
       {sidebar}
       {mobileBar}
-      {mobilePanel}
     </>
   );
 }
