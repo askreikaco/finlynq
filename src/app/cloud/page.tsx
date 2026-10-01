@@ -26,7 +26,7 @@ function CloudAuthPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialTab = searchParams.get("tab") === "register" ? "register" : "login";
-  const redirectTo = safeNext(searchParams.get("redirect"));
+  const redirectTo = safeNext(searchParams.get("redirect") ?? searchParams.get("next"));
   const stepParam = searchParams.get("step");
   const step: "unlock" | "mfa" | null = stepParam === "unlock" || stepParam === "mfa" ? stepParam : null;
   const googleError = searchParams.get("error");
@@ -64,6 +64,7 @@ function CloudAuthPageInner() {
 
   const [googleEnabled, setGoogleEnabled] = useState(false);
   const [unlockPassword, setUnlockPassword] = useState("");
+  const [unlockEmail, setUnlockEmail] = useState("");
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   // Debounced live check against /api/auth/username-check. We bump a
@@ -125,7 +126,10 @@ function CloudAuthPageInner() {
     } else if (googleError && googleError.startsWith("google_")) {
       setError(googleErrorMessage(googleError));
       // Strip error from URL
-      router.replace(`/cloud${tab === "register" ? "?tab=register" : ""}${redirectTo !== "/dashboard" ? `&redirect=${encodeURIComponent(redirectTo)}` : ""}`);
+      const qs = new URLSearchParams();
+      if (tab === "register") qs.set("tab", "register");
+      if (redirectTo !== "/dashboard") qs.set("redirect", redirectTo);
+      router.replace(`/cloud${qs.toString() ? `?${qs}` : ""}`);
     }
   }, [step, googleError, tab, redirectTo, router]);
 
@@ -150,6 +154,24 @@ function CloudAuthPageInner() {
     };
     fetchPending();
   }, [googleSignup]);
+
+  // Fetch masked email for the unlock step
+  useEffect(() => {
+    if (step !== "unlock") return;
+    (async () => {
+      try {
+        const res = await fetch("/api/auth/google/pending");
+        if (!res.ok) {
+          setError(googleErrorMessage("google_no_state"));
+          return;
+        }
+        const data = await res.json();
+        if (data.kind === "unlock") setUnlockEmail(data.email ?? "");
+      } catch {
+        setError(googleErrorMessage("google_no_state"));
+      }
+    })();
+  }, [step]);
 
   // Focus heading on step change
   useEffect(() => {
@@ -280,7 +302,13 @@ function CloudAuthPageInner() {
       const data = await res.json();
       if (!res.ok) {
         if (res.status === 401) {
-          setError(data.error || "Invalid password. Start over with Google.");
+          setError(
+            data.retry
+              ? "Wrong password. Try again."
+              : "Wrong password. Start over with Google."
+          );
+        } else if (res.status === 429) {
+          setError("Too many attempts. Start over with Google in a few minutes.");
         } else {
           setError(data.error || "Something went wrong. Try again.");
         }
@@ -331,7 +359,7 @@ function CloudAuthPageInner() {
           </p>
         )}
 
-        {step === "unlock" ? (
+        {step === "unlock" && !mfaRequired ? (
           <form onSubmit={handleUnlock} className="space-y-4">
             <h2
               ref={headingRef}
@@ -343,6 +371,11 @@ function CloudAuthPageInner() {
             <p className="text-sm text-muted-foreground">
               Enter your Finlynq password once to link Google to your account.
             </p>
+            {unlockEmail && (
+              <p className="text-sm text-foreground" data-testid="unlock-email">
+                Google account: {unlockEmail}
+              </p>
+            )}
             <div>
               <label htmlFor="google-unlock-password" className="mb-1.5 block text-sm font-medium text-foreground">
                 Password
@@ -399,6 +432,7 @@ function CloudAuthPageInner() {
                 value={mfaCode}
                 onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ""))}
                 placeholder="000000"
+                aria-label="Authentication code"
                 className="w-full rounded-lg border border-border bg-background px-4 py-3 text-center text-2xl font-mono tracking-[0.5em] text-foreground placeholder:text-muted-foreground/40 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 autoFocus
               />
@@ -426,7 +460,7 @@ function CloudAuthPageInner() {
             {googleEnabled && step === null && (
               <>
                 <a
-                  href={googleStartUrl(tab === "login" ? "login" : "login", redirectTo)}
+                  href={googleStartUrl("login", redirectTo)}
                   className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-background px-4 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
                 >
                   <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
