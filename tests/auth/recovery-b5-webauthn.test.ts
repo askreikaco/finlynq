@@ -563,6 +563,21 @@ describe.skipIf(!HAS_DB)("recovery B5 WebAuthn (real Postgres, real verification
       expect(out3.status).toBe(400);
     });
 
+    it("verifyPasskeyAssertion itself refuses a credential owned by someone else (wrong_owner), independent of the route's CAS", async () => {
+      const { beginAuthentication2fa, verifyPasskeyAssertion } = await import("@/lib/auth/webauthn");
+      const u = await mkUser(); const v = await mkUser();
+      await enroll(u);
+      const theirs = await enroll(v);
+      const row = (await passkeyRows(v.id))[0];
+      const { options, token } = await beginAuthentication2fa({ userId: u.id, pendingJti: "pj", credentials: [] });
+      const r = await verifyPasskeyAssertion({
+        token, purpose: "passkey-2fa", binding: { userId: u.id, pendingJti: "pj" },
+        response: theirs.assert(options.challenge, K),
+        passkey: { id: row.id, userId: row.userId, publicKey: row.publicKey, counter: row.counter, transports: row.transports },
+      });
+      expect(r).toEqual({ ok: false, reason: "wrong_owner" });
+    });
+
     it("pending-token handling: full session token rejected at both routes; passkey-register token not accepted as 2FA token; 2FA token bound to its pending jti; user without passkeys gets 400 at options", async () => {
       const u = await mkUser();
       const auth = await enroll(u);
