@@ -38,6 +38,7 @@ import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
 import { usePortfolioFormData } from "@/lib/hooks/usePortfolioFormData";
 import { useAccountHoldingSelection } from "@/lib/hooks/useAccountHoldingSelection";
 import { useSeedAccountFromParam } from "@/lib/hooks/useSeedAccountFromParam";
+import { AmountInput } from "@/components/amount-input";
 
 export default function FxConversionForm() {
   const router = useRouter();
@@ -356,12 +357,11 @@ export default function FxConversionForm() {
                   </span>
                 ) : null}
               </Label>
-              <Input
-                type="number"
+              <AmountInput
                 step="any"
                 inputMode="decimal"
                 value={fromAmount}
-                onChange={(e) => setFromAmount(e.target.value)}
+                onValueChange={(nv) => setFromAmount(nv)}
                 placeholder="100.00"
               />
               {errors.fromAmount && (
@@ -402,12 +402,11 @@ export default function FxConversionForm() {
                   </span>
                 ) : null}
               </Label>
-              <Input
-                type="number"
+              <AmountInput
                 step="any"
                 inputMode="decimal"
                 value={toAmount}
-                onChange={(e) => setToAmount(e.target.value)}
+                onValueChange={(nv) => setToAmount(nv)}
                 placeholder="73.50"
               />
               {errors.toAmount && (
@@ -433,12 +432,11 @@ export default function FxConversionForm() {
                   (optional)
                 </span>
               </Label>
-              <Input
-                type="number"
+              <AmountInput
                 step="any"
                 inputMode="decimal"
                 value={feeAmount}
-                onChange={(e) => setFeeAmount(e.target.value)}
+                onValueChange={(nv) => setFeeAmount(nv)}
                 placeholder="0.00"
               />
               {errors.feeAmount && (

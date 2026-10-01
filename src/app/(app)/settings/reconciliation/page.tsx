@@ -28,6 +28,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Link2 as Link2Icon, ExternalLink } from "lucide-react";
+import { AmountInput } from "@/components/amount-input";
 
 interface Thresholds {
   dateToleranceDays: number;
@@ -241,12 +242,11 @@ function NumberKnob({
     <div className="space-y-1">
       <div className="flex items-baseline justify-between gap-3">
         <label className="text-sm font-medium">{label}</label>
-        <Input
-          type="number"
+        <AmountInput
           inputMode="decimal"
           value={Number.isFinite(value) ? value : ""}
-          onChange={(e) => {
-            const n = parseFloat(e.target.value);
+          onValueChange={(nv) => {
+            const n = parseFloat(nv);
             if (Number.isFinite(n)) onChange(n);
           }}
           min={min}

@@ -54,6 +54,7 @@ import {
 import { computePureActionPatch } from "@/lib/rules/execute";
 import type { Condition, Action, ConditionGroup } from "@/lib/rules/schema";
 import { defaultConditionForField, defaultActionForKind } from "@/lib/rules/schema";
+import { AmountInput } from "@/components/amount-input";
 
 export type Category = { id: number; name: string; type: string; group: string };
 export type Account = { id: number; name: string };
@@ -350,7 +351,7 @@ export function RuleEditorDialog({
             <Label className="text-xs uppercase tracking-wide text-muted-foreground">Live preview (pure actions only)</Label>
             <div className="grid grid-cols-2 gap-2">
               <Input value={samplePayee} onChange={(e) => setSamplePayee(e.target.value)} placeholder="Sample payee" />
-              <Input type="number" value={sampleAmount} onChange={(e) => setSampleAmount(parseFloat(e.target.value) || 0)} placeholder="Sample amount" />
+              <AmountInput  value={sampleAmount} onValueChange={(nv) => setSampleAmount(parseFloat(nv) || 0)} placeholder="Sample amount" />
             </div>
             <div className="text-xs space-y-0.5 text-muted-foreground">
               <p>Sample: <span className="font-mono">{samplePayee || "(empty)"}</span> @ ${sampleAmount}</p>
@@ -425,7 +426,7 @@ function ConditionRow({
               <SelectItem value="between">between</SelectItem>
             </SelectContent>
           </Select>
-          <Input type="number" value={(cond as { value: number }).value} onChange={(e) => onChange({ value: parseFloat(e.target.value) || 0 } as Partial<Condition>)} className="flex-1" />
+          <AmountInput  value={(cond as { value: number }).value} onValueChange={(nv) => onChange({ value: parseFloat(nv) || 0 } as Partial<Condition>)} className="flex-1" />
         </>
       )}
       {cond.field === "quantity" && cond.op === "between" && (
@@ -439,8 +440,8 @@ function ConditionRow({
               <SelectItem value="between">between</SelectItem>
             </SelectContent>
           </Select>
-          <Input type="number" value={(cond as { min: number }).min ?? 0} onChange={(e) => onChange({ min: parseFloat(e.target.value) || 0 } as Partial<Condition>)} className="w-24" placeholder="min" />
-          <Input type="number" value={(cond as { max: number }).max ?? 0} onChange={(e) => onChange({ max: parseFloat(e.target.value) || 0 } as Partial<Condition>)} className="w-24" placeholder="max" />
+          <AmountInput  value={(cond as { min: number }).min ?? 0} onValueChange={(nv) => onChange({ min: parseFloat(nv) || 0 } as Partial<Condition>)} className="w-24" placeholder="min" />
+          <AmountInput  value={(cond as { max: number }).max ?? 0} onValueChange={(nv) => onChange({ max: parseFloat(nv) || 0 } as Partial<Condition>)} className="w-24" placeholder="max" />
         </>
       )}
 
@@ -455,7 +456,7 @@ function ConditionRow({
               <SelectItem value="between">between</SelectItem>
             </SelectContent>
           </Select>
-          <Input type="number" value={(cond as { value: number }).value} onChange={(e) => onChange({ value: parseFloat(e.target.value) || 0 } as Partial<Condition>)} className="flex-1" />
+          <AmountInput  value={(cond as { value: number }).value} onValueChange={(nv) => onChange({ value: parseFloat(nv) || 0 } as Partial<Condition>)} className="flex-1" />
         </>
       )}
       {cond.field === "amount" && cond.op === "between" && (
@@ -469,8 +470,8 @@ function ConditionRow({
               <SelectItem value="between">between</SelectItem>
             </SelectContent>
           </Select>
-          <Input type="number" value={(cond as { min: number }).min ?? 0} onChange={(e) => onChange({ min: parseFloat(e.target.value) || 0 } as Partial<Condition>)} className="w-24" placeholder="min" />
-          <Input type="number" value={(cond as { max: number }).max ?? 0} onChange={(e) => onChange({ max: parseFloat(e.target.value) || 0 } as Partial<Condition>)} className="w-24" placeholder="max" />
+          <AmountInput  value={(cond as { min: number }).min ?? 0} onValueChange={(nv) => onChange({ min: parseFloat(nv) || 0 } as Partial<Condition>)} className="w-24" placeholder="min" />
+          <AmountInput  value={(cond as { max: number }).max ?? 0} onValueChange={(nv) => onChange({ max: parseFloat(nv) || 0 } as Partial<Condition>)} className="w-24" placeholder="max" />
         </>
       )}
 
@@ -933,10 +934,9 @@ function VarBindingRow({
         </SelectContent>
       </Select>
       {from === "fixed" && (
-        <Input
-          type="number"
+        <AmountInput
           value={value?.value ?? 0}
-          onChange={(e) => onChange({ from: "fixed", value: parseFloat(e.target.value) || 0 })}
+          onValueChange={(nv) => onChange({ from: "fixed", value: parseFloat(nv) || 0 })}
           className="w-28"
           placeholder="value"
         />

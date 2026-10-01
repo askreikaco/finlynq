@@ -15,11 +15,15 @@ import { parseAmountInput } from "@/lib/parse-amount";
 import { getSeparators } from "@/lib/locale";
 
 type Props = Omit<ComponentProps<typeof Input>, "value" | "onChange" | "type"> & {
-  value: string;
+  value: string | number | null | undefined;
   onValueChange: (canonical: string) => void;
+  /** Render a bare <input> (for call sites that were raw inputs with their own classes). */
+  native?: boolean;
 };
 
-export function AmountInput({ value, onValueChange, ...rest }: Props) {
+export function AmountInput({ value: rawValue, onValueChange, native, ...rest }: Props) {
+  const value = rawValue == null ? "" : String(rawValue);
+  const Field = (native ? "input" : Input) as typeof Input;
   const { locale } = useLanguage();
   const sep = getSeparators(locale).decimal;
   const vi = sep !== ".";
@@ -37,13 +41,13 @@ export function AmountInput({ value, onValueChange, ...rest }: Props) {
 
   if (!vi) {
     return (
-      <Input {...rest} type="number" value={value} onChange={(e) => onValueChange(e.target.value)} />
+      <Field {...rest} type="number" value={value} onChange={(e) => onValueChange(e.target.value)} />
     );
   }
   // step/min/max are native-number attributes; drop them for the text input.
   const { step: _s, min: _mi, max: _ma, ...textProps } = rest as Record<string, unknown>;
   return (
-    <Input
+    <Field
       {...(textProps as object)}
       type="text"
       inputMode="decimal"

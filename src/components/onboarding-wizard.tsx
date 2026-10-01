@@ -34,6 +34,7 @@ import {
   CheckCheck,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { AmountInput } from "@/components/amount-input";
 
 interface OnboardingWizardProps {
   userEmail: string;
@@ -517,15 +518,14 @@ export function OnboardingWizard({
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
                             {currencySymbol}
                           </span>
-                          <input
-                            type="number"
+                          <AmountInput native
                             min={0}
                             step={10}
                             value={budgetAmounts[category]}
-                            onChange={(e) =>
+                            onValueChange={(nv) =>
                               setBudgetAmounts((prev) => ({
                                 ...prev,
-                                [category]: Number(e.target.value),
+                                [category]: Number(nv),
                               }))
                             }
                             className={`w-full rounded-lg border bg-background ${amountPadding} pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-foreground/20`}

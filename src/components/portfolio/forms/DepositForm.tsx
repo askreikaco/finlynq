@@ -32,6 +32,7 @@ import { todayISO } from "@/lib/utils/date";
 import { useEditId } from "@/lib/hooks/useEditId";
 import { usePortfolioFormData } from "@/lib/hooks/usePortfolioFormData";
 import { useSeedAccountFromParam } from "@/lib/hooks/useSeedAccountFromParam";
+import { AmountInput } from "@/components/amount-input";
 
 export default function DepositForm() {
   const router = useRouter();
@@ -366,12 +367,11 @@ export default function DepositForm() {
                   </span>
                 )}
               </Label>
-              <Input
-                type="number"
+              <AmountInput
                 step="any"
                 inputMode="decimal"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onValueChange={(nv) => setAmount(nv)}
                 placeholder="100.00"
               />
               {errors.amount && (

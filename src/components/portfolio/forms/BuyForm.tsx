@@ -38,6 +38,8 @@ import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
 import { usePortfolioFormData } from "@/lib/hooks/usePortfolioFormData";
 import { useAccountHoldingSelection } from "@/lib/hooks/useAccountHoldingSelection";
 import { useSeedAccountFromParam } from "@/lib/hooks/useSeedAccountFromParam";
+import { AmountInput } from "@/components/amount-input";
+import { getDisplayLocale } from "@/lib/locale";
 
 export default function BuyForm() {
   const router = useRouter();
@@ -324,7 +326,7 @@ export default function BuyForm() {
             )}
             {selectedHolding && (
               <p className="text-xs text-muted-foreground">
-                Currently holding {Number(selectedHolding.currentShares ?? 0).toLocaleString()} shares.
+                Currently holding {Number(selectedHolding.currentShares ?? 0).toLocaleString(getDisplayLocale())} shares.
               </p>
             )}
           </div>
@@ -346,12 +348,11 @@ export default function BuyForm() {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Quantity</Label>
-              <Input
-                type="number"
+              <AmountInput
                 step="any"
                 inputMode="decimal"
                 value={qty}
-                onChange={(e) => setQty(e.target.value)}
+                onValueChange={(nv) => setQty(nv)}
                 placeholder="100"
               />
               {errors.qty && (
@@ -367,12 +368,11 @@ export default function BuyForm() {
                   </span>
                 ) : null}
               </Label>
-              <Input
-                type="number"
+              <AmountInput
                 step="any"
                 inputMode="decimal"
                 value={totalCost}
-                onChange={(e) => setTotalCost(e.target.value)}
+                onValueChange={(nv) => setTotalCost(nv)}
                 placeholder="1000.00"
               />
               {errors.totalCost && (

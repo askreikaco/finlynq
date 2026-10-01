@@ -29,6 +29,7 @@ import { Trash2, RefreshCw, Mail, Wand2 } from "lucide-react";
 import { safeAccountName, safeName } from "@/lib/safe-name";
 import { formatCurrency, formatDateTimeLocal } from "@/lib/currency";
 import { EmailRuleDialog } from "./email-rule-dialog";
+import { AmountInput } from "@/components/amount-input";
 
 type Action =
   | "pending"
@@ -524,12 +525,11 @@ export function InboxEmailTab() {
                           </div>
                           <div className="space-y-1">
                             <label className="text-xs text-muted-foreground">Amount</label>
-                            <input
-                              type="number"
+                            <AmountInput native
                               step="0.01"
                               className="h-9 w-[110px] rounded-md border bg-background px-2 text-sm"
                               value={editAmount}
-                              onChange={(e) => setEditAmount(e.target.value)}
+                              onValueChange={(nv) => setEditAmount(nv)}
                             />
                           </div>
                           <div className="space-y-1">

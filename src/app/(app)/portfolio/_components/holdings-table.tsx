@@ -377,7 +377,7 @@ export function HoldingsTable({
                             </div>
                             <div>
                               <p className="text-muted-foreground">Days Held</p>
-                              <p className="font-medium">{daysHeld != null ? `${daysHeld.toLocaleString()} days` : "--"}</p>
+                              <p className="font-medium">{daysHeld != null ? `${daysHeld.toLocaleString(getDisplayLocale())} days` : "--"}</p>
                             </div>
                             <div>
                               <p className="text-muted-foreground">% of Portfolio</p>

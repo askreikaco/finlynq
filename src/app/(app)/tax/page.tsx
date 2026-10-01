@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { Calculator, PiggyBank, GraduationCap, Percent, ArrowRight, Lightbulb } from "lucide-react";
+import { AmountInput } from "@/components/amount-input";
 
 type TaxData = {
   tfsa: { totalRoom: number; used: number; remaining: number; currentYearLimit: number };
@@ -158,11 +159,11 @@ function TaxPageContent() {
           <div className="flex items-end gap-4 mb-4 flex-wrap">
             <div>
               <Label className="text-xs text-muted-foreground">Annual Income</Label>
-              <Input type="number" value={income} onChange={(e) => setIncome(e.target.value)} className="mt-1" />
+              <AmountInput  value={income} onValueChange={(nv) => setIncome(nv)} className="mt-1" />
             </div>
             <div>
               <Label className="text-xs text-muted-foreground">Contribution Amount</Label>
-              <Input type="number" value={contribution} onChange={(e) => setContribution(e.target.value)} className="mt-1" />
+              <AmountInput  value={contribution} onValueChange={(nv) => setContribution(nv)} className="mt-1" />
             </div>
             <Button onClick={compareRrspTfsa}>Compare</Button>
           </div>

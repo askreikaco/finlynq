@@ -30,6 +30,8 @@ import { Input } from "@/components/ui/input";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { LotAllocationMatrix } from "@/components/portfolio/lot-allocation-matrix";
 import { formatCurrency } from "@/lib/currency";
+import { AmountInput } from "@/components/amount-input";
+import { getDisplayLocale } from "@/lib/locale";
 
 interface LotRow {
   id: number;
@@ -413,12 +415,12 @@ export function LotInspectorDialog({
               <span
                 className={`text-xs font-mono ${sumMatches ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}
               >
-                {allocTotal.toLocaleString()} / {closureTotalForEdit.toLocaleString()} sh
+                {allocTotal.toLocaleString(getDisplayLocale())} / {closureTotalForEdit.toLocaleString(getDisplayLocale())} sh
               </span>
             </div>
             <p className="text-xs text-muted-foreground">
               Choose how many shares to close from each open lot. The total must
-              equal {closureTotalForEdit.toLocaleString()} shares. Requesting more
+              equal {closureTotalForEdit.toLocaleString(getDisplayLocale())} shares. Requesting more
               than a lot holds opens a short for the overflow.
             </p>
 
@@ -436,18 +438,17 @@ export function LotInspectorDialog({
                   <span className="flex items-center gap-2">
                     <span className="font-medium">Lot #{lot.id}</span>
                     <span className="text-muted-foreground">
-                      opened {lot.openDate} · {lot.qtyRemaining.toLocaleString()} sh @{" "}
+                      opened {lot.openDate} · {lot.qtyRemaining.toLocaleString(getDisplayLocale())} sh @{" "}
                       {formatCurrency(lot.costPerShare, lot.currency)}
                     </span>
                   </span>
-                  <Input
-                    type="number"
+                  <AmountInput
                     min={0}
                     step="any"
                     className="h-7 w-24 text-right"
                     value={alloc[lot.id] ?? ""}
-                    onChange={(e) => {
-                      const v = e.target.value;
+                    onValueChange={(nv) => {
+                      const v = nv;
                       setPreview(null);
                       setAlloc((a) => ({ ...a, [lot.id]: v }));
                     }}
@@ -467,7 +468,7 @@ export function LotInspectorDialog({
                   <p>
                     Opens {preview.openedShortLots.length} short lot
                     {preview.openedShortLots.length > 1 ? "s" : ""} (
-                    {preview.openedShortLots.map((s) => s.qty.toLocaleString()).join(", ")} sh).
+                    {preview.openedShortLots.map((s) => s.qty.toLocaleString(getDisplayLocale())).join(", ")} sh).
                   </p>
                 ) : (
                   <p>No short lots opened.</p>
@@ -476,7 +477,7 @@ export function LotInspectorDialog({
                   <p>
                     Restates realized gain:{" "}
                     {Object.entries(preview.realizedGainDeltaByYear)
-                      .map(([y, d]) => `${y}: ${d >= 0 ? "+" : ""}${d.toLocaleString()}`)
+                      .map(([y, d]) => `${y}: ${d >= 0 ? "+" : ""}${d.toLocaleString(getDisplayLocale())}`)
                       .join(", ")}
                   </p>
                 ) : (
@@ -537,7 +538,7 @@ export function LotInspectorDialog({
                       </span>
                     </div>
                     <div className="text-xs font-mono text-muted-foreground">
-                      {lot.qtyRemaining.toLocaleString()} / {lot.qtyOriginal.toLocaleString()} sh
+                      {lot.qtyRemaining.toLocaleString(getDisplayLocale())} / {lot.qtyOriginal.toLocaleString(getDisplayLocale())} sh
                       {" @ "}
                       {formatCurrency(lot.costPerShare, lot.currency)}
                     </div>
@@ -561,7 +562,7 @@ export function LotInspectorDialog({
                             {c.closeKind} · tx #{c.closeTxId} · {c.closeDate}
                           </span>
                           <span className="flex items-center gap-3 font-mono">
-                            <span>{c.qtyClosed.toLocaleString()} sh</span>
+                            <span>{c.qtyClosed.toLocaleString(getDisplayLocale())} sh</span>
                             <span className="text-muted-foreground">
                               @ {formatCurrency(c.proceedsPerShare, c.currency)}
                             </span>

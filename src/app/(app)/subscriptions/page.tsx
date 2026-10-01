@@ -45,6 +45,7 @@ import { PageSkeleton } from "@/components/page-skeleton";
 import { parseSaveError } from "@/lib/save-error";
 import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
 import { useDisplayCurrency } from "@/components/currency-provider";
+import { AmountInput } from "@/components/amount-input";
 
 type Subscription = {
   id: number;
@@ -595,12 +596,11 @@ function SubscriptionsPageContent() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label>Amount</Label>
-                    <Input
-                      type="number"
+                    <AmountInput
                       step="0.01"
                       value={form.amount}
-                      onChange={(e) =>
-                        setForm({ ...form, amount: e.target.value })
+                      onValueChange={(nv) =>
+                        setForm({ ...form, amount: nv })
                       }
                       required
                     />

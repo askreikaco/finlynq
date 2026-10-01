@@ -38,6 +38,8 @@ import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
 import { usePortfolioFormData } from "@/lib/hooks/usePortfolioFormData";
 import { useAccountHoldingSelection } from "@/lib/hooks/useAccountHoldingSelection";
 import { useSeedAccountFromParam } from "@/lib/hooks/useSeedAccountFromParam";
+import { AmountInput } from "@/components/amount-input";
+import { getDisplayLocale } from "@/lib/locale";
 
 type Direction = "income" | "expense";
 
@@ -425,12 +427,11 @@ export default function IncomeExpenseForm() {
             {sharesMode ? (
               <div className="space-y-1.5">
                 <Label>Quantity (shares)</Label>
-                <Input
-                  type="number"
+                <AmountInput
                   step="any"
                   inputMode="decimal"
                   value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
+                  onValueChange={(nv) => setQuantity(nv)}
                   placeholder="e.g. 1.2345"
                 />
                 {errors.quantity && (
@@ -552,12 +553,11 @@ export default function IncomeExpenseForm() {
                   (positive)
                 </span>
               </Label>
-              <Input
-                type="number"
+              <AmountInput
                 step="any"
                 inputMode="decimal"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onValueChange={(nv) => setAmount(nv)}
                 placeholder="25.00"
               />
               {errors.amount && (
@@ -625,7 +625,7 @@ export default function IncomeExpenseForm() {
             )}
             {sharesMode && impliedPricePerShare != null && (
               <p className="text-xs text-muted-foreground">
-                ≈ {impliedPricePerShare.toLocaleString(undefined, {
+                ≈ {impliedPricePerShare.toLocaleString(getDisplayLocale(), {
                   maximumFractionDigits: 6,
                 })}{" "}
                 per share
