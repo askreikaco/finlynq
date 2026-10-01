@@ -11,7 +11,7 @@
  * - All operations assume caller has authenticated
  */
 
-import { and, eq, gt, isNull, or } from "drizzle-orm";
+import { and, eq, gt, inArray, isNull, or } from "drizzle-orm";
 import { type DrizzleDb } from "@/db";
 import {
   familyShares,
@@ -311,4 +311,69 @@ export async function deleteUserFamilyData(
   await database.delete(userKeypairs).where(eq(userKeypairs.userId, userId));
   await database.delete(familySectionKeys).where(eq(familySectionKeys.ownerId, userId));
   await database.delete(familyLabels).where(eq(familyLabels.ownerId, userId));
+}
+
+/**
+ * Finalize awaiting_keys grants (P2).
+ * Converts 'awaiting_keys' -> 'ready' ONLY while the share itself is live
+ * (active / awaiting_owner_unlock). Revoked, suspended, declined, expired, key_reset and
+ * pending shares are never finalized. Key material is sealed by provisionGrants (owner session);
+ * this only flips the status marker, and a grant without key_sealed still yields no key.
+ */
+export async function finalizeGrants(
+  database: DrizzleDb,
+  shareId: string,
+): Promise<number> {
+  const [share] = await database
+    .select({ status: familyShares.status })
+    .from(familyShares)
+    .where(eq(familyShares.id, shareId))
+    .limit(1);
+  if (!share || (share.status !== "active" && share.status !== "awaiting_owner_unlock")) {
+    return 0;
+  }
+
+  const rows = await database
+    .update(familyKeyGrants)
+    .set({ status: "ready" })
+    .where(
+      and(
+        eq(familyKeyGrants.shareId, shareId),
+        eq(familyKeyGrants.status, "awaiting_keys"),
+      ),
+    )
+    .returning({ shareId: familyKeyGrants.shareId });
+
+  return rows.length;
+}
+
+/**
+ * Mark a share as key_reset (after password reset).
+ * Clears key_grants for this share; labels become generic until owner sweeps.
+ */
+export async function markShareKeyReset(
+  database: DrizzleDb,
+  shareId: string,
+  actorId: string,
+): Promise<void> {
+  // Update share status to key_reset
+  const [updated] = await database
+    .update(familyShares)
+    .set({ status: "key_reset" })
+    .where(
+      and(
+        eq(familyShares.id, shareId),
+        actorOnShare(actorId),
+        // Only states with a valid ->key_reset transition: never resurrect revoked/declined/expired.
+        inArray(familyShares.status, ["awaiting_owner_unlock", "active", "suspended"]),
+      ),
+    )
+    .returning({ id: familyShares.id });
+
+  if (!updated) {
+    throw new Error(`Share ${shareId} not found, not visible to ${actorId}, or not resettable`);
+  }
+
+  // Clear key grants (viewer can't unseal old keys)
+  await database.delete(familyKeyGrants).where(eq(familyKeyGrants.shareId, shareId));
 }

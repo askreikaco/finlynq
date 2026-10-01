@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { enqueueFamilySweep } from "@/lib/family/sweep";
 import { db, schema } from "@/db";
 import { eq, and, inArray, sql } from "drizzle-orm";
 import {
@@ -339,6 +340,10 @@ export async function POST(request: NextRequest) {
       ...enc,
     }).returning().get();
 
+    // Family sidecar label sync: fire-and-forget, never blocks/fails the edit.
+
+    enqueueFamilySweep(userId, dek, { entity: "loans" });
+
     return NextResponse.json(loan, { status: 201 });
   } catch (error: unknown) {
     if (error instanceof OwnershipError) {
@@ -399,6 +404,8 @@ export async function PUT(request: NextRequest) {
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const loan = await db.update(schema.loans).set(updatePayload as any).where(and(eq(schema.loans.id, id), eq(schema.loans.userId, userId))).returning().get();
+    // Family sidecar label sync: fire-and-forget, never blocks/fails the edit.
+    enqueueFamilySweep(userId, dek, { entity: "loans" });
     return NextResponse.json(loan);
   } catch (error: unknown) {
     if (error instanceof OwnershipError) {

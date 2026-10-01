@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { enqueueFamilySweep } from "@/lib/family/sweep";
 import { getCategories, createCategory, updateCategory, deleteCategory } from "@/lib/queries";
 import { requireAuth } from "@/lib/auth/require-auth";
 import { requireEncryption } from "@/lib/auth/require-encryption";
@@ -67,6 +68,8 @@ export async function POST(request: NextRequest) {
     if (parsed.error) return parsed.error;
     const enc = buildNameFields(dek, { name: parsed.data.name });
     const category = await createCategory(userId, { ...parsed.data, ...enc });
+    // Family sidecar label sync: fire-and-forget, never blocks/fails the edit.
+    enqueueFamilySweep(userId, dek, { entity: "categories" });
     return NextResponse.json(category, { status: 201 });
   } catch (error: unknown) {
     const duplicate = duplicateNameResponse(error);
@@ -88,6 +91,8 @@ export async function PUT(request: NextRequest) {
     if ("name" in data && data.name !== undefined) toEncrypt.name = data.name;
     const enc = buildNameFields(dek, toEncrypt);
     const category = await updateCategory(id, userId, { ...data, ...enc });
+    // Family sidecar label sync: fire-and-forget, never blocks/fails the edit.
+    enqueueFamilySweep(userId, dek, { entity: "categories" });
     return NextResponse.json(category);
   } catch (error: unknown) {
     const duplicate = duplicateNameResponse(error);
