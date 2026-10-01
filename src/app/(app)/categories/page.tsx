@@ -208,7 +208,9 @@ function CategoriesOverview() {
               {data.categories.map((c) => {
                 const segIdx = segments.findIndex((s) => s.id === c.id);
                 const dot = segIdx >= 0 ? color(segIdx) : CHART_COLORS.categories[11];
-                const ch = changeLabel(c.change);
+                // Nothing yet this month reads as "none", not a green "-100%".
+                const none = c.amount === 0;
+                const ch = none ? (data.partial ? "none yet" : "none") : changeLabel(c.change);
                 return (
                   <li key={c.id}>
                     <Link
@@ -238,7 +240,11 @@ function CategoriesOverview() {
                       <div className="flex items-center gap-2 justify-end">
                         <div className="text-right">
                           <p className="font-semibold tabular-nums">{formatCurrency(c.amount, cur)}</p>
-                          {ch && <p className={`text-xs font-medium tabular-nums ${toneFor(c.change)}`}>{ch} vs usual</p>}
+                          {ch && (
+                            <p className={`text-xs font-medium tabular-nums ${none ? "text-muted-foreground" : toneFor(c.change)}`}>
+                              {none ? ch : `${ch} vs usual`}
+                            </p>
+                          )}
                         </div>
                         <ChevronRight className="h-4 w-4 text-muted-foreground/60" />
                       </div>
