@@ -17,11 +17,10 @@ export async function GET(request: NextRequest) {
   const auth = await requireAuth(request);
 
   if (!auth.authenticated) {
-    return NextResponse.json({
-      authenticated: false,
-      method: null,
-      userId: null,
-    });
+    return NextResponse.json(
+      { authenticated: false, method: null, userId: null },
+      { headers: { "Cache-Control": "no-store" } }
+    );
   }
 
   // In managed mode, include onboarding state + admin flag + identity fields
@@ -77,5 +76,5 @@ export async function GET(request: NextRequest) {
     displayCurrency,
     mfaEnabled,
     googleEnabled: isGoogleConfigured(),
-  });
+  }, { headers: { "Cache-Control": "no-store" } }); // identity of the ACTIVE account: never cache across a switch
 }

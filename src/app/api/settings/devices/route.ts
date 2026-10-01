@@ -5,7 +5,8 @@
  *
  * Query params:
  * - id=<deviceId> → revoke single device, returns 404 if not found or not owned by user
- * - all=1 → revoke all devices and clear pf_device cookie
+ * - all=1 → revoke all of this user's devices and drop this user's entries from
+ *   pf_device (other accounts' entries on this browser are kept)
  *
  * Response: 200 {ok:true} | 404 {error:"Device not found"}
  */
@@ -13,7 +14,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth/require-auth";
 import { revokeDevice, revokeAllDevices } from "@/lib/auth/queries";
-import { deviceCookieOptions } from "@/lib/auth/trusted-device";
+import { deviceCookieOptions, removeUserDevicesFromList } from "@/lib/auth/trusted-device";
 
 export async function DELETE(request: NextRequest) {
   const auth = await requireAuth(request);
@@ -35,11 +36,16 @@ export async function DELETE(request: NextRequest) {
       // Revoke all devices
       await revokeAllDevices(userId);
 
-      // Clear pf_device cookie
+      // Drop only this user's entries from pf_device
       const response = NextResponse.json({ ok: true });
-      response.cookies.set("pf_device", "", {
-        ...deviceCookieOptions(),
-        maxAge: 0,
+      const current = request.cookies.get("pf_device")?.value;
+      const o = deviceCookieOptions();
+      const newDeviceList = current
+        ? (await removeUserDevicesFromList(current, userId)).newDeviceList
+        : "";
+      response.cookies.set("pf_device", newDeviceList, {
+        ...o,
+        maxAge: newDeviceList ? o.maxAge : 0,
       });
       return response;
     } else if (deviceId) {

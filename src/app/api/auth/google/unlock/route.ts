@@ -226,9 +226,9 @@ export async function POST(req: NextRequest) {
     let device = null;
     if (dek) {
       const userAgent = req.headers.get("user-agent") || undefined;
-      // Extract device ID from pf_device cookie to replace it
+      // pf_device is a per-user list: issueDevice replaces only THIS user's entry
       const pf_device = req.cookies.get("pf_device")?.value;
-      device = await issueDevice(userId, dek, pf_device, userAgent);
+      device = await issueDevice(userId, dek, userAgent, undefined, pf_device);
     } else {
       console.error("finish-login returned null DEK for session; skipping device issuance");
     }
@@ -241,7 +241,7 @@ export async function POST(req: NextRequest) {
 
     // Set device cookie if issued
     if (device) {
-      response.cookies.set("pf_device", device.newDeviceEntry, {
+      response.cookies.set("pf_device", device.cookieList, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",

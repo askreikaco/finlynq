@@ -1,0 +1,476 @@
+"use client";
+
+import { useEffect, useState, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import {
+  AlertTriangle,
+  Database,
+  Loader2,
+  PencilLine,
+  PiggyBank,
+  TrendingUp,
+} from "lucide-react";
+// Pure module (no DB/server imports) — safe in a client bundle.
+import { normalizeRequestedScopeLenient } from "@/lib/oauth-scopes";
+
+// Permissions block. Each entry is gated on whether the client requested
+// the corresponding scope (`mcp:read` for the read items, `mcp:write` for
+// the write item). Pre-scope clients (no `?scope=` parameter) default to
+// full access — same as before this PR — so the consent screen looks
+// identical for them. A `scope=mcp:read` request only renders the three
+// read items and the bottom "read AND write" warning becomes a "read-only"
+// note instead.
+const READ_PERMISSIONS = [
+  { icon: Database, text: "Read accounts, balances, and transactions" },
+  { icon: TrendingUp, text: "Read your portfolio and investment positions" },
+  { icon: PiggyBank, text: "Read budgets, goals, and spending history" },
+];
+const WRITE_PERMISSIONS = [
+  { icon: PencilLine, text: "Create, edit, and delete transactions, rules, and goals" },
+];
+
+/**
+ * Map known client_ids to human-readable names. Returns `null` when the id
+ * is not in our well-known list — callers fall back to the registered
+ * `client_name` from the DCR record (or, last resort, the raw `client_id`).
+ */
+function knownClientName(clientId: string): string | null {
+  const known: Record<string, string> = {
+    "claude.ai": "Claude",
+    "claude-desktop": "Claude Desktop",
+    "cursor": "Cursor",
+    "cline": "Cline",
+  };
+  return known[clientId] ?? null;
+}
+
+/**
+ * Returns true when `host` is finlynq.com, a subdomain of finlynq.com, or
+ * localhost / 127.0.0.1 (local dev). These are the only redirect destinations
+ * that a verified Finlynq integration is expected to use. An external host
+ * signals an arbitrary DCR client and triggers the consent warning banner.
+ *
+ * Guards against null/empty input — returns false (= show warning) so an
+ * unparseable redirect_uri is treated as untrusted rather than silently trusted.
+ */
+function isFinlynqHost(host: string | null | undefined): boolean {
+  if (!host) return false;
+  if (host === "localhost" || host === "127.0.0.1") return true;
+  if (host === "finlynq.com" || host.endsWith(".finlynq.com")) return true;
+  return false;
+}
+
+/**
+ * Parse the hostname out of a redirect_uri string. Returns null when the URI
+ * is malformed or empty — callers should treat a null result as untrusted.
+ */
+function redirectUriHost(uri: string): string | null {
+  if (!uri) return null;
+  try {
+    return new URL(uri).hostname;
+  } catch {
+    return null;
+  }
+}
+
+function AuthorizePageInner({ accountSlot }: { accountSlot?: React.ReactNode }) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const clientId = searchParams.get("client_id") ?? "";
+  const redirectUri = searchParams.get("redirect_uri") ?? "";
+  const responseType = searchParams.get("response_type") ?? "";
+  const state = searchParams.get("state") ?? "";
+  const codeChallenge = searchParams.get("code_challenge") ?? "";
+  const codeChallengeMethod = searchParams.get("code_challenge_method") ?? "S256";
+  // RFC 6749 §3.3 — space-separated list of scope tokens. Empty/missing
+  // defaults to the full read+write scope (back-compat: pre-scope-PR clients
+  // got full access, and we keep that until clients opt into narrower scopes).
+  //
+  // GH #318 — this MUST resolve the effective scope through the same
+  // `normalizeRequestedScopeLenient` the authorize route grants on, so the
+  // permissions rendered below always equal the permissions actually granted.
+  // It used to hand-roll the split and test `scopeTokens.includes("mcp:write")`
+  // directly: for a client requesting `openid email profile` (what mcp-remote
+  // sends) the token list was non-empty but matched nothing, so BOTH flags went
+  // false and the consent screen rendered an EMPTY permissions list — while the
+  // server granted full read+write. The user would have approved a blank
+  // screen. Never re-derive these flags from the raw query string.
+  const requestedScope = searchParams.get("scope") ?? "";
+  const grantedScope = normalizeRequestedScopeLenient(requestedScope);
+  const grantedTokens = grantedScope.split(/\s+/).filter(Boolean);
+  const wantsWrite = grantedTokens.includes("mcp:write");
+  const wantsRead = grantedTokens.includes("mcp:read") || wantsWrite;
+
+  const [sessionState, setSessionState] = useState<"loading" | "loggedIn" | "loggedOut">("loading");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  // Registered client metadata fetched from /api/oauth/client/[clientId].
+  // We display the registered `client_name` (set by the client at DCR time)
+  // alongside the redirect URI so the user can spot phishing clients whose
+  // registered name doesn't match what they expected to authorize.
+  type ClientMeta = { client_name: string; redirect_uris: string[] };
+  const [clientMeta, setClientMeta] = useState<ClientMeta | null>(null);
+  const [clientLookupError, setClientLookupError] = useState<string | null>(null);
+
+  // Check if user is logged in. `/api/auth/unlock` was removed in the SQLite
+  // purge (db9fd75) — /api/auth/session is the single source of truth now.
+  useEffect(() => {
+    fetch("/api/auth/session")
+      .then((r) => r.json())
+      .then((data) => {
+        setSessionState(data.authenticated ? "loggedIn" : "loggedOut");
+      })
+      .catch(() => setSessionState("loggedOut"));
+  }, []);
+
+  // Fetch the registered client metadata. We need this before the user clicks
+  // Allow so the displayed name reflects what's actually in the DB.
+  useEffect(() => {
+    if (!clientId) return;
+    fetch(`/api/oauth/client/${encodeURIComponent(clientId)}`)
+      .then(async (r) => {
+        if (r.status === 404) {
+          setClientLookupError(
+            "This OAuth client is not registered. Refusing to authorize."
+          );
+          return;
+        }
+        if (!r.ok) {
+          setClientLookupError("Could not load client metadata.");
+          return;
+        }
+        const data = (await r.json()) as ClientMeta;
+        setClientMeta(data);
+      })
+      .catch(() => setClientLookupError("Could not load client metadata."));
+  }, [clientId]);
+
+  // If not logged in, redirect to login with a return URL
+  useEffect(() => {
+    if (sessionState === "loggedOut") {
+      const returnUrl = `/oauth/authorize?${searchParams.toString()}`;
+      router.replace(`/cloud?redirect=${encodeURIComponent(returnUrl)}`);
+    }
+  }, [sessionState, searchParams, router]);
+
+  // Validate required params
+  const paramError = !clientId
+    ? "Missing client_id"
+    : !redirectUri
+      ? "Missing redirect_uri"
+      : responseType !== "code"
+        ? "response_type must be 'code'"
+        : !codeChallenge
+          ? "Missing code_challenge (PKCE required)"
+          : null;
+
+  async function handleAllow() {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/oauth/authorize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "allow",
+          client_id: clientId,
+          redirect_uri: redirectUri,
+          state,
+          code_challenge: codeChallenge,
+          code_challenge_method: codeChallengeMethod,
+          // Pass through the scope from the URL so the consent the user gave
+          // matches the scope persisted on the auth code + token. Empty falls
+          // through to DEFAULT_SCOPE on the server.
+          scope: requestedScope || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.redirectTo) {
+        setError(data.error ?? "Authorization failed");
+        return;
+      }
+      window.location.assign(data.redirectTo);
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleDeny() {
+    setLoading(true);
+    setError("");
+    try {
+      // Route through the server so the redirect_uri is validated against the
+      // client's registered list. The client-side branch used to navigate
+      // straight to whatever URI was in the query string, which let an
+      // attacker craft an /oauth/authorize URL pointing at attacker.com,
+      // wait for the user to click Deny, and exfil any state they could
+      // chain into the URL. The server now refuses to redirect off-list.
+      const res = await fetch("/api/oauth/authorize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "deny",
+          client_id: clientId,
+          redirect_uri: redirectUri,
+          state,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.redirectTo) {
+        setError(data.error_description ?? data.error ?? "Could not deny — invalid request");
+        return;
+      }
+      window.location.assign(data.redirectTo);
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (sessionState === "loading") {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (paramError) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background bg-dot-pattern">
+        <div className="mx-auto w-full max-w-md px-6 py-12 text-center space-y-4">
+          <AlertTriangle className="h-12 w-12 text-amber-400 mx-auto" />
+          <h1 className="text-xl font-bold text-foreground">Invalid Request</h1>
+          <p className="text-sm text-muted-foreground">{paramError}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If the client lookup failed (unknown client_id), refuse to render the
+  // consent UI at all — we don't want to display the raw redirect_uri from
+  // the URL as if it were authorized. The user has no way to make a safe
+  // decision when we can't even confirm the client is registered.
+  if (clientLookupError) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background bg-dot-pattern">
+        <div className="mx-auto w-full max-w-md px-6 py-12 text-center space-y-4">
+          <AlertTriangle className="h-12 w-12 text-amber-400 mx-auto" />
+          <h1 className="text-xl font-bold text-foreground">Cannot Authorize</h1>
+          <p className="text-sm text-muted-foreground">{clientLookupError}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Wait for the client lookup to complete before rendering the consent
+  // surface — otherwise the screen briefly shows the well-known mapping fall-
+  // back, which is exactly the spoofable text we're trying to fix.
+  if (!clientMeta) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  // Display order of preference:
+  //   1. The well-known mapping (so "claude.ai" renders as "Claude").
+  //   2. The DB-registered `client_name` from DCR — this is what the client
+  //      told us about itself at registration time. The user should see it
+  //      verbatim so they can spot phishing clients whose registered name
+  //      doesn't match what they expected (e.g. "Cloude" or "Anthropic
+  //      Helper").
+  //   3. The raw `client_id` as a last resort.
+  const wellKnown = knownClientName(clientId);
+  const displayName = wellKnown ?? clientMeta.client_name ?? clientId;
+  const showRegisteredName = !wellKnown && clientMeta.client_name && clientMeta.client_name !== clientId;
+
+  // Warning banner logic:
+  // Show a red/amber banner ONLY when the client is not in our well-known list
+  // AND the redirect_uri points outside the finlynq.com / localhost allowlist —
+  // i.e. the genuine phishing case (an arbitrary DCR client delivering the code
+  // to an external host). A well-known client (Claude, Cursor, …) legitimately
+  // redirects to its OWN non-finlynq host (claude.ai, cursor.com), so keying on
+  // `wellKnown` keeps that path unchanged. Safe because the redirect host is
+  // exact-match validated server-side per registered client (a well-known
+  // client can't be redirected to an attacker host) and an attacker can't make
+  // `knownClientName` truthy (it's keyed on hardcoded client ids).
+  const redirectHost = redirectUriHost(redirectUri);
+  const showUnverifiedBanner = !wellKnown && !isFinlynqHost(redirectHost);
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background bg-dot-pattern ambient-glow">
+      <div className="mx-auto w-full max-w-sm px-6 py-12">
+        {/* Logo + connecting indicator */}
+        <div className="flex items-center justify-center gap-4 mb-8">
+          {/* Finlynq logo */}
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 via-violet-500 to-purple-600 shadow-lg shadow-indigo-500/30">
+            <span className="text-lg font-bold text-white tracking-tight">PF</span>
+          </div>
+          {/* Connection dots */}
+          <div className="flex items-center gap-1">
+            <div className="h-1.5 w-1.5 rounded-full bg-border" />
+            <div className="h-1.5 w-1.5 rounded-full bg-border" />
+            <div className="h-1.5 w-1.5 rounded-full bg-border" />
+          </div>
+          {/* Client placeholder icon */}
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted border border-border shadow">
+            <span className="text-xl">🤖</span>
+          </div>
+        </div>
+
+        <div className="text-center mb-6">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            Authorize <span className="text-primary">{displayName}</span>
+          </h1>
+          {showRegisteredName && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Registered as{" "}
+              <span className="font-mono text-foreground">{clientMeta.client_name}</span>
+            </p>
+          )}
+          <p className="mt-2 text-sm text-muted-foreground">
+            {displayName} is requesting access to your Finlynq financial data.
+          </p>
+        </div>
+
+        {/* Server-rendered: which account will receive this grant. */}
+        {accountSlot}
+
+        {/* Permissions list — gated by the scope tokens the client requested. */}
+        <div className="rounded-xl border border-border bg-card p-4 space-y-3 mb-4">
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 mb-1">
+            This will allow {displayName} to:
+          </p>
+          {wantsRead && READ_PERMISSIONS.map(({ icon: Icon, text }) => (
+            <div key={text} className="flex items-center gap-3">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                <Icon className="h-3.5 w-3.5 text-primary" />
+              </div>
+              <span className="text-sm text-foreground/80">{text}</span>
+            </div>
+          ))}
+          {wantsWrite && WRITE_PERMISSIONS.map(({ icon: Icon, text }) => (
+            <div key={text} className="flex items-center gap-3">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                <Icon className="h-3.5 w-3.5 text-primary" />
+              </div>
+              <span className="text-sm text-foreground/80">{text}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Scope-aware warning. Read+write clients get the legacy amber
+            warning; read-only clients get a green note instead. */}
+        {wantsWrite ? (
+          <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 mb-4">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+              <p className="text-xs text-foreground/80 leading-relaxed">
+                {displayName} will be able to <strong>read AND write</strong> your
+                financial data — including creating, editing, and deleting
+                transactions — until you revoke the connection.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 mb-4">
+            <div className="flex items-start gap-2">
+              <Database className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
+              <p className="text-xs text-foreground/80 leading-relaxed">
+                {displayName} requested <strong>read-only</strong> access. It
+                cannot create, edit, or delete any of your data — only read it.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Exact redirect URI in monospace so the user sees what they're
+            actually authorizing. The hostname-only display in the prior
+            version hid the path, which a phishing client can use to look
+            harmless ("https://api.example.com/...") while the path goes
+            somewhere unexpected. */}
+        <div className="rounded-lg border border-border bg-card p-3 mb-5">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-1">
+            Authorization code will be sent to
+          </p>
+          <p className="text-xs font-mono text-foreground break-all">
+            {redirectUri}
+          </p>
+        </div>
+
+        {/* Unverified-app / external-redirect warning banner.
+            Shown when the client is not in the well-known list (Claude,
+            Cursor, …) OR the redirect host is outside the finlynq.com /
+            localhost allowlist. A user who started a legitimate MCP
+            connection sees this for an arbitrary DCR client and can abort. */}
+        {showUnverifiedBanner && (
+          <div className="rounded-lg border border-red-500/40 bg-red-500/8 p-3 mb-4">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
+              <p className="text-xs text-foreground/80 leading-relaxed">
+                <strong className="text-red-500">This is not a verified Finlynq app.</strong>{" "}
+                It will send an authorization code to{" "}
+                <span className="font-mono font-semibold">
+                  {redirectHost ?? redirectUri}
+                </span>
+                . Only continue if you started this connection.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {error && (
+          <div className="mb-4 rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3">
+            <p className="text-sm text-destructive">{error}</p>
+          </div>
+        )}
+
+        <div className="space-y-3">
+          <button
+            onClick={handleAllow}
+            disabled={loading}
+            className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {loading ? (
+              <><Loader2 className="h-4 w-4 animate-spin" /> Authorizing…</>
+            ) : (
+              "Allow Access"
+            )}
+          </button>
+          <button
+            onClick={handleDeny}
+            disabled={loading}
+            className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm font-medium text-foreground/70 transition-colors hover:bg-muted disabled:opacity-50"
+          >
+            Deny
+          </button>
+        </div>
+
+        <p className="mt-6 text-center text-xs text-muted-foreground/50">
+          You can revoke access at any time from Settings → API Key. Connections
+          you don&apos;t use are automatically removed after 60 days.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/** Client consent UI. `accountSlot` is the server-rendered "Continue as X" line. */
+export function AuthorizeClient({ accountSlot }: { accountSlot?: React.ReactNode }) {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    }>
+      <AuthorizePageInner accountSlot={accountSlot} />
+    </Suspense>
+  );
+}

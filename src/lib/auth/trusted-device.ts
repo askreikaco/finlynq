@@ -1,28 +1,24 @@
 /**
- * Trusted device management for passwordless re-login (multi-account safe).
+ * Trusted device management for passwordless re-login via Google.
  *
- * B2 hardening: pf_device cookie holds a list of per-user device credentials,
- * so account A's device doesn't overwrite account B's device when they log in
- * on the same browser.
+ * After a successful password unlock (or Google login on a new device),
+ * we issue a device trust by:
+ * 1. Generating a random 32-byte secret
+ * 2. Hashing it for database lookup (authLookupHash)
+ * 3. Wrapping the DEK with it (wrapDEKForSecret) and storing on user_devices
+ * 4. Setting an httpOnly cookie `pf_device=<deviceId>.<secret>[,<deviceId>.<secret>...]`
+ *    (multi-account: one entry per user, <= MAX_DEVICE_ENTRIES, each verified
+ *    independently; a login by B never overwrites A's entry)
  *
- * Format: `<uuid>.<secret>,<uuid>.<secret>,...` (comma-separated, ≤5 entries)
- * Legacy: single device entry (no comma) parses as a list of one.
- *
- * After a successful password unlock (or Google login on a new device):
- * 1. Generate random 32-byte secret
- * 2. Hash it for database lookup (authLookupHash)
- * 3. Wrap the DEK with it (wrapDEKForSecret) and store on user_devices
- * 4. Add/rotate the device entry for this user in the pf_device cookie
- *
- * On Google sign-in or zero-click, if pf_device is present:
- * 1. Parse all entries; find one whose device row owner==userId
- * 2. Verify secret hash + expiry
+ * On Google sign-in, if pf_device is present and valid:
+ * 1. Look up the device by id
+ * 2. Verify secret hash
  * 3. Unwrap the DEK
- * 4. Rotate: generate new secret, rewrap, store, update only this entry
+ * 4. Rotate: generate new secret, rewrap, store, update cookie
  * 5. Complete login without password
  *
  * Expiry: devices expire after PF_TRUSTED_DEVICE_DAYS (default 30, 0 = off).
- * Cookie Max-Age tracks the max expiry of all entries.
+ * Cookie Max-Age tracks the expiry for client-side cleanup.
  * Rotation extends expiry on each use (sliding window).
  */
 
@@ -32,68 +28,99 @@ import { userDevices } from "@/db/schema-pg";
 import { eq, and, isNull } from "drizzle-orm";
 import { authLookupHash, wrapDEKForSecret, unwrapDEKForSecret } from "@/lib/api-auth";
 
-/**
- * A single device entry (id.secret pair).
- */
+/** Max entries in one pf_device cookie (one per account on this browser). */
+export const MAX_DEVICE_ENTRIES = 5;
+/** Hard cap on the raw cookie we are willing to parse (5 entries are ~410 bytes). */
+const MAX_COOKIE_LENGTH = 1024;
+const ENTRY_RE = /^[A-Za-z0-9-]{1,64}\.[A-Za-z0-9_-]{1,128}$/;
+
 interface DeviceEntry {
   id: string;
   secret: string;
 }
 
 /**
- * Parse a single device entry from string format.
- * Format: <uuid>.<base64url secret>
- */
-function parseDeviceEntry(entry: string): DeviceEntry | null {
-  const parts = entry.split(".");
-  if (parts.length !== 2) return null;
-  return { id: parts[0], secret: parts[1] };
-}
-
-/**
- * Encode a single device entry to string format.
- */
-function encodeDeviceEntry(entry: DeviceEntry): string {
-  return `${entry.id}.${entry.secret}`;
-}
-
-/**
- * Parse all device entries from the cookie value.
- * Format: <uuid>.<secret>,<uuid>.<secret>,...
- * Legacy: single entry without comma is valid.
- * Returns an array (empty if parsing fails).
+ * pf_device value: `<id>.<secret>[,<id>.<secret>...]` (<= MAX_DEVICE_ENTRIES).
+ * A legacy single `<id>.<secret>` is a list of one. Malformed, duplicate and
+ * surplus entries are dropped; nothing here trusts the content (callers verify
+ * every entry against user_devices).
  */
 function parseDeviceList(cookieValue: string | undefined): DeviceEntry[] {
-  if (!cookieValue) return [];
-  // Split by comma; each part should be id.secret
-  const parts = cookieValue.split(",");
-  const entries: DeviceEntry[] = [];
-  for (const part of parts) {
-    const parsed = parseDeviceEntry(part);
-    if (parsed) entries.push(parsed);
+  if (!cookieValue || cookieValue.length > MAX_COOKIE_LENGTH) return [];
+  const out: DeviceEntry[] = [];
+  const seen = new Set<string>();
+  for (const part of cookieValue.split(",")) {
+    if (!ENTRY_RE.test(part)) continue;
+    const dot = part.indexOf(".");
+    const id = part.slice(0, dot);
+    if (seen.has(id)) continue;
+    seen.add(id);
+    out.push({ id, secret: part.slice(dot + 1) });
+    if (out.length >= MAX_DEVICE_ENTRIES) break;
   }
-  return entries;
+  return out;
 }
 
-/**
- * Encode all device entries into a comma-separated cookie value.
- * Bounded to MAX_DEVICE_ENTRIES (≤5 total).
- */
 function encodeDeviceList(entries: DeviceEntry[]): string {
-  const bounded = entries.slice(0, MAX_DEVICE_ENTRIES);
-  return bounded.map(encodeDeviceEntry).join(",");
+  return entries
+    .slice(0, MAX_DEVICE_ENTRIES)
+    .map((e) => `${e.id}.${e.secret}`)
+    .join(",");
+}
+
+type DeviceRow = typeof userDevices.$inferSelect;
+type EntryState = "ok" | "unknown" | "dead" | "badSecret";
+interface LoadedEntry {
+  entry: DeviceEntry;
+  row: DeviceRow | null;
+  state: EntryState;
 }
 
 /**
- * Device id from a pf_device cookie value, or undefined if absent/garbled.
- * Returns the first valid device ID (for backward compatibility and simple peeks).
+ * Verify EVERY entry independently against user_devices (<= 5 point lookups):
+ * unknown = no row, dead = revoked/expired, badSecret = row live but the
+ * secret does not match (stale/forged), ok = row live + secret matches.
  */
-export function parseDeviceIdFromCookie(cookieValue: string | undefined): string | undefined {
+async function loadEntries(cookieValue: string | undefined): Promise<LoadedEntry[]> {
   const entries = parseDeviceList(cookieValue);
-  return entries.length > 0 ? entries[0].id : undefined;
+  if (entries.length === 0) return [];
+  const now = Date.now();
+  const out: LoadedEntry[] = [];
+  for (const entry of entries) {
+    const rows = await db
+      .select()
+      .from(userDevices)
+      .where(eq(userDevices.id, entry.id))
+      .limit(1);
+    const row = rows[0] ?? null;
+    if (!row) out.push({ entry, row: null, state: "unknown" });
+    else if (row.revokedAt || (row.expiresAt && new Date(row.expiresAt).getTime() <= now)) {
+      out.push({ entry, row, state: "dead" });
+    } else if (!constantTimeEqual(row.secretHash, authLookupHash(entry.secret))) {
+      out.push({ entry, row, state: "badSecret" });
+    } else out.push({ entry, row, state: "ok" });
+  }
+  return out;
 }
 
-const MAX_DEVICE_ENTRIES = 5;
+/** First device id in a pf_device value (undefined if absent/garbled). Unverified. */
+export function parseDeviceIdFromCookie(cookieValue: string | undefined): string | undefined {
+  return parseDeviceList(cookieValue)[0]?.id;
+}
+
+/** All (unverified) device ids in a pf_device value. */
+export function parseDeviceIdsFromCookie(cookieValue: string | undefined): string[] {
+  return parseDeviceList(cookieValue).map((e) => e.id);
+}
+
+/** Id of THIS browser's verified, live device entry owned by userId (else undefined). */
+export async function findUserDeviceId(
+  cookieValue: string | undefined,
+  userId: string
+): Promise<string | undefined> {
+  const loaded = await loadEntries(cookieValue);
+  return loaded.find((l) => l.state === "ok" && l.row!.userId === userId)?.entry.id;
+}
 
 /**
  * Return cookie options for pf_device.
@@ -122,36 +149,63 @@ export function deviceCookieOptions(): {
 }
 
 /**
- * Issue (add or replace) a trusted device for a user after successful login.
+ * Issue a trusted device after successful login (password or Google with MFA cleared).
  *
  * Generates a random device secret, wraps the DEK with it, stores a row in
- * user_devices, and updates the pf_device cookie list with this user's device.
+ * user_devices, and returns the new entry plus the merged pf_device list.
  *
- * If the user already has a device in the list, that entry is revoked and
- * replaced with the new one. Other users' devices are preserved.
+ * Merge (when currentCookie is given): new entry first; this user's own
+ * entries in the cookie are revoked and dropped; OTHER users' entries are kept
+ * only if they verify (live row + secret); list bounded to MAX_DEVICE_ENTRIES,
+ * oldest (tail) evicted and revoked.
  *
  * If PF_TRUSTED_DEVICE_DAYS is 0 (disabled), returns null.
+ * Prunes devices to keep at most 10 non-revoked devices per user.
  *
- * Prunes user_devices to keep at most 10 non-revoked devices per user.
- *
- * @param userId - The user ID
- * @param dek - The decrypted DEK
- * @param currentDeviceList - The current pf_device cookie list (to preserve other users' devices)
- * @param userAgent - User-Agent header for device labeling (optional)
- * @returns { newDeviceEntry, maxAgeSeconds } or null if disabled
+ * @param replaceDeviceId - Optional extra device id to revoke (only if it belongs to the user)
+ * @param currentCookie - Current pf_device value (list) from the request
+ * @returns { id, cookieValue (new single entry), cookieList (value to Set-Cookie), maxAgeSeconds }
  */
 export async function issueDevice(
   userId: string,
   dek: Buffer,
-  currentDeviceList: string | undefined,
   userAgent?: string,
-): Promise<{ newDeviceEntry: string; maxAgeSeconds: number } | null> {
+  replaceDeviceId?: string,
+  currentCookie?: string
+): Promise<{ id: string; cookieValue: string; cookieList: string; maxAgeSeconds: number } | null> {
   const days = Math.max(
     0,
     parseInt(process.env.PF_TRUSTED_DEVICE_DAYS || "30", 10)
   );
   if (days === 0) {
     return null;
+  }
+
+  // Load + verify the existing list BEFORE inserting.
+  const existing = await loadEntries(currentCookie);
+
+  // Revoke replaceDeviceId if it belongs to this user, plus this user's own
+  // entries in the cookie (they are replaced by the new one).
+  const toRevoke = new Set<string>();
+  if (replaceDeviceId) {
+    try {
+      const device = await db
+        .select()
+        .from(userDevices)
+        .where(eq(userDevices.id, replaceDeviceId))
+        .limit(1);
+      if (device.length > 0 && device[0].userId === userId) toRevoke.add(replaceDeviceId);
+    } catch {
+      // Swallow error; continue to issue new device
+    }
+  }
+  for (const l of existing) if (l.row && l.row.userId === userId) toRevoke.add(l.entry.id);
+  for (const id of toRevoke) {
+    try {
+      await revokeDevice(userId, id);
+    } catch {
+      // best-effort
+    }
   }
 
   const deviceId = crypto.randomUUID();
@@ -162,7 +216,6 @@ export async function issueDevice(
   const now = new Date();
   const expiresAt = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
 
-  // Extract a simple label from User-Agent if provided
   let label: string | null = null;
   if (userAgent) {
     if (userAgent.includes("Chrome")) label = "Chrome";
@@ -184,7 +237,7 @@ export async function issueDevice(
     revokedAt: null,
   });
 
-  // Prune: keep at most 10 non-revoked devices per user
+  // Prune: keep at most 10 non-revoked devices, revoke oldest by created_at
   try {
     const userDevicesList = await db
       .select()
@@ -205,273 +258,153 @@ export async function issueDevice(
     // Swallow error; pruning is best-effort
   }
 
-  // Update the device list: remove any old device for this user, add the new one
-  const entries = parseDeviceList(currentDeviceList);
-  let updatedEntries = entries;
-
-  // Remove any existing device for this user (by checking the DB)
-  // For now, we'll remove entries by looking up their userId in the DB later
-  // During the list building. For this immediate call, we just add the new entry.
-  updatedEntries.unshift({ id: deviceId, secret: deviceSecret });
-  if (updatedEntries.length > MAX_DEVICE_ENTRIES) {
-    updatedEntries = updatedEntries.slice(0, MAX_DEVICE_ENTRIES);
+  // Merge: new entry first, then other users' VERIFIED entries (forged/stale dropped).
+  const keep = existing.filter((l) => l.state === "ok" && l.row!.userId !== userId);
+  const kept = keep.slice(0, MAX_DEVICE_ENTRIES - 1);
+  for (const l of keep.slice(MAX_DEVICE_ENTRIES - 1)) {
+    try {
+      await revokeDevice(l.row!.userId, l.entry.id); // evicted: secret no longer in any cookie
+    } catch {
+      // best-effort
+    }
   }
-
-  const newCookieValue = encodeDeviceList(updatedEntries);
-  const maxAgeSeconds = days * 24 * 60 * 60;
+  const newEntry: DeviceEntry = { id: deviceId, secret: deviceSecret };
+  const cookieList = encodeDeviceList([newEntry, ...kept.map((l) => l.entry)]);
 
   return {
-    newDeviceEntry: newCookieValue,
-    maxAgeSeconds,
+    id: deviceId,
+    cookieValue: encodeDeviceList([newEntry]),
+    cookieList,
+    maxAgeSeconds: days * 24 * 60 * 60,
   };
 }
 
 /**
- * Peek at devices in the list without redeeming or rotating.
- * Verifies each device (exists, not expired, not revoked, secret valid).
- *
- * Returns an array of valid devices with their owner userId + needsProof status.
- * Used by unlock flow to show available trusted devices.
+ * Peek at a device to check if it's valid, without unwrapping, rotating or
+ * revoking anything. With userId: the entry owned by that user; without: the
+ * first valid entry. Every entry is verified independently (secret, expiry,
+ * revocation, owner).
  */
-export async function peekDeviceList(
+export async function peekDevice(
   cookieValue: string | undefined,
-): Promise<Array<{ id: string; userId: string; label: string | null; needsProof: "totp" | "code" | null }>> {
+  userId?: string
+): Promise<
+  | { valid: true; userId: string; deviceId: string; label: string | null; needsProof: "totp" | "code" | null }
+  | { valid: false }
+> {
   const days = Math.max(
     0,
     parseInt(process.env.PF_TRUSTED_DEVICE_DAYS || "30", 10)
   );
-  if (days === 0) {
-    return [];
-  }
+  if (days === 0) return { valid: false };
 
-  const entries = parseDeviceList(cookieValue);
-  const result: Array<{ id: string; userId: string; label: string | null; needsProof: "totp" | "code" | null }> = [];
-
-  for (const entry of entries) {
-    const rows = await db
-      .select()
-      .from(userDevices)
-      .where(eq(userDevices.id, entry.id))
-      .limit(1);
-
-    if (rows.length === 0) continue;
-    const device = rows[0];
-
-    // Verify secret hash
-    if (!constantTimeEqual(device.secretHash, authLookupHash(entry.secret))) continue;
-
-    // Check expiry and revocation
-    const now = new Date();
-    if (device.expiresAt && new Date(device.expiresAt) <= now) continue;
-    if (device.revokedAt) continue;
-
-    result.push({
-      id: device.id,
-      userId: device.userId,
-      label: device.label,
-      needsProof: null,
-    });
-  }
-
-  return result;
+  const loaded = await loadEntries(cookieValue);
+  const hit = loaded.find((l) => l.state === "ok" && (userId === undefined || l.row!.userId === userId));
+  if (!hit) return { valid: false };
+  // (B2 doesn't implement proof requirements; B3 will add that)
+  return { valid: true, userId: hit.row!.userId, deviceId: hit.row!.id, label: hit.row!.label, needsProof: null };
 }
 
 /**
- * Redeem a device from the list for DEK access WITHOUT rotating.
- *
- * Validates the device (exists, not expired, not revoked), unwraps the DEK,
- * and returns it WITHOUT changing the secret. Used when full rotation is not
- * needed (e.g., recovery flows that don't want to update the cookie).
- *
- * Returns null immediately if PF_TRUSTED_DEVICE_DAYS is 0 (feature disabled)
- * or if no matching device is found for the given userId.
- *
- * @param cookieValue - The cookie value (list of id.secret pairs)
- * @param userId - The expected user ID
- * @returns { dek, maxAgeSeconds } or null if invalid/expired/revoked/mismatch
+ * Shared core of redeemDevice / redeemDeviceWithoutRotate / rotateDevice:
+ * find userId's entry in the list, verify it, unwrap the DEK, and (rotate)
+ * swap its secret. Replay (live row owned by userId but stale secret) revokes
+ * that device. Other users' entries are never touched, only verified.
  */
-export async function redeemDeviceWithoutRotate(
+async function redeemEntry(
   cookieValue: string | undefined,
   userId: string,
-): Promise<{
-  dek: Buffer;
-  maxAgeSeconds: number;
-} | null> {
+  rotate: boolean
+): Promise<{ dek: Buffer; list: string; maxAgeSeconds: number } | null> {
   const days = Math.max(
     0,
     parseInt(process.env.PF_TRUSTED_DEVICE_DAYS || "30", 10)
   );
-  if (days === 0) {
-    return null;
-  }
+  if (days === 0) return null;
 
-  const entries = parseDeviceList(cookieValue);
+  const loaded = await loadEntries(cookieValue);
+  const maxAgeSeconds = days * 24 * 60 * 60;
 
-  for (const entry of entries) {
-    const rows = await db
-      .select()
-      .from(userDevices)
-      .where(eq(userDevices.id, entry.id))
-      .limit(1);
-
-    if (rows.length === 0) continue;
-    const device = rows[0];
-
-    // Verify user match
-    if (device.userId !== userId) continue;
-
-    // Check expiry and revocation
-    const now = new Date();
-    if (device.expiresAt && new Date(device.expiresAt) <= now) continue;
-    if (device.revokedAt) continue;
-
-    // Verify secret hash
-    const expectedHash = authLookupHash(entry.secret);
-    if (!constantTimeEqual(device.secretHash, expectedHash)) {
+  for (const l of loaded) {
+    if (!l.row || l.row.userId !== userId) continue;
+    if (l.state === "badSecret") {
       // Replayed or old secret: revoke this device to prevent abuse
       try {
-        await revokeDevice(userId, entry.id);
+        await revokeDevice(userId, l.entry.id);
       } catch {
-        // swallow
+        // swallow — we still fail the redemption
       }
       continue;
     }
+    if (l.state !== "ok") continue;
 
-    // Unwrap the DEK
     let dek: Buffer;
     try {
-      dek = unwrapDEKForSecret(device.dekWrapped, entry.secret);
+      dek = unwrapDEKForSecret(l.row.dekWrapped, l.entry.secret);
     } catch {
       continue;
     }
 
-    const maxAgeSeconds = days * 24 * 60 * 60;
-    return {
-      dek,
-      maxAgeSeconds,
-    };
-  }
+    if (!rotate) {
+      // Nothing rotates, so the cookie is not rewritten.
+      return { dek, list: cookieValue as string, maxAgeSeconds };
+    }
 
+    const newSecret = crypto.randomBytes(32).toString("base64url");
+    const newExpiresAt = new Date(Date.now() + maxAgeSeconds * 1000);
+    const { rotateDeviceSecret } = await import("@/lib/auth/queries");
+    const rotated = await rotateDeviceSecret(l.row.id, l.row.secretHash, {
+      secretHash: authLookupHash(newSecret),
+      dekWrapped: wrapDEKForSecret(dek, newSecret),
+      expiresAt: newExpiresAt.toISOString(),
+    });
+    // Conditional update lost (someone rotated first): failed redemption.
+    if (!rotated) return null;
+
+    // Rewrite: only verified entries survive (tampered/stale/forged dropped),
+    // this user's entry carries the new secret.
+    const list = encodeDeviceList(
+      loaded
+        .filter((x) => x === l || x.state === "ok")
+        .map((x) => (x === l ? { id: x.entry.id, secret: newSecret } : x.entry))
+    );
+    return { dek, list, maxAgeSeconds };
+  }
   return null;
 }
 
 /**
- * Redeem a device from the list for DEK access WITH rotation.
- *
- * Finds the device entry for userId, validates it, unwraps the DEK, and
- * returns the NEW rotated entry (new secret). Other users' devices are
- * preserved in the list.
- *
- * Returns null immediately if PF_TRUSTED_DEVICE_DAYS is 0, if no matching
- * device is found, or if the device is invalid/expired/revoked.
- *
- * On replayed/old secret, the device is revoked to prevent replay attacks.
- *
- * @param cookieValue - The cookie value (list of id.secret pairs)
- * @param userId - The expected user ID
- * @returns { dek, newDeviceList, maxAgeSeconds } or null
+ * Redeem userId's device from the pf_device list WITHOUT rotating: the secret
+ * stays valid. cookieValue in the result is the list unchanged.
+ */
+export async function redeemDeviceWithoutRotate(
+  cookieValue: string | undefined,
+  userId: string
+): Promise<{
+  dek: Buffer;
+  cookieValue: string;
+  maxAgeSeconds: number;
+} | null> {
+  const r = await redeemEntry(cookieValue, userId, false);
+  return r && { dek: r.dek, cookieValue: r.list, maxAgeSeconds: r.maxAgeSeconds };
+}
+
+/**
+ * Redeem userId's device from the pf_device list WITH rotation (new secret,
+ * rewrap, sliding expiry). rotatedCookieValue is the whole list to Set-Cookie:
+ * other users' verified entries preserved, tampered entries dropped.
+ * On replayed/old secrets the device is revoked.
  */
 export async function redeemDevice(
   cookieValue: string | undefined,
-  userId: string,
+  userId: string
 ): Promise<{
   dek: Buffer;
-  newDeviceList: string;
+  rotatedCookieValue: string;
   maxAgeSeconds: number;
 } | null> {
-  const days = Math.max(
-    0,
-    parseInt(process.env.PF_TRUSTED_DEVICE_DAYS || "30", 10)
-  );
-  if (days === 0) {
-    return null;
-  }
-
-  const entries = parseDeviceList(cookieValue);
-  let foundIndex = -1;
-  let deviceRow = null;
-  let entry: DeviceEntry | null = null;
-
-  // Find the device for this user
-  for (let i = 0; i < entries.length; i++) {
-    const e = entries[i];
-    const rows = await db
-      .select()
-      .from(userDevices)
-      .where(eq(userDevices.id, e.id))
-      .limit(1);
-
-    if (rows.length === 0) continue;
-
-    if (rows[0].userId === userId) {
-      foundIndex = i;
-      deviceRow = rows[0];
-      entry = e;
-      break;
-    }
-  }
-
-  if (foundIndex === -1 || !deviceRow || !entry) {
-    return null;
-  }
-
-  // Check expiry and revocation
-  const now = new Date();
-  if (deviceRow.expiresAt && new Date(deviceRow.expiresAt) <= now) {
-    return null;
-  }
-  if (deviceRow.revokedAt) {
-    return null;
-  }
-
-  // Verify secret hash (constant-time to resist timing attacks)
-  const expectedHash = authLookupHash(entry.secret);
-  if (!constantTimeEqual(deviceRow.secretHash, expectedHash)) {
-    // Replayed or old secret: revoke this device to prevent abuse
-    try {
-      await revokeDevice(userId, deviceRow.id);
-    } catch {
-      // swallow
-    }
-    return null;
-  }
-
-  // Unwrap the DEK
-  let dek: Buffer;
-  try {
-    dek = unwrapDEKForSecret(deviceRow.dekWrapped, entry.secret);
-  } catch {
-    return null;
-  }
-
-  // Rotate: generate new secret, rewrap, update row
-  const newSecret = crypto.randomBytes(32).toString("base64url");
-  const newSecretHash = authLookupHash(newSecret);
-  const newDekWrapped = wrapDEKForSecret(dek, newSecret);
-
-  const newExpiresAt = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
-
-  const { rotateDeviceSecret } = await import("@/lib/auth/queries");
-  const rotated = await rotateDeviceSecret(deviceRow.id, deviceRow.secretHash, {
-    secretHash: newSecretHash,
-    dekWrapped: newDekWrapped,
-    expiresAt: newExpiresAt.toISOString(),
-  });
-
-  if (!rotated) return null;
-
-  // Update the list: replace only this user's entry
-  const newEntries = entries.slice();
-  newEntries[foundIndex] = { id: deviceRow.id, secret: newSecret };
-
-  const newCookieValue = encodeDeviceList(newEntries);
-  const maxAgeSeconds = days * 24 * 60 * 60;
-
-  return {
-    dek,
-    newDeviceList: newCookieValue,
-    maxAgeSeconds,
-  };
+  const r = await redeemEntry(cookieValue, userId, true);
+  return r && { dek: r.dek, rotatedCookieValue: r.list, maxAgeSeconds: r.maxAgeSeconds };
 }
 
 /**
@@ -503,150 +436,47 @@ export async function deleteAllDevices(userId: string): Promise<void> {
 }
 
 /**
- * Rotate a device in the list: generate a new secret, rewrap the DEK, extend expiry.
- * Returns the new device list or null if the device is invalid/revoked.
- *
- * Used by recovery flows that want to keep and refresh a trusted device.
- * The old secret becomes invalid (attempting to use it will be treated as a replay attack).
- *
- * @param cookieValue - The cookie value (list of id.secret pairs)
- * @param userId - The user ID (to find the right device)
- * @returns { newDeviceList, maxAgeSeconds } or null
+ * Rotate userId's device in the list: new secret, rewrap, extend expiry.
+ * Returns the new list or null if the device is invalid/revoked.
+ * The old secret becomes invalid (reuse is treated as replay: device revoked).
  */
 export async function rotateDevice(
   cookieValue: string | undefined,
-  userId: string,
-): Promise<{ newDeviceList: string; maxAgeSeconds: number } | null> {
-  const days = Math.max(
-    0,
-    parseInt(process.env.PF_TRUSTED_DEVICE_DAYS || "30", 10)
-  );
-  if (days === 0) {
-    return null;
-  }
-
-  const entries = parseDeviceList(cookieValue);
-  let foundIndex = -1;
-  let deviceRow = null;
-  let entry: DeviceEntry | null = null;
-
-  // Find the device for this user
-  for (let i = 0; i < entries.length; i++) {
-    const e = entries[i];
-    const rows = await db
-      .select()
-      .from(userDevices)
-      .where(eq(userDevices.id, e.id))
-      .limit(1);
-
-    if (rows.length === 0) continue;
-
-    if (rows[0].userId === userId) {
-      foundIndex = i;
-      deviceRow = rows[0];
-      entry = e;
-      break;
-    }
-  }
-
-  if (foundIndex === -1 || !deviceRow || !entry) {
-    return null;
-  }
-
-  // Check expiry and revocation
-  const now = new Date();
-  if (deviceRow.expiresAt && new Date(deviceRow.expiresAt) <= now) return null;
-  if (deviceRow.revokedAt) return null;
-
-  // Verify secret hash
-  const expectedHash = authLookupHash(entry.secret);
-  if (!constantTimeEqual(deviceRow.secretHash, expectedHash)) {
-    // Replayed or old secret: revoke this device to prevent abuse
-    try {
-      await revokeDevice(userId, deviceRow.id);
-    } catch {
-      // swallow
-    }
-    return null;
-  }
-
-  // Unwrap the DEK
-  let dek: Buffer;
-  try {
-    dek = unwrapDEKForSecret(deviceRow.dekWrapped, entry.secret);
-  } catch {
-    return null;
-  }
-
-  // Rotate: generate new secret, rewrap, update row
-  const newSecret = crypto.randomBytes(32).toString("base64url");
-  const newSecretHash = authLookupHash(newSecret);
-  const newDekWrapped = wrapDEKForSecret(dek, newSecret);
-
-  const newExpiresAt = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
-
-  const { rotateDeviceSecret } = await import("@/lib/auth/queries");
-  const rotated = await rotateDeviceSecret(deviceRow.id, deviceRow.secretHash, {
-    secretHash: newSecretHash,
-    dekWrapped: newDekWrapped,
-    expiresAt: newExpiresAt.toISOString(),
-  });
-
-  if (!rotated) return null;
-
-  // Update the list: replace only this user's entry
-  const newEntries = entries.slice();
-  newEntries[foundIndex] = { id: deviceRow.id, secret: newSecret };
-
-  const newCookieValue = encodeDeviceList(newEntries);
-  const maxAgeSeconds = days * 24 * 60 * 60;
-
-  return {
-    newDeviceList: newCookieValue,
-    maxAgeSeconds,
-  };
+  userId: string
+): Promise<{ rotatedCookieValue: string; maxAgeSeconds: number } | null> {
+  const r = await redeemEntry(cookieValue, userId, true);
+  return r && { rotatedCookieValue: r.list, maxAgeSeconds: r.maxAgeSeconds };
 }
 
 /**
- * Clean a device list by removing entries whose devices no longer belong to
- * the specified userId. Used after removing a user from the active bundle.
- *
- * @param cookieValue - The cookie value (list of id.secret pairs)
- * @param removeUserId - Remove all devices belonging to this user
- * @returns { newDeviceList, removed: boolean } (removed is true if any entry was dropped)
+ * Remove userId's entries from a pf_device value (logout everywhere, shared
+ * computer). Other users' entries are kept iff they verify; unknown/forged
+ * entries are dropped. revoke:true also revokes the removed user's rows.
+ * Returns the new value ("" = clear the cookie).
  */
 export async function removeUserDevicesFromList(
   cookieValue: string | undefined,
   removeUserId: string,
+  opts: { revoke?: boolean } = {}
 ): Promise<{ newDeviceList: string; removed: boolean }> {
-  const entries = parseDeviceList(cookieValue);
-  const newEntries: DeviceEntry[] = [];
+  const loaded = await loadEntries(cookieValue);
   let removed = false;
-
-  for (const entry of entries) {
-    const rows = await db
-      .select()
-      .from(userDevices)
-      .where(eq(userDevices.id, entry.id))
-      .limit(1);
-
-    if (rows.length === 0) {
+  const keep: DeviceEntry[] = [];
+  for (const l of loaded) {
+    if (l.row && l.row.userId === removeUserId) {
       removed = true;
-      continue;
+      if (opts.revoke) {
+        try {
+          await revokeDevice(removeUserId, l.entry.id);
+        } catch {
+          // best-effort
+        }
+      }
+    } else if (l.state === "ok") {
+      keep.push(l.entry);
     }
-
-    if (rows[0].userId === removeUserId) {
-      removed = true;
-      continue;
-    }
-
-    newEntries.push(entry);
   }
-
-  return {
-    newDeviceList: encodeDeviceList(newEntries),
-    removed,
-  };
+  return { newDeviceList: encodeDeviceList(keep), removed };
 }
 
 /**
@@ -654,9 +484,9 @@ export async function removeUserDevicesFromList(
  */
 function constantTimeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
-  let equal = 0;
+  let result = 0;
   for (let i = 0; i < a.length; i++) {
-    equal |= a.charCodeAt(i) ^ b.charCodeAt(i);
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
   }
-  return equal === 0;
+  return result === 0;
 }

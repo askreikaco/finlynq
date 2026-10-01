@@ -80,6 +80,12 @@ vi.mock("@/lib/auth/trusted-device", () => ({
   revokeAllDevices: async (userId: string) => {
     revokeAllDevicesCalls.push(userId);
   },
+  // Per-user list semantics are covered against real Postgres in
+  // tests/auth/multi-device-b2.test.ts; the mock drops the removed user's entries.
+  removeUserDevicesFromList: async (cookie: string | undefined, _userId: string) => ({
+    newDeviceList: "",
+    removed: !!cookie,
+  }),
   deviceCookieOptions: () => ({
     httpOnly: true,
     secure: false,

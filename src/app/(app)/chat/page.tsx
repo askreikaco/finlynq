@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
+import { useSessionUserId, readUserItem, writeUserItem, removeUserItem } from "@/lib/client/user-storage";
 import { CHART_COLORS } from "@/lib/chart-colors";
 import { Send, Trash2, MessageSquare, Bot, User, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -58,21 +59,12 @@ const SUGGESTIONS = [
 const STORAGE_KEY_BASE = "pf-chat-history";
 const MAX_MESSAGES = 100;
 
-/**
- * Namespace the storage key with userId to prevent cross-user data leaks
- * when multiple accounts are logged in on the same browser.
- */
-function getStorageKey(userId: string | null): string {
-  if (!userId) return STORAGE_KEY_BASE;
-  return `${STORAGE_KEY_BASE}:${userId}`;
-}
-
+// Per-user (`pf-chat-history:<userId>`): see src/lib/client/user-storage.ts.
+// Nothing is read or written until the active userId is known.
 function loadHistory(userId: string | null): ChatMessage[] {
-  if (typeof window === "undefined") return [];
+  const raw = readUserItem(STORAGE_KEY_BASE, userId);
+  if (!raw) return [];
   try {
-    const key = getStorageKey(userId);
-    const raw = localStorage.getItem(key);
-    if (!raw) return [];
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed.slice(-MAX_MESSAGES) : [];
   } catch {
@@ -81,13 +73,9 @@ function loadHistory(userId: string | null): ChatMessage[] {
 }
 
 function saveHistory(messages: ChatMessage[], userId: string | null) {
-  try {
-    const key = getStorageKey(userId);
-    localStorage.setItem(key, JSON.stringify(messages.slice(-MAX_MESSAGES)));
-  } catch {
+  if (!writeUserItem(STORAGE_KEY_BASE, userId, JSON.stringify(messages.slice(-MAX_MESSAGES)))) {
     // Storage full — drop oldest
-    const key = getStorageKey(userId);
-    localStorage.setItem(key, JSON.stringify(messages.slice(-50)));
+    writeUserItem(STORAGE_KEY_BASE, userId, JSON.stringify(messages.slice(-50)));
   }
 }
 
@@ -276,26 +264,13 @@ function ChatPageContent() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [mounted, setMounted] = useState(false);
 
-  // Fetch user session and load history
-  const [userId, setUserId] = useState<string | null>(null);
+  // Active user (history is per-user; nothing is read before userId is known)
+  const { userId, ready } = useSessionUserId();
   useEffect(() => {
-    const loadSession = async () => {
-      try {
-        const res = await fetch("/api/auth/session");
-        if (res.ok) {
-          const data = await res.json();
-          setUserId(data.userId ?? null);
-          setMessages(loadHistory(data.userId ?? null));
-        } else {
-          setMessages(loadHistory(null));
-        }
-      } catch {
-        setMessages(loadHistory(null));
-      }
-      setMounted(true);
-    };
-    loadSession();
-  }, []);
+    if (!ready) return;
+    setMessages(loadHistory(userId));
+    setMounted(true);
+  }, [ready, userId]);
 
   // Auto-scroll on new message
   useEffect(() => {
@@ -360,8 +335,7 @@ function ChatPageContent() {
 
   const clearHistory = () => {
     setMessages([]);
-    const key = getStorageKey(userId);
-    localStorage.removeItem(key);
+    removeUserItem(STORAGE_KEY_BASE, userId);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

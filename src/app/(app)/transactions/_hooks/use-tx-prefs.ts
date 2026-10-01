@@ -19,6 +19,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import useSWR from "swr";
+import { dropLegacyUnscopedKeys } from "@/lib/client/user-storage";
 import { jsonFetcher, softJsonFetcher, swrListOptions, swrKey } from "@/lib/swr";
 import {
   DEFAULT_COLUMNS as SHARED_DEFAULT_COLUMNS,
@@ -107,77 +108,20 @@ export function useTxColumnPrefs() {
     swrListOptions,
   );
 
-  // Seed editable state ONCE on first arrival (success OR error), running the
-  // legacy-localStorage migration the pre-115 load effect did. The guard ref
+  // Seed editable state ONCE on first arrival (success OR error). The guard ref
   // stops a later background revalidate from clobbering unsaved local edits.
   useEffect(() => {
     if (colPrefsLoaded.current) return;
     if (serverPayload === undefined && !error) return; // still loading
 
-    // Read the legacy localStorage blob only when the server endpoint has never
-    // been written for this user — otherwise the server-side layout wins
-    // (cross-device sync). The legacy blob is cleared after one migration.
-    let legacy: ColumnPref[] | null = null;
-    try {
-      // For now, just use the non-namespaced key to avoid async complexity
-      // TODO: Add namespacing in a separate effect after userId is available
-      const raw = localStorage.getItem("pf-tx-cols-v1");
-      if (raw) {
-        // Fetch user ID from session to namespace storage keys
-        fetch("/api/auth/session")
-          .then((res) => res.ok ? res.json() : null)
-          .then((data) => {
-            if (data?.userId) {
-              const keyNamespaced = `pf-tx-cols-v1:${data.userId}`;
-              try {
-                localStorage.setItem(keyNamespaced, raw);
-                localStorage.removeItem("pf-tx-cols-v1");
-              } catch { /* ignore */ }
-            }
-          })
-          .catch(() => {
-            // Failed to fetch or process
-          });
-      }
-      if (raw) {
-        const parsed = JSON.parse(raw) as { portfolio?: boolean };
-        if (parsed && typeof parsed === "object") {
-          legacy = DEFAULT_COL_PREFS.map((c) =>
-            c.id === "portfolio" ? { ...c, visible: !!parsed.portfolio } : c,
-          );
-        }
-      }
-    } catch { /* ignore */ }
+    // The old un-namespaced localStorage["pf-tx-cols-v1"] blob cannot be
+    // attributed to a user (multi-account), so it is DROPPED, never migrated:
+    // copying it to whoever is signed in would leak another account's layout.
+    // Column prefs live server-side per user (/api/settings/tx-columns).
+    dropLegacyUnscopedKeys();
 
     if (!error && serverPayload !== undefined) {
-      const d = serverPayload;
-      const serverPrefs = mergeColPrefs(d?.columns ?? null);
-      const isServerDefault = !d?.columns || d.columns.length === 0;
-      if (legacy && isServerDefault) {
-        setColumnPrefs(legacy);
-        // Push the legacy preferences up so the migration sticks.
-        void (async () => {
-          try {
-            await fetch("/api/settings/tx-columns", {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ columns: legacy }),
-            });
-            localStorage.removeItem("pf-tx-cols-v1");
-          } catch { /* best-effort */ }
-        })();
-      } else {
-        setColumnPrefs(serverPrefs);
-        try {
-          const uid = null; // TODO: fetch from session
-          const keyNamespaced = uid ? `pf-tx-cols-v1:${uid}` : "pf-tx-cols-v1";
-          localStorage.removeItem(keyNamespaced);
-          localStorage.removeItem("pf-tx-cols-v1");
-        } catch { /* ignore */ }
-      }
-    } else if (legacy) {
-      // GET failed (the pre-115 `else if (legacy)` / catch branch).
-      setColumnPrefs(legacy);
+      setColumnPrefs(mergeColPrefs(serverPayload?.columns ?? null));
     }
     colPrefsLoaded.current = true;
   }, [serverPayload, error]);

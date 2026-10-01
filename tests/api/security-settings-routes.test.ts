@@ -17,6 +17,14 @@ vi.mock("@/db", () => ({
   },
 }));
 vi.mock("drizzle-orm", () => ({ and: vi.fn(), eq: vi.fn() }));
+// Ownership/secret verification is covered against real Postgres in
+// tests/auth/multi-device-b2.test.ts; here only the cookie -> id plumbing.
+vi.mock("@/lib/auth/trusted-device", () => ({
+  findUserDeviceId: async (v: string | undefined, _userId: string) => {
+    const p = v?.split(".");
+    return p && p.length === 2 ? p[0] : undefined;
+  },
+}));
 vi.mock("@/lib/auth/google-oidc", () => ({ isGoogleConfigured: () => false }));
 
 const getUserById = vi.fn();

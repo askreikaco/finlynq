@@ -32,7 +32,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { revokeAllDevicesExcept } from "@/lib/auth/queries";
 import { sendEmail, passwordChangedEmail } from "@/lib/email";
 import { logSecurityEvent } from "@/lib/auth/security-events";
-import { parseDeviceIdFromCookie as parseCurrentDeviceId } from "@/lib/auth/trusted-device";
+import { findUserDeviceId } from "@/lib/auth/trusted-device";
 
 export const dynamic = "force-dynamic";
 
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
     // revoke every other one. No/garbled cookie -> revoke all.
     // Best-effort: a revocation failure must not fail the password change.
     try {
-      const currentDeviceId = parseCurrentDeviceId(request.cookies.get("pf_device")?.value);
+      const currentDeviceId = await findUserDeviceId(request.cookies.get("pf_device")?.value, userId);
       await revokeAllDevicesExcept(userId, currentDeviceId);
     } catch (err) {
       await logApiError("POST", "/api/settings/change-password (revokeAllDevicesExcept)", err);

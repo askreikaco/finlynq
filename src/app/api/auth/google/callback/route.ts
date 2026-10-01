@@ -221,9 +221,8 @@ export async function GET(req: NextRequest) {
         const redeemed = await redeemDevice(deviceCookie, user.id);
         if (redeemed) {
           // Set the rotated device cookie immediately
-          response.cookies.set("pf_device", redeemed.newDeviceList, {
+          response.cookies.set("pf_device", redeemed.rotatedCookieValue, {
             ...deviceCookieOptions(),
-            maxAge: redeemed.maxAgeSeconds,
           });
 
           // Device unlock successful — issue session without password

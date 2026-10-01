@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { X, Lightbulb, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { useSessionUserId, readUserItem, writeUserItem } from "@/lib/client/user-storage";
 
 interface OnboardingTip {
   id: string;
@@ -14,25 +15,18 @@ interface OnboardingTip {
 
 const STORAGE_KEY_BASE = "pf-dismissed-tips";
 
-function getStorageKey(userId: string | null): string {
-  if (!userId) return STORAGE_KEY_BASE;
-  return `${STORAGE_KEY_BASE}:${userId}`;
-}
-
-function getDismissed(userId: string | null = null): Set<string> {
-  if (typeof window === "undefined") return new Set();
+// Per-user (`pf-dismissed-tips:<userId>`): see src/lib/client/user-storage.ts.
+function getDismissed(userId: string | null): Set<string> {
   try {
-    const key = getStorageKey(userId);
-    const raw = localStorage.getItem(key);
+    const raw = readUserItem(STORAGE_KEY_BASE, userId);
     return raw ? new Set(JSON.parse(raw)) : new Set();
   } catch {
     return new Set();
   }
 }
 
-function setDismissed(ids: Set<string>, userId: string | null = null) {
-  const key = getStorageKey(userId);
-  localStorage.setItem(key, JSON.stringify([...ids]));
+function setDismissed(ids: Set<string>, userId: string | null) {
+  writeUserItem(STORAGE_KEY_BASE, userId, JSON.stringify([...ids]));
 }
 
 interface OnboardingTipsProps {
@@ -100,10 +94,13 @@ export function OnboardingTips({ page }: OnboardingTipsProps) {
   const [dismissed, setDismissedState] = useState<Set<string>>(new Set());
   const [mounted, setMounted] = useState(false);
 
+  const { userId, ready } = useSessionUserId();
+
   useEffect(() => {
-    setDismissedState(getDismissed());
+    if (!ready) return;
+    setDismissedState(getDismissed(userId));
     setMounted(true);
-  }, []);
+  }, [ready, userId]);
 
   const tips = (TIPS_BY_PAGE[page] ?? []).filter((t) => !dismissed.has(t.id));
 
@@ -111,14 +108,14 @@ export function OnboardingTips({ page }: OnboardingTipsProps) {
     const next = new Set(dismissed);
     next.add(id);
     setDismissedState(next);
-    setDismissed(next);
+    setDismissed(next, userId);
   }
 
   function dismissAll() {
     const next = new Set(dismissed);
     tips.forEach((t) => next.add(t.id));
     setDismissedState(next);
-    setDismissed(next);
+    setDismissed(next, userId);
   }
 
   if (!mounted || tips.length === 0) return null;

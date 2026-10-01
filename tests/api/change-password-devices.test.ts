@@ -28,7 +28,9 @@ vi.mock("@/lib/auth/queries", () => ({
 }));
 
 vi.mock("@/lib/auth/trusted-device", () => ({
-  parseDeviceIdFromCookie: (v: string | undefined) => {
+  // Ownership/secret verification is covered against real Postgres in
+  // tests/auth/multi-device-b2.test.ts; here only the cookie -> id plumbing.
+  findUserDeviceId: async (v: string | undefined, _userId: string) => {
     const p = v?.split(".");
     return p && p.length === 2 ? p[0] : undefined;
   },

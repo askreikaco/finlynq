@@ -7,6 +7,7 @@ import { AlertTriangle, Bell, CheckCircle2, X, ChevronRight, Shield } from "luci
 import { formatCurrency } from "@/lib/currency";
 import { motion, AnimatePresence } from "framer-motion";
 import type { SpotlightItem } from "./types";
+import { useSessionUserId, readUserItem, writeUserItem } from "@/lib/client/user-storage";
 
 const itemVariants = {
   hidden: { opacity: 0, y: 16 },
@@ -20,33 +21,25 @@ const SEVERITY_ICON = {
 };
 
 const MAX_VISIBLE = 3;
+const DISMISSED_KEY_BASE = "pf-spotlight-dismissed";
 
 export function ActionCenter() {
   const [items, setItems] = useState<SpotlightItem[] | null>(null);
   const [showAll, setShowAll] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
+  const { userId, ready } = useSessionUserId();
   const [dismissed, setDismissed] = useState<Set<string>>(() => new Set());
-  
-  // Fetch user session and load dismissed items
+
+  // Dismissed ids are per-user (`pf-spotlight-dismissed:<userId>`); nothing is
+  // read until the active userId is known.
   useEffect(() => {
-    const loadSession = async () => {
-      try {
-        const res = await fetch("/api/auth/session");
-        if (res.ok) {
-          const data = await res.json();
-          const uid = data.userId ?? null;
-          setUserId(uid);
-          // Load dismissed items for this user
-          const key = uid ? `pf-spotlight-dismissed:${uid}` : "pf-spotlight-dismissed";
-          const stored = localStorage.getItem(key);
-          setDismissed(stored ? new Set(JSON.parse(stored)) : new Set());
-        }
-      } catch {
-        // swallow
-      }
-    };
-    loadSession();
-  }, []);
+    if (!ready) return;
+    try {
+      const raw = readUserItem(DISMISSED_KEY_BASE, userId);
+      setDismissed(raw ? new Set(JSON.parse(raw)) : new Set());
+    } catch {
+      setDismissed(new Set());
+    }
+  }, [ready, userId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -68,13 +61,10 @@ export function ActionCenter() {
     const next = new Set(dismissed);
     next.add(id);
     setDismissed(next);
-    try {
-      const key = userId ? `pf-spotlight-dismissed:${userId}` : "pf-spotlight-dismissed";
-      localStorage.setItem(key, JSON.stringify([...next]));
-    } catch { /* ignore */ }
+    writeUserItem(DISMISSED_KEY_BASE, userId, JSON.stringify([...next]));
   };
 
-  if (!items) return null;
+  if (!items || !ready) return null;
 
   const visible = items.filter((i) => !dismissed.has(i.id));
   const displayItems = showAll ? visible : visible.slice(0, MAX_VISIBLE);
