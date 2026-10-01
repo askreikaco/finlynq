@@ -11,7 +11,7 @@ import { describe, it, expect, vi, beforeAll, afterAll, beforeEach, afterEach } 
 import { randomUUID } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { TOTP } from "otpauth";
-import { sql, eq, inArray } from "drizzle-orm";
+import { sql, eq, inArray, asc } from "drizzle-orm";
 import { NextRequest } from "next/server";
 
 const DB_URL = process.env.DATABASE_URL || process.env.PF_DATABASE_URL || "";
@@ -472,7 +472,7 @@ describe.skipIf(!HAS_TEST_DB)("admin integrations email (DB)", () => {
       await put({ brevoApiKey: BREVO_DB, from: "Acme <noreply@acme.test>", password: PW });
       await put({ brevoApiKey: null, password: PW });
       await revert();
-      const audit = (await db.select().from(schema.adminAudit).where(eq(schema.adminAudit.adminUserId, admin.id))) as {
+      const audit = (await db.select().from(schema.adminAudit).where(eq(schema.adminAudit.adminUserId, admin.id)).orderBy(asc(schema.adminAudit.id))) as {
         action: string; beforeJson: string | null; afterJson: string | null;
       }[];
       expect(audit.map((a) => a.action)).toEqual(["email_settings_update", "email_settings_update", "email_settings_revert"]);
