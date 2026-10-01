@@ -1,11 +1,17 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
+
+// Pin the zone for the whole file (runner may be UTC); Node re-reads TZ on assignment.
+process.env.TZ = "Asia/Ho_Chi_Minh";
 import {
   formatCurrency,
   formatNumber,
   formatDate,
   getCurrentMonth,
   getMonthLabel,
+  formatDateTimeLocal,
+  fxPreviewText,
 } from "@/lib/currency";
+import { todayISO } from "@/lib/utils/date";
 
 describe("formatCurrency", () => {
   it("formats positive CAD amount", () => {
@@ -119,5 +125,63 @@ describe("getMonthLabel", () => {
   it("returns human-readable month label", () => {
     const result = getMonthLabel("2024-03");
     expect(result).toContain("2024");
+  });
+});
+
+describe("todayISO", () => {
+  afterEach(() => {
+    // Reset timers after each test
+    vi.useRealTimers();
+  });
+
+  it("returns local date in YYYY-MM-DD format", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-30T18:00:00Z"));
+    const result = todayISO();
+    expect(result).toBe("2026-10-01");
+  });
+
+  it("returns previous day for early UTC hours", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-30T16:59:00Z"));
+    const result = todayISO();
+    expect(result).toBe("2026-09-30");
+  });
+
+  it("has Vietnam timezone offset of -420 minutes (UTC+7)", () => {
+    expect(new Date().getTimezoneOffset()).toBe(-420);
+  });
+});
+
+describe("formatDateTimeLocal", () => {
+  it("converts UTC timestamp to local date in dd/mm/yyyy format", () => {
+    const result = formatDateTimeLocal("2026-09-30T20:00:00Z");
+    expect(result).toBe("01/10/2026");
+  });
+
+  it("returns empty string for invalid input", () => {
+    const result = formatDateTimeLocal("invalid");
+    expect(result).toBe("");
+  });
+
+  it("returns empty string for null-like timestamps", () => {
+    expect(formatDateTimeLocal("")).toBe("");
+  });
+});
+
+describe("fxPreviewText", () => {
+  it("formats VND with zero decimal places", () => {
+    const result = fxPreviewText(1234.56, "VND");
+    expect(result).toBe("1235");
+  });
+
+  it("formats USD with two decimal places", () => {
+    const result = fxPreviewText(1234.56, "USD");
+    expect(result).toBe("1234.56");
+  });
+
+  it("formats JPY with zero decimal places", () => {
+    const result = fxPreviewText(1234.56, "JPY");
+    expect(result).toBe("1235");
   });
 });

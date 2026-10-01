@@ -534,15 +534,15 @@ export default function GoalsPage() {
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span>{formatCurrency(g.currentAmount, displayCurrency)} of {formatCurrency(g.targetAmount, displayCurrency)}</span>
+                  <span>{formatCurrency(g.currentAmount, g.currency)} of {formatCurrency(g.targetAmount, g.currency)}</span>
                   <span className={`font-bold ${progressTextClass(g.progress)}`}>{g.progress}%</span>
                 </div>
                 <Progress value={g.progress} className={`h-3 ${progressColorClass(g.progress)}`} />
                 <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Remaining: <span className="font-medium text-foreground">{formatCurrency(g.remaining, displayCurrency)}</span></span>
+                  <span>Remaining: <span className="font-medium text-foreground">{formatCurrency(g.remaining, g.currency)}</span></span>
                   {g.monthlyNeeded > 0 && (
                     <span className="inline-flex items-center rounded-md bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700 ring-1 ring-inset ring-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:ring-indigo-900/60">
-                      {formatCurrency(g.monthlyNeeded, displayCurrency)}/mo needed
+                      {formatCurrency(g.monthlyNeeded, g.currency)}/mo needed
                     </span>
                   )}
                 </div>
@@ -566,7 +566,7 @@ export default function GoalsPage() {
                   <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                   <div>
                     <span className="line-through text-muted-foreground">{g.name}</span>
-                    <Badge className="ml-2 bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-900/60">{formatCurrency(g.targetAmount, displayCurrency)}</Badge>
+                    <Badge className="ml-2 bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-900/60">{formatCurrency(g.targetAmount, g.currency)}</Badge>
                   </div>
                 </div>
                 <div className="flex gap-1">

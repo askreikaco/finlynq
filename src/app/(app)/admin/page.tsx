@@ -30,6 +30,7 @@ import {
   setColFilter,
   type TableColFilter,
 } from "@/lib/table-filters";
+import { formatDateTimeLocal } from "@/lib/currency";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { Pagination } from "@/components/ui/pagination";
 
@@ -496,7 +497,7 @@ export default function AdminPage() {
             >
               {u.lastActiveAt === null
                 ? "Never"
-                : new Date(u.lastActiveAt as string).toLocaleDateString()}
+                : formatDateTimeLocal(u.lastActiveAt ?? "")}
             </span>
           );
         },
@@ -529,7 +530,7 @@ export default function AdminPage() {
         accessor: (u) => u.createdAt,
         render: (u) => (
           <span className="text-sm text-muted-foreground">
-            {new Date(u.createdAt).toLocaleDateString()}
+            {formatDateTimeLocal(u.createdAt)}
           </span>
         ),
       },
@@ -993,7 +994,7 @@ export default function AdminPage() {
                             {grant.scope}
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
-                            {new Date(grant.createdAt).toLocaleDateString()}
+                            {formatDateTimeLocal(grant.createdAt)}
                           </TableCell>
                           <TableCell className="text-sm">
                             <span className="flex items-center gap-2">
@@ -1013,9 +1014,7 @@ export default function AdminPage() {
                               >
                                 {grant.lastUsedAt === null
                                   ? "Never"
-                                  : new Date(
-                                      grant.lastUsedAt
-                                    ).toLocaleDateString()}
+                                  : formatDateTimeLocal(grant.lastUsedAt)}
                               </span>
                               {dormant ? (
                                 <Badge

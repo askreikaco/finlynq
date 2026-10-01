@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { formatDateTimeLocal } from "@/lib/currency";
 import { parseSaveError } from "@/lib/save-error";
 import { Plug, Loader2 } from "lucide-react";
 
@@ -31,9 +32,7 @@ interface ConnectedApp {
 }
 
 function formatDate(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+  return formatDateTimeLocal(iso) || iso;
 }
 
 export function ConnectedApps() {

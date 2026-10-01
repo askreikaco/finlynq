@@ -11,6 +11,7 @@
  */
 
 import { LineChart, Line, XAxis, YAxis, Legend, ResponsiveContainer, Tooltip } from "recharts";
+import { formatDate } from "@/lib/currency";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ColorDot } from "@/components/csp-safe-bar";
@@ -111,8 +112,7 @@ export function BenchmarkChart({
                 <Tooltip
                   content={<GlassTooltip formatter={(v) => `${Number(v) > 0 ? "+" : ""}${Number(v).toFixed(2)}%`} />}
                   labelFormatter={label => {
-                    const d = new Date(label + "T00:00:00");
-                    return d.toLocaleDateString("en-CA", { month: "long", day: "numeric", year: "numeric" });
+                    return formatDate(String(label));
                   }}
                 />
                 <Legend />

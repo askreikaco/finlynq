@@ -8,6 +8,7 @@ import {
   articleSchema,
   breadcrumbSchema,
 } from "@/components/seo/json-ld";
+import { formatDate } from "@/lib/currency";
 import { RELEASE_SLUGS, getRelease } from "@/lib/seo/releases";
 import { metaDescription } from "@/lib/seo/site";
 
@@ -44,15 +45,7 @@ export async function generateMetadata({
 }
 
 function fmtDate(iso: string): string {
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime())
-    ? iso
-    : d.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        timeZone: "UTC",
-      });
+  return formatDate(iso);
 }
 
 export default async function ReleaseNotesPage({

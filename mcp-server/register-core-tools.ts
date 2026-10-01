@@ -430,7 +430,7 @@ export function registerCoreTools(server: McpServer, sqlite: PgCompatDb, opts: C
     "get_account_balances",
     "Get current balances for all accounts, grouped by type (asset/liability). Each balance is in its own (account) currency; the response surfaces reportingCurrency for cross-currency context. Stream D Phase 4: stdio cannot decrypt account names — use HTTP MCP or the web UI for this query.",
     {
-      currency: z.enum(["CAD", "USD", "all"]).optional().describe("Filter by currency"),
+      currency: z.string().optional().describe("Filter by currency"),
       reportingCurrency: z.string().optional().describe("ISO code; defaults to user's display currency. Returned as response metadata for cross-currency aggregation context."),
     },
     async () => streamDRefuseRead("get_account_balances", "accounts"),
@@ -461,7 +461,7 @@ export function registerCoreTools(server: McpServer, sqlite: PgCompatDb, opts: C
     "get_net_worth",
     "Net worth across all accounts. Returns per-currency assets/liabilities/net. Pass `months` > 0 for a trend; omit for current totals. reportingCurrency is surfaced as metadata for cross-currency context. NOTE: this stdio surface values ALL accounts (incl. investment) at ledger / net-contribution basis (SUM(transactions.amount)); market-valued investment balances are available only over the HTTP MCP transport on an OAuth/built-in-chat connection (which carries a decryption key).",
     {
-      currency: z.enum(["CAD", "USD", "all"]).optional().describe("Filter by currency"),
+      currency: z.string().optional().describe("Filter by currency"),
       months: z.number().optional().describe("If set, return a trend over the last N months"),
       reportingCurrency: z.string().optional().describe("ISO code; defaults to user's display currency."),
     },
@@ -503,7 +503,7 @@ export function registerCoreTools(server: McpServer, sqlite: PgCompatDb, opts: C
       for (const b of baselines) running.set(b.currency, Number(b.total));
 
       const trend = rows.map(row => {
-        const c = row.currency ?? "CAD";
+        const c = row.currency ?? reporting;
         const prev = running.get(c) ?? 0;
         const newTotal = prev + Number(row.total);
         running.set(c, newTotal);
@@ -960,6 +960,7 @@ export function registerCoreTools(server: McpServer, sqlite: PgCompatDb, opts: C
       if (category !== undefined) {
         return sqliteErr("`category` (name) is refused on stdio after Stream D Phase 4. Pass `category_id` instead.");
       }
+      const displayCurrency = await resolveReportingCurrencyStdio(sqlite, userId, null);
       const existing = await sqlite.prepare(`
         SELECT t.id, t.account_id, t.category_id, t.amount, t.date, a.currency AS account_currency
           FROM transactions t LEFT JOIN accounts a ON a.id = t.account_id
@@ -999,7 +1000,7 @@ export function registerCoreTools(server: McpServer, sqlite: PgCompatDb, opts: C
       if (enteredAmount !== undefined) {
         const txDate = date ?? existing.date;
         const resolved = await resolveTxAmountsCore({
-          accountCurrency: String(existing.account_currency ?? "CAD"),
+          accountCurrency: String(existing.account_currency ?? displayCurrency),
           date: txDate,
           userId,
           enteredAmount,

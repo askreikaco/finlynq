@@ -50,8 +50,9 @@ import {
 import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
 import { Badge } from "@/components/ui/badge";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
-import { formatCurrency, formatDate } from "@/lib/currency";
+import { formatCurrency, formatDate, currencyDecimals, fxPreviewText } from "@/lib/currency";
 import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
+import { useDisplayCurrency } from "@/components/currency-provider";
 import {
   ArrowRightLeft,
   ChevronDown,
@@ -308,6 +309,9 @@ export function TransactionDialog({
   onRequestDelete,
   onLinkedSiblingClick,
 }: TransactionDialogProps) {
+  // Get display currency for defaults
+  const { displayCurrency } = useDisplayCurrency();
+
   // Form (transaction mode)
   const [form, setForm] = useState<TransactionFormValues>(FORM_DEFAULTS);
   // Currency options: built-in fiat UNION the user's active currencies (#291).
@@ -514,6 +518,7 @@ export function TransactionDialog({
     setForm({
       ...FORM_DEFAULTS,
       date: todayISO(),
+      currency: displayCurrency || FORM_DEFAULTS.currency,
     });
     setShowAdvanced(false);
     setShowSplits(false);
@@ -705,7 +710,8 @@ export function TransactionDialog({
             to: toAcct.currency,
           });
           if (!transferReceivedTouched) {
-            setTransferForm((tf) => ({ ...tf, receivedAmount: converted.toFixed(2) }));
+            const targetCcy = toAcct?.currency ?? "USD";
+            setTransferForm((tf) => ({ ...tf, receivedAmount: fxPreviewText(converted, targetCcy) }));
           }
         })
         .catch((e) => setTransferFxPreview({ state: "error", message: String(e?.message ?? "Network error") }));
@@ -1280,7 +1286,7 @@ export function TransactionDialog({
                     setForm({
                       ...form,
                       accountId: v,
-                      currency: acct?.currency ?? "CAD",
+                      currency: acct?.currency ?? displayCurrency ?? "USD",
                       portfolioHoldingId: stillValid ? form.portfolioHoldingId : "",
                     });
                   }}
@@ -1324,7 +1330,7 @@ export function TransactionDialog({
               </div>
               <div className="space-y-1.5">
                 <Label>Currency</Label>
-                <Select value={form.currency} onValueChange={(v) => setForm({ ...form, currency: v ?? "CAD" })}>
+                <Select value={form.currency} onValueChange={(v) => setForm({ ...form, currency: v ?? displayCurrency ?? "USD" })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -2116,7 +2122,9 @@ export function TransactionDialog({
                       setTransferForm({ ...transferForm, receivedAmount: e.target.value });
                     }}
                     placeholder={
-                      transferFxPreview.state === "ok" ? transferFxPreview.converted.toFixed(2) : "0.00"
+                      transferFxPreview.state === "ok"
+                        ? fxPreviewText(transferFxPreview.converted, toAcct?.currency ?? "USD")
+                        : `0.${"0".repeat(currencyDecimals(toAcct?.currency ?? "USD"))}`
                     }
                   />
                   <p className="text-[11px] text-muted-foreground">
