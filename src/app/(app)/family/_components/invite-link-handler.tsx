@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
 import { FAMILY_STRINGS } from "@/lib/family/strings";
 import { useStepUp } from "./use-step-up";
+import { clearInviteStash, consumeInviteStash, stripTokenFromAddressBar } from "@/lib/family/invite-stash";
 import { errorMessage, postJson } from "./api";
 
 /**
@@ -15,9 +16,10 @@ import { errorMessage, postJson } from "./api";
  * history.replaceState, so it never stays in the URL/history/Referer. It is only ever sent in the
  * JSON body of accept/decline - never logged, never placed in another URL.
  */
-export function InviteLinkHandler({ onDone }: { onDone?: () => void }) {
+export function InviteLinkHandler({ onDone, requireToken = false }: { onDone?: () => void; requireToken?: boolean }) {
   const [token, setToken] = useState<string | null>(null);
   const [busy, setBusy] = useState<"accept" | "decline" | null>(null);
+  const [missing, setMissing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<"accepted" | "declined" | null>(null);
   const stepUp = useStepUp();
@@ -26,16 +28,25 @@ export function InviteLinkHandler({ onDone }: { onDone?: () => void }) {
   useEffect(() => {
     if (read.current) return;
     read.current = true;
-    const url = new URL(window.location.href);
-    const t = url.searchParams.get("token");
-    if (!t) return;
-    url.searchParams.delete("token");
-    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    // URL token wins (logged-in click); else the token stashed before the sign-in redirect, consumed once.
+    const fromUrl = stripTokenFromAddressBar();
+    const t = fromUrl ?? consumeInviteStash();
+    if (fromUrl) clearInviteStash();
+    if (!t) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (requireToken) setMissing(true);
+      return;
+    }
     setToken(t);
-  }, []);
+  }, [requireToken]);
 
-  if (!token && !result) return null;
+  if (!token && !result) {
+    return missing ? (
+      <Alert role="alert">
+        <AlertDescription>{FAMILY_STRINGS.accept_link_missing}</AlertDescription>
+      </Alert>
+    ) : null;
+  }
 
   const act = async (action: "accept" | "decline") => {
     if (!token || busy) return;
@@ -53,6 +64,7 @@ export function InviteLinkHandler({ onDone }: { onDone?: () => void }) {
           : await postJson("POST", "/api/family/manage/decline", { token });
       if (!res) return;
       if (!res.ok) {
+        if (res.status === 410) clearInviteStash();
         setError(res.status === 410 ? FAMILY_STRINGS.accept_expired : await errorMessage(res, FAMILY_STRINGS.accept_error));
         return;
       }

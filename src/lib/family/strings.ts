@@ -169,6 +169,7 @@ export const FAMILY_STRINGS = {
   decline_button: "Decline invite",
   accept_declined: "Invite declined.",
   accept_go_to_page: "Go to Family Wealth",
+  accept_link_missing: "This invite link has expired or was already used. Please open the link from your invite email again.",
   accept_expired: "This invite has expired or is no longer valid",
 
   // Update sections

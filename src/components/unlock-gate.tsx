@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { INVITE_RETURN_PATH, stashInviteFromLocation } from "@/lib/family/invite-stash";
 
 type AuthState = "loading" | "unauthenticated" | "authenticated";
 
@@ -33,9 +34,13 @@ export function UnlockGate({ children }: { children: React.ReactNode }) {
     return () => { cancelled = true; };
   }, []);
 
-  if (state === "unauthenticated") {
-    router.replace("/cloud");
-  }
+  useEffect(() => {
+    if (state !== "unauthenticated") return;
+    // Family invite link: stash the token in sessionStorage + strip it from the address bar BEFORE
+    // leaving, then return to the token-free path after sign-in (never put the token in a URL).
+    const stashed = stashInviteFromLocation();
+    router.replace(stashed ? `/cloud?redirect=${encodeURIComponent(INVITE_RETURN_PATH)}` : "/cloud");
+  }, [state, router]);
 
   if (state !== "authenticated") {
     return (

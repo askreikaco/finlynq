@@ -10,7 +10,7 @@ export default function FamilyAcceptPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl sm:text-3xl font-bold">{FAMILY_STRINGS.page_title}</h1>
-      <InviteLinkHandler />
+      <InviteLinkHandler requireToken />
       <Link href="/family" className={buttonVariants()}>
         {FAMILY_STRINGS.accept_go_to_page}
       </Link>
