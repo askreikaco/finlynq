@@ -14,6 +14,7 @@
 
 import { useEffect, useState } from "react";
 import { formatCurrency } from "@/lib/currency";
+import { AmountInput } from "@/components/amount-input";
 
 interface OpenLot {
   lotId: number;
@@ -160,13 +161,12 @@ export default function LotPicker({
                     {lot.qty} open · {formatCurrency(lot.costPerShare, currency)}/sh
                   </span>
                 </div>
-                <input
-                  type="number"
+                <AmountInput native
                   step="any"
                   min="0"
                   value={qty || ""}
-                  onChange={(e) => {
-                    const v = parseFloat(e.target.value);
+                  onValueChange={(nv) => {
+                    const v = parseFloat(nv);
                     updateQty(lot.lotId, Number.isFinite(v) && v > 0 ? v : 0);
                   }}
                   placeholder="0"

@@ -24,7 +24,7 @@ import { ColorDot, CspSafeColorBar } from "@/components/csp-safe-bar";
 import { ExposurePieTooltip } from "./portfolio-ui";
 import { exportStocksToCSV } from "./csv";
 import { SECTOR_COLORS, type EtfXrayTab, type OverviewData } from "../_types";
-import { formatPercent } from "@/lib/locale";
+import { formatPercent, getDisplayLocale } from "@/lib/locale";
 
 type ExposureRow = { name: string; pct: number; color: string };
 
@@ -339,7 +339,7 @@ export function EtfXrayCard({
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">{etf.account}</TableCell>
                     <TableCell className="text-right text-sm font-mono text-muted-foreground">
-                      {etf.totalHoldings.toLocaleString()}
+                      {etf.totalHoldings.toLocaleString(getDisplayLocale())}
                     </TableCell>
                     <TableCell className="text-right">
                       <span className="text-sm font-mono font-semibold">{etf.weightPct}%</span>

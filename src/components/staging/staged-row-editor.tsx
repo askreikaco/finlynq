@@ -30,6 +30,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/currency";
+import { AmountInput } from "@/components/amount-input";
 
 export interface StagedEditableRow {
   id: string;
@@ -388,12 +389,11 @@ export function StagedRowEditor({
             <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
               Quantity <Spinner shown={savingField === "quantity"} />
             </Label>
-            <Input
-              type="number"
+            <AmountInput
               step="any"
               value={local.quantity ?? ""}
-              onChange={(e) => {
-                const v = e.target.value === "" ? null : Number(e.target.value);
+              onValueChange={(nv) => {
+                const v = nv === "" ? null : Number(nv);
                 setLocal({ ...local, quantity: Number.isFinite(v as number) || v == null ? v : local.quantity });
               }}
               onBlur={() => {
@@ -414,12 +414,11 @@ export function StagedRowEditor({
           <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
             Entered amount <Spinner shown={savingField === "enteredAmount"} />
           </Label>
-          <Input
-            type="number"
+          <AmountInput
             step="any"
             value={local.enteredAmount ?? ""}
-            onChange={(e) => {
-              const v = e.target.value === "" ? null : Number(e.target.value);
+            onValueChange={(nv) => {
+              const v = nv === "" ? null : Number(nv);
               setLocal({ ...local, enteredAmount: Number.isFinite(v as number) || v == null ? v : local.enteredAmount });
             }}
             onBlur={() => {

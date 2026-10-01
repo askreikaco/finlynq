@@ -22,6 +22,7 @@ import { ErrorState } from "@/components/error-state";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { parseSaveError } from "@/lib/save-error";
 import { CspSafeBar } from "@/components/csp-safe-bar";
+import { AmountInput } from "@/components/amount-input";
 
 type Loan = {
   id: number; name: string; type: string; principal: number; annualRate: number;
@@ -395,12 +396,12 @@ function LoansPageContent() {
                 </div>
                 <div>
                   <Label>Principal</Label>
-                  <Input type="number" step="0.01" value={form.principal} onChange={(e) => { setForm({ ...form, principal: e.target.value }); setErrors({ ...errors, principal: "" }); }} />
+                  <AmountInput  step="0.01" value={form.principal} onValueChange={(nv) => { setForm({ ...form, principal: nv }); setErrors({ ...errors, principal: "" }); }} />
                   {errors.principal && <p className="text-xs text-destructive mt-1">{errors.principal}</p>}
                 </div>
                 <div>
                   <Label>Annual Rate (%)</Label>
-                  <Input type="number" step="0.01" value={form.annualRate} onChange={(e) => { setForm({ ...form, annualRate: e.target.value }); setErrors({ ...errors, annualRate: "" }); }} />
+                  <AmountInput  step="0.01" value={form.annualRate} onValueChange={(nv) => { setForm({ ...form, annualRate: nv }); setErrors({ ...errors, annualRate: "" }); }} />
                   {errors.annualRate && <p className="text-xs text-destructive mt-1">{errors.annualRate}</p>}
                 </div>
                 <div>
@@ -412,7 +413,7 @@ function LoansPageContent() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <Label>Payment</Label>
-                  <Input type="number" step="0.01" placeholder="From term" value={form.paymentAmount} onChange={(e) => { setForm({ ...form, paymentAmount: e.target.value }); setErrors({ ...errors, paymentAmount: "", termMonths: "" }); }} />
+                  <AmountInput step="0.01" placeholder="From term" value={form.paymentAmount} onValueChange={(nv) => { setForm({ ...form, paymentAmount: nv }); setErrors({ ...errors, paymentAmount: "", termMonths: "" }); }} />
                   {errors.paymentAmount && <p className="text-xs text-destructive mt-1">{errors.paymentAmount}</p>}
                 </div>
                 <div><Label>Frequency</Label>
@@ -423,7 +424,7 @@ function LoansPageContent() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div><Label>Extra/Payment</Label><Input type="number" step="0.01" value={form.extraPayment} onChange={(e) => setForm({ ...form, extraPayment: e.target.value })} /></div>
+                <div><Label>Extra/Payment</Label><AmountInput  step="0.01" value={form.extraPayment} onValueChange={(nv) => setForm({ ...form, extraPayment: nv })} /></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -434,7 +435,7 @@ function LoansPageContent() {
                 {form.type === "lease" && (
                   <div>
                     <Label>Residual / Buyout</Label>
-                    <Input type="number" step="0.01" placeholder="Balance at term end" value={form.residualValue} onChange={(e) => { setForm({ ...form, residualValue: e.target.value }); setErrors({ ...errors, residualValue: "" }); }} />
+                    <AmountInput  step="0.01" placeholder="Balance at term end" value={form.residualValue} onValueChange={(nv) => { setForm({ ...form, residualValue: nv }); setErrors({ ...errors, residualValue: "" }); }} />
                     {errors.residualValue && <p className="text-xs text-destructive mt-1">{errors.residualValue}</p>}
                   </div>
                 )}

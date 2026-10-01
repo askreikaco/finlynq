@@ -37,6 +37,7 @@ import { useEditId } from "@/lib/hooks/useEditId";
 import { usePortfolioFormData } from "@/lib/hooks/usePortfolioFormData";
 import { useAccountHoldingSelection } from "@/lib/hooks/useAccountHoldingSelection";
 import { useSeedAccountFromParam } from "@/lib/hooks/useSeedAccountFromParam";
+import { AmountInput } from "@/components/amount-input";
 
 export default function SwapForm() {
   return <SwapCreateForm />;
@@ -376,12 +377,11 @@ function SwapCreateForm() {
                   </span>
                 ) : null}
               </Label>
-              <Input
-                type="number"
+              <AmountInput
                 step="any"
                 inputMode="decimal"
                 value={sourceQty}
-                onChange={(e) => setSourceQty(e.target.value)}
+                onValueChange={(nv) => setSourceQty(nv)}
                 placeholder="50"
               />
               {errors.sourceQty && (
@@ -397,12 +397,11 @@ function SwapCreateForm() {
                   </span>
                 ) : null}
               </Label>
-              <Input
-                type="number"
+              <AmountInput
                 step="any"
                 inputMode="decimal"
                 value={sourceProceeds}
-                onChange={(e) => setSourceProceeds(e.target.value)}
+                onValueChange={(nv) => setSourceProceeds(nv)}
                 placeholder="1500.00"
               />
               {errors.sourceProceeds && (
@@ -423,12 +422,11 @@ function SwapCreateForm() {
                   </span>
                 ) : null}
               </Label>
-              <Input
-                type="number"
+              <AmountInput
                 step="any"
                 inputMode="decimal"
                 value={destQty}
-                onChange={(e) => setDestQty(e.target.value)}
+                onValueChange={(nv) => setDestQty(nv)}
                 placeholder="10"
               />
               {errors.destQty && (
@@ -444,12 +442,11 @@ function SwapCreateForm() {
                   </span>
                 ) : null}
               </Label>
-              <Input
-                type="number"
+              <AmountInput
                 step="any"
                 inputMode="decimal"
                 value={destCost}
-                onChange={(e) => setDestCost(e.target.value)}
+                onValueChange={(nv) => setDestCost(nv)}
                 placeholder="1500.00"
               />
               {errors.destCost && (

@@ -19,6 +19,7 @@ import {
   type OpeningBalance,
 } from "@/lib/accounts/opening-balance-client";
 import { GroupField } from "./group-field";
+import { AmountInput } from "@/components/amount-input";
 
 const ACCOUNT_TYPES = [
   { value: "A", label: "Asset" },
@@ -425,12 +426,12 @@ export function AccountDialog({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="account-dialog-ob-amount">Amount</Label>
-              <Input
+              <AmountInput
                 id="account-dialog-ob-amount"
-                type="number"
+                
                 step="0.01"
                 value={form.obAmount}
-                onChange={(e) => setForm({ ...form, obAmount: e.target.value })}
+                onValueChange={(nv) => setForm({ ...form, obAmount: nv })}
                 placeholder="0.00"
               />
             </div>

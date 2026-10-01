@@ -16,6 +16,7 @@ import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/currency";
 import { Plus, Trash2, Scissors } from "lucide-react";
+import { AmountInput } from "@/components/amount-input";
 
 type Category = { id: number; name: string; type: string; group: string };
 type Account = { id: number; name: string; currency: string; archived?: boolean };
@@ -228,12 +229,11 @@ export function SplitDialog({
                   size="sm"
                   className="h-7 w-full text-xs"
                 />
-                <Input
-                  type="number"
+                <AmountInput
                   step="0.01"
                   min="0"
                   value={row.amount}
-                  onChange={(e) => updateRow(i, "amount", e.target.value)}
+                  onValueChange={(nv) => updateRow(i, "amount", nv)}
                   className="h-7 text-xs font-mono"
                   placeholder="0.00"
                 />

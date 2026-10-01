@@ -15,6 +15,7 @@ import {
 } from "@/lib/fx/supported-currencies";
 import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
 import { todayISO } from "@/lib/utils/date";
+import { AmountInput } from "@/components/amount-input";
 
 type Override = {
   id: number;
@@ -232,12 +233,12 @@ export function FxOverridesSection() {
                     </SelectContent>
                   </Select>
                   <span className="text-xs text-muted-foreground">=</span>
-                  <Input
+                  <AmountInput
                     className="h-9"
-                    type="number"
+                    
                     step="0.000001"
                     value={form.rateInput}
-                    onChange={(e) => setForm({ ...form, rateInput: e.target.value })}
+                    onValueChange={(nv) => setForm({ ...form, rateInput: nv })}
                   />
                   <span className="text-xs text-muted-foreground font-mono w-8">{form.rateMode === "to-usd" ? "USD" : form.currency}</span>
                 </div>

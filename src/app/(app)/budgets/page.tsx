@@ -23,6 +23,7 @@ import {
   Wallet, LayoutGrid, Save, FileDown, ArrowRightLeft, Clock,
   AlertTriangle, ArrowDownRight, Copy,
 } from "lucide-react";
+import { AmountInput } from "@/components/amount-input";
 
 type Budget = {
   id: number;
@@ -577,11 +578,10 @@ export default function BudgetsPage() {
                   </div>
                   <div>
                     <Label>Amount</Label>
-                    <Input
-                      type="number"
+                    <AmountInput
                       step="0.01"
                       value={moveAmount}
-                      onChange={(e) => setMoveAmount(e.target.value)}
+                      onValueChange={(nv) => setMoveAmount(nv)}
                       placeholder="50.00"
                     />
                   </div>
@@ -626,7 +626,7 @@ export default function BudgetsPage() {
                 </div>
                 <div>
                   <Label>Budget Amount</Label>
-                  <Input type="number" step="0.01" value={form.amount} onChange={(e) => { setForm({ ...form, amount: e.target.value }); setErrors({ ...errors, amount: "" }); }} placeholder="500.00" />
+                  <AmountInput  step="0.01" value={form.amount} onValueChange={(nv) => { setForm({ ...form, amount: nv }); setErrors({ ...errors, amount: "" }); }} placeholder="500.00" />
                   {errors.amount && <p className="text-xs text-destructive mt-1">{errors.amount}</p>}
                 </div>
                 {formError && <p className="text-sm text-destructive">{formError}</p>}

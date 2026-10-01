@@ -19,6 +19,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/error-state";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { parseSaveError } from "@/lib/save-error";
+import { AmountInput } from "@/components/amount-input";
 
 type Goal = {
   id: number; name: string; type: string; targetAmount: number; currentAmount: number;
@@ -239,7 +240,7 @@ function GoalEditForm({
       </div>
       <div>
         <Label>Target Amount</Label>
-        <Input type="number" step="0.01" value={form.targetAmount} onChange={(e) => { setForm({ ...form, targetAmount: e.target.value }); setErrors({ ...errors, targetAmount: "" }); }} />
+        <AmountInput  step="0.01" value={form.targetAmount} onValueChange={(nv) => { setForm({ ...form, targetAmount: nv }); setErrors({ ...errors, targetAmount: "" }); }} />
         {errors.targetAmount && <p className="text-xs text-destructive mt-1">{errors.targetAmount}</p>}
       </div>
       <div className="grid grid-cols-2 gap-3">
