@@ -30,7 +30,7 @@ import {
   Archive,
   FolderCog,
 } from "lucide-react";
-import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
+import { PageHeader, HEADER_DESKTOP_ONLY, NetWorthHero, SectionCard, SectionLabel, AccountRow } from "@/components/mobile";
 
 type AccountBalance = {
   accountId: number;
@@ -298,6 +298,33 @@ export default function AccountsPage() {
     </div>
   );
 
+  const renderMobileSection = (title: string, list: AccountBalance[], type: "asset" | "liability") =>
+    list.length === 0 ? null : (
+      <section className="space-y-2">
+        <SectionLabel>{title}</SectionLabel>
+        {groups(list).map(([group, accts]) => (
+          <SectionCard key={group} label={group} padded={false} className="divide-y divide-border/50 px-3">
+            {accts.map((a) => (
+              <AccountRow
+                key={a.accountId}
+                accountId={a.accountId}
+                accountName={a.accountName ?? ""}
+                alias={a.alias}
+                currency={a.currency}
+                balance={a.balance}
+                convertedBalance={a.convertedBalance}
+                displayCurrency={displayCurrency}
+                archived={a.archived}
+                type={type}
+                group={group}
+                isInvestment={a.isInvestment}
+              />
+            ))}
+          </SectionCard>
+        ))}
+      </section>
+    );
+
   // Totals are aggregations across all currencies — sum the API-provided
   // convertedBalance (in displayCurrency) when present, fall back to raw balance.
   const totalAssetsConverted = activeAssets.reduce((s, a) => s + (a.convertedBalance ?? a.balance), 0);
@@ -389,7 +416,12 @@ export default function AccountsPage() {
         }
       />
 
-      <div className="grid grid-cols-2 gap-3">
+      {/* Below md the Net Worth hero (assets/liabilities tiles) replaces these two stat cards. */}
+      <div className="md:hidden">
+        <NetWorthHero totalAssets={totalAssetsConverted} totalLiabilities={totalLiabilitiesConverted} currency={displayCurrency} />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 max-md:hidden">
         {[
           { label: "Total Assets", value: totalAssetsConverted, Icon: TrendingUp, color: "emerald" },
           { label: "Total Liabilities", value: totalLiabilitiesConverted, Icon: TrendingDown, color: "rose" },
@@ -408,7 +440,13 @@ export default function AccountsPage() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* Below md: groups as native SectionCards of AccountRows (tap → /accounts/[id]). */}
+      <div data-slot="accounts-mobile-list" className="space-y-4 md:hidden">
+        {renderMobileSection("Assets", assets, "asset")}
+        {renderMobileSection("Liabilities", liabilities, "liability")}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-md:hidden">
         {renderSection("Assets", assets, "text-emerald-600", ArrowUpRight, "bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300")}
         {renderSection("Liabilities", liabilities, "text-rose-600", ArrowDownRight, "bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300")}
       </div>
