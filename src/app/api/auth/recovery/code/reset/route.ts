@@ -37,11 +37,15 @@ import { finalizeRecoveryReset } from "@/lib/auth/recovery";
 import { commitSession } from "@/lib/auth/session-bundle";
 import { logSecurityEvent } from "@/lib/auth/security-events";
 import { authLookupHash } from "@/lib/api-auth";
+import { validatePasswordStrength } from "@/lib/auth/password-policy";
+import { deviceCookieOptions } from "@/lib/auth/trusted-device";
+import crypto from "crypto";
 
 const resetSchema = z.object({
   identifier: z.string().min(1).max(256),
   recoveryCode: z.string().min(1).max(100),
-  newPassword: z.string().min(1),
+  newPassword: z.string().min(1).max(256),
+  trustDevice: z.boolean().optional(),
 });
 
 const GENERIC_FAIL = "Recovery failed. Check your details and try again.";
@@ -63,10 +67,12 @@ export async function POST(request: NextRequest) {
     const parsed = validateBody(await request.json(), resetSchema);
     if (parsed.error) return fail();
 
-    const { identifier, recoveryCode, newPassword } = parsed.data;
+    const { identifier, recoveryCode, newPassword, trustDevice } = parsed.data;
 
-    // Rate limit per identifier (use constant-time hash to avoid enumeration)
-    const identifierHash = authLookupHash(identifier);
+    // Per-identifier limit. Normalised (trim + lowercase) so case/whitespace
+    // variants of one identifier share a bucket. Applies to every identifier
+    // alike, so a 429 reveals nothing about account existence.
+    const identifierHash = authLookupHash(identifier.trim().toLowerCase());
     const identifierRateLimit = checkRateLimit(
       `recovery-code-reset-identifier:${identifierHash}`,
       5,
@@ -79,67 +85,59 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Look up user by email or username
-    const user = await getUserByIdentifier(identifier);
-    if (!user) {
-      // User not found — return generic fail
-      // Log security event without revealing user lookup failure
-      logSecurityEvent("unknown", "recovery_reset_failed", {
-        method: "code",
-        ip,
-        userAgent,
-      }).catch(() => {});
-      return fail();
-    }
+    // Password policy is checked BEFORE the code is consumed: a weak password
+    // must never burn a single-use code. Same generic body as every failure.
+    if (validatePasswordStrength(newPassword)) return fail();
 
-    // Normalize and hash recovery code
+    const user = await getUserByIdentifier(identifier);
+
+    // Uniform work for unknown user / malformed code / wrong code / used code:
+    // always hash the code and always run the atomic consume query (against a
+    // random user id when the account does not exist) so the response is
+    // indistinguishable in body, status and (approximately) timing.
     let canonicalCode: string;
+    let wellFormed = true;
     try {
       canonicalCode = `pfrc1:${normalizeRecoveryCode(recoveryCode)}`;
     } catch {
-      logSecurityEvent(user.id, "recovery_proof_failed", { method: "code", ip, userAgent }).catch(() => {});
+      wellFormed = false;
+      canonicalCode = `pfrc1:${"A".repeat(20)}`;
+    }
+    const lookupUserId = user ? (user.id as string) : crypto.randomUUID();
+    const dekWrapped = await consumeRecoveryCode(lookupUserId, hashRecoveryCode(canonicalCode));
+
+    if (!user || !wellFormed || !dekWrapped) {
+      if (user) {
+        logSecurityEvent(user.id as string, "recovery_proof_failed", { method: "code", ip, userAgent }).catch(() => {});
+      }
       return fail();
     }
 
-    // Consume recovery code (atomically burn if valid)
-    const dekWrapped = await consumeRecoveryCode(user.id, hashRecoveryCode(canonicalCode));
-    if (!dekWrapped) {
-      // Code not found, already used, or belongs to different user
-      logSecurityEvent(user.id, "recovery_proof_failed", { method: "code", ip, userAgent }).catch(() => {});
-      return fail();
-    }
-
-    // Unwrap DEK with recovery code
     let recoveredDek: Buffer;
     try {
       recoveredDek = unwrapDEKWithRecoveryCode(dekWrapped, canonicalCode);
     } catch {
-      logSecurityEvent(user.id, "recovery_proof_failed", { method: "code", ip, userAgent }).catch(() => {});
+      logSecurityEvent(user.id as string, "recovery_proof_failed", { method: "code", ip, userAgent }).catch(() => {});
       return fail();
     }
 
-    // All checks passed; finalize the reset
     const result = await finalizeRecoveryReset({
-      userId: user.id,
+      userId: user.id as string,
       newPassword,
       dek: recoveredDek,
-      trustDevice: true,
+      trustDevice: trustDevice !== false,
       userAgent,
       ip,
       method: "code",
     });
 
     const response = NextResponse.json({ success: true });
-    await commitSession(request, response, { token: result.token, jti: result.jti, userId: user.id });
+    await commitSession(request, response, { token: result.token, jti: result.jti, userId: user.id as string });
 
-    // Set the device cookie (from finalizeRecoveryReset's device issuance)
     if (result.deviceCookieValue) {
       response.cookies.set("pf_device", result.deviceCookieValue, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: result.maxAgeSeconds,
-        path: "/api/auth",
+        ...deviceCookieOptions(),
+        maxAge: result.maxAgeSeconds ?? deviceCookieOptions().maxAge,
       });
     }
 

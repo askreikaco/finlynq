@@ -8,10 +8,11 @@
  *
  * Gates:
  * - Device must be valid (not expired, not revoked, secret matches)
- * - If user has MFA (TOTP) enabled, proof is REQUIRED
- * - proof can be TOTP code (6 digits) or recovery code (24 chars)
- * - If proof is required but missing: 401 { code: "proof-required" }
- *   WITHOUT rotating the device (state must not change on auth failures)
+ * - Proof is ALWAYS required (plan 1.4): TOTP (only if the user has TOTP) or an
+ *   unused recovery code (burned). User with neither -> generic 400.
+ * - Missing proof: 401 { code: "proof-required" }. Only reachable AFTER the
+ *   device secret verified (peekDevice), so it is not an oracle without possession.
+ *   No state change on any failure.
  *
  * Rate limits: per-IP 5/15min; per-device 5/h
  *
@@ -29,23 +30,24 @@ import { z } from "zod";
 import { validateBody, logApiError } from "@/lib/validate";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { clientIp } from "@/lib/client-ip";
-import { peekDevice, redeemDeviceWithoutRotate, parseDeviceIdFromCookie } from "@/lib/auth/trusted-device";
+import { peekDevice, redeemDeviceWithoutRotate, deviceCookieOptions } from "@/lib/auth/trusted-device";
 import { getUserById } from "@/lib/auth/queries";
 import { decryptField } from "@/lib/crypto/envelope";
 import { verifyMfaCode } from "@/lib/auth/mfa";
 import { normalizeRecoveryCode, hashRecoveryCode, unwrapDEKWithRecoveryCode } from "@/lib/auth/recovery-codes";
-import { consumeRecoveryCode } from "@/lib/auth/queries";
+import { consumeRecoveryCode, countUnusedRecoveryCodes } from "@/lib/auth/queries";
+import { validatePasswordStrength } from "@/lib/auth/password-policy";
 import { finalizeRecoveryReset } from "@/lib/auth/recovery";
 import { commitSession } from "@/lib/auth/session-bundle";
 import { logSecurityEvent } from "@/lib/auth/security-events";
 import crypto from "crypto";
 
 const resetSchema = z.object({
-  newPassword: z.string().min(1),
+  newPassword: z.string().min(1).max(256),
   proof: z
     .object({
       type: z.enum(["totp", "code"]),
-      value: z.string().min(1),
+      value: z.string().min(1).max(100),
     })
     .optional(),
 });
@@ -71,17 +73,15 @@ export async function POST(request: NextRequest) {
 
     const { newPassword, proof } = parsed.data;
     const deviceCookie = request.cookies.get("pf_device")?.value;
-    if (!deviceCookie) {
-      return fail();
-    }
+    if (!deviceCookie) return fail();
 
-    const deviceId = parseDeviceIdFromCookie(deviceCookie);
-    if (!deviceId) {
-      return fail();
-    }
+    // Possession check FIRST (id + secret hash, read-only). Everything below,
+    // including the 401 proof-required and the per-device limiter, is only
+    // reachable with a valid device secret, so none of it is an oracle.
+    const peeked = await peekDevice(deviceCookie);
+    if (!peeked.valid) return fail();
 
-    // Rate limit per device
-    const deviceRateLimit = checkRateLimit(`recovery-device-reset-device:${deviceId}`, 5, 60 * 60_000);
+    const deviceRateLimit = checkRateLimit(`recovery-device-reset-device:${peeked.deviceId}`, 5, 60 * 60_000);
     if (!deviceRateLimit.allowed) {
       return NextResponse.json(
         { error: "Too many attempts. Please try again later." },
@@ -89,101 +89,69 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Peek at the device to get userId without consuming/rotating yet
-    const peeked = await peekDevice(deviceCookie);
-    if (!peeked.valid) {
-      return fail();
-    }
-
     const userId = peeked.userId;
     const user = await getUserById(userId);
-    if (!user) {
+    if (!user) return fail();
+
+    // Must not burn a code on a password that will be rejected.
+    if (validatePasswordStrength(newPassword)) return fail();
+
+    const hasTotp = !!(user.mfaEnabled && user.mfaSecret);
+    const hasCodes = (await countUnusedRecoveryCodes(userId)) > 0;
+    if (!hasTotp && !hasCodes) {
+      // Device alone is never enough and there is nothing to prove with.
       return fail();
     }
 
-    // Get the DEK without rotating yet (we need to verify proof first)
-    const redeemNoRotate = await redeemDeviceWithoutRotate(deviceCookie, userId);
-    if (!redeemNoRotate) {
-      return fail();
+    if (!proof) {
+      return NextResponse.json(
+        { error: "Additional proof required", code: "proof-required" },
+        { status: 401 }
+      );
     }
 
-    const { dek: deviceDek } = redeemNoRotate;
+    const redeemed = await redeemDeviceWithoutRotate(deviceCookie, userId);
+    if (!redeemed) return fail();
+    const deviceDek = redeemed.dek;
 
-    // Check if MFA is required
-    let proofValid = false;
-    if (user.mfaEnabled) {
-      // MFA is required; verify the proof
-      if (!proof) {
-        // No proof provided but MFA is required
-        logSecurityEvent(userId, "recovery_proof_failed", { method: "device", ip, userAgent }).catch(() => {});
-        return NextResponse.json(
-          { error: "MFA proof required", code: "proof-required" },
-          { status: 401 }
-        );
+    const proofFailed = () => {
+      logSecurityEvent(userId, "recovery_proof_failed", { method: "device", ip, userAgent }).catch(() => {});
+      return fail();
+    };
+
+    if (proof.type === "totp") {
+      if (!hasTotp || !user.mfaSecret) return proofFailed();
+      let decryptedSecret: string | null;
+      try {
+        decryptedSecret = decryptField(deviceDek, user.mfaSecret);
+      } catch {
+        return fail();
       }
-
-      // Verify the proof
-      if (proof.type === "totp") {
-        // Decrypt TOTP secret and verify code
-        if (!user.mfaSecret) {
-          return fail();
-        }
-
-        let decryptedSecret: string | null;
-        try {
-          decryptedSecret = decryptField(deviceDek, user.mfaSecret);
-        } catch {
-          return fail();
-        }
-
-        if (!decryptedSecret || !verifyMfaCode(decryptedSecret, proof.value)) {
-          logSecurityEvent(userId, "recovery_proof_failed", { method: "device", ip, userAgent }).catch(() => {});
-          return fail();
-        }
-
-        proofValid = true;
-      } else if (proof.type === "code") {
-        // Verify recovery code
-        let canonicalCode: string;
-        try {
-          canonicalCode = `pfrc1:${normalizeRecoveryCode(proof.value)}`;
-        } catch {
-          return fail();
-        }
-
-        const dekWrapped = await consumeRecoveryCode(userId, hashRecoveryCode(canonicalCode));
-        if (!dekWrapped) {
-          logSecurityEvent(userId, "recovery_proof_failed", { method: "device", ip, userAgent }).catch(() => {});
-          return fail();
-        }
-
-        let recoveredDek: Buffer;
-        try {
-          recoveredDek = unwrapDEKWithRecoveryCode(dekWrapped, canonicalCode);
-        } catch {
-          return fail();
-        }
-
-        // Verify that recovered DEK matches device DEK
-        if (
-          recoveredDek.length !== deviceDek.length ||
-          !crypto.timingSafeEqual(recoveredDek, deviceDek)
-        ) {
-          return fail();
-        }
-
-        proofValid = true;
-      }
+      if (!decryptedSecret || !verifyMfaCode(decryptedSecret, proof.value)) return proofFailed();
     } else {
-      // No MFA required; proof is not needed
-      proofValid = true;
+      let canonicalCode: string;
+      try {
+        canonicalCode = `pfrc1:${normalizeRecoveryCode(proof.value)}`;
+      } catch {
+        return proofFailed();
+      }
+      // Burns the code atomically (single use).
+      const dekWrapped = await consumeRecoveryCode(userId, hashRecoveryCode(canonicalCode));
+      if (!dekWrapped) return proofFailed();
+      let recoveredDek: Buffer;
+      try {
+        recoveredDek = unwrapDEKWithRecoveryCode(dekWrapped, canonicalCode);
+      } catch {
+        return proofFailed();
+      }
+      if (
+        recoveredDek.length !== deviceDek.length ||
+        !crypto.timingSafeEqual(recoveredDek, deviceDek)
+      ) {
+        return proofFailed();
+      }
     }
 
-    if (!proofValid) {
-      return fail();
-    }
-
-    // All checks passed; now finalize the reset
     const result = await finalizeRecoveryReset({
       userId,
       newPassword,
@@ -198,14 +166,10 @@ export async function POST(request: NextRequest) {
     const response = NextResponse.json({ success: true });
     await commitSession(request, response, { token: result.token, jti: result.jti, userId });
 
-    // Set the new device cookie (from finalizeRecoveryReset's device rotation)
     if (result.deviceCookieValue) {
       response.cookies.set("pf_device", result.deviceCookieValue, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: result.maxAgeSeconds,
-        path: "/api/auth",
+        ...deviceCookieOptions(),
+        maxAge: result.maxAgeSeconds ?? deviceCookieOptions().maxAge,
       });
     }
 

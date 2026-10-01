@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     let proofNeeded: "totp" | "code" | null = null;
 
     // Check if user has TOTP enabled
-    if (user.mfaEnabled) {
+    if (user.mfaEnabled && user.mfaSecret) {
       proofNeeded = "totp";
     } else {
       // Check if user has recovery codes
