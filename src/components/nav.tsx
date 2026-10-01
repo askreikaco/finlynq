@@ -22,7 +22,6 @@ import {
   FlameKindling,
   GitBranch,
   MessageSquare,
-  Bot,
   ChevronLeft,
   ChevronDown,
   ChevronRight,
@@ -32,19 +31,15 @@ import {
   LogOut,
   Inbox,
   Mailbox,
-  Plug,
   Megaphone,
   MessageCircle,
-  Database,
-  Activity,
   Server,
-  ScrollText,
   Shield,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { FinlynqLogo } from "@/components/FinlynqLogo";
 
-type NavItem = { href: string; label: string; icon: LucideIcon; color: string; mode?: "prod" | "dev" };
+type NavItem = { href: string; label: string; icon: LucideIcon; color: string; mode?: "prod" | "dev"; activePrefixes?: string[] };
 
 // Single-accent system: active items glow amber (`text-primary`) to match the
 // landing's restraint. Inactive icons use the sidebar-foreground muted tones.
@@ -97,11 +92,7 @@ export const adminLinks: NavItem[] = [
   { href: "/admin", label: "Admin", icon: ShieldCheck, color: ACTIVE_ACCENT, mode: "prod" },
   { href: "/admin/inbox", label: "Admin Inbox", icon: Inbox, color: ACTIVE_ACCENT, mode: "prod" },
   { href: "/admin/email-inbox", label: "Email Oversight", icon: Mailbox, color: ACTIVE_ACCENT, mode: "prod" },
-  { href: "/admin/integrations", label: "Integrations", icon: Plug, color: ACTIVE_ACCENT, mode: "prod" },
-  { href: "/admin/price-cache", label: "Rate Cache", icon: Database, color: ACTIVE_ACCENT, mode: "prod" },
-  { href: "/admin/api-log", label: "API Log", icon: Activity, color: ACTIVE_ACCENT, mode: "prod" },
-  { href: "/admin/system", label: "Server Health", icon: Server, color: ACTIVE_ACCENT, mode: "prod" },
-  { href: "/admin/diagnostics", label: "Diagnostics", icon: ScrollText, color: ACTIVE_ACCENT, mode: "prod" },
+  { href: "/admin/env", label: "Environment", icon: Server, color: ACTIVE_ACCENT, mode: "prod", activePrefixes: ["/admin/system", "/admin/diagnostics", "/admin/api-log", "/admin/price-cache", "/admin/integrations", "/admin/env"] },
   { href: "/admin/announcements", label: "Announcements", icon: Megaphone, color: ACTIVE_ACCENT, mode: "prod" },
   { href: "/admin/feedback", label: "Feedback", icon: MessageCircle, color: ACTIVE_ACCENT, mode: "prod" },
 ];
@@ -132,7 +123,7 @@ export function Nav() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
-  const [adminPref, setAdminPref] = useState(false);
+  const [adminPref, setAdminPref] = useState<boolean | null>(null);
   const [devMode, setDevMode] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [unread, setUnread] = useState(0);
@@ -156,8 +147,10 @@ export function Nav() {
     try {
       const savedAdminOpen = localStorage.getItem("nav.adminOpen");
       if (savedAdminOpen === "true") setAdminPref(true);
+      else if (savedAdminOpen === "false") setAdminPref(false);
+      // else: null (no explicit choice)
     } catch (_e) {
-      // localStorage not available, adminOpen stays false
+      // localStorage not available, adminOpen stays null
     }
 
     fetch("/api/auth/session")
@@ -172,10 +165,10 @@ export function Nav() {
       .catch(() => {});
   }, []);
 
-  // Admin group is open when the user opened it, or while on an /admin page
-  // (derived, no effect: collapsing still works, and returns to the saved pref
-  // once the user leaves /admin).
-  const adminOpen = adminPref || (isAdmin && pathname.startsWith("/admin"));
+  // Admin group is open when the user explicitly opened it (adminPref === true),
+  // or while on an /admin page (adminPref === null, derived state).
+  // Collapsing works, and returns to the saved pref once the user leaves /admin.
+  const adminOpen = adminPref ?? (isAdmin && pathname.startsWith("/admin"));
 
   // Unread announcement count for the "What's New" badge. Refetched on every
   // navigation so the badge clears after the user visits /whats-new (which
@@ -231,7 +224,15 @@ export function Nav() {
   };
 
   const renderLink = (item: NavItem, showLabel: boolean) => {
-    const isActive = pathname.startsWith(item.href);
+    // Check activePrefixes first if they exist, otherwise use default href matching
+    let isActive = false;
+    if (item.activePrefixes && item.activePrefixes.length > 0) {
+      isActive = item.activePrefixes.some(prefix =>
+        pathname === prefix || pathname.startsWith(prefix + "/")
+      );
+    } else {
+      isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+    }
     const badge = unreadFor(item.href);
     return (
       <Link

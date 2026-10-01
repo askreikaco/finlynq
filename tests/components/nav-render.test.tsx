@@ -84,6 +84,59 @@ describe("Nav admin group", () => {
     expect(await screen.findByText("Admin Inbox")).toBeTruthy();
     expect(adminToggle()!.getAttribute("aria-expanded")).toBe("true");
   });
+
+  it("admin user on /admin/system shows Environment link active, no old admin links", async () => {
+    mockPath = "/admin/system";
+    mockFetch({ admin: true });
+    render(<Nav />);
+
+    const envLink = await screen.findByRole("link", { name: /Environment/i });
+    expect(envLink.getAttribute("href")).toBe("/admin/env");
+    expect(envLink.getAttribute("aria-current")).toBe("page");
+
+    // Old links should not exist
+    expect(screen.queryByText("Diagnostics")).toBeNull();
+    expect(screen.queryByText("Rate Cache")).toBeNull();
+    expect(screen.queryByText("API Log")).toBeNull();
+    expect(screen.queryByText("Server Health")).toBeNull();
+  });
+
+  it("admin on /admin/system with group open, clicking toggle collapses it", async () => {
+    mockPath = "/admin/system";
+    localStorage.setItem("nav.adminOpen", "true");
+    mockFetch({ admin: true });
+    render(<Nav />);
+
+    const btn = await screen.findByRole("button", { name: /^admin$/i });
+    expect(btn.getAttribute("aria-expanded")).toBe("true");
+    expect(screen.getByText("Email Oversight")).toBeTruthy();
+
+    fireEvent.click(btn);
+
+    expect(btn.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByText("Email Oversight")).toBeNull();
+    expect(localStorage.getItem("nav.adminOpen")).toBe("false");
+  });
+
+  it("admin user on /admin/system with collapsed sidebar shows admin shield active", async () => {
+    mockPath = "/admin/system";
+    mockFetch({ admin: true });
+    render(<Nav />);
+
+    // Find and click the collapse button to collapse the sidebar
+    const collapseBtn = await waitFor(() =>
+      screen.getByRole("button", { name: /collapse sidebar|expand sidebar/i })
+    );
+    fireEvent.click(collapseBtn);
+
+    // Find the aria-label="Admin" link in the collapsed sidebar
+    const adminLink = await screen.findByRole("link", { name: "Admin" });
+
+    // Check that it has the active styling
+    const className = adminLink.className;
+    expect(className).toContain("bg-white/[0.08]");
+    expect(className).toContain("text-sidebar-accent-foreground");
+  });
 });
 
 describe("Nav What's New", () => {

@@ -83,32 +83,16 @@ describe("Admin Links (Collapsible)", () => {
     expect(item?.mode).toBe("prod");
   });
 
-  it("Rate Cache item exists and has prod mode", () => {
-    const item = adminLinks.find((i) => i.label === "Rate Cache");
+  it("Environment item exists with activePrefixes", () => {
+    const item = adminLinks.find((i) => i.label === "Environment");
     expect(item).toBeTruthy();
-    expect(item?.href).toBe("/admin/price-cache");
+    expect(item?.href).toBe("/admin/env");
     expect(item?.mode).toBe("prod");
-  });
-
-  it("API Log item exists and has prod mode", () => {
-    const item = adminLinks.find((i) => i.label === "API Log");
-    expect(item).toBeTruthy();
-    expect(item?.href).toBe("/admin/api-log");
-    expect(item?.mode).toBe("prod");
-  });
-
-  it("Server Health item exists and has prod mode", () => {
-    const item = adminLinks.find((i) => i.label === "Server Health");
-    expect(item).toBeTruthy();
-    expect(item?.href).toBe("/admin/system");
-    expect(item?.mode).toBe("prod");
-  });
-
-  it("Diagnostics item exists and has prod mode", () => {
-    const item = adminLinks.find((i) => i.label === "Diagnostics");
-    expect(item).toBeTruthy();
-    expect(item?.href).toBe("/admin/diagnostics");
-    expect(item?.mode).toBe("prod");
+    expect(item?.activePrefixes).toContain("/admin/system");
+    expect(item?.activePrefixes).toContain("/admin/diagnostics");
+    expect(item?.activePrefixes).toContain("/admin/api-log");
+    expect(item?.activePrefixes).toContain("/admin/price-cache");
+    expect(item?.activePrefixes).toContain("/admin/integrations");
   });
 
   it("Announcements item exists and has prod mode", () => {
