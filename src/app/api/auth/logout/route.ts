@@ -6,12 +6,14 @@
  * account out clears everything. ?all=1: revoke every jti in the bundle,
  * wipe every DEK, clear both cookies.
  * ?everywhere=1: also revoke trusted devices (active user; every bundle
- * user with all=1) and clear pf_device. pf_device is otherwise kept.
+ * user with all=1) and remove ONLY those users' entries from the pf_device
+ * list (other accounts' entries on this browser survive; the cookie is
+ * cleared when none remain). pf_device is otherwise kept.
  * Response: {success:true, activeUserId|null}. Never returns tokens.
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { revokeAllDevices, deviceCookieOptions } from "@/lib/auth/trusted-device";
+import { revokeAllDevices, removeUserDevicesFromList, deviceCookieOptions } from "@/lib/auth/trusted-device";
 import { logoutBundle } from "@/lib/auth/session-bundle";
 
 export async function POST(request: NextRequest) {
@@ -32,7 +34,22 @@ export async function POST(request: NextRequest) {
         // swallow — device revocation must not block logout
       }
     }
-    response.cookies.set("pf_device", "", { ...deviceCookieOptions(), maxAge: 0 });
+    const current = request.cookies.get("pf_device")?.value;
+    if (!current) {
+      response.cookies.set("pf_device", "", { ...deviceCookieOptions(), maxAge: 0 });
+    } else if (users.size > 0) {
+      try {
+        let list: string | undefined = current;
+        for (const userId of users) {
+          list = (await removeUserDevicesFromList(list, userId)).newDeviceList;
+        }
+        const o = deviceCookieOptions();
+        response.cookies.set("pf_device", list ?? "", { ...o, maxAge: list ? o.maxAge : 0 });
+      } catch {
+        // fail closed: drop the whole cookie
+        response.cookies.set("pf_device", "", { ...deviceCookieOptions(), maxAge: 0 });
+      }
+    }
   }
 
   // Rebuild body now that the outcome is known (cookies already on `response`).

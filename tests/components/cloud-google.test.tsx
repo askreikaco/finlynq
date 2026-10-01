@@ -15,6 +15,8 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push, replace, refresh }),
   useSearchParams: () => params,
 }));
+const hardReload = vi.fn();
+vi.mock("@/lib/client/hard-reload", () => ({ hardReload: (...a: unknown[]) => hardReload(...a) }));
 vi.mock("@/components/analytics-consent", () => ({ AnalyticsConsent: () => null }));
 vi.mock("@/components/logo-mark", () => ({ LogoMark: () => null }));
 
@@ -28,7 +30,7 @@ beforeEach(() => {
   params = new URLSearchParams();
   calls = [];
   handlers = { "/api/auth/config": () => ({ body: { googleEnabled: true } }) };
-  push.mockClear(); replace.mockClear(); refresh.mockClear();
+  push.mockClear(); replace.mockClear(); refresh.mockClear(); hardReload.mockClear();
   vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
     calls.push({ url, init });
     const h = handlers[url];
@@ -138,6 +140,9 @@ describe("/cloud Google flow", () => {
     fireEvent.submit(document.getElementById("password")!.closest("form")!);
     await waitFor(() => expect(calls.some((c) => c.url === "/api/auth/login")).toBe(true));
     expect(bodyOf("/api/auth/login")).toEqual({ identifier: "bob", password: "secret-pass" });
-    await waitFor(() => expect(push).toHaveBeenCalledWith("/dashboard"));
+    // Login is a FULL page load (kills SWR/React caches), never a client-side push.
+    await waitFor(() => expect(hardReload).toHaveBeenCalledWith("/dashboard"));
+    expect(push).not.toHaveBeenCalled();
+    expect(refresh).not.toHaveBeenCalled();
   });
 });

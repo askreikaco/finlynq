@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, useRef, Suspense } from "react";
 import { AnalyticsConsent } from "@/components/analytics-consent";
 import { LogoMark } from "@/components/logo-mark";
+import { hardReload } from "@/lib/client/hard-reload";
 import {
   safeNext,
   googleStartUrl,
@@ -200,8 +201,7 @@ function CloudAuthPageInner() {
         setMfaPendingToken(data.mfaPendingToken);
         return;
       }
-      router.push(redirectTo);
-      router.refresh();
+      hardReload(redirectTo);
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
@@ -229,8 +229,7 @@ function CloudAuthPageInner() {
         setError(data.error || "Verification failed");
         return;
       }
-      router.push(redirectTo);
-      router.refresh();
+      hardReload(redirectTo);
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
@@ -268,8 +267,7 @@ function CloudAuthPageInner() {
         setError(data.error || "Registration failed");
         return;
       }
-      router.push(redirectTo);
-      router.refresh();
+      hardReload(redirectTo);
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
@@ -319,8 +317,7 @@ function CloudAuthPageInner() {
         setMfaRequired(true);
         router.replace(`/cloud?step=mfa&redirect=${encodeURIComponent(redirectTo)}`);
       } else {
-        router.push(redirectTo);
-        router.refresh();
+        hardReload(redirectTo);
       }
     } catch {
       setError("Something went wrong. Please try again.");

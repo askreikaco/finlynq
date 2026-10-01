@@ -7,6 +7,7 @@ import { AlertTriangle, Bell, CheckCircle2, X, ChevronRight, Shield } from "luci
 import { formatCurrency } from "@/lib/currency";
 import { motion, AnimatePresence } from "framer-motion";
 import type { SpotlightItem } from "./types";
+import { useSessionUserId, readUserItem, writeUserItem } from "@/lib/client/user-storage";
 
 const itemVariants = {
   hidden: { opacity: 0, y: 16 },
@@ -20,19 +21,25 @@ const SEVERITY_ICON = {
 };
 
 const MAX_VISIBLE = 3;
+const DISMISSED_KEY_BASE = "pf-spotlight-dismissed";
 
 export function ActionCenter() {
   const [items, setItems] = useState<SpotlightItem[] | null>(null);
   const [showAll, setShowAll] = useState(false);
-  const [dismissed, setDismissed] = useState<Set<string>>(() => {
-    if (typeof window === "undefined") return new Set();
+  const { userId, ready } = useSessionUserId();
+  const [dismissed, setDismissed] = useState<Set<string>>(() => new Set());
+
+  // Dismissed ids are per-user (`pf-spotlight-dismissed:<userId>`); nothing is
+  // read until the active userId is known.
+  useEffect(() => {
+    if (!ready) return;
     try {
-      const stored = localStorage.getItem("pf-spotlight-dismissed");
-      return stored ? new Set(JSON.parse(stored)) : new Set();
+      const raw = readUserItem(DISMISSED_KEY_BASE, userId);
+      setDismissed(raw ? new Set(JSON.parse(raw)) : new Set());
     } catch {
-      return new Set();
+      setDismissed(new Set());
     }
-  });
+  }, [ready, userId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -54,12 +61,10 @@ export function ActionCenter() {
     const next = new Set(dismissed);
     next.add(id);
     setDismissed(next);
-    try {
-      localStorage.setItem("pf-spotlight-dismissed", JSON.stringify([...next]));
-    } catch { /* ignore */ }
+    writeUserItem(DISMISSED_KEY_BASE, userId, JSON.stringify([...next]));
   };
 
-  if (!items) return null;
+  if (!items || !ready) return null;
 
   const visible = items.filter((i) => !dismissed.has(i.id));
   const displayItems = showAll ? visible : visible.slice(0, MAX_VISIBLE);

@@ -38,6 +38,12 @@ vi.mock("@/lib/auth/queries", () => ({
 }));
 
 vi.mock("@/lib/auth/trusted-device", () => ({
+  parseDeviceIdsFromCookie: (v: string | undefined) =>
+    (v ?? "").split(",").map((p) => p.split(".")[0]).filter(Boolean),
+  removeUserDevicesFromList: async (cookie: string | undefined, _userId: string) => ({
+    newDeviceList: "",
+    removed: !!cookie,
+  }),
   deviceCookieOptions: () => ({
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",

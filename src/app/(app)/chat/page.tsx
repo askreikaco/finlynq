@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
+import { useSessionUserId, readUserItem, writeUserItem, removeUserItem } from "@/lib/client/user-storage";
 import { CHART_COLORS } from "@/lib/chart-colors";
 import { Send, Trash2, MessageSquare, Bot, User, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -55,14 +56,15 @@ const SUGGESTIONS = [
 
 // ─── Storage helpers ────────────────────────────────────────────────
 
-const STORAGE_KEY = "pf-chat-history";
+const STORAGE_KEY_BASE = "pf-chat-history";
 const MAX_MESSAGES = 100;
 
-function loadHistory(): ChatMessage[] {
-  if (typeof window === "undefined") return [];
+// Per-user (`pf-chat-history:<userId>`): see src/lib/client/user-storage.ts.
+// Nothing is read or written until the active userId is known.
+function loadHistory(userId: string | null): ChatMessage[] {
+  const raw = readUserItem(STORAGE_KEY_BASE, userId);
+  if (!raw) return [];
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed.slice(-MAX_MESSAGES) : [];
   } catch {
@@ -70,12 +72,10 @@ function loadHistory(): ChatMessage[] {
   }
 }
 
-function saveHistory(messages: ChatMessage[]) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.slice(-MAX_MESSAGES)));
-  } catch {
+function saveHistory(messages: ChatMessage[], userId: string | null) {
+  if (!writeUserItem(STORAGE_KEY_BASE, userId, JSON.stringify(messages.slice(-MAX_MESSAGES)))) {
     // Storage full — drop oldest
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.slice(-50)));
+    writeUserItem(STORAGE_KEY_BASE, userId, JSON.stringify(messages.slice(-50)));
   }
 }
 
@@ -264,11 +264,13 @@ function ChatPageContent() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [mounted, setMounted] = useState(false);
 
-  // Load history on mount
+  // Active user (history is per-user; nothing is read before userId is known)
+  const { userId, ready } = useSessionUserId();
   useEffect(() => {
-    setMessages(loadHistory());
+    if (!ready) return;
+    setMessages(loadHistory(userId));
     setMounted(true);
-  }, []);
+  }, [ready, userId]);
 
   // Auto-scroll on new message
   useEffect(() => {
@@ -278,9 +280,9 @@ function ChatPageContent() {
   // Save history on change
   useEffect(() => {
     if (mounted && messages.length > 0) {
-      saveHistory(messages);
+      saveHistory(messages, userId);
     }
-  }, [messages, mounted]);
+  }, [messages, mounted, userId]);
 
   const sendMessage = useCallback(async (text: string) => {
     if (!text.trim() || loading) return;
@@ -333,7 +335,7 @@ function ChatPageContent() {
 
   const clearHistory = () => {
     setMessages([]);
-    localStorage.removeItem(STORAGE_KEY);
+    removeUserItem(STORAGE_KEY_BASE, userId);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

@@ -18,9 +18,10 @@ import {
  * (`src/app/api/settings/display-currency/route.ts`) — last-writer-wins on
  * concurrent edits is acceptable for column prefs (rarely concurrent).
  *
- * The frontend migrates the legacy `localStorage["pf-tx-cols-v1"]` value on
- * first load, then writes back to this endpoint and clears the localStorage
- * key — so column prefs follow the user across devices.
+ * The legacy un-namespaced `localStorage["pf-tx-cols-v1"]` value is NOT
+ * migrated (multi-account: it cannot be attributed to a user); the client
+ * drops it. This endpoint is the only store, so prefs follow the user across
+ * devices and never cross accounts.
  *
  * Issue #59: COLUMN_IDS is now sourced from `@/lib/transactions/columns`
  * (shared with the GET /api/transactions sort whitelist + the page client +

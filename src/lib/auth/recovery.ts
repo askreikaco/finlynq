@@ -39,6 +39,8 @@ export interface FinalizeRecoveryResetOptions {
   keepDeviceId?: string;
   /** false = "shared computer": issue no pf_device (default true) */
   trustDevice?: boolean;
+  /** Current pf_device value (per-user list): other accounts' entries are preserved in deviceCookieValue */
+  deviceCookie?: string;
   userAgent?: string;
   ip?: string;
   method?: "code" | "device" | "passkey";
@@ -48,7 +50,7 @@ export interface FinalizeRecoveryResetResult {
   token: string;
   jti: string;
   sessionId: string;
-  /** New trusted device (cookie value `<id>.<secret>`), absent when disabled / shared computer */
+  /** New trusted device (deviceId; deviceCookieValue = full pf_device list to Set-Cookie), absent when disabled / shared computer */
   deviceId?: string;
   deviceCookieValue?: string;
   maxAgeSeconds?: number;
@@ -106,10 +108,10 @@ export async function finalizeRecoveryReset(
   if (options.trustDevice !== false) {
     // issueDevice(replaceDeviceId) revokes the kept device and issues a fresh
     // secret: the old pf_device cookie dies, the new one is returned.
-    const issued = await issueDevice(userId, dek, userAgent, keepDeviceId);
+    const issued = await issueDevice(userId, dek, userAgent, keepDeviceId, options.deviceCookie);
     if (issued) {
       deviceId = issued.id;
-      deviceCookieValue = issued.cookieValue;
+      deviceCookieValue = issued.cookieList;
       maxAgeSeconds = issued.maxAgeSeconds;
     }
   }

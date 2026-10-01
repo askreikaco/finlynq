@@ -250,17 +250,10 @@ export async function POST(request: NextRequest) {
           });
 
           const userAgent = request.headers.get("user-agent") || undefined;
-          // Extract device ID from pf_device cookie to replace it
+          // pf_device is a per-user list: issueDevice replaces only THIS user's entry
           const pf_device = request.cookies.get("pf_device")?.value;
-          let replaceDeviceId: string | undefined;
-          if (pf_device) {
-            const parts = pf_device.split(".");
-            if (parts.length === 2) {
-              replaceDeviceId = parts[0];
-            }
-          }
           if (trustDevice !== false) {
-            issuedDevice = await issueDevice(user.id, pendingDek, userAgent, replaceDeviceId);
+            issuedDevice = await issueDevice(user.id, pendingDek, userAgent, undefined, pf_device);
           }
         }
       } catch (error) {
@@ -296,7 +289,7 @@ export async function POST(request: NextRequest) {
     // Set pf_device cookie if device was issued
     if (issuedDevice) {
       const opts = deviceCookieOptions();
-      response.cookies.set("pf_device", issuedDevice.cookieValue, {
+      response.cookies.set("pf_device", issuedDevice.cookieList, {
         httpOnly: opts.httpOnly,
         secure: opts.secure,
         sameSite: opts.sameSite,

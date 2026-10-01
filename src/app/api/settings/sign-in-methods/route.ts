@@ -15,6 +15,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth/require-auth";
 import { listIdentities, listDevices } from "@/lib/auth/queries";
+import { parseDeviceIdsFromCookie } from "@/lib/auth/trusted-device";
 
 export async function GET(request: NextRequest) {
   const auth = await requireAuth(request);
@@ -29,6 +30,7 @@ export async function GET(request: NextRequest) {
   // Get devices for the user
   const allDevices = await listDevices(userId);
   const now = new Date();
+  const cookieDeviceIds = new Set(parseDeviceIdsFromCookie(request.cookies.get("pf_device")?.value));
 
   // Filter to non-revoked, non-expired devices
   const devices = allDevices
@@ -39,8 +41,8 @@ export async function GET(request: NextRequest) {
       createdAt: d.createdAt,
       lastUsedAt: d.lastUsedAt,
       expiresAt: d.expiresAt,
-      // current = device id prefix matches pf_device cookie
-      current: request.cookies.get("pf_device")?.value?.startsWith(d.id + ".") ?? false,
+      // current = this user's device id is an entry in the pf_device list
+      current: cookieDeviceIds.has(d.id),
     }));
 
   // Build response

@@ -230,6 +230,7 @@ describe("/api/auth/mfa/verify — Google linking", () => {
     mockIssueDevice.mockResolvedValue({
       id: "device_123",
       cookieValue: "device_123.secret",
+      cookieList: "device_123.secret,other_dev.othersecret", // merged multi-account list
       maxAgeSeconds: 30 * 24 * 60 * 60,
     } as any);
 
@@ -259,12 +260,12 @@ describe("/api/auth/mfa/verify — Google linking", () => {
     });
 
     // Verify issueDevice was called
-    // Existing device row must be replaced (replaceDeviceId parsed from pf_device cookie)
-    expect(mockIssueDevice).toHaveBeenCalledWith(userId, mockDek, undefined, "dev_abc");
+    // The current pf_device list is handed to issueDevice, which replaces ONLY this user's entry
+    expect(mockIssueDevice).toHaveBeenCalledWith(userId, mockDek, undefined, undefined, "dev_abc.oldsecret");
 
     // Verify pf_device cookie is set
     const d = res.cookies.get("pf_device");
-    expect(d?.value).toBe("device_123.secret");
+    expect(d?.value).toBe("device_123.secret,other_dev.othersecret"); // merged list, other accounts kept
     expect(d?.path).toBe("/api/auth");
     expect(d?.httpOnly).toBe(true);
   });
