@@ -77,6 +77,36 @@ const eslintConfig = defineConfig([
       "react-hooks/preserve-manual-memoization": "warn",
     },
   },
+  {
+    // ── Family Wealth key-material boundary (plan 6) ─────────────────────
+    // grant.ts (section-key unseal, epoch rotation), the label decryptor and the
+    // low-level family crypto must only be reachable from the Family Wealth
+    // modules themselves. Every other src file (routes, other libs, components)
+    // is an error. tests/family/family-p4-guards.test.ts re-checks this
+    // statically so the guard cannot be removed or widened silently.
+    files: ["src/**/*.{ts,tsx}"],
+    ignores: ["src/lib/family/**", "src/app/api/family/overview/**"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: [
+                "**/family/grant",
+                "**/family/grant.ts",
+                "**/family/label-decrypt",
+                "**/family/overview/*",
+                "**/crypto/family-crypto",
+              ],
+              message:
+                "Family Wealth key material is reachable only from src/lib/family/** and src/app/api/family/overview/**.",
+            },
+          ],
+        },
+      ],
+    },
+  },
 ]);
 
 export default eslintConfig;
