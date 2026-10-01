@@ -310,7 +310,7 @@ function AuthorizePageInner({ accountSlot }: { accountSlot?: React.ReactNode }) 
         {/* Logo + connecting indicator */}
         <div className="flex items-center justify-center gap-4 mb-8">
           {/* Finlynq logo */}
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 via-violet-500 to-purple-600 shadow-lg shadow-indigo-500/30">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 via-violet-500 to-purple-600 shadow-lg shadow-indigo-500/30">
             <span className="text-lg font-bold text-white tracking-tight">PF</span>
           </div>
           {/* Connection dots */}
@@ -320,7 +320,7 @@ function AuthorizePageInner({ accountSlot }: { accountSlot?: React.ReactNode }) 
             <div className="h-1.5 w-1.5 rounded-full bg-border" />
           </div>
           {/* Client placeholder icon */}
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted border border-border shadow">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-muted border border-border shadow">
             <span className="text-xl">🤖</span>
           </div>
         </div>

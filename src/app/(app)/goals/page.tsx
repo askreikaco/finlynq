@@ -418,7 +418,7 @@ export default function GoalsPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
             <CardContent className="flex items-center gap-4 pt-6">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 dark:bg-indigo-950/40">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 dark:bg-indigo-950/40">
                 <Target className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
               </div>
               <div>
@@ -429,7 +429,7 @@ export default function GoalsPage() {
           </Card>
           <Card>
             <CardContent className="flex items-center gap-4 pt-6">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-950/40">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-950/40">
                 <TrendingUp className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div>
@@ -440,7 +440,7 @@ export default function GoalsPage() {
           </Card>
           <Card>
             <CardContent className="flex items-center gap-4 pt-6">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-950/40">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-950/40">
                 <CheckCircle2 className="h-5 w-5 text-violet-600 dark:text-violet-400" />
               </div>
               <div>
@@ -456,7 +456,7 @@ export default function GoalsPage() {
       {goals.length === 0 && (
         <Card className="border-dashed">
           <CardContent className="py-16 flex flex-col items-center text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-100 dark:bg-indigo-950/60 mb-4">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-indigo-100 dark:bg-indigo-950/60 mb-4">
               <Target className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
             </div>
             <h3 className="text-lg font-semibold mb-2">Set your first financial goal</h3>

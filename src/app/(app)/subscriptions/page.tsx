@@ -722,7 +722,7 @@ function SubscriptionsPageContent() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="flex items-center gap-4 pt-6">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 dark:bg-indigo-950/40">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 dark:bg-indigo-950/40">
               <DollarSign className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
             </div>
             <div>
@@ -735,7 +735,7 @@ function SubscriptionsPageContent() {
         </Card>
         <Card>
           <CardContent className="flex items-center gap-4 pt-6">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-100 dark:bg-rose-950/40">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 dark:bg-rose-950/40">
               <CalendarDays className="h-5 w-5 text-rose-600 dark:text-rose-400" />
             </div>
             <div>
@@ -748,7 +748,7 @@ function SubscriptionsPageContent() {
         </Card>
         <Card>
           <CardContent className="flex items-center gap-4 pt-6">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-950/40">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-950/40">
               <CreditCard className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
             </div>
             <div>
@@ -786,7 +786,7 @@ function SubscriptionsPageContent() {
       {subs.length === 0 && (
         <Card>
           <CardContent className="py-12 flex flex-col items-center text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted mb-4">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-muted mb-4">
               <CreditCard className="h-7 w-7 text-muted-foreground" />
             </div>
             <h3 className="text-lg font-semibold mb-1">

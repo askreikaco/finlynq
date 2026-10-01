@@ -351,7 +351,7 @@ export default function DashboardPage() {
         </div>
         <Link
           href="/settings/general"
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-muted/60 hover:bg-muted transition-colors"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted/60 hover:bg-muted transition-colors"
           title="Settings"
         >
           <User className="h-4 w-4 text-muted-foreground" />

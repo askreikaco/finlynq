@@ -68,7 +68,7 @@ export function FileDropZone({ onFileSelected, accept = ACCEPT, disabled }: File
         className="hidden"
       />
       <div className="flex items-center gap-2">
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10">
           <Upload className="h-6 w-6 text-primary" />
         </div>
       </div>

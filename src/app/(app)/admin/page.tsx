@@ -707,7 +707,7 @@ export default function AdminPage() {
       {stats && (
         <motion.div variants={itemVariants}>
           <div className="flex items-center gap-2 mb-3">
-            <span className="relative flex h-2 w-2">
+            <span className="relative flex h-2 w-2 shrink-0">
               {(stats.activeUsersLast15Min ?? 0) > 0 && (
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
               )}
