@@ -119,7 +119,26 @@ export function useTxColumnPrefs() {
     // (cross-device sync). The legacy blob is cleared after one migration.
     let legacy: ColumnPref[] | null = null;
     try {
+      // For now, just use the non-namespaced key to avoid async complexity
+      // TODO: Add namespacing in a separate effect after userId is available
       const raw = localStorage.getItem("pf-tx-cols-v1");
+      if (raw) {
+        // Fetch user ID from session to namespace storage keys
+        fetch("/api/auth/session")
+          .then((res) => res.ok ? res.json() : null)
+          .then((data) => {
+            if (data?.userId) {
+              const keyNamespaced = `pf-tx-cols-v1:${data.userId}`;
+              try {
+                localStorage.setItem(keyNamespaced, raw);
+                localStorage.removeItem("pf-tx-cols-v1");
+              } catch { /* ignore */ }
+            }
+          })
+          .catch(() => {
+            // Failed to fetch or process
+          });
+      }
       if (raw) {
         const parsed = JSON.parse(raw) as { portfolio?: boolean };
         if (parsed && typeof parsed === "object") {
@@ -149,7 +168,12 @@ export function useTxColumnPrefs() {
         })();
       } else {
         setColumnPrefs(serverPrefs);
-        try { localStorage.removeItem("pf-tx-cols-v1"); } catch { /* ignore */ }
+        try {
+          const uid = null; // TODO: fetch from session
+          const keyNamespaced = uid ? `pf-tx-cols-v1:${uid}` : "pf-tx-cols-v1";
+          localStorage.removeItem(keyNamespaced);
+          localStorage.removeItem("pf-tx-cols-v1");
+        } catch { /* ignore */ }
       }
     } else if (legacy) {
       // GET failed (the pre-115 `else if (legacy)` / catch branch).

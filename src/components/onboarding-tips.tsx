@@ -12,20 +12,27 @@ interface OnboardingTip {
   action?: { label: string; href: string };
 }
 
-const STORAGE_KEY = "pf-dismissed-tips";
+const STORAGE_KEY_BASE = "pf-dismissed-tips";
 
-function getDismissed(): Set<string> {
+function getStorageKey(userId: string | null): string {
+  if (!userId) return STORAGE_KEY_BASE;
+  return `${STORAGE_KEY_BASE}:${userId}`;
+}
+
+function getDismissed(userId: string | null = null): Set<string> {
   if (typeof window === "undefined") return new Set();
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const key = getStorageKey(userId);
+    const raw = localStorage.getItem(key);
     return raw ? new Set(JSON.parse(raw)) : new Set();
   } catch {
     return new Set();
   }
 }
 
-function setDismissed(ids: Set<string>) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify([...ids]));
+function setDismissed(ids: Set<string>, userId: string | null = null) {
+  const key = getStorageKey(userId);
+  localStorage.setItem(key, JSON.stringify([...ids]));
 }
 
 interface OnboardingTipsProps {

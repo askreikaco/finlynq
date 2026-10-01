@@ -24,15 +24,29 @@ const MAX_VISIBLE = 3;
 export function ActionCenter() {
   const [items, setItems] = useState<SpotlightItem[] | null>(null);
   const [showAll, setShowAll] = useState(false);
-  const [dismissed, setDismissed] = useState<Set<string>>(() => {
-    if (typeof window === "undefined") return new Set();
-    try {
-      const stored = localStorage.getItem("pf-spotlight-dismissed");
-      return stored ? new Set(JSON.parse(stored)) : new Set();
-    } catch {
-      return new Set();
-    }
-  });
+  const [userId, setUserId] = useState<string | null>(null);
+  const [dismissed, setDismissed] = useState<Set<string>>(() => new Set());
+  
+  // Fetch user session and load dismissed items
+  useEffect(() => {
+    const loadSession = async () => {
+      try {
+        const res = await fetch("/api/auth/session");
+        if (res.ok) {
+          const data = await res.json();
+          const uid = data.userId ?? null;
+          setUserId(uid);
+          // Load dismissed items for this user
+          const key = uid ? `pf-spotlight-dismissed:${uid}` : "pf-spotlight-dismissed";
+          const stored = localStorage.getItem(key);
+          setDismissed(stored ? new Set(JSON.parse(stored)) : new Set());
+        }
+      } catch {
+        // swallow
+      }
+    };
+    loadSession();
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -55,7 +69,8 @@ export function ActionCenter() {
     next.add(id);
     setDismissed(next);
     try {
-      localStorage.setItem("pf-spotlight-dismissed", JSON.stringify([...next]));
+      const key = userId ? `pf-spotlight-dismissed:${userId}` : "pf-spotlight-dismissed";
+      localStorage.setItem(key, JSON.stringify([...next]));
     } catch { /* ignore */ }
   };
 

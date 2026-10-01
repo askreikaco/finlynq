@@ -218,7 +218,8 @@ export async function POST(request: NextRequest) {
     let device = null;
     if (googleSignup) {
       const userAgent = request.headers.get("user-agent") || undefined;
-      device = await issueDevice(user.id, dek, userAgent);
+      const currentDeviceCookie = request.cookies.get("pf_device")?.value;
+      device = await issueDevice(user.id, dek, currentDeviceCookie, userAgent);
     }
 
     const response = NextResponse.json(
@@ -230,7 +231,7 @@ export async function POST(request: NextRequest) {
 
     // Set device cookie if issued
     if (device) {
-      response.cookies.set("pf_device", device.cookieValue, {
+      response.cookies.set("pf_device", device.newDeviceEntry, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
