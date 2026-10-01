@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { enqueueFamilySweep } from "@/lib/family/sweep";
 import { db, schema } from "@/db";
-import { eq, and, inArray, sql } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import {
   buildLoanSchedule,
   calculateExtraPaymentImpact,
@@ -16,6 +16,7 @@ import { validateBody, safeErrorMessage, logApiError } from "@/lib/validate";
 import { buildNameFields, decryptNamedRows, encryptOptional, decryptOptional } from "@/lib/crypto/encrypted-columns";
 import { verifyOwnership, OwnershipError } from "@/lib/verify-ownership";
 import { todayISO } from "@/lib/utils/date";
+import { getLinkedAccountBalances, summarizeLoan } from "@/lib/loan-summary";
 import { getDisplayCurrency, getRateMap, convertWithRateMap } from "@/lib/fx-service";
 import { pickRecordCurrency } from "@/lib/fx/record-currency";
 // Issue #213 — shared YYYY-MM-DD validator (regex + leap-year/Feb-30 round-trip).
@@ -58,28 +59,6 @@ const updateLoanSchema = z.object({
   residualValue: z.number().nonnegative().nullable().optional(),
   note: z.string().optional(),
 });
-
-// FINLYNQ-136: outstanding balance per linked account = SUM(transactions.amount)
-// (same definition as getAccountBalances). txCount distinguishes "no ledger
-// activity yet" (fall back to projection) from a genuinely zero balance.
-async function getLinkedAccountBalances(userId: string, accountIds: number[]) {
-  const map = new Map<number, { balance: number; txCount: number }>();
-  if (!accountIds.length) return map;
-  const rows = await db
-    .select({
-      accountId: schema.transactions.accountId,
-      balance: sql<number>`COALESCE(SUM(${schema.transactions.amount}), 0)`,
-      txCount: sql<number>`COUNT(*)`,
-    })
-    .from(schema.transactions)
-    .where(and(eq(schema.transactions.userId, userId), inArray(schema.transactions.accountId, accountIds)))
-    .groupBy(schema.transactions.accountId)
-    .all();
-  for (const r of rows) {
-    if (r.accountId != null) map.set(r.accountId, { balance: Number(r.balance), txCount: Number(r.txCount) });
-  }
-  return map;
-}
 
 export async function GET(request: NextRequest) {
   const auth = await requireAuth(request); if (!auth.authenticated) return auth.response;
@@ -152,90 +131,27 @@ export async function GET(request: NextRequest) {
       monthlyEquivalentPaymentDisplay: null,
       dataIntegrity: { error, value },
     });
-    // Issue #213 — guard against legacy bad start_date so the whole list
-    // doesn't crash with `Invalid time value`. Same pattern as MCP HTTP
-    // `list_loans` / `get_loan_amortization` / `get_debt_payoff_plan`.
-    if (parseYmdSafe(loan.startDate) === null) {
-      return integrityRow("invalid start_date", loan.startDate);
-    }
-    let summary;
-    try {
-      summary = buildLoanSchedule({
-        principal: loan.principal,
-        annualRate: loan.annualRate,
-        termMonths: loan.termMonths,
-        startDate: loan.startDate,
-        paymentAmount: loan.paymentAmount,
-        paymentFrequency: loan.paymentFrequency,
-        extraPayment: loan.extraPayment ?? 0,
-        residualValue: loan.residualValue,
-      });
-    } catch (e) {
-      // A legacy row whose payment no longer amortizes shouldn't poison the list.
-      if (e instanceof LoanValidationError) return integrityRow(e.message, null);
-      throw e;
-    }
-    const paid = summary.schedule.filter((r) => r.date <= today);
-    const principalPaid = paid.reduce((s, r) => s + r.principal, 0);
-    const interestPaid = paid.reduce((s, r) => s + r.interest, 0);
-
-    // Projection-derived fallback values.
-    let remainingBalance = Math.max(loan.principal - principalPaid, 0);
-    let balanceSource: "account" | "projection" = "projection";
-    let payoffDate = summary.payoffDate;
-    let periodsRemaining = summary.schedule.length - paid.length;
-
-    // FINLYNQ-136: when a linked account has ledger activity, its balance is
-    // the source of truth (|sum| — liability accounts carry negative balances)
-    // and the payoff projection is re-anchored to it from today.
-    const acct = loan.accountId != null ? acctBalances.get(loan.accountId) : undefined;
-    if (acct && acct.txCount > 0) {
-      remainingBalance = Math.round(Math.abs(acct.balance) * 100) / 100;
-      balanceSource = "account";
-      const residual = loan.residualValue ?? 0;
-      if (remainingBalance <= residual + 0.01) {
-        payoffDate = today;
-        periodsRemaining = 0;
-      } else {
-        try {
-          const anchored = buildLoanSchedule({
-            principal: remainingBalance,
-            annualRate: loan.annualRate,
-            startDate: today,
-            paymentAmount: loan.paymentAmount ?? summary.paymentPerPeriod,
-            paymentFrequency: loan.paymentFrequency,
-            extraPayment: loan.extraPayment ?? 0,
-            residualValue: loan.residualValue,
-          });
-          payoffDate = anchored.payoffDate;
-          periodsRemaining = anchored.schedule.length;
-        } catch {
-          // Payment doesn't amortize the actual balance — keep projection dates.
-        }
-      }
-    }
+    const r = summarizeLoan(loan, acctBalances, today);
+    if ("integrity" in r) return integrityRow(r.integrity.error, r.integrity.value);
 
     return {
       ...loan,
-      monthlyPayment: summary.monthlyPayment,
-      paymentPerPeriod: summary.paymentPerPeriod,
-      monthlyEquivalentPayment: summary.monthlyEquivalentPayment,
-      totalInterest: summary.totalInterest,
-      payoffDate,
-      remainingBalance,
-      balanceSource,
-      principalPaid:
-        balanceSource === "account"
-          ? Math.round(Math.max(loan.principal - remainingBalance, 0) * 100) / 100
-          : Math.round(principalPaid * 100) / 100,
-      interestPaid: Math.round(interestPaid * 100) / 100,
-      periodsRemaining,
+      monthlyPayment: r.monthlyPayment,
+      paymentPerPeriod: r.paymentPerPeriod,
+      monthlyEquivalentPayment: r.monthlyEquivalentPayment,
+      totalInterest: r.totalInterest,
+      payoffDate: r.payoffDate,
+      remainingBalance: r.remainingBalance,
+      balanceSource: r.balanceSource,
+      principalPaid: r.principalPaid,
+      interestPaid: r.interestPaid,
+      periodsRemaining: r.periodsRemaining,
       // Additive reporting-currency companions — the native fields above are
       // untouched, so nothing that already read this response changes.
       displayCurrency,
-      remainingBalanceDisplay: toDisplay(remainingBalance, loan.currency),
+      remainingBalanceDisplay: toDisplay(r.remainingBalance, loan.currency),
       monthlyEquivalentPaymentDisplay: toDisplay(
-        summary.monthlyEquivalentPayment,
+        r.monthlyEquivalentPayment,
         loan.currency,
       ),
     };

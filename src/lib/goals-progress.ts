@@ -56,6 +56,15 @@ export async function computeGoalProgress(
   userId: string,
   dek: Buffer | null,
   goals: GoalProgressInput[],
+  /**
+   * Family Wealth viewer path: the caller supplies per-account values (account
+   * currency) and an FX resolver, so NO holdings pricing (needs the owner's DEK)
+   * and no owner-specific FX overrides are used. Omitted = the owner's own path.
+   */
+  injected?: {
+    valueByAccount: Map<number, number>;
+    fx: (from: string, to: string) => Promise<number>;
+  },
 ): Promise<Map<number, GoalProgressOutput>> {
   const out = new Map<number, GoalProgressOutput>();
   if (!goals.length) return out;
@@ -88,12 +97,14 @@ export async function computeGoalProgress(
   // Pull the holdings-value snapshot once. Internally it computes per-account
   // market value with full per-currency cost-basis bucketing (issue #129) and
   // cash-leg substitution (issue #96).
-  const holdingsByAccount = await getHoldingsValueByAccount(userId, dek);
+  const holdingsByAccount = injected
+    ? new Map<number, { value: number }>()
+    : await getHoldingsValueByAccount(userId, dek);
 
   // Per-account cash-flow basis (cash accounts only). One query, grouped by
   // accountId.
   const cashByAccount = new Map<number, number>();
-  if (allAccountIds.length > 0) {
+  if (allAccountIds.length > 0 && !injected) {
     const cashRows = await db
       .select({
         accountId: schema.transactions.accountId,
@@ -119,7 +130,7 @@ export async function computeGoalProgress(
     if (from === to) return 1;
     const key = `${from}->${to}`;
     if (fxCache.has(key)) return fxCache.get(key)!;
-    const rate = await getLatestFxRate(from, to, userId);
+    const rate = injected ? await injected.fx(from, to) : await getLatestFxRate(from, to, userId);
     fxCache.set(key, rate);
     return rate;
   };
@@ -130,9 +141,11 @@ export async function computeGoalProgress(
     for (const accountId of g.accountIds) {
       const meta = accountMeta.get(accountId);
       if (!meta) continue; // account got deleted under us; skip silently
-      const valueInAccountCcy = meta.isInvestment
-        ? holdingsByAccount.get(accountId)?.value ?? 0
-        : cashByAccount.get(accountId) ?? 0;
+      const valueInAccountCcy = injected
+        ? injected.valueByAccount.get(accountId) ?? 0
+        : meta.isInvestment
+          ? holdingsByAccount.get(accountId)?.value ?? 0
+          : cashByAccount.get(accountId) ?? 0;
       const fx = await getFx(meta.currency, goalCurrency);
       currentAmount += valueInAccountCcy * fx;
     }

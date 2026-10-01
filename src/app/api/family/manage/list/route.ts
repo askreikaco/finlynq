@@ -12,6 +12,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getUserById } from "@/lib/auth/queries";
 import { db } from "@/db";
 import { getOwnerShares, getViewerShares } from "@/lib/family/share-dal";
+import { loadLiveChildren, reconsentMissing } from "@/lib/family/effective-sections";
 import { manageLimit, requireFamilySession, toShareDto } from "@/lib/family/manage-guard";
 
 export const dynamic = "force-dynamic";
@@ -34,10 +35,22 @@ export async function GET(request: NextRequest) {
       return names.get(id) ?? null;
     };
 
+    // Must-share-back re-consent state for live parents (both the owner's and the viewer's view).
+    const parents = [...outgoing, ...incoming].filter(
+      (s) => s.mustShareBack && ["active", "awaiting_owner_unlock"].includes(s.status),
+    );
+    const children = await loadLiveChildren(db, parents.map((s) => s.id));
+    const missing = (s: (typeof parents)[number]) =>
+      ["active", "awaiting_owner_unlock"].includes(s.status) ? reconsentMissing(s, children.get(s.id)) : [];
+
     return NextResponse.json(
       {
-        outgoing: await Promise.all(outgoing.map(async (s) => toShareDto(s, "owner", await nameOf(s.viewerId)))),
-        incoming: await Promise.all(incoming.map(async (s) => toShareDto(s, "viewer", await nameOf(s.ownerId)))),
+        outgoing: await Promise.all(
+          outgoing.map(async (s) => toShareDto(s, "owner", await nameOf(s.viewerId), missing(s))),
+        ),
+        incoming: await Promise.all(
+          incoming.map(async (s) => toShareDto(s, "viewer", await nameOf(s.ownerId), missing(s))),
+        ),
       },
       { status: 200 },
     );

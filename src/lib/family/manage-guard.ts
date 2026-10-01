@@ -11,6 +11,9 @@ import { z } from "zod";
 import { requireAuth } from "@/lib/auth";
 import type { AuthContext } from "@/lib/auth/strategy";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { verifyPassword } from "@/lib/auth";
+import { getUserById } from "@/lib/auth/queries";
+import { isFreshSession } from "@/lib/auth/step-up";
 import { resolveSections } from "./sections";
 
 export type GuardResult =
@@ -34,6 +37,33 @@ export function rateLimited(resetAt: number, error = "Too many requests. Try aga
     { error },
     { status: 429, headers: { "Retry-After": String(Math.max(1, Math.ceil((resetAt - Date.now()) / 1000))) } },
   );
+}
+
+/**
+ * Step-up for sensitive sharing changes (invite, widen, accept-with-share-back): the session must
+ * be fresh (issued < 10 min ago) OR the body must carry the correct currentPassword.
+ * A fresh session needs no password (any supplied one is ignored). Stale + no password -> 401;
+ * stale + wrong password -> 401 (same body); password attempts are limited 5 / 15 min / user so a
+ * stolen stale session cannot brute-force the password through this endpoint.
+ * Returns null when satisfied, else the response to send.
+ */
+export async function requireFamilyStepUp(
+  ctx: AuthContext,
+  currentPassword: string | undefined,
+): Promise<NextResponse | null> {
+  if (isFreshSession(ctx.iat)) return null;
+  const denied = () =>
+    NextResponse.json(
+      { error: "Step-up required: provide currentPassword or sign in again", code: "step_up_required" },
+      { status: 401 },
+    );
+  if (!currentPassword) return denied();
+  const rl = checkRateLimit(`family-stepup:${ctx.userId}`, 5, 15 * 60_000);
+  if (!rl.allowed) return rateLimited(rl.resetAt);
+  const user = await getUserById(ctx.userId);
+  if (!user || !user.passwordHash) return denied();
+  if (!(await verifyPassword(currentPassword, user.passwordHash))) return denied();
+  return null;
 }
 
 /** Generic management limiter: 30 requests / minute / user. */
@@ -104,7 +134,13 @@ interface ShareRow {
  * Allow-list DTO. Owner view shows the invite email THEY typed; viewer view shows the owner's
  * display name only. No user ids, no keys, no token data.
  */
-export function toShareDto(share: ShareRow, role: "owner" | "viewer", counterpartName: string | null) {
+export function toShareDto(
+  share: ShareRow,
+  role: "owner" | "viewer",
+  counterpartName: string | null,
+  /** must-share-back: sections the parent requires back that the reciprocal does not cover yet */
+  reconsentMissing: string[] = [],
+) {
   return {
     id: share.id,
     role,
@@ -113,6 +149,8 @@ export function toShareDto(share: ShareRow, role: "owner" | "viewer", counterpar
     mustShareBack: share.mustShareBack,
     requiredBackSections: share.requiredBackSections ?? [],
     isReciprocal: share.reciprocalOf !== null,
+    reconsentRequired: reconsentMissing.length > 0,
+    reconsentSections: reconsentMissing,
     createdAt: share.createdAt.toISOString(),
     ...(share.acceptedAt ? { acceptedAt: share.acceptedAt.toISOString() } : {}),
     ...(share.lastViewedAt && role === "owner" ? { lastViewedAt: share.lastViewedAt.toISOString() } : {}),
