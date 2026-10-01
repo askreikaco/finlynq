@@ -1,31 +1,36 @@
 "use client";
 
 /**
- * Display section — plain "Dropdown ordering" link row in General settings
- * (old /settings/display renders General). Links to /settings/dropdown-order.
+ * Display section in General settings — "Dropdown ordering" accordion section
+ * (pin order for category, account, holding and currency pickers). Old
+ * /settings/dropdown-order renders General in place with it open; old
+ * /settings/display renders General.
  */
 
-import Link from "next/link";
-import { Settings2, ChevronRight } from "lucide-react";
+import { ListOrdered } from "lucide-react";
+import { Accordion, AccordionItem } from "@/components/ui/accordion";
+import { useOpenSection } from "@/components/settings/use-open-section";
+import { DropdownOrderSection } from "./dropdown-order-section";
+
+const OPEN_SECTIONS = {
+  byPath: [{ prefix: "/settings/dropdown-order", section: "dropdown-order" }],
+  valid: ["dropdown-order"],
+};
 
 export function DisplaySection() {
+  const [open, setOpen] = useOpenSection(OPEN_SECTIONS);
   return (
-    <Link
-      href="/settings/dropdown-order"
-      className="flex min-h-11 items-center justify-between gap-3 rounded-xl border bg-card p-4 transition-colors hover:bg-muted/40"
-    >
-      <span className="flex min-w-0 items-center gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
-          <Settings2 className="h-5 w-5" />
-        </span>
-        <span className="min-w-0">
-          <span className="block text-sm font-medium">Dropdown ordering</span>
-          <span className="block text-xs text-muted-foreground">
-            Pin frequently-used items to the top of category, account, holding, and currency pickers
-          </span>
-        </span>
-      </span>
-      <ChevronRight aria-hidden="true" className="h-4 w-4 shrink-0 text-muted-foreground" />
-    </Link>
+    <Accordion value={open} onValueChange={setOpen}>
+      <AccordionItem
+        value="dropdown-order"
+        icon={<ListOrdered className="h-4 w-4" />}
+        title="Dropdown ordering"
+        description="Pin frequently-used items to the top of category, account, holding, and currency pickers"
+      >
+        <div id="dropdown-order">
+          <DropdownOrderSection />
+        </div>
+      </AccordionItem>
+    </Accordion>
   );
 }
