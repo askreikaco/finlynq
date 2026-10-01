@@ -1,11 +1,9 @@
 "use client";
 
 /**
- * Data section — CSV Import/Export, data management, backfill, rebuild balance history,
- * and danger zone (Clear All Data, Delete Account).
- *
- * Extracted from the old /settings/data page. Renders as an accordion section
- * inside Developer settings.
+ * Data section — Import + Export + Data Management/danger zone. Accordion
+ * section on /settings/developer (old /settings/data renders it open).
+ * Lifted verbatim from the old /settings/data page.
  */
 
 import { useState, useCallback } from "react";
@@ -29,6 +27,7 @@ const exportItems = [
 ];
 
 export function DataSection() {
+  // CSV Import (accounts, categories, portfolio)
   const [importSection, setImportSection] = useState<ImportSection | null>(null);
   const [importPreview, setImportPreview] = useState<ImportRow[]>([]);
   const [importHeaders, setImportHeaders] = useState<string[]>([]);
@@ -37,13 +36,16 @@ export function DataSection() {
   const [importLoading, setImportLoading] = useState(false);
   const [importAllRows, setImportAllRows] = useState<ImportRow[]>([]);
 
+  // Export
   const [exportStatus, setExportStatus] = useState("");
 
+  // Clear data (danger zone)
   const [clearConfirm, setClearConfirm] = useState("");
-  const [clearStep, setClearStep] = useState(0);
+  const [clearStep, setClearStep] = useState(0); // 0=idle, 1=first confirm, 2=type DELETE
   const [clearStatus, setClearStatus] = useState("");
 
-  const [delStep, setDelStep] = useState(0);
+  // Delete account (danger zone) — irreversible: drops the user row + all data.
+  const [delStep, setDelStep] = useState(0); // 0=idle, 1=warn, 2=password+confirm form
   const [delPassword, setDelPassword] = useState("");
   const [delConfirm, setDelConfirm] = useState("");
   const [delMfaCode, setDelMfaCode] = useState("");
@@ -70,6 +72,7 @@ export function DataSection() {
       setDelStep(2);
       return;
     }
+    // delStep === 2 — submit.
     if (delConfirm !== "DELETE") {
       setDelStatus("Type DELETE to confirm");
       return;
@@ -94,6 +97,7 @@ export function DataSection() {
         });
       let res = await send();
       if (res.status === 401) {
+        // Passkey-only account: a password is not enough, confirm with a passkey and retry once.
         const probe = await res.clone().json().catch(() => ({}));
         if (probe?.code === "passkey-required") {
           const step = await getPasskeyStepUp("delete-account");
@@ -105,6 +109,7 @@ export function DataSection() {
         }
       }
       if (res.ok) {
+        // Account + session are gone — leave the app for the public home.
         window.location.href = "/";
         return;
       }
@@ -147,10 +152,7 @@ export function DataSection() {
     reader.onload = (e) => {
       const text = e.target?.result as string;
       const { headers, rows } = parseCSV(text);
-      if (rows.length === 0) {
-        setImportStatus("File appears empty or has no data rows.");
-        return;
-      }
+      if (rows.length === 0) { setImportStatus("File appears empty or has no data rows."); return; }
       setImportHeaders(headers);
       setImportPreview(rows.slice(0, 5));
       setImportAllRows(rows);
@@ -180,9 +182,7 @@ export function DataSection() {
               }),
             });
             ok++;
-          } catch {
-            failed++;
-          }
+          } catch { failed++; }
         }
       } else if (importSection === "categories") {
         for (const row of importAllRows) {
@@ -198,66 +198,119 @@ export function DataSection() {
               }),
             });
             ok++;
-          } catch {
-            failed++;
-          }
+          } catch { failed++; }
         }
       } else if (importSection === "portfolio") {
         for (const row of importAllRows) {
           try {
-            await fetch("/api/holdings", {
+            await fetch("/api/portfolio", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                symbol: row.symbol || row.Symbol || "",
+                symbol: row.symbol || row.Symbol || row.ticker || "",
                 name: row.name || row.Name || "",
-                assetClass: row.assetClass || row.AssetClass || "Other",
+                quantity: parseFloat(row.quantity || row.Quantity || "0") || 0,
                 currency: row.currency || row.Currency || "CAD",
+                note: row.note || row.Note || "",
               }),
             });
             ok++;
-          } catch {
-            failed++;
-          }
+          } catch { failed++; }
         }
       }
+
+      setImportStatus(`Imported ${ok} rows${failed > 0 ? `, ${failed} failed` : ""}.`);
+      setImportPreview([]);
+      setImportAllRows([]);
+      setImportSection(null);
+      setImportFileName("");
     } catch {
-      // ignore
+      setImportStatus("Import failed");
     } finally {
       setImportLoading(false);
-      setImportStatus(`${ok} imported, ${failed} failed.`);
-      if (failed === 0) {
-        setTimeout(() => {
-          setImportSection(null);
-          setImportPreview([]);
-          setImportAllRows([]);
-          setImportFileName("");
-          setImportStatus("");
-        }, 1000);
-      }
     }
   }
 
-  const handleExport = async (type: string) => {
-    setExportStatus("Preparing download…");
+  function handleImportFileInput(section: ImportSection) {
+    return (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) handleImportFile(section, file);
+      e.target.value = "";
+    };
+  }
+
+  function csvCell(val: unknown): string {
+    const s = String(val ?? "");
+    return s.includes(",") || s.includes('"') || s.includes("\n") ? `"${s.replace(/"/g, '""')}"` : s;
+  }
+
+  function buildCsv(rows: Record<string, unknown>[]): string {
+    if (rows.length === 0) return "";
+    const headers = Object.keys(rows[0]);
+    return [headers.join(","), ...rows.map((r) => headers.map((h) => csvCell(r[h])).join(","))].join("\n");
+  }
+
+  async function handleExport(type: string) {
+    setExportStatus(`Exporting ${type}...`);
     try {
-      const res = await fetch(`/api/export?type=${type}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
+      const res = await fetch(type === "transactions" ? `/api/${type}?limit=99999` : `/api/${type}`);
+      const data = await res.json();
+      let rows: Record<string, unknown>[] = Array.isArray(data) ? data : data.data ?? [];
+
+      if (rows.length === 0) {
+        setExportStatus("No data to export");
+        return;
+      }
+
+      // For transactions: expand split transactions into individual split rows
+      if (type === "transactions") {
+        const splitsRes = await fetch("/api/transactions/splits");
+        const allSplits: Array<{ transactionId: number; categoryId: number | null; accountId: number | null; amount: number; note: string; description: string; tags: string }> = splitsRes.ok ? await splitsRes.json() : [];
+        const splitMap = new Map<number, typeof allSplits>();
+        for (const s of allSplits) {
+          const arr = splitMap.get(s.transactionId) ?? [];
+          arr.push(s);
+          splitMap.set(s.transactionId, arr);
+        }
+
+        const expanded: Record<string, unknown>[] = [];
+        for (const txn of rows) {
+          const txnId = txn.id as number;
+          const splits = splitMap.get(txnId);
+          if (splits && splits.length > 0) {
+            // Emit one row per split; omit the parent's category, use split fields instead
+            for (const s of splits) {
+              expanded.push({
+                ...txn,
+                split_parent_id: txnId,
+                categoryId: s.categoryId ?? "",
+                amount: s.amount,
+                note: s.note || txn.note,
+                split_account_id: s.accountId ?? "",
+                split_description: s.description,
+                split_tags: s.tags,
+              });
+            }
+          } else {
+            expanded.push({ ...txn, split_parent_id: "" });
+          }
+        }
+        rows = expanded;
+      }
+
+      const csv = buildCsv(rows);
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `finlynq-${type}-${new Date().toISOString().slice(0, 10)}.csv`;
-      document.body.appendChild(a);
+      a.download = `${type}-export.csv`;
       a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-      setExportStatus("Downloaded successfully.");
-      setTimeout(() => setExportStatus(""), 3000);
-    } catch (e) {
-      setExportStatus(`Failed: ${e instanceof Error ? e.message : String(e)}`);
+      URL.revokeObjectURL(url);
+      setExportStatus(`${type} exported successfully`);
+    } catch {
+      setExportStatus("Export failed");
     }
-  };
+  }
 
   async function handleClearData() {
     if (clearStep === 0) {
@@ -268,113 +321,120 @@ export function DataSection() {
       setClearStep(2);
       return;
     }
-    if (clearConfirm !== "DELETE") {
-      setClearStatus("Type DELETE to confirm");
-      return;
-    }
-    setClearStatus("Clearing data…");
-    try {
-      const res = await fetch("/api/settings/clear-all-data", { method: "POST" });
-      if (res.ok) {
-        setClearStatus("All data cleared. Refreshing…");
-        setTimeout(() => window.location.reload(), 1000);
-      } else {
-        setClearStatus(`Failed: ${res.statusText}`);
+    if (clearStep === 2) {
+      if (clearConfirm !== "DELETE") {
+        setClearStatus("Type DELETE to confirm");
+        return;
       }
-    } catch (e) {
-      setClearStatus(`Failed: ${e instanceof Error ? e.message : String(e)}`);
+      try {
+        const res = await fetch("/api/data", { method: "DELETE" });
+        if (res.ok) {
+          setClearStatus("All data cleared successfully");
+          setClearStep(0);
+          setClearConfirm("");
+        } else {
+          const data = await res.json();
+          setClearStatus(data.error || "Failed to clear data");
+        }
+      } catch {
+        setClearStatus("Failed to clear data");
+      }
     }
   }
 
   return (
     <div className="space-y-6">
+      {/* CSV Import */}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-100 text-teal-600">
               <Upload className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle className="text-base">Data Import</CardTitle>
+              <CardTitle className="text-base">Import Data</CardTitle>
               <CardDescription>Import accounts, categories, or portfolio holdings from CSV</CardDescription>
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {importSection === null ? (
-            <div className="grid grid-cols-3 gap-3">
-              {[
-                { section: "accounts" as const, label: "Accounts", icon: Wallet, color: "bg-violet-100 text-violet-600" },
-                { section: "categories" as const, label: "Categories", icon: Tag, color: "bg-emerald-100 text-emerald-600" },
-                { section: "portfolio" as const, label: "Portfolio", icon: Briefcase, color: "bg-cyan-100 text-cyan-600" },
-              ].map(({ section, label, icon: Icon, color }) => (
-                <label key={section} className="cursor-pointer">
+          {/* Import type buttons */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {([
+              { key: "accounts" as const, label: "Accounts", icon: Wallet, color: "text-violet-500", hint: "Columns: name, type, group, currency, note" },
+              { key: "categories" as const, label: "Categories", icon: Tag, color: "text-emerald-500", hint: "Columns: name, type, group, note" },
+              { key: "portfolio" as const, label: "Portfolio", icon: Briefcase, color: "text-cyan-500", hint: "Columns: symbol, name, quantity, currency, note" },
+            ] as const).map(({ key, label, icon: Icon, color, hint }) => (
+              <div key={key} className="space-y-1">
+                <label className={`flex flex-col items-center gap-2 border rounded-lg p-3 cursor-pointer hover:bg-muted/50 transition-colors text-center ${importSection === key ? "border-primary bg-primary/5" : ""}`}>
+                  <Icon className={`h-5 w-5 ${color}`} />
+                  <span className="text-sm font-medium">{label}</span>
+                  <span className="text-[10px] text-muted-foreground">{hint}</span>
                   <input
                     type="file"
                     accept=".csv"
-                    className="hidden"
-                    onChange={(e) => e.target.files?.[0] && handleImportFile(section, e.target.files[0])}
+                    className="sr-only"
+                    onChange={handleImportFileInput(key)}
                   />
-                  <div className={`${color} rounded-lg p-4 text-center flex flex-col items-center justify-center gap-2 border-2 border-dashed border-current cursor-pointer hover:opacity-80 transition-opacity`}>
-                    <Icon className="h-5 w-5" />
-                    <span className="text-sm font-medium">{label}</span>
-                  </div>
                 </label>
-              ))}
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">{importFileName}</p>
-                  <p className="text-xs text-muted-foreground">Preview ({importPreview.length} of {importAllRows.length} rows)</p>
-                </div>
-                <Button variant="ghost" size="sm" onClick={() => setImportSection(null)}>
-                  Change file
-                </Button>
               </div>
+            ))}
+          </div>
 
-              <div className="overflow-x-auto border rounded-lg">
-                <table className="text-sm w-full">
-                  <thead className="bg-muted/50 border-b">
-                    <tr>
+          {/* Preview */}
+          {importPreview.length > 0 && importSection && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-sm">
+                <FileText className="h-4 w-4 text-muted-foreground" />
+                <span className="font-medium truncate">{importFileName}</span>
+                <Badge variant="outline" className="text-[10px]">Preview</Badge>
+              </div>
+              <div className="overflow-x-auto rounded border text-xs">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-muted/50">
                       {importHeaders.map((h) => (
-                        <th key={h} className="px-3 py-2 text-left font-medium">{h}</th>
+                        <th key={h} className="px-2 py-1.5 text-left font-medium text-muted-foreground whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {importPreview.map((row, i) => (
-                      <tr key={i} className="border-b hover:bg-muted/30">
+                      <tr key={i} className="border-t">
                         {importHeaders.map((h) => (
-                          <td key={h} className="px-3 py-2 max-w-40 truncate text-xs">{row[h]}</td>
+                          <td key={h} className="px-2 py-1.5 whitespace-nowrap">{row[h] ?? ""}</td>
                         ))}
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-
-              <div className="flex items-center gap-2">
-                <Button onClick={handleImportConfirm} disabled={importLoading}>
-                  {importLoading ? "Importing…" : `Import ${importAllRows.length} rows`}
-                </Button>
-                <Button variant="outline" onClick={() => setImportSection(null)} disabled={importLoading}>
+              <p className="text-[10px] text-muted-foreground">Showing first {importPreview.length} rows. Full file will be imported on confirm.</p>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => { setImportPreview([]); setImportSection(null); setImportFileName(""); setImportStatus(""); }}>
                   Cancel
                 </Button>
+                <Button size="sm" onClick={handleImportConfirm} disabled={importLoading}>
+                  {importLoading ? "Importing…" : `Import ${importSection}`}
+                </Button>
               </div>
-
-              {importStatus && <p className="text-xs text-muted-foreground">{importStatus}</p>}
             </div>
+          )}
+
+          {importStatus && (
+            <p className={`text-xs flex items-center gap-1 ${importStatus.includes("fail") || importStatus.includes("error") ? "text-destructive" : "text-muted-foreground"}`}>
+              <Upload className="h-3 w-3" /> {importStatus}
+            </p>
           )}
         </CardContent>
       </Card>
 
+      {/* Data Export */}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600">
-              <Download className="h-5 w-5" />
+              <Database className="h-5 w-5" />
             </div>
             <div>
               <CardTitle className="text-base">Data Export</CardTitle>
@@ -402,6 +462,7 @@ export function DataSection() {
         </CardContent>
       </Card>
 
+      {/* Backfill transactions — canonicalization pipeline */}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
@@ -424,6 +485,7 @@ export function DataSection() {
         </CardContent>
       </Card>
 
+      {/* Rebuild balance history */}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
@@ -434,8 +496,8 @@ export function DataSection() {
               <CardTitle className="text-base">Rebuild balance history</CardTitle>
               <CardDescription>
                 Recompute daily balance snapshots — cash and investments — from your
-                first transaction to today. Run this if the "Net Worth Over
-                Time" chart looks stale after a back-dated edit or after
+                first transaction to today. Run this if the &ldquo;Net Worth Over
+                Time&rdquo; chart looks stale after a back-dated edit or after
                 deleting transactions.
               </CardDescription>
             </div>
@@ -446,6 +508,7 @@ export function DataSection() {
         </CardContent>
       </Card>
 
+      {/* Data Management — danger zone */}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
@@ -498,6 +561,7 @@ export function DataSection() {
             </p>
           )}
 
+          {/* Delete account — irreversible: removes your login + all data */}
           <div className="pt-3 mt-1 border-t border-border/60 space-y-3">
             {delStep === 0 && (
               <div className="space-y-1.5">

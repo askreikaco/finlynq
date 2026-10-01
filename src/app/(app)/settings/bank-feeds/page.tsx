@@ -1,15 +1,9 @@
 "use client";
 
 /**
- * /settings/bank-feeds — Redirect to Integrations with bank-feeds section open.
- *
- * This page now renders the Integrations page with the bank-feeds accordion
- * section open. Users visiting this old URL will see the content they expect
- * with the settings nav highlighting Integrations.
+ * /settings/bank-feeds — old URL kept. Renders Integrations in place with the
+ * Bank feeds section open (no redirect); Integrations derives the open section
+ * from the pathname. Settings nav highlights Integrations (layout ROUTE_GROUP).
  */
 
-import IntegrationsPage from "@/app/(app)/settings/integrations/page";
-
-export default function BankFeedsRedirectPage() {
-  return <IntegrationsPage initialSection="bank-feeds" />;
-}
+export { default } from "../integrations/page";

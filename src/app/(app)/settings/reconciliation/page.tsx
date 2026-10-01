@@ -21,7 +21,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
-import { Link2 as Link2Icon, ExternalLink, Zap, Mail } from "lucide-react";
+import { Link2 as Link2Icon, ExternalLink, Zap } from "lucide-react";
+import { useOpenSection } from "@/components/settings/use-open-section";
 import { AmountInput } from "@/components/amount-input";
 import { RulesSection } from "@/components/settings/sections/rules-section";
 import { ImportSection } from "@/components/settings/sections/import-section";
@@ -40,14 +41,27 @@ const DEFAULTS: Readonly<Thresholds> = {
   scoreThreshold: 0.6,
 };
 
-export default function ReconciliationSettingsPage({ initialSection, queryString }: { initialSection?: string | null; queryString?: string } = {}) {
+// Old folded URLs render this page in place: /settings/rules opens Rules,
+// /settings/import opens Import settings; ?tab= / #hash / ?provider= pick the
+// flattened Import sections (legacy tab=connect -> migrate).
+const OPEN_SECTIONS = {
+  byPath: [
+    { prefix: "/settings/rules", section: "rules" },
+    { prefix: "/settings/import", section: "import-settings" },
+  ],
+  valid: ["rules", "import-settings", "templates", "email", "migrate", "statements"],
+  alias: { connect: "migrate", import: "import-settings" },
+  providerSection: "migrate",
+};
+
+export default function ReconciliationSettingsPage() {
   const [thresholds, setThresholds] = useState<Thresholds>(DEFAULTS);
   const [isDefault, setIsDefault] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(true);
   const [saving, setSaving] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<number | null>(null);
-  const [tab, setTab] = useState<string | null>(initialSection ?? null);
+  const [tab, setTab] = useOpenSection(OPEN_SECTIONS);
 
   // ─── Load ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -217,7 +231,7 @@ export default function ReconciliationSettingsPage({ initialSection, queryString
         <AccordionItem
           value="rules"
           icon={<Zap className="h-4 w-4" />}
-          title="Transaction Rules"
+          title="Rules"
           description="Auto-categorize and transform transactions"
         >
           <div id="rules">
@@ -225,16 +239,7 @@ export default function ReconciliationSettingsPage({ initialSection, queryString
           </div>
         </AccordionItem>
 
-        <AccordionItem
-          value="import"
-          icon={<Mail className="h-4 w-4" />}
-          title="Import"
-          description="Templates, email config, migration"
-        >
-          <div id="import">
-            <ImportSection />
-          </div>
-        </AccordionItem>
+        <ImportSection />
       </Accordion>
     </div>
   );

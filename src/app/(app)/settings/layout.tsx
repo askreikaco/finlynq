@@ -17,17 +17,11 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
   Settings2,
-  Shield,
-  Database,
   Tag,
   Briefcase,
-  Sliders,
   Server,
   Wrench,
-  Zap,
   Link2,
-  Upload,
-  Landmark,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 

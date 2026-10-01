@@ -1,8 +1,18 @@
 "use client";
 
 /**
- * Bank Feeds section — SimpleFIN integration.
- * Extracted from /settings/bank-feeds.
+ * Bank feeds section — SimpleFIN bank feed (on-demand sync). Accordion section on
+ * /settings/integrations (old /settings/bank-feeds renders it open).
+ *
+ * Paste a SimpleFIN setup token to connect, then "Sync now" DETECTS the bank's
+ * accounts. For each new account the user chooses to Create a Finlynq account or
+ * Link to an existing one; already-linked accounts sync silently. Confirming
+ * STAGES the transactions into /import/pending for review + approval (which
+ * promotes them to the bank ledger / reconciliation). On-demand only — the
+ * access URL is encrypted under your DEK, available only while logged in.
+ *
+ * Settings-page convention: bespoke fetch/useState/useEffect (no SWR), shared
+ * ConfirmDialog for disconnect, parseSaveError for failed mutations.
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -17,6 +27,7 @@ import { formatCurrency } from "@/lib/currency";
 import { safeName } from "@/lib/safe-name";
 import { Landmark, Loader2, RefreshCw, CheckCircle2, ExternalLink, Link2, Plus, Clock, AlertTriangle } from "lucide-react";
 
+/** Mirrors SimplefinSyncStatus (src/lib/external-import/simplefin-sync-status.ts). */
 interface SyncStatus {
   ok: boolean;
   partial: boolean;
@@ -195,6 +206,7 @@ export function BankFeedsSection() {
       }
       const data: Preview = await res.json();
       setPreview(data);
+      // Seed default choices: suggested → link to the suggestion, new → create.
       const seeded: Record<string, Choice> = {};
       for (const a of data.accounts) {
         if (a.status === "suggested" && a.accountId != null) {
@@ -263,6 +275,10 @@ export function BankFeedsSection() {
 
   return (
     <div className="space-y-6">
+      <p className="text-sm text-muted-foreground">
+        Pull transactions automatically from your bank via SimpleFIN
+      </p>
+
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
@@ -333,7 +349,7 @@ export function BankFeedsSection() {
                 </div>
               </div>
 
-              {/* ── Last sync failed or reported problems ── */}
+              {/* ── Last sync (automatic or manual) failed or reported problems ── */}
               {status.lastSync && !status.lastSync.ok && (
                 <div
                   role="status"
@@ -366,7 +382,7 @@ export function BankFeedsSection() {
               {detectError && <p className="text-sm text-destructive">{detectError}</p>}
               {stageError && <p className="text-sm text-destructive">{stageError}</p>}
 
-              {/* ── Detected accounts ── */}
+              {/* ── Detected accounts: create/link mapping ── */}
               {preview && (
                 <div className="rounded-xl border divide-y">
                   <div className="px-4 py-2.5 text-sm font-medium bg-muted/30">
@@ -496,7 +512,7 @@ export function BankFeedsSection() {
               )}
             </div>
           ) : (
-            /* ── Not connected ── */
+            /* ── Not connected: paste setup token ── */
             <div className="space-y-3">
               <label htmlFor="simplefin-token" className="block text-sm font-medium">
                 Setup token
@@ -539,7 +555,7 @@ export function BankFeedsSection() {
         </CardContent>
       </Card>
 
-      {/* ── Pending charges ── */}
+      {/* ── Pending charges (holds / not-yet-posted) ── */}
       {status?.connected && (
         <Card>
           <CardHeader>
@@ -550,7 +566,9 @@ export function BankFeedsSection() {
               <div className="min-w-0">
                 <CardTitle className="text-base">Pending charges</CardTitle>
                 <CardDescription>
-                  Holds and not-yet-posted charges from your bank. These are volatile so they are NOT added to your ledger.
+                  Holds and not-yet-posted charges from your bank. These are volatile (a hold
+                  clears and re-posts as a distinct charge) so they are NOT added to your ledger —
+                  shown here for visibility only.
                 </CardDescription>
               </div>
             </div>

@@ -1,58 +1,62 @@
 import { describe, it, expect } from "vitest";
+import { sectionFromPath, sectionFromUrl, type OpenSectionConfig } from "@/components/settings/use-open-section";
+
+const RECON: OpenSectionConfig = {
+  byPath: [
+    { prefix: "/settings/rules", section: "rules" },
+    { prefix: "/settings/import", section: "import-settings" },
+  ],
+  valid: ["rules", "import-settings", "templates", "email", "migrate", "statements"],
+  alias: { connect: "migrate", import: "import-settings" },
+  providerSection: "migrate",
+};
+
+describe("old-path -> open section mapping", () => {
+  it("path seeds the section", () => {
+    expect(sectionFromPath("/settings/rules", RECON)).toBe("rules");
+    expect(sectionFromPath("/settings/import", RECON)).toBe("import-settings");
+    expect(sectionFromPath("/settings/import/reconcile-visibility", RECON)).toBe("import-settings");
+    expect(sectionFromPath("/settings/reconciliation", RECON)).toBeNull();
+  });
+  it("?tab=, legacy connect, #hash and ?provider= refine it", () => {
+    expect(sectionFromUrl("?tab=email", "", RECON)).toBe("email");
+    expect(sectionFromUrl("?tab=connect", "", RECON)).toBe("migrate");
+    expect(sectionFromUrl("", "#statements", RECON)).toBe("statements");
+    expect(sectionFromUrl("?provider=moneypro", "", RECON)).toBe("migrate");
+    expect(sectionFromUrl("?tab=bogus", "", RECON)).toBeNull();
+  });
+});
 
 describe("Settings Reorganization - Code Structure", () => {
   describe("Redirect pages exist and export correctly", () => {
-    it("/settings/bank-feeds exports a redirect function", async () => {
+    it("/settings/bank-feeds renders its parent in place", async () => {
       const mod = await import("@/app/(app)/settings/bank-feeds/page");
       expect(mod.default).toBeDefined();
       expect(typeof mod.default).toBe("function");
     });
 
-    it("/settings/rules exports a redirect function", async () => {
+    it("/settings/rules renders its parent in place", async () => {
       const mod = await import("@/app/(app)/settings/rules/page");
       expect(mod.default).toBeDefined();
       expect(typeof mod.default).toBe("function");
     });
 
-    it("/settings/import exports a redirect function", async () => {
+    it("/settings/import renders its parent in place", async () => {
       const mod = await import("@/app/(app)/settings/import/page");
       expect(mod.default).toBeDefined();
       expect(typeof mod.default).toBe("function");
     });
 
-    it("/settings/display exports a redirect function", async () => {
+    it("/settings/display renders its parent in place", async () => {
       const mod = await import("@/app/(app)/settings/display/page");
       expect(mod.default).toBeDefined();
       expect(typeof mod.default).toBe("function");
     });
 
-    it("/settings/data exports a redirect function", async () => {
+    it("/settings/data renders its parent in place", async () => {
       const mod = await import("@/app/(app)/settings/data/page");
       expect(mod.default).toBeDefined();
       expect(typeof mod.default).toBe("function");
-    });
-  });
-
-  describe("Parent pages accept initialSection prop", () => {
-    it("ReconciliationPage accepts initialSection prop", async () => {
-      const mod = await import("@/app/(app)/settings/reconciliation/page");
-      const page = mod.default;
-      const sig = page.toString();
-      expect(sig).toContain("initialSection");
-    });
-
-    it("IntegrationsPage accepts initialSection prop", async () => {
-      const mod = await import("@/app/(app)/settings/integrations/page");
-      const page = mod.default;
-      const sig = page.toString();
-      expect(sig).toContain("initialSection");
-    });
-
-    it("DeveloperPage accepts initialSection prop", async () => {
-      const mod = await import("@/app/(app)/settings/developer/page");
-      const page = mod.default;
-      const sig = page.toString();
-      expect(sig).toContain("initialSection");
     });
   });
 

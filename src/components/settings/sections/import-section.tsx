@@ -1,18 +1,36 @@
 "use client";
 
 /**
- * Import section — Transaction Rules manager, CSV templates, email import config,
- * account visibility, and app-migration flows.
+ * Import settings sections — account-agnostic import MANAGEMENT.
  *
- * Extracted from the old /settings/import page. Renders as an accordion section
- * inside Reconciliation settings.
+ * Rendered as flat items of the Reconciliation accordion (old /settings/import
+ * renders Reconciliation with "import-settings" open). Sections: Import
+ * settings, Templates, Email Import, Migrate, Investment statements. Must be
+ * rendered inside an <Accordion> (returns AccordionItems).
+ *
+ * Phase 1 of the money-in surface consolidation (merge /import + /import/pending
+ * + /reconcile + /inbox → a single account-anchored /import surface). The old
+ * /import page conflated a per-account upload ACTION with account-agnostic
+ * MANAGEMENT (CSV templates, the WealthPosition connector, the email-import
+ * address). The management half has no home in an account-anchored flow, so it
+ * moves here. The upload action stays on /import and (later phases) folds into
+ * the account surface's upload drawer.
+ *
+ * Everything here is lifted verbatim from the old /import tabs — same
+ * components (`TemplateManager`, `ConnectorTab`), same endpoints
+ * (/api/import/templates, /api/import/email-config). No API changes.
  */
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Accordion, AccordionItem } from "@/components/ui/accordion";
+import { AccordionItem } from "@/components/ui/accordion";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -33,7 +51,9 @@ import {
   FileSpreadsheet,
   EyeOff,
   ChevronRight,
+  Sliders,
 } from "lucide-react";
+import Link from "next/link";
 import { TemplateManager } from "@/app/(app)/import/components/template-manager";
 import { ConnectorTab } from "@/app/(app)/import/components/connector-tab";
 import { MoneyProConnectorTab } from "@/app/(app)/import/components/moneypro-connector-tab";
@@ -47,35 +67,42 @@ type ImportProvider = "wealthposition" | "moneypro" | "generic-csv";
 export function ImportSection() {
   const [accountNames, setAccountNames] = useState<string[]>([]);
   const [templates, setTemplates] = useState<ImportTemplate[]>([]);
+  // "Migrate from another app" tab — which provider's flow is open.
   const [provider, setProvider] = useState<ImportProvider | null>(null);
-  const [tab, setTab] = useState<string | null>(null);
 
+  // Email state
   const [importEmail, setImportEmail] = useState<string | null>(null);
   const [emailLoading, setEmailLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  // §B (2026-06-04) — "Confirm detected column mapping before importing"
+  // per-user default. Seeds NEW accounts' csv_mapping_mode; a per-account
+  // override on the upload drawer (the "Don't ask again" checkbox) wins.
   const [confirmCsvMapping, setConfirmCsvMapping] = useState(true);
   const [confirmCsvLoading, setConfirmCsvLoading] = useState(false);
 
+  // FINLYNQ-241 — count of hidden accounts, shown on the entry-point card.
   const [hiddenAccountCount, setHiddenAccountCount] = useState<number | null>(null);
 
+  // FINLYNQ-138 — per-user imported-email retention window (days). Governs how
+  // long raw forwarded emails (email_inbox) are kept before the cleanup sweep
+  // hard-deletes them. Bounded {7,30,60,90}; default 60.
   const [retentionDays, setRetentionDays] = useState<number>(60);
-  const [retentionOptions, setRetentionOptions] = useState<number[]>([7, 30, 60, 90]);
+  const [retentionOptions, setRetentionOptions] = useState<number[]>([
+    7, 30, 60, 90,
+  ]);
   const [retentionLoading, setRetentionLoading] = useState(false);
 
+  // Deep-link support: ?provider=moneypro picks the Migrate provider flow. The
+  // parent (reconciliation page, useOpenSection) opens the Migrate section.
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const t = params.get("tab") ?? window.location.hash.replace(/^#/, "");
-    if (t && ["templates", "email", "migrate", "connect", "statements"].includes(t)) {
-      setTab(t === "connect" ? "migrate" : t);
-    }
-    const p = params.get("provider");
+    const p = new URLSearchParams(window.location.search).get("provider");
     if (p === "wealthposition" || p === "moneypro" || p === "generic-csv") {
       setProvider(p);
-      setTab("migrate");
     }
   }, []);
 
+  // Fetch accounts, templates, and email config on mount.
   useEffect(() => {
     fetch("/api/accounts")
       .then((r) => r.json())
@@ -117,6 +144,7 @@ export function ImportSection() {
       })
       .catch(() => {});
 
+    // FINLYNQ-241 — load the hidden-account count for the entry-point card.
     fetch("/api/settings/reconcile-hidden-accounts")
       .then((r) => r.json())
       .then((data) => {
@@ -129,6 +157,7 @@ export function ImportSection() {
 
   const updateRetentionDays = async (next: number) => {
     const prev = retentionDays;
+    // Optimistic — revert on failure.
     setRetentionDays(next);
     setRetentionLoading(true);
     try {
@@ -152,6 +181,7 @@ export function ImportSection() {
 
   const toggleConfirmCsvMapping = async () => {
     const next = !confirmCsvMapping;
+    // Optimistic — revert on failure.
     setConfirmCsvMapping(next);
     setConfirmCsvLoading(true);
     try {
@@ -193,9 +223,22 @@ export function ImportSection() {
       setTimeout(() => setCopied(false), 2000);
     }
   };
-
   return (
-    <div className="space-y-6">
+    <>
+      <AccordionItem
+        value="import-settings"
+        icon={<Sliders className="h-4 w-4" />}
+        title="Import settings"
+        description="CSV mapping confirmation, account visibility"
+      >
+        <div id="import-settings" className="space-y-6">
+          <p className="text-sm text-muted-foreground">
+            To upload a bank statement, use the{" "}
+            <a href="/import" className="underline hover:text-foreground">
+              Import page
+            </a>
+            .
+          </p>
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
@@ -207,7 +250,9 @@ export function ImportSection() {
               )}
             </div>
             <div>
-              <CardTitle className="text-base">Confirm field mapping before importing</CardTitle>
+              <CardTitle className="text-base">
+                Confirm field mapping before importing
+              </CardTitle>
               <CardDescription>
                 When on, CSV uploads show the auto-detected column mapping and
                 OFX/QFX uploads show a field-mapping preview (Name vs Memo) for
@@ -220,12 +265,14 @@ export function ImportSection() {
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-sm font-medium">
-                {confirmCsvMapping ? "Confirmation is ON" : "Confirmation is OFF"}
+                {confirmCsvMapping
+                  ? "Confirmation is ON"
+                  : "Confirmation is OFF"}
               </p>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {confirmCsvMapping
-                  ? "Accounts ask you to confirm before staging. Per-account overrides (the \"Ask me first / Apply automatically\" choice in the import preview) still apply."
-                  : "Accounts import silently using the detected mapping. Pick \"Ask me to confirm first\" in an account's import preview to turn confirmation back on for it."}
+                  ? "Accounts ask you to confirm before staging. Per-account overrides (the “Ask me first / Apply automatically” choice in the import preview) still apply."
+                  : "Accounts import silently using the detected mapping. Pick “Ask me to confirm first” in an account’s import preview to turn confirmation back on for it."}
               </p>
             </div>
             <Switch
@@ -238,6 +285,8 @@ export function ImportSection() {
         </CardContent>
       </Card>
 
+      {/* FINLYNQ-147 / FINLYNQ-241 — hide accounts from the /import reconcile
+          dropdown. The full list lives on a subpage to keep this page compact. */}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
@@ -273,7 +322,10 @@ export function ImportSection() {
         </CardContent>
       </Card>
 
-      <Accordion value={tab} onValueChange={setTab}>
+        </div>
+      </AccordionItem>
+
+        {/* Templates */}
         <AccordionItem
           value="templates"
           icon={<BookTemplate className="h-4 w-4" />}
@@ -295,6 +347,9 @@ export function ImportSection() {
               }
               onUpdated={(updated) => {
                 if (updated.isDefault) {
+                  // Server clears isDefault on every OTHER template when this one
+                  // is set true; the PUT response only returns the updated row,
+                  // so refetch to keep the "default" badge in sync across rows.
                   fetch("/api/import/templates")
                     .then((r) => r.json())
                     .then((data) => {
@@ -311,6 +366,7 @@ export function ImportSection() {
           </div>
         </AccordionItem>
 
+        {/* Email Import */}
         <AccordionItem
           value="email"
           icon={<Mail className="h-4 w-4" />}
@@ -356,7 +412,9 @@ export function ImportSection() {
                 ) : (
                   <Button onClick={generateEmail} disabled={emailLoading}>
                     <Mail className="h-4 w-4 mr-2" />
-                    {emailLoading ? "Generating..." : "Generate Import Email Address"}
+                    {emailLoading
+                      ? "Generating..."
+                      : "Generate Import Email Address"}
                   </Button>
                 )}
 
@@ -373,7 +431,7 @@ export function ImportSection() {
                     </li>
                     <li>
                       A transaction in the email <span className="font-medium">body</span>{" "}
-                      (a bank "you spent $X" alert) is parsed too and
+                      (a bank &quot;you spent $X&quot; alert) is parsed too and
                       shows up in the{" "}
                       <a href="/import?tab=email" className="underline hover:no-underline">
                         Email tab
@@ -398,9 +456,12 @@ export function ImportSection() {
               </CardContent>
             </Card>
 
+            {/* FINLYNQ-138 — imported-email retention window. */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Imported-email retention</CardTitle>
+                <CardTitle className="text-base">
+                  Imported-email retention
+                </CardTitle>
                 <CardDescription>
                   How long Finlynq keeps the raw emails you forward to your
                   import address before permanently deleting them. The cleanup
@@ -443,6 +504,7 @@ export function ImportSection() {
           </div>
         </AccordionItem>
 
+        {/* Migrate from another app — per-source submenu */}
         <AccordionItem
           value="migrate"
           icon={<LinkIcon className="h-4 w-4" />}
@@ -532,6 +594,7 @@ export function ImportSection() {
           </div>
         </AccordionItem>
 
+        {/* Investment statements (IBKR XML / multi-account OFX/QFX) */}
         <AccordionItem
           value="statements"
           icon={<Landmark className="h-4 w-4" />}
@@ -542,7 +605,6 @@ export function ImportSection() {
             <InvestmentStatementImporter />
           </div>
         </AccordionItem>
-      </Accordion>
-    </div>
+    </>
   );
 }

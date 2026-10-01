@@ -1,21 +1,11 @@
 "use client";
 
 /**
- * /settings/import — Redirect to Reconciliation with import section open.
- *
- * This page now renders the Reconciliation page with the import accordion
- * section open. Users visiting this old URL will see the content they expect
- * with the settings nav highlighting Reconciliation.
- *
- * Deep-link support: /settings/import?tab=email, /settings/import?provider=…
- * must keep working. These are passed through URL search params to the parent.
+ * /settings/import — old URL kept. Renders Reconciliation in place with the
+ * Import settings section open (no redirect). Deep links keep working and are
+ * handled by Reconciliation (useOpenSection): ?tab=templates|email|migrate|
+ * statements (legacy tab=connect -> migrate), #hash, ?provider=moneypro|
+ * wealthposition|generic-csv (opens Migrate). Nav highlights Reconciliation.
  */
 
-import { useSearchParams } from "next/navigation";
-import ReconciliationPage from "@/app/(app)/settings/reconciliation/page";
-
-export default function ImportRedirectPage() {
-  const searchParams = useSearchParams();
-  const queryString = searchParams.toString();
-  return <ReconciliationPage initialSection="import" queryString={queryString} />;
-}
+export { default } from "../reconciliation/page";

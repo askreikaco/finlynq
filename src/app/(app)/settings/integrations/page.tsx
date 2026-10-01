@@ -17,6 +17,7 @@ import { Accordion, AccordionItem } from "@/components/ui/accordion";
 import { Zap, Landmark } from "lucide-react";
 import { ConnectedApps } from "./connected-apps";
 import { BankFeedsSection } from "@/components/settings/sections/bank-feeds-section";
+import { useOpenSection } from "@/components/settings/use-open-section";
 import { isMcpConnected } from "@/lib/mcp/connected";
 
 interface ConnectedAppsData {
@@ -24,10 +25,16 @@ interface ConnectedAppsData {
   mcpApiKeyLastUsedAt: string | null;
 }
 
-export default function IntegrationsSettingsPage({ initialSection }: { initialSection?: string | null } = {}) {
+// /settings/bank-feeds renders this page in place with Bank feeds open.
+const OPEN_SECTIONS = {
+  byPath: [{ prefix: "/settings/bank-feeds", section: "bank-feeds" }],
+  valid: ["bank-feeds"],
+};
+
+export default function IntegrationsSettingsPage() {
   const [isConnected, setIsConnected] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const [tab, setTab] = useState<string | null>(initialSection ?? null);
+  const [tab, setTab] = useOpenSection(OPEN_SECTIONS);
 
   useEffect(() => {
     const checkConnected = async () => {

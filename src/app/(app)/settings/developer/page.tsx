@@ -10,13 +10,20 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
 import { ToggleLeft, ToggleRight, Database } from "lucide-react";
+import { useOpenSection } from "@/components/settings/use-open-section";
 import { DataSection } from "@/components/settings/sections/data-section";
 
-export default function DeveloperSettingsPage({ initialSection }: { initialSection?: string | null } = {}) {
+// /settings/data renders this page in place with Data open.
+const OPEN_SECTIONS = {
+  byPath: [{ prefix: "/settings/data", section: "data" }],
+  valid: ["data"],
+};
+
+export default function DeveloperSettingsPage() {
   const [devMode, setDevMode] = useState(false);
   const [devModeLoading, setDevModeLoading] = useState(false);
   const [devModeStatus, setDevModeStatus] = useState("");
-  const [tab, setTab] = useState<string | null>(initialSection ?? null);
+  const [tab, setTab] = useOpenSection(OPEN_SECTIONS);
 
   // Load dev mode
   useEffect(() => {

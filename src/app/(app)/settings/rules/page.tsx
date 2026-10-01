@@ -1,15 +1,9 @@
 "use client";
 
 /**
- * /settings/rules — Redirect to Reconciliation with rules section open.
- *
- * This page now renders the Reconciliation page with the rules accordion
- * section open. Users visiting this old URL will see the content they expect
- * with the settings nav highlighting Reconciliation.
+ * /settings/rules — old URL kept. Renders Reconciliation in place with the
+ * Rules section open (no redirect); Reconciliation derives the open section
+ * from the pathname. Settings nav highlights Reconciliation (layout ROUTE_GROUP).
  */
 
-import ReconciliationPage from "@/app/(app)/settings/reconciliation/page";
-
-export default function RulesRedirectPage() {
-  return <ReconciliationPage initialSection="rules" />;
-}
+export { default } from "../reconciliation/page";

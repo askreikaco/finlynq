@@ -34,7 +34,7 @@ describe("Family Wealth P5 structure", () => {
 
   it("2FA CTA points at the real 2FA settings route", () => {
     expect(MFA_SETUP_HREF).toBe("/settings/account");
-    expect(readFileSync(path.join(__dirname, "../../src/app/(app)/settings/account/page.tsx"), "utf8")).toContain("TwoFactor");
+    expect(readFileSync(path.join(__dirname, "../../src/components/settings/account-content.tsx"), "utf8")).toContain("TwoFactor");
     for (const f of files(DIR)) expect(readFileSync(f, "utf8")).not.toContain("/settings/security");
   });
 

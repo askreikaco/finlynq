@@ -1,15 +1,9 @@
 "use client";
 
 /**
- * /settings/data — Redirect to Developer with data section open.
- *
- * This page now renders the Developer page with the data accordion
- * section open. Users visiting this old URL will see the content they expect
- * with the settings nav highlighting Developer.
+ * /settings/data — old URL kept. Renders Developer in place with the Data
+ * section open (no redirect); Developer derives the open section from the
+ * pathname. Settings nav highlights Developer (layout ROUTE_GROUP).
  */
 
-import DeveloperPage from "@/app/(app)/settings/developer/page";
-
-export default function DataRedirectPage() {
-  return <DeveloperPage initialSection="data" />;
-}
+export { default } from "../developer/page";

@@ -1,8 +1,10 @@
 "use client";
 
 /**
- * Rules section — Transaction Rules manager.
- * Extracted from /settings/rules.
+ * Rules section — Transaction Rules manager (FINLYNQ-84). Accordion section on
+ * /settings/reconciliation (old /settings/rules renders it open). Lifted
+ * verbatim from the old /settings/rules page; multi-condition + multi-action
+ * editor, live preview, active toggle / edit / delete.
  */
 
 import { useEffect, useState } from "react";
@@ -10,7 +12,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Zap, Plus, Trash2, AlertTriangle } from "lucide-react";
+import {
+  Zap, Plus, Trash2, AlertTriangle,
+} from "lucide-react";
 import {
   RuleEditorDialog,
   type Category,
@@ -117,18 +121,6 @@ function describeAction(a: Action, fkNames?: RuleRow["actionFKNames"]): string {
   }
 }
 
-function ruleRowToSeed(rule: RuleRow | null): RuleSeed | null {
-  if (!rule) return null;
-  return {
-    id: rule.id,
-    name: rule.name,
-    conditions: rule.conditions ?? { all: [] },
-    actions: rule.actions ?? [],
-    priority: rule.priority,
-    isActive: rule.isActive,
-  };
-}
-
 export function RulesSection() {
   const [rules, setRules] = useState<RuleRow[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -151,6 +143,7 @@ export function RulesSection() {
       if (acctsRes.ok) setAccounts(await acctsRes.json());
       if (holdRes.ok) {
         const data = await holdRes.json();
+        // /api/portfolio returns an array of holdings.
         setHoldings(Array.isArray(data) ? data : (data.holdings ?? []));
       }
     } catch (e) {
@@ -195,6 +188,11 @@ export function RulesSection() {
 
   return (
     <div className="space-y-6">
+      <p className="text-sm text-muted-foreground">
+        Auto-categorize and transform transactions with multi-condition rules.
+        See <a href="/docs/transaction-rules-v2" className="underline hover:text-foreground">the docs</a> for the full action list.
+      </p>
+
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -301,3 +299,16 @@ export function RulesSection() {
     </div>
   );
 }
+
+function ruleRowToSeed(rule: RuleRow | null): RuleSeed | null {
+  if (!rule) return null;
+  return {
+    id: rule.id,
+    name: rule.name,
+    conditions: rule.conditions ?? { all: [] },
+    actions: rule.actions ?? [],
+    priority: rule.priority,
+    isActive: rule.isActive,
+  };
+}
+

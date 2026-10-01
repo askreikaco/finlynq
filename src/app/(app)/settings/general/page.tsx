@@ -159,33 +159,42 @@ export default function GeneralSettingsPage() {
             </Select>
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <Label>Appearance</Label>
+              <Label id="appearance-label">Appearance</Label>
               <p className="text-xs text-muted-foreground">
-                Light, dark, or match your system settings.
+                System, light, or dark.
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              {[
+            <div
+              role="radiogroup"
+              aria-labelledby="appearance-label"
+              className="inline-flex rounded-lg border p-0.5"
+            >
+              {([
+                { value: "system", label: "System", icon: Monitor },
                 { value: "light", label: "Light", icon: Sun },
                 { value: "dark", label: "Dark", icon: Moon },
-                { value: "system", label: "System", icon: Monitor },
-              ].map(({ value, label, icon: Icon }) => (
-                <button
-                  key={value}
-                  onClick={() => setTheme(value)}
-                  className={`flex h-10 w-14 items-center justify-center rounded-lg border-2 transition-colors ${
-                    theme === value
-                      ? "border-primary bg-primary/10"
-                      : "border-border hover:bg-muted/50"
-                  }`}
-                  aria-label={`${label} theme`}
-                  title={label}
-                >
-                  <Icon className="h-4 w-4" />
-                </button>
-              ))}
+              ] as const).map(({ value, label, icon: Icon }) => {
+                const selected = (theme ?? "system") === value;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    onClick={() => setTheme(value)}
+                    className={`inline-flex min-h-11 items-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors ${
+                      selected
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {label}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
