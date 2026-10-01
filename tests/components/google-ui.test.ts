@@ -26,6 +26,17 @@ describe("safeNext", () => {
     expect(safeNext("/a\\b")).toBe("/dashboard");
   });
 
+  it("rejects control characters browsers strip from URLs (tab/CR/LF)", () => {
+    expect(safeNext("/\t/evil.com")).toBe("/dashboard");
+    expect(safeNext("/\n/evil.com")).toBe("/dashboard");
+    expect(safeNext("/\r/evil.com")).toBe("/dashboard");
+  });
+
+  it("rejects absolute and scheme URLs", () => {
+    expect(safeNext("https://evil.com")).toBe("/dashboard");
+    expect(safeNext("javascript:alert(1)")).toBe("/dashboard");
+  });
+
   it("accepts valid paths", () => {
     expect(safeNext("/budgets")).toBe("/budgets");
   });
