@@ -640,6 +640,25 @@ export async function setPasskeyPrfWrap(id: string, wrapped: string | null) {
     .where(eq(s.userPasskeys.id, id));
 }
 
+/**
+ * Store the PRF wrap of a passkey (B6) and mark it PRF-capable. Ownership is
+ * part of the WHERE: a caller can only ever write to its own credential.
+ */
+export async function setPasskeyPrfWrapOwned(
+  userId: string,
+  id: string,
+  wrapped: string,
+  saltVersion: number
+): Promise<boolean> {
+  const s = getSchema();
+  const rows = await db
+    .update(s.userPasskeys)
+    .set({ dekWrappedPrf: wrapped, prfSupported: 1, prfSaltVersion: saltVersion })
+    .where(and(eq(s.userPasskeys.userId, userId), eq(s.userPasskeys.id, id)))
+    .returning({ id: s.userPasskeys.id });
+  return rows.length === 1;
+}
+
 export async function deletePasskey(userId: string, id: string): Promise<boolean> {
   const s = getSchema();
   const rows = await db
@@ -1413,7 +1432,7 @@ async function deleteAllUserDataTx(tx: TxClient, userId: string) {
   // wraps are cleared; wipeUserDataAndRewrap additionally DELETES the passkeys.
   await tx
     .update(s.userPasskeys)
-    .set({ dekWrappedPrf: null })
+    .set({ dekWrappedPrf: null, prfSupported: 0 })
     .where(eq(s.userPasskeys.userId, userId));
   await tx
     .update(s.userRecoveryCodes)

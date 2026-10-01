@@ -23,15 +23,33 @@ export class SoftAuthenticator {
   readonly credentialId = crypto.randomBytes(32);
   counter = 0;
   readonly signCounterEnabled: boolean;
+  /**
+   * Deterministic per-credential PRF root secret (CTAP hmac-secret / WebAuthn
+   * prf): output = HMAC-SHA256(prfSecret, SHA256("WebAuthn PRF\0" || salt)).
+   * `supportsPrf:false` emulates an authenticator without the extension.
+   */
+  readonly prfSecret = crypto.randomBytes(32);
+  readonly supportsPrf: boolean;
   private privateKey: crypto.KeyObject;
   private publicJwk: { x: string; y: string };
 
-  constructor(opts: { counters?: boolean } = {}) {
+  constructor(opts: { counters?: boolean; prf?: boolean } = {}) {
     this.signCounterEnabled = opts.counters ?? true;
+    this.supportsPrf = opts.prf ?? true;
     const { privateKey, publicKey } = crypto.generateKeyPairSync("ec", { namedCurve: "P-256" });
     this.privateKey = privateKey;
     const jwk = publicKey.export({ format: "jwk" }) as { x: string; y: string };
     this.publicJwk = { x: jwk.x, y: jwk.y };
+  }
+
+  /** What the browser would return as prf.results.first for eval.first = saltB64url (32 bytes, base64url); null if unsupported. */
+  prf(saltB64url: string): string | null {
+    if (!this.supportsPrf) return null;
+    const input = crypto
+      .createHash("sha256")
+      .update(Buffer.concat([Buffer.from("WebAuthn PRF\0"), Buffer.from(saltB64url, "base64url")]))
+      .digest();
+    return crypto.createHmac("sha256", this.prfSecret).update(input).digest().toString("base64url");
   }
 
   get id(): string {
@@ -93,7 +111,7 @@ export class SoftAuthenticator {
       id: this.id,
       rawId: this.id,
       type: "public-key",
-      clientExtensionResults: {},
+      clientExtensionResults: this.supportsPrf ? { prf: { enabled: true } } : {},
       response: {
         clientDataJSON: b64u(this.clientData("webauthn.create", challenge, k.origin)),
         attestationObject: b64u(attestationObject),

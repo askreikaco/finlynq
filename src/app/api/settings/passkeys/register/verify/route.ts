@@ -6,7 +6,11 @@
  * consumed atomically before the attestation is verified (UV required,
  * origin/rpID from server config, attestation "none").
  *
- * PRF key-wrap is B6: prf_supported stays 0 / dek_wrapped_prf NULL here.
+ * PRF key-wrap (B6) is a second step: prf_supported stays 0 / dek_wrapped_prf NULL
+ * here; the response tells the browser to run register/prf-options ->
+ * (second tap with PRF eval) -> register/finish-prf, unless the browser already
+ * said the authenticator has no PRF (clientExtensionResults.prf.enabled === false;
+ * a UI hint only, nothing server-side trusts it).
  */
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -86,7 +90,12 @@ export async function POST(request: NextRequest) {
       userAgent: request.headers.get("user-agent") ?? undefined,
     }).catch(() => {});
     return NextResponse.json(
-      { id: cred.credentialId, label: label ?? null, prfSupported: false, needsPrfAssertion: false },
+      {
+        id: cred.credentialId,
+        label: label ?? null,
+        prfSupported: false,
+        needsPrfAssertion: (response.clientExtensionResults as { prf?: { enabled?: boolean } } | undefined)?.prf?.enabled !== false,
+      },
       { headers: { "Cache-Control": "no-store" } }
     );
   } catch (e) {
