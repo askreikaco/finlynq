@@ -32,7 +32,7 @@ import { putDEK, getDEK } from "@/lib/crypto/dek-cache";
 import { generateMfaSecret } from "@/lib/auth/mfa";
 import { redeemDevice } from "@/lib/auth/trusted-device";
 import { issueSessionForDek } from "@/lib/auth/finish-login";
-import { requireAuth, apiKeyStrategy, accountStrategy } from "@/lib/auth/require-auth";
+import { apiKeyStrategy, accountStrategy } from "@/lib/auth/require-auth";
 import { middleware } from "@/middleware";
 
 const HAS_DB = /\/[^/]*_test([?#]|$)/.test(process.env.DATABASE_URL ?? process.env.PF_DATABASE_URL ?? "");
@@ -614,6 +614,62 @@ describe.skipIf(!HAS_DB)("recovery B5 WebAuthn (real Postgres, real verification
       expect(f).toMatch(/commitSession\(/);
       expect(f).not.toMatch(/cookies\s*\.\s*set\(\s*["']pf_session["']/);
       expect(f).toMatch(/applyTrustedDevicePolicy\(/);
+    });
+  });
+
+  describe("one definition of MFA: login gate and Family overview gate agree", () => {
+    const overview = async (token: string) => {
+      const { GET } = await import("@/app/api/family/overview/route");
+      const res = await GET(new NextRequest("http://localhost:3000/api/family/overview", { headers: { cookie: `pf_session=${token}`, "x-real-ip": freshIp() } }));
+      return { status: res.status, json: await res.json().catch(() => null) };
+    };
+
+    it("userHasSecondFactor: TOTP-only, passkey-only -> true; neither -> false", async () => {
+      const { userHasSecondFactor } = await import("@/lib/auth/second-factor");
+      const none = await mkUser(); const totp = await mkUser({ totp: true }); const pk = await mkUser();
+      await enroll(pk);
+      expect(await userHasSecondFactor(none.id)).toBe(false);
+      expect(await userHasSecondFactor(totp.id)).toBe(true);
+      expect(await userHasSecondFactor(pk.id)).toBe(true);
+      expect(await userHasSecondFactor(pk.id, 0)).toBe(true);
+    });
+
+    it("passkey-only user: session minted by passkey 2FA passes the Family gate; a session that never passed 2FA does not; mfa claim without any factor does not", async () => {
+      const u = await mkUser();
+      const auth = await enroll(u);
+
+      // session minted before/without the second factor (password-only login; mfa claim false)
+      const noMfa = await createSessionToken(u.id, false);
+      putDEK(noMfa.jti, Buffer.from(u.dek), 60_000, u.id);
+      const denied = await overview(noMfa.token);
+      expect(denied.status).toBe(403);
+      expect(denied.json.error).toBe("mfa_required");
+
+      // login gate agrees: password step now yields a pending token, and passkey 2FA mints the mfa claim
+      const gate = await issueSessionForDek((await getUserById(u.id))! as never, Buffer.from(u.dek));
+      expect(gate.kind).toBe("mfa");
+      const p = await pending(u);
+      const { json } = await mfaOptions(p);
+      const out = await mfaVerify(p, json.token, auth.assert(json.options.challenge, K));
+      expect(out.status).toBe(200);
+      const tok = out.cookies.get("pf_session")!.value;
+      expect((await verifySessionToken(tok))?.mfa).toBe(true);
+      const allowed = await overview(tok);
+      expect(allowed.status).not.toBe(403);
+      expect(allowed.json?.error).not.toBe("mfa_required");
+
+      // a user with NO second factor never passes, even with an mfa=true session
+      const bare = await mkUser();
+      const bs = await session(bare.id, bare.dek); // mfa claim true
+      const bd = await overview(bs.token);
+      expect(bd.status).toBe(403);
+      expect(bd.json.error).toBe("mfa_required");
+
+      // removing the last passkey withdraws the factor (the gate recomputes per request)
+      const { DELETE } = await routes.byId();
+      const st = await session(u.id, u.dek);
+      expect((await DELETE(sreq("DELETE", "/x", st.token, {}), idCtx(auth.id))).status).toBe(200);
+      expect((await overview(tok)).status).toBe(403);
     });
   });
 

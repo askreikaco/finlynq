@@ -415,7 +415,7 @@ describe("2FA gate", () => {
     expect((await overview(B2)).status).toBe(403);
   });
 
-  it("a registered passkey does not count as 2FA (login never asks for it); mfa_enabled without a verified session is refused", async () => {
+  it("a registered passkey counts as 2FA only for a session that passed it; mfa_enabled without a verified session is refused", async () => {
     const A = await mkUser("owner");
     const B = await mkUser("viewer", { mfa: false });
     await rawShare(A.id, B, ["accounts"], "active");
