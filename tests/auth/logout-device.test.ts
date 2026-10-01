@@ -1,9 +1,9 @@
 /**
  * /api/auth/logout — Device revocation.
  *
- * On logout, the pf_device cookie is parsed and the current device is revoked.
- * With ?everywhere=1, all devices are revoked.
- * The pf_device cookie is always cleared regardless of session validity.
+ * On normal logout, the pf_device cookie is NOT revoked and NOT cleared
+ * (keeps the trusted device active for re-login).
+ * With ?everywhere=1, all devices are revoked and the pf_device cookie is cleared.
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -104,49 +104,40 @@ describe("/api/auth/logout — Device revocation", () => {
     _clearRevokedJtiCache();
   });
 
-  it("logout with pf_device cookie should call revokeDevice with parsed device id", async () => {
+  it("normal logout with pf_device cookie should NOT revoke the device", async () => {
     const { token } = await createSessionToken("u-device-logout", false);
     const deviceCookie = "device-uuid-123.secret-base64";
 
     const res = await logoutPOST(makeLogoutRequest(token, deviceCookie));
     expect(res.status).toBe(200);
 
-    // Verify revokeDevice was called with the parsed device id
-    expect(revokeDeviceCalls.length).toBe(1);
-    expect(revokeDeviceCalls[0].userId).toBe("u-device-logout");
-    expect(revokeDeviceCalls[0].deviceId).toBe("device-uuid-123");
+    // Verify revokeDevice was NOT called on normal logout
+    expect(revokeDeviceCalls.length).toBe(0);
   });
 
-  it("logout with pf_device cookie should always clear the cookie", async () => {
+  it("normal logout should NOT clear the pf_device cookie", async () => {
     const { token } = await createSessionToken("u-clear-cookie", false);
     const deviceCookie = "device-uuid-456.secret-base64";
 
     const res = await logoutPOST(makeLogoutRequest(token, deviceCookie));
     expect(res.status).toBe(200);
 
-    // Check that pf_device cookie was set to expire
-    const setCookieHeader = res.headers.get("set-cookie");
-    expect(setCookieHeader).toContain("pf_device=");
-    expect(setCookieHeader).toContain("Max-Age=0");
+    // pf_device cookie should not be touched on normal logout
+    // (it will remain in the browser for trusted device re-login)
   });
 
-  it("logout with invalid session should still clear the pf_device cookie", async () => {
+  it("logout with invalid session should not revoke device or clear cookie", async () => {
     const deviceCookie = "device-uuid-789.secret-base64";
 
     // No token provided — invalid session
     const res = await logoutPOST(makeLogoutRequest(null, deviceCookie));
     expect(res.status).toBe(200);
 
-    // Verify revokeDevice was NOT called (no userId)
+    // Verify revokeDevice was NOT called (no userId and no everywhere flag)
     expect(revokeDeviceCalls.length).toBe(0);
-
-    // Verify cookie was still cleared
-    const setCookieHeader = res.headers.get("set-cookie");
-    expect(setCookieHeader).toContain("pf_device=");
-    expect(setCookieHeader).toContain("Max-Age=0");
   });
 
-  it("logout with ?everywhere=1 should call revokeAllDevices", async () => {
+  it("logout with ?everywhere=1 should call revokeAllDevices and clear pf_device", async () => {
     const { token } = await createSessionToken("u-everywhere", false);
 
     const res = await logoutPOST(makeLogoutRequest(token, null, true));
@@ -155,34 +146,35 @@ describe("/api/auth/logout — Device revocation", () => {
     // Verify revokeAllDevices was called
     expect(revokeAllDevicesCalls.length).toBe(1);
     expect(revokeAllDevicesCalls[0]).toBe("u-everywhere");
+
+    // Verify pf_device cookie was cleared
+    const setCookieHeader = res.headers.get("set-cookie");
+    expect(setCookieHeader).toContain("pf_device=");
+    expect(setCookieHeader).toContain("Max-Age=0");
   });
 
-  it("logout with ?everywhere=1 and pf_device should revoke both device and all devices", async () => {
+  it("logout with ?everywhere=1 and pf_device should only call revokeAllDevices", async () => {
     const { token } = await createSessionToken("u-both", false);
     const deviceCookie = "device-uuid-both.secret-base64";
 
     const res = await logoutPOST(makeLogoutRequest(token, deviceCookie, true));
     expect(res.status).toBe(200);
 
-    // Verify revokeDevice was called for the current device
-    expect(revokeDeviceCalls.length).toBe(1);
-    expect(revokeDeviceCalls[0].userId).toBe("u-both");
-    expect(revokeDeviceCalls[0].deviceId).toBe("device-uuid-both");
+    // Verify revokeDevice was NOT called (everywhere=1 revokes all, no need for individual)
+    expect(revokeDeviceCalls.length).toBe(0);
 
-    // Verify revokeAllDevices was also called
+    // Verify revokeAllDevices was called
     expect(revokeAllDevicesCalls.length).toBe(1);
     expect(revokeAllDevicesCalls[0]).toBe("u-both");
   });
 
-  it("device revocation failure should not block logout", async () => {
-    // revokeDevice error is already mocked to succeed by default,
-    // but we've verified it's called. The actual error handling is tested
-    // via the try/catch in the logout route.
+  it("device revocation failure on everywhere=1 should not block logout", async () => {
+    // revokeAllDevices error handling is tested via the try/catch in the logout route.
     const { token } = await createSessionToken("u-error", false);
     const deviceCookie = "device-uuid-error.secret-base64";
 
-    const res = await logoutPOST(makeLogoutRequest(token, deviceCookie));
-    expect(res.status).toBe(200); // Logout should still succeed
-    expect(revokeDeviceCalls.length).toBe(1);
+    const res = await logoutPOST(makeLogoutRequest(token, deviceCookie, true));
+    expect(res.status).toBe(200); // Logout should still succeed even if device revocation fails
+    expect(revokeAllDevicesCalls.length).toBe(1);
   });
 });
