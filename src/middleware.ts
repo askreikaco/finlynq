@@ -279,6 +279,19 @@ export function middleware(request: NextRequest) {
     return new NextResponse(null, { status: 204 });
   }
 
+  // Family Wealth overview is a read-only endpoint: any non-GET/HEAD method is refused here,
+  // before auth, CSRF or the route (defense in depth next to the route exporting GET only).
+  if (
+    request.nextUrl.pathname === "/api/family/overview" &&
+    request.method !== "GET" &&
+    request.method !== "HEAD"
+  ) {
+    return new NextResponse(JSON.stringify({ error: "Method Not Allowed" }), {
+      status: 405,
+      headers: { Allow: "GET, HEAD", "Content-Type": "application/json" },
+    });
+  }
+
   // CSRF Origin/Referer gate for cookie-auth'd state-changing requests.
   const csrfBlock = csrfCheck(request);
   if (csrfBlock) return csrfBlock;

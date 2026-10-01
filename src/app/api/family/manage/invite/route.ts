@@ -6,7 +6,8 @@
  * returns the same 201 body either way (no account-existence oracle).
  *
  * Auth: session-only. Limits: 10/day/user, 3/day/email (identical 429 body for both).
- * Body (strict): { viewerEmail, sections[], mustShareBack? }
+ * Step-up: requires fresh session (< 10 min) OR currentPassword in body.
+ * Body (strict): { viewerEmail, sections[], mustShareBack?, currentPassword? }
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -16,12 +17,12 @@ import { db } from "@/db";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getUserById } from "@/lib/auth/queries";
 import { createShare } from "@/lib/family/share-dal";
-import { createUserKeypairIfNeeded } from "@/lib/family/grant";
+import { ensureUserKeypair } from "@/lib/family/manage-ops";
 import { generateInviteToken, hashInviteToken, getInviteExpiresAt } from "@/lib/family/invite-token";
 import { FamilySectionSchema } from "@/lib/family/sections";
 import { familyInvites, familyShares } from "@/db/schema-pg";
 import { sendEmail, familyInviteEmail } from "@/lib/email";
-import { rateLimited, readStrictBody, requireFamilySession } from "@/lib/family/manage-guard";
+import { rateLimited, readStrictBody, requireFamilySession, requireFamilyStepUp } from "@/lib/family/manage-guard";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +34,7 @@ const InviteRequestSchema = z
     viewerEmail: z.string().trim().max(254).email().toLowerCase(),
     sections: z.array(FamilySectionSchema).min(1),
     mustShareBack: z.boolean().optional().default(false),
+    currentPassword: z.string().optional(),
   })
   .strict();
 
@@ -46,7 +48,11 @@ export async function POST(request: NextRequest) {
 
   const body = await readStrictBody(request, InviteRequestSchema);
   if (!body.ok) return body.response;
-  const { viewerEmail, sections, mustShareBack } = body.data;
+  const { viewerEmail, sections, mustShareBack, currentPassword } = body.data;
+
+  // Step-up: fresh session (< 10 min) OR correct currentPassword.
+  const stepUp = await requireFamilyStepUp(guard.ctx, currentPassword);
+  if (stepUp) return stepUp;
 
   // Same body as the per-user limit: does not reveal that OTHER owners invited this address.
   const emailRl = checkRateLimit(`family-invite-email:${viewerEmail}`, 3, DAY_MS);
@@ -76,7 +82,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    await createUserKeypairIfNeeded(db, ownerId, ownerDek);
+    await ensureUserKeypair(ownerId, ownerDek);
   } catch {
     console.error("[family] invite: keypair setup failed");
     return NextResponse.json({ error: "Could not set up encryption" }, { status: 500 });

@@ -35,6 +35,7 @@ import {
 } from "@/lib/crypto/family-crypto";
 import { FAMILY_SECTIONS_V1, type FamilySection } from "./sections";
 import { SECTION_LABEL_SOURCES } from "./label-registry";
+import { effectiveSectionsOf, loadLiveChildren } from "./effective-sections";
 
 export { buildGrantAAD };
 
@@ -119,7 +120,10 @@ export async function withSectionKeys<T>(
       .from(familyKeyGrants)
       .where(eq(familyKeyGrants.shareId, shareId));
 
-    const granted = new Set(keyedSectionsOfShare(share));
+    // Must-share-back re-consent: only the effective sections are unsealed.
+    const children = share.mustShareBack ? await loadLiveChildren(database, [share.id]) : new Map();
+    const effective = new Set<string>(effectiveSectionsOf(share, children.get(share.id)));
+    const granted = new Set(keyedSectionsOfShare(share).filter((s) => effective.has(s)));
     for (const grant of grants) {
       if (grant.status !== "ready" || !grant.keySealed) continue;
       // A grant for a section the share no longer covers yields nothing.
@@ -365,10 +369,17 @@ export async function provisionGrants(
     for (const kp of kps) keypairs.set(kp.userId, kp.pub);
   }
 
+  const children = await loadLiveChildren(
+    database,
+    liveShares.filter((s) => s.mustShareBack).map((s) => s.id),
+  );
+
   const latest = new Map<string, { key: Buffer; epoch: number }>();
   try {
     for (const share of liveShares) {
-      const covered = keyedSectionsOfShare(share);
+      // Must-share-back re-consent: only effective sections are keyed (see effective-sections.ts).
+      const effective = new Set<string>(effectiveSectionsOf(share, children.get(share.id)));
+      const covered = keyedSectionsOfShare(share).filter((s) => effective.has(s));
       covered.forEach((s) => liveSections.add(s));
 
       const existingGrants = await database

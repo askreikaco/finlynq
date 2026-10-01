@@ -16,11 +16,17 @@ import { and, eq, inArray } from "drizzle-orm";
 import { db, type DrizzleDb } from "@/db";
 import { familyShares, familyKeyGrants } from "@/db/schema-pg";
 import { isValidTransition, type FamilyShareStatus } from "./share-status";
-import { withOwnerLock, rotateEpoch, keyedSectionsOfShare } from "./grant";
+import { withOwnerLock, rotateEpoch, keyedSectionsOfShare, createUserKeypairIfNeeded } from "./grant";
 import { syncFamilyLabels } from "./sweep";
-import { type FamilySection } from "./sections";
+import { resolveSections, type FamilySection } from "./sections";
+import { loadLiveChildren, reconsentMissing } from "./effective-sections";
 
 type ShareRow = typeof familyShares.$inferSelect;
+
+/** Idempotent keypair bootstrap for the manage routes (they may not import grant.ts directly). */
+export async function ensureUserKeypair(userId: string, dek: Buffer): Promise<void> {
+  await createUserKeypairIfNeeded(db, userId, dek);
+}
 
 async function sealedSections(tx: DrizzleDb, shareId: string): Promise<string[]> {
   const rows = await tx.select().from(familyKeyGrants).where(eq(familyKeyGrants.shareId, shareId));
@@ -112,7 +118,7 @@ export async function revokeFamilyShare(opts: {
 }
 
 export type UpdateSectionsResult =
-  | { ok: true; share: ShareRow }
+  | { ok: true; share: ShareRow; reconsentMissing: string[] }
   | { ok: false; code: "not_found" | "conflict" | "locked" | "required_back"; requiredSections?: string[] };
 
 export async function updateFamilyShareSections(opts: {
@@ -155,9 +161,16 @@ export async function updateFamilyShareSections(opts: {
       return { ok: false, code: "locked" } as UpdateSectionsResult;
     }
 
-    // Narrowing a must-share-back parent relaxes what it requires back (never widens it).
+    // Narrowing a must-share-back parent relaxes what it requires back. WIDENING it raises the
+    // requirement to the whole widened set (plan 7.4 re-consent): until the viewer widens their
+    // reciprocal share to cover it, they only receive the part they reciprocate
+    // (effective-sections.ts). Consent = the viewer's own update-sections on their share.
+    const before = resolveSections(share.allSections, share.sections);
+    const widened = newSections.some((s) => !before.includes(s));
     const required = share.mustShareBack
-      ? (share.requiredBackSections ?? []).filter((s) => newSections.includes(s as FamilySection))
+      ? widened
+        ? newSections
+        : (share.requiredBackSections ?? []).filter((s) => newSections.includes(s as FamilySection))
       : (share.requiredBackSections ?? []);
 
     const grantRows = isLive ? await tx.select().from(familyKeyGrants).where(eq(familyKeyGrants.shareId, shareId)) : [];
@@ -184,6 +197,7 @@ export async function updateFamilyShareSections(opts: {
         share.status === "awaiting_owner_unlock" || changed.length === 0 ? undefined : { sections: changed },
       );
     }
-    return { ok: true, share: updated } as UpdateSectionsResult;
+    const child = share.mustShareBack ? (await loadLiveChildren(tx, [share.id])).get(share.id) : undefined;
+    return { ok: true, share: updated, reconsentMissing: reconsentMissing(updated, child) } as UpdateSectionsResult;
   });
 }
