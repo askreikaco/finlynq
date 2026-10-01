@@ -27,6 +27,7 @@ import {
   real,
   smallint,
 } from "drizzle-orm/pg-core";
+import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
 export const accounts = pgTable("accounts", {
@@ -2781,4 +2782,119 @@ export const backfillAudit = pgTable("backfill_audit", {
     .defaultNow(),
 }, (t) => [
   index("backfill_audit_proposal_idx").on(t.proposalId),
+]);
+
+// ─── Family Wealth sharing (P1) ─────────────────────────────────────────────
+// Per-section encrypted key sharing for household finance visibility.
+// Owner grants access to viewers for specific data sections.
+// Keys are wrapped by DEK; section labels sidecar separately encrypted.
+
+export const familyShares = pgTable(
+  "family_shares",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ownerId: text("owner_id").notNull(),
+    viewerId: text("viewer_id"),
+    viewerEmailLower: text("viewer_email_lower").notNull(),
+    sections: text("sections").array().notNull(),
+    allSections: boolean("all_sections").notNull().default(false),
+    mustShareBack: boolean("must_share_back").notNull().default(false),
+    requiredBackSections: text("required_back_sections").array().notNull().default(sql`'{}'`),
+    reciprocalOf: uuid("reciprocal_of").references((): AnyPgColumn => familyShares.id, { onDelete: "cascade" }),
+    status: text("status").notNull().default("pending").$type<
+      | "pending"
+      | "awaiting_owner_unlock"
+      | "active"
+      | "suspended"
+      | "revoked"
+      | "declined"
+      | "expired"
+      | "key_reset"
+    >(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    revokedBy: text("revoked_by"),
+    lastViewedAt: timestamp("last_viewed_at", { withTimezone: true }),
+  },
+  (t) => [
+    index("family_shares_owner_idx").on(t.ownerId),
+    index("family_shares_viewer_idx").on(t.viewerId),
+    index("family_shares_status_idx").on(t.status),
+    check("owner_not_viewer", sql`${t.ownerId} <> ${t.viewerId}`),
+    check(
+      "sections_not_empty",
+      sql`cardinality(${t.sections}) > 0 OR ${t.allSections}`,
+    ),
+    uniqueIndex("family_shares_owner_viewer_live_uniq")
+      .on(t.ownerId, t.viewerId)
+      .where(
+        sql`${t.status} IN ('active','awaiting_owner_unlock','pending')`,
+      ),
+    check(
+      "family_shares_status_check",
+      sql`${t.status} IN ('pending','awaiting_owner_unlock','active','suspended','revoked','declined','expired','key_reset')`,
+    ),
+  ],
+);
+
+export const familyInvites = pgTable("family_invites", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  shareId: uuid("share_id").notNull().references(() => familyShares.id, { onDelete: "cascade" }),
+  emailLower: text("email_lower").notNull(),
+  tokenHash: text("token_hash").notNull().unique(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  consumedAt: timestamp("consumed_at", { withTimezone: true }),
+  sendCount: integer("send_count").notNull().default(1),
+  lastSentAt: timestamp("last_sent_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  index("family_invites_share_idx").on(t.shareId),
+  index("family_invites_email_lower_idx").on(t.emailLower),
+  index("family_invites_expires_at_idx").on(t.expiresAt),
+]);
+
+export const userKeypairs = pgTable("user_keypairs", {
+  userId: text("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
+  x25519Pub: text("x25519_pub").notNull(),
+  privWrapped: text("priv_wrapped").notNull(),
+});
+
+export const familySectionKeys = pgTable("family_section_keys", {
+  ownerId: text("owner_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  section: text("section").notNull(),
+  epoch: integer("epoch").notNull().default(1),
+  keyWrapped: text("key_wrapped").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.ownerId, t.section, t.epoch] }),
+  index("family_section_keys_owner_idx").on(t.ownerId),
+]);
+
+export const familyKeyGrants = pgTable("family_key_grants", {
+  shareId: uuid("share_id").notNull().references(() => familyShares.id, { onDelete: "cascade" }),
+  section: text("section").notNull(),
+  epoch: integer("epoch").notNull().default(1),
+  keySealed: text("key_sealed"),
+  viewerWrapped: text("viewer_wrapped"),
+  status: text("status").notNull().default("ready").$type<"ready"|"awaiting_keys">(),
+}, (t) => [
+  primaryKey({ columns: [t.shareId, t.section] }),
+  index("family_key_grants_share_idx").on(t.shareId),
+  check("family_key_grants_status_check", sql`${t.status} IN ('ready','awaiting_keys')`),
+]);
+
+export const familyLabels = pgTable("family_labels", {
+  ownerId: text("owner_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  section: text("section").notNull(),
+  entityType: text("entity_type").notNull(),
+  entityId: integer("entity_id").notNull(),
+  epoch: integer("epoch").notNull().default(1),
+  labelCt: text("label_ct").notNull(),
+  srcHash: text("src_hash"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.ownerId, t.section, t.entityType, t.entityId] }),
+  index("family_labels_owner_section_idx").on(t.ownerId, t.section),
 ]);
