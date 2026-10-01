@@ -35,6 +35,7 @@ import {
   MessageCircle,
   Server,
   Shield,
+  Users,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { FinlynqLogo } from "@/components/FinlynqLogo";
@@ -71,6 +72,7 @@ export const navGroups: { label: string; items: NavItem[] }[] = [
       { href: "/accounts", label: "Accounts", icon: Wallet, color: ACTIVE_ACCENT, mode: "prod" },
       { href: "/portfolio", label: "Portfolio", icon: TrendingUp, color: ACTIVE_ACCENT, mode: "prod" },
       { href: "/loans", label: "Loans & Debt", icon: Landmark, color: ACTIVE_ACCENT, mode: "prod" },
+      { href: "/family", label: "Family Wealth", icon: Users, color: ACTIVE_ACCENT, mode: "prod" },
     ],
   },
   {
