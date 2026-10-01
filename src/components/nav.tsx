@@ -361,17 +361,17 @@ export function Nav() {
                   aria-label="Admin"
                   className={cn(
                     "group/link relative flex items-center gap-3 rounded-lg text-[13px] font-medium transition-all duration-200 px-0 py-2 justify-center",
-                    pathname === "/admin"
+                    pathname.startsWith("/admin")
                       ? "bg-white/[0.08] text-sidebar-accent-foreground"
                       : "text-sidebar-foreground/50 hover:bg-white/[0.05] hover:text-sidebar-foreground"
                   )}
                 >
-                  {pathname === "/admin" && (
+                  {pathname.startsWith("/admin") && (
                     <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 rounded-full bg-sidebar-primary shadow-[0_0_8px_2px] shadow-sidebar-primary/30" />
                   )}
                   <Shield className={cn(
                     "h-[18px] w-[18px] shrink-0 transition-all duration-200",
-                    pathname === "/admin" ? "text-primary" : "text-sidebar-foreground/40 group-hover/link:text-sidebar-foreground/70"
+                    pathname.startsWith("/admin") ? "text-primary" : "text-sidebar-foreground/40 group-hover/link:text-sidebar-foreground/70"
                   )} />
                 </Link>
               )}

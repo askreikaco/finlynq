@@ -117,6 +117,26 @@ describe("Nav admin group", () => {
     expect(screen.queryByText("Email Oversight")).toBeNull();
     expect(localStorage.getItem("nav.adminOpen")).toBe("false");
   });
+
+  it("admin user on /admin/system with collapsed sidebar shows admin shield active", async () => {
+    mockPath = "/admin/system";
+    mockFetch({ admin: true });
+    render(<Nav />);
+
+    // Find and click the collapse button to collapse the sidebar
+    const collapseBtn = await waitFor(() =>
+      screen.getByRole("button", { name: /collapse sidebar|expand sidebar/i })
+    );
+    fireEvent.click(collapseBtn);
+
+    // Find the aria-label="Admin" link in the collapsed sidebar
+    const adminLink = await screen.findByRole("link", { name: "Admin" });
+
+    // Check that it has the active styling
+    const className = adminLink.className;
+    expect(className).toContain("bg-white/[0.08]");
+    expect(className).toContain("text-sidebar-accent-foreground");
+  });
 });
 
 describe("Nav What's New", () => {
