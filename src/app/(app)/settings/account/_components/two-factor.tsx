@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { RevealForm } from "@/components/settings/reveal-form";
 import { Input } from "@/components/ui/input";
 import { Shield, Check, AlertTriangle } from "lucide-react";
 import QRCode from "qrcode";
@@ -10,8 +11,8 @@ import QRCode from "qrcode";
 const STRINGS = {
   title: "Two-Factor Authentication",
   description: "Protect your account with a time-based one-time password (TOTP)",
-  enableButton: "Enable two-factor authentication",
-  disableButton: "Disable two-factor authentication",
+  enableButton: "Enable 2FA",
+  disableButton: "Disable 2FA",
   generatingQr: "Generating QR code…",
   qrCodeAlt: "TOTP provisioning QR code",
   secretLabel: "Secret key",
@@ -22,8 +23,8 @@ const STRINGS = {
   codeLabel: "Verification code",
   codePlaceholder: "000000",
   passwordLabel: "Current password",
-  enableSubmit: "Enable 2FA",
-  disableSubmit: "Disable 2FA",
+  enableSubmit: "Confirm",
+  disableSubmit: "Confirm",
   enablingStatus: "Enabling…",
   disablingStatus: "Disabling…",
   enabledStatus: "Two-factor authentication enabled",
@@ -36,12 +37,12 @@ const STRINGS = {
   genericError: "An error occurred",
   enablePrompt: "Enter the 6-digit code from your authenticator app to enable 2FA.",
   disablePrompt: "Enter the 6-digit code from your authenticator app and your password to disable 2FA.",
-  statusEnabled: "2FA is enabled. Your account is protected.",
+  statusEnabled: "On — authenticator app",
   codeLengthError: "Code must be 6 digits",
   passwordRequiredError: "Password is required",
   scanLabel: "Scan with authenticator app:",
   cancel: "Cancel",
-  statusDisabled: "2FA is not enabled. Add an extra layer of protection.",
+  statusDisabled: "Off",
 } as const;
 
 interface SetupState {
@@ -122,6 +123,21 @@ export function TwoFactor() {
       setState({ type: "disabled" });
       setStatus("");
     }
+  }
+
+  function cancelDisable() {
+    setState({ type: "enabled" });
+    setCode("");
+    setPassword("");
+    setError("");
+  }
+
+  function startDisable() {
+    setError("");
+    setStatus("");
+    setCode("");
+    setPassword("");
+    setState({ type: "disabling" });
   }
 
   function handleCopySecret() {
@@ -269,60 +285,79 @@ export function TwoFactor() {
               {STRINGS.statusEnabled}
             </p>
 
-            <form onSubmit={(e) => { e.preventDefault(); handleDisableMfa(); }} className="space-y-3 max-w-sm">
-              <p className="text-xs text-muted-foreground">{STRINGS.disablePrompt}</p>
+            {status && state.type !== "disabling" && (
+              <p className="text-sm text-emerald-600 flex items-center gap-1" role="status">
+                <Check className="h-3.5 w-3.5" />
+                {status}
+              </p>
+            )}
+            {error && state.type !== "disabling" && (
+              <p className="text-sm text-destructive flex items-center gap-2" role="alert">
+                <AlertTriangle className="h-4 w-4" />
+                {error}
+              </p>
+            )}
+            <RevealForm open={state.type === "disabling"} onOpen={startDisable} buttonLabel={STRINGS.disableButton} variant="destructive">
+              <form onSubmit={(e) => { e.preventDefault(); handleDisableMfa(); }} className="space-y-3 max-w-sm">
+                <p className="text-xs text-muted-foreground">{STRINGS.disablePrompt}</p>
 
-              <div>
-                <label htmlFor="disable-code" className="text-xs font-medium text-muted-foreground">
-                  {STRINGS.codeLabel}
-                </label>
-                <Input
-                  id="disable-code"
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={6}
-                  placeholder={STRINGS.codePlaceholder}
-                  value={code}
-                  onChange={(e) => setCode(e.target.value.slice(0, 6))}
-                  disabled={saving}
-                />
-              </div>
+                <div>
+                  <label htmlFor="disable-code" className="text-xs font-medium text-muted-foreground">
+                    {STRINGS.codeLabel}
+                  </label>
+                  <Input
+                    id="disable-code"
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    placeholder={STRINGS.codePlaceholder}
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.slice(0, 6))}
+                    disabled={saving}
+                  />
+                </div>
 
-              <div>
-                <label htmlFor="disable-password" className="text-xs font-medium text-muted-foreground">
-                  {STRINGS.passwordLabel}
-                </label>
-                <Input
-                  id="disable-password"
-                  type="password"
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={saving}
-                />
-              </div>
+                <div>
+                  <label htmlFor="disable-password" className="text-xs font-medium text-muted-foreground">
+                    {STRINGS.passwordLabel}
+                  </label>
+                  <Input
+                    id="disable-password"
+                    type="password"
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={saving}
+                  />
+                </div>
 
-              {error && (
-                <p className="text-sm text-destructive flex items-center gap-2" role="alert">
-                  <AlertTriangle className="h-4 w-4" />
-                  {error}
-                </p>
-              )}
-              {status && (
-                <p className="text-sm text-emerald-600 flex items-center gap-1" role="status">
-                  <Check className="h-3.5 w-3.5" />
-                  {status}
-                </p>
-              )}
+                {error && (
+                  <p className="text-sm text-destructive flex items-center gap-2" role="alert">
+                    <AlertTriangle className="h-4 w-4" />
+                    {error}
+                  </p>
+                )}
+                {status && (
+                  <p className="text-sm text-emerald-600 flex items-center gap-1" role="status">
+                    <Check className="h-3.5 w-3.5" />
+                    {status}
+                  </p>
+                )}
 
-              <Button
-                type="submit"
-                variant="destructive"
-                disabled={saving || !code || !password}
-              >
-                {saving ? STRINGS.disablingStatus : STRINGS.disableSubmit}
-              </Button>
-            </form>
+                <div className="flex gap-2">
+                  <Button
+                    type="submit"
+                    variant="destructive"
+                    disabled={saving || !code || !password}
+                  >
+                    {saving ? STRINGS.disablingStatus : STRINGS.disableSubmit}
+                  </Button>
+                  <Button type="button" variant="ghost" onClick={cancelDisable} disabled={saving}>
+                    {STRINGS.cancel}
+                  </Button>
+                </div>
+              </form>
+            </RevealForm>
           </>
         ) : state.type === "enabling" ? (
           <>

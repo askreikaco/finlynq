@@ -14,6 +14,7 @@ import { TwoFactor } from "./_components/two-factor";
 import { SignInMethods } from "./_components/sign-in-methods";
 import { TrustedDevices } from "./_components/trusted-devices";
 import { PasskeysCard } from "@/components/settings/passkeys-card";
+import { RevealForm } from "@/components/settings/reveal-form";
 import { RecoveryCodesCard } from "@/components/settings/recovery-codes-card";
 
 export default function AccountSettingsPage() {
@@ -50,6 +51,7 @@ export default function AccountSettingsPage() {
   const [pwStatus, setPwStatus] = useState("");
   const [pwError, setPwError] = useState("");
   const [pwSaving, setPwSaving] = useState(false);
+  const [pwOpen, setPwOpen] = useState(false);
 
   // Change email
   const [newEmail, setNewEmail] = useState("");
@@ -57,6 +59,7 @@ export default function AccountSettingsPage() {
   const [emailStatus, setEmailStatus] = useState("");
   const [emailError, setEmailError] = useState("");
   const [emailSaving, setEmailSaving] = useState(false);
+  const [emailOpen, setEmailOpen] = useState(false);
 
   // Load current profile (email + managed-mode gate)
   useEffect(() => {
@@ -66,6 +69,23 @@ export default function AccountSettingsPage() {
       .catch(() => {})
       .finally(() => setMeLoaded(true));
   }, []);
+
+  function closePw(keepStatus = false) {
+    setPwOpen(false);
+    setCurPw("");
+    setNewPw("");
+    setConfirmPw("");
+    setPwError("");
+    if (!keepStatus) setPwStatus("");
+  }
+
+  function closeEmail(keepStatus = false) {
+    setEmailOpen(false);
+    setNewEmail("");
+    setEmailPw("");
+    setEmailError("");
+    if (!keepStatus) setEmailStatus("");
+  }
 
   async function handleChangePassword(e: React.FormEvent) {
     e.preventDefault();
@@ -92,9 +112,7 @@ export default function AccountSettingsPage() {
         return;
       }
       setPwStatus("Password updated.");
-      setCurPw("");
-      setNewPw("");
-      setConfirmPw("");
+      closePw(true);
     } catch {
       setPwError("Failed to change password.");
     } finally {
@@ -121,8 +139,7 @@ export default function AccountSettingsPage() {
       const saved = data.email ?? newEmail;
       setMe((m) => (m ? { ...m, email: saved } : m));
       setEmailStatus(`Verification email sent to ${saved}. Check your inbox to confirm.`);
-      setNewEmail("");
-      setEmailPw("");
+      closeEmail(true);
     } catch {
       setEmailError("Failed to change email.");
     } finally {
@@ -271,7 +288,13 @@ export default function AccountSettingsPage() {
               </div>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-3">
+            {pwStatus && !pwOpen && (
+              <p className="text-sm text-emerald-600 flex items-center gap-1" role="status">
+                <Check className="h-3.5 w-3.5" /> {pwStatus}
+              </p>
+            )}
+            <RevealForm open={pwOpen} onOpen={() => { setPwStatus(""); setPwOpen(true); }} buttonLabel="Change password">
             <form onSubmit={handleChangePassword} className="space-y-3 max-w-sm">
               <div>
                 <label className="text-xs font-medium text-muted-foreground">Current password</label>
@@ -287,15 +310,16 @@ export default function AccountSettingsPage() {
                 <Input type="password" autoComplete="new-password" value={confirmPw} onChange={(e) => setConfirmPw(e.target.value)} />
               </div>
               {pwError && <p className="text-sm text-destructive">{pwError}</p>}
-              {pwStatus && (
-                <p className="text-sm text-emerald-600 flex items-center gap-1">
-                  <Check className="h-3.5 w-3.5" /> {pwStatus}
-                </p>
-              )}
-              <Button type="submit" disabled={pwSaving || !curPw || !newPw || !confirmPw}>
-                {pwSaving ? "Saving…" : "Update password"}
-              </Button>
+              <div className="flex gap-2">
+                <Button type="submit" disabled={pwSaving || !curPw || !newPw || !confirmPw}>
+                  {pwSaving ? "Saving…" : "Update password"}
+                </Button>
+                <Button type="button" variant="ghost" disabled={pwSaving} onClick={() => closePw()}>
+                  Cancel
+                </Button>
+              </div>
             </form>
+            </RevealForm>
           </CardContent>
         </Card>
       )}
@@ -318,6 +342,12 @@ export default function AccountSettingsPage() {
             <p className="text-xs text-muted-foreground">
               Current: <span className="font-medium text-foreground">{me?.email || "none set"}</span>
             </p>
+            {emailStatus && !emailOpen && (
+              <p className="text-sm text-emerald-600 flex items-center gap-1" role="status">
+                <Check className="h-3.5 w-3.5" /> {emailStatus}
+              </p>
+            )}
+            <RevealForm open={emailOpen} onOpen={() => { setEmailStatus(""); setEmailOpen(true); }} buttonLabel="Change email">
             <form onSubmit={handleChangeEmail} className="space-y-3 max-w-sm">
               <div>
                 <label className="text-xs font-medium text-muted-foreground">New email</label>
@@ -328,15 +358,16 @@ export default function AccountSettingsPage() {
                 <Input type="password" autoComplete="current-password" value={emailPw} onChange={(e) => setEmailPw(e.target.value)} />
               </div>
               {emailError && <p className="text-sm text-destructive">{emailError}</p>}
-              {emailStatus && (
-                <p className="text-sm text-emerald-600 flex items-center gap-1">
-                  <Check className="h-3.5 w-3.5" /> {emailStatus}
-                </p>
-              )}
-              <Button type="submit" disabled={emailSaving || !newEmail || !emailPw}>
-                {emailSaving ? "Saving…" : "Update email"}
-              </Button>
+              <div className="flex gap-2">
+                <Button type="submit" disabled={emailSaving || !newEmail || !emailPw}>
+                  {emailSaving ? "Saving…" : "Update email"}
+                </Button>
+                <Button type="button" variant="ghost" disabled={emailSaving} onClick={() => closeEmail()}>
+                  Cancel
+                </Button>
+              </div>
             </form>
+            </RevealForm>
           </CardContent>
         </Card>
       )}
