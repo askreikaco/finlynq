@@ -10,6 +10,13 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/more",
   useRouter: () => ({ replace, push: vi.fn() }),
 }));
+let mockTheme = "system";
+const setTheme = vi.fn();
+vi.mock("next-themes", () => ({ useTheme: () => ({ theme: mockTheme, setTheme }) }));
+vi.mock("next/link", () => ({
+  default: ({ children, href, ...r }: React.PropsWithChildren<{ href: string }>) =>
+    React.createElement("a", { href, ...r }, children),
+}));
 const hardReload = vi.fn();
 const clearPerUserStorage = vi.fn();
 vi.mock("@/lib/client/hard-reload", () => ({
@@ -18,6 +25,7 @@ vi.mock("@/lib/client/hard-reload", () => ({
 }));
 
 import { MoreMenu, buildMoreGroups } from "@/components/more-menu";
+import { MANAGE_ACCOUNTS_HREF } from "@/lib/client/account-page";
 import { allFlatItems, mobileBarItems } from "@/components/nav";
 
 let session: Record<string, unknown>;
@@ -27,6 +35,8 @@ let fetchMock: ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   replace.mockClear();
+  setTheme.mockClear();
+  mockTheme = "system";
   hardReload.mockClear();
   clearPerUserStorage.mockClear();
   session = { isAdmin: false };
@@ -38,7 +48,10 @@ beforeEach(() => {
     if (url === "/api/settings/dev-mode") return j({ devMode: dev });
     if (url === "/api/announcements") return j(announcements);
     if (url === "/api/auth/accounts")
-      return j([{ userId: "u1", email: "a@b.c", displayName: "A", active: true, status: "active" }]);
+      return j([
+        { userId: "u1", email: "a@b.c", displayName: "A", active: true, status: "active" },
+        { userId: "u2", email: "x@y.z", displayName: "X", active: false, status: "switchable" },
+      ]);
     if (url === "/api/auth/logout" && init?.method === "POST") return j({ activeUserId: null });
     return j({});
   });
@@ -103,6 +116,47 @@ describe("More screen", () => {
   it("does not offer Send feedback", () => {
     render(<MoreMenu />);
     expect(screen.queryByText(/feedback/i)).toBeNull();
+  });
+});
+
+describe("More Account section", () => {
+  it("is the first section, titled Account, listing accounts then Add then Manage inside one card", async () => {
+    render(<MoreMenu />);
+    const sec = screen.getByTestId("more-account");
+    expect(within(sec).getByRole("heading", { level: 2 }).textContent).toBe("Account");
+    await waitFor(() => expect(within(sec).getAllByTestId("account-row")).toHaveLength(2));
+    expect(within(sec).getAllByTestId("account-row")[0].textContent).toMatch(/a@b\.c/);
+    expect(within(sec).getByRole("button", { name: /add another account/i })).toBeTruthy();
+    expect(within(sec).getByRole("link", { name: /manage accounts/i }).getAttribute("href")).toBe(MANAGE_ACCOUNTS_HREF);
+    const root = screen.getByTestId("more-menu");
+    const first = root.querySelector("section")!;
+    expect(first).toBe(sec);
+    // no old popover items
+    expect(screen.queryByText(/sign out of all accounts/i)).toBeNull();
+  });
+
+  it("hidden accounts are left out of the list", async () => {
+    localStorage.setItem("pf-hidden-accounts", JSON.stringify(["u2"]));
+    render(<MoreMenu />);
+    await waitFor(() => expect(within(screen.getByTestId("more-account")).getAllByTestId("account-row")).toHaveLength(1));
+    localStorage.clear();
+  });
+});
+
+describe("More Appearance row", () => {
+  it("sits in the Tools group (not Account), shows the current choice and drives setTheme", () => {
+    mockTheme = "dark";
+    render(<MoreMenu />);
+    const row = screen.getByTestId("more-appearance");
+    expect(group("tools").contains(row)).toBe(true);
+    expect(screen.getByTestId("more-account").contains(row)).toBe(false);
+    const radios = within(row).getAllByRole("radio");
+    expect(radios.map((r) => r.textContent)).toEqual(["System", "Light", "Dark"]);
+    expect(radios.map((r) => r.getAttribute("aria-checked"))).toEqual(["false", "false", "true"]);
+    fireEvent.click(within(row).getByRole("radio", { name: "Light" }));
+    expect(setTheme).toHaveBeenCalledWith("light");
+    fireEvent.click(within(row).getByRole("radio", { name: "System" }));
+    expect(setTheme).toHaveBeenCalledWith("system");
   });
 });
 
