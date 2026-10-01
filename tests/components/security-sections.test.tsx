@@ -56,17 +56,19 @@ describe("TwoFactor", () => {
         : { body: { success: true } };
     };
     render(<TwoFactor />);
-    await user.click(await screen.findByRole("button", { name: /enable two-factor/i }));
+    await user.click(await screen.findByRole("button", { name: "Enable 2FA" }));
     expect(await screen.findByAltText(/provisioning qr/i)).toHaveAttribute("src", expect.stringMatching(/^data:image\/png/));
     await user.type(screen.getByLabelText(/verification code/i), "123456");
     await user.type(screen.getByLabelText(/current password/i), "pw");
-    await user.click(screen.getByRole("button", { name: "Enable 2FA" }));
+    await user.click(screen.getByRole("button", { name: "Confirm" }));
     await waitFor(() => expect(bodiesOf("/api/auth/mfa/setup").some((b) => b.action === "enable")).toBe(true));
     const enable = bodiesOf("/api/auth/mfa/setup").find((b) => b.action === "enable");
     expect(enable).toEqual({ action: "enable", secret: "SECRET1", code: "123456", currentPassword: "pw" });
     // secret no longer visible after enabling
     await waitFor(() => expect(screen.queryByDisplayValue("SECRET1")).toBeNull());
-    expect(screen.getByText(/2FA is enabled/i)).toBeInTheDocument();
+    expect(screen.getByText(/^On — authenticator app$/)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/verification code/i)).toBeNull();
+    expect(screen.queryByLabelText(/current password/i)).toBeNull();
   });
 
   it("does not render the secret into localStorage", async () => {
@@ -74,7 +76,7 @@ describe("TwoFactor", () => {
     handlers["/api/auth/session"] = () => ({ body: { mfaEnabled: false } });
     handlers["/api/auth/mfa/setup"] = () => ({ body: { secret: "SECRET1", uri: "otpauth://x" } });
     render(<TwoFactor />);
-    await user.click(await screen.findByRole("button", { name: /enable two-factor/i }));
+    await user.click(await screen.findByRole("button", { name: "Enable 2FA" }));
     await screen.findByDisplayValue("SECRET1");
     expect(JSON.stringify({ ...localStorage })).not.toContain("SECRET1");
   });
@@ -83,7 +85,7 @@ describe("TwoFactor", () => {
     handlers["/api/auth/session"] = () => ({ body: { mfaEnabled: true } });
     render(<TwoFactor />);
     expect(await screen.findByRole("button", { name: "Disable 2FA" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /enable two-factor/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Enable 2FA" })).toBeNull();
   });
 
   it("disable POST body is {action,code,currentPassword}", async () => {
@@ -91,11 +93,60 @@ describe("TwoFactor", () => {
     handlers["/api/auth/session"] = () => ({ body: { mfaEnabled: true } });
     handlers["/api/auth/mfa/setup"] = () => ({ body: { success: true } });
     render(<TwoFactor />);
+    await user.click(await screen.findByRole("button", { name: "Disable 2FA" }));
     await user.type(await screen.findByLabelText(/verification code/i), "654321");
     await user.type(screen.getByLabelText(/current password/i), "pw");
-    await user.click(screen.getByRole("button", { name: "Disable 2FA" }));
+    await user.click(screen.getByRole("button", { name: "Confirm" }));
     await waitFor(() => expect(bodiesOf("/api/auth/mfa/setup").length).toBe(1));
     expect(bodiesOf("/api/auth/mfa/setup")[0]).toEqual({ action: "disable", code: "654321", currentPassword: "pw" });
+    // success collapses and flips the status
+    expect(await screen.findByRole("button", { name: "Enable 2FA" })).toBeInTheDocument();
+    expect(screen.getByText("Off")).toBeInTheDocument();
+    expect(screen.queryByLabelText(/verification code/i)).toBeNull();
+    expect(screen.queryByLabelText(/current password/i)).toBeNull();
+  });
+
+  it("default render has no input fields (On and Off)", async () => {
+    handlers["/api/auth/session"] = () => ({ body: { mfaEnabled: true } });
+    const on = render(<TwoFactor />);
+    await screen.findByText("On — authenticator app");
+    expect(on.container.querySelectorAll("input")).toHaveLength(0);
+    expect(screen.getByRole("button", { name: "Disable 2FA" })).toBeInTheDocument();
+    cleanup();
+    handlers["/api/auth/session"] = () => ({ body: { mfaEnabled: false } });
+    const off = render(<TwoFactor />);
+    await screen.findByText("Off");
+    expect(off.container.querySelectorAll("input")).toHaveLength(0);
+    expect(screen.getByRole("button", { name: "Enable 2FA" })).toBeInTheDocument();
+  });
+
+  it("disable: click reveals fields; Cancel hides and clears them", async () => {
+    const user = userEvent.setup();
+    handlers["/api/auth/session"] = () => ({ body: { mfaEnabled: true } });
+    render(<TwoFactor />);
+    await user.click(await screen.findByRole("button", { name: "Disable 2FA" }));
+    await user.type(screen.getByLabelText(/verification code/i), "123");
+    await user.type(screen.getByLabelText(/current password/i), "pw");
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByLabelText(/verification code/i)).toBeNull();
+    expect(screen.queryByLabelText(/current password/i)).toBeNull();
+    expect(screen.getByText("On — authenticator app")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Disable 2FA" }));
+    expect(screen.getByLabelText(/verification code/i)).toHaveValue("");
+    expect(screen.getByLabelText(/current password/i)).toHaveValue("");
+  });
+
+  it("enable: Cancel hides the QR/fields and clears them", async () => {
+    const user = userEvent.setup();
+    handlers["/api/auth/session"] = () => ({ body: { mfaEnabled: false } });
+    handlers["/api/auth/mfa/setup"] = () => ({ body: { secret: "SECRET1", uri: "otpauth://x" } });
+    render(<TwoFactor />);
+    await user.click(await screen.findByRole("button", { name: "Enable 2FA" }));
+    await user.type(await screen.findByLabelText(/verification code/i), "123");
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByLabelText(/verification code/i)).toBeNull();
+    expect(screen.queryByDisplayValue("SECRET1")).toBeNull();
+    expect(screen.getByText("Off")).toBeInTheDocument();
   });
 });
 
