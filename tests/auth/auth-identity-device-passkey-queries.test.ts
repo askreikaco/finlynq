@@ -10,10 +10,12 @@ import { describe, it, expect, vi } from "vitest";
 const updateSpy = vi.fn();
 const updateSetSpy = vi.fn();
 const deleteSpy = vi.fn();
+const executeSpy = vi.fn();
 
 vi.mock("@/db", () => {
   return {
     db: {
+      execute: (...a: unknown[]) => Promise.resolve(executeSpy(...a)),
       delete: (...args: unknown[]) => {
         deleteSpy(...args);
         return {
@@ -58,13 +60,14 @@ import {
 } from "@/lib/auth/queries";
 
 describe("identity, device, passkey, and recovery code queries", () => {
-  it("consumeRecoveryCode returns boolean based on rowCount", async () => {
+  it("consumeRecoveryCode returns the wrap or null (atomic UPDATE...RETURNING)", async () => {
     updateSetSpy.mockClear();
     updateSpy.mockClear();
 
-    // Test successful consumption
-    const result = await consumeRecoveryCode("u-123", "code-hash");
-    expect(typeof result).toBe("boolean");
+    executeSpy.mockReturnValueOnce({ rows: [{ dek_wrapped: "wrap" }] });
+    expect(await consumeRecoveryCode("u-123", "code-hash")).toBe("wrap");
+    executeSpy.mockReturnValueOnce({ rows: [] });
+    expect(await consumeRecoveryCode("u-123", "code-hash")).toBeNull();
   });
 
   it("revokeAllDevices issues an UPDATE", async () => {

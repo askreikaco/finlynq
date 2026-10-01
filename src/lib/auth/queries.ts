@@ -640,24 +640,29 @@ export async function replaceRecoveryCodes(
   }
 }
 
-export async function consumeRecoveryCode(userId: string, codeHash: string): Promise<boolean> {
-  const s = getSchema();
+/**
+ * Atomically burn one unused recovery code and return its DEK wrap.
+ * One statement: a FOR UPDATE select captures the OLD wrap (RETURNING alone
+ * would show the NULLed new row), the UPDATE re-checks used_at IS NULL, so
+ * exactly one concurrent caller gets a row. Scoped by user_id.
+ * Returns null if used / wrong user / unknown hash / row without a wrap.
+ */
+export async function consumeRecoveryCode(userId: string, codeHash: string): Promise<string | null> {
   const now = new Date().toISOString();
-  const result = await db
-    .update(s.userRecoveryCodes)
-    .set({ usedAt: now, dekWrapped: null })
-    .where(
-      and(
-        eq(s.userRecoveryCodes.userId, userId),
-        eq(s.userRecoveryCodes.codeHash, codeHash),
-        isNull(s.userRecoveryCodes.usedAt),
-      ),
-    );
-  // Drizzle doesn't return row counts in all adapters; rely on database-level
-  // behavior: if no row matched the WHERE (already used, belongs to other user),
-  // the UPDATE touches zero rows. We return true only if at least one row was
-  // updated. For PostgreSQL with the pg adapter, check rowCount.
-  return (result.rowCount ?? 0) > 0;
+  const res = await db.execute(sql`
+    WITH target AS (
+      SELECT id, dek_wrapped FROM user_recovery_codes
+      WHERE user_id = ${userId} AND code_hash = ${codeHash} AND used_at IS NULL
+      FOR UPDATE
+    )
+    UPDATE user_recovery_codes c
+    SET used_at = ${now}, dek_wrapped = NULL
+    FROM target
+    WHERE c.id = target.id AND c.used_at IS NULL
+    RETURNING target.dek_wrapped AS dek_wrapped
+  `);
+  const rows = (res as unknown as { rows?: Array<{ dek_wrapped: string | null }> }).rows ?? [];
+  return rows[0]?.dek_wrapped ?? null;
 }
 
 export async function countUnusedRecoveryCodes(userId: string): Promise<number> {
@@ -671,12 +676,12 @@ export async function countUnusedRecoveryCodes(userId: string): Promise<number> 
 
 // ─── Session cutoff ─────────────────────────────────────────────────────────
 
-export async function setSessionNotBefore(userId: string, timestamp: string) {
+export async function setSessionNotBefore(userId: string, cutoff: Date) {
   const s = getSchema();
-  await db.update(s.users).set({ sessionNotBefore: timestamp }).where(eq(s.users.id, userId));
+  await db.update(s.users).set({ sessionNotBefore: cutoff }).where(eq(s.users.id, userId));
 }
 
-export async function getSessionNotBefore(userId: string): Promise<string | null> {
+export async function getSessionNotBefore(userId: string): Promise<Date | null> {
   const s = getSchema();
   const result = await db
     .select({ sessionNotBefore: s.users.sessionNotBefore })

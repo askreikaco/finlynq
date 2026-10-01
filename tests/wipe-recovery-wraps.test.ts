@@ -1,170 +1,61 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, beforeAll } from "vitest";
-import { db } from "@/db";
-import * as pgSchema from "@/db/schema-pg";
-import { eq, and, isNull } from "drizzle-orm";
-import {
-  createUser,
-  wipeUserDataAndRewrap,
-  replaceRecoveryCodes,
-} from "@/lib/auth/queries";
-import { generateRecoveryCodes, hashRecoveryCode } from "@/lib/auth/recovery-codes";
 import crypto from "crypto";
+import { eq } from "drizzle-orm";
+import { bootstrapTestDb } from "./helpers/portfolio-fixtures";
+import { db, schema as s } from "@/db";
+import { createUser, wipeUserDataAndRewrap, replaceRecoveryCodes, consumeRecoveryCode, setSessionNotBefore, getSessionNotBefore, revokeAllDevicesExcept } from "@/lib/auth/queries";
+import { generateRecoveryCodes, hashRecoveryCode, wrapDEKWithRecoveryCode, unwrapDEKWithRecoveryCode } from "@/lib/auth/recovery-codes";
 
-describe("Wipe recovery wraps (B1)", () => {
-  let testUserId: string;
+let uid: string, other: string;
+const wrap = () => ({ kekSalt: "a", dekWrapped: "b", dekWrappedIv: "c", dekWrappedTag: "d" });
+const mk = async () => (await createUser({ username: "u"+crypto.randomUUID(), passwordHash: "h", kekSalt: "a", dekWrapped: "b", dekWrappedIv: "c", dekWrappedTag: "d" } as any)).id;
+beforeAll(async () => { if (!HAS_DB) return; await bootstrapTestDb(); uid = await mk(); other = await mk(); });
 
-  beforeAll(async () => {
-    // Create a test user
-    testUserId = crypto.randomUUID();
-    const kekSalt = crypto.randomBytes(16).toString("base64");
+const HAS_DB = /\/[^/]*_test([?#]|$)/.test(process.env.DATABASE_URL ?? process.env.PF_DATABASE_URL ?? "");
+describe.skipIf(!HAS_DB)("recovery B1 (real Postgres)", () => {
+  it("clears devices, prf, unused code wraps in wipe", async () => {
+    await db.insert(s.userDevices).values({ id: crypto.randomUUID(), userId: uid, secretHash: crypto.randomUUID(), dekWrapped: "w", createdAt: new Date().toISOString(), expiresAt: new Date(Date.now()+1e9).toISOString() } as any);
+    await db.insert(s.userPasskeys).values({ id: crypto.randomUUID(), userId: uid, publicKey: "pk", dekWrappedPrf: "prf", createdAt: new Date().toISOString() } as any);
     const dek = crypto.randomBytes(32);
-    const kek = Buffer.from("test-key-256bit-0123456789abcde"); // 32 bytes for AES-256
-    const iv = crypto.randomBytes(12);
-    const cipher = crypto.createCipheriv("aes-256-gcm", kek, iv);
-    const ct = Buffer.concat([cipher.update(dek), cipher.final()]);
-    const tag = cipher.getAuthTag();
-
-    const dekWrapped = Buffer.concat([iv, ct, tag]).toString("base64");
-    const dekWrappedIv = iv.toString("base64");
-    const dekWrappedTag = tag.toString("base64");
-
-    await createUser({
-      username: `test-wipe-${crypto.randomUUID()}`,
-      email: `test-wipe-${crypto.randomUUID()}@example.com`,
-      passwordHash: "test-hash",
-      kekSalt,
-      dekWrapped,
-      dekWrappedIv,
-      dekWrappedTag,
-    });
+    const codes = generateRecoveryCodes(3);
+    await replaceRecoveryCodes(uid, codes.map(c => ({ hash: hashRecoveryCode(c.canonical), dekWrapped: wrapDEKWithRecoveryCode(dek, c.canonical) })));
+    await wipeUserDataAndRewrap(uid, "newhash", wrap());
+    expect((await db.select().from(s.userDevices).where(eq(s.userDevices.userId, uid))).length).toBe(0);
+    expect((await db.select().from(s.userPasskeys).where(eq(s.userPasskeys.userId, uid))).every(p => p.dekWrappedPrf === null)).toBe(true);
+    const rows = await db.select().from(s.userRecoveryCodes).where(eq(s.userRecoveryCodes.userId, uid));
+    expect(rows.length).toBe(3);
+    expect(rows.every(r => r.dekWrapped === null && r.usedAt !== null)).toBe(true);
   });
-
-  it("deletes user_devices on wipe", async () => {
-    // Insert a device
-    const deviceId = crypto.randomUUID();
-    const deviceSecret = crypto.randomUUID();
-    const secretHash = crypto.createHash("sha256").update(deviceSecret).digest("hex");
-
-    await db.insert(pgSchema.userDevices).values({
-      id: deviceId,
-      userId: testUserId,
-      secretHash,
-      dekWrapped: "test-wrapped",
-      createdAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    });
-
-    // Verify device exists
-    let devices = await db
-      .select()
-      .from(pgSchema.userDevices)
-      .where(and(eq(pgSchema.userDevices.userId, testUserId), isNull(pgSchema.userDevices.revokedAt)));
-    expect(devices.length).toBe(1);
-
-    // Wipe user
-    const newPasswordHash = crypto.randomBytes(32).toString("hex");
-    const kekSalt = crypto.randomBytes(16).toString("base64");
-    const dekWrapped = crypto.randomBytes(48).toString("base64");
-    const dekWrappedIv = crypto.randomBytes(12).toString("base64");
-    const dekWrappedTag = crypto.randomBytes(16).toString("base64");
-
-    await wipeUserDataAndRewrap(testUserId, newPasswordHash, {
-      kekSalt,
-      dekWrapped,
-      dekWrappedIv,
-      dekWrappedTag,
-    });
-
-    // Verify device is deleted
-    devices = await db
-      .select()
-      .from(pgSchema.userDevices)
-      .where(eq(pgSchema.userDevices.userId, testUserId));
-    expect(devices.length).toBe(0);
+  it("consume atomic + user scoped", async () => {
+    const dek = crypto.randomBytes(32);
+    const codes = generateRecoveryCodes(8);
+    const hashes = codes.map((c) => hashRecoveryCode(c.canonical));
+    await replaceRecoveryCodes(uid, codes.map((c, i) => ({ hash: hashes[i], dekWrapped: wrapDEKWithRecoveryCode(dek, c.canonical) })));
+    // cross-user must not consume
+    expect(await consumeRecoveryCode(other, hashes[0])).toBeNull();
+    // many concurrent attempts per code: exactly one winner, and it gets the wrap
+    for (let i = 0; i < codes.length; i++) {
+      const res = await Promise.all(Array.from({ length: 30 }, () => consumeRecoveryCode(uid, hashes[i])));
+      const wins = res.filter((x): x is string => x !== null);
+      expect(wins.length).toBe(1);
+      expect(unwrapDEKWithRecoveryCode(wins[0], codes[i].canonical)).toEqual(dek);
+    }
+    // first-use timestamp is never overwritten by later attempts (used_at IS NULL guard)
+    const get = async () => (await db.select().from(s.userRecoveryCodes).where(eq(s.userRecoveryCodes.codeHash, hashes[0])))[0];
+    const first = await get();
+    expect(first.dekWrapped).toBeNull();
+    await new Promise((r) => setTimeout(r, 15));
+    expect(await consumeRecoveryCode(uid, hashes[0])).toBeNull();
+    expect((await get()).usedAt).toBe(first.usedAt);
   });
-
-  it("NULLs dek_wrapped_prf on passkeys on wipe", async () => {
-    // Insert a passkey
-    const passkeyId = crypto.randomUUID();
-    await db.insert(pgSchema.userPasskeys).values({
-      id: passkeyId,
-      userId: testUserId,
-      publicKey: "test-public-key",
-      dekWrappedPrf: "test-wrapped-prf",
-      createdAt: new Date().toISOString(),
-    });
-
-    // Verify passkey has wrapped PRF
-    let passkeys = await db
-      .select()
-      .from(pgSchema.userPasskeys)
-      .where(eq(pgSchema.userPasskeys.userId, testUserId));
-    expect(passkeys.some((p) => p.dekWrappedPrf !== null)).toBe(true);
-
-    // Wipe user
-    const newPasswordHash = crypto.randomBytes(32).toString("hex");
-    const kekSalt = crypto.randomBytes(16).toString("base64");
-    const dekWrapped = crypto.randomBytes(48).toString("base64");
-    const dekWrappedIv = crypto.randomBytes(12).toString("base64");
-    const dekWrappedTag = crypto.randomBytes(16).toString("base64");
-
-    await wipeUserDataAndRewrap(testUserId, newPasswordHash, {
-      kekSalt,
-      dekWrapped,
-      dekWrappedIv,
-      dekWrappedTag,
-    });
-
-    // Verify PRF wrap is NULLed
-    passkeys = await db
-      .select()
-      .from(pgSchema.userPasskeys)
-      .where(eq(pgSchema.userPasskeys.userId, testUserId));
-    expect(passkeys.every((p) => p.dekWrappedPrf === null)).toBe(true);
-  });
-
-  it("NULLs dek_wrapped on unused recovery codes on wipe", async () => {
-    const codes = generateRecoveryCodes(2);
-    const codeHashes = codes.map((c) => hashRecoveryCode(c.canonical));
-    const dekWrappeds = codes.map(() => "test-wrapped-dek");
-
-    // Insert recovery codes
-    await replaceRecoveryCodes(
-      testUserId,
-      codeHashes.map((hash, i) => ({
-        hash,
-        dekWrapped: dekWrappeds[i],
-      }))
-    );
-
-    // Verify codes are present with dek_wrapped
-    const codes_before = await db
-      .select()
-      .from(pgSchema.userRecoveryCodes)
-      .where(and(eq(pgSchema.userRecoveryCodes.userId, testUserId), isNull(pgSchema.userRecoveryCodes.usedAt)));
-    expect(codes_before.length).toBe(2);
-    expect(codes_before.every((c) => c.dekWrapped !== null)).toBe(true);
-
-    // Wipe user
-    const newPasswordHash = crypto.randomBytes(32).toString("hex");
-    const kekSalt = crypto.randomBytes(16).toString("base64");
-    const dekWrapped = crypto.randomBytes(48).toString("base64");
-    const dekWrappedIv = crypto.randomBytes(12).toString("base64");
-    const dekWrappedTag = crypto.randomBytes(16).toString("base64");
-
-    await wipeUserDataAndRewrap(testUserId, newPasswordHash, {
-      kekSalt,
-      dekWrapped,
-      dekWrappedIv,
-      dekWrappedTag,
-    });
-
-    // Verify dek_wrapped is NULLed for unused codes
-    const codes_after = await db
-      .select()
-      .from(pgSchema.userRecoveryCodes)
-      .where(and(eq(pgSchema.userRecoveryCodes.userId, testUserId), isNull(pgSchema.userRecoveryCodes.usedAt)));
-    expect(codes_after.length).toBe(2);
-    expect(codes_after.every((c) => c.dekWrapped === null)).toBe(true);
+  it("cutoff roundtrip + revokeExcept scoped", async () => {
+    const d = new Date(); const t = d.toISOString(); await setSessionNotBefore(uid, d);
+    expect((await getSessionNotBefore(uid))?.getTime()).toBe(d.getTime());
+    const mkd = async (u: string) => { const id = crypto.randomUUID(); await db.insert(s.userDevices).values({ id, userId: u, secretHash: crypto.randomUUID(), dekWrapped: "w", createdAt: t, expiresAt: t } as any); return id; };
+    const a = await mkd(uid), b = await mkd(uid), o = await mkd(other);
+    await revokeAllDevicesExcept(uid, a);
+    const g = async (id: string) => (await db.select().from(s.userDevices).where(eq(s.userDevices.id, id)))[0].revokedAt;
+    expect(await g(a)).toBeNull(); expect(await g(b)).not.toBeNull(); expect(await g(o)).toBeNull();
   });
 });

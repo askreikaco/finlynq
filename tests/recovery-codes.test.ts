@@ -7,6 +7,7 @@ import {
   unwrapDEKWithRecoveryCode,
 } from "@/lib/auth/recovery-codes";
 import crypto from "crypto";
+import { readFileSync } from "fs";
 
 describe("Recovery Codes (B1)", () => {
   let testDek: Buffer;
@@ -34,6 +35,19 @@ describe("Recovery Codes (B1)", () => {
       const canonicals = codes.map((c) => c.canonical);
       const unique = new Set(canonicals);
       expect(unique.size).toBe(1000);
+    });
+
+    it("uses every injected RNG bit (100 bits, base32)", () => {
+      expect(generateRecoveryCodes(1, (n) => Buffer.alloc(n, 0xff))[0].canonical).toBe("pfrc1:" + "7".repeat(20));
+      expect(generateRecoveryCodes(1, (n) => Buffer.alloc(n, 0))[0].canonical).toBe("pfrc1:" + "A".repeat(20));
+      // flip a single bit at position 99 (last of the 100 used bits): code must change
+      const base = Buffer.alloc(16, 0);
+      const flipped = Buffer.from(base); flipped[12] ^= 0x10;
+      expect(generateRecoveryCodes(1, () => base)[0].canonical).not.toBe(generateRecoveryCodes(1, () => flipped)[0].canonical);
+    });
+
+    it("source never uses Math.random", () => {
+      expect(readFileSync("src/lib/auth/recovery-codes.ts", "utf8")).not.toMatch(/Math\.random/);
     });
 
     it("rejects invalid count", () => {

@@ -88,7 +88,10 @@ export function unwrapDEKWithRecoveryCode(wrapped: string, canonicalCode: string
  * Returns: [{ canonical: "pfrc1:...", display: "XXXXX-XXXXX-XXXXX-XXXXX" }, ...]
  * Each code is 100 bits of randomness, formatted as 20 base32 chars.
  */
-export function generateRecoveryCodes(count = 10): Array<{ canonical: string; display: string }> {
+export function generateRecoveryCodes(
+  count = 10,
+  rng: (n: number) => Buffer = crypto.randomBytes,
+): Array<{ canonical: string; display: string }> {
   const codes: Array<{ canonical: string; display: string }> = [];
   const used = new Set<string>();
 
@@ -98,7 +101,7 @@ export function generateRecoveryCodes(count = 10): Array<{ canonical: string; di
     // Rejection sampling for uniqueness (plan: 1000)
     do {
       // 100 bits = 12.5 bytes; we generate 16 for safety margin
-      const bytes = crypto.randomBytes(16);
+      const bytes = rng(16);
       // Encode first 100 bits as base32
       let bits = "";
       for (let j = 0; j < 100; j++) {
