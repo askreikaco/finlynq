@@ -18,7 +18,6 @@ import {
   Upload,
   Settings,
   CreditCard,
-  CalendarDays,
   FlameKindling,
   GitBranch,
   MessageSquare,
@@ -65,8 +64,9 @@ const navGroups: { label: string; items: NavItem[] }[] = [
       { href: "/transactions", label: "Transactions", icon: ArrowLeftRight, color: ACTIVE_ACCENT, mode: "prod" },
       { href: "/budgets", label: "Budgets", icon: PiggyBank, color: ACTIVE_ACCENT, mode: "prod" },
       { href: "/goals", label: "Goals", icon: Target, color: ACTIVE_ACCENT, mode: "prod" },
-      { href: "/subscriptions", label: "Subscriptions", icon: CreditCard, color: ACTIVE_ACCENT, mode: "dev" },
-      { href: "/calendar", label: "Calendar", icon: CalendarDays, color: ACTIVE_ACCENT, mode: "dev" },
+      // Subscriptions + Bill Calendar merged (2026-10): the calendar is a view
+      // of this page (/calendar redirects to ?view=calendar). Out of dev mode.
+      { href: "/subscriptions", label: "Subscriptions", icon: CreditCard, color: ACTIVE_ACCENT, mode: "prod" },
     ],
   },
   {

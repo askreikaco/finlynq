@@ -45,8 +45,16 @@ import { resolveReportingCurrency } from "../reporting-currency";
 import { getRate } from "../../src/lib/fx-service";
 import { tagAmount } from "../currency-tagging";
 import { registerManageTool } from "./_consolidate";
+import { monthlyEquivalent, normalizeFrequency } from "../../src/lib/subscriptions/schedule";
+import { advanceStaleSubscriptionDatesSafe } from "../../src/lib/subscriptions/advance-next-dates";
 
 type ToolResult = { content: Array<{ type: "text"; text: string }> };
+
+// Billing cadences. "biweekly" + "semiannual" added with the merged
+// Subscriptions page (2026-10); "yearly" stays accepted for older callers and is
+// stored as its canonical "annual" (lib/subscriptions/schedule.ts).
+const cadenceEnum = z.enum(["weekly", "biweekly", "monthly", "quarterly", "semiannual", "annual", "yearly"]);
+type SubscriptionCadence = z.infer<typeof cadenceEnum>;
 
 export function registerSubscriptionsTools(server: McpServer, ctx: PgToolContext) {
   const { db, userId, dek, encNote, decNote } = ctx;
@@ -82,6 +90,8 @@ export function registerSubscriptionsTools(server: McpServer, ctx: PgToolContext
   // ── op: list — lifted VERBATIM from list_subscriptions ─────────────────────
   async function opList(args: { status?: "active" | "paused" | "cancelled" | "all" }): Promise<ToolResult> {
       const { status } = args;
+      // Roll passed next-payment dates forward (lib/subscriptions/advance-next-dates.ts).
+      await advanceStaleSubscriptionDatesSafe(db, userId);
       // Stream D Phase 4: s.name + c.name + a.name dropped — read *_ct only.
       const raw = await q(db, sql`
         SELECT s.id, s.name_ct, s.amount, s.currency, s.frequency, s.next_date, s.status,
@@ -121,7 +131,7 @@ export function registerSubscriptionsTools(server: McpServer, ctx: PgToolContext
   async function opAddSingle(args: {
     name: string;
     amount: number;
-    cadence: "weekly" | "monthly" | "quarterly" | "annual" | "yearly";
+    cadence: SubscriptionCadence;
     next_billing_date: string;
     currency?: string;
     category?: string;
@@ -170,7 +180,7 @@ export function registerSubscriptionsTools(server: McpServer, ctx: PgToolContext
       // Stream D Phase 4 — plaintext name dropped.
       const result = await q(db, sql`
         INSERT INTO subscriptions (user_id, amount, currency, frequency, category_id, account_id, next_date, status, notes, name_ct, name_lookup)
-        VALUES (${userId}, ${amount}, ${resolvedCurrency}, ${cadence}, ${categoryId}, ${accountId}, ${next_billing_date}, 'active', ${notes != null ? encNote(notes) : null}, ${n.ct}, ${n.lookup})
+        VALUES (${userId}, ${amount}, ${resolvedCurrency}, ${normalizeFrequency(cadence) ?? "monthly"}, ${categoryId}, ${accountId}, ${next_billing_date}, 'active', ${notes != null ? encNote(notes) : null}, ${n.ct}, ${n.lookup})
         RETURNING id
       `);
       return text({ success: true, data: { id: Number(result[0]?.id), message: `Subscription "${name}" created — ${resolvedCurrency} ${amount} ${cadence}, next ${next_billing_date}` } });
@@ -181,7 +191,7 @@ export function registerSubscriptionsTools(server: McpServer, ctx: PgToolContext
     id: number;
     name?: string;
     amount?: number;
-    cadence?: "weekly" | "monthly" | "quarterly" | "annual" | "yearly";
+    cadence?: SubscriptionCadence;
     next_billing_date?: string;
     currency?: string;
     category?: string;
@@ -246,7 +256,7 @@ export function registerSubscriptionsTools(server: McpServer, ctx: PgToolContext
         updates.push(sql`name_ct = ${n.ct}`, sql`name_lookup = ${n.lookup}`);
       }
       if (amount !== undefined) updates.push(sql`amount = ${amount}`);
-      if (cadence !== undefined) updates.push(sql`frequency = ${cadence}`);
+      if (cadence !== undefined) updates.push(sql`frequency = ${normalizeFrequency(cadence) ?? "monthly"}`);
       if (next_billing_date !== undefined) updates.push(sql`next_date = ${next_billing_date}`);
       if (currency !== undefined) updates.push(sql`currency = ${currency}`);
       if (categoryIdUpdate !== undefined) updates.push(sql`category_id = ${categoryIdUpdate}`);
@@ -290,6 +300,7 @@ export function registerSubscriptionsTools(server: McpServer, ctx: PgToolContext
   // ── opSummary — lifted VERBATIM from get_subscription_summary (was reads.ts) ─
   async function opSummary(args: { reportingCurrency?: string }): Promise<ToolResult> {
       const { reportingCurrency } = args;
+      await advanceStaleSubscriptionDatesSafe(db, userId);
       const rawSubs = await q(db, sql`
         SELECT s.id, s.name_ct, s.amount, s.currency, s.frequency, s.next_date, s.status,
                c.name_ct AS category_name_ct
@@ -314,7 +325,6 @@ export function registerSubscriptionsTools(server: McpServer, ctx: PgToolContext
       }));
 
       const active = subs.filter(s => s.status === "active");
-      const freqMult: Record<string, number> = { weekly: 4.33, monthly: 1, quarterly: 1/3, annual: 1/12, yearly: 1/12 };
 
       const reporting = await resolveReportingCurrency(db, userId, reportingCurrency);
       const today = new Date().toISOString().split("T")[0];
@@ -336,7 +346,7 @@ export function registerSubscriptionsTools(server: McpServer, ctx: PgToolContext
       for (const s of active) {
         const ccy = String(s.currency ?? reporting);
         const fx = fxByCcy.get(ccy) ?? 1;
-        totalMonthlyCostReporting += Number(s.amount) * fx * (freqMult[s.frequency] ?? 1);
+        totalMonthlyCostReporting += monthlyEquivalent(Number(s.amount) * fx, String(s.frequency ?? ""));
       }
 
       const thirtyDays = new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0];
@@ -579,7 +589,7 @@ export function registerSubscriptionsTools(server: McpServer, ctx: PgToolContext
         // Single-add fields (used when `items` is omitted):
         name: z.string().optional().describe("Subscription name (unique per user). For a single add."),
         amount: z.number().positive().optional().describe("Amount per billing cycle (must be > 0). For a single add."),
-        cadence: z.enum(["weekly", "monthly", "quarterly", "annual", "yearly"]).optional().describe("Billing frequency. For a single add."),
+        cadence: cadenceEnum.optional().describe("Billing frequency. For a single add."),
         next_billing_date: ymdDate.optional().describe("Next billing date (YYYY-MM-DD). For a single add."),
         currency: supportedCurrencyEnum.optional().describe("ISO 4217 currency code (defaults to your display currency). Issue #206: full SUPPORTED_CURRENCIES list."),
         category: z.string().optional().describe("Category name (fuzzy matched — mistyped/unmatched is REFUSED, never silently unlinked). Single add."),
@@ -602,7 +612,7 @@ export function registerSubscriptionsTools(server: McpServer, ctx: PgToolContext
         id: z.number().describe("Subscription id"),
         name: z.string().optional(),
         amount: z.number().positive().optional().describe("Amount per billing cycle (must be > 0)"),
-        cadence: z.enum(["weekly", "monthly", "quarterly", "annual", "yearly"]).optional(),
+        cadence: cadenceEnum.optional(),
         next_billing_date: ymdDate.optional().describe("YYYY-MM-DD"),
         currency: supportedCurrencyEnum.optional().describe("ISO 4217 currency code (issue #206: full SUPPORTED_CURRENCIES list)."),
         category: z.string().optional().describe("Category name (fuzzy — mistyped/unmatched is REFUSED). Empty string clears."),

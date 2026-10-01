@@ -1,23 +1,32 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { db, schema } from "@/db";
 import { eq, and, sql } from "drizzle-orm";
-import { detectRecurringTransactions, forecastCashFlow } from "@/lib/recurring-detector";
+import { detectRecurringTransactions } from "@/lib/recurring-detector";
 import { requireAuth } from "@/lib/auth/require-auth";
 import { tryDecryptField } from "@/lib/crypto/envelope";
-import { requireDevMode } from "@/lib/require-dev-mode";
 import { getDisplayCurrency, getRateMap, convertWithRateMap } from "@/lib/fx-service";
+import { monthlyEquivalent } from "@/lib/subscriptions/schedule";
+import { todayISO } from "@/lib/utils/date";
+import { round2 } from "@/lib/utils/number";
 
+// 25 months, so a semi-annual or annual series can show its 3 occurrences
+// (the detector's minimum) — 12 months could never detect anything yearly.
+const LOOKBACK_MONTHS = 25;
+
+// Not dev-mode gated: this feeds the Subscriptions page's calendar view and
+// "detected from your transactions" suggestions, on web and mobile.
 export async function GET(request: NextRequest) {
   const auth = await requireAuth(request);
   if (!auth.authenticated) return auth.response;
-  const devGuard = await requireDevMode(request);
-  if (devGuard) return devGuard;
   const { userId, dek } = auth.context;
-  // Fetch last 12 months of transactions with payees
+  const today = todayISO();
   const cutoff = new Date();
-  cutoff.setFullYear(cutoff.getFullYear() - 1);
+  cutoff.setMonth(cutoff.getMonth() - LOOKBACK_MONTHS);
   const cutoffStr = cutoff.toISOString().split("T")[0];
 
+  // Transfer, trade and swap legs are excluded: a monthly "transfer to
+  // savings" recurs, but it is neither a bill nor income, and suggesting it as
+  // a subscription is noise. Dividends (holding-linked, no pair id) stay.
   const txns = await db
     .select({
       id: schema.transactions.id,
@@ -31,20 +40,22 @@ export async function GET(request: NextRequest) {
     .from(schema.transactions)
     .where(and(
       eq(schema.transactions.userId, userId),
-      sql`${schema.transactions.date} >= ${cutoffStr} AND ${schema.transactions.payee} != ''`
+      sql`${schema.transactions.date} >= ${cutoffStr} AND ${schema.transactions.payee} != ''`,
+      sql`${schema.transactions.linkId} IS NULL AND ${schema.transactions.tradeLinkId} IS NULL AND ${schema.transactions.swapLinkId} IS NULL`,
     ))
     .all();
 
-  // Decrypt payees before grouping â€” detector groups by normalized payee, so
-  // we must give it plaintext (ciphertext has a random IV per row). If no
-  // DEK is available the passthrough keeps legacy plaintext rows working.
+  // Decrypt payees before grouping — the detector groups by normalized payee,
+  // so it needs plaintext (ciphertext has a random IV per row). With no DEK the
+  // passthrough leaves ciphertext, which never groups, so nothing is detected.
   const detected = detectRecurringTransactions(
     txns.map((t) => ({
       ...t,
       payee: (dek ? tryDecryptField(dek, t.payee, "transactions.payee") : t.payee) ?? "",
       accountId: t.accountId ?? 0,
       categoryId: t.categoryId,
-    }))
+    })),
+    { asOf: today },
   );
 
   // FINLYNQ-123 — the monthly recurring total is a forward-looking
@@ -59,16 +70,7 @@ export async function GET(request: NextRequest) {
   // Monthly total of recurring expenses
   const monthlyRecurring = detected
     .filter((r) => r.avgAmount < 0)
-    .reduce((sum, r) => {
-      const monthly = toDisplay(r.avgAmount, r.currency);
-      switch (r.frequency) {
-        case "weekly": return sum + monthly * 4.33;
-        case "biweekly": return sum + monthly * 2.17;
-        case "monthly": return sum + monthly;
-        case "yearly": return sum + monthly / 12;
-        default: return sum;
-      }
-    }, 0);
+    .reduce((sum, r) => sum + monthlyEquivalent(toDisplay(r.avgAmount, r.currency), r.frequency), 0);
 
   return NextResponse.json({
     recurring: detected.map((r) => ({
@@ -84,7 +86,7 @@ export async function GET(request: NextRequest) {
       categoryId: r.categoryId,
     })),
     displayCurrency,
-    monthlyRecurringTotal: Math.round(Math.abs(monthlyRecurring) * 100) / 100,
+    monthlyRecurringTotal: round2(Math.abs(monthlyRecurring)),
     count: detected.length,
   });
 }
