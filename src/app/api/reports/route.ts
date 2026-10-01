@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
 
     // Aggregate across currencies per category â€” keyed on categoryId so
     // rows with NULL plaintext (Phase-3 cutover) don't collide.
-    const categoryTotals = new Map<string | number, { categoryType: string; categoryGroup: string; categoryName: string; total: number; count: number }>();
+    const categoryTotals = new Map<string | number, { categoryId: number | null; categoryType: string; categoryGroup: string; categoryName: string; total: number; count: number }>();
     for (const row of rows) {
       const catType = row.categoryType ?? "";
       const catGroup = row.categoryGroup ?? "";
@@ -103,6 +103,8 @@ export async function GET(request: NextRequest) {
         existing.count += Number(row.count);
       } else {
         categoryTotals.set(key, {
+          // Lets clients drill into the category (web/mobile category view).
+          categoryId: row.categoryId ?? null,
           categoryType: catType,
           categoryGroup: catGroup,
           categoryName: catName,
