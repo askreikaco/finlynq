@@ -8,8 +8,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifySessionTokenDetailed } from "../jwt";
 import { getDEK } from "@/lib/crypto/dek-cache";
-import { isSessionRevokedByCutoff } from "../session-cutoff";
-import { getSessionNotBefore } from "../queries";
 import type { AuthStrategy, AuthResult } from "../strategy";
 
 const AUTH_COOKIE = "pf_session";
@@ -94,26 +92,6 @@ export class AccountStrategy implements AuthStrategy {
           ),
         };
       }
-    }
-
-    // Session cutoff (Q4): reject if token iat <= floor(session_not_before/1000).
-    // Cache the per-user cutoff for 30s to keep the auth hot path snappy.
-    // Fail-open on DB error (return same 401 as a revoked token).
-    try {
-      const cutoff = await getSessionNotBefore(payload.sub);
-      const iatSeconds = payload.iat as number | undefined;
-      if (isSessionRevokedByCutoff(iatSeconds, cutoff)) {
-        return {
-          authenticated: false,
-          response: NextResponse.json(
-            { error: "Invalid or expired session. Please log in again." },
-            { status: 401 }
-          ),
-        };
-      }
-    } catch {
-      // Fail-open on DB error: allow the request to proceed
-      // (same behavior as isJtiRevoked cache miss)
     }
 
     // DEK lives in the in-memory cache, populated on login. A cache miss here

@@ -6,6 +6,12 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
+
+// Cutoff lookup hits the DB (fail-closed); these suites have no DB, so pin "no cutoff".
+vi.mock("@/lib/auth/session-cutoff", async (orig) => ({
+  ...(await orig<typeof import("@/lib/auth/session-cutoff")>()),
+  getSessionCutoffCached: async () => null,
+}));
 import { NextRequest } from "next/server";
 
 process.env.PF_JWT_SECRET = "test-jwt-secret-for-vitest-32chars!!";

@@ -13,6 +13,7 @@ import { eq, count, sql, inArray, and, isNull, or } from "drizzle-orm";
 import { normalizeDbRows } from "@/lib/db-utils";
 import type { TableColFilter } from "@/lib/table-filters";
 import crypto from "crypto";
+import { bustSessionCutoff } from "./session-cutoff";
 
 /** Returns the PostgreSQL schema tables */
 function getSchema(): typeof pgSchema {
@@ -679,6 +680,41 @@ export async function countUnusedRecoveryCodes(userId: string): Promise<number> 
 export async function setSessionNotBefore(userId: string, cutoff: Date) {
   const s = getSchema();
   await db.update(s.users).set({ sessionNotBefore: cutoff }).where(eq(s.users.id, userId));
+  bustSessionCutoff(userId);
+}
+
+/**
+ * Recovery commit point: new password wrap (SAME DEK), session cutoff, and
+ * burn of outstanding email-reset tokens in ONE transaction. Either all land
+ * or none do.
+ */
+export async function applyRecoveryRewrapTx(
+  userId: string,
+  passwordHash: string,
+  wrap: { kekSalt: string; dekWrapped: string; dekWrappedIv: string; dekWrappedTag: string },
+  cutoff: Date
+) {
+  const s = getSchema();
+  const now = new Date().toISOString();
+  await db.transaction(async (tx) => {
+    await tx
+      .update(s.users)
+      .set({
+        passwordHash,
+        kekSalt: wrap.kekSalt,
+        dekWrapped: wrap.dekWrapped,
+        dekWrappedIv: wrap.dekWrappedIv,
+        dekWrappedTag: wrap.dekWrappedTag,
+        sessionNotBefore: cutoff,
+        updatedAt: now,
+      })
+      .where(eq(s.users.id, userId));
+    await tx
+      .update(s.passwordResetTokens)
+      .set({ usedAt: now })
+      .where(and(eq(s.passwordResetTokens.userId, userId), isNull(s.passwordResetTokens.usedAt)));
+  });
+  bustSessionCutoff(userId);
 }
 
 export async function getSessionNotBefore(userId: string): Promise<Date | null> {

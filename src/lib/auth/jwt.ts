@@ -125,12 +125,6 @@ export interface CreateSessionTokenOptions {
    * /api/auth/mfa/verify.
    */
   pending?: boolean;
-  /**
-   * Override the issued-at (iat) claim. Used by finalizeRecoveryReset to ensure
-   * the new session is not rejected by its own session_not_before cutoff.
-   * In seconds (Unix timestamp), must be >= now - SESSION_TTL_MS.
-   */
-  iat?: number;
 }
 
 /**
@@ -162,16 +156,9 @@ export async function createSessionToken(
     .setSubject(userId)
     .setJti(jti)
     .setIssuer(ISSUER)
-    .setAudience(AUDIENCE);
-
-  // Use custom iat if provided (for recovery reset), otherwise set to now
-  if (typeof options.iat === "number") {
-    builder.setIssuedAt(options.iat);
-  } else {
-    builder.setIssuedAt();
-  }
-
-  builder.setExpirationTime(options.expirationTime ?? EXPIRATION);
+    .setAudience(AUDIENCE)
+    .setIssuedAt()
+    .setExpirationTime(options.expirationTime ?? EXPIRATION);
   const token = await builder.sign(getSecret());
   return { token, jti };
 }
@@ -324,6 +311,19 @@ export async function verifySessionTokenDetailed(
     // (pending tokens are reusable). The DB lookup is cached in-process.
     if (session.jti && (await isJtiRevoked(session.jti))) {
       return { payload: null, reason: "revoked" };
+    }
+    // Per-user session cutoff (users.session_not_before, set by recovery /
+    // admin force-logout). Applies to EVERY session-token consumer because
+    // they all funnel through this function. FAIL CLOSED: if the cutoff
+    // cannot be read the token is treated as invalid (normal re-login path).
+    try {
+      const { getSessionCutoffCached, isSessionRevokedByCutoff } = await import("./session-cutoff");
+      const cutoff = await getSessionCutoffCached(session.sub);
+      if (isSessionRevokedByCutoff(session.iat, cutoff)) {
+        return { payload: null, reason: "revoked" };
+      }
+    } catch {
+      return { payload: null, reason: "invalid-token" };
     }
     return { payload: session };
   } catch {

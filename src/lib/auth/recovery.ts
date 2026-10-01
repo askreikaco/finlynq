@@ -1,188 +1,130 @@
 /**
  * Account recovery: finalizeRecoveryReset
  *
- * No-wipe recovery flow (recovers account with data intact, unlike password-reset wipe).
- * Called by recovery code/device/passkey routes after proving the method and passing 2FA.
+ * No-wipe recovery (data intact). Called by recovery code/device/passkey
+ * routes AFTER the method proof and 2FA gate (plan 1.3/1.4).
  *
- * B2 scope:
- * 1. Rewrap DEK under new password (pattern from change-password).
- * 2. Set session_not_before cutoff and evict sessions.
- * 3. Revoke all devices except the one being trusted (if recovery was device-based).
- * 4. Issue a fresh session with explicit iat matching the cutoff.
- * 5. Log security event and send passwordChangedEmail.
- *
- * Transaction safety: steps 1-4 are in a DB tx. Steps 5+ are fire-and-forget after commit.
- * If failure occurs before tx commit, nothing changes. After commit, steps 5+ are idempotent.
+ * Order:
+ *   1. validate password; derive new KEK; wrap the SAME DEK
+ *   2. TX (applyRecoveryRewrapTx): password+wrap, session_not_before=cutoff,
+ *      burn pending email-reset tokens. Failure -> nothing changed.
+ *   3. evict DEK cache + MCP tx cache (cutoff cache busted inside the query)
+ *   4. revokeAllDevicesExcept(keepDeviceId)   (throws -> caller sees failure)
+ *   5. wait until the wall clock is past the cutoff second, then mint the
+ *      replacement session with a natural iat/exp (no forged timestamps)
+ *   6. put DEK for the new session; issue/rotate trusted device
+ *   7. fire-and-forget: security event + passwordChanged email
  */
 
 import { deriveKEK, wrapDEK, generateSalt } from "@/lib/crypto/envelope";
 import { evictAllForUser, putDEK } from "@/lib/crypto/dek-cache";
-import { updateUserPasswordAndWrap, setSessionNotBefore, revokeAllDevicesExcept, getUserById } from "./queries";
+import { invalidateUser } from "@/lib/mcp/user-tx-cache";
+import { applyRecoveryRewrapTx, revokeAllDevicesExcept, getUserById } from "./queries";
 import { createSessionToken, SESSION_TTL_MS } from "./jwt";
-import { replacementIat } from "./session-cutoff";
+import { waitUntilAfterCutoff } from "./session-cutoff";
 import { issueDevice } from "./trusted-device";
 import { logSecurityEvent } from "./security-events";
-import { sendEmail } from "@/lib/email";
-import { escapeHtml } from "@/lib/email";
+import { sendEmail, passwordChangedEmail } from "@/lib/email";
 import { hashPassword } from "@/lib/auth";
 import { validatePasswordStrength } from "./password-policy";
 
 export interface FinalizeRecoveryResetOptions {
-  /** The user ID being recovered */
   userId: string;
   /** New password (must pass validatePasswordStrength) */
   newPassword: string;
-  /** Unwrapped DEK (the user proved they could unwrap it via recovery method) */
+  /** DEK the user proved they can unwrap via the recovery method (32 bytes) */
   dek: Buffer;
-  /** User's current password hash (for verification if needed) */
-  currentPasswordHash: string;
-  /** Optional device ID to keep (if recovery was device-based); others are revoked */
+  /** Device being used for recovery (device method): all other devices are revoked, this one is rotated */
   keepDeviceId?: string;
-  /** User-Agent for device labeling (optional) */
+  /** false = "shared computer": issue no pf_device (default true) */
+  trustDevice?: boolean;
   userAgent?: string;
-  /** IP address for security event logging (optional) */
   ip?: string;
-  /** Recovery method for audit trail (optional) */
   method?: "code" | "device" | "passkey";
 }
 
-/**
- * Finalize account recovery: re-wrap DEK, set cutoff, revoke devices, issue fresh session.
- * Returns { token, jti, sessionId, deviceId?, maxAgeSeconds? } or throws.
- *
- * Security semantics:
- * - The replacement session's iat is set to floor(cutoff_s) + 1, so it is not rejected
- *   by its own cutoff (tokens minted at the same second as the cutoff are killed).
- * - All pre-recovery sessions are killed (iat < cutoff).
- * - The trusted device (if any) is rotated with a new secret.
- * - DEK is evicted from cache and re-fetched on next request.
- *
- * Database transaction safety:
- * - All data changes happen in a single tx (password wrap, cutoff, device revocation).
- * - Email and event logging are fire-and-forget after the tx commits.
- * - If tx fails, nothing changes. If email/event fails, recovery is not rolled back.
- */
-export async function finalizeRecoveryReset(
-  options: FinalizeRecoveryResetOptions
-): Promise<{
+export interface FinalizeRecoveryResetResult {
   token: string;
   jti: string;
   sessionId: string;
+  /** New trusted device (cookie value `<id>.<secret>`), absent when disabled / shared computer */
   deviceId?: string;
+  deviceCookieValue?: string;
   maxAgeSeconds?: number;
-}> {
-  const { userId, newPassword, dek, keepDeviceId, userAgent, ip, method } = options;
+}
 
-  // Validate new password strength
+export async function finalizeRecoveryReset(
+  options: FinalizeRecoveryResetOptions
+): Promise<FinalizeRecoveryResetResult> {
+  const { userId, newPassword, keepDeviceId, userAgent, ip, method } = options;
+  if (!Buffer.isBuffer(options.dek) || options.dek.length !== 32) {
+    throw new Error("Invalid DEK");
+  }
+  // Private copy: evictAllForUser zeroes cached buffers in place, and the
+  // caller's buffer may be one of them.
+  const dek = Buffer.from(options.dek);
+
   const pwErr = validatePasswordStrength(newPassword);
-  if (pwErr) {
-    throw new Error(`Password validation failed: ${pwErr}`);
-  }
+  if (pwErr) throw new Error(`Password validation failed: ${pwErr}`);
 
-  // Fetch user for envelope details and email
   const user = await getUserById(userId);
-  if (!user) {
-    throw new Error("User not found");
-  }
-
-  // Prepare password rewrap (same pattern as change-password)
-  const pepperVersion = user.pepperVersion ?? 1;
-  const newHash = await hashPassword(newPassword);
-
-  let wrap: {
-    kekSalt: string;
-    dekWrapped: string;
-    dekWrappedIv: string;
-    dekWrappedTag: string;
-  };
-
-  if (user.kekSalt && user.dekWrapped && user.dekWrappedIv && user.dekWrappedTag) {
-    // Envelope exists; re-wrap the same DEK under the new password
-    const newSalt = generateSalt();
-    const newKek = deriveKEK(newPassword, newSalt, pepperVersion);
-    const w = wrapDEK(newKek, dek, newSalt);
-    wrap = {
-      kekSalt: w.salt.toString("base64"),
-      dekWrapped: w.wrapped.toString("base64"),
-      dekWrappedIv: w.iv.toString("base64"),
-      dekWrappedTag: w.tag.toString("base64"),
-    };
-  } else {
-    // No envelope (shouldn't happen in recovery context, but handle it)
+  if (!user) throw new Error("User not found");
+  if (!(user.kekSalt && user.dekWrapped && user.dekWrappedIv && user.dekWrappedTag)) {
     throw new Error("User has no encrypted envelope");
   }
 
-  // Set the cutoff to now. The recovery session will have iat = floor(cutoff_s) + 1.
+  const pepperVersion = user.pepperVersion ?? 1;
+  const newHash = await hashPassword(newPassword);
+  const newSalt = generateSalt();
+  const newKek = deriveKEK(newPassword, newSalt, pepperVersion);
+  const w = wrapDEK(newKek, dek, newSalt);
+  const wrap = {
+    kekSalt: w.salt.toString("base64"),
+    dekWrapped: w.wrapped.toString("base64"),
+    dekWrappedIv: w.iv.toString("base64"),
+    dekWrappedTag: w.tag.toString("base64"),
+  };
+
   const cutoff = new Date();
-  const newIat = replacementIat(cutoff);
+  await applyRecoveryRewrapTx(userId, newHash, wrap, cutoff);
 
-  // Step 1: Update password and wrap in a transaction
-  await updateUserPasswordAndWrap(userId, newHash, wrap);
-
-  // Step 2: Set session_not_before cutoff (before issuing new session so old ones die)
-  await setSessionNotBefore(userId, cutoff);
-
-  // Step 3: Evict DEK cache and revoke sessions for this user
   evictAllForUser(userId);
+  invalidateUser(userId);
 
-  // Step 4: Revoke all devices except the keep device
   await revokeAllDevicesExcept(userId, keepDeviceId);
 
-  // Step 5: Issue a fresh session token with explicit iat
-  const { token, jti } = await createSessionToken(userId, true, { iat: newIat });
-  const sessionId = jti;
+  // Mint strictly after the cutoff second so the replacement session survives
+  // its own cutoff while same-second pre-reset tokens stay dead.
+  await waitUntilAfterCutoff(cutoff);
+  const { token, jti } = await createSessionToken(userId, true);
+  putDEK(jti, dek, SESSION_TTL_MS, userId);
 
-  // Step 6: Cache the DEK for this new session
-  putDEK(sessionId, dek, SESSION_TTL_MS, userId);
-
-  // Step 7: Issue or rotate the trusted device (if keepDeviceId provided)
   let deviceId: string | undefined;
+  let deviceCookieValue: string | undefined;
   let maxAgeSeconds: number | undefined;
-  if (keepDeviceId) {
-    // Rotate the kept device with a new secret
-    const rotated = await issueDevice(userId, dek, userAgent, keepDeviceId);
-    if (rotated) {
-      deviceId = rotated.id;
-      maxAgeSeconds = rotated.maxAgeSeconds;
-    }
-  } else {
-    // Issue a new device for this recovery session
-    const issued = await issueDevice(userId, dek, userAgent);
+  if (options.trustDevice !== false) {
+    // issueDevice(replaceDeviceId) revokes the kept device and issues a fresh
+    // secret: the old pf_device cookie dies, the new one is returned.
+    const issued = await issueDevice(userId, dek, userAgent, keepDeviceId);
     if (issued) {
       deviceId = issued.id;
+      deviceCookieValue = issued.cookieValue;
       maxAgeSeconds = issued.maxAgeSeconds;
     }
   }
 
-  // Step 8: Fire-and-forget: log security event
-  logSecurityEvent(userId, "recovery_reset_success", {
-    method,
-    ip,
-  }).catch(() => {
-    // Swallow error; recovery is already complete
-  });
+  logSecurityEvent(userId, "recovery_reset_success", { method, ip, userAgent }).catch(() => {});
 
-  // Step 9: Fire-and-forget: send password-changed email if user has email
   if (user.email) {
-    const displayName = (user.displayName || user.username || "User").toString();
-    sendEmail({
-      to: user.email,
-      subject: "Your Finlynq password was changed",
-      html: `
-        <p>Hello ${escapeHtml(displayName)},</p>
-        <p>Your Finlynq account password was recently changed.</p>
-        <p>If you didn't make this change, or if you're not sure why, please contact us immediately.</p>
-        <p>
-          <a href="${process.env.APP_URL || "https://money.reika.vn"}/settings/account">
-            View your account settings
-          </a>
-        </p>
-      `,
-      text: `Your Finlynq password was changed. If this wasn't you, contact support immediately.`,
-    }).catch(() => {
-      // Swallow error; recovery is already complete
-    });
+    const displayName = (user.displayName || user.username || "").toString() || undefined;
+    void (async () => {
+      try {
+        await sendEmail(passwordChangedEmail(user.email as string, displayName));
+      } catch {
+        // recovery already complete; email failure must not surface
+      }
+    })();
   }
 
-  return { token, jti: sessionId, sessionId, deviceId, maxAgeSeconds };
+  return { token, jti, sessionId: jti, deviceId, deviceCookieValue, maxAgeSeconds };
 }

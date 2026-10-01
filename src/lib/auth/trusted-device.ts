@@ -36,6 +36,13 @@ function parseDeviceCookie(cookieValue: string): { id: string; secret: string } 
   return { id: parts[0], secret: parts[1] };
 }
 
+/** Device id from a pf_device cookie value, or undefined if absent/garbled. */
+export function parseDeviceIdFromCookie(cookieValue: string | undefined): string | undefined {
+  if (!cookieValue) return undefined;
+  const parsed = parseDeviceCookie(cookieValue);
+  return parsed?.id || undefined;
+}
+
 /**
  * Encode device ID and secret into the cookie value.
  */
@@ -187,9 +194,9 @@ export async function issueDevice(
  */
 export async function peekDevice(
   cookieValue: string,
-  userId: string
+  userId?: string
 ): Promise<
-  | { valid: true; label: string | null; needsProof: "totp" | "code" | null }
+  | { valid: true; userId: string; deviceId: string; label: string | null; needsProof: "totp" | "code" | null }
   | { valid: false }
 > {
   const days = Math.max(
@@ -203,7 +210,7 @@ export async function peekDevice(
   const parsed = parseDeviceCookie(cookieValue);
   if (!parsed) return { valid: false };
 
-  const { id } = parsed;
+  const { id, secret } = parsed;
 
   // Look up the device
   const rows = await db
@@ -215,8 +222,12 @@ export async function peekDevice(
   if (rows.length === 0) return { valid: false };
   const device = rows[0];
 
-  // Verify user match
-  if (device.userId !== userId) return { valid: false };
+  // Verify user match (when the caller already knows the user)
+  if (userId !== undefined && device.userId !== userId) return { valid: false };
+
+  // The secret must verify too: a bare device id (listable in settings) must
+  // not confirm a device exists. Read-only: never consumes, rotates or revokes.
+  if (!constantTimeEqual(device.secretHash, authLookupHash(secret))) return { valid: false };
 
   // Check expiry and revocation
   const now = new Date();
@@ -225,7 +236,7 @@ export async function peekDevice(
 
   // Device is valid; check what proof is needed
   // (B2 doesn't implement proof requirements; B3 will add that)
-  return { valid: true, label: device.label, needsProof: null };
+  return { valid: true, userId: device.userId, deviceId: device.id, label: device.label, needsProof: null };
 }
 
 /**
