@@ -33,6 +33,7 @@ import { BenchmarkChart } from "./_components/benchmark-chart";
 import { HoldingsByAccount } from "./_components/holdings-by-account";
 import { formatPercent } from "@/lib/locale";
 import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
+import { PortfolioMobileHero, MobileHoldingsList } from "./_components/mobile-portfolio";
 
 // ── Main Page ───────────────────────────────────────────────────────
 export default function PortfolioPage() {
@@ -218,6 +219,7 @@ export default function PortfolioPage() {
     .map(([name, pct]) => ({ name, pct, color: SECTOR_COLORS[name] ?? "#64748b" }));
 
   const hasEtfData = etfXray.etfCount > 0;
+  const hasPositions = (data.byHolding ?? []).some((r) => r.totalQty !== 0 || r.marketValueDisplay !== 0);
 
   return (
     <div className="space-y-6">
@@ -263,7 +265,10 @@ export default function PortfolioPage() {
       {/* Phase 3 performance chart — TWRR/MWRR + daily value series.
           Empty-state copy in the component explains how to populate
           /portfolio_snapshots via the nightly cron + admin backfill. */}
-      <PerformanceChart accountId={null} />
+      {/* Below md the empty chart (no open positions) is hidden. */}
+      <div className={cn(!hasPositions && "max-md:hidden")}>
+        <PerformanceChart accountId={null} />
+      </div>
 
       {/* Re-login prompt — surfaces when the server couldn't decrypt
           tx.portfolio_holding (cold DEK cache after a server restart).
@@ -287,8 +292,11 @@ export default function PortfolioPage() {
         </div>
       )}
 
+      {/* ── Mobile hero + metric grid (replaces the cards below md) ── */}
+      <PortfolioMobileHero summary={summary} currency={displayCurrency} />
+
       {/* ── Hero Summary Cards ────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 max-md:hidden">
         <Card className="relative overflow-hidden">
           <CardContent className="pt-5">
             <div className="flex items-start justify-between">
@@ -360,7 +368,7 @@ export default function PortfolioPage() {
 
       {/* ── Investment P&L Summary ────────────────────────────── */}
       {summary.hasQuantityData && summary.totalCostBasisDisplay > 0 && (
-        <Card>
+        <Card className="max-md:hidden">
           <CardHeader className="pb-2">
             <div className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-indigo-500" />
@@ -430,7 +438,16 @@ export default function PortfolioPage() {
         </div>
       )}
 
-      {/* ── Holdings Table ────────────────────────────────────── */}
+      {/* ── Holdings: rows below md, table at md+ ──────────────── */}
+      <MobileHoldingsList
+        holdings={filteredHoldings}
+        members={holdingsByCanonicalKey}
+        currency={displayCurrency}
+        filter={filter}
+        setFilter={setFilter}
+        counts={{ all: summary.totalHoldings, ...Object.fromEntries(Object.entries(byType).map(([k, v]) => [k, v.count])) }}
+      />
+      <div className="max-md:hidden">
       <HoldingsTable
         data={data}
         displayCurrency={displayCurrency}
@@ -449,6 +466,7 @@ export default function PortfolioPage() {
         toggleRow={toggleRow}
         setEditingHolding={setEditingHolding}
       />
+      </div>
 
       {/* ── ETF X-Ray (Combined) — dev only ──────────────────── */}
       {devMode && hasEtfData && (
@@ -489,12 +507,14 @@ export default function PortfolioPage() {
           expand region surfaces the per-account breakdown + drill-down.
           This Holdings-by-Account panel stays as-is per the same decision
           ("the per-account button row is unchanged"). */}
+      <div className="max-md:hidden">
       <HoldingsByAccount
         accountGroups={accountGroups}
         expandedAccounts={expandedAccounts}
         toggleAccount={toggleAccount}
         displayCurrency={displayCurrency}
       />
+      </div>
 
       {/* Edit / create holding dialog — wraps the shared
           <HoldingEditForm> from src/components/holdings/holding-edit-form.tsx.
