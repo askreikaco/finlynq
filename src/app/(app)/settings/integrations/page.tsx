@@ -20,17 +20,19 @@ export default function IntegrationsSettingsPage() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
+    // `connected-apps` lists OAuth grants only. An API-key-only MCP user has no
+    // grant, so they intentionally still see the guide card (owner decision).
+    // The card renders only after a SUCCESSFUL fetch (never on error).
     const checkApps = async () => {
       try {
         const res = await fetch("/api/settings/connected-apps");
         if (res.ok) {
           const data = await res.json();
           setHasApps(Array.isArray(data.apps) && data.apps.length > 0);
+          setLoaded(true);
         }
       } catch {
-        setHasApps(false);
-      } finally {
-        setLoaded(true);
+        // leave `loaded` false: no card on failure
       }
     };
     checkApps();

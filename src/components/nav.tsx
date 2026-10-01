@@ -42,7 +42,6 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { FinlynqLogo } from "@/components/FinlynqLogo";
-import { FeedbackDialog } from "@/components/feedback-dialog";
 
 type NavItem = { href: string; label: string; icon: LucideIcon; color: string; mode?: "prod" | "dev" };
 
@@ -131,13 +130,12 @@ export function Nav() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
-  const [adminOpen, setAdminOpen] = useState(false);
+  const [adminPref, setAdminPref] = useState(false);
   const [devMode, setDevMode] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [unread, setUnread] = useState(0);
   const [hasAnnouncements, setHasAnnouncements] = useState(true); // default to true to avoid hiding on initial load
   const [feedbackUnread, setFeedbackUnread] = useState(0);
-  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   const handleSignOut = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -155,7 +153,7 @@ export function Nav() {
     // Initialize admin group open state from localStorage
     try {
       const savedAdminOpen = localStorage.getItem("nav.adminOpen");
-      if (savedAdminOpen === "true") setAdminOpen(true);
+      if (savedAdminOpen === "true") setAdminPref(true);
     } catch (_e) {
       // localStorage not available, adminOpen stays false
     }
@@ -172,19 +170,17 @@ export function Nav() {
       .catch(() => {});
   }, []);
 
-  // Auto-expand admin group when on /admin path
-  useEffect(() => {
-    if (pathname.startsWith("/admin") && isAdmin) {
-      setAdminOpen(true);
-    }
-  }, [pathname, isAdmin]);
+  // Admin group is open when the user opened it, or while on an /admin page
+  // (derived, no effect: collapsing still works, and returns to the saved pref
+  // once the user leaves /admin).
+  const adminOpen = adminPref || (isAdmin && pathname.startsWith("/admin"));
 
   // Unread announcement count for the "What's New" badge. Refetched on every
   // navigation so the badge clears after the user visits /whats-new (which
   // marks items read server-side). Also tracks whether any announcements exist.
   useEffect(() => {
     fetch("/api/announcements")
-      .then((r) => (r.ok ? r.json() : []))
+      .then((r) => (r.ok ? r.json() : null))
       .then((list) => {
         if (Array.isArray(list)) {
           setHasAnnouncements(list.length > 0);
@@ -224,7 +220,7 @@ export function Nav() {
 
   const toggleAdminGroup = () => {
     const next = !adminOpen;
-    setAdminOpen(next);
+    setAdminPref(next);
     try {
       localStorage.setItem("nav.adminOpen", String(next));
     } catch (_e) {
@@ -342,6 +338,8 @@ export function Nav() {
               {!collapsed && (
                 <button
                   onClick={toggleAdminGroup}
+                  aria-expanded={adminOpen}
+                  aria-controls="nav-admin-links"
                   className="flex items-center w-full px-3 mb-1 mt-3 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/30 hover:text-sidebar-foreground/50 transition-colors"
                 >
                   <ChevronDown
@@ -357,6 +355,7 @@ export function Nav() {
                 <Link
                   href="/admin"
                   title="Admin"
+                  aria-label="Admin"
                   className={cn(
                     "group/link relative flex items-center gap-3 rounded-lg text-[13px] font-medium transition-all duration-200 px-0 py-2 justify-center",
                     pathname.startsWith("/admin")
@@ -374,7 +373,7 @@ export function Nav() {
                 </Link>
               )}
               {adminOpen && !collapsed && (
-                <div className="space-y-0.5">
+                <div id="nav-admin-links" className="space-y-0.5 max-h-[40vh] overflow-y-auto">
                   {adminLinks.filter((item) => devMode || item.mode !== "dev").map((item) => renderLink(item, !collapsed))}
                 </div>
               )}
@@ -468,7 +467,9 @@ export function Nav() {
         {isAdmin && (
           <div>
             <button
-              onClick={() => setAdminOpen(!adminOpen)}
+              onClick={toggleAdminGroup}
+              aria-expanded={adminOpen}
+              aria-controls="nav-admin-links-mobile"
               className="flex items-center w-full px-3 py-2 mb-1 mt-2 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/30 hover:text-sidebar-foreground/50 transition-colors"
             >
               <ChevronDown
@@ -480,7 +481,7 @@ export function Nav() {
               Admin
             </button>
             {adminOpen && (
-              <div className="space-y-0.5 pl-2">
+              <div id="nav-admin-links-mobile" className="space-y-0.5 pl-2">
                 {adminLinks
                   .filter((item) => devMode || item.mode !== "dev")
                   .map((item) => renderLink(item, true))}
@@ -505,7 +506,6 @@ export function Nav() {
       {sidebar}
       {mobileBar}
       {mobilePanel}
-      <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} />
     </>
   );
 }
