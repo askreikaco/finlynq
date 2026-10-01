@@ -1,19 +1,12 @@
 "use client";
 
 /**
- * /settings/reconciliation — per-user fuzzy-match threshold controls for
- * the standalone `/reconcile` page (2026-05-23).
+ * /settings/reconciliation — fuzzy-match thresholds + Rules + Import sections.
  *
- * Four knobs persist into `settings(key='reconcile_thresholds')` JSON
- * via PUT /api/settings/reconcile-thresholds. Defaults seeded from
- * `RECONCILE_DEFAULT_THRESHOLDS` in
- * `pf-app/src/lib/reconcile/match-engine.ts`. The page reads the same
- * defaults from the GET response so the visible numbers always reflect
- * what the engine is actually using.
- *
- * Explicit Save + Reset buttons (no auto-save) mirror the `/settings/rules`
- * editor pattern — users tuning thresholds are typically experimenting and
- * don't want a save-on-every-keystroke side effect.
+ * The core reconciliation fuzzy-match threshold controls persist here, along with
+ * accordion sections for Transaction Rules and Import Management. Deep-linking
+ * via /settings/rules or /settings/import renders this page with the respective
+ * section open.
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -27,8 +20,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Link2 as Link2Icon, ExternalLink } from "lucide-react";
+import { Accordion, AccordionItem } from "@/components/ui/accordion";
+import { Link2 as Link2Icon, ExternalLink, Zap, Mail } from "lucide-react";
 import { AmountInput } from "@/components/amount-input";
+import { RulesSection } from "@/components/settings/sections/rules-section";
 
 interface Thresholds {
   dateToleranceDays: number;
@@ -44,13 +39,14 @@ const DEFAULTS: Readonly<Thresholds> = {
   scoreThreshold: 0.6,
 };
 
-export default function ReconciliationSettingsPage() {
+export default function ReconciliationSettingsPage({ initialSection, queryString }: { initialSection?: string | null; queryString?: string } = {}) {
   const [thresholds, setThresholds] = useState<Thresholds>(DEFAULTS);
   const [isDefault, setIsDefault] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(true);
   const [saving, setSaving] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<number | null>(null);
+  const [tab, setTab] = useState<string | null>(initialSection ?? null);
 
   // ─── Load ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -215,6 +211,30 @@ export default function ReconciliationSettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      <Accordion value={tab} onValueChange={setTab}>
+        <AccordionItem
+          value="rules"
+          icon={<Zap className="h-4 w-4" />}
+          title="Transaction Rules"
+          description="Auto-categorize and transform transactions"
+        >
+          <div id="rules">
+            <RulesSection />
+          </div>
+        </AccordionItem>
+
+        <AccordionItem
+          value="import"
+          icon={<Mail className="h-4 w-4" />}
+          title="Import"
+          description="Templates, email config, migration"
+        >
+          <div id="import">
+            <p className="text-sm text-muted-foreground">Import section (under development)</p>
+          </div>
+        </AccordionItem>
+      </Accordion>
     </div>
   );
 }

@@ -1,21 +1,22 @@
 "use client";
 
 /**
- * /settings/integrations — MCP setup guide + Connected apps (FINLYNQ-154 —
- * per-user OAuth grant list + revoke).
+ * /settings/integrations — MCP setup guide + Connected apps + Bank feeds.
  *
  * Shows an MCP setup guide card when no apps are connected and no API key has
  * been used recently. Hides it once the user has connected via OAuth or used
- * an MCP API key within the last 30 days. Provides a "Show setup guide" link
- * when the guide is hidden.
+ * an MCP API key within the last 30 days. Also includes the SimpleFIN bank
+ * feed section in an accordion.
  */
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Zap } from "lucide-react";
+import { Accordion, AccordionItem } from "@/components/ui/accordion";
+import { Zap, Landmark } from "lucide-react";
 import { ConnectedApps } from "./connected-apps";
+import { BankFeedsSection } from "@/components/settings/sections/bank-feeds-section";
 import { isMcpConnected } from "@/lib/mcp/connected";
 
 interface ConnectedAppsData {
@@ -23,13 +24,12 @@ interface ConnectedAppsData {
   mcpApiKeyLastUsedAt: string | null;
 }
 
-export default function IntegrationsSettingsPage() {
+export default function IntegrationsSettingsPage({ initialSection }: { initialSection?: string | null } = {}) {
   const [isConnected, setIsConnected] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [tab, setTab] = useState<string | null>(initialSection ?? null);
 
   useEffect(() => {
-    // Fetch both OAuth apps and API key last-used timestamp.
-    // The card renders only after a SUCCESSFUL fetch (never on error).
     const checkConnected = async () => {
       try {
         const res = await fetch("/api/settings/connected-apps");
@@ -53,7 +53,7 @@ export default function IntegrationsSettingsPage() {
     <div className="max-w-2xl space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Integrations</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">External tools that connect to your data</p>
+        <p className="text-sm text-muted-foreground mt-0.5">External tools and bank connections</p>
       </div>
 
       {loaded && !isConnected && (
@@ -82,6 +82,19 @@ export default function IntegrationsSettingsPage() {
       )}
 
       <ConnectedApps />
+
+      <Accordion value={tab} onValueChange={setTab}>
+        <AccordionItem
+          value="bank-feeds"
+          icon={<Landmark className="h-4 w-4" />}
+          title="Bank feeds"
+          description="SimpleFIN bank sync"
+        >
+          <div id="bank-feeds">
+            <BankFeedsSection />
+          </div>
+        </AccordionItem>
+      </Accordion>
 
       {loaded && isConnected && (
         <div className="text-center text-sm text-muted-foreground">

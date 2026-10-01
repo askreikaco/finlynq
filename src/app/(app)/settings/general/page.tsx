@@ -23,7 +23,8 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Settings2, Shield, Database, Loader2 } from "lucide-react";
+import { Settings2, Shield, Database, Loader2, Sun, Moon, Monitor } from "lucide-react";
+import { useTheme } from "next-themes";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { useFont, FONT_OPTIONS, type FontKey } from "@/components/font-provider";
 import { Combobox } from "@/components/ui/combobox";
@@ -31,6 +32,7 @@ import { useDisplayCurrencyOptions } from "@/lib/hooks/useDisplayCurrencyOptions
 import { FxOverridesSection } from "@/components/fx-overrides-section";
 import { LanguageCard } from "@/components/settings/language-card";
 import { ActiveCurrenciesSection } from "@/components/active-currencies-section";
+import { DisplaySection } from "@/components/settings/sections/display-section";
 
 type RecomputeState = { active: boolean; target: string; done: number; total: number; finished: boolean };
 
@@ -38,6 +40,7 @@ export default function GeneralSettingsPage() {
   const { displayCurrency, setDisplayCurrency } = useDisplayCurrency();
   const currencyOptions = useDisplayCurrencyOptions(displayCurrency);
   const { font, setFont } = useFont();
+  const { theme, setTheme } = useTheme();
   const [currencyError, setCurrencyError] = useState("");
   // Pending currency awaiting confirmation (Phase 3: switching re-derives every
   // transaction's stored reporting amount at historical rates).
@@ -155,6 +158,37 @@ export default function GeneralSettingsPage() {
               </SelectContent>
             </Select>
           </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <Label>Appearance</Label>
+              <p className="text-xs text-muted-foreground">
+                Light, dark, or match your system settings.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              {[
+                { value: "light", label: "Light", icon: Sun },
+                { value: "dark", label: "Dark", icon: Moon },
+                { value: "system", label: "System", icon: Monitor },
+              ].map(({ value, label, icon: Icon }) => (
+                <button
+                  key={value}
+                  onClick={() => setTheme(value)}
+                  className={`flex h-10 w-14 items-center justify-center rounded-lg border-2 transition-colors ${
+                    theme === value
+                      ? "border-primary bg-primary/10"
+                      : "border-border hover:bg-muted/50"
+                  }`}
+                  aria-label={`${label} theme`}
+                  title={label}
+                >
+                  <Icon className="h-4 w-4" />
+                </button>
+              ))}
+            </div>
+          </div>
+
           {currencyError ? (
             <p className="text-sm text-destructive">{currencyError}</p>
           ) : null}
@@ -208,6 +242,8 @@ export default function GeneralSettingsPage() {
       <ActiveCurrenciesSection />
 
       <FxOverridesSection />
+
+      <DisplaySection />
 
       {/* About */}
       <Card>

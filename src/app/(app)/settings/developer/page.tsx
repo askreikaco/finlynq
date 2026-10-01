@@ -8,12 +8,15 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ToggleLeft, ToggleRight } from "lucide-react";
+import { Accordion, AccordionItem } from "@/components/ui/accordion";
+import { ToggleLeft, ToggleRight, Database } from "lucide-react";
+import { DataSection } from "@/components/settings/sections/data-section";
 
-export default function DeveloperSettingsPage() {
+export default function DeveloperSettingsPage({ initialSection }: { initialSection?: string | null } = {}) {
   const [devMode, setDevMode] = useState(false);
   const [devModeLoading, setDevModeLoading] = useState(false);
   const [devModeStatus, setDevModeStatus] = useState("");
+  const [tab, setTab] = useState<string | null>(initialSection ?? null);
 
   // Load dev mode
   useEffect(() => {
@@ -92,6 +95,19 @@ export default function DeveloperSettingsPage() {
           )}
         </CardContent>
       </Card>
+
+      <Accordion value={tab} onValueChange={setTab}>
+        <AccordionItem
+          value="data"
+          icon={<Database className="h-4 w-4" />}
+          title="Data"
+          description="Import, export, and manage your data"
+        >
+          <div id="data">
+            <DataSection />
+          </div>
+        </AccordionItem>
+      </Accordion>
     </div>
   );
 }
