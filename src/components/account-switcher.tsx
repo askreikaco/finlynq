@@ -167,13 +167,13 @@ export function AccountSwitcher({ compact = false, variant = "dropdown" }: Accou
           aria-label="Account menu"
           title="Account menu"
           className={cn(
-            "group/account relative flex items-center gap-2 rounded-lg transition-all duration-200 bg-transparent border-0",
-            compact ? "px-0 py-2 justify-center" : "px-3 py-2 w-full text-left hover:bg-white/[0.05]",
+            "group/account relative flex items-center gap-3 rounded-lg transition-all duration-200 bg-transparent border-0",
+            compact ? "size-9 mx-auto p-0 justify-center" : "px-3 py-2 w-full text-left hover:bg-white/[0.05]",
           )}
         >
           <span
             aria-hidden="true"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-medium text-primary ring-2 ring-primary"
+            className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-primary/20 text-[8px] font-semibold leading-none text-primary ring-1 ring-primary"
           >
             {initialsOf(a.active)}
           </span>

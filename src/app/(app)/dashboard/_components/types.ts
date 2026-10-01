@@ -11,6 +11,8 @@ export type Balance = {
   convertedBalance?: number;
   displayCurrency?: string;
   holdingsValue?: number;
+  /** Hidden from every metric/total; listed only. */
+  invisible?: boolean;
 };
 
 export type IncomeExpense = { month: string; type: string; total: number };

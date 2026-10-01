@@ -1,24 +1,16 @@
 "use client";
 
 /**
- * Import settings sections — account-agnostic import MANAGEMENT.
+ * Import management — account-agnostic pieces lifted from the old /import tabs
+ * (same components and endpoints, no API changes). To upload a statement, use
+ * the /import page.
  *
- * Rendered as flat items of the Reconciliation accordion (old /settings/import
- * renders Reconciliation with "import-settings" open). Sections: Import
- * settings, Templates, Email Import, Migrate, Investment statements. Must be
- * rendered inside an <Accordion> (returns AccordionItems).
+ * - ImportSettingsCard (card, Reconciliation; old /settings/import scrolls here)
+ * - ImportTemplatesItem (accordion item, Reconciliation)
+ * - ImportEmailItem, ImportMigrateItem, ImportStatementsItem (accordion items,
+ *   Integrations; ?tab=email|migrate|statements, ?provider= opens Migrate)
  *
- * Phase 1 of the money-in surface consolidation (merge /import + /import/pending
- * + /reconcile + /inbox → a single account-anchored /import surface). The old
- * /import page conflated a per-account upload ACTION with account-agnostic
- * MANAGEMENT (CSV templates, the WealthPosition connector, the email-import
- * address). The management half has no home in an account-anchored flow, so it
- * moves here. The upload action stays on /import and (later phases) folds into
- * the account surface's upload drawer.
- *
- * Everything here is lifted verbatim from the old /import tabs — same
- * components (`TemplateManager`, `ConnectorTab`), same endpoints
- * (/api/import/templates, /api/import/email-config). No API changes.
+ * Accordion items must be rendered inside an <Accordion>.
  */
 
 import { useEffect, useState } from "react";
@@ -64,17 +56,8 @@ import type { ImportTemplate } from "@/lib/import-templates";
 
 type ImportProvider = "wealthposition" | "moneypro" | "generic-csv";
 
-export function ImportSection() {
-  const [accountNames, setAccountNames] = useState<string[]>([]);
-  const [templates, setTemplates] = useState<ImportTemplate[]>([]);
-  // "Migrate from another app" tab — which provider's flow is open.
-  const [provider, setProvider] = useState<ImportProvider | null>(null);
-
-  // Email state
-  const [importEmail, setImportEmail] = useState<string | null>(null);
-  const [emailLoading, setEmailLoading] = useState(false);
-  const [copied, setCopied] = useState(false);
-
+/** CSV/OFX mapping confirmation + reconcile dropdown visibility. */
+export function ImportSettingsCard() {
   // §B (2026-06-04) — "Confirm detected column mapping before importing"
   // per-user default. Seeds NEW accounts' csv_mapping_mode; a per-account
   // override on the upload drawer (the "Don't ask again" checkbox) wins.
@@ -84,47 +67,7 @@ export function ImportSection() {
   // FINLYNQ-241 — count of hidden accounts, shown on the entry-point card.
   const [hiddenAccountCount, setHiddenAccountCount] = useState<number | null>(null);
 
-  // FINLYNQ-138 — per-user imported-email retention window (days). Governs how
-  // long raw forwarded emails (email_inbox) are kept before the cleanup sweep
-  // hard-deletes them. Bounded {7,30,60,90}; default 60.
-  const [retentionDays, setRetentionDays] = useState<number>(60);
-  const [retentionOptions, setRetentionOptions] = useState<number[]>([
-    7, 30, 60, 90,
-  ]);
-  const [retentionLoading, setRetentionLoading] = useState(false);
-
-  // Deep-link support: ?provider=moneypro picks the Migrate provider flow. The
-  // parent (reconciliation page, useOpenSection) opens the Migrate section.
   useEffect(() => {
-    const p = new URLSearchParams(window.location.search).get("provider");
-    if (p === "wealthposition" || p === "moneypro" || p === "generic-csv") {
-      setProvider(p);
-    }
-  }, []);
-
-  // Fetch accounts, templates, and email config on mount.
-  useEffect(() => {
-    fetch("/api/accounts")
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setAccountNames(data.map((a: { name: string }) => a.name));
-        }
-      })
-      .catch(() => {});
-
-    fetch("/api/import/templates")
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data)) setTemplates(data);
-      })
-      .catch(() => {});
-
-    fetch("/api/import/email-config")
-      .then((r) => r.json())
-      .then((data) => setImportEmail(data.email))
-      .catch(() => {});
-
     fetch("/api/settings/confirm-csv-mapping")
       .then((r) => r.json())
       .then((data) => {
@@ -134,17 +77,6 @@ export function ImportSection() {
       })
       .catch(() => {});
 
-    fetch("/api/settings/email-retention")
-      .then((r) => r.json())
-      .then((data) => {
-        if (typeof data.retentionDays === "number") {
-          setRetentionDays(data.retentionDays);
-        }
-        if (Array.isArray(data.options)) setRetentionOptions(data.options);
-      })
-      .catch(() => {});
-
-    // FINLYNQ-241 — load the hidden-account count for the entry-point card.
     fetch("/api/settings/reconcile-hidden-accounts")
       .then((r) => r.json())
       .then((data) => {
@@ -154,30 +86,6 @@ export function ImportSection() {
       })
       .catch(() => {});
   }, []);
-
-  const updateRetentionDays = async (next: number) => {
-    const prev = retentionDays;
-    // Optimistic — revert on failure.
-    setRetentionDays(next);
-    setRetentionLoading(true);
-    try {
-      const res = await fetch("/api/settings/email-retention", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ retentionDays: next }),
-      });
-      const data = await res.json();
-      if (!res.ok || typeof data.retentionDays !== "number") {
-        setRetentionDays(prev);
-      } else {
-        setRetentionDays(data.retentionDays);
-      }
-    } catch {
-      setRetentionDays(prev);
-    } finally {
-      setRetentionLoading(false);
-    }
-  };
 
   const toggleConfirmCsvMapping = async () => {
     const next = !confirmCsvMapping;
@@ -203,35 +111,16 @@ export function ImportSection() {
     }
   };
 
-  const generateEmail = async () => {
-    setEmailLoading(true);
-    try {
-      const res = await fetch("/api/import/email-config", { method: "POST" });
-      const data = await res.json();
-      if (data.email) setImportEmail(data.email);
-    } catch {
-      // ignore
-    } finally {
-      setEmailLoading(false);
-    }
-  };
-
-  const copyEmail = () => {
-    if (importEmail) {
-      navigator.clipboard.writeText(importEmail);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
   return (
-    <>
-      <AccordionItem
-        value="import-settings"
-        icon={<Sliders className="h-4 w-4" />}
-        title="Import settings"
-        description="CSV mapping confirmation, account visibility"
-      >
-        <div id="import-settings" className="space-y-6">
+    <Card id="import-settings" className="scroll-mt-6">
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <Sliders className="h-4 w-4" />
+          Import settings
+        </CardTitle>
+        <CardDescription>CSV mapping confirmation, account visibility</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
           <p className="text-sm text-muted-foreground">
             To upload a bank statement, use the{" "}
             <a href="/import" className="underline hover:text-foreground">
@@ -321,15 +210,39 @@ export function ImportSection() {
           </Link>
         </CardContent>
       </Card>
+      </CardContent>
+    </Card>
+  );
+}
 
-        </div>
-      </AccordionItem>
+/** Saved CSV column mappings per bank. */
+export function ImportTemplatesItem() {
+  const [accountNames, setAccountNames] = useState<string[]>([]);
+  const [templates, setTemplates] = useState<ImportTemplate[]>([]);
 
-        {/* Templates */}
+  useEffect(() => {
+    fetch("/api/accounts")
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setAccountNames(data.map((a: { name: string }) => a.name));
+        }
+      })
+      .catch(() => {});
+
+    fetch("/api/import/templates")
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) setTemplates(data);
+      })
+      .catch(() => {});
+  }, []);
+
+  return (
         <AccordionItem
           value="templates"
           icon={<BookTemplate className="h-4 w-4" />}
-          title="Templates"
+          title="Import Templates"
           description="Saved CSV column mappings per bank"
         >
           <div className="space-y-4" id="templates">
@@ -365,12 +278,91 @@ export function ImportSection() {
             />
           </div>
         </AccordionItem>
+  );
+}
 
-        {/* Email Import */}
+/** Import address, imported-email retention and email rules. */
+export function ImportEmailItem() {
+  const [importEmail, setImportEmail] = useState<string | null>(null);
+  const [emailLoading, setEmailLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  // FINLYNQ-138 — per-user imported-email retention window (days). Governs how
+  // long raw forwarded emails (email_inbox) are kept before the cleanup sweep
+  // hard-deletes them. Bounded {7,30,60,90}; default 60.
+  const [retentionDays, setRetentionDays] = useState<number>(60);
+  const [retentionOptions, setRetentionOptions] = useState<number[]>([
+    7, 30, 60, 90,
+  ]);
+  const [retentionLoading, setRetentionLoading] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/import/email-config")
+      .then((r) => r.json())
+      .then((data) => setImportEmail(data.email))
+      .catch(() => {});
+
+    fetch("/api/settings/email-retention")
+      .then((r) => r.json())
+      .then((data) => {
+        if (typeof data.retentionDays === "number") {
+          setRetentionDays(data.retentionDays);
+        }
+        if (Array.isArray(data.options)) setRetentionOptions(data.options);
+      })
+      .catch(() => {});
+  }, []);
+
+  const updateRetentionDays = async (next: number) => {
+    const prev = retentionDays;
+    // Optimistic — revert on failure.
+    setRetentionDays(next);
+    setRetentionLoading(true);
+    try {
+      const res = await fetch("/api/settings/email-retention", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ retentionDays: next }),
+      });
+      const data = await res.json();
+      if (!res.ok || typeof data.retentionDays !== "number") {
+        setRetentionDays(prev);
+      } else {
+        setRetentionDays(data.retentionDays);
+      }
+    } catch {
+      setRetentionDays(prev);
+    } finally {
+      setRetentionLoading(false);
+    }
+  };
+
+  const generateEmail = async () => {
+    setEmailLoading(true);
+    try {
+      const res = await fetch("/api/import/email-config", { method: "POST" });
+      const data = await res.json();
+      if (data.email) setImportEmail(data.email);
+    } catch {
+      // ignore
+    } finally {
+      setEmailLoading(false);
+    }
+  };
+
+  const copyEmail = () => {
+    if (importEmail) {
+      navigator.clipboard.writeText(importEmail);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  return (
         <AccordionItem
           value="email"
           icon={<Mail className="h-4 w-4" />}
-          title="Email Import"
+          title="Import via Email"
           description="Your import address, retention and email rules"
         >
           <div className="space-y-4" id="email">
@@ -503,12 +495,27 @@ export function ImportSection() {
             <EmailRulesManager />
           </div>
         </AccordionItem>
+  );
+}
 
-        {/* Migrate from another app — per-source submenu */}
+/** One-time full-ledger migration from another app, per-source submenu. */
+export function ImportMigrateItem() {
+  const [provider, setProvider] = useState<ImportProvider | null>(null);
+
+  // Deep-link support: ?provider=moneypro picks the provider flow. The parent
+  // (Integrations, useOpenSection) opens this section.
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search).get("provider");
+    if (p === "wealthposition" || p === "moneypro" || p === "generic-csv") {
+      setProvider(p);
+    }
+  }, []);
+
+  return (
         <AccordionItem
           value="migrate"
           icon={<LinkIcon className="h-4 w-4" />}
-          title="Migrate from another app"
+          title="Import via another app"
           description="One-time move of your full ledger"
         >
           <div className="space-y-4" id="migrate">
@@ -593,18 +600,21 @@ export function ImportSection() {
             )}
           </div>
         </AccordionItem>
+  );
+}
 
-        {/* Investment statements (IBKR XML / multi-account OFX/QFX) */}
+/** IBKR XML / multi-account OFX/QFX investment statements. */
+export function ImportStatementsItem() {
+  return (
         <AccordionItem
           value="statements"
           icon={<Landmark className="h-4 w-4" />}
-          title="Investment statements"
+          title="Import Investment Statement"
           description="IBKR XML or multi-account OFX/QFX"
         >
           <div id="statements">
             <InvestmentStatementImporter />
           </div>
         </AccordionItem>
-    </>
   );
 }

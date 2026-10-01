@@ -2,7 +2,7 @@
 
 /**
  * /settings/general — Display Preferences + Active Currencies + FX
- * Overrides + About (issue #57).
+ * Overrides + Dropdown ordering (issue #57). About lives on /settings/about.
  *
  * Extracted from the monolith /settings/page.tsx. FX overrides live here
  * because their app-wide impact is essentially a display preference; the
@@ -12,7 +12,6 @@
 import { useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -23,7 +22,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Settings2, Shield, Database, Loader2, Sun, Moon, Monitor } from "lucide-react";
+import { Settings2, Loader2, Sun, Moon, Monitor } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { useFont, FONT_OPTIONS, type FontKey } from "@/components/font-provider";
@@ -100,7 +99,7 @@ export default function GeneralSettingsPage() {
       <PageHeader
           title="General"
           titleClassName="text-2xl font-bold tracking-tight"
-          subtitle="Display preferences, currencies, and about"
+          subtitle="Display preferences and currencies"
           subtitleClassName="text-sm text-muted-foreground mt-0.5"
         />
 
@@ -256,39 +255,6 @@ export default function GeneralSettingsPage() {
       <FxOverridesSection />
 
       <DisplaySection />
-
-      {/* About */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
-              <Shield className="h-5 w-5" />
-            </div>
-            <div>
-              <CardTitle className="text-base">About</CardTitle>
-              <CardDescription>Finlynq</CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <p className="text-sm text-muted-foreground">
-            Track your money here, analyze it anywhere.
-          </p>
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="text-xs">
-              <Shield className="h-3 w-3 mr-1" />
-              Zero-knowledge
-            </Badge>
-            <Badge variant="secondary" className="text-xs">
-              <Database className="h-3 w-3 mr-1" />
-              Local-first
-            </Badge>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            All data is stored locally on your machine. No data is sent to any server.
-          </p>
-        </CardContent>
-      </Card>
     </div>
   );
 }

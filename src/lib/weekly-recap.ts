@@ -6,7 +6,7 @@ import { tryDecryptField } from "@/lib/crypto/envelope";
 import { getDisplayCurrency, getRateMap, convertWithRateMap } from "@/lib/fx-service";
 import { convertReportingSlice } from "@/lib/fx/reporting-amount";
 
-const { categories, transactions, budgets } = schema;
+const { categories, transactions, budgets, accounts } = schema;
 
 type RateCtx = { displayCurrency: string; rateMap: Map<string, number> };
 
@@ -297,7 +297,17 @@ export async function generateWeeklyRecap(userId: string, endDate?: string, dek?
       totalReporting: sql<number | null>`SUM(${transactions.reportingAmount})`,
     })
     .from(transactions)
-    .where(and(eq(transactions.userId, userId), gte(transactions.date, weekStart), lte(transactions.date, weekEnd)))
+    // Invisible accounts never move net worth. Left join + COALESCE keeps
+    // account-less rows in the sum, as before.
+    .leftJoin(accounts, eq(transactions.accountId, accounts.id))
+    .where(
+      and(
+        eq(transactions.userId, userId),
+        gte(transactions.date, weekStart),
+        lte(transactions.date, weekEnd),
+        sql`COALESCE(${accounts.invisible}, false) = false`,
+      ),
+    )
     .groupBy(transactions.currency, transactions.reportingCurrency)
     .all();
 

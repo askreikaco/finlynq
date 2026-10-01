@@ -62,6 +62,8 @@ type Account = {
   note?: string | null;
   archived?: boolean;
   isInvestment?: boolean;
+  /** Hidden from every metric/total (net worth, reports…). */
+  invisible?: boolean;
   mode?: Mode;
   /** Statement-upload field-mapping prefs (2026-06-04). */
   csvMappingMode?: "confirm" | "auto";
@@ -445,6 +447,15 @@ export default function AccountDetailPage() {
               )}
               {account.archived === true && (
                 <Badge variant="secondary" className="text-[10px]">Archived</Badge>
+              )}
+              {account.invisible === true && (
+                <Badge
+                  variant="secondary"
+                  className="text-[10px]"
+                  title="Hidden from net worth, totals, reports and metrics"
+                >
+                  Invisible
+                </Badge>
               )}
             </div>
         }

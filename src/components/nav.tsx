@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { ThemeToggle } from "@/components/theme-toggle";
 import {
   LayoutDashboard,
   Wallet,
@@ -36,7 +35,6 @@ import {
   Users,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { FinlynqLogo } from "@/components/FinlynqLogo";
 import { AccountSwitcher } from "@/components/account-switcher";
 
 type NavItem = { href: string; label: string; icon: LucideIcon; color: string; mode?: "prod" | "dev"; activePrefixes?: string[] };
@@ -238,7 +236,7 @@ export function Nav() {
         aria-current={isActive ? "page" : undefined}
         className={cn(
           "group/link relative flex items-center gap-3 rounded-lg text-[13px] font-medium transition-all duration-200",
-          showLabel ? "px-3 py-2" : "px-0 py-2 justify-center",
+          showLabel ? "px-3 py-2" : "size-9 mx-auto p-0 justify-center",
           isActive
             ? "bg-white/[0.08] text-sidebar-accent-foreground"
             : "text-sidebar-foreground/50 hover:bg-white/[0.05] hover:text-sidebar-foreground"
@@ -275,21 +273,8 @@ export function Nav() {
         collapsed ? "w-14" : "w-60"
       )}
     >
-      {/* Logo */}
-      <Link href="/dashboard" className={cn("flex items-center gap-3 py-5 mb-2 group/logo", collapsed ? "px-3 justify-center" : "px-5")}>
-        <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-card/50 shrink-0 transition-transform duration-300 group-hover/logo:scale-110">
-          <FinlynqLogo size={28} />
-        </div>
-        {!collapsed && (
-          <div className="overflow-hidden">
-            <span className="text-base font-semibold text-sidebar-foreground whitespace-nowrap tracking-tight">Finlynq</span>
-            <p className="text-[10px] text-sidebar-foreground/50 leading-none whitespace-nowrap">Track here, analyze anywhere</p>
-          </div>
-        )}
-      </Link>
-
-      {/* Nav groups */}
-      <div className="flex-1 px-2 space-y-1 overflow-y-auto">
+      {/* Nav groups (no logo block — owner 2026-10-01) */}
+      <div className="flex-1 px-2 pt-3 space-y-1 overflow-y-auto">
         {navGroups.map((group) => {
           const visibleItems = group.items.filter((item) => {
             // Hide What's New when there are no announcements
@@ -356,7 +341,7 @@ export function Nav() {
                   title="Admin"
                   aria-label="Admin"
                   className={cn(
-                    "group/link relative flex items-center gap-3 rounded-lg text-[13px] font-medium transition-all duration-200 px-0 py-2 justify-center",
+                    "group/link relative flex items-center gap-3 rounded-lg text-[13px] font-medium transition-all duration-200 size-9 mx-auto p-0 justify-center",
                     pathname.startsWith("/admin")
                       ? "bg-white/[0.08] text-sidebar-accent-foreground"
                       : "text-sidebar-foreground/50 hover:bg-white/[0.05] hover:text-sidebar-foreground"
@@ -380,11 +365,10 @@ export function Nav() {
           )}
         </div>
 
-        {/* Fixed bottom block: Account switcher, theme toggle, collapse button */}
+        {/* Fixed bottom block: Account switcher, collapse button (theme: Settings → General) */}
         <div className="shrink-0 px-2 pb-3 pt-2 border-t border-sidebar-border/50 space-y-0.5">
           <AccountSwitcher compact={collapsed} />
-          <div className={cn("flex items-center mt-2", collapsed ? "justify-center" : "justify-between px-1")}>
-            <ThemeToggle />
+          <div className={cn("flex items-center mt-2", collapsed ? "justify-center" : "justify-end px-1")}>
             <button
               onClick={toggleCollapsed}
               className="p-1.5 rounded-lg text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-all duration-200 hover:scale-110"

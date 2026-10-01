@@ -9,7 +9,9 @@ export async function GET(request: NextRequest) {
   const target = await getDisplayCurrency(userId, request.nextUrl.searchParams.get("target"));
 
   // Archived accounts included: their currency still needs a rate, since their
-  // balances now stay in net worth and in the history chart.
+  // balances now stay in net worth and in the history chart. Invisible
+  // accounts are excluded (getAccountBalances default) — they never reach the
+  // consolidated total / FX exposure.
   const balances = await getAccountBalances(userId, { includeArchived: true });
   const activeCurrencies = await getActiveCurrencies();
 

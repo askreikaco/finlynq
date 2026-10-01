@@ -42,6 +42,8 @@ type AccountWrite = {
   currency: string;
   note?: string;
   isInvestment?: boolean;
+  /** Hidden from every metric/total (net worth, reports, MCP totals…). */
+  invisible?: boolean;
   nameCt?: string | null;
   nameLookup?: string | null;
   aliasCt?: string | null;
@@ -76,7 +78,7 @@ export async function createAccount(userId: string, data: AccountWrite) {
 export async function updateAccount(
   id: number,
   userId: string,
-  data: Partial<AccountWrite & { archived: boolean; isInvestment: boolean }>,
+  data: Partial<AccountWrite & { archived: boolean; isInvestment: boolean; invisible: boolean }>,
 ) {
   // Apply the same default when the caller supplies `group` explicitly. We
   // only touch it when `group` is in the payload — leaving an unset group
@@ -814,9 +816,20 @@ export async function getBudgetRollover(userId: string, currentMonth: string) {
 // GROUP BY drops the name leg; result rows carry only `*_ct` columns and
 // callers decrypt via the route handler. ORDER BY drops name as well —
 // route sorts in memory after decrypt.
-export async function getAccountBalances(userId: string, opts?: { includeArchived?: boolean }) {
+//
+// INVISIBLE ACCOUNTS (2026-10-07) are EXCLUDED by default: almost every caller
+// sums these rows into a metric (net worth, totals, reports, FX exposure,
+// health score, chat context, family overview), and an invisible account must
+// reach none of them. Callers that LIST accounts (the Accounts page via
+// /api/dashboard, the reconcile summary) pass `includeInvisible: true` and
+// must skip `invisible` rows in any total they compute themselves.
+export async function getAccountBalances(
+  userId: string,
+  opts?: { includeArchived?: boolean; includeInvisible?: boolean },
+) {
   const conditions = [eq(accounts.userId, userId)];
   if (!opts?.includeArchived) conditions.push(eq(accounts.archived, false));
+  if (!opts?.includeInvisible) conditions.push(eq(accounts.invisible, false));
   return db
     .select({
       accountId: accounts.id,
@@ -826,6 +839,7 @@ export async function getAccountBalances(userId: string, opts?: { includeArchive
       currency: accounts.currency,
       archived: accounts.archived,
       isInvestment: accounts.isInvestment,
+      invisible: accounts.invisible,
       aliasCt: accounts.aliasCt,
       balance: sql<number>`COALESCE(SUM(${transactions.amount}), 0)`,
     })
@@ -840,6 +854,7 @@ export async function getAccountBalances(userId: string, opts?: { includeArchive
       accounts.currency,
       accounts.archived,
       accounts.isInvestment,
+      accounts.invisible,
       accounts.aliasCt,
     )
     .orderBy(accounts.type, accounts.group)
@@ -1035,7 +1050,9 @@ export async function getNetWorthOverTime(userId: string) {
     })
     .from(transactions)
     .leftJoin(accounts, eq(transactions.accountId, accounts.id))
-    .where(eq(transactions.userId, userId))
+    // Invisible accounts never reach net worth. COALESCE keeps account-less
+    // rows (left join → NULL) in the sum, as before.
+    .where(and(eq(transactions.userId, userId), sql`COALESCE(${accounts.invisible}, false) = false`))
     .groupBy(monthExpr(transactions.date), accounts.currency)
     .orderBy(monthExpr(transactions.date))
     .all();
@@ -1108,6 +1125,7 @@ export async function getInvestmentSnapshotsInRange(
   from: string,
   to: string,
   accountId?: number,
+  opts?: { includeInvisible?: boolean },
 ) {
   const conditions = [
     eq(schema.portfolioSnapshots.userId, userId),
@@ -1119,6 +1137,11 @@ export async function getInvestmentSnapshotsInRange(
     conditions.push(eq(schema.portfolioSnapshots.accountId, accountId));
   } else {
     conditions.push(isNotNull(schema.portfolioSnapshots.accountId));
+    // Aggregate (whole-portfolio) read: invisible accounts never reach the
+    // net-worth series. READ-side only — the builder, fingerprint and reaper
+    // still cover them, so their stored history survives a visibility toggle.
+    // An accountId-scoped read (the account's own page) is never filtered.
+    if (!opts?.includeInvisible) conditions.push(eq(accounts.invisible, false));
   }
   return db
     .select({
@@ -1189,6 +1212,7 @@ export async function getCashSnapshotsInRange(
   from: string,
   to: string,
   accountId?: number,
+  opts?: { includeInvisible?: boolean },
 ) {
   const conditions = [
     eq(schema.portfolioSnapshots.userId, userId),
@@ -1201,6 +1225,11 @@ export async function getCashSnapshotsInRange(
     conditions.push(eq(schema.portfolioSnapshots.accountId, accountId));
   } else {
     conditions.push(isNotNull(schema.portfolioSnapshots.accountId));
+    // Aggregate (whole-portfolio) read: invisible accounts never reach the
+    // net-worth series. READ-side only — the builder, fingerprint and reaper
+    // still cover them, so their stored history survives a visibility toggle.
+    // An accountId-scoped read (the account's own page) is never filtered.
+    if (!opts?.includeInvisible) conditions.push(eq(accounts.invisible, false));
   }
   return db
     .select({

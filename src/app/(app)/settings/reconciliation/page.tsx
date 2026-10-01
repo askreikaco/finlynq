@@ -1,16 +1,17 @@
 "use client";
 
 /**
- * /settings/reconciliation — fuzzy-match thresholds + Rules + Import sections.
+ * /settings/reconciliation — fuzzy-match thresholds, Import settings and Rules
+ * cards, and the Import Templates accordion section.
  *
- * The core reconciliation fuzzy-match threshold controls persist here, along with
- * accordion sections for Transaction Rules and Import Management. Deep-linking
- * via /settings/rules or /settings/import renders this page with the respective
- * section open.
+ * Old /settings/import and /settings/rules render this page in place scrolled
+ * to their card. Legacy ?tab=email|migrate|statements (and connect, ?provider=)
+ * links now live on Integrations, so they are forwarded there.
  */
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -20,12 +21,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Accordion, AccordionItem } from "@/components/ui/accordion";
+import { Accordion } from "@/components/ui/accordion";
 import { Link2 as Link2Icon, ExternalLink, Zap } from "lucide-react";
 import { useOpenSection } from "@/components/settings/use-open-section";
+import { movedImportHref } from "@/components/settings/moved-import";
 import { AmountInput } from "@/components/amount-input";
 import { RulesSection } from "@/components/settings/sections/rules-section";
-import { ImportSection } from "@/components/settings/sections/import-section";
+import {
+  ImportSettingsCard,
+  ImportTemplatesItem,
+} from "@/components/settings/sections/import-section";
 import { PageHeader } from "@/components/mobile";
 
 interface Thresholds {
@@ -42,17 +47,16 @@ const DEFAULTS: Readonly<Thresholds> = {
   scoreThreshold: 0.6,
 };
 
-// Old folded URLs render this page in place: /settings/rules opens Rules,
-// /settings/import opens Import settings; ?tab= / #hash / ?provider= pick the
-// flattened Import sections (legacy tab=connect -> migrate).
+// Old folded URLs render this page in place: /settings/rules scrolls to the
+// Rules card, /settings/import to Import settings; ?tab=templates opens Import
+// Templates.
 const OPEN_SECTIONS = {
   byPath: [
     { prefix: "/settings/rules", section: "rules" },
     { prefix: "/settings/import", section: "import-settings" },
   ],
-  valid: ["rules", "import-settings", "templates", "email", "migrate", "statements"],
-  alias: { connect: "migrate", import: "import-settings" },
-  providerSection: "migrate",
+  valid: ["rules", "import-settings", "templates"],
+  alias: { import: "import-settings" },
 };
 
 export default function ReconciliationSettingsPage() {
@@ -63,6 +67,12 @@ export default function ReconciliationSettingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [tab, setTab] = useOpenSection(OPEN_SECTIONS);
+  const router = useRouter();
+
+  useEffect(() => {
+    const href = movedImportHref(window.location.search, window.location.hash);
+    if (href) router.replace(href);
+  }, [router]);
 
   // ─── Load ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -228,19 +238,23 @@ export default function ReconciliationSettingsPage() {
         </CardContent>
       </Card>
 
-      <Accordion value={tab} onValueChange={setTab}>
-        <AccordionItem
-          value="rules"
-          icon={<Zap className="h-4 w-4" />}
-          title="Rules"
-          description="Auto-categorize and transform transactions"
-        >
-          <div id="rules">
-            <RulesSection />
-          </div>
-        </AccordionItem>
+      <ImportSettingsCard />
 
-        <ImportSection />
+      <Card id="rules" className="scroll-mt-6">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Zap className="h-4 w-4" />
+            Rules
+          </CardTitle>
+          <CardDescription>Auto-categorize and transform transactions</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <RulesSection />
+        </CardContent>
+      </Card>
+
+      <Accordion value={tab} onValueChange={setTab}>
+        <ImportTemplatesItem />
       </Accordion>
     </div>
   );

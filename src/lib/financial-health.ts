@@ -35,6 +35,10 @@
  * `transactions.date`, `transactions.currency`, `accounts.currency`,
  * `budgets.amount`, `budgets.month`) — no DEK required to SCORE.
  *
+ * Invisible accounts (`accounts.invisible = true`) are excluded from every
+ * balance/debt query here — they never reach a metric. Income/expense flow
+ * (savings rate, DTI income) stays transaction-category based.
+ *
  * `dek` IS used (2026-08-27): the money totals value investment accounts at
  * market through the shared `applyInvestmentMarketOverlay`, which needs the DEK
  * to decrypt holding symbols before pricing. Without one the totals fall back
@@ -351,6 +355,7 @@ export async function calculateFinancialHealth(
     JOIN accounts a ON a.id = t.account_id
     WHERE t.user_id = ${userId} AND t.date >= ${twelveStart}
       AND a.type = 'L'
+      AND a.invisible = false
       AND t.amount > 0
       AND (t.kind IS NULL OR t.kind NOT IN (${nonDebtServiceKinds}))
       AND NOT EXISTS (
@@ -380,7 +385,7 @@ export async function calculateFinancialHealth(
     FROM accounts a
     LEFT JOIN transactions t
       ON t.account_id = a.id AND t.user_id = ${userId} AND t.date <= ${today}
-    WHERE a.user_id = ${userId} AND a.type = 'L'
+    WHERE a.user_id = ${userId} AND a.type = 'L' AND a.invisible = false
     GROUP BY a.id, a.currency
   `)) as Array<{
     account_id: number | string;
@@ -483,7 +488,7 @@ export async function calculateFinancialHealth(
     SELECT a.id, a.type, a."group", a.currency, a.is_investment,
            COALESCE(SUM(t.amount), 0) AS balance
     FROM accounts a LEFT JOIN transactions t ON a.id = t.account_id AND t.user_id = ${userId}
-    WHERE a.user_id = ${userId}
+    WHERE a.user_id = ${userId} AND a.invisible = false
     GROUP BY a.id, a.type, a."group", a.currency, a.is_investment
   `)) as Array<{ id: number | string; type: string; group: string; currency: string | null; is_investment: boolean | null; balance: number | string }>;
 
@@ -548,7 +553,7 @@ export async function calculateFinancialHealth(
   const balancesPast = asRows(await db.execute(sql`
     SELECT a.id, a.currency, a.is_investment, COALESCE(SUM(t.amount), 0) AS balance
     FROM accounts a LEFT JOIN transactions t ON a.id = t.account_id AND t.user_id = ${userId} AND t.date <= ${ninetyDaysAgoStr}
-    WHERE a.user_id = ${userId}
+    WHERE a.user_id = ${userId} AND a.invisible = false
     GROUP BY a.id, a.currency, a.is_investment
   `)) as Array<{ id: number | string; currency: string | null; is_investment: boolean | null; balance: number | string }>;
 

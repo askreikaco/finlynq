@@ -633,7 +633,7 @@ export function registerPortfolioTools(server: McpServer, ctx: PgToolContext) {
         SELECT a.currency, COALESCE(SUM(t.amount), 0) as balance
         FROM accounts a
         LEFT JOIN transactions t ON t.account_id = a.id AND t.user_id = ${userId}
-        WHERE a.user_id = ${userId}
+        WHERE a.user_id = ${userId} AND a.invisible = false -- invisible: never in net worth
         GROUP BY a.id, a.currency
       `);
       const totalByCurrency: Record<string, number> = {};

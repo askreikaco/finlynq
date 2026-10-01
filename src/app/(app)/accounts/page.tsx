@@ -18,6 +18,7 @@ import {
   type AccountGroupOrder,
   type AccountGroupType,
 } from "@/lib/accounts/groups";
+import { excludeInvisible } from "@/lib/account-visibility";
 import { ManageGroupsDialog } from "./_components/manage-groups-dialog";
 import { AccountDialog } from "./_components/account-dialog";
 import {
@@ -42,6 +43,8 @@ type AccountBalance = {
   convertedBalance?: number;
   archived?: boolean;
   isInvestment?: boolean;
+  /** Hidden from net worth/totals/metrics; still listed here with a badge. */
+  invisible?: boolean;
   alias?: string | null;
 };
 
@@ -190,8 +193,11 @@ export default function AccountsPage() {
   // balance is still the user's money, and excluding it here made this page's
   // Total Assets / Total Liabilities disagree with both the dashboard hero and
   // the net-worth chart. Read off the unfiltered `accounts`, not `visible`.
-  const activeAssets = accounts.filter((a) => a.accountType === "A");
-  const activeLiabilities = accounts.filter((a) => a.accountType === "L");
+  // Invisible accounts are the exception: they stay LISTED (with a badge) but
+  // never count toward any total.
+  const counted = excludeInvisible(accounts);
+  const activeAssets = counted.filter((a) => a.accountType === "A");
+  const activeLiabilities = counted.filter((a) => a.accountType === "L");
 
   // FINLYNQ-179: the set of group names currently in use, for combobox
   // suggestions (any type) and the management dialog (scoped per type).
@@ -271,6 +277,15 @@ export default function AccountsPage() {
                       </p>
                       <Badge variant="outline" className="text-[10px] shrink-0">{a.currency}</Badge>
                       {a.archived && <Badge variant="secondary" className="text-[10px] shrink-0">Archived</Badge>}
+                      {a.invisible && (
+                        <Badge
+                          variant="secondary"
+                          className="text-[10px] shrink-0"
+                          title="Hidden from net worth, totals, reports and metrics"
+                        >
+                          Invisible
+                        </Badge>
+                      )}
                     </div>
                   </div>
                   {/* FINLYNQ-303 — both bases per row: the account's own

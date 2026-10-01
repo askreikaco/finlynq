@@ -42,7 +42,7 @@ describe("rules list enable/disable", () => {
   it("toggling sends PUT with the flipped isActive", async () => {
     const calls = stub(true);
     render(<RulesSettingsPage />);
-    fireEvent.click(await screen.findByRole("switch"));
+    fireEvent.click(await screen.findByRole("switch", { name: /rule Match CASHIN/ }));
     await waitFor(() => {
       const put = calls.find((c) => c.init?.method === "PUT");
       expect(put && JSON.parse(String(put.init!.body))).toEqual({ id: 7, isActive: false });

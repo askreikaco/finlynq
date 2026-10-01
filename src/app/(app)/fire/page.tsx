@@ -103,7 +103,7 @@ function FirePageContent() {
 
         // Sum investment account balances
         const investmentBalance = (data.balances ?? [])
-          .filter((b: { accountType: string }) => b.accountType === "I")
+          .filter((b: { accountType: string; invisible?: boolean }) => b.accountType === "I" && !b.invisible)
           .reduce((s: number, b: { balance: number }) => s + b.balance, 0);
 
         // Get recent income/expenses

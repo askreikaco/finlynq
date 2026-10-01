@@ -42,7 +42,7 @@ export type OwnerAccountRow = {
   ledgerBalance: number;
 };
 
-/** All accounts (archived included, same set as the dashboard hero), ciphertext stripped. */
+/** All accounts (archived included, invisible EXCLUDED — same set as the dashboard hero), ciphertext stripped. */
 export async function getOwnerAccountBalances(ownerId: string): Promise<OwnerAccountRow[]> {
   const rows = await getAccountBalances(ownerId, { includeArchived: true });
   return rows
