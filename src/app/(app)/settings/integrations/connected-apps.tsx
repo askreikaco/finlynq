@@ -13,6 +13,7 @@
  * failed mutations.
  */
 
+import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,12 +32,34 @@ interface ConnectedApp {
   expiresAt: string;
 }
 
+interface ConnectedAppsData {
+  apps: ConnectedApp[];
+  mcpApiKeyLastUsedAt: string | null;
+}
+
 function formatDate(iso: string): string {
   return formatDateTimeLocal(iso) || iso;
 }
 
+function formatRelativeTime(iso: string, now: Date = new Date()): string {
+  const date = new Date(iso);
+  const diffMs = now.getTime() - date.getTime();
+  const diffMinutes = Math.round(diffMs / (1000 * 60));
+  const diffHours = Math.round(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffMinutes < 60) {
+    return diffMinutes === 1 ? "1 minute ago" : `${diffMinutes} minutes ago`;
+  }
+  if (diffHours < 24) {
+    return diffHours === 1 ? "1 hour ago" : `${diffHours} hours ago`;
+  }
+  return diffDays === 1 ? "1 day ago" : `${diffDays} days ago`;
+}
+
 export function ConnectedApps() {
   const [apps, setApps] = useState<ConnectedApp[]>([]);
+  const [mcpApiKeyLastUsedAt, setMcpApiKeyLastUsedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
 
@@ -52,13 +75,16 @@ export function ConnectedApps() {
       if (!res.ok) {
         setLoadError(await parseSaveError(res, "Failed to load connected apps"));
         setApps([]);
+        setMcpApiKeyLastUsedAt(null);
         return;
       }
-      const data = await res.json();
+      const data: ConnectedAppsData = await res.json();
       setApps(Array.isArray(data.apps) ? data.apps : []);
+      setMcpApiKeyLastUsedAt(data.mcpApiKeyLastUsedAt || null);
     } catch {
       setLoadError("Failed to load connected apps");
       setApps([]);
+      setMcpApiKeyLastUsedAt(null);
     } finally {
       setLoading(false);
     }
@@ -114,13 +140,34 @@ export function ConnectedApps() {
             <p className="text-sm text-destructive">{loadError}</p>
             <Button variant="outline" size="sm" onClick={load}>Retry</Button>
           </div>
-        ) : apps.length === 0 ? (
+        ) : apps.length === 0 && !mcpApiKeyLastUsedAt ? (
           <p className="text-sm text-muted-foreground">
             No connected apps. When you authorize an AI assistant (like Claude or ChatGPT) to
             access your data over OAuth, it will appear here so you can revoke it any time.
           </p>
         ) : (
           <ul className="divide-y divide-border rounded-xl border">
+            {mcpApiKeyLastUsedAt && (
+              <li key="mcp-api-key" className="flex items-center justify-between gap-3 px-4 py-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate">MCP client (API key)</p>
+                  <div className="mt-1 flex items-center gap-2 flex-wrap">
+                    <span className="text-xs text-muted-foreground">
+                      Last used {formatRelativeTime(mcpApiKeyLastUsedAt)}
+                    </span>
+                  </div>
+                </div>
+                <Link href="/settings/developer">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0"
+                  >
+                    Manage API key
+                  </Button>
+                </Link>
+              </li>
+            )}
             {apps.map((app) => (
               <li key={app.id} className="flex items-center justify-between gap-3 px-4 py-3">
                 <div className="min-w-0">

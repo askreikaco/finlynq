@@ -1010,6 +1010,11 @@ export const users = pgTable(
     // rejected (see src/lib/auth/session-cutoff.ts). Replacement session must be
     // minted with iat = floor(cutoff_s)+1.
     sessionNotBefore: timestamp("session_not_before", { withTimezone: true }),
+    // MCP API key last-used tracking. Bumped on each successful MCP request
+    // authenticated via API key, DB-side-throttled (>1 hour stale). Drives
+    // the /settings/integrations visibility: API-key-only users count as
+    // "connected" so the guide card hides. Nullable = never seen API key use.
+    mcpApiKeyLastUsedAt: timestamp("mcp_api_key_last_used_at", { withTimezone: true }),
     createdAt: text("created_at").notNull(),
     updatedAt: text("updated_at").notNull(),
   },

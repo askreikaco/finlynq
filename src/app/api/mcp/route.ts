@@ -19,6 +19,7 @@ import { db } from "@/db";
 import { requireAuth } from "@/lib/auth/require-auth";
 import { accountStrategy } from "@/lib/auth/require-auth";
 import { validateOauthToken, bearerChallenge } from "@/lib/oauth";
+import { recordMcpApiKeyUse } from "@/lib/mcp/api-key-usage";
 import { DEFAULT_SCOPE, parseScope, isToolAllowedForScope, enabledToolsetsForRequest } from "@/lib/oauth-scopes";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
@@ -153,6 +154,11 @@ export async function POST(request: NextRequest) {
 
   const auth = await authenticateMcp(request);
   if (!auth.authenticated) return auth.response;
+
+  // Record API key usage (fire-and-forget, never awaited)
+  if (auth.context.method === "api_key") {
+    void recordMcpApiKeyUse(auth.context.userId);
+  }
 
   const rl = checkRateLimit(`mcp:${auth.context.userId}`, 60, 60_000);
   if (!rl.allowed) {
