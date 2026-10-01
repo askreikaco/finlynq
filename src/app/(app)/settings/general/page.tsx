@@ -1,4 +1,5 @@
 "use client";
+import { PageHeader } from "@/components/mobile";
 
 /**
  * /settings/general — Display Preferences + Active Currencies + FX
@@ -23,14 +24,16 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Settings2, Shield, Database, Loader2 } from "lucide-react";
+import { Settings2, Shield, Database, Loader2, Sun, Moon, Monitor } from "lucide-react";
+import { useTheme } from "next-themes";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { useFont, FONT_OPTIONS, type FontKey } from "@/components/font-provider";
 import { Combobox } from "@/components/ui/combobox";
 import { useDisplayCurrencyOptions } from "@/lib/hooks/useDisplayCurrencyOptions";
 import { FxOverridesSection } from "@/components/fx-overrides-section";
+import { LanguageCard } from "@/components/settings/language-card";
 import { ActiveCurrenciesSection } from "@/components/active-currencies-section";
-import { PageHeader } from "@/components/mobile";
+import { DisplaySection } from "@/components/settings/sections/display-section";
 
 type RecomputeState = { active: boolean; target: string; done: number; total: number; finished: boolean };
 
@@ -38,6 +41,7 @@ export default function GeneralSettingsPage() {
   const { displayCurrency, setDisplayCurrency } = useDisplayCurrency();
   const currencyOptions = useDisplayCurrencyOptions(displayCurrency);
   const { font, setFont } = useFont();
+  const { theme, setTheme } = useTheme();
   const [currencyError, setCurrencyError] = useState("");
   // Pending currency awaiting confirmation (Phase 3: switching re-derives every
   // transaction's stored reporting amount at historical rates).
@@ -93,18 +97,16 @@ export default function GeneralSettingsPage() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <PageHeader
-          title="General"
-          titleClassName="text-2xl font-bold tracking-tight"
-          subtitle="Display preferences, currencies, and about"
-          subtitleClassName="text-sm text-muted-foreground mt-0.5"
-        />
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">General</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">Display preferences, currencies, and about</p>
+      </div>
 
       {/* Display Preferences */}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
               <Settings2 className="h-5 w-5" />
             </div>
             <div>
@@ -157,6 +159,46 @@ export default function GeneralSettingsPage() {
               </SelectContent>
             </Select>
           </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <Label id="appearance-label">Appearance</Label>
+              <p className="text-xs text-muted-foreground">
+                System, light, or dark.
+              </p>
+            </div>
+            <div
+              role="radiogroup"
+              aria-labelledby="appearance-label"
+              className="inline-flex rounded-lg border p-0.5"
+            >
+              {([
+                { value: "system", label: "System", icon: Monitor },
+                { value: "light", label: "Light", icon: Sun },
+                { value: "dark", label: "Dark", icon: Moon },
+              ] as const).map(({ value, label, icon: Icon }) => {
+                const selected = (theme ?? "system") === value;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    onClick={() => setTheme(value)}
+                    className={`inline-flex min-h-11 items-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors ${
+                      selected
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {currencyError ? (
             <p className="text-sm text-destructive">{currencyError}</p>
           ) : null}
@@ -205,15 +247,19 @@ export default function GeneralSettingsPage() {
         </DialogContent>
       </Dialog>
 
+      <LanguageCard />
+
       <ActiveCurrenciesSection />
 
       <FxOverridesSection />
+
+      <DisplaySection />
 
       {/* About */}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
               <Shield className="h-5 w-5" />
             </div>
             <div>

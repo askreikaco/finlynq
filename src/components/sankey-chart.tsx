@@ -3,6 +3,7 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import { CHART_COLORS } from "@/lib/chart-colors";
 import { formatCurrency } from "@/lib/currency";
+import { formatPercent } from "@/lib/locale";
 
 type DataItem = { name: string; value: number };
 
@@ -293,7 +294,7 @@ export function SankeyChart({ incomeData, expenseData, currency = "CAD" }: Sanke
               y={height + 21}
               className="fill-white text-[11px] font-medium"
             >
-              Savings: {formatCurrency(savings, currency)} ({((savings / totalIncome) * 100).toFixed(1)}%)
+              Savings: {formatCurrency(savings, currency)} ({formatPercent((savings / totalIncome) * 100, 1)})
             </text>
           </g>
         )}
@@ -306,7 +307,7 @@ export function SankeyChart({ incomeData, expenseData, currency = "CAD" }: Sanke
           className="absolute z-50 pointer-events-none px-3 py-2 bg-popover text-popover-foreground border rounded-lg shadow-lg text-xs whitespace-nowrap -translate-x-1/2 -translate-y-full"
         >
           <p className="font-semibold">{hover.from}{hover.to ? ` \u2192 ${hover.to}` : ""}</p>
-          <p>{formatCurrency(hover.amount, currency)} ({hover.percentage.toFixed(1)}%)</p>
+          <p>{formatCurrency(hover.amount, currency)} ({formatPercent(hover.percentage, 1)})</p>
         </div>
       )}
     </div>

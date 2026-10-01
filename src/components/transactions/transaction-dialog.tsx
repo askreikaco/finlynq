@@ -49,6 +49,7 @@ import {
 } from "@/components/ui/select";
 import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
 import { Badge } from "@/components/ui/badge";
+import { AmountInput } from "@/components/amount-input";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { formatCurrency, formatDate, currencyDecimals, fxPreviewText } from "@/lib/currency";
 import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
@@ -75,6 +76,7 @@ import { parseSaveError } from "@/lib/save-error";
 import type { Condition, Action } from "@/lib/rules/schema";
 import { LotReallocationNotice } from "@/components/portfolio/lot-reallocation-notice";
 import type { LotReallocationPreview } from "@/lib/portfolio/lots/types";
+import { getDisplayLocale } from "@/lib/locale";
 
 // ─── Public types ──────────────────────────────────────────────────────
 
@@ -1233,11 +1235,10 @@ export function TransactionDialog({
               </div>
               <div className="space-y-1.5">
                 <Label>Amount</Label>
-                <Input
-                  type="number"
+                <AmountInput
                   step="0.01"
                   value={form.amount}
-                  onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                  onValueChange={(v) => setForm({ ...form, amount: v })}
                   placeholder="-50.00"
                   required
                 />
@@ -1466,16 +1467,15 @@ export function TransactionDialog({
                       size="sm"
                       className="h-7 flex-1 text-xs"
                     />
-                    <Input
-                      type="number"
+                    <AmountInput
                       step="0.01"
                       min="0"
                       className="h-7 text-xs w-24 font-mono"
                       placeholder="0.00"
                       value={row.amount}
-                      onChange={(e) => {
+                      onValueChange={(nv) => {
                         const next = [...splitRows];
-                        next[i] = { ...next[i], amount: e.target.value };
+                        next[i] = { ...next[i], amount: nv };
                         setSplitRows(next);
                       }}
                     />
@@ -1544,11 +1544,10 @@ export function TransactionDialog({
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label>Quantity</Label>
-                    <Input
-                      type="number"
+                    <AmountInput
                       step="0.0001"
                       value={form.quantity}
-                      onChange={(e) => setForm({ ...form, quantity: e.target.value })}
+                      onValueChange={(nv) => setForm({ ...form, quantity: nv })}
                       placeholder="e.g. 10"
                     />
                   </div>
@@ -1730,14 +1729,13 @@ export function TransactionDialog({
               </div>
               <div className="space-y-1.5">
                 <Label>Amount sent</Label>
-                <Input
-                  type="number"
+                <AmountInput
                   step="0.01"
                   min="0"
                   value={transferForm.amount}
-                  onChange={(e) => {
+                  onValueChange={(v) => {
                     setTransferReceivedTouched(false);
-                    setTransferForm({ ...transferForm, amount: e.target.value });
+                    setTransferForm({ ...transferForm, amount: v });
                   }}
                   placeholder="100.00"
                   required
@@ -1867,12 +1865,11 @@ export function TransactionDialog({
                         <Label className="text-xs">
                           Quantity (shares) <span className="text-rose-600">*</span>
                         </Label>
-                        <Input
-                          type="number"
+                        <AmountInput
                           step="0.0001"
                           min="0"
                           value={transferForm.quantity}
-                          onChange={(e) => setTransferForm({ ...transferForm, quantity: e.target.value })}
+                          onValueChange={(nv) => setTransferForm({ ...transferForm, quantity: nv })}
                           placeholder="e.g. 10.0000"
                         />
                       </div>
@@ -1904,13 +1901,13 @@ export function TransactionDialog({
                                     if (!sourceName) return "Same as source";
                                     const matchShares = Number(destExactMatch?.currentShares ?? 0);
                                     return destExactMatch
-                                      ? `${sourceName} (existing · ${matchShares.toLocaleString(undefined, { maximumFractionDigits: 4 })} shares)`
+                                      ? `${sourceName} (existing · ${matchShares.toLocaleString(getDisplayLocale(), { maximumFractionDigits: 4 })} shares)`
                                       : `${sourceName} (will create)`;
                                   }
                                   if (val === "__custom__") return transferForm.destHoldingName || "Custom name";
                                   const h = destHoldings.find((x) => x.name === val);
                                   const shares = Number(h?.currentShares ?? 0);
-                                  return `${val} · ${shares.toLocaleString(undefined, { maximumFractionDigits: 4 })} shares`;
+                                  return `${val} · ${shares.toLocaleString(getDisplayLocale(), { maximumFractionDigits: 4 })} shares`;
                                 }}
                               </SelectValue>
                             </SelectTrigger>
@@ -1920,7 +1917,7 @@ export function TransactionDialog({
                                   ? destExactMatch
                                     ? `Same as source — binds to existing "${sourceName}" (${Number(
                                         destExactMatch.currentShares ?? 0,
-                                      ).toLocaleString(undefined, { maximumFractionDigits: 4 })} shares)`
+                                      ).toLocaleString(getDisplayLocale(), { maximumFractionDigits: 4 })} shares)`
                                     : `Same as source — auto-create "${sourceName}"`
                                   : "Same as source"}
                               </SelectItem>
@@ -1928,7 +1925,7 @@ export function TransactionDialog({
                                 .filter((h) => h.name !== sourceName)
                                 .map((h) => {
                                   const shares = Number(h.currentShares ?? 0);
-                                  const qty = ` · ${shares.toLocaleString(undefined, { maximumFractionDigits: 4 })} shares`;
+                                  const qty = ` · ${shares.toLocaleString(getDisplayLocale(), { maximumFractionDigits: 4 })} shares`;
                                   return (
                                     <SelectItem key={h.id} value={h.name}>
                                       {h.symbol ? `${h.name} (${h.symbol})${qty}` : `${h.name}${qty}`}
@@ -1951,14 +1948,13 @@ export function TransactionDialog({
                       </div>
                       <div className="space-y-1">
                         <Label className="text-xs">Destination quantity</Label>
-                        <Input
-                          type="number"
+                        <AmountInput
                           step="0.0001"
                           min="0"
                           value={destQuantityTouched ? transferForm.destQuantity : transferForm.quantity}
-                          onChange={(e) => {
+                          onValueChange={(nv) => {
                             setDestQuantityTouched(true);
-                            setTransferForm({ ...transferForm, destQuantity: e.target.value });
+                            setTransferForm({ ...transferForm, destQuantity: nv });
                           }}
                           placeholder={transferForm.quantity || "e.g. 10.0000"}
                         />
@@ -2014,12 +2010,11 @@ export function TransactionDialog({
                         <Label className="text-xs">
                           Quantity (shares) <span className="text-rose-600">*</span>
                         </Label>
-                        <Input
-                          type="number"
+                        <AmountInput
                           step="0.0001"
                           min="0"
                           value={transferForm.quantity}
-                          onChange={(e) => setTransferForm({ ...transferForm, quantity: e.target.value })}
+                          onValueChange={(nv) => setTransferForm({ ...transferForm, quantity: nv })}
                           placeholder="e.g. 10.0000"
                         />
                       </div>
@@ -2046,12 +2041,11 @@ export function TransactionDialog({
                         <Label className="text-xs">
                           Quantity (shares) <span className="text-rose-600">*</span>
                         </Label>
-                        <Input
-                          type="number"
+                        <AmountInput
                           step="0.0001"
                           min="0"
                           value={transferForm.quantity}
-                          onChange={(e) => setTransferForm({ ...transferForm, quantity: e.target.value })}
+                          onValueChange={(nv) => setTransferForm({ ...transferForm, quantity: nv })}
                           placeholder="e.g. 10.0000"
                         />
                       </div>
@@ -2112,14 +2106,13 @@ export function TransactionDialog({
                       </span>
                     ) : null}
                   </div>
-                  <Input
-                    type="number"
+                  <AmountInput
                     step="0.01"
                     min="0"
                     value={transferForm.receivedAmount}
-                    onChange={(e) => {
+                    onValueChange={(nv) => {
                       setTransferReceivedTouched(true);
-                      setTransferForm({ ...transferForm, receivedAmount: e.target.value });
+                      setTransferForm({ ...transferForm, receivedAmount: nv });
                     }}
                     placeholder={
                       transferFxPreview.state === "ok"

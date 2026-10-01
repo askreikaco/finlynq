@@ -1,4 +1,5 @@
 "use client";
+import { PageHeader } from "@/components/mobile";
 
 import { DevModeGuard } from "@/components/dev-mode-guard";
 
@@ -14,7 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { Calculator, PiggyBank, GraduationCap, Percent, ArrowRight, Lightbulb } from "lucide-react";
-import { PageHeader } from "@/components/mobile";
+import { AmountInput } from "@/components/amount-input";
 
 type TaxData = {
   tfsa: { totalRoom: number; used: number; remaining: number; currentYearLimit: number };
@@ -61,7 +62,7 @@ function TaxPageContent() {
   if (loadError) return (
     <div className="space-y-6">
       <div>
-        <PageHeader title="Tax Optimization" titleClassName="text-2xl font-bold tracking-tight" />
+        <h1 className="text-2xl font-bold tracking-tight">Tax Optimization</h1>
       </div>
       <Card>
         <CardContent className="py-10 text-center text-sm text-muted-foreground">
@@ -84,12 +85,10 @@ function TaxPageContent() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-          title="Tax Optimization"
-          titleClassName="text-2xl font-bold tracking-tight"
-          subtitle="Maximize your tax-advantaged accounts and minimize your tax bill"
-          subtitleClassName="text-sm text-muted-foreground mt-0.5"
-        />
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Tax Optimization</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">Maximize your tax-advantaged accounts and minimize your tax bill</p>
+      </div>
 
       {/* Contribution Room */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -100,7 +99,7 @@ function TaxPageContent() {
                 <p className="text-xs font-medium text-muted-foreground">TFSA Room</p>
                 <p className="text-2xl font-bold tracking-tight mt-1">{formatCurrency(data.tfsa.remaining, displayCurrency)}</p>
               </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
                 <PiggyBank className="h-5 w-5" />
               </div>
             </div>
@@ -121,7 +120,7 @@ function TaxPageContent() {
                 <p className="text-xs font-medium text-muted-foreground">RESP Grant</p>
                 <p className="text-2xl font-bold tracking-tight text-emerald-600 mt-1">{formatCurrency(data.resp.grantExample, displayCurrency)}/yr</p>
               </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-600 dark:bg-violet-950/60 dark:text-violet-400">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-600 dark:bg-violet-950/60 dark:text-violet-400">
                 <GraduationCap className="h-5 w-5" />
               </div>
             </div>
@@ -135,7 +134,7 @@ function TaxPageContent() {
                 <p className="text-xs font-medium text-muted-foreground">Marginal Rate @ $100K</p>
                 <p className="text-2xl font-bold tracking-tight mt-1">{data.marginalRates.at100k.combined}%</p>
               </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400">
                 <Percent className="h-5 w-5" />
               </div>
             </div>
@@ -148,7 +147,7 @@ function TaxPageContent() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
               <Calculator className="h-5 w-5" />
             </div>
             <div>
@@ -161,11 +160,11 @@ function TaxPageContent() {
           <div className="flex items-end gap-4 mb-4 flex-wrap">
             <div>
               <Label className="text-xs text-muted-foreground">Annual Income</Label>
-              <Input type="number" value={income} onChange={(e) => setIncome(e.target.value)} className="mt-1" />
+              <AmountInput  value={income} onValueChange={(nv) => setIncome(nv)} className="mt-1" />
             </div>
             <div>
               <Label className="text-xs text-muted-foreground">Contribution Amount</Label>
-              <Input type="number" value={contribution} onChange={(e) => setContribution(e.target.value)} className="mt-1" />
+              <AmountInput  value={contribution} onValueChange={(nv) => setContribution(nv)} className="mt-1" />
             </div>
             <Button onClick={compareRrspTfsa}>Compare</Button>
           </div>
@@ -193,7 +192,7 @@ function TaxPageContent() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-100 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400">
               <Percent className="h-5 w-5" />
             </div>
             <div>
@@ -231,7 +230,7 @@ function TaxPageContent() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-100 text-cyan-600 dark:bg-cyan-950/60 dark:text-cyan-400">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-100 text-cyan-600 dark:bg-cyan-950/60 dark:text-cyan-400">
                 <Lightbulb className="h-5 w-5" />
               </div>
               <div>

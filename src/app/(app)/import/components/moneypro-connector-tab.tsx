@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { exportCsv } from "@/lib/csv-export";
 import { todayISO } from "@/lib/utils/date";
+import { getDisplayLocale } from "@/lib/locale";
 
 interface AccountPlan {
   sourceName: string;
@@ -321,7 +322,7 @@ export function MoneyProConnectorTab() {
           {summary && stage !== "executed" && (
             <div className="space-y-4">
               <div className="rounded-md border bg-muted/30 p-3 text-xs font-mono">
-                {summary.transactions.toLocaleString()} transactions ·{" "}
+                {summary.transactions.toLocaleString(getDisplayLocale())} transactions ·{" "}
                 {summary.transfers} transfers · {summary.categories.length}{" "}
                 categories
                 {summary.rowErrors.length > 0 && (
@@ -402,7 +403,7 @@ export function MoneyProConnectorTab() {
                 {stage === "executing" && (
                   <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
                 )}
-                Import {summary.transactions.toLocaleString()} transactions
+                Import {summary.transactions.toLocaleString(getDisplayLocale())} transactions
               </Button>
             </div>
           )}

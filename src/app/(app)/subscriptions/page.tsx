@@ -1,4 +1,5 @@
 "use client";
+import { PageHeader } from "@/components/mobile";
 import { addDays, todayISO } from "@/lib/utils/date";
 
 import { useEffect, useState, useCallback } from "react";
@@ -45,7 +46,7 @@ import { PageSkeleton } from "@/components/page-skeleton";
 import { parseSaveError } from "@/lib/save-error";
 import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
 import { useDisplayCurrency } from "@/components/currency-provider";
-import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
+import { AmountInput } from "@/components/amount-input";
 
 type Subscription = {
   id: number;
@@ -553,15 +554,15 @@ function SubscriptionsPageContent() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <PageHeader
-        className="flex flex-wrap items-center justify-between gap-3"
-        title="Subscriptions"
-        subtitle="Track recurring subscriptions and set cancel reminders"
-        actionsClassName="flex gap-2"
-        overflow={[{ label: detecting ? "Detecting..." : "Auto-detect", icon: Zap, onSelect: handleDetect, disabled: detecting }]}
-        actions={
-        <>
-          <Button variant="outline" className={HEADER_DESKTOP_ONLY} onClick={handleDetect} disabled={detecting}>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold">Subscriptions</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Track recurring subscriptions and set cancel reminders
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleDetect} disabled={detecting}>
             <Zap className="h-4 w-4 mr-1" />
             {detecting ? "Detecting..." : "Auto-detect"}
           </Button>
@@ -596,12 +597,11 @@ function SubscriptionsPageContent() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label>Amount</Label>
-                    <Input
-                      type="number"
+                    <AmountInput
                       step="0.01"
                       value={form.amount}
-                      onChange={(e) =>
-                        setForm({ ...form, amount: e.target.value })
+                      onValueChange={(nv) =>
+                        setForm({ ...form, amount: nv })
                       }
                       required
                     />
@@ -716,15 +716,14 @@ function SubscriptionsPageContent() {
               </form>
             </DialogContent>
           </Dialog>
-        </>
-        }
-      />
+        </div>
+      </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="flex items-center gap-4 pt-6">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 dark:bg-indigo-950/40">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 dark:bg-indigo-950/40">
               <DollarSign className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
             </div>
             <div>
@@ -737,7 +736,7 @@ function SubscriptionsPageContent() {
         </Card>
         <Card>
           <CardContent className="flex items-center gap-4 pt-6">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-100 dark:bg-rose-950/40">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 dark:bg-rose-950/40">
               <CalendarDays className="h-5 w-5 text-rose-600 dark:text-rose-400" />
             </div>
             <div>
@@ -750,7 +749,7 @@ function SubscriptionsPageContent() {
         </Card>
         <Card>
           <CardContent className="flex items-center gap-4 pt-6">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-950/40">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-950/40">
               <CreditCard className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
             </div>
             <div>
@@ -788,7 +787,7 @@ function SubscriptionsPageContent() {
       {subs.length === 0 && (
         <Card>
           <CardContent className="py-12 flex flex-col items-center text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted mb-4">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-muted mb-4">
               <CreditCard className="h-7 w-7 text-muted-foreground" />
             </div>
             <h3 className="text-lg font-semibold mb-1">

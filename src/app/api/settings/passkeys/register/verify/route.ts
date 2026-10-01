@@ -6,6 +6,8 @@
  * consumed atomically before the attestation is verified (UV required,
  * origin/rpID from server config, attestation "none").
  *
+ * label is optional (client no longer asks): see lib/auth/passkey-name.ts.
+ *
  * PRF key-wrap (B6) is a second step: prf_supported stays 0 / dek_wrapped_prf NULL
  * here; the response tells the browser to run register/prf-options ->
  * (second tap with PRF eval) -> register/finish-prf, unless the browser already
@@ -16,13 +18,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getDialect } from "@/db";
 import { requireWebSession } from "@/lib/auth/web-session";
-import { getPasskey, insertPasskey, countPasskeys } from "@/lib/auth/queries";
+import { getPasskey, insertPasskey, countPasskeys, listPasskeys } from "@/lib/auth/queries";
 import { finishRegistration, MAX_PASSKEYS_PER_USER } from "@/lib/auth/webauthn";
 import { registrationResponseSchema, challengeTokenSchema } from "@/lib/auth/webauthn-schemas";
 import { validateBody, logApiError } from "@/lib/validate";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { logSecurityEvent } from "@/lib/auth/security-events";
 import { clientIp } from "@/lib/client-ip";
+import { generatePasskeyName } from "@/lib/auth/passkey-name";
 
 export const dynamic = "force-dynamic";
 
@@ -54,7 +57,7 @@ export async function POST(request: NextRequest) {
   try {
     const parsed = validateBody(await request.json().catch(() => null), bodySchema);
     if (parsed.error) return NextResponse.json(FAIL, { status: 400 });
-    const { token, response, label } = parsed.data;
+    const { token, response, label: providedLabel } = parsed.data;
 
     const result = await finishRegistration({ userId, sessionId, token, response });
     if (!result.ok) return NextResponse.json(FAIL, { status: 400 });
@@ -66,6 +69,14 @@ export async function POST(request: NextRequest) {
     if ((await countPasskeys(userId)) >= MAX_PASSKEYS_PER_USER) {
       return NextResponse.json({ error: "Passkey limit reached." }, { status: 400 });
     }
+    // Name is optional: a provided label wins; otherwise AAGUID provider, then UA, then "Passkey".
+    const label =
+      providedLabel ??
+      generatePasskeyName({
+        aaguid: cred.aaguid,
+        userAgent: request.headers.get("user-agent"),
+        existingLabels: (await listPasskeys(userId)).map((p) => p.label),
+      });
     try {
       await insertPasskey({
         id: cred.credentialId,
@@ -75,7 +86,7 @@ export async function POST(request: NextRequest) {
         transports: cred.transports,
         aaguid: cred.aaguid,
         backedUp: cred.backedUp,
-        label: label ?? null,
+        label,
         prfSupported: 0,
         dekWrappedPrf: null,
         createdAt: new Date().toISOString(),
@@ -92,7 +103,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         id: cred.credentialId,
-        label: label ?? null,
+        label,
         prfSupported: false,
         needsPrfAssertion: (response.clientExtensionResults as { prf?: { enabled?: boolean } } | undefined)?.prf?.enabled !== false,
       },

@@ -129,15 +129,21 @@ describe("/cloud Google flow", () => {
     params = new URLSearchParams("tab=register&google=1");
     handlers["/api/auth/google/pending"] = () => ({ body: { kind: "signup", email: "a***@x.com", name: "Al" } });
     render(<CloudAuthPage />);
-    await waitFor(() => expect((screen.getByLabelText(/^Email/) as HTMLInputElement).value).toBe("a***@x.com"));
+    // Signup step shows the (masked) Google email as the identifier chip; user picks a username.
+    expect(await screen.findByText("a***@x.com")).toBeInTheDocument();
+    expect(screen.getByLabelText("Username")).toBeInTheDocument();
   });
 
   it("(h) password login POST body is unchanged", async () => {
     handlers["/api/auth/login"] = () => ({ body: { ok: true } });
+    handlers["/api/auth/identify"] = () => ({ body: { exists: true } });
     render(<CloudAuthPage />);
-    fireEvent.change(document.getElementById("identifier")!, { target: { value: "bob" } });
-    fireEvent.change(document.getElementById("password")!, { target: { value: "secret-pass" } });
-    fireEvent.submit(document.getElementById("password")!.closest("form")!);
+    fireEvent.click(await screen.findByText("Use email instead"));
+    fireEvent.change(await screen.findByLabelText("Email or username"), { target: { value: "bob" } });
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    const pw = await screen.findByPlaceholderText("Password");
+    fireEvent.change(pw, { target: { value: "secret-pass" } });
+    fireEvent.submit(pw.closest("form")!);
     await waitFor(() => expect(calls.some((c) => c.url === "/api/auth/login")).toBe(true));
     expect(bodyOf("/api/auth/login")).toEqual({ identifier: "bob", password: "secret-pass" });
     // Login is a FULL page load (kills SWR/React caches), never a client-side push.

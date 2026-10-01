@@ -1,4 +1,5 @@
 "use client";
+import { PageHeader } from "@/components/mobile";
 
 import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,7 +20,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/error-state";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { parseSaveError } from "@/lib/save-error";
-import { PageHeader } from "@/components/mobile";
+import { AmountInput } from "@/components/amount-input";
 
 type Goal = {
   id: number; name: string; type: string; targetAmount: number; currentAmount: number;
@@ -240,7 +241,7 @@ function GoalEditForm({
       </div>
       <div>
         <Label>Target Amount</Label>
-        <Input type="number" step="0.01" value={form.targetAmount} onChange={(e) => { setForm({ ...form, targetAmount: e.target.value }); setErrors({ ...errors, targetAmount: "" }); }} />
+        <AmountInput  step="0.01" value={form.targetAmount} onValueChange={(nv) => { setForm({ ...form, targetAmount: nv }); setErrors({ ...errors, targetAmount: "" }); }} />
         {errors.targetAmount && <p className="text-xs text-destructive mt-1">{errors.targetAmount}</p>}
       </div>
       <div className="grid grid-cols-2 gap-3">
@@ -375,12 +376,11 @@ export default function GoalsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        className="flex flex-wrap items-center justify-between gap-3"
-        title="Financial Goals"
-        subtitle="Track your savings targets and measure progress over time"
-        actionsClassName="contents"
-        actions={
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold">Financial Goals</h1>
+          <p className="text-sm text-muted-foreground mt-1">Track your savings targets and measure progress over time</p>
+        </div>
         <Dialog open={addOpen} onOpenChange={(o) => { setAddOpen(o); if (!o) setSeedForm(emptyForm(displayCurrency)); }}>
           <DialogTrigger render={<Button />}><Plus className="h-4 w-4 mr-1" /> Add Goal</DialogTrigger>
           <DialogContent>
@@ -395,8 +395,7 @@ export default function GoalsPage() {
             />
           </DialogContent>
         </Dialog>
-        }
-      />
+      </div>
 
       {/* Edit dialog — issue #130 */}
       <Dialog open={editGoal !== null} onOpenChange={(o) => { if (!o) setEditGoal(null); }}>
@@ -421,7 +420,7 @@ export default function GoalsPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
             <CardContent className="flex items-center gap-4 pt-6">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 dark:bg-indigo-950/40">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 dark:bg-indigo-950/40">
                 <Target className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
               </div>
               <div>
@@ -432,7 +431,7 @@ export default function GoalsPage() {
           </Card>
           <Card>
             <CardContent className="flex items-center gap-4 pt-6">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-950/40">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-950/40">
                 <TrendingUp className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div>
@@ -443,7 +442,7 @@ export default function GoalsPage() {
           </Card>
           <Card>
             <CardContent className="flex items-center gap-4 pt-6">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-950/40">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-950/40">
                 <CheckCircle2 className="h-5 w-5 text-violet-600 dark:text-violet-400" />
               </div>
               <div>
@@ -459,7 +458,7 @@ export default function GoalsPage() {
       {goals.length === 0 && (
         <Card className="border-dashed">
           <CardContent className="py-16 flex flex-col items-center text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-100 dark:bg-indigo-950/60 mb-4">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-indigo-100 dark:bg-indigo-950/60 mb-4">
               <Target className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
             </div>
             <h3 className="text-lg font-semibold mb-2">Set your first financial goal</h3>

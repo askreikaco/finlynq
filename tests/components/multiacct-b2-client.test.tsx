@@ -36,7 +36,7 @@ vi.mock("@/lib/client/hard-reload", async (orig) => {
   return { ...real, hardReload: (...a: unknown[]) => hardReload(...a) };
 });
 
-import { Nav } from "@/components/nav";
+import { ManageAccounts } from "@/components/manage-accounts";
 import ChatPage from "@/app/(app)/chat/page";
 import { ActionCenter } from "@/app/(app)/dashboard/_components/action-center";
 import {
@@ -101,11 +101,10 @@ describe("user-storage helpers", () => {
 });
 
 describe("hardReload is used for sign-out", () => {
-  it("Nav sign-out POSTs /api/auth/logout then hardReload('/') (no router push/refresh)", async () => {
-    render(<Nav />);
-    // Sign-out now lives in the AccountSwitcher menu (opened from the nav footer).
-    fireEvent.click((await screen.findAllByRole("button", { name: /account menu/i }))[0]);
-    fireEvent.click(await screen.findByRole("menuitem", { name: /sign out of this account/i }));
+  it("Remove from this device (active account) POSTs /api/auth/logout then hardReload('/') (no router push/refresh)", async () => {
+    render(<ManageAccounts />);
+    fireEvent.click(await screen.findByRole("button", { name: /remove me@example.com from this device/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /^remove$/i }));
     await waitFor(() => expect(hardReload).toHaveBeenCalledWith("/"));
     expect(fetchLog).toContain("POST /api/auth/logout");
   });

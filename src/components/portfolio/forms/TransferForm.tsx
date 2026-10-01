@@ -39,6 +39,8 @@ import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
 import { usePortfolioFormData } from "@/lib/hooks/usePortfolioFormData";
 import { useAccountHoldingSelection } from "@/lib/hooks/useAccountHoldingSelection";
 import { useSeedAccountFromParam } from "@/lib/hooks/useSeedAccountFromParam";
+import { AmountInput } from "@/components/amount-input";
+import { getDisplayLocale } from "@/lib/locale";
 
 export default function TransferForm() {
   const router = useRouter();
@@ -347,7 +349,7 @@ export default function TransferForm() {
             )}
             {selectedHolding && (
               <p className="text-xs text-muted-foreground">
-                Source has {Number(selectedHolding.currentShares ?? 0).toLocaleString()} shares available.
+                Source has {Number(selectedHolding.currentShares ?? 0).toLocaleString(getDisplayLocale())} shares available.
               </p>
             )}
           </div>
@@ -355,12 +357,11 @@ export default function TransferForm() {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Quantity</Label>
-              <Input
-                type="number"
+              <AmountInput
                 step="any"
                 inputMode="decimal"
                 value={qty}
-                onChange={(e) => setQty(e.target.value)}
+                onValueChange={(nv) => setQty(nv)}
                 placeholder="50"
               />
               {errors.qty && (

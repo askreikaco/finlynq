@@ -1,4 +1,5 @@
 "use client";
+import { PageHeader } from "@/components/mobile";
 
 import { DevModeGuard } from "@/components/dev-mode-guard";
 
@@ -17,7 +18,7 @@ import {
   AreaChart, Area, Legend,
 } from "recharts";
 import { Home, PiggyBank, CreditCard, TrendingUp, Calculator } from "lucide-react";
-import { PageHeader } from "@/components/mobile";
+import { AmountInput } from "@/components/amount-input";
 
 // --- Types ---
 type HomePurchaseResult = {
@@ -98,12 +99,12 @@ function HomePurchaseTab() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
-            <div><Label>Purchase Price ($)</Label><Input type="number" value={form.purchasePrice} onChange={(e) => setForm({ ...form, purchasePrice: e.target.value })} /></div>
-            <div><Label>Down Payment (%)</Label><Input type="number" value={form.downPaymentPct} onChange={(e) => setForm({ ...form, downPaymentPct: e.target.value })} /></div>
-            <div><Label>Interest Rate (%)</Label><Input type="number" step="0.1" value={form.interestRate} onChange={(e) => setForm({ ...form, interestRate: e.target.value })} /></div>
+            <div><Label>Purchase Price ($)</Label><AmountInput  value={form.purchasePrice} onValueChange={(nv) => setForm({ ...form, purchasePrice: nv })} /></div>
+            <div><Label>Down Payment (%)</Label><AmountInput  value={form.downPaymentPct} onValueChange={(nv) => setForm({ ...form, downPaymentPct: nv })} /></div>
+            <div><Label>Interest Rate (%)</Label><AmountInput  step="0.1" value={form.interestRate} onValueChange={(nv) => setForm({ ...form, interestRate: nv })} /></div>
             <div><Label>Amortization (years)</Label><Input type="number" value={form.amortizationYears} onChange={(e) => setForm({ ...form, amortizationYears: e.target.value })} /></div>
-            <div><Label>Property Tax / Year ($)</Label><Input type="number" value={form.propertyTaxYear} onChange={(e) => setForm({ ...form, propertyTaxYear: e.target.value })} /></div>
-            <div><Label>Maintenance / Year ($)</Label><Input type="number" value={form.maintenanceYear} onChange={(e) => setForm({ ...form, maintenanceYear: e.target.value })} /></div>
+            <div><Label>Property Tax / Year ($)</Label><AmountInput  value={form.propertyTaxYear} onValueChange={(nv) => setForm({ ...form, propertyTaxYear: nv })} /></div>
+            <div><Label>Maintenance / Year ($)</Label><AmountInput  value={form.maintenanceYear} onValueChange={(nv) => setForm({ ...form, maintenanceYear: nv })} /></div>
           </div>
           <Button onClick={calculate} disabled={loading} className="w-full">
             <Calculator className="h-4 w-4 mr-1" /> {loading ? "Calculating..." : "Calculate"}
@@ -183,8 +184,8 @@ function ExtraSavingsTab() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div><Label>Additional Monthly Savings ($)</Label><Input type="number" value={form.monthlySavings} onChange={(e) => setForm({ ...form, monthlySavings: e.target.value })} /></div>
-          <div><Label>Expected Annual Return (%)</Label><Input type="number" step="0.5" value={form.returnRate} onChange={(e) => setForm({ ...form, returnRate: e.target.value })} /></div>
+          <div><Label>Additional Monthly Savings ($)</Label><AmountInput  value={form.monthlySavings} onValueChange={(nv) => setForm({ ...form, monthlySavings: nv })} /></div>
+          <div><Label>Expected Annual Return (%)</Label><AmountInput  step="0.5" value={form.returnRate} onValueChange={(nv) => setForm({ ...form, returnRate: nv })} /></div>
           <div><Label>Time Horizon (years)</Label><Input type="number" value={form.years} onChange={(e) => setForm({ ...form, years: e.target.value })} /></div>
           <Button onClick={calculate} disabled={loading} className="w-full">
             <Calculator className="h-4 w-4 mr-1" /> {loading ? "Calculating..." : "Calculate"}
@@ -327,7 +328,7 @@ function DebtPayoffTab() {
               </div>
               <div>
                 <Label>Extra Monthly Budget ($)</Label>
-                <Input type="number" value={extraBudget} onChange={(e) => setExtraBudget(e.target.value)} />
+                <AmountInput  value={extraBudget} onValueChange={(nv) => setExtraBudget(nv)} />
               </div>
               <Button onClick={calculate} disabled={loading} className="w-full">
                 <Calculator className="h-4 w-4 mr-1" /> {loading ? "Calculating..." : "Compare Strategies"}
@@ -447,9 +448,9 @@ function IncomeChangeTab() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div><Label>Current Annual Income ($)</Label><Input type="number" value={form.currentIncome} onChange={(e) => setForm({ ...form, currentIncome: e.target.value })} /></div>
-          <div><Label>New Annual Income ($)</Label><Input type="number" value={form.newIncome} onChange={(e) => setForm({ ...form, newIncome: e.target.value })} /></div>
-          <div><Label>Current Savings Rate (%)</Label><Input type="number" value={form.currentSavingsRate} onChange={(e) => setForm({ ...form, currentSavingsRate: e.target.value })} /></div>
+          <div><Label>Current Annual Income ($)</Label><AmountInput  value={form.currentIncome} onValueChange={(nv) => setForm({ ...form, currentIncome: nv })} /></div>
+          <div><Label>New Annual Income ($)</Label><AmountInput  value={form.newIncome} onValueChange={(nv) => setForm({ ...form, newIncome: nv })} /></div>
+          <div><Label>Current Savings Rate (%)</Label><AmountInput  value={form.currentSavingsRate} onValueChange={(nv) => setForm({ ...form, currentSavingsRate: nv })} /></div>
           <Button onClick={calculate} disabled={loading} className="w-full">
             <Calculator className="h-4 w-4 mr-1" /> {loading ? "Calculating..." : "Calculate Impact"}
           </Button>
@@ -519,12 +520,12 @@ function IncomeChangeTab() {
 function ScenariosPageContent() {
   return (
     <div className="space-y-6">
-      <PageHeader
-          title="Scenario Planner"
-          titleClassName="text-2xl font-bold"
-          subtitle="Model financial decisions and see their long-term impact"
-          subtitleClassName="text-sm text-muted-foreground mt-1"
-        />
+      <div>
+        <h1 className="text-2xl font-bold">Scenario Planner</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Model financial decisions and see their long-term impact
+        </p>
+      </div>
 
       <Tabs defaultValue="home-purchase">
         <TabsList>

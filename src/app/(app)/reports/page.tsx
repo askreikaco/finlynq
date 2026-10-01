@@ -532,7 +532,7 @@ export default function ReportsPage() {
           <Card className="card-hover">
             <CardContent className="pt-4 pb-4">
               <div className="flex items-center gap-2 mb-1">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400">
                   <TrendingUp className="h-3.5 w-3.5" />
                 </div>
                 <span className="text-xs text-muted-foreground font-medium">Total Income</span>
@@ -545,7 +545,7 @@ export default function ReportsPage() {
           <Card className="card-hover">
             <CardContent className="pt-4 pb-4">
               <div className="flex items-center gap-2 mb-1">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-rose-100 text-rose-600 dark:bg-rose-950 dark:text-rose-400">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-rose-100 text-rose-600 dark:bg-rose-950 dark:text-rose-400">
                   <TrendingDown className="h-3.5 w-3.5" />
                 </div>
                 <span className="text-xs text-muted-foreground font-medium">Total Expenses</span>
@@ -558,7 +558,7 @@ export default function ReportsPage() {
           <Card className="card-hover">
             <CardContent className="pt-4 pb-4">
               <div className="flex items-center gap-2 mb-1">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
                   <DollarSign className="h-3.5 w-3.5" />
                 </div>
                 <span className="text-xs text-muted-foreground font-medium">Net Savings</span>
@@ -571,7 +571,7 @@ export default function ReportsPage() {
           <Card className="card-hover">
             <CardContent className="pt-4 pb-4">
               <div className="flex items-center gap-2 mb-1">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-100 text-violet-600 dark:bg-violet-950 dark:text-violet-400">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-600 dark:bg-violet-950 dark:text-violet-400">
                   <PiggyBank className="h-3.5 w-3.5" />
                 </div>
                 <span className="text-xs text-muted-foreground font-medium">Savings Rate</span>
@@ -590,7 +590,7 @@ export default function ReportsPage() {
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
                   <BarChart3 className="h-5 w-5" />
                 </div>
                 <div>
@@ -684,7 +684,7 @@ export default function ReportsPage() {
         <TabsContent value="income">
           {!trendsData && (
             <div className="flex flex-col items-center justify-center py-20 text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/60 mb-4">
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-muted/60 mb-4">
                 <BarChart3 className="h-8 w-8 text-muted-foreground" />
               </div>
               <h3 className="text-lg font-semibold mb-1">No transaction data yet</h3>
@@ -751,7 +751,7 @@ export default function ReportsPage() {
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400">
                         <ArrowUpRight className="h-5 w-5" />
                       </div>
                       <div>
@@ -800,7 +800,7 @@ export default function ReportsPage() {
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-100 text-rose-600 dark:bg-rose-950 dark:text-rose-400">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-600 dark:bg-rose-950 dark:text-rose-400">
                         <ArrowDownRight className="h-5 w-5" />
                       </div>
                       <div>
@@ -986,7 +986,7 @@ export default function ReportsPage() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-600 dark:bg-violet-950 dark:text-violet-400">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-600 dark:bg-violet-950 dark:text-violet-400">
                       <FileText className="h-5 w-5" />
                     </div>
                     <div>
@@ -1091,7 +1091,7 @@ export default function ReportsPage() {
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-100 text-cyan-600 dark:bg-cyan-950 dark:text-cyan-400">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-100 text-cyan-600 dark:bg-cyan-950 dark:text-cyan-400">
                     <Workflow className="h-5 w-5" />
                   </div>
                   <div>
@@ -1146,7 +1146,7 @@ export default function ReportsPage() {
                 <Card>
                   <CardHeader>
                     <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-950 dark:text-amber-400">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-950 dark:text-amber-400">
                         <GitCompareArrows className="h-5 w-5" />
                       </div>
                       <div>

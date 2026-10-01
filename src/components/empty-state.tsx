@@ -23,7 +23,7 @@ export function EmptyState({ icon: Icon, title, description, action }: EmptyStat
       animate={{ opacity: 1, y: 0 }}
       className="flex flex-col items-center justify-center py-16 px-4 text-center"
     >
-      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/60 mb-4">
+      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-muted/60 mb-4">
         <Icon className="h-8 w-8 text-muted-foreground" />
       </div>
       <h3 className="text-lg font-semibold">{title}</h3>

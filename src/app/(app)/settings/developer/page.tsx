@@ -1,4 +1,5 @@
 "use client";
+import { PageHeader } from "@/components/mobile";
 
 /**
  * /settings/developer — Dev Mode toggle (issue #57).
@@ -8,13 +9,22 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ToggleLeft, ToggleRight } from "lucide-react";
-import { PageHeader } from "@/components/mobile";
+import { Accordion, AccordionItem } from "@/components/ui/accordion";
+import { ToggleLeft, ToggleRight, Database } from "lucide-react";
+import { useOpenSection } from "@/components/settings/use-open-section";
+import { DataSection } from "@/components/settings/sections/data-section";
+
+// /settings/data renders this page in place with Data open.
+const OPEN_SECTIONS = {
+  byPath: [{ prefix: "/settings/data", section: "data" }],
+  valid: ["data"],
+};
 
 export default function DeveloperSettingsPage() {
   const [devMode, setDevMode] = useState(false);
   const [devModeLoading, setDevModeLoading] = useState(false);
   const [devModeStatus, setDevModeStatus] = useState("");
+  const [tab, setTab] = useOpenSection(OPEN_SECTIONS);
 
   // Load dev mode
   useEffect(() => {
@@ -49,17 +59,15 @@ export default function DeveloperSettingsPage() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <PageHeader
-          title="Developer"
-          titleClassName="text-2xl font-bold tracking-tight"
-          subtitle="Advanced and experimental features"
-          subtitleClassName="text-sm text-muted-foreground mt-0.5"
-        />
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Developer</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">Advanced and experimental features</p>
+      </div>
 
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
               {devMode ? <ToggleRight className="h-5 w-5" /> : <ToggleLeft className="h-5 w-5" />}
             </div>
             <div>
@@ -95,6 +103,19 @@ export default function DeveloperSettingsPage() {
           )}
         </CardContent>
       </Card>
+
+      <Accordion value={tab} onValueChange={setTab}>
+        <AccordionItem
+          value="data"
+          icon={<Database className="h-4 w-4" />}
+          title="Data"
+          description="Import, export, and manage your data"
+        >
+          <div id="data">
+            <DataSection />
+          </div>
+        </AccordionItem>
+      </Accordion>
     </div>
   );
 }

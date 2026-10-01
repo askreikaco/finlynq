@@ -29,12 +29,15 @@ import {
   GitBranch,
   FlameKindling,
   ChevronRight,
+  Palette,
   type LucideIcon,
 } from "lucide-react";
+import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { adminLinks } from "@/components/nav";
 import { AccountSwitcher } from "@/components/account-switcher";
 import { hardReload, clearPerUserStorage } from "@/lib/client/hard-reload";
+import { setPasskeyAutoSkip } from "@/lib/client/passkey-auto";
 
 export type MoreRow = { href: string; label: string; icon: LucideIcon; id: string };
 export type MoreGroup = { id: string; header?: string; rows: MoreRow[] };
@@ -117,6 +120,45 @@ function Card({ children, testId }: { children: React.ReactNode; testId?: string
   );
 }
 
+const THEME_CHOICES = [
+  { value: "system", label: "System" },
+  { value: "light", label: "Light" },
+  { value: "dark", label: "Dark" },
+] as const;
+
+/** 44px row: icon tile, label, System/Light/Dark segmented control (next-themes). */
+export function AppearanceRow() {
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const current = mounted ? (theme ?? "system") : "system";
+  return (
+    <div className="flex min-h-11 w-full items-center gap-3 px-3 py-2" data-testid="more-appearance">
+      <span className={tile}>
+        <Palette className="h-[18px] w-[18px]" aria-hidden="true" />
+      </span>
+      <span className="flex-1 truncate text-base font-medium">Appearance</span>
+      <div role="radiogroup" aria-label="Appearance" className="flex shrink-0 rounded-lg bg-muted/60 p-0.5">
+        {THEME_CHOICES.map((c) => (
+          <button
+            key={c.value}
+            type="button"
+            role="radio"
+            aria-checked={current === c.value}
+            onClick={() => setTheme(c.value)}
+            className={cn(
+              "min-h-9 rounded-md px-2.5 text-xs font-medium transition-colors",
+              current === c.value ? "bg-background text-foreground shadow-sm" : "text-muted-foreground",
+            )}
+          >
+            {c.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function MoreMenu() {
   const router = useRouter();
   const [flags, setFlags] = useState<MoreFlags>({
@@ -178,6 +220,7 @@ export function MoreMenu() {
       }
       const data = await res.json().catch(() => ({}));
       if (activeId) clearPerUserStorage(activeId);
+      setPasskeyAutoSkip();
       hardReload(res.ok && data?.activeUserId ? "/dashboard" : "/");
     } catch {
       busy.current = false;
@@ -190,11 +233,12 @@ export function MoreMenu() {
     <div className="mx-auto max-w-xl space-y-6 md:hidden" data-testid="more-menu">
       <h1 className="text-4xl font-bold tracking-tight">More</h1>
 
-      <Card testId="more-account">
-        <div className="px-1 py-1 [&_*]:text-foreground" aria-label="Account">
-          <AccountSwitcher compact={false} />
-        </div>
-      </Card>
+      <section data-testid="more-account" className="space-y-2">
+        <h2 className="px-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground">Account</h2>
+        <Card>
+          <AccountSwitcher variant="list" />
+        </Card>
+      </section>
 
       {groups.map((g) => (
         <section key={g.id} data-testid={`more-group-${g.id}`} className="space-y-2">
@@ -218,6 +262,7 @@ export function MoreMenu() {
                 <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
               </Link>
             ))}
+            {g.id === "tools" && <AppearanceRow />}
             {g.id === "tools" && (
               <button type="button" onClick={signOut} className={cn(rowCls, "text-destructive")} data-testid="more-signout">
                 <span className={tile}>

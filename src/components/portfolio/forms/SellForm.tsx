@@ -41,6 +41,8 @@ import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
 import { usePortfolioFormData } from "@/lib/hooks/usePortfolioFormData";
 import { useAccountHoldingSelection } from "@/lib/hooks/useAccountHoldingSelection";
 import { useSeedAccountFromParam } from "@/lib/hooks/useSeedAccountFromParam";
+import { AmountInput } from "@/components/amount-input";
+import { getDisplayLocale } from "@/lib/locale";
 
 export default function SellForm() {
   const router = useRouter();
@@ -385,7 +387,7 @@ export default function SellForm() {
             )}
             {selectedHolding && (
               <p className="text-xs text-muted-foreground">
-                Currently holding {Number(selectedHolding.currentShares ?? 0).toLocaleString()} shares.
+                Currently holding {Number(selectedHolding.currentShares ?? 0).toLocaleString(getDisplayLocale())} shares.
               </p>
             )}
           </div>
@@ -414,12 +416,11 @@ export default function SellForm() {
                   </span>
                 )}
               </Label>
-              <Input
-                type="number"
+              <AmountInput
                 step="any"
                 inputMode="decimal"
                 value={useLotPicker ? String(lotSelectionTotal || "") : qty}
-                onChange={(e) => setQty(e.target.value)}
+                onValueChange={(nv) => setQty(nv)}
                 placeholder="100"
                 readOnly={useLotPicker}
                 className={useLotPicker ? "bg-muted/40" : undefined}
@@ -437,12 +438,11 @@ export default function SellForm() {
                   </span>
                 ) : null}
               </Label>
-              <Input
-                type="number"
+              <AmountInput
                 step="any"
                 inputMode="decimal"
                 value={totalProceeds}
-                onChange={(e) => setTotalProceeds(e.target.value)}
+                onValueChange={(nv) => setTotalProceeds(nv)}
                 placeholder="1100.00"
               />
               {errors.totalProceeds && (
@@ -595,11 +595,11 @@ export default function SellForm() {
           <>
             This will open a short position of{" "}
             <span className="font-medium text-foreground">
-              {shortUnits.toLocaleString()}
+              {shortUnits.toLocaleString(getDisplayLocale())}
             </span>{" "}
             {selectedHolding?.symbol ?? "units"} (you hold{" "}
-            {heldQty.toLocaleString()}, selling{" "}
-            {effectiveSellQty.toLocaleString()}). Short positions are supported —
+            {heldQty.toLocaleString(getDisplayLocale())}, selling{" "}
+            {effectiveSellQty.toLocaleString(getDisplayLocale())}). Short positions are supported —
             continue?
           </>
         }

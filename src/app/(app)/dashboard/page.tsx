@@ -1,4 +1,5 @@
 "use client";
+import { PageHeader } from "@/components/mobile";
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
@@ -27,7 +28,7 @@ import { useDevMode } from "@/hooks/use-dev-mode";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { CurrencyAuditBanner } from "@/components/currency-audit-banner";
 import type { DashboardData, HealthData } from "./_components/types";
-import { PageHeader } from "@/components/mobile";
+import { formatPercent } from "@/lib/locale";
 
 // --- Quick Import Widget ---
 function QuickImportWidget() {
@@ -345,23 +346,18 @@ export default function DashboardPage() {
       {/* ============================================
           HEADER — Greeting + Profile hint
           ============================================ */}
-      <motion.div variants={itemVariants}>
-        <PageHeader
-          className="flex flex-wrap items-center justify-between gap-3"
-          title={greeting}
-          titleClassName="text-xl font-semibold tracking-tight"
-          subtitleClassName="text-[13px] text-muted-foreground mt-0.5"
-          subtitle="Here's your financial overview"
-          actions={
+      <motion.div variants={itemVariants} className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-semibold tracking-tight">{greeting}</h1>
+          <p className="text-[13px] text-muted-foreground mt-0.5">Here&apos;s your financial overview</p>
+        </div>
         <Link
           href="/settings/general"
-          className="flex h-9 w-9 max-md:h-11 max-md:w-11 items-center justify-center rounded-full bg-muted/60 hover:bg-muted transition-colors"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted/60 hover:bg-muted transition-colors"
           title="Settings"
         >
           <User className="h-4 w-4 text-muted-foreground" />
         </Link>
-          }
-        />
       </motion.div>
 
       {/* Currency audit banner — shown only when there are unresolved cross-currency rows */}
@@ -407,12 +403,12 @@ export default function DashboardPage() {
                       {momChange >= 0 ? (
                         <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-emerald-600 bg-emerald-100/80 dark:bg-emerald-950/60 dark:text-emerald-400 px-2.5 py-0.5 rounded-full">
                           <ArrowUpRight className="h-3 w-3" />
-                          +{momPct.toFixed(1)}%
+                          +{formatPercent(momPct, 1)}
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-rose-600 bg-rose-100/80 dark:bg-rose-950/60 dark:text-rose-400 px-2.5 py-0.5 rounded-full">
                           <ArrowDownRight className="h-3 w-3" />
-                          {momPct.toFixed(1)}%
+                          {formatPercent(momPct, 1)}
                         </span>
                       )}
                       <span className="text-[11px] text-muted-foreground">

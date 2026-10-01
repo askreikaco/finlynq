@@ -43,6 +43,7 @@ import {
   type EmailCondition,
   type EmailConditionField,
 } from "@/lib/email-rules/schema";
+import { AmountInput } from "@/components/amount-input";
 
 export interface RuleDraftInit {
   id?: number | null;
@@ -144,32 +145,29 @@ function EmailConditionRow({
           </Select>
           {cond.op === "between" ? (
             <>
-              <input
-                type="number"
+              <AmountInput native
                 step="0.01"
                 className="h-9 w-[90px] rounded-md border bg-background px-2 text-sm"
                 value={String(cond.min)}
                 placeholder="min"
-                onChange={(e) => onChange({ field: "amount", op: "between", min: toNum(e.target.value), max: cond.max })}
+                onValueChange={(nv) => onChange({ field: "amount", op: "between", min: toNum(nv), max: cond.max })}
               />
               <span className="text-xs text-muted-foreground">–</span>
-              <input
-                type="number"
+              <AmountInput native
                 step="0.01"
                 className="h-9 w-[90px] rounded-md border bg-background px-2 text-sm"
                 value={String(cond.max)}
                 placeholder="max"
-                onChange={(e) => onChange({ field: "amount", op: "between", min: cond.min, max: toNum(e.target.value) })}
+                onValueChange={(nv) => onChange({ field: "amount", op: "between", min: cond.min, max: toNum(nv) })}
               />
             </>
           ) : (
-            <input
-              type="number"
+            <AmountInput native
               step="0.01"
               className="h-9 w-[120px] rounded-md border bg-background px-2 text-sm"
               value={String(cond.value)}
               placeholder="amount"
-              onChange={(e) => onChange({ field: "amount", op: cond.op, value: toNum(e.target.value) })}
+              onValueChange={(nv) => onChange({ field: "amount", op: cond.op, value: toNum(nv) })}
             />
           )}
           <span className="text-xs text-muted-foreground">(by magnitude)</span>

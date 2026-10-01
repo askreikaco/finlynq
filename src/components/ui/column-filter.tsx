@@ -41,6 +41,7 @@ import {
   type TableColFilter,
   type TableFilterType,
 } from "@/lib/table-filters";
+import { AmountInput } from "@/components/amount-input";
 
 export interface ColumnFilterPopoverProps {
   columnId: string;
@@ -167,12 +168,11 @@ export function ColumnFilterPopover({
               </SelectContent>
             </Select>
             <Label className="text-xs">Value</Label>
-            <Input
-              type="number"
+            <AmountInput
               className="h-8 text-xs"
               value={(draft as { value?: number } | null)?.value ?? ""}
-              onChange={(e) => {
-                const n = e.target.value === "" ? 0 : Number(e.target.value);
+              onValueChange={(nv) => {
+                const n = nv === "" ? 0 : Number(nv);
                 if (!Number.isFinite(n)) return;
                 const cur =
                   draft && draft.type === "numeric"
@@ -190,13 +190,12 @@ export function ColumnFilterPopover({
             {draft?.type === "numeric" && draft.op === "between" && (
               <>
                 <Label className="text-xs">Upper bound</Label>
-                <Input
-                  type="number"
+                <AmountInput
                   className="h-8 text-xs"
                   value={draft.value2 ?? ""}
-                  onChange={(e) => {
+                  onValueChange={(nv) => {
                     const n =
-                      e.target.value === "" ? undefined : Number(e.target.value);
+                      nv === "" ? undefined : Number(nv);
                     if (n != null && !Number.isFinite(n)) return;
                     setDraft({ ...draft, value2: n });
                   }}

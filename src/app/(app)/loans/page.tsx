@@ -1,4 +1,5 @@
 "use client";
+import { PageHeader } from "@/components/mobile";
 
 import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,7 +23,7 @@ import { ErrorState } from "@/components/error-state";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { parseSaveError } from "@/lib/save-error";
 import { CspSafeBar } from "@/components/csp-safe-bar";
-import { PageHeader } from "@/components/mobile";
+import { AmountInput } from "@/components/amount-input";
 
 type Loan = {
   id: number; name: string; type: string; principal: number; annualRate: number;
@@ -349,13 +350,11 @@ function LoansPageContent() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        className="flex flex-wrap items-center justify-between gap-3"
-        title="Loans & Debt"
-        subtitle="Track balances, amortization schedules, and payoff strategies"
-        actionsClassName="contents"
-        actions={
-        <>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold">Loans & Debt</h1>
+          <p className="text-sm text-muted-foreground mt-1">Track balances, amortization schedules, and payoff strategies</p>
+        </div>
         {/* Opening is routed through openCreate/openEdit rather than a
             DialogTrigger, so the form is seeded before the dialog paints.
             `displayCurrency` starts at the USD default and only resolves once
@@ -398,12 +397,12 @@ function LoansPageContent() {
                 </div>
                 <div>
                   <Label>Principal</Label>
-                  <Input type="number" step="0.01" value={form.principal} onChange={(e) => { setForm({ ...form, principal: e.target.value }); setErrors({ ...errors, principal: "" }); }} />
+                  <AmountInput  step="0.01" value={form.principal} onValueChange={(nv) => { setForm({ ...form, principal: nv }); setErrors({ ...errors, principal: "" }); }} />
                   {errors.principal && <p className="text-xs text-destructive mt-1">{errors.principal}</p>}
                 </div>
                 <div>
                   <Label>Annual Rate (%)</Label>
-                  <Input type="number" step="0.01" value={form.annualRate} onChange={(e) => { setForm({ ...form, annualRate: e.target.value }); setErrors({ ...errors, annualRate: "" }); }} />
+                  <AmountInput  step="0.01" value={form.annualRate} onValueChange={(nv) => { setForm({ ...form, annualRate: nv }); setErrors({ ...errors, annualRate: "" }); }} />
                   {errors.annualRate && <p className="text-xs text-destructive mt-1">{errors.annualRate}</p>}
                 </div>
                 <div>
@@ -415,7 +414,7 @@ function LoansPageContent() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <Label>Payment</Label>
-                  <Input type="number" step="0.01" placeholder="From term" value={form.paymentAmount} onChange={(e) => { setForm({ ...form, paymentAmount: e.target.value }); setErrors({ ...errors, paymentAmount: "", termMonths: "" }); }} />
+                  <AmountInput step="0.01" placeholder="From term" value={form.paymentAmount} onValueChange={(nv) => { setForm({ ...form, paymentAmount: nv }); setErrors({ ...errors, paymentAmount: "", termMonths: "" }); }} />
                   {errors.paymentAmount && <p className="text-xs text-destructive mt-1">{errors.paymentAmount}</p>}
                 </div>
                 <div><Label>Frequency</Label>
@@ -426,7 +425,7 @@ function LoansPageContent() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div><Label>Extra/Payment</Label><Input type="number" step="0.01" value={form.extraPayment} onChange={(e) => setForm({ ...form, extraPayment: e.target.value })} /></div>
+                <div><Label>Extra/Payment</Label><AmountInput  step="0.01" value={form.extraPayment} onValueChange={(nv) => setForm({ ...form, extraPayment: nv })} /></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -437,7 +436,7 @@ function LoansPageContent() {
                 {form.type === "lease" && (
                   <div>
                     <Label>Residual / Buyout</Label>
-                    <Input type="number" step="0.01" placeholder="Balance at term end" value={form.residualValue} onChange={(e) => { setForm({ ...form, residualValue: e.target.value }); setErrors({ ...errors, residualValue: "" }); }} />
+                    <AmountInput  step="0.01" placeholder="Balance at term end" value={form.residualValue} onValueChange={(nv) => { setForm({ ...form, residualValue: nv }); setErrors({ ...errors, residualValue: "" }); }} />
                     {errors.residualValue && <p className="text-xs text-destructive mt-1">{errors.residualValue}</p>}
                   </div>
                 )}
@@ -475,15 +474,13 @@ function LoansPageContent() {
             </form>
           </DialogContent>
         </Dialog>
-        </>
-        }
-      />
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-100 dark:bg-rose-950/40">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 dark:bg-rose-950/40">
                 <Landmark className="h-5 w-5 text-rose-600 dark:text-rose-400" />
               </div>
               <CardTitle className="text-sm text-muted-foreground">Total Debt</CardTitle>
@@ -497,7 +494,7 @@ function LoansPageContent() {
         <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-950/40">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-950/40">
                 <Calendar className="h-5 w-5 text-amber-600 dark:text-amber-400" />
               </div>
               <CardTitle className="text-sm text-muted-foreground">Monthly Payments</CardTitle>
@@ -511,7 +508,7 @@ function LoansPageContent() {
         <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 dark:bg-indigo-950/40">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 dark:bg-indigo-950/40">
                 <FileText className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
               </div>
               <CardTitle className="text-sm text-muted-foreground">Active Loans</CardTitle>

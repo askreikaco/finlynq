@@ -541,3 +541,16 @@ html {
   padding-left: var(--sal);
   padding-right: var(--sar);
 }
+
+/* Owner 2026-10-01: no zoom on iOS — no double-tap zoom, no font inflation,
+   and form controls ≥16px below md so focusing never triggers auto-zoom. */
+html {
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+@media (max-width: 767.98px) {
+  input, textarea, select, [contenteditable="true"] {
+    font-size: max(16px, 1em);
+  }
+}

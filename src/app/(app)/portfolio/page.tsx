@@ -1,4 +1,5 @@
 "use client";
+import { PageHeader } from "@/components/mobile";
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
@@ -16,7 +17,6 @@ import {
 } from "@/components/holdings/holding-edit-form";
 import { PerformanceChart } from "@/components/portfolio/PerformanceChart";
 import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
 import {
   ASSET_TYPE_CONFIG, REGION_COLORS, SECTOR_COLORS,
@@ -30,7 +30,7 @@ import { EtfXrayCard } from "./_components/etf-xray-card";
 import { AllocationCharts } from "./_components/allocation-charts";
 import { BenchmarkChart } from "./_components/benchmark-chart";
 import { HoldingsByAccount } from "./_components/holdings-by-account";
-import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
+import { formatPercent } from "@/lib/locale";
 
 // ── Main Page ───────────────────────────────────────────────────────
 export default function PortfolioPage() {
@@ -156,7 +156,7 @@ export default function PortfolioPage() {
   if (data.summary.totalHoldings === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center gap-4">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-cyan-100 text-cyan-600">
+        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-cyan-100 text-cyan-600">
           <TrendingUp className="h-8 w-8" />
         </div>
         <div>
@@ -220,28 +220,30 @@ export default function PortfolioPage() {
   return (
     <div className="space-y-6">
       {/* ── Header ────────────────────────────────────────────── */}
-      <PageHeader
-        className="flex flex-wrap items-center justify-between gap-3"
-        title="Portfolio"
-        titleClassName="text-2xl font-bold tracking-tight"
-        subtitleClassName="text-sm text-muted-foreground mt-0.5"
-        subtitle={`${summary.totalHoldings} holdings across ${summary.totalAccounts} accounts`}
-        actionsClassName="flex flex-wrap items-center gap-2"
-        overflow={[
-          { label: "Realized gains", href: "/portfolio/realized-gains" },
-          { label: "Dividends", href: "/portfolio/dividends" },
-        ]}
-        actions={
-        <>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Portfolio</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {summary.totalHoldings} holdings across {summary.totalAccounts} accounts
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Phase 2 nav — realized gains + dividends dashboards. Each
+              dashboard reads its own data; they're not modal extensions
+              of this page, just deeper drills into the same portfolio.
+              `buttonVariants` styles a plain Link as a button — Button
+              itself uses base-ui ButtonPrimitive which doesn't accept
+              asChild per shadcn v4 (uses `render` prop instead, but
+              that's not wired here yet). */}
           <Link
             href="/portfolio/realized-gains"
-            className={cn(buttonVariants({ variant: "outline", size: "sm" }), HEADER_DESKTOP_ONLY)}
+            className={buttonVariants({ variant: "outline", size: "sm" })}
           >
             Realized gains
           </Link>
           <Link
             href="/portfolio/dividends"
-            className={cn(buttonVariants({ variant: "outline", size: "sm" }), HEADER_DESKTOP_ONLY)}
+            className={buttonVariants({ variant: "outline", size: "sm" })}
           >
             Dividends
           </Link>
@@ -252,11 +254,10 @@ export default function PortfolioPage() {
             href="/settings/investments"
             className={buttonVariants({ size: "sm" })}
           >
-            <Plus className="h-4 w-4 mr-1.5" /> <span className="max-md:hidden">Add holding</span><span className="md:hidden">Add</span>
+            <Plus className="h-4 w-4 mr-1.5" /> Add holding
           </Link>
-        </>
-        }
-      />
+        </div>
+      </div>
 
       {/* Phase 3 performance chart — TWRR/MWRR + daily value series.
           Empty-state copy in the component explains how to populate
@@ -295,7 +296,7 @@ export default function PortfolioPage() {
                 <p className="text-2xl font-bold tracking-tight hero-number">{summary.totalHoldings}</p>
                 <p className="text-xs text-muted-foreground">{summary.totalAccounts} accounts</p>
               </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400">
                 <Briefcase className="h-5 w-5" />
               </div>
             </div>
@@ -333,7 +334,7 @@ export default function PortfolioPage() {
                   {byType.etf.count} ETFs, {byType.stock.count} stocks
                 </p>
               </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-100 text-cyan-600 dark:bg-cyan-500/10 dark:text-cyan-400">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-100 text-cyan-600 dark:bg-cyan-500/10 dark:text-cyan-400">
                 <BarChart3 className="h-5 w-5" />
               </div>
             </div>
@@ -348,7 +349,7 @@ export default function PortfolioPage() {
                 <p className="text-2xl font-bold tracking-tight hero-number">{byType.crypto.count}</p>
                 <p className="text-xs text-muted-foreground">{byType.cash.count} cash positions</p>
               </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400">
                 <Coins className="h-5 w-5" />
               </div>
             </div>
@@ -384,7 +385,7 @@ export default function PortfolioPage() {
                   {summary.totalUnrealizedGainDisplay >= 0 ? "+" : ""}{formatCurrency(summary.totalUnrealizedGainDisplay, displayCurrency)}
                 </p>
                 <p className={`text-xs font-mono ${summary.totalUnrealizedGainPct >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
-                  {summary.totalUnrealizedGainPct >= 0 ? "+" : ""}{summary.totalUnrealizedGainPct.toFixed(2)}%
+                  {summary.totalUnrealizedGainPct >= 0 ? "+" : ""}{formatPercent(summary.totalUnrealizedGainPct, 2)}
                 </p>
               </div>
               {/* Realized G/L */}
@@ -408,7 +409,7 @@ export default function PortfolioPage() {
                   {summary.totalReturnDisplay >= 0 ? "+" : ""}{formatCurrency(summary.totalReturnDisplay, displayCurrency)}
                 </p>
                 <p className={`text-xs font-mono ${summary.totalReturnPct >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
-                  {summary.totalReturnPct >= 0 ? "+" : ""}{summary.totalReturnPct.toFixed(2)}%
+                  {summary.totalReturnPct >= 0 ? "+" : ""}{formatPercent(summary.totalReturnPct, 2)}
                 </p>
               </div>
             </div>

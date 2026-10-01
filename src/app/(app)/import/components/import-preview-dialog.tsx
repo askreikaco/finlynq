@@ -24,6 +24,7 @@ import type { RawTransaction } from "@/lib/import-pipeline";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { SaveTemplateDialog } from "./save-template-dialog";
+import { formatPercent } from "@/lib/locale";
 
 interface PreviewRow extends RawTransaction {
   hash: string;
@@ -360,7 +361,7 @@ export function ImportPreviewDialog({
                             <div className="text-muted-foreground">
                               Existing: <span className="font-mono text-foreground">{probable.matchedTx.date}</span> <span className="font-mono text-foreground">{formatCurrency(probable.matchedTx.amount, displayCurrency)}</span> —
                               {" "}<span className="font-medium text-foreground">{probable.matchedTx.daysOff}d</span> off,
-                              {" "}delta <span className="font-mono text-foreground">{formatCurrency(probable.matchedTx.amountDeltaAbs, displayCurrency)}</span> ({(probable.matchedTx.amountDeltaPct * 100).toFixed(2)}%)
+                              {" "}delta <span className="font-mono text-foreground">{formatCurrency(probable.matchedTx.amountDeltaAbs, displayCurrency)}</span> ({formatPercent(probable.matchedTx.amountDeltaPct * 100, 2)})
                             </div>
                             <div className="text-orange-700 dark:text-orange-300 font-medium">
                               Score {probable.matchScore.toFixed(2)} · {probable.matchReason}

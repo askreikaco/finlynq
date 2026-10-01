@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Fingerprint, Check, AlertTriangle } from "lucide-react";
 import { formatDateTimeLocal } from "@/lib/currency";
 import { enablePasskeyPrf, registerPasskey } from "@/lib/client/passkey-prf";
+import { setPasskeyHint } from "@/lib/client/passkey-auto";
 import { getPasskeyStepUp } from "@/lib/client/passkey-stepup";
 
 const STRINGS = {
@@ -27,8 +28,6 @@ const STRINGS = {
   unsupported: "This browser does not support passkeys.",
   none: "No passkeys yet.",
   addButton: "Add a passkey",
-  nameLabel: "Passkey name",
-  namePlaceholder: "e.g. MacBook Touch ID",
   passwordLabel: "Current password",
   passwordNeeded: "Enter your password to continue.",
   createButton: "Create passkey",
@@ -101,7 +100,6 @@ export function PasskeysCard() {
 
   // add
   const [adding, setAdding] = useState(false);
-  const [newName, setNewName] = useState("");
   const [addPassword, setAddPassword] = useState("");
   const [addNeedsPassword, setAddNeedsPassword] = useState(false);
 
@@ -142,7 +140,6 @@ export function PasskeysCard() {
 
   function resetAdd() {
     setAdding(false);
-    setNewName("");
     setAddPassword("");
     setAddNeedsPassword(false);
   }
@@ -155,6 +152,7 @@ export function PasskeysCard() {
     try {
       const o = await api("/api/settings/passkeys/register/options", "POST", pw ? { currentPassword: pw } : {});
       if (o.status === 401) {
+        setAdding(true);
         setAddNeedsPassword(true);
         setError(addPassword ? STRINGS.passwordIncorrect : STRINGS.passwordNeeded);
         return;
@@ -170,16 +168,15 @@ export function PasskeysCard() {
         setError(isCancel(e) ? STRINGS.cancelledMsg : STRINGS.genericError);
         return;
       }
-      const label = newName.trim();
       const v = await api("/api/settings/passkeys/register/verify", "POST", {
         token: o.json.token,
         response: reg.response,
-        ...(label ? { label } : {}),
       });
       if (!v.ok) {
         setError(errText(v.json, STRINGS.genericError));
         return;
       }
+      setPasskeyHint();
       const id = v.json.id as string;
       let note: string = STRINGS.added2fa;
       if (v.json.needsPrfAssertion) {
@@ -303,7 +300,7 @@ export function PasskeysCard() {
     <Card>
       <CardHeader>
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600">
             <Fingerprint className="h-5 w-5" />
           </div>
           <div>
@@ -488,36 +485,22 @@ export function PasskeysCard() {
 
         {!supported && <p className="text-xs text-muted-foreground">{STRINGS.unsupported}</p>}
 
-        {adding ? (
+        {adding && addNeedsPassword ? (
           <div className="space-y-3 rounded-lg border border-border p-3" role="group" aria-label="Add a passkey">
             <div className="space-y-1.5">
-              <label htmlFor="passkey-name" className="text-sm font-medium">
-                {STRINGS.nameLabel}
+              <label htmlFor="passkey-add-password" className="text-sm font-medium">
+                {STRINGS.passwordLabel}
               </label>
               <Input
-                id="passkey-name"
-                value={newName}
-                maxLength={60}
-                placeholder={STRINGS.namePlaceholder}
-                onChange={(e) => setNewName(e.target.value)}
+                id="passkey-add-password"
+                type="password"
+                autoComplete="current-password"
+                value={addPassword}
+                onChange={(e) => setAddPassword(e.target.value)}
               />
             </div>
-            {addNeedsPassword && (
-              <div className="space-y-1.5">
-                <label htmlFor="passkey-add-password" className="text-sm font-medium">
-                  {STRINGS.passwordLabel}
-                </label>
-                <Input
-                  id="passkey-add-password"
-                  type="password"
-                  autoComplete="current-password"
-                  value={addPassword}
-                  onChange={(e) => setAddPassword(e.target.value)}
-                />
-              </div>
-            )}
             <div className="flex gap-2">
-              <Button size="sm" onClick={submitAdd} disabled={busy || (addNeedsPassword && !addPassword)}>
+              <Button size="sm" onClick={submitAdd} disabled={busy || !addPassword}>
                 {busy ? STRINGS.working : STRINGS.createButton}
               </Button>
               <Button size="sm" variant="ghost" onClick={resetAdd} disabled={busy}>
@@ -526,8 +509,8 @@ export function PasskeysCard() {
             </div>
           </div>
         ) : (
-          <Button variant="outline" size="sm" disabled={!supported || busy} onClick={() => { setAdding(true); setMessage(""); setError(""); }}>
-            {STRINGS.addButton}
+          <Button variant="outline" size="sm" disabled={!supported || busy} onClick={() => void submitAdd()}>
+            {busy ? STRINGS.working : STRINGS.addButton}
           </Button>
         )}
       </CardContent>

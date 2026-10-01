@@ -148,3 +148,15 @@ describe("mobile bar matches the native tab bar (mobile/src/navigation/TabNaviga
     expect(layout).toContain("pb-[calc(60px+var(--sab))]");
   });
 });
+
+describe("no zoom on iOS (source)", () => {
+  const read = (p: string) => readFileSync(join(__dirname, "../../", p), "utf8");
+  it("viewport disables user scaling and globals stop double-tap / focus zoom", () => {
+    const l = read("src/app/layout.tsx");
+    expect(l).toContain("maximumScale: 1");
+    expect(l).toContain("userScalable: false");
+    const css = read("src/app/globals.css");
+    expect(css).toMatch(/html\s*\{[^}]*touch-action:\s*manipulation/);
+    expect(css).toMatch(/@media \(max-width: 767\.98px\)\s*\{\s*input, textarea, select[^{]*\{\s*font-size: max\(16px, 1em\)/);
+  });
+});

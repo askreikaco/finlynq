@@ -1,4 +1,5 @@
 "use client";
+import { PageHeader } from "@/components/mobile";
 
 import { DevModeGuard } from "@/components/dev-mode-guard";
 
@@ -17,7 +18,7 @@ import {
 } from "recharts";
 import { Flame, Target, TrendingUp, Calendar, Wallet, Dice5 } from "lucide-react";
 import { CHART_COLORS } from "@/lib/chart-colors";
-import { PageHeader } from "@/components/mobile";
+import { AmountInput } from "@/components/amount-input";
 
 type FireResult = {
   fireNumber: number;
@@ -200,7 +201,9 @@ function FirePageContent() {
   return (
     <div className="space-y-6">
       <div>
-        <PageHeader title={<><Flame className="h-6 w-6 text-orange-500" /> FIRE Calculator</>} titleClassName="text-2xl font-bold flex items-center gap-2" />
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          <Flame className="h-6 w-6 text-orange-500" /> FIRE Calculator
+        </h1>
         <p className="text-sm text-muted-foreground mt-1">
           Calculate your Financial Independence, Retire Early number and timeline
         </p>
@@ -228,29 +231,29 @@ function FirePageContent() {
             </div>
             <div>
               <Label>Current Investments ($)</Label>
-              <Input type="number" value={form.currentInvestments} onChange={(e) => setForm({ ...form, currentInvestments: e.target.value })} />
+              <AmountInput  value={form.currentInvestments} onValueChange={(nv) => setForm({ ...form, currentInvestments: nv })} />
             </div>
             <div>
               <Label>Monthly Savings ($)</Label>
-              <Input type="number" value={form.monthlySavings} onChange={(e) => setForm({ ...form, monthlySavings: e.target.value })} />
+              <AmountInput  value={form.monthlySavings} onValueChange={(nv) => setForm({ ...form, monthlySavings: nv })} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>Annual Return (%)</Label>
-                <Input type="number" step="0.5" value={form.annualReturn} onChange={(e) => setForm({ ...form, annualReturn: e.target.value })} />
+                <AmountInput  step="0.5" value={form.annualReturn} onValueChange={(nv) => setForm({ ...form, annualReturn: nv })} />
               </div>
               <div>
                 <Label>Inflation (%)</Label>
-                <Input type="number" step="0.5" value={form.inflation} onChange={(e) => setForm({ ...form, inflation: e.target.value })} />
+                <AmountInput  step="0.5" value={form.inflation} onValueChange={(nv) => setForm({ ...form, inflation: nv })} />
               </div>
             </div>
             <div>
               <Label>Annual Expenses in Retirement ($)</Label>
-              <Input type="number" value={form.annualExpenses} onChange={(e) => setForm({ ...form, annualExpenses: e.target.value })} />
+              <AmountInput  value={form.annualExpenses} onValueChange={(nv) => setForm({ ...form, annualExpenses: nv })} />
             </div>
             <div>
               <Label>Safe Withdrawal Rate (%)</Label>
-              <Input type="number" step="0.25" value={form.withdrawalRate} onChange={(e) => setForm({ ...form, withdrawalRate: e.target.value })} />
+              <AmountInput  step="0.25" value={form.withdrawalRate} onValueChange={(nv) => setForm({ ...form, withdrawalRate: nv })} />
             </div>
             <Button onClick={calculate} disabled={loading} className="w-full">
               <Flame className="h-4 w-4 mr-1" /> {loading ? "Calculating..." : "Calculate FIRE"}

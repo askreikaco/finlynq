@@ -44,6 +44,7 @@ const KEY = (m: string, u: string) => `${m} ${u}`;
 const callsTo = (m: string, u: string) => calls.filter((c) => c.method === m && c.url === u);
 
 beforeEach(() => {
+  localStorage.removeItem("pf-passkey-hint");
   calls = [];
   startRegistration.mockReset();
   startAuthentication.mockReset();
@@ -122,9 +123,6 @@ describe("PasskeysCard add", () => {
     startAuthentication.mockResolvedValue(assertion(PRF32));
     await renderLoaded();
     await user.click(screen.getByRole("button", { name: /add a passkey/i }));
-    await user.type(screen.getByLabelText(/passkey name/i), "Phone");
-    await user.click(screen.getByRole("button", { name: /create passkey/i }));
-
     expect(await screen.findByText(/it can also unlock your data without your password/i)).toBeInTheDocument();
     const order = calls.map((c) => `${c.method} ${c.url}`).filter((x) => x.includes("register"));
     expect(order).toEqual([
@@ -134,13 +132,34 @@ describe("PasskeysCard add", () => {
       "POST /api/settings/passkeys/register/finish-prf",
     ]);
     const verify = callsTo("POST", "/api/settings/passkeys/register/verify")[0].body;
-    expect(verify).toMatchObject({ token: "reg-token", label: "Phone" });
+    expect(verify).toMatchObject({ token: "reg-token" });
+    expect(verify).not.toHaveProperty("label"); // server names it
     expect((verify.response as { id: string }).id).toBe("newcred");
     expect(callsTo("POST", "/api/settings/passkeys/register/prf-options")[0].body).toMatchObject({ credentialId: "newcred" });
     const finish = callsTo("POST", "/api/settings/passkeys/register/finish-prf")[0].body;
     expect(finish).toMatchObject({ token: "prf-token" });
     expect(typeof finish.prfOutput).toBe("string");
     expect(callsTo("GET", "/api/settings/passkeys").length).toBeGreaterThanOrEqual(2);
+    expect(localStorage.getItem("pf-passkey-hint")).toBe("1");
+  });
+
+  it("Add: no name input, one click goes straight to the WebAuthn prompt, list shows the generated name", async () => {
+    const user = userEvent.setup();
+    wireAdd();
+    startAuthentication.mockResolvedValue(assertion(PRF32));
+    const added = { id: "newcred", label: "iPhone · Safari", createdAt: "2026-10-01T10:00:00.000Z", lastUsedAt: null, backedUp: true, prfSupported: true };
+    handlers[KEY("GET", "/api/settings/passkeys")] = () => ({
+      body: { passkeys: callsTo("POST", "/api/settings/passkeys/register/verify").length ? [...list, added] : list },
+    });
+    await renderLoaded();
+    await user.click(screen.getByRole("button", { name: /add a passkey/i }));
+    expect(screen.queryByLabelText(/passkey name/i)).toBeNull();
+    expect(screen.queryByRole("textbox")).toBeNull();
+    expect(screen.queryByLabelText(/current password/i)).toBeNull();
+    await waitFor(() => expect(startRegistration).toHaveBeenCalledTimes(1));
+    expect(await screen.findByText(/it can also unlock/i)).toBeInTheDocument();
+    expect(await screen.findByText("iPhone · Safari")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /rename iphone · safari/i })).toBeInTheDocument();
   });
 
   it("the PRF value never leaves in the assertion JSON", async () => {
@@ -149,7 +168,6 @@ describe("PasskeysCard add", () => {
     startAuthentication.mockResolvedValue(assertion(PRF32));
     await renderLoaded();
     await user.click(screen.getByRole("button", { name: /add a passkey/i }));
-    await user.click(screen.getByRole("button", { name: /create passkey/i }));
     await screen.findByText(/it can also unlock/i);
     const finish = callsTo("POST", "/api/settings/passkeys/register/finish-prf")[0].body;
     expect((finish.response as { clientExtensionResults: unknown }).clientExtensionResults).toEqual({});
@@ -161,7 +179,6 @@ describe("PasskeysCard add", () => {
     wireAdd({ needsPrf: false, prfEnabled: false });
     await renderLoaded();
     await user.click(screen.getByRole("button", { name: /add a passkey/i }));
-    await user.click(screen.getByRole("button", { name: /create passkey/i }));
     expect(await screen.findByText(/two-factor verification; it cannot unlock/i)).toBeInTheDocument();
     expect(callsTo("POST", "/api/settings/passkeys/register/prf-options")).toHaveLength(0);
   });
@@ -172,7 +189,6 @@ describe("PasskeysCard add", () => {
     startAuthentication.mockResolvedValue(assertion());
     await renderLoaded();
     await user.click(screen.getByRole("button", { name: /add a passkey/i }));
-    await user.click(screen.getByRole("button", { name: /create passkey/i }));
     expect(await screen.findByText(/cannot unlock your data without your password on this device/i)).toBeInTheDocument();
     expect(callsTo("POST", "/api/settings/passkeys/register/finish-prf")).toHaveLength(0);
   });
@@ -183,9 +199,9 @@ describe("PasskeysCard add", () => {
     startRegistration.mockRejectedValue(Object.assign(new Error("x"), { name: "NotAllowedError" }));
     await renderLoaded();
     await user.click(screen.getByRole("button", { name: /add a passkey/i }));
-    await user.click(screen.getByRole("button", { name: /create passkey/i }));
     expect(await screen.findByText(/cancelled/i)).toBeInTheDocument();
     expect(callsTo("POST", "/api/settings/passkeys/register/verify")).toHaveLength(0);
+    expect(localStorage.getItem("pf-passkey-hint")).toBeNull();
   });
 
   it("stale session: options 401 asks for the password, then retries with it", async () => {
@@ -198,7 +214,6 @@ describe("PasskeysCard add", () => {
     startAuthentication.mockResolvedValue(assertion(PRF32));
     await renderLoaded();
     await user.click(screen.getByRole("button", { name: /add a passkey/i }));
-    await user.click(screen.getByRole("button", { name: /create passkey/i }));
     const pw = await screen.findByLabelText(/current password/i);
     expect(n).toBe(1);
     expect(startRegistration).not.toHaveBeenCalled();

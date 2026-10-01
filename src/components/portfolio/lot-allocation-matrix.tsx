@@ -33,6 +33,8 @@ import {
   type AllocSell,
   type AllocSpec,
 } from "@/lib/portfolio/lots/allocate";
+import { AmountInput } from "@/components/amount-input";
+import { getDisplayLocale } from "@/lib/locale";
 
 interface LotRow {
   id: number;
@@ -56,7 +58,7 @@ interface ClosureRow {
 }
 
 const EPS = 1e-6;
-const qf = (n: number) => n.toLocaleString(undefined, { maximumFractionDigits: 4 });
+const qf = (n: number) => n.toLocaleString(getDisplayLocale(), { maximumFractionDigits: 4 });
 
 export function LotAllocationMatrix({
   holdingId,
@@ -400,8 +402,8 @@ export function LotAllocationMatrix({
                     <td key={s.closeTxId} className={tdBase}>
                       {ok ? (
                         <div className="flex flex-col items-end gap-0.5">
-                          <Input type="number" min={0} step="any" value={alloc[k] ?? ""} placeholder="0"
-                            onChange={(e) => setCell(s.closeTxId, lot.id, e.target.value)} className={inputCls} />
+                          <AmountInput  min={0} step="any" value={alloc[k] ?? ""} placeholder="0"
+                            onValueChange={(nv) => setCell(s.closeTxId, lot.id, nv)} className={inputCls} />
                           {g && num(k) > EPS && (
                             <span className={`text-[9px] leading-none tabular-nums ${g.gain >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
                               {g.gain >= 0 ? "+" : ""}{formatCurrency(g.gain, s.currency)} {g.term === "long" ? "LT" : "ST"}
@@ -437,8 +439,8 @@ export function LotAllocationMatrix({
                   const k = `${s.closeTxId}_${SHORT_LOT_ID}`;
                   return (
                     <td key={s.closeTxId} className={tdBase}>
-                      <Input type="number" min={0} step="any" value={alloc[k] ?? ""} placeholder="0"
-                        onChange={(e) => setCell(s.closeTxId, SHORT_LOT_ID, e.target.value)} className={inputCls} />
+                      <AmountInput  min={0} step="any" value={alloc[k] ?? ""} placeholder="0"
+                        onValueChange={(nv) => setCell(s.closeTxId, SHORT_LOT_ID, nv)} className={inputCls} />
                     </td>
                   );
                 })}

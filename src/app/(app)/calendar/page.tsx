@@ -1,4 +1,5 @@
 "use client";
+import { PageHeader } from "@/components/mobile";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,7 +16,7 @@ import {
   TrendingUp,
   CalendarDays,
 } from "lucide-react";
-import { PageHeader } from "@/components/mobile";
+import { formatDateNames, getDisplayLocale, weekdayShortNames } from "@/lib/locale";
 
 type CalendarEvent = {
   date: string;
@@ -215,12 +216,12 @@ function CalendarPageContent() {
 
   const daysInMonth = getDaysInMonth(currentYear, currentMonth);
   const firstDay = getFirstDayOfWeek(currentYear, currentMonth);
-  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const dayNames = weekdayShortNames();
 
-  const monthLabel = new Date(currentYear, currentMonth).toLocaleDateString(
-    "en-CA",
-    { year: "numeric", month: "long" }
-  );
+  const monthLabel = formatDateNames(new Date(currentYear, currentMonth), {
+    year: "numeric",
+    month: "long",
+  });
 
   const today = new Date();
   const isToday = (day: number) =>
@@ -233,12 +234,12 @@ function CalendarPageContent() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <PageHeader
-          title="Bill Calendar"
-          titleClassName="text-2xl font-bold"
-          subtitle="View expected bills and income throughout the month"
-          subtitleClassName="text-sm text-muted-foreground mt-1"
-        />
+      <div>
+        <h1 className="text-2xl font-bold">Bill Calendar</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          View expected bills and income throughout the month
+        </p>
+      </div>
 
       {/* Month navigation */}
       <div className="flex items-center justify-between">
@@ -330,7 +331,7 @@ function CalendarPageContent() {
                 currentYear,
                 currentMonth,
                 selectedDay
-              ).toLocaleDateString("en-CA", {
+              ).toLocaleDateString(getDisplayLocale(), {
                 weekday: "long",
                 month: "long",
                 day: "numeric",
@@ -398,7 +399,7 @@ function CalendarPageContent() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="flex items-center gap-4 pt-6">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-950/60">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-950/60">
               <TrendingUp className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
             </div>
             <div>
@@ -411,7 +412,7 @@ function CalendarPageContent() {
         </Card>
         <Card>
           <CardContent className="flex items-center gap-4 pt-6">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-100 dark:bg-rose-950/60">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 dark:bg-rose-950/60">
               <TrendingDown className="h-5 w-5 text-rose-600 dark:text-rose-400" />
             </div>
             <div>
@@ -424,7 +425,7 @@ function CalendarPageContent() {
         </Card>
         <Card>
           <CardContent className="flex items-center gap-4 pt-6">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
               <DollarSign className="h-5 w-5 text-primary" />
             </div>
             <div>

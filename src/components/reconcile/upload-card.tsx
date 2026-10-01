@@ -6,6 +6,7 @@ import { FileDropZone } from "@/app/(app)/import/components/file-drop-zone";
 import { Loader2 } from "lucide-react";
 
 import type { AccountOption } from "./preview-table";
+import { AmountInput } from "@/components/amount-input";
 
 export interface TemplateOption {
   id: number;
@@ -206,11 +207,10 @@ export function ReconcileUploadCard({
           <label className="text-xs font-medium text-muted-foreground">
             Statement balance (optional — CSV only)
           </label>
-          <input
-            type="number"
+          <AmountInput native
             step="0.01"
             value={statementBalance}
-            onChange={(e) => setStatementBalance(e.target.value)}
+            onValueChange={(nv) => setStatementBalance(nv)}
             placeholder="e.g. 1234.56"
             className="h-9 w-full rounded-md border bg-transparent px-3 text-sm"
           />

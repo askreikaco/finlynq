@@ -29,6 +29,7 @@ import { parseSaveError } from "@/lib/save-error";
 import { formatCurrency } from "@/lib/currency";
 import { todayISO } from "@/lib/utils/date";
 import { Loader2, Trash2 } from "lucide-react";
+import { AmountInput } from "@/components/amount-input";
 
 type Mark = { id: number; date: string; price: number; currency: string };
 
@@ -173,13 +174,12 @@ export function ManagePricesDialog({
             <DatePicker value={date} onChange={setDate} max={todayISO()} label="Effective date" />
             <div className="space-y-1">
               <Label>Price ({currency})</Label>
-              <Input
-                type="number"
+              <AmountInput
                 inputMode="decimal"
                 step="any"
                 min="0"
                 value={price}
-                onChange={(e) => setPrice(e.target.value)}
+                onValueChange={(nv) => setPrice(nv)}
                 placeholder="0.00"
               />
             </div>

@@ -166,6 +166,33 @@ describe.skipIf(!HAS_DB)("recovery B5 WebAuthn (real Postgres, real verification
       expect(await eventsOf(u.id, "passkey_added")).toBe(1);
     });
 
+    it("register/verify: missing label -> generated name (UA), dup -> (2); provided label wins as-is", async () => {
+      const u = await mkUser();
+      const { token } = await session(u.id, u.dek);
+      const { POST } = await routes.regVerify();
+      const MAC = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
+      const add = async (label: string | undefined, a = new SoftAuthenticator()) => {
+        const { json } = await regOptions(token);
+        const res = await POST(sreq("POST", "/api/settings/passkeys/register/verify", token, { token: json.token, response: a.attest(json.options.challenge, K), label }, { "user-agent": MAC }));
+        expect(res.status).toBe(200);
+        return (await res.json()).label as string;
+      };
+      expect(await add(undefined)).toBe("Mac · Chrome");
+      expect(await add(undefined)).toBe("Mac · Chrome (2)");
+      expect(await add("My YubiKey")).toBe("My YubiKey");
+      expect(await add("My YubiKey")).toBe("My YubiKey"); // provided wins, no suffix
+      expect((await passkeyRows(u.id)).map((r) => r.label).sort()).toEqual(["Mac · Chrome", "Mac · Chrome (2)", "My YubiKey", "My YubiKey"]);
+    });
+
+    it("register/verify: no label and no usable UA -> \"Passkey\"", async () => {
+      const u = await mkUser();
+      const { token } = await session(u.id, u.dek);
+      const { json } = await regOptions(token);
+      const { POST } = await routes.regVerify();
+      const res = await POST(sreq("POST", "/api/settings/passkeys/register/verify", token, { token: json.token, response: new SoftAuthenticator().attest(json.options.challenge, K) }, { "user-agent": "curl/8" }));
+      expect((await res.json()).label).toBe("Passkey");
+    });
+
     it("options: no session DEK -> 423; stale session needs password (missing 401, wrong 401, right 200)", async () => {
       const u = await mkUser();
       const noDek = await session(u.id, u.dek, { noDek: true });

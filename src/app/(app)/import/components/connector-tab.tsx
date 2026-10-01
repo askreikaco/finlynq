@@ -20,6 +20,7 @@ import { formatCurrency } from "@/lib/currency";
 import { ImportPreviewDialog } from "./import-preview-dialog";
 import { ConnectorMappingDialog, type MappingDialogState } from "./connector-mapping-dialog";
 import { ConnectorReconciliationDialog } from "./connector-reconciliation-dialog";
+import { getDisplayLocale } from "@/lib/locale";
 
 interface PreviewRow extends RawTransaction {
   hash: string;
@@ -417,7 +418,7 @@ export function ConnectorTab() {
             {zipProbe && (
               <div className="rounded-md border bg-muted/30 p-3 text-xs space-y-1 font-mono">
                 <div>{zipProbe.external.accounts.length} accounts · {zipProbe.external.categories.length} categories · {zipProbe.external.portfolio.length} portfolio holdings</div>
-                <div>{zipProbe.external.transactionsTotal.toLocaleString()} transactions</div>
+                <div>{zipProbe.external.transactionsTotal.toLocaleString(getDisplayLocale())} transactions</div>
               </div>
             )}
 
