@@ -8,7 +8,12 @@
  *  - SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS — SMTP credentials
  *  - EMAIL_FROM — sender address (default: noreply@finlynq.com)
  *  - APP_URL — base URL for links in emails (default: http://localhost:3000)
+ *
+ * Admin-editable overrides (system_settings, see resolveEmailConfig): a DB value
+ * beats the matching env var; an empty table behaves exactly like env-only.
  */
+
+import { loadEmailOverrides, type EmailField } from "@/lib/system-settings";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -63,23 +68,23 @@ const consoleTransport: EmailTransport = {
 
 // ─── SMTP Transport ─────────────────────────────────────────────────────────
 
-function createSmtpTransport(): EmailTransport {
+function createSmtpTransport(cfg: EmailConfig): EmailTransport {
   // Dynamic import to avoid requiring nodemailer in self-hosted
   return {
     async send(message) {
       const nodemailer = await import("nodemailer");
       const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: Number(process.env.SMTP_PORT) || 587,
-        secure: Number(process.env.SMTP_PORT) === 465,
+        host: cfg.smtpHost.value,
+        port: Number(cfg.smtpPort.value) || 587,
+        secure: Number(cfg.smtpPort.value) === 465,
         auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS,
+          user: cfg.smtpUser.value,
+          pass: cfg.smtpPass.value,
         },
       });
 
       await transporter.sendMail({
-        from: message.from || process.env.EMAIL_FROM || "noreply@finlynq.com",
+        from: message.from || cfg.from.value || "noreply@finlynq.com",
         to: message.to,
         subject: message.subject,
         html: message.html,
@@ -118,17 +123,17 @@ export function parseFromAddress(from: string): { name?: string; email: string }
  * EMAIL_FROM. Throws on a non-2xx so callers' existing error handling applies
  * (fire-and-forget for feedback notifications; surfaced for password reset).
  */
-function createResendTransport(): EmailTransport {
+function createResendTransport(cfg: EmailConfig): EmailTransport {
   return {
     async send(message) {
       const res = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+          Authorization: `Bearer ${cfg.resendApiKey.value}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from: message.from || process.env.EMAIL_FROM || "Finlynq <noreply@finlynq.com>",
+          from: message.from || cfg.from.value || "Finlynq <noreply@finlynq.com>",
           to: message.to,
           subject: message.subject,
           html: message.html,
@@ -154,10 +159,10 @@ function createResendTransport(): EmailTransport {
  * in the transport selection order, preferred over SMTP for managed deployments
  * that use Brevo instead. Throws on non-2xx errors.
  */
-function createBrevoTransport(): EmailTransport {
+function createBrevoTransport(cfg: EmailConfig): EmailTransport {
   return {
     async send(message) {
-      const fromStr = message.from || process.env.EMAIL_FROM || "Finlynq <noreply@finlynq.com>";
+      const fromStr = message.from || cfg.from.value || "Finlynq <noreply@finlynq.com>";
       const parsed = parseFromAddress(fromStr);
 
       // Brevo expects `to` as an array of objects with email
@@ -184,7 +189,7 @@ function createBrevoTransport(): EmailTransport {
       const res = await fetch("https://api.brevo.com/v3/smtp/email", {
         method: "POST",
         headers: {
-          "api-key": process.env.BREVO_API_KEY!,
+          "api-key": cfg.brevoApiKey.value!,
           "content-type": "application/json",
           accept: "application/json",
         },
@@ -216,15 +221,15 @@ function createBrevoTransport(): EmailTransport {
  * is an alternative for deployments that use it; SMTP stays supported for
  * self-hosters who wire their own mail server.
  */
-function getTransport(): EmailTransport {
-  if (process.env.RESEND_API_KEY) {
-    return createResendTransport();
-  }
-  if (process.env.BREVO_API_KEY) {
-    return createBrevoTransport();
-  }
-  if (process.env.SMTP_HOST) {
-    return createSmtpTransport();
+async function getTransport(): Promise<EmailTransport> {
+  const cfg = await resolveEmailConfig();
+  const active = activeEmailProvider(cfg);
+  if (active === "resend") return createResendTransport(cfg);
+  if (active === "brevo") return createBrevoTransport(cfg);
+  if (active === "smtp") return createSmtpTransport(cfg);
+  const chosen = cfg.provider.value;
+  if (chosen && chosen !== "auto") {
+    throw new Error(`Email provider "${chosen}" is selected but not configured.`);
   }
   if (process.env.NODE_ENV === "production") {
     throw new Error(
@@ -235,10 +240,77 @@ function getTransport(): EmailTransport {
   return consoleTransport;
 }
 
+// ─── Config resolution (DB override > env) ──────────────────────────────────
+
+export type EmailFieldSource = "db" | "env" | "none";
+export interface ResolvedField {
+  value: string | undefined;
+  source: EmailFieldSource;
+}
+export type EmailConfig = Record<EmailField, ResolvedField>;
+export type EmailProvider = "resend" | "brevo" | "smtp" | "none";
+
+const ENV_NAMES: Record<EmailField, string | null> = {
+  provider: null, // DB-only: env has no explicit-provider switch
+  from: "EMAIL_FROM",
+  brevoApiKey: "BREVO_API_KEY",
+  resendApiKey: "RESEND_API_KEY",
+  smtpHost: "SMTP_HOST",
+  smtpPort: "SMTP_PORT",
+  smtpUser: "SMTP_USER",
+  smtpPass: "SMTP_PASS",
+};
+
+/**
+ * Resolve every email field: a non-empty DB value wins, else a non-empty env
+ * value, else none. With an empty `system_settings` table this is exactly the
+ * env-only behaviour the app had before the table existed.
+ */
+export async function resolveEmailConfig(): Promise<EmailConfig> {
+  const overrides = await loadEmailOverrides();
+  const out = {} as EmailConfig;
+  for (const f of Object.keys(ENV_NAMES) as EmailField[]) {
+    const dbVal = overrides[f];
+    const envName = ENV_NAMES[f];
+    const envVal = envName ? process.env[envName] : undefined;
+    if (dbVal) out[f] = { value: dbVal, source: "db" };
+    else if (envVal) out[f] = { value: envVal, source: "env" };
+    else out[f] = { value: undefined, source: "none" };
+  }
+  return out;
+}
+
+/**
+ * Active provider. Explicit DB `provider` (brevo|resend|smtp) wins when that
+ * provider is configured; otherwise (auto / unset) the historic precedence
+ * Resend > Brevo > SMTP. An explicit choice that is not configured yields "none"
+ * (never a silent switch to a different provider).
+ */
+export function activeEmailProvider(cfg: EmailConfig): EmailProvider {
+  const configured = {
+    resend: !!cfg.resendApiKey.value,
+    brevo: !!cfg.brevoApiKey.value,
+    smtp: !!cfg.smtpHost.value,
+  };
+  const chosen = cfg.provider.value;
+  if (chosen === "resend" || chosen === "brevo" || chosen === "smtp") {
+    return configured[chosen] ? chosen : "none";
+  }
+  if (configured.resend) return "resend";
+  if (configured.brevo) return "brevo";
+  if (configured.smtp) return "smtp";
+  return "none";
+}
+
+/** Resolved From header value (DB > EMAIL_FROM > default). */
+export async function getEmailFrom(): Promise<string> {
+  return (await resolveEmailConfig()).from.value || "Finlynq <noreply@finlynq.com>";
+}
+
 // ─── Public API ─────────────────────────────────────────────────────────────
 
 export async function sendEmail(message: EmailMessage): Promise<void> {
-  const transport = getTransport();
+  const transport = await getTransport();
   await transport.send(message);
 }
 

@@ -26,7 +26,9 @@ export type AdminAuditAction =
   | "announcement_updated"
   | "announcement_deleted"
   | "feedback_status_change"
-  | "feedback_replied";
+  | "feedback_replied"
+  | "email_settings_update"
+  | "email_settings_revert";
 
 export async function logAdminAction(opts: {
   adminUserId: string;
