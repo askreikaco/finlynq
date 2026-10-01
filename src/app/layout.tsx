@@ -77,6 +77,9 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  // Owner 2026-10-01: app-like, no pinch/double-tap/focus zoom (iOS home-screen app).
+  maximumScale: 1,
+  userScalable: false,
   viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: dark)", color: "#0b0e11" },
