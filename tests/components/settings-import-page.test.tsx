@@ -5,11 +5,17 @@ import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import React from "react";
 import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
 
+let mockPath = "/settings/import";
+const replace = vi.fn();
 vi.mock("next/navigation", () => ({
-  usePathname: () => "/settings/import",
-  useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
+  usePathname: () => mockPath,
+  useRouter: () => ({ replace, push: vi.fn() }),
   useSearchParams: () => new URLSearchParams(),
 }));
+vi.mock("@/components/settings/sections/rules-section", () => ({ RulesSection: () => <div>tx-rules-body</div> }));
+vi.mock("@/components/settings/sections/bank-feeds-section", () => ({ BankFeedsSection: () => null }));
+vi.mock("@/components/mcp-guide/mcp-guide", () => ({ McpGuide: () => null }));
+vi.mock("../../src/app/(app)/settings/integrations/connected-apps", () => ({ ConnectedApps: () => null }));
 vi.mock("@/app/(app)/import/components/template-manager", () => ({ TemplateManager: () => <div>templates-body</div> }));
 vi.mock("@/app/(app)/import/components/connector-tab", () => ({ ConnectorTab: () => <div>wp-body</div> }));
 vi.mock("@/app/(app)/import/components/moneypro-connector-tab", () => ({ MoneyProConnectorTab: () => <div>mp-body</div> }));
@@ -18,10 +24,14 @@ vi.mock("@/app/(app)/import/components/investment-statement-importer", () => ({ 
 vi.mock("@/components/inbox/email-rules-manager", () => ({ EmailRulesManager: () => <div>rules-body</div> }));
 
 import ImportSettingsPage from "@/app/(app)/settings/import/page";
+import IntegrationsPage from "@/app/(app)/settings/integrations/page";
 
 let calls: { url: string; init?: RequestInit }[] = [];
 beforeEach(() => {
   calls = [];
+  mockPath = "/settings/import";
+  replace.mockClear();
+  Element.prototype.scrollIntoView = vi.fn();
   vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
     calls.push({ url, init });
     const body =
@@ -40,43 +50,69 @@ afterEach(() => {
 
 const section = (n: RegExp) => screen.getByRole("button", { name: n });
 
-describe("settings/import accordion", () => {
-  it("renders no tablist; /settings/import opens Import settings, the flattened sections start collapsed", async () => {
+describe("settings/import (Reconciliation) and the Import sections on Integrations", () => {
+  it("Import settings and Rules are cards; Import Templates is the only accordion item", async () => {
     render(<ImportSettingsPage />);
     expect(screen.queryByRole("tablist")).toBeNull();
-    expect(screen.queryAllByRole("tab")).toHaveLength(0);
-    expect(section(/Import settings/).getAttribute("aria-expanded")).toBe("true");
-    for (const n of [/Rules/, /Templates/, /Email Import/, /Migrate from another app/, /Investment statements/]) {
-      expect(section(n).getAttribute("aria-expanded")).toBe("false");
+    expect(await screen.findByRole("switch", { name: /Confirm field mapping/ })).toBeTruthy();
+    expect(screen.getByText("tx-rules-body")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /^Import settings/ })).toBeNull();
+    expect(section(/Import Templates/).getAttribute("aria-expanded")).toBe("false");
+    for (const n of [/Import via Email/, /Import via another app/, /Import Investment Statement/]) {
+      expect(screen.queryByRole("button", { name: n })).toBeNull();
     }
-    expect(screen.queryByText("templates-body")).toBeNull();
+    fireEvent.click(section(/Import Templates/));
+    expect(await screen.findByText("templates-body")).toBeTruthy();
   });
 
-  it("opening one section closes the other", async () => {
+  it("#templates opens Import Templates", async () => {
+    window.history.replaceState({}, "", "/settings/import#templates");
     render(<ImportSettingsPage />);
-    fireEvent.click(section(/Templates/));
-    expect(await screen.findByText("templates-body")).toBeTruthy();
-    fireEvent.click(section(/Investment statements/));
-    expect(await screen.findByText("statements-body")).toBeTruthy();
-    expect(section(/Templates/).getAttribute("aria-expanded")).toBe("false");
-    expect(screen.queryByText("templates-body")).toBeNull();
+    await waitFor(() => expect(section(/Import Templates/).getAttribute("aria-expanded")).toBe("true"));
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it.each([
-    ["?tab=email", /Email Import/],
-    ["?tab=connect", /Migrate from another app/],
-    ["?tab=statements", /Investment statements/],
-    ["?provider=moneypro", /Migrate from another app/],
-    ["#templates", /Templates/],
-  ])("deep link %s opens the right section", async (suffix, name) => {
+    ["?tab=email", "/settings/integrations?tab=email"],
+    ["?tab=connect", "/settings/integrations?tab=migrate"],
+    ["?tab=statements", "/settings/integrations?tab=statements"],
+    ["?provider=moneypro", "/settings/integrations?tab=migrate&provider=moneypro"],
+  ])("legacy /settings/import%s forwards to %s", async (suffix, href) => {
     window.history.replaceState({}, "", "/settings/import" + suffix);
     render(<ImportSettingsPage />);
+    await waitFor(() => expect(replace).toHaveBeenCalledWith(href));
+  });
+
+  it("Integrations: the moved sections start collapsed; opening one closes the other", async () => {
+    mockPath = "/settings/integrations";
+    window.history.replaceState({}, "", "/settings/integrations");
+    render(<IntegrationsPage />);
+    for (const n of [/Import via Email/, /Import via another app/, /Import Investment Statement/]) {
+      expect(section(n).getAttribute("aria-expanded")).toBe("false");
+    }
+    fireEvent.click(section(/Import via Email/));
+    expect(await screen.findByText("x@import.test")).toBeTruthy();
+    fireEvent.click(section(/Import Investment Statement/));
+    expect(await screen.findByText("statements-body")).toBeTruthy();
+    expect(section(/Import via Email/).getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it.each([
+    ["?tab=email", /Import via Email/],
+    ["?tab=migrate", /Import via another app/],
+    ["?tab=statements", /Import Investment Statement/],
+    ["?provider=moneypro", /Import via another app/],
+  ])("Integrations deep link %s opens the right section", async (suffix, name) => {
+    mockPath = "/settings/integrations";
+    window.history.replaceState({}, "", "/settings/integrations" + suffix);
+    render(<IntegrationsPage />);
     await waitFor(() => expect(section(name).getAttribute("aria-expanded")).toBe("true"));
   });
 
   it("?provider=moneypro shows that provider's flow", async () => {
-    window.history.replaceState({}, "", "/settings/import?provider=moneypro");
-    render(<ImportSettingsPage />);
+    mockPath = "/settings/integrations";
+    window.history.replaceState({}, "", "/settings/integrations?provider=moneypro");
+    render(<IntegrationsPage />);
     expect(await screen.findByText("mp-body")).toBeTruthy();
   });
 

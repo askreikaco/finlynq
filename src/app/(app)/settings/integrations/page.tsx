@@ -7,7 +7,8 @@
  * been used recently. Hides it once the user has connected via OAuth or used
  * an MCP API key within the last 30 days. The "Connect your AI" guide (the
  * in-app MCP guide, also at /connect) and the SimpleFIN bank feed are
- * accordion sections.
+ * accordion sections, as are Import via Email, Import via another app and
+ * Import Investment Statement.
  */
 
 import Link from "next/link";
@@ -20,6 +21,11 @@ import { McpGuide } from "@/components/mcp-guide/mcp-guide";
 import { ConnectedApps } from "./connected-apps";
 import { BankFeedsSection } from "@/components/settings/sections/bank-feeds-section";
 import { useOpenSection } from "@/components/settings/use-open-section";
+import {
+  ImportEmailItem,
+  ImportMigrateItem,
+  ImportStatementsItem,
+} from "@/components/settings/sections/import-section";
 import { isMcpConnected } from "@/lib/mcp/connected";
 
 interface ConnectedAppsData {
@@ -28,13 +34,15 @@ interface ConnectedAppsData {
 }
 
 // Old URLs render this page in place with their section open: /settings/bank-feeds
-// -> Bank feeds, /connect -> Connect your AI (MCP guide).
+// -> Bank feeds, /connect -> Connect your AI (MCP guide). ?tab=email|migrate|
+// statements open the Import sections; ?provider= opens Import via another app.
 const OPEN_SECTIONS = {
   byPath: [
     { prefix: "/settings/bank-feeds", section: "bank-feeds" },
     { prefix: "/connect", section: "connect" },
   ],
-  valid: ["bank-feeds", "connect"],
+  valid: ["bank-feeds", "connect", "email", "migrate", "statements"],
+  providerSection: "migrate",
 };
 
 export default function IntegrationsSettingsPage() {
@@ -117,6 +125,9 @@ export default function IntegrationsSettingsPage() {
             <BankFeedsSection />
           </div>
         </AccordionItem>
+        <ImportEmailItem />
+        <ImportMigrateItem />
+        <ImportStatementsItem />
       </Accordion>
 
       {loaded && isConnected && (

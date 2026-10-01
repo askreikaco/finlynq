@@ -23,12 +23,13 @@ import {
   Server,
   Wrench,
   Link2,
+  Info,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
 
-// Order matches issue #57 — Developer last per user decision.
+// Order matches issue #57 — Developer, then About last.
 const NAV_ITEMS: NavItem[] = [
   { href: "/settings/general", label: "General", icon: Settings2 },
   { href: "/settings/categorization", label: "Categorization", icon: Tag },
@@ -38,6 +39,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/settings/investments", label: "Investments", icon: Briefcase },
   { href: "/settings/integrations", label: "Integrations", icon: Server },
   { href: "/settings/developer", label: "Developer", icon: Wrench },
+  { href: "/settings/about", label: "About", icon: Info },
 ];
 
 // Map legacy sub-routes to their group so deep links highlight the right
