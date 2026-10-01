@@ -136,6 +136,7 @@ export function Nav() {
   const [devMode, setDevMode] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [unread, setUnread] = useState(0);
+  const [hasAnnouncements, setHasAnnouncements] = useState(true); // default to true to avoid hiding on initial load
   const [feedbackUnread, setFeedbackUnread] = useState(0);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
 
@@ -181,12 +182,13 @@ export function Nav() {
 
   // Unread announcement count for the "What's New" badge. Refetched on every
   // navigation so the badge clears after the user visits /whats-new (which
-  // marks items read server-side).
+  // marks items read server-side). Also tracks whether any announcements exist.
   useEffect(() => {
     fetch("/api/announcements")
       .then((r) => (r.ok ? r.json() : []))
       .then((list) => {
         if (Array.isArray(list)) {
+          setHasAnnouncements(list.length > 0);
           setUnread(list.filter((a: { read?: boolean }) => !a.read).length);
         }
       })
@@ -296,7 +298,11 @@ export function Nav() {
       {/* Nav groups */}
       <div className="flex-1 px-2 space-y-1 overflow-y-auto">
         {navGroups.map((group) => {
-          const visibleItems = group.items.filter((item) => devMode || item.mode !== "dev");
+          const visibleItems = group.items.filter((item) => {
+            // Hide What's New when there are no announcements
+            if (item.label === "What's New" && !hasAnnouncements) return false;
+            return devMode || item.mode !== "dev";
+          });
           if (visibleItems.length === 0) return null;
           return (
           <div key={group.label || "top"}>
@@ -456,6 +462,7 @@ export function Nav() {
           .filter((item) => !mobileBarItems.some((m) => m.href === item.href))
           .filter((item) => devMode || item.mode !== "dev")
           .filter((item) => !item.href.startsWith("/admin"))
+          .filter((item) => item.label !== "What's New" || hasAnnouncements)
           .map((item) => renderLink(item, true))}
 
         {/* Admin section in mobile panel */}

@@ -137,3 +137,20 @@ describe("Admin Links (Collapsible)", () => {
     });
   });
 });
+
+describe("What's New Visibility", () => {
+  it("What's New item exists in navGroups", () => {
+    const firstGroup = navGroups[0];
+    const whatsNewItem = firstGroup?.items.find((i) => i.label === "What's New");
+    expect(whatsNewItem).toBeTruthy();
+    expect(whatsNewItem?.href).toBe("/whats-new");
+    expect(whatsNewItem?.mode).toBe("prod");
+  });
+
+  it("What's New item is in the first (top) nav group", () => {
+    const firstGroup = navGroups[0];
+    expect(firstGroup?.label).toBe(""); // empty label for top group
+    const whatsNewItem = firstGroup?.items.find((i) => i.label === "What's New");
+    expect(whatsNewItem).toBeTruthy();
+  });
+});
