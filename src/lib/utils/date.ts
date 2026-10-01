@@ -56,3 +56,10 @@ export function prevDate(dateStr: string, frequency: string): string {
   }
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
 }
+
+/**
+ * "YYYY-MM-DD" for the viewer's LOCAL calendar day (upstream helper). In this
+ * fork `todayISO()` is already the local day; this takes an explicit Date.
+ */
+export const localDateISO = (d: Date = new Date()): string =>
+  `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;

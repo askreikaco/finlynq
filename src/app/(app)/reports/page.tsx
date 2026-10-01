@@ -38,7 +38,7 @@ import {
   ChevronRight,
   ChevronDown,
   Calendar,
-  Layers, Wallet } from "lucide-react";
+  Layers, Wallet, ChartColumn } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -1292,6 +1292,20 @@ export default function ReportsPage() {
 const MAX_PERIOD_COLUMNS = 30;
 
 /** Muted "--" cell for zero/missing period values (avoids $0.00 noise across 30 cols). */
+/** Small chart icon next to a category name → the category view (/categories/[id]). */
+function CategoryInsightsLink({ categoryId, name }: { categoryId: number; name: string }) {
+  return (
+    <Link
+      href={`/categories/${categoryId}`}
+      className="text-muted-foreground/60 hover:text-primary"
+      title={`${name}: trends, average, top payees`}
+      aria-label={`Open ${name} category view`}
+    >
+      <ChartColumn className="h-3.5 w-3.5" />
+    </Link>
+  );
+}
+
 function PeriodCell({ value, currency, colorClass }: { value: number | undefined; currency: string; colorClass: string }) {
   if (value == null || value === 0) {
     return <TableCell className="text-right text-xs text-muted-foreground/50 font-mono">--</TableCell>;
@@ -1482,13 +1496,16 @@ function GroupRow({
                 <TableCell></TableCell>
                 <TableCell className="text-sm pl-6 text-muted-foreground">
                   {item.categoryId != null ? (
-                    <Link
-                      href={buildTxDrillUrl({ categoryId: String(item.categoryId), startDate, endDate })}
-                      className="hover:underline hover:text-foreground"
-                      title={`View ${item.name} transactions for this period`}
-                    >
-                      {item.name}
-                    </Link>
+                    <span className="inline-flex items-center gap-1.5">
+                      <Link
+                        href={buildTxDrillUrl({ categoryId: String(item.categoryId), startDate, endDate })}
+                        className="hover:underline hover:text-foreground"
+                        title={`View ${item.name} transactions for this period`}
+                      >
+                        {item.name}
+                      </Link>
+                      <CategoryInsightsLink categoryId={item.categoryId} name={item.name} />
+                    </span>
                   ) : (
                     item.name
                   )}
@@ -1553,13 +1570,16 @@ function FlatTable({
                 <TableRow key={i} className="hover:bg-muted/30">
                   <TableCell className="text-sm">
                     {item.categoryId != null ? (
-                      <Link
-                        href={buildTxDrillUrl({ categoryId: String(item.categoryId), startDate, endDate })}
-                        className="hover:underline"
-                        title={`View ${item.name} transactions for this period`}
-                      >
-                        {item.name}
-                      </Link>
+                      <span className="inline-flex items-center gap-1.5">
+                        <Link
+                          href={buildTxDrillUrl({ categoryId: String(item.categoryId), startDate, endDate })}
+                          className="hover:underline"
+                          title={`View ${item.name} transactions for this period`}
+                        >
+                          {item.name}
+                        </Link>
+                        <CategoryInsightsLink categoryId={item.categoryId} name={item.name} />
+                      </span>
                     ) : (
                       item.name
                     )}

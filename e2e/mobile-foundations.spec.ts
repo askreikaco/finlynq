@@ -14,7 +14,7 @@ const TAG = process.env.MOB1_TAG || "after";
 
 const ROUTES = [
   "/dashboard", "/accounts", "/portfolio", "/transactions", "/budgets", "/goals", "/reports",
-  "/settings/general", "/family", "/subscriptions", "/loans", "/import", "/calendar", "/fire",
+  "/settings/general", "/family", "/subscriptions", "/loans", "/import", "/fire",
 ];
 
 let user: TestUser;
@@ -208,7 +208,7 @@ test("1280px: desktop header unchanged (24px bold, subtitle visible, no mobile p
 const HEADER_PAGES: Array<[string, boolean]> = [
   ["/accounts", true], ["/transactions", true], ["/budgets", true], ["/goals", true], ["/portfolio", true],
   ["/subscriptions", true], ["/loans", true], ["/import", true], ["/reports", false], ["/dashboard", false],
-  ["/calendar", false], ["/settings/general", false],
+  ["/settings/general", false],
 ];
 
 test("390px: header buttons stay on screen, primary action visible, secondary actions in the ⋯ menu", async ({ browser }) => {

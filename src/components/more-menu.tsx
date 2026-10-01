@@ -14,6 +14,7 @@ import {
   PiggyBank,
   Target,
   FileText,
+  ChartPie,
   Inbox,
   Tag,
   Upload,
@@ -22,7 +23,6 @@ import {
   Settings,
   LogOut,
   CreditCard,
-  CalendarDays,
   Landmark,
   MessageSquare,
   Calculator,
@@ -60,6 +60,7 @@ export function buildMoreGroups(f: MoreFlags): MoreGroup[] {
         row("/budgets", "Budgets", PiggyBank),
         row("/goals", "Goals", Target),
         row("/reports", "Reports", FileText),
+        row("/categories", "Category report", ChartPie),
         row("/import?tab=reconcile", "Reconcile", Inbox),
         row("/settings/categorization", "Categories", Tag),
         row("/import", "Import", Upload),
@@ -70,7 +71,6 @@ export function buildMoreGroups(f: MoreFlags): MoreGroup[] {
       header: "Explore",
       rows: [
         row("/subscriptions", "Subscriptions", CreditCard),
-        row("/calendar", "Calendar", CalendarDays),
         row("/loans", "Loans & Debt", Landmark),
         ...(f.devMode
           ? [

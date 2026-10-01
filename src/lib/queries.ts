@@ -733,8 +733,10 @@ export async function upsertBudget(userId: string, data: { categoryId: number; m
     if (data.currency) update.currency = data.currency;
     return db.update(budgets).set(update).where(eq(budgets.id, existing.id)).returning().get();
   }
-
-  const currency = data.currency ?? (await getDisplayCurrency(userId));
+  // A new record's currency is never a hardcoded default (feedback #7): an
+  // omitted currency means the user's display currency — the one every budget
+  // screen shows amounts in. The old "CAD" made a USD user's 500 read as $365.
+  const currency = data.currency?.trim().toUpperCase() || (await getDisplayCurrency(userId));
   return db.insert(budgets).values({ ...data, userId, currency }).returning().get();
 }
 
