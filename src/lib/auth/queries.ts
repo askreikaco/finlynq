@@ -1405,14 +1405,16 @@ async function deleteAllUserDataTx(tx: TxClient, userId: string) {
     .delete(s.simplefinPendingTransactions)
     .where(eq(s.simplefinPendingTransactions.userId, userId));
   await tx.delete(s.passwordResetTokens).where(eq(s.passwordResetTokens.userId, userId));
-  // Auth: trusted devices are deleted; passkeys are deleted (see below).
+  // Auth: trusted devices are deleted (revoke all sessions on wipe).
   // Identities survive (user can re-authenticate with same provider).
   // Recovery code wraps are cleared (they also bind to the old DEK).
   await tx.delete(s.userDevices).where(eq(s.userDevices.userId, userId));
-  // Passkeys are login second factors (userHasSecondFactor) and their PRF wraps
-  // bind the OLD DEK. Wipe clears TOTP the same way, so a user who lost the
-  // passkey is not locked out of the (now empty) account: DELETE the rows.
-  await tx.delete(s.userPasskeys).where(eq(s.userPasskeys.userId, userId));
+  // Passkeys survive deleteAllUserDataTx (clear-all-data keeps the DEK) but PRF
+  // wraps are cleared; wipeUserDataAndRewrap additionally DELETES the passkeys.
+  await tx
+    .update(s.userPasskeys)
+    .set({ dekWrappedPrf: null })
+    .where(eq(s.userPasskeys.userId, userId));
   await tx
     .update(s.userRecoveryCodes)
     .set({ dekWrapped: null, usedAt: now })
@@ -1479,6 +1481,13 @@ async function deleteAllUserDataTx(tx: TxClient, userId: string) {
     .where(eq(s.users.id, userId));
 }
 
+/** Delete all of a user's passkeys (second factors + their PRF wraps) inside a tx. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function deleteUserPasskeysTx(tx: any, userId: string): Promise<void> {
+  const s = getSchema();
+  await tx.delete(s.userPasskeys).where(eq(s.userPasskeys.userId, userId));
+}
+
 /**
  * Permanently wipe all user-owned data (transactions, splits, accounts,
  * categories, etc.) and swap in a fresh DEK wrapped by the new password.
@@ -1518,6 +1527,11 @@ export async function wipeUserDataAndRewrap(
       .where(and(eq(s.oauthAccessTokens.userId, userId), isNull(s.oauthAccessTokens.revokedAt)));
 
     await deleteAllUserDataTx(tx, userId);
+
+    // Passkeys are second factors (userHasSecondFactor) and their PRF wraps bind
+    // the OLD DEK. Wipe clears TOTP the same way, so delete them: a user who lost
+    // the passkey must not be locked out of the (now empty) account.
+    await deleteUserPasskeysTx(tx, userId);
 
     // Rewrap the DEK with the new password + bump encryption version so any
     // cached session DEK gets invalidated on next auth check.
@@ -1782,7 +1796,7 @@ export async function applyAdminUserEdit(
     }
     if (patch.disableMfa) {
       // Passkeys are second factors too: "Reset 2FA" removes them (and their PRF wraps).
-      await tx.delete(s.userPasskeys).where(eq(s.userPasskeys.userId, userId));
+      await deleteUserPasskeysTx(tx, userId);
       // Trusted devices were enrolled under the old 2FA state.
       await tx
         .update(s.userDevices)
