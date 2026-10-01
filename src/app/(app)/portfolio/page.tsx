@@ -154,7 +154,7 @@ export default function PortfolioPage() {
   if (data.summary.totalHoldings === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center gap-4">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-cyan-100 text-cyan-600">
+        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-cyan-100 text-cyan-600">
           <TrendingUp className="h-8 w-8" />
         </div>
         <div>
@@ -294,7 +294,7 @@ export default function PortfolioPage() {
                 <p className="text-2xl font-bold tracking-tight hero-number">{summary.totalHoldings}</p>
                 <p className="text-xs text-muted-foreground">{summary.totalAccounts} accounts</p>
               </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400">
                 <Briefcase className="h-5 w-5" />
               </div>
             </div>
@@ -332,7 +332,7 @@ export default function PortfolioPage() {
                   {byType.etf.count} ETFs, {byType.stock.count} stocks
                 </p>
               </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-100 text-cyan-600 dark:bg-cyan-500/10 dark:text-cyan-400">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-100 text-cyan-600 dark:bg-cyan-500/10 dark:text-cyan-400">
                 <BarChart3 className="h-5 w-5" />
               </div>
             </div>
@@ -347,7 +347,7 @@ export default function PortfolioPage() {
                 <p className="text-2xl font-bold tracking-tight hero-number">{byType.crypto.count}</p>
                 <p className="text-xs text-muted-foreground">{byType.cash.count} cash positions</p>
               </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400">
                 <Coins className="h-5 w-5" />
               </div>
             </div>

@@ -105,7 +105,7 @@ export function Pagination({
               key={p}
               variant={page === p ? "default" : "outline"}
               size="sm"
-              className="hidden sm:inline-flex h-8 w-8 p-0 text-sm"
+              className="hidden sm:inline-flex h-8 w-8 shrink-0 p-0 text-sm"
               onClick={() => onPageChange(p)}
               aria-label={`Page ${p + 1}`}
               aria-current={page === p ? "page" : undefined}

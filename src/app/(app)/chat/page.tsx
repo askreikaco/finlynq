@@ -355,7 +355,7 @@ function ChatPageContent() {
         transition={{ duration: 0.4 }}
         className="text-center max-w-md"
       >
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary shadow-lg shadow-primary/30">
+        <div className="mx-auto mb-4 flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary shadow-lg shadow-primary/30">
           <Sparkles className="h-8 w-8 text-primary-foreground" />
         </div>
         <h2 className="text-xl font-semibold text-foreground mb-2">Ask about your finances</h2>
@@ -384,7 +384,7 @@ function ChatPageContent() {
       {/* Header */}
       <div className="flex items-center justify-between px-4 md:px-6 py-3 border-b border-border bg-background/80 backdrop-blur-sm shrink-0">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary shadow-md shadow-primary/20">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary shadow-md shadow-primary/20">
             <MessageSquare className="h-4 w-4 text-primary-foreground" />
           </div>
           <div>

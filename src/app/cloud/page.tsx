@@ -471,7 +471,7 @@ function CloudAuthPageInner() {
           ← Back
         </Link>
 
-        <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border border-primary/30 bg-primary/10">
+        <div className="mb-6 flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-primary/30 bg-primary/10">
           <span className="[&_svg]:h-9 [&_svg]:w-9">
             <LogoMark />
           </span>

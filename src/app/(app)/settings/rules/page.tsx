@@ -217,7 +217,7 @@ export default function RulesSettingsPage() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100 text-orange-600">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-100 text-orange-600">
                 <Zap className="h-5 w-5" />
               </div>
               <div>

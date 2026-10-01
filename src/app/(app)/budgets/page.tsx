@@ -654,7 +654,7 @@ export default function BudgetsPage() {
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm text-muted-foreground">Total Budget</CardTitle>
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 dark:bg-indigo-950/40">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 dark:bg-indigo-950/40">
                 <PiggyBank className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
               </div>
             </div>
@@ -728,7 +728,7 @@ export default function BudgetsPage() {
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm text-muted-foreground">Age of Money</CardTitle>
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-950/40">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-950/40">
                   <Clock className="h-5 w-5 text-violet-600 dark:text-violet-400" />
                 </div>
               </div>
@@ -760,7 +760,7 @@ export default function BudgetsPage() {
       {budgets.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-14 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-100 dark:bg-indigo-950/60 mb-4">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-indigo-100 dark:bg-indigo-950/60 mb-4">
               <LayoutGrid className="h-7 w-7 text-indigo-600 dark:text-indigo-400" />
             </div>
             <p className="text-base font-semibold mb-1">No budgets for {getMonthLabel(month)}</p>

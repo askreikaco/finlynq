@@ -478,7 +478,7 @@ function LoansPageContent() {
         <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-100 dark:bg-rose-950/40">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 dark:bg-rose-950/40">
                 <Landmark className="h-5 w-5 text-rose-600 dark:text-rose-400" />
               </div>
               <CardTitle className="text-sm text-muted-foreground">Total Debt</CardTitle>
@@ -492,7 +492,7 @@ function LoansPageContent() {
         <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-950/40">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-950/40">
                 <Calendar className="h-5 w-5 text-amber-600 dark:text-amber-400" />
               </div>
               <CardTitle className="text-sm text-muted-foreground">Monthly Payments</CardTitle>
@@ -506,7 +506,7 @@ function LoansPageContent() {
         <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 dark:bg-indigo-950/40">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 dark:bg-indigo-950/40">
                 <FileText className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
               </div>
               <CardTitle className="text-sm text-muted-foreground">Active Loans</CardTitle>

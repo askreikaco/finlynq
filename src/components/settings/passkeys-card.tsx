@@ -303,7 +303,7 @@ export function PasskeysCard() {
     <Card>
       <CardHeader>
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600">
             <Fingerprint className="h-5 w-5" />
           </div>
           <div>

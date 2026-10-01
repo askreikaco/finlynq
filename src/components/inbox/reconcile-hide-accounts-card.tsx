@@ -101,7 +101,7 @@ export function ReconcileHideAccountsCard() {
     <Card>
       <CardHeader>
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
             <EyeOff className="h-5 w-5" />
           </div>
           <div>

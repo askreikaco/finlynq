@@ -29,7 +29,7 @@ export function AvailableToSpend({ income, expenses, currency = "CAD", monthLabe
         <div className="absolute -bottom-12 -right-12 w-32 h-32 rounded-full bg-cyan-500/5 blur-2xl pointer-events-none" />
         <CardContent className="relative pt-5 pb-5 px-5">
           <div className="flex items-center gap-2.5 mb-4">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-cyan-100 text-cyan-600 dark:bg-cyan-950/60 dark:text-cyan-400">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-cyan-100 text-cyan-600 dark:bg-cyan-950/60 dark:text-cyan-400">
               <Wallet className="h-4 w-4" />
             </div>
             <div>

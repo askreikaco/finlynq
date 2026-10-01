@@ -244,7 +244,7 @@ export default function ImportSettingsPage() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-600">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600">
               {confirmCsvMapping ? (
                 <ToggleRight className="h-5 w-5" />
               ) : (
@@ -299,7 +299,7 @@ export default function ImportSettingsPage() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
               <EyeOff className="h-5 w-5" />
             </div>
             <div>
@@ -545,7 +545,7 @@ export default function ImportSettingsPage() {
                     onClick={() => setProvider("wealthposition")}
                     className="flex items-start gap-3 rounded-lg border p-4 text-left transition-colors hover:bg-muted/40"
                   >
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600">
                       <LinkIcon className="h-5 w-5" />
                     </div>
                     <div>
@@ -561,7 +561,7 @@ export default function ImportSettingsPage() {
                     onClick={() => setProvider("moneypro")}
                     className="flex items-start gap-3 rounded-lg border p-4 text-left transition-colors hover:bg-muted/40"
                   >
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600">
                       <FileSpreadsheet className="h-5 w-5" />
                     </div>
                     <div>
@@ -576,7 +576,7 @@ export default function ImportSettingsPage() {
                     onClick={() => setProvider("generic-csv")}
                     className="flex items-start gap-3 rounded-lg border p-4 text-left transition-colors hover:bg-muted/40"
                   >
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-100 text-sky-600">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-100 text-sky-600">
                       <FileSpreadsheet className="h-5 w-5" />
                     </div>
                     <div>

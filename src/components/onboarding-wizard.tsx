@@ -586,7 +586,7 @@ export function OnboardingWizard({
                   </div>
 
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-muted text-xs">?</span>
+                    <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-xs">?</span>
                     Full setup guide for Cursor, Cline &amp; others on the MCP Guide page.
                   </div>
                   {error && <p className="text-sm text-destructive">{error}</p>}
@@ -600,7 +600,7 @@ export function OnboardingWizard({
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ type: "spring", stiffness: 200 }}
-                    className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/15 mb-4"
+                    className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 mb-4"
                   >
                     <Check className="h-8 w-8 text-emerald-500" />
                   </motion.div>

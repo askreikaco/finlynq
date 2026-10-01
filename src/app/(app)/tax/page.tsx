@@ -97,7 +97,7 @@ function TaxPageContent() {
                 <p className="text-xs font-medium text-muted-foreground">TFSA Room</p>
                 <p className="text-2xl font-bold tracking-tight mt-1">{formatCurrency(data.tfsa.remaining, displayCurrency)}</p>
               </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
                 <PiggyBank className="h-5 w-5" />
               </div>
             </div>
@@ -118,7 +118,7 @@ function TaxPageContent() {
                 <p className="text-xs font-medium text-muted-foreground">RESP Grant</p>
                 <p className="text-2xl font-bold tracking-tight text-emerald-600 mt-1">{formatCurrency(data.resp.grantExample, displayCurrency)}/yr</p>
               </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-600 dark:bg-violet-950/60 dark:text-violet-400">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-600 dark:bg-violet-950/60 dark:text-violet-400">
                 <GraduationCap className="h-5 w-5" />
               </div>
             </div>
@@ -132,7 +132,7 @@ function TaxPageContent() {
                 <p className="text-xs font-medium text-muted-foreground">Marginal Rate @ $100K</p>
                 <p className="text-2xl font-bold tracking-tight mt-1">{data.marginalRates.at100k.combined}%</p>
               </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400">
                 <Percent className="h-5 w-5" />
               </div>
             </div>
@@ -145,7 +145,7 @@ function TaxPageContent() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
               <Calculator className="h-5 w-5" />
             </div>
             <div>
@@ -190,7 +190,7 @@ function TaxPageContent() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-100 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400">
               <Percent className="h-5 w-5" />
             </div>
             <div>
@@ -228,7 +228,7 @@ function TaxPageContent() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-100 text-cyan-600 dark:bg-cyan-950/60 dark:text-cyan-400">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-100 text-cyan-600 dark:bg-cyan-950/60 dark:text-cyan-400">
                 <Lightbulb className="h-5 w-5" />
               </div>
               <div>

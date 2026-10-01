@@ -425,7 +425,7 @@ export default function AccountDetailPage() {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className={`h-10 w-10 rounded-xl flex items-center justify-center text-sm font-bold ${account.type === "A" ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
+          <div className={`h-10 w-10 shrink-0 rounded-xl flex items-center justify-center text-sm font-bold ${account.type === "A" ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
             {(account.name ?? "?").charAt(0)}
           </div>
           <div>
@@ -519,7 +519,7 @@ export default function AccountDetailPage() {
                 <p className="text-xs font-medium text-muted-foreground">Group</p>
                 <p className="text-lg font-semibold mt-1">{account.group || "None"}</p>
               </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400">
                 <Layers className="h-5 w-5" />
               </div>
             </div>
@@ -532,7 +532,7 @@ export default function AccountDetailPage() {
                 <p className="text-xs font-medium text-muted-foreground">Transactions</p>
                 <p className="text-lg font-semibold mt-1">{total}</p>
               </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400">
                 <Hash className="h-5 w-5" />
               </div>
             </div>

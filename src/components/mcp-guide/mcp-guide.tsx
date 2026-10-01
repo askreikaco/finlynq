@@ -329,7 +329,7 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 shadow-lg shadow-indigo-500/30">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 shadow-lg shadow-indigo-500/30">
               <Bot className="h-5 w-5 text-white" />
             </div>
             <div>
