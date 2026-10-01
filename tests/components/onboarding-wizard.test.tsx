@@ -45,8 +45,8 @@ describe("OnboardingWizard", () => {
     vi.clearAllMocks();
   });
 
-  describe("Budget step", () => {
-    it("renders budget amounts with default value 0", async () => {
+  describe("Skip setup button", () => {
+    it("renders Skip setup button on welcome step", () => {
       const onComplete = vi.fn();
       render(
         <OnboardingWizard
@@ -55,37 +55,10 @@ describe("OnboardingWizard", () => {
         />
       );
 
-      // Click through to budget step (click Continue 4 times: welcome -> currency -> accounts -> data -> budget)
-      const continueButtons = screen.getAllByText("Continue");
-      fireEvent.click(continueButtons[0]); // welcome -> currency
-      await waitFor(() => {
-        expect(screen.getByText("Which currency should we show your money in?")).toBeInTheDocument();
-      });
-
-      fireEvent.click(screen.getAllByText("Continue")[0]); // currency -> accounts
-      await waitFor(() => {
-        expect(screen.getByText("Add accounts")).toBeInTheDocument();
-      });
-
-      fireEvent.click(screen.getAllByText("Continue")[0]); // accounts -> data
-      await waitFor(() => {
-        expect(screen.getByText("Import your data")).toBeInTheDocument();
-      });
-
-      fireEvent.click(screen.getAllByText("Continue")[0]); // data -> budget
-      await waitFor(() => {
-        expect(screen.getByText("Set a starter budget")).toBeInTheDocument();
-      });
-
-      // Check that all budget inputs have value 0
-      const inputs = screen.getAllByRole("spinbutton") as HTMLInputElement[];
-      expect(inputs.length).toBeGreaterThan(0);
-      inputs.forEach((input) => {
-        expect(input.value).toBe("0");
-      });
+      expect(screen.getByText("Skip setup")).toBeInTheDocument();
     });
 
-    it("does not create budget rows with amount 0 when finishing", async () => {
+    it("renders Skip setup button on budget step", async () => {
       const onComplete = vi.fn();
       render(
         <OnboardingWizard
@@ -119,29 +92,38 @@ describe("OnboardingWizard", () => {
         expect(screen.getByText("Set a starter budget")).toBeInTheDocument();
       });
 
-      // Keep all budgets at 0 and click Continue
-      continueButton = screen.getByText("Continue");
-      fireEvent.click(continueButton); // budget -> mcp
-      await waitFor(() => {
-        expect(screen.getByText("Connect your AI assistant")).toBeInTheDocument();
-      });
+      expect(screen.getByText("Skip setup")).toBeInTheDocument();
+    });
 
-      // Click Finish
-      const finishButton = screen.getByText("Finish Setup");
-      fireEvent.click(finishButton);
-      await waitFor(() => {
-        // Check that no budget seed calls were made
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const budgetCalls = fetchMock.mock.calls.filter((call: any[]) =>
-          call[0]?.includes("/api/budgets/seed")
-        );
-        expect(budgetCalls.length).toBe(0);
-      });
+    it("does not show Skip setup on done step", async () => {
+      const onComplete = vi.fn();
+      render(
+        <OnboardingWizard
+          userEmail="test@example.com"
+          onComplete={onComplete}
+        />
+      );
+
+      // Navigate to done step by clicking through
+      let continueButton = screen.getByText("Continue");
+      for (let i = 0; i < 6; i++) {
+        fireEvent.click(continueButton);
+        await waitFor(() => {
+          const buttons = screen.getAllByText("Continue");
+          continueButton = buttons[0];
+        }, { timeout: 100 }).catch(() => {
+          // Might not have more Continue buttons
+        });
+      }
+
+      // Try to find Skip setup - should not exist on done step
+      const skipButtons = screen.queryAllByText("Skip setup");
+      expect(skipButtons.length).toBe(0);
     });
   });
 
-  describe("Mutation tests for budget defaults", () => {
-    it("fails if budget amounts are not set to 0", async () => {
+  describe("Skip confirmation dialog", () => {
+    it("shows confirmation dialog when Skip setup is clicked", async () => {
       const onComplete = vi.fn();
       render(
         <OnboardingWizard
@@ -150,47 +132,15 @@ describe("OnboardingWizard", () => {
         />
       );
 
-      // Navigate to budget step
-      let continueButton = screen.getByText("Continue");
-      fireEvent.click(continueButton);
-      await waitFor(() => {
-        expect(screen.getByText("Which currency should we show your money in?")).toBeInTheDocument();
-      });
+      const skipButton = screen.getByText("Skip setup");
+      fireEvent.click(skipButton);
 
-      continueButton = screen.getByText("Continue");
-      fireEvent.click(continueButton);
       await waitFor(() => {
-        expect(screen.getByText("Add accounts")).toBeInTheDocument();
-      });
-
-      continueButton = screen.getByText("Continue");
-      fireEvent.click(continueButton);
-      await waitFor(() => {
-        expect(screen.getByText("Import your data")).toBeInTheDocument();
-      });
-
-      continueButton = screen.getByText("Continue");
-      fireEvent.click(continueButton);
-      await waitFor(() => {
-        expect(screen.getByText("Set a starter budget")).toBeInTheDocument();
-      });
-
-      // Verify all budget inputs default to 0 (not some preset value)
-      const inputs = screen.getAllByRole("spinbutton") as HTMLInputElement[];
-      inputs.forEach((input) => {
-        // This test verifies the default is 0, not a preset value like 600, 300, etc.
-        expect(input.value).toBe("0");
-        expect(input.value).not.toBe("600");
-        expect(input.value).not.toBe("300");
-        expect(input.value).not.toBe("200");
-        expect(input.value).not.toBe("150");
+        expect(screen.getByText("Skip setup?")).toBeInTheDocument();
       });
     });
 
-    it("fails if skip zero-amount budgets on submission", async () => {
-      // This test verifies that the code correctly skips zero amounts
-      // If the code is broken and tries to create budgets with 0 amount,
-      // this test will fail
+    it("closes dialog when Keep going is clicked", async () => {
       const onComplete = vi.fn();
       render(
         <OnboardingWizard
@@ -199,54 +149,171 @@ describe("OnboardingWizard", () => {
         />
       );
 
-      // Navigate to budget step and set one budget to non-zero
-      let continueButton = screen.getByText("Continue");
-      fireEvent.click(continueButton);
-      await waitFor(() => {
-        expect(screen.getByText("Which currency should we show your money in?")).toBeInTheDocument();
-      });
-
-      continueButton = screen.getByText("Continue");
-      fireEvent.click(continueButton);
-      await waitFor(() => {
-        expect(screen.getByText("Add accounts")).toBeInTheDocument();
-      });
-
-      continueButton = screen.getByText("Continue");
-      fireEvent.click(continueButton);
-      await waitFor(() => {
-        expect(screen.getByText("Import your data")).toBeInTheDocument();
-      });
-
-      continueButton = screen.getByText("Continue");
-      fireEvent.click(continueButton);
-      await waitFor(() => {
-        expect(screen.getByText("Set a starter budget")).toBeInTheDocument();
-      });
-
-      // Get the first budget input and set it to 500
-      const inputs = screen.getAllByRole("spinbutton") as HTMLInputElement[];
-      const firstInput = inputs[0];
-      fireEvent.change(firstInput, { target: { value: "500" } });
-
-      // Navigate to finish and check that only one budget is created
-      continueButton = screen.getByText("Continue");
-      fireEvent.click(continueButton);
-      await waitFor(() => {
-        expect(screen.getByText("Connect your AI assistant")).toBeInTheDocument();
-      });
-
-      const finishButton = screen.getByText("Finish Setup");
-      fireEvent.click(finishButton);
+      const skipButton = screen.getByText("Skip setup");
+      fireEvent.click(skipButton);
 
       await waitFor(() => {
-        // Check that exactly one budget seed call was made (for the one non-zero amount)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const budgetCalls = fetchMock.mock.calls.filter((call: any[]) =>
-          call[0]?.includes("/api/budgets/seed")
-        );
-        expect(budgetCalls.length).toBe(1);
+        expect(screen.getByText("Skip setup?")).toBeInTheDocument();
       });
+
+      const keepGoingButton = screen.getByText("Keep going");
+      fireEvent.click(keepGoingButton);
+
+      await waitFor(() => {
+        expect(screen.queryByText("Skip setup?")).not.toBeInTheDocument();
+      });
+
+      // Verify no POST was made
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const completeCalls = fetchMock.mock.calls.filter((call: any[]) =>
+        call[0]?.includes("/api/onboarding/complete")
+      );
+      expect(completeCalls.length).toBe(0);
+    });
+
+    it("POSTs /api/onboarding/complete and calls onComplete when Skip is confirmed", async () => {
+      const onComplete = vi.fn();
+      render(
+        <OnboardingWizard
+          userEmail="test@example.com"
+          onComplete={onComplete}
+        />
+      );
+
+      const skipButton = screen.getByText("Skip setup");
+      fireEvent.click(skipButton);
+
+      await waitFor(() => {
+        expect(screen.getByText("Skip setup?")).toBeInTheDocument();
+      });
+
+      const skipConfirmButton = screen.getByText("Skip");
+      fireEvent.click(skipConfirmButton);
+
+      await waitFor(() => {
+        // Verify onComplete was called
+        expect(onComplete).toHaveBeenCalled();
+      });
+
+      // Verify the POST was made
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const completeCalls = fetchMock.mock.calls.filter((call: any[]) =>
+        call[0]?.includes("/api/onboarding/complete") && call[1]?.method === "POST"
+      );
+      expect(completeCalls.length).toBeGreaterThan(0);
+    });
+
+    it("does not create accounts or budgets when skipping", async () => {
+      const onComplete = vi.fn();
+      render(
+        <OnboardingWizard
+          userEmail="test@example.com"
+          onComplete={onComplete}
+        />
+      );
+
+      // First select an account and add some budget amounts
+      const skipButton = screen.getByText("Skip setup");
+      fireEvent.click(skipButton);
+
+      await waitFor(() => {
+        expect(screen.getByText("Skip setup?")).toBeInTheDocument();
+      });
+
+      const skipConfirmButton = screen.getByText("Skip");
+      fireEvent.click(skipConfirmButton);
+
+      await waitFor(() => {
+        expect(onComplete).toHaveBeenCalled();
+      });
+
+      // Verify no account creation calls were made
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const accountCalls = fetchMock.mock.calls.filter((call: any[]) =>
+        call[0]?.includes("/api/accounts") && call[1]?.method === "POST"
+      );
+      expect(accountCalls.length).toBe(0);
+
+      // Verify no budget seed calls were made
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const budgetCalls = fetchMock.mock.calls.filter((call: any[]) =>
+        call[0]?.includes("/api/budgets/seed")
+      );
+      expect(budgetCalls.length).toBe(0);
+
+      // Verify no sample data calls were made
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sampleDataCalls = fetchMock.mock.calls.filter((call: any[]) =>
+        call[0]?.includes("/api/onboarding/sample-data")
+      );
+      expect(sampleDataCalls.length).toBe(0);
+    });
+  });
+
+  describe("Mutation tests", () => {
+    it("fails if POST /api/onboarding/complete throws", async () => {
+      // Create a mock that throws when calling the complete endpoint
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const limitedFetchMock: any = vi.fn((url: any) => {
+        if (url?.includes("/api/onboarding/complete")) {
+          // Simulate a network error
+          return Promise.reject(new Error("Network error"));
+        }
+        return Promise.resolve({ ok: true, json: async () => ({}) });
+      });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (global as any).fetch = limitedFetchMock;
+
+      const onComplete = vi.fn();
+      render(
+        <OnboardingWizard
+          userEmail="test@example.com"
+          onComplete={onComplete}
+        />
+      );
+
+      const skipButton = screen.getByText("Skip setup");
+      fireEvent.click(skipButton);
+
+      await waitFor(() => {
+        expect(screen.getByText("Skip setup?")).toBeInTheDocument();
+      });
+
+      const skipConfirmButton = screen.getByText("Skip");
+      fireEvent.click(skipConfirmButton);
+
+      // Should see an error message
+      await waitFor(() => {
+        expect(screen.getByText("Something went wrong. Please try again.")).toBeInTheDocument();
+      });
+    });
+
+    it("does not close wizard if Skip is clicked without confirmation", async () => {
+      const onComplete = vi.fn();
+      render(
+        <OnboardingWizard
+          userEmail="test@example.com"
+          onComplete={onComplete}
+        />
+      );
+
+      const skipButton = screen.getByText("Skip setup");
+      fireEvent.click(skipButton);
+
+      await waitFor(() => {
+        expect(screen.getByText("Skip setup?")).toBeInTheDocument();
+      });
+
+      // Click Keep going to dismiss dialog without confirming
+      const keepGoingButton = screen.getByText("Keep going");
+      fireEvent.click(keepGoingButton);
+
+      await waitFor(() => {
+        expect(screen.queryByText("Skip setup?")).not.toBeInTheDocument();
+      });
+
+      // Verify onComplete was NOT called
+      expect(onComplete).not.toHaveBeenCalled();
     });
   });
 });

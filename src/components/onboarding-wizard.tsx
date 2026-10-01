@@ -1,11 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { currencyLabel } from "@/lib/fx/supported-currencies";
 import { Combobox } from "@/components/ui/combobox";
 import { useDisplayCurrencyOptions } from "@/lib/hooks/useDisplayCurrencyOptions";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import {
   Check,
   Coins,
@@ -116,6 +123,7 @@ export function OnboardingWizard({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [showSkipConfirm, setShowSkipConfirm] = useState(false);
 
   const stepIndex = STEPS.indexOf(step);
   // Derive the currency symbol from the single source of truth (formatCurrency /
@@ -221,16 +229,56 @@ export function OnboardingWizard({
     }
   }
 
+  async function handleSkip() {
+    setLoading(true);
+    setError("");
+
+    try {
+      // Persist the chosen display currency to settings.display_currency
+      // (same as handleFinish) — must land BEFORE onboarding is marked complete
+      // so the dashboard/totals render in the right currency.
+      await persistDisplayCurrency(currency).catch(() => {
+        /* non-fatal — settings fall back to the USD default */
+      });
+
+      // Mark onboarding complete without creating accounts, budgets, or demo data
+      await fetch("/api/onboarding/complete", { method: "POST" });
+
+      // Close the skip confirm dialog and close the wizard modal
+      setShowSkipConfirm(false);
+      onComplete();
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   const mcpUrl = typeof window !== "undefined"
     ? window.location.origin + "/api/mcp"
     : "http://localhost:3000/api/mcp";
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && step !== "done") {
+        e.preventDefault();
+        setShowSkipConfirm(true);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [step]);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm" role="presentation">
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         className="w-full max-w-lg mx-4 rounded-2xl border bg-card shadow-2xl overflow-hidden"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Onboarding wizard"
       >
         {/* Progress */}
         <div className="flex gap-1 px-6 pt-6">
@@ -569,6 +617,15 @@ export function OnboardingWizard({
 
           {/* Footer buttons */}
           <div className="flex justify-between items-center pt-4 mt-auto">
+            {step !== "done" ? (
+              <button
+                onClick={() => setShowSkipConfirm(true)}
+                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Skip setup
+              </button>
+            ) : null}
+
             {stepIndex > 0 && step !== "done" ? (
               <button
                 onClick={goBack}
@@ -624,6 +681,36 @@ export function OnboardingWizard({
           </div>
         </div>
       </motion.div>
+
+      {/* Skip setup confirmation dialog */}
+      <Dialog open={showSkipConfirm} onOpenChange={setShowSkipConfirm}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Skip setup?</DialogTitle>
+          </DialogHeader>
+          <div className="text-sm text-muted-foreground">
+            You can add accounts, import data and set budgets anytime from the menu.
+          </div>
+          {error && <p className="text-sm text-destructive">{error}</p>}
+          <div className="flex gap-2 mt-4">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setShowSkipConfirm(false)}
+              disabled={loading}
+            >
+              Keep going
+            </Button>
+            <Button
+              className="flex-1"
+              onClick={handleSkip}
+              disabled={loading}
+            >
+              {loading ? "Skipping..." : "Skip"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
