@@ -670,3 +670,60 @@ export function contactReplyEmail(opts: {
     text: `${opts.replyBody}${quotedText}`,
   };
 }
+
+/**
+ * Family Wealth share invitation email.
+ * No key material or amounts in the email body.
+ */
+export function familyInviteEmail(inviterName: string, acceptUrl: string) {
+  const safeInviterName = escapeHtml(inviterName);
+  const html = baseLayout(
+    `You're invited to share finances`,
+    `<p style="color:#3f3f46;line-height:1.6">${safeInviterName} has invited you to share financial data with them in Finlynq.</p>
+     <p style="color:#3f3f46;line-height:1.6">This is a one-time invitation and will expire in 7 days.</p>
+     ${buttonHtml("View invitation", acceptUrl)}
+     <p style="color:#71717a;font-size:13px">If the button doesn't work, copy this link:<br>
+     <a href="${escapeHtml(acceptUrl)}" style="color:#2563eb;word-break:break-all">${escapeHtml(acceptUrl)}</a></p>`
+  );
+  return {
+    subject: `${inviterName} invited you to share finances`,
+    html,
+    text: `${inviterName} invited you to share finances. View the invitation: ${acceptUrl}`,
+  };
+}
+
+/**
+ * Family Wealth share accepted notification.
+ */
+export function familyShareAcceptedEmail(viewerName: string) {
+  const safeViewerName = escapeHtml(viewerName);
+  const sharingUrl = `${APP_URL()}/family`;
+  const html = baseLayout(
+    `Invitation accepted`,
+    `<p style="color:#3f3f46;line-height:1.6">${safeViewerName} has accepted your Family Wealth invitation.</p>
+     <p style="color:#3f3f46;line-height:1.6">You can now view shared data and manage permissions.</p>
+     ${buttonHtml("Go to Family Wealth", sharingUrl)}`
+  );
+  return {
+    subject: `${viewerName} accepted your Family Wealth invitation`,
+    html,
+    text: `${viewerName} accepted your Family Wealth invitation. Manage sharing: ${sharingUrl}`,
+  };
+}
+
+/**
+ * Family Wealth share revoked notification.
+ */
+export function familyShareRevokedEmail(ownerName: string) {
+  const safeOwnerName = escapeHtml(ownerName);
+  const html = baseLayout(
+    `Share access revoked`,
+    `<p style="color:#3f3f46;line-height:1.6">${safeOwnerName} has revoked your access to their Family Wealth data.</p>
+     <p style="color:#3f3f46;line-height:1.6">You can no longer view their shared data. Any previous data you accessed is still known to you, but you will not see new or updated data.</p>`
+  );
+  return {
+    subject: `Your access to ${ownerName}'s Family Wealth has been revoked`,
+    html,
+    text: `Your access to ${safeOwnerName}'s Family Wealth has been revoked.`,
+  };
+}
