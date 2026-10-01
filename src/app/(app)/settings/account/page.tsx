@@ -10,6 +10,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Key, RefreshCw, Eye, EyeOff, FileText, Check, Shield, Lock, Mail, Download, Upload, AlertTriangle } from "lucide-react";
+import { TwoFactor } from "./_components/two-factor";
+import { SignInMethods } from "./_components/sign-in-methods";
+import { TrustedDevices } from "./_components/trusted-devices";
+import { PasskeysPlaceholder } from "./_components/passkeys-placeholder";
 
 export default function AccountSettingsPage() {
   // API Key — the raw key is only held in memory on first creation or
@@ -242,6 +246,12 @@ export default function AccountSettingsPage() {
         <h1 className="text-2xl font-bold tracking-tight">Account & Security</h1>
         <p className="text-sm text-muted-foreground mt-0.5">Login, API key, privacy, and backup / restore</p>
       </div>
+
+      {/* Security Section */}
+      <TwoFactor />
+      <SignInMethods />
+      <TrustedDevices />
+      <PasskeysPlaceholder />
 
       {/* Change Password — managed mode only. */}
       {meLoaded && me?.username && (
