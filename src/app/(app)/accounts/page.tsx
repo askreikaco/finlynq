@@ -245,13 +245,19 @@ export default function AccountsPage() {
     accts.filter((a) => !a.invisible).reduce((s, a) => s + (a.convertedBalance ?? a.balance), 0);
   // Accordion header: group name + account count on the left, group total right.
   const groupTitle = (group: string, accts: AccountBalance[]) => (
-    <span className="flex items-baseline justify-between gap-3">
-      <span className="min-w-0 truncate" data-testid="group-name">{group}</span>
-      <span className="flex shrink-0 items-baseline gap-2">
-        <span className="text-xs font-normal text-muted-foreground">{accts.length}</span>
-        <span className="font-mono font-semibold tabular-nums" data-testid="group-total">
-          {formatCurrency(groupTotal(accts), displayCurrency)}
+    <span className="flex items-center justify-between gap-3">
+      <span className="flex min-w-0 items-center gap-2">
+        <span className="min-w-0 truncate" data-testid="group-name">{group}</span>
+        <span
+          className="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-muted px-1.5 text-[11px] font-medium text-muted-foreground"
+          aria-label={`${accts.length} accounts`}
+          data-testid="group-count"
+        >
+          {accts.length}
         </span>
+      </span>
+      <span className="shrink-0 font-mono font-semibold tabular-nums" data-testid="group-total">
+        {formatCurrency(groupTotal(accts), displayCurrency)}
       </span>
     </span>
   );
@@ -268,10 +274,11 @@ export default function AccountsPage() {
         <SectionIcon className={`h-5 w-5 ${color}`} />
         <h2 className="text-xl font-semibold">{title}</h2>
       </div>
-      {/* Groups as an accordion (collapsed by default): header = name, count, total. */}
-      <Accordion defaultValue={null}>
+      {/* Each group is its own accordion, expanded by default (toggled independently): header = name, count, total. */}
+      <div className="flex flex-col gap-2">
         {groups(list).map(([group, accts]) => (
-          <AccordionItem key={group} value={group} title={groupTitle(group, accts)}>
+          <Accordion key={group} defaultValue={group}>
+          <AccordionItem value={group} title={groupTitle(group, accts)}>
             <div className="-mx-2 -my-2 space-y-1">
             {accts.map((a) => (
               <div key={a.accountId} className={`flex items-center gap-1 rounded-lg hover:bg-muted/50 transition-colors group ${a.archived ? "opacity-60" : ""}`}>
@@ -324,8 +331,9 @@ export default function AccountsPage() {
             ))}
             </div>
           </AccordionItem>
+          </Accordion>
         ))}
-      </Accordion>
+      </div>
     </div>
   );
 
@@ -333,9 +341,10 @@ export default function AccountsPage() {
     list.length === 0 ? null : (
       <section className="space-y-2">
         <SectionLabel>{title}</SectionLabel>
-        <Accordion defaultValue={null}>
+        <div className="flex flex-col gap-2">
           {groups(list).map(([group, accts]) => (
-            <AccordionItem key={group} value={group} title={groupTitle(group, accts)}>
+            <Accordion key={group} defaultValue={group}>
+            <AccordionItem value={group} title={groupTitle(group, accts)}>
               <div className="-mx-4 -my-4 divide-y divide-border/50 px-3">
             {accts.map((a) => (
               <AccountRow
@@ -355,8 +364,9 @@ export default function AccountsPage() {
             ))}
               </div>
             </AccordionItem>
+            </Accordion>
           ))}
-        </Accordion>
+        </div>
       </section>
     );
 

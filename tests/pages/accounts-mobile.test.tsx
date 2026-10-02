@@ -3,7 +3,7 @@
  */
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import * as React from "react";
-import { render, screen, cleanup, within, fireEvent } from "@testing-library/react";
+import { render, screen, cleanup, within, fireEvent, waitFor } from "@testing-library/react";
 import { formatCurrency } from "@/lib/currency";
 
 vi.mock("next/link", () => ({
@@ -57,31 +57,33 @@ describe("Accounts page below md", () => {
     expect(cls(desktopStats)).toContain("max-md:hidden");
   });
 
-  it("accounts are grouped by type then group as a collapsed accordion; opening a group lists AccountRows", async () => {
+  it("accounts are grouped by type then group; every group is expanded by default and toggles on its own", async () => {
     const list = await mobile();
     expect(cls(list)).toContain("md:hidden");
     const sections = Array.from(list.querySelectorAll("section.space-y-2 > h2")).map((h) => h.textContent);
     expect(sections).toEqual(expect.arrayContaining(["Assets", "Liabilities"]));
     expect(items(list).map(nameOf)).toEqual(expect.arrayContaining(["Banks", "Investments", "Credit Card"]));
 
-    // Collapsed by default: no account rows until a group is opened.
-    expect(within(list).queryAllByRole("link")).toHaveLength(0);
+    // All groups open: every account row is visible.
+    for (const i of items(list)) expect(trigger(i).getAttribute("aria-expanded")).toBe("true");
     const banks = items(list).find((i) => nameOf(i) === "Banks")!;
-    expect(trigger(banks).getAttribute("aria-expanded")).toBe("false");
-    fireEvent.click(trigger(banks));
-    const links = await within(banks).findAllByRole("link");
+    const links = within(banks).getAllByRole("link");
     expect(links.map((a) => a.getAttribute("href"))).toEqual(["/accounts/1", "/accounts/2"]);
     // native amount primary + converted equivalent for the USD account
     expect(within(links[1]).getByText(formatCurrency(100, "USD"))).toBeTruthy();
     expect(within(links[1]).getByText(formatCurrency(2500000, "VND"))).toBeTruthy();
 
     const card = items(list).find((i) => nameOf(i) === "Credit Card")!;
-    fireEvent.click(trigger(card));
-    const visa = await within(card).findByRole("link", { name: /Visa/ });
+    const visa = within(card).getByRole("link", { name: /Visa/ });
     expect(cls(within(visa).getByText(formatCurrency(-5000000, "VND")))).toContain("text-neg");
+
+    // Collapsing one group leaves the others open.
+    fireEvent.click(trigger(banks));
+    await waitFor(() => expect(trigger(banks).getAttribute("aria-expanded")).toBe("false"));
+    expect(trigger(card).getAttribute("aria-expanded")).toBe("true");
   });
 
-  it("each group header shows its account count and total in the display currency", async () => {
+  it("each group header shows its account count (pill) and total in the display currency", async () => {
     const list = await mobile();
     const byName = Object.fromEntries(items(list).map((i) => [nameOf(i), totalOf(i)]));
     expect(byName).toEqual({
@@ -90,15 +92,16 @@ describe("Accounts page below md", () => {
       "Credit Card": formatCurrency(-5000000, "VND"),
     });
     const banks = items(list).find((i) => nameOf(i) === "Banks")!;
-    expect(trigger(banks).textContent).toContain("2");
+    const count = banks.querySelector("[data-testid=group-count]") as HTMLElement;
+    expect(count.textContent).toBe("2");
+    expect(cls(count)).toEqual(expect.arrayContaining(["rounded-full", "bg-muted"]));
   });
 
-  it("desktop groups use the same collapsed accordion, hidden below md", async () => {
+  it("desktop groups use the same expanded accordions, hidden below md", async () => {
     await mobile();
     const grid = document.querySelector("div.lg\\:grid-cols-2") as HTMLElement;
     const banks = items(grid).find((i) => nameOf(i) === "Banks")!;
-    fireEvent.click(trigger(banks));
-    expect(await within(banks).findAllByText("Techcombank")).toHaveLength(1);
+    expect(within(banks).getAllByText("Techcombank")).toHaveLength(1);
     expect(cls(grid)).toEqual(expect.arrayContaining(["grid", "grid-cols-1", "lg:grid-cols-2", "gap-4", "max-md:hidden"]));
   });
 });
