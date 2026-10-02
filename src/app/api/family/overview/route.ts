@@ -7,7 +7,8 @@
  *
  * GET only: every other method is answered 405 by src/middleware.ts (and Next for methods not
  * exported). Nothing here writes except the throttled last_viewed_at audit stamp on the viewer's
- * own shares. Responses are never cached.
+ * own shares. HTTP responses are never cached (no-store); the server keeps a per-viewer, per-day
+ * in-memory copy (overview/cache.ts) that ?refresh=1 bypasses.
  */
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -22,6 +23,7 @@ import { assembleFamilyOverview } from "@/lib/family/overview/assemble";
 import { OVERVIEW_PERIODS, serializeOverview } from "@/lib/family/overview/dto";
 import { FxContext } from "@/lib/family/overview/fx";
 import { viewerPassesMfaGate } from "@/lib/family/overview/gate";
+import { getCachedOverview, overviewCacheEnabled, overviewCacheKey, setCachedOverview } from "@/lib/family/overview/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +37,8 @@ const QuerySchema = z
     currency: z.string().max(8).optional(),
     // month = month-to-date (default), year = year-to-date, all; legacy 6m / 1y still accepted
     period: z.enum(OVERVIEW_PERIODS).optional().default("month"),
+    // Refresh button: rebuild instead of serving today's cached copy
+    refresh: z.enum(["1"]).optional(),
   })
   .strict();
 
@@ -64,7 +68,7 @@ export async function GET(request: NextRequest) {
       { status: 400, headers: NO_STORE },
     );
   }
-  const { period } = parsed.data;
+  const { period, refresh } = parsed.data;
 
   const today = new Date().toISOString().slice(0, 10);
   const display = await getDisplayCurrency(viewerId);
@@ -85,16 +89,20 @@ export async function GET(request: NextRequest) {
     .where(and(eq(familyShares.viewerId, viewerId), eq(familyShares.status, "active")));
   shares.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
 
-  const { members, partial } = await assembleFamilyOverview({
-    viewerId,
-    viewerDek: dek,
-    shares,
-    fx,
-    period,
-    today,
-  });
-
-  const body = serializeOverview({ displayCurrency: fx.display, period, asOf: today, partial, members });
+  const cacheKey = overviewCacheKey({ viewerId, period, display: fx.display, unlocked: !!dek, shares });
+  let cached = refresh || !overviewCacheEnabled() ? null : getCachedOverview(cacheKey, today);
+  if (!cached) {
+    const { members, partial } = await assembleFamilyOverview({
+      viewerId,
+      viewerDek: dek,
+      shares,
+      fx,
+      period,
+      today,
+    });
+    const body = serializeOverview({ displayCurrency: fx.display, period, asOf: today, partial, members });
+    cached = setCachedOverview(cacheKey, today, body);
+  }
 
   // Audit stamp for the owner ("last viewed"), throttled; failure never affects the response.
   const cutoff = Date.now() - LAST_VIEWED_THROTTLE_MS;
@@ -104,5 +112,5 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.json(body, { headers: NO_STORE });
+  return NextResponse.json(cached.body, { headers: { ...NO_STORE, "X-Generated-At": cached.generatedAt } });
 }
