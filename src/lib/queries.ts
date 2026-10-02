@@ -185,6 +185,12 @@ export type TxSortFilter = {
   quantityMin?: number;
   quantityMax?: number;
   quantityEq?: number;
+  // Direction filter: "in" filters for amount > 0, "out" for amount < 0.
+  // Operates on absolute values of amount for filtering purposes.
+  direction?: "in" | "out";
+  // Absolute amount range filters (on ABS(amount)). Used for mobile search.
+  minAmount?: number;
+  maxAmount?: number;
   // Source filter (small-cardinality enum). Multi-select.
   sources?: TransactionSource[];
   search?: string;
@@ -239,6 +245,19 @@ function buildTxFilterConditions(userId: string, filters?: TxSortFilter) {
   } else {
     if (filters?.amountMin != null) conditions.push(gte(transactions.amount, filters.amountMin));
     if (filters?.amountMax != null) conditions.push(lte(transactions.amount, filters.amountMax));
+  }
+  // Direction filter: "in" = amount > 0, "out" = amount < 0
+  if (filters?.direction === "in") {
+    conditions.push(sql`${transactions.amount} > 0`);
+  } else if (filters?.direction === "out") {
+    conditions.push(sql`${transactions.amount} < 0`);
+  }
+  // Absolute amount range filters (on ABS(amount))
+  if (filters?.minAmount != null) {
+    conditions.push(sql`ABS(${transactions.amount}) >= ${filters.minAmount}`);
+  }
+  if (filters?.maxAmount != null) {
+    conditions.push(sql`ABS(${transactions.amount}) <= ${filters.maxAmount}`);
   }
   if (filters?.quantityEq != null) {
     conditions.push(eq(transactions.quantity, filters.quantityEq));

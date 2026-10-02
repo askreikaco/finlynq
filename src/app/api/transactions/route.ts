@@ -266,6 +266,10 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // Direction filter validation: only accept "in" or "out"
+  const directionRaw = params.get("direction");
+  const direction: "in" | "out" | undefined = (directionRaw === "in" || directionRaw === "out") ? directionRaw : undefined;
+
   // FK filter is SQL-side, so it's NOT a postDecryptFilter — paginate normally.
   const postDecryptFilter = search || tag || hasEncryptedSubstringFilter;
   const filters: TxSortFilter = {
@@ -288,6 +292,9 @@ export async function GET(request: NextRequest) {
     quantityMin: parseNum("quantityMin"),
     quantityMax: parseNum("quantityMax"),
     quantityEq: parseNum("quantityEq"),
+    direction,
+    minAmount: parseNum("minAmount"),
+    maxAmount: parseNum("maxAmount"),
     sources: parseSourcesList(),
     sortColumnId,
     sortDirection,

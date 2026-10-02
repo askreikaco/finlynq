@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import { Pagination } from "@/components/ui/pagination";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuGroup, DropdownMenuLabel, DropdownMenuCheckboxItem, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { SplitDialog } from "./split-dialog";
 import { TransactionDialog, type TransactionDialogInitialState, type DialogLinkedSibling } from "@/components/transactions/transaction-dialog";
+import { MobileTxList } from "@/components/transactions/mobile-tx-list";
 import { formatAccountLabel } from "@/lib/account-label";
 import { type TransactionSource, labelForSource } from "@/lib/tx-source";
 import {
@@ -75,6 +76,7 @@ export function TransactionsWorkspace({
 }: TransactionsWorkspaceProps = {}) {
   const locked = lockedAccountId != null;
   const urlParams = useSearchParams();
+  const pathname = usePathname();
   const router = useRouter();
   // Lookups (accounts / categories / holdings) — extracted to useLookups
   // (FINLYNQ-111 Phase 2). Same uncoordinated mount-time parallel fetch.
@@ -95,7 +97,8 @@ export function TransactionsWorkspace({
   // rest on this column), `accountId` is a standard SQL filter.
   //
   // When `locked`, the account filter is seeded to `lockedAccountId` and the
-  // URL⇄filter sync below is skipped entirely (the embedding page owns the URL).
+  // URL⇄filter sync below keeps that forced accountId and only applies the
+  // mobile search filters (dates, category, text, direction, amount range).
   const [filters, setFilters] = useState({
     // FINLYNQ-177 — single-transaction deep link (`/transactions?id=<n>`).
     id: "",
@@ -106,6 +109,9 @@ export function TransactionsWorkspace({
     search: "",
     portfolioHolding: "",
     tag: "",
+    direction: "",
+    minAmount: "",
+    maxAmount: "",
   });
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -123,7 +129,24 @@ export function TransactionsWorkspace({
   // any prior filter state rather than merging into it. Skipped when `locked`
   // (the account-scoped embed keeps its forced accountId and ignores the URL).
   useEffect(() => {
-    if (locked) return;
+    if (locked) {
+      // Account-scoped embed: the account stays forced, but the mobile search
+      // page's filters (returned via the URL) still apply.
+      setFilters((f) => ({
+        ...f,
+        accountId: String(lockedAccountId),
+        startDate: urlParams.get("startDate") ?? "",
+        endDate: urlParams.get("endDate") ?? "",
+        categoryId: urlParams.get("categoryId") ?? "",
+        search: urlParams.get("search") ?? "",
+        direction: urlParams.get("direction") ?? "",
+        minAmount: urlParams.get("minAmount") ?? "",
+        maxAmount: urlParams.get("maxAmount") ?? "",
+      }));
+      setSearchInput(urlParams.get("search") ?? "");
+      setPage(0);
+      return;
+    }
     setFilters({
       // FINLYNQ-177 — single-tx id deep link is URL-driven like the rest, so a
       // drill while already mounted REPLACES (not merges) prior filters.
@@ -135,10 +158,13 @@ export function TransactionsWorkspace({
       search: urlParams.get("search") ?? "",
       portfolioHolding: urlParams.get("portfolioHolding") ?? "",
       tag: urlParams.get("tag") ?? "",
+      direction: urlParams.get("direction") ?? "",
+      minAmount: urlParams.get("minAmount") ?? "",
+      maxAmount: urlParams.get("maxAmount") ?? "",
     });
     setSearchInput(urlParams.get("search") ?? "");
     setPage(0);
-  }, [urlParams, locked]);
+  }, [urlParams, locked, lockedAccountId]);
 
   // Per-user table column layout (visibility + order), header sort, and
   // per-column filters — all extracted to hooks (FINLYNQ-111 Phase 2). Each
@@ -247,10 +273,25 @@ export function TransactionsWorkspace({
     }, 350);
   }
 
+  // Mobile search page link: carry the current URL params and come back here.
+  const mobileSearchQuery = (() => {
+    const q = new URLSearchParams(urlParams.toString());
+    q.set("returnTo", `${pathname}${urlParams.toString() ? `?${urlParams.toString()}` : ""}`);
+    return q.toString();
+  })();
+  const activeMobileFilters = [
+    filters.search,
+    filters.direction,
+    filters.minAmount || filters.maxAmount,
+    filters.startDate || filters.endDate,
+    filters.categoryId,
+    locked ? "" : filters.accountId,
+  ].filter(Boolean).length;
+
   function clearFilters() {
     setSearchInput("");
     // When locked, keep the account scope — only the OTHER filters clear.
-    setFilters({ id: "", startDate: "", endDate: "", accountId: locked ? String(lockedAccountId) : "", categoryId: "", search: "", portfolioHolding: "", tag: "" });
+    setFilters({ id: "", startDate: "", endDate: "", accountId: locked ? String(lockedAccountId) : "", categoryId: "", search: "", portfolioHolding: "", tag: "", direction: "", minAmount: "", maxAmount: "" });
     // Issue #59 — also wipe the per-column filters + sort. The chip row
     // below the top-bar shows both, so "Clear all" should drop both.
     setColFilters([]);
@@ -746,8 +787,42 @@ export function TransactionsWorkspace({
         onLinkedSiblingClick={(s) => openLinkedSibling(s as LinkedSibling)}
       />
 
+      {/* Mobile search + filter button (below md) */}
+      <div className="md:hidden flex gap-2 items-center">
+        <Link
+          href={`/transactions/search?${mobileSearchQuery}`}
+          aria-label="Search and filter"
+          className="flex-1 flex items-center gap-2 px-3 py-2.5 bg-muted rounded-lg text-sm text-muted-foreground hover:bg-muted/80 transition-colors"
+        >
+          <Search className="h-4 w-4" />
+          <span>Search and filter</span>
+        </Link>
+        {activeMobileFilters > 0 && (
+          <button
+            type="button"
+            onClick={clearFilters}
+            className="flex min-h-11 items-center gap-1 rounded-full bg-muted px-3 text-xs font-medium"
+            aria-label={`Clear ${activeMobileFilters} filters`}
+            data-testid="mobile-filter-chip"
+          >
+            Filters ({activeMobileFilters})
+            <X className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </div>
+
+      {/* Mobile transaction list (below md) */}
+      <div className="md:hidden">
+        <MobileTxList
+          transactions={txns}
+          isLoading={loading}
+          onEdit={startEdit}
+          showAccountName={!locked}
+        />
+      </div>
+
       {/* Search + Filters */}
-      <Card className="bg-muted/30 border-dashed">
+      <Card className="max-md:hidden bg-muted/30 border-dashed">
         <CardContent className="pt-4 space-y-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
@@ -1060,7 +1135,7 @@ export function TransactionsWorkspace({
       )}
 
       {/* Table — extracted to <TransactionTable> (FINLYNQ-111 Phase 2). */}
-      <Card>
+      <Card className="max-md:hidden">
         <CardContent className="p-0">
           <TransactionTable
             loading={loading}
@@ -1090,7 +1165,7 @@ export function TransactionsWorkspace({
         </CardContent>
       </Card>
 
-      {/* Pagination */}
+      {/* Pagination (all widths: the mobile list pages the same way) */}
       <Pagination page={page} limit={limit} total={total} onPageChange={setPage} />
 
       {/* Single delete confirmation dialog */}
