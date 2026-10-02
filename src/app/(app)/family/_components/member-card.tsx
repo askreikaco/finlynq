@@ -91,24 +91,24 @@ export function MemberCard({
   const displayName = member.name;
 
   return (
-    <Card data-testid={`member-${member.id}`} id={`member-${member.id}-heading`}>
-      <CardHeader className="border-b pb-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="min-w-0">
-            <CardTitle className="text-lg break-words">{displayName}</CardTitle>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {member.partial && (
-              <Badge variant="outline" className="bg-amber-50 text-amber-900 border-amber-200">
-                {FAMILY_STRINGS.overview_partial_flag}
-              </Badge>
-            )}
-            {member.genericLabels && <Badge variant="outline">{FAMILY_STRINGS.overview_generic_badge}</Badge>}
-          </div>
+    <section data-testid={`member-${member.id}`} aria-labelledby={`member-${member.id}-heading`} className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="min-w-0">
+          <h2 id={`member-${member.id}-heading`} className="text-lg font-semibold break-words">
+            {displayName}
+          </h2>
         </div>
-      </CardHeader>
+        <div className="flex flex-wrap gap-2">
+          {member.partial && (
+            <Badge variant="outline" className="bg-amber-50 text-amber-900 border-amber-200">
+              {FAMILY_STRINGS.overview_partial_flag}
+            </Badge>
+          )}
+          {member.genericLabels && <Badge variant="outline">{FAMILY_STRINGS.overview_generic_badge}</Badge>}
+        </div>
+      </div>
 
-      <CardContent className="pt-6 space-y-4 px-3 sm:px-6">
+      <div className="space-y-4">
         {member.error && (
           <p role="alert" className="text-sm text-red-700">
             {FAMILY_STRINGS.overview_section_error}
@@ -219,7 +219,7 @@ export function MemberCard({
             )}
           </>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }

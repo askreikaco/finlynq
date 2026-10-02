@@ -1,14 +1,8 @@
-"use client";
+import { redirect } from "next/navigation";
 
 /**
- * /account — Account page as a dedicated route.
- *
- * Renders the account management UI without the settings sub-navigation.
- * Users can navigate here directly or from /settings/account.
+ * /account — redirect to /account/info
  */
-
-import { AccountContent } from "@/components/settings/account-content";
-
 export default function AccountPage() {
-  return <AccountContent />;
+  redirect("/account/info");
 }

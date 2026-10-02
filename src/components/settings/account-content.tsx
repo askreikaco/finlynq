@@ -18,7 +18,15 @@ import { RevealForm } from "@/components/settings/reveal-form";
 import { RecoveryCodesCard } from "@/components/settings/recovery-codes-card";
 import { PageHeader } from "@/components/mobile";
 
-export function AccountContent() {
+export function AccountContent({
+  hideHeader = false,
+  hideEmail = false,
+}: {
+  /** Omit the page header — used inside the /account tabbed layout. */
+  hideHeader?: boolean;
+  /** Omit the Change Email card — /account/info owns it. */
+  hideEmail?: boolean;
+} = {}) {
   // API Key — the raw key is only held in memory on first creation or
   // after a regenerate. On subsequent page loads, `apiKey` stays null
   // because only a hash is stored server-side; the UI shows a "regenerate
@@ -261,12 +269,12 @@ export function AccountContent() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <PageHeader
+      {!hideHeader && <PageHeader
           title="Account"
           titleClassName="text-2xl font-bold tracking-tight"
           subtitle={<>Login, API key, privacy, and backup / restore</>}
           subtitleClassName="text-sm text-muted-foreground mt-0.5"
-        />
+        />}
 
       {/* Security Section */}
       <TwoFactor />
@@ -328,7 +336,7 @@ export function AccountContent() {
       )}
 
       {/* Change Email — managed mode only. */}
-      {meLoaded && me?.username && (
+      {!hideEmail && meLoaded && me?.username && (
         <Card>
           <CardHeader>
             <div className="flex items-center gap-3">

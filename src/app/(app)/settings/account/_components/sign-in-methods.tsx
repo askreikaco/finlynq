@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,6 +52,7 @@ interface SignInMethod {
 
 export function SignInMethods() {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
 
   const [data, setData] = useState<SignInMethod | null>(null);
@@ -106,18 +107,18 @@ export function SignInMethods() {
     const timeoutId = setTimeout(() => {
       if (googleParam === "linked") {
         setSuccess(STRINGS.linkSuccess);
-        router.replace("/settings/account");
+        router.replace(pathname);
       } else if (errorParam === "google_link_session") {
         setError(STRINGS.linkSessionError);
-        router.replace("/settings/account");
+        router.replace(pathname);
       } else if (errorParam === "google_already_linked") {
         setError(STRINGS.linkAlreadyLinkedError);
-        router.replace("/settings/account");
+        router.replace(pathname);
       }
     }, 0);
 
     return () => clearTimeout(timeoutId);
-  }, [searchParams, router]);
+  }, [searchParams, router, pathname]);
 
   async function handleUnlink() {
     setUnlinkError("");

@@ -32,7 +32,7 @@ export const FAMILY_STRINGS = {
   overview_range_label: "Time range",
   overview_member_filter_label: "Show",
   overview_member_filter_all: "All",
-  overview_converted_note: "Converted to {currency} at {date} rates",
+  overview_converted_note: "Balances in {currency} at today's rates · income & expenses at each transaction's date rate",
   overview_rate_unavailable: "Some rates unavailable — partial amounts shown",
   overview_investment_unpriced: "Some investments not priced",
   overview_section_error: "Data temporarily unavailable",

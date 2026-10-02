@@ -151,8 +151,8 @@ describe("Settings Reorganization - Code Structure", () => {
       expect(typeof mod.AccountContent).toBe("function");
     });
 
-    it("/account imports and uses AccountContent", async () => {
-      const mod = await import("@/app/(app)/account/page");
+    it("/account/security imports and uses AccountContent", async () => {
+      const mod = await import("@/app/(app)/account/security/page");
       const src = mod.default.toString();
       expect(src).toContain("AccountContent");
     });

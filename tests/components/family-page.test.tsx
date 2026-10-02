@@ -444,7 +444,7 @@ describe("Overview", () => {
     await user.click(screen.getByRole("radio", { name: /Minh/ }));
     await screen.findByTestId("member-me");
     expect(screen.getAllByText(/₫\s?1,234,567,000$/).length).toBeGreaterThan(0);
-    expect(screen.getByText(/Converted to VND at 01\/10\/2026 rates/)).toBeTruthy();
+    expect(screen.getByText(/Balances in VND at today's rates · income & expenses at each transaction's date rate/)).toBeTruthy();
   });
 
   it("charts expose a text alternative per member (net worth over time)", async () => {

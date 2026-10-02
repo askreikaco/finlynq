@@ -9,6 +9,7 @@ import userEvent from "@testing-library/user-event";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }),
+  usePathname: () => "/settings/account",
   useSearchParams: () => new URLSearchParams(),
 }));
 vi.mock("qrcode", () => ({
