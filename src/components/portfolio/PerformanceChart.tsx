@@ -275,7 +275,8 @@ export function PerformanceChart({ accountId }: PerformanceChartProps) {
   );
 }
 
-const fmtPct = (v: number) => `${formatPercent(v * 100, 2)}`;
+const fmtPct = (v: number | null) =>
+  v == null || !Number.isFinite(v) ? "—" : `${formatPercent(v * 100, 2)}`;
 
 /** TWRR / MWRR / incomplete-history badges of the Performance card (shared with Family Wealth). */
 export function PerformanceBadges({
@@ -283,8 +284,8 @@ export function PerformanceBadges({
   mwrr,
   gapsFilledDays,
 }: {
-  twrr: { period: number; annualized: number };
-  mwrr: { irr: number; converged: boolean };
+  twrr: { period: number | null; annualized: number | null };
+  mwrr: { irr: number | null; converged: boolean };
   gapsFilledDays: number;
 }) {
   return (

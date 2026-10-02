@@ -520,3 +520,32 @@ describe("assembleFamilyOverview", () => {
     expect(aliceCashflow.granted).toEqual(["accounts", "goals", "cashflow"] satisfies FamilySection[]);
   });
 });
+
+describe("performance returns that are not finite", () => {
+  it("finiteOrNull maps NaN / Infinity to null and keeps real numbers", async () => {
+    const { finiteOrNull } = await import("@/lib/family/overview/builders");
+    expect(finiteOrNull(NaN)).toBeNull();
+    expect(finiteOrNull(Infinity)).toBeNull();
+    expect(finiteOrNull(-Infinity)).toBeNull();
+    expect(finiteOrNull(0.0123)).toBe(0.0123);
+  });
+
+  it("the overview serializer accepts null returns (period=all with a zero starting balance)", async () => {
+    const { InvestmentsDtoSchema } = await import("@/lib/family/overview/dto");
+    const ok = InvestmentsDtoSchema.safeParse({
+      holdingsValue: 1,
+      asOf: null,
+      accountsPriced: 1,
+      accountsUnpriced: 0,
+      performance: {
+        from: "2024-01-01",
+        to: "2026-10-02",
+        series: [],
+        twrr: { period: 0.1, annualized: null },
+        mwrr: { irr: null, converged: false },
+        gapsFilledDays: 0,
+      },
+    });
+    expect(ok.success).toBe(true);
+  });
+});

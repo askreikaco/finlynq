@@ -357,8 +357,10 @@ export async function buildInvestments(ctx: MemberCtx): Promise<NonNullable<Sect
       from: perf.from,
       to: perf.to,
       series: downsample(series, MAX_PERFORMANCE_POINTS),
-      twrr: { period: perf.twrr.period, annualized: perf.twrr.annualized },
-      mwrr: { irr: perf.mwrr.irr, converged: perf.mwrr.converged },
+      // Returns can be NaN/Infinity (e.g. an all-time window that starts at a
+      // zero balance); JSON/zod reject those, so they travel as null ("—").
+      twrr: { period: finiteOrNull(perf.twrr.period), annualized: finiteOrNull(perf.twrr.annualized) },
+      mwrr: { irr: finiteOrNull(perf.mwrr.irr), converged: perf.mwrr.converged },
       gapsFilledDays: perf.gapsFilledDays,
     },
   };
@@ -650,3 +652,8 @@ export const SECTION_BUILDERS: { [S in FamilySection]: (ctx: MemberCtx) => Promi
   loans: buildLoans,
   cashflow: buildCashflow,
 };
+
+/** A finite number, else null (NaN / ±Infinity can't be serialized). */
+export function finiteOrNull(n: number | null | undefined): number | null {
+  return typeof n === "number" && Number.isFinite(n) ? n : null;
+}

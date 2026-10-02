@@ -59,8 +59,9 @@ export const InvestmentsDtoSchema = z.object({
     from: z.string(),
     to: z.string(),
     series: z.array(z.object({ date: z.string(), marketValue: z.number(), costBasis: z.number() })),
-    twrr: z.object({ period: z.number(), annualized: z.number() }),
-    mwrr: z.object({ irr: z.number(), converged: z.boolean() }),
+    /** null when the return is undefined for the window (NaN/Infinity upstream). */
+    twrr: z.object({ period: z.number().nullable(), annualized: z.number().nullable() }),
+    mwrr: z.object({ irr: z.number().nullable(), converged: z.boolean() }),
     gapsFilledDays: z.number(),
   }),
 });
