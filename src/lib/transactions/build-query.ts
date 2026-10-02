@@ -33,6 +33,10 @@ export type TxFilters = {
   // method, never routed through this builder). The string is kept as-is and
   // parsed to an int server-side.
   id?: string;
+  // Mobile search filters: direction (in/out) and absolute amount range.
+  direction?: string;
+  minAmount?: string;
+  maxAmount?: string;
 };
 
 /** Per-user header sort. `null` direction = unsorted (server default date DESC). */
@@ -85,6 +89,9 @@ export function buildTransactionQuery(
   if (filters.search) params.set("search", filters.search);
   if (filters.portfolioHolding) params.set("portfolioHolding", filters.portfolioHolding);
   if (filters.tag) params.set("tag", filters.tag);
+  if (filters.direction) params.set("direction", filters.direction);
+  if (filters.minAmount) params.set("minAmount", filters.minAmount);
+  if (filters.maxAmount) params.set("maxAmount", filters.maxAmount);
 
   // Issue #59 — sort + per-column filters. The top-bar quick filters
   // above are URL-driven (deep links from /portfolio etc. must keep
