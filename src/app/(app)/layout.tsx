@@ -8,12 +8,14 @@ import { LanguageProvider } from "@/components/language-provider";
 import { FontProvider } from "@/components/font-provider";
 import { ReportingRecomputeIndicator } from "@/components/reporting-recompute-indicator";
 import { VersionGate } from "@/components/version-gate";
+import { DataProvider } from "@/lib/data";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
     <VersionGate />
     <UnlockGate>
+      <DataProvider>
       <CurrencyProvider>
         <DropdownOrderProvider>
         <FontProvider>
@@ -39,6 +41,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </FontProvider>
         </DropdownOrderProvider>
       </CurrencyProvider>
+      </DataProvider>
     </UnlockGate>
     </>
   );
