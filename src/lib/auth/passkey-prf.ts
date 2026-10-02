@@ -144,7 +144,12 @@ export async function beginPasskeyAssertion(opts: {
   });
   const token = await signChallengeToken(opts.purpose, options.challenge, opts.bind);
   return {
-    options,
+    // WebAuthn L3 hint: prefer a passkey on THIS device (Windows Hello, iCloud /
+    // Google Password Manager in the browser) over "use a phone" (QR). Only orders
+    // the browser's UI — a phone still works — and browsers without hint support
+    // ignore it. (simplewebauthn's generator doesn't take `hints`; the browser lib
+    // spreads the JSON into navigator.credentials.get, so it passes through.)
+    options: { ...options, hints: ["client-device"] } as typeof options,
     token,
     ...(opts.credential ? { prfSalt: prfSaltB64url(opts.credential.id, opts.credential.saltVersion) } : {}),
   };
