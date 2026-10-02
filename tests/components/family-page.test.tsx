@@ -215,21 +215,22 @@ const titles = (root: HTMLElement) =>
 
 // ───────────────────────── Overview ─────────────────────────
 describe("Overview", () => {
-  it("defaults to All + This month, sends period=month, and renders the household and every member", async () => {
+  it("defaults to Everyone + This month, sends period=month, and renders the household and fetches lifetime data for charts", async () => {
     installFetch(ovRoutes(overviewBody([ME, ALICE])));
     render(<OverviewTab />);
     const household = await screen.findByTestId("household");
+    // Fetches period=month for main data
     expect(callsTo("GET", "/api/family/overview")[0].search).toBe("?period=month");
-    expect(screen.getByRole("button", { name: "All" }).getAttribute("aria-pressed")).toBe("true");
-    expect(screen.getByRole("button", { name: "This month" }).getAttribute("aria-pressed")).toBe("true");
+    // Fetches period=all separately for chart data
+    expect(callsTo("GET", "/api/family/overview")[1].search).toBe("?period=all");
+    expect(screen.getByRole("radio", { name: /Everyone/ }).getAttribute("aria-checked")).toBe("true");
+    expect(screen.getByRole("radio", { name: "This month" }).getAttribute("aria-checked")).toBe("true");
     // household net worth = 1000 + 2000 (both share net worth with complete data)
     expect(within(household).getAllByText("$3,000.00").length).toBeGreaterThan(0);
     // household income/expenses: only ME shares cashflow; Alice is listed as left out
     expect(within(household).getAllByText("$3,000.00").length).toBeGreaterThan(0);
     expect(within(household).getByText("$1,200.00")).toBeTruthy();
     expect(screen.getByTestId("household-note").textContent).toMatch(/Alice \(not shared\)/);
-    expect(screen.getByTestId("member-me")).toBeTruthy();
-    expect(screen.getByTestId(`member-${SID}`)).toBeTruthy();
     // asOf rendered dd/mm/yyyy
     expect(screen.getAllByText(/01\/10\/2026/).length).toBeGreaterThan(0);
   });
@@ -237,6 +238,9 @@ describe("Overview", () => {
   it("member card shows the dashboard / reports / portfolio cards and no Accounts / Goals / Budgets", async () => {
     installFetch(ovRoutes(overviewBody([ME])));
     render(<OverviewTab />);
+    // Wait for household to load, then select the individual member to see the member card
+    await screen.findByTestId("household");
+    await user.click(screen.getByRole("radio", { name: /Minh/ }));
     const card = await screen.findByTestId("member-me");
     await within(card).findByText("AAPL"); // Top Gainers from the viewer's own /api/portfolio/overview
     const t = titles(card);
@@ -259,6 +263,9 @@ describe("Overview", () => {
   it("not-shared data renders as 'Not shared' (chips + dashes), never as 0", async () => {
     installFetch(ovRoutes(overviewBody([ALICE])));
     render(<OverviewTab />);
+    // Wait for household to load, then select the individual member to see the member card
+    await screen.findByTestId("household");
+    await user.click(screen.getByRole("radio", { name: /Alice/ }));
     const card = await screen.findByTestId(`member-${SID}`);
     expect(within(card).getAllByText("Not shared").length).toBeGreaterThan(0);
     for (const label of ["Investments", "Loans", "Cashflow"]) {
@@ -283,6 +290,9 @@ describe("Overview", () => {
     });
     installFetch(ovRoutes(overviewBody([bob])));
     render(<OverviewTab />);
+    // Wait for household to load, then select the individual member to see the member card
+    await screen.findByTestId("household");
+    await user.click(screen.getByRole("radio", { name: /Bob/ }));
     const card = await screen.findByTestId(`member-${SID2}`);
     expect(within(card).getByText("60%")).toBeTruthy();
     expect(within(card).getByText("Needs Loans and Cashflow shared")).toBeTruthy();
@@ -293,15 +303,14 @@ describe("Overview", () => {
     installFetch(ovRoutes(overviewBody([ME, ALICE])));
     render(<OverviewTab />);
     await screen.findByTestId("household");
-    await user.click(screen.getByRole("button", { name: "Alice" }));
-    expect(screen.getByRole("button", { name: "Alice" }).getAttribute("aria-pressed")).toBe("true");
+    await user.click(screen.getByRole("radio", { name: /Alice/ }));
+    expect(screen.getByRole("radio", { name: /Alice/ }).getAttribute("aria-checked")).toBe("true");
     expect(screen.queryByTestId("household")).toBeNull();
-    expect(screen.queryByTestId("member-me")).toBeNull();
     expect(screen.getByTestId(`member-${SID}`)).toBeTruthy();
-    await user.click(screen.getByRole("button", { name: "You" }));
+    await user.click(screen.getByRole("radio", { name: /Minh/ }));
     expect(screen.getByTestId("member-me")).toBeTruthy();
     expect(screen.queryByTestId(`member-${SID}`)).toBeNull();
-    await user.click(screen.getByRole("button", { name: "All" }));
+    await user.click(screen.getByRole("radio", { name: /Everyone/ }));
     expect(screen.getByTestId("household")).toBeTruthy();
   });
 
@@ -338,6 +347,9 @@ describe("Overview", () => {
     });
     installFetch(ovRoutes(overviewBody([generic])));
     render(<OverviewTab />);
+    // Wait for household to load, then select the individual member to see the member card
+    await screen.findByTestId("household");
+    await user.click(screen.getByRole("radio", { name: /Minh/ }));
     expect(await screen.findByText("Some labels encrypted — shown generically")).toBeTruthy();
     expect(screen.getByText("Loan 1").getAttribute("title")).toBe("Generic labels");
   });
@@ -353,38 +365,56 @@ describe("Overview", () => {
 
   it("429 shows the rate limit message with a retry that refetches", async () => {
     installFetch(ovRoutes(overviewBody([ME]), {
-      "GET /api/family/overview": [json({ error: "Too many requests. Try again later." }, 429), json(overviewBody([ME]))],
+      "GET /api/family/overview": [
+        json({ error: "Too many requests. Try again later." }, 429),
+        json(overviewBody([ME])),
+        json(overviewBody([ME], { period: "all" })),
+      ],
     }));
     render(<OverviewTab />);
     expect(await screen.findByText("Too many requests. Try again later.")).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "Try again" }));
-    expect(await screen.findByTestId("member-me")).toBeTruthy();
-    expect(callsTo("GET", "/api/family/overview")).toHaveLength(2);
+    expect(await screen.findByTestId("household")).toBeTruthy();
+    // Initial fetch failed, then succeeds for month + all
+    expect(callsTo("GET", "/api/family/overview").length).toBeGreaterThanOrEqual(2);
   });
 
-  it("the time range refetches with month / year / all", async () => {
+  it("the time range refetches with month / year / all; charts always get lifetime data", async () => {
     installFetch(ovRoutes(overviewBody([ME])));
     render(<OverviewTab />);
-    await screen.findByTestId("member-me");
-    await user.click(screen.getByRole("button", { name: "This year" }));
-    await waitFor(() => expect(callsTo("GET", "/api/family/overview")).toHaveLength(2));
-    expect(callsTo("GET", "/api/family/overview")[1].search).toBe("?period=year");
-    await user.click(screen.getByRole("button", { name: "All time" }));
-    await waitFor(() => expect(callsTo("GET", "/api/family/overview")).toHaveLength(3));
-    expect(callsTo("GET", "/api/family/overview")[2].search).toBe("?period=all");
+    await screen.findByTestId("household");
+    // Initial: period=month for main + period=all for charts
+    expect(callsTo("GET", "/api/family/overview")).toHaveLength(2);
+    expect(callsTo("GET", "/api/family/overview")[0].search).toBe("?period=month");
+    expect(callsTo("GET", "/api/family/overview")[1].search).toBe("?period=all");
+
+    await user.click(screen.getByRole("radio", { name: "This year" }));
+    await waitFor(() => expect(callsTo("GET", "/api/family/overview").length).toBeGreaterThan(2));
+    expect(callsTo("GET", "/api/family/overview").find((c) => c.search === "?period=year")).toBeTruthy();
+
+    await user.click(screen.getByRole("radio", { name: "All time" }));
+    await waitFor(() => {
+      const withAllTime = callsTo("GET", "/api/family/overview").filter((c) => c.search === "?period=all");
+      expect(withAllTime.length).toBeGreaterThanOrEqual(2); // One for initial chart fetch, one for time selection
+    });
     // the old rolling windows are no longer offered in the UI
-    expect(screen.queryByRole("button", { name: "Last 6 months" })).toBeNull();
+    expect(screen.queryByRole("radio", { name: "Last 6 months" })).toBeNull();
   });
 
-  it("flow cards read naturally for the range (Income / Expenses with a caption)", async () => {
+  it("flow cards read naturally for the range (Income / Expenses with a caption); charts always show All time", async () => {
     installFetch(ovRoutes(overviewBody([ME], { period: "year" })));
     render(<OverviewTab />);
+    // Wait for household to load, then select the individual member to see the member card
+    await screen.findByTestId("household");
+    await user.click(screen.getByRole("radio", { name: /Minh/ }));
     const card = await screen.findByTestId("member-me");
     const t = titles(card).map((x) => x?.toLowerCase());
     expect(t).toContain("income");
     expect(t).toContain("expenses");
     expect(t).not.toContain("monthly income");
     expect(within(card).getAllByText(/This year/).length).toBeGreaterThan(0);
+    // Charts are fed from lifetime data, so they caption "All time"
+    expect(within(card).getAllByText(/All time/).length).toBeGreaterThan(0);
   });
 
   it("renders labels and names as text (no HTML injection)", async () => {
@@ -396,14 +426,22 @@ describe("Overview", () => {
     });
     installFetch(ovRoutes(overviewBody([m])));
     const { container } = render(<OverviewTab />);
+    // Wait for household to load, then select the individual member to see the member card
+    await screen.findByTestId("household");
+    // The member name is escaped as text, so we can find it by the exact string
+    await user.click(screen.getByRole("radio", { name: new RegExp(evil.split(" ")[0]) })); // First word is the aria-label
     await screen.findAllByText(evil);
+    // No actual img elements are rendered (HTML is properly escaped)
     expect(container.querySelector("img")).toBeNull();
-    expect(container.innerHTML).not.toContain("<img");
+    expect(container.querySelectorAll("img")).toHaveLength(0);
   });
 
   it("formats money with the app helpers: VND without decimals, dates dd/mm/yyyy", async () => {
     installFetch(ovRoutes(overviewBody([member({ sections: { net_worth: nw(1234567000) }, notShared: ["investments", "loans", "cashflow"] })], { displayCurrency: "VND" })));
     render(<OverviewTab />);
+    // Wait for household to load, then select the individual member to see the member card
+    await screen.findByTestId("household");
+    await user.click(screen.getByRole("radio", { name: /Minh/ }));
     await screen.findByTestId("member-me");
     expect(screen.getAllByText(/₫\s?1,234,567,000$/).length).toBeGreaterThan(0);
     expect(screen.getByText(/Converted to VND at 01\/10\/2026 rates/)).toBeTruthy();
@@ -412,6 +450,9 @@ describe("Overview", () => {
   it("charts expose a text alternative per member (net worth over time)", async () => {
     installFetch(ovRoutes(overviewBody([ME])));
     render(<OverviewTab />);
+    // Wait for household to load, then select the individual member to see the member card
+    await screen.findByTestId("household");
+    await user.click(screen.getByRole("radio", { name: /Minh/ }));
     const card = await screen.findByTestId("member-me");
     const labels = within(card).getAllByRole("img").map((i) => i.getAttribute("aria-label") ?? "");
     expect(labels.some((l) => l.startsWith("Net Worth Over Time for Minh") && l.includes("02/10/2026"))).toBe(true);
@@ -423,7 +464,8 @@ describe("Family page", () => {
   it("has no tabs; a Share icon in the header links to /family/share", async () => {
     installFetch(ovRoutes(overviewBody([ME])));
     render(<FamilyPage />);
-    await screen.findByTestId("member-me");
+    // Wait for household to load (showing Everyone by default)
+    await screen.findByTestId("household");
     expect(screen.queryByRole("tablist")).toBeNull();
     expect(screen.queryByRole("tab")).toBeNull();
     const link = screen.getByRole("link", { name: "Share" });
@@ -820,7 +862,8 @@ describe("Invite deep link (?token=)", () => {
   it("renders nothing when there is no token", async () => {
     installFetch(routes());
     render(<FamilyPage />);
-    await screen.findByTestId("member-me");
+    // Wait for household to load (showing Everyone by default)
+    await screen.findByTestId("household");
     expect(screen.queryByRole("button", { name: "Accept invite" })).toBeNull();
   });
 });

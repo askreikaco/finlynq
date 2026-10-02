@@ -69,12 +69,14 @@ function MoversCards({ member, movers, currency }: { member: MemberDto; movers?:
 
 export function MemberCard({
   member,
+  chartMember,
   displayCurrency,
   period,
   asOf,
   ownMovers,
 }: {
   member: MemberDto;
+  chartMember?: MemberDto;
   displayCurrency: string;
   period: Period;
   asOf: string;
@@ -83,18 +85,17 @@ export function MemberCard({
   const uid = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const money = (v: number | null | undefined) => (v == null ? NONE : formatCurrency(v, displayCurrency));
   const s = member.sections;
-  const isMe = member.relation === "me";
+  const cs = chartMember?.sections ?? s; // Use chartMember sections for charts (lifetime data)
   const why = (section: "net_worth" | "cashflow" | "loans" | "investments") =>
     member.unavailable.includes(section) ? FAMILY_STRINGS.overview_section_error : FAMILY_STRINGS.overview_card_not_shared;
-  const displayName = isMe ? FAMILY_STRINGS.overview_member_me : member.name;
+  const displayName = member.name;
 
   return (
-    <Card data-testid={`member-${member.id}`}>
+    <Card data-testid={`member-${member.id}`} id={`member-${member.id}-heading`}>
       <CardHeader className="border-b pb-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="min-w-0">
             <CardTitle className="text-lg break-words">{displayName}</CardTitle>
-            {isMe && <p className="text-sm text-muted-foreground mt-1 break-words">{member.name}</p>}
           </div>
           <div className="flex flex-wrap gap-2">
             {member.partial && (
@@ -155,26 +156,26 @@ export function MemberCard({
               dtiUnavailable={s.cashflow?.debtToIncome ? undefined : FAMILY_STRINGS.overview_card_dti_needs}
             />
 
-            {(s.net_worth || s.cashflow) && (
+            {(cs.net_worth || cs.cashflow) && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {s.net_worth && (
+                {cs.net_worth && (
                   <NetWorthOverTimeCard
-                    history={s.net_worth.history}
+                    history={cs.net_worth.history}
                     currency={displayCurrency}
-                    period={period}
+                    period="all"
                     name={member.name}
                     gradientId={`nw-${uid}`}
                     note={
-                      s.net_worth.historyFxApproximation && s.net_worth.history.length > 1
+                      cs.net_worth.historyFxApproximation && cs.net_worth.history.length > 1
                         ? FAMILY_STRINGS.overview_history_fx_note
                         : undefined
                     }
                   />
                 )}
-                {s.cashflow && (
+                {cs.cashflow && (
                   <IncomeVsExpensesCard
-                    series={s.cashflow}
-                    period={period}
+                    series={cs.cashflow}
+                    period="all"
                     currency={displayCurrency}
                     asOf={asOf}
                     idPrefix={`ie-${uid}-`}

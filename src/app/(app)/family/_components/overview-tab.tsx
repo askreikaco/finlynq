@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, Loader2, Users } from "lucide-react";
 import { formatDate } from "@/lib/currency";
 import { FAMILY_STRINGS } from "@/lib/family/strings";
 import type { MemberDto, OverviewResponse } from "./types";
@@ -29,7 +29,16 @@ const EXCLUDE_TEXT: Record<ExcludeReason, string> = {
   unavailable: FAMILY_STRINGS.overview_totals_excluded_unavailable,
 };
 
-const memberLabel = (m: MemberDto) => (m.relation === "me" ? FAMILY_STRINGS.overview_member_me : m.name);
+const memberLabel = (m: MemberDto) => (m.relation === "me" ? m.name : m.name);
+
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase();
+}
 
 export function OverviewTab({ reloadKey = 0 }: { reloadKey?: number }) {
   const [period, setPeriod] = useState<Period>("month");
@@ -40,6 +49,7 @@ export function OverviewTab({ reloadKey = 0 }: { reloadKey?: number }) {
   const [mfaRequired, setMfaRequired] = useState(false);
   const [data, setData] = useState<OverviewResponse | null>(null);
   const [movers, setMovers] = useState<OwnMovers | undefined>(undefined);
+  const [lifetimeData, setLifetimeData] = useState<OverviewResponse | null>(null);
 
   useEffect(() => {
     const ctrl = new AbortController();
@@ -75,6 +85,24 @@ export function OverviewTab({ reloadKey = 0 }: { reloadKey?: number }) {
     })();
     return () => ctrl.abort();
   }, [period, attempt, reloadKey]);
+
+  // Fetch lifetime data for charts (independent of the time selection)
+  useEffect(() => {
+    const ctrl = new AbortController();
+    (async () => {
+      try {
+        const res = await fetch(`/api/family/overview?${new URLSearchParams({ period: "all" })}`, { signal: ctrl.signal });
+        if (ctrl.signal.aborted) return;
+        if (res.ok) {
+          const lifetime: OverviewResponse = await res.json();
+          if (!ctrl.signal.aborted) setLifetimeData(lifetime);
+        }
+      } catch {
+        // Silently fail for lifetime data fetch - charts will show without it
+      }
+    })();
+    return () => ctrl.abort();
+  }, [reloadKey]);
 
   // Top Gainers / Losers of the viewer's OWN portfolio: the same /api/portfolio/overview the
   // Portfolio page reads (live prices need the owner's own session, so only "me" has them).
@@ -140,50 +168,68 @@ export function OverviewTab({ reloadKey = 0 }: { reloadKey?: number }) {
   const cur = data.displayCurrency;
   const shownPeriod = data.period;
   const focus = selected === "all" ? null : data.members.find((m) => m.id === selected) ?? null;
-  const members = focus ? [focus] : data.members;
+
+  // For charts, use lifetime data if available, otherwise fall back to current data
+  const chartData = lifetimeData ?? data;
 
   return (
     <div className="space-y-6" aria-busy={loading}>
-      {/* Toolbar: member filter + time range (wraps / scrolls on mobile) */}
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      {/* Sticky filter toolbar */}
+      <div className="sticky top-[var(--sat)] z-10 bg-background/95 backdrop-blur -mx-1 px-1 py-3 space-y-3">
+        {/* Row 1: People chips */}
         <div
-          role="group"
+          role="radiogroup"
           aria-label={FAMILY_STRINGS.overview_member_filter_label}
-          className="flex gap-2 overflow-x-auto -mx-1 px-1 pb-1 md:pb-0"
+          className="flex gap-2 overflow-x-auto -mx-1 px-1 pb-0"
         >
-          <Button
-            size="sm"
-            variant={focus == null ? "default" : "outline"}
-            aria-pressed={focus == null}
+          <button
+            role="radio"
+            aria-checked={focus == null}
+            aria-label="Everyone"
             onClick={() => setSelected("all")}
-            className="shrink-0"
+            className={`shrink-0 px-3 h-9 rounded-full flex items-center gap-2 whitespace-nowrap text-sm font-medium transition-colors ${
+              focus == null ? "bg-primary text-primary-foreground" : "bg-muted"
+            }`}
           >
-            {FAMILY_STRINGS.overview_member_filter_all}
-          </Button>
-          {data.members.map((m) => (
-            <Button
-              key={m.id}
-              size="sm"
-              variant={focus?.id === m.id ? "default" : "outline"}
-              aria-pressed={focus?.id === m.id}
-              onClick={() => setSelected(m.id)}
-              className="shrink-0 max-w-[12rem] truncate"
-            >
-              {memberLabel(m)}
-            </Button>
-          ))}
+            <Users className="h-4 w-4" aria-hidden="true" />
+            <span aria-hidden="true">{FAMILY_STRINGS.overview_member_filter_all}</span>
+          </button>
+          {data.members.map((m) => {
+            const firstName = memberLabel(m).split(" ")[0];
+            return (
+              <button
+                key={m.id}
+                role="radio"
+                aria-checked={focus?.id === m.id}
+                aria-label={firstName}
+                onClick={() => setSelected(m.id)}
+                className={`shrink-0 px-3 h-9 rounded-full flex items-center gap-2 whitespace-nowrap text-sm font-medium transition-colors ${
+                  focus?.id === m.id ? "bg-primary text-primary-foreground" : "bg-muted"
+                }`}
+              >
+                <span className="h-6 w-6 rounded-full bg-muted-foreground/20 flex items-center justify-center text-xs font-bold" aria-hidden="true">
+                  {getInitials(memberLabel(m))}
+                </span>
+                <span aria-hidden="true">{firstName}</span>
+              </button>
+            );
+          })}
         </div>
-        <div role="group" aria-label={FAMILY_STRINGS.overview_range_label} className="flex flex-wrap gap-2">
+
+        {/* Row 2: Time segmented control */}
+        <div role="radiogroup" aria-label={FAMILY_STRINGS.overview_range_label} className="flex gap-0 bg-muted p-1 rounded-lg w-fit">
           {PERIODS.map((p) => (
-            <Button
+            <button
               key={p.value}
-              size="sm"
-              variant={period === p.value ? "default" : "outline"}
-              aria-pressed={period === p.value}
+              role="radio"
+              aria-checked={period === p.value}
               onClick={() => setPeriod(p.value)}
+              className={`flex-1 min-w-24 px-3 py-2 rounded text-sm font-medium transition-colors ${
+                period === p.value ? "bg-background" : "text-muted-foreground hover:text-foreground"
+              }`}
             >
               {p.label}
-            </Button>
+            </button>
           ))}
         </div>
       </div>
@@ -212,7 +258,12 @@ export function OverviewTab({ reloadKey = 0 }: { reloadKey?: number }) {
         </Alert>
       )}
 
-      {focus == null && <HouseholdBlock data={data} period={shownPeriod} />}
+      {/* Unified overview section */}
+      {focus == null ? (
+        <HouseholdBlock data={data} chartData={chartData} period={shownPeriod} />
+      ) : (
+        <MemberBlock member={focus} data={data} chartData={chartData} period={shownPeriod} movers={focus.relation === "me" ? movers : undefined} />
+      )}
 
       <p className="text-xs text-muted-foreground">
         {fill(FAMILY_STRINGS.overview_converted_note, { currency: cur, date: formatDate(data.asOf) })}
@@ -223,28 +274,20 @@ export function OverviewTab({ reloadKey = 0 }: { reloadKey?: number }) {
           <AlertDescription>{FAMILY_STRINGS.overview_generic_label_hint}</AlertDescription>
         </Alert>
       )}
-
-      <div className="grid gap-6">
-        {members.map((member) => (
-          <MemberCard
-            key={member.id}
-            member={member}
-            displayCurrency={cur}
-            period={shownPeriod}
-            asOf={data.asOf}
-            ownMovers={member.relation === "me" ? movers : undefined}
-          />
-        ))}
-      </div>
     </div>
   );
 }
 
 /** "All": household figures summed over the members that share the data with complete figures. */
-function HouseholdBlock({ data, period }: { data: OverviewResponse; period: Period }) {
+function HouseholdBlock({ data, chartData, period }: { data: OverviewResponse; chartData: OverviewResponse; period: Period }) {
   const totals = computeHousehold(data.members);
   const flows = computeHouseholdFlows(data.members);
   const cur = data.displayCurrency;
+
+  // For charts, use lifetime data
+  const chartTotals = computeHousehold(chartData.members);
+  const chartFlows = computeHouseholdFlows(chartData.members);
+
   const excludedText = (list: typeof totals.excluded, notShared = EXCLUDE_TEXT.not_shared) =>
     fill(FAMILY_STRINGS.overview_totals_excluded, {
       members: list
@@ -281,21 +324,21 @@ function HouseholdBlock({ data, period }: { data: OverviewResponse; period: Peri
             dtiUnavailable={flows.dti ? undefined : FAMILY_STRINGS.overview_card_dti_needs}
           />
 
-          {(totals.included > 0 || flows.included > 0) && (
+          {(chartTotals.included > 0 || chartFlows.included > 0) && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {totals.included > 0 && (
+              {chartTotals.included > 0 && (
                 <NetWorthOverTimeCard
-                  history={totals.history}
+                  history={chartTotals.history}
                   currency={cur}
-                  period={period}
+                  period="all"
                   name={FAMILY_STRINGS.overview_household_title}
                   gradientId="nw-household"
                 />
               )}
-              {flows.included > 0 && (
+              {chartFlows.included > 0 && (
                 <IncomeVsExpensesCard
-                  series={{ from: flows.from, monthly: flows.monthly, daily: flows.daily }}
-                  period={period}
+                  series={{ from: chartFlows.from, monthly: chartFlows.monthly, daily: chartFlows.daily }}
+                  period="all"
                   currency={cur}
                   asOf={data.asOf}
                   idPrefix="ie-household-"
@@ -315,5 +358,34 @@ function HouseholdBlock({ data, period }: { data: OverviewResponse; period: Peri
         </CardContent>
       </Card>
     </section>
+  );
+}
+
+/** Individual member section with lifetime charts */
+function MemberBlock({
+  member,
+  data,
+  chartData,
+  period,
+  movers,
+}: {
+  member: MemberDto;
+  data: OverviewResponse;
+  chartData: OverviewResponse;
+  period: Period;
+  movers?: OwnMovers;
+}) {
+  const cur = data.displayCurrency;
+  const chartMember = chartData.members.find((m) => m.id === member.id) ?? member;
+
+  return (
+    <MemberCard
+      member={member}
+      chartMember={chartMember}
+      displayCurrency={cur}
+      period={period}
+      asOf={data.asOf}
+      ownMovers={movers}
+    />
   );
 }

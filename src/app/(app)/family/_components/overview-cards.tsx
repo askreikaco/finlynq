@@ -199,7 +199,9 @@ export function NetWorthOverTimeCard({
       <CardHeader className="pb-1 px-5 pt-5">
         <div>
           <CardTitle className="text-sm font-semibold">{title}</CardTitle>
-          <p className="text-[11px] text-muted-foreground">{currency}</p>
+          <p className="text-[11px] text-muted-foreground">
+            {currency}{period === "all" ? " · All time" : ""}
+          </p>
         </div>
       </CardHeader>
       <CardContent className="px-5 pb-5">
@@ -261,17 +263,20 @@ export function IncomeVsExpensesCard({
     );
   }
   const from = series.from ?? (daily ? points[0].key : `${points[0].key}-01`);
+  const timeCaption = period === "all" ? " · All time" : "";
   return (
     <IncomeExpenseTrendCard
       timeseries={points.map((p) => ({ label: flowLabel(p.key, daily), income: p.income, expenses: p.expenses }))}
       currency={currency}
       daily={daily}
       idPrefix={idPrefix}
-      description={fill(FAMILY_STRINGS.overview_card_ie_description, {
-        granularity: daily ? "Daily" : "Monthly",
-        from: formatDate(from),
-        to: formatDate(asOf),
-      })}
+      description={
+        fill(FAMILY_STRINGS.overview_card_ie_description, {
+          granularity: daily ? "Daily" : "Monthly",
+          from: formatDate(from),
+          to: formatDate(asOf),
+        }) + timeCaption
+      }
     />
   );
 }
