@@ -10,6 +10,7 @@ import { render, screen, cleanup, waitFor } from "@testing-library/react";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }),
+  usePathname: () => "/settings/account",
   useSearchParams: () => new URLSearchParams("token=abc"),
 }));
 vi.mock("next/link", () => ({
