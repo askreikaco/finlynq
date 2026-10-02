@@ -102,6 +102,7 @@ export async function GET(request: NextRequest) {
       fx,
       period,
       today,
+      refresh: !!refresh,
     });
     const body = serializeOverview({ displayCurrency: fx.display, period, asOf: today, partial, members });
     cached = setCachedOverview(cacheKey, today, body);
