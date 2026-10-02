@@ -176,47 +176,7 @@ export function OverviewTab({ reloadKey = 0 }: { reloadKey?: number }) {
     <div className="space-y-6" aria-busy={loading}>
       {/* Sticky filter toolbar */}
       <div className="sticky top-[var(--sat)] z-10 bg-background/95 backdrop-blur -mx-1 px-1 py-3 space-y-3">
-        {/* Row 1: People chips */}
-        <div
-          role="radiogroup"
-          aria-label={FAMILY_STRINGS.overview_member_filter_label}
-          className="flex gap-2 overflow-x-auto -mx-1 px-1 pb-0"
-        >
-          <button
-            role="radio"
-            aria-checked={focus == null}
-            aria-label="Everyone"
-            onClick={() => setSelected("all")}
-            className={`shrink-0 px-3 h-9 rounded-full flex items-center gap-2 whitespace-nowrap text-sm font-medium transition-colors ${
-              focus == null ? "bg-primary text-primary-foreground" : "bg-muted"
-            }`}
-          >
-            <Users className="h-4 w-4" aria-hidden="true" />
-            <span aria-hidden="true">{FAMILY_STRINGS.overview_member_filter_all}</span>
-          </button>
-          {data.members.map((m) => {
-            const firstName = memberLabel(m).split(" ")[0];
-            return (
-              <button
-                key={m.id}
-                role="radio"
-                aria-checked={focus?.id === m.id}
-                aria-label={firstName}
-                onClick={() => setSelected(m.id)}
-                className={`shrink-0 px-3 h-9 rounded-full flex items-center gap-2 whitespace-nowrap text-sm font-medium transition-colors ${
-                  focus?.id === m.id ? "bg-primary text-primary-foreground" : "bg-muted"
-                }`}
-              >
-                <span className="h-6 w-6 rounded-full bg-muted-foreground/20 flex items-center justify-center text-xs font-bold" aria-hidden="true">
-                  {getInitials(memberLabel(m))}
-                </span>
-                <span aria-hidden="true">{firstName}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Row 2: Time segmented control */}
+        {/* Row 1: Time segmented control */}
         <div role="radiogroup" aria-label={FAMILY_STRINGS.overview_range_label} className="flex gap-0 bg-muted p-1 rounded-lg w-fit">
           {PERIODS.map((p) => (
             <button
@@ -231,6 +191,44 @@ export function OverviewTab({ reloadKey = 0 }: { reloadKey?: number }) {
               {p.label}
             </button>
           ))}
+        </div>
+
+        {/* Row 2: People chips (icon-only) */}
+        <div
+          role="radiogroup"
+          aria-label={FAMILY_STRINGS.overview_member_filter_label}
+          className="flex gap-2 overflow-x-auto -mx-1 px-1 pb-0"
+        >
+          <button
+            role="radio"
+            aria-checked={focus == null}
+            aria-label="Everyone"
+            title="Everyone"
+            onClick={() => setSelected("all")}
+            className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
+              focus == null ? "ring-2 ring-primary bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Users className="h-4 w-4" aria-hidden="true" />
+          </button>
+          {data.members.map((m) => {
+            const fullName = memberLabel(m);
+            return (
+              <button
+                key={m.id}
+                role="radio"
+                aria-checked={focus?.id === m.id}
+                aria-label={fullName}
+                title={fullName}
+                onClick={() => setSelected(m.id)}
+                className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
+                  focus?.id === m.id ? "ring-2 ring-primary bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {getInitials(fullName)}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -266,7 +264,7 @@ export function OverviewTab({ reloadKey = 0 }: { reloadKey?: number }) {
       )}
 
       <p className="text-xs text-muted-foreground">
-        {fill(FAMILY_STRINGS.overview_converted_note, { currency: cur, date: formatDate(data.asOf) })}
+        {fill(FAMILY_STRINGS.overview_converted_note, { currency: cur })}
       </p>
 
       {data.members.some((m) => m.genericLabels) && (
@@ -298,65 +296,60 @@ function HouseholdBlock({ data, chartData, period }: { data: OverviewResponse; c
 
   return (
     <section aria-labelledby="family-household-heading" className="space-y-4" data-testid="household">
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle id="family-household-heading" className="text-lg">
-            {FAMILY_STRINGS.overview_household_title}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4 px-3 sm:px-6">
-          <HeadlineCards
-            currency={cur}
-            period={period}
-            netWorth={
-              totals.net == null
-                ? { unavailable: FAMILY_STRINGS.overview_totals_none }
-                : { net: totals.net, assets: totals.assets ?? 0, liabilities: totals.liabilities ?? 0, history: totals.history }
-            }
-            flows={
-              flows.income == null || flows.expenses == null
-                ? { unavailable: FAMILY_STRINGS.overview_card_not_shared }
-                : { income: flows.income, expenses: flows.expenses, monthly: flows.monthly, daily: flows.daily, from: flows.from }
-            }
-            savingsRatePct={flows.savingsRatePct}
-            savingsUnavailable={flows.included === 0 ? FAMILY_STRINGS.overview_card_not_shared : undefined}
-            dti={flows.dti}
-            dtiUnavailable={flows.dti ? undefined : FAMILY_STRINGS.overview_card_dti_needs}
-          />
+      <h2 id="family-household-heading" className="text-lg font-semibold">
+        {FAMILY_STRINGS.overview_household_title}
+      </h2>
 
-          {(chartTotals.included > 0 || chartFlows.included > 0) && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {chartTotals.included > 0 && (
-                <NetWorthOverTimeCard
-                  history={chartTotals.history}
-                  currency={cur}
-                  period="all"
-                  name={FAMILY_STRINGS.overview_household_title}
-                  gradientId="nw-household"
-                />
-              )}
-              {chartFlows.included > 0 && (
-                <IncomeVsExpensesCard
-                  series={{ from: chartFlows.from, monthly: chartFlows.monthly, daily: chartFlows.daily }}
-                  period="all"
-                  currency={cur}
-                  asOf={data.asOf}
-                  idPrefix="ie-household-"
-                />
-              )}
-            </div>
+      <HeadlineCards
+        currency={cur}
+        period={period}
+        netWorth={
+          totals.net == null
+            ? { unavailable: FAMILY_STRINGS.overview_totals_none }
+            : { net: totals.net, assets: totals.assets ?? 0, liabilities: totals.liabilities ?? 0, history: totals.history }
+        }
+        flows={
+          flows.income == null || flows.expenses == null
+            ? { unavailable: FAMILY_STRINGS.overview_card_not_shared }
+            : { income: flows.income, expenses: flows.expenses, monthly: flows.monthly, daily: flows.daily, from: flows.from }
+        }
+        savingsRatePct={flows.savingsRatePct}
+        savingsUnavailable={flows.included === 0 ? FAMILY_STRINGS.overview_card_not_shared : undefined}
+        dti={flows.dti}
+        dtiUnavailable={flows.dti ? undefined : FAMILY_STRINGS.overview_card_dti_needs}
+      />
+
+      {(chartTotals.included > 0 || chartFlows.included > 0) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {chartTotals.included > 0 && (
+            <NetWorthOverTimeCard
+              history={chartTotals.history}
+              currency={cur}
+              period="all"
+              name={FAMILY_STRINGS.overview_household_title}
+              gradientId="nw-household"
+            />
           )}
+          {chartFlows.included > 0 && (
+            <IncomeVsExpensesCard
+              series={{ from: chartFlows.from, monthly: chartFlows.monthly, daily: chartFlows.daily }}
+              period="all"
+              currency={cur}
+              asOf={data.asOf}
+              idPrefix="ie-household-"
+            />
+          )}
+        </div>
+      )}
 
-          <div className="space-y-1 text-xs text-muted-foreground" data-testid="household-note">
-            {totals.included === 0 ? <p>{FAMILY_STRINGS.overview_totals_none}</p> : <p>{FAMILY_STRINGS.overview_kpi_note}</p>}
-            {totals.excluded.length > 0 && <p>{excludedText(totals.excluded)}</p>}
-            <p>{FAMILY_STRINGS.overview_household_cashflow_note}</p>
-            {flows.excluded.length > 0 && <p>{excludedText(flows.excluded, notShared)}</p>}
-            <p>{FAMILY_STRINGS.overview_household_dti_note}</p>
-            {flows.dtiExcluded.length > 0 && <p>{excludedText(flows.dtiExcluded, notShared)}</p>}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-1 text-xs text-muted-foreground" data-testid="household-note">
+        {totals.included === 0 ? <p>{FAMILY_STRINGS.overview_totals_none}</p> : <p>{FAMILY_STRINGS.overview_kpi_note}</p>}
+        {totals.excluded.length > 0 && <p>{excludedText(totals.excluded)}</p>}
+        <p>{FAMILY_STRINGS.overview_household_cashflow_note}</p>
+        {flows.excluded.length > 0 && <p>{excludedText(flows.excluded, notShared)}</p>}
+        <p>{FAMILY_STRINGS.overview_household_dti_note}</p>
+        {flows.dtiExcluded.length > 0 && <p>{excludedText(flows.dtiExcluded, notShared)}</p>}
+      </div>
     </section>
   );
 }
