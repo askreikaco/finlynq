@@ -46,7 +46,7 @@ export function useOpenSection(cfg: OpenSectionConfig): [string | null, (v: stri
   const [open, setOpen] = useState<string | null>(fromPath);
   const [scrollTo, setScrollTo] = useState<string | null>(fromPath);
   const cfgRef = useRef(cfg);
-  cfgRef.current = cfg;
+  useEffect(() => { cfgRef.current = cfg; }, [cfg]);
 
   // URL refinement (client only): ?tab=, #hash, ?provider=.
   useEffect(() => {

@@ -14,7 +14,7 @@ export function useDashboardLayout() {
   const [layout, setLayout] = useState<DashboardLayout>(defaultLayout);
   const [ready, setReady] = useState(false);
   const current = useRef(layout);
-  current.current = layout;
+  useEffect(() => { current.current = layout; }, [layout]);
 
   useEffect(() => {
     let alive = true;
