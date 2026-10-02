@@ -79,12 +79,13 @@ describe("More screen", () => {
       ["Goals", "/goals"],
       ["Reports", "/reports"],
       ["Category report", "/categories"],
+      ["Family Wealth", "/family"],
       ["Reconcile", "/import?tab=reconcile"],
       ["Categories", "/settings/categorization"],
       ["Import", "/import"],
     ]);
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/announcements"));
-    expect(rows("tools").map((r) => r[0])).toEqual(["What's new", "Family Wealth", "Settings"]);
+    expect(rows("tools").map((r) => r[0])).toEqual(["What's new", "Settings"]);
     expect(within(group("tools")).getByTestId("more-signout").textContent).toBe("Sign out");
     expect(rows("explore").map((r) => r[1])).toEqual(["/subscriptions", "/loans"]);
   });
@@ -93,7 +94,7 @@ describe("More screen", () => {
     announcements = [];
     render(<MoreMenu />);
     await waitFor(() => expect(screen.queryByText("What's new")).toBeNull());
-    expect(rows("tools").map((r) => r[0])).toEqual(["Family Wealth", "Settings"]);
+    expect(rows("tools").map((r) => r[0])).toEqual(["Settings"]);
   });
 
   it("shows the Admin group only for admins", async () => {
