@@ -17,6 +17,7 @@
  * at most one day stale, and carries its own asOf.
  */
 import type { FamilySection } from "../sections";
+import { sharedRead } from "./shared-reads";
 import {
   buildNetWorthHistory,
   computeDebtService,
@@ -60,6 +61,8 @@ export interface MemberCtx {
   memo: { valuation?: Promise<Valuation[]>; invSnaps?: Promise<AccountSnapshot[]> };
   /** step timings ("label=Nms", durations only, never values) for the [family] timing log */
   steps?: string[];
+  /** a manual Refresh: shared reads (shared-reads.ts) only reuse a sibling request's fresh load */
+  refresh?: boolean;
 }
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
@@ -167,7 +170,11 @@ export type Valuation = {
 
 function invSnapshots(ctx: MemberCtx): Promise<AccountSnapshot[]> {
   return (ctx.memo.invSnaps ??= (async () => {
-    const rows = await timed(ctx, "invSnaps.query", () => getInvestmentSnapshotsInRange(ctx.ownerId, "1900-01-01", ctx.today));
+    const rows = await timed(ctx, "invSnaps.query", () =>
+      sharedRead("invSnaps", ctx.ownerId, ctx.today, { refresh: ctx.refresh }, () =>
+        getInvestmentSnapshotsInRange(ctx.ownerId, "1900-01-01", ctx.today),
+      ),
+    );
     return rows
       .filter((r) => r.accountId != null)
       .map((r) => ({
@@ -183,7 +190,9 @@ function invSnapshots(ctx: MemberCtx): Promise<AccountSnapshot[]> {
 
 function valuation(ctx: MemberCtx): Promise<Valuation[]> {
   return (ctx.memo.valuation ??= (async () => {
-    const rows = await timed(ctx, "val.balances", () => getOwnerAccountBalances(ctx.ownerId));
+    const rows = await timed(ctx, "val.balances", () =>
+      sharedRead("balances", ctx.ownerId, ctx.today, { refresh: ctx.refresh }, () => getOwnerAccountBalances(ctx.ownerId)),
+    );
     const hasInv = rows.some((r) => r.isInvestment);
     const snaps = hasInv ? await invSnapshots(ctx) : [];
     const latest = new Map<number, AccountSnapshot>();
@@ -251,7 +260,11 @@ export async function buildNetWorth(ctx: MemberCtx): Promise<NonNullable<Section
   }
 
   const [cashRaw, invRaw] = await Promise.all([
-    timed(ctx, "nw.cashSnaps", () => getCashSnapshotsInRange(ctx.ownerId, "1900-01-01", ctx.today)),
+    timed(ctx, "nw.cashSnaps", () =>
+      sharedRead("cashSnaps", ctx.ownerId, ctx.today, { refresh: ctx.refresh }, () =>
+        getCashSnapshotsInRange(ctx.ownerId, "1900-01-01", ctx.today),
+      ),
+    ),
     timed(ctx, "nw.invSnaps", () => invSnapshots(ctx)),
   ]);
   const cash: AccountSnapshot[] = cashRaw

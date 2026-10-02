@@ -38,6 +38,8 @@ export interface AssembleInput {
   fx: FxContext;
   period: OverviewPeriod;
   today: string;
+  /** manual Refresh: shared reads must not reuse an older load */
+  refresh?: boolean;
 }
 
 async function buildMember(
@@ -56,6 +58,7 @@ async function buildMember(
     partial: new Set<PartialReason>(),
     generic: { used: false },
     memo: {},
+    refresh: input.refresh,
   };
   const sections: Record<string, unknown> = {};
   const unavailable: FamilySection[] = [];
