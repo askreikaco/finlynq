@@ -92,7 +92,8 @@ export function MetricCard({
   onMouseMove,
 }: MetricCardProps) {
   const hasSpark = !!sparkData && sparkData.length > 1;
-  const numberSize = size === "hero" ? "text-4xl md:text-5xl" : "text-[1.75rem]";
+  // Sized by the card's own width so a narrow card (2-up grid on a phone) never clips the number.
+  const numberSize = size === "hero" ? "text-3xl @sm:text-4xl @xl:text-5xl" : "text-xl @[13rem]:text-[1.75rem]";
   const toneClasses = tone in METRIC_TONES ? METRIC_TONES[tone as MetricTone] : tone;
   const card = (
     <Card
@@ -113,7 +114,7 @@ export function MetricCard({
           {loading ? (
             <span className="inline-block h-7 w-24 animate-shimmer rounded-md align-middle" />
           ) : (
-            <div className={`${numberSize} font-bold tracking-tight hero-number tabular-nums leading-none truncate ${valueClassName}`}>
+            <div className={`${numberSize} font-bold tracking-tight hero-number tabular-nums leading-none break-words ${valueClassName}`}>
               {typeof value === "number" ? <AnimatedNumber value={value} currency={currency} /> : value}
             </div>
           )}
@@ -139,8 +140,8 @@ export function MetricCard({
         {hasSpark && (
           <>
             {/* wide card: right-hand column, full height */}
-            <div className="hidden @xl:flex @xl:w-[45%] shrink-0 items-center pr-5 py-4 opacity-60 group-hover:opacity-100 transition-opacity duration-300">
-              <Sparkline data={sparkData!} color={sparkColor} labels={sparkLabels} currency={currency} height={96} className="w-full h-[96px]" />
+            <div className="hidden @xl:block @xl:w-[45%] shrink-0 pr-5 py-5 min-h-[120px] opacity-60 group-hover:opacity-100 transition-opacity duration-300">
+              <Sparkline data={sparkData!} color={sparkColor} labels={sparkLabels} currency={currency} height="100%" className="w-full h-full" />
             </div>
             {/* narrow card: full-bleed strip along the bottom */}
             <div className="@xl:hidden opacity-50 group-hover:opacity-100 transition-opacity duration-300 -mx-px">

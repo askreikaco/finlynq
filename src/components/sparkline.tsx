@@ -12,8 +12,8 @@ type SparklineProps = {
    * value + date. Labels are "YYYY-MM" month keys (rendered via getMonthLabel).
    */
   labels?: string[];
-  /** Chart height in px (default 30: the card-footer strip). Wrapper classes must match it. */
-  height?: number;
+  /** Chart height: px (default 30, the card-footer strip) or "100%" to fill a sized wrapper. */
+  height?: number | `${number}%`;
   /** Wrapper classes (default "w-full h-[30px]"). */
   className?: string;
   /** Currency used to format the tooltip value. */
