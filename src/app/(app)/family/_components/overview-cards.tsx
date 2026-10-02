@@ -164,7 +164,7 @@ export function HeadlineCards(d: HeadlineData) {
       </div>
       <KeyMetrics
         health={{ savingsRatePct: d.savingsRatePct, dti: d.dti ?? { pct: null, reliable: true } }}
-        savingsWindow={caption.toLowerCase()}
+        savingsWindow="last 12 months"
         unavailable={{ savings: d.savingsUnavailable, dti: d.dtiUnavailable }}
       />
     </div>

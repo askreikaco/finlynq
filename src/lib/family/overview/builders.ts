@@ -508,18 +508,18 @@ function flowValue(fx: FxContext, r: FlowRow): number | null {
 export async function buildCashflow(ctx: MemberCtx): Promise<NonNullable<SectionsDto["cashflow"]>> {
   const from = rangeStart(ctx.period, ctx.today);
   const end = `${ctx.today.slice(0, 7)}-31`;
-  const [rows, dailyRows] = await Promise.all([
+  const twelveStart = trailingTwelveStart(ctx.today);
+  const [rows, dailyRows, twelveRows] = await Promise.all([
     getIncomeVsExpenses(ctx.ownerId, from ?? "1900-01-01", end),
     ctx.period === "month" ? getIncomeVsExpensesDaily(ctx.ownerId, from as string, end) : Promise.resolve([]),
+    // Savings rate (and DTI income) always use the trailing 12 months, whatever the period filter.
+    getIncomeVsExpenses(ctx.ownerId, twelveStart, "9999-12-31"),
   ]);
-  await ctx.fx.prepare([...rows, ...dailyRows].map((r) => r.currency));
+  await ctx.fx.prepare([...rows, ...dailyRows, ...twelveRows].map((r) => r.currency));
 
   const months = new Map<string, { income: number; expenses: number }>();
   let income = 0;
   let expenses = 0;
-  // dashboard savings-rate basis: expenses summed as |slice| (financial-health.ts)
-  let savingsIncome = 0;
-  let savingsExpenses = 0;
   for (const r of rows) {
     const v = flowValue(ctx.fx, r);
     if (v == null) {
@@ -530,13 +530,23 @@ export async function buildCashflow(ctx: MemberCtx): Promise<NonNullable<Section
     if (r.type === "I") {
       cur.income += v;
       income += v;
-      savingsIncome += v;
     } else {
       cur.expenses += -v;
       expenses += -v;
-      savingsExpenses += Math.abs(v);
     }
     months.set(r.month, cur);
+  }
+  // dashboard savings-rate basis: expenses summed as |slice| (financial-health.ts), trailing 12 months
+  let savingsIncome = 0;
+  let savingsExpenses = 0;
+  for (const r of twelveRows) {
+    const v = flowValue(ctx.fx, r);
+    if (v == null) {
+      ctx.partial.add("fx_rate_missing");
+      continue;
+    }
+    if (r.type === "I") savingsIncome += v;
+    else savingsExpenses += Math.abs(v);
   }
   const monthly = [...months.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
@@ -574,7 +584,7 @@ export async function buildCashflow(ctx: MemberCtx): Promise<NonNullable<Section
       ratePct: savingsRatePct(savingsIncome, savingsExpenses),
     },
     // DTI discloses debt service: only when the member ALSO shares loans.
-    debtToIncome: ctx.granted.includes("loans") ? await buildDebtToIncome(ctx) : null,
+    debtToIncome: ctx.granted.includes("loans") ? await buildDebtToIncome(ctx, twelveStart, twelveRows) : null,
   };
 }
 
@@ -599,11 +609,17 @@ function toDebtLoan(l: OwnerLoanRow): DebtServiceLoan {
  * trailing-12-month debt service / trailing-12-month income, converted at the VIEWER's rates.
  * A missing rate yields pct null + partial (never a 1:1 conversion).
  */
-async function buildDebtToIncome(ctx: MemberCtx): Promise<NonNullable<NonNullable<SectionsDto["cashflow"]>["debtToIncome"]>> {
-  const [y, m, d] = ctx.today.split("-").map(Number);
-  const twelveStart = new Date(Date.UTC(y - 1, m - 1, d)).toISOString().slice(0, 10);
-  const [incomeRows, loans, untracked] = await Promise.all([
-    getIncomeVsExpenses(ctx.ownerId, twelveStart, "9999-12-31"),
+function trailingTwelveStart(today: string): string {
+  const [y, m, d] = today.split("-").map(Number);
+  return new Date(Date.UTC(y - 1, m - 1, d)).toISOString().slice(0, 10);
+}
+
+async function buildDebtToIncome(
+  ctx: MemberCtx,
+  twelveStart: string,
+  incomeRows: FlowRow[],
+): Promise<NonNullable<NonNullable<SectionsDto["cashflow"]>["debtToIncome"]>> {
+  const [loans, untracked] = await Promise.all([
     getOwnerLoans(ctx.ownerId),
     getOwnerUntrackedLiabilities(ctx.ownerId, twelveStart, ctx.today),
   ]);

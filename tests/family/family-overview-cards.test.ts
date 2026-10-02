@@ -299,8 +299,19 @@ describe("buildCashflow", () => {
     expect(all.daily).toEqual([]);
     expect(all.windowMonths).toBe(monthsSpanned("2024-03-01", "2026-10-15"));
     const year = await buildCashflow(ctx({ period: "year" }));
-    expect(rq.getIncomeVsExpenses).toHaveBeenLastCalledWith("owner-1", "2026-01-01", "2026-10-31");
+    expect(rq.getIncomeVsExpenses).toHaveBeenCalledWith("owner-1", "2026-01-01", "2026-10-31");
     expect(year.from).toBe("2026-01-01");
+  });
+
+  it("savings rate always covers the trailing 12 months, whatever the period", async () => {
+    rq.getIncomeVsExpenses.mockImplementation(async (_o: string, start: string) =>
+      start === "2025-10-15"
+        ? [slice("2026-01", "I", 1000), slice("2026-01", "E", -400)]
+        : [slice("2026-10", "I", 100), slice("2026-10", "E", -90)],
+    );
+    const cf = await buildCashflow(ctx({ period: "month", granted: ["cashflow"] }));
+    expect(cf.income).toBe(100);
+    expect(cf.savings).toEqual({ income: 1000, expenses: 400, ratePct: 60 });
   });
 
   it("a slice without a resolvable rate is excluded + partial, never counted 1:1", async () => {
