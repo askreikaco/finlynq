@@ -60,7 +60,7 @@ describe("Accounts page below md", () => {
   it("accounts are grouped by type then group; every group is expanded by default and toggles on its own", async () => {
     const list = await mobile();
     expect(cls(list)).toContain("md:hidden");
-    const sections = Array.from(list.querySelectorAll("section.space-y-2 > h2")).map((h) => h.textContent);
+    const sections = Array.from(list.querySelectorAll("section.space-y-2 > div > h2")).map((h) => h.textContent);
     expect(sections).toEqual(expect.arrayContaining(["Assets", "Liabilities"]));
     expect(items(list).map(nameOf)).toEqual(expect.arrayContaining(["Banks", "Investments", "Credit Card"]));
 
@@ -81,6 +81,20 @@ describe("Accounts page below md", () => {
     fireEvent.click(trigger(banks));
     await waitFor(() => expect(trigger(banks).getAttribute("aria-expanded")).toBe("false"));
     expect(trigger(card).getAttribute("aria-expanded")).toBe("true");
+  });
+
+  it("Assets and Liabilities headers show their section total", async () => {
+    const list = await mobile();
+    const totals = Object.fromEntries(
+      Array.from(list.querySelectorAll("section.space-y-2")).map((sec) => [
+        sec.querySelector(":scope > div > h2")?.textContent,
+        sec.querySelector(":scope > div > [data-testid=section-total]")?.textContent,
+      ]),
+    );
+    expect(totals).toEqual({
+      Assets: formatCurrency(40000000 + 2500000 + 10000000, "VND"),
+      Liabilities: formatCurrency(-5000000, "VND"),
+    });
   });
 
   it("each group header shows its account count (pill) and total in the display currency", async () => {

@@ -273,6 +273,9 @@ export default function AccountsPage() {
       <div className="flex items-center gap-2">
         <SectionIcon className={`h-5 w-5 ${color}`} />
         <h2 className="text-xl font-semibold">{title}</h2>
+        <span className="ml-auto font-mono text-lg font-semibold tabular-nums" data-testid="section-total">
+          {formatCurrency(groupTotal(list), displayCurrency)}
+        </span>
       </div>
       {/* Each group is its own accordion, expanded by default (toggled independently): header = name, count, total. */}
       <div className="flex flex-col gap-2">
@@ -340,7 +343,12 @@ export default function AccountsPage() {
   const renderMobileSection = (title: string, list: AccountBalance[], type: "asset" | "liability") =>
     list.length === 0 ? null : (
       <section className="space-y-2">
-        <SectionLabel>{title}</SectionLabel>
+        <div className="flex items-baseline justify-between gap-3 px-1">
+          <SectionLabel className="px-0">{title}</SectionLabel>
+          <span className="font-mono text-sm font-bold tabular-nums" data-testid="section-total">
+            {formatCurrency(groupTotal(list), displayCurrency)}
+          </span>
+        </div>
         <div className="flex flex-col gap-2">
           {groups(list).map(([group, accts]) => (
             <Accordion key={group} defaultValue={group}>
