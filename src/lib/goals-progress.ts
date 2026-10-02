@@ -136,7 +136,9 @@ export async function computeGoalProgress(
   };
 
   for (const g of goals) {
-    const goalCurrency = (g.currency ?? "CAD").toUpperCase();
+    // `goals.currency` is NOT NULL, so this fallback only covers a caller that
+    // omits it. USD, never CAD (FINLYNQ-183 — the app-wide default).
+    const goalCurrency = (g.currency ?? "USD").toUpperCase();
     let currentAmount = 0;
     let linksLiability = false;
     for (const accountId of g.accountIds) {

@@ -7,6 +7,8 @@ import { z } from "zod";
 import { validateBody, safeErrorMessage, AppError } from "@/lib/validate";
 import { buildNameFields, decryptNamedRows, encryptOptional, decryptOptional } from "@/lib/crypto/encrypted-columns";
 import { computeGoalProgress } from "@/lib/goals-progress";
+import { getDisplayCurrency, getRateMap, convertWithRateMap } from "@/lib/fx-service";
+import { pickRecordCurrency } from "@/lib/fx/record-currency";
 
 const postSchema = z.object({
   name: z.string(),
@@ -175,17 +177,34 @@ export async function GET(request: NextRequest) {
     })),
   );
 
+  // FINLYNQ-123 dual basis: every amount above is in the GOAL's own currency
+  // (that is what `computeGoalProgress` measures in). Each row also carries a
+  // current-rate conversion into the display currency so the page can total a
+  // mixed-currency set of goals — summing the native figures under one symbol
+  // is the same bug the loans page shipped.
+  const displayCurrency = await getDisplayCurrency(
+    userId,
+    request.nextUrl.searchParams.get("currency"),
+  );
+  const rateMap = await getRateMap(displayCurrency, userId);
+  const toDisplay = (amount: number, from: string | null) =>
+    Math.round(convertWithRateMap(amount, from ?? displayCurrency, rateMap) * 100) / 100;
+
   const withProgress = goals.map((g) => {
     const p = progressByGoal.get(g.id);
+    const currentAmount = p?.currentAmount ?? 0;
     return {
       ...g,
-      currentAmount: p?.currentAmount ?? 0,
+      currentAmount,
       progress: p?.progress ?? 0,
       // Issue #233: alias `percentComplete` matches the MCP `get_goals`
       // docstring's "with progress" promise. Same number as `progress`.
       percentComplete: p?.progress ?? 0,
       remaining: p?.remaining ?? g.targetAmount,
       monthlyNeeded: p?.monthlyNeeded ?? 0,
+      displayCurrency,
+      targetAmountDisplay: toDisplay(g.targetAmount, g.currency),
+      currentAmountDisplay: toDisplay(currentAmount, g.currency),
     };
   });
 
@@ -209,6 +228,24 @@ export async function POST(request: NextRequest) {
     } catch (e) {
       return NextResponse.json({ error: safeErrorMessage(e, "Invalid account") }, { status: 400 });
     }
+    // Currency resolution (feedback #7): explicit > first linked account >
+    // display currency. The web form always sends one, but the REST API is
+    // public (mobile, API-key callers) and omitting it let the column default
+    // stamp CAD onto a USD user's goal.
+    let accountCurrency: string | null = null;
+    if (accountIds.length > 0) {
+      const acct = await db
+        .select({ currency: schema.accounts.currency })
+        .from(schema.accounts)
+        .where(and(eq(schema.accounts.id, accountIds[0]), eq(schema.accounts.userId, userId)))
+        .get();
+      accountCurrency = acct?.currency ?? null;
+    }
+    const currency = pickRecordCurrency({
+      explicit: d.currency,
+      accountCurrency,
+      displayCurrency: await getDisplayCurrency(userId),
+    });
     const enc = buildNameFields(dek, { name: d.name });
     // Stream D Phase 4 — plaintext `name` column dropped; only encrypted
     // siblings persist. Issue #130: dual-write `goals.account_id` (first id
@@ -221,7 +258,7 @@ export async function POST(request: NextRequest) {
         userId,
         type: d.type,
         targetAmount: d.targetAmount,
-        ...(d.currency ? { currency: d.currency.toUpperCase() } : {}),
+        currency,
         deadline: d.deadline || null,
         accountId: accountIds[0] ?? null,
         priority: d.priority ?? 1,

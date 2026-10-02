@@ -484,7 +484,11 @@ export const goals = pgTable("goals", {
   // Stream D Phase 4 (2026-05-03) — plaintext `name` column physically
   // dropped. Reads via `name_ct` + DEK; exact-match queries via `name_lookup`.
   type: text("type").notNull(),
-  currency: text("currency").notNull().default("CAD"),
+  // FINLYNQ-183: USD, not CAD. Both create paths (REST POST + MCP
+  // manage_goals add) resolve the currency explicitly (explicit > first linked
+  // account > display currency); this default is only a backstop, and a CAD one
+  // silently stamped CAD onto goals created through MCP, which never sent it.
+  currency: text("currency").notNull().default("USD"),
   targetAmount: doublePrecision("target_amount").notNull(),
   deadline: text("deadline"),
   // Issue #130 (2026-05-03) — `goals.account_id` is being deprecated in
