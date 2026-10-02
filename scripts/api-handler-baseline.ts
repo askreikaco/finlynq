@@ -67,9 +67,10 @@
 export const API_HANDLER_EXEMPT_GLOBS: string[] = [
   "src/app/api/auth/",
   "src/app/api/oauth/",
-  "src/app/api/settings/change-password/",
-  "src/app/api/settings/change-email/",
+  "src/app/api/family/",
+  "src/app/api/settings/",
   "src/app/api/admin/",
+  "src/app/api/version/",
 ];
 
 /**
