@@ -17,6 +17,8 @@ import {
 import { PerformanceChart } from "@/components/portfolio/PerformanceChart";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { MetricCard } from "@/components/metric-card";
+
 
 import {
   ASSET_TYPE_CONFIG, REGION_COLORS, SECTOR_COLORS,
@@ -336,62 +338,59 @@ export default function PortfolioPage() {
 
       {/* ── Investment P&L Summary ────────────────────────────── */}
       {summary.hasQuantityData && summary.totalCostBasisDisplay > 0 && (
-        <Card className="max-md:hidden">
-          <CardHeader className="pb-2">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-indigo-500" />
-              <CardTitle className="text-base">Investment Returns</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-              {/* Market Value */}
-              <div className="space-y-0.5">
-                <p className="text-xs text-muted-foreground">Market Value</p>
-                <p className="text-sm font-bold font-mono hero-number">{formatCurrency(summary.totalValueDisplay, displayCurrency)}</p>
-              </div>
-              {/* Cost Basis */}
-              <div className="space-y-0.5">
-                <p className="text-xs text-muted-foreground">Cost Basis</p>
-                <p className="text-sm font-bold font-mono hero-number">{formatCurrency(summary.totalCostBasisDisplay, displayCurrency)}</p>
-              </div>
-              {/* Unrealized G/L */}
-              <div className="space-y-0.5">
-                <p className="text-xs text-muted-foreground">Unrealized G/L</p>
-                <p className={`text-sm font-bold font-mono hero-number ${summary.totalUnrealizedGainDisplay >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
-                  {summary.totalUnrealizedGainDisplay >= 0 ? "+" : ""}{formatCurrency(summary.totalUnrealizedGainDisplay, displayCurrency)}
-                </p>
-                <p className={`text-xs font-mono ${summary.totalUnrealizedGainPct >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
-                  {summary.totalUnrealizedGainPct >= 0 ? "+" : ""}{formatPercent(summary.totalUnrealizedGainPct, 2)}
-                </p>
-              </div>
-              {/* Realized G/L */}
-              <div className="space-y-0.5">
-                <p className="text-xs text-muted-foreground">Realized G/L</p>
-                <p className={`text-sm font-bold font-mono hero-number ${summary.totalRealizedGainDisplay >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
-                  {summary.totalRealizedGainDisplay >= 0 ? "+" : ""}{formatCurrency(summary.totalRealizedGainDisplay, displayCurrency)}
-                </p>
-              </div>
-              {/* Dividends */}
-              <div className="space-y-0.5">
-                <p className="text-xs text-muted-foreground">Dividends</p>
-                <p className="text-sm font-bold font-mono hero-number text-emerald-600 dark:text-emerald-400">
-                  +{formatCurrency(summary.totalDividendsDisplay, displayCurrency)}
-                </p>
-              </div>
-              {/* Total Return */}
-              <div className="space-y-0.5">
-                <p className="text-xs text-muted-foreground">Total Return</p>
-                <p className={`text-sm font-bold font-mono hero-number ${summary.totalReturnDisplay >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
-                  {summary.totalReturnDisplay >= 0 ? "+" : ""}{formatCurrency(summary.totalReturnDisplay, displayCurrency)}
-                </p>
-                <p className={`text-xs font-mono ${summary.totalReturnPct >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
-                  {summary.totalReturnPct >= 0 ? "+" : ""}{formatPercent(summary.totalReturnPct, 2)}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="space-y-3 max-md:hidden">
+          <h3 className="text-lg font-medium tracking-tight px-1">Investment Returns</h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <MetricCard
+              label="Market Value"
+              icon={Briefcase}
+              tone="indigo"
+              value={summary.totalValueDisplay}
+              currency={displayCurrency}
+            />
+            <MetricCard
+              label="Cost Basis"
+              icon={Coins}
+              tone="muted"
+              value={summary.totalCostBasisDisplay}
+              currency={displayCurrency}
+            />
+            <MetricCard
+              label="Unrealized G/L"
+              icon={TrendingUp}
+              tone={summary.totalUnrealizedGainDisplay >= 0 ? "emerald" : "rose"}
+              value={summary.totalUnrealizedGainDisplay}
+              currency={displayCurrency}
+              valueClassName={summary.totalUnrealizedGainDisplay >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}
+              badgePct={summary.totalUnrealizedGainPct}
+            />
+            <MetricCard
+              label="Realized G/L"
+              icon={TrendingUp}
+              tone={summary.totalRealizedGainDisplay >= 0 ? "emerald" : "rose"}
+              value={summary.totalRealizedGainDisplay}
+              currency={displayCurrency}
+              valueClassName={summary.totalRealizedGainDisplay >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}
+            />
+            <MetricCard
+              label="Dividends"
+              icon={Plus}
+              tone="emerald"
+              value={summary.totalDividendsDisplay}
+              currency={displayCurrency}
+              valueClassName="text-emerald-600 dark:text-emerald-400"
+            />
+            <MetricCard
+              label="Total Return"
+              icon={TrendingUp}
+              tone={summary.totalReturnDisplay >= 0 ? "emerald" : "rose"}
+              value={summary.totalReturnDisplay}
+              currency={displayCurrency}
+              valueClassName={summary.totalReturnDisplay >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}
+              badgePct={summary.totalReturnPct}
+            />
+          </div>
+        </div>
       )}
 
       {/* ── Top Movers ────────────────────────────────────────── */}

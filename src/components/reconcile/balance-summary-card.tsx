@@ -18,8 +18,9 @@
  */
 
 import { Card, CardContent } from "@/components/ui/card";
-import { CheckCircle2, AlertTriangle, Info } from "lucide-react";
+import { CheckCircle2, AlertTriangle, Info, Landmark, Database } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
+import { MetricCard } from "@/components/metric-card";
 
 export interface BalanceSummary {
   accountId: number;
@@ -53,11 +54,11 @@ export function BalanceSummaryCard({
 
   if (loading || !summary) {
     return (
-      <Card className="border-muted">
-        <CardContent className="py-3 text-sm text-muted-foreground">
-          Loading balance summary…
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <MetricCard label="Bank says" icon={Landmark} value="—" loading />
+        <MetricCard label="Finlynq has" icon={Database} value="—" loading />
+        <MetricCard label="Delta" icon={Info} value="—" loading />
+      </div>
     );
   }
 
@@ -66,10 +67,10 @@ export function BalanceSummaryCard({
 
   const tone =
     status === "balanced"
-      ? "border-emerald-300 bg-emerald-50/60"
+      ? "emerald"
       : status === "mismatch"
-        ? "border-rose-300 bg-rose-50/60"
-        : "border-sky-300 bg-sky-50/40";
+        ? "rose"
+        : "sky";
 
   const Icon =
     status === "balanced"
@@ -78,79 +79,52 @@ export function BalanceSummaryCard({
         ? AlertTriangle
         : Info;
 
-  const iconTone =
-    status === "balanced"
-      ? "text-emerald-700"
-      : status === "mismatch"
-        ? "text-rose-700"
-        : "text-sky-700";
-
-  // Tone-paired label + value colors. `text-muted-foreground` looked dim
-  // in dark mode on the tinted backgrounds (the card uses light-tone
-  // bg-*-50/60 colors which stay light in dark mode); explicit *-900 /
-  // *-700 pairs read cleanly in both themes.
-  const labelTone =
-    status === "balanced"
-      ? "text-emerald-700"
-      : status === "mismatch"
-        ? "text-rose-700"
-        : "text-sky-700";
   const valueTone =
     status === "balanced"
-      ? "text-emerald-900"
+      ? "text-emerald-600 dark:text-emerald-400"
       : status === "mismatch"
-        ? "text-rose-900"
-        : "text-sky-900";
+        ? "text-rose-600 dark:text-rose-400"
+        : "text-sky-600 dark:text-sky-400";
 
   return (
-    <Card className={tone}>
-      <CardContent className="py-2.5 px-3">
-        <div className="flex items-start gap-3">
-          <Icon className={`h-4 w-4 ${iconTone} shrink-0 mt-1`} />
-          <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm">
-            <div>
-              <div className={`text-xs ${labelTone}`}>
-                {latestAnchor ? (
-                  <>
-                    Bank says (as of{" "}
-                    <span className="font-mono">{latestAnchor.date}</span>)
-                  </>
-                ) : (
-                  <>Bank says (no anchor yet)</>
-                )}
-              </div>
-              <div className={`font-mono font-medium ${valueTone}`}>
-                {bankSideLatest === null ? "—" : fmt(bankSideLatest, currency)}
-              </div>
-            </div>
-            <div>
-              <div className={`text-xs ${labelTone}`}>Finlynq has</div>
-              <div className={`font-mono font-medium ${valueTone}`}>
-                {fmt(systemSideLatest, currency)}
-              </div>
-            </div>
-            <div>
-              <div className={`text-xs ${labelTone}`}>
-                {status === "no_anchor" ? "Status" : "Delta"}
-              </div>
-              {status === "balanced" && (
-                <div className="font-medium text-emerald-700">✓ Balanced</div>
-              )}
-              {status === "mismatch" && delta !== null && (
-                <div className="font-mono font-medium text-rose-700">
-                  {delta >= 0 ? "+" : ""}
-                  {fmt(delta, currency)}
-                </div>
-              )}
-              {status === "no_anchor" && (
-                <div className="text-xs text-sky-800">
-                  Upload a statement balance to enable validation
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <MetricCard
+        label="Bank says"
+        icon={Landmark}
+        tone="muted"
+        value={bankSideLatest === null ? "—" : bankSideLatest}
+        currency={currency}
+        sub={latestAnchor ? `as of ${latestAnchor.date}` : "no anchor yet"}
+      />
+      <MetricCard
+        label="Finlynq has"
+        icon={Database}
+        tone="muted"
+        value={systemSideLatest}
+        currency={currency}
+      />
+      <MetricCard
+        label={status === "no_anchor" ? "Status" : "Delta"}
+        icon={Icon}
+        tone={tone}
+        value={
+          status === "balanced" ? (
+            <span className="text-emerald-600 dark:text-emerald-400 text-lg">✓ Balanced</span>
+          ) : status === "no_anchor" ? (
+            <span className="text-sky-600 dark:text-sky-400 text-base">Needs anchor</span>
+          ) : (
+            delta
+          )
+        }
+        currency={currency}
+        valueClassName={valueTone}
+        sub={
+          status === "no_anchor"
+            ? "Upload a statement balance to enable validation"
+            : undefined
+        }
+      />
+    </div>
   );
 }
+

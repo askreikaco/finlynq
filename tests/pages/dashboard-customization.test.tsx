@@ -18,7 +18,7 @@ vi.mock("@/components/onboarding-wizard", () => ({ OnboardingWizard: () => null 
 vi.mock("@/components/sparkline", () => ({ Sparkline: () => null }));
 
 // Each card becomes a marker so DOM order == render order.
-const marker = vi.hoisted(() => (id: string) => () => <div data-testid={`card-${id}`} />);
+const marker = vi.hoisted(() => (id: string) => function MockCard() { return <div data-testid={`card-${id}`} />; });
 vi.mock("@/components/onboarding-tips", () => ({ OnboardingTips: marker("onboarding-tips") }));
 vi.mock("@/app/(app)/dashboard/_components/health-score-card", () => ({ HealthScoreCard: marker("health-score") }));
 vi.mock("@/app/(app)/dashboard/_components/key-metrics", () => ({ KeyMetrics: marker("key-metrics") }));
