@@ -42,7 +42,13 @@ const SECURITY_HEADERS = [
   { key: "Content-Security-Policy", value: CSP_DIRECTIVES },
 ];
 
+// One build id per `next build`, shared by the server and client bundles (set
+// before Next spawns its build workers, which inherit the env). The client
+// compares it with GET /api/version to offer "New version available".
+process.env.APP_BUILD ||= String(Date.now());
+
 const nextConfig: NextConfig = {
+  env: { NEXT_PUBLIC_APP_BUILD: process.env.APP_BUILD },
   // Drop the X-Powered-By: Next.js header (FINLYNQ-157 — tech-stack disclosure).
   // The Via: 1.1 Caddy header is stripped by the Caddy reverse proxy; see ops note.
   poweredByHeader: false,
