@@ -85,7 +85,10 @@ async function buildMember(
     }
   }
   // timings only (no values): helps find the slow section
-  console.info(`[family] timing period=${input.period} ${built.map((r) => `${r.section}=${r.ms}ms`).join(" ")}`);
+  console.info(
+    `[family] timing period=${input.period} ${built.map((r) => `${r.section}=${r.ms}ms`).join(" ")}` +
+      ` | steps ${(ctx.steps ?? []).join(" ")} | fx ${(input.fx.lookups ?? []).join(" ")}`,
+  );
   return {
     id: base.id,
     relation: base.relation,

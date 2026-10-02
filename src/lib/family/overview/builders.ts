@@ -58,9 +58,21 @@ export interface MemberCtx {
   partial: Set<PartialReason>;
   generic: { used: boolean };
   memo: { valuation?: Promise<Valuation[]>; invSnaps?: Promise<AccountSnapshot[]> };
+  /** step timings ("label=Nms", durations only, never values) for the [family] timing log */
+  steps?: string[];
 }
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
+
+/** Time one step into ctx.steps (durations only). */
+async function timed<T>(ctx: MemberCtx, label: string, fn: () => Promise<T> | T): Promise<T> {
+  const t0 = Date.now();
+  try {
+    return await fn();
+  } finally {
+    (ctx.steps ??= []).push(`${label}=${Date.now() - t0}ms`);
+  }
+}
 
 function labelOf(ctx: MemberCtx, section: FamilySection, id: number, ordinal: number, noun: string) {
   const found = ctx.labels.get(section)?.get(id);
@@ -155,7 +167,7 @@ export type Valuation = {
 
 function invSnapshots(ctx: MemberCtx): Promise<AccountSnapshot[]> {
   return (ctx.memo.invSnaps ??= (async () => {
-    const rows = await getInvestmentSnapshotsInRange(ctx.ownerId, "1900-01-01", ctx.today);
+    const rows = await timed(ctx, "invSnaps.query", () => getInvestmentSnapshotsInRange(ctx.ownerId, "1900-01-01", ctx.today));
     return rows
       .filter((r) => r.accountId != null)
       .map((r) => ({
@@ -171,7 +183,7 @@ function invSnapshots(ctx: MemberCtx): Promise<AccountSnapshot[]> {
 
 function valuation(ctx: MemberCtx): Promise<Valuation[]> {
   return (ctx.memo.valuation ??= (async () => {
-    const rows = await getOwnerAccountBalances(ctx.ownerId);
+    const rows = await timed(ctx, "val.balances", () => getOwnerAccountBalances(ctx.ownerId));
     const hasInv = rows.some((r) => r.isInvestment);
     const snaps = hasInv ? await invSnapshots(ctx) : [];
     const latest = new Map<number, AccountSnapshot>();
@@ -226,7 +238,7 @@ function valuation(ctx: MemberCtx): Promise<Valuation[]> {
 // ─── net_worth ─────────────────────────────────────────────────────────────────────────────────
 
 export async function buildNetWorth(ctx: MemberCtx): Promise<NonNullable<SectionsDto["net_worth"]>> {
-  const vals = await valuation(ctx);
+  const vals = await timed(ctx, "nw.valuation", () => valuation(ctx));
   let assets = 0;
   let liabilities = 0;
   for (const v of vals) {
@@ -239,8 +251,8 @@ export async function buildNetWorth(ctx: MemberCtx): Promise<NonNullable<Section
   }
 
   const [cashRaw, invRaw] = await Promise.all([
-    getCashSnapshotsInRange(ctx.ownerId, "1900-01-01", ctx.today),
-    invSnapshots(ctx),
+    timed(ctx, "nw.cashSnaps", () => getCashSnapshotsInRange(ctx.ownerId, "1900-01-01", ctx.today)),
+    timed(ctx, "nw.invSnaps", () => invSnapshots(ctx)),
   ]);
   const cash: AccountSnapshot[] = cashRaw
     .filter((r) => r.accountId != null)
@@ -252,7 +264,7 @@ export async function buildNetWorth(ctx: MemberCtx): Promise<NonNullable<Section
       nativeMarketValue: r.nativeMarketValue == null ? null : Number(r.nativeMarketValue),
       nativeCurrency: r.nativeCurrency,
     }));
-  await ctx.fx.prepare([...cash.map((s) => s.currency), ...invRaw.map((s) => s.currency)]);
+  await timed(ctx, "nw.fx", () => ctx.fx.prepare([...cash.map((s) => s.currency), ...invRaw.map((s) => s.currency)]));
   const usable = (s: AccountSnapshot) => ctx.fx.rate(s.currency) != null;
   if (cash.some((s) => !usable(s)) || invRaw.some((s) => !usable(s))) ctx.partial.add("fx_rate_missing");
 
@@ -261,6 +273,7 @@ export async function buildNetWorth(ctx: MemberCtx): Promise<NonNullable<Section
     if (v.row.isInvestment || v.converted == null || v.balance == null) continue;
     liveCash.set(v.row.id, { value: v.balance, currency: v.row.currency });
   }
+  const tHist = Date.now();
   const hist = buildNetWorthHistory({
     ...historyWindow(ctx.period, ctx.today),
     displayCurrency: ctx.fx.display,
@@ -270,6 +283,7 @@ export async function buildNetWorth(ctx: MemberCtx): Promise<NonNullable<Section
     snapshots: invRaw.filter(usable),
     today: ctx.today,
   });
+  (ctx.steps ??= []).push(`nw.history(cpu)=${Date.now() - tHist}ms rows=${cash.length + invRaw.length}`);
 
   return {
     assets: r2(assets),
@@ -335,7 +349,9 @@ export async function buildInvestments(ctx: MemberCtx): Promise<NonNullable<Sect
   }
 
   // The /portfolio Performance card, run for the owner (aggregate snapshot rows, DEK-free).
-  const perf = await getOwnerPortfolioPerformance(ctx.ownerId, performancePeriodKey(ctx.period), ctx.today);
+  const perf = await timed(ctx, "inv.performance", () =>
+    getOwnerPortfolioPerformance(ctx.ownerId, performancePeriodKey(ctx.period), ctx.today),
+  );
   await ctx.fx.prepare(perf.series.map((p) => p.currency));
   const series: Array<{ date: string; marketValue: number; costBasis: number }> = [];
   for (const p of perf.series) {

@@ -47,6 +47,7 @@ export async function GET(request: NextRequest) {
   if (!guard.ok) return guard.response;
   const { userId: viewerId, dek, mfaVerified } = guard.ctx;
 
+  const tStart = Date.now();
   const rl = checkRateLimit(`family-overview:${viewerId}`, 30, 60_000);
   if (!rl.allowed) return rateLimited(rl.resetAt);
 
@@ -91,6 +92,8 @@ export async function GET(request: NextRequest) {
 
   const cacheKey = overviewCacheKey({ viewerId, period, display: fx.display, unlocked: !!dek, shares });
   let cached = refresh || !overviewCacheEnabled() ? null : getCachedOverview(cacheKey, today);
+  const cacheHit = !!cached;
+  const tBuild = Date.now();
   if (!cached) {
     const { members, partial } = await assembleFamilyOverview({
       viewerId,
@@ -103,6 +106,7 @@ export async function GET(request: NextRequest) {
     const body = serializeOverview({ displayCurrency: fx.display, period, asOf: today, partial, members });
     cached = setCachedOverview(cacheKey, today, body);
   }
+  const buildMs = Date.now() - tBuild;
 
   // Audit stamp for the owner ("last viewed"), throttled; failure never affects the response.
   const cutoff = Date.now() - LAST_VIEWED_THROTTLE_MS;
@@ -112,5 +116,8 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  console.info(
+    `[family] request period=${period} cache=${cacheHit ? "hit" : refresh ? "refresh" : "miss"} build=${buildMs}ms total=${Date.now() - tStart}ms`,
+  );
   return NextResponse.json(cached.body, { headers: { ...NO_STORE, "X-Generated-At": cached.generatedAt } });
 }
