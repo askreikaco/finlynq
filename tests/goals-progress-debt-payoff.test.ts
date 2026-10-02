@@ -12,7 +12,7 @@ vi.mock("@/db", () => {
   for (const m of ["select", "from", "where", "groupBy"]) chain[m] = vi.fn(() => chain);
   chain.then = (r: (v: unknown) => unknown) =>
     r(dbHolder.results.length ? dbHolder.results.shift()! : []);
-  const tbl = { id: {}, userId: {}, currency: {}, isInvestment: {}, accountId: {}, amount: {} };
+  const tbl = { id: {}, userId: {}, currency: {}, isInvestment: {}, type: {}, accountId: {}, amount: {} };
   return { db: chain, schema: { accounts: tbl, transactions: tbl } };
 });
 vi.mock("@/lib/holdings-value", () => ({
@@ -22,12 +22,13 @@ vi.mock("@/lib/fx-service", () => ({ getLatestFxRate: vi.fn(async () => 1) }));
 
 import { computeGoalProgress } from "@/lib/goals-progress";
 
-function queueLoanBalance(balance: number) {
+function queueAccountBalance(type: "A" | "L", balance: number) {
   dbHolder.results = [
-    [{ id: 22, currency: "VND", isInvestment: false }],
+    [{ id: 22, currency: "VND", isInvestment: false, type }],
     [{ accountId: 22, total: balance }],
   ];
 }
+const queueLoanBalance = (balance: number) => queueAccountBalance("L", balance);
 
 const goal = (type: string | null) => ({
   id: 3,
@@ -67,9 +68,27 @@ describe("computeGoalProgress — debt_payoff", () => {
   });
 
   it("leaves savings goals unchanged", async () => {
-    queueLoanBalance(60_000_000);
+    queueAccountBalance("A", 60_000_000);
     const p = (await computeGoalProgress("u1", null, [goal("savings")])).get(3)!;
     expect(p.currentAmount).toBe(60_000_000);
     expect(p.progress).toBe(40);
+  });
+
+  // Regression: the inversion must only apply when a liability is linked.
+  // Without one there is nothing "owed" to measure, and inverting read the
+  // goal as fully paid off.
+  it("a debt_payoff goal with no linked accounts (manual tracking) reads 0%, not 100%", async () => {
+    const p = (await computeGoalProgress("u1", null, [{ ...goal("debt_payoff"), accountIds: [] }])).get(3)!;
+    expect(p.currentAmount).toBe(0);
+    expect(p.progress).toBe(0);
+    expect(p.remaining).toBe(150_000_000);
+  });
+
+  it("a debt_payoff goal saving toward the payoff in an asset account uses the saved balance", async () => {
+    queueAccountBalance("A", 30_000_000);
+    const p = (await computeGoalProgress("u1", null, [goal("debt_payoff")])).get(3)!;
+    expect(p.currentAmount).toBe(30_000_000);
+    expect(p.progress).toBe(20);
+    expect(p.remaining).toBe(120_000_000);
   });
 });
