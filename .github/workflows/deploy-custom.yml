@@ -1,0 +1,33 @@
+name: Deploy Custom
+
+on:
+  push:
+    branches: [custom]
+    paths-ignore:
+      - 'mobile/**'
+
+concurrency:
+  group: deploy-custom
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to money.reika.vn
+    runs-on: [self-hosted, droplet]
+    environment:
+      name: custom
+      url: https://money.reika.vn
+
+    steps:
+      - name: Trigger deploy script
+        run: |
+          set -e
+          cd /opt/finlynq/src
+          sudo -u root git fetch origin custom
+          sudo -u root git checkout -f -B custom origin/custom
+          sudo -u root git reset --hard origin/custom
+          sudo -u root docker build -t finlynq-custom:current .
+          cd /opt/finlynq
+          sudo -u root docker-compose up -d
+          cd /opt/finlynq/src
+          sudo -u root bash -c "git log -n 1 --format=%H > /opt/finlynq/.deployed-sha"
