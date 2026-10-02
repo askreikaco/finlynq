@@ -11,6 +11,7 @@
  */
 
 import { PER_USER_STORAGE_KEYS, userStorageKey, dropLegacyUnscopedKeys } from "@/lib/client/user-storage";
+import { persistSupported, wipeUser } from "@/lib/data/persist";
 
 export { PER_USER_STORAGE_KEYS };
 
@@ -35,5 +36,23 @@ export function hardReload(url: string = window.location.pathname): void {
 /** Clear the signed-out user's per-user storage, then hardReload. */
 export function hardReloadAfterLogout(userId: string, url: string = "/"): void {
   clearPerUserStorage(userId);
-  hardReload(url);
+  // Drop the encrypted on-device data cache before leaving (best effort; the next
+  // signed-out boot wipes every cache database anyway — UnlockGate).
+  if (!persistSupported()) {
+    hardReload(url);
+    return;
+  }
+  let left = false;
+  const done = () => {
+    if (left) return;
+    left = true;
+    hardReload(url);
+  };
+  const t = setTimeout(done, 400);
+  void wipeUser(userId)
+    .catch(() => undefined)
+    .finally(() => {
+      clearTimeout(t);
+      done();
+    });
 }

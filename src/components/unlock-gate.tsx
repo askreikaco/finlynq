@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { UnlockPanel } from "@/components/unlock-panel";
 import { INVITE_RETURN_PATH, stashInviteFromLocation } from "@/lib/family/invite-stash";
+import { getSessionInfo, setSessionInfo } from "@/lib/data/session-info";
+import { wipeAll } from "@/lib/data/persist";
 
 type AuthState = "loading" | "unauthenticated" | "authenticated";
 
@@ -28,6 +30,13 @@ export function UnlockGate({ children }: { children: React.ReactNode }) {
         const res = await fetch("/api/auth/session");
         const data = await res.json();
         if (cancelled) return;
+        if (data.authenticated && data.userId) {
+          setSessionInfo({ userId: String(data.userId), locked: data.encryptionLocked === true });
+        } else {
+          // signed out: no account's on-device data cache may outlive the session
+          setSessionInfo(null);
+          void wipeAll().catch(() => undefined);
+        }
         setState(data.authenticated ? "authenticated" : "unauthenticated");
         if (data.authenticated && data.encryptionLocked === true) setLocked(true);
       } catch {
@@ -46,7 +55,12 @@ export function UnlockGate({ children }: { children: React.ReactNode }) {
       if (res.status === 423) {
         const url = typeof input === "string" ? input : input instanceof URL ? input.pathname : input.url;
         const path = url.startsWith("http") ? new URL(url).pathname : url;
-        if (path.startsWith("/api/") && !path.startsWith("/api/auth/passkey")) setLocked(true);
+        if (path.startsWith("/api/") && !path.startsWith("/api/auth/passkey")) {
+          setLocked(true);
+          // locked DEK: stop persisting and wipe this user's on-device data cache
+          const info = getSessionInfo();
+          if (info && !info.locked) setSessionInfo({ ...info, locked: true });
+        }
       }
       return res;
     };
