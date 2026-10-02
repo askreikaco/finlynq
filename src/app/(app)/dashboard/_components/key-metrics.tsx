@@ -1,14 +1,8 @@
 "use client";
 
-import { Card, CardContent } from "@/components/ui/card";
-import { motion } from "framer-motion";
+import { MetricCard } from "@/components/metric-card";
 import { PiggyBank, Scale } from "lucide-react";
 import type { HealthData } from "./types";
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 16 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" as const } },
-};
 
 // Higher savings rate is better; lower DTI is better. Neutral (muted) is used
 // when a figure can't be computed or is flagged unreliable, so we never paint a
@@ -86,33 +80,21 @@ export function KeyMetrics({ health, savingsWindow = "last 3 months", unavailabl
     },
   ];
 
+  // Two global MetricCards (same design as every other metric card).
   return (
-    <motion.div variants={itemVariants}>
-      <Card className="overflow-hidden">
-        <CardContent className="grid grid-cols-1 divide-y divide-border/60 p-0 sm:grid-cols-2 sm:divide-x sm:divide-y-0">
-          {cells.map((c) => {
-            const Icon = c.icon;
-            return (
-              <div key={c.key} className="px-5 py-4">
-                <div className="mb-2 flex items-center gap-2">
-                  <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    {c.label}
-                  </span>
-                </div>
-                {loading ? (
-                  <span className="inline-block h-7 w-16 animate-shimmer rounded-md align-middle" />
-                ) : (
-                  <p className={`text-[1.75rem] font-bold leading-none tracking-tight tabular-nums ${c.tone}`}>
-                    {c.value}
-                  </p>
-                )}
-                <p className="mt-1.5 text-[11px] text-muted-foreground">{loading ? " " : c.sub}</p>
-              </div>
-            );
-          })}
-        </CardContent>
-      </Card>
-    </motion.div>
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      {cells.map((c) => (
+        <MetricCard
+          key={c.key}
+          label={c.label}
+          icon={c.icon}
+          tone={c.key === "savings" ? "emerald" : "amber"}
+          value={c.value}
+          valueClassName={c.tone}
+          sub={c.sub}
+          loading={loading}
+        />
+      ))}
+    </div>
   );
 }
