@@ -145,11 +145,21 @@ async function runAnonymousFlow(
       if (!step.prfOutput) return { ok: false, code: "prf_unavailable", status: 400 };
       r = await post(`${base}/${finalPath}`, { token: r.json.token, response: step.response, prfOutput: step.prfOutput, ...extra });
     }
-    if (r.ok) return { ok: true, json: r.json };
+    if (r.ok) {
+      // Remember the credential this browser just used, so the next sign-in here
+      // is ONE prompt (credential-scoped, PRF evaluated in the same ceremony)
+      // instead of the two-prompt discoverable flow. Non-secret: just an id.
+      rememberPasskeyHint(step.response.id);
+      return { ok: true, json: r.json };
+    }
     if (hint && r.json.code !== "prf_unavailable") forgetPasskeyHint(); // stale hint: next try is discoverable
     return { ok: false, code: r.json.code === "prf_unavailable" ? "prf_unavailable" : "failed", status: r.status };
   } catch (e) {
     const name = (e as { name?: string })?.name;
+    // A cancelled hinted prompt usually means the remembered passkey isn't on this
+    // device (the browser offered a phone / QR instead): drop the hint so the next
+    // try lets the user pick any passkey.
+    if (useHint) forgetPasskeyHint();
     return { ok: false, code: name === "NotAllowedError" || name === "AbortError" ? "cancelled" : "failed", status: 0 };
   }
 }

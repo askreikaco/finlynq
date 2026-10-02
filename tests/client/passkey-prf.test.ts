@@ -115,6 +115,33 @@ describe("passkey-prf client helper", () => {
     expect(calls[2].body).toMatchObject({ token: "T2", prfOutput: Buffer.alloc(32, 5).toString("base64url") });
   });
 
+  it("a successful sign-in remembers the passkey, so the next sign-in is one credential-scoped prompt; a cancel forgets it", async () => {
+    const store = new Map<string, string>();
+    vi.stubGlobal("localStorage", {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => void store.set(k, v),
+      removeItem: (k: string) => void store.delete(k),
+    });
+    const calls: Array<{ url: string; body: Record<string, unknown> }> = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init: { body: string }) => {
+      const body = JSON.parse(init.body);
+      calls.push({ url, body });
+      if (url.endsWith("/options")) return jsonRes(200, { options: OPTS, token: "T1" });
+      if (body.token === "T1") return jsonRes(200, { step: "prf", options: OPTS, token: "T2", prfSalt: SALT, credentialId: "cred1" });
+      return jsonRes(200, { success: true });
+    }));
+    startAuthentication.mockResolvedValueOnce(fakeAssertion()).mockResolvedValueOnce(fakeAssertion(buf(32, 5)));
+    expect((await passkeyLogin()).ok).toBe(true);
+    expect(calls[0].body).toEqual({}); // first time: discoverable
+    expect(store.get("finlynq_passkey_hint")).toBe("cred1");
+
+    calls.length = 0;
+    startAuthentication.mockRejectedValueOnce(Object.assign(new Error("x"), { name: "NotAllowedError" }));
+    expect(await passkeyLogin()).toMatchObject({ ok: false, code: "cancelled" });
+    expect(calls[0].body).toEqual({ credentialId: "cred1" }); // second time: hinted
+    expect(store.has("finlynq_passkey_hint")).toBe(false); // cancelled -> hint dropped
+  });
+
   it("prf_unavailable from the server and 'authenticator returned no PRF' both surface as prf_unavailable", async () => {
     vi.stubGlobal("fetch", vi.fn(async (url: string) =>
       url.endsWith("/options") ? jsonRes(200, { options: OPTS, token: "T1", prfSalt: SALT }) : jsonRes(400, { code: "prf_unavailable" })));
