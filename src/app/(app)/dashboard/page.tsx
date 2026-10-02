@@ -475,7 +475,7 @@ export default function DashboardPage() {
             <SpendingCategoryChart data={spendingData} currency={apiDisplayCurrency} />
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-            <AvailableToSpend income={lastMonthIncome} expenses={lastMonthExpenses} currency={apiDisplayCurrency} />
+            <AvailableToSpend income={lastMonthIncome} expenses={lastMonthExpenses} currency={apiDisplayCurrency} monthLabel={lastMonthKey ? getMonthLabel(lastMonthKey) : undefined} />
           </div>
           <InsightsSection currency={apiDisplayCurrency} />
         </>
