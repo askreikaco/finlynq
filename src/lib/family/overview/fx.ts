@@ -24,6 +24,8 @@ export class FxContext {
   private readonly rates = new Map<string, number>();
   private readonly tried = new Set<string>();
   private readonly pending = new Map<string, Promise<void>>();
+  /** lookup timings ("CODE=Nms/source", never rates) for the [family] timing log */
+  readonly lookups: string[] = [];
   private displayLeg: ReturnType<typeof getRateToUsdDetailed> | undefined;
 
   constructor(
@@ -67,12 +69,19 @@ export class FxContext {
 
   private async resolve(code: string): Promise<void> {
     if (code === this.display) return;
-    const displayLeg = await (this.displayLeg ??= getRateToUsdDetailed(this.display, this.today, this.viewerId));
+    const displayLeg = await (this.displayLeg ??= this.timedLookup(this.display));
     const displayOk = this.display === "USD" || !isTotalMiss(this.display, displayLeg);
     if (!displayOk || displayLeg.rate === 0) return;
-    const leg = await getRateToUsdDetailed(code, this.today, this.viewerId);
+    const leg = await this.timedLookup(code);
     if (isTotalMiss(code, leg)) return;
     this.rates.set(code, leg.rate / displayLeg.rate);
+  }
+
+  private async timedLookup(code: string) {
+    const t0 = Date.now();
+    const leg = await getRateToUsdDetailed(code, this.today, this.viewerId);
+    this.lookups.push(`${code}=${Date.now() - t0}ms/${leg.source}`);
+    return leg;
   }
 
   rate(code: string | null | undefined): number | null {
