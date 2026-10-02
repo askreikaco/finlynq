@@ -9,11 +9,13 @@ import { FontProvider } from "@/components/font-provider";
 import { ReportingRecomputeIndicator } from "@/components/reporting-recompute-indicator";
 import { VersionGate } from "@/components/version-gate";
 import { DataProvider } from "@/lib/data";
+import { WebVitals } from "@/components/web-vitals";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
     <VersionGate />
+    <WebVitals />
     <UnlockGate>
       <DataProvider>
       <CurrencyProvider>
