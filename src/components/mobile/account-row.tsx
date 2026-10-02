@@ -12,7 +12,8 @@ function iconFor(type: "asset" | "liability", group: string | undefined, isInves
 /**
  * One account as a native list row: icon tile, name, subtitle (alias · currency · Archived),
  * balance in the account's own currency (+ the display-currency equivalent underneath when
- * they differ), chevron → /accounts/[id]. Liability balances read red like the desktop list.
+ * they differ); the whole row links to /accounts/[id] (no chevron: a column
+ * of arrows was noise). Liability balances read red like the desktop list.
  */
 export function AccountRow({
   accountId,
@@ -50,6 +51,7 @@ export function AccountRow({
       value={<Amount value={balance} currency={currency} tone={type === "liability" || balance < 0 ? "neg" : "pos"} />}
       secondary={differs ? formatCurrency(convertedBalance as number, displayCurrency) : undefined}
       className={archived ? "opacity-60" : undefined}
+      chevron={false}
     />
   );
 }
