@@ -142,6 +142,15 @@ export default function AccountDetailPage() {
   // Actions sheet (mobile) / dropdown (desktop)
   const [actionsSheetOpen, setActionsSheetOpen] = useState(false);
 
+  // Delete / archive from the More menu. Delete goes through the shared
+  // ConfirmDialog and DELETE /api/accounts?id=; a 409 (records still linked)
+  // is shown instead of failing silently.
+  const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [accountActionError, setAccountActionError] = useState<string | null>(null);
+  // Every account (for the Transfer action's destination picker).
+  const [allAccounts, setAllAccounts] = useState<DialogAccount[]>([]);
+
   // Invisible toggle state
   const [invisible, setInvisible] = useState(account?.invisible === true);
   const [savingInvisible, setSavingInvisible] = useState(false);
@@ -324,6 +333,48 @@ export default function AccountDetailPage() {
         .then((r) => (r.ok ? r.json() : []))
         .then((h) => setDialogHoldings(Array.isArray(h) ? h : []))
         .catch(() => {});
+    }
+  }
+
+  async function toggleArchived() {
+    if (!account) return;
+    setAccountActionError(null);
+    try {
+      const res = await fetch("/api/accounts", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: account.id, archived: !account.archived }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setAccountActionError(body.error ?? "Couldn't update the account.");
+        return;
+      }
+      reloadAccount();
+    } catch {
+      setAccountActionError("Couldn't update the account.");
+    }
+  }
+
+  async function deleteThisAccount() {
+    if (!account) return;
+    setDeletingAccount(true);
+    setAccountActionError(null);
+    try {
+      const res = await fetch(`/api/accounts?id=${account.id}`, { method: "DELETE" });
+      if (res.ok) {
+        setDeleteAccountOpen(false);
+        router.push("/accounts");
+        return;
+      }
+      const body = await res.json().catch(() => ({}));
+      setDeleteAccountOpen(false);
+      setAccountActionError(body.error ?? "Couldn't delete the account.");
+    } catch {
+      setDeleteAccountOpen(false);
+      setAccountActionError("Couldn't delete the account.");
+    } finally {
+      setDeletingAccount(false);
     }
   }
 
@@ -604,6 +655,16 @@ export default function AccountDetailPage() {
               onClick={() => {
                 setTxDialogType("transfer");
                 setTxDialogOpen(true);
+                fetch("/api/accounts")
+                  .then((r) => (r.ok ? r.json() : []))
+                  .then((rows: Array<{ id: number; name: string | null; currency: string; type?: string | null; isInvestment?: boolean }>) =>
+                    setAllAccounts(
+                      Array.isArray(rows)
+                        ? rows.map((a) => ({ id: a.id, name: a.name ?? "", currency: a.currency, type: a.type, isInvestment: a.isInvestment }))
+                        : [],
+                    ),
+                  )
+                  .catch(() => {});
                 fetch("/api/categories")
                   .then((r) => (r.ok ? r.json() : []))
                   .then((c) => setDialogCategories(Array.isArray(c) ? c : []))
@@ -665,34 +726,16 @@ export default function AccountDetailPage() {
                       <TrendingUp className="h-4 w-4 mr-2" /> View in Reports
                     </DropdownMenuItem>
                     {account.archived ? (
-                      <DropdownMenuItem
-                        onClick={() => {
-                          setEditOpen(true);
-                          setEditTab("details");
-                        }}
-                      >
+                      <DropdownMenuItem onClick={() => void toggleArchived()}>
                         <Wallet className="h-4 w-4 mr-2" /> Unarchive
                       </DropdownMenuItem>
                     ) : (
-                      <DropdownMenuItem
-                        onClick={() => {
-                          setEditOpen(true);
-                          setEditTab("details");
-                        }}
-                      >
+                      <DropdownMenuItem onClick={() => void toggleArchived()}>
                         <Wallet className="h-4 w-4 mr-2" /> Archive
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuItem
-                      onClick={() => {
-                        if (confirm("Are you sure you want to delete this account? This action cannot be undone.")) {
-                          fetch(`/api/accounts/${account.id}`, { method: "DELETE" })
-                            .then((r) => {
-                              if (r.ok) router.push("/accounts");
-                            })
-                            .catch(() => {});
-                        }
-                      }}
+                      onClick={() => { setAccountActionError(null); setDeleteAccountOpen(true); }}
                       className="text-destructive"
                     >
                       <Trash2 className="h-4 w-4 mr-2" /> Delete account
@@ -704,6 +747,21 @@ export default function AccountDetailPage() {
           </div>
         </CardContent>
       </Card>
+
+      {accountActionError && (
+        <p role="alert" className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {accountActionError}
+        </p>
+      )}
+      <ConfirmDialog
+        open={deleteAccountOpen}
+        onOpenChange={setDeleteAccountOpen}
+        title="Delete this account?"
+        description="This can't be undone. An account that still has transactions or other linked records can't be deleted; archive it instead."
+        confirmLabel="Delete account"
+        onConfirm={() => void deleteThisAccount()}
+        busy={deletingAccount}
+      />
 
       {/* Information Card */}
       <Card>
@@ -831,11 +889,19 @@ export default function AccountDetailPage() {
       <TransactionDialog
         open={txDialogOpen}
         onOpenChange={setTxDialogOpen}
-        accounts={[dialogAccount]}
-        categories={dialogCategories}
+        accounts={txDialogType === "transfer" && allAccounts.length > 0 ? allAccounts : [dialogAccount]}
+        categories={
+          // In / Out: offer only income or expense categories, which is how
+          // the dialog decides the transaction's direction.
+          txDialogType === "income"
+            ? dialogCategories.filter((c) => c.type === "I")
+            : txDialogType === "expense"
+              ? dialogCategories.filter((c) => c.type === "E")
+              : dialogCategories
+        }
         holdings={dialogHoldings}
         initialState={
-          txDialogType === "transfer" ? { kind: "transfer-create" } : {
+          txDialogType === "transfer" ? { kind: "transfer-create", fromAccountId: String(account.id) } : {
             kind: "transaction-prefill",
             values: { accountId: String(account.id), currency: account.currency },
           }
@@ -976,8 +1042,8 @@ export default function AccountDetailPage() {
             {account.archived ? (
               <button
                 onClick={() => {
-                  openEdit("details");
                   setActionsSheetOpen(false);
+                  void toggleArchived();
                 }}
                 className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left"
               >
@@ -987,8 +1053,8 @@ export default function AccountDetailPage() {
             ) : (
               <button
                 onClick={() => {
-                  openEdit("details");
                   setActionsSheetOpen(false);
+                  void toggleArchived();
                 }}
                 className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left"
               >
@@ -998,14 +1064,9 @@ export default function AccountDetailPage() {
             )}
             <button
               onClick={() => {
-                if (confirm("Are you sure you want to delete this account? This action cannot be undone.")) {
-                  fetch(`/api/accounts/${account.id}`, { method: "DELETE" })
-                    .then((r) => {
-                      if (r.ok) router.push("/accounts");
-                    })
-                    .catch(() => {});
-                }
                 setActionsSheetOpen(false);
+                setAccountActionError(null);
+                setDeleteAccountOpen(true);
               }}
               className="w-full flex items-center gap-3 px-4 py-3 hover:bg-destructive/10 transition-colors text-left text-destructive"
             >

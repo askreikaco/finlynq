@@ -55,9 +55,13 @@ const mockBalances = [
 ];
 
 let fetchSpy: ReturnType<typeof vi.fn>;
+let deleteResponse: { ok: boolean; json: () => Promise<unknown> };
 
 beforeEach(() => {
-  fetchSpy = vi.fn(async (url: string) => {
+  deleteResponse = { ok: true, json: async () => ({ ok: true }) };
+  fetchSpy = vi.fn(async (url: string, init?: RequestInit) => {
+    if (init?.method === "DELETE") return deleteResponse;
+    if (init?.method === "PUT") return { ok: true, json: async () => ({}) };
     if (url.includes("/api/accounts")) {
       return { ok: true, json: async () => [mockAccount] };
     }
@@ -221,6 +225,39 @@ describe("Account Detail Page", () => {
       expect(screen.getByText("Import statement")).toBeTruthy();
       expect(screen.getByText("View in Reports")).toBeTruthy();
       expect(screen.getByText("Delete account")).toBeTruthy();
+    });
+  });
+
+  async function openSheet() {
+    render(<AccountDetailPage />);
+    await waitFor(() => fireEvent.click(screen.getAllByText("More")[0]));
+    await screen.findByText("Delete account");
+  }
+
+  it("Delete confirms in a dialog and calls DELETE /api/accounts?id=", async () => {
+    await openSheet();
+    fireEvent.click(screen.getAllByText("Delete account")[0]);
+    const confirmBtn = await screen.findByRole("button", { name: "Delete account" });
+    fireEvent.click(confirmBtn);
+    await waitFor(() =>
+      expect(fetchSpy).toHaveBeenCalledWith("/api/accounts?id=1", { method: "DELETE" }),
+    );
+  });
+
+  it("a blocked delete (409) shows the server's reason instead of failing silently", async () => {
+    deleteResponse = { ok: false, json: async () => ({ error: "Archive it instead." }) };
+    await openSheet();
+    fireEvent.click(screen.getAllByText("Delete account")[0]);
+    fireEvent.click(await screen.findByRole("button", { name: "Delete account" }));
+    expect((await screen.findByRole("alert")).textContent).toContain("Archive it instead.");
+  });
+
+  it("Archive toggles directly with PUT { id, archived: true }", async () => {
+    await openSheet();
+    fireEvent.click(screen.getAllByText("Archive")[0]);
+    await waitFor(() => {
+      const put = fetchSpy.mock.calls.find(([, init]) => (init as RequestInit | undefined)?.method === "PUT");
+      expect(put && JSON.parse(String((put[1] as RequestInit).body))).toEqual({ id: 1, archived: true });
     });
   });
 });
