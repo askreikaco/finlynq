@@ -71,9 +71,11 @@ const { transactionRules, categories, accounts, portfolioHoldings } = schema;
 
 // GET — list all rules with decrypted FK names for UI summaries.
 export async function GET(request: NextRequest) {
-  const auth = await requireAuth(request);
-  if (!auth.authenticated) return auth.response;
-  const { userId, dek } = auth.context;
+  const { checkETag } = await import("@/lib/data-version");
+  const etagCheck = await checkETag(request);
+  if (etagCheck.response) return etagCheck.response;
+  const { userId, dek } = etagCheck.authContext!;
+  const { etag } = etagCheck;
 
   const rawRules = await db
     .select({
@@ -153,7 +155,9 @@ export async function GET(request: NextRequest) {
     };
   });
 
-  return NextResponse.json(rules);
+  const response = NextResponse.json(rules);
+  if (etag) response.headers.set("ETag", etag);
+  return response;
 }
 
 // POST — create a new rule.
@@ -199,19 +203,25 @@ export async function POST(req: NextRequest) {
       actions,
     });
 
-    const rule = await db
-      .insert(transactionRules)
-      .values({
-        userId: auth.context.userId,
-        name: enc.name ?? name.trim(),
-        conditions: enc.conditions as unknown as object,
-        actions: enc.actions as unknown as object,
-        isActive: isActive ?? true,
-        priority: priority ?? 0,
-        createdAt: todayISO(),
-      })
-      .returning()
-      .get();
+    const { withDbTransaction } = await import("@/db");
+    const { incrementDataVersion } = await import("@/lib/data-version");
+    const rule = await withDbTransaction(async () => {
+      const r = await db
+        .insert(transactionRules)
+        .values({
+          userId: auth.context.userId,
+          name: enc.name ?? name.trim(),
+          conditions: enc.conditions as unknown as object,
+          actions: enc.actions as unknown as object,
+          isActive: isActive ?? true,
+          priority: priority ?? 0,
+          createdAt: todayISO(),
+        })
+        .returning()
+        .get();
+      await incrementDataVersion(auth.context.userId);
+      return r;
+    });
 
     // Decrypt for the response so the client receives plaintext.
     const decrypted = decryptRuleFields(auth.context.dek, {
@@ -286,15 +296,21 @@ export async function PUT(req: NextRequest) {
     if (updates.isActive !== undefined) data.isActive = updates.isActive;
     if (updates.priority !== undefined) data.priority = updates.priority;
 
-    const rule = await db
-      .update(transactionRules)
-      .set(data)
-      .where(and(
-        eq(transactionRules.id, id),
-        eq(transactionRules.userId, auth.context.userId),
-      ))
-      .returning()
-      .get();
+    const { withDbTransaction } = await import("@/db");
+    const { incrementDataVersion } = await import("@/lib/data-version");
+    const rule = await withDbTransaction(async () => {
+      const r = await db
+        .update(transactionRules)
+        .set(data)
+        .where(and(
+          eq(transactionRules.id, id),
+          eq(transactionRules.userId, auth.context.userId),
+        ))
+        .returning()
+        .get();
+      if (r) await incrementDataVersion(auth.context.userId);
+      return r;
+    });
 
     if (!rule) return NextResponse.json({ error: "Rule not found" }, { status: 404 });
     // Decrypt for the response so the client receives plaintext.
@@ -320,9 +336,14 @@ export async function DELETE(req: NextRequest) {
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "ID is required" }, { status: 400 });
 
-  await db.delete(transactionRules).where(and(
-    eq(transactionRules.id, parseInt(id)),
-    eq(transactionRules.userId, auth.context.userId),
-  ));
+  const { withDbTransaction } = await import("@/db");
+  const { incrementDataVersion } = await import("@/lib/data-version");
+  await withDbTransaction(async () => {
+    await db.delete(transactionRules).where(and(
+      eq(transactionRules.id, parseInt(id)),
+      eq(transactionRules.userId, auth.context.userId),
+    ));
+    await incrementDataVersion(auth.context.userId);
+  });
   return NextResponse.json({ success: true });
 }

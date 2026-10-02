@@ -26,9 +26,11 @@ async function handleGet(request: NextRequest) {
   // Dashboard must stay accessible even when the session has no cached DEK
   // (e.g. first request after a server restart). `auth.context.dek` is null in
   // that case; downstream decryption falls through to plaintext/legacy rows.
-  const auth = await requireAuth(request);
-  if (!auth.authenticated) return auth.response;
-  const { userId, dek } = auth.context;
+  const { checkETag } = await import("@/lib/data-version");
+  const etagCheck = await checkETag(request);
+  if (etagCheck.response) return etagCheck.response;
+  const { userId, dek } = etagCheck.authContext!;
+  const { etag } = etagCheck;
   const params = request.nextUrl.searchParams;
   const displayCurrency = await getDisplayCurrency(userId, params.get("currency"));
   // `includeArchived` is accepted for backward compatibility but no longer
@@ -230,7 +232,7 @@ async function handleGet(request: NextRequest) {
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([month, cumulative]) => ({ month, cumulative: Math.round(cumulative * 100) / 100, currency: displayCurrency }));
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       displayCurrency,
       balances: convertedBalances,
       incomeVsExpenses,
@@ -238,6 +240,8 @@ async function handleGet(request: NextRequest) {
       spendingByCategory,
       netWorthOverTime,
     });
+    if (etag) response.headers.set("ETag", etag);
+    return response;
   } catch (error: unknown) {
     await logApiError("GET", "/api/dashboard", error, userId);
     const message = error instanceof Error ? error.message : "Failed to load dashboard data";

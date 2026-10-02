@@ -41,19 +41,25 @@ const putSchema = z.object({
 });
 
 export async function GET(request: NextRequest) {
-  const auth = await requireAuth(request); if (!auth.authenticated) return auth.response;
+  const { checkETag } = await import("@/lib/data-version");
+  const etagCheck = await checkETag(request);
+  if (etagCheck.response) return etagCheck.response;
+  const { userId, dek } = etagCheck.authContext!;
+  const { etag } = etagCheck;
   try {
     const includeArchived = request.nextUrl.searchParams.get("includeArchived") === "1";
-    const rows = await getAccounts(auth.context.userId, { includeArchived });
+    const rows = await getAccounts(userId, { includeArchived });
     // Stream D: decrypt name + alias from *_ct columns when a DEK is in cache,
     // else fall back to plaintext columns (pre-backfill or degraded session).
-    const data = decryptNamedRows(rows, auth.context.dek, {
+    const data = decryptNamedRows(rows, dek, {
       nameCt: "name",
       aliasCt: "alias",
     });
-    return NextResponse.json(data);
+    const response = NextResponse.json(data);
+    if (etag) response.headers.set("ETag", etag);
+    return response;
   } catch (error: unknown) {
-    await logApiError("GET", "/api/accounts", error, auth.context.userId);
+    await logApiError("GET", "/api/accounts", error, userId);
     return NextResponse.json({ error: safeErrorMessage(error, "Failed to load accounts") }, { status: 500 });
   }
 }
@@ -73,7 +79,13 @@ export async function POST(request: NextRequest) {
     const enc = buildNameFields(dek, { name, alias: normalizedAlias });
     // Stream D Phase 4 — plaintext `name`/`alias` columns dropped. Only the
     // `*_ct`/`*_lookup` siblings get persisted via `enc`.
-    const account = await createAccount(userId, { ...rest, ...enc });
+    const { withDbTransaction } = await import("@/db");
+    const { incrementDataVersion } = await import("@/lib/data-version");
+    const account = await withDbTransaction(async () => {
+      const a = await createAccount(userId, { ...rest, ...enc });
+      await incrementDataVersion(userId);
+      return a;
+    });
     // When the user creates an account already flagged investment, ensure
     // the per-account Cash holding exists so the constraint is satisfiable
     // out of the gate. No transactions to reassign on a fresh account.
@@ -119,7 +131,13 @@ export async function PUT(request: NextRequest) {
       const before = await getAccountById(id, userId);
       if (before && before.isInvestment === false) needsInvestmentBackfill = true;
     }
-    const account = await updateAccount(id, userId, { ...normalized, ...enc });
+    const { withDbTransaction } = await import("@/db");
+    const { incrementDataVersion } = await import("@/lib/data-version");
+    const account = await withDbTransaction(async () => {
+      const a = await updateAccount(id, userId, { ...normalized, ...enc });
+      await incrementDataVersion(userId);
+      return a;
+    });
     if (!account) return NextResponse.json({ error: "Account not found" }, { status: 404 });
     if (needsInvestmentBackfill) {
       try {
@@ -160,7 +178,12 @@ export async function DELETE(request: NextRequest) {
     if (blockers.length > 0) {
       return NextResponse.json({ error: accountDeleteBlockedMessage(blockers) }, { status: 409 });
     }
-    await deleteAccount(id, auth.context.userId);
+    const { withDbTransaction } = await import("@/db");
+    const { incrementDataVersion } = await import("@/lib/data-version");
+    await withDbTransaction(async () => {
+      await deleteAccount(id, auth.context.userId);
+      await incrementDataVersion(auth.context.userId);
+    });
     return NextResponse.json({ ok: true });
   } catch (error: unknown) {
     // Backstop for the race where a linked row appears between the pre-check

@@ -90,7 +90,10 @@ export async function GET(request: NextRequest) {
     .where(and(eq(familyShares.viewerId, viewerId), eq(familyShares.status, "active")));
   shares.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
 
-  const cacheKey = overviewCacheKey({ viewerId, period, display: fx.display, unlocked: !!dek, shares });
+  const { getDataVersion } = await import("@/lib/data-version");
+  const dataVersion = await getDataVersion(viewerId);
+
+  const cacheKey = overviewCacheKey({ viewerId, dataVersion, period, display: fx.display, unlocked: !!dek, shares });
   let cached = refresh || !overviewCacheEnabled() ? null : getCachedOverview(cacheKey, today);
   const cacheHit = !!cached;
   const tBuild = Date.now();

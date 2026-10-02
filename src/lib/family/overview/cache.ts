@@ -23,6 +23,7 @@ const entries = new Map<string, Entry>();
 
 export type OverviewCacheKeyInput = {
   viewerId: string;
+  dataVersion: number;
   period: string;
   display: string;
   unlocked: boolean;
@@ -35,7 +36,7 @@ export function overviewCacheKey(k: OverviewCacheKeyInput): string {
     .sort()
     .join("|");
   const sharesHash = createHash("sha256").update(shares).digest("hex");
-  return `${k.viewerId}:${k.period}:${k.display}:${k.unlocked ? 1 : 0}:${sharesHash}`;
+  return `${k.viewerId}:${k.dataVersion}:${k.period}:${k.display}:${k.unlocked ? 1 : 0}:${sharesHash}`;
 }
 
 export function getCachedOverview(key: string, today: string): Entry | null {

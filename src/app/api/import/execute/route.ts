@@ -46,7 +46,11 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await executeImport(rows, forceImportIndices, userId, dek);
-    if ((result.imported ?? 0) > 0) invalidateUserTxCache(userId);
+    if ((result.imported ?? 0) > 0) {
+      invalidateUserTxCache(userId);
+      const { incrementDataVersion } = await import("@/lib/data-version");
+      await incrementDataVersion(userId);
+    }
     return NextResponse.json(result);
   } catch (error: unknown) {
     await logApiError("POST", "/api/import/execute", error, userId);

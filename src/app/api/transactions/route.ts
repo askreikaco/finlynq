@@ -95,9 +95,11 @@ export async function GET(request: NextRequest) {
   // for Bearer `pf_...` callers (api-key.ts). Re-deriving it from `sessionId`
   // here dropped the DEK for API-key and OAuth clients -- which have no
   // session -- so every row came back as `v1:` ciphertext for them.
-  const auth = await requireAuth(request);
-  if (!auth.authenticated) return auth.response;
-  const { userId, dek } = auth.context;
+  const { checkETag } = await import("@/lib/data-version");
+  const etagCheck = await checkETag(request);
+  if (etagCheck.response) return etagCheck.response;
+  const { userId, dek } = etagCheck.authContext!;
+  const { etag } = etagCheck;
 
   const params = request.nextUrl.searchParams;
   const search = params.get("search") ?? undefined;
@@ -439,7 +441,9 @@ export async function GET(request: NextRequest) {
     total = await getTransactionCount(userId, filters);
   }
 
-  return NextResponse.json({ data: decrypted, total });
+  const response = NextResponse.json({ data: decrypted, total });
+  if (etag) response.headers.set("ETag", etag);
+  return response;
 }
 
 /**
@@ -654,10 +658,13 @@ export async function POST(request: NextRequest) {
           )
         : null;
     const encrypted = encryptTxWrite(auth.dek, data);
-    // Issue #28: hard-code the writer surface at the route boundary rather
-    // than relying on the schema default. Defensive against a future writer
-    // path that forgets to set it — every entry point is grep-discoverable.
-    const tx = await createTransaction(auth.userId, { ...encrypted, source: "manual" }, auth.dek);
+    const { withDbTransaction } = await import("@/db");
+    const { incrementDataVersion } = await import("@/lib/data-version");
+    const tx = await withDbTransaction(async () => {
+      const inserted = await createTransaction(auth.userId, { ...encrypted, source: "manual" }, auth.dek);
+      await incrementDataVersion(auth.userId);
+      return inserted;
+    });
     invalidateUserTxCache(auth.userId);
     // Portfolio lot tracking — open/close a lot when the row touches a
     // portfolio holding. Soft-fails internally; never blocks the REST
@@ -853,7 +860,13 @@ export async function PUT(request: NextRequest) {
       /* best-effort — never block the edit */
     }
     const encrypted = encryptTxWrite(auth.dek, data);
-    const tx = await updateTransaction(id, auth.userId, encrypted, auth.dek);
+    const { withDbTransaction } = await import("@/db");
+    const { incrementDataVersion } = await import("@/lib/data-version");
+    const tx = await withDbTransaction(async () => {
+      const updated = await updateTransaction(id, auth.userId, encrypted, auth.dek);
+      await incrementDataVersion(auth.userId);
+      return updated;
+    });
     invalidateUserTxCache(auth.userId);
     if (reallocate) {
       // FINLYNQ-176 — the edited buy/transfer-in had dependent closures.
@@ -933,9 +946,15 @@ export async function DELETE(request: NextRequest) {
   // all live in `deleteTransactionsCascade` so the bulk / MCP / stdio delete
   // paths get identical semantics. Only the HTTP shaping stays here.
   try {
-    const outcome = await deleteTransactionsCascade(userId, [id], {
-      confirmReallocation,
-      requireAllSeeds: true,
+    const { withDbTransaction } = await import("@/db");
+    const { incrementDataVersion } = await import("@/lib/data-version");
+    const outcome = await withDbTransaction(async () => {
+      const o = await deleteTransactionsCascade(userId, [id], {
+        confirmReallocation,
+        requireAllSeeds: true,
+      });
+      if (o.ok) await incrementDataVersion(userId);
+      return o;
     });
     if (!outcome.ok) {
       if (outcome.reason === "not_found") {

@@ -1026,6 +1026,7 @@ export const users = pgTable(
     // User profile fields (2026-10-02) — phone and avatar_url for the account Info page
     phone: text("phone"),                    // Optional phone number, max 32 chars, format: /^[+0-9 ()-]*$/
     avatarUrl: text("avatar_url"),           // Optional avatar data URI, max 140KB, format: data:image/(jpeg|png);base64,...
+    dataVersion: integer("data_version").notNull().default(1),
     createdAt: text("created_at").notNull(),
     updatedAt: text("updated_at").notNull(),
   },

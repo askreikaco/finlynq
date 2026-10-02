@@ -82,17 +82,23 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const inserted = await db
-      .insert(schema.fxOverrides)
-      .values({
-        userId,
-        currency: data.currency,
-        dateFrom: data.dateFrom,
-        dateTo: data.dateTo ?? null,
-        rateToUsd: data.rateToUsd,
-        note: encryptOptional(auth.context.dek, data.note) ?? "",
-      })
-      .returning();
+    const { withDbTransaction } = await import("@/db");
+    const { incrementDataVersion } = await import("@/lib/data-version");
+    const inserted = await withDbTransaction(async () => {
+      const result = await db
+        .insert(schema.fxOverrides)
+        .values({
+          userId,
+          currency: data.currency,
+          dateFrom: data.dateFrom,
+          dateTo: data.dateTo ?? null,
+          rateToUsd: data.rateToUsd,
+          note: encryptOptional(auth.context.dek, data.note) ?? "",
+        })
+        .returning();
+      if (result.length > 0) await incrementDataVersion(userId);
+      return result;
+    });
     return NextResponse.json(
       { ...inserted[0], note: decryptOptional(auth.context.dek, inserted[0]?.note) },
       { status: 201 },
@@ -135,16 +141,22 @@ export async function PATCH(request: NextRequest) {
   }
 
   try {
-    const updated = await db
-      .update(schema.fxOverrides)
-      .set(updatePayload)
-      .where(
-        and(
-          eq(schema.fxOverrides.id, id),
-          eq(schema.fxOverrides.userId, userId)
+    const { withDbTransaction } = await import("@/db");
+    const { incrementDataVersion } = await import("@/lib/data-version");
+    const updated = await withDbTransaction(async () => {
+      const result = await db
+        .update(schema.fxOverrides)
+        .set(updatePayload)
+        .where(
+          and(
+            eq(schema.fxOverrides.id, id),
+            eq(schema.fxOverrides.userId, userId)
+          )
         )
-      )
-      .returning();
+        .returning();
+      if (result.length > 0) await incrementDataVersion(userId);
+      return result;
+    });
     if (!updated[0]) {
       return NextResponse.json({ error: "Override not found" }, { status: 404 });
     }
@@ -171,13 +183,18 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Missing id" }, { status: 400 });
   }
 
-  await db
-    .delete(schema.fxOverrides)
-    .where(
-      and(
-        eq(schema.fxOverrides.id, id),
-        eq(schema.fxOverrides.userId, userId)
-      )
-    );
+  const { withDbTransaction } = await import("@/db");
+  const { incrementDataVersion } = await import("@/lib/data-version");
+  await withDbTransaction(async () => {
+    await db
+      .delete(schema.fxOverrides)
+      .where(
+        and(
+          eq(schema.fxOverrides.id, id),
+          eq(schema.fxOverrides.userId, userId)
+        )
+      );
+    await incrementDataVersion(userId);
+  });
   return NextResponse.json({ ok: true });
 }

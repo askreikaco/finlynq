@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { db, schema } from "@/db";
 import { eq, and, isNotNull, sql, ne, inArray } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
@@ -25,9 +25,11 @@ export function GET(request: NextRequest) {
 }
 
 async function handleGet(request: NextRequest) {
-  const auth = await requireAuth(request);
-  if (!auth.authenticated) return auth.response;
-  const { userId, dek } = auth.context;
+  const { checkETag } = await import("@/lib/data-version");
+  const etagCheck = await checkETag(request);
+  if (etagCheck.response) return etagCheck.response;
+  const { userId, dek } = etagCheck.authContext!;
+  const { etag } = etagCheck;
   const displayCurrency = await getDisplayCurrency(userId, request.nextUrl.searchParams.get("currency"));
   const todayDate = todayISO();
 
@@ -1530,7 +1532,7 @@ async function handleGet(request: NextRequest) {
     };
   }).sort((a, b) => b.marketValueDisplay - a.marketValueDisplay);
 
-  return NextResponse.json({
+  const response = NextResponse.json({
     holdings: holdingsWithPct,
     byHolding,
     // Currency the totals + marketValueDisplay field are denominated in. The
@@ -1566,4 +1568,6 @@ async function handleGet(request: NextRequest) {
     topGainers,
     topLosers,
   });
+  if (etag) response.headers.set("ETag", etag);
+  return response;
 }

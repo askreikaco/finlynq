@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { db, schema } from "@/db";
 import { sql, eq, and, gte, lte, inArray } from "drizzle-orm";
 import { requireAuth } from "@/lib/auth/require-auth";
@@ -17,8 +17,11 @@ import { getHoldingsValueByAccount } from "@/lib/holdings-value";
 import { applyInvestmentMarketOverlay } from "@/lib/accounts/investment-balance-overlay";
 
 export async function GET(request: NextRequest) {
-  const auth = await requireAuth(request); if (!auth.authenticated) return auth.response;
-  const { userId, dek } = auth.context;
+  const { checkETag } = await import("@/lib/data-version");
+  const etagCheck = await checkETag(request);
+  if (etagCheck.response) return etagCheck.response;
+  const { userId, dek } = etagCheck.authContext!;
+  const { etag } = etagCheck;
   const params = request.nextUrl.searchParams;
   const type = params.get("type") ?? "income-statement";
   const startDate = params.get("startDate") ?? `${new Date().getFullYear()}-01-01`;
@@ -132,7 +135,7 @@ export async function GET(request: NextRequest) {
     });
     const unrealizedTotals = summarizeUnrealizedPnL(unrealized);
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       type: "income-statement",
       displayCurrency,
       period: { startDate, endDate },
@@ -172,6 +175,8 @@ export async function GET(request: NextRequest) {
           })),
       },
     });
+    if (etag) response.headers.set("ETag", etag);
+    return response;
   }
 
   if (type === "balance-sheet") {
@@ -229,7 +234,7 @@ export async function GET(request: NextRequest) {
     const totalAssets = assets.reduce((s, b) => s + b.convertedBalance, 0);
     const totalLiabilities = liabilities.reduce((s, b) => s + Math.abs(b.convertedBalance), 0);
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       type: "balance-sheet",
       displayCurrency,
       date: endDate,
@@ -247,6 +252,8 @@ export async function GET(request: NextRequest) {
       totalLiabilities: Math.round(totalLiabilities * 100) / 100,
       netWorth: Math.round((totalAssets - totalLiabilities) * 100) / 100,
     });
+    if (etag) response.headers.set("ETag", etag);
+    return response;
   }
 
   if (type === "tax-summary") {
@@ -300,7 +307,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       type: "tax-summary",
       displayCurrency,
       period: { startDate, endDate },
@@ -309,6 +316,8 @@ export async function GET(request: NextRequest) {
         total: Math.round(Math.abs(r.total) * 100) / 100,
       })),
     });
+    if (etag) response.headers.set("ETag", etag);
+    return response;
   }
 
   return NextResponse.json({ error: "Invalid report type" }, { status: 400 });
