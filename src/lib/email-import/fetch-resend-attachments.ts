@@ -60,10 +60,13 @@ const RESEND_API_BASE = "https://api.resend.com";
  * missing or any HTTP step fails, so the caller degrades to whatever the
  * payload carried rather than throwing.
  */
+import { resolveEmailConfig } from "@/lib/email";
+
 export async function fetchResendReceivedBody(
   resendEmailId: string,
 ): Promise<{ text: string | null; html: string | null }> {
-  const apiKey = process.env.RESEND_API_KEY;
+  const cfg = await resolveEmailConfig();
+  const apiKey = cfg.resendApiKey.value;
   if (!apiKey) {
     console.warn(
       `[email-webhook] RESEND_API_KEY not set — cannot fetch body for ${resendEmailId}`,
@@ -109,7 +112,8 @@ export async function fetchResendReceivedBody(
 export async function fetchResendAttachments(
   resendEmailId: string,
 ): Promise<ResendAttachment[]> {
-  const apiKey = process.env.RESEND_API_KEY;
+  const cfg = await resolveEmailConfig();
+  const apiKey = cfg.resendApiKey.value;
   if (!apiKey) {
     console.warn(
       `[email-webhook] RESEND_API_KEY not set — cannot fetch attachments for ${resendEmailId}`,

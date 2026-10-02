@@ -42,8 +42,11 @@ function isPass(v: string | null | undefined): boolean {
  * if we silently dropped it. Never throws — the caller is on the hot webhook
  * path and shouldn't care about bounce failures.
  */
+import { resolveEmailConfig } from "@/lib/email";
+
 export async function sendBounceIfAuthenticated(input: BounceInput): Promise<boolean> {
-  const apiKey = process.env.RESEND_API_KEY;
+  const cfg = await resolveEmailConfig();
+  const apiKey = cfg.resendApiKey.value;
   if (!apiKey) return false;
 
   // Require BOTH SPF and DKIM to pass before bouncing. DMARC alone isn't
