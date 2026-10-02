@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Loader2, Users } from "lucide-react";
+import { AlertCircle, Loader2, RefreshCw, Users } from "lucide-react";
 import { formatDate } from "@/lib/currency";
 import { FAMILY_STRINGS } from "@/lib/family/strings";
 import type { MemberDto, OverviewResponse } from "./types";
@@ -31,6 +31,11 @@ const EXCLUDE_TEXT: Record<ExcludeReason, string> = {
 
 const memberLabel = (m: MemberDto) => (m.relation === "me" ? m.name : m.name);
 
+function formatUpdated(iso: string): string {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? "" : d.toLocaleString(undefined, { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" });
+}
+
 function getInitials(name: string): string {
   return name
     .split(" ")
@@ -50,6 +55,12 @@ export function OverviewTab({ reloadKey = 0 }: { reloadKey?: number }) {
   const [data, setData] = useState<OverviewResponse | null>(null);
   const [movers, setMovers] = useState<OwnMovers | undefined>(undefined);
   const [lifetimeData, setLifetimeData] = useState<OverviewResponse | null>(null);
+  // Refresh button: the server serves a per-day cached copy unless asked to rebuild.
+  const [refreshNonce, setRefreshNonce] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const [generatedAt, setGeneratedAt] = useState<string | null>(null);
+  const mainNonce = useRef(0);
+  const lifetimeNonce = useRef(0);
 
   useEffect(() => {
     const ctrl = new AbortController();
@@ -58,7 +69,10 @@ export function OverviewTab({ reloadKey = 0 }: { reloadKey?: number }) {
       setError(null);
       setMfaRequired(false);
       try {
-        const res = await fetch(`/api/family/overview?${new URLSearchParams({ period })}`, { signal: ctrl.signal });
+        const force = refreshNonce !== mainNonce.current;
+        mainNonce.current = refreshNonce;
+        const qs = new URLSearchParams(force ? { period, refresh: "1" } : { period });
+        const res = await fetch(`/api/family/overview?${qs}`, { signal: ctrl.signal });
         if (ctrl.signal.aborted) return;
         if (res.status === 403) {
           const body = await res.clone().json().catch(() => ({}));
@@ -76,22 +90,31 @@ export function OverviewTab({ reloadKey = 0 }: { reloadKey?: number }) {
           return;
         }
         const overview: OverviewResponse = await res.json();
-        if (!ctrl.signal.aborted) setData(overview);
+        if (!ctrl.signal.aborted) {
+          setData(overview);
+          setGeneratedAt(res.headers?.get?.("X-Generated-At") ?? null);
+        }
       } catch {
         if (!ctrl.signal.aborted) setError(FAMILY_STRINGS.error_loading_data);
       } finally {
-        if (!ctrl.signal.aborted) setLoading(false);
+        if (!ctrl.signal.aborted) {
+          setLoading(false);
+          setRefreshing(false);
+        }
       }
     })();
     return () => ctrl.abort();
-  }, [period, attempt, reloadKey]);
+  }, [period, attempt, reloadKey, refreshNonce]);
 
   // Fetch lifetime data for charts (independent of the time selection)
   useEffect(() => {
     const ctrl = new AbortController();
     (async () => {
       try {
-        const res = await fetch(`/api/family/overview?${new URLSearchParams({ period: "all" })}`, { signal: ctrl.signal });
+        const force = refreshNonce !== lifetimeNonce.current;
+        lifetimeNonce.current = refreshNonce;
+        const qs = new URLSearchParams(force ? { period: "all", refresh: "1" } : { period: "all" });
+        const res = await fetch(`/api/family/overview?${qs}`, { signal: ctrl.signal });
         if (ctrl.signal.aborted) return;
         if (res.ok) {
           const lifetime: OverviewResponse = await res.json();
@@ -102,7 +125,7 @@ export function OverviewTab({ reloadKey = 0 }: { reloadKey?: number }) {
       }
     })();
     return () => ctrl.abort();
-  }, [reloadKey]);
+  }, [reloadKey, refreshNonce]);
 
   // Top Gainers / Losers of the viewer's OWN portfolio: the same /api/portfolio/overview the
   // Portfolio page reads (live prices need the owner's own session, so only "me" has them).
@@ -230,6 +253,20 @@ export function OverviewTab({ reloadKey = 0 }: { reloadKey?: number }) {
             );
           })}
         </div>
+
+        <button
+          type="button"
+          onClick={() => {
+            setRefreshing(true);
+            setRefreshNonce((n) => n + 1);
+          }}
+          disabled={refreshing}
+          aria-label="Refresh"
+          title={generatedAt ? `Refresh · updated ${formatUpdated(generatedAt)}` : "Refresh"}
+          className="ml-auto shrink-0 w-9 h-9 rounded-full flex items-center justify-center bg-muted text-muted-foreground hover:text-foreground disabled:opacity-60"
+        >
+          <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} aria-hidden="true" />
+        </button>
       </div>
 
       <div className="flex flex-wrap gap-2 empty:hidden">
@@ -265,6 +302,7 @@ export function OverviewTab({ reloadKey = 0 }: { reloadKey?: number }) {
 
       <p className="text-xs text-muted-foreground">
         {fill(FAMILY_STRINGS.overview_converted_note, { currency: cur })}
+        {generatedAt && <> · Updated {formatUpdated(generatedAt)} (refreshes daily)</>}
       </p>
 
       {data.members.some((m) => m.genericLabels) && (
