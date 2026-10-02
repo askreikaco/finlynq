@@ -175,8 +175,8 @@ export function OverviewTab({ reloadKey = 0 }: { reloadKey?: number }) {
   return (
     <div className="space-y-6" aria-busy={loading}>
       {/* Sticky filter toolbar */}
-      <div className="sticky top-[var(--sat)] z-10 bg-background/95 backdrop-blur -mx-1 px-1 py-3 space-y-3">
-        {/* Row 1: Time segmented control */}
+      <div className="sticky top-[var(--sat)] z-10 bg-background/95 backdrop-blur -mx-1 px-1 py-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+        {/* Time range first (key filter), then icon-only people chips */}
         <div role="radiogroup" aria-label={FAMILY_STRINGS.overview_range_label} className="flex gap-0 bg-muted p-1 rounded-lg w-fit">
           {PERIODS.map((p) => (
             <button
@@ -184,7 +184,7 @@ export function OverviewTab({ reloadKey = 0 }: { reloadKey?: number }) {
               role="radio"
               aria-checked={period === p.value}
               onClick={() => setPeriod(p.value)}
-              className={`flex-1 min-w-24 px-3 py-2 rounded text-sm font-medium transition-colors ${
+              className={`whitespace-nowrap px-3 py-1.5 rounded text-sm font-medium transition-colors ${
                 period === p.value ? "bg-background" : "text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -193,11 +193,11 @@ export function OverviewTab({ reloadKey = 0 }: { reloadKey?: number }) {
           ))}
         </div>
 
-        {/* Row 2: People chips (icon-only) */}
+        {/* People chips (icon-only) */}
         <div
           role="radiogroup"
           aria-label={FAMILY_STRINGS.overview_member_filter_label}
-          className="flex gap-2 overflow-x-auto -mx-1 px-1 pb-0"
+          className="flex min-w-0 gap-2 overflow-x-auto p-0.5"
         >
           <button
             role="radio"
@@ -296,7 +296,7 @@ function HouseholdBlock({ data, chartData, period }: { data: OverviewResponse; c
 
   return (
     <section aria-labelledby="family-household-heading" className="space-y-4" data-testid="household">
-      <h2 id="family-household-heading" className="text-lg font-semibold">
+      <h2 id="family-household-heading" className="sr-only">
         {FAMILY_STRINGS.overview_household_title}
       </h2>
 
