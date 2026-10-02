@@ -196,8 +196,10 @@ export type TransactionDialogInitialState =
       };
     }
   | {
-      /** Open in Transfer mode without any prefill (Quick-add Transfer entry). */
+      /** Open in Transfer mode (Quick-add Transfer entry). `fromAccountId`
+       *  optionally presets the source account (account page "Transfer"). */
       kind: "transfer-create";
+      fromAccountId?: string;
     };
 
 export interface TransactionDialogProps {
@@ -488,6 +490,8 @@ export function TransactionDialog({
     if (initialState.kind === "transfer-create") {
       resetToCreateDefaults();
       setDialogMode("transfer");
+      const from = initialState.fromAccountId;
+      if (from) setTransferForm((tf) => ({ ...tf, fromAccountId: from }));
       return;
     }
     // transaction-prefill

@@ -7,12 +7,11 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { formatCurrency } from "@/lib/currency";
 import {
   ArrowLeft,
   Wallet,
-  Layers,
-  Hash,
   Pencil,
   Coins,
   Plus,
@@ -22,6 +21,10 @@ import {
   Receipt,
   TrendingUp,
   ChevronDown,
+  ArrowDownLeft,
+  ArrowUpRight,
+  ArrowLeftRight,
+  MoreHorizontal,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AccountDialog } from "../_components/account-dialog";
@@ -33,6 +36,12 @@ import {
   DropdownMenuLabel,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
@@ -111,10 +120,8 @@ export default function AccountDetailPage() {
   /** The account lookup finished and produced nothing (missing id, not yours,
    *  or the request failed) — as opposed to "still in flight". */
   const [loadFailed, setLoadFailed] = useState(false);
-  // Transaction COUNT for the stat card. The list itself is rendered by the
-  // embedded <TransactionsWorkspace> below (its own SWR fetch); this page only
-  // needs the total for the header tile.
-  const [total, setTotal] = useState(0);
+  // The list of transactions is rendered by the embedded <TransactionsWorkspace>
+  // below (its own SWR fetch); we fetch the transaction count but don't display it anymore.
   const [balance, setBalance] = useState<number | null>(null);
   const [cashFlowBasis, setCashFlowBasis] = useState<number | null>(null);
   const [holdingsValue, setHoldingsValue] = useState<number | null>(null);
@@ -128,8 +135,25 @@ export default function AccountDetailPage() {
   // Generic "New transaction" dialog (normal accounts only) — embeds the shared
   // TransactionDialog seeded with this account pre-selected (FINLYNQ-227).
   const [txDialogOpen, setTxDialogOpen] = useState(false);
+  const [txDialogType, setTxDialogType] = useState<"income" | "expense" | "transfer" | null>(null);
   const [dialogCategories, setDialogCategories] = useState<DialogCategory[]>([]);
   const [dialogHoldings, setDialogHoldings] = useState<DialogHolding[]>([]);
+
+  // Actions sheet (mobile) / dropdown (desktop)
+  const [actionsSheetOpen, setActionsSheetOpen] = useState(false);
+
+  // Delete / archive from the More menu. Delete goes through the shared
+  // ConfirmDialog and DELETE /api/accounts?id=; a 409 (records still linked)
+  // is shown instead of failing silently.
+  const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [accountActionError, setAccountActionError] = useState<string | null>(null);
+  // Every account (for the Transfer action's destination picker).
+  const [allAccounts, setAllAccounts] = useState<DialogAccount[]>([]);
+
+  // Invisible toggle state
+  const [invisible, setInvisible] = useState(account?.invisible === true);
+  const [savingInvisible, setSavingInvisible] = useState(false);
 
   // Cash sleeves panel — list + create + delete, surfaced inside the Edit
   // dialog (FINLYNQ-227). Cash sleeves are explicit `portfolio_holdings.is_cash`
@@ -267,7 +291,6 @@ export default function AccountDetailPage() {
       .catch(() => {});
     fetch(`/api/transactions?accountId=${id}&limit=1`)
       .then((r) => r.json())
-      .then((d) => setTotal(d.total))
       .catch(() => {});
   }
 
@@ -296,7 +319,8 @@ export default function AccountDetailPage() {
 
   // Lazily fetch categories + holdings the first time the user opens the
   // generic transaction dialog (normal accounts only).
-  function openTxDialog() {
+  function openTxDialog(type?: "income" | "expense") {
+    setTxDialogType(type ?? null);
     setTxDialogOpen(true);
     if (dialogCategories.length === 0) {
       fetch("/api/categories")
@@ -309,6 +333,70 @@ export default function AccountDetailPage() {
         .then((r) => (r.ok ? r.json() : []))
         .then((h) => setDialogHoldings(Array.isArray(h) ? h : []))
         .catch(() => {});
+    }
+  }
+
+  async function toggleArchived() {
+    if (!account) return;
+    setAccountActionError(null);
+    try {
+      const res = await fetch("/api/accounts", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: account.id, archived: !account.archived }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setAccountActionError(body.error ?? "Couldn't update the account.");
+        return;
+      }
+      reloadAccount();
+    } catch {
+      setAccountActionError("Couldn't update the account.");
+    }
+  }
+
+  async function deleteThisAccount() {
+    if (!account) return;
+    setDeletingAccount(true);
+    setAccountActionError(null);
+    try {
+      const res = await fetch(`/api/accounts?id=${account.id}`, { method: "DELETE" });
+      if (res.ok) {
+        setDeleteAccountOpen(false);
+        router.push("/accounts");
+        return;
+      }
+      const body = await res.json().catch(() => ({}));
+      setDeleteAccountOpen(false);
+      setAccountActionError(body.error ?? "Couldn't delete the account.");
+    } catch {
+      setDeleteAccountOpen(false);
+      setAccountActionError("Couldn't delete the account.");
+    } finally {
+      setDeletingAccount(false);
+    }
+  }
+
+  async function handleInvisibleToggle(newValue: boolean) {
+    if (!account) return;
+    setInvisible(newValue);
+    setSavingInvisible(true);
+    try {
+      const res = await fetch("/api/accounts", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: account.id, invisible: newValue }),
+      });
+      if (!res.ok) {
+        setInvisible(!newValue);
+      } else {
+        reloadAccount();
+      }
+    } catch {
+      setInvisible(!newValue);
+    } finally {
+      setSavingInvisible(false);
     }
   }
 
@@ -349,7 +437,7 @@ export default function AccountDetailPage() {
 
     fetch(`/api/transactions?accountId=${id}&limit=1`)
       .then((r) => r.json())
-      .then((d) => setTotal(d.total));
+      .catch(() => {});
   }, [id]);
 
   // Deep-link preservation (FINLYNQ-227): `/accounts/[id]#reconciliation-mode`
@@ -364,6 +452,13 @@ export default function AccountDetailPage() {
     else if (hash === "#import-prefs") openEdit("import");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [account]);
+
+  // Sync invisible state when account loads
+  useEffect(() => {
+    if (account) {
+      setInvisible(account.invisible === true);
+    }
+  }, [account?.id]);
 
   if (!account && loadFailed) return (
     <div className="space-y-6">
@@ -469,7 +564,7 @@ export default function AccountDetailPage() {
         actions={
         <>
           {!isInvestment && (
-            <Button size="sm" onClick={openTxDialog}>
+            <Button size="sm" onClick={() => openTxDialog()}>
               <Receipt className="h-3.5 w-3.5 mr-1.5" /> <span className="max-md:hidden">New transaction</span><span className="md:hidden">Add</span>
             </Button>
           )}
@@ -505,59 +600,259 @@ export default function AccountDetailPage() {
         }
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="pt-5">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">
-                  {holdingsValue && holdingsValue > 0 ? "Market value" : "Balance"}
-                </p>
-                <p className={`text-2xl font-bold tracking-tight mt-1 ${displayBalance >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-                  {formatCurrency(displayBalance, account.currency)}
-                </p>
-                {holdingsValue && holdingsValue > 0 && cashFlowBasis !== null ? (
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Cash flow:{" "}
-                    <span className="font-medium text-foreground">
-                      {formatCurrency(cashFlowBasis, account.currency)}
-                    </span>
-                  </p>
-                ) : null}
+      {/* Balance Display */}
+      <Card className="border-0 bg-gradient-to-br from-muted/50 to-muted/20">
+        <CardContent className="pt-6">
+          <div>
+            <p className="text-xs font-medium text-muted-foreground">
+              {holdingsValue && holdingsValue > 0 ? "Market value" : "Balance"}
+            </p>
+            <p className={`text-3xl font-bold tracking-tight mt-2 ${displayBalance >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+              {formatCurrency(displayBalance, account.currency)}
+            </p>
+            {holdingsValue && holdingsValue > 0 && cashFlowBasis !== null ? (
+              <p className="text-xs text-muted-foreground mt-3">
+                Cash flow:{" "}
+                <span className="font-medium text-foreground">
+                  {formatCurrency(cashFlowBasis, account.currency)}
+                </span>
+              </p>
+            ) : null}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Actions Card */}
+      <Card>
+        <CardContent className="pt-5">
+          <div className="flex items-center justify-between gap-2">
+            {/* In */}
+            <button
+              onClick={(_e) => openTxDialog("income")}
+              className="flex flex-col items-center justify-center gap-2 flex-1 p-3 rounded-lg hover:bg-muted transition-colors"
+              title="Record income"
+            >
+              <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                <ArrowDownLeft className="h-5 w-5 text-muted-foreground" />
               </div>
-              <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${displayBalance >= 0 ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400" : "bg-rose-100 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400"}`}>
-                <Wallet className="h-5 w-5" />
+              <span className="text-xs font-medium text-center">In</span>
+            </button>
+
+            {/* Out */}
+            <button
+              onClick={(_e) => openTxDialog("expense")}
+              className="flex flex-col items-center justify-center gap-2 flex-1 p-3 rounded-lg hover:bg-muted transition-colors"
+              title="Record expense"
+            >
+              <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                <ArrowUpRight className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <span className="text-xs font-medium text-center">Out</span>
+            </button>
+
+            {/* Transfer */}
+            <button
+              onClick={() => {
+                setTxDialogType("transfer");
+                setTxDialogOpen(true);
+                fetch("/api/accounts")
+                  .then((r) => (r.ok ? r.json() : []))
+                  .then((rows: Array<{ id: number; name: string | null; currency: string; type?: string | null; isInvestment?: boolean }>) =>
+                    setAllAccounts(
+                      Array.isArray(rows)
+                        ? rows.map((a) => ({ id: a.id, name: a.name ?? "", currency: a.currency, type: a.type, isInvestment: a.isInvestment }))
+                        : [],
+                    ),
+                  )
+                  .catch(() => {});
+                fetch("/api/categories")
+                  .then((r) => (r.ok ? r.json() : []))
+                  .then((c) => setDialogCategories(Array.isArray(c) ? c : []))
+                  .catch(() => {});
+                fetch("/api/portfolio")
+                  .then((r) => (r.ok ? r.json() : []))
+                  .then((h) => setDialogHoldings(Array.isArray(h) ? h : []))
+                  .catch(() => {});
+              }}
+              className="flex flex-col items-center justify-center gap-2 flex-1 p-3 rounded-lg hover:bg-muted transition-colors"
+              title="Transfer between accounts"
+            >
+              <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                <ArrowLeftRight className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <span className="text-xs font-medium text-center">Transfer</span>
+            </button>
+
+            {/* More */}
+            <div className="md:hidden">
+              <button
+                onClick={() => setActionsSheetOpen(true)}
+                className="flex flex-col items-center justify-center gap-2 flex-1 p-3 rounded-lg hover:bg-muted transition-colors"
+                title="More actions"
+              >
+                <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                  <MoreHorizontal className="h-5 w-5 text-muted-foreground" />
+                </div>
+                <span className="text-xs font-medium text-center">More</span>
+              </button>
+            </div>
+
+            {/* Desktop More dropdown */}
+            <div className="hidden md:block flex-1">
+              <DropdownMenu>
+                <DropdownMenuTrigger render={
+                  <button className="flex flex-col items-center justify-center gap-2 w-full p-3 rounded-lg hover:bg-muted transition-colors">
+                    <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                      <MoreHorizontal className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <span className="text-xs font-medium text-center">More</span>
+                  </button>
+                } />
+                <DropdownMenuContent align="end" className="min-w-48">
+                  <DropdownMenuGroup>
+                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <DropdownMenuItem onClick={() => openEdit("details")}>
+                      <Pencil className="h-4 w-4 mr-2" /> Edit account
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => router.push(`/import?accountId=${account.id}`)}>
+                      <Receipt className="h-4 w-4 mr-2" /> Import statement
+                    </DropdownMenuItem>
+                    {account.mode && (
+                      <DropdownMenuItem onClick={() => openEdit("reconciliation")}>
+                        <Inbox className="h-4 w-4 mr-2" /> Import mode
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem onClick={() => router.push(`/reports?accountId=${account.id}`)}>
+                      <TrendingUp className="h-4 w-4 mr-2" /> View in Reports
+                    </DropdownMenuItem>
+                    {account.archived ? (
+                      <DropdownMenuItem onClick={() => void toggleArchived()}>
+                        <Wallet className="h-4 w-4 mr-2" /> Unarchive
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem onClick={() => void toggleArchived()}>
+                        <Wallet className="h-4 w-4 mr-2" /> Archive
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem
+                      onClick={() => { setAccountActionError(null); setDeleteAccountOpen(true); }}
+                      className="text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" /> Delete account
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {accountActionError && (
+        <p role="alert" className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {accountActionError}
+        </p>
+      )}
+      <ConfirmDialog
+        open={deleteAccountOpen}
+        onOpenChange={setDeleteAccountOpen}
+        title="Delete this account?"
+        description="This can't be undone. An account that still has transactions or other linked records can't be deleted; archive it instead."
+        confirmLabel="Delete account"
+        onConfirm={() => void deleteThisAccount()}
+        busy={deletingAccount}
+      />
+
+      {/* Information Card */}
+      <Card>
+        <CardContent className="pt-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-sm">Information</h3>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => openEdit("details")}
+              title="Edit account"
+              aria-label="Edit account"
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <div className="space-y-0 divide-y">
+            {/* Alias / Account Number */}
+            <div className="flex items-center justify-between py-3">
+              <p className="text-xs font-medium text-muted-foreground">Account number</p>
+              <p className="text-sm text-right">{account.alias || "—"}</p>
+            </div>
+
+            {/* Group */}
+            <div className="flex items-center justify-between py-3">
+              <p className="text-xs font-medium text-muted-foreground">Group</p>
+              <p className="text-sm text-right">{account.group || "—"}</p>
+            </div>
+
+            {/* Type */}
+            <div className="flex items-center justify-between py-3">
+              <p className="text-xs font-medium text-muted-foreground">Type</p>
+              <div className="flex gap-1">
+                {account.type === "A" ? (
+                  <Badge variant="default" className="text-[10px]">Asset</Badge>
+                ) : (
+                  <Badge variant="destructive" className="text-[10px]">Liability</Badge>
+                )}
+                {isInvestment && (
+                  <Badge variant="secondary" className="text-[10px]">Investment</Badge>
+                )}
               </div>
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-5">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">Group</p>
-                <p className="text-lg font-semibold mt-1">{account.group || "None"}</p>
-              </div>
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400">
-                <Layers className="h-5 w-5" />
-              </div>
+
+            {/* Currency */}
+            <div className="flex items-center justify-between py-3">
+              <p className="text-xs font-medium text-muted-foreground">Currency</p>
+              <p className="text-sm font-mono text-right">{account.currency}</p>
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-5">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">Transactions</p>
-                <p className="text-lg font-semibold mt-1">{total}</p>
+
+            {/* Import Mode */}
+            {account.mode && (
+              <div className="flex items-center justify-between py-3">
+                <p className="text-xs font-medium text-muted-foreground">Import mode</p>
+                <p className="text-sm text-right capitalize">{account.mode}</p>
               </div>
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400">
-                <Hash className="h-5 w-5" />
+            )}
+
+            {/* Note */}
+            {account.note && (
+              <div className="flex items-start justify-between py-3 gap-2">
+                <p className="text-xs font-medium text-muted-foreground">Note</p>
+                <p className="text-sm text-right text-muted-foreground">{account.note}</p>
               </div>
+            )}
+
+            {/* Invisible Toggle */}
+            <div className="flex items-center justify-between py-3">
+              <div className="flex-1">
+                <p className="text-xs font-medium text-muted-foreground">Invisible</p>
+                <p className="text-xs text-muted-foreground mt-1">Hidden from net worth, totals, reports and metrics</p>
+              </div>
+              <Switch
+                checked={invisible}
+                onCheckedChange={handleInvisibleToggle}
+                disabled={savingInvisible}
+                role="switch"
+              />
             </div>
-          </CardContent>
-        </Card>
-      </div>
+
+            {/* Archived Status */}
+            {account.archived === true && (
+              <div className="flex items-center justify-between py-3">
+                <p className="text-xs font-medium text-muted-foreground">Status</p>
+                <Badge variant="secondary" className="text-[10px]">Archived</Badge>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Balance Over Time — accurate daily series (cash live from
           transactions, investments from stored snapshots).
@@ -589,17 +884,28 @@ export default function AccountDetailPage() {
       </Suspense>
 
       {/* Generic transaction dialog — normal accounts only, seeded with THIS
-          account pre-selected (FINLYNQ-227). */}
+          account pre-selected (FINLYNQ-227). For the Transfer action, we use
+          transfer-create mode instead. */}
       <TransactionDialog
         open={txDialogOpen}
         onOpenChange={setTxDialogOpen}
-        accounts={[dialogAccount]}
-        categories={dialogCategories}
+        accounts={txDialogType === "transfer" && allAccounts.length > 0 ? allAccounts : [dialogAccount]}
+        categories={
+          // In / Out: offer only income or expense categories, which is how
+          // the dialog decides the transaction's direction.
+          txDialogType === "income"
+            ? dialogCategories.filter((c) => c.type === "I")
+            : txDialogType === "expense"
+              ? dialogCategories.filter((c) => c.type === "E")
+              : dialogCategories
+        }
         holdings={dialogHoldings}
-        initialState={{
-          kind: "transaction-prefill",
-          values: { accountId: String(account.id), currency: account.currency },
-        }}
+        initialState={
+          txDialogType === "transfer" ? { kind: "transfer-create", fromAccountId: String(account.id) } : {
+            kind: "transaction-prefill",
+            values: { accountId: String(account.id), currency: account.currency },
+          }
+        }
         onSaved={() => {
           setTxDialogOpen(false);
           // Refresh the header tiles (balance + count) and revalidate the
@@ -683,6 +989,93 @@ export default function AccountDetailPage() {
         busy={deletingSleeve}
         onConfirm={() => void confirmDeleteSleeve()}
       />
+
+      {/* Mobile actions sheet */}
+      <Sheet open={actionsSheetOpen} onOpenChange={setActionsSheetOpen}>
+        <SheetContent side="bottom" className="px-0">
+          <SheetHeader className="px-4 mb-4">
+            <SheetTitle>Actions</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-0">
+            <button
+              onClick={() => {
+                openEdit("details");
+                setActionsSheetOpen(false);
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left"
+            >
+              <Pencil className="h-5 w-5 text-muted-foreground" />
+              <span className="text-sm font-medium">Edit account</span>
+            </button>
+            <button
+              onClick={() => {
+                router.push(`/import?accountId=${account.id}`);
+                setActionsSheetOpen(false);
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left"
+            >
+              <Receipt className="h-5 w-5 text-muted-foreground" />
+              <span className="text-sm font-medium">Import statement</span>
+            </button>
+            {account.mode && (
+              <button
+                onClick={() => {
+                  openEdit("reconciliation");
+                  setActionsSheetOpen(false);
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left"
+              >
+                <Inbox className="h-5 w-5 text-muted-foreground" />
+                <span className="text-sm font-medium">Import mode</span>
+              </button>
+            )}
+            <button
+              onClick={() => {
+                router.push(`/reports?accountId=${account.id}`);
+                setActionsSheetOpen(false);
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left"
+            >
+              <TrendingUp className="h-5 w-5 text-muted-foreground" />
+              <span className="text-sm font-medium">View in Reports</span>
+            </button>
+            {account.archived ? (
+              <button
+                onClick={() => {
+                  setActionsSheetOpen(false);
+                  void toggleArchived();
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left"
+              >
+                <Wallet className="h-5 w-5 text-muted-foreground" />
+                <span className="text-sm font-medium">Unarchive</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  setActionsSheetOpen(false);
+                  void toggleArchived();
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left"
+              >
+                <Wallet className="h-5 w-5 text-muted-foreground" />
+                <span className="text-sm font-medium">Archive</span>
+              </button>
+            )}
+            <button
+              onClick={() => {
+                setActionsSheetOpen(false);
+                setAccountActionError(null);
+                setDeleteAccountOpen(true);
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-destructive/10 transition-colors text-left text-destructive"
+            >
+              <Trash2 className="h-5 w-5" />
+              <span className="text-sm font-medium">Delete account</span>
+            </button>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Edit account dialog — the shared <AccountDialog> (FINLYNQ-206
           follow-up). Identical form to the Create dialog; only the title and
