@@ -36,7 +36,6 @@ import { HoldingsByAccount } from "./_components/holdings-by-account";
 import { formatPercent } from "@/lib/locale";
 import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
 import { PortfolioMobileHero, MobileHoldingsList } from "./_components/mobile-portfolio";
-import { MetricCard } from "@/components/metric-card";
 
 // ── Main Page ───────────────────────────────────────────────────────
 export default function PortfolioPage() {
