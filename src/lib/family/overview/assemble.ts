@@ -61,17 +61,31 @@ async function buildMember(
   const unavailable: FamilySection[] = [];
   // Only the sections the overview renders are built: hidden ones (accounts/goals/budgets, see
   // FAMILY_HIDDEN_SECTIONS) may still sit in old share rows but are never computed or sent.
-  for (const section of FAMILY_OVERVIEW_SECTIONS) {
-    if (!granted.includes(section)) continue;
-    try {
-      sections[section] = await SECTION_BUILDERS[section](ctx);
-    } catch (err) {
-      // generic message only: never log values
-      console.error(`[family] section build failed: ${section}: ${err instanceof Error ? err.name : "error"}`);
-      unavailable.push(section);
+  // Sections build in parallel (shared lookups are memoized on ctx / ctx.fx); results are
+  // written back in FAMILY_OVERVIEW_SECTIONS order so the payload stays deterministic.
+  const wanted = FAMILY_OVERVIEW_SECTIONS.filter((section) => granted.includes(section));
+  const built = await Promise.all(
+    wanted.map(async (section) => {
+      const t0 = Date.now();
+      try {
+        const value = await SECTION_BUILDERS[section](ctx);
+        return { section, ok: true as const, value, ms: Date.now() - t0 };
+      } catch (err) {
+        // generic message only: never log values
+        console.error(`[family] section build failed: ${section}: ${err instanceof Error ? err.name : "error"}`);
+        return { section, ok: false as const, ms: Date.now() - t0 };
+      }
+    }),
+  );
+  for (const r of built) {
+    if (r.ok) sections[r.section] = r.value;
+    else {
+      unavailable.push(r.section);
       ctx.partial.add("section_error");
     }
   }
+  // timings only (no values): helps find the slow section
+  console.info(`[family] timing period=${input.period} ${built.map((r) => `${r.section}=${r.ms}ms`).join(" ")}`);
   return {
     id: base.id,
     relation: base.relation,
@@ -103,9 +117,11 @@ export async function assembleFamilyOverview(
   // "me": the viewer's own data, every section, own labels decrypted with the viewer's own DEK.
   try {
     const own = new Map<FamilySection, Map<number, string>>();
-    for (const s of FAMILY_OVERVIEW_SECTIONS) {
-      if (SECTION_LABEL_SOURCES[s]) own.set(s, await loadOwnSectionLabels(viewerId, s, viewerDek));
-    }
+    await Promise.all(
+      FAMILY_OVERVIEW_SECTIONS.filter((s) => SECTION_LABEL_SOURCES[s]).map(async (s) => {
+        own.set(s, await loadOwnSectionLabels(viewerId, s, viewerDek));
+      }),
+    );
     members.push(
       await buildMember(
         { id: "me", relation: "me", name: "Me", ownerId: viewerId },

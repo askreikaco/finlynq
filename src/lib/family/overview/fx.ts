@@ -23,6 +23,8 @@ export class FxContext {
   readonly display: string;
   private readonly rates = new Map<string, number>();
   private readonly tried = new Set<string>();
+  private readonly pending = new Map<string, Promise<void>>();
+  private displayLeg: ReturnType<typeof getRateToUsdDetailed> | undefined;
 
   constructor(
     private readonly viewerId: string,
@@ -38,30 +40,39 @@ export class FxContext {
     return this.rates;
   }
 
-  /** Resolve every currency (idempotent). Unresolvable codes stay absent from the map. */
+  /**
+   * Resolve every currency (idempotent). Unresolvable codes stay absent from the map.
+   * Concurrency-safe: sections build in parallel, so a code already being looked up is
+   * awaited rather than treated as done (which would read as a missing rate).
+   */
   async prepare(codes: Iterable<string | null | undefined>): Promise<void> {
-    const todo = new Set<string>();
+    const waits: Promise<void>[] = [];
     for (const c of codes) {
       if (!c) continue;
       const code = norm(c, this.display);
-      if (this.tried.has(code)) continue;
-      if (!CODE_RE.test(code) || this.tried.size + todo.size >= MAX_LOOKUPS) {
-        this.tried.add(code); // never resolved
+      const inFlight = this.pending.get(code);
+      if (inFlight) {
+        waits.push(inFlight);
         continue;
       }
-      todo.add(code);
-    }
-    if (todo.size === 0) return;
-    const displayLeg = await getRateToUsdDetailed(this.display, this.today, this.viewerId);
-    const displayOk = this.display === "USD" || !isTotalMiss(this.display, displayLeg) ;
-    for (const code of todo) {
+      if (this.tried.has(code)) continue;
       this.tried.add(code);
-      if (code === this.display) continue;
-      if (!displayOk || displayLeg.rate === 0) continue;
-      const leg = await getRateToUsdDetailed(code, this.today, this.viewerId);
-      if (isTotalMiss(code, leg)) continue;
-      this.rates.set(code, leg.rate / displayLeg.rate);
+      if (!CODE_RE.test(code) || this.pending.size >= MAX_LOOKUPS) continue; // never resolved
+      const p = this.resolve(code);
+      this.pending.set(code, p);
+      waits.push(p);
     }
+    await Promise.all(waits);
+  }
+
+  private async resolve(code: string): Promise<void> {
+    if (code === this.display) return;
+    const displayLeg = await (this.displayLeg ??= getRateToUsdDetailed(this.display, this.today, this.viewerId));
+    const displayOk = this.display === "USD" || !isTotalMiss(this.display, displayLeg);
+    if (!displayOk || displayLeg.rate === 0) return;
+    const leg = await getRateToUsdDetailed(code, this.today, this.viewerId);
+    if (isTotalMiss(code, leg)) return;
+    this.rates.set(code, leg.rate / displayLeg.rate);
   }
 
   rate(code: string | null | undefined): number | null {
