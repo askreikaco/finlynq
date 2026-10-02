@@ -18,11 +18,11 @@ const cls = (el: Element) => el.className.toString().split(/\s+/);
 describe("AccountRow", () => {
   const base = { accountId: 7, accountName: "Techcombank", currency: "VND", displayCurrency: "VND", type: "asset" as const };
 
-  it("is one link to /accounts/[id] with a chevron, name, subtitle and balance via formatCurrency (VND: no decimals)", () => {
+  it("is one link to /accounts/[id] (no chevron) with name, subtitle and balance via formatCurrency (VND: no decimals)", () => {
     render(<AccountRow {...base} balance={45306000} alias="TCB" />);
     const row = screen.getByRole("link");
     expect(row.getAttribute("href")).toBe("/accounts/7");
-    expect(row.querySelector("[data-slot=list-row-chevron]")).not.toBeNull();
+    expect(row.querySelector("[data-slot=list-row-chevron]")).toBeNull();
     expect(screen.getByText("Techcombank")).toBeTruthy();
     expect(screen.getByText("TCB · VND")).toBeTruthy();
     const amt = screen.getByText(formatCurrency(45306000, "VND"));
