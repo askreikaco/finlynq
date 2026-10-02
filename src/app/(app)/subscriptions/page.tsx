@@ -73,6 +73,7 @@ import {
   Wallet,
   XCircle,
 } from "lucide-react";
+import { MetricCard } from "@/components/metric-card";
 
 type Option = { id: number; name: string | null };
 type SortField = "nextDate" | "name" | "cost";
@@ -346,24 +347,19 @@ function SubscriptionsPageContent() {
 
       {/* Summary */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard
-          icon={<Wallet className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />}
-          label="Per month"
-          value={formatCurrency(totals.monthly, displayCurrency)}
-        />
-        <StatCard
-          icon={<CalendarDays className="h-4 w-4 text-rose-600 dark:text-rose-400" />}
-          label="Per year"
-          value={formatCurrency(totals.annual, displayCurrency)}
-        />
-        <StatCard
-          icon={<CalendarClock className="h-4 w-4 text-amber-600 dark:text-amber-400" />}
+        <MetricCard icon={Wallet} tone="indigo" label="Per month" value={totals.monthly} currency={displayCurrency} />
+        <MetricCard icon={CalendarDays} tone="rose" label="Per year" value={totals.annual} currency={displayCurrency} />
+        <MetricCard
+          icon={CalendarClock}
+          tone="amber"
           label={`Due in next ${DUE_SOON_DAYS} days`}
-          value={formatCurrency(totals.dueSoonAmount, displayCurrency)}
+          value={totals.dueSoonAmount}
+          currency={displayCurrency}
           sub={`${totals.dueSoonCount} payment${totals.dueSoonCount === 1 ? "" : "s"}`}
         />
-        <StatCard
-          icon={<CreditCard className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />}
+        <MetricCard
+          icon={CreditCard}
+          tone="emerald"
           label="Active"
           value={String(totals.activeCount)}
           sub={`of ${subs.length} tracked`}
@@ -527,21 +523,6 @@ function SubscriptionsPageContent() {
         onConfirm={handleDelete}
       />
     </div>
-  );
-}
-
-function StatCard({ icon, label, value, sub }: { icon: React.ReactNode; label: string; value: string; sub?: string }) {
-  return (
-    <Card>
-      <CardContent className="pt-4 pb-4">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          {icon}
-          <span className="truncate">{label}</span>
-        </div>
-        <p className="text-xl sm:text-2xl font-bold mt-1 tabular-nums truncate">{value}</p>
-        {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
-      </CardContent>
-    </Card>
   );
 }
 

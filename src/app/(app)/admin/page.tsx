@@ -1,5 +1,8 @@
 "use client";
 
+import { MetricCard } from "@/components/metric-card";
+import type { LucideIcon } from "lucide-react";
+
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -174,33 +177,16 @@ const itemVariants = {
 function StatCard({
   label,
   value,
-  icon: Icon,
+  icon,
   color,
 }: {
   label: string;
   value: string | number;
-  icon: React.ElementType;
+  icon: LucideIcon;
   color: string;
 }) {
-  return (
-    <motion.div variants={itemVariants}>
-      <Card>
-        <CardContent className="p-5">
-          <div className="flex items-center gap-3">
-            <div
-              className={`flex h-10 w-10 items-center justify-center rounded-lg ${color}`}
-            >
-              <Icon className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">{label}</p>
-              <p className="text-2xl font-bold tracking-tight">{value}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </motion.div>
-  );
+  // counts, not money: never let MetricCard format a number as currency
+  return <MetricCard label={label} icon={icon} tone={color} value={typeof value === "number" ? value.toLocaleString() : value} />;
 }
 
 // ─── Role Badge ─────────────────────────────────────────────────────────────

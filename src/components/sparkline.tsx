@@ -12,6 +12,10 @@ type SparklineProps = {
    * value + date. Labels are "YYYY-MM" month keys (rendered via getMonthLabel).
    */
   labels?: string[];
+  /** Chart height in px (default 30: the card-footer strip). Wrapper classes must match it. */
+  height?: number;
+  /** Wrapper classes (default "w-full h-[30px]"). */
+  className?: string;
   /** Currency used to format the tooltip value. */
   currency?: string;
 };
@@ -52,13 +56,13 @@ function SparklineTooltip({
   );
 }
 
-export function Sparkline({ data, color, labels, currency = "USD" }: SparklineProps) {
+export function Sparkline({ data, color, labels, currency = "USD", height = 30, className = "w-full h-[30px]" }: SparklineProps) {
   const chartData: SparkRow[] = data.map((value, index) => ({ index, value, label: labels?.[index] }));
   const interactive = Boolean(labels?.length);
 
   return (
-    <div className="w-full h-[30px]">
-      <ResponsiveContainer width="100%" height={30} minWidth={0}>
+    <div className={className}>
+      <ResponsiveContainer width="100%" height={height} minWidth={0}>
         <AreaChart data={chartData} margin={{ top: 2, right: 2, bottom: 2, left: 2 }}>
           <defs>
             <linearGradient id={`spark-${color.replace("#", "")}`} x1="0" y1="0" x2="0" y2="1">

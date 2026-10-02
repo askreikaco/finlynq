@@ -1,12 +1,8 @@
 "use client";
 
-import Link from "next/link";
-import { ArrowDownRight, ArrowUpRight } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Sparkline } from "@/components/sparkline";
+import { Landmark } from "lucide-react";
+import { MetricCard } from "@/components/metric-card";
 import { formatCurrency } from "@/lib/currency";
-import { formatPercent } from "@/lib/locale";
-import { AnimatedNumber } from "./animated-number";
 
 export interface NetWorthHeroCardProps {
   value: number;
@@ -26,8 +22,9 @@ export interface NetWorthHeroCardProps {
 }
 
 /**
- * The dashboard's "Total Net Worth" hero card (extracted from dashboard/page.tsx so the Family
- * overview renders the identical card). Markup and classes are unchanged.
+ * The dashboard's "Total Net Worth" hero card (also rendered by the Family overview) — the
+ * global MetricCard in its "hero" size: when the card is wide the sparkline fills a
+ * right-hand column, when narrow it runs along the bottom.
  */
 export function NetWorthHeroCard({
   value,
@@ -41,59 +38,23 @@ export function NetWorthHeroCard({
   onMouseMove,
   footnote,
 }: NetWorthHeroCardProps) {
-  const card = (
-    <Card
-      className={`relative overflow-hidden group card-hover mouse-glow hover:scale-[1.005] transition-transform duration-300 rounded-2xl h-full${href ? " cursor-pointer" : ""}`}
+  return (
+    <MetricCard
+      label="Total Net Worth"
+      icon={Landmark}
+      tone="indigo"
+      size="hero"
+      value={value}
+      currency={currency}
+      badgePct={change != null ? changePct : null}
+      sub={change != null ? `${change >= 0 ? "+" : ""}${formatCurrency(change, currency)} ${changeCaption}` : undefined}
+      note={footnote}
+      sparkData={sparkData}
+      sparkLabels={sparkLabels}
+      sparkColor="#6366f1"
+      href={href}
       onMouseMove={onMouseMove}
-    >
-      {/* Decorative gradient orbs */}
-      <div className="absolute -top-20 -right-20 w-48 h-48 rounded-full bg-indigo-500/8 blur-3xl dark:bg-indigo-400/5 pointer-events-none" />
-      <div className="absolute -bottom-16 -left-16 w-40 h-40 rounded-full bg-violet-500/6 blur-3xl dark:bg-violet-400/4 pointer-events-none" />
-
-      <CardContent className="relative pt-6 pb-6 px-6">
-        <div className="flex items-start justify-between">
-          <div className="space-y-3 min-w-0">
-            {/* Label */}
-            <p className="text-xs font-medium text-muted-foreground tracking-wide uppercase">
-              Total Net Worth
-            </p>
-
-            {/* Big number */}
-            <p className="text-4xl md:text-5xl font-bold tracking-tight hero-number leading-none break-words">
-              <AnimatedNumber value={value} currency={currency} />
-            </p>
-
-            {/* Change pill */}
-            {change != null && (
-              <div className="flex flex-wrap items-center gap-2.5 mt-1">
-                {change >= 0 ? (
-                  <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-emerald-600 bg-emerald-100/80 dark:bg-emerald-950/60 dark:text-emerald-400 px-2.5 py-0.5 rounded-full">
-                    <ArrowUpRight className="h-3 w-3" />
-                    +{formatPercent(changePct, 1)}
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-rose-600 bg-rose-100/80 dark:bg-rose-950/60 dark:text-rose-400 px-2.5 py-0.5 rounded-full">
-                    <ArrowDownRight className="h-3 w-3" />
-                    {formatPercent(changePct, 1)}
-                  </span>
-                )}
-                <span className="text-[11px] text-muted-foreground">
-                  {change >= 0 ? "+" : ""}{formatCurrency(change, currency)} {changeCaption}
-                </span>
-              </div>
-            )}
-            {footnote && <p className="text-[11px] text-muted-foreground">{footnote}</p>}
-          </div>
-
-          {/* Mini sparkline */}
-          {sparkData.length > 1 && (
-            <div className="hidden md:block w-40 h-20 opacity-50 group-hover:opacity-100 transition-opacity duration-300">
-              <Sparkline data={sparkData} color="#6366f1" labels={sparkLabels} currency={currency} />
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+      className="mouse-glow"
+    />
   );
-  return href ? <Link href={href}>{card}</Link> : card;
 }

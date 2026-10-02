@@ -1,0 +1,184 @@
+"use client";
+
+/**
+ * MetricCard — the ONE metric / KPI card used across the app (dashboard design):
+ * left column: icon + uppercase label, big value, small sub-line with an optional percentage
+ * badge, an optional second small line; right column: the chart (optional).
+ *
+ * The sparkline follows the card's own width (container query): a narrow card shows it as a
+ * full-bleed strip along the bottom; a wide card (≥ 36rem, e.g. the Net Worth hero) moves it
+ * into a right-hand column at full height.
+ *
+ * `value` as a number renders an animated currency amount; anything else (a percentage,
+ * a count, a badge) renders as-is. Use `valueClassName` for a tone (green / amber / red).
+ */
+
+import type { MouseEventHandler, ReactNode } from "react";
+import Link from "next/link";
+import { motion } from "framer-motion";
+import type { LucideIcon } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Sparkline } from "@/components/sparkline";
+import { ArrowDownRight, ArrowUpRight } from "lucide-react";
+import { AnimatedNumber } from "@/components/animated-number";
+import { formatPercent } from "@/lib/locale";
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" as const } },
+};
+
+/** Icon tile colours, so pages pick a name instead of hand-writing classes. */
+export const METRIC_TONES = {
+  indigo: "bg-indigo-100 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400",
+  emerald: "bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400",
+  rose: "bg-rose-100 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400",
+  amber: "bg-amber-100 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400",
+  cyan: "bg-cyan-100 text-cyan-600 dark:bg-cyan-500/10 dark:text-cyan-400",
+  violet: "bg-violet-100 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400",
+  muted: "bg-muted text-muted-foreground",
+} as const;
+export type MetricTone = keyof typeof METRIC_TONES;
+
+export type MetricCardProps = {
+  label: string;
+  icon: LucideIcon;
+  /** A METRIC_TONES name, or raw classes for the icon tile. */
+  tone?: MetricTone | (string & {});
+  /** number = animated currency amount; anything else renders as-is. */
+  value: number | ReactNode;
+  currency?: string;
+  /** Extra classes for the big number (e.g. a green / red tone). */
+  valueClassName?: string;
+  sub?: ReactNode;
+  /** Percentage badge before the sub-line (green ↗ / red ↘); null/undefined = none. */
+  badgePct?: number | null;
+  /** A second small line under the sub-line. */
+  note?: ReactNode;
+  /** Shimmer placeholder instead of the number. */
+  loading?: boolean;
+  sparkData?: number[];
+  sparkColor?: string;
+  /** Optional "YYYY-MM" labels parallel to sparkData — enables the hover tooltip. */
+  sparkLabels?: string[];
+  /** Drill-through target; omitted = a static card. */
+  href?: string;
+  /** Extra content under the sub-line (e.g. a progress bar). */
+  children?: ReactNode;
+  className?: string;
+  /** "hero" = the larger number of the Net Worth card. */
+  size?: "default" | "hero";
+  onMouseMove?: MouseEventHandler<HTMLDivElement>;
+};
+
+export function MetricCard({
+  label,
+  icon: Icon,
+  tone = "muted",
+  value,
+  currency = "CAD",
+  valueClassName = "",
+  sub,
+  badgePct,
+  note,
+  loading = false,
+  sparkData,
+  sparkColor = "#6366f1",
+  sparkLabels,
+  href,
+  children,
+  className = "",
+  size = "default",
+  onMouseMove,
+}: MetricCardProps) {
+  const hasSpark = !!sparkData && sparkData.length > 1;
+  const numberSize = size === "hero" ? "text-4xl md:text-5xl" : "text-[1.75rem]";
+  const toneClasses = tone in METRIC_TONES ? METRIC_TONES[tone as MetricTone] : tone;
+  const card = (
+    <Card
+      className={`@container relative overflow-hidden group card-hover gradient-border hover:scale-[1.005] transition-transform duration-300 h-full${href ? " cursor-pointer" : ""} ${className}`}
+      onMouseMove={onMouseMove}
+    >
+      <div className="@xl:flex @xl:items-stretch @xl:gap-6 h-full">
+        <CardContent className={`pt-4 px-5 min-w-0 @xl:flex-1 ${hasSpark ? "pb-0 @xl:pb-4" : "pb-0"}`}>
+          <div className="flex items-center gap-2.5 mb-3">
+            <div
+              className={`flex h-8 w-8 items-center justify-center rounded-lg shrink-0 transition-transform duration-300 group-hover:scale-110 ${toneClasses}`}
+            >
+              <Icon className="h-4 w-4" aria-hidden="true" />
+            </div>
+            <p className="text-xs font-medium text-muted-foreground tracking-wide uppercase truncate">{label}</p>
+          </div>
+
+          {loading ? (
+            <span className="inline-block h-7 w-24 animate-shimmer rounded-md align-middle" />
+          ) : (
+            <div className={`${numberSize} font-bold tracking-tight hero-number tabular-nums leading-none truncate ${valueClassName}`}>
+              {typeof value === "number" ? <AnimatedNumber value={value} currency={currency} /> : value}
+            </div>
+          )}
+
+          <div className="text-[11px] text-muted-foreground mt-1.5 mb-3 space-y-1">
+            {loading ? (
+              " "
+            ) : (
+              <>
+                {(badgePct != null || sub) && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    {badgePct != null && <PctBadge pct={badgePct} />}
+                    {sub && <span className="min-w-0">{sub}</span>}
+                  </div>
+                )}
+                {note && <div>{note}</div>}
+              </>
+            )}
+          </div>
+          {children && <div className="mb-4">{children}</div>}
+        </CardContent>
+
+        {hasSpark && (
+          <>
+            {/* wide card: right-hand column, full height */}
+            <div className="hidden @xl:flex @xl:w-[45%] shrink-0 items-center pr-5 py-4 opacity-60 group-hover:opacity-100 transition-opacity duration-300">
+              <Sparkline data={sparkData!} color={sparkColor} labels={sparkLabels} currency={currency} height={96} className="w-full h-[96px]" />
+            </div>
+            {/* narrow card: full-bleed strip along the bottom */}
+            <div className="@xl:hidden opacity-50 group-hover:opacity-100 transition-opacity duration-300 -mx-px">
+              <Sparkline data={sparkData!} color={sparkColor} labels={sparkLabels} currency={currency} />
+            </div>
+          </>
+        )}
+      </div>
+    </Card>
+  );
+  return (
+    <motion.div variants={itemVariants} className="h-full">
+      {href ? (
+        <Link href={href} className="block h-full">
+          {card}
+        </Link>
+      ) : (
+        card
+      )}
+    </motion.div>
+  );
+}
+
+/** The green ↗ / red ↘ percentage pill (value already in percent, e.g. -0.5 = -0.5%). */
+export function PctBadge({ pct }: { pct: number }) {
+  const up = pct >= 0;
+  const Arrow = up ? ArrowUpRight : ArrowDownRight;
+  return (
+    <span
+      className={`inline-flex items-center gap-1 text-[12px] font-semibold px-2.5 py-0.5 rounded-full ${
+        up
+          ? "text-emerald-600 bg-emerald-100/80 dark:bg-emerald-950/60 dark:text-emerald-400"
+          : "text-rose-600 bg-rose-100/80 dark:bg-rose-950/60 dark:text-rose-400"
+      }`}
+    >
+      <Arrow className="h-3 w-3" aria-hidden="true" />
+      {up ? "+" : ""}
+      {formatPercent(pct, 1)}
+    </span>
+  );
+}

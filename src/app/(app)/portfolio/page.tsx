@@ -24,7 +24,7 @@ import {
   type EnrichedHolding, type EtfXrayTab, type FilterType,
 } from "./_types";
 import { usePortfolioOverview, useBenchmarks } from "./_hooks/use-portfolio";
-import { ChangeBadge, PortfolioSkeleton } from "./_components/portfolio-ui";
+import { PortfolioSkeleton } from "./_components/portfolio-ui";
 import { TopMoversCard } from "./_components/top-movers-card";
 import { HoldingsTable } from "./_components/holdings-table";
 import { EtfXrayCard } from "./_components/etf-xray-card";
@@ -34,6 +34,7 @@ import { HoldingsByAccount } from "./_components/holdings-by-account";
 import { formatPercent } from "@/lib/locale";
 import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
 import { PortfolioMobileHero, MobileHoldingsList } from "./_components/mobile-portfolio";
+import { MetricCard } from "@/components/metric-card";
 
 // ── Main Page ───────────────────────────────────────────────────────
 export default function PortfolioPage() {
@@ -297,73 +298,40 @@ export default function PortfolioPage() {
 
       {/* ── Hero Summary Cards ────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 max-md:hidden">
-        <Card className="relative overflow-hidden">
-          <CardContent className="pt-5">
-            <div className="flex items-start justify-between">
-              <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground">Total Holdings</p>
-                <p className="text-2xl font-bold tracking-tight hero-number">{summary.totalHoldings}</p>
-                <p className="text-xs text-muted-foreground">{summary.totalAccounts} accounts</p>
-              </div>
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400">
-                <Briefcase className="h-5 w-5" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="relative overflow-hidden">
-          <CardContent className="pt-5">
-            <div className="flex items-start justify-between">
-              <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground">Day Change</p>
-                <div className="flex items-baseline gap-1.5">
-                  <ChangeBadge value={summary.dayChangePct} className="text-lg font-bold" />
-                </div>
-                <p className={`text-xs font-mono ${summary.dayChangeDisplay >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
-                  {summary.dayChangeDisplay >= 0 ? "+" : ""}{formatCurrency(summary.dayChangeDisplay, displayCurrency)}
-                </p>
-              </div>
-              <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${summary.dayChangePct >= 0 ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400" : "bg-rose-100 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400"}`}>
-                <TrendingUp className="h-5 w-5" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="relative overflow-hidden">
-          <CardContent className="pt-5">
-            <div className="flex items-start justify-between">
-              <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground">ETFs / Stocks</p>
-                <p className="text-2xl font-bold tracking-tight hero-number">
-                  {byType.etf.count + byType.stock.count}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {byType.etf.count} ETFs, {byType.stock.count} stocks
-                </p>
-              </div>
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-100 text-cyan-600 dark:bg-cyan-500/10 dark:text-cyan-400">
-                <BarChart3 className="h-5 w-5" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="relative overflow-hidden">
-          <CardContent className="pt-5">
-            <div className="flex items-start justify-between">
-              <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground">Crypto</p>
-                <p className="text-2xl font-bold tracking-tight hero-number">{byType.crypto.count}</p>
-                <p className="text-xs text-muted-foreground">{byType.cash.count} cash positions</p>
-              </div>
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400">
-                <Coins className="h-5 w-5" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <MetricCard
+          icon={Briefcase}
+          tone="indigo"
+          label="Total Holdings"
+          value={String(summary.totalHoldings)}
+          sub={`${summary.totalAccounts} accounts`}
+        />
+        <MetricCard
+          icon={TrendingUp}
+          tone={summary.dayChangePct >= 0 ? "emerald" : "rose"}
+          label="Day Change"
+          value={summary.dayChangePct == null ? "--" : `${summary.dayChangePct >= 0 ? "+" : "−"}${formatPercent(Math.abs(summary.dayChangePct), 2)}`}
+          valueClassName={summary.dayChangePct >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}
+          sub={
+            <span className={`font-mono ${summary.dayChangeDisplay >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+              {summary.dayChangeDisplay >= 0 ? "+" : ""}
+              {formatCurrency(summary.dayChangeDisplay, displayCurrency)}
+            </span>
+          }
+        />
+        <MetricCard
+          icon={BarChart3}
+          tone="cyan"
+          label="ETFs / Stocks"
+          value={String(byType.etf.count + byType.stock.count)}
+          sub={`${byType.etf.count} ETFs, ${byType.stock.count} stocks`}
+        />
+        <MetricCard
+          icon={Coins}
+          tone="amber"
+          label="Crypto"
+          value={String(byType.crypto.count)}
+          sub={`${byType.cash.count} cash positions`}
+        />
       </div>
 
       {/* ── Investment P&L Summary ────────────────────────────── */}
