@@ -572,15 +572,15 @@ function CloudAuthPageInner() {
             <h2
               ref={headingRef}
               tabIndex={-1}
-              className="text-base font-semibold text-foreground"
+              className="text-base font-semibold text-foreground text-center"
             >
               Confirm your password
             </h2>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground text-center">
               Enter your Finlynq password once to link Google to your account.
             </p>
             {unlockEmail && (
-              <p className="text-sm text-foreground" data-testid="unlock-email">
+              <p className="text-sm text-foreground text-center" data-testid="unlock-email">
                 Google account: {unlockEmail}
               </p>
             )}
@@ -599,7 +599,7 @@ function CloudAuthPageInner() {
               />
             </div>
             {error && (
-              <p className="text-sm text-destructive" role="alert" aria-live="assertive">{error}</p>
+              <p className="text-sm text-destructive text-center" role="alert" aria-live="assertive">{error}</p>
             )}
             <div className="space-y-3">
               <button
@@ -623,13 +623,13 @@ function CloudAuthPageInner() {
               <h2
                 ref={headingRef}
                 tabIndex={-1}
-                className="mb-3 text-base font-semibold text-foreground"
+                className="mb-3 text-base font-semibold text-foreground text-center"
               >
                 Two-Factor Authentication
               </h2>
               {mfaMode === "totp" ? (
                 <>
-                  <p className="mb-4 text-sm text-muted-foreground">
+                  <p className="mb-4 text-sm text-muted-foreground text-center">
                     Enter the 6-digit code from your authenticator app.
                   </p>
                   <input
@@ -647,7 +647,7 @@ function CloudAuthPageInner() {
                 </>
               ) : (
                 <>
-                  <p className="mb-4 text-sm text-muted-foreground">
+                  <p className="mb-4 text-sm text-muted-foreground text-center">
                     Enter one of your recovery codes. Each code works once.
                   </p>
                   <input
@@ -666,7 +666,7 @@ function CloudAuthPageInner() {
               )}
             </div>
             {error && (
-              <p className="text-sm text-destructive" role="alert" aria-live="assertive">{error}</p>
+              <p className="text-sm text-destructive text-center" role="alert" aria-live="assertive">{error}</p>
             )}
             <button
               type="submit"
