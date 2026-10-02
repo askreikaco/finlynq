@@ -28,5 +28,5 @@ Schema changes are allowed in `custom` (we ship our own features first; upstream
 ## Operational notes
 
 - **Never scale app to 2+ replicas**: in-memory rate-limit counters and DEK cache (per connection) are not shared across instances.
-- **Every deploy logs everyone out**: `DEPLOY_GENERATION` env var increments on each roll-out; session middleware rejects old tokens.
+- **Deploys keep users signed in**: `/opt/finlynq/docker-compose.yml` pins `DEPLOY_GENERATION` (e.g. `"pinned-20261002"`) in the app environment, so `scripts/entrypoint.sh` respects it instead of stamping `date +%s` and JWTs survive a restart. The in-memory DEK cache still empties on restart, so users see the Unlock banner (passkey/password) once, not a sign-in. Open tabs get a "New version available, Update" bar (`<VersionGate>`, compares the bundle's `NEXT_PUBLIC_APP_BUILD` with `GET /api/version`). To force everyone to sign in again (e.g. after a security incident), change the pinned value and redeploy.
 - **`/health` checks DB only**: `SELECT 1` via the postgres connection pool; does not verify the app itself is responsive.
