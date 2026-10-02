@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import withSerwistInit from "@serwist/next";
 
 // Security headers applied to every route. CSP was shipped as Report-Only in
 // `50a1742` (2026-04-22) for a watch window; flipped to enforced on
@@ -102,4 +103,10 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+const withSerwist = withSerwistInit({
+  swSrc: "src/app/sw.ts",
+  swDest: "public/sw.js",
+  disable: process.env.NODE_ENV === "development",
+});
+
+export default withSerwist(nextConfig);

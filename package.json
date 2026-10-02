@@ -1,6 +1,6 @@
 {
   "name": "finlynq",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "license": "AGPL-3.0-only",
   "workspaces": [
@@ -8,9 +8,9 @@
   ],
   "scripts": {
     "postinstall": "node scripts/generate-mcp-tool-catalog.mjs",
-    "dev": "next dev",
+    "dev": "next dev --webpack",
     "prebuild": "node scripts/generate-mcp-tool-catalog.mjs",
-    "build": "next build",
+    "build": "next build --webpack",
     "generate:mcp-catalog": "node scripts/generate-mcp-tool-catalog.mjs",
     "start": "next start",
     "lint": "eslint",
@@ -32,6 +32,7 @@
     "@base-ui/react": "^1.2.0",
     "@finlynq/import-connectors": "*",
     "@modelcontextprotocol/sdk": "^1.30.0",
+    "@serwist/next": "^9.5.12",
     "@simplewebauthn/browser": "^14.0.0",
     "@simplewebauthn/server": "^14.0.3",
     "bcryptjs": "^3.0.3",
@@ -53,6 +54,7 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "recharts": "^3.8.0",
+    "serwist": "^9.5.12",
     "shadcn": "^4.0.0",
     "swr": "^2.4.1",
     "tailwind-merge": "^3.5.0",
