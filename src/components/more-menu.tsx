@@ -61,6 +61,7 @@ export function buildMoreGroups(f: MoreFlags): MoreGroup[] {
         row("/goals", "Goals", Target),
         row("/reports", "Reports", FileText),
         row("/categories", "Category report", ChartPie),
+        ...(f.familyEnabled ? [row("/family", "Family Wealth", Users)] : []),
         row("/import?tab=reconcile", "Reconcile", Inbox),
         row("/settings/categorization", "Categories", Tag),
         row("/import", "Import", Upload),
@@ -88,7 +89,6 @@ export function buildMoreGroups(f: MoreFlags): MoreGroup[] {
       header: "Tools",
       rows: [
         ...(f.hasAnnouncements ? [row("/whats-new", "What's new", Megaphone)] : []),
-        ...(f.familyEnabled ? [row("/family", "Family Wealth", Users)] : []),
         row("/settings", "Settings", Settings),
       ],
     },
