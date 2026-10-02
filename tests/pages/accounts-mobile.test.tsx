@@ -31,6 +31,8 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 const cls = (el: Element) => el.className.toString().split(/\s+/);
+// A group header is "<name> <total>"; the name is its first span.
+const groupName = (label: Element | null | undefined) => label?.querySelector("span > span")?.textContent ?? label?.textContent;
 
 describe("Accounts page below md", () => {
   async function mobile() {
@@ -57,10 +59,10 @@ describe("Accounts page below md", () => {
     expect(cls(list)).toContain("md:hidden");
     const sections = Array.from(list.querySelectorAll("section.space-y-2 > h2")).map((h) => h.textContent);
     expect(sections).toEqual(expect.arrayContaining(["Assets", "Liabilities"]));
-    const groups = Array.from(list.querySelectorAll("[data-slot=section-card] > [data-slot=section-label]")).map((h) => h.textContent);
+    const groups = Array.from(list.querySelectorAll("[data-slot=section-card] > [data-slot=section-label]")).map((h) => groupName(h));
     expect(groups).toEqual(expect.arrayContaining(["Banks", "Investments", "Credit Card"]));
 
-    const banks = Array.from(list.querySelectorAll("[data-slot=section-card]")).find((c) => c.querySelector("[data-slot=section-label]")?.textContent === "Banks") as HTMLElement;
+    const banks = Array.from(list.querySelectorAll("[data-slot=section-card]")).find((c) => groupName(c.querySelector("[data-slot=section-label]")) === "Banks") as HTMLElement;
     const links = within(banks).getAllByRole("link");
     expect(links.map((a) => a.getAttribute("href"))).toEqual(["/accounts/1", "/accounts/2"]);
     // native amount primary + converted equivalent for the USD account
@@ -69,6 +71,21 @@ describe("Accounts page below md", () => {
 
     const visa = within(list).getByRole("link", { name: /Visa/ });
     expect(cls(within(visa).getByText(formatCurrency(-5000000, "VND")))).toContain("text-neg");
+  });
+
+  it("each group header shows the group's total in the display currency", async () => {
+    const list = await mobile();
+    const totals = Object.fromEntries(
+      Array.from(list.querySelectorAll("[data-slot=section-card] > [data-slot=section-label]")).map((h) => [
+        groupName(h),
+        h.querySelector("[data-testid=group-total]")?.textContent,
+      ]),
+    );
+    expect(totals).toEqual({
+      Banks: formatCurrency(40000000 + 2500000, "VND"), // USD account counted at its converted value
+      Investments: formatCurrency(10000000, "VND"),
+      "Credit Card": formatCurrency(-5000000, "VND"),
+    });
   });
 
   it("desktop list markup is untouched, just hidden below md", async () => {

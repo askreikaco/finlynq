@@ -238,6 +238,19 @@ export default function AccountsPage() {
     );
   };
 
+  // Group header total, in the display currency (converted balance when the
+  // account is in another currency). Invisible accounts never count.
+  const groupTotal = (accts: AccountBalance[]) =>
+    accts.filter((a) => !a.invisible).reduce((s, a) => s + (a.convertedBalance ?? a.balance), 0);
+  const groupLabel = (group: string, accts: AccountBalance[]) => (
+    <span className="flex items-baseline justify-between gap-3">
+      <span className="min-w-0 truncate">{group}</span>
+      <span className="shrink-0 font-mono normal-case tracking-normal tabular-nums" data-testid="group-total">
+        {formatCurrency(groupTotal(accts), displayCurrency)}
+      </span>
+    </span>
+  );
+
   const renderSection = (
     title: string,
     list: AccountBalance[],
@@ -254,7 +267,7 @@ export default function AccountsPage() {
         <Card key={group} size="sm">
           <CardHeader>
             <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              {group}
+              {groupLabel(group, accts)}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-1">
@@ -318,7 +331,7 @@ export default function AccountsPage() {
       <section className="space-y-2">
         <SectionLabel>{title}</SectionLabel>
         {groups(list).map(([group, accts]) => (
-          <SectionCard key={group} label={group} padded={false} className="divide-y divide-border/50 px-3">
+          <SectionCard key={group} label={groupLabel(group, accts)} padded={false} className="divide-y divide-border/50 px-3">
             {accts.map((a) => (
               <AccountRow
                 key={a.accountId}
