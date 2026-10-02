@@ -49,8 +49,8 @@ export interface PerformanceDto {
   from: string;
   to: string;
   series: Array<{ date: string; marketValue: number; costBasis: number }>;
-  twrr: { period: number; annualized: number };
-  mwrr: { irr: number; converged: boolean };
+  twrr: { period: number | null; annualized: number | null };
+  mwrr: { irr: number | null; converged: boolean };
   gapsFilledDays: number;
 }
 
