@@ -3,7 +3,7 @@
  */
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import * as React from "react";
-import { render, screen, cleanup, within } from "@testing-library/react";
+import { render, screen, cleanup, within, fireEvent } from "@testing-library/react";
 import { formatCurrency } from "@/lib/currency";
 
 vi.mock("next/link", () => ({
@@ -31,8 +31,11 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 const cls = (el: Element) => el.className.toString().split(/\s+/);
-// A group header is "<name> <total>"; the name is its first span.
-const groupName = (label: Element | null | undefined) => label?.querySelector("span > span")?.textContent ?? label?.textContent;
+// Group accordion items (mobile list or desktop grid) and their header parts.
+const items = (root: Element) => Array.from(root.querySelectorAll("[data-slot=accordion-item]")) as HTMLElement[];
+const nameOf = (item: Element) => item.querySelector("[data-testid=group-name]")?.textContent;
+const totalOf = (item: Element) => item.querySelector("[data-testid=group-total]")?.textContent;
+const trigger = (item: Element) => item.querySelector("[data-slot=accordion-trigger]") as HTMLElement;
 
 describe("Accounts page below md", () => {
   async function mobile() {
@@ -54,44 +57,48 @@ describe("Accounts page below md", () => {
     expect(cls(desktopStats)).toContain("max-md:hidden");
   });
 
-  it("accounts are grouped by type then group, each an AccountRow linking to /accounts/[id]", async () => {
+  it("accounts are grouped by type then group as a collapsed accordion; opening a group lists AccountRows", async () => {
     const list = await mobile();
     expect(cls(list)).toContain("md:hidden");
     const sections = Array.from(list.querySelectorAll("section.space-y-2 > h2")).map((h) => h.textContent);
     expect(sections).toEqual(expect.arrayContaining(["Assets", "Liabilities"]));
-    const groups = Array.from(list.querySelectorAll("[data-slot=section-card] > [data-slot=section-label]")).map((h) => groupName(h));
-    expect(groups).toEqual(expect.arrayContaining(["Banks", "Investments", "Credit Card"]));
+    expect(items(list).map(nameOf)).toEqual(expect.arrayContaining(["Banks", "Investments", "Credit Card"]));
 
-    const banks = Array.from(list.querySelectorAll("[data-slot=section-card]")).find((c) => groupName(c.querySelector("[data-slot=section-label]")) === "Banks") as HTMLElement;
-    const links = within(banks).getAllByRole("link");
+    // Collapsed by default: no account rows until a group is opened.
+    expect(within(list).queryAllByRole("link")).toHaveLength(0);
+    const banks = items(list).find((i) => nameOf(i) === "Banks")!;
+    expect(trigger(banks).getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(trigger(banks));
+    const links = await within(banks).findAllByRole("link");
     expect(links.map((a) => a.getAttribute("href"))).toEqual(["/accounts/1", "/accounts/2"]);
     // native amount primary + converted equivalent for the USD account
     expect(within(links[1]).getByText(formatCurrency(100, "USD"))).toBeTruthy();
     expect(within(links[1]).getByText(formatCurrency(2500000, "VND"))).toBeTruthy();
 
-    const visa = within(list).getByRole("link", { name: /Visa/ });
+    const card = items(list).find((i) => nameOf(i) === "Credit Card")!;
+    fireEvent.click(trigger(card));
+    const visa = await within(card).findByRole("link", { name: /Visa/ });
     expect(cls(within(visa).getByText(formatCurrency(-5000000, "VND")))).toContain("text-neg");
   });
 
-  it("each group header shows the group's total in the display currency", async () => {
+  it("each group header shows its account count and total in the display currency", async () => {
     const list = await mobile();
-    const totals = Object.fromEntries(
-      Array.from(list.querySelectorAll("[data-slot=section-card] > [data-slot=section-label]")).map((h) => [
-        groupName(h),
-        h.querySelector("[data-testid=group-total]")?.textContent,
-      ]),
-    );
-    expect(totals).toEqual({
+    const byName = Object.fromEntries(items(list).map((i) => [nameOf(i), totalOf(i)]));
+    expect(byName).toEqual({
       Banks: formatCurrency(40000000 + 2500000, "VND"), // USD account counted at its converted value
       Investments: formatCurrency(10000000, "VND"),
       "Credit Card": formatCurrency(-5000000, "VND"),
     });
+    const banks = items(list).find((i) => nameOf(i) === "Banks")!;
+    expect(trigger(banks).textContent).toContain("2");
   });
 
-  it("desktop list markup is untouched, just hidden below md", async () => {
+  it("desktop groups use the same collapsed accordion, hidden below md", async () => {
     await mobile();
     const grid = document.querySelector("div.lg\\:grid-cols-2") as HTMLElement;
-    expect(within(grid).getAllByText("Techcombank")).toHaveLength(1);
+    const banks = items(grid).find((i) => nameOf(i) === "Banks")!;
+    fireEvent.click(trigger(banks));
+    expect(await within(banks).findAllByText("Techcombank")).toHaveLength(1);
     expect(cls(grid)).toEqual(expect.arrayContaining(["grid", "grid-cols-1", "lg:grid-cols-2", "gap-4", "max-md:hidden"]));
   });
 });

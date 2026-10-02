@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Accordion, AccordionItem } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
@@ -31,7 +32,7 @@ import {
   Archive,
   FolderCog,
 } from "lucide-react";
-import { PageHeader, HEADER_DESKTOP_ONLY, NetWorthHero, SectionCard, SectionLabel, AccountRow } from "@/components/mobile";
+import { PageHeader, HEADER_DESKTOP_ONLY, NetWorthHero, SectionLabel, AccountRow } from "@/components/mobile";
 
 type AccountBalance = {
   accountId: number;
@@ -242,11 +243,15 @@ export default function AccountsPage() {
   // account is in another currency). Invisible accounts never count.
   const groupTotal = (accts: AccountBalance[]) =>
     accts.filter((a) => !a.invisible).reduce((s, a) => s + (a.convertedBalance ?? a.balance), 0);
-  const groupLabel = (group: string, accts: AccountBalance[]) => (
+  // Accordion header: group name + account count on the left, group total right.
+  const groupTitle = (group: string, accts: AccountBalance[]) => (
     <span className="flex items-baseline justify-between gap-3">
-      <span className="min-w-0 truncate">{group}</span>
-      <span className="shrink-0 font-mono normal-case tracking-normal tabular-nums" data-testid="group-total">
-        {formatCurrency(groupTotal(accts), displayCurrency)}
+      <span className="min-w-0 truncate" data-testid="group-name">{group}</span>
+      <span className="flex shrink-0 items-baseline gap-2">
+        <span className="text-xs font-normal text-muted-foreground">{accts.length}</span>
+        <span className="font-mono font-semibold tabular-nums" data-testid="group-total">
+          {formatCurrency(groupTotal(accts), displayCurrency)}
+        </span>
       </span>
     </span>
   );
@@ -263,14 +268,11 @@ export default function AccountsPage() {
         <SectionIcon className={`h-5 w-5 ${color}`} />
         <h2 className="text-xl font-semibold">{title}</h2>
       </div>
-      {groups(list).map(([group, accts]) => (
-        <Card key={group} size="sm">
-          <CardHeader>
-            <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              {groupLabel(group, accts)}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-1">
+      {/* Groups as an accordion (collapsed by default): header = name, count, total. */}
+      <Accordion defaultValue={null}>
+        {groups(list).map(([group, accts]) => (
+          <AccordionItem key={group} value={group} title={groupTitle(group, accts)}>
+            <div className="-mx-2 -my-2 space-y-1">
             {accts.map((a) => (
               <div key={a.accountId} className={`flex items-center gap-1 rounded-lg hover:bg-muted/50 transition-colors group ${a.archived ? "opacity-60" : ""}`}>
                 <Link
@@ -320,9 +322,10 @@ export default function AccountsPage() {
                 </Link>
               </div>
             ))}
-          </CardContent>
-        </Card>
-      ))}
+            </div>
+          </AccordionItem>
+        ))}
+      </Accordion>
     </div>
   );
 
@@ -330,8 +333,10 @@ export default function AccountsPage() {
     list.length === 0 ? null : (
       <section className="space-y-2">
         <SectionLabel>{title}</SectionLabel>
-        {groups(list).map(([group, accts]) => (
-          <SectionCard key={group} label={groupLabel(group, accts)} padded={false} className="divide-y divide-border/50 px-3">
+        <Accordion defaultValue={null}>
+          {groups(list).map(([group, accts]) => (
+            <AccordionItem key={group} value={group} title={groupTitle(group, accts)}>
+              <div className="-mx-4 -my-4 divide-y divide-border/50 px-3">
             {accts.map((a) => (
               <AccountRow
                 key={a.accountId}
@@ -348,8 +353,10 @@ export default function AccountsPage() {
                 isInvestment={a.isInvestment}
               />
             ))}
-          </SectionCard>
-        ))}
+              </div>
+            </AccordionItem>
+          ))}
+        </Accordion>
       </section>
     );
 
