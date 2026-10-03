@@ -8,6 +8,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { formatCurrency } from "@/lib/currency";
+import { useDisplayCurrency } from "@/components/currency-provider";
 import type { HealthData } from "./types";
 
 interface HealthInfoDialogProps {
@@ -106,7 +107,8 @@ function ComponentBlock({
 }
 
 export function HealthInfoDialog({ data, open, onOpenChange }: HealthInfoDialogProps) {
-  const reporting = data.reportingCurrency ?? "CAD";
+  const { displayCurrency } = useDisplayCurrency();
+  const reporting = data.reportingCurrency ?? displayCurrency ?? "USD";
   const totals = data.totals;
   const excluded = data.excludedComponents ?? [];
 
