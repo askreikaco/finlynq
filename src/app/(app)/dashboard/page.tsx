@@ -22,6 +22,7 @@ import { SpendingCategoryChart } from "./_components/spending-category-chart";
 import { NetWorthHistoryChart } from "@/components/net-worth-history-chart";
 import { AvailableToSpend } from "./_components/available-to-spend";
 import { InsightsSection } from "./_components/insights-section";
+import { LazyView } from "@/components/ui/lazy-view";
 import { useDevMode } from "@/hooks/use-dev-mode";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { CurrencyAuditBanner } from "@/components/currency-audit-banner";
@@ -394,43 +395,90 @@ export default function DashboardPage() {
       ),
     },
     // Key ratios: Savings Rate + DTI (FINLYNQ-291) from the same /api/health-score payload.
-    "key-metrics": { render: () => <KeyMetrics key="key-metrics" health={health} /> },
+    "key-metrics": {
+      render: () => (
+        <LazyView key="key-metrics" minHeight={160}>
+          <KeyMetrics health={health} />
+        </LazyView>
+      ),
+    },
     // Accurate merged series: cash live from transactions + investments from stored
     // snapshots; latest point matches the hero. plan/net-worth-over-time.md Part A.
     "net-worth-history": {
       render: () => (
-        <motion.div key="net-worth-history" variants={itemVariants}>
-          <NetWorthHistoryChart />
-        </motion.div>
+        <LazyView key="net-worth-history" minHeight={340}>
+          <motion.div variants={itemVariants}>
+            <NetWorthHistoryChart />
+          </motion.div>
+        </LazyView>
       ),
     },
-    "action-center": { group: ROW3_GRID, render: () => <ActionCenter key="action-center" /> },
-    "weekly-recap": { group: ROW3_GRID, extra: true, render: () => <WeeklyRecap key="weekly-recap" /> },
-    "quick-import": { group: ROW3_GRID, extra: true, render: () => <QuickImport key="quick-import" /> },
+    "action-center": {
+      group: ROW3_GRID,
+      render: () => (
+        <LazyView key="action-center" minHeight={180}>
+          <ActionCenter />
+        </LazyView>
+      ),
+    },
+    "weekly-recap": {
+      group: ROW3_GRID,
+      extra: true,
+      render: () => (
+        <LazyView key="weekly-recap" minHeight={220}>
+          <WeeklyRecap />
+        </LazyView>
+      ),
+    },
+    "quick-import": {
+      group: ROW3_GRID,
+      extra: true,
+      render: () => (
+        <LazyView key="quick-import" minHeight={180}>
+          <QuickImport />
+        </LazyView>
+      ),
+    },
     "income-expense-chart": {
       group: CHARTS_GRID,
       extra: true,
-      render: () => <IncomeExpenseChart key="income-expense-chart" data={incExpData} currency={apiDisplayCurrency} />,
+      render: () => (
+        <LazyView key="income-expense-chart" minHeight={300}>
+          <IncomeExpenseChart data={incExpData} currency={apiDisplayCurrency} />
+        </LazyView>
+      ),
     },
     "spending-category-chart": {
       group: CHARTS_GRID,
       extra: true,
-      render: () => <SpendingCategoryChart key="spending-category-chart" data={spendingData} currency={apiDisplayCurrency} />,
+      render: () => (
+        <LazyView key="spending-category-chart" minHeight={260}>
+          <SpendingCategoryChart data={spendingData} currency={apiDisplayCurrency} />
+        </LazyView>
+      ),
     },
     "available-to-spend": {
       group: SPEND_GRID,
       extra: true,
       render: () => (
-        <AvailableToSpend
-          key="available-to-spend"
-          income={lastMonthIncome}
-          expenses={lastMonthExpenses}
-          currency={apiDisplayCurrency}
-          monthLabel={lastMonthKey ? getMonthLabel(lastMonthKey) : undefined}
-        />
+        <LazyView key="available-to-spend" minHeight={200}>
+          <AvailableToSpend
+            income={lastMonthIncome}
+            expenses={lastMonthExpenses}
+            currency={apiDisplayCurrency}
+            monthLabel={lastMonthKey ? getMonthLabel(lastMonthKey) : undefined}
+          />
+        </LazyView>
       ),
     },
-    insights: { extra: true, render: () => <InsightsSection key="insights" currency={apiDisplayCurrency} /> },
+    insights: {
+      extra: true,
+      render: () => (
+        <LazyView key="insights" minHeight={200}>
+          <InsightsSection currency={apiDisplayCurrency} />
+        </LazyView>
+      ),
+    },
   };
 
   // Saved order, minus hidden cards, minus dev-only cards when dev mode is off.

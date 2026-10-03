@@ -35,6 +35,7 @@ import { buildStackedSeries, type StackPoint } from "@/lib/chart-stack";
 import { StackedChartLegend } from "@/components/chart-stack-legend";
 import type { BreakdownMember } from "@/lib/chart-breakdown";
 import { getDisplayLocale } from "@/lib/locale";
+import { useAnimations } from "@/hooks/use-animations";
 
 export type Period = "6m" | "1y" | "all";
 
@@ -146,6 +147,8 @@ export function NetWorthAreaChart({
   gradientId = "nwHistGradient",
   height = 260,
 }: NetWorthAreaChartProps) {
+  const animationsEnabled = useAnimations();
+
   return (
     <ResponsiveContainer width="100%" height={height}>
       <AreaChart data={series} margin={{ top: 8, right: 4, bottom: 0, left: -10 }}>
@@ -194,6 +197,7 @@ export function NetWorthAreaChart({
           name={accountScoped ? "Balance" : "Net Worth"}
           dot={false}
           activeDot={{ r: 4, strokeWidth: 2, fill: "var(--color-card)" }}
+          isAnimationActive={animationsEnabled}
         />
       </AreaChart>
     </ResponsiveContainer>
@@ -234,6 +238,7 @@ export function NetWorthHistoryChart({
   // per-account "By account" stack is hidden for single-account (balance) charts.
   const [stacked, setStacked] = useState(false);
   const stackable = accountId == null;
+  const animationsEnabled = useAnimations();
 
   function load() {
     const params = new URLSearchParams();
@@ -431,7 +436,7 @@ export function NetWorthHistoryChart({
                       // as more solid/distinct (paired with the wider palette).
                       fillOpacity={0.7}
                       dot={false}
-                      isAnimationActive={false}
+                      isAnimationActive={animationsEnabled}
                     />
                   ))}
                 </AreaChart>

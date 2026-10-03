@@ -2,6 +2,7 @@
 
 import { AreaChart, Area, ResponsiveContainer, Tooltip } from "recharts";
 import { formatCurrency, getMonthLabel } from "@/lib/currency";
+import { useAnimations } from "@/hooks/use-animations";
 
 type SparklineProps = {
   data: number[];
@@ -57,6 +58,7 @@ function SparklineTooltip({
 }
 
 export function Sparkline({ data, color, labels, currency = "USD", height = 30, className = "w-full h-[30px]" }: SparklineProps) {
+  const animationsEnabled = useAnimations();
   const chartData: SparkRow[] = data.map((value, index) => ({ index, value, label: labels?.[index] }));
   const interactive = Boolean(labels?.length);
 
@@ -84,7 +86,7 @@ export function Sparkline({ data, color, labels, currency = "USD", height = 30, 
               reverseDirection={{ x: false, y: true }}
               offset={8}
               wrapperStyle={{ zIndex: 50, pointerEvents: "none" }}
-              isAnimationActive={false}
+              isAnimationActive={animationsEnabled}
             />
           )}
           <Area
@@ -93,7 +95,7 @@ export function Sparkline({ data, color, labels, currency = "USD", height = 30, 
             stroke={color}
             strokeWidth={1.5}
             fill={`url(#spark-${color.replace("#", "")})`}
-            isAnimationActive={false}
+            isAnimationActive={animationsEnabled}
             activeDot={interactive ? { r: 3, stroke: color, strokeWidth: 1, fill: color } : false}
           />
         </AreaChart>

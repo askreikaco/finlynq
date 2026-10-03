@@ -33,6 +33,8 @@ import { LanguageCard } from "@/components/settings/language-card";
 import { ActiveCurrenciesSection } from "@/components/active-currencies-section";
 import { DisplaySection } from "@/components/settings/sections/display-section";
 import { PageHeader } from "@/components/mobile";
+import { Switch } from "@/components/ui/switch";
+import { useAnimationPreference } from "@/hooks/use-animations";
 
 type RecomputeState = { active: boolean; target: string; done: number; total: number; finished: boolean };
 
@@ -41,6 +43,7 @@ export default function GeneralSettingsPage() {
   const currencyOptions = useDisplayCurrencyOptions(displayCurrency);
   const { font, setFont } = useFont();
   const { theme, setTheme } = useTheme();
+  const { animationsEnabled, setAnimationsEnabled } = useAnimationPreference();
   const [currencyError, setCurrencyError] = useState("");
   // Pending currency awaiting confirmation (Phase 3: switching re-derives every
   // transaction's stored reporting amount at historical rates).
@@ -198,6 +201,21 @@ export default function GeneralSettingsPage() {
                 );
               })}
             </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <Label htmlFor="animation-toggle">Enable Chart &amp; Counter Animations</Label>
+              <p className="text-xs text-muted-foreground">
+                Smooth transitions for numbers and charts. Off by default for faster rendering.
+              </p>
+            </div>
+            <Switch
+              id="animation-toggle"
+              checked={animationsEnabled}
+              onCheckedChange={setAnimationsEnabled}
+              aria-label="Enable Chart & Counter Animations"
+            />
           </div>
 
           {currencyError ? (

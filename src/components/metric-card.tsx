@@ -22,10 +22,17 @@ import { Sparkline } from "@/components/sparkline";
 import { ArrowDownRight, ArrowUpRight } from "lucide-react";
 import { AnimatedNumber } from "@/components/animated-number";
 import { formatPercent } from "@/lib/locale";
+import { LazyView } from "@/components/ui/lazy-view";
+import { useAnimations } from "@/hooks/use-animations";
 
 const itemVariants = {
   hidden: { opacity: 0, y: 16 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" as const } },
+};
+
+const noAnimationVariants = {
+  hidden: { opacity: 1, y: 0 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0 } },
 };
 
 /** Icon tile colours, so pages pick a name instead of hand-writing classes. */
@@ -69,6 +76,8 @@ export type MetricCardProps = {
   /** "hero" = the larger number of the Net Worth card. */
   size?: "default" | "hero";
   onMouseMove?: MouseEventHandler<HTMLDivElement>;
+  /** If true, wraps the card in LazyView rendering a skeleton until in viewport */
+  lazy?: boolean;
 };
 
 export function MetricCard({
@@ -90,7 +99,10 @@ export function MetricCard({
   className = "",
   size = "default",
   onMouseMove,
+  lazy = false,
 }: MetricCardProps) {
+  const animationsEnabled = useAnimations();
+  const motionVariants = animationsEnabled ? itemVariants : noAnimationVariants;
   const hasSpark = !!sparkData && sparkData.length > 1;
   // Sized by the card's own width so a narrow card (2-up grid on a phone) never clips the number.
   const numberSize = size === "hero" ? "text-3xl @sm:text-4xl @xl:text-5xl" : "text-xl @[13rem]:text-[1.75rem]";
@@ -141,19 +153,24 @@ export function MetricCard({
           <>
             {/* wide card: right-hand column, full height */}
             <div className="hidden @xl:block @xl:w-[45%] shrink-0 pr-5 py-5 min-h-[120px] opacity-60 group-hover:opacity-100 transition-opacity duration-300">
-              <Sparkline data={sparkData!} color={sparkColor} labels={sparkLabels} currency={currency} height="100%" className="w-full h-full" />
+              <LazyView minHeight={120} className="w-full h-full">
+                <Sparkline data={sparkData!} color={sparkColor} labels={sparkLabels} currency={currency} height="100%" className="w-full h-full" />
+              </LazyView>
             </div>
             {/* narrow card: full-bleed strip along the bottom */}
             <div className="@xl:hidden opacity-50 group-hover:opacity-100 transition-opacity duration-300 -mx-px">
-              <Sparkline data={sparkData!} color={sparkColor} labels={sparkLabels} currency={currency} />
+              <LazyView minHeight={40} className="w-full">
+                <Sparkline data={sparkData!} color={sparkColor} labels={sparkLabels} currency={currency} />
+              </LazyView>
             </div>
           </>
         )}
       </div>
     </Card>
   );
-  return (
-    <motion.div variants={itemVariants} className="h-full">
+
+  const content = (
+    <motion.div variants={motionVariants} className="h-full">
       {href ? (
         <Link href={href} className="block h-full">
           {card}
@@ -162,6 +179,44 @@ export function MetricCard({
         card
       )}
     </motion.div>
+  );
+
+  if (lazy) {
+    return (
+      <LazyView
+        className="h-full"
+        placeholder={<MetricCardSkeleton className={className} size={size} />}
+      >
+        {content}
+      </LazyView>
+    );
+  }
+
+  return content;
+}
+
+export function MetricCardSkeleton({
+  className = "",
+  size = "default",
+}: {
+  className?: string;
+  size?: "default" | "hero";
+}) {
+  return (
+    <Card className={`@container relative overflow-hidden h-full ${className}`}>
+      <CardContent className="pt-4 px-5 pb-4 min-w-0">
+        <div className="flex items-center gap-2.5 mb-3">
+          <div className="h-8 w-8 rounded-lg bg-muted/60 animate-pulse shrink-0" />
+          <div className="h-3 w-20 bg-muted/60 animate-pulse rounded" />
+        </div>
+        <div
+          className={`bg-muted/60 animate-pulse rounded mb-3 ${
+            size === "hero" ? "h-10 w-48" : "h-7 w-32"
+          }`}
+        />
+        <div className="h-3 w-24 bg-muted/60 animate-pulse rounded" />
+      </CardContent>
+    </Card>
   );
 }
 

@@ -5,6 +5,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { PieTooltip } from "./chart-tooltip";
 import { formatCurrency } from "@/lib/currency";
 import { motion } from "framer-motion";
+import { useAnimations } from "@/hooks/use-animations";
 
 const CHART_COLORS = [
   "#6366f1", "#8b5cf6", "#06b6d4", "#10b981", "#f59e0b",
@@ -16,13 +17,19 @@ const itemVariants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" as const } },
 };
 
+const noAnimationVariants = {
+  hidden: { opacity: 1, y: 0 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0 } },
+};
+
 type SpendingItem = { name: string; value: number };
 
 export function SpendingCategoryChart({ data, currency = "CAD" }: { data: SpendingItem[]; currency?: string }) {
+  const animationsEnabled = useAnimations();
   const total = data.reduce((s, d) => s + d.value, 0);
 
   return (
-    <motion.div variants={itemVariants}>
+    <motion.div variants={animationsEnabled ? itemVariants : noAnimationVariants}>
       <Card className="card-hover">
         <CardHeader className="pb-1 px-5 pt-5">
           <CardTitle className="text-sm font-semibold">Spending by Category</CardTitle>
@@ -47,6 +54,7 @@ export function SpendingCategoryChart({ data, currency = "CAD" }: { data: Spendi
                     strokeWidth={2}
                     stroke="var(--color-card)"
                     paddingAngle={2}
+                    isAnimationActive={animationsEnabled}
                   >
                     {data.map((_, i) => (
                       <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />

@@ -14,10 +14,16 @@ import { buildStackedSeries, type StackPoint } from "@/lib/chart-stack";
 import { StackedChartLegend } from "@/components/chart-stack-legend";
 import { motion } from "framer-motion";
 import type { MonthlyData } from "./types";
+import { useAnimations } from "@/hooks/use-animations";
 
 const itemVariants = {
   hidden: { opacity: 0, y: 16 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" as const } },
+};
+
+const noAnimationVariants = {
+  hidden: { opacity: 1, y: 0 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0 } },
 };
 
 /**
@@ -56,6 +62,7 @@ function StackedSideChart({
       ),
     [data, valueKey, breakdownKey],
   );
+  const animationsEnabled = useAnimations();
 
   return (
     <div>
@@ -92,7 +99,7 @@ function StackedSideChart({
               fill={b.color}
               fillOpacity={0.55}
               dot={false}
-              isAnimationActive={false}
+              isAnimationActive={animationsEnabled}
             />
           ))}
         </AreaChart>
@@ -117,9 +124,10 @@ export function IncomeExpenseChart({
     [data],
   );
   const showStacked = stacked && stackable;
+  const animationsEnabled = useAnimations();
 
   return (
-    <motion.div variants={itemVariants}>
+    <motion.div variants={animationsEnabled ? itemVariants : noAnimationVariants}>
       <Card className="card-hover">
         <CardHeader className="pb-1 px-5 pt-5">
           <div className="flex items-center justify-between gap-3">
@@ -195,6 +203,7 @@ export function IncomeExpenseChart({
                     name="Income"
                     dot={false}
                     activeDot={{ r: 4, strokeWidth: 2, fill: "var(--color-card)" }}
+                    isAnimationActive={animationsEnabled}
                   />
                   <Area
                     type="monotone"
@@ -205,6 +214,7 @@ export function IncomeExpenseChart({
                     name="Expenses"
                     dot={false}
                     activeDot={{ r: 4, strokeWidth: 2, fill: "var(--color-card)" }}
+                    isAnimationActive={animationsEnabled}
                   />
                 </AreaChart>
               </ResponsiveContainer>

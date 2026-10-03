@@ -16,6 +16,7 @@ import { formatCurrency } from "@/lib/currency";
 import { ColorDot } from "@/components/csp-safe-bar";
 import { ExposurePieTooltip } from "./portfolio-ui";
 import { PIE_COLORS } from "../_types";
+import { useAnimations } from "@/hooks/use-animations";
 
 type AllocationByTypeRow = { name: string; value: number; pct: number; color: string };
 type AllocationByAccountRow = { name: string; value: number; pct: number };
@@ -29,6 +30,8 @@ export function AllocationCharts({
   allocationByAccount: AllocationByAccountRow[];
   displayCurrency: string;
 }) {
+  const animationsEnabled = useAnimations();
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       {/* By Asset Type */}
@@ -54,6 +57,7 @@ export function AllocationCharts({
                     outerRadius={64}
                     strokeWidth={2}
                     stroke="var(--color-card)"
+                    isAnimationActive={animationsEnabled}
                   >
                     {allocationByType.map((d, i) => (
                       <Cell key={i} fill={d.color} />
@@ -99,6 +103,7 @@ export function AllocationCharts({
                     outerRadius={64}
                     strokeWidth={2}
                     stroke="var(--color-card)"
+                    isAnimationActive={animationsEnabled}
                   >
                     {allocationByAccount.map((_, i) => (
                       <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />

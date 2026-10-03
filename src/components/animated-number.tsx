@@ -3,13 +3,20 @@
 import { useEffect, useRef } from "react";
 import { animate } from "framer-motion";
 import { formatCurrency } from "@/lib/currency";
+import { useAnimations } from "@/hooks/use-animations";
 
 export function AnimatedNumber({ value, currency = "CAD" }: { value: number; currency?: string }) {
+  const animationsEnabled = useAnimations();
   const ref = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
     const node = ref.current;
     if (!node) return;
+
+    if (!animationsEnabled) {
+      node.textContent = formatCurrency(value, currency);
+      return;
+    }
 
     const controls = animate(0, value, {
       duration: 1.2,
@@ -20,7 +27,7 @@ export function AnimatedNumber({ value, currency = "CAD" }: { value: number; cur
     });
 
     return () => controls.stop();
-  }, [value, currency]);
+  }, [value, currency, animationsEnabled]);
 
-  return <span ref={ref}>{formatCurrency(0, currency)}</span>;
+  return <span ref={ref}>{formatCurrency(animationsEnabled ? 0 : value, currency)}</span>;
 }

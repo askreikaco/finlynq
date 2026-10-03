@@ -6,6 +6,7 @@ import { CurrencyProvider } from "@/components/currency-provider";
 import { DropdownOrderProvider } from "@/components/dropdown-order-provider";
 import { LanguageProvider } from "@/components/language-provider";
 import { FontProvider } from "@/components/font-provider";
+import { AnimationProvider } from "@/components/animation-provider";
 import { ReportingRecomputeIndicator } from "@/components/reporting-recompute-indicator";
 import { VersionGate } from "@/components/version-gate";
 import { DataProvider } from "@/lib/data";
@@ -21,6 +22,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <CurrencyProvider>
         <DropdownOrderProvider>
         <FontProvider>
+        <AnimationProvider>
         <LanguageProvider>
         <div className="relative flex min-h-screen flex-col">
           <AnnouncementBanner />
@@ -40,6 +42,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
         </LanguageProvider>
+        </AnimationProvider>
         </FontProvider>
         </DropdownOrderProvider>
       </CurrencyProvider>

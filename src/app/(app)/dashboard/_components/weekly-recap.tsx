@@ -9,10 +9,16 @@ import { Calendar, ChevronDown, ChevronUp, ArrowUpRight, ArrowDownRight } from "
 import { motion, AnimatePresence } from "framer-motion";
 import type { WeeklyRecapData } from "./types";
 import { CspSafeBar } from "@/components/csp-safe-bar";
+import { useAnimations } from "@/hooks/use-animations";
 
 const itemVariants = {
   hidden: { opacity: 0, y: 16 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" as const } },
+};
+
+const noAnimationVariants = {
+  hidden: { opacity: 1, y: 0 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0 } },
 };
 
 export function WeeklyRecap() {
@@ -48,9 +54,10 @@ export function WeeklyRecap() {
     name: cat.name.length > 12 ? cat.name.slice(0, 12) + "..." : cat.name,
     amount: cat.total,
   }));
+  const animationsEnabled = useAnimations();
 
   return (
-    <motion.div variants={itemVariants}>
+    <motion.div variants={animationsEnabled ? itemVariants : noAnimationVariants}>
       <Card className="card-hover relative overflow-hidden">
         <div className="absolute -top-16 -right-16 w-40 h-40 rounded-full bg-primary/5 blur-3xl pointer-events-none" />
 
@@ -134,7 +141,13 @@ export function WeeklyRecap() {
                       fontSize: "12px",
                     }}
                   />
-                  <Bar dataKey="amount" fill="var(--color-primary)" radius={[0, 6, 6, 0]} name="Spent" />
+                  <Bar
+                    dataKey="amount"
+                    fill="var(--color-primary)"
+                    radius={[0, 6, 6, 0]}
+                    name="Spent"
+                    isAnimationActive={animationsEnabled}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </div>

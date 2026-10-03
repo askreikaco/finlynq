@@ -37,6 +37,7 @@ import {
 import { StackedChartLegend } from "@/components/chart-stack-legend";
 import { StackedAreaTooltip } from "@/components/chart-stack-tooltip";
 import { formatPercent } from "@/lib/locale";
+import { useAnimations } from "@/hooks/use-animations";
 
 type Period = "1m" | "3m" | "6m" | "ytd" | "1y" | "all";
 /** FINLYNQ-172 — stacked grouping mode (was a boolean in FINLYNQ-129). */
@@ -98,6 +99,7 @@ export function PerformanceChart({ accountId }: PerformanceChartProps) {
   // "By account" is meaningless when the chart is already scoped to one account
   // (it'd be a single band) — only offer it for the whole-portfolio aggregate (tc-4).
   const canGroupByAccount = accountId == null;
+  const animationsEnabled = useAnimations();
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -250,7 +252,7 @@ export function PerformanceChart({ accountId }: PerformanceChartProps) {
                         fill={b.color}
                         fillOpacity={0.55}
                         dot={false}
-                        isAnimationActive={false}
+                        isAnimationActive={animationsEnabled}
                       />
                     ))}
                   </AreaChart>
@@ -325,6 +327,8 @@ export function PerformanceLineChart({
   spansZero: boolean;
   currency: string;
 }) {
+  const animationsEnabled = useAnimations();
+
   return (
     <LineChart data={chartData}>
       <XAxis dataKey="date" tick={{ fontSize: 11 }} />
@@ -344,6 +348,7 @@ export function PerformanceLineChart({
         strokeWidth={2}
         dot={false}
         name="Market value"
+        isAnimationActive={animationsEnabled}
       />
       <Line
         type="monotone"
@@ -353,6 +358,7 @@ export function PerformanceLineChart({
         strokeDasharray="3 3"
         dot={false}
         name="Cost basis"
+        isAnimationActive={animationsEnabled}
       />
     </LineChart>
   );

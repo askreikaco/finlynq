@@ -20,6 +20,7 @@ import type { BenchmarkData } from "../_types";
 import { prepareTimeSeries } from "@/lib/chart-series";
 import { formatDateNames } from "@/lib/locale";
 import { formatPercent } from "@/lib/locale";
+import { useAnimations } from "@/hooks/use-animations";
 
 // ── Helper ──────────────────────────────────────────────────────────
 export function buildBenchmarkChartData(benchmarks: BenchmarkData[]): Record<string, unknown>[] {
@@ -59,6 +60,7 @@ export function BenchmarkChart({
       clampZeroFloor: false,
     },
   );
+  const animationsEnabled = useAnimations();
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -127,6 +129,7 @@ export function BenchmarkChart({
                     strokeWidth={2}
                     dot={false}
                     connectNulls
+                    isAnimationActive={animationsEnabled}
                   />
                 ))}
               </LineChart>

@@ -18,6 +18,7 @@ import { PerformanceChart } from "@/components/portfolio/PerformanceChart";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { MetricCard } from "@/components/metric-card";
+import { LazyView } from "@/components/ui/lazy-view";
 
 
 import {
@@ -450,20 +451,24 @@ export default function PortfolioPage() {
       )}
 
       {/* ── Allocation Overview ────────────────────────────────── */}
-      <AllocationCharts
-        allocationByType={allocationByType}
-        allocationByAccount={allocationByAccount}
-        displayCurrency={displayCurrency}
-      />
+      <LazyView minHeight={300}>
+        <AllocationCharts
+          allocationByType={allocationByType}
+          allocationByAccount={allocationByAccount}
+          displayCurrency={displayCurrency}
+        />
+      </LazyView>
 
       {/* ── Performance vs Benchmarks — dev only ─────────────── */}
       {devMode && (
-        <BenchmarkChart
-          benchmarks={benchmarks}
-          benchmarkLoading={benchmarkLoading}
-          benchmarkPeriod={benchmarkPeriod}
-          setBenchmarkPeriod={setBenchmarkPeriod}
-        />
+        <LazyView minHeight={300}>
+          <BenchmarkChart
+            benchmarks={benchmarks}
+            benchmarkLoading={benchmarkLoading}
+            benchmarkPeriod={benchmarkPeriod}
+            setBenchmarkPeriod={setBenchmarkPeriod}
+          />
+        </LazyView>
       )}
 
       {/* ── Holdings by Account (Collapsible) ───────────────────
