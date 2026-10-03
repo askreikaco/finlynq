@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Instrument_Serif, Inter, IBM_Plex_Sans, Atkinson_Hyperlegible } from "next/font/google";
 import { headers } from "next/headers";
 import { ThemeProvider } from "@/components/theme-provider";
+import { PwaRegister } from "@/components/pwa-register";
 import { JsonLd, organizationSchema } from "@/components/seo/json-ld";
 import { SITE_URL } from "@/lib/seo/site";
 import "./globals.css";
@@ -51,6 +52,10 @@ export const metadata: Metadata = {
   icons: {
     icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
     apple: "/apple-touch-icon.png",
+  },
+  manifest: "/manifest.webmanifest",
+  formatDetection: {
+    telephone: false,
   },
   appleWebApp: {
     capable: true,
@@ -116,6 +121,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         />
       </head>
       <body className="antialiased noise-bg">
+        <PwaRegister />
         <JsonLd data={organizationSchema()} />
         {/* iOS standalone PWA: opaque strip behind the translucent status bar. */}
         <ThemeProvider

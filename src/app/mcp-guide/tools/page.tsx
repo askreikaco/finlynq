@@ -102,7 +102,7 @@ function groupByCategory(tools: ReadonlyArray<CatalogTool>) {
     map.set(t.category, arr);
   }
   for (const arr of map.values()) {
-    arr.sort((a, b) => a.name.localeCompare(b.name));
+    arr.sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
   }
   return map;
 }

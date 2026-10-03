@@ -97,7 +97,7 @@ export function InboxReconciledTab({
     .filter(
       (r): r is NonNullable<typeof r> => r !== null,
     )
-    .sort((a, b) => b.bank.date.localeCompare(a.bank.date));
+    .sort((a, b) => (b.bank.date ?? "").localeCompare(a.bank.date ?? ""));
 
   const handleAutoRuleRowClick = (transactionId: number) => {
     // Navigate to /transactions filtered to this account so the user can

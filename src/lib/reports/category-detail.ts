@@ -193,7 +193,7 @@ export function buildCategoryDetail(input: {
     }));
 
   const recent = [...windowRows]
-    .sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id)
+    .sort((a, b) => (b.date ?? "").localeCompare(a.date ?? "") || b.id - a.id)
     .slice(0, input.recentLimit ?? 10)
     .map((r) => ({
       id: r.id,

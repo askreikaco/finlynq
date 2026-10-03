@@ -446,7 +446,7 @@ export function aggregateDividendRows(
   if (groupBy === "holding") {
     groups.sort((a, b) => b.amount - a.amount);
   } else {
-    groups.sort((a, b) => b.label.localeCompare(a.label));
+    groups.sort((a, b) => (b.label ?? "").localeCompare(a.label ?? ""));
   }
 
   return { groups, totals, modeFields };

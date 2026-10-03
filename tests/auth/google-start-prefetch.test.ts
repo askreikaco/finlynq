@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { isPrefetchRequest } from "@/app/api/auth/google/start/route";
+import { isPrefetchRequest } from "@/lib/auth/google-prefetch";
 
 describe("isPrefetchRequest", () => {
   it("should return false for normal navigation with text/html accept", () => {

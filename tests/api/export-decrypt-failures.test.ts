@@ -5,7 +5,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { encryptField, generateDEK } from "@/lib/crypto/envelope";
-import { decryptRowFields } from "@/app/api/data/export/route";
+import { decryptRowFields } from "@/lib/export-decrypt";
 
 describe("export decryptRowFields decrypt-failure tracking (M-8)", () => {
   it("returns plaintext + 0 failures when DEK matches", () => {

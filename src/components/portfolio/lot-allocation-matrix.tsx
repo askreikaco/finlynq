@@ -77,7 +77,10 @@ export function LotAllocationMatrix({
 }) {
   // ─── Derive rows (long lots) + columns (editable sells) ─────────────────
   const longLots = useMemo(
-    () => lots.filter((l) => l.side === "long").sort((a, b) => a.openDate.localeCompare(b.openDate) || a.id - b.id),
+    () =>
+      lots
+        .filter((l) => l.side === "long")
+        .sort((a, b) => (a.openDate ?? "").localeCompare(b.openDate ?? "") || a.id - b.id),
     [lots],
   );
   const nonSellByLot = useMemo(() => {
@@ -104,7 +107,7 @@ export function LotAllocationMatrix({
     for (const l of lots) if (l.side === "short") shortByTx.set(l.openTxId, (shortByTx.get(l.openTxId) ?? 0) + l.qtyOriginal);
     return [...byTx.entries()]
       .map(([txId, m]) => ({ closeTxId: txId, closeDate: m.closeDate, proceedsPerShare: m.pps, currency: m.currency, qty: m.closed + (shortByTx.get(txId) ?? 0) }))
-      .sort((a, b) => a.closeDate.localeCompare(b.closeDate) || a.closeTxId - b.closeTxId);
+      .sort((a, b) => (a.closeDate ?? "").localeCompare(b.closeDate ?? "") || a.closeTxId - b.closeTxId);
   }, [closures, lots]);
 
   const currentAlloc = useMemo(() => {
@@ -124,7 +127,7 @@ export function LotAllocationMatrix({
 
   // ─── Filters (display-only; spec/plan/commit always span ALL sells+lots) ─
   const sellYears = useMemo(
-    () => [...new Set(sells.map((s) => s.closeDate.slice(0, 4)))].sort((a, b) => b.localeCompare(a)),
+    () => [...new Set(sells.map((s) => s.closeDate.slice(0, 4)))].sort((a, b) => (b ?? "").localeCompare(a ?? "")),
     [sells],
   );
   const [yearFilter, setYearFilter] = useState<string>("all");
@@ -133,7 +136,7 @@ export function LotAllocationMatrix({
   const [onlyUsedLots, setOnlyUsedLots] = useState(false);
 
   const lotYears = useMemo(
-    () => [...new Set(longLots.map((l) => l.openDate.slice(0, 4)))].sort((a, b) => b.localeCompare(a)),
+    () => [...new Set(longLots.map((l) => l.openDate.slice(0, 4)))].sort((a, b) => (b ?? "").localeCompare(a ?? "")),
     [longLots],
   );
   const [buyYear, setBuyYear] = useState<string>("all");
@@ -212,8 +215,8 @@ export function LotAllocationMatrix({
     for (const sell of sells) {
       let need = sell.qty;
       let order = longLots.filter((l) => elig(l, sell));
-      if (strategy === "fifo") order = [...order].sort((a, b) => a.openDate.localeCompare(b.openDate));
-      if (strategy === "lifo") order = [...order].sort((a, b) => b.openDate.localeCompare(a.openDate));
+      if (strategy === "fifo") order = [...order].sort((a, b) => (a.openDate ?? "").localeCompare(b.openDate ?? ""));
+      if (strategy === "lifo") order = [...order].sort((a, b) => (b.openDate ?? "").localeCompare(a.openDate ?? ""));
       if (strategy === "hifo") order = [...order].sort((a, b) => b.costPerShare - a.costPerShare);
       for (const lot of order) {
         if (need <= EPS) break;

@@ -65,7 +65,7 @@ export function computeHousehold(members: MemberDto[]): HouseholdTotals {
  */
 export function sumSeries(series: Point[][]): Point[] {
   const dates = [...new Set(series.flatMap((s) => s.map((p) => p.date)))].sort();
-  const sorted = series.map((s) => [...s].sort((a, b) => a.date.localeCompare(b.date)));
+  const sorted = series.map((s) => [...s].sort((a, b) => (a.date ?? "").localeCompare(b.date ?? "")));
   const idx = sorted.map(() => -1);
   return dates.map((date) => {
     let value = 0;
@@ -103,7 +103,7 @@ function sumFlows<K extends string>(rows: Array<Array<Flow & Record<K, string>>>
     }
   }
   return [...map.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
+    .sort(([a], [b]) => (a ?? "").localeCompare(b ?? ""))
     .map(([k, v]) => ({ [key]: k, income: Math.round(v.income * 100) / 100, expenses: Math.round(v.expenses * 100) / 100 }) as Flow & Record<K, string>);
 }
 

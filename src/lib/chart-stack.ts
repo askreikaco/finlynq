@@ -160,7 +160,7 @@ export function buildStackedSeries(
   const ranked = [...agg.values()].sort((a, b) => {
     const da = b.absSum - a.absSum;
     if (da !== 0) return da;
-    return a.name.localeCompare(b.name);
+    return (a.name ?? "").localeCompare(b.name ?? "");
   });
 
   const topKeys = ranked.slice(0, maxMembers);

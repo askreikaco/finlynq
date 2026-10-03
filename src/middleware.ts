@@ -440,6 +440,7 @@ export function middleware(request: NextRequest) {
     imgSrc,
     "font-src 'self'",
     connectSrc,
+    "worker-src 'self' blob:",
     "object-src 'none'",
     "frame-ancestors 'none'",
     "base-uri 'self'",
@@ -526,6 +527,11 @@ export function middleware(request: NextRequest) {
       ? "no-referrer"
       : "strict-origin-when-cross-origin"
   );
+
+  if (pathname === "/sw.js") {
+    response.headers.set("Service-Worker-Allowed", "/");
+    response.headers.set("Cache-Control", "no-cache, no-store, must-revalidate");
+  }
 
   // Permissions policy — disable unnecessary browser features
   response.headers.set(

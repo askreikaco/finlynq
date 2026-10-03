@@ -578,7 +578,7 @@ export async function buildCashflow(ctx: MemberCtx): Promise<NonNullable<Section
     else savingsExpenses += Math.abs(v);
   }
   const monthly = [...months.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
+    .sort(([a], [b]) => (a ?? "").localeCompare(b ?? ""))
     .map(([month, v]) => ({ month, income: r2(v.income), expenses: r2(v.expenses) }));
 
   const days = new Map<string, { income: number; expenses: number }>();
@@ -591,7 +591,7 @@ export async function buildCashflow(ctx: MemberCtx): Promise<NonNullable<Section
     days.set(r.day, cur);
   }
   const daily = [...days.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
+    .sort(([a], [b]) => (a ?? "").localeCompare(b ?? ""))
     .map(([date, v]) => ({ date, income: r2(v.income), expenses: r2(v.expenses) }));
 
   const windowMonths = from

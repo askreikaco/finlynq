@@ -17,7 +17,7 @@ import {
   decodeInbox,
   decodeStaged,
 } from "@/lib/email-import/process-pending-inbox";
-import { getEmailRetentionDays } from "@/app/api/settings/email-retention/route";
+import { getEmailRetentionDays } from "@/lib/email-import/retention";
 import { nextPurgeAt } from "@/lib/email-import/retention";
 
 export const dynamic = "force-dynamic";

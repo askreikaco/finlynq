@@ -105,7 +105,7 @@ export async function validateBankBalances(
 
   // Sort defensively — caller may pass in any order. ASC by date so the
   // checkpoint walk progresses chronologically.
-  const sorted = [...newAnchors].sort((a, b) => a.date.localeCompare(b.date));
+  const sorted = [...newAnchors].sort((a, b) => (a.date ?? "").localeCompare(b.date ?? ""));
 
   // Pre-load every existing anchor on or before the latest new anchor's
   // date (we need them to look up "prior anchor" without per-row queries).

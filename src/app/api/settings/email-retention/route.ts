@@ -28,27 +28,11 @@ import {
   EMAIL_RETENTION_OPTIONS,
   parseRetentionDays,
   resolveRetentionDays,
+  getEmailRetentionDays,
   type EmailRetentionDays,
 } from "@/lib/email-import/retention";
 
 export const dynamic = "force-dynamic";
-
-/** Read the per-user window. Defaults to 60 days when unset. */
-export async function getEmailRetentionDays(
-  userId: string,
-): Promise<EmailRetentionDays> {
-  const row = await db
-    .select({ value: schema.settings.value })
-    .from(schema.settings)
-    .where(
-      and(
-        eq(schema.settings.key, EMAIL_RETENTION_SETTING_KEY),
-        eq(schema.settings.userId, userId),
-      ),
-    )
-    .get();
-  return resolveRetentionDays(row?.value);
-}
 
 export async function GET(request: NextRequest) {
   const auth = await requireAuth(request);

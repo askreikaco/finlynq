@@ -205,7 +205,7 @@ export function FxOverridesSection() {
                           .filter((c) => c !== "USD")
                           .map((c): ComboboxItemShape => ({ value: c, label: `${c} — ${currencyLabel(c)}` })),
                         (c) => c.value,
-                        (a, z) => a.label.localeCompare(z.label),
+                        (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
                       ),
                       { value: "__custom__", label: "+ Custom currency code…" } satisfies ComboboxItemShape,
                     ]}

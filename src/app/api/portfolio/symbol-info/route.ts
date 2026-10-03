@@ -146,7 +146,3 @@ async function readActiveCurrencies(userId: string): Promise<string[]> {
   } catch { /* fall through */ }
   return [];
 }
-
-// Re-export the supported currency list at this path so the dialog can
-// suggest cash-position symbols without bundling another module path.
-export const __SUPPORTED_FIAT_CURRENCIES = SUPPORTED_FIAT_CURRENCIES;

@@ -367,7 +367,7 @@ export function transferLot(input: TransferLotInput): TransferLotResult {
     .slice()
     .sort(
       (a, b) =>
-        a.openDate.localeCompare(b.openDate) || (a.id - b.id),
+        (a.openDate ?? "").localeCompare(b.openDate ?? "") || (a.id - b.id),
     );
 
   const closures: Array<Omit<HoldingLotClosure, "id">> = [];

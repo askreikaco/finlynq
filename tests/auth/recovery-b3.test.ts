@@ -60,7 +60,7 @@ import { requireAuth, apiKeyStrategy, accountStrategy } from "@/lib/auth/require
 import { issueDevice } from "@/lib/auth/trusted-device";
 import * as settingsRoute from "@/app/api/settings/recovery-codes/route";
 import * as mfaRecoveryRoute from "@/app/api/auth/mfa/recovery/verify/route";
-import { _clearRecoveryVerifyAttempts } from "@/app/api/auth/mfa/recovery/verify/route";
+import { _clearRecoveryVerifyAttempts } from "@/lib/auth/mfa-recovery-attempts";
 import * as loginRoute from "@/app/api/auth/login/route";
 import * as mfaVerifyRoute from "@/app/api/auth/mfa/verify/route";
 import * as authorizeRoute from "@/app/api/oauth/authorize/route";

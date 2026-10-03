@@ -75,7 +75,7 @@ export function analyzeTrends(spending: SpendingRow[]): CategoryTrend[] {
   const trends: CategoryTrend[] = [];
 
   for (const [category, rows] of byCategory) {
-    const sorted = rows.sort((a, b) => a.month.localeCompare(b.month));
+    const sorted = rows.sort((a, b) => (a.month ?? "").localeCompare(b.month ?? ""));
     if (sorted.length < 3) continue;
 
     const recent = sorted.slice(-3);

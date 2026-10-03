@@ -239,7 +239,7 @@ export async function previewSimpleFin(
 
   const existingAccounts = Array.from(byId.values())
     .map((a) => ({ id: a.id, name: a.name, currency: a.currency }))
-    .sort((x, y) => x.name.localeCompare(y.name));
+    .sort((x, y) => (x.name ?? "").localeCompare(y.name ?? ""));
 
   return { accounts: plans, existingAccounts, errors };
 }

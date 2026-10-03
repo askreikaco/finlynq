@@ -171,5 +171,9 @@ export function buildScheduleEvents(
     }
   }
 
-  return events.sort((a, b) => a.date.localeCompare(b.date) || a.name.localeCompare(b.name));
+  return events.sort(
+    (a, b) =>
+      (a.date ?? "").localeCompare(b.date ?? "") ||
+      (a.name ?? "").localeCompare(b.name ?? "")
+  );
 }

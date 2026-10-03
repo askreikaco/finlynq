@@ -54,54 +54,10 @@ const verifySchema = z.object({
  * subsequent verify calls reject without verifying the code — the user has
  * to log in again. Resetting requires a new pending token (different jti).
  */
+import { recordVerifyAttempt, clearVerifyAttempt } from "@/lib/auth/mfa-verify-attempts";
+
 const MAX_VERIFY_ATTEMPTS = 5;
-const ATTEMPTS_MAX_ENTRIES = 10_000;
 
-interface AttemptEntry {
-  count: number;
-  /** Best-effort eviction hint; we drop entries on first miss after expiry. */
-  expiresAt: number;
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const _g = globalThis as any;
-if (!_g.__pfMfaVerifyAttempts) {
-  _g.__pfMfaVerifyAttempts = new Map<string, AttemptEntry>();
-}
-const attemptCounter: Map<string, AttemptEntry> = _g.__pfMfaVerifyAttempts;
-
-function recordAttempt(jti: string, expSeconds: number): number {
-  // Sweep stale entries opportunistically — caps memory without a timer.
-  if (attemptCounter.size >= ATTEMPTS_MAX_ENTRIES) {
-    const now = Date.now();
-    for (const [k, v] of attemptCounter) {
-      if (v.expiresAt <= now) attemptCounter.delete(k);
-    }
-    // Still over? Evict the oldest (insertion-ordered Map).
-    if (attemptCounter.size >= ATTEMPTS_MAX_ENTRIES) {
-      const firstKey = attemptCounter.keys().next().value;
-      if (firstKey !== undefined) attemptCounter.delete(firstKey);
-    }
-  }
-  const entry = attemptCounter.get(jti);
-  if (entry) {
-    entry.count++;
-    return entry.count;
-  }
-  // expSeconds is from JWT exp (epoch seconds). Pending TTL is 5m so the
-  // counter is naturally short-lived; we still refuse subsequent attempts
-  // even after exp because the JWT signature validation would reject anyway.
-  attemptCounter.set(jti, {
-    count: 1,
-    expiresAt: expSeconds > 0 ? expSeconds * 1000 : Date.now() + 5 * 60_000,
-  });
-  return 1;
-}
-
-/** Test helper. Resets the per-jti counter. */
-export function _clearVerifyAttempts(): void {
-  attemptCounter.clear();
-}
 
 export async function POST(request: NextRequest) {
   // Per-IP soft cap stays in place — protects against a swarm of new pending
@@ -168,7 +124,7 @@ export async function POST(request: NextRequest) {
     // login attempt — enough to recover from a typo, not enough to brute the
     // 6-digit space (10^6) before the 5-minute TTL anyway.
     const expSec = typeof payload.exp === "number" ? payload.exp : 0;
-    const attempts = recordAttempt(pendingJti, expSec);
+    const attempts = recordVerifyAttempt(pendingJti, expSec);
     if (attempts > MAX_VERIFY_ATTEMPTS) {
       // Once exhausted, kill the pending token outright so it can't be reused
       // even if the attacker waits a moment.
@@ -274,7 +230,7 @@ export async function POST(request: NextRequest) {
     deleteDEK(pendingJti);
     const exp = expSec > 0 ? new Date(expSec * 1000) : new Date(Date.now() + 5 * 60_000);
     await revokeJti(pendingJti, exp);
-    attemptCounter.delete(pendingJti);
+    clearVerifyAttempt(pendingJti);
     // Securities master (Phase C) — cluster positions under securities. See login route.
     enqueueBackfillSecurities(user.id, sessionDek);
     // Staging encryption upgrade — see login route for rationale.

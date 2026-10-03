@@ -259,7 +259,7 @@ export function InboxToCategorizeTab({
     );
     return Object.values(snapshot.bankTransactions)
       .filter((b) => !linkedBankIds.has(b.id))
-      .sort((a, b) => b.date.localeCompare(a.date));
+      .sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));
   }, [snapshot]);
 
   // Per-bank-row suggestion. In the Auto-pilot lens, a non-null

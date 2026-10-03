@@ -212,7 +212,7 @@ export async function buildLotsForUser(
         : [];
     const seen = new Set(securityLegs.map((r) => r.id));
     return [...securityLegs, ...cashLegs.filter((r) => !seen.has(r.id))].sort(
-      (a, b) => a.date.localeCompare(b.date) || a.id - b.id,
+      (a, b) => (a.date ?? "").localeCompare(b.date ?? "") || a.id - b.id,
     );
   };
   const loadWholeUserTx = () =>
@@ -506,7 +506,7 @@ export async function buildLotsForUser(
       const closeKind = inflow ? "short_close" : inferCashCloseKind(r.kind);
       const openLots = arr
         .filter((l) => l.side === coverSide && l.status === "open" && l.qtyRemaining > 1e-9)
-        .sort((a, b) => a.openDate.localeCompare(b.openDate) || a.tmpId - b.tmpId);
+        .sort((a, b) => (a.openDate ?? "").localeCompare(b.openDate ?? "") || a.tmpId - b.tmpId);
       for (const lot of openLots) {
         if (remaining <= 1e-9) break;
         const closeQty = Math.min(lot.qtyRemaining, remaining);

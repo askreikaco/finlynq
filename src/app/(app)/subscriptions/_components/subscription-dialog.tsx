@@ -193,7 +193,7 @@ export function SubscriptionDialog({
                 items={sortCurrency(
                   currencyOptions.map((c): ComboboxItemShape => ({ value: c, label: c })),
                   (c) => c.value,
-                  (a, z) => a.label.localeCompare(z.label),
+                  (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
                 )}
                 placeholder={displayCurrency}
                 searchPlaceholder="Search…"

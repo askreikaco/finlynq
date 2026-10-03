@@ -207,7 +207,7 @@ export async function openLotForBuyHook(
       );
     const shortLots = shortLotRows.map(rowToLot);
     // FIFO order
-    shortLots.sort((a, b) => a.openDate.localeCompare(b.openDate) || a.id - b.id);
+    shortLots.sort((a, b) => (a.openDate ?? "").localeCompare(b.openDate ?? "") || a.id - b.id);
 
     let remaining = buyQty;
     if (shortLots.length > 0) {
@@ -1111,7 +1111,7 @@ async function loadDependentCloses(
     .map((tx) => ({ tx, originalClosures: closuresByTx.get(tx.id) ?? [] }))
     .sort(
       (a, b) =>
-        a.tx.date.localeCompare(b.tx.date) || a.tx.id - b.tx.id,
+        (a.tx.date ?? "").localeCompare(b.tx.date ?? "") || a.tx.id - b.tx.id,
     );
   return deps;
 }
@@ -1685,9 +1685,9 @@ export async function applyHoldingAllocation(
       await reverseLotsForDeleteHook(userId, id);
     }
     const ordered = [...editableTxIds].sort((a, b) => {
-      const da = sellByTx.get(a)!.closeDate;
-      const dbb = sellByTx.get(b)!.closeDate;
-      return da.localeCompare(dbb) || a - b;
+      const da = sellByTx.get(a)?.closeDate;
+      const dbb = sellByTx.get(b)?.closeDate;
+      return (da ?? "").localeCompare(dbb ?? "") || a - b;
     });
     for (const id of ordered) {
       const tx = sellTxById.get(id);

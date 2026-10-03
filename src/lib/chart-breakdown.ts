@@ -76,7 +76,7 @@ export function rankBreakdown(
     const da = Math.abs(b.value) - Math.abs(a.value);
     if (da !== 0) return da;
     if (b.value !== a.value) return b.value - a.value;
-    return a.name.localeCompare(b.name);
+    return (a.name ?? "").localeCompare(b.name ?? "");
   });
 
   if (sorted.length <= maxMembers) {

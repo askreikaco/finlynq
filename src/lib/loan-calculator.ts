@@ -261,7 +261,7 @@ export function buildLoanSchedule(opts: LoanScheduleOptions): LoanSummary {
   }
 
   const monthlyAccrual: MonthlyAccrualRow[] = Array.from(accrual.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
+    .sort(([a], [b]) => (a ?? "").localeCompare(b ?? ""))
     .map(([month, interest]) => ({ month, interest: round2(interest) }));
 
   const lastRow = schedule[schedule.length - 1];

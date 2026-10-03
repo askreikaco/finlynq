@@ -158,7 +158,8 @@ export function planHoldingAllocation(
   // Chronological — mirror the commit's re-close order so the running pool
   // depletes identically.
   const sells = [...input.sells].sort(
-    (a, b) => a.closeDate.localeCompare(b.closeDate) || a.closeTxId - b.closeTxId,
+    (a, b) =>
+      (a.closeDate ?? "").localeCompare(b.closeDate ?? "") || a.closeTxId - b.closeTxId,
   );
 
   for (const sell of sells) {

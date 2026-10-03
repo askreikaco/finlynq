@@ -127,7 +127,7 @@ export async function openCashLotHook(
       );
     const shorts: HoldingLot[] = shortRows
       .map(rowToCashLot)
-      .sort((a, b) => a.openDate.localeCompare(b.openDate) || a.id - b.id);
+      .sort((a, b) => (a.openDate ?? "").localeCompare(b.openDate ?? "") || a.id - b.id);
     for (const lot of shorts) {
       if (remaining <= 1e-9) break;
       const closeQty = Math.min(lot.qtyRemaining, remaining);
@@ -234,7 +234,7 @@ export async function closeCashLotsHook(
     // FIFO: oldest open lot first.
     const lots: HoldingLot[] = lotRows
       .map(rowToCashLot)
-      .sort((a, b) => a.openDate.localeCompare(b.openDate) || a.id - b.id);
+      .sort((a, b) => (a.openDate ?? "").localeCompare(b.openDate ?? "") || a.id - b.id);
 
     let remaining = targetQty;
     let closuresWritten = 0;

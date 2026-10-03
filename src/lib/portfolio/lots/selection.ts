@@ -83,7 +83,7 @@ function orderLots(
       const arr = openLots.slice();
       arr.sort(
         (a, b) =>
-          a.openDate.localeCompare(b.openDate) || (a.id - b.id),
+          (a.openDate ?? "").localeCompare(b.openDate ?? "") || (a.id - b.id),
       );
       return arr;
     }

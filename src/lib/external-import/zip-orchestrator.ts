@@ -432,10 +432,10 @@ function buildResolvedMapping(
 function canonicalizeMappingInput(input: MappingInput): object {
   const accounts = [...input.accounts]
     .map((r) => ({ externalId: r.externalId, finlynqId: r.finlynqId ?? null, autoCreate: r.autoCreate ?? null }))
-    .sort((a, b) => a.externalId.localeCompare(b.externalId));
+    .sort((a, b) => (a.externalId ?? "").localeCompare(b.externalId ?? ""));
   const categories = [...input.categories]
     .map((r) => ({ externalId: r.externalId, finlynqId: r.finlynqId ?? null, uncategorized: r.uncategorized ?? false, autoCreate: r.autoCreate ?? null }))
-    .sort((a, b) => a.externalId.localeCompare(b.externalId));
+    .sort((a, b) => (a.externalId ?? "").localeCompare(b.externalId ?? ""));
   return {
     accounts,
     categories,

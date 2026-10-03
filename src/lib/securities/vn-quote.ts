@@ -230,7 +230,7 @@ export async function vndirectHistory(
       }
     }
     // VNDirect returns newest first (descending); sort ascending
-    out.sort((a, b) => a.date.localeCompare(b.date));
+    out.sort((a, b) => (a.date ?? "").localeCompare(b.date ?? ""));
 
     // Memoize the full range
     historyMemo.set(baseSymbol, { fetchedAt: now, bars: out });

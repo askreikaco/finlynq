@@ -475,7 +475,7 @@ export function InboxReconcileTab({
     bankIds.sort((a, b) => {
       const da = data.bankTransactions[a].date;
       const db = data.bankTransactions[b].date;
-      return db.localeCompare(da);
+      return (db ?? "").localeCompare(da ?? "");
     });
     const bankRows: BankRow[] = bankIds.map((id) => {
       const b = data.bankTransactions[id];
@@ -518,7 +518,7 @@ export function InboxReconcileTab({
     txIds.sort((a, b) => {
       const da = data.transactions[a].date;
       const db = data.transactions[b].date;
-      return db.localeCompare(da);
+      return (db ?? "").localeCompare(da ?? "");
     });
     const txRows: TxRow[] = txIds.map((id) => {
       const t = data.transactions[id];

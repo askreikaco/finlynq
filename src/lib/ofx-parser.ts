@@ -626,7 +626,7 @@ export function parseOfx(
   }
 
   // Sort transactions by date
-  result.transactions.sort((a, b) => a.date.localeCompare(b.date));
+  result.transactions.sort((a, b) => (a.date ?? "").localeCompare(b.date ?? ""));
 
   // Compute date range
   let dateRange: { start: string; end: string } | null = null;

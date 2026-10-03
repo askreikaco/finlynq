@@ -221,7 +221,7 @@ export function DataTable<T>({
         const v = col.accessor(r);
         if (v != null && String(v) !== "") seen.add(String(v));
       }
-      map[col.key] = [...seen].sort((a, b) => a.localeCompare(b));
+      map[col.key] = [...seen].sort((a, b) => (a ?? "").localeCompare(b ?? ""));
     }
     return map;
   }, [columns, rows]);

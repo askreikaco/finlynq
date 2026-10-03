@@ -78,7 +78,7 @@ export function analyzeRecurringGroup(
     };
   }
 
-  const sorted = [...group].sort((a, b) => a.date.localeCompare(b.date));
+  const sorted = [...group].sort((a, b) => (a.date ?? "").localeCompare(b.date ?? ""));
   const avg = sorted.reduce((s, t) => s + Number(t.amount), 0) / sorted.length;
   const lastDate = sorted[sorted.length - 1].date;
   const daysSinceLast = daysBetweenDates(today, lastDate);

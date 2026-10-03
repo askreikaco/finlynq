@@ -355,7 +355,7 @@ async function findOverride(
     const aBounded = a.dateTo != null;
     const bBounded = b.dateTo != null;
     if (aBounded !== bBounded) return aBounded ? -1 : 1;
-    return a.dateFrom.localeCompare(b.dateFrom) * -1; // newer date_from first
+    return (a.dateFrom ?? "").localeCompare(b.dateFrom ?? "") * -1; // newer date_from first
   });
   return { rate: rows[0].rateToUsd, effectiveDate: rows[0].dateFrom };
 }

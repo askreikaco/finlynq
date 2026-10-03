@@ -14,7 +14,7 @@ const share = (id: string, sections: string[]) => ({
   mustShareBack: false,
   requiredBackSections: null,
 });
-const base = { viewerId: "v1", period: "month", display: "VND", unlocked: true, shares: [share("s1", ["net_worth"])] };
+const base = { viewerId: "v1", dataVersion: 1, period: "month", display: "VND", unlocked: true, shares: [share("s1", ["net_worth"])] };
 
 describe("family overview cache", () => {
   beforeEach(() => clearOverviewCache());

@@ -147,7 +147,7 @@ export function groupSuggestions(
 export function orderGroups(
   groups: ReadonlyArray<string>,
   savedOrder: ReadonlyArray<string>,
-  fallbackCompare: (a: string, b: string) => number = (a, b) => a.localeCompare(b),
+  fallbackCompare: (a: string, b: string) => number = (a, b) => (a ?? "").localeCompare(b ?? ""),
 ): string[] {
   const present = dedupeGroups(groups);
   const orderIndex = new Map<string, number>();

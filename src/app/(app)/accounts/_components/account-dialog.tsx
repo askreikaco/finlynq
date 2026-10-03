@@ -403,7 +403,7 @@ export function AccountDialog({
           items={sortCurrency(
             currencyOptions.map((c): ComboboxItemShape => ({ value: c, label: c })),
             (c) => c.value,
-            (a, z) => a.label.localeCompare(z.label),
+            (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
           )}
           placeholder={defaultCurrency}
           searchPlaceholder="Search…"

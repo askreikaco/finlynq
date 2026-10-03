@@ -102,7 +102,7 @@ export function detectRecurringTransactions(
     if (txns.length < 3) continue;
 
     // Sort by date
-    const sorted = txns.sort((a, b) => a.date.localeCompare(b.date));
+    const sorted = txns.sort((a, b) => (a.date ?? "").localeCompare(b.date ?? ""));
 
     // Check amount consistency (within 20% of average)
     const avgAmount = sorted.reduce((s, t) => s + t.amount, 0) / sorted.length;
@@ -184,7 +184,7 @@ export function forecastCashFlow(
   }
 
   // Sort by date
-  upcoming.sort((a, b) => a.date.localeCompare(b.date));
+  upcoming.sort((a, b) => (a.date ?? "").localeCompare(b.date ?? ""));
 
   // Group by date
   const byDate = new Map<string, { payee: string; amount: number }[]>();

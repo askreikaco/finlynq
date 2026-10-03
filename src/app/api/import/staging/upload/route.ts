@@ -53,7 +53,7 @@ import type { DateFormatOverride } from "@/lib/csv-parser";
 import { findUnreasonableAmountError } from "@/lib/import-pipeline";
 import { safeErrorMessage } from "@/lib/validate";
 import { advanceStagedImportByMode } from "@/lib/import/advance-by-mode";
-import { getConfirmCsvMappingDefault } from "@/app/api/settings/confirm-csv-mapping/route";
+import { getConfirmCsvMappingDefault } from "@/lib/settings/confirm-csv-mapping";
 // FINLYNQ-221 — the parse + staged-import WRITE core lives in the shared
 // stage-statement-file chokepoint (so the MCP `upload_statement` tool stages
 // via the identical pipeline). The route imports `parseStatement` for the parse

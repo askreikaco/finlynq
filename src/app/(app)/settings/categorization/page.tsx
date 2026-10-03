@@ -119,12 +119,12 @@ export default function CategorizationSettingsPage() {
     const inType = categories.filter((c) => c.type === t);
     const byGroup = new Map<string, Category[]>();
     inType.forEach((c) => byGroup.set(c.group || "", [...(byGroup.get(c.group || "") ?? []), c]));
-    const groups = Array.from(byGroup.entries()).sort(([a], [b]) => (a === "" ? -1 : b === "" ? 1 : a.localeCompare(b)));
+    const groups = Array.from(byGroup.entries()).sort(([a], [b]) => (a === "" ? -1 : b === "" ? 1 : (a ?? "").localeCompare(b ?? "")));
     return { type: t, groups };
   }).filter((s) => s.groups.length > 0);
 
   // Get unique groups for the add form
-  const uniqueGroups = Array.from(new Set(categories.map((c) => c.group).filter(Boolean))).sort((a, b) => a.localeCompare(b));
+  const uniqueGroups = Array.from(new Set(categories.map((c) => c.group).filter(Boolean))).sort((a, b) => (a ?? "").localeCompare(b ?? ""));
 
   return (
     <div className="max-w-2xl space-y-6">

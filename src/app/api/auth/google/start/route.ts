@@ -21,25 +21,7 @@ import { requireAuth } from "@/lib/auth";
 import crypto from "crypto";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { clientIp } from "@/lib/client-ip";
-
-/**
- * Prefetch guard: detect prefetch requests by checking for standard
- * prefetch-related headers. Returns true only when the request header
- * contains sec-purpose, purpose, x-middleware-prefetch, or next-router-prefetch.
- */
-export function isPrefetchRequest(headers: Headers): boolean {
-  const secPurpose = headers.get("sec-purpose") || "";
-  const purpose = headers.get("purpose") || "";
-  const xMiddlewarePrefetch = headers.get("x-middleware-prefetch");
-  const nextRouterPrefetch = headers.get("next-router-prefetch");
-
-  return (
-    secPurpose.toLowerCase().includes("prefetch") ||
-    purpose.toLowerCase().includes("prefetch") ||
-    xMiddlewarePrefetch !== null ||
-    nextRouterPrefetch !== null
-  );
-}
+import { isPrefetchRequest } from "@/lib/auth/google-prefetch";
 
 /**
  * Check if a URL is safe for redirect.

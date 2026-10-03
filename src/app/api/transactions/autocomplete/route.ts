@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     const recentTx = await db
       .select({
         payee: transactions.payee,
-        notes: transactions.notes,
+        note: transactions.note,
         tags: transactions.tags,
       })
       .from(transactions)
@@ -37,8 +37,8 @@ export async function GET(req: NextRequest) {
       if (type === "payee" && tx.payee) {
         const decrypted = dek ? tryDecryptField(dek, tx.payee, "transactions.payee") : tx.payee;
         if (decrypted) uniqueValues.add(decrypted);
-      } else if (type === "note" && tx.notes) {
-        const decrypted = dek ? tryDecryptField(dek, tx.notes, "transactions.notes") : tx.notes;
+      } else if (type === "note" && tx.note) {
+        const decrypted = dek ? tryDecryptField(dek, tx.note, "transactions.note") : tx.note;
         if (decrypted) uniqueValues.add(decrypted);
       } else if (type === "tag" && tx.tags) {
         const decrypted = dek ? tryDecryptField(dek, tx.tags, "transactions.tags") : tx.tags;

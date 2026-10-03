@@ -61,7 +61,7 @@ export function computeDependencies(
   for (const list of byKey.values()) {
     // For each sell-shaped proposal, every buy-shaped proposal in the
     // same key with date <= sell's date is a dependency.
-    list.sort((a, b) => a.date.localeCompare(b.date));
+    list.sort((a, b) => (a.date ?? "").localeCompare(b.date ?? ""));
     for (let i = 0; i < list.length; i++) {
       const entry = list[i];
       // We treat drift like buy_pair for dependency purposes — drift on a

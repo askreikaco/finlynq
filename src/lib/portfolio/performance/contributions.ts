@@ -92,7 +92,7 @@ export async function computeNetContributions(
     });
   }
 
-  out.sort((a, b) => a.date.localeCompare(b.date));
+  out.sort((a, b) => (a.date ?? "").localeCompare(b.date ?? ""));
   return out;
 }
 

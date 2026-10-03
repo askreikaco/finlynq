@@ -154,7 +154,7 @@ async function handleGet(request: NextRequest) {
     }
     const incomeVsExpenses = Array.from(iveMap.values())
       .map((r) => ({ ...r, total: Math.round(r.total * 100) / 100 }))
-      .sort((a, b) => a.month.localeCompare(b.month));
+      .sort((a, b) => (a.month ?? "").localeCompare(b.month ?? ""));
 
     // FINLYNQ-128 — per-(month, type) category breakdown for the Income vs
     // Expenses tooltip. Convert each currency/reporting slice to the display
@@ -229,7 +229,7 @@ async function handleGet(request: NextRequest) {
       netWorthByMonth.set(row.month, (netWorthByMonth.get(row.month) ?? 0) + converted);
     }
     const netWorthOverTime = Array.from(netWorthByMonth.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
+      .sort(([a], [b]) => (a ?? "").localeCompare(b ?? ""))
       .map(([month, cumulative]) => ({ month, cumulative: Math.round(cumulative * 100) / 100, currency: displayCurrency }));
 
     const response = NextResponse.json({

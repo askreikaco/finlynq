@@ -79,3 +79,23 @@ export function isInboxRowExpired(
 export function nextPurgeAt(receivedAt: Date, windowDays: number): Date {
   return new Date(receivedAt.getTime() + windowDays * 24 * 60 * 60 * 1000);
 }
+
+import { db, schema } from "@/db";
+import { and, eq } from "drizzle-orm";
+
+/** Read the per-user window. Defaults to 60 days when unset. */
+export async function getEmailRetentionDays(
+  userId: string,
+): Promise<EmailRetentionDays> {
+  const row = await db
+    .select({ value: schema.settings.value })
+    .from(schema.settings)
+    .where(
+      and(
+        eq(schema.settings.key, EMAIL_RETENTION_SETTING_KEY),
+        eq(schema.settings.userId, userId),
+      ),
+    )
+    .get();
+  return resolveRetentionDays(row?.value);
+}

@@ -22,6 +22,7 @@ const CSP_DIRECTIVES = [
   "img-src 'self' data: blob: https://assets.coingecko.com https://coin-images.coingecko.com https://www.google-analytics.com https://www.googletagmanager.com",
   "font-src 'self' data:",
   "connect-src 'self' https://query1.finance.yahoo.com https://api.coingecko.com https://www.google-analytics.com https://*.analytics.google.com https://*.google-analytics.com https://www.googletagmanager.com",
+  "worker-src 'self' blob:",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -93,8 +94,33 @@ const nextConfig: NextConfig = {
       { source: "/calendar", destination: "/subscriptions?view=calendar", permanent: false },
     ];
   },
+  async rewrites() {
+    return [
+      {
+        source: "/manifest.json",
+        destination: "/manifest.webmanifest",
+      },
+    ];
+  },
   async headers() {
     return [
+      {
+        source: "/sw.js",
+        headers: [
+          {
+            key: "Content-Type",
+            value: "application/javascript; charset=utf-8",
+          },
+          {
+            key: "Cache-Control",
+            value: "no-cache, no-store, must-revalidate",
+          },
+          {
+            key: "Service-Worker-Allowed",
+            value: "/",
+          },
+        ],
+      },
       {
         source: "/:path*",
         headers: SECURITY_HEADERS,
@@ -107,6 +133,7 @@ const withSerwist = withSerwistInit({
   swSrc: "src/app/sw.ts",
   swDest: "public/sw.js",
   disable: process.env.NODE_ENV === "development",
+  reloadOnOnline: false,
 });
 
 export default withSerwist(nextConfig);

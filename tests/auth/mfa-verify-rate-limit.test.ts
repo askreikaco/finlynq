@@ -83,7 +83,8 @@ vi.mock("@/lib/email-import/upgrade-staging-encryption", () => ({
 }));
 
 import { createSessionToken } from "@/lib/auth/jwt";
-import { POST, _clearVerifyAttempts } from "@/app/api/auth/mfa/verify/route";
+import { POST } from "@/app/api/auth/mfa/verify/route";
+import { _clearVerifyAttempts } from "@/lib/auth/mfa-verify-attempts";
 
 function makePost(body: unknown): NextRequest {
   return new NextRequest("http://localhost:3000/api/auth/mfa/verify", {

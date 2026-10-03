@@ -398,7 +398,7 @@ export function getRelease(slug: string): Release | undefined {
 
 /** Newest release first (used by the index + the "Latest" pointer). */
 export const RELEASES_BY_DATE = [...RELEASES].sort((a, b) =>
-  b.date.localeCompare(a.date),
+  (b.date ?? "").localeCompare(a.date ?? ""),
 );
 
 export const LATEST_RELEASE = RELEASES_BY_DATE[0];

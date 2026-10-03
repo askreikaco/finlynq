@@ -5,7 +5,7 @@
  * to a known date and assert the exact output without timezone ambiguity.
  */
 import { describe, it, expect } from "vitest";
-import { getPresetRange } from "@/app/(app)/reports/page";
+import { getPresetRange } from "@/lib/reports/preset-range";
 
 describe("getPresetRange — last-12 (FINLYNQ-203)", () => {
   it("tc-1: standard case (2026-06-18) → 2025-06-01 to 2026-05-31", () => {

@@ -219,7 +219,7 @@ export function InboxToApproveTab({
     );
     return Object.values(snapshot.bankTransactions)
       .filter((b) => !linkedBankIds.has(b.id))
-      .sort((a, b) => b.date.localeCompare(a.date));
+      .sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));
   }, [snapshot]);
 
   /** Possible ledger duplicates — bank rows the match engine paired with an

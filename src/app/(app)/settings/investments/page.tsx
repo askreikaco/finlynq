@@ -326,7 +326,9 @@ export default function InvestmentsSettingsPage() {
         entry.items.push({ security: s, positionId: a.positionId, isCash: a.isCash });
       }
     }
-    return Array.from(map.values()).sort((x, y) => x.account.name.localeCompare(y.account.name));
+    return Array.from(map.values()).sort((x, y) =>
+      (x.account.name ?? "").localeCompare(y.account.name ?? "")
+    );
   }, [securities, accounts]);
 
   // ---- Add security (bare catalog entry) ----

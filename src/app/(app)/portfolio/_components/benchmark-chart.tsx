@@ -32,7 +32,7 @@ export function buildBenchmarkChartData(benchmarks: BenchmarkData[]): Record<str
     }
   }
   return Array.from(dateMap.values()).sort((a, b) =>
-    (a.date as string).localeCompare(b.date as string)
+    String(a.date ?? "").localeCompare(String(b.date ?? ""))
   );
 }
 

@@ -57,52 +57,9 @@ const verifySchema = z.object({
 const GENERIC_FAIL = "Recovery failed. Check your details and try again.";
 const fail = () => NextResponse.json({ error: GENERIC_FAIL }, { status: 400 });
 
-/**
- * Per-pending-jti lifetime attempt counter (reuses mfa/verify's pattern).
- * Bounded LRU to cap memory usage.
- */
+import { recordRecoveryAttempt, clearRecoveryAttempt } from "@/lib/auth/mfa-recovery-attempts";
+
 const MAX_VERIFY_ATTEMPTS = 5;
-const ATTEMPTS_MAX_ENTRIES = 10_000;
-
-interface AttemptEntry {
-  count: number;
-  expiresAt: number;
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const _g = globalThis as any;
-if (!_g.__pfRecoveryVerifyAttempts) {
-  _g.__pfRecoveryVerifyAttempts = new Map<string, AttemptEntry>();
-}
-const attemptCounter: Map<string, AttemptEntry> = _g.__pfRecoveryVerifyAttempts;
-
-function recordAttempt(jti: string, expSeconds: number): number {
-  if (attemptCounter.size >= ATTEMPTS_MAX_ENTRIES) {
-    const now = Date.now();
-    for (const [k, v] of attemptCounter) {
-      if (v.expiresAt <= now) attemptCounter.delete(k);
-    }
-    if (attemptCounter.size >= ATTEMPTS_MAX_ENTRIES) {
-      const firstKey = attemptCounter.keys().next().value;
-      if (firstKey !== undefined) attemptCounter.delete(firstKey);
-    }
-  }
-  const entry = attemptCounter.get(jti);
-  if (entry) {
-    entry.count++;
-    return entry.count;
-  }
-  attemptCounter.set(jti, {
-    count: 1,
-    expiresAt: expSeconds > 0 ? expSeconds * 1000 : Date.now() + 5 * 60_000,
-  });
-  return 1;
-}
-
-/** Test helper. Resets the per-jti counter. */
-export function _clearRecoveryVerifyAttempts(): void {
-  attemptCounter.clear();
-}
 
 export async function POST(request: NextRequest) {
   const ip = clientIp(request);
@@ -133,7 +90,7 @@ export async function POST(request: NextRequest) {
     // Per-pending-jti cap, counted BEFORE any lookup.
     const expSec = typeof payload.exp === "number" ? payload.exp : 0;
     const exp = expSec > 0 ? new Date(expSec * 1000) : new Date(Date.now() + 5 * 60_000);
-    if (recordAttempt(pendingJti, expSec) > MAX_VERIFY_ATTEMPTS) {
+    if (recordRecoveryAttempt(pendingJti, expSec) > MAX_VERIFY_ATTEMPTS) {
       await revokeJti(pendingJti, exp);
       deleteDEK(pendingJti);
       return fail();
@@ -182,7 +139,7 @@ export async function POST(request: NextRequest) {
     putDEK(jti, sessionDek, SESSION_TTL_MS, user.id);
     deleteDEK(pendingJti);
     await revokeJti(pendingJti, exp);
-    attemptCounter.delete(pendingJti);
+    clearRecoveryAttempt(pendingJti);
 
     enqueueBackfillSecurities(user.id, sessionDek);
     enqueueUpgradeStagingEncryption(user.id, sessionDek);

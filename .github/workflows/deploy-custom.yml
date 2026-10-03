@@ -20,14 +20,4 @@ jobs:
 
     steps:
       - name: Trigger deploy script
-        run: |
-          set -e
-          cd /opt/finlynq/src
-          sudo -u root git fetch origin custom
-          sudo -u root git checkout -f -B custom origin/custom
-          sudo -u root git reset --hard origin/custom
-          sudo -u root docker build -t finlynq-custom:current .
-          cd /opt/finlynq
-          sudo -u root docker-compose up -d
-          cd /opt/finlynq/src
-          sudo -u root bash -c "git log -n 1 --format=%H > /opt/finlynq/.deployed-sha"
+        run: sudo /usr/local/bin/deploy-finlynq.sh

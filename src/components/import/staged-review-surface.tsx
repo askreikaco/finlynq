@@ -389,7 +389,7 @@ export function StagedReviewSurface({
     }
     const anchors = Array.from(byDate.entries())
       .map(([date, v]) => ({ date, anchor: v.anchor, running: v.running }))
-      .sort((a, z) => a.date.localeCompare(z.date));
+      .sort((a, z) => (a.date ?? "").localeCompare(z.date ?? ""));
     const out: BalanceWarning[] = [];
     for (let i = 1; i < anchors.length; i++) {
       const cur = anchors[i];
