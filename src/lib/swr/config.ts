@@ -52,6 +52,18 @@ export const swrListOptions: SWRConfiguration = {
 };
 
 /**
+ * Aggressive SWR options for static or rarely changing data (More page, nav, user list).
+ * Disables background revalidation and caches/deduplicates for 1 hour.
+ */
+export const swrAggressiveOptions: SWRConfiguration = {
+  revalidateOnFocus: false,
+  revalidateOnReconnect: false,
+  revalidateIfStale: false,
+  shouldRetryOnError: false,
+  dedupingInterval: 3600000,
+};
+
+/**
  * SWR cache-key convention (FINLYNQ-115).
  *
  * Keys are the **request URL string** the fetcher will hit — deterministic,

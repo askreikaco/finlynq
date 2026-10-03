@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import useSWR from "swr";
+import { softJsonFetcher, swrAggressiveOptions } from "@/lib/swr";
 import { hardReload, clearPerUserStorage } from "@/lib/client/hard-reload";
 import { setPasskeyAutoSkip } from "@/lib/client/passkey-auto";
 import { ACCOUNT_PAGE_HREF } from "@/lib/client/account-page";
@@ -37,8 +39,6 @@ export function initialsOf(a: Pick<Account, "displayName" | "email">): string {
  * manage page). Only existing APIs: /api/auth/{accounts,switch,add-intent,logout}.
  */
 export function useAccountActions() {
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [loaded, setLoaded] = useState(false);
   const [hidden, setHiddenState] = useState<string[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -47,23 +47,16 @@ export function useAccountActions() {
 
   useEffect(() => {
     setHiddenState(readHiddenAccounts());
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch("/api/auth/accounts");
-        if (res.ok) {
-          const data: Account[] = await res.json();
-          if (!cancelled && Array.isArray(data)) setAccounts(data);
-        }
-      } catch {
-        // UI simply stays hidden
-      }
-      if (!cancelled) setLoaded(true);
-    })();
-    return () => {
-      cancelled = true;
-    };
   }, []);
+
+  const { data: accountsData, isLoading, mutate: mutateAccounts } = useSWR<Account[]>(
+    "/api/auth/accounts",
+    softJsonFetcher<Account[]>([]),
+    swrAggressiveOptions,
+  );
+
+  const accounts = Array.isArray(accountsData) ? accountsData : [];
+  const loaded = !isLoading && accountsData !== undefined;
 
   useEffect(() => {
     if (!message) return;
@@ -200,6 +193,7 @@ export function useAccountActions() {
       clearPerUserStorage(account.userId);
       writeHiddenAccounts(readHiddenAccounts().filter((id) => id !== account.userId));
       setPasskeyAutoSkip();
+      mutateAccounts();
       hardReload(res.ok && data?.activeUserId ? "/dashboard" : "/");
       return true;
     });
@@ -213,6 +207,7 @@ export function useAccountActions() {
       }
       for (const a of accounts) clearPerUserStorage(a.userId);
       setPasskeyAutoSkip();
+      mutateAccounts([]);
       hardReload("/");
       return true;
     });

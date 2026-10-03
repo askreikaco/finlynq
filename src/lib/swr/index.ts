@@ -6,4 +6,4 @@
  */
 
 export { jsonFetcher, softJsonFetcher, FetchError } from "./fetcher";
-export { swrListOptions, swrKey } from "./config";
+export { swrListOptions, swrAggressiveOptions, swrKey } from "./config";

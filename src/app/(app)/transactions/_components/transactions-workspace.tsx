@@ -13,7 +13,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { OnboardingTips } from "@/components/onboarding-tips";
 import { Badge } from "@/components/ui/badge";
 import { Plus, SlidersHorizontal, ChevronDown, Receipt, Search, X, AlertTriangle, ArrowRightLeft, Columns3, TrendingUp, Download } from "lucide-react";
-import { Pagination } from "@/components/ui/pagination";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuGroup, DropdownMenuLabel, DropdownMenuCheckboxItem, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { SplitDialog } from "./split-dialog";
 import { TransactionDialog, type TransactionDialogInitialState, type DialogLinkedSibling } from "@/components/transactions/transaction-dialog";
@@ -119,9 +118,11 @@ export function TransactionsWorkspace({
   const COLUMN_LABELS = SHARED_COLUMN_LABELS;
   const TOGGLEABLE_COLUMNS = new Set<ColumnId>(SHARED_TOGGLEABLE_COLUMN_IDS);
 
-  // Pagination index lives at the page level (as it did pre-refactor) so the
-  // sort/filter hooks can reset it to 0 on change without a forward reference.
-  const [page, setPage] = useState(0);
+  // Set up setPage to reset the page slice via resetPageRef
+  const resetPageRef = useRef<() => void>(() => {});
+  const setPage = useCallback((_p?: number) => {
+    resetPageRef.current();
+  }, []);
 
   // FINLYNQ-130 — re-sync filters from the URL on every navigation (including
   // client-side drill-through while already mounted on /transactions). Resets
@@ -175,16 +176,41 @@ export function TransactionsWorkspace({
   const { sortPref, setSortPref, cycleSort } = useTxSortPref(() => setPage(0));
   const { colFilters, setColFilters, findColFilter, setColFilter } = useTxFilterPrefs(() => setPage(0));
 
-  // Main list (txns / total / loading) + loadTxns — extracted to
-  // useTransactions (FINLYNQ-111 Phase 2). Same deps, fetch URL, {data,total}
-  // unwrap, and driving effect; `page` is owned by the page-level state above.
-  const { txns, total, loading, limit, loadTxns } = useTransactions(
+  // Main list (txns / total / loading) + loadTxns + infinite scroll loadNextPage
+  const { txns, total, loading, limit, loadTxns, loadNextPage, resetPage, hasMore } = useTransactions(
     filters,
     sortPref,
     colFilters,
     accounts,
-    page,
   );
+  resetPageRef.current = resetPage;
+
+  // Infinite scroll trigger via native IntersectionObserver
+  const observerTargetRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const target = observerTargetRef.current;
+    if (!target || !hasMore) return;
+    if (typeof IntersectionObserver === "undefined") return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && !loading) {
+          loadNextPage();
+        }
+      },
+      {
+        root: null,
+        rootMargin: "200px",
+        threshold: 0,
+      }
+    );
+
+    observer.observe(target);
+    return () => {
+      observer.disconnect();
+    };
+  }, [loadNextPage, hasMore, loading]);
 
   // Post-mutation refresh: reload the list AND notify the embedding page so it
   // can refresh sibling data (e.g. the account balance header). Used after
@@ -1165,8 +1191,21 @@ export function TransactionsWorkspace({
         </CardContent>
       </Card>
 
-      {/* Pagination (all widths: the mobile list pages the same way) */}
-      <Pagination page={page} limit={limit} total={total} onPageChange={setPage} />
+      {/* Infinite scroll trigger sentinel at the bottom of the table */}
+      <div
+        ref={observerTargetRef}
+        data-testid="infinite-scroll-trigger"
+        className="h-14 w-full flex items-center justify-center text-xs text-muted-foreground"
+      >
+        {hasMore ? (
+          <span className="flex items-center gap-2">
+            <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            Loading more transactions…
+          </span>
+        ) : total > 0 ? (
+          <span>Showing all {total} transactions</span>
+        ) : null}
+      </div>
 
       {/* Single delete confirmation dialog */}
       <Dialog open={deleteConfirmId !== null} onOpenChange={(open) => {

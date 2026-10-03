@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -118,7 +118,7 @@ export const mobileBarItems: NavItem[] = [
 
 export const allFlatItems = navGroups.flatMap((g) => g.items).concat(toolLinks).concat(adminLinks);
 
-export function Nav() {
+export const Nav = memo(function Nav() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
@@ -385,9 +385,18 @@ export function Nav() {
     </nav>
   );
 
-  // Mobile bottom bar
+  return (
+    <>
+      {sidebar}
+      <MobileBottomBar pathname={pathname} />
+    </>
+  );
+});
+
+// Mobile bottom bar
+export const MobileBottomBar = memo(function MobileBottomBar({ pathname }: { pathname: string }) {
   const moreActive = pathname === "/more" || pathname.startsWith("/more/");
-  const mobileBar = (
+  return (
     <nav aria-label="Mobile navigation" className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-sidebar border-t border-sidebar-border pb-[var(--sab)] pl-[var(--sal)] pr-[var(--sar)]">
       <div className="flex h-[59px] items-stretch justify-around pt-1.5 pb-1.5" data-testid="mobile-bar-row">
         {mobileBarItems.map((item) => {
@@ -422,11 +431,4 @@ export function Nav() {
       </div>
     </nav>
   );
-
-  return (
-    <>
-      {sidebar}
-      {mobileBar}
-    </>
-  );
-}
+});

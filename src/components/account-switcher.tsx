@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronDown, Plus, Lock, UserCog, Check } from "lucide-react";
@@ -110,7 +111,7 @@ function AccountBody({ account, busy }: { account: Account; busy: string | null 
   );
 }
 
-export function AccountSwitcher({ compact = false, variant = "dropdown" }: AccountSwitcherProps) {
+export const AccountSwitcher = memo(function AccountSwitcher({ compact = false, variant = "dropdown" }: AccountSwitcherProps) {
   const router = useRouter();
   const a = useAccountActions();
 
@@ -227,4 +228,4 @@ export function AccountSwitcher({ compact = false, variant = "dropdown" }: Accou
       {alert}
     </>
   );
-}
+});

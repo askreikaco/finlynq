@@ -11,12 +11,12 @@
  * roundtrips.
  */
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import useSWR from "swr";
 import { jsonFetcher, swrListOptions } from "@/lib/swr";
 import type { Account, ColFilterShape, SortPref, Transaction } from "../_types";
 
-const limit = 50;
+const limit = 10;
 
 export const TX_PAGE_LIMIT = limit;
 
@@ -56,7 +56,7 @@ export function useTransactions(
   sortPref?: UseTransactionsSortPref,
   colFilters?: UseTransactionsColFilter[],
   _accounts?: Account[],
-  page: number = 1,
+  initialPage: number = 1,
 ) {
   // 1. Fetch all transactions (limit=100000). Persisted and encrypted by SWR IndexedDB cache.
   const SWR_KEY = "/api/transactions?limit=100000";
@@ -66,6 +66,21 @@ export function useTransactions(
     jsonFetcher,
     swrListOptions,
   );
+
+  const [page, setPage] = useState(initialPage > 0 ? initialPage : 1);
+
+  // Reset page slice to 1 whenever filters, sortPref, or colFilters change
+  useEffect(() => {
+    setPage(1);
+  }, [filters, sortPref, colFilters]);
+
+  const loadNextPage = useCallback(() => {
+    setPage((prev) => prev + 1);
+  }, []);
+
+  const resetPage = useCallback(() => {
+    setPage(1);
+  }, []);
 
   // 2. Replicate server-side filter and sort logic locally using useMemo
   const filteredTxns = useMemo(() => {
@@ -296,7 +311,7 @@ export function useTransactions(
   }, [data?.data, filters, sortPref, colFilters]);
 
   // 3. Paginate the filtered array: const paginatedTxns = filteredTxns.slice(0, page * limit)
-  const paginatedTxns = filteredTxns.slice(0, page * limit || limit);
+  const paginatedTxns = filteredTxns.slice(0, page * limit);
 
   // 4. Return { txns: paginatedTxns, total: filteredTxns.length, loading: isLoading || isValidating, limit, loadTxns: mutate }
   return {
@@ -305,5 +320,9 @@ export function useTransactions(
     loading: isLoading || isValidating,
     limit,
     loadTxns: mutate,
+    loadNextPage,
+    resetPage,
+    page,
+    hasMore: paginatedTxns.length < filteredTxns.length,
   };
 }

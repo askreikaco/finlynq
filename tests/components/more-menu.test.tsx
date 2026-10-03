@@ -3,7 +3,11 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import React from "react";
-import { render, screen, cleanup, within, waitFor, fireEvent } from "@testing-library/react";
+import { render as rtlRender, screen, cleanup, within, waitFor, fireEvent } from "@testing-library/react";
+import { SWRConfig } from "swr";
+
+const render = (ui: React.ReactElement) =>
+  rtlRender(<SWRConfig value={{ provider: () => new Map() }}>{ui}</SWRConfig>);
 
 const replace = vi.fn();
 vi.mock("next/navigation", () => ({

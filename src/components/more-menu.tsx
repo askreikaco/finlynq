@@ -9,7 +9,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo, memo } from "react";
+import useSWR from "swr";
+import { softJsonFetcher, swrAggressiveOptions } from "@/lib/swr";
 import {
   PiggyBank,
   Target,
@@ -159,15 +161,8 @@ export function AppearanceRow() {
   );
 }
 
-export function MoreMenu() {
+export const MoreMenu = memo(function MoreMenu() {
   const router = useRouter();
-  const [flags, setFlags] = useState<MoreFlags>({
-    isAdmin: false,
-    devMode: false,
-    familyEnabled: true,
-    hasAnnouncements: true, // optimistic, as in nav.tsx
-  });
-  const [unread, setUnread] = useState(0);
   const busy = useRef(false);
 
   // Desktop has the sidebar: bounce /more -> /dashboard.
@@ -177,27 +172,41 @@ export function MoreMenu() {
     }
   }, [router]);
 
-  useEffect(() => {
-    fetch("/api/auth/session")
-      .then((r) => r.json())
-      .then((d) =>
-        setFlags((p) => ({ ...p, isAdmin: d.isAdmin === true, familyEnabled: d.familyWealthEnabled !== false })),
-      )
-      .catch(() => {});
-    fetch("/api/settings/dev-mode")
-      .then((r) => r.json())
-      .then((d) => d.devMode && setFlags((p) => ({ ...p, devMode: true })))
-      .catch(() => {});
-    fetch("/api/announcements")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((list) => {
-        if (Array.isArray(list)) {
-          setFlags((p) => ({ ...p, hasAnnouncements: list.length > 0 }));
-          setUnread(list.filter((a: { read?: boolean }) => !a.read).length);
-        }
-      })
-      .catch(() => {});
-  }, []);
+  const { data: sessionData } = useSWR<{ isAdmin?: boolean; familyWealthEnabled?: boolean }>(
+    "/api/auth/session",
+    softJsonFetcher({}),
+    swrAggressiveOptions,
+  );
+  const { data: devModeData } = useSWR<{ devMode?: boolean }>(
+    "/api/settings/dev-mode",
+    softJsonFetcher({}),
+    swrAggressiveOptions,
+  );
+  const { data: announcementsData } = useSWR<Array<{ id: number; read?: boolean }> | null>(
+    "/api/announcements",
+    softJsonFetcher(null),
+    swrAggressiveOptions,
+  );
+
+  const isAdmin = sessionData?.isAdmin === true;
+  const familyEnabled = sessionData?.familyWealthEnabled !== false;
+  const devMode = Boolean(devModeData?.devMode);
+  const announcementsList = Array.isArray(announcementsData) ? announcementsData : [];
+  const hasAnnouncements =
+    announcementsData === undefined || announcementsData === null
+      ? true
+      : announcementsList.length > 0;
+  const unread = announcementsList.filter((a) => !a.read).length;
+
+  const flags: MoreFlags = useMemo(
+    () => ({
+      isAdmin,
+      devMode,
+      familyEnabled,
+      hasAnnouncements,
+    }),
+    [isAdmin, devMode, familyEnabled, hasAnnouncements],
+  );
 
   const signOut = async () => {
     if (busy.current) return;
@@ -276,4 +285,4 @@ export function MoreMenu() {
       ))}
     </div>
   );
-}
+});
