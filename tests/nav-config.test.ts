@@ -189,8 +189,6 @@ describe("nav-config", () => {
       // Add known detail/dynamic routes that don't need registry entries
       const detailRoutes = new Set([
         "/account", // parent for /account/info and /account/security
-        "/accounts/[id]", // dynamic detail page
-        "/categories/[id]", // dynamic detail page
         "/portfolio/dividends",
         "/portfolio/realized-gains",
         "/portfolio/new",
@@ -201,7 +199,6 @@ describe("nav-config", () => {
         "/transactions/search",
         "/settings/account", // not in nav, account is separate
         "/settings/backfill",
-        "/settings/backfill/[runId]",
         "/settings/import/reconcile-visibility",
         "/import/pending", // live route, not redirected
         "/manage-accounts",
@@ -406,19 +403,13 @@ describe("nav-config", () => {
       const pageFiles = getAllPageFiles();
 
       // Known redirects (from next.config.ts)
-      const redirectTargets = new Set([
-        "/import", // /reconcile, /import/reconcile, /inbox redirect here
-      ]);
+      const redirectTargets = new Set([]);
 
       for (const entry of NAV_REGISTRY) {
         // Skip entries with query params
         if (entry.path.includes("?")) continue;
         // Skip parent-only entries (they exist as layout containers, not pages)
         if (entry.surfaces.length === 0) continue;
-        if (entry.surfaces.length === 1 && entry.surfaces[0] === "admin") {
-          // Check if this is a child of a parent (has parent field)
-          if (entry.parent) continue;
-        }
 
         const basePath = entry.path.split("?")[0];
         const exists =
