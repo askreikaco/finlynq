@@ -529,32 +529,4 @@ describe("Real Handler ETag Coverage Tests (PART 2)", () => {
       console.log(`✓ /api/reports returns different ETag after data_version change`);
     });
   });
-
-  describe("All 6 routes have ETag support", () => {
-    it("should verify all 6 routes have ETag and Cache-Control headers", async () => {
-      // Summary test that iterates and documents all 6 routes with proper assertions
-      const routes = [
-        "/api/accounts",
-        "/api/dashboard",
-        "/api/transactions",
-        "/api/portfolio/overview",
-        "/api/rules",
-        "/api/reports",
-      ];
-
-      console.log(`\n=== Handler ETag Coverage Summary ===`);
-      console.log(`All 6 GET handlers verified to have:`);
-      console.log(`  - checkETag(request) call`);
-      console.log(`  - ETag header in 200 responses`);
-      console.log(`  - Cache-Control: private, no-cache header`);
-      console.log(`  - 304 Not Modified handling`);
-      console.log(`\nRoutes covered:`);
-      routes.forEach((route) => {
-        console.log(`  ✓ ${route}`);
-      });
-
-      // Assert all 6 routes are covered with ETag support
-      expect(routes).toHaveLength(6);
-    });
-  });
 });
