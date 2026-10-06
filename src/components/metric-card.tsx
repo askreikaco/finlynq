@@ -24,6 +24,7 @@ import { AnimatedNumber } from "@/components/animated-number";
 import { formatPercent } from "@/lib/locale";
 import { LazyView } from "@/components/ui/lazy-view";
 import { useAnimations } from "@/hooks/use-animations";
+import { useDisplayCurrency } from "@/components/currency-provider";
 
 const itemVariants = {
   hidden: { opacity: 0, y: 16 },
@@ -102,6 +103,8 @@ export function MetricCard({
   lazy = false,
 }: MetricCardProps) {
   const animationsEnabled = useAnimations();
+  const { displayCurrency } = useDisplayCurrency();
+  const resolvedCurrency = currency ?? displayCurrency;
   const motionVariants = animationsEnabled ? itemVariants : noAnimationVariants;
   const hasSpark = !!sparkData && sparkData.length > 1;
   // Sized by the card's own width so a narrow card (2-up grid on a phone) never clips the number.
@@ -127,7 +130,7 @@ export function MetricCard({
             <span className="inline-block h-7 w-24 animate-shimmer rounded-md align-middle" />
           ) : (
             <div className={`${numberSize} font-bold tracking-tight hero-number tabular-nums leading-none break-words ${valueClassName}`}>
-              {typeof value === "number" ? <AnimatedNumber value={value} currency={currency} /> : value}
+              {typeof value === "number" ? <AnimatedNumber value={value} currency={resolvedCurrency} /> : value}
             </div>
           )}
 
@@ -154,13 +157,13 @@ export function MetricCard({
             {/* wide card: right-hand column, full height */}
             <div className="hidden @xl:block @xl:w-[45%] shrink-0 pr-5 py-5 min-h-[120px] opacity-60 group-hover:opacity-100 transition-opacity duration-300">
               <LazyView minHeight={120} className="w-full h-full">
-                <Sparkline data={sparkData!} color={sparkColor} labels={sparkLabels} currency={currency} height="100%" className="w-full h-full" />
+                <Sparkline data={sparkData!} color={sparkColor} labels={sparkLabels} currency={resolvedCurrency} height="100%" className="w-full h-full" />
               </LazyView>
             </div>
             {/* narrow card: full-bleed strip along the bottom */}
             <div className="@xl:hidden opacity-50 group-hover:opacity-100 transition-opacity duration-300 -mx-px">
               <LazyView minHeight={40} className="w-full">
-                <Sparkline data={sparkData!} color={sparkColor} labels={sparkLabels} currency={currency} />
+                <Sparkline data={sparkData!} color={sparkColor} labels={sparkLabels} currency={resolvedCurrency} />
               </LazyView>
             </div>
           </>
