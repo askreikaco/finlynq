@@ -131,6 +131,49 @@ describe('data-version concurrency', () => {
     }
   });
 
+  it('should handle non-UUID string user IDs (e.g. "default")', async () => {
+    const client = new pg.Client({
+      connectionString: databaseUrl,
+    });
+
+    try {
+      await client.connect();
+
+      // Create a user with a string ID (not UUID)
+      const stringUserId = 'test-string-user-' + Date.now();
+      const now = new Date().toISOString();
+      await client.query(
+        `INSERT INTO users (id, email, password_hash, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [stringUserId, 'string-user@test.local', 'hash', now, now]
+      );
+
+      // Clear data_version
+      await client.query(
+        `UPDATE users SET data_version = 0 WHERE id = $1`,
+        [stringUserId]
+      );
+
+      // Insert into accounts for this string user
+      await client.query(
+        `INSERT INTO accounts (user_id, type, "group", currency)
+         VALUES ($1, $2, $3, $4)`,
+        [stringUserId, 'checking', 'default', 'CAD']
+      );
+
+      // Verify data_version was bumped
+      const result = await client.query(
+        `SELECT data_version FROM users WHERE id = $1`,
+        [stringUserId]
+      );
+
+      expect(parseInt(result.rows[0].data_version, 10)).toBeGreaterThan(0);
+      console.log(`String user ID test passed: data_version bumped for '${stringUserId}'`);
+    } finally {
+      await client.end();
+    }
+  });
+
   it('should bump both users when UPDATE changes user_id', async () => {
     const client = new pg.Client({
       connectionString: databaseUrl,

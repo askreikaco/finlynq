@@ -11,10 +11,11 @@
 -- Called by statement-level triggers with NEW TABLE or OLD TABLE.
 -- Uses deterministic row locking to prevent deadlocks in concurrent scenarios.
 -- For UPDATE statements, both old_rows and new_rows are used to detect user_id changes.
+-- NOTE: v_user_id is TEXT (not UUID) because users.id is TEXT type (e.g. 'default')
 CREATE OR REPLACE FUNCTION reika_bump_data_version()
 RETURNS TRIGGER AS $$
 DECLARE
-  v_user_id UUID;
+  v_user_id TEXT;
 BEGIN
   -- Take row locks on affected users in deterministic order BEFORE any UPDATE
   -- to prevent deadlocks. NO KEY UPDATE allows concurrent reads while preventing
