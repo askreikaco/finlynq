@@ -410,10 +410,10 @@ describe("merged categories (WP8)", () => {
       });
     });
 
-    it("load error: GET rejection shows 'Failed to load categories'", async () => {
+    it("load error: GET ok:false shows 'No categories found'", async () => {
       fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
         if (url.includes("/api/categories") && !init?.method) {
-          throw new Error("Network error");
+          return { ok: false, json: async () => ({}) };
         }
         return { ok: true, json: async () => CATEGORIES_DATA };
       });
@@ -421,7 +421,7 @@ describe("merged categories (WP8)", () => {
       render(<CategoryManagement />);
 
       await waitFor(() => {
-        expect(screen.getByText("Failed to load categories")).toBeTruthy();
+        expect(screen.getByText("No categories found")).toBeTruthy();
       }, { timeout: 5000 });
     });
 

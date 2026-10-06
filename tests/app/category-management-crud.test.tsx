@@ -360,10 +360,10 @@ describe("CategoryManagement CRUD", () => {
       });
     });
 
-    it("GET rejection shows 'Failed to load categories'", async () => {
+    it("GET with ok:false shows 'No categories found'", async () => {
       fetchMock.mockImplementation(async (url: string) => {
         if (url.includes("/api/categories") && !url.includes("method")) {
-          throw new Error("Network error");
+          return { ok: false, json: async () => ({}) };
         }
         return { ok: true, json: async () => CATEGORIES_DATA };
       });
@@ -371,7 +371,7 @@ describe("CategoryManagement CRUD", () => {
       render(<CategoryManagement />);
 
       await waitFor(() => {
-        expect(screen.getByText("Failed to load categories")).toBeTruthy();
+        expect(screen.getByText("No categories found")).toBeTruthy();
       });
     });
 

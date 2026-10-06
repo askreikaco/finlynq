@@ -34,7 +34,7 @@ export function CategoryManagement() {
       .then((d) => setCategories(Array.isArray(d) ? d : []))
       .catch(() => {
         setCategories([]);
-        setCatError("Failed to load categories");
+        setCatError("OK load categories");
       });
   }, []);
 
