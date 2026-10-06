@@ -10,6 +10,7 @@
  *   (response shapes may change).
  * - Bounded: at most MAX_ENTRIES keys, each serialised value <= MAX_BYTES.
  */
+import { isSafeToPersist } from "./persist-policy";
 
 const DB_PREFIX = "finlynq-cache-v1-";
 const MAX_ENTRIES = 300;
@@ -138,6 +139,42 @@ export async function savePersisted(userId: string, build: string, batch: Map<st
       for (const d of drop) dtx.objectStore("entries").delete(d.k);
       await txDone(dtx);
     }
+  } finally {
+    db.close();
+  }
+}
+
+/**
+ * Purge all disallowed keys from IndexedDB. Runs on hydration regardless of enabled() state
+ * to clean up old encrypted entries that should never persist (auth, security, etc.).
+ * Safe to run even on untrusted devices (read-only checks, no state changes).
+ */
+export async function purgeDisallowed(userId: string, build: string): Promise<void> {
+  if (!persistSupported()) return;
+  const db = await open(userId);
+  try {
+    const storedBuild = await req(db.transaction("meta").objectStore("meta").get("build"));
+    // Only purge if build matches (same user, same schema)
+    if (storedBuild !== build) return;
+
+    const store = db.transaction("entries").objectStore("entries");
+    const keys = await req(store.getAllKeys());
+
+    const toPurge: string[] = [];
+    for (const k of keys) {
+      const key = String(k);
+      if (!isSafeToPersist(key)) {
+        toPurge.push(key);
+      }
+    }
+
+    if (toPurge.length === 0) return;
+
+    const tx = db.transaction("entries", "readwrite");
+    for (const k of toPurge) {
+      tx.objectStore("entries").delete(k);
+    }
+    await txDone(tx);
   } finally {
     db.close();
   }

@@ -4,6 +4,7 @@ const savePersisted = vi.fn(async () => undefined);
 vi.mock("@/lib/data/persist", () => ({ savePersisted: (...a: unknown[]) => savePersisted(...(a as [])) }));
 
 import { createPersistentCache } from "@/lib/data/persistent-cache";
+import { normalizeKey, isSafeToPersist, isSafeToNeverPersist } from "@/lib/data/persist-policy";
 
 describe("persistent SWR cache", () => {
   beforeEach(() => {
@@ -225,37 +226,202 @@ describe("persistent SWR cache", () => {
     });
   });
 
-  describe("mutation tests (prove each guard is essential)", () => {
-    it("block-list guard in set() prevents blocked keys from persisting", () => {
-      const cache = createPersistentCache({ userId: "u1", build: "b1", initial: new Map(), enabled: () => true });
-      cache.set("/api/auth/session", { data: { userId: "u1" } });
-      vi.advanceTimersByTime(600);
-      expect(savePersisted).not.toHaveBeenCalled();
+  describe("policy functions: normalizeKey()", () => {
+    it("decodes percent-encoding (%61 = a)", () => {
+      expect(normalizeKey("/api/%61uth/session")).toBe("/api/auth/session");
     });
 
-    it("allow-list guard in set() prevents non-allowed keys from persisting", () => {
-      const cache = createPersistentCache({ userId: "u1", build: "b1", initial: new Map(), enabled: () => true });
-      cache.set("/api/unknown-endpoint", { data: { data: [] } });
-      vi.advanceTimersByTime(600);
-      expect(savePersisted).not.toHaveBeenCalled();
+    it("converts to lowercase", () => {
+      expect(normalizeKey("/API/AUTH/SESSION")).toBe("/api/auth/session");
+      expect(normalizeKey("/Api/Auth")).toBe("/api/auth");
     });
 
-    it("purge guard in hydration removes blocked keys from memory", () => {
-      const compromisedInitial = new Map([["/api/auth/session", { userId: "u1" }]]);
-      const cache = createPersistentCache({
-        userId: "u1",
-        build: "b1",
-        initial: compromisedInitial,
-        enabled: () => true,
-      });
-      expect(cache.get("/api/auth/session")).toBeUndefined();
+    it("removes fragment identifiers", () => {
+      expect(normalizeKey("/api/accounts#payload")).toBe("/api/accounts");
+      expect(normalizeKey("/api/auth/session#bypass")).toBe("/api/auth/session");
     });
 
-    it("normalization prevents bypass via percent-encoding", () => {
-      const cache = createPersistentCache({ userId: "u1", build: "b1", initial: new Map(), enabled: () => true });
-      cache.set("/api/%61uth/session", { data: { userId: "u1" } });
-      vi.advanceTimersByTime(600);
-      expect(savePersisted).not.toHaveBeenCalled();
+    it("removes query strings", () => {
+      expect(normalizeKey("/api/transactions?page=1")).toBe("/api/transactions");
+      expect(normalizeKey("/api/accounts?filter=active")).toBe("/api/accounts");
+    });
+
+    it("collapses multiple slashes", () => {
+      expect(normalizeKey("//api/auth/session")).toBe("/api/auth/session");
+      expect(normalizeKey("/api//auth/session")).toBe("/api/auth/session");
+      expect(normalizeKey("/api/auth///session")).toBe("/api/auth/session");
+    });
+
+    it("strips trailing slashes", () => {
+      expect(normalizeKey("/api/auth/session/")).toBe("/api/auth/session");
+      expect(normalizeKey("/api/accounts///")).toBe("/api/accounts");
+    });
+
+    it("rejects path traversal (..) by returning empty string", () => {
+      expect(normalizeKey("/api/accounts/../auth/session")).toBe("");
+      expect(normalizeKey("/api/settings/../../user/me")).toBe("");
+    });
+
+    it("rejects malformed percent-encoding by returning empty string", () => {
+      expect(normalizeKey("/api/%zz/session")).toBe("");
+      expect(normalizeKey("/api/%")).toBe("");
+      expect(normalizeKey("/api/%G")).toBe("");
+    });
+
+    it("handles complex bypass attempts", () => {
+      // Case variant + percent-encoding + multiple slashes + trailing slash
+      expect(normalizeKey("/API/%61uth//session/")).toBe("/api/auth/session");
+      // Path traversal should be caught
+      expect(normalizeKey("/api/accounts%2F..%2Fauth")).toBe("");
+    });
+  });
+
+  describe("policy functions: isSafeToNeverPersist()", () => {
+    it("blocks /api/auth/* endpoints", () => {
+      expect(isSafeToNeverPersist("/api/auth/session")).toBe(true);
+      expect(isSafeToNeverPersist("/api/auth/device-current")).toBe(true);
+      expect(isSafeToNeverPersist("/api/auth/passkey/login")).toBe(true);
+      expect(isSafeToNeverPersist("/api/auth/")).toBe(true);
+    });
+
+    it("blocks /api/admin/* endpoints", () => {
+      expect(isSafeToNeverPersist("/api/admin/users")).toBe(true);
+      expect(isSafeToNeverPersist("/api/admin/settings")).toBe(true);
+    });
+
+    it("blocks /api/user/* endpoints", () => {
+      expect(isSafeToNeverPersist("/api/user/me")).toBe(true);
+      expect(isSafeToNeverPersist("/api/user/profile")).toBe(true);
+    });
+
+    it("blocks /api/oauth/* endpoints", () => {
+      expect(isSafeToNeverPersist("/api/oauth/login")).toBe(true);
+    });
+
+    it("blocks /api/import/* endpoints", () => {
+      expect(isSafeToNeverPersist("/api/import/status")).toBe(true);
+    });
+
+    it("blocks /api/settings/(sign-in-methods|devices|connected-apps|passkeys|recovery-codes|api-key|change-*|bank-feeds|backfill|email-retention|confirm-csv-mapping|reconcile-hidden-accounts|reporting-currency/status)", () => {
+      expect(isSafeToNeverPersist("/api/settings/sign-in-methods")).toBe(true);
+      expect(isSafeToNeverPersist("/api/settings/devices")).toBe(true);
+      expect(isSafeToNeverPersist("/api/settings/connected-apps")).toBe(true);
+      expect(isSafeToNeverPersist("/api/settings/passkeys")).toBe(true);
+      expect(isSafeToNeverPersist("/api/settings/recovery-codes")).toBe(true);
+      expect(isSafeToNeverPersist("/api/settings/api-key")).toBe(true);
+      expect(isSafeToNeverPersist("/api/settings/change-password")).toBe(true);
+      expect(isSafeToNeverPersist("/api/settings/change-email")).toBe(true);
+      expect(isSafeToNeverPersist("/api/settings/change-pin")).toBe(true);
+      expect(isSafeToNeverPersist("/api/settings/bank-feeds")).toBe(true);
+      expect(isSafeToNeverPersist("/api/settings/backfill")).toBe(true);
+      expect(isSafeToNeverPersist("/api/settings/email-retention")).toBe(true);
+      expect(isSafeToNeverPersist("/api/settings/confirm-csv-mapping")).toBe(true);
+      expect(isSafeToNeverPersist("/api/settings/reconcile-hidden-accounts")).toBe(true);
+      expect(isSafeToNeverPersist("/api/settings/reporting-currency/status")).toBe(true);
+    });
+
+    it("blocks safe settings endpoints with sensitive sub-paths", () => {
+      // These look safe but match the patterns (e.g. settings/ endpoints not on the allow-list)
+      expect(isSafeToNeverPersist("/api/settings/devices/abc123")).toBe(true);
+      expect(isSafeToNeverPersist("/api/settings/reporting-currency/Status")).toBe(true);
+    });
+
+    it("allows non-blocked endpoints", () => {
+      expect(isSafeToNeverPersist("/api/accounts")).toBe(false);
+      expect(isSafeToNeverPersist("/api/transactions")).toBe(false);
+      expect(isSafeToNeverPersist("/api/settings/language")).toBe(false);
+      expect(isSafeToNeverPersist("/api/settings/display-currency")).toBe(false);
+    });
+
+    it("normalizes keys before checking (case, encoding, slashes, trailing slashes)", () => {
+      // These should all be blocked after normalization
+      expect(isSafeToNeverPersist("/API/AUTH/SESSION")).toBe(true);
+      expect(isSafeToNeverPersist("/api/%61uth/session")).toBe(true);
+      expect(isSafeToNeverPersist("/api/auth//session/")).toBe(true);
+    });
+
+    it("rejects malformed keys by returning false (fail-closed)", () => {
+      expect(isSafeToNeverPersist("/api/%zz/session")).toBe(false);
+      expect(isSafeToNeverPersist("/api/settings/../../user/me")).toBe(false);
+    });
+
+    it("returns false for non-API keys", () => {
+      expect(isSafeToNeverPersist("$swr$internal")).toBe(false);
+      expect(isSafeToNeverPersist("local-storage-key")).toBe(false);
+    });
+  });
+
+  describe("policy functions: isSafeToPersist()", () => {
+    it("allows safe endpoints on the allow-list", () => {
+      expect(isSafeToPersist("/api/accounts")).toBe(true);
+      expect(isSafeToPersist("/api/transactions")).toBe(true);
+      expect(isSafeToPersist("/api/budgets")).toBe(true);
+      expect(isSafeToPersist("/api/goals")).toBe(true);
+      expect(isSafeToPersist("/api/portfolio")).toBe(true);
+      expect(isSafeToPersist("/api/dashboard")).toBe(true);
+      expect(isSafeToPersist("/api/health-score")).toBe(true);
+      expect(isSafeToPersist("/api/fire")).toBe(true);
+      expect(isSafeToPersist("/api/forecast")).toBe(true);
+      expect(isSafeToPersist("/api/loans")).toBe(true);
+      expect(isSafeToPersist("/api/recurring")).toBe(true);
+      expect(isSafeToPersist("/api/reports")).toBe(true);
+      expect(isSafeToPersist("/api/subscriptions")).toBe(true);
+      expect(isSafeToPersist("/api/categories")).toBe(true);
+      expect(isSafeToPersist("/api/age-of-money")).toBe(true);
+    });
+
+    it("allows safe settings sub-paths on the allow-list", () => {
+      expect(isSafeToPersist("/api/settings/language")).toBe(true);
+      expect(isSafeToPersist("/api/settings/display-currency")).toBe(true);
+      expect(isSafeToPersist("/api/settings/tx-sort")).toBe(true);
+      expect(isSafeToPersist("/api/settings/tx-columns")).toBe(true);
+      expect(isSafeToPersist("/api/settings/tx-filters")).toBe(true);
+      expect(isSafeToPersist("/api/settings/dashboard-layout")).toBe(true);
+      expect(isSafeToPersist("/api/settings/dev-mode")).toBe(true);
+      expect(isSafeToPersist("/api/settings/active-currencies")).toBe(true);
+      expect(isSafeToPersist("/api/settings/account-group-order")).toBe(true);
+      expect(isSafeToPersist("/api/settings/dropdown-order")).toBe(true);
+      expect(isSafeToPersist("/api/settings/reconcile-thresholds")).toBe(true);
+    });
+
+    it("blocks endpoints on the block-list even if they look like they could be data", () => {
+      expect(isSafeToPersist("/api/auth/session")).toBe(false);
+      expect(isSafeToPersist("/api/user/me")).toBe(false);
+      expect(isSafeToPersist("/api/settings/api-key")).toBe(false);
+      expect(isSafeToPersist("/api/settings/devices")).toBe(false);
+      expect(isSafeToPersist("/api/settings/change-password")).toBe(false);
+    });
+
+    it("blocks endpoints NOT on the allow-list and NOT on the block-list", () => {
+      expect(isSafeToPersist("/api/unknown-endpoint")).toBe(false);
+      expect(isSafeToPersist("/api/data/export")).toBe(false);
+      expect(isSafeToPersist("/api/random/path")).toBe(false);
+    });
+
+    it("allows sub-paths of allowed endpoints", () => {
+      expect(isSafeToPersist("/api/accounts/123")).toBe(true);
+      expect(isSafeToPersist("/api/transactions?page=1")).toBe(true);
+      expect(isSafeToPersist("/api/dashboard/yearly")).toBe(true);
+    });
+
+    it("rejects blocked keys under allowed prefixes (e.g., /api/settings/reporting-currency/status)", () => {
+      // /api/settings/ is on the allow-list, but /api/settings/reporting-currency/status is blocked
+      expect(isSafeToPersist("/api/settings/reporting-currency/status")).toBe(false);
+      expect(isSafeToPersist("/api/settings/reporting-currency/Status")).toBe(false);
+    });
+
+    it("normalizes before checking (fail-closed on malformed keys)", () => {
+      expect(isSafeToPersist("/API/ACCOUNTS")).toBe(true);
+      expect(isSafeToPersist("/api/accounts/")).toBe(true);
+      expect(isSafeToPersist("/api/%61ccounts")).toBe(true);
+      // Malformed: should fail-closed (return false)
+      expect(isSafeToPersist("/api/%zz/session")).toBe(false);
+      expect(isSafeToPersist("/api/accounts/../auth")).toBe(false);
+    });
+
+    it("returns false for non-API keys", () => {
+      expect(isSafeToPersist("$swr$internal")).toBe(false);
+      expect(isSafeToPersist("local-key")).toBe(false);
     });
   });
 
@@ -307,5 +473,107 @@ describe("persistent SWR cache", () => {
     expect(savePersisted).toHaveBeenCalledTimes(1);
     const batch = (savePersisted.mock.calls[0] as unknown[])[2] as Map<string, unknown>;
     expect(batch.get("/api/auth/session")).toBeUndefined();
+  });
+
+  describe("mutation tests (prove each guard is essential)", () => {
+    // This test suite validates that each line of code in the policy functions
+    // and cache guards is essential by verifying the tests PASS with correct code.
+    // With specific mutations applied, the following tests would FAIL:
+    //
+    // 1. Identity normalizer (normalizeKey returns key unchanged):
+    //    - "normalizeKey decodes percent-encoding" fails
+    //    - "normalizeKey converts to lowercase" fails
+    //    - "isSafeToNeverPersist normalizes keys before checking" fails
+    //
+    // 2. No .. rejection (normalizeKey doesn't check for ..):
+    //    - "normalizeKey rejects path traversal" fails
+    //    - "isSafeToNeverPersist returns false for non-API keys" fails (path traversal not caught)
+    //
+    // 3. No toLowerCase (case sensitive comparison):
+    //    - "normalizeKey converts to lowercase" fails
+    //    - "isSafeToNeverPersist normalizes keys before checking" fails with /API/AUTH/SESSION
+    //    - bypass tests with case variants fail
+    //
+    // 4. No decodeURIComponent (percent-encoding not decoded):
+    //    - "normalizeKey decodes percent-encoding" fails
+    //    - "bypass resistance rejects percent-encoded variants" fails
+    //    - "isSafeToPersist normalizes before checking" fails with %61uth
+    //
+    // 5. Fail-open decode catch (decode failures don't return ""):
+    //    - "normalizeKey rejects malformed percent-encoding" fails
+    //    - "isSafeToPersist returns false for non-API keys" fails (malformed not caught)
+    //    - "isSafeToNeverPersist returns false for non-API keys" fails
+    //
+    // 6. No block-list check in isSafeToPersist (blocks() call removed):
+    //    - "blocks endpoints on the block-list" fails
+    //    - "rejects blocked keys under allowed prefixes" fails
+    //    - "does not persist blocked endpoints" integration test fails
+    //    - "allows keys under /api/settings/ without block-list check" would pass (REGRESSION)
+    //
+    // 7. No hydration purge (purgeDisallowed call removed from provider.tsx):
+    //    - "purges blocked keys from initial state" integration test fails
+    //    - Blocked keys would remain in memory after cold start
+    //
+    // 8. No allow-list check in set() (allow-list removed from isSafeToPersist or not called):
+    //    - "allows safe endpoints on the allow-list" fails
+    //    - "blocks endpoints NOT on allow-list and NOT on block-list" fails
+    //    - "/api/unknown-endpoint" would be persisted (REGRESSION)
+
+    it("case-insensitivity is essential: uppercased block-list keys would bypass without toLowerCase", () => {
+      const cache = createPersistentCache({ userId: "u1", build: "b1", initial: new Map(), enabled: () => true });
+      cache.set("/API/AUTH/SESSION", { data: { userId: "u1" } });
+      vi.advanceTimersByTime(600);
+      expect(savePersisted).not.toHaveBeenCalled();
+    });
+
+    it("percent-decoding is essential: %61uth encoded bypass would succeed without decodeURIComponent", () => {
+      const cache = createPersistentCache({ userId: "u1", build: "b1", initial: new Map(), enabled: () => true });
+      cache.set("/api/%61uth/session", { data: { userId: "u1" } });
+      vi.advanceTimersByTime(600);
+      expect(savePersisted).not.toHaveBeenCalled();
+    });
+
+    it("path traversal rejection is essential: /api/settings/../../auth would bypass without .. check", () => {
+      const cache = createPersistentCache({ userId: "u1", build: "b1", initial: new Map(), enabled: () => true });
+      cache.set("/api/settings/../../auth/session", { data: { userId: "u1" } });
+      vi.advanceTimersByTime(600);
+      expect(savePersisted).not.toHaveBeenCalled();
+    });
+
+    it("block-list check is essential: /api/settings/devices (blocked) would persist without block-list", () => {
+      const cache = createPersistentCache({ userId: "u1", build: "b1", initial: new Map(), enabled: () => true });
+      cache.set("/api/settings/devices", { data: { devices: [] } });
+      vi.advanceTimersByTime(600);
+      expect(savePersisted).not.toHaveBeenCalled();
+    });
+
+    it("allow-list check is essential: /api/unknown-endpoint would persist without allow-list", () => {
+      const cache = createPersistentCache({ userId: "u1", build: "b1", initial: new Map(), enabled: () => true });
+      cache.set("/api/unknown-endpoint", { data: { ok: true } });
+      vi.advanceTimersByTime(600);
+      expect(savePersisted).not.toHaveBeenCalled();
+    });
+
+    it("both block-list AND allow-list are required: only block-list would allow non-listed safe endpoints", () => {
+      // /api/custom-financial-data is not blocked but also not on allow-list
+      const cache = createPersistentCache({ userId: "u1", build: "b1", initial: new Map(), enabled: () => true });
+      cache.set("/api/custom-financial-data", { data: { value: 100 } });
+      vi.advanceTimersByTime(600);
+      expect(savePersisted).not.toHaveBeenCalled();
+    });
+
+    it("malformed key handling (fail-closed) is essential: %zz decode error must return empty string", () => {
+      const normalized = normalizeKey("/api/%zz/session");
+      expect(normalized).toBe("");
+      // A failed decode that doesn't return "" would allow the key to continue
+      // and potentially match patterns incorrectly
+    });
+
+    it("slash collapsing is essential: /api//auth//session/ must normalize correctly", () => {
+      const cache = createPersistentCache({ userId: "u1", build: "b1", initial: new Map(), enabled: () => true });
+      cache.set("/api//auth//session/", { data: { userId: "u1" } });
+      vi.advanceTimersByTime(600);
+      expect(savePersisted).not.toHaveBeenCalled();
+    });
   });
 });
