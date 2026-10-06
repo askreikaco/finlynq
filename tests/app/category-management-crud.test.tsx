@@ -295,6 +295,51 @@ describe("CategoryManagement CRUD", () => {
         expect(screen.getByText("No categories found")).toBeTruthy();
       });
     });
+
+    it("A3: reload failure after data clears list", async () => {
+      let getCallCount = 0;
+      fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
+        if (url.includes("/api/categories") && !init?.method) {
+          getCallCount++;
+          if (getCallCount === 1) {
+            // Initial load succeeds
+            return { ok: true, json: async () => CATEGORIES_DATA };
+          }
+          // Follow-up GET after add/delete fails
+          throw new Error("Network error");
+        }
+        if (url.includes("/api/categories")) {
+          if (init?.method === "POST" || init?.method === "PUT" || init?.method === "DELETE") {
+            return { ok: true, json: async () => ({}) };
+          }
+        }
+        return { ok: false, json: async () => ({}) };
+      });
+
+      const user = userEvent.setup();
+      render(<CategoryManagement />);
+
+      // Initial load succeeds
+      await waitFor(() => {
+        expect(screen.getByText("Food")).toBeTruthy();
+      });
+
+      // Trigger an add (which will load categories, but the second GET fails)
+      const addButton = screen.getByRole("button", { name: /Add$/i });
+      await user.click(addButton);
+
+      const nameInput = screen.getByLabelText("Category name");
+      await user.type(nameInput, "NewCat");
+
+      const submitButton = screen.getByRole("button", { name: "Add Category" });
+      await user.click(submitButton);
+
+      // After reload fails, old rows should be gone and error banner shown
+      await waitFor(() => {
+        expect(screen.queryByText("Food")).toBeFalsy();
+        expect(screen.getByText("Failed to load categories")).toBeTruthy();
+      });
+    });
   });
 
   describe("B7: PUT Content-Type header", () => {
@@ -363,6 +408,27 @@ describe("CategoryManagement CRUD", () => {
 
   describe("B12: Edit input disappears after success", () => {
     it("after successful PUT, edit input element is removed from DOM", async () => {
+      // Updated data after PUT
+      let putCalled = false;
+      fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
+        if (url.includes("/api/categories")) {
+          if (init?.method === "PUT") {
+            putCalled = true;
+            return { ok: true, json: async () => ({}) };
+          }
+          // After PUT, return updated data
+          if (!init?.method && putCalled) {
+            return { ok: true, json: async () => [
+              { id: 1, type: "E", group: "Expenses", name: "Coffee", note: "" },
+              { id: 2, type: "E", group: "Transport", name: "Gas", note: "" },
+              { id: 3, type: "I", group: "Income", name: "Salary", note: "" },
+            ] };
+          }
+          return { ok: true, json: async () => CATEGORIES_DATA };
+        }
+        return { ok: false, json: async () => ({}) };
+      });
+
       const user = userEvent.setup();
       render(<CategoryManagement />);
 
@@ -379,8 +445,15 @@ describe("CategoryManagement CRUD", () => {
 
       fireEvent.keyDown(editInput, { key: "Enter", code: "Enter" });
 
+      // After success, edit input gone and Save button gone
       await waitFor(() => {
-        expect(screen.queryByDisplayValue("Coffee")).toBeFalsy();
+        expect(screen.queryByRole("textbox", { name: "" })).toBeFalsy();
+        expect(screen.queryByLabelText("Save category name")).toBeFalsy();
+      });
+
+      // Verify "Coffee" is now shown as plain text (from updated GET data)
+      await waitFor(() => {
+        expect(screen.getByText("Coffee")).toBeTruthy();
       });
     });
   });
@@ -517,8 +590,11 @@ describe("CategoryManagement CRUD", () => {
       const nameInput = screen.getByLabelText("Category name") as HTMLInputElement;
       await user.type(nameInput, "Test");
 
-      // Simulate setting group with spaces (via combobox)
-      // For now, just verify empty group is trimmed to empty string
+      // Interact with Group combobox - click it and type with spaces
+      const groupInput = screen.getByLabelText("Group") as HTMLInputElement;
+      await user.click(groupInput);
+      await user.type(groupInput, "  Bills  ");
+
       const submitButton = screen.getByRole("button", { name: "Add Category" });
       await user.click(submitButton);
 
@@ -528,7 +604,7 @@ describe("CategoryManagement CRUD", () => {
 
         const lastPostCall = postCalls[postCalls.length - 1];
         const body = JSON.parse(lastPostCall[1].body as string);
-        expect(body.group).toBe("");
+        expect(body.group).toBe("Bills");
       });
     });
   });
@@ -655,20 +731,44 @@ describe("CategoryManagement CRUD", () => {
   });
 
   describe("E1, E4, E6, E10: Multi-group data handling", () => {
-    it("E1: displays multiple groups within same type", async () => {
+    it("E1: groups ordered Zeta, Alpha, with ungrouped rows first", async () => {
+      const testData = [
+        { id: 1, type: "E", group: "", name: "Ungrouped", note: "" },
+        { id: 2, type: "E", group: "Zeta", name: "Cat1", note: "" },
+        { id: 3, type: "E", group: "Alpha", name: "Cat2", note: "" },
+      ];
+
+      fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
+        if (url.includes("/api/categories")) {
+          if (init?.method === "POST" || init?.method === "PUT" || init?.method === "DELETE") {
+            return { ok: true, json: async () => ({}) };
+          }
+          return { ok: true, json: async () => testData };
+        }
+        return { ok: false, json: async () => ({}) };
+      });
+
       render(<CategoryManagement />);
 
       await waitFor(() => {
-        expect(screen.getByText("Food")).toBeTruthy();
-        expect(screen.getByText("Gas")).toBeTruthy();
+        expect(screen.getByText("Ungrouped")).toBeTruthy();
+        expect(screen.getByText("Cat1")).toBeTruthy();
+        expect(screen.getByText("Cat2")).toBeTruthy();
       });
 
-      // Should see both Expenses and Transport groups (h4 headers)
-      const allText = screen.getByRole("button", { name: /Add$/i }).parentElement?.textContent || "";
-      expect(allText).toBeTruthy();
+      // Assert h4 headings exist and are ordered Alpha, Zeta
+      const headings = screen.getAllByRole("heading", { level: 4 });
+      expect(headings.length).toBe(2);
+      expect(headings[0].textContent).toBe("Alpha");
+      expect(headings[1].textContent).toBe("Zeta");
+
+      // Assert ungrouped rows render before first h4
+      const ungrouped = screen.getByText("Ungrouped");
+      const alphaHeading = headings[0];
+      expect(ungrouped.compareDocumentPosition(alphaHeading)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     });
 
-    it("E4: renders categories with empty group separately", async () => {
+    it("E4: no h4 has empty text and h4 count equals non-empty groups", async () => {
       const testData = [
         { id: 1, type: "E", group: "", name: "Ungrouped", note: "" },
         { id: 2, type: "E", group: "Food", name: "Groceries", note: "" },
@@ -690,18 +790,67 @@ describe("CategoryManagement CRUD", () => {
         expect(screen.getByText("Ungrouped")).toBeTruthy();
         expect(screen.getByText("Groceries")).toBeTruthy();
       });
+
+      // Assert no h4 has empty text
+      const headings = screen.getAllByRole("heading", { level: 4 });
+      headings.forEach((h) => {
+        expect(h.textContent?.trim().length).toBeGreaterThan(0);
+      });
+
+      // Assert h4 count equals number of non-empty groups (1)
+      expect(headings.length).toBe(1);
     });
 
-    it("E6: shows Income category in separate section", async () => {
+    it("E6: data with only E rows hides I and R sections; I rows show I section", async () => {
+      const testDataE = [
+        { id: 1, type: "E", group: "Expenses", name: "Food", note: "" },
+      ];
+
+      fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
+        if (url.includes("/api/categories")) {
+          if (init?.method === "POST" || init?.method === "PUT" || init?.method === "DELETE") {
+            return { ok: true, json: async () => ({}) };
+          }
+          return { ok: true, json: async () => testDataE };
+        }
+        return { ok: false, json: async () => ({}) };
+      });
+
       render(<CategoryManagement />);
 
       await waitFor(() => {
-        expect(screen.getByText("Salary")).toBeTruthy();
+        expect(screen.getByTestId("type-section-E")).toBeTruthy();
       });
 
-      // Verify Income section exists by checking for the h3
-      const sections = screen.getAllByRole("region");
-      expect(sections.length).toBeGreaterThan(1);
+      // I and R sections should not exist
+      expect(screen.queryByTestId("type-section-I")).toBeFalsy();
+      expect(screen.queryByTestId("type-section-R")).toBeFalsy();
+    });
+
+    it("E6b: data with only I rows shows I section and hides others", async () => {
+      const testDataI = [
+        { id: 3, type: "I", group: "Income", name: "Salary", note: "" },
+      ];
+
+      fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
+        if (url.includes("/api/categories")) {
+          if (init?.method === "POST" || init?.method === "PUT" || init?.method === "DELETE") {
+            return { ok: true, json: async () => ({}) };
+          }
+          return { ok: true, json: async () => testDataI };
+        }
+        return { ok: false, json: async () => ({}) };
+      });
+
+      render(<CategoryManagement />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId("type-section-I")).toBeTruthy();
+      });
+
+      // E and R sections should not exist
+      expect(screen.queryByTestId("type-section-E")).toBeFalsy();
+      expect(screen.queryByTestId("type-section-R")).toBeFalsy();
     });
 
     it("E10: categories stay grouped after add", async () => {
@@ -772,27 +921,12 @@ describe("CategoryManagement CRUD", () => {
       expect(groupInput).toBeTruthy();
     });
 
-    it("E9: unique groups from categories appear", async () => {
-      const user = userEvent.setup();
-      render(<CategoryManagement />);
-
-      await waitFor(() => {
-        expect(screen.getByText("Food")).toBeTruthy();
-        expect(screen.getByText("Gas")).toBeTruthy();
-      });
-
-      const addButton = screen.getByRole("button", { name: /Add$/i });
-      await user.click(addButton);
-
-      const groupInput = screen.getByLabelText("Group");
-      expect(groupInput).toBeTruthy();
-    });
-
-    it("F21: groups are used in multi-type scenario", async () => {
+    it("E9: group combobox options are sorted, empty group absent from groups", async () => {
       const testData = [
-        { id: 1, type: "E", group: "Group1", name: "Cat1", note: "" },
-        { id: 2, type: "E", group: "Group2", name: "Cat2", note: "" },
-        { id: 3, type: "I", group: "Income", name: "Cat3", note: "" },
+        { id: 1, type: "E", group: "", name: "Ungrouped", note: "" },
+        { id: 2, type: "E", group: "Zeta", name: "Cat1", note: "" },
+        { id: 3, type: "E", group: "Alpha", name: "Cat2", note: "" },
+        { id: 4, type: "E", group: "Mid", name: "Cat3", note: "" },
       ];
 
       fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
@@ -805,16 +939,68 @@ describe("CategoryManagement CRUD", () => {
         return { ok: false, json: async () => ({}) };
       });
 
+      const user = userEvent.setup();
       render(<CategoryManagement />);
 
       await waitFor(() => {
-        expect(screen.getByText("Cat1")).toBeTruthy();
+        expect(screen.getByText("Ungrouped")).toBeTruthy();
+      });
+
+      const addButton = screen.getByRole("button", { name: /Add$/i });
+      await user.click(addButton);
+
+      // Open Group combobox
+      const groupInput = screen.getByLabelText("Group");
+      await user.click(groupInput);
+
+      // Get options from the combobox (includes "No group" and then sorted groups)
+      await waitFor(() => {
+        const options = screen.getAllByRole("option");
+        // Options should be: "No group" (for clearing), then sorted groups Alpha, Mid, Zeta
+        const optionTexts = options.map((opt) => opt.textContent);
+        expect(optionTexts).toEqual(["No group", "Alpha", "Mid", "Zeta"]);
+      });
+    });
+
+    it("F21: group combobox input value and POST body use typed value", async () => {
+      const user = userEvent.setup();
+      render(<CategoryManagement />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Food")).toBeTruthy();
+      });
+
+      const addButton = screen.getByRole("button", { name: /Add$/i });
+      await user.click(addButton);
+
+      const nameInput = screen.getByLabelText("Category name");
+      await user.type(nameInput, "Test");
+
+      // Type into Group combobox
+      const groupInput = screen.getByLabelText("Group") as HTMLInputElement;
+      await user.click(groupInput);
+      await user.type(groupInput, "Abc");
+
+      // Assert input value is "Abc"
+      expect(groupInput.value).toBe("Abc");
+
+      const submitButton = screen.getByRole("button", { name: "Add Category" });
+      await user.click(submitButton);
+
+      // Assert POST body.group === "Abc"
+      await waitFor(() => {
+        const postCalls = fetchMock.mock.calls.filter((c) => c[1]?.method === "POST");
+        expect(postCalls.length).toBeGreaterThan(0);
+
+        const lastPostCall = postCalls[postCalls.length - 1];
+        const body = JSON.parse(lastPostCall[1].body as string);
+        expect(body.group).toBe("Abc");
       });
     });
   });
 
   describe("F8-F9: Escape and Cancel behavior", () => {
-    it("F8: Escape in edit input cancels edit", async () => {
+    it("F8: Escape in edit input cancels edit and removes input", async () => {
       const user = userEvent.setup();
       render(<CategoryManagement />);
 
@@ -832,16 +1018,20 @@ describe("CategoryManagement CRUD", () => {
       // Press Escape
       fireEvent.keyDown(editInput, { key: "Escape", code: "Escape" });
 
-      // Input should be gone, no PUT made
+      // Input should be gone
       await waitFor(() => {
-        expect(screen.queryByDisplayValue("Changed")).toBeFalsy();
+        expect(screen.queryByRole("textbox")).toBeFalsy();
+        expect(screen.queryByLabelText("Save category name")).toBeFalsy();
       });
+
+      // "Food" plain text should be rendered
+      expect(screen.getByText("Food")).toBeTruthy();
 
       const putCalls = fetchMock.mock.calls.filter((c) => c[1]?.method === "PUT");
       expect(putCalls.length).toBe(0);
     });
 
-    it("F9: Cancel button closes add form", async () => {
+    it("F9: Click Edit then Cancel button closes without PUT", async () => {
       const user = userEvent.setup();
       render(<CategoryManagement />);
 
@@ -849,23 +1039,26 @@ describe("CategoryManagement CRUD", () => {
         expect(screen.getByText("Food")).toBeTruthy();
       });
 
-      const addButton = screen.getByRole("button", { name: /Add$/i });
-      await user.click(addButton);
+      const editButtons = screen.getAllByLabelText("Edit category");
+      await user.click(editButtons[0]);
 
-      const nameInput = screen.getByLabelText("Category name");
-      await user.type(nameInput, "Test");
-
-      const cancelButton = screen.getByRole("button", { name: "Cancel" });
+      const cancelButton = screen.getByLabelText("Cancel editing");
       await user.click(cancelButton);
 
+      // Edit input and Save button should be gone
       await waitFor(() => {
-        expect(screen.queryByLabelText("Category name")).toBeFalsy();
+        expect(screen.queryByRole("textbox")).toBeFalsy();
+        expect(screen.queryByLabelText("Save category name")).toBeFalsy();
       });
+
+      // No PUT should be sent
+      const putCalls = fetchMock.mock.calls.filter((c) => c[1]?.method === "PUT");
+      expect(putCalls.length).toBe(0);
     });
   });
 
   describe("F24, F26, F28: Aria attributes", () => {
-    it("F24: category name input has aria-label", async () => {
+    it("F24: category name input aria-invalid is false initially, true after empty submit, false after typing", async () => {
       const user = userEvent.setup();
       render(<CategoryManagement />);
 
@@ -876,9 +1069,25 @@ describe("CategoryManagement CRUD", () => {
       const addButton = screen.getByRole("button", { name: /Add$/i });
       await user.click(addButton);
 
-      const nameInput = screen.getByLabelText("Category name");
-      expect(nameInput).toBeTruthy();
-      expect(nameInput.getAttribute("aria-label")).toBe("Category name");
+      const nameInput = screen.getByLabelText("Category name") as HTMLInputElement;
+
+      // Initially, aria-invalid should not be set (or false)
+      expect(nameInput.getAttribute("aria-invalid")).toBeFalsy();
+
+      // Submit empty form
+      const submitButton = screen.getByRole("button", { name: "Add Category" });
+      await user.click(submitButton);
+
+      // After submit with empty input, aria-invalid should be "true"
+      await waitFor(() => {
+        expect(nameInput.getAttribute("aria-invalid")).toBe("true");
+      });
+
+      // Type a character
+      await user.type(nameInput, "A");
+
+      // After typing, aria-invalid should be absent again
+      expect(nameInput.getAttribute("aria-invalid")).toBeFalsy();
     });
 
     it("F26: group combobox has aria label", async () => {
@@ -1414,9 +1623,10 @@ describe("CategoryManagement CRUD", () => {
       const cancelButton = screen.getByLabelText("Cancel editing");
       await user.click(cancelButton);
 
-      // Input should be gone
+      // Input and Save button should be gone
       await waitFor(() => {
-        expect(screen.queryByDisplayValue("Food")).toBeFalsy();
+        expect(screen.queryByRole("textbox")).toBeFalsy();
+        expect(screen.queryByLabelText("Save category name")).toBeFalsy();
       });
 
       // No PUT should be sent
