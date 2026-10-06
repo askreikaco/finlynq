@@ -5,37 +5,15 @@ import { usePathname } from "next/navigation";
 import { useState, useEffect, memo } from "react";
 import { cn } from "@/lib/utils";
 import {
-  LayoutDashboard,
-  Wallet,
-  ArrowLeftRight,
-  PiggyBank,
-  TrendingUp,
-  Landmark,
-  Target,
-  FileText,
-  Calculator,
-  Upload,
-  Settings,
-  CreditCard,
-  ChartPie,
-  FlameKindling,
-  GitBranch,
-  MessageSquare,
   ChevronLeft,
   ChevronDown,
   ChevronRight,
   MoreHorizontal,
-  ShieldCheck,
-  Inbox,
-  Mailbox,
-  Megaphone,
-  MessageCircle,
-  Server,
   Shield,
-  Users,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { AccountSwitcher } from "@/components/account-switcher";
+import { NAV_REGISTRY, getEntriesBySurface, getEntriesByGroup } from "@/lib/nav-config";
 
 type NavItem = { href: string; label: string; icon: LucideIcon; color: string; mode?: "prod" | "dev"; activePrefixes?: string[] };
 
@@ -43,78 +21,87 @@ type NavItem = { href: string; label: string; icon: LucideIcon; color: string; m
 // landing's restraint. Inactive icons use the sidebar-foreground muted tones.
 const ACTIVE_ACCENT = "text-primary";
 
-export const navGroups: { label: string; items: NavItem[] }[] = [
-  {
-    label: "",
-    items: [
-      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, color: ACTIVE_ACCENT, mode: "prod" },
-      { href: "/whats-new", label: "What's New", icon: Megaphone, color: ACTIVE_ACCENT, mode: "prod" },
-      { href: "/chat", label: "AI Chat", icon: MessageSquare, color: ACTIVE_ACCENT, mode: "dev" },
-    ],
-  },
-  {
-    label: "Tracking",
-    items: [
-      { href: "/transactions", label: "Transactions", icon: ArrowLeftRight, color: ACTIVE_ACCENT, mode: "prod" },
-      { href: "/budgets", label: "Budgets", icon: PiggyBank, color: ACTIVE_ACCENT, mode: "prod" },
-      { href: "/goals", label: "Goals", icon: Target, color: ACTIVE_ACCENT, mode: "prod" },
-      // Subscriptions + Bill Calendar merged (2026-10): the calendar is a view
-      // of this page (/calendar redirects to ?view=calendar). Out of dev mode.
-      { href: "/subscriptions", label: "Subscriptions", icon: CreditCard, color: ACTIVE_ACCENT, mode: "prod" },
-    ],
-  },
-  {
-    label: "Wealth",
-    items: [
-      { href: "/accounts", label: "Accounts", icon: Wallet, color: ACTIVE_ACCENT, mode: "prod" },
-      { href: "/portfolio", label: "Portfolio", icon: TrendingUp, color: ACTIVE_ACCENT, mode: "prod" },
-      { href: "/loans", label: "Loans & Debt", icon: Landmark, color: ACTIVE_ACCENT, mode: "prod" },
-      { href: "/family", label: "Family Wealth", icon: Users, color: ACTIVE_ACCENT, mode: "prod" },
-    ],
-  },
-  {
-    label: "Analysis",
-    items: [
-      { href: "/reports", label: "Reports", icon: FileText, color: ACTIVE_ACCENT, mode: "prod" },
-      { href: "/categories", label: "Categories", icon: ChartPie, color: ACTIVE_ACCENT, mode: "prod" },
-      { href: "/tax", label: "Tax", icon: Calculator, color: ACTIVE_ACCENT, mode: "dev" },
-    ],
-  },
-  {
-    label: "Planning",
-    items: [
-      { href: "/scenarios", label: "Scenarios", icon: GitBranch, color: ACTIVE_ACCENT, mode: "dev" },
-      { href: "/fire", label: "FIRE Calculator", icon: FlameKindling, color: ACTIVE_ACCENT, mode: "dev" },
-    ],
-  },
-];
+/**
+ * Generate navGroups from the registry, filtering for sidebar surface.
+ * Groups sidebar items by their group field, excluding admin/settings.
+ */
+function generateNavGroups(): { label: string; items: NavItem[] }[] {
+  const sidebarEntries = getEntriesBySurface("sidebar")
+    .filter((e) => !e.adminOnly && e.group !== "Tools" && e.group !== "Settings" && e.group !== "Admin");
 
-export const adminLinks: NavItem[] = [
-  { href: "/admin", label: "Admin", icon: ShieldCheck, color: ACTIVE_ACCENT, mode: "prod" },
-  { href: "/admin/inbox", label: "Admin Inbox", icon: Inbox, color: ACTIVE_ACCENT, mode: "prod" },
-  { href: "/admin/email-inbox", label: "Email Oversight", icon: Mailbox, color: ACTIVE_ACCENT, mode: "prod" },
-  { href: "/admin/env", label: "Environment", icon: Server, color: ACTIVE_ACCENT, mode: "prod", activePrefixes: ["/admin/system", "/admin/diagnostics", "/admin/api-log", "/admin/price-cache", "/admin/integrations", "/admin/env"] },
-  { href: "/admin/announcements", label: "Announcements", icon: Megaphone, color: ACTIVE_ACCENT, mode: "prod" },
-  { href: "/admin/feedback", label: "Feedback", icon: MessageCircle, color: ACTIVE_ACCENT, mode: "prod" },
-];
+  // Group by group field
+  const groups = new Map<string, NavItem[]>();
+  for (const entry of sidebarEntries) {
+    if (!groups.has(entry.group)) {
+      groups.set(entry.group, []);
+    }
+    const item: NavItem = {
+      href: entry.path,
+      label: entry.label,
+      icon: entry.icon,
+      color: ACTIVE_ACCENT,
+      mode: entry.mode === "dev" ? "dev" : "prod",
+      activePrefixes: entry.activePrefixes,
+    };
+    groups.get(entry.group)!.push(item);
+  }
 
-const toolLinks: NavItem[] = [
-  // Consolidation Phase 3 (2026-06-04): /import is now the single
-  // account-anchored money-in surface (upload + staging + reconcile tabs).
-  // The standalone /reconcile link was folded in (it's the Reconcile tab);
-  // /reconcile + /inbox + /import/reconcile redirect here (next.config.ts).
-  { href: "/import", label: "Import", icon: Upload, color: ACTIVE_ACCENT, mode: "prod" },
-  { href: "/api-docs", label: "API Docs", icon: FileText, color: ACTIVE_ACCENT, mode: "dev" },
-  { href: "/feedback", label: "Your feedback", icon: MessageCircle, color: ACTIVE_ACCENT, mode: "prod" },
-  { href: "/settings", label: "Settings", icon: Settings, color: ACTIVE_ACCENT, mode: "prod" },
-];
+  // Order by group name: empty (top) first, then Tracking, Wealth, Analysis, Planning
+  const order = ["Top", "Tracking", "Wealth", "Analysis", "Planning"];
+  const result = order
+    .filter((g) => groups.has(g))
+    .map((g) => ({ label: g === "Top" ? "" : g, items: groups.get(g)! }));
 
-export const mobileBarItems: NavItem[] = [
-  { href: "/dashboard", label: "Home", icon: LayoutDashboard, color: ACTIVE_ACCENT },
-  { href: "/accounts", label: "Accounts", icon: Wallet, color: ACTIVE_ACCENT },
-  { href: "/portfolio", label: "Portfolio", icon: TrendingUp, color: ACTIVE_ACCENT },
-  { href: "/transactions", label: "Transactions", icon: ArrowLeftRight, color: ACTIVE_ACCENT },
-];
+  return result;
+}
+
+/**
+ * Generate adminLinks from the registry.
+ */
+function generateAdminLinks(): NavItem[] {
+  return getEntriesBySurface("sidebar")
+    .filter((e) => e.adminOnly)
+    .map((entry) => ({
+      href: entry.path,
+      label: entry.label,
+      icon: entry.icon,
+      color: ACTIVE_ACCENT,
+      mode: entry.mode === "dev" ? "dev" : "prod",
+      activePrefixes: entry.activePrefixes,
+    }));
+}
+
+/**
+ * Generate toolLinks from the registry (sidebar Tools entries).
+ */
+function generateToolLinks(): NavItem[] {
+  return getEntriesBySurface("sidebar")
+    .filter((e) => !e.adminOnly && e.group === "Tools")
+    .map((entry) => ({
+      href: entry.path,
+      label: entry.label,
+      icon: entry.icon,
+      color: ACTIVE_ACCENT,
+      mode: entry.mode === "dev" ? "dev" : "prod",
+    }));
+}
+
+/**
+ * Generate mobileBarItems from the registry.
+ */
+function generateMobileBarItems(): NavItem[] {
+  return getEntriesBySurface("mobileBar").map((entry) => ({
+    href: entry.path,
+    label: entry.label,
+    icon: entry.icon,
+    color: ACTIVE_ACCENT,
+  }));
+}
+
+export const navGroups: { label: string; items: NavItem[] }[] = generateNavGroups();
+export const adminLinks: NavItem[] = generateAdminLinks();
+const toolLinks: NavItem[] = generateToolLinks();
+export const mobileBarItems: NavItem[] = generateMobileBarItems();
 
 export const allFlatItems = navGroups.flatMap((g) => g.items).concat(toolLinks).concat(adminLinks);
 

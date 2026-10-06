@@ -16,46 +16,63 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import {
-  Settings2,
-  Tag,
-  Briefcase,
-  Server,
-  Wrench,
-  Link2,
-  Info,
-} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { getEntriesBySurface, ALIASES } from "@/lib/nav-config";
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
 
-// Order matches issue #57 — Developer, then About last.
-const NAV_ITEMS: NavItem[] = [
-  { href: "/settings/general", label: "General", icon: Settings2 },
-  { href: "/settings/categorization", label: "Categorization", icon: Tag },
-  { href: "/settings/reconciliation", label: "Reconciliation", icon: Link2 },
-  // Securities master (Tier 2) is folded into this page — one filterable row
-  // per security; /settings/securities + /settings/holding-accounts redirect here.
-  { href: "/settings/investments", label: "Investments", icon: Briefcase },
-  { href: "/settings/integrations", label: "Integrations", icon: Server },
-  { href: "/settings/developer", label: "Developer", icon: Wrench },
-  { href: "/settings/about", label: "About", icon: Info },
-];
+/**
+ * Generate NAV_ITEMS from the registry's settings surface.
+ * Order: General, Categories, Reconciliation, Investments, Integrations, Developer, About.
+ */
+function generateNavItems(): NavItem[] {
+  const settingsEntries = getEntriesBySurface("settings");
+  const order = [
+    "/settings/general",
+    "/settings/categorization",
+    "/settings/reconciliation",
+    "/settings/investments",
+    "/settings/integrations",
+    "/settings/developer",
+    "/settings/about",
+  ];
 
-// Map legacy sub-routes to their group so deep links highlight the right
-// nav entry without us having to add them as nav items.
-const ROUTE_GROUP: Array<{ prefix: string; group: string }> = [
-  { prefix: "/settings/holding-accounts", group: "/settings/investments" },
-  { prefix: "/settings/securities", group: "/settings/investments" },
-  { prefix: "/settings/dropdown-order", group: "/settings/general" },
-  { prefix: "/settings/display", group: "/settings/general" },
-  { prefix: "/settings/bank-feeds", group: "/settings/integrations" },
-  // /connect keeps its URL; it is Integrations with "Connect your AI" open.
-  { prefix: "/connect", group: "/settings/integrations" },
-  { prefix: "/settings/rules", group: "/settings/reconciliation" },
-  { prefix: "/settings/import", group: "/settings/reconciliation" },
-  { prefix: "/settings/data", group: "/settings/developer" },
-];
+  const items: NavItem[] = [];
+  for (const href of order) {
+    const entry = settingsEntries.find((e) => e.path === href);
+    if (entry) {
+      items.push({
+        href: entry.path,
+        label: entry.label,
+        icon: entry.icon,
+      });
+    }
+  }
+  return items;
+}
+
+const NAV_ITEMS: NavItem[] = generateNavItems();
+
+/**
+ * Map legacy sub-routes to their canonical nav item via the registry aliases.
+ * Maps both redirect and render-parent aliases to their target paths.
+ */
+function generateRouteGroup(): Array<{ prefix: string; group: string }> {
+  const routeGroup: Array<{ prefix: string; group: string }> = [];
+
+  for (const alias of ALIASES) {
+    if (alias.path.startsWith("/settings") || alias.path === "/connect") {
+      routeGroup.push({
+        prefix: alias.path,
+        group: alias.target,
+      });
+    }
+  }
+
+  return routeGroup;
+}
+
+const ROUTE_GROUP: Array<{ prefix: string; group: string }> = generateRouteGroup();
 
 function activeHref(pathname: string): string {
   for (const { prefix, group } of ROUTE_GROUP) {

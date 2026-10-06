@@ -36,10 +36,10 @@ import {
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
-import { adminLinks } from "@/components/nav";
 import { AccountSwitcher } from "@/components/account-switcher";
 import { hardReload, clearPerUserStorage } from "@/lib/client/hard-reload";
 import { setPasskeyAutoSkip } from "@/lib/client/passkey-auto";
+import { getEntriesBySurface, getEntriesByGroup } from "@/lib/nav-config";
 
 export type MoreRow = { href: string; label: string; icon: LucideIcon; id: string };
 export type MoreGroup = { id: string; header?: string; rows: MoreRow[] };
@@ -55,55 +55,55 @@ const row = (href: string, label: string, icon: LucideIcon): MoreRow => ({ id: h
 
 /** Pure builder so order/visibility is unit-testable. Sign out is rendered separately (last row of TOOLS). */
 export function buildMoreGroups(f: MoreFlags): MoreGroup[] {
-  const groups: MoreGroup[] = [
-    {
-      id: "main",
-      rows: [
-        row("/budgets", "Budgets", PiggyBank),
-        row("/goals", "Goals", Target),
-        row("/reports", "Reports", FileText),
-        row("/categories", "Category report", ChartPie),
-        ...(f.familyEnabled ? [row("/family", "Family Wealth", Users)] : []),
-        row("/import?tab=reconcile", "Reconcile", Inbox),
-        row("/settings/categorization", "Categories", Tag),
-        row("/import", "Import", Upload),
-      ],
-    },
-    {
-      id: "explore",
-      header: "Explore",
-      rows: [
-        row("/subscriptions", "Subscriptions", CreditCard),
-        row("/loans", "Loans & Debt", Landmark),
-        ...(f.devMode
-          ? [
-              row("/chat", "AI Chat", MessageSquare),
-              row("/tax", "Tax", Calculator),
-              row("/scenarios", "Scenarios", GitBranch),
-              row("/fire", "FIRE Calculator", FlameKindling),
-              row("/api-docs", "API Docs", FileText),
-            ]
-          : []),
-      ],
-    },
-    {
-      id: "tools",
-      header: "Tools",
-      rows: [
-        ...(f.hasAnnouncements ? [row("/whats-new", "What's new", Megaphone)] : []),
-        row("/settings", "Settings", Settings),
-      ],
-    },
-  ];
-  if (f.isAdmin) {
-    groups.push({
-      id: "admin",
-      header: "Admin",
-      rows: adminLinks
-        .filter((i) => f.devMode || i.mode !== "dev")
-        .map((i) => row(i.href, i.label, i.icon)),
-    });
+  const moreEntries = getEntriesBySurface("more");
+
+  // Group by rough category for better organization
+  const main: MoreRow[] = [];
+  const explore: MoreRow[] = [];
+  const tools: MoreRow[] = [];
+  const admin: MoreRow[] = [];
+
+  for (const entry of moreEntries) {
+    // Skip dev-only entries if devMode is off
+    if (entry.mode === "dev" && !f.devMode) continue;
+
+    // Skip family if disabled
+    if (entry.flag === "family" && !f.familyEnabled) continue;
+
+    // Skip announcements-dependent entries if no announcements
+    if (entry.flag === "announcements" && !f.hasAnnouncements) continue;
+
+    const item = row(entry.path, entry.label, entry.icon);
+
+    if (entry.adminOnly) {
+      admin.push(item);
+    } else if (entry.group === "Tools") {
+      tools.push(item);
+    } else if (entry.group === "Tracking" || entry.group === "Top" || entry.path === "/import?tab=reconcile" || entry.path === "/settings/categorization") {
+      main.push(item);
+    } else {
+      explore.push(item);
+    }
   }
+
+  const groups: MoreGroup[] = [];
+
+  if (main.length > 0) {
+    groups.push({ id: "main", rows: main });
+  }
+
+  if (explore.length > 0) {
+    groups.push({ id: "explore", header: "Explore", rows: explore });
+  }
+
+  if (tools.length > 0) {
+    groups.push({ id: "tools", header: "Tools", rows: tools });
+  }
+
+  if (f.isAdmin && admin.length > 0) {
+    groups.push({ id: "admin", header: "Admin", rows: admin });
+  }
+
   return groups;
 }
 

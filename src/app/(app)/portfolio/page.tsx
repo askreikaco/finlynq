@@ -288,7 +288,7 @@ export default function PortfolioPage() {
             </p>
             <p className="text-xs text-amber-800/80 dark:text-amber-300/80 mt-0.5">
               Your session needs to refresh after the last deploy.{" "}
-              <Link href="/login" className="underline font-medium">Sign in again</Link>{" "}
+              <Link href="/cloud" className="underline font-medium">Sign in again</Link>{" "}
               to unlock your portfolio data.
             </p>
           </div>
