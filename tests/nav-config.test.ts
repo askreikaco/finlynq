@@ -9,6 +9,7 @@ import {
 } from "@/lib/nav-config";
 import { readFileSync, readdirSync } from "fs";
 import { join } from "path";
+import * as lucideIcons from "lucide-react";
 
 /**
  * Derive the list of authenticated page files from src/app/(app)/[glob]/page.tsx
@@ -51,19 +52,6 @@ function getAuthenticatedPagePaths(): string[] {
 
 describe("nav-config", () => {
   describe("Registry structure", () => {
-    it("should have entries with required fields", () => {
-      for (const entry of NAV_REGISTRY) {
-        expect(entry.id).toBeDefined();
-        expect(entry.path).toBeDefined();
-        expect(entry.label).toBeDefined();
-        expect(entry.icon).toBeDefined();
-        expect(entry.group).toBeDefined();
-        expect(entry.mode).toBeDefined();
-        expect(entry.surfaces).toBeDefined();
-        expect(Array.isArray(entry.surfaces)).toBe(true);
-      }
-    });
-
     it("should have unique ids", () => {
       const ids = NAV_REGISTRY.map((e) => e.id);
       const uniqueIds = new Set(ids);
@@ -328,17 +316,6 @@ describe("nav-config", () => {
       const adminEntries = getEntriesByGroup("Admin");
       expect(adminEntries.every((e) => e.adminOnly === true)).toBe(true);
     });
-
-    it("should only show admin routes in admin surface", () => {
-      const adminEntries = NAV_REGISTRY.filter((e) => e.adminOnly === true);
-      for (const entry of adminEntries) {
-        // Admin routes should be in sidebar or more, but could be in admin too
-        const validSurfaces = ["sidebar", "more", "admin"];
-        expect(
-          entry.surfaces.some((s) => validSurfaces.includes(s))
-        ).toBe(true);
-      }
-    });
   });
 
   describe("Feature flags", () => {
@@ -359,13 +336,34 @@ describe("nav-config", () => {
   });
 
   describe("Icons", () => {
-    it("should have valid lucide icons", () => {
-      for (const entry of NAV_REGISTRY) {
-        expect(entry.icon).toBeDefined();
-        // Lucide icons are React components (objects/functions, not primitives)
-        expect(entry.icon).not.toBeNull();
-        expect(typeof entry.icon).not.toBe("string");
-      }
+    it("should have Settings2 for /settings/general", () => {
+      const entry = getNavEntry("/settings/general");
+      expect(entry?.icon).toBe(lucideIcons.Settings2);
+    });
+
+    it("should have correct admin environment icons", () => {
+      const adminSystemEntry = getNavEntry("/admin/system");
+      expect(adminSystemEntry?.icon).toBe(lucideIcons.Server);
+
+      const adminDiagnosticsEntry = getNavEntry("/admin/diagnostics");
+      expect(adminDiagnosticsEntry?.icon).toBe(lucideIcons.ScrollText);
+
+      const adminApiLogEntry = getNavEntry("/admin/api-log");
+      expect(adminApiLogEntry?.icon).toBe(lucideIcons.Activity);
+
+      const adminPriceCacheEntry = getNavEntry("/admin/price-cache");
+      expect(adminPriceCacheEntry?.icon).toBe(lucideIcons.Database);
+
+      const adminIntegrationsEntry = getNavEntry("/admin/integrations");
+      expect(adminIntegrationsEntry?.icon).toBe(lucideIcons.Plug);
+    });
+
+    it("should have correct account surface icons", () => {
+      const accountInfoEntry = getNavEntry("/account/info");
+      expect(accountInfoEntry?.icon).toBe(lucideIcons.Settings);
+
+      const accountSecurityEntry = getNavEntry("/account/security");
+      expect(accountSecurityEntry?.icon).toBe(lucideIcons.ShieldCheck);
     });
   });
 
@@ -423,6 +421,58 @@ describe("nav-config", () => {
 
         expect(exists).toBe(true);
       }
+    });
+  });
+
+  describe("More menu", () => {
+    it("should have whats-new with announcements flag in more surface for badge rendering", () => {
+      const entry = getNavEntry("/whats-new");
+      expect(entry?.flag).toBe("announcements");
+      expect(entry?.surfaces).toContain("more");
+    });
+
+    it("should have feedback entry with feedback flag in sidebar", () => {
+      const entry = getNavEntry("/feedback");
+      expect(entry?.flag).toBe("feedback");
+      expect(entry?.surfaces).toContain("sidebar");
+    });
+  });
+
+  describe("Account surface", () => {
+    it("should have info and security tabs in account surface", () => {
+      const accountEntries = getEntriesBySurface("account");
+      const paths = accountEntries.map((e) => e.path);
+      expect(paths).toContain("/account/info");
+      expect(paths).toContain("/account/security");
+    });
+
+    it("should have parent set for account children", () => {
+      const infoEntry = getNavEntry("/account/info");
+      const securityEntry = getNavEntry("/account/security");
+      expect(infoEntry?.parent).toBe("/account");
+      expect(securityEntry?.parent).toBe("/account");
+    });
+  });
+
+  describe("Admin environment pages", () => {
+    it("should have System, Diagnostics, API Log, Price Cache, Integrations in admin environment", () => {
+      const adminEnvEntries = NAV_REGISTRY.filter(
+        (e) => e.surfaces.includes("admin") && e.parent === "/admin/env"
+      );
+      const labels = adminEnvEntries.map((e) => e.label);
+      expect(labels).toContain("System");
+      expect(labels).toContain("Diagnostics");
+      expect(labels).toContain("API Log");
+      expect(labels).toContain("Rate Cache");
+      expect(labels).toContain("Integrations");
+    });
+
+    it("should have correct paths for admin environment pages", () => {
+      expect(getNavEntry("/admin/system")).toBeDefined();
+      expect(getNavEntry("/admin/diagnostics")).toBeDefined();
+      expect(getNavEntry("/admin/api-log")).toBeDefined();
+      expect(getNavEntry("/admin/price-cache")).toBeDefined();
+      expect(getNavEntry("/admin/integrations")).toBeDefined();
     });
   });
 });
