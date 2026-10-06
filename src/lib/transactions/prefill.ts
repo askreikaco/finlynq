@@ -102,7 +102,7 @@ export function readAndClearPrefill(now: number): PrefillData | null {
     if (
       typeof data !== "object" ||
       data === null ||
-      (data as any).v !== VERSION
+      (data as Record<string, unknown>).v !== VERSION
     ) {
       return null;
     }

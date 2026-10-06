@@ -50,8 +50,6 @@ const createMockTx = (overrides?: Partial<Transaction>): Transaction => ({
   tradeLinkId: null,
   kind: null,
   source: 'manual',
-  importHash: null,
-  reconciled: 0,
   createdAt: '2026-10-06T10:00:00Z',
   updatedAt: '2026-10-06T10:00:00Z',
   ...overrides,
@@ -162,21 +160,19 @@ describe('prefill', () => {
       expect(prefill.amount).toBe('50');
     });
 
-    it('never copies id, linkId, importHash, createdAt, source', () => {
+    it('never copies id, linkId, createdAt, source', () => {
       const tx = createMockTx({
         id: 999,
         linkId: 'link123',
-        importHash: 'hash123',
         createdAt: '2026-01-01T00:00:00Z',
         source: 'import',
       });
       const prefill = buildPrefill(tx);
 
-      expect((prefill as any).id).toBeUndefined();
-      expect((prefill as any).linkId).toBeUndefined();
-      expect((prefill as any).importHash).toBeUndefined();
-      expect((prefill as any).createdAt).toBeUndefined();
-      expect((prefill as any).source).toBeUndefined();
+      expect((prefill as Record<string, unknown>).id).toBeUndefined();
+      expect((prefill as Record<string, unknown>).linkId).toBeUndefined();
+      expect((prefill as Record<string, unknown>).createdAt).toBeUndefined();
+      expect((prefill as Record<string, unknown>).source).toBeUndefined();
     });
 
     it('has v=1 and ts set', () => {

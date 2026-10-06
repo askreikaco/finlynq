@@ -158,8 +158,6 @@ describe('Prefill Integration - Transaction New Page', () => {
         tradeLinkId: null,
         kind: null,
         source: 'import',
-        importHash: 'hash123',
-        reconciled: 0,
         createdAt: '2026-10-06T10:00:00Z',
         updatedAt: '2026-10-06T10:00:00Z',
       };
@@ -167,11 +165,10 @@ describe('Prefill Integration - Transaction New Page', () => {
       const prefill = prefillModule.buildPrefill(mockTx as any);
 
       // Should not have these fields
-      expect((prefill as any).id).toBeUndefined();
-      expect((prefill as any).linkId).toBeUndefined();
-      expect((prefill as any).importHash).toBeUndefined();
-      expect((prefill as any).createdAt).toBeUndefined();
-      expect((prefill as any).source).toBeUndefined();
+      expect((prefill as Record<string, unknown>).id).toBeUndefined();
+      expect((prefill as Record<string, unknown>).linkId).toBeUndefined();
+      expect((prefill as Record<string, unknown>).createdAt).toBeUndefined();
+      expect((prefill as Record<string, unknown>).source).toBeUndefined();
     });
   });
 
