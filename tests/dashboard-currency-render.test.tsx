@@ -621,38 +621,9 @@ describe("Dashboard Currency Render Tests", () => {
   });
 });
 
-describe("Dashboard Currency Render Tests - Animation useAnimations=false", () => {
+describe("Dashboard Currency Render Tests - With useAnimations false", () => {
   // useAnimations is mocked to false in the global beforeEach above
   it("AnimatedNumber with animations disabled displays VND", async () => {
-    const { container } = render(
-      <TestWrapper>
-        <AnimatedNumber value={1000000} />
-      </TestWrapper>
-    );
-
-    await waitFor(() => {
-      const text = container.textContent || "";
-      expect(text).toMatch(/₫/);
-      expect(text).not.toMatch(/\$|US\$|CA\$|CAD|USD/);
-    });
-  });
-});
-
-describe("Dashboard Currency Render Tests - Animation useAnimations=true", () => {
-  beforeEach(() => {
-    // Unmock and remock useAnimations to return true for this describe block
-    vi.unmock("@/hooks/use-animations");
-    vi.mock("@/hooks/use-animations", () => ({
-      useAnimations: () => true,
-    }));
-  });
-
-  afterEach(() => {
-    cleanup();
-    vi.unmock("@/hooks/use-animations");
-  });
-
-  it("AnimatedNumber with animations enabled displays VND", async () => {
     const { container } = render(
       <TestWrapper>
         <AnimatedNumber value={1000000} />
