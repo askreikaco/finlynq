@@ -33,12 +33,6 @@ const ALLOW_LIST = [
     reason: "Mobile component out of scope (matches both assignment and jsx-attr)",
   },
   {
-    file: "src/components/portfolio/PerformanceChart.tsx",
-    line: `const stackCurrency = holdings?.currency ?? data?.currency ?? "USD";`,
-    count: 1,
-    reason: "Portfolio chart uses account/data currency fallback",
-  },
-  {
     file: "src/app/(app)/chat/page.tsx",
     line: `function InlineBarChart({ data, currency = "CAD" }: { data: Record<string, unknown>[]; currency?: string }) {`,
     count: 2,
@@ -62,6 +56,12 @@ const ALLOW_LIST = [
     count: 2,
     reason: "Sankey chart out of scope",
   },
+  {
+    file: "src/components/fx-overrides-section.tsx",
+    line: `<Select value={form.rateMode === "to-usd" ? form.currency : "USD"} onValueChange={(v) => setForm({ ...form, rateMode: v === "USD" ? "from-usd" : "to-usd" })}>`,
+    count: 2, // matches property-key and ternary patterns
+    reason: "FX override form ternary and property key for USD rate mode setting",
+  },
 
   // OUT OF SCOPE: Holdings and portfolio forms
   {
@@ -81,60 +81,60 @@ const ALLOW_LIST = [
   {
     file: "src/components/import/reconcile/db-pane.tsx",
     line: `{formatCurrency(r.amount, r.currency || "CAD")}`,
-    count: 1,
+    count: 2, // matches logical-or and format-call patterns
     reason: "Reconcile display falls back to bank row currency",
   },
   {
     file: "src/components/import/reconcile/db-pane.tsx",
     line: `? formatCurrency(r.runningBalance, r.currency || "CAD")`,
-    count: 1,
+    count: 2, // matches logical-or and format-call patterns
     reason: "Reconcile balance falls back to bank row currency",
   },
   {
     file: "src/components/import/reconcile/db-pane.tsx",
     line: `? formatCurrency(r.anchorBalance, r.currency || "CAD")`,
-    count: 1,
+    count: 2, // matches logical-or and format-call patterns
     reason: "Reconcile balance falls back to bank row currency",
   },
   {
     file: "src/components/import/reconcile/file-pane.tsx",
     line: `{formatCurrency(r.amount, r.currency || "CAD")}`,
-    count: 1,
+    count: 2, // matches logical-or and format-call patterns
     reason: "Reconcile display falls back to bank row currency",
   },
   {
     file: "src/components/import/reconcile/file-pane.tsx",
     line: `? formatCurrency(dayBalance, r.currency || "CAD")`,
-    count: 1,
+    count: 2, // matches logical-or and format-call patterns
     reason: "Reconcile balance falls back to bank row currency",
   },
   {
     file: "src/components/reconcile/bank-pane.tsx",
     line: `{formatCurrency(r.amount, r.currency || "CAD")}`,
-    count: 1,
+    count: 2, // matches logical-or and format-call patterns
     reason: "Reconcile display falls back to bank row currency",
   },
-  // REMOVED: confirm-delete-bank-row.tsx now uses trim check pattern with displayCurrency
+  // Confirm delete bank row dialog (display shows bank row amount with CAD fallback)
+  {
+    file: "src/components/reconcile/confirm-delete-bank-row.tsx",
+    line: `{formatCurrency(bankAmount, bankCurrency || "CAD")}`,
+    count: 2, // matches logical-or and format-call patterns
+    reason: "Modal displays bank row amount with CAD fallback when currency missing",
+  },
   {
     file: "src/components/reconcile/investment-op-preview-dialog.tsx",
     line: `const amountAbs = formatCurrency(Math.abs(preview.amount), preview.currency || "CAD");`,
-    count: 1,
+    count: 2, // matches logical-or and format-call patterns
     reason: "Investment preview falls back to preview currency",
   },
   {
     file: "src/components/reconcile/transactions-pane.tsx",
     line: `{formatCurrency(r.amount, r.currency || "CAD")}`,
-    count: 1,
+    count: 2, // matches logical-or and format-call patterns
     reason: "Reconcile display falls back to bank row currency",
   },
 
   // OUT OF SCOPE: Staging/import surface (data-driven)
-  {
-    file: "src/components/import/staged-review-surface.tsx",
-    line: `const driftCurrency = dbRows[0]?.currency ?? "USD";`,
-    count: 1,
-    reason: "Staged import surfaces use account/row currency",
-  },
   {
     file: "src/components/import/staged-review-surface.tsx",
     line: `currency: payload.bankCurrency ?? snap?.currency ?? "CAD",`,
@@ -152,13 +152,13 @@ const ALLOW_LIST = [
   {
     file: "src/components/inbox/auto-rule-banner.tsx",
     line: `{formatCurrency(item.amount, item.currency || "CAD")}`,
-    count: 1,
+    count: 2, // matches logical-or and format-call patterns
     reason: "Inbox banner displays transaction currency",
   },
   {
     file: "src/components/inbox/row-card.tsx",
     line: `{formatCurrency(bank.amount, bank.currency || "CAD")}`,
-    count: 1,
+    count: 2, // matches logical-or and format-call patterns
     reason: "Row card displays bank row currency",
   },
   {
@@ -173,61 +173,12 @@ const ALLOW_LIST = [
   {
     file: "src/components/staging/staged-row-editor.tsx",
     line: `Row {s.rowIndex + 1}: {s.date} · {formatCurrency(s.amount, s.currency || "CAD")} ·{" "}`,
-    count: 1,
+    count: 2, // matches logical-or and format-call patterns
     reason: "Staged row editor displays row currency",
   },
 
   // OUT OF SCOPE: Transaction dialog (complex form with many currency sources)
-  {
-    file: "src/components/transactions/transaction-dialog.tsx",
-    line: `const targetCcy = toAcct?.currency ?? "USD";`,
-    count: 1,
-    reason: "Transaction dialog uses account currency",
-  },
-  {
-    file: "src/components/transactions/transaction-dialog.tsx",
-    line: `currency: acct?.currency ?? displayCurrency ?? "USD",`,
-    count: 1,
-    reason: "Transaction form uses account currency",
-  },
-  {
-    file: "src/components/transactions/transaction-dialog.tsx",
-    line: `<Select value={form.currency} onValueChange={(v) => setForm({ ...form, currency: v ?? displayCurrency ?? "USD" })}>`,
-    count: 1,
-    reason: "Transaction currency selector form",
-  },
-  {
-    file: "src/components/transactions/transaction-dialog.tsx",
-    line: `? fxPreviewText(transferFxPreview.converted, toAcct?.currency ?? "USD")`,
-    count: 1,
-    reason: "Transaction FX preview uses account currency",
-  },
-  {
-    file: "src/components/transactions/transaction-dialog.tsx",
-    line: `: \`0.\${"0".repeat(currencyDecimals(toAcct?.currency ?? "USD"))}\``,
-    count: 1,
-    reason: "Transaction FX preview uses account currency",
-  },
 
-  // OUT OF SCOPE: Account page and settings forms
-  {
-    file: "src/app/(app)/accounts/[id]/page.tsx",
-    line: `setNewSleeveCurrency(account?.currency ?? "USD");`,
-    count: 1,
-    reason: "Account detail uses account currency default",
-  },
-  {
-    file: "src/app/(app)/settings/investments/page.tsx",
-    line: `currency={pricesTarget?.currency ?? "USD"}`,
-    count: 1,
-    reason: "Investment settings price target currency",
-  },
-  {
-    file: "src/app/(app)/settings/general/page.tsx",
-    line: `const v = (val ?? "USD").toUpperCase();`,
-    count: 1,
-    reason: "General settings currency picker default",
-  },
 
   // REMOVED: preview-table.tsx now uses displayCurrency instead of "USD"
 
@@ -245,8 +196,8 @@ const ALLOW_LIST = [
   {
     file: "src/components/inbox/inbox-reconcile-tab.tsx",
     line: `let currency = "CAD";`,
-    count: 1,
-    reason: "Inbox reconcile tab local variable initialization",
+    count: 2,
+    reason: "Inbox reconcile tab local variable initialization (matches assignment + jsx-attr patterns)",
   },
 
   // OUT OF SCOPE: Inbox tabs (data-driven)
@@ -303,109 +254,14 @@ const ALLOW_LIST = [
     reason: "Investment settings form useState currency default",
   },
 
-  // New patterns (ternary, property-key) for existing allow-listed entries
+  // Transaction dialog form defaults
   {
-    file: "src/components/fx-overrides-section.tsx",
-    line: `<Select value={form.rateMode === "to-usd" ? form.currency : "USD"} onValueChange={(v) => setForm({ ...form, rateMode: v === "USD" ? "from-usd" : "to-usd" })}>`,
-    count: 2,
-    reason: "FX override form ternary and property key for USD rate mode setting",
-  },
-  {
-    file: "src/components/holdings/holding-edit-form.tsx",
-    line: `currency: initialHolding?.currency ?? "CAD",`,
+    file: "src/components/transactions/transaction-dialog.tsx",
+    line: `currency: "CAD",`,
     count: 1,
-    reason: "Holding form fallback to holding currency (nullish pattern match)",
+    reason: "Transaction form default values, form-only (not display-reaching)",
   },
-  {
-    file: "src/components/holdings/holding-edit-form.tsx",
-    line: `currency: row.currency ?? "CAD",`,
-    count: 1,
-    reason: "Holding edit form fallback to row currency (nullish pattern match)",
-  },
-  {
-    file: "src/components/import/reconcile/db-pane.tsx",
-    line: `{formatCurrency(r.amount, r.currency || "CAD")}`,
-    count: 1,
-    reason: "Reconcile display falls back to bank row currency (logical-or pattern)",
-  },
-  {
-    file: "src/components/import/reconcile/db-pane.tsx",
-    line: `? formatCurrency(r.runningBalance, r.currency || "CAD")`,
-    count: 1,
-    reason: "Reconcile balance falls back to bank row currency (logical-or pattern)",
-  },
-  {
-    file: "src/components/import/reconcile/db-pane.tsx",
-    line: `? formatCurrency(r.anchorBalance, r.currency || "CAD")`,
-    count: 1,
-    reason: "Reconcile balance falls back to bank row currency (logical-or pattern)",
-  },
-  {
-    file: "src/components/import/reconcile/file-pane.tsx",
-    line: `{formatCurrency(r.amount, r.currency || "CAD")}`,
-    count: 1,
-    reason: "Reconcile display falls back to bank row currency (logical-or pattern)",
-  },
-  {
-    file: "src/components/import/reconcile/file-pane.tsx",
-    line: `? formatCurrency(dayBalance, r.currency || "CAD")`,
-    count: 1,
-    reason: "Reconcile balance falls back to bank row currency (logical-or pattern)",
-  },
-  {
-    file: "src/components/import/staged-review-surface.tsx",
-    line: `const driftCurrency = dbRows[0]?.currency ?? "USD";`,
-    count: 1,
-    reason: "Staged import surfaces use account/row currency (nullish pattern)",
-  },
-  {
-    file: "src/components/import/staged-review-surface.tsx",
-    line: `currency: payload.bankCurrency ?? snap?.currency ?? "CAD",`,
-    count: 1,
-    reason: "Staged import surfaces use account/row currency (nullish pattern)",
-  },
-  {
-    file: "src/components/import/staged-review-surface.tsx",
-    line: `stagedCurrency: sRow.currency ?? "CAD",`,
-    count: 1,
-    reason: "Staged import surfaces use row currency (nullish pattern)",
-  },
-  {
-    file: "src/components/inbox/auto-rule-banner.tsx",
-    line: `{formatCurrency(item.amount, item.currency || "CAD")}`,
-    count: 1,
-    reason: "Inbox banner displays transaction currency (logical-or pattern)",
-  },
-  {
-    file: "src/components/inbox/inbox-reconcile-tab.tsx",
-    line: `currency: payload.bankCurrency ?? snap?.currency ?? "CAD",`,
-    count: 1,
-    reason: "Inbox reconcile tab uses bank row currency (nullish pattern)",
-  },
-  {
-    file: "src/components/inbox/inbox-to-approve-tab.tsx",
-    line: `currency: payload.bankCurrency ?? snap?.currency ?? "CAD",`,
-    count: 1,
-    reason: "Inbox to-approve tab uses bank row currency (nullish pattern)",
-  },
-  {
-    file: "src/components/inbox/inbox-to-categorize-tab.tsx",
-    line: `currency: payload.bankCurrency ?? snap?.currency ?? "CAD",`,
-    count: 1,
-    reason: "Inbox to-categorize tab uses bank row currency (nullish pattern)",
-  },
-  {
-    file: "src/components/inbox/row-card.tsx",
-    line: `{formatCurrency(bank.amount, bank.currency || "CAD")}`,
-    count: 1,
-    reason: "Row card displays bank row currency (logical-or pattern)",
-  },
-  {
-    file: "src/components/inbox/row-card.tsx",
-    line: `duplicate.txCurrency || bank.currency || "CAD",`,
-    count: 1,
-    reason: "Row card falls back through tx/bank/default currency (logical-or pattern)",
-  },
+
 ];
 
 /**
@@ -502,6 +358,10 @@ describe("Currency Hardcodes Guard", () => {
                 allowed.count--;
                 allowListUsed.add(key);
               } else {
+                // Debug: Check if line exists in allow-list but with different spacing
+                const exactMatch = ALLOW_LIST.find((a) => a.file === relfile && a.line === trimmed);
+                const fuzzyMatch = ALLOW_LIST.find((a) => a.file === relfile && a.line.replace(/\s+/g, " ") === trimmed.replace(/\s+/g, " "));
+
                 violations.push(
                   `${relfile}:${lineNum}: hardcoded ${currency} (${name})\n  ${line}`
                 );

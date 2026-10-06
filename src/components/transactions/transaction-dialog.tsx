@@ -1291,7 +1291,7 @@ export function TransactionDialog({
                     setForm({
                       ...form,
                       accountId: v,
-                      currency: acct?.currency ?? displayCurrency ?? "USD",
+                      currency: acct?.currency ?? displayCurrency,
                       portfolioHoldingId: stillValid ? form.portfolioHoldingId : "",
                     });
                   }}
@@ -1335,7 +1335,7 @@ export function TransactionDialog({
               </div>
               <div className="space-y-1.5">
                 <Label>Currency</Label>
-                <Select value={form.currency} onValueChange={(v) => setForm({ ...form, currency: v ?? displayCurrency ?? "USD" })}>
+                <Select value={form.currency} onValueChange={(v) => setForm({ ...form, currency: v ?? displayCurrency })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
