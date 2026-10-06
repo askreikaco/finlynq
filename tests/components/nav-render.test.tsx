@@ -143,7 +143,7 @@ describe("Nav What's New", () => {
   it("hidden when there are no announcements", async () => {
     const f = mockFetch({ announcements: [] });
     render(<Nav />);
-    await waitFor(() => expect(screen.queryByText("What's New")).toBeNull());
+    await waitFor(() => expect(screen.queryByText("What's new")).toBeNull());
     expect(f).toHaveBeenCalledWith("/api/announcements");
   });
 
@@ -151,13 +151,13 @@ describe("Nav What's New", () => {
     mockFetch({ announcements: [{ id: 1, read: true }] });
     render(<Nav />);
     await new Promise((r) => setTimeout(r, 10));
-    expect(screen.getByText("What's New")).toBeTruthy();
+    expect(screen.getByText("What's new")).toBeTruthy();
   });
 
   it("shown when the announcements request fails (non-OK)", async () => {
     mockFetch({ announcements: [], announcementsOk: false });
     render(<Nav />);
     await new Promise((r) => setTimeout(r, 10));
-    expect(screen.getByText("What's New")).toBeTruthy();
+    expect(screen.getByText("What's new")).toBeTruthy();
   });
 });

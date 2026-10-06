@@ -281,8 +281,8 @@ export const Nav = memo(function Nav() {
       <div className="flex-1 px-2 pt-3 space-y-1 overflow-y-auto">
         {navGroups.map((group) => {
           const visibleItems = group.items.filter((item) => {
-            // Hide What's New when there are no announcements
-            if (item.label === "What's New" && !hasAnnouncements) return false;
+            // Hide What's new when there are no announcements
+            if (item.label === "What's new" && !hasAnnouncements) return false;
             if (item.href === "/family" && !familyEnabled) return false;
             return devMode || item.mode !== "dev";
           });
