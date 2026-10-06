@@ -91,7 +91,7 @@ describe("nav-config", () => {
     it("should have valid flag values if present", () => {
       for (const entry of NAV_REGISTRY) {
         if (entry.flag) {
-          expect(["family", "announcements", "feedback"]).toContain(entry.flag);
+          expect(["family", "announcements", "feedback", "instance"]).toContain(entry.flag);
         }
       }
     });

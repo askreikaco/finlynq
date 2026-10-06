@@ -202,7 +202,7 @@ describe("More Appearance row", () => {
 
 describe("More keeps everything the old sheet offered reachable", () => {
   it("every non-bar nav item (all flags on) has a row, except owner-removed /feedback", () => {
-    const all = buildMoreGroups({ isAdmin: true, devMode: true, familyEnabled: true, hasAnnouncements: true });
+    const all = buildMoreGroups({ isAdmin: true, devMode: true, familyEnabled: true, hasAnnouncements: true, instanceAdminEnabled: true });
     const hrefs = new Set(all.flatMap((g) => g.rows.map((r) => r.href)));
     const bar = new Set(mobileBarItems.map((i) => i.href));
     const missing = allFlatItems
@@ -215,5 +215,38 @@ describe("More keeps everything the old sheet offered reachable", () => {
     vi.stubGlobal("matchMedia", () => ({ matches: true }));
     render(<MoreMenu />);
     expect(replace).toHaveBeenCalledWith("/dashboard");
+  });
+});
+
+describe("More instance admin filter (WP9a)", () => {
+  it("hides Instance config when instanceAdminEnabled={false}", () => {
+    const groups = buildMoreGroups({ isAdmin: true, devMode: false, familyEnabled: true, hasAnnouncements: true, instanceAdminEnabled: false });
+    const allHrefs = new Set(groups.flatMap((g) => g.rows.map((r) => r.href)));
+    expect(allHrefs.has("/admin/instance")).toBe(false);
+  });
+
+  it("shows Instance config when instanceAdminEnabled={true}", () => {
+    const groups = buildMoreGroups({ isAdmin: true, devMode: false, familyEnabled: true, hasAnnouncements: true, instanceAdminEnabled: true });
+    const allHrefs = new Set(groups.flatMap((g) => g.rows.map((r) => r.href)));
+    expect(allHrefs.has("/admin/instance")).toBe(true);
+  });
+
+  it("renders Instance config row in MoreMenu when instanceAdminEnabled={true} with admin session", async () => {
+    session = { isAdmin: true };
+    const { unmount } = render(<MoreMenu instanceAdminEnabled={true} />);
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/announcements"));
+    const configLink = screen.queryByRole("link", { name: /Instance config/i });
+    expect(configLink).toBeTruthy();
+    expect(configLink?.getAttribute("href")).toBe("/admin/instance");
+    unmount();
+  });
+
+  it("does not render Instance config row in MoreMenu when instanceAdminEnabled={false} with admin session", async () => {
+    session = { isAdmin: true };
+    const { unmount } = render(<MoreMenu instanceAdminEnabled={false} />);
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/announcements"));
+    const configLink = screen.queryByRole("link", { name: /Instance config/i });
+    expect(configLink).toBeNull();
+    unmount();
   });
 });

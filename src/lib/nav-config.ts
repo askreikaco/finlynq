@@ -52,11 +52,12 @@ import {
   Activity,
   Database,
   Plug,
+  Cloud,
   type LucideIcon,
 } from "lucide-react";
 
 export type Surface = "sidebar" | "mobileBar" | "more" | "settings" | "admin" | "account";
-export type Flag = "family" | "announcements" | "feedback";
+export type Flag = "family" | "announcements" | "feedback" | "instance";
 export type Mode = "prod" | "dev";
 
 export interface NavPageEntry {
@@ -448,6 +449,18 @@ export const NAV_REGISTRY: NavPageEntry[] = [
     adminOnly: true,
     surfaces: ["sidebar", "more"],
   },
+  {
+    id: "admin-instance",
+    path: "/admin/instance",
+    label: "Instance config",
+    icon: Cloud,
+    group: "Admin",
+    mode: "prod",
+    adminOnly: true,
+    flag: "instance",
+    surfaces: ["sidebar", "more"],
+  },
+
   // Admin environment subsections (in (env) layout)
   {
     id: "admin-system",

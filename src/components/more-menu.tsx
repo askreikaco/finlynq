@@ -33,6 +33,7 @@ export interface MoreFlags {
   devMode: boolean;
   familyEnabled: boolean;
   hasAnnouncements: boolean;
+  instanceAdminEnabled: boolean;
 }
 
 const row = (href: string, label: string, icon: LucideIcon): MoreRow => ({ id: href, href, label, icon });
@@ -104,7 +105,13 @@ export function buildMoreGroups(f: MoreFlags): MoreGroup[] {
   // Admin group (for admins only)
   if (f.isAdmin) {
     // Get all admin entries in order from registry
-    const adminEntries = moreEntries.filter((e) => e.adminOnly && (e.mode !== "dev" || f.devMode));
+    const adminEntries = moreEntries.filter((e) => {
+      if (!e.adminOnly || (e.mode === "dev" && !f.devMode)) return false;
+      // Filter by feature flags
+      if (e.flag === "family" && !f.familyEnabled) return false;
+      if (e.flag === "instance" && !f.instanceAdminEnabled) return false;
+      return true;
+    });
     for (const entry of adminEntries) {
       admin.push(row(entry.path, entry.label, entry.icon));
     }
@@ -185,7 +192,7 @@ export function AppearanceRow() {
   );
 }
 
-export const MoreMenu = memo(function MoreMenu() {
+export const MoreMenu = memo(function MoreMenu({ instanceAdminEnabled = false }: { instanceAdminEnabled?: boolean }) {
   const router = useRouter();
   const busy = useRef(false);
 
@@ -228,8 +235,9 @@ export const MoreMenu = memo(function MoreMenu() {
       devMode,
       familyEnabled,
       hasAnnouncements,
+      instanceAdminEnabled,
     }),
-    [isAdmin, devMode, familyEnabled, hasAnnouncements],
+    [isAdmin, devMode, familyEnabled, hasAnnouncements, instanceAdminEnabled],
   );
 
   const signOut = async () => {

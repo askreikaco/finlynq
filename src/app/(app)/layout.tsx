@@ -13,8 +13,10 @@ import { DataProvider } from "@/lib/data";
 import { WebVitals } from "@/components/web-vitals";
 import { QuickAddFAB } from "@/components/quick-add-fab";
 import { isQuickAddEnabled } from "@/lib/quick-add/flag";
+import { isInstanceAdminEnabled } from "@/lib/admin/instance-flag";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
+  const instanceAdminEnabled = isInstanceAdminEnabled();
   return (
     <>
     <VersionGate />
@@ -31,7 +33,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <PromptGate />
           <ReportingRecomputeIndicator />
           <div className="flex flex-1">
-            <Nav />
+            <Nav instanceAdminEnabled={instanceAdminEnabled} />
             <main className="flex-1 overflow-x-hidden overflow-y-auto min-w-0 pb-[calc(60px+var(--sab))] md:pb-0 bg-dot-pattern ambient-glow">
               {/* FINLYNQ-52: no width cap on the (app) shell — content fills
                   the viewport to the right of the sidebar. Per-page wrappers
