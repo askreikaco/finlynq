@@ -1,77 +1,34 @@
-/**
- * @vitest-environment node
- *
- * AppLayout instance admin wiring test (WP9a)
- *
- * Verifies that AppLayout correctly:
- * 1. Imports and calls isInstanceAdminEnabled()
- * 2. Passes the result to Nav as instanceAdminEnabled prop
- */
+/** @vitest-environment node */
+import { describe, it, expect, afterEach, vi } from "vitest";
+import type { ReactElement, ReactNode } from "react";
 
-import { describe, it, expect } from "vitest";
-import fs from "fs";
-import path from "path";
+vi.mock("@/components/nav", () => ({ Nav: () => null }));
+for (const m of ["unlock-gate","announcement-banner","prompt-gate","currency-provider","dropdown-order-provider","language-provider","font-provider","animation-provider","reporting-recompute-indicator","version-gate","web-vitals"]) {
+  vi.doMock(`@/components/${m}`, () => new Proxy({}, { get: () => () => null }));
+}
+vi.mock("@/lib/data", () => ({ DataProvider: () => null }));
 
-describe("AppLayout instance admin wiring", () => {
-  it("calls isInstanceAdminEnabled and passes result to Nav prop", () => {
-    // Read the source file
-    const layoutPath = path.join(
-      process.cwd(),
-      "src/app/(app)/layout.tsx"
-    );
-    const content = fs.readFileSync(layoutPath, "utf-8");
+import AppLayout from "@/app/(app)/layout";
+import { Nav } from "@/components/nav";
 
-    // Verify the flag is imported
-    expect(content).toContain(
-      'import { isInstanceAdminEnabled } from "@/lib/admin/instance-flag"'
-    );
+// walk the element tree (children props only; no rendering) to find <Nav/>
+function findNav(node: ReactNode): ReactElement<{ instanceAdminEnabled?: boolean }> | null {
+  if (!node || typeof node !== "object") return null;
+  if (Array.isArray(node)) { for (const n of node) { const f = findNav(n); if (f) return f; } return null; }
+  const el = node as ReactElement<{ children?: ReactNode; instanceAdminEnabled?: boolean }>;
+  if (el.type === Nav) return el;
+  return findNav(el.props?.children);
+}
 
-    // Verify isInstanceAdminEnabled() is called
-    expect(content).toContain("isInstanceAdminEnabled()");
+afterEach(() => { vi.unstubAllEnvs(); });
 
-    // Verify the result is assigned to a variable
-    expect(content).toContain("instanceAdminEnabled");
-
-    // Verify the variable is passed to Nav
-    expect(content).toContain("instanceAdminEnabled={instanceAdminEnabled}");
-
-    // Verify this is inside the Nav component
-    expect(content).toContain("<Nav instanceAdminEnabled={instanceAdminEnabled}");
+describe("AppLayout passes the runtime flag to Nav", () => {
+  it("unset -> false", () => {
+    vi.stubEnv("FINLYNQ_INSTANCE_ADMIN", "");
+    expect(findNav(AppLayout({ children: null }))?.props.instanceAdminEnabled).toBe(false);
   });
-
-  it("does not hard-code the flag value to true", () => {
-    const layoutPath = path.join(
-      process.cwd(),
-      "src/app/(app)/layout.tsx"
-    );
-    const content = fs.readFileSync(layoutPath, "utf-8");
-
-    // This would catch the mutation: "layout.tsx forces the flag true"
-    // Count how many times true is explicitly passed to instanceAdminEnabled
-    const navLineMatch = content.match(
-      /<Nav[^>]*instanceAdminEnabled={[^}]*}/
-    );
-    if (navLineMatch) {
-      const navLine = navLineMatch[0];
-      // Should have the variable, not literal true
-      expect(navLine).toContain("instanceAdminEnabled}");
-      expect(navLine).not.toMatch(/instanceAdminEnabled=\{true\}/);
-    }
-  });
-
-  it("does not drop the Nav prop", () => {
-    const layoutPath = path.join(
-      process.cwd(),
-      "src/app/(app)/layout.tsx"
-    );
-    const content = fs.readFileSync(layoutPath, "utf-8");
-
-    // Verify Nav is rendered
-    expect(content).toContain("<Nav");
-
-    // Verify instanceAdminEnabled prop is present on Nav
-    expect(content).toContain(
-      "instanceAdminEnabled={instanceAdminEnabled}"
-    );
+  it("1 -> true", () => {
+    vi.stubEnv("FINLYNQ_INSTANCE_ADMIN", "1");
+    expect(findNav(AppLayout({ children: null }))?.props.instanceAdminEnabled).toBe(true);
   });
 });

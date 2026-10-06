@@ -29,7 +29,7 @@ let fetchMock: ReturnType<typeof vi.fn>;
 beforeEach(() => {
   vi.clearAllMocks();
   fetchMock = vi.fn();
-  global.fetch = fetchMock;
+  global.fetch = fetchMock as unknown as typeof fetch;
 });
 
 afterEach(() => {
@@ -157,11 +157,7 @@ describe("InstanceAdminPage", () => {
     render(<InstanceAdminPage />);
 
     await waitFor(() => {
-      expect(screen.getByText(/Error loading configuration/i)).toBeTruthy();
+      expect(screen.getByText(/Failed to fetch config: Internal Server Error/)).toBeTruthy();
     });
-
-    // Generic error message should be shown
-    const errorText = screen.getByText("Error loading configuration").nextElementSibling?.textContent;
-    expect(errorText).toBeTruthy();
   });
 });

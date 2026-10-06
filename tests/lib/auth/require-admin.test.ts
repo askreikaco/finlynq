@@ -90,6 +90,44 @@ describe("requireAdmin", () => {
       }
     });
 
+    it("returns 403 when user has 'viewer' role", async () => {
+      mockRequireAuth.mockResolvedValue({
+        authenticated: true,
+        context: { userId: "viewer-123" },
+      });
+
+      mockGetUserById.mockResolvedValue({
+        id: "viewer-123",
+        role: "viewer",
+      });
+
+      const result = await requireAdmin(makeRequest());
+
+      expect(result.authenticated).toBe(false);
+      if (!result.authenticated) {
+        expect(result.response.status).toBe(403);
+      }
+    });
+
+    it("returns 403 when user role is undefined", async () => {
+      mockRequireAuth.mockResolvedValue({
+        authenticated: true,
+        context: { userId: "no-role-user" },
+      });
+
+      mockGetUserById.mockResolvedValue({
+        id: "no-role-user",
+        role: undefined,
+      });
+
+      const result = await requireAdmin(makeRequest());
+
+      expect(result.authenticated).toBe(false);
+      if (!result.authenticated) {
+        expect(result.response.status).toBe(403);
+      }
+    });
+
     it("returns authenticated when user has 'admin' role", async () => {
       mockRequireAuth.mockResolvedValue({
         authenticated: true,
