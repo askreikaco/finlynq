@@ -30,13 +30,25 @@ describe("Settings Shell", () => {
     );
 
     const links = screen.getAllByRole("link");
-    const expectedOrder = ["General", "Categories", "Reconciliation", "Investments", "Integrations", "Developer", "About"];
+    const expectedHrefs = [
+      "/settings/general",
+      "/settings/categorization",
+      "/settings/reconciliation",
+      "/settings/investments",
+      "/settings/integrations",
+      "/settings/developer",
+      "/settings/about",
+    ];
 
-    for (const label of expectedOrder) {
-      const link = links.find((l) => l.textContent?.includes(label));
-      expect(link).toBeTruthy();
-      expect(link?.getAttribute("href")).toBe(`/settings/${label.toLowerCase().replace(" ", "-").replace("general", "general").replace("categories", "categorization")}`);
-    }
+    // Filter to only settings links
+    const settingsLinks = links.filter((l) => {
+      const href = l.getAttribute("href");
+      return href?.startsWith("/settings/");
+    });
+
+    // Take only the first 7 (one instance of each settings link)
+    const actualHrefs = settingsLinks.slice(0, 7).map((l) => l.getAttribute("href"));
+    expect(actualHrefs).toEqual(expectedHrefs);
   });
 
   it("renders correct icon classes for each settings entry", () => {
