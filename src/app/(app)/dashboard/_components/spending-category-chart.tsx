@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { PieTooltip } from "./chart-tooltip";
 import { formatCurrency } from "@/lib/currency";
+import { useDisplayCurrency } from "@/components/currency-provider";
 import { motion } from "framer-motion";
 import { useAnimations } from "@/hooks/use-animations";
 
@@ -24,7 +25,8 @@ const noAnimationVariants = {
 
 type SpendingItem = { name: string; value: number };
 
-export function SpendingCategoryChart({ data, currency = "CAD" }: { data: SpendingItem[]; currency?: string }) {
+export function SpendingCategoryChart({ data, currency }: { data: SpendingItem[]; currency?: string }) {
+  const displayCurrency = currency || useDisplayCurrency().displayCurrency;
   const animationsEnabled = useAnimations();
   const total = data.reduce((s, d) => s + d.value, 0);
 
@@ -60,12 +62,12 @@ export function SpendingCategoryChart({ data, currency = "CAD" }: { data: Spendi
                       <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip content={<PieTooltip currency={currency} />} />
+                  <Tooltip content={<PieTooltip currency={displayCurrency} />} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                 <span className="text-[10px] text-muted-foreground">Total</span>
-                <span className="text-sm font-bold tabular-nums">{formatCurrency(total, currency)}</span>
+                <span className="text-sm font-bold tabular-nums">{formatCurrency(total, displayCurrency)}</span>
               </div>
             </div>
 

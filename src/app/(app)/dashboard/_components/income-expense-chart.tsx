@@ -8,6 +8,7 @@ import {
 } from "recharts";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/currency";
+import { useDisplayCurrency } from "@/components/currency-provider";
 import { formatCompactNumber } from "@/lib/utils/number";
 import { ChartTooltip } from "./chart-tooltip";
 import { buildStackedSeries, type StackPoint } from "@/lib/chart-stack";
@@ -111,11 +112,12 @@ function StackedSideChart({
 
 export function IncomeExpenseChart({
   data,
-  currency = "USD",
+  currency,
 }: {
   data: MonthlyData[];
   currency?: string;
 }) {
+  const displayCurrency = currency || useDisplayCurrency().displayCurrency;
   // FINLYNQ-129 — component-only "By category" toggle (resets on reload).
   const [stacked, setStacked] = useState(false);
   // Only offer stacking when at least one month carries a category breakdown.
@@ -155,14 +157,14 @@ export function IncomeExpenseChart({
                 data={data}
                 valueKey="income"
                 breakdownKey="incomeBreakdown"
-                currency={currency}
+                currency={displayCurrency}
               />
               <StackedSideChart
                 title="Expenses by category"
                 data={data}
                 valueKey="expenses"
                 breakdownKey="expenseBreakdown"
-                currency={currency}
+                currency={displayCurrency}
               />
             </div>
           ) : (
@@ -193,7 +195,7 @@ export function IncomeExpenseChart({
                     tick={{ fill: "var(--color-muted-foreground)" }}
                     tickFormatter={(v) => formatCompactNumber(Number(v))}
                   />
-                  <Tooltip content={<ChartTooltip currency={currency} />} cursor={{ stroke: "var(--color-border)", strokeDasharray: "4 4" }} />
+                  <Tooltip content={<ChartTooltip currency={displayCurrency} />} cursor={{ stroke: "var(--color-border)", strokeDasharray: "4 4" }} />
                   <Area
                     type="monotone"
                     dataKey="income"
