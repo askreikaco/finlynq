@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
   // for Bearer `pf_...` callers (api-key.ts). Re-deriving it from `sessionId`
   // here dropped the DEK for API-key and OAuth clients -- which have no
   // session -- so every row came back as `v1:` ciphertext for them.
-  const { checkETag } = await import("@/lib/data-version");
+  const { checkETag, withEtagHeaders } = await import("@/lib/data-version");
   const etagCheck = await checkETag(request);
   if (etagCheck.response) return etagCheck.response;
   const { userId, dek } = etagCheck.authContext!;
@@ -442,7 +442,7 @@ export async function GET(request: NextRequest) {
   }
 
   const response = NextResponse.json({ data: decrypted, total });
-  if (etag) response.headers.set("ETag", etag);
+  if (etag) return withEtagHeaders(response, etag);
   return response;
 }
 

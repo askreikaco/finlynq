@@ -17,7 +17,7 @@ import { getHoldingsValueByAccount } from "@/lib/holdings-value";
 import { applyInvestmentMarketOverlay } from "@/lib/accounts/investment-balance-overlay";
 
 export async function GET(request: NextRequest) {
-  const { checkETag } = await import("@/lib/data-version");
+  const { checkETag, withEtagHeaders } = await import("@/lib/data-version");
   const etagCheck = await checkETag(request);
   if (etagCheck.response) return etagCheck.response;
   const { userId, dek } = etagCheck.authContext!;
@@ -175,7 +175,7 @@ export async function GET(request: NextRequest) {
           })),
       },
     });
-    if (etag) response.headers.set("ETag", etag);
+    if (etag) return withEtagHeaders(response, etag);
     return response;
   }
 
@@ -252,7 +252,7 @@ export async function GET(request: NextRequest) {
       totalLiabilities: Math.round(totalLiabilities * 100) / 100,
       netWorth: Math.round((totalAssets - totalLiabilities) * 100) / 100,
     });
-    if (etag) response.headers.set("ETag", etag);
+    if (etag) return withEtagHeaders(response, etag);
     return response;
   }
 
@@ -316,7 +316,7 @@ export async function GET(request: NextRequest) {
         total: Math.round(Math.abs(r.total) * 100) / 100,
       })),
     });
-    if (etag) response.headers.set("ETag", etag);
+    if (etag) return withEtagHeaders(response, etag);
     return response;
   }
 
