@@ -30,76 +30,69 @@ vi.mock("@/lib/auth/require-auth", () => ({
   })),
 }));
 
-// Mock db module - returns minimal test data
+// Mock db module - returns minimal test data with proper data version handling
+// Create a generic query chain proxy that's awaitable and supports all methods
+function createQueryProxy(context: { selectedFields?: any; selectedTable?: any } = {}): any {
+  return new Proxy(
+    {
+      [Symbol.toStringTag]: "Query",
+      _context: context,
+      then(resolve: any, reject: any) {
+        try {
+          resolve([]);
+        } catch (e) {
+          reject(e);
+        }
+      },
+    },
+    {
+      get(target: any, prop: string | symbol) {
+        // If it's one of these methods, return the array or the result
+        if (prop === "all") {
+          return () => Promise.resolve([]);
+        }
+        if (prop === "get") {
+          return () => {
+            // For dataVersion queries, return the current mockDataVersion
+            if (target._context?.selectedFields?.dataVersion !== undefined) {
+              return Promise.resolve({ dataVersion: mockDataVersion });
+            }
+            // For other queries, return null
+            return Promise.resolve(null);
+          };
+        }
+        // If it's Symbol.toStringTag, then, or other special properties, return target's version
+        if (prop === Symbol.toStringTag || prop === "then" || prop === "catch" || prop === "finally" || prop === "_context") {
+          return target[prop];
+        }
+        // For method calls, build a new proxy with updated context
+        if (typeof target[prop] !== "function") {
+          return (...args: any[]) => {
+            const newContext = { ...target._context };
+            // Track what fields are being selected
+            if (prop === "select" && args[0]?.dataVersion !== undefined) {
+              newContext.selectedFields = { dataVersion: true };
+            }
+            return createQueryProxy(newContext);
+          };
+        }
+        // For any other method, return a function that chains
+        return (...args: any[]) => createQueryProxy(target._context);
+      },
+    },
+  );
+}
+
 vi.mock("@/db", () => ({
   db: {
-    select: vi.fn(function(obj: any) {
-      return {
-        from: vi.fn(function(tableOrAlias: any) {
-          return {
-            where: vi.fn(function() {
-              return {
-                get: vi.fn(function() {
-                  // Return user data for getDataVersion queries
-                  if (obj && obj.dataVersion !== undefined) {
-                    return { dataVersion: mockDataVersion };
-                  }
-                  // For settings queries (dashboard, portfolio/overview, reports)
-                  if (obj && obj.value !== undefined) {
-                    return { value: null };
-                  }
-                  return { dataVersion: mockDataVersion };
-                }),
-                orderBy: vi.fn(function() {
-                  return {
-                    all: vi.fn(function() {
-                      return [];
-                    }),
-                  };
-                }),
-                all: vi.fn(function() {
-                  return [];
-                }),
-                limit: vi.fn(function() {
-                  return {
-                    get: vi.fn(() => null),
-                  };
-                }),
-              };
-            }),
-            leftJoin: vi.fn(function() {
-              return {
-                where: vi.fn(function() {
-                  return { all: vi.fn(() => []) };
-                }),
-              };
-            }),
-            groupBy: vi.fn(function() {
-              return {
-                orderBy: vi.fn(function() {
-                  return { all: vi.fn(() => []) };
-                }),
-                all: vi.fn(() => []),
-              };
-            }),
-            innerJoin: vi.fn(function() {
-              return {
-                leftJoin: vi.fn(function() {
-                  return {
-                    where: vi.fn(function() {
-                      return { groupBy: vi.fn(() => ({ all: vi.fn(() => []) })) };
-                    }),
-                  };
-                }),
-              };
-            }),
-            all: vi.fn(function() {
-              return [];
-            }),
-          };
-        }),
-      };
+    select: vi.fn((fields: any) => {
+      const context: any = {};
+      if (fields?.dataVersion !== undefined) {
+        context.selectedFields = { dataVersion: true };
+      }
+      return createQueryProxy(context);
     }),
+    execute: vi.fn(async () => []),
   },
   schema: {
     users: { id: {}, dataVersion: {} },
@@ -111,23 +104,14 @@ vi.mock("@/db", () => ({
     holdingAccounts: { holdingId: {}, accountId: {}, userId: {} },
     settings: { key: {}, value: {}, userId: {} },
     securities: { id: {}, nameCt: {}, symbolCt: {}, assetType: {}, priceSource: {} },
+    portfolioLotsStatus: { userId: {}, enabled: {} },
   },
 }));
 
-// Mock data-version module - use our mockDataVersion
-vi.mock("@/lib/data-version", async () => {
-  const actual = await vi.importActual<typeof import("@/lib/data-version")>("@/lib/data-version");
-  return {
-    ...actual,
-    getDataVersion: vi.fn(async () => mockDataVersion),
-  };
-});
+// Data-version module will use the mocked db to get the data version
+// No need to mock it separately since getDataVersion queries the db which is mocked
 
 // Mock crypto module
-vi.mock("@/lib/crypto/encrypted-columns", () => ({
-  decryptName: vi.fn((ct: string) => ct ? ct.replace(/^ct:/, "") : null),
-}));
-
 // Mock rules crypto
 vi.mock("@/lib/rules/crypto", () => ({
   decryptRuleFields: vi.fn((dek: Buffer, data: any) => data),
@@ -204,11 +188,11 @@ vi.mock("@/lib/chart-breakdown", () => ({
 }));
 
 vi.mock("@/lib/diagnostics/op-context", () => ({
-  withOp: vi.fn((name: string, fn: Function) => fn),
+  withOp: vi.fn((name: string, fn: Function) => fn()),
 }));
 
 vi.mock("@/lib/portfolio/top-movers", () => ({
-  aggregateMovers: vi.fn(async () => []),
+  aggregateMovers: vi.fn(() => []),
 }));
 
 vi.mock("@/lib/price-service", () => ({
