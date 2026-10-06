@@ -52,6 +52,14 @@ describe("mobile bottom bar", () => {
     expect(mobileBarItems[3].label).toBe("Transactions");
   });
 
+  it("mobileBarItems all carry ACTIVE_ACCENT color", () => {
+    // Verify all mobile bar items have the correct accent color for active state
+    const ACTIVE_ACCENT = "text-primary";
+    for (const item of mobileBarItems) {
+      expect(item.color).toBe(ACTIVE_ACCENT);
+    }
+  });
+
   it("mobileBarItems snapshot: order must not change without explicit test update", () => {
     // Regression test: ensure order stays stable
     const snapshot = mobileBarItems.map((i) => ({ href: i.href, label: i.label }));

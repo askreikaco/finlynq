@@ -613,20 +613,23 @@ describe("nav-config", () => {
     });
 
     it("next.config.ts async redirects() should return REDIRECTS from nav-config", async () => {
-      // Verify that the REDIRECTS table has all expected redirects
-      // and that they can be used directly in next.config.ts
-      const testRedirects = REDIRECTS;
-      expect(testRedirects).toHaveLength(7);
-      expect(testRedirects[0]).toEqual({
-        source: "/mcp",
-        destination: "/api/mcp",
-        permanent: true,
-      });
-      expect(testRedirects[1]).toEqual({
-        source: "/mcp/:path*",
-        destination: "/api/mcp/:path*",
-        permanent: true,
-      });
+      // Load next.config.ts and verify it returns the exact REDIRECTS table
+      const cfg = (await import("../../next.config")).default;
+      const result = await cfg.redirects!();
+
+      // Expected 7 entries (full table)
+      const expectedRedirects = [
+        { source: "/mcp", destination: "/api/mcp", permanent: true },
+        { source: "/mcp/:path*", destination: "/api/mcp/:path*", permanent: true },
+        { source: "/inbox", destination: "/import", permanent: false },
+        { source: "/reconcile", destination: "/import?tab=reconcile", permanent: false },
+        { source: "/import/reconcile", destination: "/import?tab=reconcile", permanent: false },
+        { source: "/import/classic", destination: "/import", permanent: false },
+        { source: "/calendar", destination: "/subscriptions?view=calendar", permanent: false },
+      ];
+
+      expect(result).toEqual(expectedRedirects);
+      expect(result).toEqual(REDIRECTS);
     });
   });
 });
