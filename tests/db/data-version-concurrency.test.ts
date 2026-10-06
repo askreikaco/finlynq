@@ -3,8 +3,13 @@ import pg from 'pg';
 
 /**
  * Concurrency tests for data_version trigger system.
- * Verifies the deadlock fix: row locking (FOR NO KEY UPDATE) in deterministic order prevents deadlocks.
- * Verifies UPDATE with user_id change bumps both users.
+ * Verifies data_version increments correctly under concurrent load.
+ * Verifies UPDATE with user_id change bumps both users' data_version.
+ *
+ * NOTE: This test does not reliably trigger deadlocks even with locks removed.
+ * Single-statement INSERT...FROM unnest transactions with randomized row order
+ * do not create the conflict patterns needed for deadlock detection.
+ * Multi-statement transactions may deadlock regardless of locks on individual statements.
  *
  * Run with: DATABASE_URL=postgres://... vitest run tests/db/data-version-concurrency.test.ts
  * Requires a live Postgres cluster at $DATABASE_URL with the migration applied.
@@ -12,8 +17,8 @@ import pg from 'pg';
 
 describe('data-version concurrency', () => {
   const databaseUrl = process.env.DATABASE_URL;
-  const numClients = 6;
-  const numUsers = 4;
+  const numClients = 24;
+  const numUsers = 10;
   const iterationsPerClient = 80;
   const testUserIds: string[] = [];
 
@@ -73,7 +78,7 @@ describe('data-version concurrency', () => {
     }
   });
 
-  it('should prevent deadlocks with multi-user concurrent inserts using unnest + shuffled array (6 clients × 80 iterations)', async () => {
+  it('should increment data_version correctly under concurrent multi-user inserts with shuffled arrays (24 clients × 80 iterations)', async () => {
     const clients = Array.from({ length: numClients }, () => new pg.Client({
       connectionString: databaseUrl,
     }));
@@ -117,8 +122,10 @@ describe('data-version concurrency', () => {
 
       await Promise.all(clientPromises);
 
-      // CRITICAL: Verify zero deadlocks (fails if FOR NO KEY UPDATE is removed)
-      console.log(`\n*** DEADLOCK TEST RESULT: ${deadlockCount} deadlocks out of 480 operations ***`);
+      // Verify that all operations completed without deadlock errors.
+      // NOTE: This single-statement workload does not reliably trigger deadlocks,
+      // even without row locks. Deadlocks are more likely in multi-statement transactions.
+      console.log(`\n*** DEADLOCK COUNT: ${deadlockCount} out of ${numClients * iterationsPerClient} operations ***`);
       expect(deadlockCount).toBe(0);
 
       // Verify each user's data_version was incremented (480 operations / 4 users = 120 per user)
