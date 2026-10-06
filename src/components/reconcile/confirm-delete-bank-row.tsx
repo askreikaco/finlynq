@@ -51,9 +51,10 @@ export function ConfirmDeleteBankRow({
   onConfirm,
   onCancel,
 }: ConfirmDeleteBankRowProps) {
+  const { displayCurrency } = useDisplayCurrency();
+
   if (!open) return null;
 
-  const { displayCurrency } = useDisplayCurrency();
   const isPlural = linkedTransactionCount !== 1;
 
   return (

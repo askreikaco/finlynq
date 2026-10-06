@@ -6,9 +6,10 @@
  * Each test MUST fail on pristine code with hardcoded defaults.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, cleanup, waitFor } from "@testing-library/react";
+import { render, cleanup, waitFor } from "@testing-library/react";
 import { forwardRef, ReactNode } from "react";
 const MockIcon = forwardRef<SVGSVGElement>(() => <span>Icon</span>);
+MockIcon.displayName = "MockIcon";
 
 // Mock fetch globally to return VND as displayCurrency
 beforeEach(() => {
