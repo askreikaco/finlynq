@@ -119,6 +119,7 @@ describe("data-version", () => {
 
       expect(etag1).toBe(etag2);
     });
+  });
 
   describe("getDataVersion", () => {
     it("should handle missing user by returning default value", async () => {
