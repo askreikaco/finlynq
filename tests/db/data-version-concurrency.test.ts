@@ -38,13 +38,14 @@ describe('data-version concurrency', () => {
       const mainClient = clients[0];
 
       // Create test users
+      const now = new Date().toISOString();
       const userResults = await mainClient.query(
-        `INSERT INTO users (email, password, salt)
-         SELECT 'concurrent-user-' || i::text || '@test.local', 'pass', 'salt'
+        `INSERT INTO users (id, email, password_hash, created_at, updated_at)
+         SELECT gen_random_uuid(), 'concurrent-user-' || i::text || '@test.local', 'hash_pass', $2, $3
          FROM generate_series(1, $1) i
          ON CONFLICT DO NOTHING
          RETURNING id`,
-        [numUsers]
+        [numUsers, now, now]
       );
 
       let userIds = userResults.rows.map((r: any) => r.id);
@@ -91,9 +92,9 @@ describe('data-version concurrency', () => {
       const insertPromises = operations.map(async ([clientId, userId, iteration]) => {
         try {
           await clients[clientId].query(
-            `INSERT INTO accounts (user_id, name)
-             VALUES ($1, $2)`,
-            [userId, 'client' + clientId + '_iter' + iteration]
+            `INSERT INTO accounts (user_id, type, "group", currency)
+             VALUES ($1, $2, $3, $4)`,
+            [userId, 'checking', 'default', 'CAD']
           );
         } catch (error: any) {
           if (error.message && error.message.includes('deadlock')) {
@@ -158,10 +159,10 @@ describe('data-version concurrency', () => {
 
       // Insert a record for user 1
       const insertResult = await client.query(
-        `INSERT INTO accounts (user_id, name)
-         VALUES ($1, $2)
+        `INSERT INTO accounts (user_id, type, "group", currency)
+         VALUES ($1, $2, $3, $4)
          RETURNING id`,
-        [user1Id, 'transfer_test']
+        [user1Id, 'checking', 'default', 'CAD']
       );
 
       const recordId = insertResult.rows[0].id;
