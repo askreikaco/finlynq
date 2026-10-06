@@ -13,7 +13,6 @@ import { getUserById } from "@/lib/auth/queries";
 import { and, eq } from "drizzle-orm";
 import { isGoogleConfigured } from "@/lib/auth/google-oidc";
 import { isFamilyWealthEnabled } from "@/lib/family/flag";
-import { isQuickAddEnabled } from "@/lib/quick-add/flag";
 
 export async function GET(request: NextRequest) {
   const auth = await requireAuth(request);
@@ -79,6 +78,5 @@ export async function GET(request: NextRequest) {
     mfaEnabled,
     googleEnabled: isGoogleConfigured(),
     familyWealthEnabled: isFamilyWealthEnabled(),
-    quickAddEnabled: isQuickAddEnabled(),
   }, { headers: { "Cache-Control": "no-store" } }); // identity of the ACTIVE account: never cache across a switch
 }

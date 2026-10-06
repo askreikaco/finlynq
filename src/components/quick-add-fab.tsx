@@ -4,20 +4,19 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useQuickAddEnabled } from "@/hooks/use-quick-add-enabled";
 
 /**
  * Quick-add FAB (Floating Action Button)
  * Bottom-right, safe-area inset, hidden when keyboard is shown.
- * Only appears on /dashboard and /transactions paths when flag is enabled.
+ * Only appears on /dashboard and /transactions paths.
+ * Rendered conditionally by server component based on FINLYNQ_QUICK_ADD flag.
  */
 export function QuickAddFAB() {
   const pathname = usePathname();
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
-  const quickAddEnabled = useQuickAddEnabled();
 
   // Check if we're on a page where FAB should appear
-  const isVisible = (pathname === "/dashboard" || pathname === "/transactions") && quickAddEnabled;
+  const isVisible = pathname === "/dashboard" || pathname === "/transactions";
 
   // Handle keyboard visibility changes on mobile
   useEffect(() => {
@@ -52,7 +51,7 @@ export function QuickAddFAB() {
   return (
     <Link
       href="/transactions/new"
-      className="fixed bottom-[calc(60px+var(--sab))] right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors"
+      className="fixed bottom-[calc(76px+var(--sab))] right-4 z-40 md:bottom-6 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors"
       aria-label="Add transaction"
     >
       <Plus className="h-6 w-6" />

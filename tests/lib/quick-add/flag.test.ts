@@ -1,7 +1,31 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { isQuickAddEnabled } from "@/lib/quick-add/flag";
 
 describe("isQuickAddEnabled", () => {
+  let originalEnv: string | undefined;
+
+  beforeEach(() => {
+    originalEnv = process.env.FINLYNQ_QUICK_ADD;
+  });
+
+  afterEach(() => {
+    if (originalEnv === undefined) {
+      delete process.env.FINLYNQ_QUICK_ADD;
+    } else {
+      process.env.FINLYNQ_QUICK_ADD = originalEnv;
+    }
+  });
+
+  it("should return false when no argument (process.env) and env var unset", () => {
+    delete process.env.FINLYNQ_QUICK_ADD;
+    expect(isQuickAddEnabled()).toBe(false);
+  });
+
+  it("should return true when no argument (process.env) and env var is '1'", () => {
+    process.env.FINLYNQ_QUICK_ADD = "1";
+    expect(isQuickAddEnabled()).toBe(true);
+  });
+
   it("should return false by default when env is empty", () => {
     expect(isQuickAddEnabled({})).toBe(false);
   });

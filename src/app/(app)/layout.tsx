@@ -12,6 +12,7 @@ import { VersionGate } from "@/components/version-gate";
 import { DataProvider } from "@/lib/data";
 import { WebVitals } from "@/components/web-vitals";
 import { QuickAddFAB } from "@/components/quick-add-fab";
+import { isQuickAddEnabled } from "@/lib/quick-add/flag";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -41,7 +42,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </div>
             </main>
           </div>
-          <QuickAddFAB />
+          {isQuickAddEnabled() && <QuickAddFAB />}
         </div>
         </LanguageProvider>
         </AnimationProvider>
