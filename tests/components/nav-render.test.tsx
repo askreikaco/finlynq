@@ -193,10 +193,8 @@ describe("Nav What's New", () => {
     mockFetch({ feedback: [{ unread: true }, { unread: true }] });
     render(<Nav />);
     await waitFor(() => {
-      const feedbackLink = screen.queryByRole("link", { name: /Your feedback/ });
-      if (feedbackLink) {
-        expect(feedbackLink.textContent).toContain("2");
-      }
+      const feedbackLink = screen.getByRole("link", { name: /^Feedback/ });
+      expect(feedbackLink.textContent).toContain("2");
     });
   });
 
@@ -211,12 +209,8 @@ describe("Nav What's New", () => {
     fireEvent.click(collapseBtn);
 
     // Check for the dot badge on the collapsed feedback link
-    await waitFor(() => {
-      const feedbackLink = screen.queryByRole("link", { name: /Your feedback/ });
-      if (feedbackLink) {
-        const badge = feedbackLink.querySelector("span[class*='h-2'][class*='w-2'][class*='rounded-full'][class*='bg-primary']");
-        expect(badge).not.toBeNull();
-      }
-    });
+    const feedbackLink = await screen.findByRole("link", { name: /^Feedback/ });
+    const badge = feedbackLink.querySelector("span[class*='h-2'][class*='w-2'][class*='rounded-full'][class*='bg-primary']");
+    expect(badge).not.toBeNull();
   });
 });
