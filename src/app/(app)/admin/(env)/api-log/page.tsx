@@ -189,7 +189,7 @@ export default function AdminApiLogPage() {
         <div>
           <div className="flex items-center gap-2">
             <Activity className="h-5 w-5 text-primary" />
-            <PageHeader title="Outbound API log" titleClassName="text-2xl font-bold tracking-tight" />
+            <PageHeader title="API Log" titleClassName="text-2xl font-bold tracking-tight" />
           </div>
           <p className="mt-0.5 text-sm text-muted-foreground">
             Every outbound market-data call (Yahoo / CoinGecko) made by the server, newest first.

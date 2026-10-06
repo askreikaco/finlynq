@@ -212,7 +212,7 @@ export default function AdminDiagnosticsPage() {
         <div>
           <div className="flex items-center gap-2">
             <ScrollText className="h-5 w-5 text-primary" />
-            <PageHeader title="Diagnostics log" titleClassName="text-2xl font-bold tracking-tight" />
+            <PageHeader title="Diagnostics" titleClassName="text-2xl font-bold tracking-tight" />
             {data?.meta.env && (
               <Badge variant="outline" className="ml-1 uppercase">
                 {data.meta.env}
