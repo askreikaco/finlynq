@@ -101,7 +101,7 @@ describe("nav-config", () => {
     it("should have valid flag values if present", () => {
       for (const entry of NAV_REGISTRY) {
         if (entry.flag) {
-          expect(["family", "announcements"]).toContain(entry.flag);
+          expect(["family", "announcements", "feedback"]).toContain(entry.flag);
         }
       }
     });
@@ -353,6 +353,11 @@ describe("nav-config", () => {
     it("should have announcements flag on /whats-new", () => {
       const entry = getNavEntry("/whats-new");
       expect(entry?.flag).toBe("announcements");
+    });
+
+    it("should have feedback flag on /feedback", () => {
+      const entry = getNavEntry("/feedback");
+      expect(entry?.flag).toBe("feedback");
     });
   });
 
