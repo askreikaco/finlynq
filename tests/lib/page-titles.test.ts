@@ -69,7 +69,7 @@ describe("Page titles", () => {
       // Match first h1 if no PageHeader found
       const h1Match = pageContent.match(/<h1[^>]*>([^<]+)<\/h1>/);
 
-      let foundTitle: string | null = pageHeaderTitle || (h1Match ? h1Match[1].trim() : null);
+      const foundTitle: string | null = pageHeaderTitle || (h1Match ? h1Match[1].trim() : null);
 
       if (foundTitle && foundTitle !== entry.label) {
         failures.push(`${entry.path}: label="${entry.label}" but title="${foundTitle}"${!pageHeaderTitle && h1Match ? " (h1)" : ""}`);
