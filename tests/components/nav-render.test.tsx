@@ -20,12 +20,13 @@ vi.mock("framer-motion", () => ({
 
 import { Nav } from "@/components/nav";
 
-type Opts = { admin?: boolean; announcements?: unknown; announcementsOk?: boolean };
-function mockFetch({ admin = false, announcements = [], announcementsOk = true }: Opts = {}) {
+type Opts = { admin?: boolean; announcements?: unknown; announcementsOk?: boolean; feedback?: unknown; feedbackOk?: boolean };
+function mockFetch({ admin = false, announcements = [], announcementsOk = true, feedback = [], feedbackOk = true }: Opts = {}) {
   const fn = vi.fn(async (url: string) => {
     const json = (body: unknown, ok = true) => ({ ok, json: async () => body }) as Response;
     if (url.startsWith("/api/auth/session")) return json({ isAdmin: admin });
     if (url.startsWith("/api/announcements")) return json(announcements, announcementsOk);
+    if (url.startsWith("/api/feedback")) return json(feedback, feedbackOk);
     if (url.startsWith("/api/settings/dev-mode")) return json({ devMode: false });
     return json([]);
   });
@@ -159,5 +160,63 @@ describe("Nav What's New", () => {
     render(<Nav />);
     await new Promise((r) => setTimeout(r, 10));
     expect(screen.getByText("What's new")).toBeTruthy();
+  });
+
+  it("shows unread badge on whats-new row in expanded sidebar", async () => {
+    mockFetch({ announcements: [{ id: 1, read: false }, { id: 2, read: false }] });
+    render(<Nav />);
+    await waitFor(() => {
+      const whatsnewLink = screen.getByRole("link", { name: /What's new/ });
+      expect(whatsnewLink.textContent).toContain("2");
+    });
+  });
+
+  it("shows unread badge on whats-new row in collapsed sidebar", async () => {
+    mockFetch({ announcements: [{ id: 1, read: false }] });
+    render(<Nav />);
+
+    // Collapse the sidebar
+    const collapseBtn = await waitFor(() =>
+      screen.getByRole("button", { name: /collapse sidebar|expand sidebar/i })
+    );
+    fireEvent.click(collapseBtn);
+
+    // Check for the dot badge on the collapsed What's new link
+    await waitFor(() => {
+      const whatsnewLink = screen.getByRole("link", { name: /What's new/ });
+      const badge = whatsnewLink.querySelector("span[class*='h-2'][class*='w-2'][class*='rounded-full'][class*='bg-primary']");
+      expect(badge).not.toBeNull();
+    });
+  });
+
+  it("shows unread badge on feedback row in expanded sidebar", async () => {
+    mockFetch({ feedback: [{ unread: true }, { unread: true }] });
+    render(<Nav />);
+    await waitFor(() => {
+      const feedbackLink = screen.queryByRole("link", { name: /Your feedback/ });
+      if (feedbackLink) {
+        expect(feedbackLink.textContent).toContain("2");
+      }
+    });
+  });
+
+  it("shows unread badge on feedback row in collapsed sidebar", async () => {
+    mockFetch({ feedback: [{ unread: true }] });
+    render(<Nav />);
+
+    // Collapse the sidebar
+    const collapseBtn = await waitFor(() =>
+      screen.getByRole("button", { name: /collapse sidebar|expand sidebar/i })
+    );
+    fireEvent.click(collapseBtn);
+
+    // Check for the dot badge on the collapsed feedback link
+    await waitFor(() => {
+      const feedbackLink = screen.queryByRole("link", { name: /Your feedback/ });
+      if (feedbackLink) {
+        const badge = feedbackLink.querySelector("span[class*='h-2'][class*='w-2'][class*='rounded-full'][class*='bg-primary']");
+        expect(badge).not.toBeNull();
+      }
+    });
   });
 });
