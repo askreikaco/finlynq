@@ -58,6 +58,7 @@ import { ErrorState } from "@/components/error-state";
 import { EmptyState } from "@/components/empty-state";
 import { parseSaveError } from "@/lib/save-error";
 import { formatCurrency } from "@/lib/currency";
+import { useDisplayCurrency } from "@/components/currency-provider";
 import {
   Briefcase,
   Plus,
@@ -152,6 +153,7 @@ type LinkDialogState =
   | null;
 
 export default function InvestmentsSettingsPage() {
+  const { displayCurrency } = useDisplayCurrency();
   const [securities, setSecurities] = useState<Security[] | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1534,7 +1536,7 @@ export default function InvestmentsSettingsPage() {
       <ManagePricesDialog
         securityId={pricesTarget?.id ?? null}
         securityLabel={pricesTarget ? symbolLabel(pricesTarget) : ""}
-        currency={pricesTarget?.currency ?? "USD"}
+        currency={pricesTarget?.currency ?? displayCurrency}
         open={pricesTarget != null}
         onOpenChange={(o) => {
           if (!o) setPricesTarget(null);
