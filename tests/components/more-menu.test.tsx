@@ -112,6 +112,21 @@ describe("More screen", () => {
     expect(rows("admin").map((r) => r[1])).toContain("/admin");
   });
 
+  it("shows admin rows in correct order", async () => {
+    session = { isAdmin: true };
+    render(<MoreMenu />);
+    await waitFor(() => expect(screen.getByTestId("more-group-admin")).toBeTruthy());
+    const expectedHrefs = [
+      "/admin",
+      "/admin/inbox",
+      "/admin/email-inbox",
+      "/admin/env",
+      "/admin/announcements",
+      "/admin/feedback",
+    ];
+    expect(rows("admin").map((r) => r[1])).toEqual(expectedHrefs);
+  });
+
   it("Sign out posts logout, clears the user's storage and hard-reloads", async () => {
     render(<MoreMenu />);
     fireEvent.click(screen.getByTestId("more-signout"));

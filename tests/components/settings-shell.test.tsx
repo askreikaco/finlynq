@@ -129,6 +129,19 @@ describe("Settings Shell", () => {
     expect(integrationsLink?.getAttribute("aria-current")).toBe("page");
   });
 
+  it("uses fallback to highlight General when on bare /settings", () => {
+    mockPath = "/settings";
+    render(
+      <SettingsShell>
+        <div>Test content</div>
+      </SettingsShell>
+    );
+
+    const links = screen.getAllByRole("link");
+    const generalLink = links.find((l) => l.textContent?.includes("General"));
+    expect(generalLink?.getAttribute("aria-current")).toBe("page");
+  });
+
   it("renders children", () => {
     render(
       <SettingsShell>

@@ -120,6 +120,19 @@ describe("Admin Links (Collapsible)", () => {
       expect(item.href.startsWith("/feedback")).toBe(false);
     });
   });
+
+  it("adminLinks are in correct order", () => {
+    const expectedHrefs = [
+      "/admin",
+      "/admin/inbox",
+      "/admin/email-inbox",
+      "/admin/env",
+      "/admin/announcements",
+      "/admin/feedback",
+    ];
+    const actualHrefs = adminLinks.map((i) => i.href);
+    expect(actualHrefs).toEqual(expectedHrefs);
+  });
 });
 
 describe("What's New Visibility", () => {
