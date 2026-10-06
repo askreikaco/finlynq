@@ -30,37 +30,37 @@ const ALLOW_LIST = [
     file: "src/components/mobile/amount.tsx",
     line: `currency = "USD",`,
     count: 2,
-    reason: "KNOWN GAP (follow-up, see projects/finlynq/currency-followups.md): display component still falls back to hardcoded USD when no currency prop",
+    reason: "KNOWN GAP (see docs/currency-known-gaps.md): display component still falls back to hardcoded USD when no currency prop",
   },
   {
     file: "src/app/(app)/chat/page.tsx",
     line: `function InlineBarChart({ data, currency = "CAD" }: { data: Record<string, unknown>[]; currency?: string }) {`,
     count: 2,
-    reason: "KNOWN GAP (follow-up, see projects/finlynq/currency-followups.md): display component still falls back to hardcoded CAD when no currency prop",
+    reason: "KNOWN GAP (see docs/currency-known-gaps.md): display component still falls back to hardcoded CAD when no currency prop",
   },
   {
     file: "src/app/(app)/chat/page.tsx",
     line: `function InlinePieChart({ data, currency = "CAD" }: { data: Record<string, unknown>[]; currency?: string }) {`,
     count: 2,
-    reason: "KNOWN GAP (follow-up, see projects/finlynq/currency-followups.md): display component still falls back to hardcoded CAD when no currency prop",
+    reason: "KNOWN GAP (see docs/currency-known-gaps.md): display component still falls back to hardcoded CAD when no currency prop",
   },
   {
     file: "src/app/(app)/chat/page.tsx",
     line: `function InlineLineChart({ data, currency = "CAD" }: { data: Record<string, unknown>[]; currency?: string }) {`,
     count: 2,
-    reason: "KNOWN GAP (follow-up, see projects/finlynq/currency-followups.md): display component still falls back to hardcoded CAD when no currency prop",
+    reason: "KNOWN GAP (see docs/currency-known-gaps.md): display component still falls back to hardcoded CAD when no currency prop",
   },
   {
     file: "src/components/sankey-chart.tsx",
     line: `export function SankeyChart({ incomeData, expenseData, currency = "CAD" }: SankeyChartProps) {`,
     count: 2,
-    reason: "KNOWN GAP (follow-up, see projects/finlynq/currency-followups.md): display component still falls back to hardcoded CAD when no currency prop",
+    reason: "KNOWN GAP (see docs/currency-known-gaps.md): display component still falls back to hardcoded CAD when no currency prop",
   },
   {
     file: "src/components/fx-overrides-section.tsx",
     line: `<Select value={form.rateMode === "to-usd" ? form.currency : "USD"} onValueChange={(v) => setForm({ ...form, rateMode: v === "USD" ? "from-usd" : "to-usd" })}>`,
     count: 2, // matches property-key and ternary patterns
-    reason: "KNOWN GAP (follow-up, see projects/finlynq/currency-followups.md): FX override ternary display path still falls back to hardcoded USD as default rate mode",
+    reason: "FX rate-base selector in a form; USD is the FX anchor, not a display fallback",
   },
 
   // Holdings form defaults - currency from holding/row, but falls back to CAD when missing
@@ -68,13 +68,13 @@ const ALLOW_LIST = [
     file: "src/components/holdings/holding-edit-form.tsx",
     line: `currency: initialHolding?.currency ?? "CAD",`,
     count: 1,
-    reason: "KNOWN GAP (follow-up, see projects/finlynq/currency-followups.md): display path still falls back to hardcoded CAD when the holding currency is missing",
+    reason: "Form-state default (initial CAD), not a display path",
   },
   {
     file: "src/components/holdings/holding-edit-form.tsx",
     line: `currency: row.currency ?? "CAD",`,
     count: 1,
-    reason: "KNOWN GAP (follow-up, see projects/finlynq/currency-followups.md): display path still falls back to hardcoded CAD when the row currency is missing",
+    reason: "Form-state default (initial CAD), not a display path",
   },
 
   // Reconcile components - display path falls back to CAD when row currency is missing

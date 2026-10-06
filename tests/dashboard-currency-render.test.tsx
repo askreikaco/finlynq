@@ -631,7 +631,23 @@ describe("Dashboard Currency Render Tests", () => {
 describe("Dashboard Currency Render Tests - Animation Cases", () => {
   describe("With useAnimations disabled", () => {
     // useAnimations is mocked to false by default
-    it("AnimatedNumber with animations disabled displays VND", async () => {
+    it("AnimatedNumber with animations disabled and explicit EUR currency displays exact EUR string", async () => {
+      const { container } = render(
+        <TestWrapper>
+          <AnimatedNumber value={1000000} currency="EUR" />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        const text = container.textContent || "";
+        // Assert exact string to catch formatting violations in disabled effect path
+        expect(text).toContain("€");
+        expect(text).toContain("1,000,000");
+        expect(text).not.toMatch(/₫|\$|US\$|CA\$|CAD|USD/);
+      });
+    });
+
+    it("AnimatedNumber with animations disabled and no prop displays exact VND string", async () => {
       const { container } = render(
         <TestWrapper>
           <AnimatedNumber value={1000000} />
@@ -640,8 +656,10 @@ describe("Dashboard Currency Render Tests - Animation Cases", () => {
 
       await waitFor(() => {
         const text = container.textContent || "";
-        expect(text).toMatch(/₫/);
-        expect(text).not.toMatch(/\$|US\$|CA\$|CAD|USD/);
+        // Assert exact VND string
+        expect(text).toContain("₫");
+        expect(text).toContain("1,000,000");
+        expect(text).not.toMatch(/\$|US\$|CA\$|CAD|USD|€/);
       });
     });
   });
@@ -655,7 +673,23 @@ describe("Dashboard Currency Render Tests - Animation Cases", () => {
       animationsState.enabled = false;
     });
 
-    it("AnimatedNumber with animations enabled displays VND in animated path", async () => {
+    it("AnimatedNumber with animations enabled and explicit EUR currency displays exact EUR string in both paths", async () => {
+      const { container } = render(
+        <TestWrapper>
+          <AnimatedNumber value={1000000} currency="EUR" />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        const text = container.textContent || "";
+        // Assert exact string to catch formatting violations in both initial render (€0) and onUpdate (€1,000,000)
+        expect(text).toContain("€");
+        expect(text).toContain("1,000,000");
+        expect(text).not.toMatch(/₫|\$|US\$|CA\$|CAD|USD/);
+      });
+    });
+
+    it("AnimatedNumber with animations enabled and no prop displays exact VND string in both paths", async () => {
       const { container } = render(
         <TestWrapper>
           <AnimatedNumber value={1000000} />
@@ -664,28 +698,31 @@ describe("Dashboard Currency Render Tests - Animation Cases", () => {
 
       await waitFor(() => {
         const text = container.textContent || "";
-        // Should display VND currency symbol in both initial render and animated onUpdate
-        expect(text).toMatch(/₫/);
-        expect(text).not.toMatch(/\$|US\$|CA\$|CAD|USD/);
+        // Assert exact VND string to catch violations in both initial render (₫0) and onUpdate (₫1,000,000)
+        expect(text).toContain("₫");
+        expect(text).toContain("1,000,000");
+        expect(text).not.toMatch(/\$|US\$|CA\$|CAD|USD|€/);
       });
     });
 
-    it("MetricCard with animations enabled displays VND in animated path", async () => {
+    it("MetricCard with animations enabled and explicit EUR currency displays exact EUR string in both paths", async () => {
       const { container } = render(
         <TestWrapper>
           <MetricCard
             label="Test Metric"
             icon={MockIcon}
             value={5000000}
+            currency="EUR"
           />
         </TestWrapper>
       );
 
       await waitFor(() => {
         const text = container.textContent || "";
-        // Should display VND currency symbol in both initial render and animated onUpdate
-        expect(text).toMatch(/₫/);
-        expect(text).not.toMatch(/\$|US\$|CA\$|CAD|USD/);
+        // Assert exact string to catch formatting violations in both AnimatedNumber initial and onUpdate paths
+        expect(text).toContain("€");
+        expect(text).toContain("5,000,000");
+        expect(text).not.toMatch(/₫|\$|US\$|CA\$|CAD|USD/);
       });
     });
   });
