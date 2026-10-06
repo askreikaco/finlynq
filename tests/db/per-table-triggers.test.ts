@@ -76,17 +76,20 @@ describe("Per-table trigger verification", () => {
     console.log(`=== Excluded ${Object.keys(DOCUMENTED_EXCLUSIONS).length} documented exclusions ===`);
     Object.entries(DOCUMENTED_EXCLUSIONS).forEach(([t, reason]) => console.log(`  - ${t}: ${reason}`));
 
-    // Create test users
+    // Create test users (unique emails per run)
     const now = new Date().toISOString();
+    const timestamp = Date.now();
     await client.query(
       `INSERT INTO users (id, email, password_hash, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5)`,
-      [testUserId, "test@local", "hash", now, now]
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT DO NOTHING`,
+      [testUserId, `test-${timestamp}@local`, "hash", now, now]
     );
     await client.query(
       `INSERT INTO users (id, email, password_hash, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5)`,
-      [testUser2Id, "test2@local", "hash", now, now]
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT DO NOTHING`,
+      [testUser2Id, `test2-${timestamp}@local`, "hash", now, now]
     );
   });
 
@@ -101,7 +104,7 @@ describe("Per-table trigger verification", () => {
           // Table may not exist or have FK constraints; ignore
         }
       }
-      await client.query(`DELETE FROM users WHERE id = $1 OR id = $1`, [testUserId, testUser2Id]);
+      await client.query(`DELETE FROM users WHERE id = $1 OR id = $2`, [testUserId, testUser2Id]);
       await client.end();
     }
   });
@@ -169,7 +172,7 @@ describe("Per-table trigger verification", () => {
     if (!rowId) return; // Skip if we can't get an ID
 
     // Clear versions
-    await client.query(`UPDATE users SET data_version = 0 WHERE id = $1 OR id = $1`, [
+    await client.query(`UPDATE users SET data_version = 0 WHERE id = $1 OR id = $2`, [
       testUserId,
       testUser2Id,
     ]);
