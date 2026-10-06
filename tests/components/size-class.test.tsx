@@ -142,4 +142,28 @@ describe("useSizeClass", () => {
     expect(result.current).toBe("compact");
     expect(observedElements.length).toBe(0);
   });
+
+  it("limitation: ref.current mutation after mount does not re-trigger observer", () => {
+    // The hook includes ref in [ref] dependency array. Since ref is an object,
+    // and the dependency check uses === identity comparison, changing ref.current
+    // without changing the ref object itself does NOT trigger effect re-run.
+    // In normal React usage (useRef + render-prop), this is fine: ref is created once,
+    // and ref.current is only set/changed by the container element lifecycle.
+    // This documents the known limitation: do not mutate ref.current after mount.
+    const element1 = document.createElement("div");
+    const ref = { current: element1 };
+
+    const { result } = renderHook(() => useSizeClass(ref));
+    expect(result.current).toBe("compact");
+
+    const observedCount = observedElements.length;
+    expect(observedCount).toBeGreaterThan(0);
+
+    // Mutating ref.current does NOT create a new ResizeObserver (known limitation)
+    const element2 = document.createElement("div");
+    ref.current = element2;
+
+    // Effect did not re-run because ref object identity is unchanged
+    expect(observedElements.length).toBe(observedCount);
+  });
 });
