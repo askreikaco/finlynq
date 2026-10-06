@@ -193,6 +193,9 @@ describe("Table coverage test (Test C)", () => {
     await client.query(`BEGIN`);
 
     try {
+      // FIRST: verify coverage passes before mutation
+      await verifyCoverageEquality(client, DOCUMENTED_EXCLUSIONS);
+
       // Create a temporary test table in public schema with user_id column
       await client.query(`CREATE TABLE IF NOT EXISTS public.test_coverage_uncovered_table (
         id serial PRIMARY KEY,
@@ -200,13 +203,18 @@ describe("Table coverage test (Test C)", () => {
         created_at timestamp DEFAULT NOW()
       )`);
 
-      // The shared verification function should now fail
+      // NOW: the shared verification function should fail
       let checkFailed = false;
+      let errorMessage = '';
       try {
         await verifyCoverageEquality(client, DOCUMENTED_EXCLUSIONS);
-      } catch (error) {
-        // Expected: the coverage check should fail
+      } catch (error: unknown) {
+        // Expected: the coverage check should fail with a mismatch
         checkFailed = true;
+        errorMessage = (error as Error).message || String(error);
+        if (!errorMessage.includes('toEqual')) {
+          throw error;  // Re-throw if not an expect() error
+        }
       }
 
       expect(checkFailed).toBe(true);
@@ -253,16 +261,24 @@ describe("Table coverage test (Test C)", () => {
 
       const triggerName = triggerResult.rows[0].tgname;
 
+      // FIRST: verify coverage passes before mutation
+      await verifyCoverageEquality(client, DOCUMENTED_EXCLUSIONS);
+
       // Drop the trigger
       await client.query(`DROP TRIGGER IF EXISTS ${triggerName} ON ${firstCoveredTable}`);
 
-      // The shared verification function should now fail
+      // NOW: the shared verification function should fail
       let checkFailed = false;
+      let errorMessage = '';
       try {
         await verifyCoverageEquality(client, DOCUMENTED_EXCLUSIONS);
-      } catch (error) {
-        // Expected: the coverage check should fail
+      } catch (error: unknown) {
+        // Expected: the coverage check should fail with a mismatch
         checkFailed = true;
+        errorMessage = (error as Error).message || String(error);
+        if (!errorMessage.includes('toEqual')) {
+          throw error;  // Re-throw if not an expect() error
+        }
       }
 
       expect(checkFailed).toBe(true);
