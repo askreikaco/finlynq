@@ -28,8 +28,8 @@ export function amountToneClass(tone: AmountTone, value: number): string {
  * Formatting always goes through formatCurrency (VND/JPY/KRW: no decimals).
  * `compact` renders K/M/B (formatCompactNumber) with the full value as aria-label.
  *
- * Falls back to displayCurrency when no currency prop is provided, with USD default
- * during first paint (isLoading from CurrencyProvider).
+ * Falls back to displayCurrency when no currency prop is provided (CurrencyProvider
+ * defaults to USD during first paint while loading user settings).
  */
 export function Amount({
   value,
@@ -48,12 +48,11 @@ export function Amount({
   showSign?: boolean;
   compact?: boolean;
 }) {
-  const { displayCurrency, isLoading } = useDisplayCurrency();
+  const { displayCurrency } = useDisplayCurrency();
 
-  // Use provided currency (if non-empty after trim), fall back to displayCurrency,
-  // or USD during first paint (isLoading). Follows repo pattern from currency PR.
-  const effectiveCurrency = currency?.trim() ? currency :
-    (isLoading ? "USD" : displayCurrency);
+  // Use provided currency (if non-empty after trim), fall back to displayCurrency.
+  // Follows repo pattern from currency PR.
+  const effectiveCurrency = currency?.trim() ? currency : displayCurrency;
 
   const full = formatCurrency(value, effectiveCurrency);
   const text = compact ? formatCompactNumber(value) : full;

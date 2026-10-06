@@ -77,12 +77,12 @@ describe("Amount component with real CurrencyProvider", () => {
     expect(span.textContent).toContain("₫");
   });
 
-  it("respects explicit currency prop even when displayCurrency differs", async () => {
-    // Even though displayCurrency is VND, explicit USD should be used
-    renderWithCurrency(<Amount value={100} currency="USD" />, { displayCurrency: "VND" });
+  it("respects explicit currency prop even when displayCurrency differs (EUR vs VND)", async () => {
+    // Even though displayCurrency is VND, explicit EUR should be used
+    renderWithCurrency(<Amount value={100} currency="EUR" />, { displayCurrency: "VND" });
 
     const span = screen.getByTestId("amount");
-    expect(span.textContent).toContain("$100");
+    expect(span.textContent).toContain("€");
     expect(span.textContent).not.toContain("₫");
   });
 
@@ -98,7 +98,7 @@ describe("Amount component with real CurrencyProvider", () => {
 
     // Before fetch completes, should use USD default (first paint)
     const span = screen.getByTestId("amount");
-    expect(span.textContent).toContain("$100");
+    expect(span.textContent).toBe("$100.00");
   });
 
   it("shows VND with correct amount formatting (no decimals)", async () => {
@@ -107,5 +107,62 @@ describe("Amount component with real CurrencyProvider", () => {
     const span = await screen.findByTestId("amount");
     // VND should not have decimals
     expect(span.textContent).toBe("₫1,234,567");
+  });
+
+  it("respects size prop (hero)", () => {
+    render(
+      <CurrencyProvider>
+        <Amount value={100} currency="USD" size="hero" />
+      </CurrencyProvider>
+    );
+
+    const span = screen.getByTestId("amount");
+    expect(span.className).toContain("text-[32px]");
+    expect(span.className).toContain("font-extrabold");
+  });
+
+  it("respects tone prop (pos)", () => {
+    render(
+      <CurrencyProvider>
+        <Amount value={50} currency="USD" tone="pos" />
+      </CurrencyProvider>
+    );
+
+    const span = screen.getByTestId("amount");
+    expect(span.className).toContain("text-pos");
+  });
+
+  it("respects tone prop (neg)", () => {
+    render(
+      <CurrencyProvider>
+        <Amount value={-50} currency="USD" tone="neg" />
+      </CurrencyProvider>
+    );
+
+    const span = screen.getByTestId("amount");
+    expect(span.className).toContain("text-neg");
+  });
+
+  it("shows sign when showSign=true for positive amounts", () => {
+    render(
+      <CurrencyProvider>
+        <Amount value={50} currency="USD" showSign />
+      </CurrencyProvider>
+    );
+
+    const span = screen.getByTestId("amount");
+    expect(span.textContent).toContain("+$50");
+  });
+
+  it("hides sign when showSign=true for negative amounts", () => {
+    render(
+      <CurrencyProvider>
+        <Amount value={-50} currency="USD" showSign />
+      </CurrencyProvider>
+    );
+
+    const span = screen.getByTestId("amount");
+    expect(span.textContent).toContain("-$50.00");
+    expect(span.textContent).not.toContain("+-");
   });
 });

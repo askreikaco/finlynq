@@ -6,10 +6,12 @@ Display components that fall back to hardcoded USD/CAD defaults when currency da
 
 - ✓ **Mobile amount.tsx**: Now uses `currency?.trim() ? currency : displayCurrency`
   - Falls back to user's displayCurrency preference
-  - Test: tests/components/amount-displaycurrency.test.tsx (7 tests with VND, CAD, whitespace edge cases)
+  - Removed isLoading branch; CurrencyProvider already defaults to USD during first paint
+  - Test: tests/components/amount-displaycurrency.test.tsx (12 tests: explicit currency, empty/whitespace fallback, VND, CAD, EUR/VND discrimination, size/tone/showSign)
 
 - ✓ **Reconcile display - transactions-pane.tsx**: Now uses `r.currency?.trim() ? r.currency : displayCurrency`
-  - TransactionsPane render test with real CurrencyProvider validates behavior
+  - Falls back to user's displayCurrency preference instead of hardcoded CAD
+  - Test: tests/components/TransactionsPane.test.tsx (5 tests: explicit currency, empty string fallback, whitespace fallback, never CAD, CAD displayCurrency)
 
 ## Display Components with Hardcoded Fallbacks (TO DO)
 
