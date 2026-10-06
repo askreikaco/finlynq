@@ -7,18 +7,20 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup, waitFor } from "@testing-library/react";
-import { ReactNode } from "react";
+import { forwardRef, ReactNode } from "react";
+const MockIcon = forwardRef<SVGSVGElement>(() => <span>Icon</span>);
 
 // Mock fetch globally to return VND as displayCurrency
 beforeEach(() => {
-  global.fetch = vi.fn((url: string) => {
-    if (url.includes("/api/auth/session")) {
+  (global.fetch as unknown as typeof fetch) = vi.fn((url: string | Request | URL) => {
+    const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
+    if (urlStr.includes("/api/auth/session")) {
       return Promise.resolve({
         ok: true,
         json: () => Promise.resolve({ displayCurrency: "VND" }),
       } as any);
     }
-    if (url.includes("/api/dashboard/insights")) {
+    if (urlStr.includes("/api/dashboard/insights")) {
       return Promise.resolve({
         ok: true,
         json: () => Promise.resolve({
@@ -39,7 +41,7 @@ beforeEach(() => {
         }),
       } as any);
     }
-    if (url.includes("/api/net-worth-history")) {
+    if (urlStr.includes("/api/net-worth-history")) {
       return Promise.resolve({
         ok: true,
         json: () => Promise.resolve({
@@ -240,7 +242,7 @@ describe("Dashboard Currency Render Tests", () => {
   });
 
   it("MetricCard without currency prop displays VND", async () => {
-    const MockIcon = () => <span>Icon</span>;
+    
     const { container } = render(
       <TestWrapper>
         <MetricCard
@@ -259,7 +261,7 @@ describe("Dashboard Currency Render Tests", () => {
   });
 
   it("MetricCard with empty string currency prop displays VND (not bare number)", async () => {
-    const MockIcon = () => <span>Icon</span>;
+    
     const { container } = render(
       <TestWrapper>
         <MetricCard
@@ -280,7 +282,7 @@ describe("Dashboard Currency Render Tests", () => {
   });
 
   it("MetricCard with EUR currency prop displays EUR symbol", async () => {
-    const MockIcon = () => <span>Icon</span>;
+    
     const { container } = render(
       <TestWrapper>
         <MetricCard
