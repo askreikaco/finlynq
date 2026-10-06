@@ -614,6 +614,7 @@ describe("nav-config", () => {
 
     it("next.config.ts async redirects() should return REDIRECTS from nav-config", async () => {
       // Load next.config.ts and verify it returns the exact REDIRECTS table
+      // @ts-expect-error - dynamic import of root-level .ts file for runtime verification
       const cfg = (await import("../../next.config")).default;
       const result = await cfg.redirects!();
 
