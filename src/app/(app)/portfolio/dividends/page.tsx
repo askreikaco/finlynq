@@ -31,6 +31,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Download } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
+import { useDisplayCurrency } from "@/components/currency-provider";
 import { PageHeader } from "@/components/mobile";
 
 interface CurrencyCell {
@@ -74,6 +75,7 @@ const CURRENT_YEAR = new Date().getFullYear();
 const TAX_YEARS = Array.from({ length: 11 }, (_, i) => CURRENT_YEAR - i);
 
 export default function DividendsPage() {
+  const { displayCurrency } = useDisplayCurrency();
   const [groupBy, setGroupBy] = useState<GroupBy>("year");
   const [reporting, setReporting] = useState(false);
   const [from, setFrom] = useState("");
@@ -123,7 +125,7 @@ export default function DividendsPage() {
     return [...set].sort();
   }, [data, reporting]);
 
-  const reportingCcy = data?.reportingCurrency ?? "USD";
+  const reportingCcy = data?.reportingCurrency ?? displayCurrency;
   const firstHeader = groupBy === "holding" ? "Holding" : "Period";
   const hasFilters = Boolean(from || to || taxYear);
 
