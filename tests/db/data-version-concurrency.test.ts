@@ -24,7 +24,7 @@ describe('data-version concurrency', () => {
     }
   });
 
-  it('should handle 6 concurrent clients with 6 users without deadlocks (60 iterations)', async () => {
+  it('should prevent deadlocks with multi-user multi-statement inserts (6 clients × 60 iterations)', async () => {
     const clients = Array.from({ length: numClients }, () => new pg.Client({
       connectionString: databaseUrl,
     }));
@@ -41,7 +41,7 @@ describe('data-version concurrency', () => {
       const now = new Date().toISOString();
       const userResults = await mainClient.query(
         `INSERT INTO users (id, email, password_hash, created_at, updated_at)
-         SELECT gen_random_uuid(), 'concurrent-user-' || i::text || '@test.local', 'hash_pass', $2, $3
+         SELECT gen_random_uuid(), 'deadlock-user-' || i::text || '@test.local', 'hash_pass', $2, $3
          FROM generate_series(1, $1) i
          ON CONFLICT DO NOTHING
          RETURNING id`,
@@ -53,25 +53,10 @@ describe('data-version concurrency', () => {
       if (userIds.length === 0) {
         // Users already exist, fetch them
         const existing = await mainClient.query(
-          `SELECT id FROM users WHERE email LIKE 'concurrent-user-%' ORDER BY id LIMIT $1`,
+          `SELECT id FROM users WHERE email LIKE 'deadlock-user-%' ORDER BY id LIMIT $1`,
           [numUsers]
         );
         userIds = existing.rows.map((r: any) => r.id);
-      }
-
-      // Create shuffled order of (clientId, userId, iteration) tuples
-      const operations: Array<[number, string, number]> = [];
-      for (let clientId = 0; clientId < numClients; clientId++) {
-        for (let iteration = 0; iteration < iterationsPerClient; iteration++) {
-          const userIdx = (clientId + iteration) % userIds.length;
-          operations.push([clientId, userIds[userIdx], iteration]);
-        }
-      }
-
-      // Fisher-Yates shuffle
-      for (let i = operations.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [operations[i], operations[j]] = [operations[j], operations[i]];
       }
 
       // Clear data_version for all test users before test
@@ -80,48 +65,74 @@ describe('data-version concurrency', () => {
         [userIds]
       );
 
-      // Use the accounts table which already has triggers
-      // (Clean up any existing test data)
+      // Clean up any existing test data
       await mainClient.query(
         `DELETE FROM accounts WHERE user_id = ANY($1)`,
         [userIds]
       );
 
-      // Execute all operations concurrently from different clients
-      let deadlockCount = 0;
-      const insertPromises = operations.map(async ([clientId, userId, iteration]) => {
-        try {
-          await clients[clientId].query(
-            `INSERT INTO accounts (user_id, type, "group", currency)
-             VALUES ($1, $2, $3, $4)`,
-            [userId, 'checking', 'default', 'CAD']
-          );
-        } catch (error: any) {
-          if (error.message && error.message.includes('deadlock')) {
-            deadlockCount++;
-            console.error(`Deadlock detected on client ${clientId} iteration ${iteration}`);
-          } else {
-            throw error;
-          }
+      // Create shuffled user_id assignments: 360 operations across 6 users
+      const shuffledUserIds: string[] = [];
+      for (let i = 0; i < iterationsPerClient; i++) {
+        for (let u = 0; u < numUsers; u++) {
+          shuffledUserIds.push(userIds[u]);
         }
-      });
+      }
+      // Fisher-Yates shuffle to randomize user_id order
+      for (let i = shuffledUserIds.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffledUserIds[i], shuffledUserIds[j]] = [shuffledUserIds[j], shuffledUserIds[i]];
+      }
 
-      await Promise.all(insertPromises);
+      // Dispatch work: each client gets 60 iterations, each iteration inserts multiple rows
+      // using INSERT ... SELECT FROM unnest() to generate a single statement with multi-user impact
+      let deadlockCount = 0;
+      const batchSize = 6; // rows per batch insert
+      const clientPromises = [];
 
-      // Verify zero deadlocks
+      for (let clientId = 0; clientId < numClients; clientId++) {
+        const clientPromise = (async () => {
+          for (let iter = 0; iter < iterationsPerClient; iter++) {
+            try {
+              // Build a batch of user_ids for this iteration
+              const batchStart = (clientId * iterationsPerClient + iter) * batchSize;
+              const batchUserIds = shuffledUserIds.slice(batchStart, batchStart + batchSize);
+
+              // Single statement inserting multiple rows across multiple users
+              const placeholders = batchUserIds.map((_, i) => `($${i + 1}, 'checking', 'default', 'CAD')`).join(',');
+              await clients[clientId].query(
+                `INSERT INTO accounts (user_id, type, "group", currency) VALUES ${placeholders}`,
+                batchUserIds
+              );
+            } catch (error: any) {
+              if (error.message && error.message.includes('deadlock')) {
+                deadlockCount++;
+                console.error(`Deadlock on client ${clientId} iteration ${iter}`);
+              } else {
+                throw error;
+              }
+            }
+          }
+        })();
+        clientPromises.push(clientPromise);
+      }
+
+      await Promise.all(clientPromises);
+
+      // CRITICAL: Verify zero deadlocks (fails if deterministic row locking is removed)
+      console.log(`\n*** DEADLOCK TEST RESULT: ${deadlockCount} deadlocks out of 360 operations ***`);
       expect(deadlockCount).toBe(0);
 
       // Verify each user's data_version was incremented
       const finalVersions = await mainClient.query(
-        `SELECT id, data_version FROM users WHERE id = ANY($1)
-         ORDER BY id`,
+        `SELECT id, data_version FROM users WHERE id = ANY($1) ORDER BY id`,
         [userIds]
       );
 
       for (const user of finalVersions.rows) {
         const version = parseInt(user.data_version, 10);
         expect(version).toBeGreaterThan(0);
-        console.log(`User ${user.id.toString().slice(0, 8)}... final data_version: ${version}`);
+        console.log(`User data_version bumped to: ${version}`);
       }
     } finally {
       // Close all clients
