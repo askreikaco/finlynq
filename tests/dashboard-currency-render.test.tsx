@@ -104,9 +104,10 @@ vi.mock("lucide-react", () => ({
   ArrowDownRight: () => <span>Down</span>,
 }));
 
-// Mock hooks
+// Mock hooks with mutable state for testing both animated and non-animated paths
+const animationsState = vi.hoisted(() => ({ enabled: false }));
 vi.mock("@/hooks/use-animations", () => ({
-  useAnimations: () => false, // Disable animations to avoid async issues
+  useAnimations: () => animationsState.enabled,
 }));
 
 // Mock chart libraries
@@ -169,9 +170,15 @@ vi.mock("framer-motion", () => ({
   motion: {
     div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
   },
-  animate: () => ({
-    stop: () => {},
-  }),
+  animate: (from: number, to: number, options: any) => {
+    // Call onUpdate callback synchronously to simulate animation completion
+    if (options?.onUpdate) {
+      options.onUpdate(to);
+    }
+    return {
+      stop: () => {},
+    };
+  },
 }));
 
 vi.mock("@/components/ui/lazy-view", () => ({
@@ -621,19 +628,65 @@ describe("Dashboard Currency Render Tests", () => {
   });
 });
 
-describe("Dashboard Currency Render Tests - With useAnimations false", () => {
-  // useAnimations is mocked to false in the global beforeEach above
-  it("AnimatedNumber with animations disabled displays VND", async () => {
-    const { container } = render(
-      <TestWrapper>
-        <AnimatedNumber value={1000000} />
-      </TestWrapper>
-    );
+describe("Dashboard Currency Render Tests - Animation Cases", () => {
+  describe("With useAnimations disabled", () => {
+    // useAnimations is mocked to false by default
+    it("AnimatedNumber with animations disabled displays VND", async () => {
+      const { container } = render(
+        <TestWrapper>
+          <AnimatedNumber value={1000000} />
+        </TestWrapper>
+      );
 
-    await waitFor(() => {
-      const text = container.textContent || "";
-      expect(text).toMatch(/₫/);
-      expect(text).not.toMatch(/\$|US\$|CA\$|CAD|USD/);
+      await waitFor(() => {
+        const text = container.textContent || "";
+        expect(text).toMatch(/₫/);
+        expect(text).not.toMatch(/\$|US\$|CA\$|CAD|USD/);
+      });
+    });
+  });
+
+  describe("With useAnimations enabled", () => {
+    beforeEach(() => {
+      animationsState.enabled = true;
+    });
+
+    afterEach(() => {
+      animationsState.enabled = false;
+    });
+
+    it("AnimatedNumber with animations enabled displays VND in animated path", async () => {
+      const { container } = render(
+        <TestWrapper>
+          <AnimatedNumber value={1000000} />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        const text = container.textContent || "";
+        // Should display VND currency symbol in both initial render and animated onUpdate
+        expect(text).toMatch(/₫/);
+        expect(text).not.toMatch(/\$|US\$|CA\$|CAD|USD/);
+      });
+    });
+
+    it("MetricCard with animations enabled displays VND in animated path", async () => {
+      const { container } = render(
+        <TestWrapper>
+          <MetricCard
+            label="Test Metric"
+            icon={MockIcon}
+            value={5000000}
+          />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        const text = container.textContent || "";
+        // Should display VND currency symbol in both initial render and animated onUpdate
+        expect(text).toMatch(/₫/);
+        expect(text).not.toMatch(/\$|US\$|CA\$|CAD|USD/);
+      });
     });
   });
 });
