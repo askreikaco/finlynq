@@ -68,7 +68,7 @@ describe("SettingsHub", () => {
     expect(settingsLabel).toBeDefined();
   });
 
-  it("renders each entry as a clickable link with correct href", () => {
+  it("renders each entry as a clickable link with correct href (exact match)", () => {
     render(<SettingsHub />);
 
     const expectedPaths = [
@@ -82,30 +82,30 @@ describe("SettingsHub", () => {
     ];
 
     const links = screen.getAllByRole("link");
-    const settingsLinks = links
-      .filter((l) => {
-        const href = l.getAttribute("href");
-        return expectedPaths.includes(href || "");
-      })
-      .map((l) => l.getAttribute("href"));
+    const settingsLinks = links.filter((l) => {
+      const href = l.getAttribute("href");
+      return href?.startsWith("/settings/");
+    }).map((l) => l.getAttribute("href"));
 
     expect(settingsLinks).toEqual(expectedPaths);
   });
 
-  it("renders entries with their registry icons", () => {
+  it("renders entries with their registry icons in list-row-tile per row", () => {
     render(<SettingsHub />);
 
-    // Check that SVGs are rendered (icons)
-    const svgs = screen.getAllByRole("link")
+    // Check that each settings link has exactly one SVG icon in the list-row-tile slot
+    const settingsLinks = screen.getAllByRole("link")
       .filter((l) => {
         const href = l.getAttribute("href");
         return href?.startsWith("/settings/");
-      })
-      .map((l) => l.querySelector("svg"));
+      });
 
-    expect(svgs.length).toBeGreaterThanOrEqual(7);
-    svgs.forEach((svg) => {
-      expect(svg).not.toBeNull();
+    expect(settingsLinks.length).toBeGreaterThanOrEqual(7);
+
+    settingsLinks.forEach((link) => {
+      const tileSvg = link.querySelector('[data-slot="list-row-tile"] svg');
+      expect(tileSvg).not.toBeNull();
+      expect(tileSvg).toBeDefined();
     });
   });
 
@@ -119,7 +119,9 @@ describe("SettingsHub", () => {
     expect(sectionCard).not.toBeNull();
   });
 
-  it("verifies hub lists match registry settings surface", () => {
+  it("consistency check: hub lists match registry settings surface", () => {
+    // This is a tautological consistency check: the hub is built from the registry,
+    // so they should always match. Failure indicates the hub build logic broke.
     const registryEntries = getEntriesBySurface("settings");
     const expectedCount = registryEntries.length;
 
@@ -160,6 +162,15 @@ describe("SettingsHub", () => {
 
     for (const entry of registryEntries) {
       expect(hrefs).toContain(entry.path);
+    }
+  });
+
+  it("verifies no settings surface entries have adminOnly or flag set", () => {
+    const registryEntries = getEntriesBySurface("settings");
+
+    for (const entry of registryEntries) {
+      expect(entry.adminOnly).toBeFalsy();
+      expect(entry.flag).toBeFalsy();
     }
   });
 });

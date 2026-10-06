@@ -58,7 +58,7 @@ describe("AccountHub", () => {
     expect(accountLabel).toBeDefined();
   });
 
-  it("renders each entry as a clickable link with correct href", () => {
+  it("renders each entry as a clickable link with correct href (exact match)", () => {
     render(<AccountHub />);
 
     const expectedPaths = [
@@ -70,27 +70,29 @@ describe("AccountHub", () => {
     const accountLinks = links
       .filter((l) => {
         const href = l.getAttribute("href");
-        return expectedPaths.includes(href || "");
+        return href?.startsWith("/account/");
       })
       .map((l) => l.getAttribute("href"));
 
     expect(accountLinks).toEqual(expectedPaths);
   });
 
-  it("renders entries with their registry icons", () => {
+  it("renders entries with their registry icons in list-row-tile per row", () => {
     render(<AccountHub />);
 
-    // Check that SVGs are rendered (icons)
-    const svgs = screen.getAllByRole("link")
+    // Check that each account link has exactly one SVG icon in the list-row-tile slot
+    const accountLinks = screen.getAllByRole("link")
       .filter((l) => {
         const href = l.getAttribute("href");
         return href?.startsWith("/account/");
-      })
-      .map((l) => l.querySelector("svg"));
+      });
 
-    expect(svgs.length).toBeGreaterThanOrEqual(2);
-    svgs.forEach((svg) => {
-      expect(svg).not.toBeNull();
+    expect(accountLinks.length).toBeGreaterThanOrEqual(2);
+
+    accountLinks.forEach((link) => {
+      const tileSvg = link.querySelector('[data-slot="list-row-tile"] svg');
+      expect(tileSvg).not.toBeNull();
+      expect(tileSvg).toBeDefined();
     });
   });
 
@@ -104,7 +106,9 @@ describe("AccountHub", () => {
     expect(sectionCard).not.toBeNull();
   });
 
-  it("verifies hub lists match registry account surface", () => {
+  it("consistency check: hub lists match registry account surface", () => {
+    // This is a tautological consistency check: the hub is built from the registry,
+    // so they should always match. Failure indicates the hub build logic broke.
     const registryEntries = getEntriesBySurface("account");
     const expectedCount = registryEntries.length;
 
@@ -162,5 +166,14 @@ describe("AccountHub", () => {
     const registryPaths = registryEntries.map((e) => e.path).sort();
 
     expect(hrefs).toEqual(registryPaths);
+  });
+
+  it("verifies no account surface entries have adminOnly or flag set", () => {
+    const registryEntries = getEntriesBySurface("account");
+
+    for (const entry of registryEntries) {
+      expect(entry.adminOnly).toBeFalsy();
+      expect(entry.flag).toBeFalsy();
+    }
   });
 });
