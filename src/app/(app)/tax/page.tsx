@@ -62,7 +62,7 @@ function TaxPageContent() {
   if (loadError) return (
     <div className="space-y-6">
       <div>
-        <PageHeader title="Tax Optimization" titleClassName="text-2xl font-bold tracking-tight" />
+        <PageHeader title="Tax" titleClassName="text-2xl font-bold tracking-tight" />
       </div>
       <Card>
         <CardContent className="py-10 text-center text-sm text-muted-foreground">
@@ -86,7 +86,7 @@ function TaxPageContent() {
   return (
     <div className="space-y-6">
       <PageHeader
-          title="Tax Optimization"
+          title="Tax"
           titleClassName="text-2xl font-bold tracking-tight"
           subtitle="Maximize your tax-advantaged accounts and minimize your tax bill"
           subtitleClassName="text-sm text-muted-foreground mt-0.5"
