@@ -82,49 +82,49 @@ const ALLOW_LIST = [
     file: "src/components/import/reconcile/db-pane.tsx",
     line: `{formatCurrency(r.amount, r.currency || "CAD")}`,
     count: 2, // matches logical-or and format-call patterns
-    reason: "KNOWN GAP (follow-up, see projects/finlynq/currency-followups.md): display path still falls back to hardcoded CAD when the row currency is missing",
+    reason: "KNOWN GAP (follow-up, see docs/currency-known-gaps.md): display path still falls back to hardcoded CAD when the row currency is missing",
   },
   {
     file: "src/components/import/reconcile/db-pane.tsx",
     line: `? formatCurrency(r.runningBalance, r.currency || "CAD")`,
     count: 2, // matches logical-or and format-call patterns
-    reason: "KNOWN GAP (follow-up, see projects/finlynq/currency-followups.md): display path still falls back to hardcoded CAD when the row currency is missing",
+    reason: "KNOWN GAP (follow-up, see docs/currency-known-gaps.md): display path still falls back to hardcoded CAD when the row currency is missing",
   },
   {
     file: "src/components/import/reconcile/db-pane.tsx",
     line: `? formatCurrency(r.anchorBalance, r.currency || "CAD")`,
     count: 2, // matches logical-or and format-call patterns
-    reason: "KNOWN GAP (follow-up, see projects/finlynq/currency-followups.md): display path still falls back to hardcoded CAD when the row currency is missing",
+    reason: "KNOWN GAP (follow-up, see docs/currency-known-gaps.md): display path still falls back to hardcoded CAD when the row currency is missing",
   },
   {
     file: "src/components/import/reconcile/file-pane.tsx",
     line: `{formatCurrency(r.amount, r.currency || "CAD")}`,
     count: 2, // matches logical-or and format-call patterns
-    reason: "KNOWN GAP (follow-up, see projects/finlynq/currency-followups.md): display path still falls back to hardcoded CAD when the row currency is missing",
+    reason: "KNOWN GAP (follow-up, see docs/currency-known-gaps.md): display path still falls back to hardcoded CAD when the row currency is missing",
   },
   {
     file: "src/components/import/reconcile/file-pane.tsx",
     line: `? formatCurrency(dayBalance, r.currency || "CAD")`,
     count: 2, // matches logical-or and format-call patterns
-    reason: "KNOWN GAP (follow-up, see projects/finlynq/currency-followups.md): display path still falls back to hardcoded CAD when the row currency is missing",
+    reason: "KNOWN GAP (follow-up, see docs/currency-known-gaps.md): display path still falls back to hardcoded CAD when the row currency is missing",
   },
   {
     file: "src/components/reconcile/bank-pane.tsx",
     line: `{formatCurrency(r.amount, r.currency || "CAD")}`,
     count: 2, // matches logical-or and format-call patterns
-    reason: "KNOWN GAP (follow-up, see projects/finlynq/currency-followups.md): display path still falls back to hardcoded CAD when the row currency is missing",
+    reason: "KNOWN GAP (follow-up, see docs/currency-known-gaps.md): display path still falls back to hardcoded CAD when the row currency is missing",
   },
   {
     file: "src/components/reconcile/investment-op-preview-dialog.tsx",
     line: `const amountAbs = formatCurrency(Math.abs(preview.amount), preview.currency || "CAD");`,
     count: 2, // matches logical-or and format-call patterns
-    reason: "KNOWN GAP (follow-up, see projects/finlynq/currency-followups.md): display path still falls back to hardcoded CAD when the preview currency is missing",
+    reason: "KNOWN GAP (follow-up, see docs/currency-known-gaps.md): display path still falls back to hardcoded CAD when the preview currency is missing",
   },
   {
     file: "src/components/reconcile/transactions-pane.tsx",
     line: `{formatCurrency(r.amount, r.currency || "CAD")}`,
     count: 2, // matches logical-or and format-call patterns
-    reason: "KNOWN GAP (follow-up, see projects/finlynq/currency-followups.md): display path still falls back to hardcoded CAD when the row currency is missing",
+    reason: "KNOWN GAP (follow-up, see docs/currency-known-gaps.md): display path still falls back to hardcoded CAD when the row currency is missing",
   },
 
   // Staging/import surfaces - display path falls back to CAD when row/bank currency is missing
@@ -132,13 +132,13 @@ const ALLOW_LIST = [
     file: "src/components/import/staged-review-surface.tsx",
     line: `currency: payload.bankCurrency ?? snap?.currency ?? "CAD",`,
     count: 1,
-    reason: "KNOWN GAP (follow-up, see projects/finlynq/currency-followups.md): display path still falls back to hardcoded CAD when the row currency is missing",
+    reason: "KNOWN GAP (follow-up, see docs/currency-known-gaps.md): display path still falls back to hardcoded CAD when the row currency is missing",
   },
   {
     file: "src/components/import/staged-review-surface.tsx",
     line: `stagedCurrency: sRow.currency ?? "CAD",`,
     count: 1,
-    reason: "KNOWN GAP (follow-up, see projects/finlynq/currency-followups.md): display path still falls back to hardcoded CAD when the row currency is missing",
+    reason: "KNOWN GAP (follow-up, see docs/currency-known-gaps.md): display path still falls back to hardcoded CAD when the row currency is missing",
   },
 
   // Inbox components - display path falls back to CAD when transaction/row currency is missing
@@ -146,26 +146,26 @@ const ALLOW_LIST = [
     file: "src/components/inbox/auto-rule-banner.tsx",
     line: `{formatCurrency(item.amount, item.currency || "CAD")}`,
     count: 2, // matches logical-or and format-call patterns
-    reason: "KNOWN GAP (follow-up, see projects/finlynq/currency-followups.md): display path still falls back to hardcoded CAD when the row currency is missing",
+    reason: "KNOWN GAP (follow-up, see docs/currency-known-gaps.md): display path still falls back to hardcoded CAD when the row currency is missing",
   },
   {
     file: "src/components/inbox/row-card.tsx",
     line: `{formatCurrency(bank.amount, bank.currency || "CAD")}`,
     count: 2, // matches logical-or and format-call patterns
-    reason: "KNOWN GAP (follow-up, see projects/finlynq/currency-followups.md): display path still falls back to hardcoded CAD when the row currency is missing",
+    reason: "KNOWN GAP (follow-up, see docs/currency-known-gaps.md): display path still falls back to hardcoded CAD when the row currency is missing",
   },
   {
     file: "src/components/inbox/row-card.tsx",
     line: `duplicate.txCurrency || bank.currency || "CAD",`,
     count: 1,
-    reason: "KNOWN GAP (follow-up, see projects/finlynq/currency-followups.md): display path still falls back to hardcoded CAD when the row currency is missing",
+    reason: "KNOWN GAP (follow-up, see docs/currency-known-gaps.md): display path still falls back to hardcoded CAD when the row currency is missing",
   },
 
   {
     file: "src/components/staging/staged-row-editor.tsx",
     line: `Row {s.rowIndex + 1}: {s.date} · {formatCurrency(s.amount, s.currency || "CAD")} ·{" "}`,
     count: 2, // matches logical-or and format-call patterns
-    reason: "KNOWN GAP (follow-up, see projects/finlynq/currency-followups.md): display path still falls back to hardcoded CAD when the row currency is missing",
+    reason: "KNOWN GAP (follow-up, see docs/currency-known-gaps.md): display path still falls back to hardcoded CAD when the row currency is missing",
   },
 
   // Inbox reconcile tab - display path falls back to CAD when row/bank currency is missing
@@ -173,13 +173,13 @@ const ALLOW_LIST = [
     file: "src/components/inbox/inbox-reconcile-tab.tsx",
     line: `currency: payload.bankCurrency ?? snap?.currency ?? "CAD",`,
     count: 1,
-    reason: "KNOWN GAP (follow-up, see projects/finlynq/currency-followups.md): display path still falls back to hardcoded CAD when the row currency is missing",
+    reason: "KNOWN GAP (follow-up, see docs/currency-known-gaps.md): display path still falls back to hardcoded CAD when the row currency is missing",
   },
   {
     file: "src/components/inbox/inbox-reconcile-tab.tsx",
     line: `let currency = "CAD";`,
     count: 2,
-    reason: "KNOWN GAP (follow-up, see projects/finlynq/currency-followups.md): display path still falls back to hardcoded CAD when the row currency is missing",
+    reason: "KNOWN GAP (follow-up, see docs/currency-known-gaps.md): display path still falls back to hardcoded CAD when the row currency is missing",
   },
 
   // Inbox tabs - display path falls back to CAD when row/bank currency is missing
@@ -187,13 +187,13 @@ const ALLOW_LIST = [
     file: "src/components/inbox/inbox-to-approve-tab.tsx",
     line: `currency: payload.bankCurrency ?? snap?.currency ?? "CAD",`,
     count: 1,
-    reason: "KNOWN GAP (follow-up, see projects/finlynq/currency-followups.md): display path still falls back to hardcoded CAD when the row currency is missing",
+    reason: "KNOWN GAP (follow-up, see docs/currency-known-gaps.md): display path still falls back to hardcoded CAD when the row currency is missing",
   },
   {
     file: "src/components/inbox/inbox-to-categorize-tab.tsx",
     line: `currency: payload.bankCurrency ?? snap?.currency ?? "CAD",`,
     count: 1,
-    reason: "KNOWN GAP (follow-up, see projects/finlynq/currency-followups.md): display path still falls back to hardcoded CAD when the row currency is missing",
+    reason: "KNOWN GAP (follow-up, see docs/currency-known-gaps.md): display path still falls back to hardcoded CAD when the row currency is missing",
   },
 
   // Data section - importer rows default to CAD when currency is missing
@@ -201,7 +201,7 @@ const ALLOW_LIST = [
     file: "src/components/settings/sections/data-section.tsx",
     line: `currency: row.currency || row.Currency || "CAD",`,
     count: 2,
-    reason: "KNOWN GAP (follow-up, see projects/finlynq/currency-followups.md): display path still falls back to hardcoded CAD when the row currency is missing",
+    reason: "Import POST payload default (data layer), not a display path",
   },
 
   // OUT OF SCOPE: Onboarding and form helpers

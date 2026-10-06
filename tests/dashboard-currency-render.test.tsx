@@ -8,6 +8,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, cleanup, waitFor } from "@testing-library/react";
 import { forwardRef, ReactNode, cloneElement } from "react";
+import { renderToString } from "react-dom/server";
 import { formatCurrency } from "@/lib/currency";
 const MockIcon = forwardRef<SVGSVGElement>(() => <span>Icon</span>);
 MockIcon.displayName = "MockIcon";
@@ -662,6 +663,21 @@ describe("Dashboard Currency Render Tests - Animation Cases", () => {
         expect(text).not.toMatch(/\$|US\$|CA\$|CAD|USD|€/);
       });
     });
+
+    it("AnimatedNumber SSR first render with EUR currency shows € not $", () => {
+      // Test server-side rendering (first paint) - renders initial JSX without effect
+      // Catches violations in formatCurrency(animationsEnabled ? 0 : value, currency)
+      const html = renderToString(
+        <TestWrapper>
+          <AnimatedNumber value={1000000} currency="EUR" />
+        </TestWrapper>
+      );
+
+      // Verify SSR output contains EUR symbol, not USD
+      expect(html).toContain("€");
+      expect(html).toContain("1,000,000");
+      expect(html).not.toMatch(/\$|US\$|CAD|USD/);
+    });
   });
 
   describe("With useAnimations enabled", () => {
@@ -723,6 +739,30 @@ describe("Dashboard Currency Render Tests - Animation Cases", () => {
         expect(text).toContain("€");
         expect(text).toContain("5,000,000");
         expect(text).not.toMatch(/₫|\$|US\$|CA\$|CAD|USD/);
+      });
+    });
+
+    it("MetricCard with sparkData and EUR currency displays EUR in sparkline tooltip", async () => {
+      const { container } = render(
+        <TestWrapper>
+          <MetricCard
+            label="Test Metric"
+            icon={MockIcon}
+            value={5000000}
+            currency="EUR"
+            sparkData={[100000, 200000, 150000]}
+            sparkLabels={["2024-01", "2024-02", "2024-03"]}
+          />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        const text = container.textContent || "";
+        // Verify main value shows EUR
+        expect(text).toContain("€");
+        expect(text).toContain("5,000,000");
+        // Verify sparkline tooltip mock also formats with EUR (not hardcoded USD)
+        expect(text).not.toMatch(/\$|US\$|CA\$|CAD|USD/);
       });
     });
   });
