@@ -115,10 +115,6 @@ describe("nav-config", () => {
           const duplicates = labels.filter(
             (l, i) => labels.indexOf(l) !== i
           );
-          console.log(
-            `Duplicate labels in ${surface}:`,
-            duplicates
-          );
         }
 
         expect(labels.length).toBe(uniqueLabels.size);
@@ -149,9 +145,6 @@ describe("nav-config", () => {
         }
 
         for (const [label, paths] of Object.entries(labelToPaths)) {
-          if (paths.size > 1) {
-            console.log(`Duplicate label "${label}" in ${surface}:`, Array.from(paths));
-          }
           expect(paths.size).toBe(1);
         }
       }
@@ -198,13 +191,6 @@ describe("nav-config", () => {
           !registeredPaths.has(p) &&
           !detailRoutes.has(p)
       );
-
-      if (missing.length > 0) {
-        console.log(
-          "Pages that should be added to registry, aliases, or detail list:",
-          missing
-        );
-      }
 
       // Most pages should be covered
       expect(missing.length).toBe(0);
@@ -400,24 +386,12 @@ describe("nav-config", () => {
 
       const pageFiles = getAllPageFiles();
 
-      // Known redirects (from next.config.ts)
-      const redirectTargets = new Set<string>([]);
-
       for (const entry of NAV_REGISTRY) {
         // Skip entries with query params
         if (entry.path.includes("?")) continue;
-        // Skip parent-only entries (they exist as layout containers, not pages)
-        if (entry.surfaces.length === 0) continue;
 
         const basePath = entry.path.split("?")[0];
-        const exists =
-          pageFiles.has(basePath) ||
-          pageFiles.has(basePath.replace(/\/\[id\]$/, "/[id]")) ||
-          redirectTargets.has(basePath);
-
-        if (!exists) {
-          console.log(`Page file missing for registry entry: ${basePath}`);
-        }
+        const exists = pageFiles.has(basePath);
 
         expect(exists).toBe(true);
       }

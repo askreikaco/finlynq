@@ -70,7 +70,6 @@ export interface NavPageEntry {
   adminOnly?: boolean;
   flag?: Flag; // requires feature flag to be true
   surfaces: Surface[];
-  color?: string; // default ACTIVE_ACCENT for now
   activePrefixes?: string[]; // for parent routes that should highlight child paths
 }
 
