@@ -32,6 +32,9 @@ type Goal = {
   accountIds: number[]; accounts: string[]; accountName: string | null;
   priority: number; status: string;
   progress: number; remaining: number; monthlyNeeded: number; note: string;
+  // FINLYNQ-123: current-rate conversions into the display currency. The ONLY
+  // figures the summary tiles may sum — per-goal amounts stay in `currency`.
+  targetAmountDisplay?: number; currentAmountDisplay?: number;
 };
 type Account = { id: number; name: string };
 
@@ -368,8 +371,9 @@ export default function GoalsPage() {
 
   const active = goals.filter((g) => g.status === "active");
   const completed = goals.filter((g) => g.status === "completed");
-  const totalTarget = active.reduce((s, g) => s + g.targetAmount, 0);
-  const totalCurrent = active.reduce((s, g) => s + g.currentAmount, 0);
+  const totalTarget = active.reduce((s, g) => s + (g.targetAmountDisplay ?? g.targetAmount), 0);
+  const totalCurrent = active.reduce((s, g) => s + (g.currentAmountDisplay ?? g.currentAmount), 0);
+  const hasForeignGoal = active.some((g) => g.currency && g.currency !== displayCurrency);
 
   if (loading) return <PageSkeleton variant="cards" rows={3} />;
   if (loadError) return <ErrorState title="Couldn't load goals" message="We couldn't load your goals. Please try again." onRetry={() => { setLoading(true); load(); }} />;
@@ -428,6 +432,7 @@ export default function GoalsPage() {
               <div>
                 <p className="text-sm text-muted-foreground">Total Target</p>
                 <p className="text-2xl font-bold">{formatCurrency(totalTarget, displayCurrency)}</p>
+                {hasForeignGoal && <p className="text-xs text-muted-foreground mt-1">converted at today&apos;s rates</p>}
               </div>
             </CardContent>
           </Card>
@@ -439,6 +444,7 @@ export default function GoalsPage() {
               <div>
                 <p className="text-sm text-muted-foreground">Current Progress</p>
                 <p className="text-2xl font-bold text-emerald-600">{formatCurrency(totalCurrent, displayCurrency)}</p>
+                {hasForeignGoal && <p className="text-xs text-muted-foreground mt-1">converted at today&apos;s rates</p>}
               </div>
             </CardContent>
           </Card>
@@ -511,6 +517,9 @@ export default function GoalsPage() {
                     <h3 className="font-semibold">{g.name}</h3>
                     <div className="flex flex-wrap gap-2 mt-1">
                       <Badge className={config.badgeClass}>{config.label}</Badge>
+                      {g.currency && g.currency !== displayCurrency && (
+                        <Badge variant="outline">{g.currency}</Badge>
+                      )}
                       {/* Issue #130 — render every linked account as its own chip. */}
                       {(g.accounts ?? []).filter((n) => n).map((name, i) => (
                         <Badge key={`${g.accountIds[i] ?? i}`} variant="secondary">{name}</Badge>
@@ -538,15 +547,15 @@ export default function GoalsPage() {
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span>{formatCurrency(g.currentAmount, g.currency)} of {formatCurrency(g.targetAmount, g.currency)}</span>
+                  <span>{formatCurrency(g.currentAmount, g.currency || displayCurrency)} of {formatCurrency(g.targetAmount, g.currency || displayCurrency)}</span>
                   <span className={`font-bold ${progressTextClass(g.progress)}`}>{g.progress}%</span>
                 </div>
                 <Progress value={g.progress} className={`h-3 ${progressColorClass(g.progress)}`} />
                 <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Remaining: <span className="font-medium text-foreground">{formatCurrency(g.remaining, g.currency)}</span></span>
+                  <span>Remaining: <span className="font-medium text-foreground">{formatCurrency(g.remaining, g.currency || displayCurrency)}</span></span>
                   {g.monthlyNeeded > 0 && (
                     <span className="inline-flex items-center rounded-md bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700 ring-1 ring-inset ring-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:ring-indigo-900/60">
-                      {formatCurrency(g.monthlyNeeded, g.currency)}/mo needed
+                      {formatCurrency(g.monthlyNeeded, g.currency || displayCurrency)}/mo needed
                     </span>
                   )}
                 </div>
@@ -570,7 +579,7 @@ export default function GoalsPage() {
                   <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                   <div>
                     <span className="line-through text-muted-foreground">{g.name}</span>
-                    <Badge className="ml-2 bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-900/60">{formatCurrency(g.targetAmount, g.currency)}</Badge>
+                    <Badge className="ml-2 bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-900/60">{formatCurrency(g.targetAmount, g.currency || displayCurrency)}</Badge>
                   </div>
                 </div>
                 <div className="flex gap-1">
