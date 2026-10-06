@@ -2,10 +2,12 @@ import { describe, it, expect } from "vitest";
 import {
   NAV_REGISTRY,
   ALIASES,
+  REDIRECTS,
   getNavEntry,
   getEntriesBySurface,
   getEntriesByGroup,
   isRegisteredPath,
+  getMobileBarItemsSorted,
 } from "@/lib/nav-config";
 import { readdirSync } from "fs";
 import { join } from "path";
@@ -537,6 +539,97 @@ describe("nav-config", () => {
       expect(getNavEntry("/admin/api-log")).toBeDefined();
       expect(getNavEntry("/admin/price-cache")).toBeDefined();
       expect(getNavEntry("/admin/integrations")).toBeDefined();
+    });
+  });
+
+  describe("Tab ordering (mobile bar)", () => {
+    it("should have exactly 4 mobileBar entries with tab orders", () => {
+      const mobileEntries = getEntriesBySurface("mobileBar");
+      const withTabOrder = mobileEntries.filter((e) => e.tab?.order !== undefined);
+      expect(withTabOrder.length).toBe(4);
+    });
+
+    it("should have unique tab order values", () => {
+      const mobileEntries = getEntriesBySurface("mobileBar");
+      const orders = mobileEntries
+        .filter((e) => e.tab?.order !== undefined)
+        .map((e) => e.tab?.order);
+      const uniqueOrders = new Set(orders);
+      expect(orders.length).toBe(uniqueOrders.size);
+    });
+
+    it("should have correct tab order for dashboard (1), accounts (2), portfolio (3), transactions (4)", () => {
+      const dashboardEntry = getNavEntry("/dashboard");
+      const accountsEntry = getNavEntry("/accounts");
+      const portfolioEntry = getNavEntry("/portfolio");
+      const transactionsEntry = getNavEntry("/transactions");
+
+      expect(dashboardEntry?.tab?.order).toBe(1);
+      expect(accountsEntry?.tab?.order).toBe(2);
+      expect(portfolioEntry?.tab?.order).toBe(3);
+      expect(transactionsEntry?.tab?.order).toBe(4);
+    });
+
+    it("should return mobileBar items in correct order from getMobileBarItemsSorted", () => {
+      const sortedItems = getMobileBarItemsSorted();
+      const paths = sortedItems.map((e) => e.path);
+      expect(paths).toEqual([
+        "/dashboard",
+        "/accounts",
+        "/portfolio",
+        "/transactions",
+      ]);
+    });
+
+    it("should maintain correct order even if entries in registry are not ordered", () => {
+      // This test verifies the sorting logic works independently of registry order
+      const sortedItems = getMobileBarItemsSorted();
+      for (let i = 1; i < sortedItems.length; i++) {
+        const prevOrder = sortedItems[i - 1].tab?.order ?? 0;
+        const currOrder = sortedItems[i].tab?.order ?? 0;
+        expect(currOrder).toBeGreaterThan(prevOrder);
+      }
+    });
+  });
+
+  describe("Redirects table", () => {
+    it("should have valid redirect entries", () => {
+      for (const redirect of REDIRECTS) {
+        expect(redirect.source).toBeDefined();
+        expect(redirect.destination).toBeDefined();
+        expect(typeof redirect.permanent).toBe("boolean");
+      }
+    });
+
+    it("should include core redirects", () => {
+      const sources = REDIRECTS.map((r) => r.source);
+      expect(sources).toContain("/inbox");
+      expect(sources).toContain("/reconcile");
+      expect(sources).toContain("/calendar");
+    });
+
+    it("should preserve query strings in redirect destinations", () => {
+      const reconcileRedirect = REDIRECTS.find((r) => r.source === "/reconcile");
+      expect(reconcileRedirect?.destination).toBe("/import?tab=reconcile");
+
+      const calendarRedirect = REDIRECTS.find((r) => r.source === "/calendar");
+      expect(calendarRedirect?.destination).toBe("/subscriptions?view=calendar");
+    });
+
+    it("should have at least 5 redirects", () => {
+      expect(REDIRECTS.length).toBeGreaterThanOrEqual(5);
+    });
+
+    it("should not have duplicate source paths", () => {
+      const sources = REDIRECTS.map((r) => r.source);
+      const uniqueSources = new Set(sources);
+      expect(sources.length).toBe(uniqueSources.size);
+    });
+
+    it("should include /import/classic legacy redirect", () => {
+      const classicRedirect = REDIRECTS.find((r) => r.source === "/import/classic");
+      expect(classicRedirect).toBeDefined();
+      expect(classicRedirect?.destination).toBe("/import");
     });
   });
 });

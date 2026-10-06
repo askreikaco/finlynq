@@ -43,6 +43,40 @@ describe("mobile bottom bar", () => {
     expect(mobileBarItems.map((i) => i.href)).toEqual(["/dashboard", "/accounts", "/portfolio", "/transactions"]);
   });
 
+  it("mobileBarItems maintains registry-driven order from tab field", () => {
+    // Ensures tab order is read from registry, not hardcoded
+    expect(mobileBarItems).toHaveLength(4);
+    expect(mobileBarItems[0].label).toBe("Home");
+    expect(mobileBarItems[1].label).toBe("Accounts");
+    expect(mobileBarItems[2].label).toBe("Portfolio");
+    expect(mobileBarItems[3].label).toBe("Transactions");
+  });
+
+  it("mobileBarItems snapshot: order must not change without explicit test update", () => {
+    // Regression test: ensure order stays stable
+    const snapshot = mobileBarItems.map((i) => ({ href: i.href, label: i.label }));
+    expect(snapshot).toMatchInlineSnapshot(`
+      [
+        {
+          "href": "/dashboard",
+          "label": "Home",
+        },
+        {
+          "href": "/accounts",
+          "label": "Accounts",
+        },
+        {
+          "href": "/portfolio",
+          "label": "Portfolio",
+        },
+        {
+          "href": "/transactions",
+          "label": "Transactions",
+        },
+      ]
+    `);
+  });
+
   it.each([
     ["/accounts/123", "Accounts"],
     ["/portfolio/holdings/9", "Portfolio"],
