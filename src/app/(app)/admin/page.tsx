@@ -652,7 +652,7 @@ export default function AdminPage() {
     >
       {/* Header */}
       <motion.div variants={itemVariants}>
-        <PageHeader title="Admin Dashboard" titleClassName="text-2xl font-bold tracking-tight" />
+        <PageHeader title="Admin" titleClassName="text-2xl font-bold tracking-tight" />
         <p className="text-muted-foreground">
           Manage users and monitor platform usage
         </p>

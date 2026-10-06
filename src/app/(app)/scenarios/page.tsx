@@ -521,7 +521,7 @@ function ScenariosPageContent() {
   return (
     <div className="space-y-6">
       <PageHeader
-          title="Scenario Planner"
+          title="Scenarios"
           titleClassName="text-2xl font-bold"
           subtitle="Model financial decisions and see their long-term impact"
           subtitleClassName="text-sm text-muted-foreground mt-1"

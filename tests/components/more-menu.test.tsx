@@ -82,7 +82,7 @@ describe("More screen", () => {
       ["Budgets", "/budgets"],
       ["Goals", "/goals"],
       ["Reports", "/reports"],
-      ["Category report", "/categories"],
+      ["Spending by category", "/categories"],
       ["Family Wealth", "/family"],
       ["Reconcile", "/import?tab=reconcile"],
       ["Categories", "/settings/categorization"],
@@ -112,6 +112,21 @@ describe("More screen", () => {
     expect(rows("admin").map((r) => r[1])).toContain("/admin");
   });
 
+  it("shows admin rows in correct order", async () => {
+    session = { isAdmin: true };
+    render(<MoreMenu />);
+    await waitFor(() => expect(screen.getByTestId("more-group-admin")).toBeTruthy());
+    const expectedHrefs = [
+      "/admin",
+      "/admin/inbox",
+      "/admin/email-inbox",
+      "/admin/env",
+      "/admin/announcements",
+      "/admin/feedback",
+    ];
+    expect(rows("admin").map((r) => r[1])).toEqual(expectedHrefs);
+  });
+
   it("Sign out posts logout, clears the user's storage and hard-reloads", async () => {
     render(<MoreMenu />);
     fireEvent.click(screen.getByTestId("more-signout"));
@@ -124,6 +139,23 @@ describe("More screen", () => {
   it("does not offer Send feedback", () => {
     render(<MoreMenu />);
     expect(screen.queryByText(/feedback/i)).toBeNull();
+  });
+
+  it("shows badge with unread announcement count on whats-new row", async () => {
+    announcements = [{ id: 1, read: false }, { id: 2, read: false }];
+    render(<MoreMenu />);
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/announcements"));
+    const whatsnewRow = screen.getAllByTestId("more-row").find((r) => r.textContent?.includes("What's new"));
+    expect(whatsnewRow?.textContent).toContain("2");
+  });
+
+  it("shows no badge when all announcements are read", async () => {
+    announcements = [{ id: 1, read: true }, { id: 2, read: true }];
+    render(<MoreMenu />);
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/announcements"));
+    const whatsnewRow = screen.getAllByTestId("more-row").find((r) => r.textContent?.includes("What's new"));
+    expect(whatsnewRow?.textContent).not.toContain("2");
+    expect(whatsnewRow?.querySelector("[class*='bg-primary']")).toBeNull();
   });
 });
 

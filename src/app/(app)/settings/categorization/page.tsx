@@ -129,7 +129,7 @@ export default function CategorizationSettingsPage() {
   return (
     <div className="max-w-2xl space-y-6">
       <PageHeader
-          title="Categorization"
+          title="Categories"
           titleClassName="text-2xl font-bold tracking-tight"
           subtitle={<>Manage transaction categories. Auto-categorization rules live in <a href="/settings/rules" className="underline hover:text-foreground">Rules</a>.</>}
           subtitleClassName="text-sm text-muted-foreground mt-0.5"

@@ -13,33 +13,17 @@ import { useEffect, useRef, useState, useMemo, memo } from "react";
 import useSWR from "swr";
 import { softJsonFetcher, swrAggressiveOptions } from "@/lib/swr";
 import {
-  PiggyBank,
-  Target,
-  FileText,
-  ChartPie,
-  Inbox,
-  Tag,
-  Upload,
-  Megaphone,
-  Users,
-  Settings,
   LogOut,
-  CreditCard,
-  Landmark,
-  MessageSquare,
-  Calculator,
-  GitBranch,
-  FlameKindling,
   ChevronRight,
   Palette,
   type LucideIcon,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
-import { adminLinks } from "@/components/nav";
 import { AccountSwitcher } from "@/components/account-switcher";
 import { hardReload, clearPerUserStorage } from "@/lib/client/hard-reload";
 import { setPasskeyAutoSkip } from "@/lib/client/passkey-auto";
+import { getEntriesBySurface } from "@/lib/nav-config";
 
 export type MoreRow = { href: string; label: string; icon: LucideIcon; id: string };
 export type MoreGroup = { id: string; header?: string; rows: MoreRow[] };
@@ -55,55 +39,95 @@ const row = (href: string, label: string, icon: LucideIcon): MoreRow => ({ id: h
 
 /** Pure builder so order/visibility is unit-testable. Sign out is rendered separately (last row of TOOLS). */
 export function buildMoreGroups(f: MoreFlags): MoreGroup[] {
-  const groups: MoreGroup[] = [
-    {
-      id: "main",
-      rows: [
-        row("/budgets", "Budgets", PiggyBank),
-        row("/goals", "Goals", Target),
-        row("/reports", "Reports", FileText),
-        row("/categories", "Category report", ChartPie),
-        ...(f.familyEnabled ? [row("/family", "Family Wealth", Users)] : []),
-        row("/import?tab=reconcile", "Reconcile", Inbox),
-        row("/settings/categorization", "Categories", Tag),
-        row("/import", "Import", Upload),
-      ],
-    },
-    {
-      id: "explore",
-      header: "Explore",
-      rows: [
-        row("/subscriptions", "Subscriptions", CreditCard),
-        row("/loans", "Loans & Debt", Landmark),
-        ...(f.devMode
-          ? [
-              row("/chat", "AI Chat", MessageSquare),
-              row("/tax", "Tax", Calculator),
-              row("/scenarios", "Scenarios", GitBranch),
-              row("/fire", "FIRE Calculator", FlameKindling),
-              row("/api-docs", "API Docs", FileText),
-            ]
-          : []),
-      ],
-    },
-    {
-      id: "tools",
-      header: "Tools",
-      rows: [
-        ...(f.hasAnnouncements ? [row("/whats-new", "What's new", Megaphone)] : []),
-        row("/settings", "Settings", Settings),
-      ],
-    },
+  const moreEntries = getEntriesBySurface("more");
+  const entryMap = new Map(moreEntries.map((e) => [e.path, e]));
+
+  // Build groups in the original order expected by the tests
+  // main: core tracking + analysis + reconcile + import
+  // explore: wealth + planning items
+  // tools: what's new + settings (sign out added by component)
+  // admin: admin items (for admins only)
+
+  const main: MoreRow[] = [];
+  const explore: MoreRow[] = [];
+  const tools: MoreRow[] = [];
+  const admin: MoreRow[] = [];
+
+  // Main group: Tracking (Budgets, Goals) + Analysis (Reports, Categories) + Settings (Categorization) + Import + Reconcile
+  const mainPaths = [
+    "/budgets",
+    "/goals",
+    "/reports",
+    "/categories",
+    ...(f.familyEnabled ? ["/family"] : []),
+    "/import?tab=reconcile",
+    "/settings/categorization",
+    "/import",
   ];
-  if (f.isAdmin) {
-    groups.push({
-      id: "admin",
-      header: "Admin",
-      rows: adminLinks
-        .filter((i) => f.devMode || i.mode !== "dev")
-        .map((i) => row(i.href, i.label, i.icon)),
-    });
+
+  for (const path of mainPaths) {
+    const entry = entryMap.get(path);
+    if (entry && (entry.mode !== "dev" || f.devMode)) {
+      main.push(row(entry.path, entry.label, entry.icon));
+    }
   }
+
+  // Explore group: Wealth + Planning items
+  const explorePaths = [
+    "/subscriptions",
+    "/loans",
+    ...(f.devMode
+      ? ["/chat", "/tax", "/scenarios", "/fire", "/api-docs"]
+      : []),
+  ];
+
+  for (const path of explorePaths) {
+    const entry = entryMap.get(path);
+    if (entry) {
+      explore.push(row(entry.path, entry.label, entry.icon));
+    }
+  }
+
+  // Tools group: What's new (conditional) + Settings
+  if (f.hasAnnouncements) {
+    const entry = entryMap.get("/whats-new");
+    if (entry) {
+      tools.push(row(entry.path, entry.label, entry.icon));
+    }
+  }
+
+  const settingsEntry = entryMap.get("/settings");
+  if (settingsEntry) {
+    tools.push(row(settingsEntry.path, settingsEntry.label, settingsEntry.icon));
+  }
+
+  // Admin group (for admins only)
+  if (f.isAdmin) {
+    // Get all admin entries in order from registry
+    const adminEntries = moreEntries.filter((e) => e.adminOnly && (e.mode !== "dev" || f.devMode));
+    for (const entry of adminEntries) {
+      admin.push(row(entry.path, entry.label, entry.icon));
+    }
+  }
+
+  const groups: MoreGroup[] = [];
+
+  if (main.length > 0) {
+    groups.push({ id: "main", rows: main });
+  }
+
+  if (explore.length > 0) {
+    groups.push({ id: "explore", header: "Explore", rows: explore });
+  }
+
+  if (tools.length > 0) {
+    groups.push({ id: "tools", header: "Tools", rows: tools });
+  }
+
+  if (admin.length > 0) {
+    groups.push({ id: "admin", header: "Admin", rows: admin });
+  }
+
   return groups;
 }
 
@@ -257,20 +281,23 @@ export const MoreMenu = memo(function MoreMenu() {
             </h2>
           )}
           <Card>
-            {g.rows.map((r) => (
-              <Link key={r.id} href={r.href} className={rowCls} data-testid="more-row">
-                <span className={tile}>
-                  <r.icon className="h-[18px] w-[18px]" aria-hidden="true" />
-                </span>
-                <span className="flex-1 truncate">{r.label}</span>
-                {r.href === "/whats-new" && unread > 0 && (
-                  <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold leading-none text-primary-foreground">
-                    {unread}
+            {g.rows.map((r) => {
+              const showUnreadBadge = r.href === "/whats-new" && unread > 0;
+              return (
+                <Link key={r.id} href={r.href} className={rowCls} data-testid="more-row">
+                  <span className={tile}>
+                    <r.icon className="h-[18px] w-[18px]" aria-hidden="true" />
                   </span>
-                )}
-                <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-              </Link>
-            ))}
+                  <span className="flex-1 truncate">{r.label}</span>
+                  {showUnreadBadge && (
+                    <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold leading-none text-primary-foreground">
+                      {unread}
+                    </span>
+                  )}
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                </Link>
+              );
+            })}
             {g.id === "tools" && <AppearanceRow />}
             {g.id === "tools" && (
               <button type="button" onClick={signOut} className={cn(rowCls, "text-destructive")} data-testid="more-signout">

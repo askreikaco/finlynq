@@ -382,7 +382,7 @@ export default function GoalsPage() {
     <div className="space-y-6">
       <PageHeader
         className="flex flex-wrap items-center justify-between gap-3"
-        title="Financial Goals"
+        title="Goals"
         subtitle="Track your savings targets and measure progress over time"
         actionsClassName="contents"
         actions={
