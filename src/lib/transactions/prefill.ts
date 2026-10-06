@@ -30,7 +30,7 @@ const EXPIRY_MS = 2 * 60 * 1000; // 2 minutes
  * - No investment/trades (tradeLinkId, kind, or quantity present)
  * - No multi-currency mismatch (enteredCurrency != account currency)
  */
-export function canDuplicate(tx: Transaction, accountCurrency: string): boolean {
+export function canDuplicate(tx: Pick<Transaction, 'linkId' | 'tradeLinkId' | 'kind' | 'quantity' | 'enteredCurrency'>, accountCurrency: string): boolean {
   // Transfer leg: never duplicate
   if (tx.linkId) return false;
 

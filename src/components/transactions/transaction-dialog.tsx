@@ -1702,7 +1702,7 @@ export function TransactionDialog({
             )}
 
             <div className="flex gap-2">
-              {editingTx && onRequestDuplicate && canDuplicate(editingTx as any, editingTx.currency) && (
+              {editingTx && onRequestDuplicate && canDuplicate(editingTx, editingTx.currency) && (
                 <Button
                   type="button"
                   variant="outline"
