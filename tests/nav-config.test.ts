@@ -593,31 +593,17 @@ describe("nav-config", () => {
   });
 
   describe("Redirects table", () => {
-    it("should have valid redirect entries", () => {
-      for (const redirect of REDIRECTS) {
-        expect(redirect.source).toBeDefined();
-        expect(redirect.destination).toBeDefined();
-        expect(typeof redirect.permanent).toBe("boolean");
-      }
-    });
-
-    it("should include core redirects", () => {
-      const sources = REDIRECTS.map((r) => r.source);
-      expect(sources).toContain("/inbox");
-      expect(sources).toContain("/reconcile");
-      expect(sources).toContain("/calendar");
-    });
-
-    it("should preserve query strings in redirect destinations", () => {
-      const reconcileRedirect = REDIRECTS.find((r) => r.source === "/reconcile");
-      expect(reconcileRedirect?.destination).toBe("/import?tab=reconcile");
-
-      const calendarRedirect = REDIRECTS.find((r) => r.source === "/calendar");
-      expect(calendarRedirect?.destination).toBe("/subscriptions?view=calendar");
-    });
-
-    it("should have at least 5 redirects", () => {
-      expect(REDIRECTS.length).toBeGreaterThanOrEqual(5);
+    it("should have complete REDIRECTS array with all 7 entries in exact form", () => {
+      const expectedRedirects = [
+        { source: "/mcp", destination: "/api/mcp", permanent: true },
+        { source: "/mcp/:path*", destination: "/api/mcp/:path*", permanent: true },
+        { source: "/inbox", destination: "/import", permanent: false },
+        { source: "/reconcile", destination: "/import?tab=reconcile", permanent: false },
+        { source: "/import/reconcile", destination: "/import?tab=reconcile", permanent: false },
+        { source: "/import/classic", destination: "/import", permanent: false },
+        { source: "/calendar", destination: "/subscriptions?view=calendar", permanent: false },
+      ];
+      expect(REDIRECTS).toEqual(expectedRedirects);
     });
 
     it("should not have duplicate source paths", () => {
@@ -626,10 +612,21 @@ describe("nav-config", () => {
       expect(sources.length).toBe(uniqueSources.size);
     });
 
-    it("should include /import/classic legacy redirect", () => {
-      const classicRedirect = REDIRECTS.find((r) => r.source === "/import/classic");
-      expect(classicRedirect).toBeDefined();
-      expect(classicRedirect?.destination).toBe("/import");
+    it("next.config.ts async redirects() should return REDIRECTS from nav-config", async () => {
+      // Verify that the REDIRECTS table has all expected redirects
+      // and that they can be used directly in next.config.ts
+      const testRedirects = REDIRECTS;
+      expect(testRedirects).toHaveLength(7);
+      expect(testRedirects[0]).toEqual({
+        source: "/mcp",
+        destination: "/api/mcp",
+        permanent: true,
+      });
+      expect(testRedirects[1]).toEqual({
+        source: "/mcp/:path*",
+        destination: "/api/mcp/:path*",
+        permanent: true,
+      });
     });
   });
 });

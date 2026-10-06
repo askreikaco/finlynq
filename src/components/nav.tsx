@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { AccountSwitcher } from "@/components/account-switcher";
-import { getEntriesBySurface } from "@/lib/nav-config";
+import { getEntriesBySurface, getMobileBarItemsSorted } from "@/lib/nav-config";
 
 type NavItem = { href: string; label: string; icon: LucideIcon; color: string; mode?: "prod" | "dev"; activePrefixes?: string[]; flag?: "family" | "announcements" | "feedback" };
 
@@ -93,12 +93,7 @@ function generateToolLinks(): NavItem[] {
  * Generate mobileBarItems from the registry, ordered by tab.order field.
  */
 function generateMobileBarItems(): NavItem[] {
-  const mobileEntries = getEntriesBySurface("mobileBar");
-
-  // Sort by tab.order, filtering out entries without a tab order
-  const sortedEntries = mobileEntries
-    .filter((e) => e.tab?.order !== undefined)
-    .sort((a, b) => (a.tab?.order ?? 0) - (b.tab?.order ?? 0));
+  const sortedEntries = getMobileBarItemsSorted();
 
   const items: NavItem[] = sortedEntries.map((entry) => ({
     href: entry.path,

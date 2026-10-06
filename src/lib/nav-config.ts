@@ -72,7 +72,6 @@ export interface NavPageEntry {
   surfaces: Surface[];
   activePrefixes?: string[]; // for parent routes that should highlight child paths
   tab?: { order: number }; // mobileBar tab ordering
-  level?: string; // hierarchy level for future use
 }
 
 export interface AliasEntry {
@@ -549,13 +548,24 @@ export interface RedirectEntry {
 }
 
 export const REDIRECTS: RedirectEntry[] = [
-  // Existing redirects from next.config.ts
+  // /mcp is a vanity shortcut for the MCP server. 308 preserves POST/SSE bodies.
   { source: "/mcp", destination: "/api/mcp", permanent: true },
   { source: "/mcp/:path*", destination: "/api/mcp/:path*", permanent: true },
+  // Money-in consolidation (2026-06-04): /import is the single account-anchored surface.
+  // The legacy standalone routes fold into it and their page files are deleted (Phase 6),
+  // so these redirects are now the only thing serving those paths.
+  // Query strings (?account=, ?id=) are preserved automatically.
+  // Not permanent yet — still soaking on dev; flip to permanent at prod promotion.
+  // /import/pending is NOT matched (it's a live route — the standalone staged-review surface).
+  // /reconcile and /import/reconcile now preserve ?tab=reconcile for the More menu.
   { source: "/inbox", destination: "/import", permanent: false },
   { source: "/reconcile", destination: "/import?tab=reconcile", permanent: false },
   { source: "/import/reconcile", destination: "/import?tab=reconcile", permanent: false },
+  // /import/classic was the temporary legacy-hub backup (Phase 3b → 6);
+  // deleted after validation. Redirect so old bookmarks don't 404.
   { source: "/import/classic", destination: "/import", permanent: false },
+  // Subscriptions + Bill Calendar merged into one page (2026-10); the
+  // calendar is now a view of /subscriptions.
   { source: "/calendar", destination: "/subscriptions?view=calendar", permanent: false },
 ];
 
