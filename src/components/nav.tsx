@@ -123,7 +123,7 @@ export const mobileBarItems: NavItem[] = generateMobileBarItems();
 
 export const allFlatItems = navGroups.flatMap((g) => g.items).concat(toolLinks).concat(adminLinks);
 
-export const Nav = memo(function Nav() {
+export const Nav = memo(function Nav({ instanceAdminEnabled = false }: { instanceAdminEnabled?: boolean }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
@@ -131,7 +131,6 @@ export const Nav = memo(function Nav() {
   const [devMode, setDevMode] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [familyEnabled, setFamilyEnabled] = useState(true); // FAMILY_WEALTH_ENABLED (default on)
-  const [instanceAdminEnabled, setInstanceAdminEnabled] = useState(false); // FINLYNQ_INSTANCE_ADMIN (default off)
   const [unread, setUnread] = useState(0);
   const [hasAnnouncements, setHasAnnouncements] = useState(true); // default to true to avoid hiding on initial load
   const [feedbackUnread, setFeedbackUnread] = useState(0);
@@ -159,7 +158,6 @@ export const Nav = memo(function Nav() {
       .then((data) => {
         setIsAdmin(data.isAdmin === true);
         if (data.familyWealthEnabled === false) setFamilyEnabled(false);
-        if (data.instanceAdminEnabled === true) setInstanceAdminEnabled(true);
       })
       .catch(() => {});
     fetch("/api/settings/dev-mode")

@@ -12,6 +12,8 @@ export function isInstanceAdminEnabled(env: Record<string, string | undefined> =
 export function isInstanceAdminPath(pathname: string): boolean {
   return (
     pathname === "/admin/instance" ||
-    pathname.startsWith("/admin/instance/")
+    pathname.startsWith("/admin/instance/") ||
+    pathname === "/api/admin/instance" ||
+    pathname.startsWith("/api/admin/instance/")
   );
 }

@@ -300,11 +300,14 @@ export function middleware(request: NextRequest) {
       status: 405,
       headers: { Allow: "GET, HEAD", "Content-Type": "application/json" },
     });
-
-  // FINLYNQ_INSTANCE_ADMIN kill switch: the feature does not exist (404) for pages when disabled.
-  if (isInstanceAdminPath(request.nextUrl.pathname) && !isInstanceAdminEnabled()) {
-    return NextResponse.rewrite(new URL("/instance-admin-disabled", request.url), { status: 404 });
   }
+
+  // FINLYNQ_INSTANCE_ADMIN kill switch: the feature does not exist (404) for pages and API when disabled.
+  if (isInstanceAdminPath(request.nextUrl.pathname) && !isInstanceAdminEnabled()) {
+    if (request.nextUrl.pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    return NextResponse.rewrite(new URL("/instance-admin-disabled", request.url), { status: 404 });
   }
 
   // CSRF Origin/Referer gate for cookie-auth'd state-changing requests.

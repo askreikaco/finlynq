@@ -192,7 +192,7 @@ export function AppearanceRow() {
   );
 }
 
-export const MoreMenu = memo(function MoreMenu() {
+export const MoreMenu = memo(function MoreMenu({ instanceAdminEnabled = false }: { instanceAdminEnabled?: boolean }) {
   const router = useRouter();
   const busy = useRef(false);
 
@@ -203,7 +203,7 @@ export const MoreMenu = memo(function MoreMenu() {
     }
   }, [router]);
 
-  const { data: sessionData } = useSWR<{ isAdmin?: boolean; familyWealthEnabled?: boolean; instanceAdminEnabled?: boolean }>(
+  const { data: sessionData } = useSWR<{ isAdmin?: boolean; familyWealthEnabled?: boolean }>(
     "/api/auth/session",
     softJsonFetcher({}),
     swrAggressiveOptions,
@@ -221,7 +221,6 @@ export const MoreMenu = memo(function MoreMenu() {
 
   const isAdmin = sessionData?.isAdmin === true;
   const familyEnabled = sessionData?.familyWealthEnabled !== false;
-  const instanceAdminEnabled = sessionData?.instanceAdminEnabled === true;
   const devMode = Boolean(devModeData?.devMode);
   const announcementsList = Array.isArray(announcementsData) ? announcementsData : [];
   const hasAnnouncements =

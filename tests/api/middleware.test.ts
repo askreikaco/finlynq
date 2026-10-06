@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { middleware } from "@/middleware";
 import { NextRequest } from "next/server";
 
@@ -126,5 +126,51 @@ describe("Middleware — CSP nonce (B10)", () => {
     const res = middleware(makeRequest("/dashboard"));
     const csp = res.headers.get("Content-Security-Policy") ?? "";
     expect(csp).toContain("object-src 'none'");
+  });
+});
+
+describe("Middleware — Instance Admin kill switch (WP9a)", () => {
+  function makeRequest(path: string, method = "GET") {
+    return new NextRequest(new URL(path, "http://localhost:3000"), { method });
+  }
+
+  beforeEach(() => {
+    vi.resetModules();
+    vi.clearAllMocks();
+    // Clear the env var before each test
+    delete process.env.FINLYNQ_INSTANCE_ADMIN;
+  });
+
+  it("returns 404 for /admin/instance page when flag is unset", () => {
+    const res = middleware(makeRequest("/admin/instance"));
+    expect(res.status).toBe(404);
+  });
+
+  it("returns 404 for /api/admin/instance/config when flag is unset", () => {
+    const res = middleware(makeRequest("/api/admin/instance/config"));
+    expect(res.status).toBe(404);
+  });
+
+  it("allows /admin/instance when flag is set to '1'", () => {
+    process.env.FINLYNQ_INSTANCE_ADMIN = "1";
+    const res = middleware(makeRequest("/admin/instance"));
+    // NextResponse.next() returns status 200 (the normal flow continues)
+    expect(res.status).toBe(200);
+  });
+
+  it("allows /api/admin/instance/config when flag is set to 'true'", () => {
+    process.env.FINLYNQ_INSTANCE_ADMIN = "true";
+    const res = middleware(makeRequest("/api/admin/instance/config"));
+    expect(res.status).toBe(200);
+  });
+
+  it("does not affect other routes when flag is unset", () => {
+    const res = middleware(makeRequest("/dashboard"));
+    expect(res.status).toBe(200);
+  });
+
+  it("does not affect /family routes", () => {
+    const res = middleware(makeRequest("/family/overview"));
+    expect(res.status).toBe(200);
   });
 });

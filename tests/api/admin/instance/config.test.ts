@@ -31,64 +31,6 @@ vi.mock("@/lib/auth/require-admin", () => ({
   requireAdmin: vi.fn(async () => adminAuthState),
 }));
 
-// Mock getEffectiveConfig to test it's called and secrets are not leaked
-vi.mock("@/lib/admin/effective-config", () => ({
-  getEffectiveConfig: vi.fn((env: Record<string, string | undefined>) => ({
-    google: {
-      clientId: {
-        value: env.GOOGLE_CLIENT_ID || null,
-        masked: false,
-        source: "env",
-        displayValue: env.GOOGLE_CLIENT_ID ? env.GOOGLE_CLIENT_ID.slice(0, 10) + "..." : "(empty)",
-      },
-      clientSecret: {
-        value: null, // NEVER return actual secret value
-        masked: !!env.GOOGLE_CLIENT_SECRET,
-        source: "env",
-        displayValue: env.GOOGLE_CLIENT_SECRET ? "***" : "(empty)",
-      },
-      enabled: {
-        value: !!(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET),
-        masked: false,
-        source: "env",
-        displayValue: !!(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) ? "Yes" : "No",
-      },
-    },
-    passkey: {
-      enabled: {
-        value: true,
-        masked: false,
-        source: "default",
-        displayValue: "Yes",
-      },
-    },
-    registration: {
-      allowOpen: {
-        value: true,
-        masked: false,
-        source: "default",
-        displayValue: "Yes (default)",
-      },
-    },
-    email: {
-      enabled: {
-        value: !!env.SENDGRID_API_KEY,
-        masked: false,
-        source: "env",
-        displayValue: env.SENDGRID_API_KEY ? "Yes" : "No",
-      },
-    },
-    captcha: {
-      enabled: {
-        value: false,
-        masked: false,
-        source: "default",
-        displayValue: "No (not configured)",
-      },
-    },
-  })),
-}));
-
 describe("GET /api/admin/instance/config", () => {
   beforeEach(() => {
     vi.clearAllMocks();
