@@ -232,7 +232,7 @@ describe("More instance admin filter (WP9a)", () => {
   });
 
   it("hides Instance config by default (instanceAdminEnabled false)", () => {
-    const groups = buildMoreGroups({ isAdmin: true, devMode: false, familyEnabled: true, hasAnnouncements: true });
+    const groups = buildMoreGroups({ isAdmin: true, devMode: false, familyEnabled: true, hasAnnouncements: true, instanceAdminEnabled: false });
     const allHrefs = new Set(groups.flatMap((g) => g.rows.map((r) => r.href)));
     expect(allHrefs.has("/admin/instance")).toBe(false);
   });

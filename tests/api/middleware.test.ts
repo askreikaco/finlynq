@@ -194,7 +194,7 @@ describe("Middleware — Instance Admin kill switch (WP9a)", () => {
       new NextRequest(new URL("/api/admin/instance/config", "http://localhost:3000"), {
         method: "DELETE",
         headers: {
-          cookie: "session=abc123",
+          cookie: "pf_session=abc123",
           origin: "https://evil.com",
         },
       })
