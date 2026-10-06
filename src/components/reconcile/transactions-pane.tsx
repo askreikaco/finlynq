@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/table";
 import { Fragment } from "react";
 import { formatCurrency } from "@/lib/currency";
+import { useDisplayCurrency } from "@/components/currency-provider";
 import { MatchPill, type ReconcileBadgeVariant } from "./match-pill";
 import {
   SuggestionCard,
@@ -80,6 +81,7 @@ export function TransactionsPane({
   /** Toggle every visible row's checked state at once (header checkbox). */
   onToggleSelectAll?: (checked: boolean) => void;
 }) {
+  const { displayCurrency } = useDisplayCurrency();
   const selectionEnabled = !!onToggleSelect;
   const allChecked =
     selectionEnabled &&
@@ -188,7 +190,7 @@ export function TransactionsPane({
                       />
                     </TableCell>
                     <TableCell className="text-right font-mono text-xs">
-                      {formatCurrency(r.amount, r.currency || "CAD")}
+                      {formatCurrency(r.amount, r.currency || displayCurrency)}
                     </TableCell>
                   </TableRow>
                   {r.suggestion && (
