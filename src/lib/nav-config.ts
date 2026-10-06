@@ -52,12 +52,11 @@ import {
   Activity,
   Database,
   Plug,
-  Cloud,
   type LucideIcon,
 } from "lucide-react";
 
 export type Surface = "sidebar" | "mobileBar" | "more" | "settings" | "admin" | "account";
-export type Flag = "family" | "announcements" | "feedback" | "instance";
+export type Flag = "family" | "announcements" | "feedback";
 export type Mode = "prod" | "dev";
 
 export interface NavPageEntry {
@@ -204,7 +203,7 @@ export const NAV_REGISTRY: NavPageEntry[] = [
   {
     id: "categories",
     path: "/categories",
-    label: "Categories",
+    label: "Spending by category",
     icon: ChartPie,
     group: "Analysis",
     mode: "prod",
@@ -295,7 +294,7 @@ export const NAV_REGISTRY: NavPageEntry[] = [
   {
     id: "settings-categorization",
     path: "/settings/categorization",
-    label: "Category Settings",
+    label: "Categories",
     icon: Tag,
     group: "Settings",
     mode: "prod",
@@ -444,18 +443,6 @@ export const NAV_REGISTRY: NavPageEntry[] = [
     adminOnly: true,
     surfaces: ["sidebar", "more"],
   },
-  {
-    id: "admin-instance",
-    path: "/admin/instance",
-    label: "Instance config",
-    icon: Cloud,
-    group: "Admin",
-    mode: "prod",
-    adminOnly: true,
-    flag: "instance",
-    surfaces: ["sidebar", "more"],
-  },
-
   // Admin environment subsections (in (env) layout)
   {
     id: "admin-system",
@@ -541,7 +528,6 @@ export const ALIASES: AliasEntry[] = [
   { path: "/settings/import", kind: "render-parent", target: "/settings/reconciliation" },
   // /connect is the Integrations page with "Connect your AI" panel open
   { path: "/connect", kind: "render-parent", target: "/settings/integrations" },
-  { path: "/settings/categorization", kind: "render-parent", target: "/categories" },
 ];
 
 /**

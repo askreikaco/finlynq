@@ -51,9 +51,6 @@ beforeEach(() => {
       }
       return { ok: true, json: async () => CATEGORIES_DATA };
     }
-    if (url.includes("/api/flags/categories-merged")) {
-      return { ok: true, json: async () => ({ enabled: true }) };
-    }
     return { ok: false, json: async () => ({}) };
   });
   vi.stubGlobal("fetch", fetchMock);
@@ -64,130 +61,125 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-import Page from "@/app/(app)/categories/page";
+import CategoriesPageContent from "@/app/(app)/categories/_page-content";
 
-describe("merged categories hub (WP8)", () => {
-  it("renders tabs when merged flag is enabled", async () => {
-    render(<Page />);
-    await waitFor(() => {
-      expect(screen.getByRole("tab", { name: "Overview" })).toBeTruthy();
-      expect(screen.getByRole("tab", { name: "Manage" })).toBeTruthy();
+describe("merged categories (WP8)", () => {
+  describe("flag OFF (merged=false)", () => {
+    it("shows original title without tabs", async () => {
+      render(<CategoriesPageContent isMerged={false} />);
+      await waitFor(
+        () => {
+          expect(screen.getByText("Spending by category")).toBeTruthy();
+          expect(screen.queryByRole("tab", { name: "Overview" })).toBeFalsy();
+          expect(screen.queryByRole("tab", { name: "Manage" })).toBeFalsy();
+        },
+        { timeout: 5000 }
+      );
+    });
+
+    it("loads overview data immediately", async () => {
+      render(<CategoriesPageContent isMerged={false} />);
+      await waitFor(
+        () => {
+          expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("/api/reports/categories"));
+        },
+        { timeout: 5000 }
+      );
+    });
+
+    it("shows category list", async () => {
+      render(<CategoriesPageContent isMerged={false} />);
+      await waitFor(
+        () => {
+          expect(screen.getByText("Food")).toBeTruthy();
+          expect(screen.getByText("Transport")).toBeTruthy();
+        },
+        { timeout: 5000 }
+      );
     });
   });
 
-  it("shows overview tab content by default", async () => {
-    render(<Page />);
-    await waitFor(() => {
-      expect(screen.getByText(/Spending by category|Categories/)).toBeTruthy();
+  describe("flag ON (merged=true)", () => {
+    it("shows tabs", async () => {
+      render(<CategoriesPageContent isMerged={true} />);
+      await waitFor(() => {
+        expect(screen.getByRole("tab", { name: "Overview" })).toBeTruthy();
+        expect(screen.getByRole("tab", { name: "Manage" })).toBeTruthy();
+      });
     });
-  });
 
-  it("switches to manage tab when clicked", async () => {
-    render(<Page />);
-    await waitFor(() => {
-      const manageTab = screen.getByRole("tab", { name: "Manage" });
+    it("overview tab shows original content", async () => {
+      render(<CategoriesPageContent isMerged={true} />);
+      await waitFor(
+        () => {
+          expect(screen.getByText("Spending by category")).toBeTruthy();
+        },
+        { timeout: 5000 }
+      );
+    });
+
+    it("manage tab loads categories", async () => {
+      render(<CategoriesPageContent isMerged={true} />);
+      const manageTab = await screen.findByRole("tab", { name: "Manage" });
       fireEvent.click(manageTab);
-      expect(screen.getByText("Category Management")).toBeTruthy();
+      await waitFor(() => {
+        expect(fetchMock).toHaveBeenCalledWith("/api/categories");
+      });
+    });
+
+    it("manage tab has add button", async () => {
+      render(<CategoriesPageContent isMerged={true} />);
+      const manageTab = await screen.findByRole("tab", { name: "Manage" });
+      fireEvent.click(manageTab);
+      await waitFor(() => {
+        const addButton = screen.getByRole("button", { name: /Add$/i });
+        expect(addButton).toBeTruthy();
+      });
     });
   });
 
-  it("renders category list in overview", async () => {
-    render(<Page />);
-    await waitFor(
-      () => {
-        expect(screen.getByText("Food")).toBeTruthy();
-      },
-      { timeout: 5000 }
-    );
-  });
+  describe("category management", () => {
+    it("groups categories by type", async () => {
+      render(<CategoriesPageContent isMerged={true} />);
+      const manageTab = await screen.findByRole("tab", { name: "Manage" });
+      fireEvent.click(manageTab);
+      await waitFor(() => {
+        expect(screen.getByTestId("type-section-E")).toBeTruthy();
+        expect(screen.getByTestId("type-section-I")).toBeTruthy();
+        expect(screen.getByTestId("type-section-R")).toBeTruthy();
+      });
+    });
 
-  it("shows spending/income type toggle", async () => {
-    render(<Page />);
-    await waitFor(
-      () => {
-        expect(screen.getByRole("tab", { name: "Spending" })).toBeTruthy();
-        expect(screen.getByRole("tab", { name: "Income" })).toBeTruthy();
-      },
-      { timeout: 5000 }
-    );
-  });
+    it("type R category appears in reconciliation section", async () => {
+      render(<CategoriesPageContent isMerged={true} />);
+      const manageTab = await screen.findByRole("tab", { name: "Manage" });
+      fireEvent.click(manageTab);
+      await waitFor(() => {
+        expect(screen.getByText("Balance Adjustment")).toBeTruthy();
+      });
+    });
 
-  it("shows month navigation controls", async () => {
-    render(<Page />);
-    await waitFor(
-      () => {
-        const buttons = screen.queryAllByRole("button");
-        expect(buttons.length).toBeGreaterThan(0);
-      },
-      { timeout: 5000 }
-    );
-  });
-
-  it("management tab loads categories", async () => {
-    render(<Page />);
-    const manageTab = await screen.findByRole("tab", { name: "Manage" });
-    fireEvent.click(manageTab);
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith("/api/categories");
+    it("shows link to rules", async () => {
+      render(<CategoriesPageContent isMerged={true} />);
+      const manageTab = await screen.findByRole("tab", { name: "Manage" });
+      fireEvent.click(manageTab);
+      await waitFor(() => {
+        const rulesLink = screen.getByRole("link", { name: /Rules/i }) as HTMLAnchorElement;
+        expect(rulesLink.href).toContain("/settings/rules");
+      });
     });
   });
 
-  it("management tab has add category button", async () => {
-    render(<Page />);
-    const manageTab = await screen.findByRole("tab", { name: "Manage" });
-    fireEvent.click(manageTab);
-    await waitFor(() => {
-      const addButton = screen.getByRole("button", { name: /Add$/i });
-      expect(addButton).toBeTruthy();
-    });
-  });
-
-  it("type R category is not shown in expense categories", async () => {
-    render(<Page />);
-    const manageTab = await screen.findByRole("tab", { name: "Manage" });
-    fireEvent.click(manageTab);
-    await waitFor(() => {
-      // Type R (Balance Adjustment) should not appear in expense section
-      const expenseSection = screen.queryByTestId("type-section-E");
-      if (expenseSection) {
-        expect(expenseSection.textContent).not.toContain("Balance Adjustment");
-      }
-    });
-  });
-
-  it("management tab has link to rules page", async () => {
-    render(<Page />);
-    const manageTab = await screen.findByRole("tab", { name: "Manage" });
-    fireEvent.click(manageTab);
-    await waitFor(() => {
-      const rulesLink = screen.queryByRole("link", { name: /Rules/i });
-      if (rulesLink) {
-        expect((rulesLink as HTMLAnchorElement).href).toContain("/settings/rules");
-      }
-    });
-  });
-
-  it("shows reconciliation type categories in manage tab", async () => {
-    render(<Page />);
-    const manageTab = await screen.findByRole("tab", { name: "Manage" });
-    fireEvent.click(manageTab);
-    await waitFor(() => {
-      expect(screen.queryByText("Balance Adjustment")).toBeTruthy();
-    });
-  });
-
-  it("call fetch for merged flag on mount", async () => {
-    render(<Page />);
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith("/api/flags/categories-merged");
-    });
-  });
-
-  it("shows both tabs after flag check completes", async () => {
-    render(<Page />);
-    await waitFor(() => {
-      expect(screen.getByRole("tab", { name: "Overview" })).toBeTruthy();
-      expect(screen.getByRole("tab", { name: "Manage" })).toBeTruthy();
+  describe("income/expense toggle", () => {
+    it("shows spending and income tabs in overview", async () => {
+      render(<CategoriesPageContent isMerged={false} />);
+      await waitFor(
+        () => {
+          expect(screen.getByRole("tab", { name: "Spending" })).toBeTruthy();
+          expect(screen.getByRole("tab", { name: "Income" })).toBeTruthy();
+        },
+        { timeout: 5000 }
+      );
     });
   });
 });
