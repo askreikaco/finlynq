@@ -102,8 +102,8 @@ describe("Admin Links (Collapsible)", () => {
     expect(item?.mode).toBe("prod");
   });
 
-  it("Feedback item exists and has prod mode", () => {
-    const item = adminLinks.find((i) => i.label === "Feedback");
+  it("User feedback item exists and has prod mode", () => {
+    const item = adminLinks.find((i) => i.label === "User feedback");
     expect(item).toBeTruthy();
     expect(item?.href).toBe("/admin/feedback");
     expect(item?.mode).toBe("prod");
@@ -120,21 +120,69 @@ describe("Admin Links (Collapsible)", () => {
       expect(item.href.startsWith("/feedback")).toBe(false);
     });
   });
+
+  it("adminLinks are in correct order", () => {
+    const expectedHrefs = [
+      "/admin",
+      "/admin/inbox",
+      "/admin/email-inbox",
+      "/admin/env",
+      "/admin/announcements",
+      "/admin/feedback",
+    ];
+    const actualHrefs = adminLinks.map((i) => i.href);
+    expect(actualHrefs).toEqual(expectedHrefs);
+  });
 });
 
 describe("What's New Visibility", () => {
-  it("What's New item exists in navGroups", () => {
+  it("What's new item exists in navGroups", () => {
     const firstGroup = navGroups[0];
-    const whatsNewItem = firstGroup?.items.find((i) => i.label === "What's New");
+    const whatsNewItem = firstGroup?.items.find((i) => i.label === "What's new");
     expect(whatsNewItem).toBeTruthy();
     expect(whatsNewItem?.href).toBe("/whats-new");
     expect(whatsNewItem?.mode).toBe("prod");
   });
 
-  it("What's New item is in the first (top) nav group", () => {
+  it("What's new item is in the first (top) nav group", () => {
     const firstGroup = navGroups[0];
     expect(firstGroup?.label).toBe(""); // empty label for top group
-    const whatsNewItem = firstGroup?.items.find((i) => i.label === "What's New");
+    const whatsNewItem = firstGroup?.items.find((i) => i.label === "What's new");
     expect(whatsNewItem).toBeTruthy();
+  });
+
+  it("should have correct nav groups in expected order", () => {
+    const groupLabels = navGroups.map((g) => g.label);
+    expect(groupLabels).toEqual(["", "Tracking", "Wealth", "Analysis", "Planning"]);
+  });
+
+  it("should have correct items in Top group with correct hrefs in order", () => {
+    const topGroup = navGroups.find((g) => g.label === "");
+    const hrefs = topGroup?.items.map((i) => i.href) ?? [];
+    expect(hrefs).toEqual(["/dashboard", "/whats-new", "/chat"]);
+  });
+
+  it("should have correct items in Tracking group with correct hrefs in order", () => {
+    const trackingGroup = navGroups.find((g) => g.label === "Tracking");
+    const hrefs = trackingGroup?.items.map((i) => i.href) ?? [];
+    expect(hrefs).toEqual(["/transactions", "/budgets", "/goals", "/subscriptions"]);
+  });
+
+  it("should have correct items in Wealth group with correct hrefs in order", () => {
+    const wealthGroup = navGroups.find((g) => g.label === "Wealth");
+    const hrefs = wealthGroup?.items.map((i) => i.href) ?? [];
+    expect(hrefs).toEqual(["/accounts", "/portfolio", "/loans", "/family"]);
+  });
+
+  it("should have correct items in Analysis group with correct hrefs in order", () => {
+    const analysisGroup = navGroups.find((g) => g.label === "Analysis");
+    const hrefs = analysisGroup?.items.map((i) => i.href) ?? [];
+    expect(hrefs).toEqual(["/reports", "/categories", "/tax"]);
+  });
+
+  it("should have correct items in Planning group with correct hrefs in order", () => {
+    const planningGroup = navGroups.find((g) => g.label === "Planning");
+    const hrefs = planningGroup?.items.map((i) => i.href) ?? [];
+    expect(hrefs).toEqual(["/scenarios", "/fire"]);
   });
 });

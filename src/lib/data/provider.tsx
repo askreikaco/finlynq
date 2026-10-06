@@ -5,8 +5,9 @@ import { SWRConfig, type Cache } from "swr";
 import { dataDefaults } from "./config";
 import { installWriteRevalidation } from "./write-revalidation";
 import { getSessionInfo, onSessionInfo } from "./session-info";
-import { loadPersisted, persistSupported, wipeUser } from "./persist";
+import { loadPersisted, persistSupported, purgeDisallowed, wipeUser } from "./persist";
 import { createPersistentCache } from "./persistent-cache";
+import { isSafeToPersist } from "./persist-policy";
 
 const BUILD = process.env.NEXT_PUBLIC_APP_BUILD ?? "dev";
 /** Never hold the first paint longer than this waiting for the on-device copy. */
@@ -43,9 +44,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setCache(make(new Map()));
     } else {
       const budget = new Promise<Map<string, unknown>>((r) => setTimeout(() => r(new Map()), HYDRATE_BUDGET_MS));
-      void Promise.race([loadPersisted(userId, BUILD).catch(() => new Map<string, unknown>()), budget]).then((initial) => {
-        if (!cancelled) setCache(make(initial));
-      });
+      void Promise.race([loadPersisted(userId, BUILD, isSafeToPersist).catch(() => new Map<string, unknown>()), budget])
+        .then((initial) => {
+          if (!cancelled) setCache(make(initial));
+          // Purge disallowed keys from IndexedDB in parallel (fire-and-forget).
+          // Runs regardless of trusted state, cleaning only this user's database.
+          void purgeDisallowed(userId, BUILD).catch(() => undefined);
+        });
     }
 
     // Only a device the user marked as trusted keeps data at rest.

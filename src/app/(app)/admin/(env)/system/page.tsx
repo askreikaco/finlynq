@@ -412,7 +412,7 @@ export default function AdminSystemPage() {
         <div>
           <div className="flex items-center gap-2">
             <Server className="h-5 w-5 text-primary" />
-            <PageHeader title="Server Health" titleClassName="text-2xl font-bold tracking-tight" />
+            <PageHeader title="System" titleClassName="text-2xl font-bold tracking-tight" />
             {data?.env && (
               <Badge variant="outline" className="ml-1 uppercase">
                 {data.env}

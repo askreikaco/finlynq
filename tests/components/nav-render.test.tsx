@@ -20,12 +20,13 @@ vi.mock("framer-motion", () => ({
 
 import { Nav } from "@/components/nav";
 
-type Opts = { admin?: boolean; announcements?: unknown; announcementsOk?: boolean };
-function mockFetch({ admin = false, announcements = [], announcementsOk = true }: Opts = {}) {
+type Opts = { admin?: boolean; announcements?: unknown; announcementsOk?: boolean; feedback?: unknown; feedbackOk?: boolean };
+function mockFetch({ admin = false, announcements = [], announcementsOk = true, feedback = [], feedbackOk = true }: Opts = {}) {
   const fn = vi.fn(async (url: string) => {
     const json = (body: unknown, ok = true) => ({ ok, json: async () => body }) as Response;
     if (url.startsWith("/api/auth/session")) return json({ isAdmin: admin });
     if (url.startsWith("/api/announcements")) return json(announcements, announcementsOk);
+    if (url.startsWith("/api/feedback")) return json(feedback, feedbackOk);
     if (url.startsWith("/api/settings/dev-mode")) return json({ devMode: false });
     return json([]);
   });
@@ -143,7 +144,7 @@ describe("Nav What's New", () => {
   it("hidden when there are no announcements", async () => {
     const f = mockFetch({ announcements: [] });
     render(<Nav />);
-    await waitFor(() => expect(screen.queryByText("What's New")).toBeNull());
+    await waitFor(() => expect(screen.queryByText("What's new")).toBeNull());
     expect(f).toHaveBeenCalledWith("/api/announcements");
   });
 
@@ -151,13 +152,114 @@ describe("Nav What's New", () => {
     mockFetch({ announcements: [{ id: 1, read: true }] });
     render(<Nav />);
     await new Promise((r) => setTimeout(r, 10));
-    expect(screen.getByText("What's New")).toBeTruthy();
+    expect(screen.getByText("What's new")).toBeTruthy();
   });
 
   it("shown when the announcements request fails (non-OK)", async () => {
     mockFetch({ announcements: [], announcementsOk: false });
     render(<Nav />);
     await new Promise((r) => setTimeout(r, 10));
-    expect(screen.getByText("What's New")).toBeTruthy();
+    expect(screen.getByText("What's new")).toBeTruthy();
+  });
+
+  it("shows unread badge on whats-new row in expanded sidebar", async () => {
+    mockFetch({ announcements: [{ id: 1, read: false }, { id: 2, read: false }] });
+    render(<Nav />);
+    await waitFor(() => {
+      const whatsnewLink = screen.getByRole("link", { name: /What's new/ });
+      expect(whatsnewLink.textContent).toContain("2");
+    });
+  });
+
+  it("shows unread badge on whats-new row in collapsed sidebar", async () => {
+    mockFetch({ announcements: [{ id: 1, read: false }] });
+    render(<Nav />);
+
+    // Collapse the sidebar
+    const collapseBtn = await waitFor(() =>
+      screen.getByRole("button", { name: /collapse sidebar|expand sidebar/i })
+    );
+    fireEvent.click(collapseBtn);
+
+    // Check for the dot badge on the collapsed What's new link
+    await waitFor(() => {
+      const whatsnewLink = screen.getByRole("link", { name: /What's new/ });
+      const badge = whatsnewLink.querySelector("span[class*='h-2'][class*='w-2'][class*='rounded-full'][class*='bg-primary']");
+      expect(badge).not.toBeNull();
+    });
+  });
+
+  it("shows unread badge on feedback row in expanded sidebar", async () => {
+    mockFetch({ feedback: [{ unread: true }, { unread: true }] });
+    render(<Nav />);
+    await waitFor(() => {
+      const feedbackLink = screen.getByRole("link", { name: /^Feedback/ });
+      expect(feedbackLink.textContent).toContain("2");
+    });
+  });
+
+  it("shows unread badge on feedback row in collapsed sidebar", async () => {
+    mockFetch({ feedback: [{ unread: true }] });
+    render(<Nav />);
+
+    // Collapse the sidebar
+    const collapseBtn = await waitFor(() =>
+      screen.getByRole("button", { name: /collapse sidebar|expand sidebar/i })
+    );
+    fireEvent.click(collapseBtn);
+
+    // Check for the dot badge on the collapsed feedback link
+    const feedbackLink = await screen.findByRole("link", { name: /^Feedback/ });
+    const badge = feedbackLink.querySelector("span[class*='h-2'][class*='w-2'][class*='rounded-full'][class*='bg-primary']");
+    expect(badge).not.toBeNull();
+  });
+});
+
+describe("Nav icon rendering", () => {
+  beforeEach(() => {
+    mockPath = "/dashboard";
+    localStorage.clear();
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  it("sidebar entries render with icons", async () => {
+    mockFetch({ announcements: [{ id: 1, read: false }], admin: true });
+    render(<Nav />);
+
+    // Wait for nav to load
+    await waitFor(() => expect(screen.queryByText("What's new")).not.toBeNull());
+
+    // Check that What's new link has an icon (SVG)
+    const whatsnewLink = screen.getByRole("link", { name: /What's new/ });
+    const iconSvg = whatsnewLink.querySelector("svg");
+    expect(iconSvg).not.toBeNull();
+  });
+
+  it("feedback entry in sidebar renders with icon", async () => {
+    mockFetch({ feedback: [{ unread: true }] });
+    render(<Nav />);
+
+    await waitFor(() => expect(screen.queryByText("Feedback")).not.toBeNull());
+
+    const feedbackLink = screen.getByRole("link", { name: /^Feedback/ });
+    const iconSvg = feedbackLink.querySelector("svg");
+    expect(iconSvg).not.toBeNull();
+  });
+
+  it("more menu entry (What's new) renders with icon", async () => {
+    mockFetch({ announcements: [{ id: 1, read: false }] });
+    render(<Nav />);
+
+    await waitFor(() => expect(screen.queryByText("What's new")).not.toBeNull());
+
+    // Verify icon is rendered for the more menu entry
+    const whatsnewLink = screen.getByRole("link", { name: /What's new/ });
+    const iconSvg = whatsnewLink.querySelector("svg");
+    // Icon should exist since What's new is in both sidebar and more surfaces
+    expect(iconSvg).not.toBeNull();
   });
 });

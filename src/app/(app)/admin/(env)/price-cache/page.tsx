@@ -290,7 +290,7 @@ export default function AdminPriceCachePage() {
         <div>
           <div className="flex items-center gap-2">
             <Database className="h-5 w-5 text-primary" />
-            <PageHeader title="Market-data cache" titleClassName="text-2xl font-bold tracking-tight" />
+            <PageHeader title="Rate Cache" titleClassName="text-2xl font-bold tracking-tight" />
           </div>
           <p className="text-sm text-muted-foreground mt-0.5">
             Read-only view of the server-side <code className="text-xs">price_cache</code> and{" "}
