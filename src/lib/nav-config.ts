@@ -448,7 +448,6 @@ export const NAV_REGISTRY: NavPageEntry[] = [
     adminOnly: true,
     surfaces: ["sidebar", "more"],
   },
-
   // Admin environment subsections (in (env) layout)
   {
     id: "admin-system",
