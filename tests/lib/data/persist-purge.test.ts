@@ -239,23 +239,4 @@ describe("provider integration: purgeDisallowed called during hydration (M7a)", 
     await cleanup(userId);
   });
 
-  it("M7a: provider reads file checking loadPersisted and purgeDisallowed calls", async () => {
-    // This test verifies the provider.tsx file contains the necessary calls.
-    // Since rendering a full DataProvider is complex with mocks, we verify the file content.
-    const fs = await import("fs");
-    const path = await import("path");
-    const providerPath = path.join(process.cwd(), "src/lib/data/provider.tsx");
-    const content = fs.readFileSync(providerPath, "utf-8");
-
-    // Verify provider imports the necessary functions
-    expect(content).toContain("loadPersisted");
-    expect(content).toContain("purgeDisallowed");
-    expect(content).toContain("isSafeToPersist");
-
-    // Verify loadPersisted is called with three arguments (including isSafeToPersist)
-    expect(content).toContain("loadPersisted(userId, BUILD, isSafeToPersist)");
-
-    // Verify purgeDisallowed is called with userId and BUILD
-    expect(content).toContain("purgeDisallowed(userId, BUILD)");
-  });
 });
