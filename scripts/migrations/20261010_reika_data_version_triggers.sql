@@ -735,3 +735,63 @@ DO $$ BEGIN
       EXECUTE FUNCTION reika_bump_data_version();
   END IF;
 END $$;
+
+-- email_inbox (user's incoming emails from bank/email integrations)
+DO $$ BEGIN
+  IF to_regclass('email_inbox') IS NOT NULL THEN
+    DROP TRIGGER IF EXISTS reika_email_inbox_data_version_ins ON email_inbox;
+    CREATE TRIGGER reika_email_inbox_data_version_ins AFTER INSERT ON email_inbox
+      REFERENCING NEW TABLE AS new_rows FOR EACH STATEMENT
+      EXECUTE FUNCTION reika_bump_data_version();
+
+    DROP TRIGGER IF EXISTS reika_email_inbox_data_version_upd ON email_inbox;
+    CREATE TRIGGER reika_email_inbox_data_version_upd AFTER UPDATE ON email_inbox
+      REFERENCING NEW TABLE AS new_rows FOR EACH STATEMENT
+      EXECUTE FUNCTION reika_bump_data_version();
+
+    DROP TRIGGER IF EXISTS reika_email_inbox_data_version_del ON email_inbox;
+    CREATE TRIGGER reika_email_inbox_data_version_del AFTER DELETE ON email_inbox
+      REFERENCING OLD TABLE AS old_rows FOR EACH STATEMENT
+      EXECUTE FUNCTION reika_bump_data_version();
+  END IF;
+END $$;
+
+-- user_prompt_acks (user acknowledgments of platform prompts)
+DO $$ BEGIN
+  IF to_regclass('user_prompt_acks') IS NOT NULL THEN
+    DROP TRIGGER IF EXISTS reika_user_prompt_acks_data_version_ins ON user_prompt_acks;
+    CREATE TRIGGER reika_user_prompt_acks_data_version_ins AFTER INSERT ON user_prompt_acks
+      REFERENCING NEW TABLE AS new_rows FOR EACH STATEMENT
+      EXECUTE FUNCTION reika_bump_data_version();
+
+    DROP TRIGGER IF EXISTS reika_user_prompt_acks_data_version_upd ON user_prompt_acks;
+    CREATE TRIGGER reika_user_prompt_acks_data_version_upd AFTER UPDATE ON user_prompt_acks
+      REFERENCING NEW TABLE AS new_rows FOR EACH STATEMENT
+      EXECUTE FUNCTION reika_bump_data_version();
+
+    DROP TRIGGER IF EXISTS reika_user_prompt_acks_data_version_del ON user_prompt_acks;
+    CREATE TRIGGER reika_user_prompt_acks_data_version_del AFTER DELETE ON user_prompt_acks
+      REFERENCING OLD TABLE AS old_rows FOR EACH STATEMENT
+      EXECUTE FUNCTION reika_bump_data_version();
+  END IF;
+END $$;
+
+-- webhooks (user webhook subscriptions for integrations)
+DO $$ BEGIN
+  IF to_regclass('webhooks') IS NOT NULL THEN
+    DROP TRIGGER IF EXISTS reika_webhooks_data_version_ins ON webhooks;
+    CREATE TRIGGER reika_webhooks_data_version_ins AFTER INSERT ON webhooks
+      REFERENCING NEW TABLE AS new_rows FOR EACH STATEMENT
+      EXECUTE FUNCTION reika_bump_data_version();
+
+    DROP TRIGGER IF EXISTS reika_webhooks_data_version_upd ON webhooks;
+    CREATE TRIGGER reika_webhooks_data_version_upd AFTER UPDATE ON webhooks
+      REFERENCING NEW TABLE AS new_rows FOR EACH STATEMENT
+      EXECUTE FUNCTION reika_bump_data_version();
+
+    DROP TRIGGER IF EXISTS reika_webhooks_data_version_del ON webhooks;
+    CREATE TRIGGER reika_webhooks_data_version_del AFTER DELETE ON webhooks
+      REFERENCING OLD TABLE AS old_rows FOR EACH STATEMENT
+      EXECUTE FUNCTION reika_bump_data_version();
+  END IF;
+END $$;

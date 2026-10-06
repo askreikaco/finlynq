@@ -143,5 +143,17 @@ DROP TRIGGER IF EXISTS reika_transactions_data_version_ins ON transactions;
 DROP TRIGGER IF EXISTS reika_transactions_data_version_upd ON transactions;
 DROP TRIGGER IF EXISTS reika_transactions_data_version_del ON transactions;
 
+DROP TRIGGER IF EXISTS reika_email_inbox_data_version_ins ON email_inbox;
+DROP TRIGGER IF EXISTS reika_email_inbox_data_version_upd ON email_inbox;
+DROP TRIGGER IF EXISTS reika_email_inbox_data_version_del ON email_inbox;
+
+DROP TRIGGER IF EXISTS reika_user_prompt_acks_data_version_ins ON user_prompt_acks;
+DROP TRIGGER IF EXISTS reika_user_prompt_acks_data_version_upd ON user_prompt_acks;
+DROP TRIGGER IF EXISTS reika_user_prompt_acks_data_version_del ON user_prompt_acks;
+
+DROP TRIGGER IF EXISTS reika_webhooks_data_version_ins ON webhooks;
+DROP TRIGGER IF EXISTS reika_webhooks_data_version_upd ON webhooks;
+DROP TRIGGER IF EXISTS reika_webhooks_data_version_del ON webhooks;
+
 -- Drop the trigger function (only if no other triggers use it)
 DROP FUNCTION IF EXISTS reika_bump_data_version() CASCADE;
