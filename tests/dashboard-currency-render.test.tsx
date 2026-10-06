@@ -133,6 +133,7 @@ import { SpendingCategoryChart } from "@/app/(app)/dashboard/_components/spendin
 import { InsightsSection } from "@/app/(app)/dashboard/_components/insights-section";
 import { Sparkline } from "@/components/sparkline";
 import { IncomeExpenseChart } from "@/app/(app)/dashboard/_components/income-expense-chart";
+import { ConfirmDeleteBankRow } from "@/components/reconcile/confirm-delete-bank-row";
 import { CurrencyProvider } from "@/components/currency-provider";
 
 function TestWrapper({ children }: { children: ReactNode }) {
@@ -307,6 +308,80 @@ describe("Dashboard Currency Render Tests", () => {
     await waitFor(() => {
       // Component should render without errors
       expect(container).toBeTruthy();
+    });
+  });
+
+  it("ConfirmDeleteBankRow with empty string bankCurrency displays VND (not hardcoded fallback)", async () => {
+    const { container } = render(
+      <TestWrapper>
+        <ConfirmDeleteBankRow
+          open={true}
+          linkedTransactionCount={1}
+          bankDate="2024-01-15"
+          bankAmount={1000000}
+          bankCurrency=""
+          bankPayee="Test Payee"
+          busy={false}
+          onConfirm={() => {}}
+          onCancel={() => {}}
+        />
+      </TestWrapper>
+    );
+
+    await waitFor(() => {
+      const text = container.textContent || "";
+      // Empty string currency should fallback to displayCurrency (VND), not hardcoded USD
+      expect(text).toMatch(/₫/);
+      expect(text).not.toMatch(/\$|US\$|USD/);
+    });
+  });
+
+  it("ConfirmDeleteBankRow with real currency code (EUR) displays correct currency", async () => {
+    const { container } = render(
+      <TestWrapper>
+        <ConfirmDeleteBankRow
+          open={true}
+          linkedTransactionCount={1}
+          bankDate="2024-01-15"
+          bankAmount={1000}
+          bankCurrency="EUR"
+          bankPayee="Test Payee"
+          busy={false}
+          onConfirm={() => {}}
+          onCancel={() => {}}
+        />
+      </TestWrapper>
+    );
+
+    await waitFor(() => {
+      const text = container.textContent || "";
+      // EUR currency should display EUR symbol, not fallback to provider or hardcoded default
+      expect(text).toMatch(/€/);
+      expect(text).not.toMatch(/₫/);
+    });
+  });
+
+  it("ConfirmDeleteBankRow with null bankCurrency displays VND", async () => {
+    const { container } = render(
+      <TestWrapper>
+        <ConfirmDeleteBankRow
+          open={true}
+          linkedTransactionCount={1}
+          bankDate="2024-01-15"
+          bankAmount={1000000}
+          bankCurrency={"" as any}
+          bankPayee="Test Payee"
+          busy={false}
+          onConfirm={() => {}}
+          onCancel={() => {}}
+        />
+      </TestWrapper>
+    );
+
+    await waitFor(() => {
+      const text = container.textContent || "";
+      // Null/empty should fallback to displayCurrency (VND)
+      expect(text).toMatch(/₫/);
     });
   });
 });
