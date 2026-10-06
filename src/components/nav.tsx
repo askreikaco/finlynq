@@ -15,7 +15,7 @@ import type { LucideIcon } from "lucide-react";
 import { AccountSwitcher } from "@/components/account-switcher";
 import { NAV_REGISTRY, getEntriesBySurface, getEntriesByGroup } from "@/lib/nav-config";
 
-type NavItem = { href: string; label: string; icon: LucideIcon; color: string; mode?: "prod" | "dev"; activePrefixes?: string[] };
+type NavItem = { href: string; label: string; icon: LucideIcon; color: string; mode?: "prod" | "dev"; activePrefixes?: string[]; flag?: "family" | "announcements" };
 
 // Single-accent system: active items glow amber (`text-primary`) to match the
 // landing's restraint. Inactive icons use the sidebar-foreground muted tones.
@@ -42,6 +42,7 @@ function generateNavGroups(): { label: string; items: NavItem[] }[] {
       color: ACTIVE_ACCENT,
       mode: entry.mode === "dev" ? "dev" : "prod",
       activePrefixes: entry.activePrefixes,
+      flag: entry.flag,
     };
     groups.get(entry.group)!.push(item);
   }
@@ -68,6 +69,7 @@ function generateAdminLinks(): NavItem[] {
       color: ACTIVE_ACCENT,
       mode: entry.mode === "dev" ? "dev" : "prod",
       activePrefixes: entry.activePrefixes,
+      flag: entry.flag,
     }));
 }
 
@@ -83,6 +85,7 @@ function generateToolLinks(): NavItem[] {
       icon: entry.icon,
       color: ACTIVE_ACCENT,
       mode: entry.mode === "dev" ? "dev" : "prod",
+      flag: entry.flag,
     }));
 }
 
@@ -198,8 +201,8 @@ export const Nav = memo(function Nav() {
   }, [pathname]);
 
   // Unread count to badge a given nav link (0 = no badge).
-  const unreadFor = (href: string) =>
-    href === "/whats-new" ? unread : href === "/feedback" ? feedbackUnread : 0;
+  const unreadFor = (item: NavItem) =>
+    item.flag === "announcements" ? unread : item.href === "/feedback" ? feedbackUnread : 0;
 
   const toggleCollapsed = () => {
     const next = !collapsed;
@@ -231,7 +234,7 @@ export const Nav = memo(function Nav() {
     } else {
       isActive = pathname === item.href || pathname.startsWith(item.href + "/");
     }
-    const badge = unreadFor(item.href);
+    const badge = unreadFor(item);
     return (
       <Link
         key={item.href}
@@ -281,9 +284,9 @@ export const Nav = memo(function Nav() {
       <div className="flex-1 px-2 pt-3 space-y-1 overflow-y-auto">
         {navGroups.map((group) => {
           const visibleItems = group.items.filter((item) => {
-            // Hide What's new when there are no announcements
-            if (item.label === "What's new" && !hasAnnouncements) return false;
-            if (item.href === "/family" && !familyEnabled) return false;
+            // Filter by feature flags
+            if (item.flag === "announcements" && !hasAnnouncements) return false;
+            if (item.flag === "family" && !familyEnabled) return false;
             return devMode || item.mode !== "dev";
           });
           if (visibleItems.length === 0) return null;

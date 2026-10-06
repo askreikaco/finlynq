@@ -297,20 +297,23 @@ export const MoreMenu = memo(function MoreMenu() {
             </h2>
           )}
           <Card>
-            {g.rows.map((r) => (
-              <Link key={r.id} href={r.href} className={rowCls} data-testid="more-row">
-                <span className={tile}>
-                  <r.icon className="h-[18px] w-[18px]" aria-hidden="true" />
-                </span>
-                <span className="flex-1 truncate">{r.label}</span>
-                {r.href === "/whats-new" && unread > 0 && (
-                  <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold leading-none text-primary-foreground">
-                    {unread}
+            {g.rows.map((r) => {
+              const showUnreadBadge = r.id === "whats-new" && unread > 0;
+              return (
+                <Link key={r.id} href={r.href} className={rowCls} data-testid="more-row">
+                  <span className={tile}>
+                    <r.icon className="h-[18px] w-[18px]" aria-hidden="true" />
                   </span>
-                )}
-                <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-              </Link>
-            ))}
+                  <span className="flex-1 truncate">{r.label}</span>
+                  {showUnreadBadge && (
+                    <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold leading-none text-primary-foreground">
+                      {unread}
+                    </span>
+                  )}
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                </Link>
+              );
+            })}
             {g.id === "tools" && <AppearanceRow />}
             {g.id === "tools" && (
               <button type="button" onClick={signOut} className={cn(rowCls, "text-destructive")} data-testid="more-signout">
