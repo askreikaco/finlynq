@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import withSerwistInit from "@serwist/next";
+import { REDIRECTS } from "./src/lib/nav-config";
 
 // Security headers applied to every route. CSP was shipped as Report-Only in
 // `50a1742` (2026-04-22) for a watch window; flipped to enforced on
@@ -73,27 +74,7 @@ const nextConfig: NextConfig = {
   // so Claude's connector flow (MCP Streamable HTTP + OAuth .well-known discovery)
   // follows the redirect cleanly.
   async redirects() {
-    return [
-      { source: "/mcp", destination: "/api/mcp", permanent: true },
-      { source: "/mcp/:path*", destination: "/api/mcp/:path*", permanent: true },
-      // Money-in consolidation (2026-06-04): /import is the single
-      // account-anchored surface. The legacy standalone routes fold into it
-      // and their page files are deleted (Phase 6), so these redirects are now
-      // the only thing serving those paths. Query strings (?account=, ?id=)
-      // are preserved automatically. Not permanent yet — still soaking on dev;
-      // flip to permanent at prod promotion. /import/pending is NOT matched
-      // (it's a live route — the standalone staged-review surface).
-      // /reconcile and /import/reconcile now preserve ?tab=reconcile for the More menu.
-      { source: "/inbox", destination: "/import", permanent: false },
-      { source: "/reconcile", destination: "/import?tab=reconcile", permanent: false },
-      { source: "/import/reconcile", destination: "/import?tab=reconcile", permanent: false },
-      // /import/classic was the temporary legacy-hub backup (Phase 3b → 6);
-      // deleted after validation. Redirect so old bookmarks don't 404.
-      { source: "/import/classic", destination: "/import", permanent: false },
-      // Subscriptions + Bill Calendar merged into one page (2026-10); the
-      // calendar is now a view of /subscriptions.
-      { source: "/calendar", destination: "/subscriptions?view=calendar", permanent: false },
-    ];
+    return REDIRECTS;
   },
   async rewrites() {
     return [

@@ -27,12 +27,6 @@ const SCAN_ROOTS = [
 const ALLOW_LIST = [
   // OUT OF SCOPE: Mobile, portfolio, chat, and other advanced features
   {
-    file: "src/components/mobile/amount.tsx",
-    line: `currency = "USD",`,
-    count: 2,
-    reason: "KNOWN GAP (see docs/currency-known-gaps.md): display component still falls back to hardcoded USD when no currency prop",
-  },
-  {
     file: "src/app/(app)/chat/page.tsx",
     line: `function InlineBarChart({ data, currency = "CAD" }: { data: Record<string, unknown>[]; currency?: string }) {`,
     count: 2,
@@ -120,13 +114,6 @@ const ALLOW_LIST = [
     count: 2, // matches logical-or and format-call patterns
     reason: "KNOWN GAP (follow-up, see docs/currency-known-gaps.md): display path still falls back to hardcoded CAD when the preview currency is missing",
   },
-  {
-    file: "src/components/reconcile/transactions-pane.tsx",
-    line: `{formatCurrency(r.amount, r.currency || "CAD")}`,
-    count: 2, // matches logical-or and format-call patterns
-    reason: "KNOWN GAP (follow-up, see docs/currency-known-gaps.md): display path still falls back to hardcoded CAD when the row currency is missing",
-  },
-
   // Staging/import surfaces - display path falls back to CAD when row/bank currency is missing
   {
     file: "src/components/import/staged-review-surface.tsx",

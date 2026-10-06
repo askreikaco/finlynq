@@ -77,7 +77,7 @@ export function buildMoreGroups(f: MoreFlags): MoreGroup[] {
     "/subscriptions",
     "/loans",
     ...(f.devMode
-      ? ["/chat", "/tax", "/scenarios", "/fire", "/api-docs"]
+      ? ["/chat", "/tax", "/scenarios", "/fire", "/api-docs", "/dev/gallery"]
       : []),
   ];
 

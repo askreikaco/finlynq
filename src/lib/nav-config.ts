@@ -71,6 +71,7 @@ export interface NavPageEntry {
   flag?: Flag; // requires feature flag to be true
   surfaces: Surface[];
   activePrefixes?: string[]; // for parent routes that should highlight child paths
+  tab?: { order: number }; // mobileBar tab ordering
 }
 
 export interface AliasEntry {
@@ -90,6 +91,7 @@ export const NAV_REGISTRY: NavPageEntry[] = [
     group: "Top",
     mode: "prod",
     surfaces: ["sidebar", "mobileBar", "more"],
+    tab: { order: 1 },
   },
   {
     id: "whats-new",
@@ -120,6 +122,7 @@ export const NAV_REGISTRY: NavPageEntry[] = [
     group: "Tracking",
     mode: "prod",
     surfaces: ["sidebar", "mobileBar", "more"],
+    tab: { order: 4 },
   },
   {
     id: "budgets",
@@ -158,6 +161,7 @@ export const NAV_REGISTRY: NavPageEntry[] = [
     group: "Wealth",
     mode: "prod",
     surfaces: ["sidebar", "mobileBar", "more"],
+    tab: { order: 2 },
   },
   {
     id: "portfolio",
@@ -168,6 +172,7 @@ export const NAV_REGISTRY: NavPageEntry[] = [
     mode: "prod",
     surfaces: ["sidebar", "mobileBar", "more"],
     activePrefixes: ["/portfolio", "/portfolio/dividends", "/portfolio/realized-gains"],
+    tab: { order: 3 },
   },
   {
     id: "loans",
@@ -511,6 +516,17 @@ export const NAV_REGISTRY: NavPageEntry[] = [
     mode: "prod",
     surfaces: ["more"],
   },
+
+  // Dev tools
+  {
+    id: "gallery",
+    path: "/dev/gallery",
+    label: "Gallery",
+    icon: Wrench,
+    group: "Tools",
+    mode: "dev",
+    surfaces: ["sidebar", "more"],
+  },
 ];
 
 /**
@@ -532,9 +548,37 @@ export const ALIASES: AliasEntry[] = [
 ];
 
 /**
- * Redirects are defined in next.config.ts. This registry focuses on pages that appear
- * in navigation only. Redirect routing is managed in the Next.js config.
+ * Path redirects with query preservation: old paths that should redirect to canonical paths.
+ * Query strings are preserved automatically (Next.js default behavior).
+ * These are exported for consumption by next.config.ts redirects().
  */
+export interface RedirectEntry {
+  source: string;
+  destination: string;
+  permanent: boolean;
+}
+
+export const REDIRECTS: RedirectEntry[] = [
+  // /mcp is a vanity shortcut for the MCP server. 308 preserves POST/SSE bodies.
+  { source: "/mcp", destination: "/api/mcp", permanent: true },
+  { source: "/mcp/:path*", destination: "/api/mcp/:path*", permanent: true },
+  // Money-in consolidation (2026-06-04): /import is the single account-anchored surface.
+  // The legacy standalone routes fold into it and their page files are deleted (Phase 6),
+  // so these redirects are now the only thing serving those paths.
+  // Query strings (?account=, ?id=) are preserved automatically.
+  // Not permanent yet — still soaking on dev; flip to permanent at prod promotion.
+  // /import/pending is NOT matched (it's a live route — the standalone staged-review surface).
+  // /reconcile and /import/reconcile now preserve ?tab=reconcile for the More menu.
+  { source: "/inbox", destination: "/import", permanent: false },
+  { source: "/reconcile", destination: "/import?tab=reconcile", permanent: false },
+  { source: "/import/reconcile", destination: "/import?tab=reconcile", permanent: false },
+  // /import/classic was the temporary legacy-hub backup (Phase 3b → 6);
+  // deleted after validation. Redirect so old bookmarks don't 404.
+  { source: "/import/classic", destination: "/import", permanent: false },
+  // Subscriptions + Bill Calendar merged into one page (2026-10); the
+  // calendar is now a view of /subscriptions.
+  { source: "/calendar", destination: "/subscriptions?view=calendar", permanent: false },
+];
 
 /**
  * Get a registry entry by path.
@@ -562,4 +606,14 @@ export function getEntriesByGroup(group: string): NavPageEntry[] {
  */
 export function isRegisteredPath(path: string): boolean {
   return !!getNavEntry(path) || !!ALIASES.find((a) => a.path === path);
+}
+
+/**
+ * Get mobileBar entries sorted by tab order.
+ */
+export function getMobileBarItemsSorted(): NavPageEntry[] {
+  const mobileEntries = getEntriesBySurface("mobileBar");
+  return mobileEntries
+    .filter((e) => e.tab?.order !== undefined)
+    .sort((a, b) => (a.tab?.order ?? 0) - (b.tab?.order ?? 0));
 }

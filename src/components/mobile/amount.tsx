@@ -2,6 +2,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/currency";
 import { formatCompactNumber } from "@/lib/utils/number";
+import { useDisplayCurrency } from "@/components/currency-provider";
 
 export type AmountSize = "hero" | "lg" | "md";
 export type AmountTone = "auto" | "pos" | "neg" | "muted" | "none";
@@ -26,10 +27,13 @@ export function amountToneClass(tone: AmountTone, value: number): string {
  * class resolves to the system sans (globals.css); md+ keeps the app's mono.
  * Formatting always goes through formatCurrency (VND/JPY/KRW: no decimals).
  * `compact` renders K/M/B (formatCompactNumber) with the full value as aria-label.
+ *
+ * Falls back to displayCurrency when no currency prop is provided (CurrencyProvider
+ * defaults to USD during first paint while loading user settings).
  */
 export function Amount({
   value,
-  currency = "USD",
+  currency,
   size = "md",
   tone = "auto",
   showSign = false,
@@ -44,12 +48,19 @@ export function Amount({
   showSign?: boolean;
   compact?: boolean;
 }) {
-  const full = formatCurrency(value, currency);
+  const { displayCurrency } = useDisplayCurrency();
+
+  // Use provided currency (if non-empty after trim), fall back to displayCurrency.
+  // Follows repo pattern from currency PR.
+  const effectiveCurrency = currency?.trim() ? currency : displayCurrency;
+
+  const full = formatCurrency(value, effectiveCurrency);
   const text = compact ? formatCompactNumber(value) : full;
   const signed = showSign && value > 0 ? `+${text}` : text;
   return (
     <span
       data-slot="amount"
+      data-testid="amount"
       data-value={String(value)}
       aria-label={compact ? full : undefined}
       className={cn(
