@@ -131,6 +131,7 @@ export const Nav = memo(function Nav() {
   const [devMode, setDevMode] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [familyEnabled, setFamilyEnabled] = useState(true); // FAMILY_WEALTH_ENABLED (default on)
+  const [instanceAdminEnabled, setInstanceAdminEnabled] = useState(false); // FINLYNQ_INSTANCE_ADMIN (default off)
   const [unread, setUnread] = useState(0);
   const [hasAnnouncements, setHasAnnouncements] = useState(true); // default to true to avoid hiding on initial load
   const [feedbackUnread, setFeedbackUnread] = useState(0);
@@ -158,6 +159,7 @@ export const Nav = memo(function Nav() {
       .then((data) => {
         setIsAdmin(data.isAdmin === true);
         if (data.familyWealthEnabled === false) setFamilyEnabled(false);
+        if (data.instanceAdminEnabled === true) setInstanceAdminEnabled(true);
       })
       .catch(() => {});
     fetch("/api/settings/dev-mode")
@@ -287,6 +289,7 @@ export const Nav = memo(function Nav() {
             // Filter by feature flags
             if (item.flag === "announcements" && !hasAnnouncements) return false;
             if (item.flag === "family" && !familyEnabled) return false;
+            if (item.flag === "instance" && !instanceAdminEnabled) return false;
             return devMode || item.mode !== "dev";
           });
           if (visibleItems.length === 0) return null;
@@ -365,7 +368,12 @@ export const Nav = memo(function Nav() {
               )}
               {adminOpen && !collapsed && (
                 <div id="nav-admin-links" className="space-y-0.5 max-h-[40vh] overflow-y-auto">
-                  {adminLinks.filter((item) => devMode || item.mode !== "dev").map((item) => renderLink(item, !collapsed))}
+                  {adminLinks.filter((item) => {
+                    if (item.flag === "announcements" && !hasAnnouncements) return false;
+                    if (item.flag === "family" && !familyEnabled) return false;
+                    if (item.flag === "instance" && !instanceAdminEnabled) return false;
+                    return devMode || item.mode !== "dev";
+                  }).map((item) => renderLink(item, !collapsed))}
                 </div>
               )}
             </div>

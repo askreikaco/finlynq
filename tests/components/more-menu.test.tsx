@@ -202,7 +202,7 @@ describe("More Appearance row", () => {
 
 describe("More keeps everything the old sheet offered reachable", () => {
   it("every non-bar nav item (all flags on) has a row, except owner-removed /feedback", () => {
-    const all = buildMoreGroups({ isAdmin: true, devMode: true, familyEnabled: true, hasAnnouncements: true });
+    const all = buildMoreGroups({ isAdmin: true, devMode: true, familyEnabled: true, hasAnnouncements: true, instanceAdminEnabled: true });
     const hrefs = new Set(all.flatMap((g) => g.rows.map((r) => r.href)));
     const bar = new Set(mobileBarItems.map((i) => i.href));
     const missing = allFlatItems
