@@ -11,4 +11,7 @@ describe("isLoanCompleted", () => {
     expect(isLoanCompleted({ remainingBalance: 149_549_995, periodsRemaining: 34 })).toBe(false);
     expect(isLoanCompleted({ remainingBalance: 13_193, periodsRemaining: 1 })).toBe(false);
   });
+  it("is false for a loan the server couldn't schedule (null balance/periods)", () => {
+    expect(isLoanCompleted({ remainingBalance: null, periodsRemaining: null })).toBe(false);
+  });
 });

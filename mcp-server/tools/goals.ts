@@ -39,8 +39,9 @@ import {
 } from "../lib/date-validators";
 import { computeGoalProgress } from "../../src/lib/goals-progress";
 import { todayISO } from "../../src/lib/utils/date";
-import { registerManageTool } from "./_consolidate";
+import { pickRecordCurrency } from "../../src/lib/fx/record-currency";
 import { resolveReportingCurrency } from "../reporting-currency";
+import { registerManageTool } from "./_consolidate";
 
 type ToolResult = { content: Array<{ type: "text"; text: string }> };
 
@@ -54,12 +55,12 @@ export function registerGoalsTools(server: McpServer, ctx: PgToolContext) {
     type: "savings" | "debt_payoff" | "investment" | "emergency_fund";
     target_amount: number;
     deadline?: string;
-    currency?: string;
     account?: string;
     account_id?: number;
     account_ids?: number[];
+    currency?: string;
   }): Promise<ToolResult> {
-    const { name, type, target_amount, deadline, currency, account, account_id, account_ids } = args;
+    const { name, type, target_amount, deadline, account, account_id, account_ids, currency } = args;
     // Resolve the canonical id list. account_ids wins; then the legacy single
     // `account`/`account_id`. FINLYNQ-267: a mistyped `account` name now REFUSES
     // the create (via resolveEntity → resolveOrReport) instead of silently
@@ -92,26 +93,28 @@ export function registerGoalsTools(server: McpServer, ctx: PgToolContext) {
         return err(`One or more account_ids are not owned by you.`);
       }
     }
-    const n = dek ? encryptName(dek, name) : { ct: null, lookup: null };
-
-    // Determine currency: explicit parameter wins, then linked account (first) else display currency.
-    let linkedAccountCcy: string | null = null;
+    // Currency resolution (feedback #7): explicit > first linked account >
+    // display currency. This INSERT used to omit the column entirely, so every
+    // goal created through an assistant took the table default — CAD — even
+    // for a USD user, and progress was then measured (and shown) in CAD.
+    let accountCurrency: string | null = null;
     if (resolvedIds.length > 0) {
-      const accountCurrency = await q(db, sql`
-        SELECT currency FROM accounts WHERE id = ${resolvedIds[0]} AND user_id = ${userId}
+      const acct = await q(db, sql`
+        SELECT currency FROM accounts WHERE user_id = ${userId} AND id = ${resolvedIds[0]}
       `);
-      if (accountCurrency.length > 0) {
-        linkedAccountCcy = String(accountCurrency[0].currency);
-      }
+      accountCurrency = (acct[0]?.currency as string | null | undefined) ?? null;
     }
-    const displayCcy = await resolveReportingCurrency(db, userId, null);
-    const goalCurrency = currency ?? linkedAccountCcy ?? displayCcy;
-
+    const goalCurrency = pickRecordCurrency({
+      explicit: currency,
+      accountCurrency,
+      displayCurrency: await resolveReportingCurrency(db, userId, null),
+    });
+    const n = dek ? encryptName(dek, name) : { ct: null, lookup: null };
     // Stream D Phase 4 — plaintext name column dropped. Issue #130 — dual-write
     // the legacy `goals.account_id` (first id only) AND the goal_accounts join.
     const inserted = await q(db, sql`
-      INSERT INTO goals (user_id, type, target_amount, deadline, account_id, status, currency, name_ct, name_lookup)
-      VALUES (${userId}, ${type}, ${target_amount}, ${deadline ?? null}, ${resolvedIds[0] ?? null}, 'active', ${goalCurrency}, ${n.ct}, ${n.lookup})
+      INSERT INTO goals (user_id, type, target_amount, currency, deadline, account_id, status, name_ct, name_lookup)
+      VALUES (${userId}, ${type}, ${target_amount}, ${goalCurrency}, ${deadline ?? null}, ${resolvedIds[0] ?? null}, 'active', ${n.ct}, ${n.lookup})
       RETURNING id
     `);
     const goalId = Number(inserted[0]?.id);
@@ -129,6 +132,7 @@ export function registerGoalsTools(server: McpServer, ctx: PgToolContext) {
       data: {
         goalId,
         accountIds: resolvedIds,
+        currency: goalCurrency,
         message: `Goal created: "${name}" — target ${target_amount} ${goalCurrency}${deadline ? ` by ${deadline}` : ""}${resolvedIds.length > 0 ? ` linked to ${resolvedIds.length} account(s)` : ""}`,
       },
     });
@@ -143,10 +147,10 @@ export function registerGoalsTools(server: McpServer, ctx: PgToolContext) {
     deadline?: string;
     status?: "active" | "completed" | "paused";
     name?: string;
-    currency?: string;
     account_ids?: number[];
+    currency?: string;
   }): Promise<ToolResult> {
-    const { goal, goal_id, target_amount, deadline, status, name, currency, account_ids } = args;
+    const { goal, goal_id, target_amount, deadline, status, name, account_ids, currency } = args;
     // FINLYNQ-267: `goal_id` FK fast-path wins; a name resolves via the shared
     // envelope (mistyped → refuse, 2+ → ambiguous — was `fuzzyFind` silent-first).
     const rawGoals = await q(db, sql`SELECT id, name_ct FROM goals WHERE user_id = ${userId}`);
@@ -178,7 +182,10 @@ export function registerGoalsTools(server: McpServer, ctx: PgToolContext) {
     if (target_amount !== undefined) updates.push(sql`target_amount = ${target_amount}`);
     if (deadline !== undefined) updates.push(sql`deadline = ${deadline}`);
     if (status !== undefined) updates.push(sql`status = ${status}`);
-    if (currency !== undefined) updates.push(sql`currency = ${currency}`);
+    // Re-denominates; does NOT convert target_amount (same contract as
+    // manage_loans). Lets an assistant correct a goal the old CAD default
+    // stamped wrongly.
+    if (currency !== undefined) updates.push(sql`currency = ${currency.toUpperCase()}`);
     // Mirror the legacy single-account column (issue #130) — first id only.
     if (account_ids !== undefined) {
       updates.push(sql`account_id = ${account_ids[0] ?? null}`);
@@ -329,10 +336,10 @@ export function registerGoalsTools(server: McpServer, ctx: PgToolContext) {
     type: z.enum(["savings", "debt_payoff", "investment", "emergency_fund"]).describe("Goal type"),
     target_amount: z.number().positive().describe("Target amount (must be > 0)"),
     deadline: ymdDate.optional().describe("Deadline (YYYY-MM-DD)"),
-    currency: z.string().regex(/^[A-Z]{3,4}$/).optional().describe("Currency code (ISO 4217; 3-4 letters). Defaults to linked account currency (if specified) else display currency."),
     account: z.string().optional().describe("Legacy single-account linker — name or alias (fuzzy matched). A mistyped/unmatched name is REFUSED (never silently unlinked). Prefer `account_id` or `account_ids`."),
     account_id: z.number().int().positive().optional().describe("Single-account linker FK fast-path — wins over the fuzzy `account` name. Prefer `account_ids` for multi-account goals."),
     account_ids: z.array(z.number().int()).optional().describe("Multi-account linker (issue #130). Goal progress sums transactions across every account id supplied. Each id must belong to the user. Empty array = unlinked (manual tracking)."),
+    currency: z.string().regex(/^[A-Za-z]{3,4}$/).optional().describe("ISO code the goal is measured in, e.g. 'EUR'. Defaults to the first linked account's currency, else the user's display currency — never a hardcoded default."),
   });
   const updateVariant = z.object({
     op: z.literal("update"),
@@ -342,8 +349,8 @@ export function registerGoalsTools(server: McpServer, ctx: PgToolContext) {
     deadline: ymdDate.optional().describe("YYYY-MM-DD"),
     status: z.enum(["active", "completed", "paused"]).optional(),
     name: z.string().optional().describe("Rename the goal"),
-    currency: z.string().regex(/^[A-Z]{3,4}$/).optional().describe("Currency code (ISO 4217; 3-4 letters). When provided, overwrites the goal's currency."),
     account_ids: z.array(z.number().int()).optional().describe("Replace the goal's linked accounts (issue #130). When supplied, the existing goal_accounts rows are deleted and replaced with the new set in a single transaction. Pass `[]` to unlink all. Omit to leave links unchanged."),
+    currency: z.string().regex(/^[A-Za-z]{3,4}$/).optional().describe("ISO code the goal is measured in. Changes the currency target_amount is interpreted in — it does NOT convert it."),
   });
   const deleteVariant = z.object({
     op: z.literal("delete"),
@@ -357,7 +364,7 @@ export function registerGoalsTools(server: McpServer, ctx: PgToolContext) {
   registerManageTool(
     server,
     "manage_goals",
-    "Manage financial goals: `op` selects add / update / delete / list. add: create a goal (name/type/target_amount, optional deadline + account_ids). update: change a goal's target, deadline, status, name, or linked accounts (fuzzy `goal`). delete: remove a goal by name. list: all goals with progress (accountIds, currentAmount, progress, remaining, monthlyNeeded).",
+    "Manage financial goals: `op` selects add / update / delete / list. add: create a goal (name/type/target_amount, optional deadline, account_ids + currency). update: change a goal's target, deadline, status, name, currency, or linked accounts (fuzzy `goal`). delete: remove a goal by name. list: all goals with progress (accountIds, currentAmount, progress, remaining, monthlyNeeded).",
     z.discriminatedUnion("op", [addVariant, updateVariant, deleteVariant, listVariant]),
     async (input) => {
       switch (input.op) {

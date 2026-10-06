@@ -728,10 +728,13 @@ async function main() {
     const efEnc = encryptName(demoDek, "Emergency fund");
     const tjEnc = encryptName(demoDek, "Trip to Japan");
     await client.query(
-      `INSERT INTO goals (user_id, name_ct, name_lookup, type, target_amount, deadline, account_id, priority, status, note)
+      // currency: USD — the Savings account both goals track is seeded USD,
+      // as is the demo's display_currency. Omitting it let the column default
+      // stamp the public demo's goals CAD on every nightly reseed.
+      `INSERT INTO goals (user_id, name_ct, name_lookup, type, target_amount, currency, deadline, account_id, priority, status, note)
        VALUES
-         ($1, $3, $4, 'savings', 10000, NULL, $2, 1, 'active', 'Three months of expenses'),
-         ($1, $5, $6, 'savings', 5000, '2027-03-01', $2, 2, 'active', '')`,
+         ($1, $3, $4, 'savings', 10000, 'USD', NULL, $2, 1, 'active', 'Three months of expenses'),
+         ($1, $5, $6, 'savings', 5000, 'USD', '2027-03-01', $2, 2, 'active', '')`,
       [userId, accountIds["Savings"], efEnc.ct, efEnc.lookup, tjEnc.ct, tjEnc.lookup]
     );
 
