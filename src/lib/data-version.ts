@@ -63,20 +63,22 @@ export function getTimeComponentForRoute(route: string): string {
 }
 
 /**
- * Generate an ETag from route, query params, data version, DEK state, and optional extra info.
+ * Generate an ETag from route, query params, data version, userId, DEK state, and optional extra info.
  * Always includes UTC date (for daily refresh on price/FX changes).
  * The extra parameter can include UTC hour for hourly refresh on price-driven routes.
  *
  * @param route - request path (e.g., "/api/accounts")
  * @param queryString - request search params (e.g., "?includeArchived=1")
  * @param dataVersion - user's current data_version
- * @param dekState - DEK locked state
+ * @param userId - user ID (included in hash for per-user ETags)
+ * @param dekState - DEK unlocked state (true = DEK present/unlocked, false = DEK missing/locked)
  * @param extra - optional extra string (e.g., UTC hour "2025-01-15T14" for hourly refresh)
  */
 export function generateETag(
   route: string,
   queryString: string,
   dataVersion: number,
+  userId: string,
   dekState: boolean,
   extra?: string
 ): string {
@@ -84,7 +86,8 @@ export function generateETag(
   const utcDate = getUtcDate();
   // Append extra (e.g., hourly bucket) if provided for price-driven routes
   const combined = extra ? `${utcDate}|${extra}` : utcDate;
-  const payload = `${route}|${queryString}|${dataVersion}|${dekState ? "locked" : "unlocked"}|${combined}`;
+  // Fixed label: dekState true = unlocked (DEK present), false = locked (DEK missing)
+  const payload = `${route}|${queryString}|${dataVersion}|${userId}|${dekState ? "unlocked" : "locked"}|${combined}`;
   return `"${createHash("sha256").update(payload).digest("hex")}"`;
 }
 
@@ -112,7 +115,7 @@ export async function checkETag(
   // Auto-detect time component if not provided (for price-driven routes)
   const timeComponent = extra ?? getTimeComponentForRoute(route);
 
-  const etag = generateETag(route, queryString, dataVersion, !!dek, timeComponent || undefined);
+  const etag = generateETag(route, queryString, dataVersion, userId, !!dek, timeComponent || undefined);
 
   if (request.headers.get("if-none-match") === etag) {
     return {
@@ -127,4 +130,18 @@ export async function checkETag(
   }
 
   return { etag, authContext: auth.context };
+}
+
+/**
+ * Helper to add ETag and Cache-Control headers to a response.
+ * Used by route handlers to set proper HTTP caching headers on 200 responses.
+ *
+ * @param response - the response to add headers to
+ * @param etag - the ETag value to set
+ * @returns the response with headers set
+ */
+export function withEtagHeaders(response: NextResponse, etag: string): NextResponse {
+  response.headers.set("ETag", etag);
+  response.headers.set("Cache-Control", "private, no-cache");
+  return response;
 }

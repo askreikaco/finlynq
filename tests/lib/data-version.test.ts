@@ -3,8 +3,10 @@ import { generateETag, checkETag, getDataVersion, getTimeComponentForRoute } fro
 
 describe("data-version", () => {
   describe("generateETag", () => {
+    const testUserId = "test-user-123";
+
     it("should generate a valid ETag with base parameters", () => {
-      const etag = generateETag("/api/accounts", "", 42, false);
+      const etag = generateETag("/api/accounts", "", 42, testUserId, false);
       expect(etag).toMatch(/^"[a-f0-9]{64}"$/);
     });
 
@@ -13,8 +15,8 @@ describe("data-version", () => {
       const query = "";
       const dekState = false;
 
-      const etag1 = generateETag(route, query, 1, dekState);
-      const etag2 = generateETag(route, query, 2, dekState);
+      const etag1 = generateETag(route, query, 1, testUserId, dekState);
+      const etag2 = generateETag(route, query, 2, testUserId, dekState);
 
       expect(etag1).not.toBe(etag2);
     });
@@ -24,8 +26,8 @@ describe("data-version", () => {
       const query = "";
       const dekState = false;
 
-      const etag1 = generateETag("/api/accounts", query, dataVersion, dekState);
-      const etag2 = generateETag("/api/dashboard", query, dataVersion, dekState);
+      const etag1 = generateETag("/api/accounts", query, dataVersion, testUserId, dekState);
+      const etag2 = generateETag("/api/dashboard", query, dataVersion, testUserId, dekState);
 
       expect(etag1).not.toBe(etag2);
     });
@@ -35,8 +37,8 @@ describe("data-version", () => {
       const dataVersion = 42;
       const dekState = false;
 
-      const etag1 = generateETag(route, "?archived=false", dataVersion, dekState);
-      const etag2 = generateETag(route, "?archived=true", dataVersion, dekState);
+      const etag1 = generateETag(route, "?archived=false", dataVersion, testUserId, dekState);
+      const etag2 = generateETag(route, "?archived=true", dataVersion, testUserId, dekState);
 
       expect(etag1).not.toBe(etag2);
     });
@@ -46,8 +48,23 @@ describe("data-version", () => {
       const query = "";
       const dataVersion = 42;
 
-      const etag1 = generateETag(route, query, dataVersion, true);
-      const etag2 = generateETag(route, query, dataVersion, false);
+      const etag1 = generateETag(route, query, dataVersion, testUserId, true);
+      const etag2 = generateETag(route, query, dataVersion, testUserId, false);
+
+      expect(etag1).not.toBe(etag2);
+    });
+
+    it("should change ETag when userId changes", () => {
+      const route = "/api/accounts";
+      const query = "";
+      const dataVersion = 42;
+      const dekState = false;
+
+      const user1 = "user-1";
+      const user2 = "user-2";
+
+      const etag1 = generateETag(route, query, dataVersion, user1, dekState);
+      const etag2 = generateETag(route, query, dataVersion, user2, dekState);
 
       expect(etag1).not.toBe(etag2);
     });
@@ -62,13 +79,13 @@ describe("data-version", () => {
 
       // Simulate today's date
       const today = new Date().toISOString().split("T")[0];
-      const etag1 = generateETag(route, query, dataVersion, dekState, today);
+      const etag1 = generateETag(route, query, dataVersion, testUserId, dekState, today);
 
       // Simulate tomorrow's date
       const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000)
         .toISOString()
         .split("T")[0];
-      const etag2 = generateETag(route, query, dataVersion, dekState, tomorrow);
+      const etag2 = generateETag(route, query, dataVersion, testUserId, dekState, tomorrow);
 
       expect(etag1).not.toBe(etag2);
     });
@@ -81,11 +98,11 @@ describe("data-version", () => {
 
       // Simulate hour 0
       const hour0 = "2025-01-15T00";
-      const etag1 = generateETag(route, query, dataVersion, dekState, hour0);
+      const etag1 = generateETag(route, query, dataVersion, testUserId, dekState, hour0);
 
       // Simulate hour 1
       const hour1 = "2025-01-15T01";
-      const etag2 = generateETag(route, query, dataVersion, dekState, hour1);
+      const etag2 = generateETag(route, query, dataVersion, testUserId, dekState, hour1);
 
       expect(etag1).not.toBe(etag2);
     });
@@ -97,12 +114,11 @@ describe("data-version", () => {
       const dekState = true;
       const extra = "2025-01-15T10";
 
-      const etag1 = generateETag(route, query, dataVersion, dekState, extra);
-      const etag2 = generateETag(route, query, dataVersion, dekState, extra);
+      const etag1 = generateETag(route, query, dataVersion, testUserId, dekState, extra);
+      const etag2 = generateETag(route, query, dataVersion, testUserId, dekState, extra);
 
       expect(etag1).toBe(etag2);
     });
-  });
 
   describe("getDataVersion", () => {
     it("should handle missing user by returning default value", async () => {

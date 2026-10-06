@@ -14,31 +14,40 @@
 CREATE OR REPLACE FUNCTION reika_bump_data_version()
 RETURNS TRIGGER AS $$
 DECLARE
-  v_user_ids text;
+  v_user_ids UUID[];
 BEGIN
-  -- Determine the user_ids subquery based on trigger operation.
+  -- Collect user_ids from transition tables based on trigger operation.
   -- INSERT: uses new_rows
   -- DELETE: uses old_rows
   -- UPDATE: unions old_rows and new_rows to catch user_id changes
   -- (a row moved from one user to another must bump both owners)
   IF TG_OP = 'INSERT' THEN
-    v_user_ids := '(SELECT DISTINCT user_id FROM new_rows WHERE user_id IS NOT NULL)';
+    SELECT ARRAY(SELECT DISTINCT user_id FROM new_rows WHERE user_id IS NOT NULL) INTO v_user_ids;
   ELSIF TG_OP = 'DELETE' THEN
-    v_user_ids := '(SELECT DISTINCT user_id FROM old_rows WHERE user_id IS NOT NULL)';
+    SELECT ARRAY(SELECT DISTINCT user_id FROM old_rows WHERE user_id IS NOT NULL) INTO v_user_ids;
   ELSIF TG_OP = 'UPDATE' THEN
-    v_user_ids := '(SELECT DISTINCT user_id FROM old_rows WHERE user_id IS NOT NULL UNION ALL SELECT DISTINCT user_id FROM new_rows WHERE user_id IS NOT NULL)';
+    SELECT ARRAY(SELECT DISTINCT user_id FROM (
+      SELECT user_id FROM old_rows WHERE user_id IS NOT NULL
+      UNION ALL
+      SELECT user_id FROM new_rows WHERE user_id IS NOT NULL
+    ) combined) INTO v_user_ids;
+  END IF;
+
+  -- Early exit if no users affected
+  IF v_user_ids IS NULL OR array_length(v_user_ids, 1) = 0 THEN
+    RETURN NULL;
   END IF;
 
   -- Take row locks on the users table in deterministic order (by id) BEFORE the UPDATE
   -- to prevent deadlocks. NO KEY UPDATE allows concurrent reads while preventing
   -- concurrent modifications to the same rows.
-  EXECUTE format('PERFORM 1 FROM users WHERE id IN %s ORDER BY id FOR NO KEY UPDATE', v_user_ids);
+  LOCK TABLE users IN ROW EXCLUSIVE MODE;
+
+  -- Perform the lock by selecting with FOR NO KEY UPDATE and ORDER BY id
+  PERFORM 1 FROM users WHERE id = ANY(v_user_ids) ORDER BY id FOR NO KEY UPDATE;
 
   -- Now bump the data_version for all affected users
-  EXECUTE format(
-    'UPDATE users SET data_version = data_version + 1 WHERE id IN %s',
-    v_user_ids
-  );
+  UPDATE users SET data_version = data_version + 1 WHERE id = ANY(v_user_ids);
 
   RETURN NULL; -- STATEMENT-level triggers return NULL
 END;
