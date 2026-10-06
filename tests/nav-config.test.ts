@@ -111,12 +111,6 @@ describe("nav-config", () => {
         const labels = entries.map((e) => e.label);
         const uniqueLabels = new Set(labels);
 
-        if (labels.length !== uniqueLabels.size) {
-          const duplicates = labels.filter(
-            (l, i) => labels.indexOf(l) !== i
-          );
-        }
-
         expect(labels.length).toBe(uniqueLabels.size);
       }
     });
@@ -144,7 +138,7 @@ describe("nav-config", () => {
           labelToPaths[entry.label].add(basePath);
         }
 
-        for (const [label, paths] of Object.entries(labelToPaths)) {
+        for (const [_label, paths] of Object.entries(labelToPaths)) {
           expect(paths.size).toBe(1);
         }
       }

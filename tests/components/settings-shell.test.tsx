@@ -3,7 +3,7 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import React from "react";
-import { render, screen, cleanup, within } from "@testing-library/react";
+import { render, screen, cleanup } from "@testing-library/react";
 
 let mockPath = "/settings/general";
 vi.mock("next/navigation", () => ({
@@ -32,7 +32,6 @@ describe("Settings Shell", () => {
     const links = screen.getAllByRole("link");
     const expectedOrder = ["General", "Categories", "Reconciliation", "Investments", "Integrations", "Developer", "About"];
 
-    let index = 0;
     for (const label of expectedOrder) {
       const link = links.find((l) => l.textContent?.includes(label));
       expect(link).toBeTruthy();
