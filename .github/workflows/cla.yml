@@ -35,6 +35,8 @@ permissions:
 
 jobs:
   cla:
+    # Only run in the original repository, not in forks
+    if: github.repository == 'finlynq/finlynq'
     runs-on: ubuntu-latest
     steps:
       - name: CLA Assistant
