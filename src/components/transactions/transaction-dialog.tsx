@@ -78,6 +78,7 @@ import type { Condition, Action } from "@/lib/rules/schema";
 import { LotReallocationNotice } from "@/components/portfolio/lot-reallocation-notice";
 import type { LotReallocationPreview } from "@/lib/portfolio/lots/types";
 import { getDisplayLocale } from "@/lib/locale";
+import { canDuplicate } from "@/lib/transactions/prefill";
 
 // ─── Public types ──────────────────────────────────────────────────────
 
@@ -1701,7 +1702,7 @@ export function TransactionDialog({
             )}
 
             <div className="flex gap-2">
-              {editingTx && onRequestDuplicate && (
+              {editingTx && onRequestDuplicate && canDuplicate(editingTx as any, editingTx.currency) && (
                 <Button
                   type="button"
                   variant="outline"

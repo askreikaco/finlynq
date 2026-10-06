@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   ChevronLeft,
@@ -36,6 +36,10 @@ type TxType = "Expense" | "Income" | "Transfer";
 
 export default function MobileTransactionPage() {
   const router = useRouter();
+
+  // Refs to handle StrictMode and prefill application
+  const prefillReadRef = useRef(false);
+  const prefillAppliedRef = useRef(false);
 
   // Mode
   const [txType, setTxType] = useState<TxType>("Expense");
@@ -78,7 +82,15 @@ export default function MobileTransactionPage() {
   ]);
 
   // Read prefill from sessionStorage once on mount ([] deps)
+  // Uses ref to prevent double-read in StrictMode
   useEffect(() => {
+    // Only read if ?prefill=1 is in URL or legacy mode (no query param)
+    const hasPrefillQuery = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("prefill");
+
+    // Prevent reading twice in StrictMode
+    if (prefillReadRef.current) return;
+    prefillReadRef.current = true;
+
     const prefill = readAndClearPrefill(Date.now());
     if (prefill) {
       setAmount(prefill.amount);
@@ -89,7 +101,8 @@ export default function MobileTransactionPage() {
       setTags(prefill.tags);
       setIsBusiness(prefill.isBusiness);
       setTxType(prefill.txType);
-    } else if (typeof window !== "undefined" && sessionStorage.getItem("finlynq:tx-prefill") === null && new URLSearchParams(window.location.search).has("prefill")) {
+      prefillAppliedRef.current = true;
+    } else if (hasPrefillQuery) {
       // prefill=1 in URL but no valid data = show notice
       setPrefillNotice("Prefill data expired or invalid. Please fill the form manually.");
     }
@@ -132,8 +145,9 @@ export default function MobileTransactionPage() {
   }, [rawAccounts]);
 
   // Auto-select initial account if available
+  // Skip if prefill was applied (to avoid clobbering prefilled accountId)
   useEffect(() => {
-    if (!accountId && activeAccounts.length > 0) {
+    if (!accountId && activeAccounts.length > 0 && !prefillAppliedRef.current) {
       setAccountId(String(activeAccounts[0].id));
     }
   }, [activeAccounts, accountId]);
