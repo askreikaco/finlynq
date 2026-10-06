@@ -190,7 +190,7 @@ export function TransactionsPane({
                       />
                     </TableCell>
                     <TableCell className="text-right font-mono text-xs">
-                      {formatCurrency(r.amount, r.currency || displayCurrency)}
+                      {formatCurrency(r.amount, r.currency?.trim() ? r.currency : displayCurrency)}
                     </TableCell>
                   </TableRow>
                   {r.suggestion && (

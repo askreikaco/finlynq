@@ -29,7 +29,7 @@ export function amountToneClass(tone: AmountTone, value: number): string {
  * `compact` renders K/M/B (formatCompactNumber) with the full value as aria-label.
  *
  * Falls back to displayCurrency when no currency prop is provided, with USD default
- * during first paint (isLoading).
+ * during first paint (isLoading from CurrencyProvider).
  */
 export function Amount({
   value,
@@ -50,8 +50,10 @@ export function Amount({
 }) {
   const { displayCurrency, isLoading } = useDisplayCurrency();
 
-  // Use provided currency, or fall back to displayCurrency (or USD during loading)
-  const effectiveCurrency = currency ?? (isLoading ? "USD" : displayCurrency);
+  // Use provided currency (if non-empty after trim), fall back to displayCurrency,
+  // or USD during first paint (isLoading). Follows repo pattern from currency PR.
+  const effectiveCurrency = currency?.trim() ? currency :
+    (isLoading ? "USD" : displayCurrency);
 
   const full = formatCurrency(value, effectiveCurrency);
   const text = compact ? formatCompactNumber(value) : full;
