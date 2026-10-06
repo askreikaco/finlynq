@@ -13,23 +13,7 @@ import { useEffect, useRef, useState, useMemo, memo } from "react";
 import useSWR from "swr";
 import { softJsonFetcher, swrAggressiveOptions } from "@/lib/swr";
 import {
-  PiggyBank,
-  Target,
-  FileText,
-  ChartPie,
-  Inbox,
-  Tag,
-  Upload,
-  Megaphone,
-  Users,
-  Settings,
   LogOut,
-  CreditCard,
-  Landmark,
-  MessageSquare,
-  Calculator,
-  GitBranch,
-  FlameKindling,
   ChevronRight,
   Palette,
   type LucideIcon,
