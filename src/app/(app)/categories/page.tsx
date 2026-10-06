@@ -22,6 +22,7 @@ import { PageSkeleton } from "@/components/page-skeleton";
 import { Sparkline } from "@/components/sparkline";
 import { formatCurrency } from "@/lib/currency";
 import { CHART_COLORS } from "@/lib/chart-colors";
+import type { CategoryOverview } from "@/lib/reports/category-overview";
 import { localDateISO } from "@/lib/utils/date";
 import { shiftMonth } from "@/lib/reports/category-detail";
 import { ChevronLeft, ChevronRight } from "lucide-react";
