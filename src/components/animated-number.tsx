@@ -5,7 +5,7 @@ import { animate } from "framer-motion";
 import { formatCurrency } from "@/lib/currency";
 import { useAnimations } from "@/hooks/use-animations";
 
-export function AnimatedNumber({ value, currency }: { value: number; currency: string }) {
+export function AnimatedNumber({ value, currency }: { value: number; currency?: string }) {
   const animationsEnabled = useAnimations();
   const ref = useRef<HTMLSpanElement>(null);
 

@@ -59,7 +59,8 @@ function SparklineTooltip({
 }
 
 export function Sparkline({ data, color, labels, currency, height = 30, className = "w-full h-[30px]" }: SparklineProps) {
-  const displayCurrency = currency || useDisplayCurrency().displayCurrency;
+  const { displayCurrency: userDisplayCurrency } = useDisplayCurrency();
+  const resolvedCurrency = currency || userDisplayCurrency;
   const animationsEnabled = useAnimations();
   const chartData: SparkRow[] = data.map((value, index) => ({ index, value, label: labels?.[index] }));
   const interactive = Boolean(labels?.length);
@@ -76,7 +77,7 @@ export function Sparkline({ data, color, labels, currency, height = 30, classNam
           </defs>
           {interactive && (
             <Tooltip
-              content={<SparklineTooltip color={color} currency={displayCurrency} />}
+              content={<SparklineTooltip color={color} currency={resolvedCurrency} />}
               cursor={{ stroke: color, strokeOpacity: 0.35, strokeWidth: 1 }}
               // The chart is only 30px tall and sits at the bottom of an
               // overflow-hidden card. Render the tooltip ABOVE the cursor

@@ -55,7 +55,8 @@ function InsightCard({
 }
 
 export function InsightsSection({ currency }: { currency?: string }) {
-  const displayCurrency = currency || useDisplayCurrency().displayCurrency;
+  const { displayCurrency: userDisplayCurrency } = useDisplayCurrency();
+  const resolvedCurrency = currency || userDisplayCurrency;
   const [insights, setInsights] = useState<InsightsData | null>(null);
   const [recurring, setRecurring] = useState<RecurringData | null>(null);
 
@@ -109,10 +110,10 @@ export function InsightsSection({ currency }: { currency?: string }) {
                 </div>
                 <div className="text-right shrink-0 ml-2">
                   <p className="text-[13px] font-mono font-semibold text-amber-700 dark:text-amber-400 tabular-nums">
-                    {formatCurrency(a.currentMonth, displayCurrency)}
+                    {formatCurrency(a.currentMonth, resolvedCurrency)}
                   </p>
                   <p className="text-[10px] text-muted-foreground tabular-nums">
-                    avg {formatCurrency(a.average, displayCurrency)}
+                    avg {formatCurrency(a.average, resolvedCurrency)}
                   </p>
                 </div>
               </div>
@@ -127,7 +128,7 @@ export function InsightsSection({ currency }: { currency?: string }) {
           icon={RefreshCw}
           iconBg="bg-cyan-100 text-cyan-600 dark:bg-cyan-950/60 dark:text-cyan-400"
           title={`Recurring (${recurring.count})`}
-          subtitle={`${formatCurrency(recurring.monthlyRecurringTotal, recurring.displayCurrency || displayCurrency)}/month`}
+          subtitle={`${formatCurrency(recurring.monthlyRecurringTotal, recurring.displayCurrency || resolvedCurrency)}/month`}
         >
           <div className="divide-y divide-border/40">
             {recurring.recurring.slice(0, 8).map((r, i) => (
@@ -137,7 +138,7 @@ export function InsightsSection({ currency }: { currency?: string }) {
                   <p className="text-[11px] text-muted-foreground">{r.frequency} &middot; next: {r.nextDate}</p>
                 </div>
                 <p className={`text-[13px] font-mono font-semibold tabular-nums shrink-0 ml-2 ${r.avgAmount < 0 ? "text-rose-500" : "text-emerald-500"}`}>
-                  {formatCurrency(r.avgAmount, r.currency || displayCurrency)}
+                  {formatCurrency(r.avgAmount, r.currency || resolvedCurrency)}
                 </p>
               </div>
             ))}
@@ -161,7 +162,7 @@ export function InsightsSection({ currency }: { currency?: string }) {
                   <p className="text-[11px] text-muted-foreground">{m.count} transactions</p>
                 </div>
                 <p className="text-[13px] font-mono font-semibold text-rose-500 tabular-nums shrink-0 ml-2">
-                  {formatCurrency(m.totalSpent, displayCurrency)}
+                  {formatCurrency(m.totalSpent, resolvedCurrency)}
                 </p>
               </div>
             ))}

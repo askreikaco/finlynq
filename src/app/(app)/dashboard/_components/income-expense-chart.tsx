@@ -117,7 +117,8 @@ export function IncomeExpenseChart({
   data: MonthlyData[];
   currency?: string;
 }) {
-  const displayCurrency = currency || useDisplayCurrency().displayCurrency;
+  const { displayCurrency: userDisplayCurrency } = useDisplayCurrency();
+  const resolvedCurrency = currency || userDisplayCurrency;
   // FINLYNQ-129 — component-only "By category" toggle (resets on reload).
   const [stacked, setStacked] = useState(false);
   // Only offer stacking when at least one month carries a category breakdown.
@@ -157,14 +158,14 @@ export function IncomeExpenseChart({
                 data={data}
                 valueKey="income"
                 breakdownKey="incomeBreakdown"
-                currency={displayCurrency}
+                currency={resolvedCurrency}
               />
               <StackedSideChart
                 title="Expenses by category"
                 data={data}
                 valueKey="expenses"
                 breakdownKey="expenseBreakdown"
-                currency={displayCurrency}
+                currency={resolvedCurrency}
               />
             </div>
           ) : (
@@ -195,7 +196,7 @@ export function IncomeExpenseChart({
                     tick={{ fill: "var(--color-muted-foreground)" }}
                     tickFormatter={(v) => formatCompactNumber(Number(v))}
                   />
-                  <Tooltip content={<ChartTooltip currency={displayCurrency} />} cursor={{ stroke: "var(--color-border)", strokeDasharray: "4 4" }} />
+                  <Tooltip content={<ChartTooltip currency={resolvedCurrency} />} cursor={{ stroke: "var(--color-border)", strokeDasharray: "4 4" }} />
                   <Area
                     type="monotone"
                     dataKey="income"

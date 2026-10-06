@@ -6,6 +6,7 @@ import { useDisplayCurrency } from "@/components/currency-provider";
 import { Wallet } from "lucide-react";
 import { motion } from "framer-motion";
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const itemVariants = {
   hidden: { opacity: 0, y: 16 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" as const } },
@@ -21,7 +22,8 @@ type Props = {
 };
 
 export function AvailableToSpend({ income, expenses, currency, monthLabel }: Props) {
-  const displayCurrency = currency || useDisplayCurrency().displayCurrency;
+  const { displayCurrency: userDisplayCurrency } = useDisplayCurrency();
+  const resolvedCurrency = currency || userDisplayCurrency;
   const available = income - expenses;
   const pctSpent = income > 0 ? (expenses / income) * 100 : 0;
 
@@ -31,7 +33,7 @@ export function AvailableToSpend({ income, expenses, currency, monthLabel }: Pro
       icon={Wallet}
       tone="cyan"
       value={Math.abs(available)}
-      currency={displayCurrency}
+      currency={resolvedCurrency}
       valueClassName={available >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-500"}
       sub={monthLabel ? `${monthLabel} remaining` : "This month remaining"}
     >
@@ -40,19 +42,19 @@ export function AvailableToSpend({ income, expenses, currency, monthLabel }: Pro
           <div className="flex justify-between text-[12px]">
             <span className="text-muted-foreground">Income</span>
             <span className="font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">
-              {formatCurrency(income, displayCurrency)}
+              {formatCurrency(income, resolvedCurrency)}
             </span>
           </div>
           <div className="flex justify-between text-[12px]">
             <span className="text-muted-foreground">Spent so far</span>
             <span className="font-semibold text-rose-500 tabular-nums">
-              -{formatCurrency(expenses, displayCurrency)}
+              -{formatCurrency(expenses, resolvedCurrency)}
             </span>
           </div>
           <div className="border-t pt-2 flex justify-between text-[12px] font-semibold">
             <span>Remaining</span>
             <span className={`tabular-nums ${available >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-500"}`}>
-              {formatCurrency(available, displayCurrency)}
+              {formatCurrency(available, resolvedCurrency)}
             </span>
           </div>
           <div className="w-full bg-muted/50 rounded-full h-2 overflow-hidden mt-3">

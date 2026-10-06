@@ -26,7 +26,8 @@ const noAnimationVariants = {
 type SpendingItem = { name: string; value: number };
 
 export function SpendingCategoryChart({ data, currency }: { data: SpendingItem[]; currency?: string }) {
-  const displayCurrency = currency || useDisplayCurrency().displayCurrency;
+  const { displayCurrency: userDisplayCurrency } = useDisplayCurrency();
+  const resolvedCurrency = currency || userDisplayCurrency;
   const animationsEnabled = useAnimations();
   const total = data.reduce((s, d) => s + d.value, 0);
 
@@ -62,12 +63,12 @@ export function SpendingCategoryChart({ data, currency }: { data: SpendingItem[]
                       <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip content={<PieTooltip currency={displayCurrency} />} />
+                  <Tooltip content={<PieTooltip currency={resolvedCurrency} />} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                 <span className="text-[10px] text-muted-foreground">Total</span>
-                <span className="text-sm font-bold tabular-nums">{formatCurrency(total, displayCurrency)}</span>
+                <span className="text-sm font-bold tabular-nums">{formatCurrency(total, resolvedCurrency)}</span>
               </div>
             </div>
 
