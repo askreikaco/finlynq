@@ -36,6 +36,7 @@
 import { CheckCircle2, AlertTriangle, Info } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/currency";
+import { useDisplayCurrency } from "@/components/currency-provider";
 
 export interface ReconciliationCalloutProps {
   statementBalance: number | null;
@@ -60,6 +61,7 @@ export interface ReconciliationCalloutProps {
 const MATCH_TOLERANCE = 0.01;
 
 export function ReconciliationCallout(props: ReconciliationCalloutProps) {
+  const { displayCurrency } = useDisplayCurrency();
   const {
     statementBalance,
     statementBalanceDate,
@@ -91,7 +93,7 @@ export function ReconciliationCallout(props: ReconciliationCalloutProps) {
     );
   }
 
-  const ccy = statementCurrency ?? boundAccountCurrency ?? "USD";
+  const ccy = statementCurrency ?? boundAccountCurrency ?? displayCurrency;
 
   // The bank ledger has no anchor yet (brand-new account) — there's nothing
   // to project a send against. Show the statement we captured plus a muted

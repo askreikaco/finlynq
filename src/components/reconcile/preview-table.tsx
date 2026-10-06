@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/table";
 import { AlertTriangle, CheckCircle2, Sparkles } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
+import { useDisplayCurrency } from "@/components/currency-provider";
 
 export type ReconcileStatus = "new" | "existing" | "probable_duplicate";
 
@@ -103,6 +104,7 @@ export function ReconcilePreviewTable({
   holdings,
   onChange,
 }: Props) {
+  const { displayCurrency } = useDisplayCurrency();
   const accountItems = useMemo(
     () =>
       accounts.map((a) => ({
@@ -210,7 +212,7 @@ export function ReconcilePreviewTable({
                 <TableCell
                   className={`text-right font-mono text-xs align-top pt-3 ${row.amount < 0 ? "text-rose-600" : "text-emerald-600"}`}
                 >
-                  {formatCurrency(row.amount, row.currency ?? accountCurrency ?? "USD")}
+                  {formatCurrency(row.amount, row.currency ?? accountCurrency ?? displayCurrency)}
                 </TableCell>
                 <TableCell className="align-top">
                   <Combobox

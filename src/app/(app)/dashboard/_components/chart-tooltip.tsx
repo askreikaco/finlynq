@@ -13,12 +13,12 @@ export function ChartTooltip({
   active,
   payload,
   label,
-  currency = "CAD",
+  currency,
 }: {
   active?: boolean;
   payload?: { name: string; value: number; color: string; dataKey?: string; payload?: IncomeExpenseRow }[];
   label?: string;
-  currency?: string;
+  currency: string;
 }) {
   if (!active || !payload?.length) return null;
   // The data row is shared across series entries; read the breakdown once.
@@ -57,11 +57,11 @@ export function ChartTooltip({
 export function PieTooltip({
   active,
   payload,
-  currency = "CAD",
+  currency,
 }: {
   active?: boolean;
   payload?: { name: string; value: number; payload: { name: string } }[];
-  currency?: string;
+  currency: string;
 }) {
   if (!active || !payload?.length) return null;
   return (
