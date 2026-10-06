@@ -565,17 +565,15 @@ async function insertGenericRow(
   // If no columns to insert and table has no id, just return the test user row
   if (colNames.length === 0) {
     if (!hasIdColumn) {
-      // Table without id column - try returning first column
-      try {
-        const result = await client.query(
-          `INSERT INTO "${table}" (user_id) VALUES ($1) RETURNING user_id, *`,
-          [userId]
-        );
-        return result;
-      } catch (e) {
-        // If user_id insertion fails, return a dummy result
-        return { rows: [{ id: 'dummy', user_id: userId }], rowCount: 1 } as any;
+      // Table without id column - insert with user_id only
+      const result = await client.query(
+        `INSERT INTO "${table}" (user_id) VALUES ($1) RETURNING user_id, *`,
+        [userId]
+      );
+      if (!result.rows || result.rows.length === 0) {
+        throw new Error(`Failed to insert into table ${table} with user_id: no rows returned`);
       }
+      return result;
     }
     const sql = `INSERT INTO "${table}" (user_id) VALUES ($1) RETURNING id`;
     return await client.query(sql, [userId]);
