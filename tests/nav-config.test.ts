@@ -7,7 +7,7 @@ import {
   getEntriesByGroup,
   isRegisteredPath,
 } from "@/lib/nav-config";
-import { readFileSync, readdirSync } from "fs";
+import { readdirSync } from "fs";
 import { join } from "path";
 import * as lucideIcons from "lucide-react";
 
@@ -104,10 +104,10 @@ describe("nav-config", () => {
         "settings",
         "admin",
         "account",
-      ];
+      ] as const;
 
       for (const surface of surfaces) {
-        const entries = getEntriesBySurface(surface as any);
+        const entries = getEntriesBySurface(surface);
         const labels = entries.map((e) => e.label);
         const uniqueLabels = new Set(labels);
 
@@ -134,12 +134,12 @@ describe("nav-config", () => {
         "settings",
         "admin",
         "account",
-      ];
+      ] as const;
 
       for (const surface of surfaces) {
         const labelToPaths: Record<string, Set<string>> = {};
 
-        const entries = NAV_REGISTRY.filter((e) => e.surfaces.includes(surface as any));
+        const entries = NAV_REGISTRY.filter((e) => e.surfaces.includes(surface));
         for (const entry of entries) {
           const basePath = entry.path.split("?")[0]; // remove query params
           if (!labelToPaths[entry.label]) {
@@ -385,7 +385,7 @@ describe("nav-config", () => {
             if (entry.isDirectory() && !entry.name.startsWith("_")) {
               walkDir(fullPath, routePath);
             } else if (entry.name === "page.tsx") {
-              let normalizedPath = routePath
+              const normalizedPath = routePath
                 .replace(/\/page\.tsx$/, "") // Remove /page.tsx
                 .replace(/\/\([^)]+\)/g, "") // Remove route groups like /(env)
                 .replace(/\/$/, ""); // Remove trailing slash
@@ -401,7 +401,7 @@ describe("nav-config", () => {
       const pageFiles = getAllPageFiles();
 
       // Known redirects (from next.config.ts)
-      const redirectTargets = new Set([]);
+      const redirectTargets = new Set<string>([]);
 
       for (const entry of NAV_REGISTRY) {
         // Skip entries with query params
