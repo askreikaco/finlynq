@@ -250,7 +250,7 @@ const ALLOW_LIST = [
     file: "src/components/reconcile/preview-table.tsx",
     line: `{formatCurrency(row.amount, row.currency ?? accountCurrency ?? "USD")}`,
     count: 1,
-    reason: "Preview table uses row/account/display currency chain",
+    reason: "Preview table uses row/account/display currency chain (format-call pattern)",
   },
 
   // OUT OF SCOPE: Dividends page
@@ -279,7 +279,7 @@ const ALLOW_LIST = [
   {
     file: "src/components/inbox/inbox-reconcile-tab.tsx",
     line: `let currency = "CAD";`,
-    count: 2,
+    count: 1,
     reason: "Inbox reconcile tab local variable initialization",
   },
 
@@ -317,6 +317,128 @@ const ALLOW_LIST = [
     line: `onValueChange={(v) => setCurrency(v || "USD")}`,
     count: 1,
     reason: "Prompt form currency picker",
+  },
+  {
+    file: "src/components/prompts/prompt-forms.tsx",
+    line: `const [currency, setCurrency] = useState("USD");`,
+    count: 1,
+    reason: "Prompt form useState currency default",
+  },
+  {
+    file: "src/components/onboarding-wizard.tsx",
+    line: `const [currency, setCurrency] = useState("USD");`,
+    count: 1,
+    reason: "Onboarding form useState currency default",
+  },
+  {
+    file: "src/app/(app)/settings/investments/page.tsx",
+    line: `const [addCurrency, setAddCurrency] = useState("USD");`,
+    count: 1,
+    reason: "Investment settings form useState currency default",
+  },
+
+  // New patterns (ternary, property-key) for existing allow-listed entries
+  {
+    file: "src/components/fx-overrides-section.tsx",
+    line: `<Select value={form.rateMode === "to-usd" ? form.currency : "USD"} onValueChange={(v) => setForm({ ...form, rateMode: v === "USD" ? "from-usd" : "to-usd" })}>`,
+    count: 2,
+    reason: "FX override form ternary and property key for USD rate mode setting",
+  },
+  {
+    file: "src/components/holdings/holding-edit-form.tsx",
+    line: `currency: initialHolding?.currency ?? "CAD",`,
+    count: 1,
+    reason: "Holding form fallback to holding currency (nullish pattern match)",
+  },
+  {
+    file: "src/components/holdings/holding-edit-form.tsx",
+    line: `currency: row.currency ?? "CAD",`,
+    count: 1,
+    reason: "Holding edit form fallback to row currency (nullish pattern match)",
+  },
+  {
+    file: "src/components/import/reconcile/db-pane.tsx",
+    line: `{formatCurrency(r.amount, r.currency || "CAD")}`,
+    count: 1,
+    reason: "Reconcile display falls back to bank row currency (logical-or pattern)",
+  },
+  {
+    file: "src/components/import/reconcile/db-pane.tsx",
+    line: `? formatCurrency(r.runningBalance, r.currency || "CAD")`,
+    count: 1,
+    reason: "Reconcile balance falls back to bank row currency (logical-or pattern)",
+  },
+  {
+    file: "src/components/import/reconcile/db-pane.tsx",
+    line: `? formatCurrency(r.anchorBalance, r.currency || "CAD")`,
+    count: 1,
+    reason: "Reconcile balance falls back to bank row currency (logical-or pattern)",
+  },
+  {
+    file: "src/components/import/reconcile/file-pane.tsx",
+    line: `{formatCurrency(r.amount, r.currency || "CAD")}`,
+    count: 1,
+    reason: "Reconcile display falls back to bank row currency (logical-or pattern)",
+  },
+  {
+    file: "src/components/import/reconcile/file-pane.tsx",
+    line: `? formatCurrency(dayBalance, r.currency || "CAD")`,
+    count: 1,
+    reason: "Reconcile balance falls back to bank row currency (logical-or pattern)",
+  },
+  {
+    file: "src/components/import/staged-review-surface.tsx",
+    line: `const driftCurrency = dbRows[0]?.currency ?? "USD";`,
+    count: 1,
+    reason: "Staged import surfaces use account/row currency (nullish pattern)",
+  },
+  {
+    file: "src/components/import/staged-review-surface.tsx",
+    line: `currency: payload.bankCurrency ?? snap?.currency ?? "CAD",`,
+    count: 1,
+    reason: "Staged import surfaces use account/row currency (nullish pattern)",
+  },
+  {
+    file: "src/components/import/staged-review-surface.tsx",
+    line: `stagedCurrency: sRow.currency ?? "CAD",`,
+    count: 1,
+    reason: "Staged import surfaces use row currency (nullish pattern)",
+  },
+  {
+    file: "src/components/inbox/auto-rule-banner.tsx",
+    line: `{formatCurrency(item.amount, item.currency || "CAD")}`,
+    count: 1,
+    reason: "Inbox banner displays transaction currency (logical-or pattern)",
+  },
+  {
+    file: "src/components/inbox/inbox-reconcile-tab.tsx",
+    line: `currency: payload.bankCurrency ?? snap?.currency ?? "CAD",`,
+    count: 1,
+    reason: "Inbox reconcile tab uses bank row currency (nullish pattern)",
+  },
+  {
+    file: "src/components/inbox/inbox-to-approve-tab.tsx",
+    line: `currency: payload.bankCurrency ?? snap?.currency ?? "CAD",`,
+    count: 1,
+    reason: "Inbox to-approve tab uses bank row currency (nullish pattern)",
+  },
+  {
+    file: "src/components/inbox/inbox-to-categorize-tab.tsx",
+    line: `currency: payload.bankCurrency ?? snap?.currency ?? "CAD",`,
+    count: 1,
+    reason: "Inbox to-categorize tab uses bank row currency (nullish pattern)",
+  },
+  {
+    file: "src/components/inbox/row-card.tsx",
+    line: `{formatCurrency(bank.amount, bank.currency || "CAD")}`,
+    count: 1,
+    reason: "Row card displays bank row currency (logical-or pattern)",
+  },
+  {
+    file: "src/components/inbox/row-card.tsx",
+    line: `duplicate.txCurrency || bank.currency || "CAD",`,
+    count: 1,
+    reason: "Row card falls back through tx/bank/default currency (logical-or pattern)",
   },
 ];
 
@@ -364,10 +486,16 @@ describe("Currency Hardcodes Guard", () => {
       { regex: /\|\|\s*["'](USD|CAD)["']/g, name: "logical-or" },
       // Pattern 4: JSX attribute (currency="USD" or currency="CAD" or currency={"USD"})
       { regex: /currency\s*=\s*["'{]*(USD|CAD)["}]/g, name: "jsx-attr" },
-      // Pattern 5: formatCurrency call (formatCurrency(..., "USD") or formatCurrency(..., "CAD"))
-      { regex: /formatCurrency\s*\([^)]*,\s*["'](USD|CAD)["']\s*\)/g, name: "format-call" },
+      // Pattern 5: formatCurrency call (any line with formatCurrency followed by "USD"/"CAD" at end of call)
+      { regex: /formatCurrency\s*\(.*?["'](USD|CAD)["']\s*\)/g, name: "format-call" },
       // Pattern 6: Default currency fallback (DEFAULT_CURRENCY = "CAD")
       { regex: /DEFAULT_CURRENCY\s*=\s*["'](CAD)["']/g, name: "constant" },
+      // Pattern 7: useState with hardcoded default (useState("USD") or useState("CAD"))
+      { regex: /useState\s*\(\s*["'](USD|CAD)["']\s*\)/g, name: "useState" },
+      // Pattern 8: Property key in object literal ({ currency: "USD" } or { currency: "CAD" })
+      { regex: /\bcurrency\s*:\s*["'](USD|CAD)["']/g, name: "property-key" },
+      // Pattern 9: Ternary fallback tail (? something : "CAD" or ? something : "USD")
+      { regex: /\?\s*[^:]*:\s*["'](USD|CAD)["']/g, name: "ternary" },
     ];
 
     for (const scanRoot of SCAN_ROOTS) {
