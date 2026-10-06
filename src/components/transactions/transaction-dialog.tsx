@@ -57,6 +57,7 @@ import { useDisplayCurrency } from "@/components/currency-provider";
 import {
   ArrowRightLeft,
   ChevronDown,
+  Copy,
   Link2,
   Plus,
   Scissors,
@@ -224,6 +225,8 @@ export interface TransactionDialogProps {
   ) => void | Promise<void>;
   /** Trash button in transaction-edit mode. Parent owns the confirm modal. */
   onRequestDelete?: (tx: DialogTransaction) => void;
+  /** Duplicate button in transaction-edit mode. Parent writes prefill and navigates. */
+  onRequestDuplicate?: (tx: DialogTransaction) => void;
   /** Sibling button in linked-siblings panel. Parent owns navigation. */
   onLinkedSiblingClick?: (sibling: DialogLinkedSibling) => void;
 }
@@ -311,6 +314,7 @@ export function TransactionDialog({
   offerRuleSuggestion = false,
   onSaved,
   onRequestDelete,
+  onRequestDuplicate,
   onLinkedSiblingClick,
 }: TransactionDialogProps) {
   // Get display currency for defaults
@@ -1697,6 +1701,19 @@ export function TransactionDialog({
             )}
 
             <div className="flex gap-2">
+              {editingTx && onRequestDuplicate && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    onRequestDuplicate(editingTx);
+                    onOpenChange(false);
+                  }}
+                  aria-label="Duplicate transaction"
+                >
+                  <Copy className="h-4 w-4 mr-1.5" /> Duplicate
+                </Button>
+              )}
               {editingTx && onRequestDelete && (
                 <Button
                   type="button"
