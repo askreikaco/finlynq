@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { execSync } from "child_process";
+import { readFileSync } from "fs";
+import { join } from "path";
 
 describe("Portfolio page /cloud link", () => {
   it("should not have href=/login in any src files", () => {
@@ -21,5 +23,11 @@ describe("Portfolio page /cloud link", () => {
     const appDir = path.join(process.cwd(), "src/app");
     const loginPathExists = fs.existsSync(path.join(appDir, "(app)", "login"));
     expect(loginPathExists).toBe(false);
+  });
+
+  it("portfolio page contains href=\"/cloud\" in page source", () => {
+    const portfolioPagePath = join(process.cwd(), "src/app/(app)/portfolio/page.tsx");
+    const pageSource = readFileSync(portfolioPagePath, "utf-8");
+    expect(pageSource).toContain('href="/cloud"');
   });
 });
