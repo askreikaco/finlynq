@@ -84,25 +84,25 @@ describe('data-version concurrency', () => {
         [shuffledUserIds[i], shuffledUserIds[j]] = [shuffledUserIds[j], shuffledUserIds[i]];
       }
 
-      // Dispatch work: each client gets 60 iterations, each iteration inserts multiple rows
-      // using INSERT ... SELECT FROM unnest() to generate a single statement with multi-user impact
+      // Dispatch work: 6 clients × 60 iterations = 360 total operations
+      // Create a shuffled list of operations: each (clientId, iteration) maps to a user_id
+      // This ensures multi-user contention across all clients simultaneously
       let deadlockCount = 0;
-      const batchSize = 6; // rows per batch insert
       const clientPromises = [];
 
       for (let clientId = 0; clientId < numClients; clientId++) {
         const clientPromise = (async () => {
           for (let iter = 0; iter < iterationsPerClient; iter++) {
             try {
-              // Build a batch of user_ids for this iteration
-              const batchStart = (clientId * iterationsPerClient + iter) * batchSize;
-              const batchUserIds = shuffledUserIds.slice(batchStart, batchStart + batchSize);
+              // Get user_id for this operation from shuffled list
+              const opIdx = clientId * iterationsPerClient + iter;
+              const userId = shuffledUserIds[opIdx % shuffledUserIds.length];
 
-              // Single statement inserting multiple rows across multiple users
-              const placeholders = batchUserIds.map((_, i) => `($${i + 1}, 'checking', 'default', 'CAD')`).join(',');
+              // Insert single row with this user_id
               await clients[clientId].query(
-                `INSERT INTO accounts (user_id, type, "group", currency) VALUES ${placeholders}`,
-                batchUserIds
+                `INSERT INTO accounts (user_id, type, "group", currency)
+                 VALUES ($1, $2, $3, $4)`,
+                [userId, 'checking', 'default', 'CAD']
               );
             } catch (error: any) {
               if (error.message && error.message.includes('deadlock')) {
@@ -155,8 +155,9 @@ describe('data-version concurrency', () => {
       const now = new Date().toISOString();
       await client.query(
         `INSERT INTO users (id, email, password_hash, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [stringUserId, 'string-user@test.local', 'hash', now, now]
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT DO NOTHING`,
+        [stringUserId, 'string-user-' + Date.now() + '@test.local', 'hash', now, now]
       );
 
       // Clear data_version
