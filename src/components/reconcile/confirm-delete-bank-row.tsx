@@ -22,6 +22,7 @@
 
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/currency";
+import { useDisplayCurrency } from "@/components/currency-provider";
 
 export interface ConfirmDeleteBankRowProps {
   open: boolean;
@@ -52,6 +53,7 @@ export function ConfirmDeleteBankRow({
 }: ConfirmDeleteBankRowProps) {
   if (!open) return null;
 
+  const { displayCurrency } = useDisplayCurrency();
   const isPlural = linkedTransactionCount !== 1;
 
   return (
@@ -63,7 +65,7 @@ export function ConfirmDeleteBankRow({
         <p className="mt-2 text-sm text-muted-foreground">
           You&rsquo;re deleting{" "}
           <strong>
-            {formatCurrency(bankAmount, bankCurrency || "CAD")}
+            {formatCurrency(bankAmount, bankCurrency?.trim() ? bankCurrency : displayCurrency)}
           </strong>{" "}
           on <strong>{bankDate}</strong>
           {bankPayee ? (
