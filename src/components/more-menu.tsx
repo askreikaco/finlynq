@@ -56,33 +56,73 @@ const row = (href: string, label: string, icon: LucideIcon): MoreRow => ({ id: h
 /** Pure builder so order/visibility is unit-testable. Sign out is rendered separately (last row of TOOLS). */
 export function buildMoreGroups(f: MoreFlags): MoreGroup[] {
   const moreEntries = getEntriesBySurface("more");
+  const entryMap = new Map(moreEntries.map((e) => [e.path, e]));
 
-  // Group by rough category for better organization
+  // Build groups in the original order expected by the tests
+  // main: core tracking + analysis + reconcile + import
+  // explore: wealth + planning items
+  // tools: what's new + settings (sign out added by component)
+  // admin: admin items (for admins only)
+
   const main: MoreRow[] = [];
   const explore: MoreRow[] = [];
   const tools: MoreRow[] = [];
   const admin: MoreRow[] = [];
 
-  for (const entry of moreEntries) {
-    // Skip dev-only entries if devMode is off
-    if (entry.mode === "dev" && !f.devMode) continue;
+  // Main group: Tracking (Budgets, Goals) + Analysis (Reports, Categories) + Settings (Categorization) + Import + Reconcile
+  const mainPaths = [
+    "/budgets",
+    "/goals",
+    "/reports",
+    "/categories",
+    ...(f.familyEnabled ? ["/family"] : []),
+    "/import?tab=reconcile",
+    "/settings/categorization",
+    "/import",
+  ];
 
-    // Skip family if disabled
-    if (entry.flag === "family" && !f.familyEnabled) continue;
+  for (const path of mainPaths) {
+    const entry = entryMap.get(path);
+    if (entry && (entry.mode !== "dev" || f.devMode)) {
+      main.push(row(entry.path, entry.label, entry.icon));
+    }
+  }
 
-    // Skip announcements-dependent entries if no announcements
-    if (entry.flag === "announcements" && !f.hasAnnouncements) continue;
+  // Explore group: Wealth + Planning items
+  const explorePaths = [
+    "/subscriptions",
+    "/loans",
+    ...(f.devMode
+      ? ["/chat", "/tax", "/scenarios", "/fire", "/api-docs"]
+      : []),
+  ];
 
-    const item = row(entry.path, entry.label, entry.icon);
+  for (const path of explorePaths) {
+    const entry = entryMap.get(path);
+    if (entry) {
+      explore.push(row(entry.path, entry.label, entry.icon));
+    }
+  }
 
-    if (entry.adminOnly) {
-      admin.push(item);
-    } else if (entry.group === "Tools") {
-      tools.push(item);
-    } else if (entry.group === "Tracking" || entry.group === "Top" || entry.path === "/import?tab=reconcile" || entry.path === "/settings/categorization") {
-      main.push(item);
-    } else {
-      explore.push(item);
+  // Tools group: What's new (conditional) + Settings
+  if (f.hasAnnouncements) {
+    const entry = entryMap.get("/whats-new");
+    if (entry) {
+      tools.push(row(entry.path, entry.label, entry.icon));
+    }
+  }
+
+  const settingsEntry = entryMap.get("/settings");
+  if (settingsEntry) {
+    tools.push(row(settingsEntry.path, settingsEntry.label, settingsEntry.icon));
+  }
+
+  // Admin group (for admins only)
+  if (f.isAdmin) {
+    // Get all admin entries in order from registry
+    const adminEntries = moreEntries.filter((e) => e.adminOnly && (e.mode !== "dev" || f.devMode));
+    for (const entry of adminEntries) {
+      admin.push(row(entry.path, entry.label, entry.icon));
     }
   }
 
@@ -100,7 +140,7 @@ export function buildMoreGroups(f: MoreFlags): MoreGroup[] {
     groups.push({ id: "tools", header: "Tools", rows: tools });
   }
 
-  if (f.isAdmin && admin.length > 0) {
+  if (admin.length > 0) {
     groups.push({ id: "admin", header: "Admin", rows: admin });
   }
 

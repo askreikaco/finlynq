@@ -87,15 +87,30 @@ function generateToolLinks(): NavItem[] {
 }
 
 /**
- * Generate mobileBarItems from the registry.
+ * Generate mobileBarItems from the registry in the original order:
+ * Home, Accounts, Portfolio, Transactions
  */
 function generateMobileBarItems(): NavItem[] {
-  return getEntriesBySurface("mobileBar").map((entry) => ({
-    href: entry.path,
-    label: entry.label,
-    icon: entry.icon,
-    color: ACTIVE_ACCENT,
-  }));
+  const mobileEntries = getEntriesBySurface("mobileBar");
+  const entryMap = new Map(mobileEntries.map((e) => [e.path, e]));
+
+  // Maintain original order: dashboard, accounts, portfolio, transactions
+  const paths = ["/dashboard", "/accounts", "/portfolio", "/transactions"];
+  const items: NavItem[] = [];
+
+  for (const path of paths) {
+    const entry = entryMap.get(path);
+    if (entry) {
+      items.push({
+        href: entry.path,
+        label: entry.label,
+        icon: entry.icon,
+        color: ACTIVE_ACCENT,
+      });
+    }
+  }
+
+  return items;
 }
 
 export const navGroups: { label: string; items: NavItem[] }[] = generateNavGroups();

@@ -82,7 +82,7 @@ describe("More screen", () => {
       ["Budgets", "/budgets"],
       ["Goals", "/goals"],
       ["Reports", "/reports"],
-      ["Category report", "/categories"],
+      ["Spending by category", "/categories"],
       ["Family Wealth", "/family"],
       ["Reconcile", "/import?tab=reconcile"],
       ["Categories", "/settings/categorization"],

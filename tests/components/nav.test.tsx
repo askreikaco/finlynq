@@ -102,8 +102,8 @@ describe("Admin Links (Collapsible)", () => {
     expect(item?.mode).toBe("prod");
   });
 
-  it("Feedback item exists and has prod mode", () => {
-    const item = adminLinks.find((i) => i.label === "Feedback");
+  it("User feedback item exists and has prod mode", () => {
+    const item = adminLinks.find((i) => i.label === "User feedback");
     expect(item).toBeTruthy();
     expect(item?.href).toBe("/admin/feedback");
     expect(item?.mode).toBe("prod");
@@ -123,18 +123,18 @@ describe("Admin Links (Collapsible)", () => {
 });
 
 describe("What's New Visibility", () => {
-  it("What's New item exists in navGroups", () => {
+  it("What's new item exists in navGroups", () => {
     const firstGroup = navGroups[0];
-    const whatsNewItem = firstGroup?.items.find((i) => i.label === "What's New");
+    const whatsNewItem = firstGroup?.items.find((i) => i.label === "What's new");
     expect(whatsNewItem).toBeTruthy();
     expect(whatsNewItem?.href).toBe("/whats-new");
     expect(whatsNewItem?.mode).toBe("prod");
   });
 
-  it("What's New item is in the first (top) nav group", () => {
+  it("What's new item is in the first (top) nav group", () => {
     const firstGroup = navGroups[0];
     expect(firstGroup?.label).toBe(""); // empty label for top group
-    const whatsNewItem = firstGroup?.items.find((i) => i.label === "What's New");
+    const whatsNewItem = firstGroup?.items.find((i) => i.label === "What's new");
     expect(whatsNewItem).toBeTruthy();
   });
 });

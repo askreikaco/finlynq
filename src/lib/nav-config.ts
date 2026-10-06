@@ -267,7 +267,7 @@ export const NAV_REGISTRY: NavPageEntry[] = [
     icon: MessageCircle,
     group: "Tools",
     mode: "prod",
-    surfaces: ["sidebar", "more"],
+    surfaces: ["sidebar"],
   },
   {
     id: "settings",
@@ -298,7 +298,7 @@ export const NAV_REGISTRY: NavPageEntry[] = [
     icon: Tag,
     group: "Settings",
     mode: "prod",
-    surfaces: ["settings"],
+    surfaces: ["settings", "more"],
     parent: "/settings",
   },
   {
