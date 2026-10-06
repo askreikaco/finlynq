@@ -86,7 +86,13 @@ describe("manage_goals currency", () => {
     expect(executed.find((q) => /^\s*UPDATE goals SET/.test(q.sql))!.sql).not.toMatch(/currency =/);
   });
 
+  it("schema accepts lowercase currency codes and uppercases them", () => {
+    const result = tool.inputSchema.safeParse({ ...base, currency: "usd" });
+    expect(result.success).toBe(true);
+  });
+
   it("schema rejects a malformed currency", () => {
-    expect(tool.inputSchema.safeParse({ ...base, currency: "usd" }).success).toBe(false);
+    expect(tool.inputSchema.safeParse({ ...base, currency: "US" }).success).toBe(false);
+    expect(tool.inputSchema.safeParse({ ...base, currency: "U$D" }).success).toBe(false);
   });
 });
