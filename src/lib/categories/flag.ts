@@ -1,7 +1,6 @@
 /**
  * FINLYNQ_CATEGORIES_MERGED kill switch for merged categories hub (WP8). Default OFF.
  * When enabled, /categories becomes a unified hub with tabs for overview, management, and rules.
- * /settings/categorization becomes a render-parent alias to /categories.
  * Set to 1/true/on/yes to enable; anything else disables.
  */
 export function isCategoriesMergedEnabled(env: Record<string, string | undefined> = process.env): boolean {
