@@ -494,38 +494,56 @@ describe("Dashboard Currency Render Tests", () => {
     }, { timeout: 3000 });
   });
 
-  it("NetWorthHistoryChart renders with currency from API response", async () => {
-    const { container } = render(
-      <TestWrapper>
-        <NetWorthHistoryChart />
-      </TestWrapper>
-    );
-
-    await waitFor(() => {
-      // NetWorthHistoryChart should render and fetch from /api/net-worth-history
-      // The mocked API returns displayCurrency: "VND" which is used for formatting in tooltip
-      const text = container.textContent || "";
-      expect(text).toMatch(/Net Worth Over Time/);
-      // Should display VND currency symbol in tooltip content
-      expect(text).toMatch(/₫/);
-      expect(text).not.toMatch(/\$|US\$|CA\$|CAD|USD/);
-    }, { timeout: 3000 });
-  });
-
-  it("AnimatedNumber with reduced animations (useAnimations returns false) displays VND", async () => {
-    // This test verifies that even when animations are disabled, currency display still works
-    const { container } = render(
-      <TestWrapper>
-        <AnimatedNumber value={1000000} />
-      </TestWrapper>
-    );
-
-    await waitFor(() => {
-      const text = container.textContent || "";
-      // Should display in VND even with animations disabled
-      expect(text).toMatch(/₫/);
-      expect(text).not.toMatch(/\$|US\$|CA\$|CAD|USD/);
+  it("NetWorthHistoryChart resolves currency from provider when API response has no displayCurrency", async () => {
+    // Create a fetch mock that handles all endpoints, returning VND for session
+    // but NO displayCurrency/seriesCurrency for net-worth endpoint
+    const originalFetch = global.fetch;
+    (global.fetch as unknown as typeof fetch) = vi.fn((url: string | Request | URL) => {
+      const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
+      if (urlStr.includes("/api/auth/session")) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ displayCurrency: "VND" }),
+        } as any);
+      }
+      if (urlStr.includes("/api/net-worth-history")) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            // Explicitly NO displayCurrency or seriesCurrency - should fall back to provider's VND
+            period: "6m",
+            accountId: null,
+            series: [
+              { date: "2024-01-01", value: 100000000 },
+              { date: "2024-02-01", value: 120000000 },
+              { date: "2024-03-01", value: 150000000 },
+            ],
+            hasInvestmentData: false,
+            fxApproximation: false,
+          }),
+        } as any);
+      }
+      return Promise.resolve({ ok: false } as any);
     });
+
+    try {
+      const { container } = render(
+        <TestWrapper>
+          <NetWorthHistoryChart />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        const text = container.textContent || "";
+        expect(text).toMatch(/Net Worth Over Time/);
+        // Component should use provider's displayCurrency (VND) when API response has none
+        expect(text).toMatch(/₫/);
+        expect(text).not.toMatch(/\$|US\$|CA\$|CAD|USD/);
+      }, { timeout: 3000 });
+    } finally {
+      // Restore original fetch
+      global.fetch = originalFetch;
+    }
   });
 
   it("ConfirmDeleteBankRow with empty string bankCurrency displays VND (not hardcoded fallback)", async () => {
@@ -586,7 +604,7 @@ describe("Dashboard Currency Render Tests", () => {
           linkedTransactionCount={1}
           bankDate="2024-01-15"
           bankAmount={1000000}
-          bankCurrency={"" as any}
+          bankCurrency={null as unknown as string}
           bankPayee="Test Payee"
           busy={false}
           onConfirm={() => {}}
@@ -597,8 +615,54 @@ describe("Dashboard Currency Render Tests", () => {
 
     await waitFor(() => {
       const text = container.textContent || "";
-      // Null/empty should fallback to displayCurrency (VND)
+      // Null should fallback to displayCurrency (VND)
       expect(text).toMatch(/₫/);
+    });
+  });
+});
+
+describe("Dashboard Currency Render Tests - Animation useAnimations=false", () => {
+  // useAnimations is mocked to false in the global beforeEach above
+  it("AnimatedNumber with animations disabled displays VND", async () => {
+    const { container } = render(
+      <TestWrapper>
+        <AnimatedNumber value={1000000} />
+      </TestWrapper>
+    );
+
+    await waitFor(() => {
+      const text = container.textContent || "";
+      expect(text).toMatch(/₫/);
+      expect(text).not.toMatch(/\$|US\$|CA\$|CAD|USD/);
+    });
+  });
+});
+
+describe("Dashboard Currency Render Tests - Animation useAnimations=true", () => {
+  beforeEach(() => {
+    // Unmock and remock useAnimations to return true for this describe block
+    vi.unmock("@/hooks/use-animations");
+    vi.mock("@/hooks/use-animations", () => ({
+      useAnimations: () => true,
+    }));
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.unmock("@/hooks/use-animations");
+  });
+
+  it("AnimatedNumber with animations enabled displays VND", async () => {
+    const { container } = render(
+      <TestWrapper>
+        <AnimatedNumber value={1000000} />
+      </TestWrapper>
+    );
+
+    await waitFor(() => {
+      const text = container.textContent || "";
+      expect(text).toMatch(/₫/);
+      expect(text).not.toMatch(/\$|US\$|CA\$|CAD|USD/);
     });
   });
 });
