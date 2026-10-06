@@ -114,13 +114,6 @@ const ALLOW_LIST = [
     count: 2, // matches logical-or and format-call patterns
     reason: "Reconcile display falls back to bank row currency",
   },
-  // Confirm delete bank row dialog (display shows bank row amount with CAD fallback)
-  {
-    file: "src/components/reconcile/confirm-delete-bank-row.tsx",
-    line: `{formatCurrency(bankAmount, bankCurrency || "CAD")}`,
-    count: 2, // matches logical-or and format-call patterns
-    reason: "Modal displays bank row amount with CAD fallback when currency missing",
-  },
   {
     file: "src/components/reconcile/investment-op-preview-dialog.tsx",
     line: `const amountAbs = formatCurrency(Math.abs(preview.amount), preview.currency || "CAD");`,
