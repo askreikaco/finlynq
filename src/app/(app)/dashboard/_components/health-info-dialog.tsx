@@ -108,7 +108,7 @@ function ComponentBlock({
 
 export function HealthInfoDialog({ data, open, onOpenChange }: HealthInfoDialogProps) {
   const { displayCurrency } = useDisplayCurrency();
-  const reporting = data.reportingCurrency ?? displayCurrency ?? "USD";
+  const reporting = data.reportingCurrency ?? displayCurrency;
   const totals = data.totals;
   const excluded = data.excludedComponents ?? [];
 
