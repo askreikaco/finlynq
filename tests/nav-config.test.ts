@@ -366,4 +366,67 @@ describe("nav-config", () => {
       }
     });
   });
+
+  describe("Registry entries resolve to real pages", () => {
+    it("every registry entry (except parent-only entries) should have a page file", () => {
+      const appDir = join(process.cwd(), "src/app/(app)");
+
+      // Get all page files in the app directory
+      function getAllPageFiles(): Set<string> {
+        const pages = new Set<string>();
+
+        function walkDir(dir: string, basePath = ""): void {
+          const entries = readdirSync(dir, { withFileTypes: true });
+
+          for (const entry of entries) {
+            const fullPath = join(dir, entry.name);
+            const routePath = basePath + "/" + entry.name;
+
+            if (entry.isDirectory() && !entry.name.startsWith("_")) {
+              walkDir(fullPath, routePath);
+            } else if (entry.name === "page.tsx") {
+              let normalizedPath = routePath
+                .replace(/\/page\.tsx$/, "") // Remove /page.tsx
+                .replace(/\/\([^)]+\)/g, "") // Remove route groups like /(env)
+                .replace(/\/$/, ""); // Remove trailing slash
+              pages.add(normalizedPath);
+            }
+          }
+        }
+
+        walkDir(appDir);
+        return pages;
+      }
+
+      const pageFiles = getAllPageFiles();
+
+      // Known redirects (from next.config.ts)
+      const redirectTargets = new Set([
+        "/import", // /reconcile, /import/reconcile, /inbox redirect here
+      ]);
+
+      for (const entry of NAV_REGISTRY) {
+        // Skip entries with query params
+        if (entry.path.includes("?")) continue;
+        // Skip parent-only entries (they exist as layout containers, not pages)
+        if (entry.surfaces.length === 0) continue;
+        if (entry.surfaces.length === 1 && entry.surfaces[0] === "admin") {
+          // Check if this is a child of a parent (has parent field)
+          if (entry.parent) continue;
+        }
+
+        const basePath = entry.path.split("?")[0];
+        const exists =
+          pageFiles.has(basePath) ||
+          pageFiles.has(basePath.replace(/\/\[id\]$/, "/[id]")) ||
+          redirectTargets.has(basePath);
+
+        if (!exists) {
+          console.log(`Page file missing for registry entry: ${basePath}`);
+        }
+
+        expect(exists).toBe(true);
+      }
+    });
+  });
 });
