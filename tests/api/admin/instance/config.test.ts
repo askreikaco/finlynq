@@ -82,10 +82,9 @@ describe("GET /api/admin/instance/config", () => {
       context: { userId: "admin-user" },
     };
 
-    // Mock process.env with secrets
-    const originalEnv = process.env;
-    process.env.GOOGLE_CLIENT_SECRET = "super-secret-key-12345";
-    process.env.SENDGRID_API_KEY = "SG.secret-sendgrid-key";
+    // Mock process.env with secrets using vi.stubEnv
+    vi.stubEnv("GOOGLE_CLIENT_SECRET", "super-secret-key-12345");
+    vi.stubEnv("SENDGRID_API_KEY", "SG.secret-sendgrid-key");
 
     try {
       const request = new NextRequest("http://localhost:3000/api/admin/instance/config");
@@ -100,7 +99,7 @@ describe("GET /api/admin/instance/config", () => {
       // Should only contain masked version
       expect(jsonString).toContain("***");
     } finally {
-      process.env = originalEnv;
+      vi.unstubAllEnvs();
     }
   });
 });

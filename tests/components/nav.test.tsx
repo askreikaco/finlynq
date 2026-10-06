@@ -129,6 +129,7 @@ describe("Admin Links (Collapsible)", () => {
       "/admin/env",
       "/admin/announcements",
       "/admin/feedback",
+      "/admin/instance",
     ];
     const actualHrefs = adminLinks.map((i) => i.href);
     expect(actualHrefs).toEqual(expectedHrefs);

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { middleware } from "@/middleware";
+import { isInstanceAdminPath } from "@/lib/admin/instance-flag";
 import { NextRequest } from "next/server";
 
 describe("Middleware — Security Headers", () => {
@@ -172,5 +173,53 @@ describe("Middleware — Instance Admin kill switch (WP9a)", () => {
   it("does not affect /family routes", () => {
     const res = middleware(makeRequest("/family/overview"));
     expect(res.status).toBe(200);
+  });
+
+  it("API 404 response has correct body format and content-type", async () => {
+    const res = middleware(makeRequest("/api/admin/instance/config"));
+    expect(res.status).toBe(404);
+    expect(res.headers.get("content-type")).toContain("application/json");
+    const body = await res.json();
+    expect(body).toEqual({ error: "Not found" });
+  });
+
+  it("page 404 response has x-middleware-rewrite header", () => {
+    const res = middleware(makeRequest("/admin/instance"));
+    expect(res.status).toBe(404);
+    expect(res.headers.get("x-middleware-rewrite")).toBe("http://localhost:3000/instance-admin-disabled");
+  });
+
+  it("DELETE with cookie and evil Origin returns 404 not 403 (gate before CSRF)", () => {
+    const res = middleware(
+      new NextRequest(new URL("/api/admin/instance/config", "http://localhost:3000"), {
+        method: "DELETE",
+        headers: {
+          cookie: "session=abc123",
+          origin: "https://evil.com",
+        },
+      })
+    );
+    expect(res.status).toBe(404);
+    // Not 403 (CSRF), because instance-admin gate runs first
+  });
+
+  it("isInstanceAdminPath matches /api/admin/instance (exact)", () => {
+    expect(isInstanceAdminPath("/api/admin/instance")).toBe(true);
+  });
+
+  it("isInstanceAdminPath matches /api/admin/instance/config (subpath)", () => {
+    expect(isInstanceAdminPath("/api/admin/instance/config")).toBe(true);
+  });
+
+  it("isInstanceAdminPath matches /admin/instance/subpage (page subpath)", () => {
+    expect(isInstanceAdminPath("/admin/instance/subpage")).toBe(true);
+  });
+
+  it("isInstanceAdminPath does not match /admin/instances (plural)", () => {
+    expect(isInstanceAdminPath("/admin/instances")).toBe(false);
+  });
+
+  it("isInstanceAdminPath does not match /admin/instance-x (with suffix)", () => {
+    expect(isInstanceAdminPath("/admin/instance-x")).toBe(false);
   });
 });

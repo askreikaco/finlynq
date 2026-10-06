@@ -263,3 +263,55 @@ describe("Nav icon rendering", () => {
     expect(iconSvg).not.toBeNull();
   });
 });
+
+describe("Nav Instance Admin filter (WP9a)", () => {
+  beforeEach(() => {
+    mockPath = "/admin/instance";
+    localStorage.clear();
+  });
+
+  it("hides Instance config when instanceAdminEnabled={false}", async () => {
+    mockFetch({ admin: true });
+    render(<Nav instanceAdminEnabled={false} />);
+
+    // Open admin group
+    localStorage.setItem("nav.adminOpen", "true");
+    render(<Nav instanceAdminEnabled={false} />);
+
+    await new Promise((r) => setTimeout(r, 10));
+    expect(screen.queryByText("Instance config")).toBeNull();
+  });
+
+  it("shows Instance config when instanceAdminEnabled={true}", async () => {
+    mockFetch({ admin: true });
+    render(<Nav instanceAdminEnabled={true} />);
+
+    // Open admin group
+    localStorage.setItem("nav.adminOpen", "true");
+    render(<Nav instanceAdminEnabled={true} />);
+
+    const configLink = await waitFor(() => screen.getByRole("link", { name: /Instance config/i }));
+    expect(configLink).toBeTruthy();
+    expect(configLink.getAttribute("href")).toBe("/admin/instance");
+  });
+
+  it("hides Instance config by default (instanceAdminEnabled omitted)", async () => {
+    mockFetch({ admin: true });
+    render(<Nav />);
+
+    // Open admin group
+    localStorage.setItem("nav.adminOpen", "true");
+    render(<Nav />);
+
+    await new Promise((r) => setTimeout(r, 10));
+    expect(screen.queryByText("Instance config")).toBeNull();
+  });
+
+  it("Instance config has instance flag set in nav registry", async () => {
+    // Verify the flag is correctly set at the static config level
+    const { adminLinks } = await import("@/components/nav");
+    const instanceItem = adminLinks.find((i) => i.label === "Instance config");
+    expect(instanceItem).toBeTruthy();
+    expect(instanceItem?.flag).toBe("instance");
+  });
+});
