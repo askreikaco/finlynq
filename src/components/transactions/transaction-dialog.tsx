@@ -716,7 +716,7 @@ export function TransactionDialog({
             to: toAcct.currency,
           });
           if (!transferReceivedTouched) {
-            const targetCcy = toAcct?.currency ?? "USD";
+            const targetCcy = toAcct?.currency ?? displayCurrency;
             setTransferForm((tf) => ({ ...tf, receivedAmount: fxPreviewText(converted, targetCcy) }));
           }
         })
@@ -2120,8 +2120,8 @@ export function TransactionDialog({
                     }}
                     placeholder={
                       transferFxPreview.state === "ok"
-                        ? fxPreviewText(transferFxPreview.converted, toAcct?.currency ?? "USD")
-                        : `0.${"0".repeat(currencyDecimals(toAcct?.currency ?? "USD"))}`
+                        ? fxPreviewText(transferFxPreview.converted, toAcct?.currency ?? displayCurrency)
+                        : `0.${"0".repeat(currencyDecimals(toAcct?.currency ?? displayCurrency))}`
                     }
                   />
                   <p className="text-[11px] text-muted-foreground">
