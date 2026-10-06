@@ -131,7 +131,7 @@ describe('data-version concurrency', () => {
   });
 
   it('should bump both users when UPDATE changes user_id', async () => {
-    const client = new pg.Client({
+    const client = new Client({
       connectionString: databaseUrl,
     });
 

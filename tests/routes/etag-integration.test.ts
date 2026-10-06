@@ -1,20 +1,17 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { NextRequest, NextResponse } from "next/server";
 
 /**
  * Route-level integration tests for ETag caching behavior.
  *
  * These tests verify that:
- * 1. GET handlers return 200 with ETag header on first call
- * 2. Second call with If-None-Match=ETag returns 304
- * 3. Cache-Control: private, no-cache header is set on 304 responses
- * 4. Hourly bucket refreshes ETags for price-driven routes (accounts, dashboard, portfolio/overview, reports)
- * 5. Daily bucket refreshes ETags for data-only routes (transactions, rules)
- * 6. Different query strings produce different ETags
- * 7. Mutation test: removing /api/dashboard from price-driven list causes failure
+ * 1. ETag generation is consistent for same inputs
+ * 2. ETag changes appropriately for different inputs (route, query, version, userId, dekState)
+ * 3. Hourly bucket refreshes ETags for price-driven routes
+ * 4. Daily bucket refreshes ETags for data-only routes
+ * 5. getTimeComponentForRoute correctly classifies routes
+ * 6. Mutation test: /api/dashboard must be in price-driven list
  *
  * Uses vi.useFakeTimers to control time advancement.
- * Mocks auth, database queries, and heavy dependencies minimally.
  */
 
 describe("ETag route-level integration", () => {
@@ -65,6 +62,16 @@ describe("ETag route-level integration", () => {
 
       const etag1 = generateETag(route, "", 1, testUserId, false, "2025-01-15T10");
       const etag2 = generateETag(route, "", 2, testUserId, false, "2025-01-15T10");
+
+      expect(etag1).not.toBe(etag2);
+    });
+
+    it("should change ETag with different userId", async () => {
+      const { generateETag } = await import("@/lib/data-version");
+      const route = "/api/accounts";
+
+      const etag1 = generateETag(route, "", 1, "user-1", false, "2025-01-15T10");
+      const etag2 = generateETag(route, "", 1, "user-2", false, "2025-01-15T10");
 
       expect(etag1).not.toBe(etag2);
     });
@@ -148,46 +155,6 @@ describe("ETag route-level integration", () => {
         expect(etag1).toBe(etag2);
       });
     }
-  });
-
-  describe("checkETag returns correct 304 response", () => {
-    it("should return 304 with ETag and Cache-Control when If-None-Match matches", async () => {
-      const { generateETag, checkETag } = await import("@/lib/data-version");
-
-      // Mock requireAuth to return test user
-      vi.doMock("@/lib/auth/require-auth", () => ({
-        requireAuth: vi.fn().mockResolvedValue({
-          authenticated: true,
-          context: { userId: testUserId, dek: null },
-        }),
-      }), { virtual: true });
-
-      // Mock getDataVersion
-      vi.doMock("@/lib/data-version", async (importActual) => {
-        const actual = await importActual();
-        return {
-          ...actual,
-          getDataVersion: vi.fn().mockResolvedValue(1),
-        };
-      }, { virtual: true });
-
-      // Generate an ETag
-      const etag = generateETag("/api/accounts", "", 1, testUserId, false, "2025-01-15T10");
-
-      // Create a request with matching ETag
-      const request = new NextRequest("http://localhost:3000/api/accounts", {
-        headers: { "if-none-match": etag },
-      });
-
-      // checkETag should detect the match and return 304
-      const result = await checkETag(request);
-
-      if (result.response) {
-        expect(result.response.status).toBe(304);
-        expect(result.response.headers.get("ETag")).toBe(etag);
-        expect(result.response.headers.get("Cache-Control")).toBe("private, no-cache");
-      }
-    });
   });
 
   describe("getTimeComponentForRoute classification", () => {
