@@ -93,15 +93,19 @@ export function isSafeToNeverPersist(key: string): boolean {
   return NEVER_PERSIST.some((pattern) => pattern.test(normalized));
 }
 
-export function isSafeToPersist(key: string): boolean {
+export function isSafeToPersist(
+  key: string,
+  allowList: Set<string> = PERSIST_ALLOWED,
+  blockList: RegExp[] = NEVER_PERSIST,
+): boolean {
   if (typeof key !== "string") return false;
 
   const normalized = normalizeKey(key);
   if (!normalized || !normalized.startsWith("/api/")) return false;
 
   // Must NOT match block-list
-  if (isSafeToNeverPersist(key)) return false;
+  if (blockList.some((pattern) => pattern.test(normalized))) return false;
 
   // Must match allow-list prefix
-  return Array.from(PERSIST_ALLOWED).some((allowed) => normalized === allowed || normalized.startsWith(allowed + "/"));
+  return Array.from(allowList).some((allowed) => normalized === allowed || normalized.startsWith(allowed + "/"));
 }

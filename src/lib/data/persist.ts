@@ -67,8 +67,14 @@ async function getKey(db: IDBDatabase, create: boolean): Promise<CryptoKey | nul
   return key;
 }
 
-/** Load every stored entry for this user + build. Wrong build → wipe, empty. */
-export async function loadPersisted(userId: string, build: string): Promise<Map<string, unknown>> {
+/** Load every stored entry for this user + build. Wrong build → wipe, empty.
+ * Pass optional isSafe predicate to skip decrypting disallowed entries.
+ */
+export async function loadPersisted(
+  userId: string,
+  build: string,
+  isSafe?: (key: string) => boolean,
+): Promise<Map<string, unknown>> {
   const out = new Map<string, unknown>();
   if (!persistSupported()) return out;
   const db = await open(userId);
@@ -86,9 +92,12 @@ export async function loadPersisted(userId: string, build: string): Promise<Map<
     const dec = new TextDecoder();
     await Promise.all(
       (values as Entry[]).map(async (e, i) => {
+        const keyStr = String(keys[i]);
+        // Skip decryption if isSafe predicate is provided and key fails it
+        if (isSafe && !isSafe(keyStr)) return;
         try {
           const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: e.iv }, key, e.ct);
-          out.set(String(keys[i]), JSON.parse(dec.decode(plain)));
+          out.set(keyStr, JSON.parse(dec.decode(plain)));
         } catch {
           /* corrupt or foreign entry: skip */
         }
@@ -148,6 +157,7 @@ export async function savePersisted(userId: string, build: string, batch: Map<st
  * Purge all disallowed keys from IndexedDB. Runs on hydration regardless of enabled() state
  * to clean up old encrypted entries that should never persist (auth, security, etc.).
  * Safe to run even on untrusted devices (read-only checks, no state changes).
+ * Cleans ONLY this user's database (userId parameter); wipeAll() handles other users on signed-out boot.
  */
 export async function purgeDisallowed(userId: string, build: string): Promise<void> {
   if (!persistSupported()) return;
