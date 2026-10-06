@@ -1,5 +1,10 @@
 -- Per-user data versioning via statement-level triggers
 --
+-- HAND-MAINTAINED: This file was originally generated but is now hand-edited to fix
+-- deadlock issues and handle TEXT user_ids (not just UUIDs). Do not regenerate.
+-- Generator script (scripts/gen-data-version-migration.mjs) deleted to prevent
+-- accidental regeneration with invalid PERFORM syntax.
+--
 -- Adds triggers to bump users.data_version on EVERY write to user-owned tables.
 -- Each trigger is STATEMENT-level (not ROW) with transition tables, so a bulk
 -- insert of 1000 rows bumps the version once per affected user, not 1000 times.
