@@ -15,8 +15,8 @@ import pg from 'pg';
 describe('data-version concurrency', () => {
   const databaseUrl = process.env.DATABASE_URL;
   const numClients = 6;
-  const numUsers = 6;
-  const iterationsPerClient = 60;
+  const numUsers = 4;
+  const iterationsPerClient = 80;
 
   beforeAll(() => {
     if (!databaseUrl) {
@@ -24,7 +24,7 @@ describe('data-version concurrency', () => {
     }
   });
 
-  it('should prevent deadlocks with multi-user multi-statement inserts (6 clients × 60 iterations)', async () => {
+  it('should prevent deadlocks with multi-user multi-statement inserts (6 clients × 80 iterations)', async () => {
     const clients = Array.from({ length: numClients }, () => new pg.Client({
       connectionString: databaseUrl,
     }));
@@ -71,7 +71,8 @@ describe('data-version concurrency', () => {
         [userIds]
       );
 
-      // Create shuffled user_id assignments: 360 operations across 6 users
+      // Create shuffled user_id assignments: 480 operations across 4 test users
+      // Each iteration creates a shuffled array of 4 user IDs
       const shuffledUserIds: string[] = [];
       for (let i = 0; i < iterationsPerClient; i++) {
         for (let u = 0; u < numUsers; u++) {
@@ -84,7 +85,7 @@ describe('data-version concurrency', () => {
         [shuffledUserIds[i], shuffledUserIds[j]] = [shuffledUserIds[j], shuffledUserIds[i]];
       }
 
-      // Dispatch work: 6 clients × 60 iterations = 360 total operations
+      // Dispatch work: 6 clients × 80 iterations = 480 total operations
       // Create a shuffled list of operations: each (clientId, iteration) maps to a user_id
       // This ensures multi-user contention across all clients simultaneously
       let deadlockCount = 0;
@@ -120,7 +121,7 @@ describe('data-version concurrency', () => {
       await Promise.all(clientPromises);
 
       // CRITICAL: Verify zero deadlocks (fails if deterministic row locking is removed)
-      console.log(`\n*** DEADLOCK TEST RESULT: ${deadlockCount} deadlocks out of 360 operations ***`);
+      console.log(`\n*** DEADLOCK TEST RESULT: ${deadlockCount} deadlocks out of 480 operations ***`);
       expect(deadlockCount).toBe(0);
 
       // Verify each user's data_version was incremented
@@ -194,17 +195,18 @@ describe('data-version concurrency', () => {
     try {
       await client.connect();
 
-      // Get or create two test users
-      const users = await client.query(
-        `SELECT id FROM users WHERE email LIKE 'concurrent-user-%' ORDER BY id LIMIT 2`
+      // Create two test users for this test
+      const now = new Date().toISOString();
+      const createUserResult = await client.query(
+        `INSERT INTO users (id, email, password_hash, created_at, updated_at)
+         SELECT 'update-user-' || gen_random_uuid()::text, 'update-user-' || i::text || '@test.local', 'hash_pass', $1, $2
+         FROM generate_series(1, 2) i
+         RETURNING id`,
+        [now, now]
       );
 
-      if (users.rows.length < 2) {
-        throw new Error('Need at least 2 test users');
-      }
-
-      const user1Id = users.rows[0].id;
-      const user2Id = users.rows[1].id;
+      const user1Id = createUserResult.rows[0].id;
+      const user2Id = createUserResult.rows[1].id;
 
       // Clear data_version for both users
       await client.query(
@@ -254,6 +256,16 @@ describe('data-version concurrency', () => {
 
       console.log(`User 1 (old owner) data_version: ${finalUser1Version}`);
       console.log(`User 2 (new owner) data_version: ${finalUser2Version}`);
+
+      // Clean up test users and their data
+      await client.query(
+        `DELETE FROM accounts WHERE user_id IN ($1, $2)`,
+        [user1Id, user2Id]
+      );
+      await client.query(
+        `DELETE FROM users WHERE id IN ($1, $2)`,
+        [user1Id, user2Id]
+      );
     } finally {
       await client.end();
     }
