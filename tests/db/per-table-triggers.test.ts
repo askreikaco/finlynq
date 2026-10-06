@@ -72,6 +72,7 @@ const trackedTables = [
   "holding_lots",
   "holding_lot_closures",
   "portfolio_lots_status",
+  "portfolio_cash_snapshot_meta",
   "portfolio_snapshots",
   "portfolio_legacy_realized_gain_snapshot",
   "backfill_runs",
@@ -246,6 +247,10 @@ function buildInsertStatement(
       sql: `INSERT INTO webhooks (user_id, url, events) VALUES ($1, $2, $3) RETURNING id`,
       params: ["http://example.com", "{}"],
     },
+    portfolio_cash_snapshot_meta: {
+      sql: `INSERT INTO portfolio_cash_snapshot_meta (user_id, snapshot_date) VALUES ($1, $2) RETURNING id`,
+      params: [new Date().toISOString().split("T")[0]],
+    },
   };
 
   // Fallback for tables not explicitly listed
@@ -276,6 +281,7 @@ function buildUpdateStatement(tableName: string): string | null {
     settings: `UPDATE settings SET value = 'new_value'`,
     subscriptions: `UPDATE subscriptions SET active = false`,
     webhooks: `UPDATE webhooks SET url = 'http://updated.com'`,
+    portfolio_cash_snapshot_meta: `UPDATE portfolio_cash_snapshot_meta SET snapshot_date = CURRENT_DATE`,
   };
 
   return updates[tableName] || null;
