@@ -2,6 +2,7 @@
 
 import { AreaChart, Area, ResponsiveContainer, Tooltip } from "recharts";
 import { formatCurrency, getMonthLabel } from "@/lib/currency";
+import { useDisplayCurrency } from "@/components/currency-provider";
 import { useAnimations } from "@/hooks/use-animations";
 
 type SparklineProps = {
@@ -57,7 +58,9 @@ function SparklineTooltip({
   );
 }
 
-export function Sparkline({ data, color, labels, currency = "USD", height = 30, className = "w-full h-[30px]" }: SparklineProps) {
+export function Sparkline({ data, color, labels, currency, height = 30, className = "w-full h-[30px]" }: SparklineProps) {
+  const { displayCurrency: userDisplayCurrency } = useDisplayCurrency();
+  const resolvedCurrency = currency?.trim() ? currency : userDisplayCurrency;
   const animationsEnabled = useAnimations();
   const chartData: SparkRow[] = data.map((value, index) => ({ index, value, label: labels?.[index] }));
   const interactive = Boolean(labels?.length);
@@ -74,7 +77,7 @@ export function Sparkline({ data, color, labels, currency = "USD", height = 30, 
           </defs>
           {interactive && (
             <Tooltip
-              content={<SparklineTooltip color={color} currency={currency} />}
+              content={<SparklineTooltip color={color} currency={resolvedCurrency} />}
               cursor={{ stroke: color, strokeOpacity: 0.35, strokeWidth: 1 }}
               // The chart is only 30px tall and sits at the bottom of an
               // overflow-hidden card. Render the tooltip ABOVE the cursor
