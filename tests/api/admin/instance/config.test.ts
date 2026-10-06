@@ -9,6 +9,7 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest, NextResponse } from "next/server";
+import * as routeModule from "@/app/api/admin/instance/config/route";
 import { GET, POST, PATCH, DELETE } from "@/app/api/admin/instance/config/route";
 
 // Mock requireAdmin to control auth state
@@ -128,9 +129,14 @@ describe("State-changing methods", () => {
     expect(response.status).toBe(405);
   });
 
-  it("route module does not export PUT method", () => {
-    // This verifies that PUT is not exported, preventing mutations that add it
-    const route: Record<string, unknown> = { GET, POST, PATCH, DELETE };
-    expect(route.PUT).toBeUndefined();
+  it("route module exports only GET, POST, PATCH, DELETE (no PUT or other HTTP verbs)", () => {
+    // Get all exported names from the route module
+    const httpVerbs = Object.keys(routeModule).filter((key) =>
+      ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"].includes(key)
+    );
+    // Should contain exactly these four: GET, POST, PATCH, DELETE
+    expect(httpVerbs.sort()).toEqual(["DELETE", "GET", "PATCH", "POST"]);
+    // Specifically, PUT should not be exported
+    expect((routeModule as Record<string, unknown>).PUT).toBeUndefined();
   });
 });

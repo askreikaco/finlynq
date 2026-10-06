@@ -128,7 +128,20 @@ describe("requireAdmin", () => {
       }
     });
 
-    it.each(["user", "viewer", "moderator", "ADMIN", "Admin", undefined, ""])(
+    it.each([
+      "user",
+      "viewer",
+      "moderator",
+      "ADMIN",
+      "Admin",
+      undefined,
+      "",
+      null,
+      "Admin ",
+      " admin",
+      "superadmin",
+      "admin2",
+    ])(
       "returns 403 when user has role: %s",
       async (role) => {
         mockRequireAuth.mockResolvedValue({

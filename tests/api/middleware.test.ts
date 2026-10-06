@@ -131,37 +131,38 @@ describe("Middleware — CSP nonce (B10)", () => {
 });
 
 describe("Middleware — Matcher pattern (WP9a)", () => {
+  it("middleware config has exactly one matcher pattern", () => {
+    expect(middlewareConfig.matcher).toHaveLength(1);
+  });
+
   it("matcher[0] RegExp matches /api/admin/instance/config", () => {
-    // Verify middleware config has matcher defined
-    expect(middlewareConfig.matcher).toBeDefined();
-    expect(middlewareConfig.matcher[0]).toBeDefined();
-
-    // Build RegExp from the matcher pattern (Next.js path-to-regexp syntax)
-    // The pattern: /((?!_next/static|_next/image|favicon.ico).*)/
-    // Matches anything that doesn't start with the excluded paths
-    const regex = new RegExp(`^/((?!_next/static|_next/image|favicon.ico).*)$`);
-
-    expect(regex.test("/api/admin/instance/config")).toBe(true);
+    const re = new RegExp("^" + middlewareConfig.matcher[0] + "$");
+    expect(re.test("/api/admin/instance/config")).toBe(true);
   });
 
   it("matcher[0] RegExp matches /admin/instance", () => {
-    const regex = new RegExp(`^/((?!_next/static|_next/image|favicon.ico).*)$`);
-    expect(regex.test("/admin/instance")).toBe(true);
+    const re = new RegExp("^" + middlewareConfig.matcher[0] + "$");
+    expect(re.test("/admin/instance")).toBe(true);
+  });
+
+  it("matcher[0] RegExp matches /api/foo", () => {
+    const re = new RegExp("^" + middlewareConfig.matcher[0] + "$");
+    expect(re.test("/api/foo")).toBe(true);
   });
 
   it("matcher[0] RegExp does NOT match /_next/static/x", () => {
-    const regex = new RegExp(`^/((?!_next/static|_next/image|favicon.ico).*)$`);
-    expect(regex.test("/_next/static/x")).toBe(false);
+    const re = new RegExp("^" + middlewareConfig.matcher[0] + "$");
+    expect(re.test("/_next/static/x")).toBe(false);
   });
 
   it("matcher[0] RegExp does NOT match /_next/image", () => {
-    const regex = new RegExp(`^/((?!_next/static|_next/image|favicon.ico).*)$`);
-    expect(regex.test("/_next/image")).toBe(false);
+    const re = new RegExp("^" + middlewareConfig.matcher[0] + "$");
+    expect(re.test("/_next/image")).toBe(false);
   });
 
   it("matcher[0] RegExp does NOT match /favicon.ico", () => {
-    const regex = new RegExp(`^/((?!_next/static|_next/image|favicon.ico).*)$`);
-    expect(regex.test("/favicon.ico")).toBe(false);
+    const re = new RegExp("^" + middlewareConfig.matcher[0] + "$");
+    expect(re.test("/favicon.ico")).toBe(false);
   });
 });
 
