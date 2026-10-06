@@ -15,25 +15,23 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import {
-  Server,
-  ScrollText,
-  Activity,
-  Database,
-  Plug,
-} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { PageHeader } from "@/components/mobile";
+import { getEntriesBySurface } from "@/lib/nav-config";
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
 
-const NAV_ITEMS: NavItem[] = [
-  { href: "/admin/system", label: "System", icon: Server },
-  { href: "/admin/diagnostics", label: "Diagnostics", icon: ScrollText },
-  { href: "/admin/api-log", label: "API Log", icon: Activity },
-  { href: "/admin/price-cache", label: "Rate Cache", icon: Database },
-  { href: "/admin/integrations", label: "Integrations", icon: Plug },
-];
+function getAdminEnvItems(): NavItem[] {
+  return getEntriesBySurface("admin")
+    .filter((e) => e.parent === "/admin/env")
+    .map((entry) => ({
+      href: entry.path,
+      label: entry.label,
+      icon: entry.icon,
+    }));
+}
+
+const NAV_ITEMS: NavItem[] = getAdminEnvItems();
 
 function activeHref(pathname: string): string {
   let best: string | null = null;

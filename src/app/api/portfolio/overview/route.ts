@@ -25,7 +25,7 @@ export function GET(request: NextRequest) {
 }
 
 async function handleGet(request: NextRequest) {
-  const { checkETag } = await import("@/lib/data-version");
+  const { checkETag, withEtagHeaders } = await import("@/lib/data-version");
   const etagCheck = await checkETag(request);
   if (etagCheck.response) return etagCheck.response;
   const { userId, dek } = etagCheck.authContext!;
@@ -1568,6 +1568,6 @@ async function handleGet(request: NextRequest) {
     topGainers,
     topLosers,
   });
-  if (etag) response.headers.set("ETag", etag);
+  if (etag) return withEtagHeaders(response, etag);
   return response;
 }

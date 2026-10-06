@@ -83,9 +83,10 @@ const nextConfig: NextConfig = {
       // are preserved automatically. Not permanent yet — still soaking on dev;
       // flip to permanent at prod promotion. /import/pending is NOT matched
       // (it's a live route — the standalone staged-review surface).
+      // /reconcile and /import/reconcile now preserve ?tab=reconcile for the More menu.
       { source: "/inbox", destination: "/import", permanent: false },
-      { source: "/reconcile", destination: "/import", permanent: false },
-      { source: "/import/reconcile", destination: "/import", permanent: false },
+      { source: "/reconcile", destination: "/import?tab=reconcile", permanent: false },
+      { source: "/import/reconcile", destination: "/import?tab=reconcile", permanent: false },
       // /import/classic was the temporary legacy-hub backup (Phase 3b → 6);
       // deleted after validation. Redirect so old bookmarks don't 404.
       { source: "/import/classic", destination: "/import", permanent: false },

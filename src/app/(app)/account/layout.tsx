@@ -9,13 +9,25 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/mobile";
+import { getEntriesBySurface } from "@/lib/nav-config";
 
 type TabItem = { href: string; label: string };
 
-const TABS: TabItem[] = [
-  { href: "/account/info", label: "Info" },
-  { href: "/account/security", label: "Security" },
-];
+function getAccountTabs(): TabItem[] {
+  return getEntriesBySurface("account")
+    .filter((e) => e.parent === "/account")
+    .map((entry) => ({
+      href: entry.path,
+      label: entry.label,
+    }))
+    .sort((a, b) => {
+      // Sort: /account/info first, then /account/security
+      const order = ["/account/info", "/account/security"];
+      return order.indexOf(a.href) - order.indexOf(b.href);
+    });
+}
+
+const TABS: TabItem[] = getAccountTabs();
 
 export default function AccountLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

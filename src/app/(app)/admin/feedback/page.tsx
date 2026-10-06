@@ -386,7 +386,7 @@ export default function AdminFeedbackPage() {
     <div className="mx-auto max-w-3xl">
       <div className="mb-6 flex items-center gap-2">
         <MessageCircle className="h-5 w-5 text-primary" />
-        <PageHeader title="Feedback" titleClassName="text-2xl font-semibold tracking-tight" />
+        <PageHeader title="User feedback" titleClassName="text-2xl font-semibold tracking-tight" />
       </div>
 
       <div className="mb-4 flex flex-wrap gap-2">

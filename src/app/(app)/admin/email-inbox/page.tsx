@@ -145,7 +145,7 @@ export default function AdminEmailInboxPage() {
         <div>
           <div className="flex items-center gap-2">
             <Mailbox className="h-5 w-5 text-primary" />
-            <PageHeader title="Imported Email Oversight" titleClassName="text-2xl font-bold tracking-tight" />
+            <PageHeader title="Email Oversight" titleClassName="text-2xl font-bold tracking-tight" />
           </div>
           <p className="text-sm text-muted-foreground mt-0.5">
             Cross-user view of inbound email-import rows. Metadata is always

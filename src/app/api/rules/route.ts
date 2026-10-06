@@ -71,7 +71,7 @@ const { transactionRules, categories, accounts, portfolioHoldings } = schema;
 
 // GET — list all rules with decrypted FK names for UI summaries.
 export async function GET(request: NextRequest) {
-  const { checkETag } = await import("@/lib/data-version");
+  const { checkETag, withEtagHeaders } = await import("@/lib/data-version");
   const etagCheck = await checkETag(request);
   if (etagCheck.response) return etagCheck.response;
   const { userId, dek } = etagCheck.authContext!;
@@ -156,7 +156,7 @@ export async function GET(request: NextRequest) {
   });
 
   const response = NextResponse.json(rules);
-  if (etag) response.headers.set("ETag", etag);
+  if (etag) return withEtagHeaders(response, etag);
   return response;
 }
 

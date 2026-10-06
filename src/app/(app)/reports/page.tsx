@@ -345,7 +345,7 @@ export default function ReportsPage() {
     <div className="space-y-6">
       {/* Header */}
       <PageHeader
-          title="Financial Reports"
+          title="Reports"
           titleClassName="text-2xl font-bold tracking-tight"
           subtitle="Analyze income, expenses, cash flow, and trends across any time period"
           subtitleClassName="text-sm text-muted-foreground mt-0.5"
