@@ -106,7 +106,7 @@ describe("design-system-guard: ratchet for adaptive patterns", () => {
       })
       .map(([file, baselineCount]) => {
         const currentCount = current[file] ?? 0;
-        return `lower the baseline to ${currentCount} for ${file}`;
+        return `lower the baseline to ${currentCount} for ${file} (was ${baselineCount})`;
       });
 
     expect(
