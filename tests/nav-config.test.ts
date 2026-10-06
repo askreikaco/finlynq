@@ -354,19 +354,76 @@ describe("nav-config", () => {
       expect(accountSecurityEntry?.icon).toBe(lucideIcons.ShieldCheck);
     });
 
-    it("all sidebar entries should have defined icons", () => {
-      const sidebarEntries = getEntriesBySurface("sidebar");
-      for (const entry of sidebarEntries) {
-        expect(entry.icon).toBeDefined();
-        expect(entry.icon).not.toBeNull();
+    it("all sidebar entries should have correct icons", () => {
+      const sidebarIconMap: Record<string, typeof lucideIcons[keyof typeof lucideIcons]> = {
+        "/dashboard": lucideIcons.LayoutDashboard,
+        "/whats-new": lucideIcons.Megaphone,
+        "/chat": lucideIcons.MessageSquare,
+        "/transactions": lucideIcons.ArrowLeftRight,
+        "/budgets": lucideIcons.PiggyBank,
+        "/goals": lucideIcons.Target,
+        "/subscriptions": lucideIcons.CreditCard,
+        "/accounts": lucideIcons.Wallet,
+        "/portfolio": lucideIcons.TrendingUp,
+        "/loans": lucideIcons.Landmark,
+        "/family": lucideIcons.Users,
+        "/reports": lucideIcons.FileText,
+        "/categories": lucideIcons.ChartPie,
+        "/tax": lucideIcons.Calculator,
+        "/scenarios": lucideIcons.GitBranch,
+        "/fire": lucideIcons.FlameKindling,
+        "/import": lucideIcons.Upload,
+        "/api-docs": lucideIcons.FileText,
+        "/feedback": lucideIcons.MessageCircle,
+        "/settings": lucideIcons.Settings,
+        "/admin": lucideIcons.ShieldCheck,
+        "/admin/inbox": lucideIcons.Inbox,
+        "/admin/announcements": lucideIcons.Megaphone,
+        "/admin/email-inbox": lucideIcons.Mailbox,
+        "/admin/env": lucideIcons.Server,
+        "/admin/feedback": lucideIcons.MessageCircle,
+      };
+
+      for (const [path, expectedIcon] of Object.entries(sidebarIconMap)) {
+        const entry = getNavEntry(path);
+        expect(entry?.icon).toBe(expectedIcon);
       }
     });
 
-    it("all more menu entries should have defined icons", () => {
-      const moreEntries = getEntriesBySurface("more");
-      for (const entry of moreEntries) {
-        expect(entry.icon).toBeDefined();
-        expect(entry.icon).not.toBeNull();
+    it("all more menu entries should have correct icons", () => {
+      const moreIconMap: Record<string, typeof lucideIcons[keyof typeof lucideIcons]> = {
+        "/dashboard": lucideIcons.LayoutDashboard,
+        "/whats-new": lucideIcons.Megaphone,
+        "/chat": lucideIcons.MessageSquare,
+        "/transactions": lucideIcons.ArrowLeftRight,
+        "/budgets": lucideIcons.PiggyBank,
+        "/goals": lucideIcons.Target,
+        "/subscriptions": lucideIcons.CreditCard,
+        "/accounts": lucideIcons.Wallet,
+        "/portfolio": lucideIcons.TrendingUp,
+        "/loans": lucideIcons.Landmark,
+        "/family": lucideIcons.Users,
+        "/fire": lucideIcons.FlameKindling,
+        "/import": lucideIcons.Upload,
+        "/import?tab=reconcile": lucideIcons.Inbox,
+        "/reports": lucideIcons.FileText,
+        "/categories": lucideIcons.ChartPie,
+        "/tax": lucideIcons.Calculator,
+        "/scenarios": lucideIcons.GitBranch,
+        "/api-docs": lucideIcons.FileText,
+        "/settings": lucideIcons.Settings,
+        "/settings/categorization": lucideIcons.Tag,
+        "/admin": lucideIcons.ShieldCheck,
+        "/admin/inbox": lucideIcons.Inbox,
+        "/admin/announcements": lucideIcons.Megaphone,
+        "/admin/email-inbox": lucideIcons.Mailbox,
+        "/admin/env": lucideIcons.Server,
+        "/admin/feedback": lucideIcons.MessageCircle,
+      };
+
+      for (const [path, expectedIcon] of Object.entries(moreIconMap)) {
+        const entry = getNavEntry(path);
+        expect(entry?.icon).toBe(expectedIcon);
       }
     });
   });
