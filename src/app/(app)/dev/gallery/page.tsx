@@ -100,7 +100,7 @@ function GalleryContent() {
                   <Amount value={1234.56} />
                   <Amount value={-100.50} />
                   <Amount value={0} />
-                  <Amount value={5000000} currency="USD" />
+                  <Amount value={5000000} currency="EUR" />
                 </div>
               </div>
             </SectionCard>
