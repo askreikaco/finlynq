@@ -17,8 +17,8 @@ const DATABASE_URL = process.env.DATABASE_URL;
  * - feedback, tx_currency_audit (system tables, not user data)
  * - Other non-user-data tables
  *
- * Total excluded: 50 tables
- * Expected coverage: 94 - 50 = 44 tables
+ * Total excluded: 35 tables (actual from schema)
+ * Expected coverage: 79 total - 35 excluded = 44 covered
  */
 
 const DOCUMENTED_EXCLUSIONS: Record<string, string> = {
@@ -136,8 +136,8 @@ describe("Table coverage test", () => {
       console.log(`  - ${table}: ${reason}`);
     });
 
-    // Expected 50 exclusions (94 total - 44 covered)
-    expect(exclusionCount).toBe(50);
+    // Expected 35 exclusions (79 total - 44 covered = 35 excluded)
+    expect(exclusionCount).toBe(35);
   });
 
   afterAll(async () => {
