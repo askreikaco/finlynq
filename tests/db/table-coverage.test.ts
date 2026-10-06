@@ -155,8 +155,12 @@ describe("Table coverage test (Test C)", () => {
     // Verify that if we were to add a new public table with user_id but without a reika_* trigger,
     // the coverage check would fail
 
-    // Create a temporary test table in public schema
-    await client.query(`CREATE TABLE IF NOT EXISTS public.test_coverage_new_table (id serial PRIMARY KEY, user_id text)`);
+    // Create a temporary test table in public schema with user_id column
+    await client.query(`CREATE TABLE IF NOT EXISTS public.test_coverage_uncovered_table (
+      id serial PRIMARY KEY,
+      user_id text NOT NULL,
+      created_at timestamp DEFAULT NOW()
+    )`);
 
     try {
       // Re-run the coverage analysis with the new table
@@ -167,30 +171,99 @@ describe("Table coverage test (Test C)", () => {
       );
       const tablesWithUserId = new Set(userIdTablesResult.rows.map((r: any) => r.table_name));
 
-      // New table should be in the set
-      expect(tablesWithUserId.has('test_coverage_new_table')).toBe(true);
+      // Query all tables with reika_* triggers
+      const triggeredTablesResult = await client.query(
+        `SELECT DISTINCT substring(tgname from 'reika_([a-z_]+)_data_version') AS table_name
+         FROM pg_trigger WHERE tgname LIKE 'reika_%_data_version_ins'
+         ORDER BY table_name`
+      );
+      const tablesWithTriggers = new Set(triggeredTablesResult.rows.map((r: any) => r.table_name));
 
-      // But it's not in DOCUMENTED_EXCLUSIONS, so the check would fail
-      expect(DOCUMENTED_EXCLUSIONS['test_coverage_new_table']).toBeUndefined();
+      // Compute what should be excluded
+      const shouldBeExcluded = new Set(
+        Array.from(tablesWithUserId).filter(t => !tablesWithTriggers.has(t))
+      );
+
+      // New table should be in the uncovered set
+      expect(shouldBeExcluded.has('test_coverage_uncovered_table')).toBe(true);
+
+      // But it's not in DOCUMENTED_EXCLUSIONS, so the set-equality check would fail
+      expect(shouldBeExcluded).not.toEqual(new Set(Object.keys(DOCUMENTED_EXCLUSIONS)));
+      console.log(`✓ Coverage check correctly detects missing table: test_coverage_uncovered_table`);
     } finally {
       // Clean up
-      await client.query(`DROP TABLE IF EXISTS public.test_coverage_new_table`);
+      await client.query(`DROP TABLE IF EXISTS public.test_coverage_uncovered_table`);
     }
   });
 
-  it("removing an exclusion should cause mismatch error", async () => {
-    // This is a demonstration test: if we were to remove an entry from DOCUMENTED_EXCLUSIONS,
-    // the previous test would fail due to the assertion mismatch
+  it("dropping a trigger should cause coverage mismatch error", async () => {
+    // Verify that if we drop a trigger, the coverage check would fail
 
-    // Create a test set that's missing one entry
-    const testExclusions = { ...DOCUMENTED_EXCLUSIONS };
-    const firstKey = Object.keys(testExclusions)[0];
-    delete testExclusions[firstKey];
+    // Get a covered table with a trigger
+    const coveredTableResult = await client.query(
+      `SELECT DISTINCT substring(tgname from 'reika_([a-z_]+)_data_version') AS table_name
+       FROM pg_trigger WHERE tgname LIKE 'reika_%_data_version_ins'
+       LIMIT 1`
+    );
 
-    // If we were to use testExclusions instead of DOCUMENTED_EXCLUSIONS in the previous test,
-    // the assertion would fail because the sets wouldn't match
+    if (coveredTableResult.rows.length === 0) {
+      throw new Error('No covered tables found with triggers');
+    }
 
-    expect(Object.keys(testExclusions).length).toBe(Object.keys(DOCUMENTED_EXCLUSIONS).length - 1);
+    const firstCoveredTable = coveredTableResult.rows[0].table_name;
+
+    // Get the trigger name
+    const triggerResult = await client.query(
+      `SELECT tgname FROM pg_trigger
+       WHERE tgname LIKE $1 AND tgname LIKE '%_data_version_ins'
+       LIMIT 1`,
+      [`reika_${firstCoveredTable}%`]
+    );
+
+    if (triggerResult.rows.length === 0) {
+      throw new Error(`No INSERT trigger found for ${firstCoveredTable}`);
+    }
+
+    const triggerName = triggerResult.rows[0].tgname;
+
+    try {
+      // Drop the trigger
+      await client.query(`DROP TRIGGER IF EXISTS ${triggerName} ON ${firstCoveredTable}`);
+
+      // Re-run the coverage analysis with the dropped trigger
+      const userIdTablesResult = await client.query(
+        `SELECT table_name FROM information_schema.columns
+         WHERE table_schema = 'public' AND column_name = 'user_id'
+         GROUP BY table_name`
+      );
+      const tablesWithUserId = new Set(userIdTablesResult.rows.map((r: any) => r.table_name));
+
+      // Query all tables with reika_* triggers (now missing one)
+      const triggeredTablesResult = await client.query(
+        `SELECT DISTINCT substring(tgname from 'reika_([a-z_]+)_data_version') AS table_name
+         FROM pg_trigger WHERE tgname LIKE 'reika_%_data_version_ins'
+         ORDER BY table_name`
+      );
+      const tablesWithTriggers = new Set(triggeredTablesResult.rows.map((r: any) => r.table_name));
+
+      // Compute what should be excluded
+      const shouldBeExcluded = new Set(
+        Array.from(tablesWithUserId).filter(t => !tablesWithTriggers.has(t))
+      );
+
+      // The dropped table should now be in the uncovered set
+      expect(shouldBeExcluded.has(firstCoveredTable)).toBe(true);
+
+      // So the set-equality check would fail
+      expect(shouldBeExcluded).not.toEqual(new Set(Object.keys(DOCUMENTED_EXCLUSIONS)));
+      console.log(`✓ Coverage check correctly detects dropped trigger for: ${firstCoveredTable}`);
+    } finally {
+      // Restore the trigger by re-creating it
+      await client.query(
+        `CREATE TRIGGER ${triggerName} AFTER INSERT ON ${firstCoveredTable}
+         FOR EACH STATEMENT EXECUTE FUNCTION reika_bump_data_version()`
+      );
+    }
   });
 
   afterAll(async () => {

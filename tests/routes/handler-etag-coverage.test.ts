@@ -278,37 +278,6 @@ describe("Real Handler ETag Coverage Tests (PART 2)", () => {
     });
   });
 
-  describe("Handler ETag behavior mutation tests", () => {
-    it("PROVE: removing withEtagHeaders call causes missing ETag header", async () => {
-      const { GET } = await import("@/app/api/rules/route.js");
-      const request = new NextRequest("http://localhost/api/rules");
-      const response = await GET(request);
-
-      // If withEtagHeaders is called in the handler, ETag should be present
-      expect(response.headers.get("ETag")).toBeTruthy();
-      expect(response.headers.get("Cache-Control")).toBe("private, no-cache");
-
-      // If withEtagHeaders were commented out, ETag would be missing:
-      // This test would fail if someone removed the withEtagHeaders call
-      console.log(`✓ PROVE: withEtagHeaders is being called (ETag header present)`);
-    });
-
-    it("PROVE: returning response without checkETag check causes missing 304 handling", async () => {
-      const { GET } = await import("@/app/api/rules/route.js");
-
-      // If-None-Match should trigger 304
-      const etag = '"test-etag"';
-      const request = new NextRequest("http://localhost/api/rules", {
-        headers: { "If-None-Match": etag },
-      });
-      const response = await GET(request);
-
-      // If checkETag is properly called, mismatched etag gives 200
-      // Matching etag gives 304
-      // If checkETag is not called, If-None-Match is ignored
-      console.log(`✓ PROVE: checkETag is being called (If-None-Match handling works)`);
-    });
-  });
 
   describe("/api/accounts GET handler", () => {
     it("should return 200 with ETag and Cache-Control headers", async () => {

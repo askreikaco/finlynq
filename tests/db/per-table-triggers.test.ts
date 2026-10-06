@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import pg from "pg";
+import { execSync } from "child_process";
 
 const DATABASE_URL = process.env.DATABASE_URL;
 
@@ -121,6 +122,8 @@ console.log(`Testable tables: ${coveredTablesStatic.length}`);
 
 describe("Per-table trigger verification", () => {
   let client: pg.Client;
+  let adminClient: pg.Client;
+  let tempDbName: string = "";
   const coveredTables: string[] = coveredTablesStatic;
   const testUserId = "tbl-user-" + Math.random().toString(36).slice(2, 9);
   const testUser2Id = "tbl-user2-" + Math.random().toString(36).slice(2, 9);
@@ -130,7 +133,47 @@ describe("Per-table trigger verification", () => {
       throw new Error("DATABASE_URL required for per-table trigger tests");
     }
 
-    client = new pg.Client({ connectionString: DATABASE_URL });
+    // Parse DATABASE_URL to get connection parameters
+    const url = new URL(DATABASE_URL);
+    const host = url.hostname;
+    const port = url.port;
+    const adminDbName = url.pathname.split('/')[1] || 'postgres';
+    const user = url.username || 'postgres';
+    const password = url.password;
+
+    // Create a temporary database name with random hex suffix
+    const randomHex = Math.random().toString(16).slice(2, 10);
+    tempDbName = `finlynq_pertable_${randomHex}`;
+
+    // Connect to admin database to create the temporary database
+    adminClient = new pg.Client({
+      host,
+      port: port ? parseInt(port) : 5432,
+      database: adminDbName,
+      user,
+      password,
+    });
+    await adminClient.connect();
+
+    console.log(`\nCreating temporary database: ${tempDbName}`);
+    await adminClient.query(`CREATE DATABASE ${tempDbName}`);
+
+    // Run migrations on the temporary database
+    const tempDbUrl = `postgresql://${user}${password ? ':' + password : ''}@${host}${port ? ':' + port : ''}/${tempDbName}`;
+    console.log(`Running migrations on temporary database...`);
+    try {
+      execSync(`DATABASE_URL="${tempDbUrl}" node scripts/run-migrations.mjs`, {
+        stdio: 'inherit',
+        cwd: process.cwd(),
+      });
+    } catch (e: any) {
+      await adminClient.query(`DROP DATABASE ${tempDbName} WITH (FORCE)`);
+      await adminClient.end();
+      throw e;
+    }
+
+    // Connect to the temporary database
+    client = new pg.Client({ connectionString: tempDbUrl });
     await client.connect();
 
     // Create test users (unique emails per run)
@@ -148,6 +191,13 @@ describe("Per-table trigger verification", () => {
        ON CONFLICT DO NOTHING`,
       [testUser2Id, `test2-${timestamp}@local`, "hash", now, now]
     );
+
+    // Verify this is the temp database before dropping constraints
+    const dbNameResult = await client.query(`SELECT current_database()`);
+    const currentDb = dbNameResult.rows[0].current_database;
+    if (!currentDb.match(/^finlynq_pertable_[0-9a-f]+$/)) {
+      throw new Error(`Safety check failed: not connected to temp database (${currentDb})`);
+    }
 
     // Drop all CHECK constraints and non-user ForeignKeys to allow generic inserts
     console.log("\nDropping constraints to allow generic test inserts...");
@@ -191,24 +241,18 @@ describe("Per-table trigger verification", () => {
 
   afterAll(async () => {
     if (client) {
-      // Cleanup test data (ignore FK errors since we dropped constraints)
-      for (const table of coveredTables) {
-        try {
-          await client.query(`DELETE FROM ${table} WHERE user_id = $1`, [testUserId]);
-          await client.query(`DELETE FROM ${table} WHERE user_id = $1`, [testUser2Id]);
-        } catch (e) {
-          // Ignore errors
-        }
-      }
-
-      // Delete test users last (they may have FK references)
-      try {
-        await client.query(`DELETE FROM users WHERE id = $1 OR id = $2`, [testUserId, testUser2Id]);
-      } catch (e) {
-        // Ignore errors
-      }
-
       await client.end();
+    }
+
+    // Drop the temporary database
+    if (tempDbName && adminClient) {
+      try {
+        console.log(`\nDropping temporary database: ${tempDbName}`);
+        await adminClient.query(`DROP DATABASE ${tempDbName} WITH (FORCE)`);
+        await adminClient.end();
+      } catch (e) {
+        console.error(`Failed to drop temporary database: ${e}`);
+      }
     }
   });
 
@@ -230,7 +274,6 @@ describe("Per-table trigger verification", () => {
     "%s: INSERT bumps data_version",
     async (table) => {
       testsExecuted++;
-      if (!client) return;
 
       // Reset data_version to 0 before test
       await client.query(
@@ -260,7 +303,6 @@ describe("Per-table trigger verification", () => {
     "%s: UPDATE bumps data_version",
     async (table) => {
       testsExecuted++;
-      if (!client) return;
 
       // Create a row
       const insertResult = await insertGenericRow(client, table, testUserId);
@@ -291,7 +333,6 @@ describe("Per-table trigger verification", () => {
     "%s: DELETE bumps data_version",
     async (table) => {
       testsExecuted++;
-      if (!client) return;
 
       // Create a row
       const insertResult = await insertGenericRow(client, table, testUserId);
