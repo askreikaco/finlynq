@@ -6,12 +6,6 @@ import { useDisplayCurrency } from "@/components/currency-provider";
 import { Wallet } from "lucide-react";
 import { motion } from "framer-motion";
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const itemVariants = {
-  hidden: { opacity: 0, y: 16 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" as const } },
-};
-
 type Props = {
   income: number;
   expenses: number;
@@ -23,7 +17,7 @@ type Props = {
 
 export function AvailableToSpend({ income, expenses, currency, monthLabel }: Props) {
   const { displayCurrency: userDisplayCurrency } = useDisplayCurrency();
-  const resolvedCurrency = currency || userDisplayCurrency;
+  const resolvedCurrency = currency?.trim() ? currency : userDisplayCurrency;
   const available = income - expenses;
   const pctSpent = income > 0 ? (expenses / income) * 100 : 0;
 

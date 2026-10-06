@@ -27,7 +27,7 @@ type SpendingItem = { name: string; value: number };
 
 export function SpendingCategoryChart({ data, currency }: { data: SpendingItem[]; currency?: string }) {
   const { displayCurrency: userDisplayCurrency } = useDisplayCurrency();
-  const resolvedCurrency = currency || userDisplayCurrency;
+  const resolvedCurrency = currency?.trim() ? currency : userDisplayCurrency;
   const animationsEnabled = useAnimations();
   const total = data.reduce((s, d) => s + d.value, 0);
 

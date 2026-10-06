@@ -7,7 +7,8 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, cleanup, waitFor } from "@testing-library/react";
-import { forwardRef, ReactNode } from "react";
+import { forwardRef, ReactNode, cloneElement } from "react";
+import { formatCurrency } from "@/lib/currency";
 const MockIcon = forwardRef<SVGSVGElement>(() => <span>Icon</span>);
 MockIcon.displayName = "MockIcon";
 
@@ -21,24 +22,32 @@ beforeEach(() => {
         json: () => Promise.resolve({ displayCurrency: "VND" }),
       } as any);
     }
-    if (urlStr.includes("/api/dashboard/insights")) {
+    if (urlStr.includes("/api/insights")) {
       return Promise.resolve({
         ok: true,
         json: () => Promise.resolve({
-          categories: [
-            { name: "Food", currentMonth: 5000000, average: 4000000 },
-            { name: "Transport", currentMonth: 2000000, average: 1500000 },
+          anomalies: [
+            { category: "Food", currentMonth: 5000000, average: 4000000, percentAbove: 25, severity: "high" },
+            { category: "Transport", currentMonth: 2000000, average: 1500000, percentAbove: 15, severity: "medium" },
           ],
-          recurring: {
-            monthlyRecurringTotal: 3000000,
-            displayCurrency: "VND",
-            items: [
-              { description: "Subscription", avgAmount: 500000, currency: "VND" },
-            ],
-          },
-          monthlySpending: [
-            { month: "2024-01", totalSpent: 10000000 },
+          trends: [],
+          topMerchants: [
+            { payee: "TestStore", totalSpent: 3000000, count: 5 },
           ],
+          spendingByDay: [],
+        }),
+      } as any);
+    }
+    if (urlStr.includes("/api/recurring")) {
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({
+          recurring: [
+            { payee: "Subscription", avgAmount: 500000, currency: "VND", frequency: "monthly", nextDate: "2026-11-06" },
+          ],
+          displayCurrency: "VND",
+          monthlyRecurringTotal: 500000,
+          count: 1,
         }),
       } as any);
     }
@@ -110,12 +119,42 @@ vi.mock("recharts", () => ({
   Cell: () => null,
   XAxis: () => null,
   YAxis: () => null,
-  Tooltip: ({ content }: any) => <div data-testid="tooltip">{content}</div>,
+  Tooltip: ({ content, formatter }: any) => {
+    let rendered = null;
+    if (content && typeof content === "object" && content.type) {
+      // content is a React element (like <ChartTooltip ... /> or <PieTooltip ... /> or <SparklineTooltip ... />)
+      // Clone it with tooltip props that Recharts would normally pass
+      const mockPayload = [{ value: 1234567, name: "test", payload: { date: "2024-01", total: 1234567 } }];
+      rendered = cloneElement(content, { active: true, payload: mockPayload, label: "2024-01" });
+    } else if (typeof content === "function") {
+      // content is a component function
+      const mockPayload = [{ value: 1234567, name: "test", payload: { date: "2024-01", total: 1234567 } }];
+      rendered = content({ active: true, payload: mockPayload, label: "2024-01" });
+    } else if (formatter) {
+      // Use formatter to format values
+      const formattedValue = formatter(1234567, "test");
+      rendered = <div>{Array.isArray(formattedValue) ? formattedValue[0] : formattedValue}</div>;
+    }
+    return <div data-testid="tooltip">{rendered}</div>;
+  },
   ReferenceLine: () => null,
 }));
 
 vi.mock("@/components/chart-breakdown-list", () => ({
   TooltipBreakdownList: () => null,
+}));
+
+vi.mock("@/app/(app)/dashboard/_components/chart-tooltip", () => ({
+  ChartTooltip: ({ currency }: any) => (
+    <div>
+      {currency && formatCurrency(1000000, currency)}
+    </div>
+  ),
+  PieTooltip: ({ currency }: any) => (
+    <div>
+      {currency && formatCurrency(500000, currency)}
+    </div>
+  ),
 }));
 
 vi.mock("@/components/chart-stack-tooltip", () => ({
@@ -392,12 +431,10 @@ describe("Dashboard Currency Render Tests", () => {
     );
 
     await waitFor(() => {
-      // Chart should render with the provider's currency (VND) in the Recharts formatter
-      // The textContent won't show the tooltip values until hover, but the chart is set up to use VND
       const text = container.textContent || "";
-      expect(text).toMatch(/Income vs Expenses/);
-      // Verify the chart is rendered
-      expect(container.querySelector('[data-testid="chart"]')).toBeTruthy();
+      // Chart should display amounts using displayCurrency (VND) in the Tooltip
+      expect(text).toMatch(/₫/);
+      expect(text).not.toMatch(/\$|US\$|CA\$|CAD|USD/);
     });
   });
 
@@ -414,8 +451,10 @@ describe("Dashboard Currency Render Tests", () => {
     );
 
     await waitFor(() => {
-      // Sparkline should render and use displayCurrency (VND) in tooltips (checked on hover)
-      expect(container.querySelector('[data-testid="chart"]')).toBeTruthy();
+      const text = container.textContent || "";
+      // Sparkline should render and use displayCurrency (VND) in tooltips
+      expect(text).toMatch(/₫/);
+      expect(text).not.toMatch(/\$|US\$|CA\$|CAD|USD|€/);
     });
   });
 
@@ -433,8 +472,10 @@ describe("Dashboard Currency Render Tests", () => {
     );
 
     await waitFor(() => {
+      const text = container.textContent || "";
       // Sparkline should render and use EUR in tooltips
-      expect(container.querySelector('[data-testid="chart"]')).toBeTruthy();
+      expect(text).toMatch(/€/);
+      expect(text).not.toMatch(/₫/);
     });
   });
 
@@ -446,9 +487,10 @@ describe("Dashboard Currency Render Tests", () => {
     );
 
     await waitFor(() => {
-      // InsightsSection should render and use displayCurrency (VND) for amounts
-      // Component fetches data from /api/dashboard/insights which is mocked
-      expect(container).toBeTruthy();
+      const text = container.textContent || "";
+      // InsightsSection should render amounts using displayCurrency (VND)
+      expect(text).toMatch(/₫/);
+      expect(text).not.toMatch(/\$|US\$|CA\$|CAD|USD/);
     }, { timeout: 3000 });
   });
 
@@ -461,9 +503,12 @@ describe("Dashboard Currency Render Tests", () => {
 
     await waitFor(() => {
       // NetWorthHistoryChart should render and fetch from /api/net-worth-history
-      // The mocked API returns displayCurrency: "VND" which is used for formatting
+      // The mocked API returns displayCurrency: "VND" which is used for formatting in tooltip
       const text = container.textContent || "";
       expect(text).toMatch(/Net Worth Over Time/);
+      // Should display VND currency symbol in tooltip content
+      expect(text).toMatch(/₫/);
+      expect(text).not.toMatch(/\$|US\$|CA\$|CAD|USD/);
     }, { timeout: 3000 });
   });
 
