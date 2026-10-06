@@ -114,12 +114,7 @@ const ALLOW_LIST = [
     count: 1,
     reason: "Reconcile display falls back to bank row currency",
   },
-  {
-    file: "src/components/reconcile/confirm-delete-bank-row.tsx",
-    line: `{formatCurrency(bankAmount, bankCurrency || "CAD")}`,
-    count: 1,
-    reason: "Delete confirm displays bank row currency",
-  },
+  // REMOVED: confirm-delete-bank-row.tsx now uses trim check pattern with displayCurrency
   {
     file: "src/components/reconcile/investment-op-preview-dialog.tsx",
     line: `const amountAbs = formatCurrency(Math.abs(preview.amount), preview.currency || "CAD");`,
@@ -173,19 +168,8 @@ const ALLOW_LIST = [
     reason: "Row card falls back through tx/bank/default currency",
   },
 
-  // OUT OF SCOPE: Staging/reconciliation (data-driven)
-  {
-    file: "src/components/staging/balance-warning-banner.tsx",
-    line: `return formatCurrency(value, currency ?? "USD");`,
-    count: 1,
-    reason: "Balance banner fallback to display currency is acceptable",
-  },
-  {
-    file: "src/components/staging/reconciliation-callout.tsx",
-    line: `const ccy = statementCurrency ?? boundAccountCurrency ?? "USD";`,
-    count: 1,
-    reason: "Reconciliation callout uses statement/account/display currency",
-  },
+  // REMOVED: balance-warning-banner.tsx now uses displayCurrency instead of "USD"
+  // REMOVED: reconciliation-callout.tsx now uses displayCurrency instead of "USD"
   {
     file: "src/components/staging/staged-row-editor.tsx",
     line: `Row {s.rowIndex + 1}: {s.date} · {formatCurrency(s.amount, s.currency || "CAD")} ·{" "}`,
@@ -245,29 +229,11 @@ const ALLOW_LIST = [
     reason: "General settings currency picker default",
   },
 
-  // OUT OF SCOPE: Reconcile preview table
-  {
-    file: "src/components/reconcile/preview-table.tsx",
-    line: `{formatCurrency(row.amount, row.currency ?? accountCurrency ?? "USD")}`,
-    count: 1,
-    reason: "Preview table uses row/account/display currency chain (format-call pattern)",
-  },
+  // REMOVED: preview-table.tsx now uses displayCurrency instead of "USD"
 
-  // OUT OF SCOPE: Dividends page
-  {
-    file: "src/app/(app)/portfolio/dividends/page.tsx",
-    line: `const reportingCcy = data?.reportingCurrency ?? "USD";`,
-    count: 1,
-    reason: "Dividends page uses API reportingCurrency fallback",
-  },
+  // REMOVED: dividends/page.tsx now uses displayCurrency instead of "USD"
 
-  // OUT OF SCOPE: Health info dialog
-  {
-    file: "src/app/(app)/dashboard/_components/health-info-dialog.tsx",
-    line: `const reporting = data.reportingCurrency ?? displayCurrency ?? "USD";`,
-    count: 1,
-    reason: "Health dialog uses API currency chain",
-  },
+  // REMOVED: health-info-dialog.tsx now uses displayCurrency without "USD" fallback
 
   // OUT OF SCOPE: Inbox reconcile tab (already addressed in component-level tests)
   {
