@@ -17,18 +17,18 @@ function loadBaseline(): Baseline {
 function scanAdaptiveUsage(): Baseline {
   const results: Baseline = {};
 
-  // Get all TypeScript/TSX files from src/app and src/components
+  // Get all TypeScript/TSX/JavaScript files from src/app and src/components
   let files: string[] = [];
   try {
     const appFiles = execSync(
-      "find src/app -type f \\( -name '*.tsx' -o -name '*.ts' \\)"
+      "find src/app -type f \\( -name '*.tsx' -o -name '*.ts' -o -name '*.jsx' -o -name '*.js' \\)"
     )
       .toString()
       .trim()
       .split("\n")
       .filter(Boolean);
     const componentFiles = execSync(
-      "find src/components -type f \\( -name '*.tsx' -o -name '*.ts' \\)"
+      "find src/components -type f \\( -name '*.tsx' -o -name '*.ts' -o -name '*.jsx' -o -name '*.js' \\)"
     )
       .toString()
       .trim()
@@ -139,5 +139,12 @@ describe("design-system-guard: ratchet for adaptive patterns", () => {
     // Non-vacuous test: verify the scan actually found patterns
     const patternCount = Object.values(current).reduce((a, b) => a + b, 0);
     expect(patternCount).toBeGreaterThan(0);
+  });
+
+  it("exclusion of src/components/ui/size-class.ts is necessary", () => {
+    // Verify that size-class.ts would be flagged if not excluded (it must not be in baseline)
+    expect(baseline).not.toHaveProperty("src/components/ui/size-class.ts");
+    // The file exists and is excluded, so current should also not have it
+    expect(current).not.toHaveProperty("src/components/ui/size-class.ts");
   });
 });
