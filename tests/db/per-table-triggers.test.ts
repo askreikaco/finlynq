@@ -66,9 +66,9 @@ const COVERED_TABLES_HARDCODED = [
 ];
 
 // Tables explicitly excluded from testing (truly cannot be exercised)
-// Target: zero skips - all 44 tables should be testable
+// STRICT: Only tables that are genuinely unexercisable go here with documented reasons
 const DOCUMENTED_EXCLUSIONS: Record<string, string> = {
-  // Populated at runtime with tables that truly fail to exercise
+  // Currently: none - all 44 tables must be exercisable
 };
 
 // Discover covered tables BEFORE test collection and verify against hardcoded list
@@ -239,11 +239,9 @@ describe("Per-table trigger verification", () => {
       );
 
       // INSERT: generic row creation using information_schema
+      // Must succeed or test fails naming table+operation
       const insertResult = await insertGenericRow(client, table, testUserId);
-      if (!insertResult || insertResult.rowCount === 0) {
-        // Skip if insert failed (table constraints too complex)
-        return;
-      }
+      expect(insertResult.rowCount).toBeGreaterThan(0);
 
       // Verify INSERT bumped version
       const result = await client.query(
@@ -254,11 +252,7 @@ describe("Per-table trigger verification", () => {
       expect(versionAfterInsert).toBe(1);
 
       // Cleanup
-      try {
-        await client.query(`DELETE FROM "${table}" WHERE user_id = $1`, [testUserId]);
-      } catch (e) {
-        // Ignore cleanup errors
-      }
+      await client.query(`DELETE FROM "${table}" WHERE user_id = $1`, [testUserId]);
     }
   );
 
@@ -270,10 +264,7 @@ describe("Per-table trigger verification", () => {
 
       // Create a row
       const insertResult = await insertGenericRow(client, table, testUserId);
-      if (!insertResult || insertResult.rowCount === 0) {
-        // Skip if insert failed (table constraints too complex)
-        return;
-      }
+      expect(insertResult.rowCount).toBeGreaterThan(0);
 
       // Reset data_version to 0 before test
       await client.query(
@@ -281,13 +272,8 @@ describe("Per-table trigger verification", () => {
         [testUserId]
       );
 
-      // UPDATE: update a non-key column
-      try {
-        await updateGenericRow(client, table, testUserId);
-      } catch (e) {
-        // Skip if update fails
-        return;
-      }
+      // UPDATE: update a non-key column - must succeed
+      await updateGenericRow(client, table, testUserId);
 
       const result = await client.query(
         `SELECT data_version FROM users WHERE id = $1`,
@@ -297,11 +283,7 @@ describe("Per-table trigger verification", () => {
       expect(versionAfterUpdate).toBeGreaterThan(0);
 
       // Cleanup
-      try {
-        await client.query(`DELETE FROM "${table}" WHERE user_id = $1`, [testUserId]);
-      } catch (e) {
-        // Ignore cleanup errors
-      }
+      await client.query(`DELETE FROM "${table}" WHERE user_id = $1`, [testUserId]);
     }
   );
 
@@ -311,19 +293,9 @@ describe("Per-table trigger verification", () => {
       testsExecuted++;
       if (!client) return;
 
-      // For some tables, clean up any existing rows from the INSERT test
-      try {
-        await client.query(`DELETE FROM "${table}" WHERE user_id = $1`, [testUserId]);
-      } catch (e) {
-        // Ignore cleanup errors
-      }
-
       // Create a row
       const insertResult = await insertGenericRow(client, table, testUserId);
-      if (!insertResult || insertResult.rowCount === 0) {
-        // Skip if insert failed (table constraints too complex)
-        return;
-      }
+      expect(insertResult.rowCount).toBeGreaterThan(0);
 
       // Reset data_version to 0 before test
       await client.query(
@@ -331,13 +303,12 @@ describe("Per-table trigger verification", () => {
         [testUserId]
       );
 
-      // DELETE
-      try {
-        await client.query(`DELETE FROM "${table}" WHERE user_id = $1`, [testUserId]);
-      } catch (e) {
-        // Skip if delete fails
-        return;
-      }
+      // DELETE - must succeed
+      const deleteResult = await client.query(
+        `DELETE FROM "${table}" WHERE user_id = $1`,
+        [testUserId]
+      );
+      expect(deleteResult.rowCount).toBeGreaterThan(0);
 
       const result = await client.query(
         `SELECT data_version FROM users WHERE id = $1`,
@@ -423,14 +394,19 @@ describe("Per-table trigger verification", () => {
     await client.query(`DELETE FROM "${table}" WHERE user_id = $1`, [testUserId]);
   });
 
-  it("verifies test count >= 132 (44 tables × 3 operations) and no excluded tables", async () => {
-    expect(testsExecuted).toBeGreaterThanOrEqual(132);
+  it("verifies test count == 132 (44 tables × 3 operations) and no excluded tables", async () => {
+    const totalTests = 44 * 3; // 44 tables × 3 operations (INSERT, UPDATE, DELETE)
+    const skippedTables = Object.keys(DOCUMENTED_EXCLUSIONS).length;
+    const expectedExecuted = totalTests - (skippedTables * 3); // Each skipped table loses 3 tests
+
+    console.log(`\n=== Test Execution Summary (STRICT VERIFICATION) ===`);
+    console.log(`Total possible tests: ${totalTests} (44 tables × 3 operations)`);
+    console.log(`Skipped tables: ${skippedTables}`);
+    console.log(`Expected executed: ${expectedExecuted}`);
+    console.log(`Actually executed: ${testsExecuted}`);
+
+    expect(testsExecuted).toBe(expectedExecuted);
     expect(Object.keys(DOCUMENTED_EXCLUSIONS).length).toBe(0);
-    console.log(`\n=== Test Execution Summary ===`);
-    console.log(`Tests executed: ${testsExecuted} (expected >= 132 = 44 tables × 3 operations)`);
-    console.log(`Covered tables: ${COVERED_TABLES_HARDCODED.length}`);
-    console.log(`Excluded (cannot be exercised): ${Object.keys(DOCUMENTED_EXCLUSIONS).length} (target: 0)`);
-    console.log(`Successfully exercised: ${coveredTables.length} tables`);
   });
 });
 
@@ -593,37 +569,52 @@ async function updateGenericRow(
     return;
   }
 
-  // Get updateable columns (exclude primary key columns and timestamp columns)
+  // Get updateable columns: text/character types (including url, secret)
   const columnsResult = await client.query(
     `SELECT column_name, data_type
      FROM information_schema.columns
      WHERE table_schema = 'public'
        AND table_name = $1
-       AND column_name NOT IN ('id', 'user_id', 'created_at', 'updated_at', 'goal_id', 'account_id', 'holding_id', 'prompt_id', 'version', 'key', 'date')
+       AND data_type IN ('text', 'character varying', 'character')
+       AND column_name NOT IN ('id', 'user_id', 'created_at', 'updated_at', 'goal_id', 'account_id', 'holding_id', 'prompt_id', 'version', 'key', 'date', 'status', 'email', 'svix_id', 'subject', 'file_format')
      ORDER BY ordinal_position LIMIT 1`,
     [table]
   );
 
   if (columnsResult.rows.length === 0) {
-    // No updateable columns found; skip update
+    // No text columns found, try numeric/boolean columns
+    const numericResult = await client.query(
+      `SELECT column_name, data_type
+       FROM information_schema.columns
+       WHERE table_schema = 'public'
+         AND table_name = $1
+         AND data_type IN ('integer', 'bigint', 'numeric', 'double precision', 'boolean')
+         AND column_name NOT IN ('id', 'user_id', 'created_at', 'updated_at', 'goal_id', 'account_id', 'holding_id', 'prompt_id', 'version', 'key', 'date')
+       ORDER BY ordinal_position LIMIT 1`,
+      [table]
+    );
+
+    if (numericResult.rows.length === 0) {
+      // No updateable columns at all - fail the test
+      throw new Error(`No updateable columns found for table ${table}`);
+    }
+
+    const { column_name, data_type } = numericResult.rows[0];
+    let newValue: any;
+    if (data_type === 'boolean') {
+      newValue = true;
+    } else if (data_type === 'integer' || data_type === 'bigint') {
+      newValue = 999;
+    } else {
+      newValue = 456.78;
+    }
+    const sql = `UPDATE "${table}" SET "${column_name}" = $1 WHERE user_id = $2`;
+    await client.query(sql, [newValue, userId]);
     return;
   }
 
   const { column_name, data_type } = columnsResult.rows[0];
-
-  let newValue: any;
-  if (data_type === 'text' || data_type.includes('character')) {
-    newValue = 'updated';
-  } else if (data_type === 'boolean') {
-    newValue = true;
-  } else if (data_type === 'integer' || data_type === 'bigint') {
-    newValue = 999;
-  } else if (data_type === 'numeric' || data_type === 'double precision') {
-    newValue = 456.78;
-  } else {
-    newValue = 'updated';
-  }
-
+  const newValue = 'updated_' + Math.random().toString(36).slice(2, 7);
   const sql = `UPDATE "${table}" SET "${column_name}" = $1 WHERE user_id = $2`;
   await client.query(sql, [newValue, userId]);
 }
