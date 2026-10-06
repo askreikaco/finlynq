@@ -85,7 +85,7 @@ export function MetricCard({
   icon: Icon,
   tone = "muted",
   value,
-  currency = "CAD",
+  currency,
   valueClassName = "",
   sub,
   badgePct,
