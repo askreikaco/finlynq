@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import * as fs from "fs";
-import * as path from "path";
 import { execSync } from "child_process";
 
 const BASELINE_PATH = "tests/fixtures/adaptive-baseline.json";

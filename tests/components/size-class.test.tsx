@@ -1,7 +1,10 @@
+/**
+ * @vitest-environment jsdom
+ */
+import React from "react";
 import { renderHook, act } from "@testing-library/react";
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { sizeClassFor, useSizeClass } from "@/components/ui/size-class";
-import { useRef } from "react";
 
 describe("sizeClassFor", () => {
   it("returns 'compact' for width < 640", () => {
@@ -22,26 +25,36 @@ describe("sizeClassFor", () => {
 });
 
 describe("useSizeClass", () => {
-  let resizeObserverMock: {
-    observe: ReturnType<typeof vi.fn>;
-    disconnect: ReturnType<typeof vi.fn>;
-  };
+  let resizeObserverCallbacks: ResizeObserverCallback[] = [];
+  let observedElements: Element[] = [];
 
   beforeEach(() => {
-    resizeObserverMock = {
-      observe: vi.fn(),
-      disconnect: vi.fn(),
-    };
+    resizeObserverCallbacks = [];
+    observedElements = [];
 
-    global.ResizeObserver = vi.fn((callback: ResizeObserverCallback) => {
-      resizeObserverMock.callback = callback;
-      return resizeObserverMock as any;
-    }) as any;
+    class MockResizeObserver {
+      callback: ResizeObserverCallback;
+
+      constructor(callback: ResizeObserverCallback) {
+        this.callback = callback;
+        resizeObserverCallbacks.push(callback);
+      }
+
+      observe(element: Element) {
+        observedElements.push(element);
+      }
+
+      disconnect() {
+        resizeObserverCallbacks = [];
+        observedElements = [];
+      }
+    }
+
+    globalThis.ResizeObserver = MockResizeObserver as unknown as typeof ResizeObserver;
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
-    delete (global as any).ResizeObserver;
+    delete (globalThis as Record<string, unknown>).ResizeObserver;
   });
 
   it("initializes to 'compact' before observer fires", () => {
@@ -55,32 +68,46 @@ describe("useSizeClass", () => {
     const element = document.createElement("div");
     const ref = { current: element };
 
-    const { result, rerender } = renderHook(() => useSizeClass(ref));
+    const { result } = renderHook(() => useSizeClass(ref));
 
     expect(result.current).toBe("compact");
 
     // Simulate ResizeObserver firing with width 800 (regular)
     act(() => {
-      const callback = (resizeObserverMock as any).callback;
-      callback([
-        {
-          target: element,
-          contentRect: { width: 800, height: 600 } as DOMRectReadOnly,
-        } as ResizeObserverEntry,
-      ]);
+      const callback = resizeObserverCallbacks[0];
+      const mockObserver = {} as ResizeObserver;
+      callback(
+        [
+          {
+            target: element,
+            contentRect: { width: 800, height: 600 } as DOMRectReadOnly,
+            borderBoxSize: [] as ResizeObserverSize[],
+            contentBoxSize: [] as ResizeObserverSize[],
+            devicePixelContentBoxSize: [] as ResizeObserverSize[],
+          },
+        ] as ResizeObserverEntry[],
+        mockObserver
+      );
     });
 
     expect(result.current).toBe("regular");
 
     // Simulate ResizeObserver firing with width 1500 (wide)
     act(() => {
-      const callback = (resizeObserverMock as any).callback;
-      callback([
-        {
-          target: element,
-          contentRect: { width: 1500, height: 600 } as DOMRectReadOnly,
-        } as ResizeObserverEntry,
-      ]);
+      const callback = resizeObserverCallbacks[0];
+      const mockObserver = {} as ResizeObserver;
+      callback(
+        [
+          {
+            target: element,
+            contentRect: { width: 1500, height: 600 } as DOMRectReadOnly,
+            borderBoxSize: [] as ResizeObserverSize[],
+            contentBoxSize: [] as ResizeObserverSize[],
+            devicePixelContentBoxSize: [] as ResizeObserverSize[],
+          },
+        ] as ResizeObserverEntry[],
+        mockObserver
+      );
     });
 
     expect(result.current).toBe("wide");
@@ -90,16 +117,16 @@ describe("useSizeClass", () => {
     const ref = { current: document.createElement("div") };
     const { unmount } = renderHook(() => useSizeClass(ref));
 
-    expect(resizeObserverMock.observe).toHaveBeenCalled();
-    expect(resizeObserverMock.disconnect).not.toHaveBeenCalled();
+    expect(observedElements.length).toBeGreaterThan(0);
 
     unmount();
 
-    expect(resizeObserverMock.disconnect).toHaveBeenCalled();
+    // After disconnect, arrays should be cleared by the mock
+    expect(resizeObserverCallbacks.length).toBe(0);
   });
 
   it("handles missing ResizeObserver gracefully", () => {
-    delete (global as any).ResizeObserver;
+    delete (globalThis as Record<string, unknown>).ResizeObserver;
 
     const ref = { current: document.createElement("div") };
     const { result } = renderHook(() => useSizeClass(ref));
@@ -109,10 +136,10 @@ describe("useSizeClass", () => {
   });
 
   it("handles null ref gracefully", () => {
-    const ref = { current: null };
-    const { result } = renderHook(() => useSizeClass(ref as any));
+    const ref = { current: null } as unknown as React.RefObject<HTMLElement>;
+    const { result } = renderHook(() => useSizeClass(ref));
 
     expect(result.current).toBe("compact");
-    expect(resizeObserverMock.observe).not.toHaveBeenCalled();
+    expect(observedElements.length).toBe(0);
   });
 });
