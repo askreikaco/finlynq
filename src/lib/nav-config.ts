@@ -76,11 +76,6 @@ export interface AliasEntry {
   target: string; // canonical path or parent path
 }
 
-export interface RedirectEntry {
-  source: string;
-  destination: string;
-  preserveQuery?: boolean; // if true, preserve query params; default false for legacy redirects
-}
 
 export const NAV_REGISTRY: NavPageEntry[] = [
   // Top section
@@ -533,21 +528,9 @@ export const ALIASES: AliasEntry[] = [
 ];
 
 /**
- * Redirects that should preserve query parameters (e.g., ?tab, ?account).
- * These are used in next.config.ts and handled specially to keep query strings.
+ * Redirects are defined in next.config.ts. This registry focuses on pages that appear
+ * in navigation only. Redirect routing is managed in the Next.js config.
  */
-export const REDIRECTS_PRESERVE_QUERY: RedirectEntry[] = [
-  { source: "/reconcile", destination: "/import", preserveQuery: true },
-  { source: "/import/reconcile", destination: "/import", preserveQuery: true },
-  { source: "/inbox", destination: "/import", preserveQuery: true },
-];
-
-/**
- * Redirects that should NOT preserve query parameters (legacy consolidation).
- */
-export const REDIRECTS_LEGACY: RedirectEntry[] = [
-  { source: "/import/classic", destination: "/import", preserveQuery: false },
-];
 
 /**
  * Get a registry entry by path.

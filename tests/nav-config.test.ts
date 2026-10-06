@@ -2,8 +2,6 @@ import { describe, it, expect } from "vitest";
 import {
   NAV_REGISTRY,
   ALIASES,
-  REDIRECTS_PRESERVE_QUERY,
-  REDIRECTS_LEGACY,
   getNavEntry,
   getEntriesBySurface,
   getEntriesByGroup,
@@ -304,41 +302,6 @@ describe("nav-config", () => {
     });
   });
 
-  describe("Redirects", () => {
-    it("should have valid redirects that preserve query params", () => {
-      for (const redirect of REDIRECTS_PRESERVE_QUERY) {
-        expect(redirect.source).toBeDefined();
-        expect(redirect.destination).toBeDefined();
-        expect(redirect.preserveQuery).toBe(true);
-      }
-    });
-
-    it("should have valid legacy redirects", () => {
-      for (const redirect of REDIRECTS_LEGACY) {
-        expect(redirect.source).toBeDefined();
-        expect(redirect.destination).toBeDefined();
-        expect(redirect.preserveQuery).toBe(false);
-      }
-    });
-
-    it("/reconcile should redirect to /import with preserveQuery", () => {
-      const redirect = REDIRECTS_PRESERVE_QUERY.find(
-        (r) => r.source === "/reconcile"
-      );
-      expect(redirect).toBeDefined();
-      expect(redirect?.destination).toBe("/import");
-      expect(redirect?.preserveQuery).toBe(true);
-    });
-
-    it("/import/reconcile should redirect to /import with preserveQuery", () => {
-      const redirect = REDIRECTS_PRESERVE_QUERY.find(
-        (r) => r.source === "/import/reconcile"
-      );
-      expect(redirect).toBeDefined();
-      expect(redirect?.destination).toBe("/import");
-      expect(redirect?.preserveQuery).toBe(true);
-    });
-  });
 
   describe("Aliases", () => {
     it("should have valid alias entries", () => {
