@@ -104,13 +104,16 @@ const discoveredTables = await discoverCoveredTables();
 console.log(`\n=== Discovered ${discoveredTables.length} tables with reika_* triggers ===`);
 discoveredTables.forEach((t) => console.log(`  - ${t}`));
 
-// Verify hardcoded list matches discovered tables
-if (JSON.stringify(COVERED_TABLES_HARDCODED.sort()) !== JSON.stringify(discoveredTables.sort())) {
-  console.error("ERROR: Hardcoded COVERED_TABLES_HARDCODED does not match live pg_trigger discovery!");
+// Verify hardcoded list matches discovered tables (must throw, not console.error)
+const hardcodedSorted = [...COVERED_TABLES_HARDCODED].sort();
+const discoveredSorted = [...discoveredTables].sort();
+if (JSON.stringify(hardcodedSorted) !== JSON.stringify(discoveredSorted)) {
   const missing = discoveredTables.filter(t => !COVERED_TABLES_HARDCODED.includes(t));
   const extra = COVERED_TABLES_HARDCODED.filter(t => !discoveredTables.includes(t));
-  if (missing.length) console.error(`Missing from hardcoded list: ${missing.join(', ')}`);
-  if (extra.length) console.error(`Extra in hardcoded list: ${extra.join(', ')}`);
+  let errorMsg = "ERROR: Hardcoded COVERED_TABLES_HARDCODED does not match live pg_trigger discovery!";
+  if (missing.length) errorMsg += `\nMissing from hardcoded list: ${missing.join(', ')}`;
+  if (extra.length) errorMsg += `\nExtra in hardcoded list: ${extra.join(', ')}`;
+  throw new Error(errorMsg);
 }
 
 // All 44 tables are testable - no exclusions
@@ -322,7 +325,7 @@ describe("Per-table trigger verification", () => {
         [testUserId]
       );
       const versionAfterUpdate = parseInt(result.rows[0].data_version, 10);
-      expect(versionAfterUpdate).toBeGreaterThan(0);
+      expect(versionAfterUpdate).toBe(1);
 
       // Cleanup
       await client.query(`DELETE FROM "${table}" WHERE user_id = $1`, [testUserId]);
@@ -361,8 +364,6 @@ describe("Per-table trigger verification", () => {
   );
 
   it("user_id transfer bumps both owners on accounts table", async () => {
-    if (!client || !coveredTables.includes('accounts')) return;
-
     const table = 'accounts';
 
     // INSERT for user 1
@@ -395,8 +396,6 @@ describe("Per-table trigger verification", () => {
   });
 
   it("bulk insert on categories bumps data_version exactly once", async () => {
-    if (!client || !coveredTables.includes('categories')) return;
-
     const table = "categories";
 
     // Clear version
