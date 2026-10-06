@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { AccountSwitcher } from "@/components/account-switcher";
-import { NAV_REGISTRY, getEntriesBySurface, getEntriesByGroup } from "@/lib/nav-config";
+import { getEntriesBySurface } from "@/lib/nav-config";
 
 type NavItem = { href: string; label: string; icon: LucideIcon; color: string; mode?: "prod" | "dev"; activePrefixes?: string[]; flag?: "family" | "announcements" };
 
