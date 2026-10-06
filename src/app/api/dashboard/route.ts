@@ -26,7 +26,7 @@ async function handleGet(request: NextRequest) {
   // Dashboard must stay accessible even when the session has no cached DEK
   // (e.g. first request after a server restart). `auth.context.dek` is null in
   // that case; downstream decryption falls through to plaintext/legacy rows.
-  const { checkETag } = await import("@/lib/data-version");
+  const { checkETag, withEtagHeaders } = await import("@/lib/data-version");
   const etagCheck = await checkETag(request);
   if (etagCheck.response) return etagCheck.response;
   const { userId, dek } = etagCheck.authContext!;
@@ -240,7 +240,7 @@ async function handleGet(request: NextRequest) {
       spendingByCategory,
       netWorthOverTime,
     });
-    if (etag) response.headers.set("ETag", etag);
+    if (etag) return withEtagHeaders(response, etag);
     return response;
   } catch (error: unknown) {
     await logApiError("GET", "/api/dashboard", error, userId);

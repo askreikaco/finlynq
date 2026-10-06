@@ -131,7 +131,7 @@ describe('data-version concurrency', () => {
   });
 
   it('should bump both users when UPDATE changes user_id', async () => {
-    const client = new Client({
+    const client = new pg.Client({
       connectionString: databaseUrl,
     });
 
@@ -193,8 +193,8 @@ describe('data-version concurrency', () => {
       const finalUser1Version = versionMap.get(user1Id.toString());
       const finalUser2Version = versionMap.get(user2Id.toString());
 
-      expect(finalUser1Version).toBeGreaterThan(0, 'User 1 (old owner) version should be bumped');
-      expect(finalUser2Version).toBeGreaterThan(0, 'User 2 (new owner) version should be bumped');
+      expect(finalUser1Version).toBeGreaterThan(0);
+      expect(finalUser2Version).toBeGreaterThan(0);
 
       console.log(`User 1 (old owner) data_version: ${finalUser1Version}`);
       console.log(`User 2 (new owner) data_version: ${finalUser2Version}`);
