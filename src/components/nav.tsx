@@ -15,7 +15,7 @@ import type { LucideIcon } from "lucide-react";
 import { AccountSwitcher } from "@/components/account-switcher";
 import { getEntriesBySurface } from "@/lib/nav-config";
 
-type NavItem = { href: string; label: string; icon: LucideIcon; color: string; mode?: "prod" | "dev"; activePrefixes?: string[]; flag?: "family" | "announcements" };
+type NavItem = { href: string; label: string; icon: LucideIcon; color: string; mode?: "prod" | "dev"; activePrefixes?: string[]; flag?: "family" | "announcements" | "feedback" };
 
 // Single-accent system: active items glow amber (`text-primary`) to match the
 // landing's restraint. Inactive icons use the sidebar-foreground muted tones.
