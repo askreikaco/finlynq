@@ -3,13 +3,13 @@ import pg from 'pg';
 
 /**
  * Concurrency tests for data_version trigger system.
- * Verifies data_version increments correctly under concurrent load.
+ * Verifies data_version increments correctly under concurrent load with ordered row locks.
  * Verifies UPDATE with user_id change bumps both users' data_version.
  *
- * NOTE: This test does not reliably trigger deadlocks even with locks removed.
- * Single-statement INSERT...FROM unnest transactions with randomized row order
- * do not create the conflict patterns needed for deadlock detection.
- * Multi-statement transactions may deadlock regardless of locks on individual statements.
+ * Ordered row locks (FOR NO KEY UPDATE) prevent real deadlocks in single multi-user
+ * statements by ensuring all transactions acquire locks in deterministic order.
+ * Deadlock reproduction is state-dependent: the test forces the required table state
+ * with VACUUM FULL users before each run.
  *
  * Run with: DATABASE_URL=postgres://... vitest run tests/db/data-version-concurrency.test.ts
  * Requires a live Postgres cluster at $DATABASE_URL with the migration applied.
@@ -27,11 +27,18 @@ describe('data-version concurrency', () => {
       throw new Error('DATABASE_URL not set for data-version concurrency tests');
     }
 
-    // Create 4 test users in beforeAll
     const client = new pg.Client({ connectionString: databaseUrl });
     await client.connect();
 
     try {
+      // Delete leftover concurrency-user-* rows and accounts at START
+      await client.query(`DELETE FROM accounts WHERE user_id LIKE 'concurrency-user-%'`);
+      await client.query(`DELETE FROM users WHERE id LIKE 'concurrency-user-%'`);
+
+      // Force table state with VACUUM FULL outside any transaction
+      await client.query(`VACUUM FULL users`);
+
+      // Create 10 test users
       const now = new Date().toISOString();
       const createUserResult = await client.query(
         `INSERT INTO users (id, email, password_hash, created_at, updated_at)
@@ -48,31 +55,19 @@ describe('data-version concurrency', () => {
         `UPDATE users SET data_version = 0 WHERE id = ANY($1)`,
         [testUserIds]
       );
-
-      // Clean up any existing test data
-      await client.query(
-        `DELETE FROM accounts WHERE user_id = ANY($1)`,
-        [testUserIds]
-      );
     } finally {
       await client.end();
     }
   });
 
   afterAll(async () => {
-    // Delete all test data and test users
+    // Delete all test data and test users (also on failure)
     const client = new pg.Client({ connectionString: databaseUrl });
     await client.connect();
 
     try {
-      await client.query(
-        `DELETE FROM accounts WHERE user_id = ANY($1)`,
-        [testUserIds]
-      );
-      await client.query(
-        `DELETE FROM users WHERE id = ANY($1)`,
-        [testUserIds]
-      );
+      await client.query(`DELETE FROM accounts WHERE user_id LIKE 'concurrency-user-%'`);
+      await client.query(`DELETE FROM users WHERE id LIKE 'concurrency-user-%'`);
     } finally {
       await client.end();
     }
@@ -89,7 +84,8 @@ describe('data-version concurrency', () => {
         await client.connect();
       }
 
-      // Dispatch work: 6 clients × 80 iterations = 480 total operations
+      // Dispatch work: 24 clients × 80 iterations = 1920 total operations
+      // With 10 users, each user should see 1920 / 10 = 192 increments
       let deadlockCount = 0;
       const clientPromises = [];
 
@@ -97,7 +93,7 @@ describe('data-version concurrency', () => {
         const clientPromise = (async () => {
           for (let iter = 0; iter < iterationsPerClient; iter++) {
             try {
-              // Shuffle the 4 user IDs per iteration
+              // Shuffle the 10 user IDs per iteration
               const shuffledUsers = [...testUserIds].sort(() => Math.random() - 0.5);
 
               // Use unnest to insert with shuffled user array
@@ -124,21 +120,21 @@ describe('data-version concurrency', () => {
       await Promise.all(clientPromises);
 
       // Verify that all operations completed without deadlock errors.
-      // NOTE: This single-statement workload does not reliably trigger deadlocks,
-      // even without row locks. Deadlocks are more likely in multi-statement transactions.
+      // Ordered row locks prevent real deadlocks by ensuring deterministic lock acquisition.
       console.log(`\n*** DEADLOCK COUNT: ${deadlockCount} out of ${numClients * iterationsPerClient} operations ***`);
       expect(deadlockCount).toBe(0);
 
-      // Verify each user's data_version was incremented (480 operations / 4 users = 120 per user)
+      // Verify each user's data_version increased by exactly clients*iterations (1920)
       const finalVersions = await clients[0].query(
         `SELECT id, data_version FROM users WHERE id = ANY($1) ORDER BY id`,
         [testUserIds]
       );
 
+      const expectedIncrement = numClients * iterationsPerClient;
       for (const user of finalVersions.rows) {
         const version = parseInt(user.data_version, 10);
-        expect(version).toBeGreaterThan(0);
-        console.log(`User ${user.id} data_version: ${version} (expected ~120)`);
+        expect(version).toBe(expectedIncrement);
+        console.log(`User ${user.id} data_version: ${version} (expected ${expectedIncrement})`);
       }
     } finally {
       // Close all clients
