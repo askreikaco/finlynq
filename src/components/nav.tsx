@@ -15,7 +15,7 @@ import type { LucideIcon } from "lucide-react";
 import { AccountSwitcher } from "@/components/account-switcher";
 import { getEntriesBySurface, getMobileBarItemsSorted } from "@/lib/nav-config";
 
-type NavItem = { href: string; label: string; icon: LucideIcon; color: string; mode?: "prod" | "dev"; activePrefixes?: string[]; flag?: "family" | "announcements" | "feedback" };
+type NavItem = { href: string; label: string; icon: LucideIcon; color: string; mode?: "prod" | "dev"; activePrefixes?: string[]; flag?: "family" | "announcements" | "feedback" | "instance" };
 
 // Single-accent system: active items glow amber (`text-primary`) to match the
 // landing's restraint. Inactive icons use the sidebar-foreground muted tones.
@@ -112,7 +112,7 @@ export const mobileBarItems: NavItem[] = generateMobileBarItems();
 
 export const allFlatItems = navGroups.flatMap((g) => g.items).concat(toolLinks).concat(adminLinks);
 
-export const Nav = memo(function Nav() {
+export const Nav = memo(function Nav({ instanceAdminEnabled = false }: { instanceAdminEnabled?: boolean }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
@@ -276,6 +276,7 @@ export const Nav = memo(function Nav() {
             // Filter by feature flags
             if (item.flag === "announcements" && !hasAnnouncements) return false;
             if (item.flag === "family" && !familyEnabled) return false;
+            if (item.flag === "instance" && !instanceAdminEnabled) return false;
             return devMode || item.mode !== "dev";
           });
           if (visibleItems.length === 0) return null;
@@ -354,7 +355,12 @@ export const Nav = memo(function Nav() {
               )}
               {adminOpen && !collapsed && (
                 <div id="nav-admin-links" className="space-y-0.5 max-h-[40vh] overflow-y-auto">
-                  {adminLinks.filter((item) => devMode || item.mode !== "dev").map((item) => renderLink(item, !collapsed))}
+                  {adminLinks.filter((item) => {
+                    if (item.flag === "announcements" && !hasAnnouncements) return false;
+                    if (item.flag === "family" && !familyEnabled) return false;
+                    if (item.flag === "instance" && !instanceAdminEnabled) return false;
+                    return devMode || item.mode !== "dev";
+                  }).map((item) => renderLink(item, !collapsed))}
                 </div>
               )}
             </div>

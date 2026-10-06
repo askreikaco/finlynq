@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getRequestOrigins } from "@/lib/request-origins";
 import { isFamilyWealthEnabled, isFamilyWealthPath } from "@/lib/family/flag";
+import { isInstanceAdminEnabled, isInstanceAdminPath } from "@/lib/admin/instance-flag";
 
 /**
  * Allowed origins for managed (hosted) mode.
@@ -299,6 +300,14 @@ export function middleware(request: NextRequest) {
       status: 405,
       headers: { Allow: "GET, HEAD", "Content-Type": "application/json" },
     });
+  }
+
+  // FINLYNQ_INSTANCE_ADMIN kill switch: the feature does not exist (404) for pages and API when disabled.
+  if (isInstanceAdminPath(request.nextUrl.pathname) && !isInstanceAdminEnabled()) {
+    if (request.nextUrl.pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    return NextResponse.rewrite(new URL("/instance-admin-disabled", request.url), { status: 404 });
   }
 
   // CSRF Origin/Referer gate for cookie-auth'd state-changing requests.

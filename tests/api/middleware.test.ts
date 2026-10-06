@@ -1,5 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { middleware } from "@/middleware";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { middleware, config as middlewareConfig } from "@/middleware";
+import { isInstanceAdminPath } from "@/lib/admin/instance-flag";
 import { NextRequest } from "next/server";
 
 describe("Middleware — Security Headers", () => {
@@ -126,5 +127,143 @@ describe("Middleware — CSP nonce (B10)", () => {
     const res = middleware(makeRequest("/dashboard"));
     const csp = res.headers.get("Content-Security-Policy") ?? "";
     expect(csp).toContain("object-src 'none'");
+  });
+});
+
+describe("Middleware — Matcher pattern (WP9a)", () => {
+  it("middleware config has exactly one matcher pattern", () => {
+    expect(middlewareConfig.matcher).toHaveLength(1);
+  });
+
+  it("matcher[0] RegExp matches /api/admin/instance/config", () => {
+    const re = new RegExp("^" + middlewareConfig.matcher[0] + "$");
+    expect(re.test("/api/admin/instance/config")).toBe(true);
+  });
+
+  it("matcher[0] RegExp matches /admin/instance", () => {
+    const re = new RegExp("^" + middlewareConfig.matcher[0] + "$");
+    expect(re.test("/admin/instance")).toBe(true);
+  });
+
+  it("matcher[0] RegExp matches /api/foo", () => {
+    const re = new RegExp("^" + middlewareConfig.matcher[0] + "$");
+    expect(re.test("/api/foo")).toBe(true);
+  });
+
+  it("matcher[0] RegExp does NOT match /_next/static/x", () => {
+    const re = new RegExp("^" + middlewareConfig.matcher[0] + "$");
+    expect(re.test("/_next/static/x")).toBe(false);
+  });
+
+  it("matcher[0] RegExp does NOT match /_next/image", () => {
+    const re = new RegExp("^" + middlewareConfig.matcher[0] + "$");
+    expect(re.test("/_next/image")).toBe(false);
+  });
+
+  it("matcher[0] RegExp does NOT match /favicon.ico", () => {
+    const re = new RegExp("^" + middlewareConfig.matcher[0] + "$");
+    expect(re.test("/favicon.ico")).toBe(false);
+  });
+});
+
+describe("Middleware — Instance Admin kill switch (WP9a)", () => {
+  function makeRequest(path: string, method = "GET") {
+    return new NextRequest(new URL(path, "http://localhost:3000"), { method });
+  }
+
+  beforeEach(() => {
+    vi.resetModules();
+    vi.clearAllMocks();
+    // Clear the env var before each test
+    delete process.env.FINLYNQ_INSTANCE_ADMIN;
+  });
+
+  it("returns 404 for /admin/instance page when flag is unset", () => {
+    const res = middleware(makeRequest("/admin/instance"));
+    expect(res.status).toBe(404);
+  });
+
+  it("returns 404 for /api/admin/instance/config when flag is unset", () => {
+    const res = middleware(makeRequest("/api/admin/instance/config"));
+    expect(res.status).toBe(404);
+  });
+
+  it("allows /admin/instance when flag is set to '1'", () => {
+    process.env.FINLYNQ_INSTANCE_ADMIN = "1";
+    const res = middleware(makeRequest("/admin/instance"));
+    // NextResponse.next() returns status 200 (the normal flow continues)
+    expect(res.status).toBe(200);
+  });
+
+  it("allows /api/admin/instance/config when flag is set to 'true'", () => {
+    process.env.FINLYNQ_INSTANCE_ADMIN = "true";
+    const res = middleware(makeRequest("/api/admin/instance/config"));
+    expect(res.status).toBe(200);
+  });
+
+  it("does not affect other routes when flag is unset", () => {
+    const res = middleware(makeRequest("/dashboard"));
+    expect(res.status).toBe(200);
+  });
+
+  it("does not affect /family routes", () => {
+    const res = middleware(makeRequest("/family/overview"));
+    expect(res.status).toBe(200);
+  });
+
+  it("API 404 response has correct body format and content-type", async () => {
+    const res = middleware(makeRequest("/api/admin/instance/config"));
+    expect(res.status).toBe(404);
+    expect(res.headers.get("content-type")).toContain("application/json");
+    const body = await res.json();
+    expect(body).toEqual({ error: "Not found" });
+  });
+
+  it("page 404 response has x-middleware-rewrite header", () => {
+    const res = middleware(makeRequest("/admin/instance"));
+    expect(res.status).toBe(404);
+    expect(res.headers.get("x-middleware-rewrite")).toBe("http://localhost:3000/instance-admin-disabled");
+  });
+
+  it("DELETE with cookie and evil Origin returns 404 not 403 (gate before CSRF)", () => {
+    const res = middleware(
+      new NextRequest(new URL("/api/admin/instance/config", "http://localhost:3000"), {
+        method: "DELETE",
+        headers: {
+          cookie: "pf_session=abc123",
+          origin: "https://evil.com",
+        },
+      })
+    );
+    expect(res.status).toBe(404);
+    // Not 403 (CSRF), because instance-admin gate runs first
+  });
+
+  it("isInstanceAdminPath matches /api/admin/instance (exact)", () => {
+    expect(isInstanceAdminPath("/api/admin/instance")).toBe(true);
+  });
+
+  it("isInstanceAdminPath matches /api/admin/instance/config (subpath)", () => {
+    expect(isInstanceAdminPath("/api/admin/instance/config")).toBe(true);
+  });
+
+  it("isInstanceAdminPath matches /admin/instance/subpage (page subpath)", () => {
+    expect(isInstanceAdminPath("/admin/instance/subpage")).toBe(true);
+  });
+
+  it("isInstanceAdminPath does not match /admin/instances (plural)", () => {
+    expect(isInstanceAdminPath("/admin/instances")).toBe(false);
+  });
+
+  it("isInstanceAdminPath does not match /admin/instance-x (with suffix)", () => {
+    expect(isInstanceAdminPath("/admin/instance-x")).toBe(false);
+  });
+
+  it("isInstanceAdminPath does not match /api/admin/instances (plural)", () => {
+    expect(isInstanceAdminPath("/api/admin/instances")).toBe(false);
+  });
+
+  it("isInstanceAdminPath does not match /api/admin/instance-x (with suffix)", () => {
+    expect(isInstanceAdminPath("/api/admin/instance-x")).toBe(false);
   });
 });
