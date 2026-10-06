@@ -21,14 +21,25 @@ const DOLLAR_SYMBOLS: Record<string, string> = {
  * ISO 4217 minor-unit count for a currency (VND/JPY/KRW → 0, USD/EUR → 2),
  * read from Intl so zero-decimal currencies don't render a meaningless ".00".
  * Custom / non-ISO codes that Intl rejects fall back to 2.
+ *
+ * Memoized per code: `formatCurrency` runs for every money cell in every
+ * table, and constructing an `Intl.NumberFormat` just to read this back would
+ * double its cost.
  */
+const decimalsByCurrency = new Map<string, number>();
 export function currencyDecimals(currency: string): number {
+  const cached = decimalsByCurrency.get(currency);
+  if (cached !== undefined) return cached;
+  let decimals = 2;
   try {
-    return new Intl.NumberFormat(getDisplayLocale(), { style: "currency", currency })
-      .resolvedOptions().maximumFractionDigits ?? 2;
+    decimals =
+      new Intl.NumberFormat(getDisplayLocale(), { style: "currency", currency })
+        .resolvedOptions().maximumFractionDigits ?? 2;
   } catch {
-    return 2;
+    // Not a well-formed currency code — keep the 2-decimal default.
   }
+  decimalsByCurrency.set(currency, decimals);
+  return decimals;
 }
 
 export function formatCurrency(
