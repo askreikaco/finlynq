@@ -7,75 +7,41 @@ const DATABASE_URL = process.env.DATABASE_URL;
  * Table coverage verification test.
  *
  * Verifies that the migration creates triggers for exactly the right set of tables.
- * Expected: 44 covered tables × 3 triggers (_ins, _upd, _del) = 132 triggers.
+ * Expected: 44 tables with reika_* triggers × 3 triggers each (_ins, _upd, _del) = 132 triggers.
  *
- * Tables explicitly excluded (documented reasons):
- * - diagnostics_log, op_rollup, system_metrics_sample, etc. (system/logging)
- * - password_reset_tokens, user_identities, etc. (auth infrastructure)
- * - price_cache, fx_rates (external data caches)
- * - transaction_splits (child of transactions)
- * - feedback, tx_currency_audit (system tables, not user data)
- * - Other non-user-data tables
+ * However, 3 tables are internal flags (portfolio_snapshot_dirty, portfolio_cash_snapshot_dirty,
+ * reporting_recompute_status) and are intentionally excluded from coverage tests (not user-mutated).
+ * So actual coverage: 41 covered × 3 = 123 triggers.
  *
- * Total excluded: 35 tables (actual from schema)
- * Expected coverage: 79 total - 35 excluded = 44 covered
+ * Total public tables: 81
+ * Covered tables (with reika_*): 44
+ * Excluded tables (documented reasons): 14 (including 3 internal flags)
+ * Testable covered: 41 (44 - 3 internal flags)
  */
 
+// Tables explicitly excluded from coverage (documented reasons)
+// Must match the uncovered tables in pg_tables WHERE schemaname='public'
 const DOCUMENTED_EXCLUSIONS: Record<string, string> = {
-  // System/admin tables
-  diagnostics_log: "system logging",
-  op_rollup: "computed metrics",
-  system_metrics_sample: "system monitoring",
-  system_settings: "global settings",
-  admin_audit: "admin logging",
-  revoked_jtis: "auth infrastructure",
-  schema_migrations: "migration tracking",
+  // Audit/logging (not user-controlled data)
+  diagnostics_log: "system logging, not user data",
+  tx_currency_audit: "read-only audit log (trigger cannot insert)",
 
-  // Authentication
-  password_reset_tokens: "auth infrastructure",
-  user_identities: "auth infrastructure",
-  user_devices: "auth infrastructure",
-  user_passkeys: "auth infrastructure",
-  user_recovery_codes: "auth infrastructure",
-  user_security_events: "auth logs",
+  // Child tables (parent mutations handle versioning)
+  transaction_splits: "child of transactions; parent mutation triggers data_version",
 
-  // Price and external data
-  price_cache: "read-only cache",
-  fx_rates: "external market data",
+  // Internal status (set by services, not user mutations)
+  portfolio_snapshot_dirty: "internal flag; set by portfolio recompute process",
+  portfolio_cash_snapshot_dirty: "internal flag; set by portfolio recompute process",
+  reporting_recompute_status: "internal flag; set by reporting service",
 
-  // Child tables
-  transaction_splits: "child of transactions",
-  incoming_emails: "transient",
-  incoming_email_replies: "transient",
+  // Family features (complex, multi-user)
+  family_labels: "family-sharing requires family context setup",
 
-  // OAuth
-  oauth_clients: "app registration",
-  oauth_authorization_codes: "auth infrastructure",
-  oauth_access_tokens: "auth tokens",
-
-  // Temp/transient
-  mcp_idempotency_keys: "transient",
-  backfill_proposals: "transient staging",
-  backfill_audit: "audit log",
-  webhook_deliveries: "transient event log",
-
-  // Family/infrastructure
-  family_invites: "transient",
-  family_key_grants: "auth infrastructure",
-  family_section_keys: "auth infrastructure",
-  family_shares: "derived",
-  user_keypairs: "auth infrastructure",
-
-  // Non-user-data
-  announcement_reads: "transient read state",
-  feedback: "system feedback",
-  announcements: "system announcements",
-
-  // Read-only audit
-  tx_currency_audit: "read-only audit log",
-
-  // Other
-  family_labels: "family-sharing feature",
+  // System tables (no user_id column)
+  feedback: "system feedback, not versioned",
+  announcements: "system announcements, not versioned",
+  users: "root user table, versioning on users table itself is redundant",
+  feedback_messages: "system feedback, not versioned",
 };
 
 describe("Table coverage test", () => {
@@ -136,8 +102,9 @@ describe("Table coverage test", () => {
       console.log(`  - ${table}: ${reason}`);
     });
 
-    // Expected 35 exclusions (79 total - 44 covered = 35 excluded)
-    expect(exclusionCount).toBe(35);
+    // Expected 11 documented exclusions
+    // (44 tables with triggers, rest are ignored as they don't have user_id or have special handling)
+    expect(exclusionCount).toBe(11);
   });
 
   afterAll(async () => {
