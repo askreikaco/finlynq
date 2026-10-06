@@ -1,10 +1,14 @@
 "use client";
 
 /**
- * Categories overview — where the money went in a month, and how each
- * category compares with its usual month. Every row opens the single-category
- * view (`/categories/[id]`). Data: GET /api/reports/categories (math in
- * lib/reports/category-overview.ts, averaging shared with the detail view).
+ * Categories hub — merged overview + management page (WP8).
+ *
+ * When FINLYNQ_CATEGORIES_MERGED is enabled:
+ * - Shows tabbed interface with Overview and Management tabs
+ * - Overview: category spending/income report with trends
+ * - Management: add/edit/delete categories and link to rules
+ *
+ * When disabled (default): Shows only overview (backward compatible)
  */
 
 import { Suspense, useCallback, useEffect, useState } from "react";
@@ -12,7 +16,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ErrorState } from "@/components/error-state";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { Sparkline } from "@/components/sparkline";
@@ -20,8 +24,8 @@ import { formatCurrency } from "@/lib/currency";
 import { CHART_COLORS } from "@/lib/chart-colors";
 import { localDateISO } from "@/lib/utils/date";
 import { shiftMonth } from "@/lib/reports/category-detail";
-import type { CategoryOverview } from "@/lib/reports/category-overview";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { CategoryManagement } from "./_components/category-management";
 
 type OverviewResponse = CategoryOverview & { type: "E" | "I"; displayCurrency: string };
 
@@ -44,10 +48,63 @@ function changeLabel(change: number | null): string | null {
 }
 
 export default function CategoriesPage() {
+  const [isMerged, setIsMerged] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Check if merged categories are enabled
+    fetch("/api/flags/categories-merged")
+      .then((r) => (r.ok ? r.json() : { enabled: false }))
+      .then((data) => {
+        setIsMerged(data.enabled ?? false);
+        setLoading(false);
+      })
+      .catch(() => {
+        setIsMerged(false);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) {
+    return <PageSkeleton variant="list" rows={6} />;
+  }
+
+  if (!isMerged) {
+    // Backward compatible: show only overview
+    return (
+      <Suspense fallback={<PageSkeleton variant="list" rows={6} />}>
+        <CategoriesOverview />
+      </Suspense>
+    );
+  }
+
+  // Merged UI: show tabs
   return (
-    <Suspense fallback={<PageSkeleton variant="list" rows={6} />}>
-      <CategoriesOverview />
-    </Suspense>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">Categories</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          View spending patterns and manage your categories.
+        </p>
+      </div>
+
+      <Tabs defaultValue="overview" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="manage">Manage</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-6 mt-6">
+          <Suspense fallback={<PageSkeleton variant="list" rows={6} />}>
+            <CategoriesOverview />
+          </Suspense>
+        </TabsContent>
+
+        <TabsContent value="manage" className="space-y-6 mt-6">
+          <CategoryManagement />
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }
 
@@ -104,7 +161,6 @@ function CategoriesOverview() {
   const otherAmount = active.slice(TOP_SEGMENTS).reduce((s, c) => s + c.amount, 0);
   const color = (i: number) => CHART_COLORS.categories[i % CHART_COLORS.categories.length];
   const sparkLabels = data.windowMonths.map((m) => monthName(m, "short"));
-  // Up is bad for spending, good for income.
   const toneFor = (change: number | null) =>
     change == null ? "text-muted-foreground" : (change > 0) === isIncome ? "text-emerald-600" : "text-rose-600";
 
@@ -112,7 +168,7 @@ function CategoriesOverview() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Spending by category</h1>
+          <h2 className="text-xl font-semibold">Spending by category</h2>
           <p className="text-sm text-muted-foreground mt-1">
             Where your money goes, and how each category compares with a usual month.
           </p>
@@ -208,7 +264,6 @@ function CategoriesOverview() {
               {data.categories.map((c) => {
                 const segIdx = segments.findIndex((s) => s.id === c.id);
                 const dot = segIdx >= 0 ? color(segIdx) : CHART_COLORS.categories[11];
-                // Nothing yet this month reads as "none", not a green "-100%".
                 const none = c.amount === 0;
                 const ch = none ? (data.partial ? "none yet" : "none") : changeLabel(c.change);
                 return (
