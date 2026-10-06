@@ -78,4 +78,28 @@ describe("Admin Environment Layout", () => {
 
     expect(screen.getByText("Test content goes here")).toBeTruthy();
   });
+
+  it("renders correct icon classes for each tab", () => {
+    render(
+      <Layout>
+        <div>Test content</div>
+      </Layout>
+    );
+
+    const links = screen.getAllByRole("link");
+    const tabLinks = links.filter(l => l.getAttribute("href")?.startsWith("/admin/"));
+
+    const expectedIcons = [
+      "lucide-server",      // System
+      "lucide-scroll-text", // Diagnostics
+      "lucide-activity",    // API Log
+      "lucide-database",    // Rate Cache
+      "lucide-plug",        // Integrations
+    ];
+
+    for (let i = 0; i < tabLinks.length; i++) {
+      const svg = tabLinks[i].querySelector("svg");
+      expect(svg?.className.baseVal).toContain(expectedIcons[i]);
+    }
+  });
 });
