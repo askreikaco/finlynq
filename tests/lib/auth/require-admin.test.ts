@@ -183,6 +183,29 @@ describe("requireAdmin", () => {
       if (result.authenticated) {
         expect(result.context.userId).toBe("admin-123");
       }
+      expect(mockGetUserById).toHaveBeenCalledWith("admin-123");
+    });
+
+    it("verifies getUserById is called with correct userId in 403 case", async () => {
+      const userId = "non-admin-user";
+      mockRequireAuth.mockResolvedValue({
+        authenticated: true,
+        context: { userId },
+      });
+
+      mockGetUserById.mockResolvedValue({
+        id: userId,
+        email: "user@example.com",
+        role: "user",
+      });
+
+      const result = await requireAdmin(makeRequest());
+
+      expect(result.authenticated).toBe(false);
+      if (!result.authenticated) {
+        expect(result.response.status).toBe(403);
+      }
+      expect(mockGetUserById).toHaveBeenCalledWith(userId);
     });
   });
 });

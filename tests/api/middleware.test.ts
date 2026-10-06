@@ -258,4 +258,12 @@ describe("Middleware — Instance Admin kill switch (WP9a)", () => {
   it("isInstanceAdminPath does not match /admin/instance-x (with suffix)", () => {
     expect(isInstanceAdminPath("/admin/instance-x")).toBe(false);
   });
+
+  it("isInstanceAdminPath does not match /api/admin/instances (plural)", () => {
+    expect(isInstanceAdminPath("/api/admin/instances")).toBe(false);
+  });
+
+  it("isInstanceAdminPath does not match /api/admin/instance-x (with suffix)", () => {
+    expect(isInstanceAdminPath("/api/admin/instance-x")).toBe(false);
+  });
 });

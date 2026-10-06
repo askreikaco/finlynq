@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { isInstanceAdminEnabled, isInstanceAdminPath } from "@/lib/admin/instance-flag";
 
 describe("isInstanceAdminEnabled", () => {
@@ -40,6 +40,14 @@ describe("isInstanceAdminEnabled", () => {
     expect(isInstanceAdminEnabled({ FINLYNQ_INSTANCE_ADMIN: "off" })).toBe(false);
     expect(isInstanceAdminEnabled({ FINLYNQ_INSTANCE_ADMIN: "random" })).toBe(false);
   });
+
+  it.each(["0", "false", "no", "off", "enabled", "", "2"])(
+    "returns false when FINLYNQ_INSTANCE_ADMIN is %s",
+    (token) => {
+      vi.stubEnv("FINLYNQ_INSTANCE_ADMIN", token);
+      expect(isInstanceAdminEnabled()).toBe(false);
+    }
+  );
 });
 
 describe("isInstanceAdminPath", () => {
