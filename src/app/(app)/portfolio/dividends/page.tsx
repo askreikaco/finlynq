@@ -33,7 +33,6 @@ import { Download } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { PageHeader } from "@/components/mobile";
-import { useDisplayCurrency } from "@/components/currency-provider";
 
 interface CurrencyCell {
   amount: number;

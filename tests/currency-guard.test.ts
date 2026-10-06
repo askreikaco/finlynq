@@ -358,10 +358,6 @@ describe("Currency Hardcodes Guard", () => {
                 allowed.count--;
                 allowListUsed.add(key);
               } else {
-                // Debug: Check if line exists in allow-list but with different spacing
-                const exactMatch = ALLOW_LIST.find((a) => a.file === relfile && a.line === trimmed);
-                const fuzzyMatch = ALLOW_LIST.find((a) => a.file === relfile && a.line.replace(/\s+/g, " ") === trimmed.replace(/\s+/g, " "));
-
                 violations.push(
                   `${relfile}:${lineNum}: hardcoded ${currency} (${name})\n  ${line}`
                 );
