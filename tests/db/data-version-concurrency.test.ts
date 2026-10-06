@@ -41,7 +41,7 @@ describe('data-version concurrency', () => {
         [numUsers, now, now]
       );
 
-      testUserIds.push(...createUserResult.rows.map((r: any) => r.id));
+      testUserIds.push(...createUserResult.rows.map((r: { id: string }) => r.id));
 
       // Clear data_version for all test users
       await client.query(
@@ -107,10 +107,11 @@ describe('data-version concurrency', () => {
                  FROM unnest($1::text[]) u`,
                 [shuffledUsers]
               );
-            } catch (error: any) {
-              if (error.code === '40P01' || (error.message && error.message.includes('deadlock'))) {
+            } catch (error: unknown) {
+              const err = error as { code?: string; message?: string };
+              if (err.code === '40P01' || (err.message && err.message.includes('deadlock'))) {
                 deadlockCount++;
-                console.error(`Deadlock on client ${clientId} iteration ${iter}: ${error.message}`);
+                console.error(`Deadlock on client ${clientId} iteration ${iter}: ${err.message}`);
               } else {
                 throw error;
               }
@@ -198,7 +199,7 @@ describe('data-version concurrency', () => {
         [[user1Id, user2Id]]
       );
 
-      const versionMap = new Map(finalVersions.rows.map((u: any) => [u.id.toString(), parseInt(u.data_version, 10)]));
+      const versionMap = new Map(finalVersions.rows.map((u: { id: string; data_version: string }) => [u.id.toString(), parseInt(u.data_version, 10)]));
       const finalUser1Version = versionMap.get(user1Id.toString());
       const finalUser2Version = versionMap.get(user2Id.toString());
 
