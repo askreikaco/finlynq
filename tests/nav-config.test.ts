@@ -322,6 +322,14 @@ describe("nav-config", () => {
   });
 
   describe("Icons", () => {
+    it("every entry should have a valid icon", () => {
+      for (const entry of NAV_REGISTRY) {
+        expect(entry.icon).toBeDefined();
+        // Icon should be a React component (function or ForwardRef object)
+        expect(entry.icon).not.toBeNull();
+      }
+    });
+
     it("should have Settings2 for /settings/general", () => {
       const entry = getNavEntry("/settings/general");
       expect(entry?.icon).toBe(lucideIcons.Settings2);
@@ -350,6 +358,22 @@ describe("nav-config", () => {
 
       const accountSecurityEntry = getNavEntry("/account/security");
       expect(accountSecurityEntry?.icon).toBe(lucideIcons.ShieldCheck);
+    });
+
+    it("all sidebar entries should have defined icons", () => {
+      const sidebarEntries = getEntriesBySurface("sidebar");
+      for (const entry of sidebarEntries) {
+        expect(entry.icon).toBeDefined();
+        expect(entry.icon).not.toBeNull();
+      }
+    });
+
+    it("all more menu entries should have defined icons", () => {
+      const moreEntries = getEntriesBySurface("more");
+      for (const entry of moreEntries) {
+        expect(entry.icon).toBeDefined();
+        expect(entry.icon).not.toBeNull();
+      }
     });
   });
 

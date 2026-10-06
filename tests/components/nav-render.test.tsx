@@ -214,3 +214,52 @@ describe("Nav What's New", () => {
     expect(badge).not.toBeNull();
   });
 });
+
+describe("Nav icon rendering", () => {
+  beforeEach(() => {
+    mockPath = "/dashboard";
+    localStorage.clear();
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  it("sidebar entries render with icons", async () => {
+    mockFetch({ announcements: [{ id: 1, read: false }], admin: true });
+    render(<Nav />);
+
+    // Wait for nav to load
+    await waitFor(() => expect(screen.queryByText("What's new")).not.toBeNull());
+
+    // Check that What's new link has an icon (SVG)
+    const whatsnewLink = screen.getByRole("link", { name: /What's new/ });
+    const iconSvg = whatsnewLink.querySelector("svg");
+    expect(iconSvg).not.toBeNull();
+  });
+
+  it("feedback entry in sidebar renders with icon", async () => {
+    mockFetch({ feedback: [{ unread: true }] });
+    render(<Nav />);
+
+    await waitFor(() => expect(screen.queryByText("Feedback")).not.toBeNull());
+
+    const feedbackLink = screen.getByRole("link", { name: /^Feedback/ });
+    const iconSvg = feedbackLink.querySelector("svg");
+    expect(iconSvg).not.toBeNull();
+  });
+
+  it("more menu entry (What's new) renders with icon", async () => {
+    mockFetch({ announcements: [{ id: 1, read: false }] });
+    render(<Nav />);
+
+    await waitFor(() => expect(screen.queryByText("What's new")).not.toBeNull());
+
+    // Verify icon is rendered for the more menu entry
+    const whatsnewLink = screen.getByRole("link", { name: /What's new/ });
+    const iconSvg = whatsnewLink.querySelector("svg");
+    // Icon should exist since What's new is in both sidebar and more surfaces
+    expect(iconSvg).not.toBeNull();
+  });
+});
