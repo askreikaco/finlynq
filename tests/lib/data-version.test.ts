@@ -114,11 +114,10 @@ describe("data-version", () => {
   describe("getTimeComponentForRoute", () => {
     it("should return hourly component for price-driven routes", () => {
       const routes = [
-        "/api/v1/accounts",
-        "/api/v1/dashboard",
-        "/api/v1/portfolio/overview",
-        "/api/v1/reports",
-        "/api/v1/goals",
+        "/api/accounts",
+        "/api/dashboard",
+        "/api/portfolio/overview",
+        "/api/reports",
       ];
 
       for (const route of routes) {
@@ -130,10 +129,11 @@ describe("data-version", () => {
 
     it("should return empty string for non-price-driven routes", () => {
       const routes = [
-        "/api/v1/transactions",
-        "/api/v1/categories",
-        "/api/v1/budgets",
-        "/api/v1/loans",
+        "/api/transactions",
+        "/api/rules",
+        "/api/categories",
+        "/api/budgets",
+        "/api/loans",
       ];
 
       for (const route of routes) {
@@ -147,7 +147,7 @@ describe("data-version", () => {
       const now = new Date();
       const expectedHourPattern = now.toISOString().slice(0, 13); // "2025-01-15T14"
 
-      const component = getTimeComponentForRoute("/api/v1/dashboard");
+      const component = getTimeComponentForRoute("/api/dashboard");
       // Component should match the pattern (seconds might differ slightly in test execution)
       expect(component).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}$/);
       // Should be in the current hour range

@@ -39,16 +39,25 @@ function getUtcHour(): string {
 
 /**
  * Helper to get the appropriate time bucket for a route.
- * Price-driven routes (dashboard, portfolio, accounts, goals, reports) use hourly buckets;
- * others use daily (via UTC date component in generateETag).
+ * Price-driven routes (dashboard, portfolio, accounts, goals, reports) use hourly buckets
+ * because they display live market prices and FX rates that change throughout the day.
+ * Data-only routes (transactions, rules, categories) use daily refresh (via UTC date in generateETag).
+ *
+ * Real routes (verified via grep of src/app/api):
+ * - /api/accounts (price-driven: account balances depend on live security prices)
+ * - /api/dashboard (price-driven: portfolio value, asset allocation, returns)
+ * - /api/portfolio/overview (price-driven: holdings, performance)
+ * - /api/goals (price-driven: goal progress depends on live portfolio values)
+ * - /api/reports (price-driven: some reports show unrealized gains, FX impact)
+ * - /api/rules, /api/transactions, /api/categories (data-only: no live pricing)
  */
 export function getTimeComponentForRoute(route: string): string {
   const priceDrivenRoutes = [
-    "/api/v1/accounts",
-    "/api/v1/dashboard",
-    "/api/v1/portfolio/overview",
-    "/api/v1/reports",
-    "/api/v1/goals",
+    "/api/accounts",
+    "/api/dashboard",
+    "/api/portfolio/overview",
+    "/api/goals",
+    "/api/reports",
   ];
   return priceDrivenRoutes.some((pr) => route.startsWith(pr)) ? getUtcHour() : "";
 }
