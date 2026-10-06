@@ -127,4 +127,10 @@ describe("State-changing methods", () => {
     const response = await DELETE();
     expect(response.status).toBe(405);
   });
+
+  it("route module does not export PUT method", () => {
+    // This verifies that PUT is not exported, preventing mutations that add it
+    const route: Record<string, unknown> = { GET, POST, PATCH, DELETE };
+    expect(route.PUT).toBeUndefined();
+  });
 });

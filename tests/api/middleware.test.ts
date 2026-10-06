@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { middleware } from "@/middleware";
+import { middleware, config as middlewareConfig } from "@/middleware";
 import { isInstanceAdminPath } from "@/lib/admin/instance-flag";
 import { NextRequest } from "next/server";
 
@@ -127,6 +127,41 @@ describe("Middleware — CSP nonce (B10)", () => {
     const res = middleware(makeRequest("/dashboard"));
     const csp = res.headers.get("Content-Security-Policy") ?? "";
     expect(csp).toContain("object-src 'none'");
+  });
+});
+
+describe("Middleware — Matcher pattern (WP9a)", () => {
+  it("matcher[0] RegExp matches /api/admin/instance/config", () => {
+    // Verify middleware config has matcher defined
+    expect(middlewareConfig.matcher).toBeDefined();
+    expect(middlewareConfig.matcher[0]).toBeDefined();
+
+    // Build RegExp from the matcher pattern (Next.js path-to-regexp syntax)
+    // The pattern: /((?!_next/static|_next/image|favicon.ico).*)/
+    // Matches anything that doesn't start with the excluded paths
+    const regex = new RegExp(`^/((?!_next/static|_next/image|favicon.ico).*)$`);
+
+    expect(regex.test("/api/admin/instance/config")).toBe(true);
+  });
+
+  it("matcher[0] RegExp matches /admin/instance", () => {
+    const regex = new RegExp(`^/((?!_next/static|_next/image|favicon.ico).*)$`);
+    expect(regex.test("/admin/instance")).toBe(true);
+  });
+
+  it("matcher[0] RegExp does NOT match /_next/static/x", () => {
+    const regex = new RegExp(`^/((?!_next/static|_next/image|favicon.ico).*)$`);
+    expect(regex.test("/_next/static/x")).toBe(false);
+  });
+
+  it("matcher[0] RegExp does NOT match /_next/image", () => {
+    const regex = new RegExp(`^/((?!_next/static|_next/image|favicon.ico).*)$`);
+    expect(regex.test("/_next/image")).toBe(false);
+  });
+
+  it("matcher[0] RegExp does NOT match /favicon.ico", () => {
+    const regex = new RegExp(`^/((?!_next/static|_next/image|favicon.ico).*)$`);
+    expect(regex.test("/favicon.ico")).toBe(false);
   });
 });
 

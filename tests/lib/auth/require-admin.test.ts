@@ -128,6 +128,30 @@ describe("requireAdmin", () => {
       }
     });
 
+    it.each(["user", "viewer", "moderator", "ADMIN", "Admin", undefined, ""])(
+      "returns 403 when user has role: %s",
+      async (role) => {
+        mockRequireAuth.mockResolvedValue({
+          authenticated: true,
+          context: { userId: `user-${role}` },
+        });
+
+        mockGetUserById.mockResolvedValue({
+          id: `user-${role}`,
+          role,
+        });
+
+        const result = await requireAdmin(makeRequest());
+
+        expect(result.authenticated).toBe(false);
+        if (!result.authenticated) {
+          expect(result.response.status).toBe(403);
+          const json = await result.response.json();
+          expect(json.error).toBe("Admin access required.");
+        }
+      }
+    );
+
     it("returns authenticated when user has 'admin' role", async () => {
       mockRequireAuth.mockResolvedValue({
         authenticated: true,
