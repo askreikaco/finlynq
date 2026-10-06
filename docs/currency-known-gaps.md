@@ -6,7 +6,6 @@ Display components that fall back to hardcoded USD/CAD defaults when currency da
 
 - ✓ **Mobile amount.tsx**: Now uses `currency?.trim() ? currency : displayCurrency`
   - Falls back to user's displayCurrency preference
-  - Removed isLoading branch; CurrencyProvider already defaults to USD during first paint
   - Test: tests/components/amount-displaycurrency.test.tsx (12 tests: explicit currency, empty/whitespace fallback, VND, CAD, EUR/VND discrimination, size/tone/showSign)
 
 - ✓ **Reconcile display - transactions-pane.tsx**: Now uses `r.currency?.trim() ? r.currency : displayCurrency`
@@ -15,14 +14,23 @@ Display components that fall back to hardcoded USD/CAD defaults when currency da
 
 ## Display Components with Hardcoded Fallbacks (TO DO)
 
-- **Reconcile display** (4 files): db-pane, file-pane, bank-pane, investment-op-preview-dialog
-- **Inbox display**: row-card, auto-rule-banner, staged-row-editor, staged-review-surface (lines 864, 946), active-currencies-section
-- **Inbox reconcile dialog**: inbox-to-approve-tab, inbox-to-categorize-tab, inbox-reconcile-tab
-- **API docs**, **Weekly recap**
-- **Chat page.tsx**: InlineBarChart/InlinePieChart/InlineLineChart (skip per WP1)
-- **Sankey chart.tsx**: Falls back to CAD
+Remaining display fallbacks using `||` and `??` patterns:
 
-All use pattern `|| "CAD"` or similar hardcoded defaults requiring fix to `?.trim() ? currency : displayCurrency`.
+- **src/components/import/reconcile/db-pane.tsx**: lines 267, 280, 296 (3 occurrences)
+- **src/components/import/reconcile/file-pane.tsx**: lines 288, 300 (2 occurrences)
+- **src/components/reconcile/bank-pane.tsx**: line 268
+- **src/components/reconcile/investment-op-preview-dialog.tsx**: line 65
+- **src/components/inbox/auto-rule-banner.tsx**: line 129
+- **src/components/inbox/row-card.tsx**: lines 199, 212
+- **src/components/staging/staged-row-editor.tsx**: line 301
+- **src/components/import/staged-review-surface.tsx**: lines 864, 946
+- **src/components/inbox/inbox-reconcile-tab.tsx**: line 668
+- **src/components/inbox/inbox-to-approve-tab.tsx**: line 500
+- **src/components/inbox/inbox-to-categorize-tab.tsx**: line 451
+- **src/components/sankey-chart.tsx**: line 39 (default parameter)
+- **src/app/(app)/chat/page.tsx**: lines 84, 147, 182 (skip per WP1)
+
+All require fix to `?.trim() ? currency : displayCurrency` pattern. Form defaults (`currency: "CAD"` in state, default parameters) are intentional and out of scope.
 
 ## Form/Control Components (Intentional)
 
