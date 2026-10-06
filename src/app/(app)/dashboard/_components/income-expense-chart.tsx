@@ -118,7 +118,7 @@ export function IncomeExpenseChart({
   currency?: string;
 }) {
   const { displayCurrency: userDisplayCurrency } = useDisplayCurrency();
-  const resolvedCurrency = currency || userDisplayCurrency;
+  const resolvedCurrency = currency?.trim() ? currency : userDisplayCurrency;
   // FINLYNQ-129 — component-only "By category" toggle (resets on reload).
   const [stacked, setStacked] = useState(false);
   // Only offer stacking when at least one month carries a category breakdown.

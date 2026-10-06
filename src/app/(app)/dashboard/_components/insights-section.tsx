@@ -56,7 +56,7 @@ function InsightCard({
 
 export function InsightsSection({ currency }: { currency?: string }) {
   const { displayCurrency: userDisplayCurrency } = useDisplayCurrency();
-  const resolvedCurrency = currency || userDisplayCurrency;
+  const resolvedCurrency = currency?.trim() ? currency : userDisplayCurrency;
   const [insights, setInsights] = useState<InsightsData | null>(null);
   const [recurring, setRecurring] = useState<RecurringData | null>(null);
 

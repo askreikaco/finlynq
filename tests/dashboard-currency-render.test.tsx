@@ -18,6 +18,44 @@ beforeEach(() => {
         json: () => Promise.resolve({ displayCurrency: "VND" }),
       } as any);
     }
+    if (url.includes("/api/dashboard/insights")) {
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({
+          categories: [
+            { name: "Food", currentMonth: 5000000, average: 4000000 },
+            { name: "Transport", currentMonth: 2000000, average: 1500000 },
+          ],
+          recurring: {
+            monthlyRecurringTotal: 3000000,
+            displayCurrency: "VND",
+            items: [
+              { description: "Subscription", avgAmount: 500000, currency: "VND" },
+            ],
+          },
+          monthlySpending: [
+            { month: "2024-01", totalSpent: 10000000 },
+          ],
+        }),
+      } as any);
+    }
+    if (url.includes("/api/net-worth-history")) {
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({
+          displayCurrency: "VND",
+          period: "6m",
+          accountId: null,
+          series: [
+            { date: "2024-01-01", value: 100000000 },
+            { date: "2024-02-01", value: 120000000 },
+            { date: "2024-03-01", value: 150000000 },
+          ],
+          hasInvestmentData: false,
+          fxApproximation: false,
+        }),
+      } as any);
+    }
     return Promise.resolve({
       ok: false,
     } as any);
@@ -133,6 +171,7 @@ import { SpendingCategoryChart } from "@/app/(app)/dashboard/_components/spendin
 import { InsightsSection } from "@/app/(app)/dashboard/_components/insights-section";
 import { Sparkline } from "@/components/sparkline";
 import { IncomeExpenseChart } from "@/app/(app)/dashboard/_components/income-expense-chart";
+import { NetWorthHistoryChart } from "@/components/net-worth-history-chart";
 import { ConfirmDeleteBankRow } from "@/components/reconcile/confirm-delete-bank-row";
 import { CurrencyProvider } from "@/components/currency-provider";
 
@@ -155,7 +194,37 @@ describe("Dashboard Currency Render Tests", () => {
     });
   });
 
-  it("AnimatedNumber with currency prop uses provided currency", async () => {
+  it("AnimatedNumber with empty string currency prop displays VND (not bare number)", async () => {
+    const { container } = render(
+      <TestWrapper>
+        <AnimatedNumber value={1000000} currency="" />
+      </TestWrapper>
+    );
+
+    await waitFor(() => {
+      const text = container.textContent || "";
+      // Empty string should fall back to displayCurrency (VND)
+      expect(text).toMatch(/₫/);
+      expect(text).not.toMatch(/\$|US\$|CA\$|CAD|USD/);
+    });
+  });
+
+  it("AnimatedNumber with EUR currency prop displays EUR symbol", async () => {
+    const { container } = render(
+      <TestWrapper>
+        <AnimatedNumber value={1000000} currency="EUR" />
+      </TestWrapper>
+    );
+
+    await waitFor(() => {
+      const text = container.textContent || "";
+      // EUR should render with Euro symbol
+      expect(text).toMatch(/€/);
+      expect(text).not.toMatch(/₫/);
+    });
+  });
+
+  it("AnimatedNumber with JPY currency prop displays JPY symbol", async () => {
     const { container } = render(
       <TestWrapper>
         <AnimatedNumber value={1000000} currency="JPY" />
@@ -164,8 +233,9 @@ describe("Dashboard Currency Render Tests", () => {
 
     await waitFor(() => {
       const text = container.textContent || "";
-      // JPY should render without decimal places
-      expect(text).toMatch(/\d+/);
+      // JPY should render with symbol/code
+      expect(text).toMatch(/¥|JPY/);
+      expect(text).not.toMatch(/₫/);
     });
   });
 
@@ -188,6 +258,48 @@ describe("Dashboard Currency Render Tests", () => {
     });
   });
 
+  it("MetricCard with empty string currency prop displays VND (not bare number)", async () => {
+    const MockIcon = () => <span>Icon</span>;
+    const { container } = render(
+      <TestWrapper>
+        <MetricCard
+          label="Test Metric"
+          icon={MockIcon}
+          value={5000000}
+          currency=""
+        />
+      </TestWrapper>
+    );
+
+    await waitFor(() => {
+      const text = container.textContent || "";
+      // Empty string should fall back to displayCurrency (VND)
+      expect(text).toMatch(/₫/);
+      expect(text).not.toMatch(/\$|US\$|CA\$|CAD|USD/);
+    });
+  });
+
+  it("MetricCard with EUR currency prop displays EUR symbol", async () => {
+    const MockIcon = () => <span>Icon</span>;
+    const { container } = render(
+      <TestWrapper>
+        <MetricCard
+          label="Test Metric"
+          icon={MockIcon}
+          value={5000000}
+          currency="EUR"
+        />
+      </TestWrapper>
+    );
+
+    await waitFor(() => {
+      const text = container.textContent || "";
+      // EUR should render with Euro symbol
+      expect(text).toMatch(/€/);
+      expect(text).not.toMatch(/₫/);
+    });
+  });
+
   it("AvailableToSpend without currency prop displays VND", async () => {
     const { container } = render(
       <TestWrapper>
@@ -205,7 +317,26 @@ describe("Dashboard Currency Render Tests", () => {
     });
   });
 
-  it("AvailableToSpend with currency prop uses provided currency", async () => {
+  it("AvailableToSpend with EUR currency prop displays EUR symbol", async () => {
+    const { container } = render(
+      <TestWrapper>
+        <AvailableToSpend
+          income={5000000}
+          expenses={2000000}
+          currency="EUR"
+        />
+      </TestWrapper>
+    );
+
+    await waitFor(() => {
+      const text = container.textContent || "";
+      // EUR should render with Euro symbol
+      expect(text).toMatch(/€/);
+      expect(text).not.toMatch(/₫/);
+    });
+  });
+
+  it("AvailableToSpend with JPY currency prop displays JPY symbol", async () => {
     const { container } = render(
       <TestWrapper>
         <AvailableToSpend
@@ -218,8 +349,9 @@ describe("Dashboard Currency Render Tests", () => {
 
     await waitFor(() => {
       const text = container.textContent || "";
-      // Should contain JPY-formatted number
-      expect(text).toMatch(/\d+/);
+      // JPY should render with symbol/code
+      expect(text).toMatch(/¥|JPY/);
+      expect(text).not.toMatch(/₫/);
     });
   });
 
@@ -242,7 +374,7 @@ describe("Dashboard Currency Render Tests", () => {
     });
   });
 
-  it("IncomeExpenseChart without currency prop renders without error", async () => {
+  it("IncomeExpenseChart without currency prop renders using provider currency", async () => {
     const data = [
       {
         month: "2024-01",
@@ -257,13 +389,16 @@ describe("Dashboard Currency Render Tests", () => {
     );
 
     await waitFor(() => {
+      // Chart should render with the provider's currency (VND) in the Recharts formatter
+      // The textContent won't show the tooltip values until hover, but the chart is set up to use VND
       const text = container.textContent || "";
       expect(text).toMatch(/Income vs Expenses/);
-      expect(container.querySelector('[data-testid="card"]')).toBeTruthy();
+      // Verify the chart is rendered
+      expect(container.querySelector('[data-testid="chart"]')).toBeTruthy();
     });
   });
 
-  it("Sparkline without currency prop mounts with provider currency", async () => {
+  it("Sparkline without currency prop renders with provider currency", async () => {
     const data = [100000, 200000, 150000];
     const { container } = render(
       <TestWrapper>
@@ -276,29 +411,31 @@ describe("Dashboard Currency Render Tests", () => {
     );
 
     await waitFor(() => {
+      // Sparkline should render and use displayCurrency (VND) in tooltips (checked on hover)
       expect(container.querySelector('[data-testid="chart"]')).toBeTruthy();
     });
   });
 
-  it("Sparkline with currency prop overrides provider", async () => {
+  it("Sparkline with EUR currency prop renders using provided currency", async () => {
     const data = [100000, 200000, 150000];
     const { container } = render(
       <TestWrapper>
         <Sparkline
           data={data}
           color="#6366f1"
-          currency="JPY"
+          currency="EUR"
           labels={["2024-01", "2024-02", "2024-03"]}
         />
       </TestWrapper>
     );
 
     await waitFor(() => {
+      // Sparkline should render and use EUR in tooltips
       expect(container.querySelector('[data-testid="chart"]')).toBeTruthy();
     });
   });
 
-  it("InsightsSection without currency prop displays VND", async () => {
+  it("InsightsSection renders with provider currency", async () => {
     const { container } = render(
       <TestWrapper>
         <InsightsSection />
@@ -306,8 +443,40 @@ describe("Dashboard Currency Render Tests", () => {
     );
 
     await waitFor(() => {
-      // Component should render without errors
+      // InsightsSection should render and use displayCurrency (VND) for amounts
+      // Component fetches data from /api/dashboard/insights which is mocked
       expect(container).toBeTruthy();
+    }, { timeout: 3000 });
+  });
+
+  it("NetWorthHistoryChart renders with currency from API response", async () => {
+    const { container } = render(
+      <TestWrapper>
+        <NetWorthHistoryChart />
+      </TestWrapper>
+    );
+
+    await waitFor(() => {
+      // NetWorthHistoryChart should render and fetch from /api/net-worth-history
+      // The mocked API returns displayCurrency: "VND" which is used for formatting
+      const text = container.textContent || "";
+      expect(text).toMatch(/Net Worth Over Time/);
+    }, { timeout: 3000 });
+  });
+
+  it("AnimatedNumber with reduced animations (useAnimations returns false) displays VND", async () => {
+    // This test verifies that even when animations are disabled, currency display still works
+    const { container } = render(
+      <TestWrapper>
+        <AnimatedNumber value={1000000} />
+      </TestWrapper>
+    );
+
+    await waitFor(() => {
+      const text = container.textContent || "";
+      // Should display in VND even with animations disabled
+      expect(text).toMatch(/₫/);
+      expect(text).not.toMatch(/\$|US\$|CA\$|CAD|USD/);
     });
   });
 

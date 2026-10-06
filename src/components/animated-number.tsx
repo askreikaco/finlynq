@@ -9,7 +9,7 @@ import { useDisplayCurrency } from "@/components/currency-provider";
 export function AnimatedNumber({ value, currency }: { value: number; currency?: string }) {
   const animationsEnabled = useAnimations();
   const { displayCurrency } = useDisplayCurrency();
-  const resolvedCurrency = currency ?? displayCurrency;
+  const resolvedCurrency = currency?.trim() ? currency : displayCurrency;
   const ref = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {

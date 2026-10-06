@@ -60,7 +60,7 @@ function SparklineTooltip({
 
 export function Sparkline({ data, color, labels, currency, height = 30, className = "w-full h-[30px]" }: SparklineProps) {
   const { displayCurrency: userDisplayCurrency } = useDisplayCurrency();
-  const resolvedCurrency = currency || userDisplayCurrency;
+  const resolvedCurrency = currency?.trim() ? currency : userDisplayCurrency;
   const animationsEnabled = useAnimations();
   const chartData: SparkRow[] = data.map((value, index) => ({ index, value, label: labels?.[index] }));
   const interactive = Boolean(labels?.length);

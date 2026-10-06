@@ -104,7 +104,7 @@ export function MetricCard({
 }: MetricCardProps) {
   const animationsEnabled = useAnimations();
   const { displayCurrency } = useDisplayCurrency();
-  const resolvedCurrency = currency ?? displayCurrency;
+  const resolvedCurrency = currency?.trim() ? currency : displayCurrency;
   const motionVariants = animationsEnabled ? itemVariants : noAnimationVariants;
   const hasSpark = !!sparkData && sparkData.length > 1;
   // Sized by the card's own width so a narrow card (2-up grid on a phone) never clips the number.
