@@ -169,7 +169,7 @@ describe('data-version concurrency', () => {
       const recordId = insertResult.rows[0].id;
 
       // Verify user1's version was bumped by INSERT
-      let user1 = await client.query(`SELECT data_version FROM users WHERE id = $1`, [user1Id]);
+      const user1 = await client.query(`SELECT data_version FROM users WHERE id = $1`, [user1Id]);
       const user1InsertVersion = parseInt(user1.rows[0].data_version, 10);
       expect(user1InsertVersion).toBeGreaterThan(0);
 

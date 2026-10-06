@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeAll, vi, beforeEach } from "vitest";
-import { NextRequest, NextResponse } from "next/server";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { NextRequest } from "next/server";
 
 /**
  * Real Handler-level ETag coverage tests for GET endpoints (Test D - PART 2).
@@ -180,7 +180,7 @@ vi.mock("@/lib/accounts/investment-balance-overlay", () => ({
 }));
 
 vi.mock("@/lib/dashboard/spending-by-category", () => ({
-  buildSpendingByCategory: vi.fn((slices: any[], decrypt: Function) => slices),
+  buildSpendingByCategory: vi.fn((slices: any[], _decrypt: (_x: any) => any) => slices),
 }));
 
 vi.mock("@/lib/chart-breakdown", () => ({
@@ -188,7 +188,7 @@ vi.mock("@/lib/chart-breakdown", () => ({
 }));
 
 vi.mock("@/lib/diagnostics/op-context", () => ({
-  withOp: vi.fn((name: string, fn: Function) => fn()),
+  withOp: vi.fn((_name: string, fn: () => Promise<any>) => fn()),
 }));
 
 vi.mock("@/lib/portfolio/top-movers", () => ({

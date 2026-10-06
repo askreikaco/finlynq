@@ -121,7 +121,7 @@ console.log(`Testable tables: ${coveredTablesStatic.length}`);
 
 describe("Per-table trigger verification", () => {
   let client: pg.Client;
-  let coveredTables: string[] = coveredTablesStatic;
+  const coveredTables: string[] = coveredTablesStatic;
   const testUserId = "tbl-user-" + Math.random().toString(36).slice(2, 9);
   const testUser2Id = "tbl-user2-" + Math.random().toString(36).slice(2, 9);
 
@@ -435,7 +435,6 @@ async function insertGenericRow(
   const values: any[] = [];
   let paramIdx = 1;
   let hasIdColumn = false;
-  let returnClause = 'RETURNING id';
 
   for (const col of columns) {
     const { column_name, data_type, is_nullable, column_default } = col;
