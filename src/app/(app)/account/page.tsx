@@ -1,8 +1,19 @@
 import { redirect } from "next/navigation";
+import { isNavV2Enabled } from "@/lib/nav-v2/flag";
+import { AccountHub } from "@/components/account-hub";
 
 /**
- * /account — redirect to /account/info
+ * /account landing.
+ *
+ * When FINLYNQ_NAV_V2 is enabled: shows iOS grouped list hub of all account sections.
+ * When disabled (default): redirects to /account/info.
  */
 export default function AccountPage() {
-  redirect("/account/info");
+  const navV2Enabled = isNavV2Enabled();
+
+  if (!navV2Enabled) {
+    redirect("/account/info");
+  }
+
+  return <AccountHub />;
 }
