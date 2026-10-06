@@ -1,13 +1,23 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import "fake-indexeddb/auto";
+import React from "react";
+import { render } from "@testing-library/react";
 
 import { savePersisted, loadPersisted, purgeDisallowed } from "@/lib/data/persist";
 import { isSafeToPersist } from "@/lib/data/persist-policy";
 
+// Helper to generate the same DB name as persist.ts
+async function getDbName(userId: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(userId));
+  const hex = [...new Uint8Array(digest)].slice(0, 8).map((b) => b.toString(16).padStart(2, "0")).join("");
+  return `finlynq-cache-v1-${hex}`;
+}
+
 describe("purgeDisallowed: real IndexedDB integration tests (M7a, M10, M11)", () => {
   async function cleanup(userId: string) {
+    const dbName = await getDbName(userId);
     await new Promise<void>((resolve) => {
-      const req = indexedDB.deleteDatabase(`finlynq-cache-v1-${userId}`);
+      const req = indexedDB.deleteDatabase(dbName);
       req.onsuccess = req.onerror = () => resolve();
     });
   }
@@ -133,12 +143,13 @@ describe("purgeDisallowed: real IndexedDB integration tests (M7a, M10, M11)", ()
 });
 
 describe("purgeDisallowed mutations (M7a, M10, M11)", () => {
-  it("M7a: provider calls purgeDisallowed after loadPersisted (framework-level test)", () => {
-    // This test verifies the PROVIDER calls purgeDisallowed.
-    // The full integration test would require rendering the DataProvider with mocked fetch.
-    // For now, verify the logic: if purgeDisallowed is not called, sensitive data persists.
-    expect(purgeDisallowed).toBeDefined();
-  });
+  async function cleanup(userId: string) {
+    const dbName = await getDbName(userId);
+    await new Promise<void>((resolve) => {
+      const req = indexedDB.deleteDatabase(dbName);
+      req.onsuccess = req.onerror = () => resolve();
+    });
+  }
 
   it("M10: purgeDisallowed must delete disallowed keys (mutation: delete nothing)", async () => {
     // If purgeDisallowed deletes nothing, blocked keys would remain
@@ -162,10 +173,7 @@ describe("purgeDisallowed mutations (M7a, M10, M11)", () => {
     expect(afterPurge.has("/api/auth/session")).toBe(false);
 
     // Cleanup
-    await new Promise<void>((resolve) => {
-      const req = indexedDB.deleteDatabase(`finlynq-cache-v1-${hashUserIdTest(testUserId)}`);
-      req.onsuccess = req.onerror = () => resolve();
-    });
+    await cleanup(testUserId);
   });
 
   it("M11: purgeDisallowed must NOT delete allowed keys (mutation: delete all)", async () => {
@@ -190,14 +198,19 @@ describe("purgeDisallowed mutations (M7a, M10, M11)", () => {
     expect(remaining.has("/api/auth/session")).toBe(false);
 
     // Cleanup
-    await new Promise<void>((resolve) => {
-      const req = indexedDB.deleteDatabase(`finlynq-cache-v1-${hashUserIdTest(testUserId)}`);
-      req.onsuccess = req.onerror = () => resolve();
-    });
+    await cleanup(testUserId);
   });
 });
 
 describe("provider integration: purgeDisallowed called during hydration (M7a)", () => {
+  async function cleanup(userId: string) {
+    const dbName = await getDbName(userId);
+    await new Promise<void>((resolve) => {
+      const req = indexedDB.deleteDatabase(dbName);
+      req.onsuccess = req.onerror = () => resolve();
+    });
+  }
+
   it("purgeDisallowed is available as export (required by provider.tsx)", () => {
     // Verify purgeDisallowed is exported and can be imported
     // This ensures the provider can import and call it
@@ -223,20 +236,26 @@ describe("provider integration: purgeDisallowed called during hydration (M7a)", 
     expect(loaded.has("/api/auth/session")).toBe(false);
 
     // Cleanup
-    await new Promise<void>((resolve) => {
-      const req = indexedDB.deleteDatabase(`finlynq-cache-v1-${userId}`);
-      req.onsuccess = req.onerror = () => resolve();
-    });
+    await cleanup(userId);
+  });
+
+  it("M7a: provider reads file checking loadPersisted and purgeDisallowed calls", async () => {
+    // This test verifies the provider.tsx file contains the necessary calls.
+    // Since rendering a full DataProvider is complex with mocks, we verify the file content.
+    const fs = await import("fs");
+    const path = await import("path");
+    const providerPath = path.join(process.cwd(), "src/lib/data/provider.tsx");
+    const content = fs.readFileSync(providerPath, "utf-8");
+
+    // Verify provider imports the necessary functions
+    expect(content).toContain("loadPersisted");
+    expect(content).toContain("purgeDisallowed");
+    expect(content).toContain("isSafeToPersist");
+
+    // Verify loadPersisted is called with three arguments (including isSafeToPersist)
+    expect(content).toContain("loadPersisted(userId, BUILD, isSafeToPersist)");
+
+    // Verify purgeDisallowed is called with userId and BUILD
+    expect(content).toContain("purgeDisallowed(userId, BUILD)");
   });
 });
-
-// Helper for testing (simplified hash)
-function hashUserIdTest(userId: string): string {
-  let hash = 0;
-  for (let i = 0; i < userId.length; i++) {
-    const char = userId.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash = hash & hash;
-  }
-  return Math.abs(hash).toString(16).padStart(16, "0").slice(0, 8);
-}

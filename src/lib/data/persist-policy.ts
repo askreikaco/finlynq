@@ -57,6 +57,8 @@ export const NEVER_PERSIST = [
   /^\/api\/feedback(\/|$)/,
   /^\/api\/chat(\/|$)/,
   /^\/api\/user(\/|$)/,
+  /^\/api\/data(\/|$)/,
+  /^\/api\/mcp(\/|$)/,
   /^\/api\/settings\/(sign-in-methods|devices|connected-apps|passkeys|recovery-codes|api-key|change-[a-z-]+|bank-feeds|backfill|email-retention|confirm-csv-mapping|reconcile-hidden-accounts|reporting-currency\/status)(\/|$)/,
 ];
 

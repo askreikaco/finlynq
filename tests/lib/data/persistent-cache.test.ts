@@ -306,6 +306,13 @@ describe("persistent SWR cache", () => {
       expect(isSafeToNeverPersist("/api/import/status")).toBe(true);
     });
 
+    it("blocks /api/data/* and /api/mcp/* endpoints", () => {
+      expect(isSafeToNeverPersist("/api/data/export")).toBe(true);
+      expect(isSafeToNeverPersist("/api/data/import")).toBe(true);
+      expect(isSafeToNeverPersist("/api/mcp/anything")).toBe(true);
+      expect(isSafeToNeverPersist("/api/mcp/tools")).toBe(true);
+    });
+
     it("blocks /api/settings/(sign-in-methods|devices|connected-apps|passkeys|recovery-codes|api-key|change-*|bank-feeds|backfill|email-retention|confirm-csv-mapping|reconcile-hidden-accounts|reporting-currency/status)", () => {
       expect(isSafeToNeverPersist("/api/settings/sign-in-methods")).toBe(true);
       expect(isSafeToNeverPersist("/api/settings/devices")).toBe(true);
@@ -391,9 +398,13 @@ describe("persistent SWR cache", () => {
     it("blocks endpoints on the block-list even if they look like they could be data", () => {
       expect(isSafeToPersist("/api/auth/session")).toBe(false);
       expect(isSafeToPersist("/api/user/me")).toBe(false);
+      expect(isSafeToPersist("/api/settings")).toBe(false);
       expect(isSafeToPersist("/api/settings/api-key")).toBe(false);
+      expect(isSafeToPersist("/api/settings/passkeys")).toBe(false);
       expect(isSafeToPersist("/api/settings/devices")).toBe(false);
       expect(isSafeToPersist("/api/settings/change-password")).toBe(false);
+      expect(isSafeToPersist("/api/data/export")).toBe(false);
+      expect(isSafeToPersist("/api/mcp/anything")).toBe(false);
     });
 
     it("blocks endpoints NOT on the allow-list and NOT on the block-list", () => {
