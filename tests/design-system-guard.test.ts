@@ -98,6 +98,23 @@ describe("design-system-guard: ratchet for adaptive patterns", () => {
     ).toEqual([]);
   });
 
+  it("ratchet tightens: must update baseline when usage decreases", () => {
+    const decreased = Object.entries(baseline)
+      .filter(([file, count]) => {
+        const currentCount = current[file] ?? 0;
+        return currentCount < count && currentCount > 0;
+      })
+      .map(([file, baselineCount]) => {
+        const currentCount = current[file] ?? 0;
+        return `lower the baseline to ${currentCount} for ${file}`;
+      });
+
+    expect(
+      decreased,
+      `Found files with decreased usage but stale baseline: ${decreased.join(", ")}`
+    ).toEqual([]);
+  });
+
   it("should not have stale baseline entries", () => {
     const stale = Object.keys(baseline).filter((file) => {
       const currentCount = current[file] ?? 0;
