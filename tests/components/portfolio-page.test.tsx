@@ -8,9 +8,10 @@ describe("Portfolio page /cloud link", () => {
       const result = execSync('grep -r \'href=\\"/login\\"\' src/', { encoding: "utf-8" });
       // If grep finds matches, fail the test
       expect(result).toBe("");
-    } catch (e: any) {
+    } catch (e) {
       // grep returns exit code 1 when no matches found, which is what we want
-      expect(e.status).toBe(1);
+      const error = e as { status: number };
+      expect(error.status).toBe(1);
     }
   });
 

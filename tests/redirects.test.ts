@@ -9,12 +9,12 @@ describe("Next.config redirects", () => {
     const cfg = (await import("../next.config")).default;
     const redirects = await cfg.redirects!();
 
-    const reconcileRedirect = redirects.find((r: any) => r.source === "/reconcile");
+    const reconcileRedirect = redirects.find((r: { source: string; destination: string; permanent?: boolean }) => r.source === "/reconcile");
     expect(reconcileRedirect).toBeDefined();
     expect(reconcileRedirect?.destination).toBe("/import?tab=reconcile");
     expect(reconcileRedirect?.permanent).toBe(false);
 
-    const importReconcileRedirect = redirects.find((r: any) => r.source === "/import/reconcile");
+    const importReconcileRedirect = redirects.find((r: { source: string; destination: string; permanent?: boolean }) => r.source === "/import/reconcile");
     expect(importReconcileRedirect).toBeDefined();
     expect(importReconcileRedirect?.destination).toBe("/import?tab=reconcile");
     expect(importReconcileRedirect?.permanent).toBe(false);
@@ -25,7 +25,7 @@ describe("Next.config redirects", () => {
     const redirects = await cfg.redirects!();
 
     // Verify the redirects array contains expected sources
-    const sources = redirects.map((r: any) => r.source);
+    const sources = redirects.map((r: { source: string; destination: string; permanent?: boolean }) => r.source);
     expect(sources).toContain("/reconcile");
     expect(sources).toContain("/import/reconcile");
 
