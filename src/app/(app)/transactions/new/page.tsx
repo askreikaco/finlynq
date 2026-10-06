@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   ChevronLeft,
@@ -16,6 +16,7 @@ import {
   AlertCircle,
   CheckCircle2,
   Wallet,
+  Info,
 } from "lucide-react";
 import { useApi } from "@/lib/data/use-api";
 import { mutate } from "swr";
@@ -29,11 +30,16 @@ import {
 } from "./_components/date-time-picker";
 import { AutocompletePills } from "./_components/autocomplete-pills";
 import { SplitSection, type SplitRow } from "./_components/split-section";
+import { readAndClearPrefill } from "@/lib/transactions/prefill";
 
 type TxType = "Expense" | "Income" | "Transfer";
 
 export default function MobileTransactionPage() {
   const router = useRouter();
+
+  // Refs to handle StrictMode and prefill application
+  const prefillReadRef = useRef(false);
+  const prefillAppliedRef = useRef(false);
 
   // Mode
   const [txType, setTxType] = useState<TxType>("Expense");
@@ -43,6 +49,9 @@ export default function MobileTransactionPage() {
     useApi<Category[]>("/api/categories");
   const { data: rawAccounts = [], isLoading: loadingAccounts } =
     useApi<Account[]>("/api/accounts");
+
+  // Prefill notice (malformed/expired sessionStorage entry)
+  const [prefillNotice, setPrefillNotice] = useState<string | null>(null);
 
   // Form State
   const [amount, setAmount] = useState("");
@@ -71,6 +80,33 @@ export default function MobileTransactionPage() {
     { id: "1", categoryId: "", amount: "", note: "" },
     { id: "2", categoryId: "", amount: "", note: "" },
   ]);
+
+  // Read prefill from sessionStorage once on mount ([] deps)
+  // Uses ref to prevent double-read in StrictMode
+  useEffect(() => {
+    // Only read if ?prefill=1 is in URL or legacy mode (no query param)
+    const hasPrefillQuery = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("prefill");
+
+    // Prevent reading twice in StrictMode
+    if (prefillReadRef.current) return;
+    prefillReadRef.current = true;
+
+    const prefill = readAndClearPrefill(Date.now());
+    if (prefill) {
+      setAmount(prefill.amount);
+      setCategoryId(prefill.categoryId);
+      setAccountId(prefill.accountId);
+      setPayee(prefill.payee);
+      setNote(prefill.note);
+      setTags(prefill.tags);
+      setIsBusiness(prefill.isBusiness);
+      setTxType(prefill.txType);
+      prefillAppliedRef.current = true;
+    } else if (hasPrefillQuery) {
+      // prefill=1 in URL but no valid data = show notice
+      setPrefillNotice("Prefill data expired or invalid. Please fill the form manually.");
+    }
+  }, []);
 
   // UI / Modal States
   const [showNumpad, setShowNumpad] = useState(false);
@@ -109,8 +145,9 @@ export default function MobileTransactionPage() {
   }, [rawAccounts]);
 
   // Auto-select initial account if available
+  // Skip if prefill was applied (to avoid clobbering prefilled accountId)
   useEffect(() => {
-    if (!accountId && activeAccounts.length > 0) {
+    if (!accountId && activeAccounts.length > 0 && !prefillAppliedRef.current) {
       setAccountId(String(activeAccounts[0].id));
     }
   }, [activeAccounts, accountId]);
@@ -342,7 +379,13 @@ export default function MobileTransactionPage() {
       </div>
 
       {/* Notice & Error Banners */}
-      <div className="px-4 pt-2">
+      <div className="px-4 pt-2 space-y-2">
+        {prefillNotice && (
+          <div className="flex items-start gap-2.5 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs animate-in fade-in">
+            <Info className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
+            <span className="flex-1 leading-relaxed">{prefillNotice}</span>
+          </div>
+        )}
         {errorMessage && (
           <div className="flex items-start gap-2.5 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs animate-in fade-in">
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-400" />

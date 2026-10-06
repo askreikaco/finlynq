@@ -16,7 +16,7 @@ import { EmptyState } from "@/components/empty-state";
 import { formatCurrency, formatDate } from "@/lib/currency";
 import { formatAccountLabel } from "@/lib/account-label";
 import { labelForSource } from "@/lib/tx-source";
-import { Trash2, Pencil, Receipt, Scissors, Link2, ArrowUp, ArrowDown } from "lucide-react";
+import { Trash2, Pencil, Receipt, Scissors, Link2, ArrowUp, ArrowDown, Copy } from "lucide-react";
 import {
   COLUMN_LABELS as SHARED_COLUMN_LABELS,
   TOGGLEABLE_COLUMN_IDS as SHARED_TOGGLEABLE_COLUMN_IDS,
@@ -27,6 +27,7 @@ import {
 } from "@/lib/transactions/columns";
 import { ColumnFilterPopover } from "./column-filter-popover";
 import { SplitBadge } from "./split-badge";
+import { canDuplicate } from "@/lib/transactions/prefill";
 import type { Transaction, Account, Category, ColFilterShape, SortPref, ColumnPref } from "../_types";
 import { getDisplayLocale } from "@/lib/locale";
 
@@ -87,6 +88,7 @@ export function TransactionTable({
   startEdit,
   openSplitDialog,
   confirmDelete,
+  startDuplicate,
 }: {
   loading: boolean;
   txns: Transaction[];
@@ -111,6 +113,7 @@ export function TransactionTable({
   startEdit: (t: Transaction) => void;
   openSplitDialog: (t: Transaction) => void;
   confirmDelete: (t: Transaction) => void;
+  startDuplicate: (t: Transaction) => void;
 }) {
   if (loading) return <TableSkeleton />;
   if (txns.length === 0) {
@@ -477,6 +480,18 @@ export function TransactionTable({
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startEdit(t)} title="Edit">
                           <Pencil className="h-3 w-3" />
                         </Button>
+                        {canDuplicate(t, t.currency) && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-sky-500"
+                            onClick={() => startDuplicate(t)}
+                            title="Duplicate"
+                            aria-label="Duplicate transaction"
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        )}
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-violet-500" onClick={() => openSplitDialog(t)} title="Split">
                           <Scissors className="h-3 w-3" />
                         </Button>

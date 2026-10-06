@@ -19,6 +19,7 @@ import { TransactionDialog, type TransactionDialogInitialState, type DialogLinke
 import { MobileTxList } from "@/components/transactions/mobile-tx-list";
 import { formatAccountLabel } from "@/lib/account-label";
 import { type TransactionSource, labelForSource } from "@/lib/tx-source";
+import { buildPrefill, writePrefill, canDuplicate } from "@/lib/transactions/prefill";
 import {
   COLUMN_LABELS as SHARED_COLUMN_LABELS,
   TOGGLEABLE_COLUMN_IDS as SHARED_TOGGLEABLE_COLUMN_IDS,
@@ -588,6 +589,12 @@ export function TransactionsWorkspace({
     afterMutate();
   }
 
+  function startDuplicate(t: Transaction) {
+    if (!canDuplicate(t, t.currency)) return;
+    writePrefill(buildPrefill(t));
+    router.push("/transactions/new?prefill=1");
+  }
+
   function openSplitDialog(t: Transaction) {
     setSplitTxn(t);
     setSplitDialogOpen(true);
@@ -810,6 +817,7 @@ export function TransactionsWorkspace({
           afterMutate();
         }}
         onRequestDelete={(t) => confirmDelete(t as Transaction)}
+        onRequestDuplicate={(t) => startDuplicate(t as Transaction)}
         onLinkedSiblingClick={(s) => openLinkedSibling(s as LinkedSibling)}
       />
 
@@ -1187,6 +1195,7 @@ export function TransactionsWorkspace({
             startEdit={startEdit}
             openSplitDialog={openSplitDialog}
             confirmDelete={confirmDelete}
+            startDuplicate={startDuplicate}
           />
         </CardContent>
       </Card>
