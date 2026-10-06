@@ -41,4 +41,8 @@ describe("isCategoriesMergedEnabled", () => {
   it("returns false for empty string", () => {
     expect(isCategoriesMergedEnabled({ FINLYNQ_CATEGORIES_MERGED: "" })).toBe(false);
   });
+
+  it("returns true for space-padded ' 1 '", () => {
+    expect(isCategoriesMergedEnabled({ FINLYNQ_CATEGORIES_MERGED: " 1 " })).toBe(true);
+  });
 });
