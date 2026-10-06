@@ -22,15 +22,26 @@ describe('data-version concurrency', () => {
   const iterationsPerClient = 80;
   const testUserIds: string[] = [];
 
-  beforeAll(async () => {
-    if (!databaseUrl) {
-      throw new Error('DATABASE_URL not set for data-version concurrency tests');
-    }
+  beforeAll(
+    async () => {
+      if (!databaseUrl) {
+        throw new Error('DATABASE_URL not set for data-version concurrency tests');
+      }
 
-    const client = new pg.Client({ connectionString: databaseUrl });
-    await client.connect();
+      const client = new pg.Client({ connectionString: databaseUrl });
+      await client.connect();
 
     try {
+      // Verify this is a test database (safety guard against destructive operations)
+      const dbNameResult = await client.query(`SELECT current_database()`);
+      const dbName = dbNameResult.rows[0].current_database;
+      if (!/_test|_pertable_|conc|test/i.test(dbName)) {
+        throw new Error(
+          `Safety check failed: data-version-concurrency test will not run on database "${dbName}". ` +
+          `Must use a test database matching /_test|_pertable_|conc|test/i (e.g. finlynq_test, finlynq_conc)`
+        );
+      }
+
       // Delete leftover concurrency-user-* rows and accounts at START
       await client.query(`DELETE FROM accounts WHERE user_id LIKE 'concurrency-user-%'`);
       await client.query(`DELETE FROM users WHERE id LIKE 'concurrency-user-%'`);
@@ -58,7 +69,7 @@ describe('data-version concurrency', () => {
     } finally {
       await client.end();
     }
-  });
+  }, 60000);  // hookTimeout: 60 seconds for DB setup
 
   afterAll(async () => {
     // Delete all test data and test users (also on failure)
@@ -117,7 +128,16 @@ describe('data-version concurrency', () => {
         clientPromises.push(clientPromise);
       }
 
-      await Promise.all(clientPromises);
+      // Use allSettled to ensure all client operations complete before cleanup,
+      // even if one fails (preventing leftover clients from stalling subsequent runs)
+      const results = await Promise.allSettled(clientPromises);
+
+      // Check for any rejections
+      for (let i = 0; i < results.length; i++) {
+        if (results[i].status === 'rejected') {
+          console.error(`Client ${i} promise rejected:`, (results[i] as PromiseRejectedResult).reason);
+        }
+      }
 
       // Verify that all operations completed without deadlock errors.
       // Ordered row locks prevent real deadlocks by ensuring deterministic lock acquisition.
@@ -137,12 +157,16 @@ describe('data-version concurrency', () => {
         console.log(`User ${user.id} data_version: ${version} (expected ${expectedIncrement})`);
       }
     } finally {
-      // Close all clients
+      // Close all clients - ensure cleanup even if operations failed
       for (const client of clients) {
-        await client.end();
+        try {
+          await client.end();
+        } catch (e) {
+          console.error('Error closing client:', e);
+        }
       }
     }
-  });
+  }, 60000);  // timeout: 60 seconds for concurrent operations
 
   it('should bump both users when UPDATE changes user_id', async () => {
     const client = new pg.Client({
