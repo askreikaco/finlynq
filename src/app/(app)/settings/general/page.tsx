@@ -76,7 +76,7 @@ export default function GeneralSettingsPage() {
 
   // Step 1: the Select fires this. We don't apply yet — open a confirm dialog.
   function handleCurrencySelect(val: string | null) {
-    const v = (val ?? "USD").toUpperCase();
+    const v = (val ?? displayCurrency).toUpperCase();
     if (v === displayCurrency.toUpperCase()) return;
     setCurrencyError("");
     setPendingCurrency(v);

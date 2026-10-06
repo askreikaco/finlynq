@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { mutate as globalMutate } from "swr";
 import Link from "next/link";
+import { useDisplayCurrency } from "@/components/currency-provider";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -115,6 +116,7 @@ const INVESTMENT_OPS: { op: string; label: string }[] = [
 export default function AccountDetailPage() {
   const { id } = useParams();
   const router = useRouter();
+  const { displayCurrency } = useDisplayCurrency();
   const [account, setAccount] = useState<Account | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
   /** The account lookup finished and produced nothing (missing id, not yours,
@@ -223,7 +225,7 @@ export default function AccountDetailPage() {
   }, [id]);
 
   function openNewSleeve() {
-    setNewSleeveCurrency(account?.currency ?? "USD");
+    setNewSleeveCurrency(account?.currency ?? displayCurrency);
     setNewSleeveError("");
     setNewSleeveOpen(true);
   }

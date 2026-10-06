@@ -716,7 +716,7 @@ export function TransactionDialog({
             to: toAcct.currency,
           });
           if (!transferReceivedTouched) {
-            const targetCcy = toAcct?.currency ?? "USD";
+            const targetCcy = toAcct?.currency ?? displayCurrency;
             setTransferForm((tf) => ({ ...tf, receivedAmount: fxPreviewText(converted, targetCcy) }));
           }
         })
@@ -1291,7 +1291,7 @@ export function TransactionDialog({
                     setForm({
                       ...form,
                       accountId: v,
-                      currency: acct?.currency ?? displayCurrency ?? "USD",
+                      currency: acct?.currency ?? displayCurrency,
                       portfolioHoldingId: stillValid ? form.portfolioHoldingId : "",
                     });
                   }}
@@ -1335,7 +1335,7 @@ export function TransactionDialog({
               </div>
               <div className="space-y-1.5">
                 <Label>Currency</Label>
-                <Select value={form.currency} onValueChange={(v) => setForm({ ...form, currency: v ?? displayCurrency ?? "USD" })}>
+                <Select value={form.currency} onValueChange={(v) => setForm({ ...form, currency: v ?? displayCurrency })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -2120,8 +2120,8 @@ export function TransactionDialog({
                     }}
                     placeholder={
                       transferFxPreview.state === "ok"
-                        ? fxPreviewText(transferFxPreview.converted, toAcct?.currency ?? "USD")
-                        : `0.${"0".repeat(currencyDecimals(toAcct?.currency ?? "USD"))}`
+                        ? fxPreviewText(transferFxPreview.converted, toAcct?.currency ?? displayCurrency)
+                        : `0.${"0".repeat(currencyDecimals(toAcct?.currency ?? displayCurrency))}`
                     }
                   />
                   <p className="text-[11px] text-muted-foreground">

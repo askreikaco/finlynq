@@ -58,6 +58,7 @@ import {
 } from "@/components/import/reconcile/suggestions-group";
 import { ConfirmDeleteBankRow } from "@/components/reconcile/confirm-delete-bank-row";
 import { Link as LinkIcon, X as XIcon } from "lucide-react";
+import { useDisplayCurrency } from "@/components/currency-provider";
 
 import { type StagedDetail, shiftDays } from "@/app/(app)/import/pending/_types";
 import {
@@ -78,6 +79,7 @@ export function StagedReviewSurface({
   embedded?: boolean;
   accountScope?: number | null;
 }) {
+  const { displayCurrency } = useDisplayCurrency();
   const { list, loading, error, loadList } = useStagedImports();
   const [openId, setOpenId] = useState<string | null>(null);
   const {
@@ -411,7 +413,7 @@ export function StagedReviewSurface({
     }
     return out;
   }, [dbRows]);
-  const driftCurrency = dbRows[0]?.currency ?? "USD";
+  const driftCurrency = dbRows[0]?.currency ?? displayCurrency;
 
   // Anchors-only approve detector. When every staged row is already in
   // the bank ledger (skipped_duplicate) or already linked to a system-side

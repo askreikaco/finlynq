@@ -38,6 +38,7 @@ import { StackedChartLegend } from "@/components/chart-stack-legend";
 import { StackedAreaTooltip } from "@/components/chart-stack-tooltip";
 import { formatPercent } from "@/lib/locale";
 import { useAnimations } from "@/hooks/use-animations";
+import { useDisplayCurrency } from "@/components/currency-provider";
 
 type Period = "1m" | "3m" | "6m" | "ytd" | "1y" | "all";
 /** FINLYNQ-172 — stacked grouping mode (was a boolean in FINLYNQ-129). */
@@ -86,6 +87,7 @@ export interface PerformanceChartProps {
 }
 
 export function PerformanceChart({ accountId }: PerformanceChartProps) {
+  const { displayCurrency } = useDisplayCurrency();
   const [period, setPeriod] = useState<Period>("1y");
   const [data, setData] = useState<ApiResponse["data"] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -154,7 +156,7 @@ export function PerformanceChart({ accountId }: PerformanceChartProps) {
     [rawChartData],
   );
 
-  const stackCurrency = holdings?.currency ?? data?.currency ?? "USD";
+  const stackCurrency = holdings?.currency ?? data?.currency ?? displayCurrency;
   const { rows: stackedRows, legend } = useMemo(
     () =>
       buildStackedSeries(

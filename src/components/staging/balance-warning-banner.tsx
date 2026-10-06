@@ -15,6 +15,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
+import { useDisplayCurrency } from "@/components/currency-provider";
 
 export interface BalanceWarning {
   date: string;
@@ -31,15 +32,16 @@ interface BalanceWarningBannerProps {
   currency: string | null;
 }
 
-function fmt(value: number, currency: string | null): string {
-  return formatCurrency(value, currency ?? "USD");
-}
-
 export function BalanceWarningBanner({
   warnings,
   currency,
 }: BalanceWarningBannerProps) {
+  const { displayCurrency } = useDisplayCurrency();
   const [open, setOpen] = useState(false);
+
+  function fmt(value: number, curr: string | null): string {
+    return formatCurrency(value, curr ?? displayCurrency);
+  }
   if (warnings.length === 0) return null;
 
   const label =
