@@ -13,42 +13,62 @@ const shouldRun = !!DATABASE_URL;
  * Verifies that every table with a user_id column (that should have triggers)
  * actually has the reika_* triggers created by the data-version migration.
  *
- * Documented exclusions (auth system, system tables):
- * - password_reset_tokens, user_identities, user_devices, user_passkeys,
- *   user_recovery_codes, oauth_authorization_codes, oauth_access_tokens,
- *   user_security_events, portfolio_cash_snapshot_dirty, portfolio_snapshot_dirty,
- *   portfolio_lots_status, reporting_recompute_status, portfolio_cash_snapshot_meta
+ * Tracked tables (50): accounts, categories, transactions, tx_currency_audit, securities,
+ * portfolio_holdings, holding_accounts, budgets, loans, snapshots, goals, goal_accounts,
+ * target_allocations, recurring_transactions, fx_overrides, custom_security_prices,
+ * notifications, announcements, user_prompt_acks, feedback, feedback_messages,
+ * subscriptions, settings, transaction_rules, budget_templates, users,
+ * contribution_room, import_templates, staged_imports, staged_transactions,
+ * bank_upload_batches, bank_transactions, simplefin_pending_transactions,
+ * transaction_bank_links, transaction_reconciliation_flags, email_inbox,
+ * email_import_rules, webhooks, bank_daily_balances, holding_lots,
+ * holding_lot_closures, portfolio_lots_status, portfolio_snapshots,
+ * portfolio_snapshot_dirty, portfolio_cash_snapshot_dirty,
+ * reporting_recompute_status, portfolio_cash_snapshot_meta,
+ * portfolio_legacy_realized_gain_snapshot, backfill_runs, family_labels
+ *
+ * Documented exclusions (from generator script): system tables, auth infrastructure,
+ * price cache, temp/staging, family infrastructure, etc. See scripts/gen-data-version-migration.mjs
  */
 
 const DOCUMENTED_EXCLUSIONS = new Set([
+  // System tables
+  "diagnostics_log",
+  "op_rollup",
+  "system_metrics_sample",
+  "system_settings",
+  "admin_audit",
+  "revoked_jtis",
+  "schema_migrations",
+  // Authentication
   "password_reset_tokens",
   "user_identities",
   "user_devices",
   "user_passkeys",
   "user_recovery_codes",
+  "user_security_events",
+  // Price and external data
+  "price_cache",
+  "fx_rates",
+  // OAuth infrastructure
+  "oauth_clients",
   "oauth_authorization_codes",
   "oauth_access_tokens",
-  "user_security_events",
-  // Portfolio snapshot tracking (internal status tables, not user-facing data)
-  "portfolio_cash_snapshot_dirty",
-  "portfolio_snapshot_dirty",
-  "portfolio_lots_status",
-  "reporting_recompute_status",
-  "portfolio_cash_snapshot_meta",
-  // Email import rules (legacy, being phased out)
-  "email_import_rules",
-  // Backfill proposals (internal system table)
-  "backfill_proposals",
-  // MCP tables (internal integration tracking)
+  // Temp/transient
   "mcp_idempotency_keys",
-  // Feedback (admin-only, not user-facing data write)
-  "feedback",
-  // Announcement reads (system-generated, high-volume, not needing version bump)
+  "backfill_proposals",
+  "webhook_deliveries",
   "announcement_reads",
-  // Audit/system tables (not user-facing data modifications)
-  "tx_currency_audit",
-  // Keypairs (auth/system credential material, not user-data)
+  // Family infrastructure
+  "family_invites",
+  "family_key_grants",
+  "family_section_keys",
   "user_keypairs",
+  // Child table excluded (splits route also UPDATEs transactions)
+  "transaction_splits",
+  // Incoming emails (transient, webhook-driven)
+  "incoming_emails",
+  "incoming_email_replies",
 ]);
 
 describe.skipIf(!shouldRun)("Table coverage verification", () => {
@@ -151,7 +171,7 @@ describe.skipIf(!shouldRun)("Table coverage verification", () => {
     }
   });
 
-  it("trigger count should match expected coverage (36 tables x 3 operations)", async () => {
+  it("trigger count should match expected coverage (50 tables x 3 operations)", async () => {
     if (!shouldRun) return;
 
     const { rows } = await client.query(`
@@ -159,8 +179,18 @@ describe.skipIf(!shouldRun)("Table coverage verification", () => {
     `);
 
     const count = rows[0].count;
-    // We now have 38 tables (35 original + webhooks + email_inbox + user_prompt_acks)
-    const expectedCount = 38 * 3; // INSERT, UPDATE, DELETE per table
+    // 50 tracked tables: accounts, categories, transactions, securities, portfolio_holdings,
+    // holding_accounts, budgets, loans, snapshots, goals, goal_accounts, target_allocations,
+    // recurring_transactions, fx_overrides, custom_security_prices, notifications, announcements,
+    // user_prompt_acks, feedback, feedback_messages, subscriptions, settings, transaction_rules,
+    // budget_templates, users, contribution_room, import_templates, staged_imports,
+    // staged_transactions, bank_upload_batches, bank_transactions, simplefin_pending_transactions,
+    // transaction_bank_links, transaction_reconciliation_flags, email_inbox, email_import_rules,
+    // webhooks, bank_daily_balances, holding_lots, holding_lot_closures, portfolio_lots_status,
+    // portfolio_snapshots, portfolio_snapshot_dirty, portfolio_cash_snapshot_dirty,
+    // reporting_recompute_status, portfolio_cash_snapshot_meta, portfolio_legacy_realized_gain_snapshot,
+    // backfill_runs, family_labels, tx_currency_audit
+    const expectedCount = 50 * 3; // INSERT, UPDATE, DELETE per table
 
     expect(count).toBe(expectedCount);
   });
