@@ -516,6 +516,17 @@ export const NAV_REGISTRY: NavPageEntry[] = [
     mode: "prod",
     surfaces: ["more"],
   },
+
+  // Dev tools
+  {
+    id: "gallery",
+    path: "/dev/gallery",
+    label: "Gallery",
+    icon: Wrench,
+    group: "Tools",
+    mode: "dev",
+    surfaces: ["sidebar", "more"],
+  },
 ];
 
 /**

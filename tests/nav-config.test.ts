@@ -633,4 +633,22 @@ describe("nav-config", () => {
       expect(result).toEqual(REDIRECTS);
     });
   });
+
+  describe("Dev gallery", () => {
+    it("getNavEntry('/dev/gallery') has mode === 'dev'", () => {
+      const entry = getNavEntry("/dev/gallery");
+      expect(entry).toBeDefined();
+      expect(entry?.mode).toBe("dev");
+    });
+
+    it("getNavEntry('/dev/gallery') has adminOnly unset", () => {
+      const entry = getNavEntry("/dev/gallery");
+      expect(entry?.adminOnly).toBeUndefined();
+    });
+
+    it("getNavEntry('/dev/gallery') has surfaces exactly ['sidebar','more']", () => {
+      const entry = getNavEntry("/dev/gallery");
+      expect(entry?.surfaces).toEqual(["sidebar", "more"]);
+    });
+  });
 });
