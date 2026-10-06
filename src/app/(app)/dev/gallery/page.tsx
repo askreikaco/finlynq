@@ -21,10 +21,10 @@ import {
 } from "lucide-react";
 
 /**
- * Dev gallery page — displays mobile and ui primitives at 3 size classes.
- * Hidden unless user enables dev mode via DevModeGuard.
+ * Inner component that uses the ref and hook.
+ * Mounted only after DevModeGuard confirms dev mode is enabled.
  */
-export default function GalleryPage() {
+function GalleryContent() {
   const containerRef = useRef<HTMLDivElement>(null);
   const sizeClass = useSizeClass(containerRef as React.RefObject<HTMLElement>);
   const [width, setWidth] = React.useState(0);
@@ -36,12 +36,11 @@ export default function GalleryPage() {
   }, [sizeClass]);
 
   return (
-    <DevModeGuard>
-      <div
-        ref={containerRef}
-        className="flex-1 overflow-y-auto bg-background"
-        style={{ minWidth: "100%" }}
-      >
+    <div
+      ref={containerRef}
+      className="flex-1 overflow-y-auto bg-background"
+      style={{ minWidth: "100%" }}
+    >
         <div className="space-y-8 p-4">
           <PageHeader
             title="Component Gallery"
@@ -219,6 +218,17 @@ export default function GalleryPage() {
           <div className="pb-8" />
         </div>
       </div>
+  );
+}
+
+/**
+ * Dev gallery page — displays mobile and ui primitives at 3 size classes.
+ * Hidden unless user enables dev mode via DevModeGuard.
+ */
+export default function GalleryPage() {
+  return (
+    <DevModeGuard>
+      <GalleryContent />
     </DevModeGuard>
   );
 }

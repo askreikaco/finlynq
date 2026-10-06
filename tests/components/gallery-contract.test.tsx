@@ -2,7 +2,7 @@
  * @vitest-environment jsdom
  */
 import { describe, it, expect, beforeEach } from "vitest";
-import { renderHook, act } from "@testing-library/react";
+import { renderHook } from "@testing-library/react";
 import { useSizeClass, sizeClassFor } from "@/components/ui/size-class";
 
 const TEST_WIDTHS = {
@@ -12,18 +12,13 @@ const TEST_WIDTHS = {
 };
 
 describe("gallery-contract", () => {
-  describe("primitives render at 3 container widths with correct sizeClass", () => {
-    let resizeObserverCallbacks: ResizeObserverCallback[] = [];
-
+  describe("useSizeClass hook at 3 container widths", () => {
     beforeEach(() => {
-      resizeObserverCallbacks = [];
-
       class MockResizeObserver {
         callback: ResizeObserverCallback;
 
         constructor(callback: ResizeObserverCallback) {
           this.callback = callback;
-          resizeObserverCallbacks.push(callback);
         }
 
         observe(element: Element) {
@@ -43,15 +38,13 @@ describe("gallery-contract", () => {
           );
         }
 
-        disconnect() {
-          resizeObserverCallbacks = [];
-        }
+        disconnect() {}
       }
 
       globalThis.ResizeObserver = MockResizeObserver as unknown as typeof ResizeObserver;
     });
 
-    it("renders component at compact width (400px) and detects 'compact' size class", () => {
+    it("detects 'compact' size class at 400px width", () => {
       const element = document.createElement("div");
       Object.defineProperty(element, "clientWidth", {
         value: TEST_WIDTHS.compact,
@@ -61,29 +54,10 @@ describe("gallery-contract", () => {
 
       const { result } = renderHook(() => useSizeClass(ref));
 
-      // Trigger observer callback with compact width
-      act(() => {
-        const callback = resizeObserverCallbacks[0];
-        if (callback) {
-          callback(
-            [
-              {
-                target: element,
-                contentRect: { width: TEST_WIDTHS.compact, height: 600 } as DOMRectReadOnly,
-                borderBoxSize: [] as ResizeObserverSize[],
-                contentBoxSize: [] as ResizeObserverSize[],
-                devicePixelContentBoxSize: [] as ResizeObserverSize[],
-              },
-            ] as ResizeObserverEntry[],
-            {} as ResizeObserver
-          );
-        }
-      });
-
       expect(result.current).toBe("compact");
     });
 
-    it("renders component at regular width (800px) and detects 'regular' size class", () => {
+    it("detects 'regular' size class at 800px width", () => {
       const element = document.createElement("div");
       Object.defineProperty(element, "clientWidth", {
         value: TEST_WIDTHS.regular,
@@ -93,29 +67,10 @@ describe("gallery-contract", () => {
 
       const { result } = renderHook(() => useSizeClass(ref));
 
-      // Trigger observer callback with regular width
-      act(() => {
-        const callback = resizeObserverCallbacks[0];
-        if (callback) {
-          callback(
-            [
-              {
-                target: element,
-                contentRect: { width: TEST_WIDTHS.regular, height: 600 } as DOMRectReadOnly,
-                borderBoxSize: [] as ResizeObserverSize[],
-                contentBoxSize: [] as ResizeObserverSize[],
-                devicePixelContentBoxSize: [] as ResizeObserverSize[],
-              },
-            ] as ResizeObserverEntry[],
-            {} as ResizeObserver
-          );
-        }
-      });
-
       expect(result.current).toBe("regular");
     });
 
-    it("renders component at wide width (1200px) and detects 'wide' size class", () => {
+    it("detects 'wide' size class at 1200px width", () => {
       const element = document.createElement("div");
       Object.defineProperty(element, "clientWidth", {
         value: TEST_WIDTHS.wide,
@@ -124,25 +79,6 @@ describe("gallery-contract", () => {
       const ref = { current: element };
 
       const { result } = renderHook(() => useSizeClass(ref));
-
-      // Trigger observer callback with wide width
-      act(() => {
-        const callback = resizeObserverCallbacks[0];
-        if (callback) {
-          callback(
-            [
-              {
-                target: element,
-                contentRect: { width: TEST_WIDTHS.wide, height: 600 } as DOMRectReadOnly,
-                borderBoxSize: [] as ResizeObserverSize[],
-                contentBoxSize: [] as ResizeObserverSize[],
-                devicePixelContentBoxSize: [] as ResizeObserverSize[],
-              },
-            ] as ResizeObserverEntry[],
-            {} as ResizeObserver
-          );
-        }
-      });
 
       expect(result.current).toBe("wide");
     });
