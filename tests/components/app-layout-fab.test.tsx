@@ -85,9 +85,10 @@ describe("AppLayout with QuickAddFAB", () => {
 
     render(<AppLayout><div>Test Content</div></AppLayout>);
 
-    // The FAB is rendered when flag is on
-    // Note: Full component testing requires mocking Next navigation
-    expect(flagModule.isQuickAddEnabled).toHaveBeenCalled();
+    // FAB is rendered with correct href when flag is on
+    const fab = screen.getByLabelText("Add transaction");
+    expect(fab).toBeInTheDocument();
+    expect(fab).toHaveAttribute("href", "/transactions/new");
   });
 
   it("should not render QuickAddFAB when flag is disabled", () => {
@@ -95,7 +96,8 @@ describe("AppLayout with QuickAddFAB", () => {
 
     render(<AppLayout><div>Test Content</div></AppLayout>);
 
-    // Flag is checked at server level
-    expect(flagModule.isQuickAddEnabled).toHaveBeenCalled();
+    // FAB is not in the document when flag is off
+    const fab = screen.queryByLabelText("Add transaction");
+    expect(fab).not.toBeInTheDocument();
   });
 });
