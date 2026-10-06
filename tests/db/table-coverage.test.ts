@@ -212,7 +212,7 @@ describe("Table coverage test (Test C)", () => {
         // Expected: the coverage check should fail with a mismatch
         checkFailed = true;
         errorMessage = (error as Error).message || String(error);
-        if (!errorMessage.includes('toEqual')) {
+        if ((error as Error).name !== 'AssertionError') {
           throw error;  // Re-throw if not an expect() error
         }
       }
@@ -276,7 +276,7 @@ describe("Table coverage test (Test C)", () => {
         // Expected: the coverage check should fail with a mismatch
         checkFailed = true;
         errorMessage = (error as Error).message || String(error);
-        if (!errorMessage.includes('toEqual')) {
+        if ((error as Error).name !== 'AssertionError') {
           throw error;  // Re-throw if not an expect() error
         }
       }

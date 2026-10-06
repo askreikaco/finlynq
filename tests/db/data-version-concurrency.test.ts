@@ -31,45 +31,45 @@ describe('data-version concurrency', () => {
       const client = new pg.Client({ connectionString: databaseUrl });
       await client.connect();
 
-    try {
-      // Verify this is a test database (safety guard against destructive operations)
-      const dbNameResult = await client.query(`SELECT current_database()`);
-      const dbName = dbNameResult.rows[0].current_database;
-      if (!/_test|_pertable_|conc|test/i.test(dbName)) {
-        throw new Error(
-          `Safety check failed: data-version-concurrency test will not run on database "${dbName}". ` +
-          `Must use a test database matching /_test|_pertable_|conc|test/i (e.g. finlynq_test, finlynq_conc)`
+      try {
+        // Verify this is a test database (safety guard against destructive operations)
+        const dbNameResult = await client.query(`SELECT current_database()`);
+        const dbName = dbNameResult.rows[0].current_database;
+        if (!/_test|_pertable_|conc|test/i.test(dbName)) {
+          throw new Error(
+            `Safety check failed: data-version-concurrency test will not run on database "${dbName}". ` +
+            `Must use a test database matching /_test|_pertable_|conc|test/i (e.g. finlynq_test, finlynq_conc)`
+          );
+        }
+
+        // Delete leftover concurrency-user-* rows and accounts at START
+        await client.query(`DELETE FROM accounts WHERE user_id LIKE 'concurrency-user-%'`);
+        await client.query(`DELETE FROM users WHERE id LIKE 'concurrency-user-%'`);
+
+        // Force table state with VACUUM FULL outside any transaction
+        await client.query(`VACUUM FULL users`);
+
+        // Create 10 test users
+        const now = new Date().toISOString();
+        const createUserResult = await client.query(
+          `INSERT INTO users (id, email, password_hash, created_at, updated_at)
+           SELECT 'concurrency-user-' || i::text, 'concurrency-user-' || i::text || '@test.local', 'hash_pass', $2, $3
+           FROM generate_series(1, $1) i
+           RETURNING id`,
+          [numUsers, now, now]
         );
+
+        testUserIds.push(...createUserResult.rows.map((r: { id: string }) => r.id));
+
+        // Clear data_version for all test users
+        await client.query(
+          `UPDATE users SET data_version = 0 WHERE id = ANY($1)`,
+          [testUserIds]
+        );
+      } finally {
+        await client.end();
       }
-
-      // Delete leftover concurrency-user-* rows and accounts at START
-      await client.query(`DELETE FROM accounts WHERE user_id LIKE 'concurrency-user-%'`);
-      await client.query(`DELETE FROM users WHERE id LIKE 'concurrency-user-%'`);
-
-      // Force table state with VACUUM FULL outside any transaction
-      await client.query(`VACUUM FULL users`);
-
-      // Create 10 test users
-      const now = new Date().toISOString();
-      const createUserResult = await client.query(
-        `INSERT INTO users (id, email, password_hash, created_at, updated_at)
-         SELECT 'concurrency-user-' || i::text, 'concurrency-user-' || i::text || '@test.local', 'hash_pass', $2, $3
-         FROM generate_series(1, $1) i
-         RETURNING id`,
-        [numUsers, now, now]
-      );
-
-      testUserIds.push(...createUserResult.rows.map((r: { id: string }) => r.id));
-
-      // Clear data_version for all test users
-      await client.query(
-        `UPDATE users SET data_version = 0 WHERE id = ANY($1)`,
-        [testUserIds]
-      );
-    } finally {
-      await client.end();
-    }
-  }, 60000);  // hookTimeout: 60 seconds for DB setup
+    }, 60000);  // hookTimeout: 60 seconds for DB setup
 
   afterAll(async () => {
     // Delete all test data and test users (also on failure)
@@ -82,7 +82,7 @@ describe('data-version concurrency', () => {
     } finally {
       await client.end();
     }
-  });
+  }, 60000);  // hookTimeout: 60 seconds for cleanup
 
   it('should increment data_version correctly under concurrent multi-user inserts with shuffled arrays (24 clients × 80 iterations)', async () => {
     const clients = Array.from({ length: numClients }, () => new pg.Client({
