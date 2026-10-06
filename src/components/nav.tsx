@@ -202,7 +202,7 @@ export const Nav = memo(function Nav() {
 
   // Unread count to badge a given nav link (0 = no badge).
   const unreadFor = (item: NavItem) =>
-    item.flag === "announcements" ? unread : item.href === "/feedback" ? feedbackUnread : 0;
+    item.flag === "announcements" ? unread : item.flag === "feedback" ? feedbackUnread : 0;
 
   const toggleCollapsed = () => {
     const next = !collapsed;

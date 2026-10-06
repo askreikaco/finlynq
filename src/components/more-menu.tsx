@@ -298,7 +298,7 @@ export const MoreMenu = memo(function MoreMenu() {
           )}
           <Card>
             {g.rows.map((r) => {
-              const showUnreadBadge = r.id === "whats-new" && unread > 0;
+              const showUnreadBadge = r.href === "/whats-new" && unread > 0;
               return (
                 <Link key={r.id} href={r.href} className={rowCls} data-testid="more-row">
                   <span className={tile}>

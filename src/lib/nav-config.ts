@@ -48,11 +48,15 @@ import {
   Wrench,
   Link2,
   Info,
+  ScrollText,
+  Activity,
+  Database,
+  Plug,
   type LucideIcon,
 } from "lucide-react";
 
 export type Surface = "sidebar" | "mobileBar" | "more" | "settings" | "admin" | "account";
-export type Flag = "family" | "announcements";
+export type Flag = "family" | "announcements" | "feedback";
 export type Mode = "prod" | "dev";
 
 export interface NavPageEntry {
@@ -263,6 +267,7 @@ export const NAV_REGISTRY: NavPageEntry[] = [
     icon: MessageCircle,
     group: "Tools",
     mode: "prod",
+    flag: "feedback",
     surfaces: ["sidebar"],
   },
   {
@@ -456,7 +461,7 @@ export const NAV_REGISTRY: NavPageEntry[] = [
     id: "admin-diagnostics",
     path: "/admin/diagnostics",
     label: "Diagnostics",
-    icon: FileText,
+    icon: ScrollText,
     group: "Environment",
     mode: "prod",
     adminOnly: true,
@@ -467,7 +472,7 @@ export const NAV_REGISTRY: NavPageEntry[] = [
     id: "admin-api-log",
     path: "/admin/api-log",
     label: "API Log",
-    icon: FileText,
+    icon: Activity,
     group: "Environment",
     mode: "prod",
     adminOnly: true,
@@ -478,7 +483,7 @@ export const NAV_REGISTRY: NavPageEntry[] = [
     id: "admin-price-cache",
     path: "/admin/price-cache",
     label: "Rate Cache",
-    icon: FileText,
+    icon: Database,
     group: "Environment",
     mode: "prod",
     adminOnly: true,
@@ -489,7 +494,7 @@ export const NAV_REGISTRY: NavPageEntry[] = [
     id: "admin-integrations",
     path: "/admin/integrations",
     label: "Integrations",
-    icon: Server,
+    icon: Plug,
     group: "Environment",
     mode: "prod",
     adminOnly: true,
