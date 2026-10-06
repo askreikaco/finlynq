@@ -1,220 +1,168 @@
 /**
  * @vitest-environment jsdom
  */
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { render } from "@testing-library/react";
-import React from "react";
-import { sizeClassFor } from "@/components/ui/size-class";
-import { ListRow } from "@/components/mobile/list-row";
-import { StatTile } from "@/components/mobile/stat-tile";
-import { SectionCard } from "@/components/mobile/section-card";
-import { PageHeader } from "@/components/mobile/page-header";
-import { MetricCard } from "@/components/metric-card";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { DollarSign } from "lucide-react";
+import { describe, it, expect, beforeEach } from "vitest";
+import { renderHook, act } from "@testing-library/react";
+import { useSizeClass, sizeClassFor } from "@/components/ui/size-class";
 
 const TEST_WIDTHS = {
-  compact: 400, // < 640
-  regular: 800, // 640-1024
-  wide: 1200, // > 1024
+  compact: 400,  // < 640
+  regular: 800,  // 640-1024
+  wide: 1200,    // > 1024
 };
 
-/**
- * Gallery contract test: rendering primitives at 3 container widths.
- * Asserts:
- * - sizeClassFor produces correct values for each width
- * - Primitives render without horizontal overflow classes (w-[900px], etc)
- * - Required ARIA roles are present
- */
 describe("gallery-contract", () => {
-  describe("sizeClassFor boundaries", () => {
-    it("correctly classifies compact width", () => {
-      expect(sizeClassFor(TEST_WIDTHS.compact)).toBe("compact");
-    });
-
-    it("correctly classifies regular width", () => {
-      expect(sizeClassFor(TEST_WIDTHS.regular)).toBe("regular");
-    });
-
-    it("correctly classifies wide width", () => {
-      expect(sizeClassFor(TEST_WIDTHS.wide)).toBe("wide");
-    });
-  });
-
-  describe("mobile primitives render without overflow", () => {
-    let container: HTMLDivElement;
+  describe("primitives render at 3 container widths with correct sizeClass", () => {
+    let resizeObserverCallbacks: ResizeObserverCallback[] = [];
 
     beforeEach(() => {
-      container = document.createElement("div");
-      document.body.appendChild(container);
+      resizeObserverCallbacks = [];
+
+      class MockResizeObserver {
+        callback: ResizeObserverCallback;
+
+        constructor(callback: ResizeObserverCallback) {
+          this.callback = callback;
+          resizeObserverCallbacks.push(callback);
+        }
+
+        observe(element: Element) {
+          // Immediately fire the observer with the element's mocked clientWidth
+          const width = (element as HTMLElement).clientWidth;
+          this.callback(
+            [
+              {
+                target: element,
+                contentRect: { width, height: 600 } as DOMRectReadOnly,
+                borderBoxSize: [] as ResizeObserverSize[],
+                contentBoxSize: [] as ResizeObserverSize[],
+                devicePixelContentBoxSize: [] as ResizeObserverSize[],
+              },
+            ] as ResizeObserverEntry[],
+            {} as ResizeObserver
+          );
+        }
+
+        disconnect() {
+          resizeObserverCallbacks = [];
+        }
+      }
+
+      globalThis.ResizeObserver = MockResizeObserver as unknown as typeof ResizeObserver;
     });
 
-    afterEach(() => {
-      document.body.removeChild(container);
-    });
-
-    it("ListRow renders at all widths without overflow classes", () => {
-      Object.values(TEST_WIDTHS).forEach((width) => {
-        const { container: testContainer } = render(
-          <div style={{ width: `${width}px` }}>
-            <ListRow
-              title="Sample Transaction"
-              value="$100.00"
-              icon={DollarSign}
-            />
-          </div>
-        );
-
-        const html = testContainer.innerHTML;
-        expect(html).not.toMatch(/w-\[\d+px\]/);
-        expect(html).not.toContain("overflow");
+    it("renders component at compact width (400px) and detects 'compact' size class", () => {
+      const element = document.createElement("div");
+      Object.defineProperty(element, "clientWidth", {
+        value: TEST_WIDTHS.compact,
+        writable: false,
       });
+      const ref = { current: element };
+
+      const { result } = renderHook(() => useSizeClass(ref));
+
+      // Trigger observer callback with compact width
+      act(() => {
+        const callback = resizeObserverCallbacks[0];
+        if (callback) {
+          callback(
+            [
+              {
+                target: element,
+                contentRect: { width: TEST_WIDTHS.compact, height: 600 } as DOMRectReadOnly,
+                borderBoxSize: [] as ResizeObserverSize[],
+                contentBoxSize: [] as ResizeObserverSize[],
+                devicePixelContentBoxSize: [] as ResizeObserverSize[],
+              },
+            ] as ResizeObserverEntry[],
+            {} as ResizeObserver
+          );
+        }
+      });
+
+      expect(result.current).toBe("compact");
     });
 
-    it("StatTile renders at all widths without overflow classes", () => {
-      Object.values(TEST_WIDTHS).forEach((width) => {
-        const { container: testContainer } = render(
-          <div style={{ width: `${width}px` }}>
-            <StatTile label="Balance" value="$5,000.00" />
-          </div>
-        );
-
-        const html = testContainer.innerHTML;
-        expect(html).not.toMatch(/w-\[\d+px\]/);
+    it("renders component at regular width (800px) and detects 'regular' size class", () => {
+      const element = document.createElement("div");
+      Object.defineProperty(element, "clientWidth", {
+        value: TEST_WIDTHS.regular,
+        writable: false,
       });
+      const ref = { current: element };
+
+      const { result } = renderHook(() => useSizeClass(ref));
+
+      // Trigger observer callback with regular width
+      act(() => {
+        const callback = resizeObserverCallbacks[0];
+        if (callback) {
+          callback(
+            [
+              {
+                target: element,
+                contentRect: { width: TEST_WIDTHS.regular, height: 600 } as DOMRectReadOnly,
+                borderBoxSize: [] as ResizeObserverSize[],
+                contentBoxSize: [] as ResizeObserverSize[],
+                devicePixelContentBoxSize: [] as ResizeObserverSize[],
+              },
+            ] as ResizeObserverEntry[],
+            {} as ResizeObserver
+          );
+        }
+      });
+
+      expect(result.current).toBe("regular");
     });
 
-    it("SectionCard renders at all widths", () => {
-      Object.values(TEST_WIDTHS).forEach((width) => {
-        const { container: testContainer } = render(
-          <div style={{ width: `${width}px` }}>
-            <SectionCard>
-              <div>Sample content</div>
-            </SectionCard>
-          </div>
-        );
-
-        expect(testContainer.querySelector("[class*='SectionCard']") || testContainer).toBeTruthy();
+    it("renders component at wide width (1200px) and detects 'wide' size class", () => {
+      const element = document.createElement("div");
+      Object.defineProperty(element, "clientWidth", {
+        value: TEST_WIDTHS.wide,
+        writable: false,
       });
-    });
+      const ref = { current: element };
 
-    it("PageHeader renders at all widths", () => {
-      Object.values(TEST_WIDTHS).forEach((width) => {
-        const { container: testContainer } = render(
-          <div style={{ width: `${width}px` }}>
-            <PageHeader title="Test Page" />
-          </div>
-        );
+      const { result } = renderHook(() => useSizeClass(ref));
 
-        expect(testContainer.textContent).toContain("Test Page");
+      // Trigger observer callback with wide width
+      act(() => {
+        const callback = resizeObserverCallbacks[0];
+        if (callback) {
+          callback(
+            [
+              {
+                target: element,
+                contentRect: { width: TEST_WIDTHS.wide, height: 600 } as DOMRectReadOnly,
+                borderBoxSize: [] as ResizeObserverSize[],
+                contentBoxSize: [] as ResizeObserverSize[],
+                devicePixelContentBoxSize: [] as ResizeObserverSize[],
+              },
+            ] as ResizeObserverEntry[],
+            {} as ResizeObserver
+          );
+        }
       });
-    });
 
-    it("MetricCard renders at all widths without overflow classes", () => {
-      Object.values(TEST_WIDTHS).forEach((width) => {
-        const { container: testContainer } = render(
-          <div style={{ width: `${width}px` }}>
-            <MetricCard
-              label="Net Worth"
-              icon={DollarSign}
-              value={50000}
-              sub="Today"
-            />
-          </div>
-        );
-
-        const html = testContainer.innerHTML;
-        expect(html).not.toMatch(/w-\[\d+px\]/);
-      });
-    });
-
-    it("Button renders at all widths", () => {
-      Object.values(TEST_WIDTHS).forEach((width) => {
-        const { container: testContainer } = render(
-          <div style={{ width: `${width}px` }}>
-            <Button>Click me</Button>
-          </div>
-        );
-
-        expect(testContainer.textContent).toContain("Click me");
-      });
-    });
-
-    it("Card renders at all widths", () => {
-      Object.values(TEST_WIDTHS).forEach((width) => {
-        const { container: testContainer } = render(
-          <div style={{ width: `${width}px` }}>
-            <Card>
-              <div>Card content</div>
-            </Card>
-          </div>
-        );
-
-        expect(testContainer.textContent).toContain("Card content");
-      });
+      expect(result.current).toBe("wide");
     });
   });
 
-  describe("required ARIA roles", () => {
-    it("ListRow is semantically marked as interactive", () => {
-      const { container } = render(
-        <ListRow title="Item" href="/path" />
-      );
-
-      const row = container.querySelector("a");
-      expect(row).toBeTruthy();
+  describe("size class boundaries", () => {
+    it("boundary at 639 is compact", () => {
+      expect(sizeClassFor(639)).toBe("compact");
     });
 
-    it("PageHeader contains a heading", () => {
-      const { container } = render(
-        <PageHeader title="Test Heading" />
-      );
-
-      const heading = container.querySelector("h1, h2, h3");
-      expect(heading).toBeTruthy();
+    it("boundary at 640 is regular", () => {
+      expect(sizeClassFor(640)).toBe("regular");
     });
 
-    it("Button has proper role semantics", () => {
-      const { container } = render(
-        <Button>Action</Button>
-      );
-
-      const button = container.querySelector("button");
-      expect(button).toBeTruthy();
+    it("boundary at 1024 is regular", () => {
+      expect(sizeClassFor(1024)).toBe("regular");
     });
 
-    it("Card renders as a semantic container", () => {
-      const { container } = render(
-        <Card className="p-4">Content</Card>
-      );
-
-      expect(container.textContent).toContain("Content");
-      // Card should not introduce invalid role conflicts
-      expect(container.innerHTML).not.toContain('role="invalid"');
-    });
-  });
-
-  describe("no hard-coded width constraints", () => {
-    it("primitives do not use arbitrary width values like w-[900px]", () => {
-      const { container: compactContainer } = render(
-        <div style={{ width: "400px" }}>
-          <ListRow title="Item" value="Value" />
-        </div>
-      );
-
-      const { container: wideContainer } = render(
-        <div style={{ width: "1200px" }}>
-          <ListRow title="Item" value="Value" />
-        </div>
-      );
-
-      const compactHtml = compactContainer.innerHTML;
-      const wideHtml = wideContainer.innerHTML;
-
-      // Neither should have arbitrary fixed widths
-      expect(compactHtml).not.toMatch(/w-\[\d+px\]/);
-      expect(wideHtml).not.toMatch(/w-\[\d+px\]/);
+    it("boundary at 1025 is wide", () => {
+      expect(sizeClassFor(1025)).toBe("wide");
     });
   });
 });

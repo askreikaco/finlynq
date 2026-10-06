@@ -517,7 +517,7 @@ export const NAV_REGISTRY: NavPageEntry[] = [
     id: "gallery",
     path: "/dev/gallery",
     label: "Gallery",
-    icon: Database,
+    icon: Wrench,
     group: "Tools",
     mode: "dev",
     surfaces: ["sidebar", "more"],

@@ -22,11 +22,11 @@ import {
 
 /**
  * Dev gallery page — displays mobile and ui primitives at 3 size classes.
- * Behind DevModeGuard; accessible only in dev mode.
+ * Hidden unless user enables dev mode via DevModeGuard.
  */
 export default function GalleryPage() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const sizeClass = useSizeClass(containerRef);
+  const sizeClass = useSizeClass(containerRef as React.RefObject<HTMLElement>);
   const [width, setWidth] = React.useState(0);
 
   React.useEffect(() => {
