@@ -1,7 +1,8 @@
 -- Per-user data versioning via statement-level triggers
 --
--- HAND-MAINTAINED: This file was originally generated but is now hand-edited to fix
--- deadlock issues and handle TEXT user_ids (not just UUIDs). Do not regenerate.
+-- HAND-MAINTAINED: This file was originally generated but is now hand-edited to include
+-- row locking (FOR NO KEY UPDATE) in deterministic order and handle TEXT user_ids
+-- (not just UUIDs). Do not regenerate.
 -- Generator script (scripts/gen-data-version-migration.mjs) deleted to prevent
 -- accidental regeneration with invalid PERFORM syntax.
 --
@@ -9,12 +10,20 @@
 -- Each trigger is STATEMENT-level (not ROW) with transition tables, so a bulk
 -- insert of 1000 rows bumps the version once per affected user, not 1000 times.
 --
+-- This migration includes explicit row locking on affected users before version updates.
+-- While row locks may help prevent some deadlock scenarios in complex multi-statement
+-- transactions, single-statement workloads (like the test cases) do not reliably trigger
+-- deadlocks even without these locks. The locks are defensive programming for scenarios
+-- that are difficult to reproduce in testing.
+--
 -- This migration is idempotent (DROP TRIGGER IF EXISTS before CREATE TRIGGER).
 -- To rollback: see scripts/migrations/down/20261010_reika_data_version_triggers.down.sql
 
 -- Plpgsql function that bumps data_version for affected users.
 -- Called by statement-level triggers with NEW TABLE or OLD TABLE.
--- Uses deterministic row locking to prevent deadlocks in concurrent scenarios.
+-- Uses deterministic row locking (FOR NO KEY UPDATE) on affected users before updating.
+-- This defensive locking may help prevent deadlocks in complex multi-statement transactions,
+-- though single-statement workloads do not reliably trigger deadlocks even without it.
 -- For UPDATE statements, both old_rows and new_rows are used to detect user_id changes.
 -- NOTE: v_user_id is TEXT (not UUID) because users.id is TEXT type (e.g. 'default')
 CREATE OR REPLACE FUNCTION reika_bump_data_version()
@@ -22,12 +31,13 @@ RETURNS TRIGGER AS $$
 DECLARE
   v_user_id TEXT;
 BEGIN
-  -- Take row locks on affected users in deterministic order BEFORE any UPDATE
-  -- to prevent deadlocks. NO KEY UPDATE allows concurrent reads while preventing
-  -- concurrent modifications to the same rows.
-  
+  -- Take row locks on affected users in deterministic order BEFORE any UPDATE.
+  -- NO KEY UPDATE allows concurrent reads while preventing concurrent modifications.
+  -- This defensive locking may help in some multi-statement transaction scenarios,
+  -- though single-statement workloads rarely trigger deadlocks even without these locks.
+
   -- For INSERT: lock users from new_rows
-  -- For DELETE: lock users from old_rows  
+  -- For DELETE: lock users from old_rows
   -- For UPDATE: lock users from both old_rows and new_rows (catch user_id changes)
   IF TG_OP = 'INSERT' THEN
     FOR v_user_id IN 
