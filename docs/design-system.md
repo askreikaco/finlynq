@@ -2,27 +2,36 @@
 
 ## Design Tokens
 
-Defined in `src/app/globals.css` (@theme directive, lines 7-51). These are read by Tailwind and exposed as CSS custom properties:
+Defined in `src/app/globals.css` (@theme directive, lines 7–51). These are read by Tailwind and exposed as CSS custom properties:
 
-### Color Palette
-- **Primary**: Amber (#f5a623 light theme, adjusted dark) for interactive elements
-- **Destructive/Negative**: Coral/Red for alerts and loss indicators
-- **Chart colors**: 5-value palette (chart-1 through chart-5) for data visualization
-- **Semantic**: Muted, secondary, accent, sidebar colors
+### Colors (CSS custom properties in @theme)
+- `--color-primary` / `--color-primary-foreground`: oklch(0.75 0.165 70) / oklch(0.18 0.05 70)
+- `--color-pos` (gain/income, chart-2): oklch(0.72 0.13 170)
+- `--color-neg` (loss/expense, destructive): oklch(0.62 0.19 28)
+- `--color-card`, `--color-foreground`, `--color-muted`, `--color-secondary`, `--color-accent`: semantic scale
+- `--color-chart-1` through `--color-chart-5`: data visualization palette
+- `--color-sidebar*`: sidebar-specific color overrides
 
-### Spacing & Sizing
-- **Radius**: Base 0.5rem with scaled variants (sm: 60%, md: 80%, lg: 100%, xl: 140%, 2xl: 180%, 3xl: 220%, 4xl: 260%)
-- **Safe-area insets**: Applied via Tailwind `safe-area-*` utilities (iOS status bar, notches)
+### Fonts
+- `--font-sans`: Geist Sans (overridden per `[data-font]` in layout)
+- `--font-mono`: Geist Mono
+
+### Sizing
+- `--radius-sm/md/lg/xl/2xl/3xl/4xl`: 0.3–1.3rem (60% to 260% of base 0.5rem)
+
+### Safe-Area Insets (iOS, notches)
+- CSS custom properties: `--sat` (top), `--sab` (bottom), `--sal` (left), `--sar` (right)
+- Tailwind utilities: `@utility top-safe`, `@utility pt-safe`, `@utility px-safe` (read vars at globals.css ~521–541)
 
 ## Adaptive Container Sizing (SizeClass)
 
-The `useSizeClass(ref)` hook (from `src/components/ui/size-class.ts`) measures container width via ResizeObserver and returns a `SizeClass`:
+The `useSizeClass(ref)` hook (from `src/components/ui/size-class.ts`) observes a container element and returns a `SizeClass`:
 
 - **compact** (`<640px`): Mobile portrait, smartphones
 - **regular** (`640–1024px`): Tablets, mobile landscape, responsive desktop
 - **wide** (`>1024px`): Desktop, large displays
 
-Use this for layout toggling instead of media queries or `window.innerWidth` checks. See `src/components/mobile/*` for examples.
+**Hook semantics**: Takes a `React.RefObject<HTMLElement>`, observes its `contentRect.width` via ResizeObserver, and returns "compact" on first render (before observer fires; SSR-safe). Returns updated size class on resize. Effect depends on `[ref]`; cleanup on unmount. Use for layout toggling instead of media queries or `window.innerWidth` checks. (Examples coming in WP2.)
 
 ## Patterns
 
@@ -36,19 +45,20 @@ Pages in `/app/(app)/*` are full-screen views that adapt to container width. Dia
 ## Ratchet: Guarding Against Adaptive Regressions
 
 The `design-system-guard.test.ts` scans for banned patterns in `src/app/**` and `src/components/**`:
-- `isMobile` (removed primitive; use SizeClass)
+- `isMobile` (legacy, ratcheted; do not add new uses)
 - `md:hidden` / `hidden md:` (breakpoint-driven hiding; replace with SizeClass logic)
 - `window.innerWidth` (SSR-unsafe; use ResizeObserver hook)
 
-Baseline recorded in `tests/fixtures/adaptive-baseline.json`. The ratchet **fails** on:
-1. New files containing patterns (regression)
-2. Increased count in existing files
-3. Stale entries (removed usage, baseline not updated)
+Baseline recorded in `tests/fixtures/adaptive-baseline.json` (13 files, 43 instances). The ratchet **fails** on:
+1. New files containing patterns (regression guard)
+2. Increased count in existing files (no new uses)
+3. Decreased count without baseline update (enforce migration)
+4. Stale entries (file deleted or usage completely removed)
 
 ### Shrinking the Baseline
-When removing a banned pattern from a file:
-1. Remove the usage from the file
-2. Update the count in `adaptive-baseline.json` (decrement or delete the entry if 0)
-3. Push to PR; the ratchet will pass
+When reducing a banned pattern from a file:
+1. Remove or reduce usage in the file
+2. Update the count in `adaptive-baseline.json` (lower the count, or delete the entry if usage reaches 0)
+3. Push to PR; the ratchet validates the change
 
 Target: reduce baseline to 0 over multiple PRs (migrate all pages to SizeClass).
