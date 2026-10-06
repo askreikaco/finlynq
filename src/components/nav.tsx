@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { AccountSwitcher } from "@/components/account-switcher";
-import { getEntriesBySurface } from "@/lib/nav-config";
+import { getEntriesBySurface, getMobileBarItemsSorted } from "@/lib/nav-config";
 
 type NavItem = { href: string; label: string; icon: LucideIcon; color: string; mode?: "prod" | "dev"; activePrefixes?: string[]; flag?: "family" | "announcements" | "feedback" };
 
@@ -90,28 +90,17 @@ function generateToolLinks(): NavItem[] {
 }
 
 /**
- * Generate mobileBarItems from the registry in the original order:
- * Home, Accounts, Portfolio, Transactions
+ * Generate mobileBarItems from the registry, ordered by tab.order field.
  */
 function generateMobileBarItems(): NavItem[] {
-  const mobileEntries = getEntriesBySurface("mobileBar");
-  const entryMap = new Map(mobileEntries.map((e) => [e.path, e]));
+  const sortedEntries = getMobileBarItemsSorted();
 
-  // Maintain original order: dashboard, accounts, portfolio, transactions
-  const paths = ["/dashboard", "/accounts", "/portfolio", "/transactions"];
-  const items: NavItem[] = [];
-
-  for (const path of paths) {
-    const entry = entryMap.get(path);
-    if (entry) {
-      items.push({
-        href: entry.path,
-        label: entry.label,
-        icon: entry.icon,
-        color: ACTIVE_ACCENT,
-      });
-    }
-  }
+  const items: NavItem[] = sortedEntries.map((entry) => ({
+    href: entry.path,
+    label: entry.label,
+    icon: entry.icon,
+    color: ACTIVE_ACCENT,
+  }));
 
   return items;
 }

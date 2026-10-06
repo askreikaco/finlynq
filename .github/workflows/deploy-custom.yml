@@ -1,5 +1,8 @@
 name: Deploy Custom
 
+# NEUTRALISED in fork: self-hosted runner does not exist.
+# Deploy script: /usr/local/bin/finlynq-deploy.sh
+
 on:
   push:
     branches: [custom]
@@ -12,6 +15,8 @@ concurrency:
 
 jobs:
   deploy:
+    # Only run in the original repository, not in forks
+    if: github.repository == 'finlynq/finlynq'
     name: Deploy to money.reika.vn
     runs-on: [self-hosted, droplet]
     environment:
@@ -20,4 +25,4 @@ jobs:
 
     steps:
       - name: Trigger deploy script
-        run: sudo /usr/local/bin/deploy-finlynq.sh
+        run: sudo /usr/local/bin/finlynq-deploy.sh

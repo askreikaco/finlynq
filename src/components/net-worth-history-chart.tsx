@@ -26,6 +26,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatCurrency, formatDate } from "@/lib/currency";
+import { useDisplayCurrency } from "@/components/currency-provider";
 import { formatCompactNumber } from "@/lib/utils/number";
 import { RebuildSnapshotsButton } from "@/components/portfolio/rebuild-snapshots-button";
 import { prepareTimeSeries } from "@/lib/chart-series";
@@ -223,6 +224,7 @@ export function NetWorthHistoryChart({
   title = "Net Worth Over Time",
   accountCurrency,
 }: NetWorthHistoryChartProps) {
+  const displayCurrencyHook = useDisplayCurrency();
   const [period, setPeriod] = useState<Period>("6m");
   // FINLYNQ-303 — session-only (resets on reload), mirroring the period +
   // stacked toggles. Per-account charts default to NATIVE so the line ties out
@@ -267,7 +269,7 @@ export function NetWorthHistoryChart({
   // Label from what the API actually returned, never from the requested basis:
   // a native request silently downgrades when the stored rows predate the
   // dual-basis rebuild, and mislabelling that would misstate the currency.
-  const currency = data?.seriesCurrency ?? data?.displayCurrency ?? "CAD";
+  const currency = data?.seriesCurrency ?? data?.displayCurrency ?? displayCurrencyHook.displayCurrency;
   // The toggle is pointless when both bases resolve to the same currency.
   const canToggleBasis =
     accountId != null &&

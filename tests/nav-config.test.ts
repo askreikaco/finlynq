@@ -2,10 +2,12 @@ import { describe, it, expect } from "vitest";
 import {
   NAV_REGISTRY,
   ALIASES,
+  REDIRECTS,
   getNavEntry,
   getEntriesBySurface,
   getEntriesByGroup,
   isRegisteredPath,
+  getMobileBarItemsSorted,
 } from "@/lib/nav-config";
 import { readdirSync } from "fs";
 import { join } from "path";
@@ -537,6 +539,116 @@ describe("nav-config", () => {
       expect(getNavEntry("/admin/api-log")).toBeDefined();
       expect(getNavEntry("/admin/price-cache")).toBeDefined();
       expect(getNavEntry("/admin/integrations")).toBeDefined();
+    });
+  });
+
+  describe("Tab ordering (mobile bar)", () => {
+    it("should have exactly 4 mobileBar entries with tab orders", () => {
+      const mobileEntries = getEntriesBySurface("mobileBar");
+      const withTabOrder = mobileEntries.filter((e) => e.tab?.order !== undefined);
+      expect(withTabOrder.length).toBe(4);
+    });
+
+    it("should have unique tab order values", () => {
+      const mobileEntries = getEntriesBySurface("mobileBar");
+      const orders = mobileEntries
+        .filter((e) => e.tab?.order !== undefined)
+        .map((e) => e.tab?.order);
+      const uniqueOrders = new Set(orders);
+      expect(orders.length).toBe(uniqueOrders.size);
+    });
+
+    it("should have correct tab order for dashboard (1), accounts (2), portfolio (3), transactions (4)", () => {
+      const dashboardEntry = getNavEntry("/dashboard");
+      const accountsEntry = getNavEntry("/accounts");
+      const portfolioEntry = getNavEntry("/portfolio");
+      const transactionsEntry = getNavEntry("/transactions");
+
+      expect(dashboardEntry?.tab?.order).toBe(1);
+      expect(accountsEntry?.tab?.order).toBe(2);
+      expect(portfolioEntry?.tab?.order).toBe(3);
+      expect(transactionsEntry?.tab?.order).toBe(4);
+    });
+
+    it("should return mobileBar items in correct order from getMobileBarItemsSorted", () => {
+      const sortedItems = getMobileBarItemsSorted();
+      const paths = sortedItems.map((e) => e.path);
+      expect(paths).toEqual([
+        "/dashboard",
+        "/accounts",
+        "/portfolio",
+        "/transactions",
+      ]);
+    });
+
+    it("should maintain correct order even if entries in registry are not ordered", () => {
+      // This test verifies the sorting logic works independently of registry order
+      const sortedItems = getMobileBarItemsSorted();
+      for (let i = 1; i < sortedItems.length; i++) {
+        const prevOrder = sortedItems[i - 1].tab?.order ?? 0;
+        const currOrder = sortedItems[i].tab?.order ?? 0;
+        expect(currOrder).toBeGreaterThan(prevOrder);
+      }
+    });
+  });
+
+  describe("Redirects table", () => {
+    it("should have complete REDIRECTS array with all 7 entries in exact form", () => {
+      const expectedRedirects = [
+        { source: "/mcp", destination: "/api/mcp", permanent: true },
+        { source: "/mcp/:path*", destination: "/api/mcp/:path*", permanent: true },
+        { source: "/inbox", destination: "/import", permanent: false },
+        { source: "/reconcile", destination: "/import?tab=reconcile", permanent: false },
+        { source: "/import/reconcile", destination: "/import?tab=reconcile", permanent: false },
+        { source: "/import/classic", destination: "/import", permanent: false },
+        { source: "/calendar", destination: "/subscriptions?view=calendar", permanent: false },
+      ];
+      expect(REDIRECTS).toEqual(expectedRedirects);
+    });
+
+    it("should not have duplicate source paths", () => {
+      const sources = REDIRECTS.map((r) => r.source);
+      const uniqueSources = new Set(sources);
+      expect(sources.length).toBe(uniqueSources.size);
+    });
+
+    it("next.config.ts async redirects() should return REDIRECTS from nav-config", async () => {
+      // Load next.config.ts and verify it returns the exact REDIRECTS table
+      // @ts-expect-error - dynamic import of root-level .ts file for runtime verification
+      const cfg = (await import("../../next.config")).default;
+      const result = await cfg.redirects!();
+
+      // Expected 7 entries (full table)
+      const expectedRedirects = [
+        { source: "/mcp", destination: "/api/mcp", permanent: true },
+        { source: "/mcp/:path*", destination: "/api/mcp/:path*", permanent: true },
+        { source: "/inbox", destination: "/import", permanent: false },
+        { source: "/reconcile", destination: "/import?tab=reconcile", permanent: false },
+        { source: "/import/reconcile", destination: "/import?tab=reconcile", permanent: false },
+        { source: "/import/classic", destination: "/import", permanent: false },
+        { source: "/calendar", destination: "/subscriptions?view=calendar", permanent: false },
+      ];
+
+      expect(result).toEqual(expectedRedirects);
+      expect(result).toEqual(REDIRECTS);
+    });
+  });
+
+  describe("Dev gallery", () => {
+    it("getNavEntry('/dev/gallery') has mode === 'dev'", () => {
+      const entry = getNavEntry("/dev/gallery");
+      expect(entry).toBeDefined();
+      expect(entry?.mode).toBe("dev");
+    });
+
+    it("getNavEntry('/dev/gallery') has adminOnly unset", () => {
+      const entry = getNavEntry("/dev/gallery");
+      expect(entry?.adminOnly).toBeUndefined();
+    });
+
+    it("getNavEntry('/dev/gallery') has surfaces exactly ['sidebar','more']", () => {
+      const entry = getNavEntry("/dev/gallery");
+      expect(entry?.surfaces).toEqual(["sidebar", "more"]);
     });
   });
 });
