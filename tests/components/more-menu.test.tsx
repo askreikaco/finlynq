@@ -125,6 +125,23 @@ describe("More screen", () => {
     render(<MoreMenu />);
     expect(screen.queryByText(/feedback/i)).toBeNull();
   });
+
+  it("shows badge with unread announcement count on whats-new row", async () => {
+    announcements = [{ id: 1, read: false }, { id: 2, read: false }];
+    render(<MoreMenu />);
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/announcements"));
+    const whatsnewRow = screen.getAllByTestId("more-row").find((r) => r.textContent?.includes("What's new"));
+    expect(whatsnewRow?.textContent).toContain("2");
+  });
+
+  it("shows no badge when all announcements are read", async () => {
+    announcements = [{ id: 1, read: true }, { id: 2, read: true }];
+    render(<MoreMenu />);
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/announcements"));
+    const whatsnewRow = screen.getAllByTestId("more-row").find((r) => r.textContent?.includes("What's new"));
+    expect(whatsnewRow?.textContent).not.toContain("2");
+    expect(whatsnewRow?.querySelector("[class*='bg-primary']")).toBeNull();
+  });
 });
 
 describe("More Account section", () => {
