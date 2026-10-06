@@ -830,3 +830,123 @@ DO $$ BEGIN
       EXECUTE FUNCTION reika_bump_data_version();
   END IF;
 END $$;
+
+-- email_import_rules
+DO $$ BEGIN
+  IF to_regclass('email_import_rules') IS NOT NULL THEN
+    DROP TRIGGER IF EXISTS reika_email_import_rules_data_version_ins ON email_import_rules;
+    CREATE TRIGGER reika_email_import_rules_data_version_ins AFTER INSERT ON email_import_rules
+      REFERENCING NEW TABLE AS new_rows FOR EACH STATEMENT
+      EXECUTE FUNCTION reika_bump_data_version();
+
+    DROP TRIGGER IF EXISTS reika_email_import_rules_data_version_upd ON email_import_rules;
+    CREATE TRIGGER reika_email_import_rules_data_version_upd AFTER UPDATE ON email_import_rules
+      REFERENCING OLD TABLE AS old_rows NEW TABLE AS new_rows FOR EACH STATEMENT
+      EXECUTE FUNCTION reika_bump_data_version();
+
+    DROP TRIGGER IF EXISTS reika_email_import_rules_data_version_del ON email_import_rules;
+    CREATE TRIGGER reika_email_import_rules_data_version_del AFTER DELETE ON email_import_rules
+      REFERENCING OLD TABLE AS old_rows FOR EACH STATEMENT
+      EXECUTE FUNCTION reika_bump_data_version();
+  END IF;
+END $$;
+
+-- portfolio_cash_snapshot_dirty
+DO $$ BEGIN
+  IF to_regclass('portfolio_cash_snapshot_dirty') IS NOT NULL THEN
+    DROP TRIGGER IF EXISTS reika_portfolio_cash_snapshot_dirty_data_version_ins ON portfolio_cash_snapshot_dirty;
+    CREATE TRIGGER reika_portfolio_cash_snapshot_dirty_data_version_ins AFTER INSERT ON portfolio_cash_snapshot_dirty
+      REFERENCING NEW TABLE AS new_rows FOR EACH STATEMENT
+      EXECUTE FUNCTION reika_bump_data_version();
+
+    DROP TRIGGER IF EXISTS reika_portfolio_cash_snapshot_dirty_data_version_upd ON portfolio_cash_snapshot_dirty;
+    CREATE TRIGGER reika_portfolio_cash_snapshot_dirty_data_version_upd AFTER UPDATE ON portfolio_cash_snapshot_dirty
+      REFERENCING OLD TABLE AS old_rows NEW TABLE AS new_rows FOR EACH STATEMENT
+      EXECUTE FUNCTION reika_bump_data_version();
+
+    DROP TRIGGER IF EXISTS reika_portfolio_cash_snapshot_dirty_data_version_del ON portfolio_cash_snapshot_dirty;
+    CREATE TRIGGER reika_portfolio_cash_snapshot_dirty_data_version_del AFTER DELETE ON portfolio_cash_snapshot_dirty
+      REFERENCING OLD TABLE AS old_rows FOR EACH STATEMENT
+      EXECUTE FUNCTION reika_bump_data_version();
+  END IF;
+END $$;
+
+-- portfolio_cash_snapshot_meta
+DO $$ BEGIN
+  IF to_regclass('portfolio_cash_snapshot_meta') IS NOT NULL THEN
+    DROP TRIGGER IF EXISTS reika_portfolio_cash_snapshot_meta_data_version_ins ON portfolio_cash_snapshot_meta;
+    CREATE TRIGGER reika_portfolio_cash_snapshot_meta_data_version_ins AFTER INSERT ON portfolio_cash_snapshot_meta
+      REFERENCING NEW TABLE AS new_rows FOR EACH STATEMENT
+      EXECUTE FUNCTION reika_bump_data_version();
+
+    DROP TRIGGER IF EXISTS reika_portfolio_cash_snapshot_meta_data_version_upd ON portfolio_cash_snapshot_meta;
+    CREATE TRIGGER reika_portfolio_cash_snapshot_meta_data_version_upd AFTER UPDATE ON portfolio_cash_snapshot_meta
+      REFERENCING OLD TABLE AS old_rows NEW TABLE AS new_rows FOR EACH STATEMENT
+      EXECUTE FUNCTION reika_bump_data_version();
+
+    DROP TRIGGER IF EXISTS reika_portfolio_cash_snapshot_meta_data_version_del ON portfolio_cash_snapshot_meta;
+    CREATE TRIGGER reika_portfolio_cash_snapshot_meta_data_version_del AFTER DELETE ON portfolio_cash_snapshot_meta
+      REFERENCING OLD TABLE AS old_rows FOR EACH STATEMENT
+      EXECUTE FUNCTION reika_bump_data_version();
+  END IF;
+END $$;
+
+-- portfolio_lots_status
+DO $$ BEGIN
+  IF to_regclass('portfolio_lots_status') IS NOT NULL THEN
+    DROP TRIGGER IF EXISTS reika_portfolio_lots_status_data_version_ins ON portfolio_lots_status;
+    CREATE TRIGGER reika_portfolio_lots_status_data_version_ins AFTER INSERT ON portfolio_lots_status
+      REFERENCING NEW TABLE AS new_rows FOR EACH STATEMENT
+      EXECUTE FUNCTION reika_bump_data_version();
+
+    DROP TRIGGER IF EXISTS reika_portfolio_lots_status_data_version_upd ON portfolio_lots_status;
+    CREATE TRIGGER reika_portfolio_lots_status_data_version_upd AFTER UPDATE ON portfolio_lots_status
+      REFERENCING OLD TABLE AS old_rows NEW TABLE AS new_rows FOR EACH STATEMENT
+      EXECUTE FUNCTION reika_bump_data_version();
+
+    DROP TRIGGER IF EXISTS reika_portfolio_lots_status_data_version_del ON portfolio_lots_status;
+    CREATE TRIGGER reika_portfolio_lots_status_data_version_del AFTER DELETE ON portfolio_lots_status
+      REFERENCING OLD TABLE AS old_rows FOR EACH STATEMENT
+      EXECUTE FUNCTION reika_bump_data_version();
+  END IF;
+END $$;
+
+-- portfolio_snapshot_dirty
+DO $$ BEGIN
+  IF to_regclass('portfolio_snapshot_dirty') IS NOT NULL THEN
+    DROP TRIGGER IF EXISTS reika_portfolio_snapshot_dirty_data_version_ins ON portfolio_snapshot_dirty;
+    CREATE TRIGGER reika_portfolio_snapshot_dirty_data_version_ins AFTER INSERT ON portfolio_snapshot_dirty
+      REFERENCING NEW TABLE AS new_rows FOR EACH STATEMENT
+      EXECUTE FUNCTION reika_bump_data_version();
+
+    DROP TRIGGER IF EXISTS reika_portfolio_snapshot_dirty_data_version_upd ON portfolio_snapshot_dirty;
+    CREATE TRIGGER reika_portfolio_snapshot_dirty_data_version_upd AFTER UPDATE ON portfolio_snapshot_dirty
+      REFERENCING OLD TABLE AS old_rows NEW TABLE AS new_rows FOR EACH STATEMENT
+      EXECUTE FUNCTION reika_bump_data_version();
+
+    DROP TRIGGER IF EXISTS reika_portfolio_snapshot_dirty_data_version_del ON portfolio_snapshot_dirty;
+    CREATE TRIGGER reika_portfolio_snapshot_dirty_data_version_del AFTER DELETE ON portfolio_snapshot_dirty
+      REFERENCING OLD TABLE AS old_rows FOR EACH STATEMENT
+      EXECUTE FUNCTION reika_bump_data_version();
+  END IF;
+END $$;
+
+-- reporting_recompute_status
+DO $$ BEGIN
+  IF to_regclass('reporting_recompute_status') IS NOT NULL THEN
+    DROP TRIGGER IF EXISTS reika_reporting_recompute_status_data_version_ins ON reporting_recompute_status;
+    CREATE TRIGGER reika_reporting_recompute_status_data_version_ins AFTER INSERT ON reporting_recompute_status
+      REFERENCING NEW TABLE AS new_rows FOR EACH STATEMENT
+      EXECUTE FUNCTION reika_bump_data_version();
+
+    DROP TRIGGER IF EXISTS reika_reporting_recompute_status_data_version_upd ON reporting_recompute_status;
+    CREATE TRIGGER reika_reporting_recompute_status_data_version_upd AFTER UPDATE ON reporting_recompute_status
+      REFERENCING OLD TABLE AS old_rows NEW TABLE AS new_rows FOR EACH STATEMENT
+      EXECUTE FUNCTION reika_bump_data_version();
+
+    DROP TRIGGER IF EXISTS reika_reporting_recompute_status_data_version_del ON reporting_recompute_status;
+    CREATE TRIGGER reika_reporting_recompute_status_data_version_del AFTER DELETE ON reporting_recompute_status
+      REFERENCING OLD TABLE AS old_rows FOR EACH STATEMENT
+      EXECUTE FUNCTION reika_bump_data_version();
+  END IF;
+END $$;
