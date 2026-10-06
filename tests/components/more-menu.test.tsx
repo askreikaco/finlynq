@@ -231,9 +231,22 @@ describe("More instance admin filter (WP9a)", () => {
     expect(allHrefs.has("/admin/instance")).toBe(true);
   });
 
-  it("hides Instance config by default (instanceAdminEnabled false)", () => {
-    const groups = buildMoreGroups({ isAdmin: true, devMode: false, familyEnabled: true, hasAnnouncements: true, instanceAdminEnabled: false });
-    const allHrefs = new Set(groups.flatMap((g) => g.rows.map((r) => r.href)));
-    expect(allHrefs.has("/admin/instance")).toBe(false);
+  it("renders Instance config row in MoreMenu when instanceAdminEnabled={true} with admin session", async () => {
+    session = { isAdmin: true };
+    const { unmount } = render(<MoreMenu instanceAdminEnabled={true} />);
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/announcements"));
+    const configLink = screen.queryByRole("link", { name: /Instance config/i });
+    expect(configLink).toBeTruthy();
+    expect(configLink?.getAttribute("href")).toBe("/admin/instance");
+    unmount();
+  });
+
+  it("does not render Instance config row in MoreMenu when instanceAdminEnabled={false} with admin session", async () => {
+    session = { isAdmin: true };
+    const { unmount } = render(<MoreMenu instanceAdminEnabled={false} />);
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/announcements"));
+    const configLink = screen.queryByRole("link", { name: /Instance config/i });
+    expect(configLink).toBeNull();
+    unmount();
   });
 });

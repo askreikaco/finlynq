@@ -272,8 +272,6 @@ describe("Nav Instance Admin filter (WP9a)", () => {
 
   it("hides Instance config when instanceAdminEnabled={false}", async () => {
     mockFetch({ admin: true });
-    render(<Nav instanceAdminEnabled={false} />);
-
     // Open admin group
     localStorage.setItem("nav.adminOpen", "true");
     render(<Nav instanceAdminEnabled={false} />);
@@ -284,8 +282,6 @@ describe("Nav Instance Admin filter (WP9a)", () => {
 
   it("shows Instance config when instanceAdminEnabled={true}", async () => {
     mockFetch({ admin: true });
-    render(<Nav instanceAdminEnabled={true} />);
-
     // Open admin group
     localStorage.setItem("nav.adminOpen", "true");
     render(<Nav instanceAdminEnabled={true} />);
@@ -297,8 +293,6 @@ describe("Nav Instance Admin filter (WP9a)", () => {
 
   it("hides Instance config by default (instanceAdminEnabled omitted)", async () => {
     mockFetch({ admin: true });
-    render(<Nav />);
-
     // Open admin group
     localStorage.setItem("nav.adminOpen", "true");
     render(<Nav />);
