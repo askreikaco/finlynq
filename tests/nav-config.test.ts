@@ -289,6 +289,21 @@ describe("nav-config", () => {
       expect(alias).toBeDefined();
       expect(alias?.kind).toBe("render-parent");
     });
+
+    it("should have correct complete ALIASES array with all entries in order", () => {
+      const expectedAliases = [
+        { path: "/settings/display", kind: "render-parent", target: "/settings/general" },
+        { path: "/settings/dropdown-order", kind: "render-parent", target: "/settings/general" },
+        { path: "/settings/data", kind: "render-parent", target: "/settings/developer" },
+        { path: "/settings/bank-feeds", kind: "render-parent", target: "/settings/integrations" },
+        { path: "/settings/securities", kind: "render-parent", target: "/settings/investments" },
+        { path: "/settings/holding-accounts", kind: "render-parent", target: "/settings/investments" },
+        { path: "/settings/rules", kind: "render-parent", target: "/settings/reconciliation" },
+        { path: "/settings/import", kind: "render-parent", target: "/settings/reconciliation" },
+        { path: "/connect", kind: "render-parent", target: "/settings/integrations" },
+      ];
+      expect(ALIASES).toEqual(expectedAliases);
+    });
   });
 
   describe("Admin-only pages", () => {
