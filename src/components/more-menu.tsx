@@ -203,7 +203,7 @@ export const MoreMenu = memo(function MoreMenu() {
     }
   }, [router]);
 
-  const { data: sessionData } = useSWR<{ isAdmin?: boolean; familyWealthEnabled?: boolean }>(
+  const { data: sessionData } = useSWR<{ isAdmin?: boolean; familyWealthEnabled?: boolean; instanceAdminEnabled?: boolean }>(
     "/api/auth/session",
     softJsonFetcher({}),
     swrAggressiveOptions,
