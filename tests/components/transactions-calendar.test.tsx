@@ -25,7 +25,7 @@ const payload = {
 };
 
 function renderCalendar(props: Partial<React.ComponentProps<typeof TransactionsCalendar>> = {}) {
-  const fetchMock = vi.fn(async () => ({ ok: true, json: async () => payload }));
+  const fetchMock = vi.fn(async (_url: string) => ({ ok: true, json: async () => payload }));
   vi.stubGlobal("fetch", fetchMock);
   const onSelectDay = vi.fn();
   render(
