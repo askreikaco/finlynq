@@ -112,6 +112,36 @@ export const mobileBarItems: NavItem[] = generateMobileBarItems();
 
 export const allFlatItems = navGroups.flatMap((g) => g.items).concat(toolLinks).concat(adminLinks);
 
+/**
+ * Determine which nav item should be active by finding the longest matching
+ * prefix across all sidebar, tool, and admin items. An item is active only if
+ * it owns the longest match. Ties preserve the same item (portfolio case).
+ */
+export function pickActiveHref(
+  pathname: string,
+  items: NavItem[] = allFlatItems
+): NavItem | null {
+  let longestMatch = "";
+  let activeItem: NavItem | null = null;
+
+  for (const item of items) {
+    // Build the set of prefixes to check for this item
+    const prefixes = item.activePrefixes && item.activePrefixes.length > 0
+      ? item.activePrefixes
+      : [item.href];
+
+    for (const prefix of prefixes) {
+      const isMatch = pathname === prefix || pathname.startsWith(prefix + "/");
+      if (isMatch && prefix.length > longestMatch.length) {
+        longestMatch = prefix;
+        activeItem = item;
+      }
+    }
+  }
+
+  return activeItem;
+}
+
 export const Nav = memo(function Nav({ instanceAdminEnabled = false }: { instanceAdminEnabled?: boolean }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
@@ -214,15 +244,10 @@ export const Nav = memo(function Nav({ instanceAdminEnabled = false }: { instanc
   };
 
   const renderLink = (item: NavItem, showLabel: boolean) => {
-    // Check activePrefixes first if they exist, otherwise use default href matching
-    let isActive = false;
-    if (item.activePrefixes && item.activePrefixes.length > 0) {
-      isActive = item.activePrefixes.some(prefix =>
-        pathname === prefix || pathname.startsWith(prefix + "/")
-      );
-    } else {
-      isActive = pathname === item.href || pathname.startsWith(item.href + "/");
-    }
+    // Use pickActiveHref to determine if this item should be active
+    // It's active only if it owns the longest match across all items
+    const activeItem = pickActiveHref(pathname);
+    const isActive = activeItem === item;
     const badge = unreadFor(item);
     return (
       <Link
@@ -395,7 +420,7 @@ export const Nav = memo(function Nav({ instanceAdminEnabled = false }: { instanc
 
 // Mobile bottom bar
 export const MobileBottomBar = memo(function MobileBottomBar({ pathname }: { pathname: string }) {
-  const moreActive = pathname === "/more" || pathname.startsWith("/more/");
+  const moreActive = !mobileBarItems.some(i => pathname === i.href || pathname.startsWith(i.href + "/"));
   return (
     <nav aria-label="Mobile navigation" className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-sidebar border-t border-sidebar-border pb-[var(--sab)] pl-[var(--sal)] pr-[var(--sar)]">
       <div className="flex h-[59px] items-stretch justify-around pt-1.5 pb-1.5" data-testid="mobile-bar-row">
