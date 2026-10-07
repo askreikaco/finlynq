@@ -94,47 +94,17 @@ function activeHref(pathname: string): string {
 export function SettingsShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const active = activeHref(pathname);
+  const isHub = pathname === "/settings";
 
   return (
     <div className="flex flex-col gap-6 md:flex-row md:gap-8">
-      {/* Mobile pill row */}
-      <nav
-        aria-label="Settings sections"
-        className="md:hidden -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8"
-      >
-        <div className="flex gap-2 overflow-x-auto pb-2">
-          {NAV_ITEMS.map((item) => {
-            const isActive = item.href === active;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={isActive ? "page" : undefined}
-                className={cn(
-                  "shrink-0 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
-                  isActive
-                    ? "border-primary/40 bg-primary/10 text-primary"
-                    : "border-border/60 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                )}
-              >
-                <item.icon className="h-3.5 w-3.5" />
-                {item.label}
-              </Link>
-            );
-          })}
-        </div>
-      </nav>
-
-      {/* Desktop left nav */}
-      <aside
-        aria-label="Settings sections"
-        className="hidden md:block w-56 shrink-0"
-      >
-        <div className="sticky top-[calc(1.5rem+var(--sat))]">
-          <p className="px-3 mb-2 text-[10px] font-semibold tracking-widest uppercase text-muted-foreground">
-            Settings
-          </p>
-          <nav className="space-y-0.5">
+      {/* Mobile pill row — hidden on hub page */}
+      {!isHub && (
+        <nav
+          aria-label="Settings sections"
+          className="md:hidden -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8"
+        >
+          <div className="flex gap-2 overflow-x-auto pb-2">
             {NAV_ITEMS.map((item) => {
               const isActive = item.href === active;
               return (
@@ -143,28 +113,63 @@ export function SettingsShell({ children }: { children: React.ReactNode }) {
                   href={item.href}
                   aria-current={isActive ? "page" : undefined}
                   className={cn(
-                    "group/link relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-200",
+                    "shrink-0 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
                     isActive
-                      ? "bg-white/[0.08] text-foreground"
-                      : "text-muted-foreground hover:bg-white/[0.05] hover:text-foreground"
+                      ? "border-primary/40 bg-primary/10 text-primary"
+                      : "border-border/60 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                   )}
                 >
-                  {isActive && (
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 rounded-full bg-primary shadow-[0_0_8px_2px] shadow-primary/30" />
-                  )}
-                  <item.icon
-                    className={cn(
-                      "h-[16px] w-[16px] shrink-0 transition-colors",
-                      isActive ? "text-primary" : "text-muted-foreground/70 group-hover/link:text-foreground"
-                    )}
-                  />
-                  <span className="truncate">{item.label}</span>
+                  <item.icon className="h-3.5 w-3.5" />
+                  {item.label}
                 </Link>
               );
             })}
-          </nav>
-        </div>
-      </aside>
+          </div>
+        </nav>
+      )}
+
+      {/* Desktop left nav — hidden on hub page */}
+      {!isHub && (
+        <aside
+          aria-label="Settings sections"
+          className="hidden md:block w-56 shrink-0"
+        >
+          <div className="sticky top-[calc(1.5rem+var(--sat))]">
+            <p className="px-3 mb-2 text-[10px] font-semibold tracking-widest uppercase text-muted-foreground">
+              Settings
+            </p>
+            <nav className="space-y-0.5">
+              {NAV_ITEMS.map((item) => {
+                const isActive = item.href === active;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    aria-current={isActive ? "page" : undefined}
+                    className={cn(
+                      "group/link relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-200",
+                      isActive
+                        ? "bg-white/[0.08] text-foreground"
+                        : "text-muted-foreground hover:bg-white/[0.05] hover:text-foreground"
+                    )}
+                  >
+                    {isActive && (
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 rounded-full bg-primary shadow-[0_0_8px_2px] shadow-primary/30" />
+                    )}
+                    <item.icon
+                      className={cn(
+                        "h-[16px] w-[16px] shrink-0 transition-colors",
+                        isActive ? "text-primary" : "text-muted-foreground/70 group-hover/link:text-foreground"
+                      )}
+                    />
+                    <span className="truncate">{item.label}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+        </aside>
+      )}
 
       {/* Content slot — `min-w-0` lets the flex item shrink below intrinsic
           content width; `overflow-x-auto` makes wide tables (issue #88)
