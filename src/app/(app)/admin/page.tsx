@@ -663,7 +663,7 @@ export default function AdminPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             label="Total Users"
-            value={String(stats.totalUsers)}
+            value={stats.totalUsers}
             icon={Users}
             color="bg-blue-500/15 text-blue-600"
           />
@@ -675,13 +675,13 @@ export default function AdminPage() {
           />
           <StatCard
             label="New (7d)"
-            value={String(stats.registrationsLast7Days)}
+            value={stats.registrationsLast7Days}
             icon={BarChart3}
             color="bg-violet-500/15 text-violet-600"
           />
           <StatCard
             label="MFA Enabled"
-            value={String(stats.mfaEnabledUsers)}
+            value={stats.mfaEnabledUsers}
             icon={Shield}
             color="bg-amber-500/15 text-amber-600"
           />
@@ -713,19 +713,19 @@ export default function AdminPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <StatCard
               label="Active now (15 min)"
-              value={String(stats.activeUsersLast15Min ?? 0)}
+              value={stats.activeUsersLast15Min ?? 0}
               icon={Activity}
               color="bg-emerald-500/15 text-emerald-600"
             />
             <StatCard
               label="Active (last hour)"
-              value={String(stats.activeUsersLast60Min ?? 0)}
+              value={stats.activeUsersLast60Min ?? 0}
               icon={Activity}
               color="bg-teal-500/15 text-teal-600"
             />
             <StatCard
               label="Active (last 24h)"
-              value={String(stats.activeUsersLast24Hours ?? 0)}
+              value={stats.activeUsersLast24Hours ?? 0}
               icon={Activity}
               color="bg-sky-500/15 text-sky-600"
             />
