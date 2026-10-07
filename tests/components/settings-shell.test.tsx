@@ -129,7 +129,7 @@ describe("Settings Shell", () => {
     expect(integrationsLink?.getAttribute("aria-current")).toBe("page");
   });
 
-  it("uses fallback to highlight General when on bare /settings", () => {
+  it("hides nav (mobile pill bar and desktop nav) when on hub page /settings", () => {
     mockPath = "/settings";
     render(
       <SettingsShell>
@@ -137,9 +137,32 @@ describe("Settings Shell", () => {
       </SettingsShell>
     );
 
+    // When on /settings (hub page), nav items should not be rendered
+    const links = screen.queryAllByRole("link");
+    // All links should be filtered out (no settings nav links shown)
+    const settingsLinks = links.filter((l) => {
+      const href = l.getAttribute("href");
+      return href?.startsWith("/settings/");
+    });
+    expect(settingsLinks.length).toBe(0);
+  });
+
+  it("renders nav items (mobile pill bar and desktop nav) when on a settings sub-page", () => {
+    mockPath = "/settings/general";
+    render(
+      <SettingsShell>
+        <div>Test content</div>
+      </SettingsShell>
+    );
+
+    // When on a sub-page like /settings/general, nav items should be rendered
     const links = screen.getAllByRole("link");
-    const generalLink = links.find((l) => l.textContent?.includes("General"));
-    expect(generalLink?.getAttribute("aria-current")).toBe("page");
+    const settingsLinks = links.filter((l) => {
+      const href = l.getAttribute("href");
+      return href?.startsWith("/settings/");
+    });
+    // Should have at least 7 settings links (once per nav item)
+    expect(settingsLinks.length).toBeGreaterThanOrEqual(7);
   });
 
   it("renders children", () => {
