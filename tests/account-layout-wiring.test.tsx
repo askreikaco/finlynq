@@ -16,6 +16,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 import AccountLayout from "@/app/(app)/account/layout";
+import { AccountShell } from "@/components/account-shell";
 
 beforeEach(() => {
   mockIsNavV2Enabled = false;
@@ -28,25 +29,18 @@ afterEach(() => {
 });
 
 describe("AccountLayout wiring", () => {
-  it("renders AccountShell component", () => {
-    const el = <AccountLayout><div>test</div></AccountLayout>;
-    expect(el.type.name || el.type === AccountLayout).toBeTruthy();
-    expect(el.props.children).toBeTruthy();
-  });
-
   it("passes navV2 prop as true when flag is enabled", () => {
     mockIsNavV2Enabled = true;
-    const el = <AccountLayout><div>test</div></AccountLayout>;
-    // The layout renders AccountShell, verify the call path
-    const rendered = render(el);
-    expect(rendered).toBeTruthy();
+    const el = AccountLayout({ children: <div>test</div> });
+    expect(el.type).toBe(AccountShell);
+    expect(el.props.navV2).toBe(true);
   });
 
   it("passes navV2 prop as false when flag is disabled", () => {
     mockIsNavV2Enabled = false;
-    const el = <AccountLayout><div>test</div></AccountLayout>;
-    const rendered = render(el);
-    expect(rendered).toBeTruthy();
+    const el = AccountLayout({ children: <div>test</div> });
+    expect(el.type).toBe(AccountShell);
+    expect(el.props.navV2).toBe(false);
   });
 
   it("passes children through to AccountShell", () => {
@@ -61,7 +55,7 @@ describe("AccountLayout wiring", () => {
 
   describe("nested paths with navV2 enabled", () => {
     it("shows tabs and back link on /account/security/mfa with navV2 true", () => {
-      mockPath = "/account/security";
+      mockPath = "/account/security/mfa";
       mockIsNavV2Enabled = true;
       render(
         <AccountLayout>
@@ -74,8 +68,9 @@ describe("AccountLayout wiring", () => {
       expect(tabs.length).toBe(2);
 
       // Should show back link
-      const backButton = screen.getByRole("link", { name: /account/i });
+      const backButton = screen.getByRole("link", { name: "Account" });
       expect(backButton).toBeTruthy();
+      expect(backButton.getAttribute("data-slot")).toBe("back-button");
       expect(backButton.getAttribute("href")).toBe("/account");
     });
 
@@ -94,8 +89,9 @@ describe("AccountLayout wiring", () => {
       expect(tabs[0].getAttribute("aria-selected")).toBe("true");
 
       // Should show back link
-      const backButton = screen.getByRole("link", { name: /account/i });
+      const backButton = screen.getByRole("link", { name: "Account" });
       expect(backButton).toBeTruthy();
+      expect(backButton.getAttribute("data-slot")).toBe("back-button");
       expect(backButton.getAttribute("href")).toBe("/account");
     });
 
@@ -113,8 +109,9 @@ describe("AccountLayout wiring", () => {
       expect(tabs.length).toBe(2);
 
       // Should NOT show back link
-      const backButton = screen.queryByRole("link", { name: /account/i });
-      expect(backButton).toBeFalsy();
+      const backButtons = screen.queryAllByRole("link");
+      const hasBackButton = backButtons.some((link) => link.getAttribute("data-slot") === "back-button");
+      expect(hasBackButton).toBe(false);
     });
   });
 });

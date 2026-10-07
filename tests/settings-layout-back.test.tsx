@@ -12,6 +12,7 @@ vi.mock("@/lib/nav-v2/flag", () => ({
 
 import { isNavV2Enabled } from "@/lib/nav-v2/flag";
 import SettingsLayout from "@/app/(app)/settings/layout";
+import { SettingsShell } from "@/components/settings-shell";
 
 describe("Settings Layout Back Button", () => {
   it("passes hubBackHref=/settings when isNavV2Enabled is true", () => {
@@ -20,7 +21,7 @@ describe("Settings Layout Back Button", () => {
     const el = SettingsLayout({ children: "test content" });
 
     // The returned element should be a SettingsShell with hubBackHref="/settings"
-    expect(el.type.name).toBe("SettingsShell");
+    expect(el.type).toBe(SettingsShell);
     expect(el.props.hubBackHref).toBe("/settings");
   });
 
@@ -30,7 +31,7 @@ describe("Settings Layout Back Button", () => {
     const el = SettingsLayout({ children: "test content" });
 
     // The returned element should be a SettingsShell with undefined hubBackHref
-    expect(el.type.name).toBe("SettingsShell");
+    expect(el.type).toBe(SettingsShell);
     expect(el.props.hubBackHref).toBeUndefined();
   });
 

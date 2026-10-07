@@ -229,9 +229,8 @@ describe("Settings Shell", () => {
     // Find the aside element (desktop nav)
     const aside = container.querySelector("aside");
 
-    // Find the content slot (the last flex-1 div)
-    const contentSlots = container.querySelectorAll(".flex-1");
-    const contentSlot = contentSlots[contentSlots.length - 1];
+    // Find the content slot (the settings-content data slot)
+    const contentSlot = container.querySelector('[data-slot="settings-content"]');
 
     // Verify back button is inside content slot, not a sibling of aside
     expect(contentSlot?.contains(backButton)).toBe(true);

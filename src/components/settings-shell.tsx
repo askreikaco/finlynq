@@ -75,6 +75,7 @@ function generateRouteGroup(): Array<{ prefix: string; group: string }> {
 
 const ROUTE_GROUP: Array<{ prefix: string; group: string }> = generateRouteGroup();
 
+// Pages that render their own PageHeader backHref must be listed here to avoid a double back button.
 const SELF_BACK_PATHS = ["/settings/import/reconcile-visibility"];
 
 function activeHref(pathname: string): string {
@@ -177,7 +178,7 @@ export function SettingsShell({ children, hubBackHref }: { children: React.React
       {/* Content slot — `min-w-0` lets the flex item shrink below intrinsic
           content width; `overflow-x-auto` makes wide tables (issue #88)
           scroll inside the slot instead of pushing the page wider. */}
-      <div className="flex-1 min-w-0 overflow-x-auto">
+      <div className="flex-1 min-w-0 overflow-x-auto" data-slot="settings-content">
         {hubBackHref && !isHub && !SELF_BACK_PATHS.some((p) => pathname.startsWith(p)) && (
           <BackButton href={hubBackHref} label="Back to Settings" />
         )}
