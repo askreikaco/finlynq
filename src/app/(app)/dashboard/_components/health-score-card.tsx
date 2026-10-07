@@ -62,7 +62,7 @@ export function HealthScoreCard({ health: healthProp }: { health?: HealthData | 
         label="Financial Health"
         icon={Activity}
         tone={health ? (health.score > 70 ? "emerald" : health.score >= 40 ? "amber" : "rose") : "muted"}
-        value={health ? health.score : <span className="inline-block h-7 w-24 animate-shimmer rounded-md align-middle" />}
+        value={health ? <span>{Math.round(health.score)}</span> : <span className="inline-block h-7 w-24 animate-shimmer rounded-md align-middle" />}
         valueClassName={health ? (health.score > 70 ? "text-emerald-500" : health.score >= 40 ? "text-amber-500" : "text-rose-500") : ""}
         sub={
           health ? (
