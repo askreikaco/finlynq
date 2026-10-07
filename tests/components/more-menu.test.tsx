@@ -202,7 +202,7 @@ describe("More Appearance row", () => {
 
 describe("More keeps everything the old sheet offered reachable", () => {
   it("every non-bar nav item (all flags on) has a row, except owner-removed /feedback", () => {
-    const all = buildMoreGroups({ isAdmin: true, devMode: true, familyEnabled: true, hasAnnouncements: true, instanceAdminEnabled: true });
+    const all = buildMoreGroups({ isAdmin: true, devMode: true, familyEnabled: true, hasAnnouncements: true, instanceAdminEnabled: true, categoriesMerged: false });
     const hrefs = new Set(all.flatMap((g) => g.rows.map((r) => r.href)));
     const bar = new Set(mobileBarItems.map((i) => i.href));
     const missing = allFlatItems
@@ -220,13 +220,13 @@ describe("More keeps everything the old sheet offered reachable", () => {
 
 describe("More instance admin filter (WP9a)", () => {
   it("hides Instance config when instanceAdminEnabled={false}", () => {
-    const groups = buildMoreGroups({ isAdmin: true, devMode: false, familyEnabled: true, hasAnnouncements: true, instanceAdminEnabled: false });
+    const groups = buildMoreGroups({ isAdmin: true, devMode: false, familyEnabled: true, hasAnnouncements: true, instanceAdminEnabled: false, categoriesMerged: false });
     const allHrefs = new Set(groups.flatMap((g) => g.rows.map((r) => r.href)));
     expect(allHrefs.has("/admin/instance")).toBe(false);
   });
 
   it("shows Instance config when instanceAdminEnabled={true}", () => {
-    const groups = buildMoreGroups({ isAdmin: true, devMode: false, familyEnabled: true, hasAnnouncements: true, instanceAdminEnabled: true });
+    const groups = buildMoreGroups({ isAdmin: true, devMode: false, familyEnabled: true, hasAnnouncements: true, instanceAdminEnabled: true, categoriesMerged: false });
     const allHrefs = new Set(groups.flatMap((g) => g.rows.map((r) => r.href)));
     expect(allHrefs.has("/admin/instance")).toBe(true);
   });
