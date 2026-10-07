@@ -127,7 +127,14 @@ describe("SectionCard / SectionLabel / StatTile", () => {
 
   it("StatTile: 13/600 muted label + value + optional sub", () => {
     render(<StatTile label="Income" value={<Amount value={1} currency="USD" />} sub="this month" />);
-    expect(cls(screen.getByText("Income"))).toEqual(expect.arrayContaining(["text-[13px]", "font-semibold", "text-muted-foreground"]));
+    // Assert MetricCard contract: label text is rendered with MetricCard styling
+    expect(screen.getByText("Income")).toBeTruthy();
+    expect(cls(screen.getByText("Income"))).toEqual(
+      expect.arrayContaining(["text-xs", "font-medium", "text-muted-foreground", "tracking-wide", "uppercase", "truncate"])
+    );
+    // Assert value is rendered (the Amount component should show $1.00)
+    expect(screen.getByText("$1.00")).toBeTruthy();
+    // Assert sub-line is rendered
     expect(screen.getByText("this month")).toBeTruthy();
   });
 });

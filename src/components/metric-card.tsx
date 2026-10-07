@@ -49,7 +49,7 @@ export const METRIC_TONES = {
 export type MetricTone = keyof typeof METRIC_TONES;
 
 export type MetricCardProps = {
-  label: string;
+  label: ReactNode;
   icon: LucideIcon;
   /** A METRIC_TONES name, or raw classes for the icon tile. */
   tone?: MetricTone | (string & {});
