@@ -1,6 +1,6 @@
 "use client";
 
-import { AreaChart, Area, ResponsiveContainer, Tooltip } from "recharts";
+import { AreaChart, Area, ResponsiveContainer, Tooltip, YAxis } from "recharts";
 import { formatCurrency, getMonthLabel } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { useAnimations } from "@/hooks/use-animations";
@@ -21,6 +21,41 @@ type SparklineProps = {
   /** Currency used to format the tooltip value. */
   currency?: string;
 };
+
+/**
+ * Compute a padded domain for the sparkline chart.
+ * Adds padding to prevent the chart from appearing flat when values are tightly clustered.
+ * Ignores non-finite values (NaN, Infinity).
+ * @param data Array of numeric values
+ * @returns [min, max] domain with padding applied
+ */
+export function sparkDomain(data: number[]): [number, number] {
+  if (!data || data.length === 0) {
+    return [0, 1];
+  }
+
+  // Filter to only finite values
+  const finiteData = data.filter(Number.isFinite);
+
+  // Return safe fallback if no finite values
+  if (finiteData.length === 0) {
+    return [0, 1];
+  }
+
+  const min = Math.min(...finiteData);
+  const max = Math.max(...finiteData);
+
+  // Handle flat data (all values the same)
+  if (min === max) {
+    const pad = Math.abs(max) * 0.05;
+    return [max - pad, max + pad];
+  }
+
+  // Regular case: add 10% of the range as padding
+  const range = max - min;
+  const pad = range * 0.1;
+  return [min - pad, max + pad];
+}
 
 type SparkRow = { index: number; value: number; label?: string };
 
@@ -64,6 +99,7 @@ export function Sparkline({ data, color, labels, currency, height = 30, classNam
   const animationsEnabled = useAnimations();
   const chartData: SparkRow[] = data.map((value, index) => ({ index, value, label: labels?.[index] }));
   const interactive = Boolean(labels?.length);
+  const [minDomain, maxDomain] = sparkDomain(data);
 
   return (
     <div className={className}>
@@ -71,10 +107,11 @@ export function Sparkline({ data, color, labels, currency, height = 30, classNam
         <AreaChart data={chartData} margin={{ top: 2, right: 2, bottom: 2, left: 2 }}>
           <defs>
             <linearGradient id={`spark-${color.replace("#", "")}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={color} stopOpacity={0.3} />
+              <stop offset="0%" stopColor={color} stopOpacity={0.18} />
               <stop offset="95%" stopColor={color} stopOpacity={0} />
             </linearGradient>
           </defs>
+          <YAxis hide domain={[minDomain, maxDomain]} />
           {interactive && (
             <Tooltip
               content={<SparklineTooltip color={color} currency={resolvedCurrency} />}

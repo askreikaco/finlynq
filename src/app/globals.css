@@ -189,6 +189,11 @@ html {
   font-family: var(--font-geist-mono);
 }
 
+/* Hero number uses sans font for better proportions, even with tabular-nums variant */
+.hero-number.tabular-nums {
+  font-family: var(--font-sans);
+}
+
 /* Mobile (<md): amounts use the system sans (tabular figures), like the native app. */
 @media (width < 48rem) {
   .tabular-nums, [data-value] {
@@ -294,6 +299,12 @@ html {
   font-variant-numeric: tabular-nums lining-nums;
   font-feature-settings: "tnum" 1, "lnum" 1;
   letter-spacing: -0.025em;
+}
+
+/* Sparkline fade — left-edge mask for smooth appearance */
+.sparkline-fade {
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, black 20%);
+  mask-image: linear-gradient(90deg, transparent 0%, black 20%);
 }
 
 /* ═══════════════════════════════════════════════
