@@ -18,6 +18,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 import { getEntriesBySurface, ALIASES } from "@/lib/nav-config";
+import { BackButton } from "@/components/mobile/back-button";
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
 
@@ -91,7 +92,7 @@ function activeHref(pathname: string): string {
   return best ?? "";
 }
 
-export function SettingsShell({ children }: { children: React.ReactNode }) {
+export function SettingsShell({ children, hubBackHref }: { children: React.ReactNode; hubBackHref?: string }) {
   const pathname = usePathname();
   const active = activeHref(pathname);
   const isHub = pathname === "/settings";
@@ -174,7 +175,12 @@ export function SettingsShell({ children }: { children: React.ReactNode }) {
       {/* Content slot — `min-w-0` lets the flex item shrink below intrinsic
           content width; `overflow-x-auto` makes wide tables (issue #88)
           scroll inside the slot instead of pushing the page wider. */}
-      <div className="flex-1 min-w-0 overflow-x-auto">{children}</div>
+      <div className="flex-1 min-w-0 overflow-x-auto">
+        {hubBackHref && !isHub && (
+          <BackButton href={hubBackHref} label="Back to Settings" />
+        )}
+        {children}
+      </div>
     </div>
   );
 }
