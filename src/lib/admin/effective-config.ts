@@ -60,7 +60,27 @@ export async function getEffectiveConfig(env: Record<string, string | undefined>
   const emailCfg = await resolveEmailConfig();
   const provider = activeEmailProvider(emailCfg);
   const emailConfigured = provider !== "none";
-  const providerDisplay = emailConfigured ? `Yes (${provider.charAt(0).toUpperCase() + provider.slice(1)})` : "No";
+
+  // Provider label map for consistent capitalization
+  const providerLabels: Record<string, string> = {
+    resend: "Resend",
+    brevo: "Brevo",
+    smtp: "SMTP",
+  };
+  const providerDisplay = emailConfigured ? `Yes (${providerLabels[provider]})` : "No";
+
+  // Determine email source: use the active provider's source field, fallback to "default"
+  let emailSource: "env" | "db" | "default" = "default";
+  if (provider !== "none") {
+    const srcField = {
+      resend: emailCfg.resendApiKey,
+      brevo: emailCfg.brevoApiKey,
+      smtp: emailCfg.smtpHost,
+    }[provider];
+    if (srcField && srcField.source !== "none") {
+      emailSource = srcField.source;
+    }
+  }
 
   return {
     google: {
@@ -96,14 +116,14 @@ export async function getEffectiveConfig(env: Record<string, string | undefined>
         value: null, // Not configurable here yet; no real setting exists
         masked: false,
         source: "default",
-        displayValue: "Not configurable here (always open by default)",
+        displayValue: "Not configurable here",
       },
     },
     email: {
       enabled: {
         value: emailConfigured, // boolean indicating if any provider is configured
         masked: false,
-        source: emailCfg.resendApiKey.source || emailCfg.brevoApiKey.source || emailCfg.smtpHost.source || "default",
+        source: emailSource,
         displayValue: providerDisplay,
       },
     },

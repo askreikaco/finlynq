@@ -40,7 +40,7 @@ describe("getEffectiveConfig", () => {
     expect(config.google.enabled.value).toBe(false);
     expect(config.passkey.enabled.value).toBe(true);
     expect(config.registration.allowOpen.value).toBeNull();
-    expect(config.registration.allowOpen.displayValue).toBe("Not configurable here (always open by default)");
+    expect(config.registration.allowOpen.displayValue).toBe("Not configurable here");
     expect(config.email.enabled.value).toBe(false);
     expect(config.captcha.enabled.value).toBe(false);
   });
@@ -138,7 +138,7 @@ describe("getEffectiveConfig", () => {
     });
 
     expect(config.email.enabled.value).toBe(true);
-    expect(config.email.enabled.displayValue).toBe("Yes (Smtp)");
+    expect(config.email.enabled.displayValue).toBe("Yes (SMTP)");
   });
 
   it("shows 'No' for email when no provider is configured", async () => {
@@ -216,7 +216,7 @@ describe("getEffectiveConfig", () => {
     const config = await getEffectiveConfig({});
 
     expect(config.registration.allowOpen.value).toBeNull();
-    expect(config.registration.allowOpen.displayValue).toBe("Not configurable here (always open by default)");
+    expect(config.registration.allowOpen.displayValue).toBe("Not configurable here");
     expect(config.registration.allowOpen.source).toBe("default");
   });
 

@@ -32,6 +32,21 @@ vi.mock("@/lib/auth/require-admin", () => ({
   requireAdmin: vi.fn(async () => adminAuthState),
 }));
 
+// Mock the email config resolution
+vi.mock("@/lib/email", () => ({
+  resolveEmailConfig: vi.fn(async () => ({
+    provider: { value: undefined, source: "none" as const },
+    from: { value: undefined, source: "none" as const },
+    brevoApiKey: { value: undefined, source: "none" as const },
+    resendApiKey: { value: undefined, source: "none" as const },
+    smtpHost: { value: undefined, source: "none" as const },
+    smtpPort: { value: undefined, source: "none" as const },
+    smtpUser: { value: undefined, source: "none" as const },
+    smtpPass: { value: undefined, source: "none" as const },
+  })),
+  activeEmailProvider: vi.fn(() => "none" as const),
+}));
+
 describe("GET /api/admin/instance/config", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -85,7 +100,9 @@ describe("GET /api/admin/instance/config", () => {
 
     // Mock process.env with secrets using vi.stubEnv
     vi.stubEnv("GOOGLE_CLIENT_SECRET", "super-secret-key-12345");
-    vi.stubEnv("SENDGRID_API_KEY", "SG.secret-sendgrid-key");
+    vi.stubEnv("RESEND_API_KEY", "re_test-resend-api-key");
+    vi.stubEnv("BREVO_API_KEY", "xkeysib-test-brevo-api-key");
+    vi.stubEnv("SMTP_PASS", "smtp-password-secret");
 
     try {
       const request = new NextRequest("http://localhost:3000/api/admin/instance/config");
@@ -96,7 +113,9 @@ describe("GET /api/admin/instance/config", () => {
 
       // Verify secrets are not in the response
       expect(jsonString).not.toContain("super-secret-key-12345");
-      expect(jsonString).not.toContain("SG.secret-sendgrid-key");
+      expect(jsonString).not.toContain("re_test-resend-api-key");
+      expect(jsonString).not.toContain("xkeysib-test-brevo-api-key");
+      expect(jsonString).not.toContain("smtp-password-secret");
       // Should only contain masked version
       expect(jsonString).toContain("***");
     } finally {
