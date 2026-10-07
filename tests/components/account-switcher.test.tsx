@@ -8,8 +8,12 @@
 import "@testing-library/jest-dom";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import React from "react";
-import { render, screen, waitFor, cleanup } from "@testing-library/react";
+import { render as rtlRender, screen, waitFor, cleanup, act } from "@testing-library/react";
+import { SWRConfig } from "swr";
 import userEvent from "@testing-library/user-event";
+
+const render = (ui: React.ReactElement) =>
+  rtlRender(<SWRConfig value={{ provider: () => new Map() }}>{ui}</SWRConfig>);
 
 const push = vi.fn();
 const hardReload = vi.fn();
@@ -111,6 +115,19 @@ describe("AccountSwitcher dropdown listing", () => {
     replies["GET /api/auth/accounts"] = { throws: true };
     const { container } = render(<AccountSwitcher />);
     await waitFor(() => expect(callsTo("GET", "/api/auth/accounts")).toHaveLength(1));
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("renders nothing when the accounts request returns 500", async () => {
+    replies["GET /api/auth/accounts"] = { status: 500, body: {} };
+    const { container } = render(<AccountSwitcher />);
+    await waitFor(() => expect(callsTo("GET", "/api/auth/accounts")).toHaveLength(1));
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
     expect(container).toBeEmptyDOMElement();
   });
 
