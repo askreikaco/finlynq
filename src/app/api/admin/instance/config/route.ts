@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Get the effective config from environment
-  const config = getEffectiveConfig(process.env);
+  const config = await getEffectiveConfig(process.env);
 
   return NextResponse.json(config);
 }
