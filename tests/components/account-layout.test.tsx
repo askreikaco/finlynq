@@ -143,5 +143,26 @@ describe("AccountShell", () => {
       const backButton = screen.queryByRole("link", { name: /account/i });
       expect(backButton).toBeFalsy();
     });
+
+    it("shows tabs and back link on nested path /account/security with navV2 true", () => {
+      mockPath = "/account/security";
+      render(
+        <AccountShell navV2={true}>
+          <div>Security content</div>
+        </AccountShell>
+      );
+
+      // Should show tabs
+      const tabs = screen.getAllByRole("tab");
+      expect(tabs.length).toBe(2);
+      expect(tabs[0].getAttribute("aria-selected")).toBe("false");
+      expect(tabs[1].getAttribute("aria-selected")).toBe("true");
+
+      // Should show back link
+      const backButton = screen.getByRole("link", { name: /account/i });
+      expect(backButton).toBeTruthy();
+      expect(backButton.getAttribute("href")).toBe("/account");
+      expect(backButton.getAttribute("data-slot")).toBe("back-button");
+    });
   });
 });
