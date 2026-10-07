@@ -31,6 +31,7 @@ const TABS: TabItem[] = getAccountTabs();
 
 export default function AccountLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const isHub = pathname === "/account";
 
   // Determine active tab
   const activeTab = TABS.find(t => pathname === t.href)?.href || "/account/info";
@@ -46,6 +47,7 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
       />
 
       {/* Tab Navigation */}
+      {!isHub && (
       <nav className="flex gap-4 border-b border-border" role="tablist">
         {TABS.map((tab) => {
           const isActive = activeTab === tab.href;
@@ -67,6 +69,7 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
           );
         })}
       </nav>
+      )}
 
       {/* Content */}
       <div>{children}</div>
