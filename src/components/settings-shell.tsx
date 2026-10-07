@@ -18,6 +18,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 import { getEntriesBySurface, ALIASES } from "@/lib/nav-config";
+import { BackButton } from "@/components/mobile/back-button";
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
 
@@ -91,13 +92,20 @@ function activeHref(pathname: string): string {
   return best ?? "";
 }
 
-export function SettingsShell({ children }: { children: React.ReactNode }) {
+export function SettingsShell({ children, hubBackHref }: { children: React.ReactNode; hubBackHref?: string }) {
   const pathname = usePathname();
   const active = activeHref(pathname);
   const isHub = pathname === "/settings";
 
   return (
     <div className="flex flex-col gap-6 md:flex-row md:gap-8">
+      {/* Back button to Settings hub (nav-v2) */}
+      {hubBackHref && !isHub && (
+        <div className="-mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 -mb-4">
+          <BackButton href={hubBackHref} label="Settings" />
+        </div>
+      )}
+
       {/* Mobile pill row — hidden on hub page */}
       {!isHub && (
         <nav

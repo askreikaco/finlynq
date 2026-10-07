@@ -174,4 +174,44 @@ describe("Settings Shell", () => {
 
     expect(screen.getByText("Test content goes here")).toBeTruthy();
   });
+
+  it("renders back button when hubBackHref is set and not on hub page", () => {
+    mockPath = "/settings/general";
+    render(
+      <SettingsShell hubBackHref="/settings">
+        <div>Test content</div>
+      </SettingsShell>
+    );
+
+    const backButton = screen.getByRole("link", { name: /settings/i });
+    expect(backButton).toBeDefined();
+    expect(backButton?.getAttribute("data-slot")).toBe("back-button");
+    expect(backButton?.getAttribute("href")).toBe("/settings");
+  });
+
+  it("does not render back button when hubBackHref is not set", () => {
+    mockPath = "/settings/general";
+    render(
+      <SettingsShell>
+        <div>Test content</div>
+      </SettingsShell>
+    );
+
+    const backButtons = screen.queryAllByRole("link");
+    const hasBackButton = backButtons.some((link) => link.getAttribute("data-slot") === "back-button");
+    expect(hasBackButton).toBe(false);
+  });
+
+  it("does not render back button when on hub page even if hubBackHref is set", () => {
+    mockPath = "/settings";
+    render(
+      <SettingsShell hubBackHref="/settings">
+        <div>Test content</div>
+      </SettingsShell>
+    );
+
+    const backButtons = screen.queryAllByRole("link");
+    const hasBackButton = backButtons.some((link) => link.getAttribute("data-slot") === "back-button");
+    expect(hasBackButton).toBe(false);
+  });
 });
