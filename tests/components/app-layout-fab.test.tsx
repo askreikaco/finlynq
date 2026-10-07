@@ -10,6 +10,7 @@ afterEach(cleanup);
 
 vi.mock("@/lib/quick-add/flag", () => ({
   isQuickAddEnabled: vi.fn(),
+  QUICK_ADD_FAB_PATHS: ["/dashboard", "/transactions"],
 }));
 
 vi.mock("@/components/nav", () => ({
@@ -49,7 +50,7 @@ vi.mock("@/components/animation-provider", () => ({
 }));
 
 vi.mock("@/components/reporting-recompute-indicator", () => ({
-  ReportingRecomputeIndicator: () => null,
+  ReportingRecomputeIndicator: vi.fn(() => null),
 }));
 
 vi.mock("@/components/version-gate", () => ({
@@ -70,6 +71,7 @@ vi.mock("next/navigation", () => ({
 
 // Import after mocking
 import AppLayout from "@/app/(app)/layout";
+import * as indicatorModule from "@/components/reporting-recompute-indicator";
 
 describe("AppLayout with QuickAddFAB", () => {
   beforeEach(() => {
@@ -99,5 +101,25 @@ describe("AppLayout with QuickAddFAB", () => {
     // FAB is not in the document when flag is off
     const fab = screen.queryByLabelText("Add transaction");
     expect(fab).not.toBeInTheDocument();
+  });
+
+  it("should pass avoidFab=true to ReportingRecomputeIndicator when flag is enabled", () => {
+    vi.mocked(flagModule.isQuickAddEnabled).mockReturnValue(true);
+
+    render(<AppLayout><div>Test Content</div></AppLayout>);
+
+    // ReportingRecomputeIndicator should be called with avoidFab=true
+    const callArgs = vi.mocked(indicatorModule.ReportingRecomputeIndicator).mock.calls[0];
+    expect(callArgs[0]).toEqual(expect.objectContaining({ avoidFab: true }));
+  });
+
+  it("should pass avoidFab=false to ReportingRecomputeIndicator when flag is disabled", () => {
+    vi.mocked(flagModule.isQuickAddEnabled).mockReturnValue(false);
+
+    render(<AppLayout><div>Test Content</div></AppLayout>);
+
+    // ReportingRecomputeIndicator should be called with avoidFab=false
+    const callArgs = vi.mocked(indicatorModule.ReportingRecomputeIndicator).mock.calls[0];
+    expect(callArgs[0]).toEqual(expect.objectContaining({ avoidFab: false }));
   });
 });

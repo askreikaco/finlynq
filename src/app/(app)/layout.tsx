@@ -31,7 +31,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="relative flex min-h-screen flex-col">
           <AnnouncementBanner />
           <PromptGate />
-          <ReportingRecomputeIndicator />
+          <ReportingRecomputeIndicator avoidFab={isQuickAddEnabled()} />
           <div className="flex flex-1">
             <Nav instanceAdminEnabled={instanceAdminEnabled} />
             <main className={`flex-1 overflow-x-hidden overflow-y-auto min-w-0 ${

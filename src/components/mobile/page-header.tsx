@@ -11,6 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { BackButton } from "./back-button";
 
 export interface OverflowAction {
   label: string;
@@ -63,6 +64,8 @@ export function PageHeader({
   lead,
   leadClassName = "flex items-center gap-3",
   belowTitle,
+  backHref,
+  backLabel,
 }: {
   title: React.ReactNode;
   subtitle?: React.ReactNode;
@@ -78,6 +81,10 @@ export function PageHeader({
   leadClassName?: string;
   /** Always-visible node under the h1 (e.g. badges). */
   belowTitle?: React.ReactNode;
+  /** Optional back button link href. */
+  backHref?: string;
+  /** Optional back button label (defaults to "Back"). */
+  backLabel?: string;
 }) {
   const hasRight = !!actions || (overflow?.length ?? 0) > 0;
   const noTracking = !/(^|\s)tracking-/.test(titleClassName);
@@ -94,7 +101,16 @@ export function PageHeader({
     </h1>
   );
   // Title only: emit just the h1 so the page's DOM stays exactly as it was.
-  if (!subtitle && !belowTitle && !lead && !hasRight && !className) return h1;
+  if (!subtitle && !belowTitle && !lead && !hasRight && !className && !backHref) return h1;
+  // Title-only with backHref: wrap in a container
+  if (!subtitle && !belowTitle && !lead && !hasRight && !className && backHref) {
+    return (
+      <div className="flex items-center gap-2">
+        <BackButton href={backHref} label={backLabel} />
+        {h1}
+      </div>
+    );
+  }
   const titleBlock = (
     <div className={cn(!lead && "max-md:min-w-0", !lead && hasRight && "max-md:flex-1")} data-slot="page-header-title-block">
       {h1}
@@ -114,15 +130,23 @@ export function PageHeader({
   ) : (
     titleBlock
   );
+  const headingWithBack = backHref ? (
+    <div className={cn(leadClassName, "max-md:min-w-0", hasRight && "max-md:flex-1")}>
+      <BackButton href={backHref} label={backLabel} />
+      {heading}
+    </div>
+  ) : (
+    heading
+  );
   if (!hasRight) {
-    return className ? <div className={className}>{heading}</div> : heading;
+    return className ? <div className={className}>{headingWithBack}</div> : headingWithBack;
   }
   return (
     <div
       data-slot="page-header"
       className={cn(className, "max-md:flex max-md:flex-row max-md:flex-nowrap max-md:items-center max-md:justify-between max-md:gap-3")}
     >
-      {heading}
+      {headingWithBack}
       <div data-slot="page-header-actions" className={cn(actionsClassName, "max-md:w-auto max-md:shrink-0 max-md:flex-nowrap max-md:gap-2")}>
         {overflow && overflow.length > 0 ? <OverflowMenu items={overflow} /> : null}
         {actions}

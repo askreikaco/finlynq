@@ -1,4 +1,5 @@
 export { PageHeader, OverflowMenu, HEADER_DESKTOP_ONLY, desktopClasses, type OverflowAction } from "./page-header";
+export { BackButton } from "./back-button";
 export { SectionCard } from "./section-card";
 export { SectionLabel } from "./section-label";
 export { ListRow, type ListRowProps, type SecondaryTone } from "./list-row";

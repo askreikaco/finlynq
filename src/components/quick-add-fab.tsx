@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { QUICK_ADD_FAB_PATHS } from "@/lib/quick-add/flag";
 
 /**
  * Quick-add FAB (Floating Action Button)
@@ -16,7 +17,7 @@ export function QuickAddFAB() {
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   // Check if we're on a page where FAB should appear
-  const isVisible = pathname === "/dashboard" || pathname === "/transactions";
+  const isVisible = QUICK_ADD_FAB_PATHS.includes(pathname);
 
   // Handle keyboard visibility changes on mobile
   useEffect(() => {

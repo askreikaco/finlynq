@@ -17,7 +17,9 @@
  */
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Loader2, CheckCircle2 } from "lucide-react";
+import { QUICK_ADD_FAB_PATHS } from "@/lib/quick-add/flag";
 
 type View = { running: boolean; target: string; done: number; total: number } | null;
 
@@ -25,8 +27,15 @@ const DONE_FLASH_MS = 8000;
 const IDLE_POLL_MS = 5000; // catch a job within ~5s of it starting (any source)
 const RUN_POLL_MS = 1500; // tighter cadence while a job is in flight / flashing done
 
-export function ReportingRecomputeIndicator() {
+interface ReportingRecomputeIndicatorProps {
+  avoidFab?: boolean;
+}
+
+export function ReportingRecomputeIndicator({ avoidFab = false }: ReportingRecomputeIndicatorProps) {
+  const pathname = usePathname();
   const [view, setView] = useState<View>(null);
+  const isFabPath = QUICK_ADD_FAB_PATHS.includes(pathname);
+  const shouldAvoidFab = avoidFab && isFabPath;
 
   useEffect(() => {
     let alive = true;
@@ -78,8 +87,12 @@ export function ReportingRecomputeIndicator() {
 
   if (!view) return null;
 
+  const bottomClasses = shouldAvoidFab
+    ? "bottom-[calc(144px+var(--sab))] md:bottom-24"
+    : "bottom-[calc(80px+var(--sab))] md:bottom-4";
+
   return (
-    <div className="fixed bottom-20 right-4 z-50 flex items-center gap-2 rounded-full bg-background px-3.5 py-2 text-xs text-muted-foreground shadow-lg ring-1 ring-foreground/10 md:bottom-4">
+    <div className={`fixed ${bottomClasses} right-4 z-50 flex items-center gap-2 rounded-full bg-background px-3.5 py-2 text-xs text-muted-foreground shadow-lg ring-1 ring-foreground/10`}>
       {view.running ? (
         <>
           <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-500" />
