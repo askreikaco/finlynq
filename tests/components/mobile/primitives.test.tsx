@@ -125,7 +125,7 @@ describe("SectionCard / SectionLabel / StatTile", () => {
     expect(screen.queryByRole("heading")).toBeNull();
   });
 
-  it("StatTile: 13/600 muted label + value + optional sub", () => {
+  it("StatTile asserts MetricCard label contract: label text rendered with MetricCard styling", () => {
     render(<StatTile label="Income" value={<Amount value={1} currency="USD" />} sub="this month" />);
     // Assert MetricCard contract: label text is rendered with MetricCard styling
     expect(screen.getByText("Income")).toBeTruthy();
@@ -136,6 +136,12 @@ describe("SectionCard / SectionLabel / StatTile", () => {
     expect(screen.getByText("$1.00")).toBeTruthy();
     // Assert sub-line is rendered
     expect(screen.getByText("this month")).toBeTruthy();
+  });
+
+  it("StatTile renders ReactNode labels (not just strings) and preserves their structure", () => {
+    render(<StatTile label={<span data-testid="lbl">Inc<b>ome</b></span>} value="1" />);
+    expect(screen.getByTestId("lbl")).toBeTruthy();
+    expect(screen.queryByText("Stat")).toBeNull();
   });
 });
 
