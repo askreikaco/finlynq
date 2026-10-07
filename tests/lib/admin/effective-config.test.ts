@@ -1,21 +1,52 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { getEffectiveConfig } from "@/lib/admin/effective-config";
 
+// Mock the email module to avoid DB calls
+vi.mock("@/lib/email", () => ({
+  resolveEmailConfig: vi.fn(),
+  activeEmailProvider: vi.fn(),
+}));
+
+import { resolveEmailConfig, activeEmailProvider } from "@/lib/email";
+
+const mockResolveEmailConfig = resolveEmailConfig as ReturnType<typeof vi.fn>;
+const mockActiveEmailProvider = activeEmailProvider as ReturnType<typeof vi.fn>;
+
 describe("getEffectiveConfig", () => {
-  it("returns defaults when env is empty", () => {
-    const config = getEffectiveConfig({});
+  beforeEach(() => {
+    // Default mocks: no email configured
+    mockResolveEmailConfig.mockResolvedValue({
+      provider: { value: undefined, source: "none" },
+      from: { value: undefined, source: "none" },
+      brevoApiKey: { value: undefined, source: "none" },
+      resendApiKey: { value: undefined, source: "none" },
+      smtpHost: { value: undefined, source: "none" },
+      smtpPort: { value: undefined, source: "none" },
+      smtpUser: { value: undefined, source: "none" },
+      smtpPass: { value: undefined, source: "none" },
+    });
+    mockActiveEmailProvider.mockReturnValue("none");
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns defaults when env is empty", async () => {
+    const config = await getEffectiveConfig({});
 
     expect(config.google.clientId.value).toBeNull();
     expect(config.google.clientSecret.value).toBeNull();
     expect(config.google.enabled.value).toBe(false);
     expect(config.passkey.enabled.value).toBe(true);
-    expect(config.registration.allowOpen.value).toBe(true);
+    expect(config.registration.allowOpen.value).toBeNull();
+    expect(config.registration.allowOpen.displayValue).toBe("Not configurable here");
     expect(config.email.enabled.value).toBe(false);
     expect(config.captcha.enabled.value).toBe(false);
   });
 
-  it("reads GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET from env", () => {
-    const config = getEffectiveConfig({
+  it("reads GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET from env", async () => {
+    const config = await getEffectiveConfig({
       GOOGLE_CLIENT_ID: "test-client-id",
       GOOGLE_CLIENT_SECRET: "test-client-secret",
     });
@@ -26,36 +57,101 @@ describe("getEffectiveConfig", () => {
     expect(config.google.enabled.value).toBe(true);
   });
 
-  it("enables Google only when both clientId and clientSecret are set", () => {
-    const configIdOnly = getEffectiveConfig({
+  it("enables Google only when both clientId and clientSecret are set", async () => {
+    const configIdOnly = await getEffectiveConfig({
       GOOGLE_CLIENT_ID: "test-id",
     });
     expect(configIdOnly.google.enabled.value).toBe(false);
 
-    const configSecretOnly = getEffectiveConfig({
+    const configSecretOnly = await getEffectiveConfig({
       GOOGLE_CLIENT_SECRET: "test-secret",
     });
     expect(configSecretOnly.google.enabled.value).toBe(false);
 
-    const configBoth = getEffectiveConfig({
+    const configBoth = await getEffectiveConfig({
       GOOGLE_CLIENT_ID: "test-id",
       GOOGLE_CLIENT_SECRET: "test-secret",
     });
     expect(configBoth.google.enabled.value).toBe(true);
   });
 
-  it("reads SENDGRID_API_KEY for email enabled status", () => {
-    const configNoEmail = getEffectiveConfig({});
-    expect(configNoEmail.email.enabled.value).toBe(false);
-
-    const configWithEmail = getEffectiveConfig({
-      SENDGRID_API_KEY: "SG.test-key",
+  it("detects Resend email provider from RESEND_API_KEY", async () => {
+    mockResolveEmailConfig.mockResolvedValue({
+      provider: { value: undefined, source: "none" },
+      from: { value: undefined, source: "none" },
+      brevoApiKey: { value: undefined, source: "none" },
+      resendApiKey: { value: "SENTINEL_SECRET_resend123", source: "env" },
+      smtpHost: { value: undefined, source: "none" },
+      smtpPort: { value: undefined, source: "none" },
+      smtpUser: { value: undefined, source: "none" },
+      smtpPass: { value: undefined, source: "none" },
     });
-    expect(configWithEmail.email.enabled.value).toBe(true);
+    mockActiveEmailProvider.mockReturnValue("resend");
+
+    const config = await getEffectiveConfig({
+      RESEND_API_KEY: "SENTINEL_SECRET_resend123",
+    });
+
+    expect(config.email.enabled.value).toBe(true);
+    expect(config.email.enabled.displayValue).toBe("Yes (Resend)");
   });
 
-  it("masks secrets in displayValue and never leaks value", () => {
-    const config = getEffectiveConfig({
+  it("detects Brevo email provider from BREVO_API_KEY", async () => {
+    mockResolveEmailConfig.mockResolvedValue({
+      provider: { value: undefined, source: "none" },
+      from: { value: undefined, source: "none" },
+      brevoApiKey: { value: "SENTINEL_SECRET_brevo456", source: "env" },
+      resendApiKey: { value: undefined, source: "none" },
+      smtpHost: { value: undefined, source: "none" },
+      smtpPort: { value: undefined, source: "none" },
+      smtpUser: { value: undefined, source: "none" },
+      smtpPass: { value: undefined, source: "none" },
+    });
+    mockActiveEmailProvider.mockReturnValue("brevo");
+
+    const config = await getEffectiveConfig({
+      BREVO_API_KEY: "SENTINEL_SECRET_brevo456",
+    });
+
+    expect(config.email.enabled.value).toBe(true);
+    expect(config.email.enabled.displayValue).toBe("Yes (Brevo)");
+  });
+
+  it("detects SMTP email provider from SMTP_HOST", async () => {
+    mockResolveEmailConfig.mockResolvedValue({
+      provider: { value: undefined, source: "none" },
+      from: { value: undefined, source: "none" },
+      brevoApiKey: { value: undefined, source: "none" },
+      resendApiKey: { value: undefined, source: "none" },
+      smtpHost: { value: "smtp.example.com", source: "env" },
+      smtpPort: { value: "587", source: "env" },
+      smtpUser: { value: "SENTINEL_SECRET_user", source: "env" },
+      smtpPass: { value: "SENTINEL_SECRET_pass", source: "env" },
+    });
+    mockActiveEmailProvider.mockReturnValue("smtp");
+
+    const config = await getEffectiveConfig({
+      SMTP_HOST: "smtp.example.com",
+      SMTP_PORT: "587",
+      SMTP_USER: "SENTINEL_SECRET_user",
+      SMTP_PASS: "SENTINEL_SECRET_pass",
+    });
+
+    expect(config.email.enabled.value).toBe(true);
+    expect(config.email.enabled.displayValue).toBe("Yes (SMTP)");
+  });
+
+  it("shows 'No' for email when no provider is configured", async () => {
+    mockActiveEmailProvider.mockReturnValue("none");
+
+    const config = await getEffectiveConfig({});
+
+    expect(config.email.enabled.value).toBe(false);
+    expect(config.email.enabled.displayValue).toBe("No");
+  });
+
+  it("masks secrets in displayValue and never leaks value", async () => {
+    const config = await getEffectiveConfig({
       GOOGLE_CLIENT_SECRET: "super-secret-key-12345",
     });
 
@@ -64,8 +160,8 @@ describe("getEffectiveConfig", () => {
     expect(config.google.clientSecret.displayValue).toBe("***");
   });
 
-  it("does not mask client IDs", () => {
-    const config = getEffectiveConfig({
+  it("does not mask client IDs", async () => {
+    const config = await getEffectiveConfig({
       GOOGLE_CLIENT_ID: "123456.apps.googleusercontent.com",
     });
 
@@ -73,26 +169,38 @@ describe("getEffectiveConfig", () => {
     expect(config.google.clientId.displayValue).toContain("123456");
   });
 
-  it("truncates long client IDs for display", () => {
-    const config = getEffectiveConfig({
+  it("truncates long client IDs for display", async () => {
+    const config = await getEffectiveConfig({
       GOOGLE_CLIENT_ID: "123456789012345678901234567890",
     });
 
     expect(config.google.clientId.displayValue).toBe("1234567890...");
   });
 
-  it("shows empty display value when secret is empty", () => {
-    const config = getEffectiveConfig({});
+  it("shows empty display value when secret is empty", async () => {
+    const config = await getEffectiveConfig({});
 
     expect(config.google.clientSecret.value).toBeNull();
     expect(config.google.clientSecret.displayValue).toBe("(empty)");
   });
 
-  it("sets correct source for all fields", () => {
-    const config = getEffectiveConfig({
+  it("sets correct source for all fields", async () => {
+    mockResolveEmailConfig.mockResolvedValue({
+      provider: { value: undefined, source: "none" },
+      from: { value: undefined, source: "none" },
+      brevoApiKey: { value: undefined, source: "none" },
+      resendApiKey: { value: "SENTINEL_SECRET_test", source: "env" },
+      smtpHost: { value: undefined, source: "none" },
+      smtpPort: { value: undefined, source: "none" },
+      smtpUser: { value: undefined, source: "none" },
+      smtpPass: { value: undefined, source: "none" },
+    });
+    mockActiveEmailProvider.mockReturnValue("resend");
+
+    const config = await getEffectiveConfig({
       GOOGLE_CLIENT_ID: "test-id",
       GOOGLE_CLIENT_SECRET: "test-secret",
-      SENDGRID_API_KEY: "test-key",
+      RESEND_API_KEY: "SENTINEL_SECRET_test",
     });
 
     expect(config.google.clientId.source).toBe("env");
@@ -104,17 +212,283 @@ describe("getEffectiveConfig", () => {
     expect(config.captcha.enabled.source).toBe("default");
   });
 
-  it("never leaks secrets in the whole config object", () => {
-    const config = getEffectiveConfig({
+  it("shows honest registration label when not configurable", async () => {
+    const config = await getEffectiveConfig({});
+
+    expect(config.registration.allowOpen.value).toBeNull();
+    expect(config.registration.allowOpen.displayValue).toBe("Not configurable here");
+    expect(config.registration.allowOpen.source).toBe("default");
+  });
+
+  it("never leaks secrets in the whole config object", async () => {
+    mockResolveEmailConfig.mockResolvedValue({
+      provider: { value: undefined, source: "none" },
+      from: { value: undefined, source: "none" },
+      brevoApiKey: { value: undefined, source: "none" },
+      resendApiKey: { value: "SENTINEL_SECRET_should_not_leak", source: "env" },
+      smtpHost: { value: undefined, source: "none" },
+      smtpPort: { value: undefined, source: "none" },
+      smtpUser: { value: undefined, source: "none" },
+      smtpPass: { value: undefined, source: "none" },
+    });
+    mockActiveEmailProvider.mockReturnValue("resend");
+
+    const config = await getEffectiveConfig({
       GOOGLE_CLIENT_SECRET: "super-secret-should-not-leak",
-      SENDGRID_API_KEY: "sg-secret-should-not-leak",
+      RESEND_API_KEY: "SENTINEL_SECRET_should_not_leak",
     });
 
     // Serialize to JSON and verify no secrets appear
     const json = JSON.stringify(config);
     expect(json).not.toContain("super-secret-should-not-leak");
-    expect(json).not.toContain("sg-secret-should-not-leak");
+    expect(json).not.toContain("SENTINEL_SECRET_should_not_leak");
     // Only "***" should appear for masked secrets
     expect(json).toContain("***");
+  });
+
+  it("never leaks secrets for Brevo provider", async () => {
+    mockResolveEmailConfig.mockResolvedValue({
+      provider: { value: undefined, source: "none" },
+      from: { value: undefined, source: "none" },
+      brevoApiKey: { value: "SENTINEL_SECRET_brevo_should_not_leak", source: "env" },
+      resendApiKey: { value: undefined, source: "none" },
+      smtpHost: { value: undefined, source: "none" },
+      smtpPort: { value: undefined, source: "none" },
+      smtpUser: { value: undefined, source: "none" },
+      smtpPass: { value: undefined, source: "none" },
+    });
+    mockActiveEmailProvider.mockReturnValue("brevo");
+
+    const config = await getEffectiveConfig({
+      BREVO_API_KEY: "SENTINEL_SECRET_brevo_should_not_leak",
+    });
+
+    const json = JSON.stringify(config);
+    expect(json).not.toContain("SENTINEL_SECRET_brevo_should_not_leak");
+  });
+
+  it("never leaks secrets for SMTP provider", async () => {
+    mockResolveEmailConfig.mockResolvedValue({
+      provider: { value: undefined, source: "none" },
+      from: { value: undefined, source: "none" },
+      brevoApiKey: { value: undefined, source: "none" },
+      resendApiKey: { value: undefined, source: "none" },
+      smtpHost: { value: "smtp.example.com", source: "env" },
+      smtpPort: { value: "587", source: "env" },
+      smtpUser: { value: "SENTINEL_SECRET_user", source: "env" },
+      smtpPass: { value: "SENTINEL_SECRET_pass", source: "env" },
+    });
+    mockActiveEmailProvider.mockReturnValue("smtp");
+
+    const config = await getEffectiveConfig({
+      SMTP_HOST: "smtp.example.com",
+      SMTP_PORT: "587",
+      SMTP_USER: "SENTINEL_SECRET_user",
+      SMTP_PASS: "SENTINEL_SECRET_pass",
+    });
+
+    const json = JSON.stringify(config);
+    expect(json).not.toContain("SENTINEL_SECRET_user");
+    expect(json).not.toContain("SENTINEL_SECRET_pass");
+  });
+
+  describe("email.enabled.source derivation", () => {
+    it("sets email.enabled.source to 'env' when Brevo-only is configured", async () => {
+      mockResolveEmailConfig.mockResolvedValue({
+        provider: { value: undefined, source: "none" },
+        from: { value: undefined, source: "none" },
+        brevoApiKey: { value: "x", source: "env" },
+        resendApiKey: { value: undefined, source: "none" },
+        smtpHost: { value: undefined, source: "none" },
+        smtpPort: { value: undefined, source: "none" },
+        smtpUser: { value: undefined, source: "none" },
+        smtpPass: { value: undefined, source: "none" },
+      });
+      mockActiveEmailProvider.mockReturnValue("brevo");
+
+      const config = await getEffectiveConfig({});
+
+      expect(config.email.enabled.source).toBe("env");
+      expect(config.email.enabled.displayValue).toBe("Yes (Brevo)");
+    });
+
+    it("uses only the active provider's source, ignoring other configured providers", async () => {
+      // Edge case: Brevo is active with db source, but Resend is also configured with env source.
+      // The bug would check Resend first (env) and return it, ignoring Brevo's actual db source.
+      mockResolveEmailConfig.mockResolvedValue({
+        provider: { value: undefined, source: "none" },
+        from: { value: undefined, source: "none" },
+        brevoApiKey: { value: "brevo-key", source: "db" },
+        resendApiKey: { value: "resend-key", source: "env" },
+        smtpHost: { value: undefined, source: "none" },
+        smtpPort: { value: undefined, source: "none" },
+        smtpUser: { value: undefined, source: "none" },
+        smtpPass: { value: undefined, source: "none" },
+      });
+      mockActiveEmailProvider.mockReturnValue("brevo");
+
+      const config = await getEffectiveConfig({});
+
+      // Must use Brevo's source (db), not Resend's (env)
+      expect(config.email.enabled.source).toBe("db");
+      expect(config.email.enabled.displayValue).toBe("Yes (Brevo)");
+    });
+
+    it("sets email.enabled.source to 'env' when SMTP-only is configured", async () => {
+      mockResolveEmailConfig.mockResolvedValue({
+        provider: { value: undefined, source: "none" },
+        from: { value: undefined, source: "none" },
+        brevoApiKey: { value: undefined, source: "none" },
+        resendApiKey: { value: undefined, source: "none" },
+        smtpHost: { value: "smtp.example.com", source: "env" },
+        smtpPort: { value: "587", source: "env" },
+        smtpUser: { value: "user", source: "env" },
+        smtpPass: { value: "pass", source: "env" },
+      });
+      mockActiveEmailProvider.mockReturnValue("smtp");
+
+      const config = await getEffectiveConfig({
+        SMTP_HOST: "smtp.example.com",
+        SMTP_PORT: "587",
+        SMTP_USER: "user",
+        SMTP_PASS: "pass",
+      });
+
+      expect(config.email.enabled.source).toBe("env");
+      expect(config.email.enabled.displayValue).toBe("Yes (SMTP)");
+    });
+
+    it("sets email.enabled.source to 'db' when Resend is configured from DB", async () => {
+      mockResolveEmailConfig.mockResolvedValue({
+        provider: { value: undefined, source: "none" },
+        from: { value: undefined, source: "none" },
+        brevoApiKey: { value: undefined, source: "none" },
+        resendApiKey: { value: "key", source: "db" },
+        smtpHost: { value: undefined, source: "none" },
+        smtpPort: { value: undefined, source: "none" },
+        smtpUser: { value: undefined, source: "none" },
+        smtpPass: { value: undefined, source: "none" },
+      });
+      mockActiveEmailProvider.mockReturnValue("resend");
+
+      const config = await getEffectiveConfig({});
+
+      expect(config.email.enabled.source).toBe("db");
+      expect(config.email.enabled.displayValue).toBe("Yes (Resend)");
+    });
+
+    it("sets email.enabled.source to 'default' when no email provider is configured", async () => {
+      mockResolveEmailConfig.mockResolvedValue({
+        provider: { value: undefined, source: "none" },
+        from: { value: undefined, source: "none" },
+        brevoApiKey: { value: undefined, source: "none" },
+        resendApiKey: { value: undefined, source: "none" },
+        smtpHost: { value: undefined, source: "none" },
+        smtpPort: { value: undefined, source: "none" },
+        smtpUser: { value: undefined, source: "none" },
+        smtpPass: { value: undefined, source: "none" },
+      });
+      mockActiveEmailProvider.mockReturnValue("none");
+
+      const config = await getEffectiveConfig({});
+
+      expect(config.email.enabled.source).toBe("default");
+      expect(config.email.enabled.value).toBe(false);
+      expect(config.email.enabled.displayValue).toBe("No");
+    });
+
+    it("ensures email.enabled.source is always one of 'env', 'db', or 'default'", async () => {
+      // Test with all different provider configurations
+      const scenarios = [
+        {
+          name: "Resend from env",
+          config: {
+            resendApiKey: { value: "key", source: "env" },
+            brevoApiKey: { value: undefined, source: "none" },
+            smtpHost: { value: undefined, source: "none" },
+          },
+          provider: "resend",
+        },
+        {
+          name: "Brevo from db",
+          config: {
+            brevoApiKey: { value: "key", source: "db" },
+            resendApiKey: { value: undefined, source: "none" },
+            smtpHost: { value: undefined, source: "none" },
+          },
+          provider: "brevo",
+        },
+        {
+          name: "SMTP from env",
+          config: {
+            smtpHost: { value: "host", source: "env" },
+            brevoApiKey: { value: undefined, source: "none" },
+            resendApiKey: { value: undefined, source: "none" },
+          },
+          provider: "smtp",
+        },
+        {
+          name: "No provider",
+          config: {
+            resendApiKey: { value: undefined, source: "none" },
+            brevoApiKey: { value: undefined, source: "none" },
+            smtpHost: { value: undefined, source: "none" },
+          },
+          provider: "none",
+        },
+      ];
+
+      for (const scenario of scenarios) {
+        mockResolveEmailConfig.mockResolvedValue({
+          provider: { value: undefined, source: "none" },
+          from: { value: undefined, source: "none" },
+          brevoApiKey: scenario.config.brevoApiKey,
+          resendApiKey: scenario.config.resendApiKey,
+          smtpHost: scenario.config.smtpHost,
+          smtpPort: { value: undefined, source: "none" },
+          smtpUser: { value: undefined, source: "none" },
+          smtpPass: { value: undefined, source: "none" },
+        });
+        mockActiveEmailProvider.mockReturnValue(scenario.provider);
+
+        const config = await getEffectiveConfig({});
+
+        expect(
+          ["env", "db", "default"].includes(config.email.enabled.source),
+          `${scenario.name}: source must be env, db, or default`,
+        ).toBe(true);
+      }
+    });
+  });
+
+  describe("registration and SMTP label assertions", () => {
+    it("ensures registration.allowOpen.displayValue is exactly 'Not configurable here'", async () => {
+      const config = await getEffectiveConfig({});
+
+      expect(config.registration.allowOpen.displayValue).toBe("Not configurable here");
+    });
+
+    it("ensures SMTP provider label is exactly 'Yes (SMTP)'", async () => {
+      mockResolveEmailConfig.mockResolvedValue({
+        provider: { value: undefined, source: "none" },
+        from: { value: undefined, source: "none" },
+        brevoApiKey: { value: undefined, source: "none" },
+        resendApiKey: { value: undefined, source: "none" },
+        smtpHost: { value: "smtp.example.com", source: "env" },
+        smtpPort: { value: "587", source: "env" },
+        smtpUser: { value: "user", source: "env" },
+        smtpPass: { value: "pass", source: "env" },
+      });
+      mockActiveEmailProvider.mockReturnValue("smtp");
+
+      const config = await getEffectiveConfig({
+        SMTP_HOST: "smtp.example.com",
+        SMTP_PORT: "587",
+        SMTP_USER: "user",
+        SMTP_PASS: "pass",
+      });
+
+      expect(config.email.enabled.displayValue).toBe("Yes (SMTP)");
+    });
   });
 });

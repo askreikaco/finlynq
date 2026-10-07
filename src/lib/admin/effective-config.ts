@@ -10,6 +10,8 @@
  * All secrets are masked in the returned config to prevent leaking in logs/HTML.
  */
 
+import { resolveEmailConfig, activeEmailProvider } from "@/lib/email";
+
 export interface EffectiveConfigEntry {
   value: string | boolean | null; // for secrets, this will be null or a placeholder; never the actual secret
   masked: boolean; // true if the value is a secret and has been masked
@@ -27,10 +29,10 @@ export interface EffectiveConfig {
     enabled: EffectiveConfigEntry;
   };
   registration: {
-    allowOpen: EffectiveConfigEntry; // default: true
+    allowOpen: EffectiveConfigEntry; // shows honest "not configurable here" label
   };
   email: {
-    enabled: EffectiveConfigEntry;
+    enabled: EffectiveConfigEntry; // provider name + configured status, never any key material
   };
   captcha: {
     enabled: EffectiveConfigEntry; // default: false (Turnstile not yet configured)
@@ -43,12 +45,42 @@ export interface EffectiveConfig {
  *
  * All secret fields (clientSecret, etc.) are masked in the returned object.
  * Secret values are NEVER included in the response, only masked placeholders.
+ *
+ * For email configuration, reads the real provider (Resend, Brevo, SMTP) status
+ * instead of just checking SENDGRID_API_KEY.
+ *
+ * For registration, shows "not configurable here" since no real setting exists yet.
  */
-export function getEffectiveConfig(env: Record<string, string | undefined> = process.env): EffectiveConfig {
+export async function getEffectiveConfig(env: Record<string, string | undefined> = process.env): Promise<EffectiveConfig> {
   const googleClientId = env.GOOGLE_CLIENT_ID ?? null;
   const googleClientSecret = env.GOOGLE_CLIENT_SECRET ?? null;
   const googleEnabled = !!(googleClientId && googleClientSecret);
-  const sendgridEnabled = !!env.SENDGRID_API_KEY;
+
+  // Determine real email provider status
+  const emailCfg = await resolveEmailConfig();
+  const provider = activeEmailProvider(emailCfg);
+  const emailConfigured = provider !== "none";
+
+  // Provider label map for consistent capitalization
+  const providerLabels: Record<string, string> = {
+    resend: "Resend",
+    brevo: "Brevo",
+    smtp: "SMTP",
+  };
+  const providerDisplay = emailConfigured ? `Yes (${providerLabels[provider]})` : "No";
+
+  // Determine email source: use the active provider's source field, fallback to "default"
+  let emailSource: "env" | "db" | "default" = "default";
+  if (provider !== "none") {
+    const srcField = {
+      resend: emailCfg.resendApiKey,
+      brevo: emailCfg.brevoApiKey,
+      smtp: emailCfg.smtpHost,
+    }[provider];
+    if (srcField && srcField.source !== "none") {
+      emailSource = srcField.source;
+    }
+  }
 
   return {
     google: {
@@ -81,18 +113,18 @@ export function getEffectiveConfig(env: Record<string, string | undefined> = pro
     },
     registration: {
       allowOpen: {
-        value: true, // Default: open registration unless overridden in 9b
+        value: null, // Not configurable here yet; no real setting exists
         masked: false,
         source: "default",
-        displayValue: "Yes (default)",
+        displayValue: "Not configurable here",
       },
     },
     email: {
       enabled: {
-        value: sendgridEnabled,
+        value: emailConfigured, // boolean indicating if any provider is configured
         masked: false,
-        source: "env",
-        displayValue: sendgridEnabled ? "Yes" : "No",
+        source: emailSource,
+        displayValue: providerDisplay,
       },
     },
     captcha: {

@@ -2,6 +2,8 @@
 
 import React from "react";
 import { Plus, Trash2, CheckCircle2, AlertCircle } from "lucide-react";
+import { AmountInput } from "@/components/amount-input";
+import { formatCurrency, currencyDecimals } from "@/lib/currency";
 import { type Category } from "./category-selector";
 
 export interface SplitRow {
@@ -18,6 +20,7 @@ interface SplitSectionProps {
   onChangeRows: (rows: SplitRow[]) => void;
   categories: Category[];
   totalAmount: number;
+  currency: string;
   onOpenCategorySelector: (rowIndex: number) => void;
 }
 
@@ -28,11 +31,14 @@ export function SplitSection({
   onChangeRows,
   categories,
   totalAmount,
+  currency,
   onOpenCategorySelector,
 }: SplitSectionProps) {
+  const decimals = currencyDecimals(currency);
+  const multiplier = Math.pow(10, decimals);
   const splitSum = rows.reduce((acc, r) => acc + (parseFloat(r.amount) || 0), 0);
-  const diff = Math.round((totalAmount - splitSum) * 100) / 100;
-  const isBalanced = Math.abs(diff) < 0.01 && totalAmount > 0;
+  const diff = Math.round((totalAmount - splitSum) * multiplier) / multiplier;
+  const isBalanced = Math.abs(diff) < Math.pow(10, -decimals) && totalAmount > 0;
 
   const handleAddRow = () => {
     const remaining = Math.max(0, diff);
@@ -41,7 +47,7 @@ export function SplitSection({
       {
         id: Math.random().toString(36).slice(2, 9),
         categoryId: "",
-        amount: remaining > 0 ? remaining.toFixed(2) : "",
+        amount: remaining > 0 ? remaining.toFixed(decimals) : "",
         note: "",
       },
     ]);
@@ -74,17 +80,17 @@ export function SplitSection({
             {isBalanced ? (
               <span className="flex items-center gap-1 text-emerald-400 font-medium">
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                Balanced (${splitSum.toFixed(2)})
+                Balanced ({formatCurrency(splitSum, currency)})
               </span>
             ) : diff > 0 ? (
               <span className="flex items-center gap-1 text-amber-400 font-medium">
                 <AlertCircle className="w-3.5 h-3.5" />
-                ${diff.toFixed(2)} remaining
+                {formatCurrency(diff, currency)} remaining
               </span>
             ) : (
               <span className="flex items-center gap-1 text-rose-400 font-medium">
                 <AlertCircle className="w-3.5 h-3.5" />
-                Over by ${Math.abs(diff).toFixed(2)}
+                Over by {formatCurrency(Math.abs(diff), currency)}
               </span>
             )}
           </div>
@@ -129,19 +135,12 @@ export function SplitSection({
                   </button>
 
                   {/* Amount input */}
-                  <div className="relative">
-                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-500 font-medium">
-                      $
-                    </span>
-                    <input
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      value={row.amount}
-                      onChange={(e) => handleUpdateRow(idx, "amount", e.target.value)}
-                      className="w-full pl-6 pr-2.5 py-1.5 bg-zinc-800/80 border border-zinc-700/60 rounded-lg text-xs text-white placeholder:text-zinc-500 outline-none focus:border-indigo-500 transition-colors"
-                    />
-                  </div>
+                  <AmountInput
+                    value={row.amount}
+                    onValueChange={(val) => handleUpdateRow(idx, "amount", val)}
+                    placeholder={`0${currencyDecimals(currency) > 0 ? ".00" : ""}`}
+                    className="h-8 px-2.5 py-1.5 bg-zinc-800/80 border border-zinc-700/60 rounded-lg text-xs text-white placeholder:text-zinc-500 outline-none focus:border-indigo-500 transition-colors"
+                  />
                 </div>
 
                 {/* Split Note */}

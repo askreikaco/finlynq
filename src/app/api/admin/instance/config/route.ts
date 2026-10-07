@@ -2,7 +2,8 @@
  * GET /api/admin/instance/config — read-only endpoint returning effective instance configuration.
  *
  * Requires admin authentication. Returns the effective config with sources and masked secrets.
- * WP9a: read-only, environment-only config. WP9b will add database config + write path.
+ * WP9a: read-only config from environment variables, system settings (DB), and defaults.
+ * WP9b will add write path for configuration changes.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Get the effective config from environment
-  const config = getEffectiveConfig(process.env);
+  const config = await getEffectiveConfig(process.env);
 
   return NextResponse.json(config);
 }

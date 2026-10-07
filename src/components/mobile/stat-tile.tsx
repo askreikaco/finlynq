@@ -1,5 +1,4 @@
 import * as React from "react";
-import { cn } from "@/lib/utils";
 import { MetricCard } from "@/components/metric-card";
 import { Hash } from "lucide-react";
 
@@ -18,7 +17,7 @@ export function StatTile({
   return (
     <div className={className} {...props}>
       <MetricCard
-        label={typeof label === "string" ? label : "Stat"}
+        label={label}
         icon={Hash}
         value={value}
         sub={sub}
