@@ -145,6 +145,6 @@ describe("MoreMenu with categoriesMerged", () => {
 
     // Make sure "Spending by category" appears exactly once (for the /categories link)
     const matches = screen.queryAllByText("Spending by category");
-    expect(matches.length).toBeGreaterThan(0);
+    expect(matches.length).toBe(1);
   });
 });

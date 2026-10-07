@@ -34,7 +34,7 @@ export interface MoreFlags {
   familyEnabled: boolean;
   hasAnnouncements: boolean;
   instanceAdminEnabled: boolean;
-  categoriesMerged: boolean;
+  categoriesMerged?: boolean;
 }
 
 const row = (href: string, label: string, icon: LucideIcon): MoreRow => ({ id: href, href, label, icon });
