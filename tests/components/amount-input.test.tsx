@@ -41,7 +41,9 @@ describe("AmountInput", () => {
   it("vi: canonical initial value displays with decimal comma; numeric value accepted", () => {
     locale = "vi-VN";
     render(<AmountInput data-testid="in" value={12.5} onValueChange={() => {}} />);
-    expect((screen.getByTestId("in") as HTMLInputElement).value).toBe("12,5");
+    const el = screen.getByTestId("in") as HTMLInputElement;
+    expect(el).toBeTruthy();
+    expect(el.value).toBe("12,5");
   });
 });
 
