@@ -91,6 +91,8 @@ describe("mobile bottom bar", () => {
     ["/transactions", "Transactions"],
     ["/dashboard", "Home"],
     ["/more", "More"],
+    ["/accountsfoo", "More"],
+    ["/settings", "More"],
   ])("marks the right tab active on %s", (path, label) => {
     mockPath = path;
     render(<Nav />);
@@ -100,12 +102,13 @@ describe("mobile bottom bar", () => {
     expect(active.map((l) => l.textContent)).toEqual([label]);
   });
 
-  it("does not treat /accountsfoo as Accounts", () => {
+  it("does not treat /accountsfoo as Accounts; More is current instead", () => {
     mockPath = "/accountsfoo";
     render(<Nav />);
-    expect(
-      within(bar()).queryAllByRole("link").filter((l) => l.getAttribute("aria-current") === "page"),
-    ).toHaveLength(0);
+    const links = within(bar()).getAllByRole("link");
+    const current = links.filter((l) => l.getAttribute("aria-current") === "page");
+    expect(current.map((l) => l.textContent)).toEqual(["More"]);
+    expect(links.find((l) => l.textContent === "Accounts")!.getAttribute("aria-current")).toBeNull();
   });
 
   it("fits 5 tabs: equal-width flex items, no truncation", () => {

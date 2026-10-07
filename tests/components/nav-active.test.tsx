@@ -101,6 +101,12 @@ describe("pickActiveHref: with custom items array", () => {
     const active2 = pickActiveHref("/admin/instance", allFlatItems);
     expect(active1).toBe(active2);
   });
+
+  const mk = (href: string) => ({ href, label: href, icon: (() => null) as any, color: "x" });
+  it("picks the longest prefix regardless of item order", () => {
+    expect(pickActiveHref("/a/b/c", [mk("/a"), mk("/a/b")])?.href).toBe("/a/b");
+    expect(pickActiveHref("/a/b/c", [mk("/a/b"), mk("/a")])?.href).toBe("/a/b");
+  });
 });
 
 // Mock fetch for rendering tests
