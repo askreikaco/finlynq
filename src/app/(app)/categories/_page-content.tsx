@@ -79,7 +79,7 @@ export default function CategoriesPageContent({ isMerged }: CategoriesPageProps)
 
         <TabsContent value="overview" className="space-y-6 mt-6">
           <Suspense fallback={<PageSkeleton variant="list" rows={6} />}>
-            <CategoriesOverview />
+            <CategoriesOverview embedded />
           </Suspense>
         </TabsContent>
 
@@ -91,7 +91,11 @@ export default function CategoriesPageContent({ isMerged }: CategoriesPageProps)
   );
 }
 
-function CategoriesOverview() {
+interface CategoriesOverviewProps {
+  embedded?: boolean;
+}
+
+function CategoriesOverview({ embedded = false }: CategoriesOverviewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const currentMonth = localDateISO().slice(0, 7);
@@ -150,14 +154,42 @@ function CategoriesOverview() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">Spending by category</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Where your money goes, and how each category compares with a usual month.
-          </p>
+      {!embedded && (
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold">Spending by category</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Where your money goes, and how each category compares with a usual month.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Tabs value={type} onValueChange={(v) => go({ type: v === "I" ? "I" : "E" })}>
+              <TabsList>
+                <TabsTrigger value="E" className="px-3">Spending</TabsTrigger>
+                <TabsTrigger value="I" className="px-3">Income</TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <div className="flex items-center gap-1">
+              <Button variant="outline" size="icon" aria-label="Previous month" onClick={() => go({ month: shiftMonth(month, -1) })}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="min-w-32 text-center text-sm font-medium">{monthName(month)}</span>
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label="Next month"
+                disabled={month >= currentMonth}
+                onClick={() => go({ month: shiftMonth(month, 1) })}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+      )}
+
+      {embedded && (
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <Tabs value={type} onValueChange={(v) => go({ type: v === "I" ? "I" : "E" })}>
             <TabsList>
               <TabsTrigger value="E" className="px-3">Spending</TabsTrigger>
@@ -180,7 +212,7 @@ function CategoriesOverview() {
             </Button>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Month summary + where it went */}
       <Card>
