@@ -50,4 +50,18 @@ describe("ErrorState", () => {
     const { queryByText } = render(<ErrorState />);
     expect(queryByText("Try again")).toBeNull();
   });
+
+  it("retry button has min-h-11 and min-w-11 classes", () => {
+    const handleRetry = vi.fn();
+    const { getByText } = render(<ErrorState onRetry={handleRetry} />);
+    const button = getByText("Try again");
+    expect(button.className).toContain("min-h-11");
+    expect(button.className).toContain("min-w-11");
+  });
+
+  it("has role alert on wrapper element", () => {
+    const { getByRole } = render(<ErrorState />);
+    const alert = getByRole("alert");
+    expect(alert).toBeTruthy();
+  });
 });
