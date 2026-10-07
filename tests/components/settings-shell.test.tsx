@@ -183,7 +183,7 @@ describe("Settings Shell", () => {
       </SettingsShell>
     );
 
-    const backButton = screen.getByRole("link", { name: /settings/i });
+    const backButton = screen.getByRole("link", { name: "Back to Settings" });
     expect(backButton).toBeDefined();
     expect(backButton?.getAttribute("data-slot")).toBe("back-button");
     expect(backButton?.getAttribute("href")).toBe("/settings");
@@ -213,5 +213,28 @@ describe("Settings Shell", () => {
     const backButtons = screen.queryAllByRole("link");
     const hasBackButton = backButtons.some((link) => link.getAttribute("data-slot") === "back-button");
     expect(hasBackButton).toBe(false);
+  });
+
+  it("renders back button inside content slot (not as sibling of aside at md+)", () => {
+    mockPath = "/settings/general";
+    const { container } = render(
+      <SettingsShell hubBackHref="/settings">
+        <div>Test content</div>
+      </SettingsShell>
+    );
+
+    // Find the back button
+    const backButton = screen.getByRole("link", { name: "Back to Settings" });
+
+    // Find the aside element (desktop nav)
+    const aside = container.querySelector("aside");
+
+    // Find the content slot (the last flex-1 div)
+    const contentSlots = container.querySelectorAll(".flex-1");
+    const contentSlot = contentSlots[contentSlots.length - 1];
+
+    // Verify back button is inside content slot, not a sibling of aside
+    expect(contentSlot?.contains(backButton)).toBe(true);
+    expect(aside?.contains(backButton)).toBe(false);
   });
 });

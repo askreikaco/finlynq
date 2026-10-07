@@ -99,13 +99,6 @@ export function SettingsShell({ children, hubBackHref }: { children: React.React
 
   return (
     <div className="flex flex-col gap-6 md:flex-row md:gap-8">
-      {/* Back button to Settings hub (nav-v2) */}
-      {hubBackHref && !isHub && (
-        <div className="-mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 -mb-4">
-          <BackButton href={hubBackHref} label="Settings" />
-        </div>
-      )}
-
       {/* Mobile pill row — hidden on hub page */}
       {!isHub && (
         <nav
@@ -182,7 +175,12 @@ export function SettingsShell({ children, hubBackHref }: { children: React.React
       {/* Content slot — `min-w-0` lets the flex item shrink below intrinsic
           content width; `overflow-x-auto` makes wide tables (issue #88)
           scroll inside the slot instead of pushing the page wider. */}
-      <div className="flex-1 min-w-0 overflow-x-auto">{children}</div>
+      <div className="flex-1 min-w-0 overflow-x-auto">
+        {hubBackHref && !isHub && (
+          <BackButton href={hubBackHref} label="Back to Settings" />
+        )}
+        {children}
+      </div>
     </div>
   );
 }

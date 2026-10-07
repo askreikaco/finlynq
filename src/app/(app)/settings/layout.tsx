@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * /settings shared layout — the left-nav shell lives in
  * src/components/settings-shell.tsx so /connect can render it too.
