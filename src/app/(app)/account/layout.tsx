@@ -1,78 +1,17 @@
-"use client";
-
 /**
  * /account shared layout — Header + Info/Security tab navigation.
- * Mobile-friendly two-tab layout for user profile and account security.
+ * Server component that renders AccountShell with nav-v2 flag.
  */
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
-import { PageHeader } from "@/components/mobile";
-import { getEntriesBySurface } from "@/lib/nav-config";
+import { isNavV2Enabled } from "@/lib/nav-v2/flag";
+import { AccountShell } from "@/components/account-shell";
 
-type TabItem = { href: string; label: string };
+export default function AccountLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const navV2Enabled = isNavV2Enabled();
 
-function getAccountTabs(): TabItem[] {
-  return getEntriesBySurface("account")
-    .filter((e) => e.parent === "/account")
-    .map((entry) => ({
-      href: entry.path,
-      label: entry.label,
-    }))
-    .sort((a, b) => {
-      // Sort: /account/info first, then /account/security
-      const order = ["/account/info", "/account/security"];
-      return order.indexOf(a.href) - order.indexOf(b.href);
-    });
-}
-
-const TABS: TabItem[] = getAccountTabs();
-
-export default function AccountLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-  const isHub = pathname === "/account";
-
-  // Determine active tab
-  const activeTab = TABS.find(t => pathname === t.href)?.href || "/account/info";
-
-  return (
-    <div className="max-w-2xl space-y-6">
-      {/* Header */}
-      <PageHeader
-        title="Account"
-        titleClassName="text-2xl font-bold tracking-tight"
-        subtitle={<>Profile, login, API key, privacy, and backup / restore</>}
-        subtitleClassName="text-sm text-muted-foreground mt-0.5"
-      />
-
-      {/* Tab Navigation */}
-      {!isHub && (
-      <nav className="flex gap-4 border-b border-border" role="tablist">
-        {TABS.map((tab) => {
-          const isActive = activeTab === tab.href;
-          return (
-            <Link
-              key={tab.href}
-              href={tab.href}
-              role="tab"
-              aria-selected={isActive}
-              className={cn(
-                "pb-3 text-sm font-medium transition-colors border-b-2 -mb-[2px]",
-                isActive
-                  ? "text-foreground border-b-primary"
-                  : "text-muted-foreground border-b-transparent hover:text-foreground"
-              )}
-            >
-              {tab.label}
-            </Link>
-          );
-        })}
-      </nav>
-      )}
-
-      {/* Content */}
-      <div>{children}</div>
-    </div>
-  );
+  return <AccountShell navV2={navV2Enabled}>{children}</AccountShell>;
 }
