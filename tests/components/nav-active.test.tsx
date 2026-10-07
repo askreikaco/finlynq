@@ -102,7 +102,7 @@ describe("pickActiveHref: with custom items array", () => {
     expect(active1).toBe(active2);
   });
 
-  const mk = (href: string) => ({ href, label: href, icon: (() => null) as any, color: "x" });
+  const mk = (href: string) => ({ href, label: href, icon: (() => null) as unknown as React.ComponentType, color: "x" });
   it("picks the longest prefix regardless of item order", () => {
     expect(pickActiveHref("/a/b/c", [mk("/a"), mk("/a/b")])?.href).toBe("/a/b");
     expect(pickActiveHref("/a/b/c", [mk("/a/b"), mk("/a")])?.href).toBe("/a/b");
@@ -154,6 +154,62 @@ describe("Nav rendering with longest-match sidebar highlighting", () => {
     const currentAdminLinks = adminLinks.filter(l => l?.getAttribute("aria-current") === "page");
     expect(currentAdminLinks).toHaveLength(1);
     expect(currentAdminLinks[0]).toBe(instanceLink);
+  });
+
+  it("sidebar: exactly ONE link marked aria-current at /admin/instance", async () => {
+    mockFetch({ admin: true });
+    localStorage.setItem("nav.adminOpen", "true");
+    const { container } = render(<Nav instanceAdminEnabled={true} />);
+
+    await waitFor(() => screen.getByRole("link", { name: /Instance config/i }));
+
+    // Find the sidebar nav element (aria-label="Main navigation")
+    const sidebar = container.querySelector('nav[aria-label="Main navigation"]');
+    expect(sidebar).toBeTruthy();
+
+    // All links with aria-current="page" within the sidebar
+    const sidebarCurrentLinks = sidebar ? Array.from(sidebar.querySelectorAll('a[aria-current="page"]')) : [];
+    expect(sidebarCurrentLinks).toHaveLength(1);
+    expect((sidebarCurrentLinks[0] as HTMLAnchorElement).href).toContain("/admin/instance");
+  });
+
+  it("sidebar: exactly ONE link marked aria-current at /admin/system (Environment via activePrefixes)", async () => {
+    mockPath = "/admin/system";
+    mockFetch({ admin: true });
+    localStorage.setItem("nav.adminOpen", "true");
+    const { container } = render(<Nav />);
+
+    await waitFor(() => screen.getByRole("link", { name: /Environment/i }));
+
+    const sidebar = container.querySelector('nav[aria-label="Main navigation"]');
+    expect(sidebar).toBeTruthy();
+
+    const sidebarCurrentLinks = sidebar ? Array.from(sidebar.querySelectorAll('a[aria-current="page"]')) : [];
+    expect(sidebarCurrentLinks).toHaveLength(1);
+    // Environment link should be current, not /admin
+    const envLink = sidebar?.querySelector('a[href="/admin/env"]');
+    expect(envLink?.getAttribute("aria-current")).toBe("page");
+  });
+
+  it("sidebar: exactly ONE link marked aria-current at /admin", async () => {
+    mockPath = "/admin";
+    mockFetch({ admin: true });
+    localStorage.setItem("nav.adminOpen", "true");
+    const { container } = render(<Nav />);
+
+    await waitFor(() => {
+      const adminLink = screen.queryByRole("link", { name: /Admin Inbox/i });
+      expect(adminLink).toBeTruthy();
+    });
+
+    const sidebar = container.querySelector('nav[aria-label="Main navigation"]');
+    expect(sidebar).toBeTruthy();
+
+    const sidebarCurrentLinks = sidebar ? Array.from(sidebar.querySelectorAll('a[aria-current="page"]')) : [];
+    expect(sidebarCurrentLinks).toHaveLength(1);
+    // /admin link should be current
+    const adminLink = sidebar?.querySelector('a[href="/admin"]');
+    expect(adminLink?.getAttribute("aria-current")).toBe("page");
   });
 });
 
