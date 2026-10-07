@@ -19,6 +19,7 @@ export function ErrorState({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       className="flex flex-col items-center justify-center py-16 px-4 text-center"
+      role="alert"
     >
       <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-rose-100 dark:bg-rose-950/40 mb-4">
         <AlertCircle className="h-8 w-8 text-rose-500" />
@@ -28,7 +29,7 @@ export function ErrorState({
       {onRetry && (
         <button
           onClick={onRetry}
-          className="mt-4 inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted"
+          className="mt-4 inline-flex items-center gap-2 rounded-lg border border-border min-h-11 min-w-11 px-4 py-2 text-sm font-medium transition-colors hover:bg-muted"
         >
           <RefreshCw className="h-4 w-4" />
           Try again

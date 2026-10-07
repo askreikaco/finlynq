@@ -16,6 +16,7 @@ import { ActionCenter } from "./_components/action-center";
 import { WeeklyRecap } from "./_components/weekly-recap";
 import { OnboardingTips } from "@/components/onboarding-tips";
 import { OnboardingWizard } from "@/components/onboarding-wizard";
+import { ErrorState } from "@/components/error-state";
 import { QuickImport } from "./_components/quick-import";
 import { IncomeExpenseChart } from "./_components/income-expense-chart";
 import { SpendingCategoryChart } from "./_components/spending-category-chart";
@@ -128,14 +129,17 @@ export default function DashboardPage() {
   const [userInfo, setUserInfo] = useState<{ email: string; displayName?: string } | null>(null);
   const { layout, ready: layoutReady, save: saveLayout, reset: resetLayout } = useDashboardLayout();
   const [customizeOpen, setCustomizeOpen] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   // Below md the secondary cards ("extra insights") sit behind a disclosure.
   const [showMore, setShowMore] = useState(false);
 
   useEffect(() => {
     if (currencyLoading) return; // wait until provider has read settings
     fetch(`/api/dashboard?currency=${encodeURIComponent(displayCurrency)}`)
-      .then((r) => { if (r.ok) return r.json(); })
-      .then((d) => { if (d) setData(d); });
+      .then((r) => { if (!r.ok) throw new Error('dashboard'); return r.json(); })
+      .then((d) => { if (d) { setData(d); setLoadError(false); } })
+      .catch(() => setLoadError(true));
 
     // Financial-health payload feeds both the Health Score card and the
     // KeyMetrics strip (savings rate + DTI) — fetched once here and passed down
@@ -159,13 +163,15 @@ export default function DashboardPage() {
         }
       })
       .catch(() => {});
-  }, [displayCurrency, currencyLoading]);
+  }, [displayCurrency, currencyLoading, reloadKey]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     e.currentTarget.style.setProperty("--mouse-x", `${e.clientX - rect.left}px`);
     e.currentTarget.style.setProperty("--mouse-y", `${e.clientY - rect.top}px`);
   }, []);
+
+  if (loadError && !data) return <ErrorState onRetry={() => { setLoadError(false); setReloadKey((k) => k + 1); }} />;
 
   if (!data || !layoutReady) return <DashboardSkeleton />;
 
