@@ -413,7 +413,6 @@ export default function AccountsPage() {
   if (accounts.length === 0) {
     return (
       <div className="space-y-4">
-        <OnboardingTips page="accounts" />
         <PageHeader
           className="flex flex-wrap items-center justify-between gap-3"
           title="Accounts"
@@ -421,6 +420,7 @@ export default function AccountsPage() {
           actions={createAccountDialog}
           actionsClassName="contents"
         />
+        <OnboardingTips page="accounts" />
         <EmptyState
           icon={Wallet}
           title="No accounts yet"
@@ -433,7 +433,6 @@ export default function AccountsPage() {
 
   return (
     <div className="space-y-4">
-      <OnboardingTips page="accounts" />
       <PageHeader
         className="flex items-center justify-between"
         title="Accounts"
@@ -468,6 +467,8 @@ export default function AccountsPage() {
           </>
         }
       />
+
+      <OnboardingTips page="accounts" />
 
       {/* Below md the Net Worth hero (assets/liabilities tiles) replaces these two stat cards. */}
       <div className="md:hidden">
