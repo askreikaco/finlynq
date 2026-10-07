@@ -20,6 +20,8 @@ import {
 } from "lucide-react";
 import { useApi } from "@/lib/data/use-api";
 import { mutate } from "swr";
+import { formatCurrency } from "@/lib/currency";
+import { useDisplayCurrency } from "@/components/currency-provider";
 import { Button } from "@/components/ui/button";
 import { Numpad } from "./_components/numpad";
 import { CategorySelector, type Category } from "./_components/category-selector";
@@ -36,6 +38,7 @@ type TxType = "Expense" | "Income" | "Transfer";
 
 export default function MobileTransactionPage() {
   const router = useRouter();
+  const { displayCurrency } = useDisplayCurrency();
 
   // Refs to handle StrictMode and prefill application
   const prefillReadRef = useRef(false);
@@ -264,8 +267,9 @@ export default function MobileTransactionPage() {
           throw new Error("All split rows must have a category assigned");
         }
         const splitSum = validSplits.reduce((acc, r) => acc + (parseFloat(r.amount) || 0), 0);
+        const effectiveAccountCurrency = selectedAcc?.currency || displayCurrency;
         if (Math.abs(splitSum - parsedAmount) > 0.05) {
-          throw new Error(`Split sum ($${splitSum.toFixed(2)}) must equal total amount ($${parsedAmount.toFixed(2)})`);
+          throw new Error(`Split sum ${formatCurrency(splitSum, effectiveAccountCurrency)} must equal total amount ${formatCurrency(parsedAmount, effectiveAccountCurrency)}`);
         }
       }
 
@@ -657,6 +661,7 @@ export default function MobileTransactionPage() {
                     onChangeRows={setSplitRows}
                     categories={filteredCategories}
                     totalAmount={parsedAmount}
+                    currency={selectedAcc?.currency || displayCurrency}
                     onOpenCategorySelector={(idx) => {
                       setActiveSplitIndex(idx);
                       setShowCatSelector(true);
