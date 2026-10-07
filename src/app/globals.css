@@ -277,6 +277,17 @@ html {
   box-shadow: 0 1px 2px oklch(0 0 0 / 30%);
 }
 
+/* Mobile bottom tab bar glass (S8): opaque fallback where blur/color-mix is unsupported or transparency is reduced. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .mobile-glass-bar { background-color: var(--sidebar); }
+}
+@supports not (color: color-mix(in oklab, red, blue)) {
+  .mobile-glass-bar { background-color: var(--sidebar); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .mobile-glass-bar { background-color: var(--sidebar); -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+
 /* ═══════════════════════════════════════════════
    TEXT EFFECTS
    ═══════════════════════════════════════════════ */
