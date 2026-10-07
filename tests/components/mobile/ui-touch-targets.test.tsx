@@ -85,7 +85,12 @@ describe("app shell below md", () => {
   it("(app) layout: flat bg + tight top padding below md, desktop padding unchanged", () => {
     const l = read("src/app/(app)/layout.tsx");
     expect(l).toContain("px-4 py-3 sm:px-6 sm:py-8 lg:px-8");
-    expect(l).toContain("pb-[calc(60px+var(--sab))] md:pb-0");
+    // Assert the 60px branch when QuickAdd is not enabled
+    expect(l).toMatch(/pb-\[calc\(60px\+var\(--sab\)\)\]/);
+    // Assert the 132px branch when QuickAdd is enabled
+    expect(l).toMatch(/pb-\[calc\(132px\+var\(--sab\)\)\]/);
+    // Assert md:pb-0 for desktop padding in the main className before bg-dot-pattern
+    expect(l).toMatch(/\} md:pb-0 bg-dot-pattern/);
   });
 
   it("globals.css: dot/glow off and sans amounts under 48rem only, pos/neg tokens exist", () => {
