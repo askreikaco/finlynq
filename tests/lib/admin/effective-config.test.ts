@@ -291,4 +291,204 @@ describe("getEffectiveConfig", () => {
     expect(json).not.toContain("SENTINEL_SECRET_user");
     expect(json).not.toContain("SENTINEL_SECRET_pass");
   });
+
+  describe("email.enabled.source derivation", () => {
+    it("sets email.enabled.source to 'env' when Brevo-only is configured", async () => {
+      mockResolveEmailConfig.mockResolvedValue({
+        provider: { value: undefined, source: "none" },
+        from: { value: undefined, source: "none" },
+        brevoApiKey: { value: "x", source: "env" },
+        resendApiKey: { value: undefined, source: "none" },
+        smtpHost: { value: undefined, source: "none" },
+        smtpPort: { value: undefined, source: "none" },
+        smtpUser: { value: undefined, source: "none" },
+        smtpPass: { value: undefined, source: "none" },
+      });
+      mockActiveEmailProvider.mockReturnValue("brevo");
+
+      const config = await getEffectiveConfig({});
+
+      expect(config.email.enabled.source).toBe("env");
+      expect(config.email.enabled.displayValue).toBe("Yes (Brevo)");
+    });
+
+    it("uses only the active provider's source, ignoring other configured providers", async () => {
+      // Edge case: Brevo is active with db source, but Resend is also configured with env source.
+      // The bug would check Resend first (env) and return it, ignoring Brevo's actual db source.
+      mockResolveEmailConfig.mockResolvedValue({
+        provider: { value: undefined, source: "none" },
+        from: { value: undefined, source: "none" },
+        brevoApiKey: { value: "brevo-key", source: "db" },
+        resendApiKey: { value: "resend-key", source: "env" },
+        smtpHost: { value: undefined, source: "none" },
+        smtpPort: { value: undefined, source: "none" },
+        smtpUser: { value: undefined, source: "none" },
+        smtpPass: { value: undefined, source: "none" },
+      });
+      mockActiveEmailProvider.mockReturnValue("brevo");
+
+      const config = await getEffectiveConfig({});
+
+      // Must use Brevo's source (db), not Resend's (env)
+      expect(config.email.enabled.source).toBe("db");
+      expect(config.email.enabled.displayValue).toBe("Yes (Brevo)");
+    });
+
+    it("sets email.enabled.source to 'env' when SMTP-only is configured", async () => {
+      mockResolveEmailConfig.mockResolvedValue({
+        provider: { value: undefined, source: "none" },
+        from: { value: undefined, source: "none" },
+        brevoApiKey: { value: undefined, source: "none" },
+        resendApiKey: { value: undefined, source: "none" },
+        smtpHost: { value: "smtp.example.com", source: "env" },
+        smtpPort: { value: "587", source: "env" },
+        smtpUser: { value: "user", source: "env" },
+        smtpPass: { value: "pass", source: "env" },
+      });
+      mockActiveEmailProvider.mockReturnValue("smtp");
+
+      const config = await getEffectiveConfig({
+        SMTP_HOST: "smtp.example.com",
+        SMTP_PORT: "587",
+        SMTP_USER: "user",
+        SMTP_PASS: "pass",
+      });
+
+      expect(config.email.enabled.source).toBe("env");
+      expect(config.email.enabled.displayValue).toBe("Yes (SMTP)");
+    });
+
+    it("sets email.enabled.source to 'db' when Resend is configured from DB", async () => {
+      mockResolveEmailConfig.mockResolvedValue({
+        provider: { value: undefined, source: "none" },
+        from: { value: undefined, source: "none" },
+        brevoApiKey: { value: undefined, source: "none" },
+        resendApiKey: { value: "key", source: "db" },
+        smtpHost: { value: undefined, source: "none" },
+        smtpPort: { value: undefined, source: "none" },
+        smtpUser: { value: undefined, source: "none" },
+        smtpPass: { value: undefined, source: "none" },
+      });
+      mockActiveEmailProvider.mockReturnValue("resend");
+
+      const config = await getEffectiveConfig({});
+
+      expect(config.email.enabled.source).toBe("db");
+      expect(config.email.enabled.displayValue).toBe("Yes (Resend)");
+    });
+
+    it("sets email.enabled.source to 'default' when no email provider is configured", async () => {
+      mockResolveEmailConfig.mockResolvedValue({
+        provider: { value: undefined, source: "none" },
+        from: { value: undefined, source: "none" },
+        brevoApiKey: { value: undefined, source: "none" },
+        resendApiKey: { value: undefined, source: "none" },
+        smtpHost: { value: undefined, source: "none" },
+        smtpPort: { value: undefined, source: "none" },
+        smtpUser: { value: undefined, source: "none" },
+        smtpPass: { value: undefined, source: "none" },
+      });
+      mockActiveEmailProvider.mockReturnValue("none");
+
+      const config = await getEffectiveConfig({});
+
+      expect(config.email.enabled.source).toBe("default");
+      expect(config.email.enabled.value).toBe(false);
+      expect(config.email.enabled.displayValue).toBe("No");
+    });
+
+    it("ensures email.enabled.source is always one of 'env', 'db', or 'default'", async () => {
+      // Test with all different provider configurations
+      const scenarios = [
+        {
+          name: "Resend from env",
+          config: {
+            resendApiKey: { value: "key", source: "env" },
+            brevoApiKey: { value: undefined, source: "none" },
+            smtpHost: { value: undefined, source: "none" },
+          },
+          provider: "resend",
+        },
+        {
+          name: "Brevo from db",
+          config: {
+            brevoApiKey: { value: "key", source: "db" },
+            resendApiKey: { value: undefined, source: "none" },
+            smtpHost: { value: undefined, source: "none" },
+          },
+          provider: "brevo",
+        },
+        {
+          name: "SMTP from env",
+          config: {
+            smtpHost: { value: "host", source: "env" },
+            brevoApiKey: { value: undefined, source: "none" },
+            resendApiKey: { value: undefined, source: "none" },
+          },
+          provider: "smtp",
+        },
+        {
+          name: "No provider",
+          config: {
+            resendApiKey: { value: undefined, source: "none" },
+            brevoApiKey: { value: undefined, source: "none" },
+            smtpHost: { value: undefined, source: "none" },
+          },
+          provider: "none",
+        },
+      ];
+
+      for (const scenario of scenarios) {
+        mockResolveEmailConfig.mockResolvedValue({
+          provider: { value: undefined, source: "none" },
+          from: { value: undefined, source: "none" },
+          brevoApiKey: scenario.config.brevoApiKey,
+          resendApiKey: scenario.config.resendApiKey,
+          smtpHost: scenario.config.smtpHost,
+          smtpPort: { value: undefined, source: "none" },
+          smtpUser: { value: undefined, source: "none" },
+          smtpPass: { value: undefined, source: "none" },
+        });
+        mockActiveEmailProvider.mockReturnValue(scenario.provider);
+
+        const config = await getEffectiveConfig({});
+
+        expect(
+          ["env", "db", "default"].includes(config.email.enabled.source),
+          `${scenario.name}: source must be env, db, or default`,
+        ).toBe(true);
+      }
+    });
+  });
+
+  describe("registration and SMTP label assertions", () => {
+    it("ensures registration.allowOpen.displayValue is exactly 'Not configurable here'", async () => {
+      const config = await getEffectiveConfig({});
+
+      expect(config.registration.allowOpen.displayValue).toBe("Not configurable here");
+    });
+
+    it("ensures SMTP provider label is exactly 'Yes (SMTP)'", async () => {
+      mockResolveEmailConfig.mockResolvedValue({
+        provider: { value: undefined, source: "none" },
+        from: { value: undefined, source: "none" },
+        brevoApiKey: { value: undefined, source: "none" },
+        resendApiKey: { value: undefined, source: "none" },
+        smtpHost: { value: "smtp.example.com", source: "env" },
+        smtpPort: { value: "587", source: "env" },
+        smtpUser: { value: "user", source: "env" },
+        smtpPass: { value: "pass", source: "env" },
+      });
+      mockActiveEmailProvider.mockReturnValue("smtp");
+
+      const config = await getEffectiveConfig({
+        SMTP_HOST: "smtp.example.com",
+        SMTP_PORT: "587",
+        SMTP_USER: "user",
+        SMTP_PASS: "pass",
+      });
+
+      expect(config.email.enabled.displayValue).toBe("Yes (SMTP)");
+    });
+  });
 });
