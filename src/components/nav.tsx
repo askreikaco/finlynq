@@ -423,7 +423,7 @@ export const Nav = memo(function Nav({ instanceAdminEnabled = false, categoriesM
 export const MobileBottomBar = memo(function MobileBottomBar({ pathname }: { pathname: string }) {
   const moreActive = !mobileBarItems.some(i => pathname === i.href || pathname.startsWith(i.href + "/"));
   return (
-    <nav aria-label="Mobile navigation" className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-sidebar border-t border-sidebar-border pb-[var(--sab)] pl-[var(--sal)] pr-[var(--sar)]">
+    <nav aria-label="Mobile navigation" className="md:hidden fixed bottom-0 left-0 right-0 z-50 mobile-glass-bar bg-sidebar/80 backdrop-blur border-t border-sidebar-border pb-[var(--sab)] pl-[var(--sal)] pr-[var(--sar)]">
       <div className="flex h-[59px] items-stretch justify-around pt-1.5 pb-1.5" data-testid="mobile-bar-row">
         {mobileBarItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/");

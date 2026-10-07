@@ -121,6 +121,57 @@ describe("mobile bottom bar", () => {
   });
 });
 
+describe("mobile bottom bar glass (S8)", () => {
+  it("bar has mobile-glass-bar, bg-sidebar/80, backdrop-blur, fixed bottom positioning, and safe-area insets", () => {
+    render(<Nav />);
+    const nav = bar();
+    const c = nav.className;
+    expect(c).toContain("mobile-glass-bar");
+    expect(c).toContain("bg-sidebar/80");
+    expect(c).toContain("fixed");
+    expect(c).toContain("bottom-0");
+    expect(c).toContain("pb-[var(--sab)]");
+    expect(c).toContain("pl-[var(--sal)]");
+    expect(c).toContain("pr-[var(--sar)]");
+    // Check backdrop-blur as an actual class token, not substring
+    expect(nav.classList.contains("backdrop-blur")).toBe(true);
+  });
+
+  it("bar row maintains h-[59px] height", () => {
+    render(<Nav />);
+    const row = within(bar()).getByTestId("mobile-bar-row");
+    expect(row.className).toContain("h-[59px]");
+  });
+
+  it("active link has text-sidebar-primary with aria-current='page'", () => {
+    mockPath = "/dashboard";
+    render(<Nav />);
+    const links = within(bar()).getAllByRole("link");
+    const homeLink = links[0];
+    expect(homeLink.getAttribute("aria-current")).toBe("page");
+    expect(homeLink.className).toContain("text-sidebar-primary");
+  });
+
+  it("inactive links lack text-sidebar-primary class", () => {
+    mockPath = "/dashboard";
+    render(<Nav />);
+    const links = within(bar()).getAllByRole("link");
+    const accountsLink = links[1];
+    expect(accountsLink.className).not.toContain("text-sidebar-primary");
+  });
+
+  it("globals.css has @supports blocks for backdrop-filter and color-mix fallbacks", () => {
+    const css = readFileSync(join(__dirname, "../../src/app/globals.css"), "utf8");
+    expect(css).toMatch(/@supports not \(\(backdrop-filter: blur\(1px\)[^{]*\{\s*\.mobile-glass-bar\s*\{[^}]*background-color:\s*var\(--sidebar\)/);
+    expect(css).toMatch(/@supports not \(color: color-mix[^{]*\{\s*\.mobile-glass-bar\s*\{[^}]*background-color:\s*var\(--sidebar\)/);
+  });
+
+  it("globals.css has @media prefers-reduced-transparency block disabling blur and setting fallback color", () => {
+    const css = readFileSync(join(__dirname, "../../src/app/globals.css"), "utf8");
+    expect(css).toMatch(/@media \(prefers-reduced-transparency: reduce\)\s*\{[^}]*\.mobile-glass-bar\s*\{[^}]*background-color:\s*var\(--sidebar\)[^}]*backdrop-filter:\s*none/);
+  });
+});
+
 describe("safe-area classes", () => {
   it("mobile bar reserves bottom + side insets via the shared vars", () => {
     render(<Nav />);
