@@ -695,7 +695,6 @@ export function TransactionsWorkspace({
     <div className="space-y-6">
       {showHeader && (
         <>
-          <OnboardingTips page="transactions" />
           <PageHeader
             className="flex flex-wrap items-center justify-between gap-3"
             title="Transactions"
@@ -802,6 +801,7 @@ export function TransactionsWorkspace({
             </>
             }
           />
+          <OnboardingTips page="transactions" />
         </>
       )}
       {/* Add/edit dialog is always mounted — startEdit opens it even when the
