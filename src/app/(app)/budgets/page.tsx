@@ -410,7 +410,6 @@ export default function BudgetsPage() {
 
   return (
     <div className="space-y-6">
-      <OnboardingTips page="budgets" />
       {/* Header */}
       <PageHeader
         className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
@@ -645,6 +644,8 @@ export default function BudgetsPage() {
         </>
         }
       />
+
+      <OnboardingTips page="budgets" />
 
       {/* Month nav */}
       <div className="inline-flex items-center gap-2 rounded-xl bg-muted/50 px-2 py-1.5">
