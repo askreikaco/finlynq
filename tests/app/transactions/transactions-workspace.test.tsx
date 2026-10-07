@@ -4,6 +4,8 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import * as React from "react";
 import { render, screen, cleanup, fireEvent, within } from "@testing-library/react";
+import fs from "fs";
+import path from "path";
 const H = vi.hoisted(() => {
   const mkTx = (o: any) => ({ id: 1, date: "2026-01-01", accountId: 1, accountName: "A", categoryId: 4, categoryName: "C", categoryType: "E", currency: "USD", amount: -50, enteredAmount: -50, enteredCurrency: "USD", quantity: null, portfolioHolding: null, note: "nn", payee: "pp", tags: "t", isBusiness: 1, linkId: null, tradeLinkId: null, kind: null, ...o });
   const TXNS = [mkTx({ id: 1 }), mkTx({ id: 2, linkId: "L" }), mkTx({ id: 3, enteredCurrency: "EUR" })];
@@ -37,6 +39,15 @@ beforeEach(() => { sessionStorage.clear(); push.mockClear();
   (window as any).matchMedia ??= () => ({ matches: false, addListener(){}, removeListener(){}, addEventListener(){}, removeEventListener(){} }); });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 describe("workspace", () => {
+  it("guard: PageHeader element appears before OnboardingTips element in source", () => {
+    const srcPath = path.resolve(__dirname, "../../../src/app/(app)/transactions/_components/transactions-workspace.tsx");
+    const source = fs.readFileSync(srcPath, "utf-8");
+    const pageHeaderIndex = source.indexOf("<PageHeader");
+    const onboardingTipsIndex = source.indexOf("<OnboardingTips page=\"transactions\"");
+    expect(pageHeaderIndex).toBeGreaterThan(-1);
+    expect(onboardingTipsIndex).toBeGreaterThan(-1);
+    expect(pageHeaderIndex).toBeLessThan(onboardingTipsIndex);
+  });
   it("W1 table Duplicate -> writes prefill + pushes ?prefill=1", () => {
     render(<TransactionsWorkspace />);
     const dups = screen.getAllByLabelText("Duplicate transaction");

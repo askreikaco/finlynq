@@ -155,15 +155,15 @@ export function MetricCard({
         {hasSpark && (
           <>
             {/* wide card: right-hand column, full height */}
-            <div className="hidden @xl:block @xl:w-[45%] shrink-0 pr-5 py-5 min-h-[120px] opacity-60 group-hover:opacity-100 transition-opacity duration-300">
-              <LazyView minHeight={120} className="w-full h-full">
-                <Sparkline data={sparkData!} color={sparkColor} labels={sparkLabels} currency={resolvedCurrency} height="100%" className="w-full h-full" />
+            <div className="hidden @xl:block @xl:w-[40%] @xl:max-w-[18rem] @xl:self-center shrink-0 pr-5 py-5 opacity-60 group-hover:opacity-100 transition-opacity duration-300">
+              <LazyView minHeight={96} className="w-full">
+                <Sparkline data={sparkData!} color={sparkColor} labels={sparkLabels} currency={resolvedCurrency} height={96} className="w-full sparkline-fade" />
               </LazyView>
             </div>
             {/* narrow card: full-bleed strip along the bottom */}
             <div className="@xl:hidden opacity-50 group-hover:opacity-100 transition-opacity duration-300 -mx-px">
-              <LazyView minHeight={40} className="w-full">
-                <Sparkline data={sparkData!} color={sparkColor} labels={sparkLabels} currency={resolvedCurrency} />
+              <LazyView minHeight={44} className="w-full">
+                <Sparkline data={sparkData!} color={sparkColor} labels={sparkLabels} currency={resolvedCurrency} height={44} />
               </LazyView>
             </div>
           </>
