@@ -250,3 +250,38 @@ describe("More instance admin filter (WP9a)", () => {
     unmount();
   });
 });
+
+describe("More with categories merged hub", () => {
+  it("main group has exactly one Categories row at /categories when merged ON", () => {
+    const groups = buildMoreGroups({ isAdmin: false, devMode: false, familyEnabled: true, hasAnnouncements: true, instanceAdminEnabled: false, categoriesMerged: true });
+    const mainGroup = groups.find((g) => g.id === "main");
+    expect(mainGroup).toBeTruthy();
+    const categoryRows = mainGroup!.rows.filter((r) => r.label === "Categories");
+    expect(categoryRows).toHaveLength(1);
+    expect(categoryRows[0].href).toBe("/categories");
+    // Ensure no /settings/categorization row exists
+    const settingsCatRow = mainGroup!.rows.find((r) => r.href === "/settings/categorization");
+    expect(settingsCatRow).toBeUndefined();
+  });
+
+  it("main group labels are unique when merged ON", () => {
+    const groups = buildMoreGroups({ isAdmin: false, devMode: false, familyEnabled: true, hasAnnouncements: true, instanceAdminEnabled: false, categoriesMerged: true });
+    const mainGroup = groups.find((g) => g.id === "main");
+    expect(mainGroup).toBeTruthy();
+    const labels = mainGroup!.rows.map((r) => r.label);
+    const uniqueLabels = new Set(labels);
+    expect(labels.length).toBe(uniqueLabels.size);
+  });
+
+  it("merged OFF keeps both Spending by category and Categories", () => {
+    const groups = buildMoreGroups({ isAdmin: false, devMode: false, familyEnabled: true, hasAnnouncements: true, instanceAdminEnabled: false, categoriesMerged: false });
+    const mainGroup = groups.find((g) => g.id === "main");
+    expect(mainGroup).toBeTruthy();
+    const categoryRow = mainGroup!.rows.find((r) => r.href === "/categories");
+    const settingsCatRow = mainGroup!.rows.find((r) => r.href === "/settings/categorization");
+    expect(categoryRow).toBeTruthy();
+    expect(categoryRow?.label).toBe("Spending by category");
+    expect(settingsCatRow).toBeTruthy();
+    expect(settingsCatRow?.label).toBe("Categories");
+  });
+});
