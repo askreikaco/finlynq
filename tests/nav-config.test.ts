@@ -8,6 +8,7 @@ import {
   getEntriesByGroup,
   isRegisteredPath,
   getMobileBarItemsSorted,
+  navLabel,
 } from "@/lib/nav-config";
 import { readdirSync } from "fs";
 import { join } from "path";
@@ -649,6 +650,49 @@ describe("nav-config", () => {
     it("getNavEntry('/dev/gallery') has surfaces exactly ['sidebar','more']", () => {
       const entry = getNavEntry("/dev/gallery");
       expect(entry?.surfaces).toEqual(["sidebar", "more"]);
+    });
+  });
+
+  describe("navLabel", () => {
+    it("should return 'Categories' for /categories when categoriesMerged is true", () => {
+      const result = navLabel("/categories", "Spending by category", { categoriesMerged: true });
+      expect(result).toBe("Categories");
+    });
+
+    it("should return 'Spending by category' for /categories when categoriesMerged is false", () => {
+      const result = navLabel("/categories", "Spending by category", { categoriesMerged: false });
+      expect(result).toBe("Spending by category");
+    });
+
+    it("should return 'Spending by category' for /categories when categoriesMerged is omitted", () => {
+      const result = navLabel("/categories", "Spending by category");
+      expect(result).toBe("Spending by category");
+    });
+
+    it("should return label unchanged for /settings/categorization when categoriesMerged is true", () => {
+      const result = navLabel("/settings/categorization", "Categories", { categoriesMerged: true });
+      expect(result).toBe("Categories");
+    });
+
+    it("should return label unchanged for /settings/categorization when categoriesMerged is false", () => {
+      const result = navLabel("/settings/categorization", "Categories", { categoriesMerged: false });
+      expect(result).toBe("Categories");
+    });
+
+    it("should return label unchanged for /dashboard when categoriesMerged is true", () => {
+      const result = navLabel("/dashboard", "Home", { categoriesMerged: true });
+      expect(result).toBe("Home");
+    });
+
+    it("should return label unchanged for /reports when categoriesMerged is true", () => {
+      const result = navLabel("/reports", "Reports", { categoriesMerged: true });
+      expect(result).toBe("Reports");
+    });
+
+    it("should return label unchanged for other hrefs regardless of categoriesMerged", () => {
+      expect(navLabel("/accounts", "Accounts", { categoriesMerged: true })).toBe("Accounts");
+      expect(navLabel("/transactions", "Transactions", { categoriesMerged: false })).toBe("Transactions");
+      expect(navLabel("/budgets", "Budgets")).toBe("Budgets");
     });
   });
 });

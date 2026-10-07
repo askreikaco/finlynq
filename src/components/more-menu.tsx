@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils";
 import { AccountSwitcher } from "@/components/account-switcher";
 import { hardReload, clearPerUserStorage } from "@/lib/client/hard-reload";
 import { setPasskeyAutoSkip } from "@/lib/client/passkey-auto";
-import { getEntriesBySurface } from "@/lib/nav-config";
+import { getEntriesBySurface, navLabel } from "@/lib/nav-config";
 
 export type MoreRow = { href: string; label: string; icon: LucideIcon; id: string };
 export type MoreGroup = { id: string; header?: string; rows: MoreRow[] };
@@ -34,6 +34,7 @@ export interface MoreFlags {
   familyEnabled: boolean;
   hasAnnouncements: boolean;
   instanceAdminEnabled: boolean;
+  categoriesMerged?: boolean;
 }
 
 const row = (href: string, label: string, icon: LucideIcon): MoreRow => ({ id: href, href, label, icon });
@@ -67,9 +68,14 @@ export function buildMoreGroups(f: MoreFlags): MoreGroup[] {
   ];
 
   for (const path of mainPaths) {
+    // Skip settings/categorization when categories are merged into the hub
+    if (f.categoriesMerged && path === "/settings/categorization") {
+      continue;
+    }
     const entry = entryMap.get(path);
     if (entry && (entry.mode !== "dev" || f.devMode)) {
-      main.push(row(entry.path, entry.label, entry.icon));
+      const displayLabel = navLabel(entry.path, entry.label, { categoriesMerged: f.categoriesMerged });
+      main.push(row(entry.path, displayLabel, entry.icon));
     }
   }
 
@@ -85,7 +91,8 @@ export function buildMoreGroups(f: MoreFlags): MoreGroup[] {
   for (const path of explorePaths) {
     const entry = entryMap.get(path);
     if (entry) {
-      explore.push(row(entry.path, entry.label, entry.icon));
+      const displayLabel = navLabel(entry.path, entry.label, { categoriesMerged: f.categoriesMerged });
+      explore.push(row(entry.path, displayLabel, entry.icon));
     }
   }
 
@@ -93,13 +100,15 @@ export function buildMoreGroups(f: MoreFlags): MoreGroup[] {
   if (f.hasAnnouncements) {
     const entry = entryMap.get("/whats-new");
     if (entry) {
-      tools.push(row(entry.path, entry.label, entry.icon));
+      const displayLabel = navLabel(entry.path, entry.label, { categoriesMerged: f.categoriesMerged });
+      tools.push(row(entry.path, displayLabel, entry.icon));
     }
   }
 
   const settingsEntry = entryMap.get("/settings");
   if (settingsEntry) {
-    tools.push(row(settingsEntry.path, settingsEntry.label, settingsEntry.icon));
+    const displayLabel = navLabel(settingsEntry.path, settingsEntry.label, { categoriesMerged: f.categoriesMerged });
+    tools.push(row(settingsEntry.path, displayLabel, settingsEntry.icon));
   }
 
   // Admin group (for admins only)
@@ -113,7 +122,8 @@ export function buildMoreGroups(f: MoreFlags): MoreGroup[] {
       return true;
     });
     for (const entry of adminEntries) {
-      admin.push(row(entry.path, entry.label, entry.icon));
+      const displayLabel = navLabel(entry.path, entry.label, { categoriesMerged: f.categoriesMerged });
+      admin.push(row(entry.path, displayLabel, entry.icon));
     }
   }
 
@@ -192,7 +202,7 @@ export function AppearanceRow() {
   );
 }
 
-export const MoreMenu = memo(function MoreMenu({ instanceAdminEnabled = false }: { instanceAdminEnabled?: boolean }) {
+export const MoreMenu = memo(function MoreMenu({ instanceAdminEnabled = false, categoriesMerged = false }: { instanceAdminEnabled?: boolean; categoriesMerged?: boolean }) {
   const router = useRouter();
   const busy = useRef(false);
 
@@ -236,8 +246,9 @@ export const MoreMenu = memo(function MoreMenu({ instanceAdminEnabled = false }:
       familyEnabled,
       hasAnnouncements,
       instanceAdminEnabled,
+      categoriesMerged,
     }),
-    [isAdmin, devMode, familyEnabled, hasAnnouncements, instanceAdminEnabled],
+    [isAdmin, devMode, familyEnabled, hasAnnouncements, instanceAdminEnabled, categoriesMerged],
   );
 
   const signOut = async () => {

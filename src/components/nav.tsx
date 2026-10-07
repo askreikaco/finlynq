@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { AccountSwitcher } from "@/components/account-switcher";
-import { getEntriesBySurface, getMobileBarItemsSorted } from "@/lib/nav-config";
+import { getEntriesBySurface, getMobileBarItemsSorted, navLabel } from "@/lib/nav-config";
 
 type NavItem = { href: string; label: string; icon: LucideIcon; color: string; mode?: "prod" | "dev"; activePrefixes?: string[]; flag?: "family" | "announcements" | "feedback" | "instance" };
 
@@ -142,7 +142,7 @@ export function pickActiveHref(
   return activeItem;
 }
 
-export const Nav = memo(function Nav({ instanceAdminEnabled = false }: { instanceAdminEnabled?: boolean }) {
+export const Nav = memo(function Nav({ instanceAdminEnabled = false, categoriesMerged = false }: { instanceAdminEnabled?: boolean; categoriesMerged?: boolean }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
@@ -249,11 +249,12 @@ export const Nav = memo(function Nav({ instanceAdminEnabled = false }: { instanc
     const activeItem = pickActiveHref(pathname);
     const isActive = activeItem === item;
     const badge = unreadFor(item);
+    const displayLabel = navLabel(item.href, item.label, { categoriesMerged });
     return (
       <Link
         key={item.href}
         href={item.href}
-        title={!showLabel ? item.label : undefined}
+        title={!showLabel ? displayLabel : undefined}
         aria-current={isActive ? "page" : undefined}
         className={cn(
           "group/link relative flex items-center gap-3 rounded-lg text-[13px] font-medium transition-all duration-200",
@@ -274,7 +275,7 @@ export const Nav = memo(function Nav({ instanceAdminEnabled = false }: { instanc
         {!showLabel && badge > 0 && (
           <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary" />
         )}
-        {showLabel && <span className="truncate">{item.label}</span>}
+        {showLabel && <span className="truncate">{displayLabel}</span>}
         {showLabel && badge > 0 ? (
           <span className="ml-auto rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold leading-none text-primary-foreground">
             {badge}

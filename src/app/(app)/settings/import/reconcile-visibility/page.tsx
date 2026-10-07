@@ -10,8 +10,6 @@
  * subpage. Persistence is unchanged: GET/PUT /api/settings/reconcile-hidden-accounts.
  */
 
-import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
 import { ReconcileHideAccountsCard } from "@/components/inbox/reconcile-hide-accounts-card";
 import { PageHeader } from "@/components/mobile";
 
@@ -19,14 +17,7 @@ export default function ReconcileVisibilityPage() {
   return (
     <div className="max-w-2xl space-y-6">
       <div>
-        <Link
-          href="/settings/import"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-3"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          Import settings
-        </Link>
-        <PageHeader title="Reconcile dropdown visibility" titleClassName="text-2xl font-bold tracking-tight" />
+        <PageHeader title="Reconcile dropdown visibility" titleClassName="text-2xl font-bold tracking-tight" backHref="/settings/import" backLabel="Import settings" />
         <p className="text-sm text-muted-foreground mt-0.5">
           Choose which accounts appear in the account picker on the Import page.
         </p>

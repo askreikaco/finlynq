@@ -202,7 +202,7 @@ describe("More Appearance row", () => {
 
 describe("More keeps everything the old sheet offered reachable", () => {
   it("every non-bar nav item (all flags on) has a row, except owner-removed /feedback", () => {
-    const all = buildMoreGroups({ isAdmin: true, devMode: true, familyEnabled: true, hasAnnouncements: true, instanceAdminEnabled: true });
+    const all = buildMoreGroups({ isAdmin: true, devMode: true, familyEnabled: true, hasAnnouncements: true, instanceAdminEnabled: true, categoriesMerged: false });
     const hrefs = new Set(all.flatMap((g) => g.rows.map((r) => r.href)));
     const bar = new Set(mobileBarItems.map((i) => i.href));
     const missing = allFlatItems
@@ -220,13 +220,13 @@ describe("More keeps everything the old sheet offered reachable", () => {
 
 describe("More instance admin filter (WP9a)", () => {
   it("hides Instance config when instanceAdminEnabled={false}", () => {
-    const groups = buildMoreGroups({ isAdmin: true, devMode: false, familyEnabled: true, hasAnnouncements: true, instanceAdminEnabled: false });
+    const groups = buildMoreGroups({ isAdmin: true, devMode: false, familyEnabled: true, hasAnnouncements: true, instanceAdminEnabled: false, categoriesMerged: false });
     const allHrefs = new Set(groups.flatMap((g) => g.rows.map((r) => r.href)));
     expect(allHrefs.has("/admin/instance")).toBe(false);
   });
 
   it("shows Instance config when instanceAdminEnabled={true}", () => {
-    const groups = buildMoreGroups({ isAdmin: true, devMode: false, familyEnabled: true, hasAnnouncements: true, instanceAdminEnabled: true });
+    const groups = buildMoreGroups({ isAdmin: true, devMode: false, familyEnabled: true, hasAnnouncements: true, instanceAdminEnabled: true, categoriesMerged: false });
     const allHrefs = new Set(groups.flatMap((g) => g.rows.map((r) => r.href)));
     expect(allHrefs.has("/admin/instance")).toBe(true);
   });
@@ -248,5 +248,40 @@ describe("More instance admin filter (WP9a)", () => {
     const configLink = screen.queryByRole("link", { name: /Instance config/i });
     expect(configLink).toBeNull();
     unmount();
+  });
+});
+
+describe("More with categories merged hub", () => {
+  it("main group has exactly one Categories row at /categories when merged ON", () => {
+    const groups = buildMoreGroups({ isAdmin: false, devMode: false, familyEnabled: true, hasAnnouncements: true, instanceAdminEnabled: false, categoriesMerged: true });
+    const mainGroup = groups.find((g) => g.id === "main");
+    expect(mainGroup).toBeTruthy();
+    const categoryRows = mainGroup!.rows.filter((r) => r.label === "Categories");
+    expect(categoryRows).toHaveLength(1);
+    expect(categoryRows[0].href).toBe("/categories");
+    // Ensure no /settings/categorization row exists
+    const settingsCatRow = mainGroup!.rows.find((r) => r.href === "/settings/categorization");
+    expect(settingsCatRow).toBeUndefined();
+  });
+
+  it("main group labels are unique when merged ON", () => {
+    const groups = buildMoreGroups({ isAdmin: false, devMode: false, familyEnabled: true, hasAnnouncements: true, instanceAdminEnabled: false, categoriesMerged: true });
+    const mainGroup = groups.find((g) => g.id === "main");
+    expect(mainGroup).toBeTruthy();
+    const labels = mainGroup!.rows.map((r) => r.label);
+    const uniqueLabels = new Set(labels);
+    expect(labels.length).toBe(uniqueLabels.size);
+  });
+
+  it("merged OFF keeps both Spending by category and Categories", () => {
+    const groups = buildMoreGroups({ isAdmin: false, devMode: false, familyEnabled: true, hasAnnouncements: true, instanceAdminEnabled: false, categoriesMerged: false });
+    const mainGroup = groups.find((g) => g.id === "main");
+    expect(mainGroup).toBeTruthy();
+    const categoryRow = mainGroup!.rows.find((r) => r.href === "/categories");
+    const settingsCatRow = mainGroup!.rows.find((r) => r.href === "/settings/categorization");
+    expect(categoryRow).toBeTruthy();
+    expect(categoryRow?.label).toBe("Spending by category");
+    expect(settingsCatRow).toBeTruthy();
+    expect(settingsCatRow?.label).toBe("Categories");
   });
 });

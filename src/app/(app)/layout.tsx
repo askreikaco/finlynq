@@ -14,9 +14,11 @@ import { WebVitals } from "@/components/web-vitals";
 import { QuickAddFAB } from "@/components/quick-add-fab";
 import { isQuickAddEnabled } from "@/lib/quick-add/flag";
 import { isInstanceAdminEnabled } from "@/lib/admin/instance-flag";
+import { isCategoriesMergedEnabled } from "@/lib/categories/flag";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const instanceAdminEnabled = isInstanceAdminEnabled();
+  const categoriesMerged = isCategoriesMergedEnabled();
   return (
     <>
     <VersionGate />
@@ -33,7 +35,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <PromptGate />
           <ReportingRecomputeIndicator avoidFab={isQuickAddEnabled()} />
           <div className="flex flex-1">
-            <Nav instanceAdminEnabled={instanceAdminEnabled} />
+            <Nav instanceAdminEnabled={instanceAdminEnabled} categoriesMerged={categoriesMerged} />
             <main className={`flex-1 overflow-x-hidden overflow-y-auto min-w-0 ${
               isQuickAddEnabled() ? "pb-[calc(132px+var(--sab))] md:pb-24" : "pb-[calc(60px+var(--sab))] md:pb-0"
             } bg-dot-pattern ambient-glow`}>

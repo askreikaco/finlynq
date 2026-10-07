@@ -174,4 +174,92 @@ describe("Settings Shell", () => {
 
     expect(screen.getByText("Test content goes here")).toBeTruthy();
   });
+
+  it("renders back button when hubBackHref is set and not on hub page", () => {
+    mockPath = "/settings/general";
+    render(
+      <SettingsShell hubBackHref="/settings">
+        <div>Test content</div>
+      </SettingsShell>
+    );
+
+    const backButton = screen.getByRole("link", { name: "Back to Settings" });
+    expect(backButton).toBeDefined();
+    expect(backButton?.getAttribute("data-slot")).toBe("back-button");
+    expect(backButton?.getAttribute("href")).toBe("/settings");
+  });
+
+  it("does not render back button when hubBackHref is not set", () => {
+    mockPath = "/settings/general";
+    render(
+      <SettingsShell>
+        <div>Test content</div>
+      </SettingsShell>
+    );
+
+    const backButtons = screen.queryAllByRole("link");
+    const hasBackButton = backButtons.some((link) => link.getAttribute("data-slot") === "back-button");
+    expect(hasBackButton).toBe(false);
+  });
+
+  it("does not render back button when on hub page even if hubBackHref is set", () => {
+    mockPath = "/settings";
+    render(
+      <SettingsShell hubBackHref="/settings">
+        <div>Test content</div>
+      </SettingsShell>
+    );
+
+    const backButtons = screen.queryAllByRole("link");
+    const hasBackButton = backButtons.some((link) => link.getAttribute("data-slot") === "back-button");
+    expect(hasBackButton).toBe(false);
+  });
+
+  it("renders back button inside content slot (not as sibling of aside at md+)", () => {
+    mockPath = "/settings/general";
+    const { container } = render(
+      <SettingsShell hubBackHref="/settings">
+        <div>Test content</div>
+      </SettingsShell>
+    );
+
+    // Find the back button
+    const backButton = screen.getByRole("link", { name: "Back to Settings" });
+
+    // Find the aside element (desktop nav)
+    const aside = container.querySelector("aside");
+
+    // Find the content slot (the settings-content data slot)
+    const contentSlot = container.querySelector('[data-slot="settings-content"]');
+
+    // Verify back button is inside content slot, not a sibling of aside
+    expect(contentSlot?.contains(backButton)).toBe(true);
+    expect(aside?.contains(backButton)).toBe(false);
+  });
+
+  it("does not render hub back button when on /settings/import/reconcile-visibility (page with self back button)", () => {
+    mockPath = "/settings/import/reconcile-visibility";
+    render(
+      <SettingsShell hubBackHref="/settings">
+        <div>Test content</div>
+      </SettingsShell>
+    );
+
+    const backButtons = screen.queryAllByRole("link");
+    const hasHubBackButton = backButtons.some((link) => link.getAttribute("data-slot") === "back-button");
+    expect(hasHubBackButton).toBe(false);
+  });
+
+  it("still renders back button on /settings/general with hubBackHref set", () => {
+    mockPath = "/settings/general";
+    render(
+      <SettingsShell hubBackHref="/settings">
+        <div>Test content</div>
+      </SettingsShell>
+    );
+
+    const backButton = screen.getByRole("link", { name: "Back to Settings" });
+    expect(backButton).toBeDefined();
+    expect(backButton?.getAttribute("data-slot")).toBe("back-button");
+  });
 });

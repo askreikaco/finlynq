@@ -629,3 +629,15 @@ export function getMobileBarItemsSorted(): NavPageEntry[] {
     .filter((e) => e.tab?.order !== undefined)
     .sort((a, b) => (a.tab?.order ?? 0) - (b.tab?.order ?? 0));
 }
+
+/**
+ * Pure helper to return the display label for a nav href.
+ * When categoriesMerged is true and href is /categories, returns 'Categories'.
+ * Otherwise returns the label unchanged.
+ */
+export function navLabel(href: string, label: string, { categoriesMerged = false }: { categoriesMerged?: boolean } = {}): string {
+  if (categoriesMerged && href === "/categories") {
+    return "Categories";
+  }
+  return label;
+}
