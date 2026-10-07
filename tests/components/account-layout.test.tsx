@@ -10,7 +10,7 @@ vi.mock("next/navigation", () => ({
   usePathname: () => mockPath,
 }));
 
-import Layout from "@/app/(app)/account/layout";
+import { AccountShell } from "@/components/account-shell";
 
 beforeEach(() => {
   mockPath = "/account/info";
@@ -21,14 +21,14 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("Account Layout", () => {
+describe("AccountShell", () => {
   describe("Hub page (/account)", () => {
     it("hides tab navigation on hub page", () => {
       mockPath = "/account";
       render(
-        <Layout>
+        <AccountShell navV2={false}>
           <div>Hub content</div>
-        </Layout>
+        </AccountShell>
       );
 
       const tabs = screen.queryAllByRole("tab");
@@ -38,14 +38,27 @@ describe("Account Layout", () => {
     it("still renders heading and children on hub page", () => {
       mockPath = "/account";
       render(
-        <Layout>
+        <AccountShell navV2={false}>
           <div>Hub content</div>
-        </Layout>
+        </AccountShell>
       );
 
       expect(screen.getByText("Account")).toBeTruthy();
       expect(screen.getByText("Profile, login, API key, privacy, and backup / restore")).toBeTruthy();
       expect(screen.getByText("Hub content")).toBeTruthy();
+    });
+
+    it("does not show back button on hub page when navV2 is true", () => {
+      mockPath = "/account";
+      render(
+        <AccountShell navV2={true}>
+          <div>Hub content</div>
+        </AccountShell>
+      );
+
+      const backButton = screen.queryByRole("link", { name: /back|account/i });
+      // Should not have a back button on the hub
+      expect(backButton).toBeFalsy();
     });
   });
 
@@ -53,9 +66,9 @@ describe("Account Layout", () => {
     it("renders heading and account tabs in correct order on /account/info", () => {
       mockPath = "/account/info";
       render(
-        <Layout>
+        <AccountShell navV2={false}>
           <div>Test content</div>
-        </Layout>
+        </AccountShell>
       );
 
       expect(screen.getByText("Account")).toBeTruthy();
@@ -70,9 +83,9 @@ describe("Account Layout", () => {
     it("sets aria-selected=true on active tab (Info)", () => {
       mockPath = "/account/info";
       render(
-        <Layout>
+        <AccountShell navV2={false}>
           <div>Test content</div>
-        </Layout>
+        </AccountShell>
       );
 
       const tabs = screen.getAllByRole("tab");
@@ -83,9 +96,9 @@ describe("Account Layout", () => {
     it("sets aria-selected=true on active tab (Security)", () => {
       mockPath = "/account/security";
       render(
-        <Layout>
+        <AccountShell navV2={false}>
           <div>Test content</div>
-        </Layout>
+        </AccountShell>
       );
 
       const tabs = screen.getAllByRole("tab");
@@ -97,12 +110,59 @@ describe("Account Layout", () => {
     it("renders children on sub-pages", () => {
       mockPath = "/account/info";
       render(
-        <Layout>
+        <AccountShell navV2={false}>
           <div>Test content goes here</div>
-        </Layout>
+        </AccountShell>
       );
 
       expect(screen.getByText("Test content goes here")).toBeTruthy();
+    });
+
+    it("shows back link on sub-page when navV2 is true", () => {
+      mockPath = "/account/info";
+      render(
+        <AccountShell navV2={true}>
+          <div>Test content</div>
+        </AccountShell>
+      );
+
+      const backButton = screen.getByRole("link", { name: /account/i });
+      expect(backButton).toBeTruthy();
+      expect(backButton.getAttribute("href")).toBe("/account");
+      expect(backButton.getAttribute("data-slot")).toBe("back-button");
+    });
+
+    it("does not show back link on sub-page when navV2 is false", () => {
+      mockPath = "/account/info";
+      render(
+        <AccountShell navV2={false}>
+          <div>Test content</div>
+        </AccountShell>
+      );
+
+      const backButton = screen.queryByRole("link", { name: /account/i });
+      expect(backButton).toBeFalsy();
+    });
+
+    it("shows tabs and back link on nested path /account/security with navV2 true", () => {
+      mockPath = "/account/security";
+      render(
+        <AccountShell navV2={true}>
+          <div>Security content</div>
+        </AccountShell>
+      );
+
+      // Should show tabs
+      const tabs = screen.getAllByRole("tab");
+      expect(tabs.length).toBe(2);
+      expect(tabs[0].getAttribute("aria-selected")).toBe("false");
+      expect(tabs[1].getAttribute("aria-selected")).toBe("true");
+
+      // Should show back link
+      const backButton = screen.getByRole("link", { name: /account/i });
+      expect(backButton).toBeTruthy();
+      expect(backButton.getAttribute("href")).toBe("/account");
+      expect(backButton.getAttribute("data-slot")).toBe("back-button");
     });
   });
 });
