@@ -86,9 +86,10 @@ describe("app shell below md", () => {
     const l = read("src/app/(app)/layout.tsx");
     expect(l).toContain("px-4 py-3 sm:px-6 sm:py-8 lg:px-8");
     // Assert the binding condition between QuickAdd enabled state and padding values
-    expect(l).toMatch(/isQuickAddEnabled\(\)\s*\?\s*"pb-\[calc\(132px\+var\(--sab\)\)\]"\s*:\s*"pb-\[calc\(60px\+var\(--sab\)\)\]"/);
-    // Assert md:pb-0 for desktop padding before bg-dot-pattern
-    expect(l).toMatch(/md:pb-0 bg-dot-pattern/);
+    // Flag-on branch includes md:pb-24 for desktop FAB clearance
+    expect(l).toMatch(/isQuickAddEnabled\(\)\s*\?\s*"pb-\[calc\(132px\+var\(--sab\)\)\]\s+md:pb-24"\s*:\s*"pb-\[calc\(60px\+var\(--sab\)\)\]\s+md:pb-0"/);
+    // Assert bg-dot-pattern is still present
+    expect(l).toMatch(/bg-dot-pattern/);
   });
 
   it("globals.css: dot/glow off and sans amounts under 48rem only, pos/neg tokens exist", () => {
