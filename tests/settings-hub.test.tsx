@@ -1,10 +1,16 @@
 /**
  * @vitest-environment jsdom
  */
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { SettingsHub } from "@/components/settings-hub";
+import { SettingsShell } from "@/components/settings-shell";
 import { getEntriesBySurface } from "@/lib/nav-config";
+
+// Mock next/navigation to provide usePathname
+vi.mock("next/navigation", () => ({
+  usePathname: vi.fn(() => "/settings"),
+}));
 
 describe("SettingsHub", () => {
   beforeEach(() => {
@@ -60,12 +66,16 @@ describe("SettingsHub", () => {
     expect(actualLabels).toEqual(expectedOrder);
   });
 
-  it("renders section card with Settings label", () => {
+  it("renders section card without a separate label (title is the page title)", () => {
     render(<SettingsHub />);
 
-    // SectionLabel renders as "Settings" in sentence case
-    const settingsLabel = screen.getByText("Settings");
-    expect(settingsLabel).toBeDefined();
+    // SectionCard is rendered without a label prop, so no separate section-label element
+    const settingsLabel = document.querySelector('[data-slot="section-label"]');
+    expect(settingsLabel).toBeNull();
+
+    // But the page title should still be "Settings" from PageHeader
+    const pageTitle = screen.getByRole("heading", { level: 1, name: "Settings" });
+    expect(pageTitle).toBeDefined();
   });
 
   it("renders each entry as a clickable link with correct href (exact match)", () => {
@@ -172,5 +182,34 @@ describe("SettingsHub", () => {
       expect(entry.adminOnly).toBeFalsy();
       expect(entry.flag).toBeFalsy();
     }
+  });
+
+  it("renders a page title using PageHeader", () => {
+    render(<SettingsHub />);
+
+    const title = screen.getByRole("heading", { level: 1, name: "Settings" });
+    expect(title).toBeDefined();
+    expect(title.tagName).toBe("H1");
+  });
+
+  it("hub page has no pill bar or left nav (hidden by SettingsShell when pathname is /settings)", () => {
+    // Render the hub inside the real SettingsShell with pathname="/settings" (isHub=true)
+    render(
+      <SettingsShell>
+        <SettingsHub />
+      </SettingsShell>
+    );
+
+    // Verify the hub content is present with the section card
+    const sectionCard = document.querySelector('[data-slot="section-card"]');
+    expect(sectionCard).not.toBeNull();
+
+    // Verify that the mobile pill nav is NOT rendered when isHub=true
+    const mobilePillNav = document.querySelector('nav[aria-label="Settings sections"]');
+    expect(mobilePillNav).toBeNull();
+
+    // Verify that the desktop left nav (aside) is NOT rendered when isHub=true
+    const desktopAside = document.querySelector('aside[aria-label="Settings sections"]');
+    expect(desktopAside).toBeNull();
   });
 });
