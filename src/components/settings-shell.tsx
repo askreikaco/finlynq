@@ -75,6 +75,8 @@ function generateRouteGroup(): Array<{ prefix: string; group: string }> {
 
 const ROUTE_GROUP: Array<{ prefix: string; group: string }> = generateRouteGroup();
 
+const SELF_BACK_PATHS = ["/settings/import/reconcile-visibility"];
+
 function activeHref(pathname: string): string {
   for (const { prefix, group } of ROUTE_GROUP) {
     if (pathname.startsWith(prefix)) return group;
@@ -176,7 +178,7 @@ export function SettingsShell({ children, hubBackHref }: { children: React.React
           content width; `overflow-x-auto` makes wide tables (issue #88)
           scroll inside the slot instead of pushing the page wider. */}
       <div className="flex-1 min-w-0 overflow-x-auto">
-        {hubBackHref && !isHub && (
+        {hubBackHref && !isHub && !SELF_BACK_PATHS.some((p) => pathname.startsWith(p)) && (
           <BackButton href={hubBackHref} label="Back to Settings" />
         )}
         {children}

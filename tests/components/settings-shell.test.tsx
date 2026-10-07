@@ -237,4 +237,30 @@ describe("Settings Shell", () => {
     expect(contentSlot?.contains(backButton)).toBe(true);
     expect(aside?.contains(backButton)).toBe(false);
   });
+
+  it("does not render hub back button when on /settings/import/reconcile-visibility (page with self back button)", () => {
+    mockPath = "/settings/import/reconcile-visibility";
+    render(
+      <SettingsShell hubBackHref="/settings">
+        <div>Test content</div>
+      </SettingsShell>
+    );
+
+    const backButtons = screen.queryAllByRole("link");
+    const hasHubBackButton = backButtons.some((link) => link.getAttribute("data-slot") === "back-button");
+    expect(hasHubBackButton).toBe(false);
+  });
+
+  it("still renders back button on /settings/general with hubBackHref set", () => {
+    mockPath = "/settings/general";
+    render(
+      <SettingsShell hubBackHref="/settings">
+        <div>Test content</div>
+      </SettingsShell>
+    );
+
+    const backButton = screen.getByRole("link", { name: "Back to Settings" });
+    expect(backButton).toBeDefined();
+    expect(backButton?.getAttribute("data-slot")).toBe("back-button");
+  });
 });
