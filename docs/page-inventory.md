@@ -268,3 +268,6 @@ Count: 59 of 69. No `<ErrorState` in the page file or in its import closure to d
 - `/transactions`  `src/app/(app)/transactions/page.tsx`
 - `/transactions/search`  `src/app/(app)/transactions/search/page.tsx`
 - `/whats-new`  `src/app/(app)/whats-new/page.tsx`
+
+## W6 update (2026-10-09, tip 9b731f5)
+Files under src/app/(app) + src/components containing `<ErrorState`: 18. Added since this inventory: /transactions, /reports, /portfolio, /portfolio/dividends, /portfolio/realized-gains, /tax (W4/W5), /whats-new, /account/info (W6-04). Remaining pages without ErrorState fetch only on user action, are admin-only, re-export another page, or share one error state with a save form (see the W6 plan, Definition of done, ErrorState rule).
