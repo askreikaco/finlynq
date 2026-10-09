@@ -137,7 +137,7 @@ export function HoldingsTable({
                   onClick={() => setFilter(t)}
                 >
                   {t === "all" ? "All" : ASSET_TYPE_CONFIG[t]?.label ?? t}
-                  <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1 bg-transparent">
+                  <Badge variant="secondary" className={`ml-1 text-[10px] h-4 px-1 bg-transparent ${filter === t ? "text-primary-foreground" : ""}`}>
                     {t === "all" ? summary.totalHoldings : byType[t]?.count ?? 0}
                   </Badge>
                 </Button>

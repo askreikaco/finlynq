@@ -311,7 +311,7 @@ export const Nav = memo(function Nav({ instanceAdminEnabled = false, categoriesM
             {group.label && !collapsed && (
               <button
                 onClick={() => toggleGroup(group.label)}
-                className="flex items-center w-full px-3 mb-1 mt-5 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/30 hover:text-sidebar-foreground/50 transition-colors"
+                className="flex items-center w-full px-3 mb-1 mt-5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground hover:text-sidebar-foreground/50 transition-colors"
               >
                 <ChevronDown
                   className={cn(
@@ -347,7 +347,7 @@ export const Nav = memo(function Nav({ instanceAdminEnabled = false, categoriesM
                   onClick={toggleAdminGroup}
                   aria-expanded={adminOpen}
                   aria-controls="nav-admin-links"
-                  className="flex items-center w-full px-3 mb-1 mt-3 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/30 hover:text-sidebar-foreground/50 transition-colors"
+                  className="flex items-center w-full px-3 mb-1 mt-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground hover:text-sidebar-foreground/50 transition-colors"
                 >
                   <ChevronDown
                     className={cn(
