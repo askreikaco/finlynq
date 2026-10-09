@@ -124,14 +124,12 @@ for (const [w, h, mobile] of [[390, 844, true], [1280, 800, false]] as const) {
 
       // ---- create via /transactions/new, then it is first on /transactions ----
       await openPage(page, s, "/transactions/new");
-      await page.getByRole("button", { name: /^\$/ }).first().click(); // amount pad
-      for (const k of ["1", "2", ".", "5"]) await page.getByRole("button", { name: k, exact: true }).click();
-      await page.getByRole("button", { name: "OK", exact: true }).click();
+      await page.getByRole("textbox", { name: "Amount", exact: true }).fill("12.5");
       await page.getByRole("textbox", { name: "Payee", exact: true }).fill("Created Row Q");
       await page.getByRole("button", { name: /^Category/ }).click();
       await page.getByPlaceholder("Search category...").fill("Groceries");
       await page.getByRole("button", { name: /Groceries/ }).first().click();
-      await page.getByRole("button", { name: /^Save / }).click();
+      await page.getByRole("button", { name: "Save", exact: true }).click();
       await page.waitForURL(/\/transactions(\?|$)/, { timeout: 120_000 });
       if (mobile) {
         await expect(page.getByRole("button", { name: /^Edit / }).first()).toHaveAccessibleName("Edit Created Row Q", { timeout: 60_000 });
