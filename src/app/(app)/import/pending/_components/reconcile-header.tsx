@@ -67,7 +67,7 @@ export function ReconcileHeader({
               ? detail.staged.source === "upload"
                 ? detail.staged.originalFilename || "Uploaded file"
                 : detail.staged.subject || "(no subject)"
-              : "Loading…"} titleClassName="text-xl font-semibold tracking-tight" />
+              : "Loading…"} titleClassName="text-2xl font-bold tracking-tight" />
           {detail && (
             <p className="text-xs text-muted-foreground mt-0.5">
               {detail.staged.source === "upload" && detail.staged.fileFormat

@@ -336,8 +336,8 @@ function SubscriptionsPageContent() {
         className="flex flex-wrap items-start justify-between gap-3"
         title="Subscriptions"
         subtitle="Recurring bills and subscriptions: what they cost and when they're due."
-        titleClassName="text-2xl font-bold"
-        subtitleClassName="text-sm text-muted-foreground mt-1"
+        titleClassName="text-2xl font-bold tracking-tight"
+        subtitleClassName="text-sm text-muted-foreground mt-0.5"
         actions={
           <Button onClick={openAdd}>
             <Plus className="h-4 w-4 mr-1" /> Add subscription

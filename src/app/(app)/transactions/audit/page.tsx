@@ -108,7 +108,7 @@ export default function CurrencyAuditPage() {
     <div className="space-y-5 max-w-4xl">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <PageHeader title="Currency Review" titleClassName="text-xl font-semibold tracking-tight" backHref="/transactions" backLabel="Back to Transactions" />
+          <PageHeader title="Currency Review" titleClassName="text-2xl font-bold tracking-tight" backHref="/transactions" backLabel="Back to Transactions" />
           <p className="text-sm text-muted-foreground mt-1">
             Transactions with a currency that doesn&apos;t match their account&apos;s currency.
             These were flagged when we added the entered/account/reporting model — they need
