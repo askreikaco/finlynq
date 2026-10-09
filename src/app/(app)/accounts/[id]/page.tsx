@@ -1,13 +1,10 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useSWRConfig } from "swr";
-import { revalidateTransactionLists } from "@/lib/transactions/revalidate";
 import Link from "next/link";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { Card, CardContent } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { formatCurrency } from "@/lib/currency";
@@ -15,11 +12,8 @@ import {
   ArrowLeft,
   Wallet,
   Pencil,
-  Coins,
-  Plus,
   Trash2,
   Inbox,
-  FileCog,
   Receipt,
   TrendingUp,
   ChevronDown,
@@ -29,7 +23,6 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { AccountDialog } from "../_components/account-dialog";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -50,16 +43,8 @@ import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/error-state";
 import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
-import { ModePicker } from "@/components/inbox/mode-picker";
-import { ImportPrefsPicker } from "@/components/inbox/import-prefs-picker";
-import { isMode, type Mode } from "@/components/inbox/modes";
+import type { Mode } from "@/components/inbox/modes";
 import { NetWorthHistoryChart } from "@/components/net-worth-history-chart";
-import {
-  TransactionDialog,
-  type DialogAccount,
-  type DialogCategory,
-  type DialogHolding,
-} from "@/components/transactions/transaction-dialog";
 import { TransactionsWorkspace } from "../../transactions/_components/transactions-workspace";
 import { PageHeader, HEADER_DESKTOP_ONLY, CompactOnly, FromMd } from "@/components/mobile";
 import { usePageFab } from "@/components/mobile/page-fab";
@@ -82,14 +67,6 @@ type Account = {
   ofxPayeeSource?: "name" | "memo";
 };
 
-type CashSleeve = {
-  id: number;
-  currency: string;
-  name: string | null;
-  /** Total tx count referencing this sleeve — server-side from /api/portfolio's currentShares is a sum, not a count, so we derive client-side from a separate fetch. */
-  txCount?: number;
-};
-
 type AccountBalance = {
   accountId: number;
   balance: number;
@@ -97,10 +74,6 @@ type AccountBalance = {
   holdingsValue?: number;
   holdingsCostBasis?: number;
 };
-
-/** Edit-dialog tab ids. `#reconciliation-mode` / `#import-prefs` deep-links
- *  map onto the reconciliation / import tabs (FINLYNQ-227). */
-type EditTab = "details" | "reconciliation" | "import" | "sleeves";
 
 /** All 8 portfolio ops for the investment-account quick-actions menu. The op
  *  keys match the `/portfolio/new?op=<key>` route (hyphenated, NOT underscore). */
@@ -116,12 +89,11 @@ const INVESTMENT_OPS: { op: string; label: string }[] = [
 ];
 
 export default function AccountDetailPage() {
-  const { mutate: swrMutate, cache } = useSWRConfig();
   const { id } = useParams();
   const router = useRouter();
   const { displayCurrency } = useDisplayCurrency();
   const [account, setAccount] = useState<Account | null>(null);
-  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [, setAccounts] = useState<Account[]>([]);
   /** The account lookup finished and produced nothing (missing id, not yours,
    *  or the request failed) — as opposed to "still in flight". */
   const [loadFailed, setLoadFailed] = useState(false);
@@ -130,19 +102,6 @@ export default function AccountDetailPage() {
   const [balance, setBalance] = useState<number | null>(null);
   const [cashFlowBasis, setCashFlowBasis] = useState<number | null>(null);
   const [holdingsValue, setHoldingsValue] = useState<number | null>(null);
-
-  // Edit dialog (Details / Reconciliation / Import / Cash sleeves tabs). The
-  // form + save logic live in the shared <AccountDialog> (FINLYNQ-206 follow-up);
-  // this page only owns open/tab + the extra-tab content.
-  const [editOpen, setEditOpen] = useState(false);
-  const [editTab, setEditTab] = useState<EditTab>("details");
-
-  // Generic "New transaction" dialog (normal accounts only) — embeds the shared
-  // TransactionDialog seeded with this account pre-selected (FINLYNQ-227).
-  const [txDialogOpen, setTxDialogOpen] = useState(false);
-  const [txDialogType, setTxDialogType] = useState<"income" | "expense" | null>(null);
-  const [dialogCategories, setDialogCategories] = useState<DialogCategory[]>([]);
-  const [dialogHoldings, setDialogHoldings] = useState<DialogHolding[]>([]);
 
   // Actions sheet (mobile) / dropdown (desktop)
   const [actionsSheetOpen, setActionsSheetOpen] = useState(false);
@@ -158,72 +117,11 @@ export default function AccountDetailPage() {
   const [invisible, setInvisible] = useState(account?.invisible === true);
   const [savingInvisible, setSavingInvisible] = useState(false);
 
-  // Cash sleeves panel — list + create + delete, surfaced inside the Edit
-  // dialog (FINLYNQ-227). Cash sleeves are explicit `portfolio_holdings.is_cash`
-  // rows, one per (account, currency); users provision them before recording
-  // Buy/Sell/FX operations.
-  const [sleeves, setSleeves] = useState<CashSleeve[]>([]);
-  const [sleevesLoading, setSleevesLoading] = useState(false);
   const [newSleeveOpen, setNewSleeveOpen] = useState(false);
   const [newSleeveCurrency, setNewSleeveCurrency] = useState<string>("");
   const [newSleeveSaving, setNewSleeveSaving] = useState(false);
   const [newSleeveError, setNewSleeveError] = useState("");
   const sleeveCurrencyOptions = useActiveCurrencies(newSleeveCurrency);
-  // Sleeve-delete confirm (shared ConfirmDialog, replaces window.confirm).
-  const [deleteSleeveId, setDeleteSleeveId] = useState<number | null>(null);
-  const [deletingSleeve, setDeletingSleeve] = useState(false);
-  const [deleteSleeveError, setDeleteSleeveError] = useState("");
-
-  // Group suggestions: the user's existing group names across all accounts.
-  const existingGroups = useMemo(
-    () =>
-      Array.from(
-        new Set(accounts.map((a) => (a.group || "").trim()).filter(Boolean)),
-      ),
-    [accounts],
-  );
-
-  async function refreshSleeves() {
-    if (!id) return;
-    setSleevesLoading(true);
-    try {
-      const res = await fetch("/api/portfolio");
-      if (!res.ok) return;
-      const all: Array<{
-        id: number;
-        accountId: number | null;
-        currency: string;
-        isCash: boolean;
-        name: string | null;
-      }> = await res.json();
-      const mine = all.filter(
-        (h) => h.accountId === Number(id) && h.isCash === true,
-      );
-      // Pull tx count per sleeve for the "Delete" gating.
-      const withCounts = await Promise.all(
-        mine.map(async (h) => {
-          const r = await fetch(
-            `/api/transactions?portfolioHoldingId=${h.id}&limit=1`,
-          );
-          const j = await r.json();
-          return {
-            id: h.id,
-            currency: h.currency,
-            name: h.name,
-            txCount: Number(j.total ?? 0),
-          };
-        }),
-      );
-      setSleeves(withCounts);
-    } finally {
-      setSleevesLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    void refreshSleeves();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
 
   function openNewSleeve() {
     setNewSleeveCurrency(account?.currency ?? displayCurrency);
@@ -250,33 +148,11 @@ export default function AccountDetailPage() {
         return;
       }
       setNewSleeveOpen(false);
-      await refreshSleeves();
     } catch {
       setNewSleeveError("Failed to create sleeve");
     } finally {
       setNewSleeveSaving(false);
     }
-  }
-
-  const sleeveToDelete = sleeves.find((s) => s.id === deleteSleeveId) ?? null;
-
-  async function confirmDeleteSleeve() {
-    if (deleteSleeveId == null) return;
-    setDeletingSleeve(true);
-    setDeleteSleeveError("");
-    const res = await fetch(
-      `/api/portfolio/holdings/cash-sleeve?id=${deleteSleeveId}`,
-      { method: "DELETE" },
-    );
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setDeleteSleeveError(data.error ?? "Failed to delete sleeve");
-      setDeletingSleeve(false);
-      return;
-    }
-    setDeletingSleeve(false);
-    setDeleteSleeveId(null);
-    await refreshSleeves();
   }
 
   // Re-fetch the computed balance + transaction count (the opening balance
@@ -297,10 +173,10 @@ export default function AccountDetailPage() {
       .catch(() => {});
   }
 
-  function openEdit(tab: EditTab = "details") {
+  // Edit account is a full page now (Details / Reconciliation / Import / Cash sleeves tabs).
+  function openEdit(tab: "details" | "reconciliation" | "import" = "details") {
     if (!account) return;
-    setEditTab(tab);
-    setEditOpen(true);
+    router.push(`/accounts/${account.id}/edit?tab=${tab}`);
   }
 
   // Re-fetch this account fresh (decrypted name/alias) after a save — avoids
@@ -318,25 +194,6 @@ export default function AccountDetailPage() {
         if (found) setAccount(found);
       })
       .catch(() => {});
-  }
-
-  // Lazily fetch categories + holdings the first time the user opens the
-  // generic transaction dialog (normal accounts only).
-  function openTxDialog(type?: "income" | "expense") {
-    setTxDialogType(type ?? null);
-    setTxDialogOpen(true);
-    if (dialogCategories.length === 0) {
-      fetch("/api/categories")
-        .then((r) => (r.ok ? r.json() : []))
-        .then((c) => setDialogCategories(Array.isArray(c) ? c : []))
-        .catch(() => {});
-    }
-    if (dialogHoldings.length === 0) {
-      fetch("/api/portfolio")
-        .then((r) => (r.ok ? r.json() : []))
-        .then((h) => setDialogHoldings(Array.isArray(h) ? h : []))
-        .catch(() => {});
-    }
   }
 
   async function toggleArchived() {
@@ -454,7 +311,15 @@ export default function AccountDetailPage() {
     if (hash === "#reconciliation-mode") openEdit("reconciliation");
     else if (hash === "#import-prefs") openEdit("import");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [account]);
+  }, [account?.id]);
+
+  // The Edit account page's "Add sleeve" lands here (?addSleeve=1): open the create-sleeve dialog.
+  useEffect(() => {
+    if (!account) return;
+    if (typeof window === "undefined") return;
+    if (new URLSearchParams(window.location.search).get("addSleeve") === "1") openNewSleeve();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [account?.id]);
 
   // Sync invisible state when account loads
   useEffect(() => {
@@ -519,14 +384,6 @@ export default function AccountDetailPage() {
   const normalInvestmentOps = INVESTMENT_OPS.filter(
     (o) => o.op === "deposit" || o.op === "withdrawal",
   );
-
-  const dialogAccount: DialogAccount = {
-    id: account.id,
-    name: account.name,
-    currency: account.currency,
-    type: account.type,
-    isInvestment: account.isInvestment,
-  };
 
   return (
     <div className="space-y-6">
@@ -643,7 +500,7 @@ export default function AccountDetailPage() {
           <div className="flex items-center justify-between gap-2">
             {/* In */}
             <button
-              onClick={(_e) => openTxDialog("income")}
+              onClick={() => router.push(`/transactions/new?kind=income&account=${account.id}`)}
               className="flex flex-col items-center justify-center gap-2 flex-1 p-3 rounded-lg hover:bg-muted transition-colors"
               title="Record income"
             >
@@ -655,7 +512,7 @@ export default function AccountDetailPage() {
 
             {/* Out */}
             <button
-              onClick={(_e) => openTxDialog("expense")}
+              onClick={() => router.push(`/transactions/new?kind=expense&account=${account.id}`)}
               className="flex flex-col items-center justify-center gap-2 flex-1 p-3 rounded-lg hover:bg-muted transition-colors"
               title="Record expense"
             >
@@ -858,10 +715,9 @@ export default function AccountDetailPage() {
         accountCurrency={account.currency}
       />
 
-      {/* Reconciliation mode, Import preferences, and Cash sleeves moved into
-          the Edit dialog (FINLYNQ-227) — they declutter the main page and are
-          reachable via the Edit button (or the #reconciliation-mode /
-          #import-prefs deep-links, which open the dialog to the right tab). */}
+      {/* Reconciliation mode, Import preferences and Cash sleeves live on the
+          Edit account page (its tabs). Reached via the Edit button, or the
+          #reconciliation-mode / #import-prefs deep-links (see the hash effect). */}
 
       {/* Transactions — the FULL transactions surface (multi-select bulk
           update/delete, filters, per-column customize, sort, CSV export)
@@ -877,35 +733,6 @@ export default function AccountDetailPage() {
           onDataChange={refreshBalanceAndTxns}
         />
       </Suspense>
-
-      {/* Generic transaction dialog (In / Out) — seeded with THIS account
-          pre-selected (FINLYNQ-227). Transfer now opens /transactions/new?kind=transfer. */}
-      <TransactionDialog
-        open={txDialogOpen}
-        onOpenChange={setTxDialogOpen}
-        accounts={[dialogAccount]}
-        categories={
-          // In / Out: offer only income or expense categories, which is how
-          // the dialog decides the transaction's direction.
-          txDialogType === "income"
-            ? dialogCategories.filter((c) => c.type === "I")
-            : txDialogType === "expense"
-              ? dialogCategories.filter((c) => c.type === "E")
-              : dialogCategories
-        }
-        holdings={dialogHoldings}
-        initialState={{
-          kind: "transaction-prefill",
-          values: { accountId: String(account.id), currency: account.currency },
-        }}
-        onSaved={() => {
-          setTxDialogOpen(false);
-          // Refresh the header tiles (balance + count) and revalidate the
-          // embedded workspace's SWR list so the new row shows immediately.
-          refreshBalanceAndTxns();
-          void revalidateTransactionLists(swrMutate, cache);
-        }}
-      />
 
       {/* Create cash sleeve dialog */}
       <Dialog open={newSleeveOpen} onOpenChange={setNewSleeveOpen}>
@@ -955,30 +782,6 @@ export default function AccountDetailPage() {
           </form>
         </DialogContent>
       </Dialog>
-
-      {/* Cash-sleeve delete confirmation (shared ConfirmDialog). */}
-      <ConfirmDialog
-        open={deleteSleeveId != null}
-        onOpenChange={(open) => {
-          if (!open) {
-            setDeleteSleeveId(null);
-            setDeleteSleeveError("");
-          }
-        }}
-        title="Delete cash sleeve"
-        description={
-          <>
-            Delete the {sleeveToDelete?.currency} cash sleeve? This is only
-            allowed when no transactions reference it.
-            {deleteSleeveError && (
-              <span className="mt-2 block text-destructive">{deleteSleeveError}</span>
-            )}
-          </>
-        }
-        confirmLabel="Delete sleeve"
-        busy={deletingSleeve}
-        onConfirm={() => void confirmDeleteSleeve()}
-      />
 
       {/* Mobile actions sheet */}
       <Sheet open={actionsSheetOpen} onOpenChange={setActionsSheetOpen}>
@@ -1067,147 +870,6 @@ export default function AccountDetailPage() {
         </SheetContent>
       </Sheet>
 
-      {/* Edit account dialog — the shared <AccountDialog> (FINLYNQ-206
-          follow-up). Its form is the same <AccountForm> the New account page
-          uses. Reconciliation / Import / Cash sleeves are edit-only extra tabs
-          (they act on this account's id). */}
-      <AccountDialog
-        open={editOpen}
-        onOpenChange={setEditOpen}
-        account={account}
-        existingGroups={existingGroups}
-        initialTab={editTab}
-        onSaved={() => { reloadAccount(); refreshBalanceAndTxns(); }}
-        onRemoved={() => router.push("/accounts")}
-        extraTabs={[
-          {
-            value: "reconciliation",
-            label: "Reconciliation",
-            content: (
-              <>
-                <div className="flex items-center gap-2">
-                  <Inbox className="h-4 w-4 text-info" />
-                  <h3 className="text-sm font-medium">Reconciliation mode</h3>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  How uploads to this account flow through the pipeline. The{" "}
-                  <code className="px-1 mx-0.5 rounded bg-muted text-xs">/inbox</code>{" "}
-                  chip is a per-render lens; this picker is the persisted policy.
-                </p>
-                <ModePicker
-                  accountId={account.id}
-                  initialMode={isMode(account.mode) ? account.mode : "manual"}
-                  onSaved={(m) => setAccount({ ...account, mode: m })}
-                />
-              </>
-            ),
-          },
-          {
-            value: "import",
-            label: "Import",
-            content: (
-              <>
-                <div className="flex items-center gap-2">
-                  <FileCog className="h-4 w-4 text-chart-5" />
-                  <h3 className="text-sm font-medium">Import preferences</h3>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Whether CSV / OFX / QFX uploads to this account show a
-                  field-mapping preview before staging, and which OFX field
-                  becomes the payee.
-                </p>
-                <ImportPrefsPicker
-                  accountId={account.id}
-                  initialCsvMappingMode={account.csvMappingMode === "auto" ? "auto" : "confirm"}
-                  initialOfxPayeeSource={account.ofxPayeeSource === "memo" ? "memo" : "name"}
-                  onSaved={(prefs) =>
-                    setAccount({
-                      ...account,
-                      csvMappingMode: prefs.csvMappingMode,
-                      ofxPayeeSource: prefs.ofxPayeeSource,
-                    })
-                  }
-                />
-              </>
-            ),
-          },
-          {
-            value: "sleeves",
-            label: "Cash sleeves",
-            content: (
-              <>
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <Coins className="h-4 w-4 text-pos" />
-                      <h3 className="text-sm font-medium">Cash sleeves</h3>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Per-currency cash positions inside this account. Required
-                      before recording buys, sells, or FX conversions in a new
-                      currency.
-                    </p>
-                  </div>
-                  <Button size="sm" variant="outline" onClick={openNewSleeve}>
-                    <Plus className="h-3.5 w-3.5 mr-1.5" /> Add sleeve
-                  </Button>
-                </div>
-                {sleevesLoading && sleeves.length === 0 ? (
-                  <div className="h-12 animate-shimmer rounded-md" />
-                ) : sleeves.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-4 text-center">
-                    No cash sleeves yet. Add one to start recording trades.
-                  </p>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="text-xs">Currency</TableHead>
-                        <TableHead className="text-xs">Name</TableHead>
-                        <TableHead className="text-xs text-right">Transactions</TableHead>
-                        <TableHead className="text-xs text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {sleeves.map((s) => (
-                        <TableRow key={s.id} className="hover:bg-muted/30">
-                          <TableCell>
-                            <Badge variant="outline" className="text-xs font-mono">
-                              {s.currency}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-sm">{s.name ?? `Cash ${s.currency}`}</TableCell>
-                          <TableCell className="text-right text-sm tabular-nums">
-                            {s.txCount ?? 0}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button aria-label="Delete sleeve"
-                              size="sm"
-                              variant="ghost"
-                              disabled={(s.txCount ?? 0) > 0}
-                              title={
-                                (s.txCount ?? 0) > 0
-                                  ? "Sleeve has transactions — delete or reassign them first"
-                                  : "Delete sleeve"
-                              }
-                              onClick={() => {
-                                setDeleteSleeveError("");
-                                setDeleteSleeveId(s.id);
-                              }}
-                            >
-                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </>
-            ),
-          },
-        ]}
-      />
     </div>
   );
 }

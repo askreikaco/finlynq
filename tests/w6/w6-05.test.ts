@@ -9,7 +9,7 @@ const FILES: string[] = [
   "src/app/(app)/accounts/page.tsx",
 ];
 const ARIA: [string, string, number][] = [
-  ["src/app/(app)/accounts/[id]/page.tsx", "aria-label=\"Delete sleeve\"", 1],
+  ["src/app/(app)/accounts/[id]/edit/page.tsx", "aria-label=\"Delete sleeve\"", 1],
 ];
 const SKELETON: [string, string, number][] = [
   ["src/app/(app)/accounts/[id]/page.tsx", "bg-muted animate-pulse", 5],

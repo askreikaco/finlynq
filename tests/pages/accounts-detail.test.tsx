@@ -11,19 +11,12 @@ vi.mock("next/link", () => ({
 }));
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn() }),
+  useRouter: () => ({ push: H.push, replace: H.replace }),
   useParams: () => ({ id: "1" }),
   useSearchParams: () => new URLSearchParams(),
 }));
 
-const H = vi.hoisted(() => ({
-  swrMutate: vi.fn(),
-  cache: new Map(),
-  revalidate: vi.fn(async (..._args: unknown[]) => {}),
-  onSaved: null as null | (() => void),
-}));
-vi.mock("swr", () => ({ mutate: vi.fn(), useSWRConfig: () => ({ mutate: H.swrMutate, cache: H.cache }) }));
-vi.mock("@/lib/transactions/revalidate", () => ({ revalidateTransactionLists: (...a: unknown[]) => H.revalidate(...a) }));
+const H = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn() }));
 
 vi.mock("@/components/currency-provider", () => ({ useDisplayCurrency: () => ({ displayCurrency: "VND" }) }));
 vi.mock("@/components/dropdown-order-provider", () => ({ useDropdownOrder: () => <T,>(items: T[]) => items }));
@@ -31,17 +24,8 @@ vi.mock("@/lib/hooks/useActiveCurrencies", () => ({ useActiveCurrencies: () => [
 vi.mock("@/components/inbox/mode-picker", () => ({ ModePicker: () => null }));
 vi.mock("@/components/inbox/import-prefs-picker", () => ({ ImportPrefsPicker: () => null }));
 vi.mock("@/components/net-worth-history-chart", () => ({ NetWorthHistoryChart: () => null }));
-vi.mock("@/components/transactions/transaction-dialog", () => ({
-  TransactionDialog: (props: { onSaved?: () => void }) => {
-    H.onSaved = props.onSaved ?? null;
-    return null;
-  },
-}));
 vi.mock("@/app/(app)/transactions/_components/transactions-workspace", () => ({
   TransactionsWorkspace: () => <div>Transactions Workspace</div>,
-}));
-vi.mock("@/app/(app)/accounts/_components/account-dialog", () => ({
-  AccountDialog: () => null,
 }));
 
 import AccountDetailPage from "@/app/(app)/accounts/[id]/page";
@@ -90,6 +74,11 @@ beforeEach(() => {
     return { ok: false };
   });
   vi.stubGlobal("fetch", fetchSpy);
+});
+
+beforeEach(() => {
+  H.push.mockReset();
+  H.replace.mockReset();
 });
 
 afterEach(() => {
@@ -271,12 +260,37 @@ describe("Account Detail Page", () => {
     });
   });
 
-  it("a transaction saved from the account page revalidates paged lists through the prefix helper", async () => {
+  it("Edit opens the Edit account page on the Details tab (no dialog)", async () => {
     render(<AccountDetailPage />);
-    await waitFor(() => expect(H.onSaved).not.toBeNull());
-    H.revalidate.mockClear();
-    H.onSaved!();
-    expect(H.revalidate).toHaveBeenCalledTimes(1);
-    expect(H.revalidate).toHaveBeenCalledWith(H.swrMutate, H.cache);
+    fireEvent.click(await screen.findByLabelText("Edit account"));
+    expect(H.push).toHaveBeenCalledWith("/accounts/1/edit?tab=details");
+  });
+
+  it("the #reconciliation-mode deep link moves to the Edit page's Reconciliation tab", async () => {
+    window.history.replaceState(null, "", "/accounts/1#reconciliation-mode");
+    try {
+      render(<AccountDetailPage />);
+      await waitFor(() => expect(H.push).toHaveBeenCalledWith("/accounts/1/edit?tab=reconciliation"));
+    } finally {
+      window.history.replaceState(null, "", "/");
+    }
+  });
+
+  it("Income and Expense open New transaction with this account and the matching kind", async () => {
+    render(<AccountDetailPage />);
+    fireEvent.click(await screen.findByTitle("Record income"));
+    expect(H.push).toHaveBeenLastCalledWith("/transactions/new?kind=income&account=1");
+    fireEvent.click(screen.getByTitle("Record expense"));
+    expect(H.push).toHaveBeenLastCalledWith("/transactions/new?kind=expense&account=1");
+  });
+
+  it("?addSleeve=1 (from the Edit page) opens the create-sleeve dialog", async () => {
+    window.history.replaceState(null, "", "/accounts/1?addSleeve=1");
+    try {
+      render(<AccountDetailPage />);
+      expect(await screen.findByText("Add cash sleeve")).toBeTruthy();
+    } finally {
+      window.history.replaceState(null, "", "/");
+    }
   });
 });

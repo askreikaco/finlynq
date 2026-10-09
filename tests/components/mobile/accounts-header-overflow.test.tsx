@@ -14,7 +14,6 @@ vi.mock("@/components/dropdown-order-provider", () => ({
   useDropdownOrder: () => <T,>(items: T[]) => items,
 }));
 vi.mock("@/components/onboarding-tips", () => ({ OnboardingTips: () => null }));
-vi.mock("@/app/(app)/accounts/_components/account-dialog", () => ({ AccountDialog: () => null }));
 
 import AccountsPage from "@/app/(app)/accounts/page";
 
