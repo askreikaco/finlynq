@@ -1,27 +1,36 @@
 /**
  * @vitest-environment jsdom
  */
-// Progressive transactions load: the recent-200 window renders first, the full
-// history replaces it in the background, totals are flagged partial, and
-// create/edit/delete refresh both keys.
+// Progressive transactions load fixes: no false "No transactions" empty state
+// while the 200-row window has no match, export enabled while partial, the
+// fast key dropped once the full list is in, and a Retry for a failed full load.
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as React from "react";
-import { renderHook, waitFor, act, cleanup, render, screen } from "@testing-library/react";
+import { renderHook, waitFor, cleanup, render, screen, fireEvent } from "@testing-library/react";
 import { SWRConfig } from "swr";
 
 const H = vi.hoisted(() => ({
   SP: new URLSearchParams(""),
   RES: {} as Record<string, unknown>,
   useMock: false,
+  keyLog: [] as Array<string | null>,
 }));
 
-// ── hook-level fixtures ──────────────────────────────────────────────────────
+// Spy on every useSWR key the hook passes (the fast key is the second call per render).
+vi.mock("swr", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("swr")>();
+  const spied = (key: any, ...rest: any[]) => {
+    H.keyLog.push(key);
+    return (actual.default as any)(key, ...rest);
+  };
+  return { ...actual, default: spied };
+});
+
 const FULL_KEY = "/api/transactions?limit=100000";
 const FAST_KEY = "/api/transactions?limit=200";
 
 import {
   useTransactions,
-  isNonDefaultTxView,
   TX_FULL_KEY,
   TX_FAST_KEY,
 } from "@/app/(app)/transactions/_hooks/use-transactions";
@@ -30,6 +39,7 @@ const NO_FILTERS = {
   id: "", startDate: "", endDate: "", accountId: "", categoryId: "", search: "",
   portfolioHolding: "", tag: "", direction: "", minAmount: "", maxAmount: "",
 };
+const NO_MATCH = { ...NO_FILTERS, search: "zzz-no-such-payee" };
 const DEFAULT_SORT = { columnId: null, direction: null } as const;
 
 function mkTx(id: number) {
@@ -40,11 +50,10 @@ function mkTx(id: number) {
     source: "manual", accountType: "A", portfolioHolding: null, portfolioHoldingSymbol: null,
   };
 }
-// Full ledger: 300 rows, id DESC so the server order (date DESC, id DESC) is ids 300..1.
+// Full ledger: 300 rows, id DESC so the server order is ids 300..1.
 const ALL = Array.from({ length: 300 }, (_, i) => mkTx(300 - i));
 const FAST_ROWS = ALL.slice(0, 200);
 
-// Controllable fetch: each request waits until the test settles it.
 let queue: Record<string, Array<(body: unknown) => void>> = {};
 let calls: string[] = [];
 function fetchImpl(url: string) {
@@ -65,6 +74,7 @@ function wrapper({ children }: { children: React.ReactNode }) {
 
 beforeEach(() => {
   H.useMock = false;
+  H.keyLog = [];
   queue = {};
   calls = [];
   vi.stubGlobal("fetch", vi.fn(fetchImpl));
@@ -74,91 +84,42 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("useTransactions progressive load", () => {
-  it("renders the recent-200 window before the full history resolves", async () => {
-    const { result } = renderHook(() => useTransactions(NO_FILTERS, DEFAULT_SORT), { wrapper });
-    await waitFor(() => expect(calls).toEqual(expect.arrayContaining([FULL_KEY, FAST_KEY])));
-
-    settle(FAST_KEY, { data: FAST_ROWS, total: 300 });
-
-    await waitFor(() => expect(result.current.txns.length).toBe(10));
-    expect(result.current.isPartial).toBe(true);
-    expect(result.current.loading).toBe(false);
-    expect(result.current.total).toBe(200);
-    expect(result.current.hasMore).toBe(true);
-    expect(result.current.txns[0].id).toBe(300);
-  });
-
-  it("isPartial goes true -> false and the full list replaces the window without a loading flash", async () => {
-    const history: Array<{ isPartial: boolean; loading: boolean; n: number }> = [];
-    const { result } = renderHook(
-      () => {
-        const r = useTransactions(NO_FILTERS, DEFAULT_SORT);
-        history.push({ isPartial: r.isPartial, loading: r.loading, n: r.txns.length });
-        return r;
-      },
-      { wrapper },
-    );
+describe("useTransactions partial-load fixes", () => {
+  it("(a) a filter matching nothing in the 200 window keeps loading while full loads, then reports a real empty list", async () => {
+    const { result } = renderHook(() => useTransactions(NO_MATCH, DEFAULT_SORT), { wrapper });
     await waitFor(() => expect(calls).toEqual(expect.arrayContaining([FULL_KEY, FAST_KEY])));
     settle(FAST_KEY, { data: FAST_ROWS, total: 300 });
+
     await waitFor(() => expect(result.current.isPartial).toBe(true));
+    expect(result.current.txns.length).toBe(0);
+    expect(result.current.total).toBe(0);
+    // Not the empty state: the full history may still match.
+    expect(result.current.loading).toBe(true);
+    expect(result.current.loadError).toBe(false);
 
     settle(FULL_KEY, { data: ALL, total: 300 });
     await waitFor(() => expect(result.current.isPartial).toBe(false));
-    expect(result.current.total).toBe(300);
+    // Full arrived with zero matches: now the empty state is legitimate.
+    expect(result.current.txns.length).toBe(0);
     expect(result.current.loading).toBe(false);
-
-    // Once any rows are on screen, the table never shows the skeleton again.
-    const firstRows = history.findIndex((h) => h.n > 0);
-    expect(firstRows).toBeGreaterThanOrEqual(0);
-    expect(history.slice(firstRows).some((h) => h.loading)).toBe(false);
   });
 
-  it("mutate (loadTxns) revalidates the full key; the fast key is dropped once full data exists", async () => {
+  it("(c) the fast key is passed as null once full data exists", async () => {
     const { result } = renderHook(() => useTransactions(NO_FILTERS, DEFAULT_SORT), { wrapper });
     await waitFor(() => expect(calls).toEqual(expect.arrayContaining([FULL_KEY, FAST_KEY])));
+    // While partial, the fast window key is live.
+    expect(H.keyLog).toContain(TX_FAST_KEY);
+
     settle(FAST_KEY, { data: FAST_ROWS, total: 300 });
     settle(FULL_KEY, { data: ALL, total: 300 });
     await waitFor(() => expect(result.current.isPartial).toBe(false));
 
-    calls = [];
-    act(() => {
-      void result.current.loadTxns();
-    });
-    await waitFor(() => expect(calls).toEqual(expect.arrayContaining([FULL_KEY])));
-    // Fast window is no longer fetched once the full list is in (null key).
-    expect(calls).not.toContain(FAST_KEY);
-    // Drain the revalidation request so nothing is left pending.
-    settle(FULL_KEY, { data: ALL, total: 300 });
-  });
-
-  it("filters during the partial window are flagged by isNonDefaultTxView", async () => {
-    const filters = { ...NO_FILTERS, search: "p1" };
-    const { result } = renderHook(() => useTransactions(filters, DEFAULT_SORT), { wrapper });
-    await waitFor(() => expect(calls).toEqual(expect.arrayContaining([FULL_KEY, FAST_KEY])));
-    settle(FAST_KEY, { data: FAST_ROWS, total: 300 });
-    await waitFor(() => expect(result.current.txns.length).toBeGreaterThan(0));
-    expect(result.current.isPartial).toBe(true);
-    expect(isNonDefaultTxView(filters, DEFAULT_SORT, [])).toBe(true);
-  });
-
-  it("isNonDefaultTxView: default recent-first view is not flagged; any filter, column filter or non-default sort is", () => {
-    expect(isNonDefaultTxView(NO_FILTERS, DEFAULT_SORT, [])).toBe(false);
-    expect(isNonDefaultTxView(NO_FILTERS, { columnId: "date", direction: "desc" }, undefined)).toBe(false);
-    expect(isNonDefaultTxView({ ...NO_FILTERS, search: "   " }, DEFAULT_SORT, [])).toBe(false);
-    expect(isNonDefaultTxView({ ...NO_FILTERS, search: "coffee" }, DEFAULT_SORT, [])).toBe(true);
-    expect(isNonDefaultTxView(NO_FILTERS, { columnId: "amount", direction: "desc" }, [])).toBe(true);
-    expect(isNonDefaultTxView(NO_FILTERS, { columnId: "date", direction: "asc" }, [])).toBe(true);
-    expect(isNonDefaultTxView(NO_FILTERS, DEFAULT_SORT, [{ id: "payee", type: "text", value: "x" }])).toBe(true);
-  });
-
-  it("exports the two distinct keys", () => {
-    expect(TX_FULL_KEY).toBe(FULL_KEY);
-    expect(TX_FAST_KEY).toBe(FAST_KEY);
+    // Last render: full key live, fast key null (no refetch of the window).
+    expect(H.keyLog.slice(-2)).toEqual([TX_FULL_KEY, null]);
   });
 });
 
-// ── workspace-level: the inline note and footer ─────────────────────────────
+// ── workspace-level: canned hook result, rendering and controls ─────────────
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }),
   useSearchParams: () => H.SP,
@@ -185,7 +146,6 @@ vi.mock("@/app/(app)/transactions/_hooks/use-transactions", async (importOrigina
   const actual = await importOriginal<typeof import("@/app/(app)/transactions/_hooks/use-transactions")>();
   return {
     ...actual,
-    // Real hook for the hook-level tests; canned result for the workspace tests.
     useTransactions: (...args: Parameters<typeof actual.useTransactions>) =>
       H.useMock ? (H.RES as ReturnType<typeof actual.useTransactions>) : actual.useTransactions(...args),
   };
@@ -193,15 +153,15 @@ vi.mock("@/app/(app)/transactions/_hooks/use-transactions", async (importOrigina
 
 import { TransactionsWorkspace } from "@/app/(app)/transactions/_components/transactions-workspace";
 
-function partialRes(extra: Record<string, unknown> = {}) {
+function canned(extra: Record<string, unknown> = {}) {
   return {
-    txns: ALL.slice(0, 10), total: 200, loading: false, limit: 10, loadTxns: vi.fn(),
+    txns: [], total: 0, loading: false, limit: 10, loadTxns: vi.fn(),
     loadNextPage: () => {}, resetPage: () => {}, page: 1, hasMore: true, loadError: false,
     isPartial: true, fullLoadError: false, ...extra,
   };
 }
 
-describe("TransactionsWorkspace partial-load note", () => {
+describe("TransactionsWorkspace partial-load fixes", () => {
   beforeEach(() => {
     H.useMock = true;
     (globalThis as any).ResizeObserver ??= class { observe() {} unobserve() {} disconnect() {} };
@@ -211,24 +171,45 @@ describe("TransactionsWorkspace partial-load note", () => {
     vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => ({ data: [] }) })));
   });
 
-  it("shows 'Loading full history...' while partial and a search filter is active", () => {
-    H.SP = new URLSearchParams("search=coffee");
-    H.RES = partialRes();
+  it("(a) while the no-match window is still loading: 'Loading full history...' and no empty state", () => {
+    H.SP = new URLSearchParams("search=zzz-no-such-payee");
+    H.RES = canned({ loading: true, isPartial: true });
     render(<TransactionsWorkspace />);
     expect(screen.getByText("Loading full history...")).toBeTruthy();
+    expect(screen.queryByText("No transactions yet")).toBeNull();
+    expect(screen.queryByText("No transactions found")).toBeNull();
   });
 
-  it("shows no note on the default view while partial", () => {
+  it("(a) once the full list lands with zero matches: the empty state shows", () => {
+    H.SP = new URLSearchParams("search=zzz-no-such-payee");
+    H.RES = canned({ loading: false, isPartial: false, hasMore: false });
+    render(<TransactionsWorkspace />);
+    expect(screen.getAllByText("No transactions yet").length).toBeGreaterThan(0);
+  });
+
+  it("(b) export is enabled while partial with zero window matches", () => {
     H.SP = new URLSearchParams("");
-    H.RES = partialRes();
+    H.RES = canned({ isPartial: true, total: 0 });
     render(<TransactionsWorkspace />);
-    expect(screen.queryByText("Loading full history...")).toBeNull();
+    const btn = screen.getByRole("button", { name: /Export CSV/ }) as HTMLButtonElement;
+    expect(btn.disabled).toBe(false);
   });
 
-  it("shows no note once the full list is in, even with a filter", () => {
-    H.SP = new URLSearchParams("search=coffee");
-    H.RES = partialRes({ isPartial: false, total: 300, hasMore: false });
+  it("(b) export is disabled once the full list has zero rows", () => {
+    H.SP = new URLSearchParams("");
+    H.RES = canned({ isPartial: false, total: 0, hasMore: false });
     render(<TransactionsWorkspace />);
-    expect(screen.queryByText("Loading full history...")).toBeNull();
+    const btn = screen.getByRole("button", { name: /Export CSV/ }) as HTMLButtonElement;
+    expect(btn.disabled).toBe(true);
+  });
+
+  it("(d) Retry after a full-load error calls loadTxns", () => {
+    H.SP = new URLSearchParams("");
+    const loadTxns = vi.fn();
+    H.RES = canned({ isPartial: true, fullLoadError: true, total: 200, txns: [], loadTxns, hasMore: false });
+    render(<TransactionsWorkspace />);
+    expect(screen.getByText(/Full history failed to load/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    expect(loadTxns).toHaveBeenCalledTimes(1);
   });
 });

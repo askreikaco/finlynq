@@ -6,9 +6,10 @@
  * Progressive load (perf): two SWR fetches run in parallel.
  *   - TX_FAST_KEY (limit=200): the most recent 200 rows (server default order
  *     date DESC, id DESC). Renders the first pages immediately.
- *   - TX_FULL_KEY (limit=100000): the whole ledger. SWR's createPersistentCache
- *     encrypts and persists this payload to IndexedDB. When it arrives it
- *     replaces the fast window with no skeleton (keepPreviousData).
+ *   - TX_FULL_KEY (limit=100000): the whole ledger. It stays in memory only:
+ *     persist-policy does not allow /api/transactions into IndexedDB. When it
+ *     arrives it replaces the fast window with no skeleton (keepPreviousData),
+ *     and TX_FAST_KEY is dropped (null key) so it is not refetched.
  * While the full list is pending, `isPartial` is true. Totals and sums from a
  * partial set are not final.
  *
@@ -88,7 +89,7 @@ export function useTransactions(
 ) {
   // 1. Two parallel fetches. FAST renders first; FULL replaces it when it lands.
   const full = useSWR<TxListResponse>(TX_FULL_KEY, jsonFetcher, swrListOptions);
-  const fast = useSWR<TxListResponse>(TX_FAST_KEY, jsonFetcher, swrListOptions);
+  const fast = useSWR<TxListResponse>(full.data ? null : TX_FAST_KEY, jsonFetcher, swrListOptions);
   const { mutate: mutateFull } = full;
   const { mutate: mutateFast } = fast;
 
@@ -96,10 +97,6 @@ export function useTransactions(
   const sourceRows = full.data?.data ?? fast.data?.data;
   const fullLoadError = Boolean(full.error) && !full.data;
   const loadError = fullLoadError && !fast.data;
-  const loading = isPartial
-    ? sourceRows == null && (full.isLoading || fast.isLoading)
-    : full.isLoading || full.isValidating;
-
   const [page, setPage] = useState(initialPage > 0 ? initialPage : 1);
 
   // Reset page slice to 1 whenever filters, sortPref, or colFilters change
@@ -342,6 +339,17 @@ export function useTransactions(
 
     return filtered;
   }, [sourceRows, filters, sortPref, colFilters]);
+
+  // While partial, a window with no match is not "empty": the full history may
+  // still hold matches, so keep loading until the full load settles.
+  const awaitingFullMatch =
+    isPartial &&
+    filteredTxns.length === 0 &&
+    !fullLoadError &&
+    (full.isLoading || full.isValidating);
+  const loading = isPartial
+    ? (sourceRows == null && (full.isLoading || fast.isLoading)) || awaitingFullMatch
+    : full.isLoading || full.isValidating;
 
   // 3. Paginate the filtered array: const paginatedTxns = filteredTxns.slice(0, page * limit)
   const paginatedTxns = filteredTxns.slice(0, page * limit);

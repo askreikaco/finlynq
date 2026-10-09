@@ -960,7 +960,7 @@ export function TransactionsWorkspace({
               size="sm"
               className="h-8 text-xs gap-1.5 ml-auto"
               onClick={handleExport}
-              disabled={exporting || total === 0}
+              disabled={exporting || (!isPartial && total === 0)}
             >
               <Download className="h-3.5 w-3.5" />
               {exporting ? "Exporting…" : "Export CSV"}
@@ -1207,7 +1207,17 @@ export function TransactionsWorkspace({
         className="h-14 w-full flex items-center justify-center text-xs text-muted-foreground"
       >
         {isPartial && fullLoadError ? (
-          <span>Full history failed to load. Showing the most recent 200 transactions.</span>
+          <span className="flex flex-wrap items-center justify-center gap-2">
+            <span>Full history failed to load. Showing the most recent 200 transactions.</span>
+            <Button
+              variant="outline"
+              size="sm"
+              className="min-h-11 md:min-h-8 text-xs"
+              onClick={() => { void loadTxns(); }}
+            >
+              Retry
+            </Button>
+          </span>
         ) : hasMore ? (
           <span className="flex items-center gap-2">
             <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
