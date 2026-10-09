@@ -715,7 +715,7 @@ export default function MobileTransactionPage() {
           <span className="sr-only">New</span>{" "}
           {txType}
         </h1>
-        <div className="flex h-11 w-11 items-center justify-end justify-self-end">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-end justify-self-end">
           {saving && <Loader2 className="h-4 w-4 animate-spin text-primary" aria-hidden="true" />}
         </div>
       </header>

@@ -307,7 +307,7 @@ export default function InfoPage() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-chart-5/10 text-chart-5">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-chart-5/10 text-chart-5">
               <User className="h-5 w-5" />
             </div>
             <div>
@@ -404,7 +404,7 @@ export default function InfoPage() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-pos/10 text-pos">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-pos/10 text-pos">
               <Phone className="h-5 w-5" />
             </div>
             <div>
@@ -436,7 +436,7 @@ export default function InfoPage() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-info/10 text-info">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-info/10 text-info">
               <Mail className="h-5 w-5" />
             </div>
             <div>
