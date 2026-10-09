@@ -474,7 +474,7 @@ export default function AccountDetailPage() {
 
   if (!account && loadFailed) return (
     <div className="space-y-6">
-      <Link href="/accounts" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+      <Link href="/accounts" className="inline-flex max-md:min-h-11 items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
         <ArrowLeft className="h-4 w-4" /> Back to Accounts
       </Link>
       <ErrorState
@@ -529,7 +529,7 @@ export default function AccountDetailPage() {
 
   return (
     <div className="space-y-6">
-      <Link href="/accounts" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+      <Link href="/accounts" className="inline-flex max-md:min-h-11 items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
         <ArrowLeft className="h-4 w-4" /> Back to Accounts
       </Link>
 
@@ -762,6 +762,7 @@ export default function AccountDetailPage() {
             <Button
               size="sm"
               variant="ghost"
+              className="max-md:w-11 max-md:px-0"
               onClick={() => openEdit("details")}
               title="Edit account"
               aria-label="Edit account"

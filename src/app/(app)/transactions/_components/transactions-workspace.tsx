@@ -817,7 +817,7 @@ export function TransactionsWorkspace({
         <Link
           href={`/transactions/search?${mobileSearchQuery}`}
           aria-label="Search and filter"
-          className="flex-1 flex items-center gap-2 px-3 py-2.5 bg-muted rounded-lg text-sm text-muted-foreground hover:bg-muted/80 transition-colors"
+          className="flex min-h-11 flex-1 items-center gap-2 px-3 py-2.5 bg-muted rounded-lg text-sm text-muted-foreground hover:bg-muted/80 transition-colors"
         >
           <Search className="h-4 w-4" />
           <span>Search and filter</span>

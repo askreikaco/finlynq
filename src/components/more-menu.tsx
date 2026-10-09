@@ -191,7 +191,7 @@ export function AppearanceRow() {
             aria-checked={current === c.value}
             onClick={() => setTheme(c.value)}
             className={cn(
-              "min-h-9 rounded-md px-2.5 text-xs font-medium transition-colors",
+              "min-h-9 max-md:min-h-11 rounded-md px-2.5 text-xs font-medium transition-colors active:bg-muted",
               current === c.value ? "bg-background text-foreground shadow-sm" : "text-muted-foreground",
             )}
           >
