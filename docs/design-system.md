@@ -49,11 +49,13 @@ The `design-system-guard.test.ts` scans for banned patterns in `src/app/**` and 
 - `md:hidden` / `hidden md:` (breakpoint-driven hiding; replace with SizeClass logic)
 - `window.innerWidth` (SSR-unsafe; use ResizeObserver hook)
 
-Baseline recorded in `tests/fixtures/adaptive-baseline.json` (13 files, 43 instances). The ratchet **fails** on:
+Baseline recorded in `tests/fixtures/adaptive-baseline.json` (9 files, 31 instances). The ratchet **fails** on:
 1. New files containing patterns (regression guard)
 2. Increased count in existing files (no new uses)
 3. Decreased count without baseline update (enforce migration)
 4. Stale entries (file deleted or usage completely removed)
+
+`CompactOnly` / `FromMd` (src/components/mobile/adaptive.tsx) emit the md:hidden / max-md:hidden classes from the sanctioned primitive directory; prefer them over raw classes in new code.
 
 ### Shrinking the Baseline
 When reducing a banned pattern from a file:
