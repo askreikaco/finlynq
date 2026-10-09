@@ -17,7 +17,7 @@ export const PICKER_RECENT_LIMIT = 5;
 
 /** Bottom sheet on mobile (keyboard-aware); floating panel from sm up. */
 export const PICKER_SHEET_CLASS =
-  "flex flex-col p-0 pt-0 rounded-t-3xl bg-background border-t border-border text-foreground data-[side=bottom]:h-auto data-[side=bottom]:max-h-[min(70dvh,calc(100dvh-var(--kb-inset,0px)))] sm:inset-x-auto! sm:left-1/2! sm:bottom-6! sm:h-auto! sm:max-h-[70dvh]! sm:w-[28rem]! sm:max-w-[calc(100vw-2rem)]! sm:-translate-x-1/2! sm:rounded-2xl! sm:border!";
+  "flex flex-col p-0 pt-0 rounded-t-3xl bg-background border-t border-border text-foreground data-[side=bottom]:h-auto data-[side=bottom]:max-h-[min(70dvh,calc(100dvh-var(--kb-inset,0px)))] regular:inset-x-auto! regular:left-1/2! regular:bottom-6! regular:h-auto! regular:max-h-[70dvh]! regular:w-[28rem]! regular:max-w-[calc(100vw-2rem)]! regular:-translate-x-1/2! regular:rounded-2xl! regular:border!";
 
 export interface PickerEntry {
   id: string;

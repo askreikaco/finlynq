@@ -22,13 +22,8 @@
   "src/app/(app)/scenarios/page.tsx": 6,
   "src/app/(app)/tax/page.tsx": 1,
   "src/app/(app)/transactions/_components/transaction-edit-form.tsx": 1,
-  "src/app/(app)/transactions/new/_components/grouped-picker.tsx": 10,
-  "src/app/(app)/transactions/new/_components/split-section.tsx": 2,
-  "src/app/(app)/transactions/new/page.tsx": 12,
   "src/app/api/import/staged/[id]/rows/[rowId]/route.ts": 2,
   "src/components/account-switcher.tsx": 2,
-  "src/components/analytics-consent.tsx": 1,
-  "src/components/announcement-banner.tsx": 4,
   "src/components/date-picker.tsx": 1,
   "src/components/fx-overrides-section.tsx": 1,
   "src/components/inbox/email-rule-dialog.tsx": 1,
@@ -39,8 +34,6 @@
   "src/components/portfolio/lot-allocation-matrix.tsx": 6,
   "src/components/portfolio/lot-inspector-dialog.tsx": 2,
   "src/components/prompt-gate.tsx": 1,
-  "src/components/reporting-recompute-indicator.tsx": 3,
   "src/components/rules/rule-editor-dialog.tsx": 1,
-  "src/components/transactions/transaction-dialog.tsx": 1,
   "src/components/ui/button.tsx": 2
 }

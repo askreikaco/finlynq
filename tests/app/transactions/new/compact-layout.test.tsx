@@ -120,7 +120,7 @@ describe("compact new-transaction layout", () => {
     expect(header.className).not.toContain("pt-[var(--sat)]");
     const src = readFileSync(SRC, "utf8");
     expect(src).not.toContain("pt-[var(--sat)]");
-    expect(src).toContain("max-md:top-[var(--sat)]");
+    expect(src).toContain("max-regular:top-[var(--sat)]");
     const css = readFileSync(path.join(process.cwd(), "src/app/globals.css"), "utf8");
     expect(css).toMatch(/body\s*\{[^}]*padding-top:\s*var\(--sat\)/);
   });

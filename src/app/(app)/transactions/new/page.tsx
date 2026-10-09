@@ -692,8 +692,8 @@ export default function MobileTransactionPage() {
       data-testid="txnew-root"
       className={cn(
         "flex flex-col bg-background text-foreground",
-        "max-md:fixed max-md:inset-x-0 max-md:top-[var(--sat)] max-md:bottom-[var(--sab,0px)]",
-        "md:relative md:mx-auto md:h-[min(46rem,calc(100dvh-8rem))] md:w-full md:max-w-md md:rounded-2xl md:border md:border-border/80",
+        "max-regular:fixed max-regular:inset-x-0 max-regular:top-[var(--sat)] max-regular:bottom-[var(--sab,0px)]",
+        "regular:relative regular:mx-auto regular:h-[min(46rem,calc(100dvh-8rem))] regular:w-full regular:max-w-md regular:rounded-2xl regular:border regular:border-border/80",
       )}
     >
       {/* Top bar (--phone-header-h, 60px): PHONE_BAR_STICKY, the same glass bar height as the other pages.

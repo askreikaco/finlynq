@@ -47,7 +47,7 @@ export function AnnouncementBanner() {
   const warning = item.severity === "warning";
 
   return (
-    <div className="fixed left-4 right-4 max-w-sm bottom-[calc(var(--mobile-bar-clearance)-8px)] md:bottom-4 md:right-auto z-50 rounded-xl border border-border/50 bg-card p-4 shadow-lg">
+    <div className="fixed left-4 right-4 max-w-sm bottom-[calc(var(--mobile-bar-clearance)-8px)] regular:bottom-4 regular:right-auto z-50 rounded-xl border border-border/50 bg-card p-4 shadow-lg">
       <div className="flex items-start gap-3">
         {warning ? (
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
@@ -78,7 +78,7 @@ export function AnnouncementBanner() {
         <button
           onClick={dismiss}
           aria-label="Dismiss announcement"
-          className="text-muted-foreground hover:text-foreground shrink-0 max-md:p-3 max-md:-m-3"
+          className="text-muted-foreground hover:text-foreground shrink-0 max-regular:p-3 max-regular:-m-3"
         >
           <X className="h-4 w-4" />
         </button>

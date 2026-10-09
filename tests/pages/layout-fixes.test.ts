@@ -152,7 +152,7 @@ describe("holdings table at 1280", () => {
 describe("reporting toast on phones", () => {
   it("sits above the tab bar via the clearance var, not over content rows", () => {
     const src = read("src/components/reporting-recompute-indicator.tsx");
-    expect(src).toContain("max-md:bottom-[calc(var(--mobile-bar-clearance)+0.5rem)]");
-    expect(src).not.toContain("max-md:bottom-[calc(var(--mobile-bar-clearance)+80px)]");
+    expect(src).toContain("max-regular:bottom-[calc(var(--mobile-bar-clearance)+0.5rem)]");
+    expect(src).not.toContain("max-regular:bottom-[calc(var(--mobile-bar-clearance)+80px)]");
   });
 });
