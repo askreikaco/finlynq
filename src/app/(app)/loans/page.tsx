@@ -24,6 +24,7 @@ import { parseSaveError } from "@/lib/save-error";
 import { CspSafeBar } from "@/components/csp-safe-bar";
 import { AmountInput } from "@/components/amount-input";
 import { PageHeader } from "@/components/mobile";
+import { usePageFab } from "@/components/mobile/page-fab";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
 import { isLoanCompleted } from "@/lib/loan-status";
 
@@ -405,6 +406,8 @@ function LoansPageContent() {
           </Card>
         );
   };
+
+  usePageFab("loans.create", () => openCreate());
 
   if (loading) return <LoansSkeleton />;
   if (loadError) return <ErrorState title="Couldn't load loans" message="We couldn't load your loans. Please try again." onRetry={() => { setLoading(true); load(); }} />;

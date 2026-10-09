@@ -61,6 +61,7 @@ import {
 } from "@/components/transactions/transaction-dialog";
 import { TransactionsWorkspace } from "../../transactions/_components/transactions-workspace";
 import { PageHeader, HEADER_DESKTOP_ONLY, CompactOnly, FromMd } from "@/components/mobile";
+import { usePageFab } from "@/components/mobile/page-fab";
 
 type Account = {
   id: number;
@@ -461,6 +462,15 @@ export default function AccountDetailPage() {
       setInvisible(account.invisible === true);
     }
   }, [account?.id]);
+
+  // Mobile FAB: normal account adds a transaction; investment account buys.
+  const fabIsInvestment = account?.isInvestment === true;
+  const fabAdd = () => {
+    if (!account) return;
+    if (account.isInvestment === true) router.push(`/portfolio/new?op=buy&account=${account.id}`);
+    else router.push(`/transactions/new?account=${account.id}`);
+  };
+  usePageFab("accounts.detail.add", fabAdd, fabIsInvestment ? { label: "Buy", icon: TrendingUp } : {});
 
   if (!account && loadFailed) return (
     <div className="space-y-6">

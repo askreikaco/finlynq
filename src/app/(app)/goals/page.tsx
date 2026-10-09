@@ -21,6 +21,7 @@ import { PageSkeleton } from "@/components/page-skeleton";
 import { parseSaveError } from "@/lib/save-error";
 import { AmountInput } from "@/components/amount-input";
 import { PageHeader } from "@/components/mobile";
+import { usePageFab } from "@/components/mobile/page-fab";
 
 type Goal = {
   id: number; name: string; type: string; targetAmount: number; currentAmount: number;
@@ -374,6 +375,8 @@ export default function GoalsPage() {
   const totalTarget = active.reduce((s, g) => s + (g.targetAmountDisplay ?? g.targetAmount), 0);
   const totalCurrent = active.reduce((s, g) => s + (g.currentAmountDisplay ?? g.currentAmount), 0);
   const hasForeignGoal = active.some((g) => g.currency && g.currency !== displayCurrency);
+
+  usePageFab("goals.create", () => setAddOpen(true));
 
   if (loading) return <PageSkeleton variant="cards" rows={3} />;
   if (loadError) return <ErrorState title="Couldn't load goals" message="We couldn't load your goals. Please try again." onRetry={() => { setLoading(true); load(); }} />;

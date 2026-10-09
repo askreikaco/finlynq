@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { AmountInput } from "@/components/amount-input";
 import { PageHeader, HEADER_DESKTOP_ONLY, FromMd } from "@/components/mobile";
+import { usePageFab } from "@/components/mobile/page-fab";
 
 type Budget = {
   id: number;
@@ -404,6 +405,8 @@ export default function BudgetsPage() {
     if (ratio >= 0.75) return "[&_[data-slot=progress-indicator]]:bg-warning";
     return "[&_[data-slot=progress-indicator]]:bg-primary";
   }
+
+  usePageFab("budgets.create", () => setDialogOpen(true));
 
   if (loading) return <PageSkeleton variant="list" rows={5} />;
   if (loadError) return <ErrorState title="Couldn't load budgets" message="We couldn't load your budgets. Please try again." onRetry={() => { setLoading(true); loadData(); }} />;

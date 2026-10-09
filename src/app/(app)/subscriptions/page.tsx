@@ -22,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PageHeader } from "@/components/mobile";
+import { usePageFab } from "@/components/mobile/page-fab";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -315,6 +316,8 @@ function SubscriptionsPageContent() {
   }
 
   const deletingSub = subs.find((s) => s.id === deleteId) ?? null;
+
+  usePageFab("subscriptions.create", () => openAdd());
 
   if (loading) return <PageSkeleton variant="list" rows={5} />;
   if (loadError) {
