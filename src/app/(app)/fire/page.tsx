@@ -210,9 +210,9 @@ function FirePageContent() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 wide:grid-cols-3 gap-6">
         {/* Inputs */}
-        <Card className="lg:col-span-1">
+        <Card className="wide:col-span-1">
           <CardHeader>
             <CardTitle className="text-base">Your Details</CardTitle>
           </CardHeader>
@@ -260,10 +260,10 @@ function FirePageContent() {
         </Card>
 
         {/* Results */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="wide:col-span-2 space-y-4">
           {result && (
             <>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 regular:grid-cols-3 gap-4">
                 <ResultCard
                   label="FIRE Number"
                   value={formatCurrency(result.fireNumber, displayCurrency)}
@@ -503,7 +503,7 @@ function FirePageContent() {
                       </ResponsiveContainer>
 
                       {/* Final value percentiles */}
-                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 text-center">
+                      <div className="grid grid-cols-2 regular:grid-cols-3 wide:grid-cols-5 gap-2 text-center">
                         {([
                           { label: "Worst Case (P10)", value: mcResult.finalValues.p10, color: "text-destructive" },
                           { label: "P25", value: mcResult.finalValues.p25, color: "text-warning" },

@@ -197,7 +197,7 @@ function ThreadDialog({
 
   return (
     <Dialog open={feedbackId != null} onOpenChange={(v) => { if (!v) onClose(); }}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="regular:max-w-lg">
         <DialogHeader>
           <DialogTitle className="capitalize">
             {thread ? `${thread.type} feedback` : "Feedback"}
@@ -357,7 +357,7 @@ export default function FeedbackPage() {
         subtitleClassName="text-sm text-muted-foreground mt-0.5"
         actions={
           <Button onClick={() => setSendOpen(true)}>
-            <Send className="hidden size-4 max-md:block" aria-hidden />
+            <Send className="hidden size-4 max-regular:block" aria-hidden />
             Send feedback
           </Button>
         }

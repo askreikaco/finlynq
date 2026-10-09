@@ -492,7 +492,7 @@ export default function ReportsPage() {
 
       {/* ── Summary Cards ── */}
       {trendsData && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 regular:grid-cols-4 gap-4">
           <Card className="card-hover">
             <CardContent className="pt-4 pb-4">
               <div className="flex items-center gap-2 mb-1">
@@ -778,7 +778,7 @@ export default function ReportsPage() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {/* Totals row */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 regular:grid-cols-3 gap-3">
                       <div className="rounded-lg border bg-muted/30 p-3">
                         <p className="text-xs text-muted-foreground">Valuation G/L</p>
                         <p

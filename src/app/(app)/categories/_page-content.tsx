@@ -286,7 +286,7 @@ function CategoriesOverview({ embedded = false }: CategoriesOverviewProps) {
             Compared with each category&apos;s average over the previous complete months (up to 11) · {cur}
           </CardDescription>
         </CardHeader>
-        <CardContent className="px-2 sm:px-6">
+        <CardContent className="px-2 regular:px-6">
           {data.categories.length === 0 ? (
             <p className="text-sm text-muted-foreground px-2">No categories with {noun} in the last 12 months.</p>
           ) : (
@@ -301,7 +301,7 @@ function CategoriesOverview({ embedded = false }: CategoriesOverviewProps) {
                   <li key={c.id}>
                     <Link
                       href={`/categories/${c.id}`}
-                      className="grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,1.4fr)_7rem_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 rounded-lg px-2 py-3 hover:bg-muted/40"
+                      className="grid grid-cols-[minmax(0,1fr)_auto] regular:grid-cols-[minmax(0,1.4fr)_7rem_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 rounded-lg px-2 py-3 hover:bg-muted/40"
                     >
                       <div className="min-w-0 flex items-center gap-2.5">
                         <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: dot }} />
@@ -314,10 +314,10 @@ function CategoriesOverview({ embedded = false }: CategoriesOverviewProps) {
                           </p>
                         </div>
                       </div>
-                      <div className="hidden sm:block">
+                      <div className="hidden regular:block">
                         <Sparkline data={c.trend} color={isIncome ? CHART_COLORS.positive : CHART_COLORS.negative} labels={sparkLabels} currency={cur} />
                       </div>
-                      <div className="hidden sm:block">
+                      <div className="hidden regular:block">
                         <div className="h-1.5 rounded-full bg-muted overflow-hidden">
                           <div className="h-full rounded-full" style={{ width: `${Math.min(100, c.share * 100)}%`, backgroundColor: dot }} />
                         </div>

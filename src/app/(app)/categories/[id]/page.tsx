@@ -182,7 +182,7 @@ function CategoryPageContent() {
                 placeholder="Switch category"
                 searchPlaceholder="Search categories…"
                 emptyMessage="No matches"
-                className="w-56 max-md:w-40"
+                className="w-56 max-regular:w-40"
               />
             )}
             </span>
@@ -212,7 +212,7 @@ function CategoryPageContent() {
       </div>
 
       {/* Stat tiles */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 wide:grid-cols-5 gap-3">
         <StatTile
           label="This month so far"
           value={formatCurrency(stats.thisMonth, cur)}
@@ -312,7 +312,7 @@ function CategoryPageContent() {
             </CardContent>
           </Card>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 wide:grid-cols-2 gap-4">
             {/* Top payees */}
             <Card>
               <CardHeader>

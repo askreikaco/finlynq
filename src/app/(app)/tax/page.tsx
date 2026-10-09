@@ -78,7 +78,7 @@ function TaxPageContent() {
         />
 
       {/* Contribution Room */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 regular:grid-cols-3 gap-4">
         <Card>
           <CardContent className="pt-5">
             <div className="flex items-start justify-between mb-3">
