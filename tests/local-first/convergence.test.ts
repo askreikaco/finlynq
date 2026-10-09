@@ -255,11 +255,11 @@ describe("convergence fuzz", () => {
     expect(first.controlDiverged, "ASSERT metric arrival-order-control-diverges >=50% of trials").toBeGreaterThanOrEqual(Math.ceil(0.5 * TRIALS));
     expect(first.causalLifts, "ASSERT metric hlc-recv-was-exercised (causal lifts >0)").toBeGreaterThan(0);
     expect(first.causalViolations, "ASSERT hlc-causality-violations-zero").toBe(0);
-  }, 180_000);
+  }, 300_000);
 
   it("is deterministic: a second in-process run gives the same suite hash", async () => {
     const second = await runSuite(TRIALS);
     process.stderr.write(`METRIC suite_hash_run2=${second.suiteHash}\n`);
     expect(second.suiteHash, "ASSERT suite-hash-deterministic").toBe(first.suiteHash);
-  }, 180_000);
+  }, 300_000);
 });

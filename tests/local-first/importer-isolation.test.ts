@@ -20,20 +20,40 @@ function walk(dir: string): string[] {
   return out.sort();
 }
 
-function stripComments(src: string): string {
-  return src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'`])\/\/[^\n]*/g, "$1");
+/** Strips a line comment: `//` only at line start or after whitespace, and never inside a quoted string. */
+function stripLine(line: string): string {
+  let quote: string | null = null;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (quote) {
+      if (c === "\\") i++;
+      else if (c === quote) quote = null;
+      continue;
+    }
+    if (c === '"' || c === "'" || c === "`") quote = c;
+    else if (c === "/" && line[i + 1] === "/" && (i === 0 || /\s/.test(line[i - 1]))) return line.slice(0, i);
+  }
+  return line;
 }
 
-const SPEC_RE = /\b(?:from|import|require)\s*\(?\s*["']([^"']+)["']/g;
-const NETWORK_RE = /\bfetch\s*\(|\bXMLHttpRequest\b|\bWebSocket\b|\bEventSource\b|\bsendBeacon\b|["'`][^"'`\n]*\/api\/[^"'`\n]*["'`]/;
+function stripComments(src: string): string {
+  return src.replace(/\/\*[\s\S]*?\*\//g, "").split("\n").map(stripLine).join("\n");
+}
+
+// Group 1: from/import/require with a quoted specifier. Group 2: dynamic import() with a literal (quote or backtick).
+const SPEC_RE = /\b(?:from|import|require)\s*\(?\s*["']([^"']+)["']|\bimport\s*\(\s*["'`]([^"'`]+)["'`]/g;
+// import( whose argument is not a plain literal (variable, concatenation, interpolated template).
+const DYN_NONLITERAL_RE = /\bimport\s*\(\s*(?!["'`][^"'`$]*["'`]\s*\))/;
+const FORBIDDEN_PKG_RE = /^(pg|postgres|axios|undici|node:https?|https?)$|^drizzle-orm\/(node-postgres|postgres-js)/;
+const NETWORK_RE = /\bfetch\s*\(|\b(?:globalThis|window|self)\s*\.\s*fetch\b|\bXMLHttpRequest\b|\bWebSocket\b|\bEventSource\b|\bsendBeacon\b|["'`][^"'`\n]*\/api\/[^"'`\n]*["'`]/;
 
 /** Returns a list of violation strings for one file's source (comments already allowed in input). */
 export function scanSource(file: string, src: string): string[] {
   const code = stripComments(src);
   const violations: string[] = [];
   for (const m of code.matchAll(SPEC_RE)) {
-    const spec = m[1];
-    const forbiddenAlias = spec === "@/db" || spec.startsWith("@/db/") || spec === "@/lib/queries";
+    const spec = m[1] ?? m[2];
+    const forbiddenAlias = spec === "@/db" || spec.startsWith("@/db/") || spec === "@/lib/queries" || FORBIDDEN_PKG_RE.test(spec);
     let forbiddenRel = false;
     if (spec.startsWith(".")) {
       const target = relative(REPO, resolve(dirname(file), spec)).replace(/\\/g, "/");
@@ -41,6 +61,7 @@ export function scanSource(file: string, src: string): string[] {
     }
     if (forbiddenAlias || forbiddenRel) violations.push(`${file}: import "${spec}"`);
   }
+  if (DYN_NONLITERAL_RE.test(code)) violations.push(`${file}: import() with non-literal argument`);
   const net = NETWORK_RE.exec(code);
   if (net) violations.push(`${file}: network site "${net[0]}"`);
   return violations;
@@ -69,6 +90,20 @@ describe("importer isolation (static scan of src/lib/local-first)", () => {
     ];
     const found = planted.map((src) => scanSource(join(LOCAL_FIRST, "planted.ts"), src).length);
     expect(found).toEqual([1, 1, 1, 1, 1]);
+  });
+
+  it("hardened controls: dynamic, package, network-alias and comment-stripping patterns are flagged", () => {
+    const planted: Array<[string, string]> = [
+      ["dynamic template import of @/db", "const m = await import(`@/db`);"],
+      ["pg import", 'import pg from "pg";'],
+      ["axios import", 'import axios from "axios";'],
+      ["globalThis.fetch", "const f = globalThis.fetch;"],
+      ["x//y string then import", 'const s = "x//y"; import { db } from "@/db";'],
+      ["import(variable)", "const m = await import(spec);"],
+    ];
+    for (const [label, src] of planted) {
+      expect(scanSource(join(LOCAL_FIRST, "planted.ts"), src).length, `control: ${label}`).toBeGreaterThan(0);
+    }
   });
 
   it("comments that name forbidden modules are not counted", () => {

@@ -194,6 +194,38 @@ export function netWorthByMonth(data: FixtureDataset, rateMap: ReadonlyMap<strin
   return out;
 }
 
+/** One row per tx month x visible-account currency, in native currency (no FX). */
+export interface NetWorthCurrencyRow {
+  month: string; // YYYY-MM
+  currency: string;
+  runningTotal: number; // cumulative native amount through month end
+}
+
+/**
+ * Native-currency running total per month x currency. No conversion, so no round2 granularity.
+ * Same filters as getNetWorthOverTime / NET_WORTH_BY_MONTH_SQL: invisible accounts excluded,
+ * archived NOT excluded. One row for every (tx month, visible currency); a currency with no
+ * transaction yet through that month has 0.
+ */
+export function netWorthByMonthPerCurrency(data: FixtureDataset): NetWorthCurrencyRow[] {
+  const months = [...new Set(data.transactions.map((t) => t.date.slice(0, 7)))].sort();
+  const visible = new Map(data.accounts.filter((a) => a.invisible !== true).map((a) => [a.id, a]));
+  const currencies = [...new Set([...visible.values()].map((a) => a.currency))].sort();
+  const out: NetWorthCurrencyRow[] = [];
+  for (const month of months) {
+    for (const currency of currencies) {
+      let runningTotal = 0;
+      for (const t of data.transactions) {
+        if (t.date.slice(0, 7) > month) continue;
+        const a = visible.get(t.accountId);
+        if (a && a.currency === currency) runningTotal += t.amount;
+      }
+      out.push({ month, currency, runningTotal });
+    }
+  }
+  return out;
+}
+
 /**
  * Hero net worth as the dashboard computes it: getAccountBalances(includeArchived, includeInvisible)
  * (src/app/api/dashboard/route.ts:67-70), each balance converted with convertWithRateMap, then

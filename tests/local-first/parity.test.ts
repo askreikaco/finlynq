@@ -182,7 +182,8 @@ describe("server oracle vs LocalStore vs reference (synthetic P1 fixture)", { ti
     });
   }
 
-  it("netWorthOverTime (per month and currency) matches at cents", async () => {
+  it("netWorthOverTime per month x currency (native, no FX) matches at cents on every cell", async () => {
+    // server/local values are per-month SUM(amount) per currency (NOT running totals).
     const server = new Map<string, number>();
     for (const r of await getNetWorthOverTime(ORACLE_USER_ID)) addTo(server, `${r.month}|${r.currency}`, Number(r.cumulative));
     const local = new Map<string, number>();
@@ -190,9 +191,52 @@ describe("server oracle vs LocalStore vs reference (synthetic P1 fixture)", { ti
     expect(server.size).toBeGreaterThanOrEqual(Math.floor(0.9 * monthSpan("2024-01-01", "2026-12-31") * 2));
     expect(sameKeySet(server, local)).toBe(true);
     expect(centsDiff(server, local)).toEqual([]);
-    // Reference: running total through the last month equals the hero net worth (checked below).
-    const refRows = ref.netWorthByMonth(data);
-    expect(refRows.length).toBe(monthSpan("2024-01-01", "2026-12-31"));
+
+    // Running totals per currency in NATIVE currency, compared cell by cell (every month x currency).
+    // Not converted per month: convertCurrency rounds each conversion to cents (round2), and the
+    // reference converts per account while the server would convert per currency, so converted
+    // per-month totals differ by design at the cent level. Converted totals are checked at the
+    // last month by the hero test below.
+    const refRows = ref.netWorthByMonthPerCurrency(data);
+    const months = [...new Set(refRows.map((r) => r.month))].sort();
+    expect(months.length).toBe(monthSpan("2024-01-01", "2026-12-31"));
+    const currencies = [...new Set(refRows.map((r) => r.currency))].sort();
+    const refGrid: Keyed = new Map(refRows.map((r) => [`${r.month}|${r.currency}`, r.runningTotal]));
+    const serverMonths = new Set([...server.keys()].map((k) => k.split("|")[0]));
+    for (const m of serverMonths) expect(months.includes(m), `ASSERT server month ${m} in reference`).toBe(true);
+    for (const k of server.keys()) expect(currencies.includes(k.split("|")[1]), `ASSERT server currency in key ${k}`).toBe(true);
+
+    // Independent naive recomputation: one pass over transactions sorted by date, no helper reuse.
+    const acct = new Map(data.accounts.map((a) => [a.id, a]));
+    const byDate = [...data.transactions].sort((x, y) => (x.date < y.date ? -1 : x.date > y.date ? 1 : 0));
+    const naive: Keyed = new Map();
+    const runNaive = new Map<string, number>();
+    let cursor = 0;
+    for (const m of months) {
+      while (cursor < byDate.length && byDate[cursor].date.slice(0, 7) <= m) {
+        const t = byDate[cursor++];
+        const a = acct.get(t.accountId);
+        if (a && a.invisible !== true) addTo(runNaive, a.currency, t.amount);
+      }
+      for (const c of currencies) naive.set(`${m}|${c}`, runNaive.get(c) ?? 0);
+    }
+    expect(centsDiff(refGrid, naive), "ASSERT helper matches naive recomputation").toEqual([]);
+
+    // Server and local running totals on the same full grid.
+    const runGrid = (monthly: Keyed): Keyed => {
+      const out: Keyed = new Map();
+      const run = new Map<string, number>();
+      for (const m of months) {
+        for (const c of currencies) {
+          addTo(run, c, monthly.get(`${m}|${c}`) ?? 0);
+          out.set(`${m}|${c}`, run.get(c) ?? 0);
+        }
+      }
+      return out;
+    };
+    expect(centsDiff(runGrid(server), refGrid), "ASSERT server running total == reference, every month x currency").toEqual([]);
+    expect(centsDiff(runGrid(local), refGrid), "ASSERT local running total == reference, every month x currency").toEqual([]);
+    expect(refGrid.size).toBe(months.length * currencies.length);
   });
 
   it("hero net worth (sumAssetsLiabilities over convertWithRateMap) matches at cents", async () => {

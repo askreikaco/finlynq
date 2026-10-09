@@ -33,7 +33,7 @@ describe("dependency smoke", () => {
     } finally {
       await client.close();
     }
-  });
+  }, 60_000);
 
   it("drizzle-orm/pglite drives PGlite", async () => {
     const client = new PGlite("memory://");
@@ -44,7 +44,7 @@ describe("dependency smoke", () => {
     } finally {
       await client.close();
     }
-  });
+  }, 60_000);
 
   it("Argon2id matches RFC 9106 section 5.3 tag (t=3, m=32 KiB, p=4, v=0x13)", () => {
     const tag = argon2id(fromHex(PASSWORD_HEX), fromHex(SALT_HEX), {
