@@ -49,9 +49,9 @@ const SECTIONS = [
 
 function SourceBadge({ source }: { source: "env" | "db" | "default" }) {
   const colors: Record<string, string> = {
-    env: "bg-blue-100 text-blue-900 dark:bg-blue-900 dark:text-blue-100",
-    db: "bg-purple-100 text-purple-900 dark:bg-purple-900 dark:text-purple-100",
-    default: "bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100",
+    env: "bg-info/10 text-info",
+    db: "bg-chart-5/10 text-chart-5",
+    default: "bg-muted text-foreground",
   };
   const labels: Record<string, string> = {
     env: "Environment",
@@ -135,7 +135,7 @@ export default function InstanceAdminPage() {
       )}
 
       {error && (
-        <div className="rounded-lg bg-red-50 dark:bg-red-900/20 p-4 text-red-900 dark:text-red-200">
+        <div className="rounded-lg bg-destructive/10 p-4 text-destructive">
           <p className="text-sm font-medium">Error loading configuration</p>
           <p className="text-sm">{error}</p>
         </div>
@@ -214,7 +214,7 @@ export default function InstanceAdminPage() {
           </ConfigSection>
 
           {/* Info note */}
-          <div className="rounded-lg bg-blue-50 dark:bg-blue-900/20 p-4 text-blue-900 dark:text-blue-200">
+          <div className="rounded-lg bg-info/10 p-4 text-info">
             <p className="text-sm font-medium">Configuration precedence</p>
             <p className="text-sm mt-1">
               Environment variables override database settings, which override built-in defaults.

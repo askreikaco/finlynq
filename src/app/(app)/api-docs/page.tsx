@@ -385,15 +385,15 @@ const API_GROUPS: ApiGroup[] = [
 // ============ COMPONENTS ============
 
 const METHOD_COLORS: Record<string, string> = {
-  GET: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300",
-  POST: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300",
-  PUT: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
+  GET: "bg-pos/10 text-pos",
+  POST: "bg-primary/10 text-primary",
+  PUT: "bg-warning/10 text-warning",
   DELETE: "bg-destructive/10 text-destructive",
 };
 
 function MethodBadge({ method }: { method: string }) {
   return (
-    <span className={`inline-block rounded px-2 py-0.5 text-xs font-bold uppercase tracking-wide ${METHOD_COLORS[method] ?? "bg-gray-100 text-gray-700"}`}>
+    <span className={`inline-block rounded px-2 py-0.5 text-xs font-bold uppercase tracking-wide ${METHOD_COLORS[method] ?? "bg-muted text-foreground"}`}>
       {method}
     </span>
   );
@@ -424,7 +424,7 @@ function ParamTable({ params, label }: { params: ApiParam[]; label: string }) {
           <tbody>
             {params.map((p) => (
               <tr key={p.name} className="border-b border-border last:border-0">
-                <td className="px-3 py-2 font-mono text-xs text-indigo-600 dark:text-indigo-400">{p.name}</td>
+                <td className="px-3 py-2 font-mono text-xs text-primary">{p.name}</td>
                 <td className="px-3 py-2 text-xs text-muted-foreground">{p.type}</td>
                 <td className="px-3 py-2 text-xs">{p.required ? <span className="text-destructive">yes</span> : <span className="text-muted-foreground">no</span>}</td>
                 <td className="px-3 py-2 text-xs text-muted-foreground">{p.description}</td>
@@ -572,10 +572,10 @@ function ApiDocsPageContent() {
         </div>
 
         {/* Auth Notice */}
-        <div className="mb-8 rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/30">
-          <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-300">Authentication (Optional)</h3>
-          <p className="mt-1 text-sm text-amber-700 dark:text-amber-400">
-            Routes can optionally require an API key via the <code className="rounded bg-amber-100 px-1 py-0.5 text-xs dark:bg-amber-900/50">X-API-Key</code> header.
+        <div className="mb-8 rounded-lg border border-warning/30 bg-warning/10 p-4">
+          <h3 className="text-sm font-semibold text-warning">Authentication (Optional)</h3>
+          <p className="mt-1 text-sm text-warning">
+            Routes can optionally require an API key via the <code className="rounded bg-warning/10 px-1 py-0.5 text-xs">X-API-Key</code> header.
             Generate your key from Settings. The MCP server runs locally on stdio and does not require authentication.
           </p>
         </div>
@@ -687,7 +687,7 @@ npx tsx mcp-server/index.ts
                   <tbody>
                     {MCP_TOOLS.filter((t) => t.type === "read").map((tool) => (
                       <tr key={tool.name} className="border-b border-border last:border-0">
-                        <td className="px-4 py-2 font-mono text-xs text-emerald-600 dark:text-emerald-400">{tool.name}</td>
+                        <td className="px-4 py-2 font-mono text-xs text-pos">{tool.name}</td>
                         <td className="px-4 py-2 text-xs text-muted-foreground">{tool.description}</td>
                       </tr>
                     ))}
@@ -711,7 +711,7 @@ npx tsx mcp-server/index.ts
                   <tbody>
                     {MCP_TOOLS.filter((t) => t.type === "write").map((tool) => (
                       <tr key={tool.name} className="border-b border-border last:border-0">
-                        <td className="px-4 py-2 font-mono text-xs text-indigo-600 dark:text-indigo-400">{tool.name}</td>
+                        <td className="px-4 py-2 font-mono text-xs text-primary">{tool.name}</td>
                         <td className="px-4 py-2 text-xs text-muted-foreground">{tool.description}</td>
                       </tr>
                     ))}
