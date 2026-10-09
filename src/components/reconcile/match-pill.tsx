@@ -40,12 +40,12 @@ const VARIANT_LABEL: Record<ReconcileBadgeVariant, string> = {
 };
 
 const VARIANT_CLASS: Record<ReconcileBadgeVariant, string> = {
-  linked_primary: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  linked_extra: "bg-teal-50 text-teal-700 border-teal-200",
-  suggested_exact: "bg-sky-50 text-sky-700 border-sky-200",
-  suggested_fuzzy: "bg-amber-50 text-amber-700 border-amber-200",
-  bank_only: "bg-rose-50 text-rose-700 border-rose-200",
-  tx_only: "bg-rose-50 text-rose-700 border-rose-200",
+  linked_primary: "bg-pos/10 text-pos border-pos/30",
+  linked_extra: "bg-pos/10 text-pos border-pos/30",
+  suggested_exact: "bg-info/10 text-info border-info/30",
+  suggested_fuzzy: "bg-warning/10 text-warning border-warning/30",
+  bank_only: "bg-destructive/10 text-destructive border-destructive/30",
+  tx_only: "bg-destructive/10 text-destructive border-destructive/30",
 };
 
 export function MatchPill({

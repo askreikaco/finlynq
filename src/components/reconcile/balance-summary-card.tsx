@@ -81,10 +81,10 @@ export function BalanceSummaryCard({
 
   const valueTone =
     status === "balanced"
-      ? "text-emerald-600 dark:text-emerald-400"
+      ? "text-pos"
       : status === "mismatch"
-        ? "text-rose-600 dark:text-rose-400"
-        : "text-sky-600 dark:text-sky-400";
+        ? "text-destructive"
+        : "text-info";
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -109,9 +109,9 @@ export function BalanceSummaryCard({
         tone={tone}
         value={
           status === "balanced" ? (
-            <span className="text-emerald-600 dark:text-emerald-400 text-lg">✓ Balanced</span>
+            <span className="text-pos text-lg">✓ Balanced</span>
           ) : status === "no_anchor" ? (
-            <span className="text-sky-600 dark:text-sky-400 text-base">Needs anchor</span>
+            <span className="text-info text-base">Needs anchor</span>
           ) : (
             delta
           )

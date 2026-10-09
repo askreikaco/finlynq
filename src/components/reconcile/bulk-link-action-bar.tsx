@@ -58,8 +58,8 @@ export function BulkLinkActionBar({
   const deltaCents = Math.round(delta * 100);
   const isBalanced = deltaCents === 0 && (txCount > 0 || bankCount > 0);
   const deltaClass = isBalanced
-    ? "text-emerald-700 dark:text-emerald-400"
-    : "text-amber-700 dark:text-amber-400";
+    ? "text-pos"
+    : "text-warning";
 
   return (
     <div className="fixed bottom-20 md:bottom-4 left-1/2 -translate-x-1/2 z-40 w-fit max-w-[calc(100%-2rem)]">

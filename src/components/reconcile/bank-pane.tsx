@@ -181,7 +181,7 @@ export function BankPane({
               const busy = busyBankId === r.id;
               const highlighted = highlightedBankIds?.has(r.id) ?? false;
               const highlightClass = highlighted
-                ? "bg-sky-500/10 outline outline-2 outline-sky-500/40"
+                ? "bg-info/10 outline outline-2 outline-info/40"
                 : "";
               const checked = selectedBankIds?.has(r.id) ?? false;
               return (
@@ -247,7 +247,7 @@ export function BankPane({
                       />
                       {r.suggestedInvestmentOp && (
                         <span
-                          className="rounded bg-violet-500/10 text-violet-700 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+                          className="rounded bg-chart-5/10 text-chart-5 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
                           title={`A rule will record this as a ${r.suggestedInvestmentOp} when you create it`}
                         >
                           → {r.suggestedInvestmentOp}
@@ -308,7 +308,7 @@ export function BankPane({
                         onClick={() => onDelete(r.id)}
                         title="Delete this bank-ledger row"
                         aria-label="Delete bank row"
-                        className="h-7 w-7 p-0 text-muted-foreground hover:text-rose-700"
+                        className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
