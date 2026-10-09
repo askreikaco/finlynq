@@ -275,7 +275,7 @@ export function RecentUploadsPanel({
               <Button
                 onClick={() => void deleteBatch(confirm.batch.id, true)}
                 disabled={deletingId === confirm.batch.id}
-                className="bg-destructive hover:bg-destructive/10 text-white"
+                className="bg-destructive hover:bg-destructive/90 text-white"
               >
                 Delete all (bank rows + transactions)
               </Button>
