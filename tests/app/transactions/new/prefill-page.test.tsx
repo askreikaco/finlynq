@@ -44,7 +44,9 @@ afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 async function saveAndGetPayload(type: string) {
   fireEvent.click(screen.getByRole("button", { name: `Save ${type}` }));
   await waitFor(() => expect(fetchMock).toHaveBeenCalled());
-  return JSON.parse(fetchMock.mock.calls[0][1].body);
+  // First POST to /api/transactions (the page also GETs active currencies on mount).
+  const post = fetchMock.mock.calls.find((c: unknown[]) => c[0] === "/api/transactions" && (c[1] as RequestInit | undefined)?.method === "POST");
+  return JSON.parse(String((post![1] as RequestInit).body));
 }
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; };
 

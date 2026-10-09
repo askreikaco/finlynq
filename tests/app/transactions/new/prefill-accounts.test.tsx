@@ -28,7 +28,9 @@ afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 async function save(type: string) {
   fireEvent.click(screen.getByRole("button", { name: `Save ${type}` }));
   await waitFor(() => expect(fetchMock).toHaveBeenCalled());
-  return JSON.parse(fetchMock.mock.calls[0][1].body);
+  // First POST to /api/transactions (the page also GETs active currencies on mount).
+  const post = fetchMock.mock.calls.find((c: unknown[]) => c[0] === "/api/transactions" && (c[1] as RequestInit | undefined)?.method === "POST");
+  return JSON.parse(String((post![1] as RequestInit).body));
 }
 describe("account selection", () => {
   it("R1 no prefill, accounts at mount -> first account shown", () => {
@@ -107,6 +109,6 @@ describe("account selection", () => {
     render(<Page />);
     fireEvent.click(screen.getByRole("button", { name: "Save Income" }));
     await new Promise(r => setTimeout(r, 50));
-    console.log("R9 fetch calls:", fetchMock.mock.calls.length, fetchMock.mock.calls[0] && fetchMock.mock.calls[0][1].body);
+    console.log("R9 fetch calls:", fetchMock.mock.calls.length, fetchMock.mock.calls[0] && fetchMock.mock.calls[0][1]?.body);
   });
 });

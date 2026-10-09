@@ -138,7 +138,7 @@ export default function AccountDetailPage() {
   // Generic "New transaction" dialog (normal accounts only) — embeds the shared
   // TransactionDialog seeded with this account pre-selected (FINLYNQ-227).
   const [txDialogOpen, setTxDialogOpen] = useState(false);
-  const [txDialogType, setTxDialogType] = useState<"income" | "expense" | "transfer" | null>(null);
+  const [txDialogType, setTxDialogType] = useState<"income" | "expense" | null>(null);
   const [dialogCategories, setDialogCategories] = useState<DialogCategory[]>([]);
   const [dialogHoldings, setDialogHoldings] = useState<DialogHolding[]>([]);
 
@@ -151,8 +151,6 @@ export default function AccountDetailPage() {
   const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [accountActionError, setAccountActionError] = useState<string | null>(null);
-  // Every account (for the Transfer action's destination picker).
-  const [allAccounts, setAllAccounts] = useState<DialogAccount[]>([]);
 
   // Invisible toggle state
   const [invisible, setInvisible] = useState(account?.invisible === true);
@@ -664,28 +662,7 @@ export default function AccountDetailPage() {
 
             {/* Transfer */}
             <button
-              onClick={() => {
-                setTxDialogType("transfer");
-                setTxDialogOpen(true);
-                fetch("/api/accounts")
-                  .then((r) => (r.ok ? r.json() : []))
-                  .then((rows: Array<{ id: number; name: string | null; currency: string; type?: string | null; isInvestment?: boolean }>) =>
-                    setAllAccounts(
-                      Array.isArray(rows)
-                        ? rows.map((a) => ({ id: a.id, name: a.name ?? "", currency: a.currency, type: a.type, isInvestment: a.isInvestment }))
-                        : [],
-                    ),
-                  )
-                  .catch(() => {});
-                fetch("/api/categories")
-                  .then((r) => (r.ok ? r.json() : []))
-                  .then((c) => setDialogCategories(Array.isArray(c) ? c : []))
-                  .catch(() => {});
-                fetch("/api/portfolio")
-                  .then((r) => (r.ok ? r.json() : []))
-                  .then((h) => setDialogHoldings(Array.isArray(h) ? h : []))
-                  .catch(() => {});
-              }}
+              onClick={() => router.push(`/transactions/new?kind=transfer&account=${account.id}`)}
               className="flex flex-col items-center justify-center gap-2 flex-1 p-3 rounded-lg hover:bg-muted transition-colors"
               title="Transfer between accounts"
             >
@@ -895,13 +872,12 @@ export default function AccountDetailPage() {
         />
       </Suspense>
 
-      {/* Generic transaction dialog — normal accounts only, seeded with THIS
-          account pre-selected (FINLYNQ-227). For the Transfer action, we use
-          transfer-create mode instead. */}
+      {/* Generic transaction dialog (In / Out) — seeded with THIS account
+          pre-selected (FINLYNQ-227). Transfer now opens /transactions/new?kind=transfer. */}
       <TransactionDialog
         open={txDialogOpen}
         onOpenChange={setTxDialogOpen}
-        accounts={txDialogType === "transfer" && allAccounts.length > 0 ? allAccounts : [dialogAccount]}
+        accounts={[dialogAccount]}
         categories={
           // In / Out: offer only income or expense categories, which is how
           // the dialog decides the transaction's direction.
@@ -912,12 +888,10 @@ export default function AccountDetailPage() {
               : dialogCategories
         }
         holdings={dialogHoldings}
-        initialState={
-          txDialogType === "transfer" ? { kind: "transfer-create", fromAccountId: String(account.id) } : {
-            kind: "transaction-prefill",
-            values: { accountId: String(account.id), currency: account.currency },
-          }
-        }
+        initialState={{
+          kind: "transaction-prefill",
+          values: { accountId: String(account.id), currency: account.currency },
+        }}
         onSaved={() => {
           setTxDialogOpen(false);
           // Refresh the header tiles (balance + count) and revalidate the

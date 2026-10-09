@@ -73,6 +73,8 @@ import {
   type Holding as RuleEditorHolding,
 } from "@/components/rules/rule-editor-dialog";
 import { buildPayeeCategoryRule } from "@/lib/rules/build-payee-category-rule";
+import { useFxPreview, type FxPreview } from "@/lib/hooks/use-fx-preview";
+import { FxPreviewLine } from "./fx-preview-line";
 import { parseSaveError } from "@/lib/save-error";
 import type { Condition, Action } from "@/lib/rules/schema";
 import { LotReallocationNotice } from "@/components/portfolio/lot-reallocation-notice";
@@ -236,13 +238,6 @@ export interface TransactionDialogProps {
 
 type DialogMode = "transaction" | "transfer";
 
-type FxPreview =
-  | { state: "idle" }
-  | { state: "loading" }
-  | { state: "ok"; rate: number; source: string; converted: number; date: string; to: string }
-  | { state: "needs-override" }
-  | { state: "error"; message: string };
-
 interface SplitRow {
   categoryId: string;
   amount: string;
@@ -342,8 +337,14 @@ export function TransactionDialog({
   const [transferBooked, setTransferBooked] = useState<{ sent: number; received: number } | null>(null);
 
   // FX preview
-  const [fxPreview, setFxPreview] = useState<FxPreview>({ state: "idle" });
-  const fxTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fxAccountCurrency = accounts.find((a) => String(a.id) === form.accountId)?.currency;
+  const fxPreview = useFxPreview({
+    enabled: open,
+    from: form.currency,
+    to: fxAccountCurrency,
+    amount: parseFloat(form.amount),
+    date: form.date,
+  });
   const [transferFxPreview, setTransferFxPreview] = useState<FxPreview>({ state: "idle" });
   const transferFxTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -613,63 +614,6 @@ export function TransactionDialog({
     prevFromIsInvestmentRef.current = fromIsInvestment;
     prevToIsInvestmentRef.current = toIsInvestment;
   }, [transferForm.fromAccountId, transferForm.toAccountId, accounts]);
-
-  // ─── FX preview (transaction mode) ──────────────────────────────────
-  useEffect(() => {
-    if (fxTimer.current) clearTimeout(fxTimer.current);
-    if (!open) {
-      setFxPreview({ state: "idle" });
-      return;
-    }
-    const acct = accounts.find((a) => String(a.id) === form.accountId);
-    const accountCurrency = acct?.currency;
-    const amountNum = parseFloat(form.amount);
-    if (
-      !accountCurrency ||
-      !form.currency ||
-      !form.amount ||
-      !Number.isFinite(amountNum) ||
-      amountNum === 0 ||
-      form.currency === accountCurrency
-    ) {
-      setFxPreview({ state: "idle" });
-      return;
-    }
-    setFxPreview({ state: "loading" });
-    fxTimer.current = setTimeout(() => {
-      const params = new URLSearchParams({
-        from: form.currency,
-        to: accountCurrency,
-        date: form.date,
-        amount: String(Math.abs(amountNum)),
-      });
-      fetch(`/api/fx/preview?${params}`)
-        .then(async (r) => {
-          const d = await r.json().catch(() => ({}));
-          if (!r.ok) {
-            setFxPreview({ state: "error", message: d?.error ?? "Rate lookup failed" });
-            return;
-          }
-          if (d?.needsOverride === true) {
-            setFxPreview({ state: "needs-override" });
-            return;
-          }
-          const sign = amountNum < 0 ? -1 : 1;
-          setFxPreview({
-            state: "ok",
-            rate: Number(d.rate ?? 0),
-            source: String(d.source ?? "—"),
-            converted: sign * Number(d.converted ?? 0),
-            date: String(d.date ?? form.date),
-            to: accountCurrency,
-          });
-        })
-        .catch((e) => setFxPreview({ state: "error", message: String(e?.message ?? "Network error") }));
-    }, 300);
-    return () => {
-      if (fxTimer.current) clearTimeout(fxTimer.current);
-    };
-  }, [open, form.accountId, form.amount, form.currency, form.date, accounts]);
 
   // ─── FX preview (transfer mode) ─────────────────────────────────────
   useEffect(() => {
@@ -1253,34 +1197,7 @@ export function TransactionDialog({
                 />
               </div>
             </div>
-            {fxPreview.state !== "idle" && (
-              <div className="text-xs text-muted-foreground -mt-2">
-                {fxPreview.state === "loading" && <span>Loading…</span>}
-                {fxPreview.state === "ok" && (
-                  <span>
-                    Account:{" "}
-                    <span className="font-mono font-medium text-foreground">
-                      {formatCurrency(fxPreview.converted, fxPreview.to)}
-                    </span>
-                    <span className="ml-1.5 opacity-70">
-                      (rate {fxPreview.rate} · {fxPreview.source} · {fxPreview.date})
-                    </span>
-                  </span>
-                )}
-                {fxPreview.state === "needs-override" && (
-                  <span className="text-warning">
-                    Rate not available —{" "}
-                    <Link href="/settings/general" className="underline hover:no-underline">
-                      add an override
-                    </Link>
-                    .
-                  </span>
-                )}
-                {fxPreview.state === "error" && (
-                  <span className="text-destructive">{fxPreview.message}</span>
-                )}
-              </div>
-            )}
+            <FxPreviewLine preview={fxPreview} className="text-xs text-muted-foreground -mt-2" />
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>Account</Label>

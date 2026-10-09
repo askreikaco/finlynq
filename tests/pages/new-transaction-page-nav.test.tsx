@@ -56,11 +56,11 @@ describe("Add opens the New Transaction page, not the dialog", () => {
     expect(H.push).toHaveBeenCalledWith("/transactions/new");
     expect(screen.queryByRole("dialog")).toBeNull();
   });
-  it("N3 dropdown Transfer stays on the dialog (no page nav)", () => {
+  it("N3 dropdown Transfer opens the New Transaction page on the Transfer tab", () => {
     render(<TransactionsWorkspace />);
     fireEvent.click(screen.getByLabelText("More transaction types"));
     fireEvent.click(screen.getByText("Transfer"));
-    expect(H.push).not.toHaveBeenCalledWith("/transactions/new");
-    expect(screen.getByRole("dialog")).toBeTruthy();
+    expect(H.push).toHaveBeenCalledWith("/transactions/new?kind=transfer");
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 });

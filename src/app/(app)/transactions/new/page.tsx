@@ -17,6 +17,7 @@ import {
   CheckCircle2,
   Wallet,
   Info,
+  Coins,
 } from "lucide-react";
 import { useApi } from "@/lib/data/use-api";
 import { mutate } from "swr";
@@ -33,6 +34,17 @@ import {
 import { AutocompletePills } from "./_components/autocomplete-pills";
 import { SplitSection, type SplitRow } from "./_components/split-section";
 import { readAndClearPrefill } from "@/lib/transactions/prefill";
+import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
+import { useFxPreview } from "@/lib/hooks/use-fx-preview";
+import { FxPreviewLine } from "@/components/transactions/fx-preview-line";
+import { buildPayeeCategoryRule } from "@/lib/rules/build-payee-category-rule";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type TxType = "Expense" | "Income" | "Transfer";
 
@@ -66,6 +78,10 @@ export default function MobileTransactionPage() {
   const [payee, setPayee] = useState("");
   const [note, setNote] = useState("");
   const [tags, setTags] = useState("");
+  // Entered currency; blank = follow the selected account's currency (as the dialog does).
+  const [currencyChoice, setCurrencyChoice] = useState("");
+  // "Also create a rule for next time" (Expense/Income with payee + category).
+  const [alsoCreateRule, setAlsoCreateRule] = useState(false);
 
   // Date & Time State
   const [date, setDate] = useState(() => {
@@ -113,6 +129,12 @@ export default function MobileTransactionPage() {
       // prefill=1 in URL but no valid data = show notice
       setPrefillNotice("Prefill data expired or invalid. Please fill the form manually.");
     }
+
+    // ?kind=transfer|expense|income opens that tab (account page Transfer action, workspace links). Other values ignored.
+    const kindParam = new URLSearchParams(window.location.search).get("kind");
+    if (kindParam === "transfer") setTxType("Transfer");
+    else if (kindParam === "expense") setTxType("Expense");
+    else if (kindParam === "income") setTxType("Income");
   }, []);
 
   // UI / Modal States
@@ -186,6 +208,20 @@ export default function MobileTransactionPage() {
   );
 
   const parsedAmount = parseFloat(amount) || 0;
+
+  // Entered currency: explicit choice, else the account's currency, else the display currency.
+  const currency = currencyChoice || selectedAcc?.currency || displayCurrency;
+  const currencyOptions = useActiveCurrencies(currency);
+  const fxPreview = useFxPreview({
+    enabled: txType !== "Transfer",
+    from: currency,
+    to: selectedAcc?.currency || displayCurrency,
+    amount: parsedAmount,
+    date,
+  });
+  // Rule suggestion needs a payee + category on a plain (non-split) Expense/Income.
+  const ruleEligible =
+    txType !== "Transfer" && !splitEnabled && payee.trim().length > 0 && !!categoryId;
 
   // Handle Category Selection for either main category or split row
   const handleCategorySelect = (selectedId: string) => {
@@ -289,6 +325,7 @@ export default function MobileTransactionPage() {
         date,
         accountId: Number(accountId),
         categoryId: effectiveCategoryId,
+        enteredCurrency: currency,
         enteredAmount: signedAmount,
         payee: payee.trim() || undefined,
         note: note.trim() || undefined,
@@ -333,6 +370,37 @@ export default function MobileTransactionPage() {
         if (!splitRes.ok) {
           const splitErr = await splitRes.json().catch(() => ({}));
           console.warn("Splits write failed:", splitErr);
+        }
+      }
+
+      // Rule step runs after the transaction is saved; a failure never undoes it.
+      if (alsoCreateRule && ruleEligible) {
+        let ruleFailure: string | null = null;
+        try {
+          const ruleRes = await fetch("/api/rules", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(buildPayeeCategoryRule(payee.trim(), Number(categoryId))),
+          });
+          if (!ruleRes.ok) {
+            const ruleErr = await ruleRes.json().catch(() => ({}));
+            ruleFailure = ruleErr?.error
+              ? `Transaction saved, but the rule could not be created: ${ruleErr.error}`
+              : "Transaction saved, but the rule could not be created.";
+          }
+        } catch (ruleErr: unknown) {
+          ruleFailure =
+            ruleErr instanceof Error
+              ? `Transaction saved, but the rule could not be created: ${ruleErr.message}`
+              : "Transaction saved, but the rule could not be created.";
+        }
+        if (ruleFailure) {
+          // Saved already: show why and leave (a second Save would book the transaction twice).
+          mutate("/api/transactions");
+          mutate("/api/accounts");
+          setErrorMessage(ruleFailure);
+          setTimeout(() => router.push("/transactions"), 2500);
+          return;
         }
       }
 
@@ -430,6 +498,7 @@ export default function MobileTransactionPage() {
               {amount || "0.00"}
             </span>
           </button>
+          <FxPreviewLine preview={fxPreview} className="text-xs text-muted-foreground text-center" />
         </div>
 
         {/* Core Form Fields */}
@@ -522,6 +591,30 @@ export default function MobileTransactionPage() {
             </div>
             <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
           </button>
+
+          {/* Currency (Expense & Income); defaults to the account's currency */}
+          {txType !== "Transfer" && (
+            <div className="w-full flex items-center justify-between bg-card/90 border border-border/80 p-3.5 rounded-2xl">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center text-muted-foreground shrink-0">
+                  <Coins className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <span className="text-xs text-muted-foreground font-medium">Currency</span>
+              </div>
+              <Select value={currency} onValueChange={(v) => setCurrencyChoice(v ?? "")}>
+                <SelectTrigger aria-label="Currency" size="sm" className="w-28">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {currencyOptions.map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {c}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Destination Account (Transfer Mode Only) */}
           {txType === "Transfer" && (
@@ -700,6 +793,24 @@ export default function MobileTransactionPage() {
           </div>
         </div>
 
+        {/* Rule suggestion (Expense/Income, payee + category set) */}
+        {ruleEligible && (
+          <label className="flex items-start gap-3 p-3.5 rounded-2xl border border-info/30 bg-info/10 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={alsoCreateRule}
+              onChange={(e) => setAlsoCreateRule(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-input"
+            />
+            <span className="flex flex-col gap-0.5">
+              <span className="text-sm font-medium text-foreground">Also create a rule for next time</span>
+              <span className="text-xs text-muted-foreground">
+                Payee contains &ldquo;{payee.trim()}&rdquo; → {selectedCat?.name}
+              </span>
+            </span>
+          </label>
+        )}
+
         {/* Save Action Button */}
         {!showNumpad && (
           <div className="pt-2">
@@ -752,7 +863,10 @@ export default function MobileTransactionPage() {
         accounts={activeAccounts}
         selectedAccountId={accountId}
         title={txType === "Transfer" ? "Select Source Account" : "Select Account"}
-        onSelect={setAccountId}
+        onSelect={(id) => {
+          setAccountId(id);
+          setCurrencyChoice("");
+        }}
       />
 
       <AccountSelector

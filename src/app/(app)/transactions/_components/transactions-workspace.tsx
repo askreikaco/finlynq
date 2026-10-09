@@ -711,7 +711,7 @@ export function TransactionsWorkspace({
             subtitleClassName="text-sm text-muted-foreground mt-0.5"
             actionsClassName="flex flex-wrap items-center gap-1.5"
             overflow={[
-          { label: "Transfer", icon: ArrowRightLeft, onSelect: () => { setDialogInitial({ kind: "transfer-create" }); setDialogOpen(true); } },
+          { label: "Transfer", icon: ArrowRightLeft, onSelect: () => router.push("/transactions/new?kind=transfer") },
           { label: "Buy", onSelect: () => router.push("/portfolio/new?op=buy") },
           { label: "Sell", onSelect: () => router.push("/portfolio/new?op=sell") },
           { label: "Swap", onSelect: () => router.push("/portfolio/new?op=swap") },
@@ -752,12 +752,7 @@ export function TransactionsWorkspace({
                     <DropdownMenuItem onClick={() => router.push("/transactions/new")}>
                       <Receipt className="h-4 w-4 mr-2" /> Transaction
                     </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => {
-                        setDialogInitial({ kind: "transfer-create" });
-                        setDialogOpen(true);
-                      }}
-                    >
+                    <DropdownMenuItem onClick={() => router.push("/transactions/new?kind=transfer")}>
                       <ArrowRightLeft className="h-4 w-4 mr-2" /> Transfer
                     </DropdownMenuItem>
                   </DropdownMenuGroup>
