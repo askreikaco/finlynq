@@ -79,8 +79,8 @@ describe("page-level targets", () => {
     expect(accountPage).toMatch(/variant="ghost"\s*\n\s*className="pointer-coarse:w-11 pointer-coarse:px-0"\s*\n\s*onClick=\{\(\) => openEdit\("details"\)\}\s*\n\s*title="Edit account"/);
     expect(accountPage).not.toContain("max-md:w-11");
   });
-  it("more-menu theme segment: min-h-9 at md+, min-h-11 below, with pressed bg", () => {
-    expect(moreMenu).toContain("min-h-9 max-md:min-h-11 rounded-md px-2.5");
+  it("more-menu theme segment: min-h-9, min-h-11 for touch input (pointer-coarse, not width), with pressed bg", () => {
+    expect(moreMenu).toContain("min-h-9 pointer-coarse:min-h-11 rounded-md px-2.5");
     expect(moreMenu).toContain("active:bg-muted");
   });
   it("portfolio 'Add Account' link has min-h-11", () => {
