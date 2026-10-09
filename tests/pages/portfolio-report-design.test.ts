@@ -35,7 +35,7 @@ describe("portfolio report pages: PageHeader page below and above md", () => {
   });
 
   it.each(PAGES)("%s renders the page root as a tall space-y container (sticky header parent)", (f) => {
-    expect(read(f)).toMatch(/<div className="space-y-4 md:space-y-6">\s*<PageHeader/);
+    expect(read(f)).toMatch(/<div className="space-y-4 regular:space-y-6">\s*<PageHeader/);
   });
 
   it.each(PAGES)("%s has no Dialog/Sheet import (the report is a page, not a popup)", (f) => {

@@ -12,7 +12,7 @@ describe("W5-13 mobile touch targets", () => {
   it("action-center dismiss button is always visible on mobile and 44px", () => {
     const src = read("src/app/(app)/dashboard/_components/action-center.tsx");
     expect(src).toContain(
-      'className="p-1 rounded-md opacity-0 group-hover:opacity-100 focus-visible:opacity-100 max-md:opacity-100 max-md:p-3 max-md:-m-3 hover:bg-muted/80 transition-all"'
+      'className="p-1 rounded-md opacity-0 group-hover:opacity-100 focus-visible:opacity-100 max-regular:opacity-100 max-regular:p-3 max-regular:-m-3 hover:bg-muted/80 transition-all"'
     );
     expect(src).not.toContain(
       'className="p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-muted/80 transition-all"'

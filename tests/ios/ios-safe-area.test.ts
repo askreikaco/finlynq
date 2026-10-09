@@ -42,7 +42,7 @@ describe("safe-area offsets", () => {
     }
   });
   it("account switcher (fixed) clears the home indicator", () => {
-    expect(switcher).toContain("fixed bottom-[calc(var(--mobile-bar-clearance)-8px)] md:bottom-4 left-4");
+    expect(switcher).toContain("fixed bottom-[calc(var(--mobile-bar-clearance)-8px)] regular:bottom-4 left-4");
     expect(switcher).not.toContain("fixed bottom-4 ");
   });
 });
