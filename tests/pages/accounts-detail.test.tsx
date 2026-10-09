@@ -14,6 +14,7 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: H.push, replace: H.replace }),
   useParams: () => ({ id: "1" }),
   useSearchParams: () => new URLSearchParams(),
+  usePathname: () => "/accounts/1",
 }));
 
 const H = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn() }));

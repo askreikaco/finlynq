@@ -9,7 +9,7 @@ import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 const replace = vi.fn();
-vi.mock("next/navigation", () => ({ useRouter: () => ({ replace, push: vi.fn() }) }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ replace, push: vi.fn() }), usePathname: () => "/family/accept" }));
 
 import { UnlockGate } from "@/components/unlock-gate";
 import FamilyAcceptPage from "@/app/(app)/family/accept/page";

@@ -11,6 +11,7 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({
     replace: mockReplace,
   }),
+  usePathname: () => "/dev/gallery",
 }));
 
 describe("GalleryPage", () => {
