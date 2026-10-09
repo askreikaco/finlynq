@@ -228,7 +228,7 @@ function ModeCard({
         <div className="flex-1">
           <div className="font-medium text-sm">{label}</div>
           <div className="text-xs text-muted-foreground mt-1 flex items-start gap-1">
-            {warning && <AlertTriangle className="size-3 text-amber-500 mt-0.5 shrink-0" />}
+            {warning && <AlertTriangle className="size-3 text-warning mt-0.5 shrink-0" />}
             <span>{description}</span>
           </div>
         </div>
