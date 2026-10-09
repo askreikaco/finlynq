@@ -24,14 +24,15 @@ describe("phone top bar: sticky on every PageHeader row (max-md only)", () => {
   const bar = constant("PHONE_BAR");
   const tokens = bar.split(/\s+/);
 
-  it("is sticky below md and nothing else (desktop unchanged)", () => {
-    expect(tokens).toContain("max-md:sticky");
-    expect(tokens.filter((t) => t.startsWith("sticky") || t.startsWith("md:sticky"))).toEqual([]);
-    expect(tokens.filter((t) => /^(md:|sm:|lg:)/.test(t))).toEqual([]);
+  it("is sticky at every breakpoint (no max-md: gate on the position)", () => {
+    expect(tokens).toContain("sticky");
+    expect(tokens).not.toContain("max-md:sticky");
+    expect(tokens.filter((t) => /^(md:|sm:|lg:)?(sticky|relative|absolute|fixed|static)$/.test(t))).toEqual(["sticky"]);
   });
 
   it("is pinned at the safe-area inset, not 0 (iOS status bar)", () => {
-    expect(tokens).toContain("max-md:top-[var(--sat,0px)]");
+    expect(tokens).toContain("top-[var(--sat,0px)]");
+    expect(tokens).toContain("md:top-0");
     expect(tokens).not.toContain("max-md:top-0");
   });
 
@@ -41,7 +42,7 @@ describe("phone top bar: sticky on every PageHeader row (max-md only)", () => {
   });
 
   it("sits above section labels (z-30 > z-10)", () => {
-    expect(tokens).toContain("max-md:z-30");
+    expect(tokens).toContain("z-30");
   });
 
   it("row height comes from --phone-header-h", () => {
@@ -82,12 +83,13 @@ describe("elements under the header offset by sat + header height", () => {
 
   it("family overview filter toolbar offsets on phones, desktop keeps --sat", () => {
     expect(overview).toContain("max-md:top-[calc(var(--sat)+var(--phone-header-h))]");
-    expect(overview).toContain("md:top-[var(--sat)]");
+    expect(overview).toContain("md:static");
+    expect(overview).not.toContain("md:top-[var(--sat)]");
     expect(overview).not.toMatch(/sticky top-\[var\(--sat\)\]/);
   });
 
   it("settings back row uses the shared bar", () => {
-    expect(settingsShell).toContain("<div className={PHONE_BAR}>");
+    expect(settingsShell).toContain("cn(PHONE_BAR, ");
     expect(settingsShell).not.toContain("max-md:pt-[var(--sat)]");
   });
 
@@ -96,11 +98,11 @@ describe("elements under the header offset by sat + header height", () => {
     expect(settingsShell).toContain("max-md:[&_[data-slot=page-header]]:min-h-0");
     expect(settingsShell).toContain("max-md:[&_[data-slot=page-header-title]]:sr-only");
     // the content wrapper keeps the phone-level overflow rule (no scroll container around the header)
-    expect(settingsShell).toContain('className="max-md:overflow-x-clip md:overflow-x-auto"');
+    expect(settingsShell).toContain('<div className="overflow-x-clip">{children}</div>');
   });
 
-  it("dashboard header wrapper is display:contents on phones (its parent must be taller than the sticky row)", () => {
+  it("dashboard header wrapper is display:contents at every breakpoint (its parent must span the page)", () => {
     const dash = read("src/app/(app)/dashboard/page.tsx");
-    expect(dash).toMatch(/<motion\.div variants=\{itemVariants\} className="max-md:contents">\s*<PageHeader/);
+    expect(dash).toMatch(/<motion\.div variants=\{itemVariants\} className="contents">\s*<PageHeader/);
   });
 });

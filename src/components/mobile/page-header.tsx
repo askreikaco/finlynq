@@ -26,15 +26,23 @@ export interface OverflowAction {
 export const HEADER_DESKTOP_ONLY = "max-md:hidden";
 
 /**
- * Phone top bar (max-md only), shared by PageHeader and the settings detail row. One liquid-glass
- * bar (.glass-bar, globals.css): full-bleed (-mx-4 cancels the app shell's px-4), sticky under the
- * safe-area inset, z-30 above section labels (z-10). Content scrolls under it and shows blurred.
- * Sticky is also the containing block for the absolutely centred title (no `relative`: twMerge drops sticky).
- * Row = min-h --phone-header-h (3.75rem, fits a 44px control and a title + subtitle pair).
+ * Sticky top bar, every breakpoint. Pinned at the top of the scroll container: the window on phones
+ * (safe-area inset), <main> on md+ (top 0). z-30 above section labels (z-10).
+ * md+ gets a translucent background (glass-bar only exists below md) so scrolled content does not show through.
+ * Sticky is inert if any ancestor between the bar and the scroller has overflow-* other than visible/clip.
+ * Keep ONE position class on the bar: cn()/twMerge drops sticky if a relative/absolute/fixed class is merged in.
+ */
+export const PHONE_BAR_STICKY =
+  "glass-bar sticky top-[var(--sat,0px)] z-30 md:top-0 md:bg-background/90 md:backdrop-blur-sm";
+
+/**
+ * Phone top bar (max-md layout), shared by PageHeader and the settings detail row. Adds to PHONE_BAR_STICKY:
+ * full-bleed (-mx-4 cancels the app shell's px-4), flex row, min-h --phone-header-h (3.75rem, fits a 44px
+ * control and a title + subtitle pair). The absolutely centred title uses the sticky bar as containing block.
  * No pt-[var(--sat)]: body already pads its in-flow top by --sat.
  */
 export const PHONE_BAR =
-  "glass-bar max-md:sticky max-md:top-[var(--sat,0px)] max-md:z-30 max-md:-mx-4 max-md:flex max-md:min-h-[var(--phone-header-h)] max-md:flex-nowrap max-md:items-center max-md:justify-start max-md:px-4";
+  "glass-bar sticky top-[var(--sat,0px)] z-30 md:top-0 md:bg-background/90 md:backdrop-blur-sm max-md:-mx-4 max-md:flex max-md:min-h-[var(--phone-header-h)] max-md:flex-nowrap max-md:items-center max-md:justify-start max-md:px-4";
 
 /** Left slot placeholder (no back target): keeps the centred title centred. */
 export const PHONE_BAR_SIDE = "hidden max-md:flex max-md:size-11 max-md:shrink-0";

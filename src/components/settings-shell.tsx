@@ -183,8 +183,9 @@ export function SettingsShell({ children, hubBackHref }: { children: React.React
       )}
 
       {/* Content slot — `min-w-0` lets the flex item shrink below intrinsic
-          content width; `overflow-x-auto` makes wide tables (issue #88)
-          scroll inside the slot instead of pushing the page wider. */}
+          content width. `overflow-x-clip` (not overflow-x-auto, which forces overflow-y to auto and makes this
+          box the scroller, so sticky PageHeaders inside would never pin) keeps wide content inside the slot;
+          wide tables scroll in their own ui/table container (issue #88). */}
       <div
         className={cn(
           "flex-1 min-w-0",
@@ -198,17 +199,17 @@ export function SettingsShell({ children, hubBackHref }: { children: React.React
       >
         {/* Not inside the overflow container below: sticky needs a non-overflow ancestor. */}
         {showDetailHeader && (
-          // Phones: the shared glass top bar (round back | centred active section title). md+: back button only.
-          <div className={PHONE_BAR}>
+          // Phones: the shared glass top bar (round back | centred active section title). md+: back button only,
+          // static (scrolls away): the page's own PageHeader is the sticky bar on md+, two sticky rows would overlap.
+          <div className={cn(PHONE_BAR, "md:static md:bg-transparent")}>
             <BackButton href={hubBackHref!} label="Back to Settings" className="justify-self-start" />
             <span aria-hidden className={cn("hidden", PHONE_BAR_CENTER, PHONE_BAR_TITLE)}>
               {activeLabel}
             </span>
           </div>
         )}
-        {/* Phones: no scroll container here (sticky page header inside children needs the page as its scroller;
-            wide tables scroll in their own ui/table container). md+ keeps overflow-x-auto. */}
-        <div className="max-md:overflow-x-clip md:overflow-x-auto">{children}</div>
+        {/* No scroll container here at any breakpoint: the sticky PageHeader inside children pins to the page scroller. */}
+        <div className="overflow-x-clip">{children}</div>
       </div>
     </div>
   );

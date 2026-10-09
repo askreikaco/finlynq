@@ -197,8 +197,9 @@ export function OverviewTab({ reloadKey = 0 }: { reloadKey?: number }) {
 
   return (
     <div className="space-y-6" aria-busy={loading}>
-      {/* Sticky filter toolbar */}
-      <div className="sticky max-md:top-[calc(var(--sat)+var(--phone-header-h))] md:top-[var(--sat)] z-10 bg-background/95 backdrop-blur -mx-1 px-1 py-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+      {/* Sticky filter toolbar: pinned under the page's sticky PageHeader on phones. md+ is static: the PageHeader is
+          also sticky at top 0 there, and a second bar would overlap it (no shared height var to offset by). */}
+      <div className="sticky max-md:top-[calc(var(--sat)+var(--phone-header-h))] md:static z-10 bg-background/95 backdrop-blur -mx-1 px-1 py-3 flex flex-wrap items-center gap-x-3 gap-y-2">
         {/* Time range first (key filter), then icon-only people chips */}
         <div role="radiogroup" aria-label={FAMILY_STRINGS.overview_range_label} className="flex gap-0 bg-muted p-1 rounded-lg w-fit">
           {PERIODS.map((p) => (

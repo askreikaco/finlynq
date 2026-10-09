@@ -47,6 +47,7 @@ import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
 import { useFxPreview } from "@/lib/hooks/use-fx-preview";
 import { FxPreviewLine } from "@/components/transactions/fx-preview-line";
 import { buildPayeeCategoryRule } from "@/lib/rules/build-payee-category-rule";
+import { PHONE_BAR_STICKY } from "@/components/mobile/page-header";
 
 type TxType = "Expense" | "Income" | "Transfer";
 // "save" books and locks the form; "continue" books and clears the entry fields for the next one.
@@ -695,11 +696,11 @@ export default function MobileTransactionPage() {
         "md:relative md:mx-auto md:h-[min(46rem,calc(100dvh-8rem))] md:w-full md:max-w-md md:rounded-2xl md:border md:border-border/80",
       )}
     >
-      {/* Top bar (44px): one liquid-glass bar on phones (.glass-bar), the same as the other pages.
+      {/* Top bar (44px): PHONE_BAR_STICKY, the same glass bar as the other pages.
           The top safe area is reserved once, by the fixed root's top offset. Back is a round 44px glass button. */}
       <header
         data-testid="txnew-topbar"
-        className="glass-bar grid h-11 shrink-0 grid-cols-[2.75rem_1fr_2.75rem] items-center px-4"
+        className={cn(PHONE_BAR_STICKY, "grid h-11 shrink-0 grid-cols-[2.75rem_1fr_2.75rem] items-center px-4")}
       >
         <button
           type="button"

@@ -97,7 +97,7 @@ describe("Settings iOS multi-level menu: detail pages (level 2)", () => {
 
     const row = back.parentElement;
     expect(row?.contains(title as Node)).toBe(true);
-    expect(cls(row)).toEqual(expect.arrayContaining(["glass-bar", "max-md:sticky", "max-md:-mx-4"]));
+    expect(cls(row)).toEqual(expect.arrayContaining(["glass-bar", "sticky", "max-md:-mx-4"]));
     expect(cls(title)).toEqual(expect.arrayContaining(["max-md:absolute", "max-md:text-base", "max-md:font-semibold"]));
   });
 
@@ -126,7 +126,7 @@ describe("PageHeader with backHref: phone glass header row", () => {
     expect(cls(h1)).not.toContain("glass-capsule");
 
     const row = container.querySelector('[data-slot="page-header"]');
-    expect(cls(row)).toEqual(expect.arrayContaining(["glass-bar", "max-md:sticky"]));
+    expect(cls(row)).toEqual(expect.arrayContaining(["glass-bar", "sticky"]));
     expect(row?.contains(back)).toBe(true);
     expect(row?.contains(h1)).toBe(true);
   });

@@ -787,7 +787,7 @@ export default function InvestmentsSettingsPage() {
 
   return (
     <div className="max-w-5xl space-y-6">
-      <div className="flex items-start justify-between gap-3 max-md:contents">
+      <div className="contents">
         <PageHeader
             title="Investments"
             titleClassName="text-2xl font-bold tracking-tight"

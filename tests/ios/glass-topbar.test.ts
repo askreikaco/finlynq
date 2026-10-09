@@ -132,7 +132,7 @@ describe("PageHeader phone bar (render)", () => {
   it("the bar itself carries the glass-bar material and max-md sticky at the safe-area inset", () => {
     const { container } = render(h(PageHeader, { title: "Bar" }));
     const bar = container.querySelector('[data-slot="page-header"]');
-    expect(cls(bar)).toEqual(expect.arrayContaining(["glass-bar", "max-md:sticky", "max-md:top-[var(--sat,0px)]", "max-md:z-30"]));
+    expect(cls(bar)).toEqual(expect.arrayContaining(["glass-bar", "sticky", "top-[var(--sat,0px)]", "z-30"]));
     expect(pageHeaderSrc).toContain("PHONE_BAR_TITLE");
   });
 });

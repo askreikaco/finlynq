@@ -89,11 +89,10 @@ describe("S1: phone main does not become a scroll container", () => {
     const m = layout.match(/<main className="([^"]+)"/);
     expect(m).not.toBeNull();
     const cls = m![1].split(/\s+/);
-    expect(cls).toContain("max-md:overflow-y-visible");
-    expect(cls).toContain("max-md:overflow-x-clip");
-    // desktop keeps the original overflow classes
-    expect(cls).toContain("overflow-y-auto");
-    expect(cls).toContain("overflow-x-hidden");
+    expect(cls).toContain("overflow-x-clip");
+    // main is not a scroll container at any breakpoint (sticky pins to the window)
+    expect(cls).not.toContain("overflow-y-auto");
+    expect(cls).not.toContain("overflow-x-hidden");
   });
 });
 
