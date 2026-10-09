@@ -14,6 +14,7 @@ import {
 import { Dialog } from "@/components/ui/dialog";
 import { BackButton } from "./back-button";
 import { FromMd } from "./adaptive";
+import { useBackTarget } from "@/components/adaptive/use-back-target";
 
 export interface OverflowAction {
   label: string;
@@ -182,6 +183,9 @@ export function PageHeader({
   /** Optional back button label (defaults to "Back"). */
   backLabel?: string;
 }) {
+  // No backHref: a level 2+ route (per the nav registry) gets a back button to its parent.
+  const autoBack = useBackTarget();
+  const effectiveBackHref = backHref ?? (autoBack && autoBack.level >= 2 ? autoBack.href ?? undefined : undefined);
   const hasRight = !!actions || (overflow?.length ?? 0) > 0;
   const noTracking = !/(^|\s)tracking-/.test(titleClassName);
   const h1 = (
@@ -208,13 +212,13 @@ export function PageHeader({
       {belowTitle}
     </div>
   );
-  const hasLeft = !!backHref || !!lead;
+  const hasLeft = !!effectiveBackHref || !!lead;
   const phoneActions = withPhonePrimary(actions);
   return (
     <div data-slot="page-header" className={cn(className, PHONE_BAR)}>
       {hasLeft ? (
         <div className={cn(leadClassName, "max-md:contents")}>
-          {backHref ? <BackButton href={backHref} label={backLabel} className="justify-self-start" /> : null}
+          {effectiveBackHref ? <BackButton href={effectiveBackHref} label={backLabel} className="justify-self-start" /> : null}
           {lead}
           {titleBlock}
         </div>

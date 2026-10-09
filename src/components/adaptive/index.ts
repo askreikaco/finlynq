@@ -10,3 +10,5 @@ export { DataView } from "./data-view";
 export type { DataViewProps, DataViewContent } from "./data-view";
 export { DensityProvider, useDensity, DENSITY_STORAGE_KEY } from "./density-provider";
 export type { Density } from "./density-provider";
+export { useBackTarget, resolveBackTarget } from "./use-back-target";
+export type { BackTarget } from "./use-back-target";
