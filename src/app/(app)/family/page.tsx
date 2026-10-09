@@ -28,9 +28,9 @@ export default function FamilyPage() {
       <PageHeader
         className="flex items-start justify-between gap-3"
         title={FAMILY_STRINGS.page_title}
-        titleClassName="text-2xl sm:text-3xl font-bold"
+        titleClassName="text-2xl font-bold tracking-tight"
         subtitle={FAMILY_STRINGS.page_description}
-        subtitleClassName="text-sm text-muted-foreground mt-1"
+        subtitleClassName="text-sm text-muted-foreground mt-0.5"
         actions={
           <Link
             href={FAMILY_SHARE_PATH}

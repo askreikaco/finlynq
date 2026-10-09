@@ -13,9 +13,9 @@ export default function FamilySharePage() {
       <PageHeader
         className="flex items-start gap-3"
         title={FAMILY_STRINGS.share_page_title}
-        titleClassName="text-2xl sm:text-3xl font-bold"
+        titleClassName="text-2xl font-bold tracking-tight"
         subtitle={FAMILY_STRINGS.share_page_description}
-        subtitleClassName="text-sm text-muted-foreground mt-1"
+        subtitleClassName="text-sm text-muted-foreground mt-0.5"
         backHref="/family"
         backLabel={FAMILY_STRINGS.share_back}
       />

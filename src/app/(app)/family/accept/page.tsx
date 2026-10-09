@@ -10,7 +10,7 @@ import { PageHeader } from "@/components/mobile";
 export default function FamilyAcceptPage() {
   return (
     <div className="space-y-6">
-      <PageHeader title={FAMILY_STRINGS.page_title} titleClassName="text-2xl sm:text-3xl font-bold" />
+      <PageHeader title={FAMILY_STRINGS.page_title} titleClassName="text-2xl font-bold tracking-tight" />
       <InviteLinkHandler requireToken />
       <Link href="/family" className={buttonVariants()}>
         {FAMILY_STRINGS.accept_go_to_page}
