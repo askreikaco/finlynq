@@ -76,7 +76,7 @@ interface Props {
 function StatusBadge({ status, match }: { status: ReconcileStatus; match?: ReconcileMatch }) {
   if (status === "new") {
     return (
-      <Badge className="bg-pos text-white text-[10px]">
+      <Badge className="bg-pos text-white dark:text-primary-foreground text-[10px]">
         <Sparkles className="h-3 w-3 mr-1" /> New
       </Badge>
     );

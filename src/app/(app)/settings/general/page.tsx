@@ -191,7 +191,7 @@ export default function GeneralSettingsPage() {
                     onClick={() => setTheme(value)}
                     className={`inline-flex min-h-11 items-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors ${
                       selected
-                        ? "bg-primary/10 text-primary"
+                        ? "bg-primary/10 text-primary-text"
                         : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                     }`}
                   >

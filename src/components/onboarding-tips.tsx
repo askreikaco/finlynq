@@ -142,7 +142,7 @@ export function OnboardingTips({ page }: OnboardingTipsProps) {
           className="flex items-center gap-2 text-left max-md:min-h-11 md:pointer-events-none md:cursor-default"
         >
           <Lightbulb className="h-4 w-4 text-primary" />
-          <span className="text-sm font-medium text-primary">
+          <span className="text-sm font-medium text-primary-text">
             <span className="md:hidden">Tips ({tips.length})</span>
             <span className="max-md:hidden">Tips for getting started</span>
           </span>
