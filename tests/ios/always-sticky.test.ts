@@ -110,8 +110,8 @@ describe("no ancestor breaks sticky (scroll container and containing block)", ()
     expect(investments).toMatch(/<div className="contents">\s*<PageHeader/);
   });
 
-  it("family filter toolbar is static on md+ so it cannot overlap the sticky PageHeader", () => {
-    expect(overview).toContain("md:static");
+  it("family filter toolbar is static from regular (640px) so it cannot overlap the sticky PageHeader", () => {
+    expect(overview).toContain("regular:static");
     expect(overview).not.toContain("md:top-[var(--sat)]");
   });
 

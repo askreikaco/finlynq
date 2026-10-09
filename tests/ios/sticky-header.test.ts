@@ -82,8 +82,8 @@ describe("elements under the header offset by sat + header height", () => {
   });
 
   it("family overview filter toolbar offsets on phones, desktop keeps --sat", () => {
-    expect(overview).toContain("max-md:top-[calc(var(--sat)+var(--phone-header-h))]");
-    expect(overview).toContain("md:static");
+    expect(overview).toContain("max-regular:top-[calc(var(--sat)+var(--phone-header-h))]");
+    expect(overview).toContain("regular:static");
     expect(overview).not.toContain("md:top-[var(--sat)]");
     expect(overview).not.toMatch(/sticky top-\[var\(--sat\)\]/);
   });

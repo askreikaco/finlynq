@@ -86,8 +86,8 @@ describe("page-level targets", () => {
   it("portfolio 'Add Account' link has min-h-11", () => {
     expect(portfolio).toContain("inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-4 py-2");
   });
-  it("family overview Refresh button is 44x44 below md, 36x36 at md+", () => {
-    expect(family).toContain("w-9 h-9 max-md:w-11 max-md:h-11");
+  it("family overview Refresh button is 44x44 on coarse pointers, 36x36 otherwise", () => {
+    expect(family).toContain("w-9 h-9 pointer-coarse:w-11 pointer-coarse:h-11");
   });
   it("account shell Info/Security tabs are 44px tall and wide below md", () => {
     expect(shell).toContain("max-md:flex max-md:min-h-11 max-md:min-w-11 max-md:items-end");
