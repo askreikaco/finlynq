@@ -155,18 +155,18 @@ export function UnresolvedCategoriesBanner({
     : [];
 
   return (
-    <Card className="border-amber-300 bg-amber-50/40 dark:bg-amber-950/20">
+    <Card className="border-warning/30 bg-warning/10">
       <CardContent className="py-3 space-y-2">
         <div className="flex items-start gap-2">
-          <AlertTriangle className="h-4 w-4 text-amber-700 dark:text-amber-400 mt-0.5 shrink-0" />
+          <AlertTriangle className="h-4 w-4 text-warning mt-0.5 shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-amber-900 dark:text-amber-200">
+            <p className="text-sm font-medium text-warning">
               {rowIds.length} row{rowIds.length === 1 ? "" : "s"} need a category before import
             </p>
-            <p className="text-xs text-amber-800 dark:text-amber-300 mt-0.5">
+            <p className="text-xs text-warning mt-0.5">
               Assign a category to each row (expand the row below) or create a rule that covers a payee pattern. Transfers don&apos;t need one.
             </p>
-            <p className="text-xs text-amber-800 dark:text-amber-300 mt-0.5">
+            <p className="text-xs text-warning mt-0.5">
               If you added a transfer or account rule recently, click <strong>Re-apply rules</strong> at the top of the page.
             </p>
           </div>
@@ -174,14 +174,14 @@ export function UnresolvedCategoriesBanner({
             type="button"
             onClick={onDismiss}
             aria-label="Dismiss banner"
-            className="text-amber-700 hover:text-amber-900 dark:text-amber-400 dark:hover:text-amber-200 p-1 -m-1 shrink-0"
+            className="text-warning hover:text-warning p-1 -m-1 shrink-0"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
         {loadError && (
-          <p className="ml-6 text-[11px] text-rose-700">{loadError}</p>
+          <p className="ml-6 text-[11px] text-destructive">{loadError}</p>
         )}
 
         <ul className="space-y-1.5 ml-6">
@@ -190,14 +190,14 @@ export function UnresolvedCategoriesBanner({
             return (
               <li key={rid} className="text-xs">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-mono text-amber-900 dark:text-amber-200 break-all">
+                  <span className="font-mono text-warning break-all">
                     {payee || <span className="italic text-muted-foreground">(empty payee)</span>}
                   </span>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="h-6 px-2 text-[11px] border-amber-300 hover:bg-amber-100"
+                    className="h-6 px-2 text-[11px] border-warning/30 hover:bg-warning/10"
                     onClick={() => openDialogForRow(rid)}
                     disabled={loading}
                   >
