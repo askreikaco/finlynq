@@ -168,24 +168,25 @@ describe("wiring: every loan surface carries the currency", () => {
     expect(code).not.toContain("formatCurrency(loan.totalInterest, displayCurrency)");
   });
 
-  it("the page can edit a loan, through the SAME dialog as create", () => {
-    const code = codeOnly(LOANS_PAGE);
+  it("the loan form is shared by create and edit, behind one payload builder", () => {
+    const form = codeOnly(readFileSync(path.join(ROOT, "src/app/(app)/loans/_components/loan-form.tsx"), "utf8"));
+    const editPage = codeOnly(readFileSync(path.join(ROOT, "src/app/(app)/loans/[id]/edit/page.tsx"), "utf8"));
     // PUT /api/loans existed from the start but nothing called it — a loan was
     // create-or-delete only in the browser, so a wrong currency was visible
-    // and unfixable.
-    expect(code).toContain('method: editing ? "PUT" : "POST"');
-    expect(code).toContain("openEdit");
-    // One dialog, one payload builder, keyed off a single `editingLoan` flag:
-    // that is what makes a newly added field editable without extra work. Two
-    // DialogContent blocks (or a second payload shape) would break that.
-    expect(code.match(/<DialogContent>/g) ?? []).toHaveLength(1);
-    expect(code.match(/function buildPayload\(/g) ?? []).toHaveLength(1);
+    // and unfixable. Edit is now its own page that renders the SAME form.
+    expect(form).toContain('method: isEdit ? "PUT" : "POST"');
+    expect(editPage).toContain("<LoanForm");
+    expect(editPage).toContain('mode="edit"');
+    // One payload builder: a second copy is how create and edit drift apart.
+    expect(form.match(/function buildPayload\(/g) ?? []).toHaveLength(1);
     // Edit must seed from the NATIVE fields — seeding from the converted
     // companions would rewrite the principal in the display currency on save.
-    expect(code).toContain("principal: String(loan.principal)");
-    expect(code).not.toContain("String(loan.remainingBalanceDisplay)");
+    expect(form).toContain("principal: String(loan.principal)");
+    expect(form).not.toContain("String(loan.remainingBalanceDisplay)");
     // Re-denomination is confirmed, not silent.
-    expect(code).toContain("pendingRedenominate");
+    expect(form).toContain("pendingRedenominate");
+    // The list no longer carries a form of its own.
+    expect(codeOnly(LOANS_PAGE)).not.toContain("<DialogContent>");
   });
 
   it("REST GET emits the reporting-currency companions", () => {

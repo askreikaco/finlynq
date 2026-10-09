@@ -372,6 +372,9 @@ export function InboxToApproveTab({
 
   // Declared before onApprove so it can reference onEdit without a temporal
   // dead-zone access (react-hooks/immutability, FINLYNQ-119).
+// TODO(PKG1 tx-edit): materialize-from-bank-row still opens TransactionDialog in create mode.
+// It saves, then links the bank row to the new transaction (onSaved + setMaterializeBankId). /transactions/new
+// cannot do that link yet, and that page is outside PKG1. Move this to a route once it can.
   const onEdit = useCallback(
     (bankId: string) => {
       if (!snapshot) return;

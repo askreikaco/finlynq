@@ -40,14 +40,18 @@ describe("matchFabRoute", () => {
 describe("resolveFab", () => {
   it("handler registered -> button with the registration's onClick", () => {
     const spy = vi.fn();
-    const r = resolveFab("/goals", withHandler("goals.create", { onClick: spy }));
-    expect(r).toMatchObject({ type: "button", label: "Add goal", disabled: false, pattern: "/goals" });
+    const r = resolveFab("/admin/announcements", withHandler("admin.announcements.new", { onClick: spy }));
+    expect(r).toMatchObject({ type: "button", label: "New announcement", disabled: false, pattern: "/admin/announcements" });
     if (r?.type === "button") r.onClick();
     expect(spy).toHaveBeenCalledTimes(1);
   });
 
+  it("route entry -> link to the create page, no handler needed (goals)", () => {
+    expect(resolveFab("/goals", none)).toMatchObject({ type: "link", label: "Add goal", href: "/goals/new", pattern: "/goals" });
+  });
+
   it("handler not registered and no fallbackHref -> null", () => {
-    expect(resolveFab("/goals", none)).toBeNull();
+    expect(resolveFab("/admin/announcements", none)).toBeNull();
   });
 
   it("handler not registered with fallbackHref -> link to the fallback", () => {
@@ -65,7 +69,7 @@ describe("resolveFab", () => {
   });
 
   it("hidden and redirect routes -> null", () => {
-    for (const p of ["/chat", "/family/accept", "/portfolio/new", "/portfolio/new/buy", "/portfolio/new/in-kind-transfer", "/accounts/new", "/transactions/new", "/transactions/search", "/admin/env", "/settings/holding-accounts", "/settings/securities"]) {
+    for (const p of ["/chat", "/family/accept", "/portfolio/new", "/portfolio/new/buy", "/portfolio/new/in-kind-transfer", "/accounts/new", "/accounts/7/edit", "/transactions/new", "/transactions/search", "/admin/env", "/settings/holding-accounts", "/settings/securities"]) {
       expect(resolveFab(p, none), p).toBeNull();
     }
   });
@@ -86,14 +90,14 @@ describe("resolveFab", () => {
 });
 
 describe("FAB_ROUTES table", () => {
-  it("has 79 route keys (71 + 8 portfolio operation pages)", () => {
-    expect(Object.keys(FAB_ROUTES)).toHaveLength(79);
+  it("has 103 route keys (100 + 3 PKG1 transaction edit/split pages)", () => {
+    expect(Object.keys(FAB_ROUTES)).toHaveLength(103);
   });
 
-  it("kind counts are 38 fallback, 9 route, 14 handler, 15 hidden, 3 redirect", () => {
+  it("kind counts are 38 fallback, 17 route, 6 handler, 39 hidden, 3 redirect", () => {
     const counts: Record<string, number> = {};
     for (const e of Object.values(FAB_ROUTES)) counts[e.kind] = (counts[e.kind] ?? 0) + 1;
-    expect(counts).toEqual({ fallback: 38, route: 9, handler: 14, hidden: 15, redirect: 3 });
+    expect(counts).toEqual({ fallback: 38, route: 17, handler: 6, hidden: 39, redirect: 3 });
   });
 
   it("label/href table for the route entries", () => {
@@ -103,20 +107,28 @@ describe("FAB_ROUTES table", () => {
       .sort();
     expect(rows).toEqual([
       ["/accounts", "Add account", "/accounts/new"],
+      ["/budgets", "Add budget", "/budgets/new"],
+      ["/categories", "Add category", "/categories/new"],
       ["/dashboard", "New transaction", "/transactions/new"],
       ["/family", "Invite", "/family/share"],
+      ["/goals", "Add goal", "/goals/new"],
       ["/import/pending", "Upload statement", "/import"],
+      ["/loans", "Add loan", "/loans/new"],
       ["/portfolio", "Add holding", "/settings/investments"],
       ["/portfolio/dividends", "Record dividend", "/portfolio/new/income-expense"],
       ["/portfolio/realized-gains", "Record sale", "/portfolio/new/sell"],
       ["/settings/backfill/[runId]", "New run", "/settings/backfill"],
+      ["/settings/categorization", "Add category", "/categories/new"],
+      ["/settings/investments", "Add security", "/settings/investments/securities/new"],
+      ["/settings/rules", "Add rule", "/settings/rules/new"],
+      ["/subscriptions", "Add subscription", "/subscriptions/new"],
       ["/transactions", "Add transaction", "/transactions/new"],
     ]);
   });
 
-  it("every handler key is unique and the 14 keys are all used", () => {
+  it("every handler key is unique and the 6 keys are all used", () => {
     const used = Object.values(FAB_ROUTES).flatMap((e) => (e.kind === "handler" ? [e.handlerKey] : []));
-    expect(used).toHaveLength(14);
+    expect(used).toHaveLength(6);
     expect(new Set(used).size).toBe(used.length);
     expect([...used].sort()).toEqual([...FAB_HANDLER_KEYS].sort());
   });

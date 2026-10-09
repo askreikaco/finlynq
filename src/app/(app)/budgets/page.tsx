@@ -1,14 +1,11 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { Suspense, useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/error-state";
 import { PageSkeleton } from "@/components/page-skeleton";
@@ -17,98 +14,34 @@ import { formatCurrency, getCurrentMonth, getMonthLabel } from "@/lib/currency";
 import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
 import { parseSaveError } from "@/lib/save-error";
 import { useDisplayCurrency } from "@/components/currency-provider";
-import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import {
   Plus, ChevronLeft, ChevronRight, Trash2, PiggyBank, TrendingDown,
   Wallet, LayoutGrid, Save, FileDown, ArrowRightLeft, Clock,
   AlertTriangle, ArrowDownRight, Copy,
 } from "lucide-react";
-import { AmountInput } from "@/components/amount-input";
-import { PageHeader, HEADER_DESKTOP_ONLY, FromMd, PHONE_PRIMARY_CLASS } from "@/components/mobile";
-import { usePageFab } from "@/components/mobile/page-fab";
+import { PageHeader, HEADER_DESKTOP_ONLY, FromMd, PHONE_PRIMARY_CLASS, type OverflowAction } from "@/components/mobile";
+import { cn } from "@/lib/utils";
+import { type Budget, type SpendingRow, type BudgetTemplate, type AgeOfMoney, type BudgetMode, parseMonthParam } from "./_components/budget-types";
 
-type Budget = {
-  id: number;
-  categoryId: number;
-  categoryName: string;
-  categoryGroup: string;
-  month: string;
-  amount: number;
-  currency?: string;
-  rolloverAmount?: number;
-};
-
-type Category = { id: number; name: string; type: string; group: string };
-
-type SpendingRow = {
-  categoryId: number;
-  categoryName: string;
-  categoryGroup: string;
-  categoryType: string;
-  total: number;
-};
-
-type BudgetTemplate = {
-  id: number;
-  name: string;
-  categoryId: number;
-  categoryName: string;
-  categoryGroup: string;
-  amount: number;
-  createdAt: string;
-};
-
-type AgeOfMoney = {
-  ageInDays: number;
-  trend: number;
-  history: { date: string; ageInDays: number }[];
-};
-
-type BudgetMode = "traditional" | "envelope";
-
-export default function BudgetsPage() {
+function BudgetsPageContent() {
   const { displayCurrency } = useDisplayCurrency();
-  const [month, setMonth] = useState(getCurrentMonth());
+  const searchParams = useSearchParams();
+  // Month and mode come from the URL so returning from a form page lands on the same view.
+  const [month, setMonth] = useState(() => parseMonthParam(searchParams.get("month"), getCurrentMonth()));
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [spending, setSpending] = useState<SpendingRow[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
   const [templates, setTemplates] = useState<BudgetTemplate[]>([]);
   const [ageOfMoney, setAgeOfMoney] = useState<AgeOfMoney | null>(null);
-  const [mode, setMode] = useState<BudgetMode>("traditional");
+  const [mode, setMode] = useState<BudgetMode>(() => (searchParams.get("mode") === "envelope" ? "envelope" : "traditional"));
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
-  const [formError, setFormError] = useState("");
-  const [submitting, setSubmitting] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [copying, setCopying] = useState(false);
   const [copyError, setCopyError] = useState("");
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
-  const [applyTemplateDialogOpen, setApplyTemplateDialogOpen] = useState(false);
-  const [moveMoneyDialogOpen, setMoveMoneyDialogOpen] = useState(false);
-  const [form, setForm] = useState({ categoryId: "", amount: "" });
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [templateName, setTemplateName] = useState("");
-  const [moveFrom, setMoveFrom] = useState("");
-  const [moveTo, setMoveTo] = useState("");
-  const [moveAmount, setMoveAmount] = useState("");
-  const [moveError, setMoveError] = useState("");
 
   // Envelope mode: track per-category available amounts (income allocated)
   const [envelopeIncome, setEnvelopeIncome] = useState(0);
-
-  const sortCategory = useDropdownOrder("category");
-
-  function validateForm() {
-    const newErrors: Record<string, string> = {};
-    if (!form.categoryId) newErrors.categoryId = "Category is required";
-    if (!form.amount || parseFloat(form.amount) <= 0) newErrors.amount = "Amount must be greater than 0";
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  }
-
-  const isFormValid = form.categoryId !== "" && form.amount !== "" && parseFloat(form.amount) > 0;
 
   const loadData = useCallback(() => {
     setLoadError(false);
@@ -156,42 +89,16 @@ export default function BudgetsPage() {
   }, [loadData]);
 
   useEffect(() => {
-    fetch("/api/categories")
-      .then((r) => (r.ok ? r.json() : []))
-      .then((cats: Category[]) => setCategories(Array.isArray(cats) ? cats.filter((c) => c.type === "E") : []))
-      .catch(() => {});
     loadTemplates();
     loadAgeOfMoney();
   }, [loadTemplates, loadAgeOfMoney]);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!validateForm()) return;
-    setSubmitting(true);
+  // Keep the address bar in step with month/mode so a reload or browser back returns to this view.
+  function syncUrl(nextMonth: string, nextMode: BudgetMode) {
     try {
-      const res = await fetch("/api/budgets", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          categoryId: Number(form.categoryId),
-          month,
-          amount: parseFloat(form.amount),
-          currency: displayCurrency,
-        }),
-      });
-      if (!res.ok) {
-        setFormError(await parseSaveError(res, "Failed to save budget"));
-        return;
-      }
-      setDialogOpen(false);
-      setForm({ categoryId: "", amount: "" });
-      setErrors({});
-      setFormError("");
-      loadData();
+      window.history.replaceState(null, "", listUrlFor(nextMonth, nextMode));
     } catch {
-      setFormError("Network error. Please try again.");
-    } finally {
-      setSubmitting(false);
+      /* URL sync is a convenience; the page works without it. */
     }
   }
 
@@ -260,114 +167,14 @@ export default function BudgetsPage() {
   function changeMonth(delta: number) {
     const [y, m] = month.split("-").map(Number);
     const d = new Date(y, m - 1 + delta, 1);
-    setMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+    const next = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    setMonth(next);
+    syncUrl(next, mode);
   }
 
-  // Save current budgets as a template
-  async function handleSaveTemplate() {
-    if (!templateName.trim() || budgets.length === 0) return;
-    for (const b of budgets) {
-      await fetch("/api/budget-templates", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: templateName.trim(),
-          categoryId: b.categoryId,
-          amount: b.amount,
-        }),
-      });
-    }
-    setTemplateName("");
-    setTemplateDialogOpen(false);
-    loadTemplates();
-  }
-
-  // Apply a template to the current month
-  async function handleApplyTemplate(name: string) {
-    const templateItems = templates.filter((t) => t.name === name);
-    for (const t of templateItems) {
-      const res = await fetch("/api/budgets", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          categoryId: t.categoryId,
-          month,
-          amount: t.amount,
-          currency: displayCurrency,
-        }),
-      });
-      if (!res.ok) {
-        // Surface the reason (e.g. 423 locked) and stop applying the rest.
-        setCopyError(await parseSaveError(res, "Failed to apply template"));
-        loadData();
-        return;
-      }
-    }
-    setApplyTemplateDialogOpen(false);
-    loadData();
-  }
-
-  async function handleDeleteTemplate(name: string) {
-    const templateItems = templates.filter((t) => t.name === name);
-    for (const t of templateItems) {
-      await fetch(`/api/budget-templates?id=${t.id}`, { method: "DELETE" });
-    }
-    loadTemplates();
-  }
-
-  // Move money between envelopes
-  async function handleMoveMoney() {
-    if (!moveFrom || !moveTo || !moveAmount || moveFrom === moveTo) return;
-    const amt = parseFloat(moveAmount);
-    if (amt <= 0) return;
-
-    const fromBudget = budgets.find((b) => b.categoryId === Number(moveFrom));
-    const toBudget = budgets.find((b) => b.categoryId === Number(moveTo));
-
-    setMoveError("");
-    try {
-      if (fromBudget) {
-        const fromRes = await fetch("/api/budgets", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            categoryId: fromBudget.categoryId,
-            month,
-            amount: Math.max(0, fromBudget.amount - amt),
-            currency: fromBudget.currency ?? displayCurrency,
-          }),
-        });
-        if (!fromRes.ok) {
-          setMoveError(await parseSaveError(fromRes, "Failed to move funds"));
-          return;
-        }
-      }
-
-      const toRes = await fetch("/api/budgets", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          categoryId: Number(moveTo),
-          month,
-          amount: (toBudget?.amount ?? 0) + amt,
-          currency: toBudget?.currency ?? displayCurrency,
-        }),
-      });
-      if (!toRes.ok) {
-        setMoveError(await parseSaveError(toRes, "Failed to move funds"));
-        loadData();
-        return;
-      }
-
-      setMoveMoneyDialogOpen(false);
-      setMoveFrom("");
-      setMoveTo("");
-      setMoveAmount("");
-      setMoveError("");
-      loadData();
-    } catch {
-      setMoveError("Network error. Please try again.");
-    }
+  function changeMode(next: BudgetMode) {
+    setMode(next);
+    syncUrl(month, next);
   }
 
   const spendingMap = new Map(spending.map((s) => [s.categoryId, Math.abs(s.total)]));
@@ -398,6 +205,10 @@ export default function BudgetsPage() {
   // Unique template names
   const templateNames = [...new Set(templates.map((t) => t.name))];
 
+  // Form pages return here: the list URL (month + mode) is passed as returnTo.
+  const listUrl = listUrlFor(month, mode);
+  const formQuery = `month=${month}&returnTo=${encodeURIComponent(listUrl)}`;
+
   function progressColorClass(spent: number, budgetAmt: number) {
     if (budgetAmt <= 0) return "";
     const ratio = spent / budgetAmt;
@@ -406,10 +217,17 @@ export default function BudgetsPage() {
     return "[&_[data-slot=progress-indicator]]:bg-primary";
   }
 
-  usePageFab("budgets.create", () => setDialogOpen(true));
-
   if (loading) return <PageSkeleton variant="list" rows={5} />;
   if (loadError) return <ErrorState title="Couldn't load budgets" message="We couldn't load your budgets. Please try again." onRetry={() => { setLoading(true); loadData(); }} />;
+
+  const overflow: OverflowAction[] = [
+    mode === "traditional"
+      ? { label: "Switch to Envelope mode", icon: Wallet, onSelect: () => changeMode("envelope") }
+      : { label: "Switch to Traditional mode", icon: LayoutGrid, onSelect: () => changeMode("traditional") },
+    ...(budgets.length > 0 ? [{ label: "Save Template", icon: Save, href: `/budgets/templates/new?${formQuery}` }] : []),
+    ...(templateNames.length > 0 ? [{ label: "Apply Template", icon: FileDown, href: `/budgets/templates/apply?${formQuery}` }] : []),
+    ...(mode === "envelope" && budgets.length >= 2 ? [{ label: "Move Money", icon: ArrowRightLeft, href: `/budgets/move-money?${formQuery}` }] : []),
+  ];
 
   return (
     <div className="space-y-6">
@@ -419,14 +237,7 @@ export default function BudgetsPage() {
         title="Budgets"
         subtitle="Set spending limits and track how you're doing each month."
         actionsClassName="flex flex-wrap items-center gap-2"
-        overflow={[
-          mode === "traditional"
-            ? { label: "Switch to Envelope mode", icon: Wallet, onSelect: () => setMode("envelope") }
-            : { label: "Switch to Traditional mode", icon: LayoutGrid, onSelect: () => setMode("traditional") },
-          ...(budgets.length > 0 ? [{ label: "Save Template", icon: Save, onSelect: () => setTemplateDialogOpen(true) }] : []),
-          ...(templateNames.length > 0 ? [{ label: "Apply Template", icon: FileDown, onSelect: () => setApplyTemplateDialogOpen(true) }] : []),
-          ...(mode === "envelope" && budgets.length >= 2 ? [{ label: "Move Money", icon: ArrowRightLeft, onSelect: () => setMoveMoneyDialogOpen(true) }] : []),
-        ]}
+        overflow={overflow}
         actions={
         <>
           {/* Mode toggle */}
@@ -437,7 +248,7 @@ export default function BudgetsPage() {
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               }`}
-              onClick={() => setMode("traditional")}
+              onClick={() => changeMode("traditional")}
               title="Monthly budget limits per category"
             >
               <LayoutGrid className="h-3 w-3" />
@@ -449,7 +260,7 @@ export default function BudgetsPage() {
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               }`}
-              onClick={() => setMode("envelope")}
+              onClick={() => changeMode("envelope")}
               title="Zero-based envelope budgeting"
             >
               <Wallet className="h-3 w-3" />
@@ -457,193 +268,37 @@ export default function BudgetsPage() {
             </button>
           </FromMd>
 
-          {/* Template buttons */}
+          {/* Template and move-money pages (desktop buttons; phones use the overflow menu) */}
           {budgets.length > 0 && (
-            <Dialog open={templateDialogOpen} onOpenChange={setTemplateDialogOpen}>
-              <DialogTrigger render={<Button variant="outline" size="sm" className={HEADER_DESKTOP_ONLY} />}>
-                <Save className="h-4 w-4 mr-1" /> Save Template
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Save as Template</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label>Template Name</Label>
-                    <Input
-                      value={templateName}
-                      onChange={(e) => setTemplateName(e.target.value)}
-                      placeholder="e.g. Monthly Essentials"
-                    />
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    This will save all {budgets.length} budget items as a reusable template.
-                  </p>
-                  <Button
-                    className="w-full"
-                    disabled={!templateName.trim()}
-                    onClick={handleSaveTemplate}
-                  >
-                    Save Template
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
+            <Link
+              href={`/budgets/templates/new?${formQuery}`}
+              className={cn(buttonVariants({ variant: "outline", size: "sm" }), HEADER_DESKTOP_ONLY)}
+            >
+              <Save className="h-4 w-4 mr-1" /> Save Template
+            </Link>
           )}
 
           {templateNames.length > 0 && (
-            <Dialog open={applyTemplateDialogOpen} onOpenChange={(open) => { setApplyTemplateDialogOpen(open); if (open) setCopyError(""); }}>
-              <DialogTrigger render={<Button variant="outline" size="sm" className={HEADER_DESKTOP_ONLY} />}>
-                <FileDown className="h-4 w-4 mr-1" /> Apply Template
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Apply Budget Template</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-3">
-                  {copyError && <p className="text-sm text-destructive">{copyError}</p>}
-                  {templateNames.map((name) => {
-                    const items = templates.filter((t) => t.name === name);
-                    const total = items.reduce((s, t) => s + t.amount, 0);
-                    return (
-                      <div
-                        key={name}
-                        className="flex items-center justify-between rounded-lg border p-3"
-                      >
-                        <div>
-                          <p className="text-sm font-medium">{name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {items.length} categories &middot; {formatCurrency(total, displayCurrency)}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button size="sm" onClick={() => handleApplyTemplate(name)}>
-                            Apply
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground"
-                            aria-label={`Delete template ${name}`}
-                            onClick={() => handleDeleteTemplate(name)}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </DialogContent>
-            </Dialog>
+            <Link
+              href={`/budgets/templates/apply?${formQuery}`}
+              className={cn(buttonVariants({ variant: "outline", size: "sm" }), HEADER_DESKTOP_ONLY)}
+            >
+              <FileDown className="h-4 w-4 mr-1" /> Apply Template
+            </Link>
           )}
 
-          {/* Move Money (envelope mode) */}
           {mode === "envelope" && budgets.length >= 2 && (
-            <Dialog open={moveMoneyDialogOpen} onOpenChange={(open) => { setMoveMoneyDialogOpen(open); if (!open) setMoveError(""); }}>
-              <DialogTrigger render={<Button variant="outline" size="sm" className={HEADER_DESKTOP_ONLY} />}>
-                <ArrowRightLeft className="h-4 w-4 mr-1" /> Move Money
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Move Money Between Envelopes</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label>From</Label>
-                    <Combobox
-                      value={moveFrom}
-                      onValueChange={(v) => setMoveFrom(v)}
-                      items={sortCategory(
-                        budgets.map((b): ComboboxItemShape => ({
-                          value: String(b.categoryId),
-                          label: `${b.categoryName} (${formatCurrency(b.amount - (spendingMap.get(b.categoryId) ?? 0), displayCurrency)} available)`,
-                        })),
-                        (b) => Number(b.value),
-                        (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
-                      )}
-                      placeholder="Select category"
-                      searchPlaceholder="Search categories…"
-                      emptyMessage="No matches"
-                      className="w-full"
-                    />
-                  </div>
-                  <div>
-                    <Label>To</Label>
-                    <Combobox
-                      value={moveTo}
-                      onValueChange={(v) => setMoveTo(v)}
-                      items={sortCategory(
-                        budgets
-                          .filter((b) => String(b.categoryId) !== moveFrom)
-                          .map((b): ComboboxItemShape => ({ value: String(b.categoryId), label: b.categoryName })),
-                        (b) => Number(b.value),
-                        (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
-                      )}
-                      placeholder="Select category"
-                      searchPlaceholder="Search categories…"
-                      emptyMessage="No matches"
-                      className="w-full"
-                    />
-                  </div>
-                  <div>
-                    <Label>Amount</Label>
-                    <AmountInput
-                      step="0.01"
-                      value={moveAmount}
-                      onValueChange={(nv) => setMoveAmount(nv)}
-                      placeholder="50.00"
-                    />
-                  </div>
-                  {moveError && <p className="text-sm text-destructive">{moveError}</p>}
-                  <Button
-                    className="w-full"
-                    disabled={!moveFrom || !moveTo || !moveAmount || moveFrom === moveTo || parseFloat(moveAmount) <= 0}
-                    onClick={handleMoveMoney}
-                  >
-                    Move Funds
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
+            <Link
+              href={`/budgets/move-money?${formQuery}`}
+              className={cn(buttonVariants({ variant: "outline", size: "sm" }), HEADER_DESKTOP_ONLY)}
+            >
+              <ArrowRightLeft className="h-4 w-4 mr-1" /> Move Money
+            </Link>
           )}
 
-          <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) { setFormError(""); setErrors({}); } }}>
-            <DialogTrigger render={<Button className={PHONE_PRIMARY_CLASS} aria-label="Add Budget" />}>
-              <Plus className="h-4 w-4 mr-1" /> Add Budget
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Set Budget for {getMonthLabel(month)}</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <Label>Category</Label>
-                  <Combobox
-                    value={form.categoryId}
-                    onValueChange={(v) => { setForm({ ...form, categoryId: v }); setErrors({ ...errors, categoryId: "" }); }}
-                    items={sortCategory(
-                      categories.map((c): ComboboxItemShape => ({ value: String(c.id), label: `${c.group} - ${c.name}` })),
-                      (c) => Number(c.value),
-                      (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
-                    )}
-                    placeholder="Select category"
-                    searchPlaceholder="Search categories…"
-                    emptyMessage="No categories"
-                    className="w-full"
-                  />
-                  {errors.categoryId && <p className="text-xs text-destructive mt-1">{errors.categoryId}</p>}
-                </div>
-                <div>
-                  <Label>Budget Amount</Label>
-                  <AmountInput  step="0.01" value={form.amount} onValueChange={(nv) => { setForm({ ...form, amount: nv }); setErrors({ ...errors, amount: "" }); }} placeholder="500.00" />
-                  {errors.amount && <p className="text-xs text-destructive mt-1">{errors.amount}</p>}
-                </div>
-                {formError && <p className="text-sm text-destructive">{formError}</p>}
-                <Button type="submit" className="w-full" disabled={!isFormValid || submitting}>{submitting ? "Saving…" : "Save Budget"}</Button>
-              </form>
-            </DialogContent>
-          </Dialog>
+          <Button className={PHONE_PRIMARY_CLASS} aria-label="Add Budget" render={<Link href={`/budgets/new?${formQuery}`} />}>
+            <Plus className="h-4 w-4 mr-1" /> Add Budget
+          </Button>
         </>
         }
       />
@@ -781,7 +436,7 @@ export default function BudgetsPage() {
               Set spending limits for your categories and track how you&apos;re doing throughout the month.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-2">
-              <Button onClick={() => setDialogOpen(true)}>
+              <Button render={<Link href={`/budgets/new?${formQuery}`} />}>
                 <Plus className="h-4 w-4 mr-1" />
                 Add your first budget
               </Button>
@@ -891,5 +546,25 @@ export default function BudgetsPage() {
         onConfirm={handleDelete}
       />
     </div>
+  );
+}
+
+/** The budgets list URL for a month + mode (traditional is the default, so it is omitted). */
+function listUrlFor(month: string, mode: BudgetMode): string {
+  return `/budgets?month=${month}${mode === "envelope" ? "&mode=envelope" : ""}`;
+}
+
+/** Previous calendar month as YYYY-MM. */
+function prevMonthOf(m: string): string {
+  const [y, mm] = m.split("-").map(Number);
+  const d = new Date(y, mm - 2, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+export default function BudgetsPage() {
+  return (
+    <Suspense fallback={<PageSkeleton variant="list" rows={5} />}>
+      <BudgetsPageContent />
+    </Suspense>
   );
 }

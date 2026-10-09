@@ -62,10 +62,10 @@ const COMPONENTS_THAT_DISPLAY_CURRENCY = [
     reason: "Uses displayCurrency without fallback tail",
   },
   {
-    file: "src/app/(app)/settings/investments/page.tsx",
-    mustHave: ["useDisplayCurrency"],
+    file: "src/app/(app)/settings/investments/securities/[id]/prices/page.tsx",
+    mustHave: ["useDisplayCurrency", "displayCurrency"],
     mustNotHave: ['?? "USD"'],
-    reason: "Shows investment prices in displayCurrency",
+    reason: "Investment prices page falls back to displayCurrency",
   },
   {
     file: "src/app/(app)/settings/general/page.tsx",

@@ -14,10 +14,6 @@ const APP = "src/app/(app)";
 
 const PAGES = [
   { file: `${APP}/accounts/[id]/page.tsx`, component: "AccountDetailPage", route: "/accounts/[id]", key: "accounts.detail.add" },
-  { file: `${APP}/budgets/page.tsx`, component: "BudgetsPage", route: "/budgets", key: "budgets.create" },
-  { file: `${APP}/goals/page.tsx`, component: "GoalsPage", route: "/goals", key: "goals.create" },
-  { file: `${APP}/loans/page.tsx`, component: "LoansPageContent", route: "/loans", key: "loans.create" },
-  { file: `${APP}/subscriptions/page.tsx`, component: "SubscriptionsPageContent", route: "/subscriptions", key: "subscriptions.create" },
 ] as const;
 
 function read(rel: string): string {
@@ -59,6 +55,28 @@ describe("finance pages wire usePageFab", () => {
         expect(hookIdx).toBeGreaterThan(-1);
         expect(hookIdx).toBeLessThan(firstEarlyReturnIndex(src, p.component));
       });
+    });
+  }
+});
+
+// Loans, subscriptions, budgets and goals create through their own form pages
+// (route entries, not a usePageFab handler): the list pages must not register a
+// create handler, and their FAB links to the create page.
+describe("create FABs are routes to the create page (loans, subscriptions, budgets, goals)", () => {
+  const LIST_PAGES = [
+    { file: `${APP}/loans/page.tsx`, route: "/loans", href: "/loans/new" },
+    { file: `${APP}/subscriptions/page.tsx`, route: "/subscriptions", href: "/subscriptions/new" },
+    { file: `${APP}/budgets/page.tsx`, route: "/budgets", href: "/budgets/new" },
+    { file: `${APP}/goals/page.tsx`, route: "/goals", href: "/goals/new" },
+  ] as const;
+
+  for (const p of LIST_PAGES) {
+    it(`${p.route} FAB is a route link to ${p.href}`, () => {
+      expect(FAB_ROUTES[p.route]).toMatchObject({ kind: "route", href: p.href });
+    });
+
+    it(`${p.route} list page does not register a create handler`, () => {
+      expect(read(p.file)).not.toMatch(/usePageFab\(/);
     });
   }
 });

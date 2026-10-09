@@ -1,33 +1,26 @@
 "use client";
 
 /**
- * Category Management tab — Manage, add, delete categories.
- * Extracted from /settings/categorization for reuse in merged categories hub.
+ * Category list: type sections, group sub-headers, delete. Add and rename are
+ * full pages (/categories/new, /categories/[id]/edit), not inline forms.
+ * Used by the merged categories hub (Manage tab) and /settings/categorization.
+ * `returnTo` is where the create/rename pages send the user back to.
  */
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { GroupCombobox } from "@/components/ui/group-combobox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tag, Plus, AlertTriangle, Pencil, Trash2, Check, X } from "lucide-react";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Tag, Plus, AlertTriangle, Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { usePageFab } from "@/components/mobile/page-fab";
 
 const TYPE_LABELS = { E: "Expense", I: "Income", R: "Reconciliation" } as const;
 const TYPE_ORDER = ["E", "I", "R"] as const;
 
 type Category = { id: number; type: string; group: string; name: string; note: string };
 
-export function CategoryManagement() {
+export function CategoryManagement({ returnTo }: { returnTo: string }) {
   const [categories, setCategories] = useState<Category[]>([]);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [editName, setEditName] = useState("");
   const [catError, setCatError] = useState("");
-  const [newCatForm, setNewCatForm] = useState({ name: "", type: "E", group: "" });
-  const [newCatErrors, setNewCatErrors] = useState<{ name?: string; group?: string }>({});
-  const [showAddCat, setShowAddCat] = useState(false);
 
   const loadCategories = useCallback(() => {
     fetch("/api/categories")
@@ -42,28 +35,6 @@ export function CategoryManagement() {
   useEffect(() => {
     loadCategories();
   }, [loadCategories]);
-
-  async function handleEditCategory(id: number) {
-    if (!editName.trim()) return;
-    setCatError("");
-    try {
-      const res = await fetch("/api/categories", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, name: editName.trim() }),
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        setCatError(data.error || "Failed to update");
-        return;
-      }
-      setEditingId(null);
-      setEditName("");
-      loadCategories();
-    } catch {
-      setCatError("Failed to update category");
-    }
-  }
 
   async function handleDeleteCategory(id: number) {
     setCatError("");
@@ -80,34 +51,6 @@ export function CategoryManagement() {
     }
   }
 
-  async function handleAddCategory(e: React.FormEvent) {
-    e.preventDefault();
-    const errs: { name?: string; group?: string } = {};
-    if (!newCatForm.name.trim()) errs.name = "Name is required";
-    setNewCatErrors(errs);
-    if (Object.keys(errs).length > 0) return;
-
-    setCatError("");
-    try {
-      const res = await fetch("/api/categories", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newCatForm.name.trim(), type: newCatForm.type, group: newCatForm.group.trim() }),
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        setCatError(data.error || "Failed to create");
-        return;
-      }
-      setNewCatForm({ name: "", type: "E", group: "" });
-      setNewCatErrors({});
-      setShowAddCat(false);
-      loadCategories();
-    } catch {
-      setCatError("Failed to create category");
-    }
-  }
-
   const sections = TYPE_ORDER.map((t) => {
     const inType = categories.filter((c) => c.type === t);
     const byGroup = new Map<string, Category[]>();
@@ -118,16 +61,7 @@ export function CategoryManagement() {
     return { type: t, groups };
   }).filter((s) => s.groups.length > 0);
 
-  const uniqueGroups = Array.from(new Set(categories.map((c) => c.group).filter(Boolean))).sort((a, b) =>
-    (a ?? "").localeCompare(b ?? "")
-  );
-
-  const addCatFormRef = useRef<HTMLFormElement>(null);
-  const openAddCategoryForm = () => {
-    setShowAddCat(true);
-    requestAnimationFrame(() => addCatFormRef.current?.scrollIntoView({ block: "center" }));
-  };
-  usePageFab("categories.create", openAddCategoryForm);
+  const newHref = `/categories/new?returnTo=${encodeURIComponent(returnTo)}`;
 
   return (
     <div className="space-y-6">
@@ -154,9 +88,9 @@ export function CategoryManagement() {
                 <CardDescription>Manage transaction categories</CardDescription>
               </div>
             </div>
-            <Button variant="outline" size="sm" onClick={() => setShowAddCat(!showAddCat)}>
+            <Link href={newHref} className={buttonVariants({ variant: "outline", size: "sm" })}>
               <Plus className="h-4 w-4 mr-1" /> Add
-            </Button>
+            </Link>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -165,69 +99,6 @@ export function CategoryManagement() {
               <AlertTriangle className="h-4 w-4 shrink-0" />
               {catError}
             </div>
-          )}
-
-          {showAddCat && (
-            <form ref={addCatFormRef} onSubmit={handleAddCategory} className="space-y-3 p-3 rounded-lg border bg-muted/30">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <Input
-                    aria-label="Category name"
-                    aria-invalid={!!newCatErrors.name || undefined}
-                    className="h-11 md:h-8 text-base md:text-sm"
-                    value={newCatForm.name}
-                    onChange={(e) => {
-                      setNewCatForm({ ...newCatForm, name: e.target.value });
-                      setNewCatErrors({ ...newCatErrors, name: "" });
-                    }}
-                    placeholder="Category name"
-                  />
-                  {newCatErrors.name && <p className="text-xs text-destructive mt-1">{newCatErrors.name}</p>}
-                </div>
-                <div>
-                  <GroupCombobox
-                    value={newCatForm.group}
-                    onChange={(g) => {
-                      setNewCatForm({ ...newCatForm, group: g });
-                      setNewCatErrors({ ...newCatErrors, group: "" });
-                    }}
-                    options={uniqueGroups}
-                    placeholder="Group"
-                    ariaLabel="Group"
-                    invalid={!!newCatErrors.group}
-                  />
-                  {newCatErrors.group && <p className="text-xs text-destructive mt-1">{newCatErrors.group}</p>}
-                </div>
-                <div>
-                  <Select items={TYPE_LABELS} value={newCatForm.type} onValueChange={(v) => setNewCatForm({ ...newCatForm, type: v ?? "E" })}>
-                    <SelectTrigger aria-label="Type" className="w-full h-11 md:h-8">
-                      <SelectValue placeholder="Type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="E">Expense</SelectItem>
-                      <SelectItem value="I">Income</SelectItem>
-                      <SelectItem value="R">Reconciliation</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button type="submit" size="sm">
-                  Add Category
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setShowAddCat(false);
-                    setNewCatErrors({});
-                  }}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </form>
           )}
 
           {sections.map(({ type, groups }) => (
@@ -240,72 +111,25 @@ export function CategoryManagement() {
                     <div className="space-y-1">
                       {cats.map((cat) => (
                         <div key={cat.id} className="flex items-center justify-between rounded-lg px-3 py-2 min-h-11 md:min-h-0 hover:bg-muted/50 transition-colors group">
-                          {editingId === cat.id ? (
-                            <div className="flex items-center gap-2 flex-1">
-                              <Input
-                                value={editName}
-                                onChange={(e) => setEditName(e.target.value)}
-                                className="h-7 text-sm"
-                                autoFocus
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter") handleEditCategory(cat.id);
-                                  if (e.key === "Escape") {
-                                    setEditingId(null);
-                                    setEditName("");
-                                  }
-                                }}
-                              />
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={() => handleEditCategory(cat.id)}
-                                aria-label="Save category name"
-                              >
-                                <Check className="h-3 w-3" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={() => {
-                                  setEditingId(null);
-                                  setEditName("");
-                                }}
-                                aria-label="Cancel editing"
-                              >
-                                <X className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          ) : (
-                            <>
-                              <span className="text-sm">{cat.name}</span>
-                              <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7"
-                                  onClick={() => {
-                                    setEditingId(cat.id);
-                                    setEditName(cat.name);
-                                    setCatError("");
-                                  }}
-                                  aria-label="Edit category"
-                                >
-                                  <Pencil className="h-3 w-3" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7 text-destructive"
-                                  onClick={() => handleDeleteCategory(cat.id)}
-                                  aria-label="Delete category"
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            </>
-                          )}
+                          <span className="text-sm">{cat.name}</span>
+                          <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                            <Link
+                              href={`/categories/${cat.id}/edit?returnTo=${encodeURIComponent(returnTo)}`}
+                              aria-label="Edit category"
+                              className={buttonVariants({ variant: "ghost", size: "icon", className: "h-7 w-7" })}
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </Link>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-destructive"
+                              onClick={() => handleDeleteCategory(cat.id)}
+                              aria-label="Delete category"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
                         </div>
                       ))}
                     </div>

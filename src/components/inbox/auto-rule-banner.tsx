@@ -47,7 +47,7 @@ export function AutoRuleBanner({
   onRowClick,
 }: {
   accountId: number;
-  /** Caller wires this to open TransactionDialog in edit mode. */
+  /** Caller opens the row's full-page edit route (transactions/[id]/edit). */
   onRowClick?: (transactionId: number) => void;
 }) {
   const [data, setData] = useState<AutoRuleData | null>(null);

@@ -171,7 +171,18 @@ describe("nav-config", () => {
         "/portfolio/realized-gains",
         "/portfolio/new",
         "/accounts/new", // create-account page, opened from the accounts header (no nav entry)
+        "/budgets/new", // set-budget page, opened from the budgets header/FAB (no nav entry)
+        "/budgets/templates/new", // save-template page, opened from the budgets overflow menu
+        "/budgets/templates/apply", // apply-template page, opened from the budgets overflow menu
+        "/budgets/move-money", // move-money page, opened from the budgets overflow menu (envelope mode)
+        "/goals/new", // create-goal page, opened from the goals header/FAB (no nav entry)
+        "/goals/[id]/edit", // edit-goal page, opened from the goals list (no nav entry)
         "/accounts/groups", // manage-groups page, opened from the accounts header (no nav entry)
+        "/loans/new", // create-loan page, opened from the loans header / FAB (no nav entry)
+        "/loans/[id]/edit", // edit-loan page, opened from a loan card (no nav entry)
+        "/subscriptions/new", // create-subscription page, opened from the subscriptions header / Review
+        "/subscriptions/[id]/edit", // edit-subscription page, opened from a row (no nav entry)
+        "/accounts/[id]/edit", // edit-account page, opened from the account page (no nav entry)
         "/portfolio/new/buy", // level-2 operation pages (create flow, no nav entry)
         "/portfolio/new/sell",
         "/portfolio/new/swap",
@@ -187,10 +198,16 @@ describe("nav-config", () => {
         "/transactions/search",
         "/settings/account", // not in nav, account is separate
         "/settings/backfill",
+        "/settings/investments/securities/new", // create-security page, opened from the investments list (no nav entry)
+        "/settings/investments/cash-sleeves/new", // add-cash-sleeve page, opened from the investments list
         "/settings/import/reconcile-visibility",
         "/import/pending", // live route, not redirected
         "/manage-accounts",
         "/more", // mobile-only route
+        "/categories/new", // create-category page, opened from the categories Add button (no nav entry)
+        "/categories/[id]/edit", // rename-category page, opened from the category row (no nav entry)
+        "/settings/rules/new", // create-rule page, opened from the rules Add button (no nav entry)
+        "/settings/rules/[id]/edit", // edit-rule page, opened from the rule row (no nav entry)
       ]);
 
       const missing = pagePaths.filter(

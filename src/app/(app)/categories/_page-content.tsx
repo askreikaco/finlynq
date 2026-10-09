@@ -71,23 +71,37 @@ export default function CategoriesPageContent({ isMerged }: CategoriesPageProps)
         </p>
       </div>
 
-      <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="manage">Manage</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview" className="space-y-6 mt-6">
-          <Suspense fallback={<PageSkeleton variant="list" rows={6} />}>
-            <CategoriesOverview embedded />
-          </Suspense>
-        </TabsContent>
-
-        <TabsContent value="manage" className="space-y-6 mt-6">
-          <CategoryManagement />
-        </TabsContent>
-      </Tabs>
+      <Suspense fallback={<PageSkeleton variant="list" rows={6} />}>
+        <MergedHubTabs />
+      </Suspense>
     </div>
+  );
+}
+
+/**
+ * Hub tabs. `?tab=manage` opens the Manage tab, so the create/rename pages
+ * (/categories/new, /categories/[id]/edit) can return the user to it.
+ */
+function MergedHubTabs() {
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get("tab") === "manage" ? "manage" : "overview";
+  return (
+    <Tabs defaultValue={initialTab} className="w-full">
+      <TabsList className="grid w-full grid-cols-2">
+        <TabsTrigger value="overview">Overview</TabsTrigger>
+        <TabsTrigger value="manage">Manage</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="overview" className="space-y-6 mt-6">
+        <Suspense fallback={<PageSkeleton variant="list" rows={6} />}>
+          <CategoriesOverview embedded />
+        </Suspense>
+      </TabsContent>
+
+      <TabsContent value="manage" className="space-y-6 mt-6">
+        <CategoryManagement returnTo="/categories?tab=manage" />
+      </TabsContent>
+    </Tabs>
   );
 }
 

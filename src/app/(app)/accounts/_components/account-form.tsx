@@ -83,7 +83,7 @@ function formFromAccount(a: AccountFormAccount): FormState {
   };
 }
 
-/** "stack" = label above each field (dialog). "rows" = label-left rows in one card (New account page). */
+/** "stack" = label above each field. "rows" = label-left rows in one card (New / Edit account pages). */
 export type AccountFormVariant = "stack" | "rows";
 
 export interface AccountFormProps {
@@ -96,18 +96,16 @@ export interface AccountFormProps {
   existingGroups?: string[];
   /** optional alias-clash warning; excludeId is the account being edited (null on create). */
   aliasWarning?: (alias: string, excludeId: number | null) => string;
-  /** Re-seeds the form each time this becomes true (the dialog's open flag). Default true. */
+  /** Re-seeds the form each time this becomes true. Default true. */
   open?: boolean;
   variant?: AccountFormVariant;
-  /** External busy flag (the dialog's archive / unarchive / delete in progress). */
+  /** External busy flag (the edit page's archive / unarchive / delete in progress). */
   busy?: boolean;
   onCancel: () => void;
   onCreated?: (account: AccountFormAccount) => void;
   onSaved?: (account: AccountFormAccount) => void;
-  /** Called after a successful save (the dialog closes here). */
+  /** Called after a successful save (the page navigates away here). */
   onComplete?: () => void;
-  /** Rendered after the footer, inside the form (edit-only account actions). */
-  children?: ReactNode;
 }
 
 const ROW = "flex min-h-12 items-center gap-3 px-4 py-2";
@@ -204,8 +202,8 @@ function CheckField({
 
 /**
  * Shared account form (create + edit): the same fields, validation, opening
- * balance and save logic in the dialog (edit) and the New account page (create).
- * Owns the form state; the caller owns the chrome (dialog / page, tabs, actions).
+ * balance and save logic on the New account page (create) and the Edit account
+ * page (edit). Owns the form state; the caller owns the chrome (page, tabs, actions).
  */
 export function AccountForm({
   mode,
@@ -220,7 +218,6 @@ export function AccountForm({
   onCreated,
   onSaved,
   onComplete,
-  children,
 }: AccountFormProps) {
   const [form, setForm] = useState<FormState>(() => blankForm(defaultCurrency));
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -546,7 +543,6 @@ export function AccountForm({
         </Button>
       </div>
 
-      {children}
     </form>
   );
 }

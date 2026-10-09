@@ -420,7 +420,26 @@ export const Nav = memo(function Nav({ instanceAdminEnabled = false, categoriesM
 });
 
 // Full-screen entry flows: the mobile tab bar is hidden so the form and its Save/Continue are never overlapped.
-const FULL_SCREEN_ENTRY_ROUTES = ["/transactions/new", "/accounts/new"] as const;
+const FULL_SCREEN_ENTRY_ROUTES = [
+  "/transactions/new",
+  "/accounts/new",
+  "/settings/rules/new",
+  "/categories/new",
+  "/settings/investments/securities",
+  "/settings/investments/accounts",
+  "/settings/investments/cash-sleeves",
+  "/loans/new",
+  "/subscriptions/new",
+  "/budgets/new",
+  "/budgets/templates/new",
+  "/budgets/move-money",
+  "/goals/new",
+] as const;
+// Edit forms for a single loan / subscription / account / goal / category / rule (/loans/<id>/edit,
+// /subscriptions/<id>/edit, /accounts/<id>/edit, /goals/<id>/edit) and rule / category rename pages.
+const FULL_SCREEN_EDIT_ROUTE = /^\/(loans|subscriptions|accounts|goals|categories|settings\/rules)\/[^/]+\/edit$/;
+// Full-page transaction edit flows (PKG1): /transactions/<id>/edit and /split, /transactions/transfer/<linkId>/edit.
+const FULL_SCREEN_ENTRY_PATTERNS = [/^\/transactions\/\d+\/(edit|split)$/, /^\/transactions\/transfer\/[^/]+\/edit$/];
 
 // Mobile bottom bar
 export const MobileBottomBar = memo(function MobileBottomBar({ pathname }: { pathname: string }) {
@@ -429,6 +448,8 @@ export const MobileBottomBar = memo(function MobileBottomBar({ pathname }: { pat
   // Portfolio operation forms (/portfolio/new/<op>) follow the same rule; the /portfolio/new list keeps the bar.
   const hidden =
     FULL_SCREEN_ENTRY_ROUTES.some((r) => pathname === r || pathname.startsWith(r + "/")) ||
+    FULL_SCREEN_EDIT_ROUTE.test(pathname) ||
+    FULL_SCREEN_ENTRY_PATTERNS.some((re) => re.test(pathname)) ||
     pathname.startsWith("/portfolio/new/");
   if (hidden) return null;
   return (

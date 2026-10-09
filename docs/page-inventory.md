@@ -6,14 +6,14 @@ Base `99e332df` (branch `wave4/w4-4-5-docs`). Generated 2026-10-09 (UTC+7 VN). S
 
 | check | value |
 |---|---|
-| `find "src/app/(app)" -name page.tsx \| sort \| wc -l` | 79 |
-| table rows below (route rows) | 79 |
-| pages with own `<PageHeader` in page.tsx | 49 |
+| `find "src/app/(app)" -name page.tsx \| sort \| wc -l` | 100 |
+| table rows below (route rows) | 100 |
+| pages with own `<PageHeader` in page.tsx | 66 |
 | pages with PageHeader only via an imported module or alias | 12 |
 | pages with header from a layout only | 3 |
 | pages with no PageHeader found | 7 |
 | pages with ErrorState (direct or via imports) | 10 |
-| pages with PageSkeleton (direct or via imports) | 7 |
+| pages with PageSkeleton (direct or via imports) | 11 |
 | pages that re-export another page module | 7 |
 
 Pages with ErrorState: `/accounts/[id]`, `/accounts`, `/budgets`, `/categories/[id]`, `/categories`, `/dashboard`, `/goals`, `/loans`, `/settings/investments`, `/subscriptions`.
@@ -39,6 +39,7 @@ Pages with PageSkeleton: `/budgets`, `/categories/[id]`, `/categories`, `/goals`
 | `/accounts/groups` | `src/app/(app)/accounts/groups/page.tsx` | app | yes (page.tsx:56) | no | yes (page.tsx:63) | list body: _components/manage-groups-panel.tsx |
 | `/accounts` | `src/app/(app)/accounts/page.tsx` | app | yes (page.tsx:377) | no | yes (page.tsx:351) | - |
 | `/accounts/new` | `src/app/(app)/accounts/new/page.tsx` | app | yes (page.tsx:56) | no | no | - |
+| `/accounts/[id]/edit` | `src/app/(app)/accounts/[id]/edit/page.tsx` | app | yes (page.tsx) | no | no | edit form: _components/account-form.tsx |
 | `/admin/(env)/api-log` | `src/app/(app)/admin/(env)/api-log/page.tsx` | app > admin/(env)/layout.tsx (EnvLayout) | yes (page.tsx:192); + layout PageHeader (admin/(env)/layout.tsx:53) | no | no | stacked under layout PageHeader (admin/(env)/layout.tsx:53) |
 | `/admin/(env)/diagnostics` | `src/app/(app)/admin/(env)/diagnostics/page.tsx` | app > admin/(env)/layout.tsx (EnvLayout) | yes (page.tsx:215); + layout PageHeader (admin/(env)/layout.tsx:53) | no | no | stacked under layout PageHeader (admin/(env)/layout.tsx:53) |
 | `/admin/(env)/integrations` | `src/app/(app)/admin/(env)/integrations/page.tsx` | app > admin/(env)/layout.tsx (EnvLayout) | yes (page.tsx:247); + layout PageHeader (admin/(env)/layout.tsx:53) | no | no | stacked under layout PageHeader (admin/(env)/layout.tsx:53) |
@@ -52,8 +53,16 @@ Pages with PageSkeleton: `/budgets`, `/categories/[id]`, `/categories`, `/goals`
 | `/admin/instance` | `src/app/(app)/admin/instance/page.tsx` | app | yes (page.tsx:131) | no | no | - |
 | `/admin` | `src/app/(app)/admin/page.tsx` | app | yes (page.tsx:655) | no | no | - |
 | `/api-docs` | `src/app/(app)/api-docs/page.tsx` | app | yes (page.tsx:567) | no | no | titleClassName text-3xl font-bold text-zinc-900 dark:text-zinc-50 |
-| `/budgets` | `src/app/(app)/budgets/page.tsx` | app | yes (page.tsx:414) | yes (page.tsx:408) | yes (page.tsx:409) | - |
+| `/budgets` | `src/app/(app)/budgets/page.tsx` | app | yes (page.tsx:235) | yes (page.tsx:221) | yes (page.tsx:220) | - |
+| `/budgets/move-money` | `src/app/(app)/budgets/move-money/page.tsx` | app | yes (page.tsx:21) | no | no | - |
+| `/budgets/new` | `src/app/(app)/budgets/new/page.tsx` | app | yes (page.tsx:22) | no | no | - |
+| `/budgets/templates/apply` | `src/app/(app)/budgets/templates/apply/page.tsx` | app | yes (page.tsx:21) | no | no | - |
+| `/budgets/templates/new` | `src/app/(app)/budgets/templates/new/page.tsx` | app | yes (page.tsx:36) | no | yes (page.tsx:45) | - |
 | `/categories/[id]` | `src/app/(app)/categories/[id]/page.tsx` | app | yes (page.tsx:167); backHref + backLabel | yes (page.tsx:76) | yes (page.tsx:144) | - |
+| `/categories/[id]/edit` | `src/app/(app)/categories/[id]/edit/page.tsx` | app | no | no | no | - |
+| `/categories/new` | `src/app/(app)/categories/new/page.tsx` | app | no | no | no | - |
+| `/settings/rules/[id]/edit` | `src/app/(app)/settings/rules/[id]/edit/page.tsx` | app | no | no | no | - |
+| `/settings/rules/new` | `src/app/(app)/settings/rules/new/page.tsx` | app | no | no | no | - |
 | `/categories` | `src/app/(app)/categories/page.tsx` | app | no | via import (categories/_page-content.tsx:58) | via import (categories/_page-content.tsx:139) | ErrorState/PageSkeleton from categories/_page-content.tsx (reachable); no PageHeader in depth-3 imports |
 | `/chat` | `src/app/(app)/chat/page.tsx` | app | no | no | no | UNVERIFIED: no header in depth-3 imports |
 | `/connect` | `src/app/(app)/connect/page.tsx` | app | via import (settings/integrations/page.tsx:76) | no | no | re-exports `/settings/integrations/page` (page source); renders SettingsShell and imports ../settings/integrations/page |
@@ -64,10 +73,14 @@ Pages with PageSkeleton: `/budgets`, `/categories/[id]`, `/categories`, `/goals`
 | `/family/share` | `src/app/(app)/family/share/page.tsx` | app | yes (page.tsx:13); backHref + backLabel | no | no | titleClassName text-2xl sm:text-3xl font-bold |
 | `/feedback` | `src/app/(app)/feedback/page.tsx` | app | yes (page.tsx:350) | no | no | - |
 | `/fire` | `src/app/(app)/fire/page.tsx` | app | yes (page.tsx:204) | no | no | - |
-| `/goals` | `src/app/(app)/goals/page.tsx` | app | yes (page.tsx:383) | yes (page.tsx:378) | yes (page.tsx:379) | - |
+| `/goals` | `src/app/(app)/goals/page.tsx` | app | yes (page.tsx:95) | yes (page.tsx:91) | yes (page.tsx:90) | - |
+| `/goals/[id]/edit` | `src/app/(app)/goals/[id]/edit/page.tsx` | app | yes (page.tsx:75) | yes (page.tsx:71) | yes (page.tsx:70) | - |
+| `/goals/new` | `src/app/(app)/goals/new/page.tsx` | app | yes (page.tsx:45) | no | no | - |
 | `/import` | `src/app/(app)/import/page.tsx` | app | yes (page.tsx:324) | no | no | - |
 | `/import/pending` | `src/app/(app)/import/pending/page.tsx` | app | via import (import/pending/_components/staged-list-view.tsx:103) | no | no | header from import/pending/_components/reconcile-header.tsx:66 (reachable) |
-| `/loans` | `src/app/(app)/loans/page.tsx` | app | yes (page.tsx:414) | no | yes (page.tsx:410) | - |
+| `/loans` | `src/app/(app)/loans/page.tsx` | app | yes | no | yes | - |
+| `/loans/new` | `src/app/(app)/loans/new/page.tsx` | app | yes | no | no | form: _components/loan-form.tsx |
+| `/loans/[id]/edit` | `src/app/(app)/loans/[id]/edit/page.tsx` | app | yes | yes | yes | form: _components/loan-form.tsx; delete in overflow |
 | `/manage-accounts` | `src/app/(app)/manage-accounts/page.tsx` | app | no | no | no | UNVERIFIED: no header/error/skeleton in depth-3 imports |
 | `/more` | `src/app/(app)/more/page.tsx` | app | no | no | no | UNVERIFIED: no header in depth-3 imports |
 | `/portfolio/dividends` | `src/app/(app)/portfolio/dividends/page.tsx` | app | yes (page.tsx:141) | no | no | - |
@@ -99,15 +112,26 @@ Pages with PageSkeleton: `/budgets`, `/categories/[id]`, `/categories`, `/goals`
 | `/settings/import` | `src/app/(app)/settings/import/page.tsx` | app > settings/layout.tsx (SettingsShell) | via import (settings/reconciliation/page.tsx:136) | no | no | re-exports `/settings/reconciliation/page` (page source) |
 | `/settings/import/reconcile-visibility` | `src/app/(app)/settings/import/reconcile-visibility/page.tsx` | app > settings/layout.tsx (SettingsShell) | yes (page.tsx:20); backHref + backLabel | no | no | in SELF_BACK_PATHS (src/components/settings-shell.tsx:79) |
 | `/settings/integrations` | `src/app/(app)/settings/integrations/page.tsx` | app > settings/layout.tsx (SettingsShell) | yes (page.tsx:76) | no | no | - |
-| `/settings/investments` | `src/app/(app)/settings/investments/page.tsx` | app > settings/layout.tsx (SettingsShell) | yes (page.tsx:788) | yes (page.tsx:739) | yes (page.tsx:746) | - |
+| `/settings/investments` | `src/app/(app)/settings/investments/page.tsx` | app > settings/layout.tsx (SettingsShell) | yes (page.tsx:358) | yes (page.tsx:309) | yes (page.tsx:316) | - |
+| `/settings/investments/securities/new` | `src/app/(app)/settings/investments/securities/new/page.tsx` | app > settings/layout.tsx (SettingsShell) | yes (page.tsx:18) | no | no | form: _components/add-security-form.tsx |
+| `/settings/investments/securities/[id]/edit` | `src/app/(app)/settings/investments/securities/[id]/edit/page.tsx` | app > settings/layout.tsx (SettingsShell) | yes (page.tsx:48) | yes (page.tsx:26) | no | form: _components/edit-security-form.tsx |
+| `/settings/investments/securities/[id]/link` | `src/app/(app)/settings/investments/securities/[id]/link/page.tsx` | app > settings/layout.tsx (SettingsShell) | yes (page.tsx:50) | yes (page.tsx:26) | no | form: _components/link-form.tsx |
+| `/settings/investments/securities/[id]/prices` | `src/app/(app)/settings/investments/securities/[id]/prices/page.tsx` | app > settings/layout.tsx (SettingsShell) | yes (page.tsx:48) | yes (page.tsx:26) | no | panel: _components/manage-prices-dialog.tsx |
+| `/settings/investments/accounts/[id]/link` | `src/app/(app)/settings/investments/accounts/[id]/link/page.tsx` | app > settings/layout.tsx (SettingsShell) | yes (page.tsx:50) | yes (page.tsx:26) | no | form: _components/link-form.tsx |
+| `/settings/investments/cash-sleeves/new` | `src/app/(app)/settings/investments/cash-sleeves/new/page.tsx` | app > settings/layout.tsx (SettingsShell) | yes (page.tsx:23) | no | no | form: src/components/portfolio/cash-sleeve-form.tsx |
 | `/settings` | `src/app/(app)/settings/page.tsx` | app > settings/layout.tsx (SettingsShell) | via import (components/settings-hub.tsx:42) | no | no | - |
 | `/settings/reconciliation` | `src/app/(app)/settings/reconciliation/page.tsx` | app > settings/layout.tsx (SettingsShell) | yes (page.tsx:136) | no | no | - |
 | `/settings/rules` | `src/app/(app)/settings/rules/page.tsx` | app > settings/layout.tsx (SettingsShell) | via import (settings/reconciliation/page.tsx:136) | no | no | re-exports `/settings/reconciliation/page` (page source) |
 | `/settings/securities` | `src/app/(app)/settings/securities/page.tsx` | app > settings/layout.tsx (SettingsShell) | no | no | no | UNVERIFIED: 1-file closure, no header |
-| `/subscriptions` | `src/app/(app)/subscriptions/page.tsx` | app | yes (page.tsx:335) | yes (page.tsx:107) | yes (page.tsx:322) | - |
+| `/subscriptions` | `src/app/(app)/subscriptions/page.tsx` | app | yes | yes | yes | - |
+| `/subscriptions/new` | `src/app/(app)/subscriptions/new/page.tsx` | app | yes | no | no | form: _components/subscription-form.tsx |
+| `/subscriptions/[id]/edit` | `src/app/(app)/subscriptions/[id]/edit/page.tsx` | app | yes | yes | yes | form: _components/subscription-form.tsx; delete in overflow |
 | `/tax` | `src/app/(app)/tax/page.tsx` | app | yes (page.tsx:65) | no | no | - |
 | `/transactions/audit` | `src/app/(app)/transactions/audit/page.tsx` | app | yes (page.tsx:111); backHref + backLabel | no | no | titleClassName text-xl font-semibold tracking-tight |
 | `/transactions/new` | `src/app/(app)/transactions/new/page.tsx` | app | no | no | no | UNVERIFIED: no header in depth-3 imports |
+| `/transactions/[id]/edit` | `src/app/(app)/transactions/[id]/edit/page.tsx` | app | yes (_components/transaction-edit-form.tsx PageHeader) | no | no | full-page Edit transaction; hidden FAB + tab bar |
+| `/transactions/transfer/[linkId]/edit` | `src/app/(app)/transactions/transfer/[linkId]/edit/page.tsx` | app | yes (_components/transaction-edit-form.tsx PageHeader) | no | no | full-page Edit transfer; hidden FAB + tab bar |
+| `/transactions/[id]/split` | `src/app/(app)/transactions/[id]/split/page.tsx` | app | yes (_components/transaction-split-form.tsx PageHeader) | no | no | full-page Split transaction (replaces split-dialog.tsx); hidden FAB + tab bar |
 | `/transactions` | `src/app/(app)/transactions/page.tsx` | app | via import (transactions/_components/transactions-workspace.tsx:698) | no | no | header from transactions/_components/transactions-workspace.tsx:698 (reachable) |
 | `/transactions/search` | `src/app/(app)/transactions/search/page.tsx` | app | yes (page.tsx:158) | no | no | - |
 | `/whats-new` | `src/app/(app)/whats-new/page.tsx` | app | yes (page.tsx:56) | no | no | - |

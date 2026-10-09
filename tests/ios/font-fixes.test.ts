@@ -13,7 +13,7 @@ const TOUCHED = [
   "src/app/cloud/page.tsx",
   "src/components/nav.tsx",
   "src/components/portfolio/lot-allocation-matrix.tsx",
-  "src/app/(app)/transactions/_components/split-dialog.tsx",
+  "src/app/(app)/transactions/_components/transaction-split-form.tsx",
   "src/app/(app)/portfolio/_components/holdings-by-account.tsx",
   "src/app/(app)/portfolio/_components/holdings-table.tsx",
   "src/app/(app)/portfolio/realized-gains/page.tsx",
@@ -90,10 +90,11 @@ describe("4. fixed-size boxes grown for 12px text", () => {
     expect(src.match(/min-w-28/g)?.length).toBe(2);
   });
 
-  it("split dialog Amount column is 96px in header and rows", () => {
-    const src = read("src/app/(app)/transactions/_components/split-dialog.tsx");
-    expect(src).not.toContain("1fr_1fr_80px_1fr_1fr_32px");
-    expect(src.match(/grid-cols-\[1fr_1fr_96px_1fr_1fr_32px\]/g)?.length).toBe(2);
+  it("split page rows are ListCard + FormRow (no fixed 6-column grid on phones)", () => {
+    const src = read("src/app/(app)/transactions/_components/transaction-split-form.tsx");
+    expect(src).not.toContain("1fr_1fr_96px_1fr_1fr_32px");
+    expect(src).toContain("<ListCard");
+    expect(src).toContain("<FormRow");
   });
 
   it("holdings badges with text-xs are h-5, not h-4", () => {

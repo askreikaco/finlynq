@@ -9,21 +9,17 @@
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { usePageFab } from "@/components/mobile/page-fab";
+import Link from "next/link";
 import {
   Zap, Plus, Trash2, AlertTriangle,
 } from "lucide-react";
-import {
-  RuleEditorDialog,
-  type Category,
-  type Account,
-  type Holding,
-  type RuleSeed,
-} from "@/components/rules/rule-editor-dialog";
 import type { Condition, Action } from "@/lib/rules/schema";
+
+/** Where the rule create/edit pages send the user back to (this section's page). */
+const RULES_RETURN_TO = "/settings/rules";
 
 type RuleRow = {
   id: number;
@@ -124,29 +120,12 @@ function describeAction(a: Action, fkNames?: RuleRow["actionFKNames"]): string {
 
 export function RulesSection() {
   const [rules, setRules] = useState<RuleRow[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [holdings, setHoldings] = useState<Holding[]>([]);
   const [error, setError] = useState("");
-  const [editing, setEditing] = useState<RuleRow | null>(null);
-  const [showEditor, setShowEditor] = useState(false);
 
   async function load() {
     try {
-      const [rulesRes, catsRes, acctsRes, holdRes] = await Promise.all([
-        fetch("/api/rules"),
-        fetch("/api/categories"),
-        fetch("/api/accounts"),
-        fetch("/api/portfolio"),
-      ]);
+      const rulesRes = await fetch("/api/rules");
       if (rulesRes.ok) setRules(await rulesRes.json());
-      if (catsRes.ok) setCategories(await catsRes.json());
-      if (acctsRes.ok) setAccounts(await acctsRes.json());
-      if (holdRes.ok) {
-        const data = await holdRes.json();
-        // /api/portfolio returns an array of holdings.
-        setHoldings(Array.isArray(data) ? data : (data.holdings ?? []));
-      }
     } catch (e) {
       setError(String(e));
     }
@@ -182,13 +161,6 @@ export function RulesSection() {
     }
   }
 
-  function startEditor(rule?: RuleRow) {
-    setEditing(rule ?? null);
-    setShowEditor(true);
-  }
-
-  usePageFab("rules.create", () => startEditor());
-
   return (
     <div className="space-y-6">
       <p className="text-sm text-muted-foreground">
@@ -208,9 +180,9 @@ export function RulesSection() {
                 <CardDescription>Sorted by priority DESC. First match wins.</CardDescription>
               </div>
             </div>
-            <Button variant="outline" size="sm" onClick={() => startEditor()}>
+            <Link href={`/settings/rules/new?returnTo=${encodeURIComponent(RULES_RETURN_TO)}`} className={buttonVariants({ variant: "outline", size: "sm" })}>
               <Plus className="h-4 w-4 mr-1" /> Add Rule
-            </Button>
+            </Link>
           </div>
         </CardHeader>
         <CardContent className="space-y-2">
@@ -252,9 +224,12 @@ export function RulesSection() {
                       aria-label={`${rule.isActive ? "Disable" : "Enable"} rule ${rule.name}`}
                     />
                   </span>
-                  <Button variant="ghost" size="sm" onClick={() => startEditor(rule)}>
+                  <Link
+                    href={`/settings/rules/${rule.id}/edit?returnTo=${encodeURIComponent(RULES_RETURN_TO)}`}
+                    className={buttonVariants({ variant: "ghost", size: "sm" })}
+                  >
                     Edit
-                  </Button>
+                  </Link>
                   <Button aria-label="Delete rule" variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(rule)}>
                     <Trash2 className="h-3 w-3" />
                   </Button>
@@ -264,54 +239,6 @@ export function RulesSection() {
           ))}
         </CardContent>
       </Card>
-
-      {showEditor && (
-        <RuleEditorDialog
-          rule={ruleRowToSeed(editing)}
-          categories={categories}
-          accounts={accounts}
-          holdings={holdings}
-          onClose={(saved) => {
-            setShowEditor(false);
-            setEditing(null);
-            if (saved) load();
-          }}
-          onSubmit={async (payload) => {
-            const url = "/api/rules";
-            const method = editing ? "PUT" : "POST";
-            const body = editing
-              ? { id: editing.id, ...payload }
-              : payload;
-            try {
-              const res = await fetch(url, {
-                method,
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(body),
-              });
-              if (!res.ok) {
-                const data = await res.json().catch(() => ({}));
-                return { ok: false, error: data?.error ?? "Failed to save rule" };
-              }
-              return { ok: true };
-            } catch (e) {
-              return { ok: false, error: e instanceof Error ? e.message : String(e) };
-            }
-          }}
-        />
-      )}
     </div>
   );
 }
-
-function ruleRowToSeed(rule: RuleRow | null): RuleSeed | null {
-  if (!rule) return null;
-  return {
-    id: rule.id,
-    name: rule.name,
-    conditions: rule.conditions ?? { all: [] },
-    actions: rule.actions ?? [],
-    priority: rule.priority,
-    isActive: rule.isActive,
-  };
-}
-

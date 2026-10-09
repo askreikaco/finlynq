@@ -26,6 +26,7 @@ import { Check, Inbox } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import type { ReconcileData } from "./inbox-reconcile-tab";
 import { AutoRuleBanner } from "./auto-rule-banner";
+import { transactionEditHref } from "@/lib/transactions/edit-flow";
 
 export function InboxReconciledTab({
   data,
@@ -100,11 +101,9 @@ export function InboxReconciledTab({
     .sort((a, b) => (b.bank.date ?? "").localeCompare(a.bank.date ?? ""));
 
   const handleAutoRuleRowClick = (transactionId: number) => {
-    // Navigate to /transactions filtered to this account so the user can
-    // find + edit the rule-fired row. Hard navigation keeps the existing
-    // edit flow intact; the inbox surface doesn't itself own a
-    // TransactionDialog open-by-id path.
-    router.push(`/transactions?focusId=${transactionId}`);
+    // Opens the rule-fired row on its full-page edit route (PKG1). Back returns to this inbox view.
+    const here = typeof window === "undefined" ? "/inbox" : `${window.location.pathname}${window.location.search}`;
+    router.push(transactionEditHref(transactionId, here));
   };
 
   if (rows.length === 0) {

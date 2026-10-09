@@ -217,15 +217,15 @@ const ALLOW_LIST = [
     reason: "Onboarding form useState currency default",
   },
   {
-    file: "src/app/(app)/settings/investments/page.tsx",
-    line: `const [addCurrency, setAddCurrency] = useState("USD");`,
+    file: "src/app/(app)/settings/investments/_components/add-security-form.tsx",
+    line: `const [currency, setCurrency] = useState("USD");`,
     count: 1,
     reason: "Investment settings form useState currency default",
   },
 
-  // Transaction dialog form defaults
+  // Transaction form defaults (moved from transaction-dialog.tsx into use-transaction-form.ts, PKG1)
   {
-    file: "src/components/transactions/transaction-dialog.tsx",
+    file: "src/components/transactions/use-transaction-form.ts",
     line: `currency: "CAD",`,
     count: 1,
     reason: "Transaction form default values, form-only (not display-reaching)",
