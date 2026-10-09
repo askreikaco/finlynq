@@ -321,7 +321,7 @@ export function ColumnMappingDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl max-h-[88vh] overflow-hidden flex flex-col">
+      <DialogContent className="sm:max-w-4xl max-h-[88dvh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>
             {confirmMode ? "Confirm Column Mapping" : "Map CSV Columns"}

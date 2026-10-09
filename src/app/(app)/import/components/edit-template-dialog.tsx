@@ -155,9 +155,9 @@ export function EditTemplateDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {/* `flex flex-col` overrides DialogContent's default `grid` via tailwind-merge;
-          `max-h-[90vh]` + the inner scroll region keeps the footer reachable when
+          `max-h-[90dvh]` + the inner scroll region keeps the footer reachable when
           the import-options panel is expanded. */}
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+      <DialogContent className="sm:max-w-2xl max-h-[90dvh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>Edit Template</DialogTitle>
           <DialogDescription>

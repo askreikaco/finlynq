@@ -312,7 +312,7 @@ export function LotInspectorDialog({
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={showMatrix ? "sm:max-w-[97vw] w-[97vw] h-[95vh] max-h-[95vh] flex flex-col overflow-hidden overflow-y-hidden" : "sm:max-w-2xl"}>
+      <DialogContent className={showMatrix ? "sm:max-w-[97vw] w-[97vw] h-[95dvh] max-h-[95dvh] flex flex-col overflow-hidden overflow-y-hidden" : "sm:max-w-2xl"}>
         <DialogHeader>
           <DialogTitle className="text-base">
             Lot inspector
@@ -424,7 +424,7 @@ export function LotInspectorDialog({
               than a lot holds opens a short for the overflow.
             </p>
 
-            <div className="space-y-1.5 max-h-[40vh] overflow-y-auto">
+            <div className="space-y-1.5 max-h-[40dvh] overflow-y-auto">
               {openLongLots.length === 0 && (
                 <p className="text-xs text-muted-foreground">
                   No open long lots available — the closure will open a short.
@@ -510,7 +510,7 @@ export function LotInspectorDialog({
         )}
 
         {!loading && !error && editTxId == null && !showMatrix && lots.length > 0 && (
-          <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+          <div className="space-y-3 max-h-[60dvh] overflow-y-auto">
             {lots.map((lot) => {
               const lotClosures = closuresByLot.get(lot.id) ?? [];
               return (

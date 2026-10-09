@@ -29,7 +29,7 @@ export function DetailSheet({
 }) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="max-h-[85dvh] overflow-y-auto rounded-t-2xl">
+      <SheetContent side="bottom" className="max-h-[85dvh] overflow-y-auto overscroll-contain rounded-t-2xl">
         <SheetHeader>
           <SheetTitle className="text-lg font-bold">{title}</SheetTitle>
           {description ? <SheetDescription>{description}</SheetDescription> : null}

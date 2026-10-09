@@ -111,7 +111,7 @@ export function OfxConfirmDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl max-h-[88vh] overflow-hidden flex flex-col">
+      <DialogContent className="sm:max-w-4xl max-h-[88dvh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Confirm import — {format.toUpperCase()} statement</DialogTitle>
           <DialogDescription>
@@ -176,7 +176,7 @@ export function OfxConfirmDialog({
                 (first {Math.min(previewRows.length, 50)} of {rowCount})
               </span>
             </div>
-            <div className="rounded-lg border overflow-auto max-h-[42vh]">
+            <div className="rounded-lg border overflow-auto max-h-[42dvh]">
               <table className="w-full text-xs">
                 <thead className="bg-muted/50 sticky top-0">
                   <tr>

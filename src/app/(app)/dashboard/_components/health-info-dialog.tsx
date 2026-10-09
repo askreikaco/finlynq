@@ -134,7 +134,7 @@ export function HealthInfoDialog({ data, open, onOpenChange }: HealthInfoDialogP
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+      <DialogContent className="sm:max-w-2xl max-h-[90dvh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>How is the Financial Health score calculated?</DialogTitle>
           <DialogDescription>
