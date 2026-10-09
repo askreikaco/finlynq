@@ -37,9 +37,9 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 function StatusIcon({ status }: { status: string }) {
-  if (status === "active") return <CheckCircle2 className="h-4 w-4 text-green-600" aria-hidden="true" />;
-  if (status === "pending" || status === "awaiting_owner_unlock") return <Clock className="h-4 w-4 text-amber-600" aria-hidden="true" />;
-  if (status === "suspended" || status === "key_reset") return <AlertTriangle className="h-4 w-4 text-amber-600" aria-hidden="true" />;
+  if (status === "active") return <CheckCircle2 className="h-4 w-4 text-pos" aria-hidden="true" />;
+  if (status === "pending" || status === "awaiting_owner_unlock") return <Clock className="h-4 w-4 text-warning" aria-hidden="true" />;
+  if (status === "suspended" || status === "key_reset") return <AlertTriangle className="h-4 w-4 text-warning" aria-hidden="true" />;
   return <CircleSlash className="h-4 w-4 text-muted-foreground" aria-hidden="true" />;
 }
 
@@ -145,14 +145,14 @@ export function SharesList({ shares, incoming, emptyMessage, role, onChanged }: 
                       </dl>
 
                       {share.mustShareBack && (
-                        <p className="text-xs font-medium text-blue-700 dark:text-blue-300">
+                        <p className="text-xs font-medium text-info">
                           {fill(FAMILY_STRINGS.sharing_list_must_share_back, {
                             sections: share.requiredBackSections.map(getSectionLabel).join(", "),
                           })}
                         </p>
                       )}
                       {role === "owner" && share.reconsentRequired && (
-                        <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                        <p className="text-xs font-medium text-warning">
                           {fill(FAMILY_STRINGS.sharing_list_reconsent_waiting, {
                             sections: share.reconsentSections.map(getSectionLabel).join(", "),
                           })}
