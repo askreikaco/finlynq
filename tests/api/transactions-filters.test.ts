@@ -21,6 +21,18 @@ vi.mock("@/lib/queries", () => ({
   deleteTransaction: vi.fn(),
 }));
 
+// The route calls checkETag (data-version.ts), which reads users.data_version
+// through the real DB adapter. This file only asserts query arguments, so stub
+// the ETag layer with the authenticated context and a fixed data_version.
+vi.mock("@/lib/data-version", () => ({
+  checkETag: vi.fn(async () => ({
+    authContext: { userId: "default", method: "passphrase" as const, mfaVerified: false, dek: Buffer.alloc(32, 0xaa), sessionId: "test-session-jti" },
+    dataVersion: 1,
+  })),
+  withEtagHeaders: (response: unknown) => response,
+  getDataVersion: vi.fn(async () => 1),
+}));
+
 vi.mock("@/lib/verify-ownership", () => ({
   verifyOwnership: vi.fn(async () => undefined),
   OwnershipError: class OwnershipError extends Error {

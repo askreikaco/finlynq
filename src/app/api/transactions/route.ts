@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getTransactions, getTransactionCount, createTransaction, updateTransaction, getAccountById, type TxSortFilter } from "@/lib/queries";
+import { getTransactions, getTransactionCount, getTransactionsPage, createTransaction, updateTransaction, getAccountById, type TxSortFilter } from "@/lib/queries";
+import { decodeCursor, InvalidCursorError, type TxCursor } from "@/lib/transactions/cursor";
+import { resolveTextFilterIds, resolveAccountTextIds, resolveHoldingTextIds } from "@/lib/transactions/text-filter";
 import { requireAuth } from "@/lib/auth/require-auth";
 import { requireEncryption } from "@/lib/auth/require-encryption";
-import { encryptTxWrite, decryptTxRows, redactTxCiphertext, filterDecryptedBySearch, nameLookup, decryptName } from "@/lib/crypto/encrypted-columns";
+import { encryptTxWrite, decryptTxRows, redactTxCiphertext, nameLookup, decryptName } from "@/lib/crypto/encrypted-columns";
 import { decryptField } from "@/lib/crypto/envelope";
 import { invalidateUser as invalidateUserTxCache } from "@/lib/mcp/user-tx-cache";
 import { buildHoldingResolver } from "@/lib/external-import/portfolio-holding-resolver";
@@ -144,16 +146,9 @@ export async function GET(request: NextRequest) {
       portfolioHoldingNameIds = [];
     }
   }
-  // Tag is an in-memory exact-match filter on the comma-split list. The
-  // column is ciphertext-at-rest so SQL LIKE won't work, and substring
-  // match on decrypted text would false-match (e.g. `source:X` in one tag
-  // shouldn't match `source:XY` in another). Split then exact-compare each.
   const tag = params.get("tag") ?? undefined;
 
-  // Issue #59 — parse the new sort + per-column filter query params. SQL-
-  // pushdown filters (date / numeric / multi-id / enum) are wired into
-  // `getTransactions`. Substring filters on encrypted columns stay
-  // post-decryption (handled below alongside the legacy `search`).
+  // Issue #59 — parse the new sort + per-column filter query params.
   const sortColumnIdRaw = params.get("sort") ?? undefined;
   const sortDirRaw = params.get("sortDir") ?? undefined;
   const sortColumnId = sortColumnIdRaw && isSortableColumnId(sortColumnIdRaw)
@@ -181,34 +176,53 @@ export async function GET(request: NextRequest) {
     return out.length > 0 ? out : undefined;
   };
 
-  // Encrypted-column substring filters — payee / note / accountName /
-  // categoryName / portfolioHolding etc. Trigger the post-decrypt widening
-  // since SQL LIKE on ciphertext returns garbage.
+  // Cursor mode: a `cursor` param switches the response to opaque paging.
+  // An empty value is the first page (the only page that carries `total`).
+  // Legacy mode (no `cursor` param) keeps the {data,total} shape.
+  const cursorParam = params.get("cursor");
+  const cursorMode = cursorParam !== null;
+  const cursorFirstPage = cursorMode && cursorParam === "";
+  const expectedSort = sortColumnId ?? "date";
+  const expectedDirection: "asc" | "desc" = sortDirection === "asc" ? "asc" : "desc";
+  let cursor: TxCursor | undefined;
+  if (cursorMode && cursorParam !== "") {
+    try {
+      cursor = decodeCursor(cursorParam, { sort: expectedSort, direction: expectedDirection });
+    } catch (err) {
+      if (err instanceof InvalidCursorError) {
+        return NextResponse.json({ error: "Invalid cursor" }, { status: 400 });
+      }
+      throw err;
+    }
+  }
+
+  // Empty-or-whitespace text params are "no filter" (same as the client).
+  const nonEmpty = (v: string | null | undefined): string | undefined =>
+    v && v.trim() !== "" ? v : undefined;
+  const intersectIdSets = (sets: number[][]): number[] | undefined =>
+    sets.length === 0 ? undefined : sets.reduce((acc, s) => acc.filter((id) => s.includes(id)));
+  const definedSets = (sets: Array<number[] | undefined>): number[][] =>
+    sets.filter((s): s is number[] => s !== undefined);
+
+  // Encrypted-text filters. search / tag / filter_payee / filter_note /
+  // filter_tags are resolved by resolveTextFilterIds (server decrypt of three
+  // narrow columns, then id pushdown). Account and holding name filters
+  // resolve to id sets. filter_kind is plaintext, so it is SQL ILIKE.
   const filterPayee = params.get("filter_payee") ?? undefined;
   const filterNote = params.get("filter_note") ?? undefined;
   const filterAccountName = params.get("filter_accountName") ?? undefined;
   const filterAccountAlias = params.get("filter_accountAlias") ?? undefined;
+  const filterAccount = params.get("filter_account") ?? undefined;
   const filterPortfolio = params.get("filter_portfolio") ?? undefined;
   const filterPortfolioTicker = params.get("filter_portfolioTicker") ?? undefined;
   const filterTags = params.get("filter_tags") ?? undefined;
-  // NOTE: `filterPortfolioTicker` is deliberately NOT in this set. Unlike the
-  // other encrypted-substring filters (which scan decrypted text post-fetch),
-  // the ticker filter is resolved to a holding-id set below and pushed into SQL,
-  // so it must NOT trigger the capped 1000-row post-decrypt window — that cap
-  // hid XAU/metal rows older than the 1000 most-recent across "All accounts".
-  const hasEncryptedSubstringFilter = !!(
-    filterPayee || filterNote || filterAccountName || filterAccountAlias ||
-    filterPortfolio || filterTags
-  );
+  const filterKind = params.get("filter_kind") ?? undefined;
 
   // Resolve the ticker substring against the user's (small) holdings/securities
-  // symbol set. Symbols are Stream-D encrypted, so SQL can't LIKE on them — but
-  // there are only tens of holdings per user, so decrypt them here, substring-
-  // match the needle (case-insensitive, matching the post-decrypt semantics the
-  // ticker column always had), and push the matching `portfolio_holding_id` set
-  // into the SQL WHERE. When the filter is present we ALWAYS bind a result set
-  // (possibly empty = "no holding matched") so the filter is never silently
-  // dropped — including the no-DEK case, which can't decrypt any symbol.
+  // symbol set. Symbols are Stream-D encrypted, so SQL can't LIKE on them. When
+  // the filter is present we ALWAYS bind a result set (possibly empty = "no
+  // holding matched") so the filter is never silently dropped, including the
+  // no-DEK case, which can't decrypt any symbol.
   let portfolioTickerHoldingIds: number[] | undefined;
   if (filterPortfolioTicker) {
     if (dek) {
@@ -239,32 +253,71 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Combine the holding-id constraints (the Ticker column filter + the
-  // name/symbol drill) into ONE id set pushed into SQL. Both present →
-  // intersection (AND, e.g. ticker-filtering inside a drilled holding); either
-  // alone → that set; neither → undefined (no holding-id constraint). An empty
-  // resulting set means "matched no holding" → `1 = 0` in the query.
-  const holdingIdSets = [portfolioTickerHoldingIds, portfolioHoldingNameIds].filter(
-    (s): s is number[] => s !== undefined,
+  // Holding-id constraints (ticker column filter, name/symbol drill, holding
+  // name text filter) are ANDed into one id set. An empty set means "matched no
+  // holding", which is handled below as match-nothing.
+  const holdingTextNeedle = nonEmpty(filterPortfolio);
+  const holdingTextIds = holdingTextNeedle
+    ? await resolveHoldingTextIds({ userId, dek, needle: holdingTextNeedle })
+    : undefined;
+  const portfolioHoldingIds = intersectIdSets(
+    definedSets([portfolioTickerHoldingIds, portfolioHoldingNameIds, holdingTextIds]),
   );
-  const portfolioHoldingIds: number[] | undefined =
-    holdingIdSets.length === 0
-      ? undefined
-      : holdingIdSets.reduce((acc, s) => acc.filter((id) => s.includes(id)));
 
-  // FINLYNQ-177 — single-transaction id deep link. Owner-scoped SQL pushdown
-  // (combined with the user_id predicate in buildTxFilterConditions). A present
-  // but non-positive / non-numeric `id` param can never match a real serial id,
-  // so short-circuit to the empty state rather than silently dropping the
-  // filter and rendering the full list.
+  // Account-id constraints: explicit accountIds, a comma-list accountId (2.5 d),
+  // and the account name / alias text filters (2.5 h). Each text filter is a
+  // separate resolved id set, ANDed together.
+  const accountIdRaw = params.get("accountId");
+  const categoryIdRaw = params.get("categoryId");
+  const commaAccountIds = accountIdRaw?.includes(",") ? parseIdList("accountId") : undefined;
+  const commaCategoryIds = categoryIdRaw?.includes(",") ? parseIdList("categoryId") : undefined;
+  const accountIdSingle = accountIdRaw && !accountIdRaw.includes(",") ? parseInt(accountIdRaw) : undefined;
+  const categoryIdSingle = categoryIdRaw && !categoryIdRaw.includes(",") ? parseInt(categoryIdRaw) : undefined;
+
+  const accountTextSets: number[][] = [];
+  const accountTextSpecs: Array<[string | undefined, Array<"name" | "alias">]> = [
+    [nonEmpty(filterAccountName), ["name"]],
+    [nonEmpty(filterAccountAlias), ["alias"]],
+    [nonEmpty(filterAccount), ["name", "alias"]],
+  ];
+  for (const [needle, fields] of accountTextSpecs) {
+    if (needle) {
+      accountTextSets.push(await resolveAccountTextIds({ userId, dek, needle, fields }));
+    }
+  }
+  const accountIdSet = intersectIdSets(
+    definedSets([parseIdList("accountIds"), commaAccountIds, ...accountTextSets]),
+  );
+  const categoryIdSet = intersectIdSets(definedSets([parseIdList("categoryIds"), commaCategoryIds]));
+
+  // A set that resolved to nothing means the whole result is empty. The query
+  // then runs with `ids: []` (1 = 0), never with an empty accountIds or
+  // portfolioHoldingIds array.
+  const matchNothing =
+    accountIdSet?.length === 0 ||
+    categoryIdSet?.length === 0 ||
+    portfolioHoldingIds?.length === 0;
+
+  // FINLYNQ-177 — single-transaction id deep link. A present but non-positive
+  // / non-numeric `id` param can never match a real serial id, so
+  // short-circuit to the empty state rather than dropping the filter.
   const idParamRaw = params.get("id");
   let idFilter: number | undefined;
+  const emptyResponse = () =>
+    cursorMode
+      ? NextResponse.json({
+          data: [],
+          ...(cursorFirstPage ? { total: 0 } : {}),
+          nextCursor: null,
+          hasMore: false,
+        })
+      : NextResponse.json({ data: [], total: 0 });
   if (idParamRaw != null && idParamRaw !== "") {
     const parsed = parseInt(idParamRaw, 10);
     if (Number.isFinite(parsed) && parsed > 0) {
       idFilter = parsed;
     } else {
-      return NextResponse.json({ data: [], total: 0 });
+      return emptyResponse();
     }
   }
 
@@ -272,9 +325,16 @@ export async function GET(request: NextRequest) {
   const directionRaw = params.get("direction");
   const direction: "in" | "out" | undefined = (directionRaw === "in" || directionRaw === "out") ? directionRaw : undefined;
 
-  // FK filter is SQL-side, so it's NOT a postDecryptFilter — paginate normally.
-  const postDecryptFilter = search || tag || hasEncryptedSubstringFilter;
-  const filters: TxSortFilter = {
+  // Kind: plaintext column, case-insensitive substring via ILIKE. Escape LIKE
+  // metacharacters so the needle is literal.
+  const kindNeedle = nonEmpty(filterKind);
+  const kindLike = kindNeedle
+    ? `%${kindNeedle.trim().replace(/[\\%_]/g, "\\$&")}%`
+    : undefined;
+
+  // SQL-side filters (no sort, no paging, no text ids). Also the memo key for
+  // resolveTextFilterIds, so sort or paging changes do not re-decrypt.
+  const sqlFilters: TxSortFilter = {
     id: idFilter,
     startDate: params.get("startDate") ?? undefined,
     endDate: params.get("endDate") ?? undefined,
@@ -282,12 +342,12 @@ export async function GET(request: NextRequest) {
     createdAtTo: params.get("createdAtTo") ?? undefined,
     updatedAtFrom: params.get("updatedAtFrom") ?? undefined,
     updatedAtTo: params.get("updatedAtTo") ?? undefined,
-    accountId: params.get("accountId") ? parseInt(params.get("accountId")!) : undefined,
-    categoryId: params.get("categoryId") ? parseInt(params.get("categoryId")!) : undefined,
+    accountId: accountIdSingle,
+    categoryId: categoryIdSingle,
     portfolioHoldingId: Number.isFinite(portfolioHoldingId) ? portfolioHoldingId : undefined,
-    portfolioHoldingIds,
-    accountIds: parseIdList("accountIds"),
-    categoryIds: parseIdList("categoryIds"),
+    portfolioHoldingIds: portfolioHoldingIds?.length ? portfolioHoldingIds : undefined,
+    accountIds: accountIdSet?.length ? accountIdSet : undefined,
+    categoryIds: categoryIdSet?.length ? categoryIdSet : undefined,
     amountMin: parseNum("amountMin"),
     amountMax: parseNum("amountMax"),
     amountEq: parseNum("amountEq"),
@@ -298,150 +358,142 @@ export async function GET(request: NextRequest) {
     minAmount: parseNum("minAmount"),
     maxAmount: parseNum("maxAmount"),
     sources: parseSourcesList(),
-    sortColumnId,
-    sortDirection,
-    // Search is applied after decryption, so don't push it into the SQL filter.
-    // Pull a wider page when any post-decrypt filter is set so the in-memory
-    // pass doesn't paginate an empty window. The client still honors the
-    // original limit.
-    limit: postDecryptFilter ? 1000 : (params.get("limit") ? parseInt(params.get("limit")!) : 100),
-    offset: postDecryptFilter ? 0 : (params.get("offset") ? parseInt(params.get("offset")!) : 0),
+    kindLike,
   };
 
-  const rawRows = await getTransactions(userId, filters);
-  let decrypted = decryptTxRows(dek, rawRows as Array<Parameters<typeof decryptTxRows>[1][number]>);
-  // Locked session: never ship ciphertext to the client (display-only rows).
-  if (!dek) decrypted = redactTxCiphertext(decrypted);
+  const textNeedles = {
+    search: nonEmpty(search),
+    tag: nonEmpty(tag),
+    payee: nonEmpty(filterPayee),
+    note: nonEmpty(filterNote),
+    tags: nonEmpty(filterTags),
+  };
+  const hasTextNeedle = Object.values(textNeedles).some((v) => v !== undefined);
 
-  // Resolve every Stream-D-encrypted display name and strip the *_ct
-  // companion fields before serializing. Falls back to plaintext (legacy
-  // rows + DEK-mismatch users) via decryptName's ladder. Without the
-  // category + account decrypts, the /transactions page and the Reports
-  // tabs render empty cells for every Phase-3-NULL'd user.
-  // Securities master read-flip — when on, the displayed holding identity comes
-  // from the centralized `securities` row (single source of truth), so a renamed
-  // security (e.g. a cash sleeve "Cash USD") shows here, not the stale position
-  // name. Off / unlinked → the holding's own name (legacy behavior).
+  let textIds: number[] | undefined;
+  if (matchNothing) {
+    textIds = [];
+  } else if (hasTextNeedle) {
+    textIds = await resolveTextFilterIds({
+      userId,
+      dek,
+      sqlFilters,
+      needles: textNeedles,
+      dataVersion: etagCheck.dataVersion,
+    });
+  }
+
+  const filters: TxSortFilter = {
+    ...sqlFilters,
+    sortColumnId,
+    sortDirection,
+    ids: textIds,
+  };
+
   const securitiesRead = await securitiesReadEnabledForUser(userId);
-  decrypted = decrypted.map((r) => {
-    const row = r as typeof r & {
-      accountName?: string | null;
-      accountNameCt?: string | null;
-      accountAlias?: string | null;
-      accountAliasCt?: string | null;
-      categoryName?: string | null;
-      categoryNameCt?: string | null;
-      portfolioHoldingName?: string | null;
-      portfolioHoldingNameCt?: string | null;
-      portfolioHoldingSymbol?: string | null;
-      portfolioHoldingSymbolCt?: string | null;
-      securityNameCt?: string | null;
-      securitySymbolCt?: string | null;
-      portfolioHolding?: string | null;
-    };
-    row.accountName = decryptName(row.accountNameCt, dek, row.accountName);
-    row.accountAlias = decryptName(row.accountAliasCt, dek, row.accountAlias);
-    row.categoryName = decryptName(row.categoryNameCt, dek, row.categoryName);
-    // Holding name — prefer the security's name when the read-flip is on.
-    let resolvedHolding: string | null = null;
-    if (securitiesRead && row.securityNameCt && dek) {
-      try {
-        resolvedHolding = decryptField(dek, row.securityNameCt);
-      } catch {
-        resolvedHolding = null;
-      }
-    }
-    if (!resolvedHolding) {
-      resolvedHolding = row.portfolioHoldingName ?? null;
-      if (!resolvedHolding && row.portfolioHoldingNameCt && dek) {
+  // Decrypt + redact + resolve display names for the rows actually returned.
+  const shapeRows = (raw: unknown[]) => {
+    let decrypted = decryptTxRows(dek, raw as Array<Parameters<typeof decryptTxRows>[1][number]>);
+    // Locked session: never ship ciphertext to the client (display-only rows).
+    if (!dek) decrypted = redactTxCiphertext(decrypted);
+    // Resolve every Stream-D-encrypted display name and strip the *_ct
+    // companion fields before serializing. Falls back to plaintext (legacy
+    // rows + DEK-mismatch users) via decryptName's ladder.
+    // Securities master read-flip: when on, the displayed holding identity comes
+    // from the centralized `securities` row. Off / unlinked → the holding's own name.
+    return decrypted.map((r) => {
+      const row = r as typeof r & {
+        accountName?: string | null;
+        accountNameCt?: string | null;
+        accountAlias?: string | null;
+        accountAliasCt?: string | null;
+        categoryName?: string | null;
+        categoryNameCt?: string | null;
+        portfolioHoldingName?: string | null;
+        portfolioHoldingNameCt?: string | null;
+        portfolioHoldingSymbol?: string | null;
+        portfolioHoldingSymbolCt?: string | null;
+        securityNameCt?: string | null;
+        securitySymbolCt?: string | null;
+        portfolioHolding?: string | null;
+      };
+      row.accountName = decryptName(row.accountNameCt, dek, row.accountName);
+      row.accountAlias = decryptName(row.accountAliasCt, dek, row.accountAlias);
+      row.categoryName = decryptName(row.categoryNameCt, dek, row.categoryName);
+      // Holding name — prefer the security's name when the read-flip is on.
+      let resolvedHolding: string | null = null;
+      if (securitiesRead && row.securityNameCt && dek) {
         try {
-          resolvedHolding = decryptField(dek, row.portfolioHoldingNameCt);
+          resolvedHolding = decryptField(dek, row.securityNameCt);
         } catch {
           resolvedHolding = null;
         }
       }
-    }
-    row.portfolioHolding = resolvedHolding;
-    // Symbol — same preference. The security's symbol equals the holding's for
-    // tickered rows; null for cash → falls back to the holding's.
-    let resolvedSymbol: string | null = null;
-    if (securitiesRead && row.securitySymbolCt) {
-      resolvedSymbol = decryptName(row.securitySymbolCt, dek, null);
-    }
-    if (resolvedSymbol == null) {
-      resolvedSymbol = decryptName(row.portfolioHoldingSymbolCt, dek, row.portfolioHoldingSymbol);
-    }
-    row.portfolioHoldingSymbol = resolvedSymbol;
-    delete row.accountNameCt;
-    delete row.accountAliasCt;
-    delete row.categoryNameCt;
-    delete row.portfolioHoldingName;
-    delete row.portfolioHoldingNameCt;
-    delete row.portfolioHoldingSymbolCt;
-    delete row.securityNameCt;
-    delete row.securitySymbolCt;
-    return row;
-  });
-
-  if (search) {
-    decrypted = filterDecryptedBySearch(decrypted, search);
-  }
-
-  if (tag) {
-    decrypted = decrypted.filter((r) => {
-      if (!r.tags) return false;
-      return r.tags.split(",").map((t) => t.trim()).includes(tag);
+      if (!resolvedHolding) {
+        resolvedHolding = row.portfolioHoldingName ?? null;
+        if (!resolvedHolding && row.portfolioHoldingNameCt && dek) {
+          try {
+            resolvedHolding = decryptField(dek, row.portfolioHoldingNameCt);
+          } catch {
+            resolvedHolding = null;
+          }
+        }
+      }
+      row.portfolioHolding = resolvedHolding;
+      // Symbol — same preference. The security's symbol equals the holding's for
+      // tickered rows; null for cash → falls back to the holding's.
+      let resolvedSymbol: string | null = null;
+      if (securitiesRead && row.securitySymbolCt) {
+        resolvedSymbol = decryptName(row.securitySymbolCt, dek, null);
+      }
+      if (resolvedSymbol == null) {
+        resolvedSymbol = decryptName(row.portfolioHoldingSymbolCt, dek, row.portfolioHoldingSymbol);
+      }
+      row.portfolioHoldingSymbol = resolvedSymbol;
+      delete row.accountNameCt;
+      delete row.accountAliasCt;
+      delete row.categoryNameCt;
+      delete row.portfolioHoldingName;
+      delete row.portfolioHoldingNameCt;
+      delete row.portfolioHoldingSymbolCt;
+      delete row.securityNameCt;
+      delete row.securitySymbolCt;
+      return row;
     });
-  }
-
-  // Issue #59 — per-column substring filters on encrypted fields.
-  // Case-insensitive substring match against the post-decrypt value.
-  // Each filter narrows independently (AND across columns).
-  const matchSubstring = (value: string | null | undefined, needle: string) => {
-    if (!value) return false;
-    return value.toLowerCase().includes(needle.toLowerCase());
   };
-  if (filterPayee) {
-    decrypted = decrypted.filter((r) => matchSubstring(r.payee, filterPayee));
-  }
-  if (filterNote) {
-    decrypted = decrypted.filter((r) => matchSubstring(r.note, filterNote));
-  }
-  if (filterAccountName) {
-    decrypted = decrypted.filter((r) =>
-      matchSubstring((r as { accountName?: string | null }).accountName, filterAccountName),
-    );
-  }
-  if (filterAccountAlias) {
-    decrypted = decrypted.filter((r) =>
-      matchSubstring((r as { accountAlias?: string | null }).accountAlias, filterAccountAlias),
-    );
-  }
-  if (filterPortfolio) {
-    decrypted = decrypted.filter((r) =>
-      matchSubstring((r as { portfolioHolding?: string | null }).portfolioHolding, filterPortfolio),
-    );
-  }
-  // NOTE: the ticker filter (`filterPortfolioTicker`) is applied SQL-side via
-  // `portfolioHoldingIds` (resolved above), not here — so it scales past the
-  // 1000-row post-decrypt window. No in-memory ticker pass needed.
-  if (filterTags) {
-    decrypted = decrypted.filter((r) => matchSubstring(r.tags, filterTags));
-  }
 
-  // Re-apply client-requested pagination after in-memory filters so the
-  // chip-filtered view doesn't spill into an empty page.
-  let total: number;
-  if (postDecryptFilter) {
-    total = decrypted.length;
-    const clientLimit = params.get("limit") ? parseInt(params.get("limit")!) : 100;
-    const clientOffset = params.get("offset") ? parseInt(params.get("offset")!) : 0;
-    decrypted = decrypted.slice(clientOffset, clientOffset + clientLimit);
+  let response: NextResponse;
+  if (cursorMode) {
+    const pageLimitRaw = params.get("limit") ? parseInt(params.get("limit")!, 10) : NaN;
+    const pageLimit = Number.isFinite(pageLimitRaw) ? Math.min(200, Math.max(1, pageLimitRaw)) : 50;
+    let page: Awaited<ReturnType<typeof getTransactionsPage>>;
+    try {
+      page = await getTransactionsPage(userId, { ...filters, cursor }, pageLimit);
+    } catch (err) {
+      if (err instanceof InvalidCursorError) {
+        return NextResponse.json({ error: "Invalid cursor" }, { status: 400 });
+      }
+      throw err;
+    }
+    const total = cursorFirstPage
+      ? (textIds ? textIds.length : await getTransactionCount(userId, sqlFilters))
+      : undefined;
+    response = NextResponse.json({
+      data: shapeRows(page.rows),
+      nextCursor: page.nextCursor,
+      hasMore: page.hasMore,
+      ...(total !== undefined ? { total } : {}),
+    });
   } else {
-    total = await getTransactionCount(userId, filters);
+    // Legacy: byte-identical {data,total} shape with limit/offset, total on every call.
+    const rawRows = await getTransactions(userId, {
+      ...filters,
+      limit: params.get("limit") ? parseInt(params.get("limit")!) : 100,
+      offset: params.get("offset") ? parseInt(params.get("offset")!) : 0,
+    });
+    const total = textIds ? textIds.length : await getTransactionCount(userId, sqlFilters);
+    response = NextResponse.json({ data: shapeRows(rawRows), total });
   }
-
-  const response = NextResponse.json({ data: decrypted, total });
   if (etag) return withEtagHeaders(response, etag);
   return response;
 }
