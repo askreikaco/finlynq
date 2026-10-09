@@ -43,6 +43,8 @@ export default function MobileTransactionPage() {
   // Refs to handle StrictMode and prefill application
   const prefillReadRef = useRef(false);
   const prefillAppliedRef = useRef(false);
+  // ?account=<id> (set by the account page's New transaction button) preselects the source account.
+  const preselectAccountRef = useRef<string | null>(null);
 
   // Mode
   const [txType, setTxType] = useState<TxType>("Expense");
@@ -93,6 +95,8 @@ export default function MobileTransactionPage() {
     // Prevent reading twice in StrictMode
     if (prefillReadRef.current) return;
     prefillReadRef.current = true;
+
+    preselectAccountRef.current = new URLSearchParams(window.location.search).get("account");
 
     const prefill = readAndClearPrefill(Date.now());
     if (prefill) {
@@ -151,7 +155,9 @@ export default function MobileTransactionPage() {
   // Skip if prefill was applied (to avoid clobbering prefilled accountId)
   useEffect(() => {
     if (!accountId && activeAccounts.length > 0 && !prefillAppliedRef.current) {
-      setAccountId(String(activeAccounts[0].id));
+      const pre = preselectAccountRef.current;
+      const match = pre ? activeAccounts.find((a) => String(a.id) === pre) : undefined;
+      setAccountId(String((match ?? activeAccounts[0]).id));
     }
   }, [activeAccounts, accountId]);
 

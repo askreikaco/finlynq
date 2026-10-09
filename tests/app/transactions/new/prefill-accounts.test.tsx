@@ -76,6 +76,18 @@ describe("account selection", () => {
     r.rerender(<React.StrictMode><Page /></React.StrictMode>);
     expect((await save("Income")).accountId).toBe(2);
   });
+  it("R8 ?account=2 (no prefill) -> account 2 preselected", () => {
+    window.history.replaceState({}, "", "/transactions/new?account=2");
+    render(<Page />);
+    expect(screen.queryByText("Savings")).toBeTruthy();
+    expect(screen.queryByText("Checking")).toBeNull();
+  });
+  it("R10 ?account=999 (unknown id) -> falls back to first account", () => {
+    window.history.replaceState({}, "", "/transactions/new?account=999");
+    render(<Page />);
+    expect(screen.queryByText("Checking")).toBeTruthy();
+    expect(screen.queryByText("Savings")).toBeNull();
+  });
   it("R7 invalid prefill (expired) -> notice AND first account auto-selected", () => {
     sessionStorage.setItem(KEY, JSON.stringify(mk({ ts: 1 })));
     window.history.replaceState({}, "", "/transactions/new?prefill=1");

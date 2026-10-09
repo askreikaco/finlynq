@@ -566,7 +566,7 @@ export default function AccountDetailPage() {
         actions={
         <>
           {!isInvestment && (
-            <Button size="sm" onClick={() => openTxDialog()}>
+            <Button size="sm" onClick={() => router.push(`/transactions/new?account=${account.id}`)}>
               <Receipt className="h-3.5 w-3.5 mr-1.5" /> <FromMd as="span">New transaction</FromMd><CompactOnly as="span">Add</CompactOnly>
             </Button>
           )}

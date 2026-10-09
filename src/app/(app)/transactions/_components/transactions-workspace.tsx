@@ -724,15 +724,12 @@ export function TransactionsWorkspace({
             ]}
             actions={
             <>
-              {/* Split button: main click → quick Transaction dialog. Chevron →
+              {/* Split button: main click → /transactions/new page. Chevron →
                   dropdown with every kind (Transfer + the 6 portfolio operations).
                   Phase 2 portfolio-ops UX (2026-05-25). */}
               <Button
                 className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-sm"
-                onClick={() => {
-                  setDialogInitial(null);
-                  setDialogOpen(true);
-                }}
+                onClick={() => router.push("/transactions/new")}
               >
                 <Plus className="h-4 w-4 mr-2" /> <span className="max-md:hidden">Add Transaction</span><span className="md:hidden">Add</span>
               </Button>
@@ -752,12 +749,7 @@ export function TransactionsWorkspace({
                 <DropdownMenuContent align="end" className="min-w-56">
                   <DropdownMenuGroup>
                     <DropdownMenuLabel>Quick add</DropdownMenuLabel>
-                    <DropdownMenuItem
-                      onClick={() => {
-                        setDialogInitial(null);
-                        setDialogOpen(true);
-                      }}
-                    >
+                    <DropdownMenuItem onClick={() => router.push("/transactions/new")}>
                       <Receipt className="h-4 w-4 mr-2" /> Transaction
                     </DropdownMenuItem>
                     <DropdownMenuItem
