@@ -598,7 +598,7 @@ function ActionRow({
 
   return (
     <div
-      className={`${isSideEffect ? "border-l-2 border-amber-500/50 pl-2" : ""} ${
+      className={`${isSideEffect ? "border-l-2 border-warning/50 pl-2" : ""} ${
         isInvestmentOp ? "flex flex-col gap-2" : "flex items-center gap-2"
       }`}
     >

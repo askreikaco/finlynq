@@ -300,7 +300,7 @@ export function PasskeysCard() {
     <Card>
       <CardHeader>
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
             <Fingerprint className="h-5 w-5" />
           </div>
           <div>
@@ -312,7 +312,7 @@ export function PasskeysCard() {
       <CardContent className="space-y-4">
         <div role="status" aria-live="polite">
           {message && (
-            <p className="flex items-start gap-2 text-sm text-emerald-600">
+            <p className="flex items-start gap-2 text-sm text-pos">
               <Check className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
               {message}
             </p>
@@ -356,11 +356,11 @@ export function PasskeysCard() {
                         <div className="flex flex-wrap items-center gap-2">
                           <p className="font-medium text-foreground">{name}</p>
                           {p.prfSupported ? (
-                            <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                            <span className="inline-flex items-center rounded-full bg-pos/10 px-2 py-0.5 text-xs font-medium text-pos">
                               {STRINGS.badgePrf}
                             </span>
                           ) : (
-                            <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
+                            <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-foreground">
                               {STRINGS.badge2fa}
                             </span>
                           )}
@@ -436,8 +436,8 @@ export function PasskeysCard() {
                         onChange={(e) => setRemoving({ ...removing, password: e.target.value })}
                       />
                       {removing.needs2fa && (
-                        <div className="space-y-2 rounded-md border border-amber-500/30 bg-amber-500/5 p-2">
-                          <p className="text-xs text-amber-700 dark:text-amber-300">{STRINGS.secondFactorNote}</p>
+                        <div className="space-y-2 rounded-md border border-warning/30 bg-warning/5 p-2">
+                          <p className="text-xs text-warning">{STRINGS.secondFactorNote}</p>
                           {removing.totpOffered && (
                             <>
                               <label htmlFor={`rm-totp-${p.id}`} className="text-sm font-medium">

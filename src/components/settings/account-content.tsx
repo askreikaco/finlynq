@@ -290,7 +290,7 @@ export function AccountContent({
         <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-600">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
                 <Lock className="h-5 w-5" />
               </div>
               <div>
@@ -301,7 +301,7 @@ export function AccountContent({
           </CardHeader>
           <CardContent className="space-y-3">
             {pwStatus && !pwOpen && (
-              <p className="text-sm text-emerald-600 flex items-center gap-1" role="status">
+              <p className="text-sm text-pos flex items-center gap-1" role="status">
                 <Check className="h-3.5 w-3.5" /> {pwStatus}
               </p>
             )}
@@ -340,7 +340,7 @@ export function AccountContent({
         <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-100 text-sky-600">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-info/10 text-info">
                 <Mail className="h-5 w-5" />
               </div>
               <div>
@@ -354,7 +354,7 @@ export function AccountContent({
               Current: <span className="font-medium text-foreground">{me?.email || "none set"}</span>
             </p>
             {emailStatus && !emailOpen && (
-              <p className="text-sm text-emerald-600 flex items-center gap-1" role="status">
+              <p className="text-sm text-pos flex items-center gap-1" role="status">
                 <Check className="h-3.5 w-3.5" /> {emailStatus}
               </p>
             )}
@@ -387,7 +387,7 @@ export function AccountContent({
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-chart-5/10 text-chart-5">
               <Key className="h-5 w-5" />
             </div>
             <div>
@@ -409,7 +409,7 @@ export function AccountContent({
               }
               className="font-mono text-sm flex-1"
             />
-            <Button
+            <Button aria-label={apiKeyVisible ? "Hide key" : "Show key"}
               variant="outline"
               size="icon"
               onClick={() => setApiKeyVisible(!apiKeyVisible)}
@@ -418,18 +418,18 @@ export function AccountContent({
             >
               {apiKeyVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </Button>
-            <Button
+            <Button aria-label="Copy key"
               variant="outline"
               size="icon"
               onClick={handleCopyApiKey}
               title="Copy key"
               disabled={!apiKey}
             >
-              {apiKeyCopied ? <Check className="h-4 w-4 text-emerald-500" /> : <FileText className="h-4 w-4" />}
+              {apiKeyCopied ? <Check className="h-4 w-4 text-pos" /> : <FileText className="h-4 w-4" />}
             </Button>
           </div>
           {apiKey && (
-            <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+            <div className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
               <strong>Save this key now.</strong> We store only a hash — once you leave this page we can&rsquo;t show it again.
             </div>
           )}
@@ -461,10 +461,10 @@ export function AccountContent({
       </Card>
 
       {/* Privacy & Backup */}
-      <Card className="border-indigo-200 dark:border-indigo-500/30">
+      <Card className="border-primary/30">
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
               <Shield className="h-5 w-5" />
             </div>
             <div>
@@ -475,7 +475,7 @@ export function AccountContent({
         </CardHeader>
         <CardContent className="space-y-5">
           {/* AES-256 reminder */}
-          <div className="rounded-xl border border-indigo-100 dark:border-indigo-500/20 bg-indigo-50 dark:bg-indigo-500/8 px-4 py-3 text-sm text-indigo-800 dark:text-indigo-300 flex items-start gap-2.5">
+          <div className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-primary flex items-start gap-2.5">
             <Lock className="h-4 w-4 mt-0.5 shrink-0" />
             <span>Your data is encrypted with AES-256. Only you hold the key — not even Finlynq can read it.</span>
           </div>
@@ -493,7 +493,7 @@ export function AccountContent({
             </Button>
             {backupStatus && (
               <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                <Check className="h-3 w-3 text-emerald-500" /> {backupStatus}
+                <Check className="h-3 w-3 text-pos" /> {backupStatus}
               </p>
             )}
           </div>
@@ -533,7 +533,7 @@ export function AccountContent({
                     ))}
                 </div>
 
-                <div className="rounded-lg border border-amber-300/60 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-500/8 px-3 py-2.5 flex items-start gap-2 text-xs text-amber-800 dark:text-amber-300">
+                <div className="rounded-lg border border-warning/30 bg-warning/10 px-3 py-2.5 flex items-start gap-2 text-xs text-warning">
                   <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
                   <span><strong>This will replace all your current data.</strong> This cannot be undone. Download a fresh backup first if you want to keep your current data.</span>
                 </div>
@@ -561,8 +561,8 @@ export function AccountContent({
             )}
 
             {restoreStatus && (
-              <p className={`text-xs mt-2 flex items-center gap-1 ${restoreStatus.startsWith("Restore complete") ? "text-emerald-600" : "text-muted-foreground"}`}>
-                {restoreStatus.startsWith("Restore complete") ? <Check className="h-3 w-3 text-emerald-500" /> : <AlertTriangle className="h-3 w-3 text-amber-500" />}
+              <p className={`text-xs mt-2 flex items-center gap-1 ${restoreStatus.startsWith("Restore complete") ? "text-pos" : "text-muted-foreground"}`}>
+                {restoreStatus.startsWith("Restore complete") ? <Check className="h-3 w-3 text-pos" /> : <AlertTriangle className="h-3 w-3 text-warning" />}
                 {restoreStatus}
               </p>
             )}
