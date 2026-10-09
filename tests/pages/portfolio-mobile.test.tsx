@@ -62,31 +62,39 @@ function makeOverview(over: Record<string, unknown> = {}) {
 beforeEach(() => { overview.current = makeOverview(); });
 afterEach(cleanup);
 const cls = (el: Element) => el.className.toString().split(/\s+/);
-const mobileList = () => document.querySelector("[data-slot=portfolio-mobile-holdings]") as HTMLElement;
+// Cards view (the default at compact): one HoldingRow per holding.
+const cardsView = () => document.querySelector("[data-view=cards]") as HTMLElement;
+const cardRows = () => within(cardsView()).getAllByRole("button").filter((b) => b.getAttribute("data-slot") === "list-row");
 
-describe("Portfolio page below md", () => {
-  it("hero: total value, day change and total gain; desktop stat cards + returns card hidden below md", () => {
+describe("Portfolio summary and holdings cards (one page, every size)", () => {
+  it("hero and metric grid render at every size (no viewport hide on the summary)", () => {
     render(<PortfolioPage />);
-    const hero = document.querySelector("[data-slot=portfolio-mobile-hero]") as HTMLElement;
-    expect(cls(hero)).toContain("md:hidden");
+    const summary = document.querySelector("[data-slot=portfolio-summary]") as HTMLElement;
+    expect(summary).toBeTruthy();
+    expect(summary.querySelector("[class*='md:hidden']")).toBeNull();
+    const hero = summary.firstElementChild as HTMLElement;
     expect(within(hero).getByText(formatCurrency(65500000, "VND"))).toBeTruthy();
     expect(within(hero).getByText(/\+.*100,000.*\(\+0\.15%\)/)).toBeTruthy();
     expect(within(hero).getByText("Total gain")).toBeTruthy();
     expect(within(hero).getByText(/9,500,000.*\(\+17\.30%\)/)).toBeTruthy();
-    // 2-col metric grid
-    const grid = hero.querySelector("[data-slot=metric-grid]")!;
+    // 2 columns at compact, gaining columns with the size class
+    const grid = summary.querySelector("[data-slot=metric-grid]") as HTMLElement;
     expect(cls(grid)).toContain("grid-cols-2");
-    expect(within(grid as HTMLElement).getByText("Cost basis")).toBeTruthy();
-    expect(within(grid as HTMLElement).getByText("Realized G/L")).toBeTruthy();
-    // desktop blocks only hidden below md
-    expect(cls(screen.getByText("Total Holdings").closest("div.grid")!)).toContain("max-md:hidden");
-    expect(cls(screen.getByText("Investment Returns").parentElement!)).toContain("max-md:hidden");
+    expect(cls(grid)).toContain("regular:grid-cols-3");
+    expect(within(grid).getByText("Cost basis")).toBeTruthy();
+    expect(within(grid).getByText("Realized G/L")).toBeTruthy();
+    // total return is a regular-and-up tile; compact keeps the six tiles it always had
+    const totalTile = Array.from(grid.children).find((c) => c.textContent?.includes("Total return")) as HTMLElement;
+    expect(cls(totalTile)).toContain("hidden");
+    expect(cls(totalTile)).toContain("regular:block");
+    // the desktop-only stat cards and returns block are gone (folded into the summary)
+    expect(screen.queryByText("Investment Returns")).toBeNull();
+    expect(screen.queryByText("Total Holdings")).toBeNull();
   });
 
-  it("holdings rows show ONLY name | market value + unrealized % in text-pos / text-neg", () => {
+  it("Cards view rows show ONLY name | market value + unrealized % in text-pos / text-neg", () => {
     render(<PortfolioPage />);
-    const list = mobileList();
-    const rows = within(list).getAllByRole("button").filter((b) => b.getAttribute("data-slot") === "list-row");
+    const rows = cardRows();
     expect(rows.map((r) => r.getAttribute("aria-label"))).toEqual(["AAPL", "VNM", "Cash · VND"]);
 
     const aapl = rows[0];
@@ -105,7 +113,7 @@ describe("Portfolio page below md", () => {
   it("tapping a row opens a DetailSheet with qty, avg cost, price, cost basis, unrealized, realized and accounts", () => {
     render(<PortfolioPage />);
     expect(screen.queryByRole("dialog")).toBeNull();
-    fireEvent.click(within(mobileList()).getByRole("button", { name: "AAPL" }));
+    fireEvent.click(within(cardsView()).getByRole("button", { name: "AAPL" }));
     const dlg = screen.getByRole("dialog");
     expect(within(dlg).getByText("Apple Inc.")).toBeTruthy();
     const dl = dlg.querySelector("[data-slot=detail-list]") as HTMLElement;
@@ -120,34 +128,31 @@ describe("Portfolio page below md", () => {
     expect(cls(within(dl).getByText(/10,500,000/))).toContain("text-pos");
   });
 
-  it("type chips filter the rows", () => {
+  it("the type chips in the page toolbar filter the Cards rows", () => {
     render(<PortfolioPage />);
-    const list = mobileList();
-    fireEvent.click(within(within(list).getByRole("group", { name: "Filter holdings by type" })).getByRole("button", { name: /^Cash/ }));
-    const rows = within(list).getAllByRole("button").filter((b) => b.getAttribute("data-slot") === "list-row");
-    expect(rows.map((r) => r.getAttribute("aria-label"))).toEqual(["Cash · VND"]);
+    const group = screen.getByRole("group", { name: "Filter holdings by type" });
+    fireEvent.click(within(group).getByRole("button", { name: /^Cash/ }));
+    expect(cardRows().map((r) => r.getAttribute("aria-label"))).toEqual(["Cash · VND"]);
   });
 
-  it("desktop table is still rendered (hidden below md) and mobile list is md:hidden", () => {
+  it("per-holding rows are not duplicated in a second tree (the table is not mounted in Cards)", () => {
     render(<PortfolioPage />);
-    expect(cls(mobileList())).toContain("md:hidden");
-    const tableWrap = screen.getByRole("table").closest("div.max-md\\:hidden");
-    expect(tableWrap).not.toBeNull();
-    expect(screen.getByText("All Holdings")).toBeTruthy();
-    expect(cls(screen.getByTestId("by-account").parentElement!)).toContain("max-md:hidden");
+    expect(document.querySelector("table")).toBeNull();
+    expect(screen.getByRole("radio", { name: "Cards" }).getAttribute("aria-checked")).toBe("true");
   });
 
-  it("empty chart is hidden below md when there are no open positions", () => {
+  it("empty chart is hidden below regular when there are no open positions", () => {
     overview.current = makeOverview({
       byHolding: [row({ totalQty: 0, marketValueDisplay: 0 })],
       summary: { ...makeOverview().summary, totalHoldings: 1 },
     });
     render(<PortfolioPage />);
-    expect(cls(screen.getByTestId("perf-chart").parentElement!)).toContain("max-md:hidden");
+    expect(cls(screen.getByTestId("perf-chart").parentElement!)).toContain("hidden");
+    expect(cls(screen.getByTestId("perf-chart").parentElement!)).toContain("regular:block");
   });
 
   it("chart stays visible when there are positions", () => {
     render(<PortfolioPage />);
-    expect(cls(screen.getByTestId("perf-chart").parentElement!)).not.toContain("max-md:hidden");
+    expect(cls(screen.getByTestId("perf-chart").parentElement!)).not.toContain("hidden");
   });
 });

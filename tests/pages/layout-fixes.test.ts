@@ -90,19 +90,19 @@ describe("budgets at 390", () => {
 });
 
 describe("portfolio performance controls at 390", () => {
-  it("controls are ONE horizontally scrollable row (overflow-x-auto, overscroll-x-contain), no wrap below md", () => {
+  it("controls are ONE horizontally scrollable row (overflow-x-auto, overscroll-x-contain), no wrap below regular", () => {
     const src = read(PERF_CHART);
     const at = src.indexOf('aria-label="Performance controls"');
     const cls = src.slice(src.indexOf('className="', at) + 11, src.indexOf('"', src.indexOf('className="', at) + 11));
     const row = cls.split(/\s+/);
     expect(row).toEqual(expect.arrayContaining(["overflow-x-auto", "overscroll-x-contain", "flex", "items-center"]));
     expect(row).not.toContain("flex-wrap");
-    expect(row).toContain("md:flex-wrap");
+    expect(row).toContain("regular:flex-wrap");
   });
 
-  it("every chip (holding, account, periods) uses the shared CHIP_CLASS: no wrap, 44px tall below md", () => {
+  it("every chip (holding, account, periods) uses the shared CHIP_CLASS: no wrap, 44px tall on coarse pointers", () => {
     const src = read(PERF_CHART);
-    expect(src).toContain('const CHIP_CLASS = "shrink-0 whitespace-nowrap max-md:min-h-11";');
+    expect(src).toContain('const CHIP_CLASS = "shrink-0 whitespace-nowrap pointer-coarse:min-h-11";');
     expect(src.match(/className=\{CHIP_CLASS\}/g)?.length).toBe(3);
   });
 });

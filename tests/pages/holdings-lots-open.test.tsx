@@ -75,7 +75,9 @@ afterEach(cleanup);
 describe("holdings table: Lots action", () => {
   it("clicking Lots on a per-account row opens the lot inspector for that holding and account", () => {
     render(<PortfolioPage />);
-    // Expand the desktop row for AAPL (rows toggle on click).
+    // The table lives in the List view (Cards is the default at compact). Switch to it.
+    fireEvent.click(screen.getByRole("radio", { name: "List" }));
+    // Expand the table row for AAPL (rows toggle on click).
     const table = document.querySelector("table") as HTMLElement;
     const aaplRow = within(table).getAllByRole("row").find((r) => r.textContent?.includes("AAPL") && !r.textContent.includes("Account")) as HTMLElement;
     fireEvent.click(aaplRow);

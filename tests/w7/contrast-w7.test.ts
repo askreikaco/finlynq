@@ -50,9 +50,9 @@ describe("W7 contrast class strings", () => {
     );
   });
 
-  it("portfolio count badge uses text-primary-foreground when selected", () => {
-    expect(read("src/app/(app)/portfolio/_components/holdings-table.tsx")).toContain(
-      'filter === t ? "text-primary-foreground" : ""',
+  it("portfolio type chip uses text-primary-foreground when selected (toolbar chips, portfolio-ui)", () => {
+    expect(read("src/app/(app)/portfolio/_components/portfolio-ui.tsx")).toContain(
+      '"border-primary bg-primary text-primary-foreground"',
     );
   });
 
