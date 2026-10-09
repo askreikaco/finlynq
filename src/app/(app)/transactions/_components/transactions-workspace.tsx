@@ -849,7 +849,7 @@ export function TransactionsWorkspace({
       <div className="md:hidden">
         <MobileTxList
           transactions={txns}
-          isLoading={loading}
+          isLoading={loading && txns.length === 0}
           onEdit={startEdit}
           showAccountName={!locked}
         />

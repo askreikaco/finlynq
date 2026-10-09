@@ -28,7 +28,7 @@ export const PERSIST_ALLOWED = new Set([
   "/api/recurring",
   "/api/reports",
   "/api/subscriptions",
-  "/api/transactions",
+  // /api/transactions intentionally absent: the whole ledger is too large to persist on every change.
   "/api/age-of-money",
   // Safe display-only settings (no credentials/secrets)
   "/api/settings/account-group-order",

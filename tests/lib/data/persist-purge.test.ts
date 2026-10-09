@@ -30,7 +30,7 @@ describe("purgeDisallowed: real IndexedDB integration tests (M7a, M10, M11)", ()
     const entriesToSave = new Map<string, unknown>([
       ["/api/auth/session", { userId: "u1" }], // blocked
       ["/api/accounts", [{ id: 1 }]], // allowed
-      ["/api/transactions?limit=100000", { items: [] }], // allowed (with query)
+      ["/api/budgets?limit=100000", { items: [] }], // allowed (with query)
       ["/api/settings/devices", { devices: [] }], // blocked
       ["garbage", { data: "should be removed" }], // not an API key
       ["/api/%zz", { malformed: true }], // malformed key
@@ -47,10 +47,10 @@ describe("purgeDisallowed: real IndexedDB integration tests (M7a, M10, M11)", ()
     const remaining = await loadPersisted(userId, build);
     const remainingKeys = Array.from(remaining.keys()).sort();
 
-    // Only /api/accounts and /api/transactions?limit=100000 should remain
-    expect(remainingKeys).toEqual(["/api/accounts", "/api/transactions?limit=100000"]);
+    // Only /api/accounts and /api/budgets?limit=100000 should remain
+    expect(remainingKeys).toEqual(["/api/accounts", "/api/budgets?limit=100000"]);
     expect(remaining.get("/api/accounts")).toEqual([{ id: 1 }]);
-    expect(remaining.get("/api/transactions?limit=100000")).toEqual({ items: [] });
+    expect(remaining.get("/api/budgets?limit=100000")).toEqual({ items: [] });
 
     await cleanup(userId);
   });
@@ -85,7 +85,7 @@ describe("purgeDisallowed: real IndexedDB integration tests (M7a, M10, M11)", ()
       ["/api/auth/session", { userId: "u1" }],
       ["/api/accounts", [{ id: 1 }]],
       ["/api/settings/devices", { devices: [] }],
-      ["/api/transactions", { items: [] }],
+      ["/api/budgets", { items: [] }],
     ]);
     await savePersisted(userId, build, entriesToSave);
 
@@ -94,7 +94,7 @@ describe("purgeDisallowed: real IndexedDB integration tests (M7a, M10, M11)", ()
 
     // Only safe keys should be returned
     const keys = Array.from(loaded.keys()).sort();
-    expect(keys).toEqual(["/api/accounts", "/api/transactions"]);
+    expect(keys).toEqual(["/api/accounts", "/api/budgets"]);
 
     await cleanup(userId);
   });
@@ -185,7 +185,7 @@ describe("purgeDisallowed mutations (M7a, M10, M11)", () => {
     const entriesToSave = new Map<string, unknown>([
       ["/api/auth/session", { userId: "u1" }],
       ["/api/accounts", { id: 1 }],
-      ["/api/transactions", { items: [] }],
+      ["/api/budgets", { items: [] }],
     ]);
     await savePersisted(testUserId, testBuild, entriesToSave);
 
@@ -194,7 +194,7 @@ describe("purgeDisallowed mutations (M7a, M10, M11)", () => {
     const remaining = await loadPersisted(testUserId, testBuild);
 
     expect(remaining.has("/api/accounts")).toBe(true);
-    expect(remaining.has("/api/transactions")).toBe(true);
+    expect(remaining.has("/api/budgets")).toBe(true);
     expect(remaining.has("/api/auth/session")).toBe(false);
 
     // Cleanup

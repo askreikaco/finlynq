@@ -42,6 +42,41 @@ export function currencyDecimals(currency: string): number {
   return decimals;
 }
 
+/**
+ * Memoized Intl.NumberFormat instances. formatCurrency runs for every money
+ * cell in every table; constructing a formatter per call is the hot cost.
+ * Keys: "plain|<locale>|<decimals>" (no currency style) and
+ * "style|<locale>|<currency>|<decimals>". Only successful constructions are
+ * cached, so an invalid currency code still throws and takes the fallback path.
+ */
+const numberFormatCache = new Map<string, Intl.NumberFormat>();
+function plainFormatter(locale: string, decimals: number): Intl.NumberFormat {
+  const key = `plain|${locale}|${decimals}`;
+  let fmt = numberFormatCache.get(key);
+  if (!fmt) {
+    fmt = new Intl.NumberFormat(locale, {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    });
+    numberFormatCache.set(key, fmt);
+  }
+  return fmt;
+}
+function currencyFormatter(locale: string, currency: string, decimals: number): Intl.NumberFormat {
+  const key = `style|${locale}|${currency}|${decimals}`;
+  let fmt = numberFormatCache.get(key);
+  if (!fmt) {
+    fmt = new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency,
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    });
+    numberFormatCache.set(key, fmt);
+  }
+  return fmt;
+}
+
 export function formatCurrency(
   amount: number,
   currency: string = "USD",
@@ -50,19 +85,11 @@ export function formatCurrency(
   const decimals = opts?.decimals ?? currencyDecimals(currency);
   const symbol = DOLLAR_SYMBOLS[currency];
   if (symbol) {
-    const num = new Intl.NumberFormat(getDisplayLocale(), {
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals,
-    }).format(Math.abs(amount));
+    const num = plainFormatter(getDisplayLocale(), decimals).format(Math.abs(amount));
     return `${amount < 0 ? "-" : ""}${symbol}${num}`;
   }
   try {
-    return new Intl.NumberFormat(getDisplayLocale(), {
-      style: "currency",
-      currency,
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals,
-    }).format(amount);
+    return currencyFormatter(getDisplayLocale(), currency, decimals).format(amount);
   } catch {
     // Custom / non-ISO-4217 currency code. Users can add arbitrary 3-4 letter
     // codes via Settings → "Currencies you use" (+ a custom FX rate), and
@@ -70,10 +97,7 @@ export function formatCurrency(
     // `RangeError: Invalid currency code` for codes that aren't well-formed
     // ISO 4217 (e.g. a 4-letter "TEST"). Fall back to a plain decimal with the
     // code as a prefix so a custom-currency row never crashes the page.
-    const num = new Intl.NumberFormat(getDisplayLocale(), {
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals,
-    }).format(Math.abs(amount));
+    const num = plainFormatter(getDisplayLocale(), decimals).format(Math.abs(amount));
     const code = (currency || "").trim().toUpperCase();
     return `${amount < 0 ? "-" : ""}${code ? `${code} ` : ""}${num}`;
   }
