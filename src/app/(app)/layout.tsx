@@ -12,6 +12,7 @@ import { VersionGate } from "@/components/version-gate";
 import { DataProvider } from "@/lib/data";
 import { WebVitals } from "@/components/web-vitals";
 import { PageFab, PageFabProvider } from "@/components/mobile/page-fab";
+import { KeyboardInsetObserver } from "@/components/mobile/keyboard-inset-observer";
 import { isInstanceAdminEnabled } from "@/lib/admin/instance-flag";
 import { isCategoriesMergedEnabled } from "@/lib/categories/flag";
 
@@ -22,6 +23,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <>
     <VersionGate />
     <WebVitals />
+    <KeyboardInsetObserver />
     <UnlockGate>
       <DataProvider>
       <CurrencyProvider>

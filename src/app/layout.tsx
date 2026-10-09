@@ -86,6 +86,8 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
+  // Chrome Android honours this (Safari ignores it); the keyboard inset hook covers iOS.
+  interactiveWidget: "resizes-content",
   themeColor: [
     { media: "(prefers-color-scheme: dark)", color: "#0b0e11" },
     { media: "(prefers-color-scheme: light)", color: "#ffffff" },

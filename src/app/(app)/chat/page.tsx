@@ -380,7 +380,7 @@ function ChatPageContent() {
   // ─── Render ─────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col max-md:h-[calc(100dvh-var(--mobile-bar-clearance)-3.75rem)] max-md:-mb-20 md:h-[calc(100dvh-4rem)]">
+    <div data-chat-shell className="flex flex-col max-md:h-[calc(100dvh-var(--mobile-bar-clearance)-3.75rem)] max-md:-mb-20 md:h-[calc(100dvh-4rem)]">
       {/* Header */}
       <div className="flex items-center justify-between px-4 md:px-6 py-3 border-b border-border bg-background/80 backdrop-blur-sm shrink-0">
         <div className="flex items-center gap-3">

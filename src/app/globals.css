@@ -391,6 +391,14 @@ html {
   [class*="animate-spin"] { animation-duration: 1s !important; animation-iteration-count: infinite !important; }
   .animate-shimmer, .dark .animate-shimmer { animation: none !important; }
 }
+/* Keyboard open (visualViewport inset > 100px, see components/mobile/use-keyboard-inset.ts):
+   iOS overlays the keyboard on fixed UI, so hide the floating tab bar and the page FAB. */
+html[data-keyboard-open] nav[aria-label="Mobile navigation"],
+html[data-keyboard-open] [data-testid="page-fab"] { display: none; }
+/* Chat shell gives back the keyboard overlap on phones (tab bar is hidden meanwhile). */
+@media (max-width: 767.98px) {
+  html[data-keyboard-open] [data-chat-shell] { height: calc(100dvh - var(--mobile-bar-clearance) - 3.75rem - var(--kb-inset, 0px)); }
+}
 
 /* ═══════════════════════════════════════════════
    TEXT EFFECTS
