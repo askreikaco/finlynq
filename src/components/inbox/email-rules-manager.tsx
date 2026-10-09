@@ -144,7 +144,7 @@ export function EmailRulesManager() {
         </div>
 
         {error && (
-          <div className="rounded-md border border-rose-200 bg-rose-50 p-2 text-xs text-rose-800">
+          <div className="rounded-md border border-destructive/30 bg-destructive/10 p-2 text-xs text-destructive">
             {error}
           </div>
         )}
@@ -186,7 +186,7 @@ export function EmailRulesManager() {
                   <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => void toggleActive(r)}>
                     {r.isActive ? "Disable" : "Enable"}
                   </Button>
-                  <Button
+                  <Button aria-label="Edit"
                     size="icon"
                     variant="ghost"
                     className="h-7 w-7"
@@ -209,10 +209,10 @@ export function EmailRulesManager() {
                   >
                     <Pencil className="h-3.5 w-3.5" />
                   </Button>
-                  <Button
+                  <Button aria-label="Delete"
                     size="icon"
                     variant="ghost"
-                    className="h-7 w-7 text-muted-foreground hover:text-rose-600"
+                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
                     onClick={() => void remove(r.id)}
                     title="Delete"
                   >
