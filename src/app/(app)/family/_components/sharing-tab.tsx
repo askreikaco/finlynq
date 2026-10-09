@@ -12,6 +12,7 @@ import { ReconsentBanner } from "./reconsent-banner";
 import { errorMessage } from "./api";
 import { fill } from "./section-labels";
 import { LIVE_STATUSES, type SharesResponse } from "./types";
+import { usePageFab } from "@/components/mobile/page-fab";
 
 export function SharingTab({ reloadKey = 0, onSharesChanged }: { reloadKey?: number; onSharesChanged?: () => void }) {
   const [showInvite, setShowInvite] = useState(false);
@@ -54,6 +55,8 @@ export function SharingTab({ reloadKey = 0, onSharesChanged }: { reloadKey?: num
       cancelled = true;
     };
   }, [reloadKey, version]);
+
+  usePageFab("family.invite", () => setShowInvite(true));
 
   if (loading && !shares) {
     return (

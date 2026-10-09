@@ -56,6 +56,7 @@ import { InboxEmailTab } from "@/components/inbox/inbox-email-tab";
 import { ReconcileSummaryPanel } from "@/components/inbox/reconcile-summary-panel";
 import { takeHandoffFile } from "@/lib/import/file-handoff";
 import { PageHeader } from "@/components/mobile";
+import { usePageFab } from "@/components/mobile/page-fab";
 
 interface Account {
   id: number;
@@ -309,6 +310,10 @@ function ImportPageInner() {
     // ring is the only persisted UI cue that the lens is still flipped.
     // We don't store anything beyond the in-memory `lens` state.
   };
+
+  usePageFab("import.upload", () => setUploadOpen(true), {
+    enabled: account != null,
+  });
 
   if (accountsLoading) {
     return (

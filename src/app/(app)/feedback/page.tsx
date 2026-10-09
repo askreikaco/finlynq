@@ -29,6 +29,7 @@ import type {
   FeedbackThreadSummary,
 } from "@shared/types";
 import { PageHeader } from "@/components/mobile";
+import { usePageFab } from "@/components/mobile/page-fab";
 
 function fmtBytes(n: number): string {
   if (n < 1024) return `${n} B`;
@@ -343,6 +344,8 @@ export default function FeedbackPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  usePageFab("feedback.send", () => setSendOpen(true));
 
   return (
     <div className="mx-auto max-w-2xl">
