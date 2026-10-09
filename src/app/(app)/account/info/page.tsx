@@ -8,6 +8,8 @@ import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ErrorState } from "@/components/error-state";
+import { PageSkeleton } from "@/components/page-skeleton";
 import { User, Mail, Phone, Check, AlertCircle, Trash2 } from "lucide-react";
 
 type Profile = {
@@ -22,6 +24,7 @@ export default function InfoPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
 
   // Form state
   const [displayName, setDisplayName] = useState("");
@@ -67,7 +70,7 @@ export default function InfoPage() {
       }
     }
     loadProfile();
-  }, []);
+  }, [reloadKey]);
 
   async function handleSaveDisplayName(e: React.FormEvent) {
     e.preventDefault();
@@ -267,15 +270,35 @@ export default function InfoPage() {
   }
 
   if (loading) {
-    return <div className="text-muted-foreground">Loading profile...</div>;
+    return <PageSkeleton variant="list" rows={4} />;
   }
 
   if (error) {
-    return <div className="text-destructive">{error}</div>;
+    return (
+      <ErrorState
+        title="Couldn't load your profile"
+        message="Please try again."
+        onRetry={() => {
+          setError("");
+          setLoading(true);
+          setReloadKey((k) => k + 1);
+        }}
+      />
+    );
   }
 
   if (!profile) {
-    return <div className="text-destructive">Failed to load profile</div>;
+    return (
+      <ErrorState
+        title="Couldn't load your profile"
+        message="Please try again."
+        onRetry={() => {
+          setError("");
+          setLoading(true);
+          setReloadKey((k) => k + 1);
+        }}
+      />
+    );
   }
 
   return (
@@ -284,7 +307,7 @@ export default function InfoPage() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-100 text-purple-600">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-chart-5/10 text-chart-5">
               <User className="h-5 w-5" />
             </div>
             <div>
@@ -334,7 +357,7 @@ export default function InfoPage() {
           </label>
 
           {avatarError && <p className="text-sm text-destructive flex items-center gap-1"><AlertCircle className="h-4 w-4" /> {avatarError}</p>}
-          {avatarStatus && <p className="text-sm text-emerald-600 flex items-center gap-1"><Check className="h-3.5 w-3.5" /> {avatarStatus}</p>}
+          {avatarStatus && <p className="text-sm text-pos flex items-center gap-1"><Check className="h-3.5 w-3.5" /> {avatarStatus}</p>}
         </CardContent>
       </Card>
 
@@ -369,7 +392,7 @@ export default function InfoPage() {
               maxLength={80}
             />
             {displayNameError && <p className="text-sm text-destructive">{displayNameError}</p>}
-            {displayNameStatus && <p className="text-sm text-emerald-600 flex items-center gap-1"><Check className="h-3.5 w-3.5" /> {displayNameStatus}</p>}
+            {displayNameStatus && <p className="text-sm text-pos flex items-center gap-1"><Check className="h-3.5 w-3.5" /> {displayNameStatus}</p>}
             <Button type="submit" disabled={displayNameSaving}>
               {displayNameSaving ? "Saving…" : "Save"}
             </Button>
@@ -381,7 +404,7 @@ export default function InfoPage() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-100 text-green-600">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-pos/10 text-pos">
               <Phone className="h-5 w-5" />
             </div>
             <div>
@@ -401,7 +424,7 @@ export default function InfoPage() {
             />
             <p className="text-[11px] text-muted-foreground">Accepts +, digits, spaces, parentheses, and hyphens.</p>
             {phoneError && <p className="text-sm text-destructive">{phoneError}</p>}
-            {phoneStatus && <p className="text-sm text-emerald-600 flex items-center gap-1"><Check className="h-3.5 w-3.5" /> {phoneStatus}</p>}
+            {phoneStatus && <p className="text-sm text-pos flex items-center gap-1"><Check className="h-3.5 w-3.5" /> {phoneStatus}</p>}
             <Button type="submit" disabled={phoneSaving}>
               {phoneSaving ? "Saving…" : "Save"}
             </Button>
@@ -413,7 +436,7 @@ export default function InfoPage() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-100 text-sky-600">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-info/10 text-info">
               <Mail className="h-5 w-5" />
             </div>
             <div>
@@ -436,7 +459,7 @@ export default function InfoPage() {
               <Input type="password" autoComplete="current-password" value={emailPw} onChange={(e) => setEmailPw(e.target.value)} />
             </div>
             {emailError && <p className="text-sm text-destructive">{emailError}</p>}
-            {emailStatus && <p className="text-sm text-emerald-600 flex items-center gap-1"><Check className="h-3.5 w-3.5" /> {emailStatus}</p>}
+            {emailStatus && <p className="text-sm text-pos flex items-center gap-1"><Check className="h-3.5 w-3.5" /> {emailStatus}</p>}
             <Button type="submit" disabled={emailSaving || !email || !emailPw}>
               {emailSaving ? "Saving…" : "Update email"}
             </Button>
