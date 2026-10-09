@@ -65,7 +65,7 @@ describe("resolveFab", () => {
   });
 
   it("hidden and redirect routes -> null", () => {
-    for (const p of ["/chat", "/family/accept", "/portfolio/new", "/portfolio/new/buy", "/portfolio/new/in-kind-transfer", "/accounts/new", "/transactions/new", "/transactions/search", "/admin/env", "/settings/holding-accounts", "/settings/securities"]) {
+    for (const p of ["/chat", "/family/accept", "/portfolio/new", "/portfolio/new/buy", "/portfolio/new/in-kind-transfer", "/accounts/new", "/accounts/7/edit", "/transactions/new", "/transactions/search", "/admin/env", "/settings/holding-accounts", "/settings/securities"]) {
       expect(resolveFab(p, none), p).toBeNull();
     }
   });
@@ -86,14 +86,14 @@ describe("resolveFab", () => {
 });
 
 describe("FAB_ROUTES table", () => {
-  it("has 89 route keys (85 + 4 loan/subscription create and edit pages)", () => {
-    expect(Object.keys(FAB_ROUTES)).toHaveLength(89);
+  it("has 90 route keys (89 + accounts edit page)", () => {
+    expect(Object.keys(FAB_ROUTES)).toHaveLength(90);
   });
 
-  it("kind counts are 38 fallback, 12 route, 11 handler, 25 hidden, 3 redirect", () => {
+  it("kind counts are 38 fallback, 12 route, 11 handler, 26 hidden, 3 redirect", () => {
     const counts: Record<string, number> = {};
     for (const e of Object.values(FAB_ROUTES)) counts[e.kind] = (counts[e.kind] ?? 0) + 1;
-    expect(counts).toEqual({ fallback: 38, route: 12, handler: 11, hidden: 25, redirect: 3 });
+    expect(counts).toEqual({ fallback: 38, route: 12, handler: 11, hidden: 26, redirect: 3 });
   });
 
   it("label/href table for the route entries", () => {

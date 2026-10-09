@@ -429,8 +429,9 @@ const FULL_SCREEN_ENTRY_ROUTES = [
   "/loans/new",
   "/subscriptions/new",
 ] as const;
-// Edit forms for a single loan / subscription (/loans/<id>/edit, /subscriptions/<id>/edit).
-const FULL_SCREEN_EDIT_ROUTE = /^\/(loans|subscriptions)\/[^/]+\/edit$/;
+// Edit forms for a single loan / subscription / account (/loans/<id>/edit, /subscriptions/<id>/edit,
+// /accounts/<id>/edit).
+const FULL_SCREEN_EDIT_ROUTE = /^\/(loans|subscriptions|accounts)\/[^/]+\/edit$/;
 
 // Mobile bottom bar
 export const MobileBottomBar = memo(function MobileBottomBar({ pathname }: { pathname: string }) {

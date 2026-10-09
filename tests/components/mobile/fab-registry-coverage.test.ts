@@ -32,7 +32,7 @@ describe("fab-registry coverage ratchet", () => {
     const text = fs.readFileSync(INVENTORY, "utf8");
     const rows = [...text.matchAll(/^\| `(\/[^`]*)` \| `src\/app\/\(app\)\/(.+?)` \|/gm)];
     expect(rows).toHaveLength(routes.length);
-    expect(routes).toHaveLength(89);
+    expect(routes).toHaveLength(90);
     for (const row of rows) {
       const route = routeFromPageFile(`src/app/(app)/${row[2]}`);
       expect(Object.prototype.hasOwnProperty.call(FAB_ROUTES, route), route).toBe(true);

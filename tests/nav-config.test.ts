@@ -176,6 +176,7 @@ describe("nav-config", () => {
         "/loans/[id]/edit", // edit-loan page, opened from a loan card (no nav entry)
         "/subscriptions/new", // create-subscription page, opened from the subscriptions header / Review
         "/subscriptions/[id]/edit", // edit-subscription page, opened from a row (no nav entry)
+        "/accounts/[id]/edit", // edit-account page, opened from the account page (no nav entry)
         "/portfolio/new/buy", // level-2 operation pages (create flow, no nav entry)
         "/portfolio/new/sell",
         "/portfolio/new/swap",
