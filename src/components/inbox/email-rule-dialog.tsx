@@ -198,8 +198,9 @@ function EmailConditionRow({
         <Button
           size="icon"
           variant="ghost"
-          className="h-8 w-8 text-muted-foreground hover:text-rose-600"
+          className="h-8 w-8 text-muted-foreground hover:text-destructive"
           onClick={onRemove}
+          aria-label="Remove condition"
           title="Remove condition"
         >
           <Trash2 className="h-3.5 w-3.5" />

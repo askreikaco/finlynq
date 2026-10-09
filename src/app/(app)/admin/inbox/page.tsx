@@ -361,12 +361,13 @@ export default function AdminInboxPage() {
                       variant="ghost"
                       size="sm"
                       onClick={remove}
+                      aria-label="Delete email"
                       disabled={acting}
-                      className="text-rose-700 hover:text-rose-800 hover:bg-rose-50"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={closeThread}>
+                    <Button variant="ghost" size="sm" onClick={closeThread} aria-label="Close thread">
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
