@@ -120,7 +120,7 @@ export function InviteDialog({ onClose, onSuccess }: InviteDialogProps) {
 
             <section
               aria-labelledby="family-invite-disclosure"
-              className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-100"
+              className="rounded-lg border border-info/30 bg-info/10 p-3 text-sm text-info"
             >
               <h4 id="family-invite-disclosure" className="font-semibold mb-2">
                 {FAMILY_STRINGS.invite_dialog_disclosure_title}
