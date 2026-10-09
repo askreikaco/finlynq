@@ -150,6 +150,7 @@
     padding-top: var(--sat);
     padding-left: var(--sal);
     padding-right: var(--sar);
+    overscroll-behavior-y: none;
   }
   html {
     @apply font-sans scroll-smooth;
@@ -562,6 +563,7 @@ html {
    avoid a phantom scroll. Unlayered on purpose (beats the utilities layer). */
 .min-h-screen {
   min-height: calc(100vh - var(--sat));
+  min-height: calc(100dvh - var(--sat));
 }
 
 /* For fixed/sticky elements anchored to the top edge. */
@@ -580,6 +582,7 @@ html {
    and form controls ≥16px below md so focusing never triggers auto-zoom. */
 html {
   touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
