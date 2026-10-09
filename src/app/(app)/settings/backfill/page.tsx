@@ -114,10 +114,10 @@ export default function BackfillWizardPage() {
     <div className="max-w-3xl mx-auto p-6 space-y-6">
       <PageHeader
           title="Backfill transactions"
-          titleClassName="text-2xl font-semibold"
+          titleClassName="text-2xl font-bold tracking-tight"
           subtitle={<>One-time fix for imported transactions so realized gains and lot tracking work correctly.
           Won&apos;t change your account balances.</>}
-          subtitleClassName="text-sm text-muted-foreground mt-1"
+          subtitleClassName="text-sm text-muted-foreground mt-0.5"
         />
 
       <CashSleeveSymbolFix />

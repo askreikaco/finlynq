@@ -302,9 +302,9 @@ export default function BackfillReviewPage({ params }: { params: Promise<{ runId
       <div className="flex flex-wrap items-center justify-between gap-3">
         <PageHeader
             title="Backfill review"
-            titleClassName="text-2xl font-semibold"
+            titleClassName="text-2xl font-bold tracking-tight"
             subtitle={<>{proposals.length} proposal(s) · {approvedCount} approved · {appliedCount} applied</>}
-            subtitleClassName="text-sm text-muted-foreground mt-1"
+            subtitleClassName="text-sm text-muted-foreground mt-0.5"
           />
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => router.push("/settings/backfill")}>

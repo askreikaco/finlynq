@@ -522,9 +522,9 @@ function ScenariosPageContent() {
     <div className="space-y-6">
       <PageHeader
           title="Scenarios"
-          titleClassName="text-2xl font-bold"
+          titleClassName="text-2xl font-bold tracking-tight"
           subtitle="Model financial decisions and see their long-term impact"
-          subtitleClassName="text-sm text-muted-foreground mt-1"
+          subtitleClassName="text-sm text-muted-foreground mt-0.5"
         />
 
       <Tabs defaultValue="home-purchase">
