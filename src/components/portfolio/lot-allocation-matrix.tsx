@@ -283,7 +283,7 @@ export function LotAllocationMatrix({
   // md:text-xs is REQUIRED: the base Input carries `md:text-sm`, a md:
   // responsive variant that beats a plain `text-xs` at ≥768px — so the
   // override must also be md:-prefixed for tailwind-merge to drop md:text-sm.
-  const inputCls = "h-6 w-[58px] px-1 text-right text-xs md:text-xs tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
+  const inputCls = "h-7 w-16 px-1 text-right text-xs md:text-xs tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
 
   return (
     <div className="flex flex-1 min-h-0 flex-col gap-2.5">
@@ -377,14 +377,14 @@ export function LotAllocationMatrix({
                 <div className="font-normal text-muted-foreground">sells →</div>
               </th>
               {visibleSells.map((s) => (
-                <th key={s.closeTxId} className={`${thBase} sticky top-0 z-10 bg-muted border-b-2 border-primary/40 min-w-[92px]`}>
+                <th key={s.closeTxId} className={`${thBase} sticky top-0 z-10 bg-muted border-b-2 border-primary/40 min-w-28`}>
                   <div className="font-medium text-foreground">Sell #{s.closeTxId}</div>
                   <div className="font-normal text-muted-foreground">{s.closeDate}</div>
                   <div className="font-normal text-muted-foreground">@{formatCurrency(s.proceedsPerShare, s.currency)}</div>
                   <div className="font-normal text-muted-foreground/80">need {qf(s.qty)}</div>
                 </th>
               ))}
-              <th className={`${thBase} sticky right-0 top-0 z-20 bg-muted border-l border-border min-w-[92px]`}>
+              <th className={`${thBase} sticky right-0 top-0 z-20 bg-muted border-l border-border min-w-28`}>
                 <div className="text-foreground">Lot total</div>
                 <div className="font-normal text-muted-foreground">alloc / avail</div>
               </th>

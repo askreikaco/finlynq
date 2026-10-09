@@ -441,7 +441,7 @@ export const MobileBottomBar = memo(function MobileBottomBar({ pathname }: { pat
               )}
             >
               <item.icon className={cn("size-[22px]", isActive && item.color)} />
-              {item.label}
+              <span className="block max-w-full truncate">{item.label}</span>
             </Link>
           );
         })}
@@ -455,7 +455,7 @@ export const MobileBottomBar = memo(function MobileBottomBar({ pathname }: { pat
           )}
         >
           <MoreHorizontal className="size-[22px]" />
-          More
+          <span className="block max-w-full truncate">More</span>
         </Link>
       </div>
     </nav>

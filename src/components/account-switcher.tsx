@@ -174,7 +174,7 @@ export const AccountSwitcher = memo(function AccountSwitcher({ compact = false, 
         >
           <span
             aria-hidden="true"
-            className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-semibold leading-none text-primary ring-1 ring-primary"
+            className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-semibold leading-none text-primary ring-1 ring-primary"
           >
             {initialsOf(a.active)}
           </span>

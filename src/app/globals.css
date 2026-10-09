@@ -17,7 +17,8 @@ html {
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-stack-sans);
+  /* Follows the UI font picker (--font-ui on html), so explicit font-sans is not pinned to the system stack. */
+  --font-sans: var(--font-ui);
   --font-mono: var(--font-stack-mono);
   --font-serif: var(--font-stack-serif);
   --font-rounded: var(--font-stack-rounded);

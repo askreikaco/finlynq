@@ -641,7 +641,7 @@ function CloudAuthPageInner() {
                     onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ""))}
                     placeholder="000000"
                     aria-label="Authentication code"
-                    className="w-full rounded-lg border border-border bg-background px-4 py-3 text-center text-2xl font-mono tracking-normal text-foreground placeholder:text-muted-foreground/40 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="w-full rounded-lg border border-border bg-background px-4 py-3 text-center text-2xl font-mono tracking-widest text-foreground placeholder:text-muted-foreground/40 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                     autoFocus
                   />
                 </>

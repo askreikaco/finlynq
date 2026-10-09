@@ -180,7 +180,7 @@ export function SplitDialog({
           </div>
 
           {/* Column headers */}
-          <div className="grid grid-cols-[1fr_1fr_80px_1fr_1fr_32px] gap-1.5 text-xs text-muted-foreground font-medium uppercase tracking-wide px-0.5">
+          <div className="grid grid-cols-[1fr_1fr_96px_1fr_1fr_32px] gap-1.5 text-xs text-muted-foreground font-medium uppercase tracking-wide px-0.5">
             <span>Category</span>
             <span>Account</span>
             <span>Amount</span>
@@ -192,7 +192,7 @@ export function SplitDialog({
           {/* Split rows */}
           <div className="space-y-1.5">
             {rows.map((row, i) => (
-              <div key={i} className="grid grid-cols-[1fr_1fr_80px_1fr_1fr_32px] gap-1.5 items-center">
+              <div key={i} className="grid grid-cols-[1fr_1fr_96px_1fr_1fr_32px] gap-1.5 items-center">
                 <Combobox
                   value={row.categoryId}
                   onValueChange={(v) => updateRow(i, "categoryId", v)}

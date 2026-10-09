@@ -108,7 +108,7 @@ export function MetricCard({
   const motionVariants = animationsEnabled ? itemVariants : noAnimationVariants;
   const hasSpark = !!sparkData && sparkData.length > 1;
   // Sized by the card's own width so a narrow card (2-up grid on a phone) never clips the number.
-  const numberSize = size === "hero" ? "text-3xl @sm:text-4xl @xl:text-5xl" : "text-xl @[13rem]:text-3xl";
+  const numberSize = size === "hero" ? "text-3xl @sm:text-4xl @xl:text-5xl" : "text-xl @[13rem]:text-2xl @[18rem]:text-3xl";
   const toneClasses = tone in METRIC_TONES ? METRIC_TONES[tone as MetricTone] : tone;
   const card = (
     <Card

@@ -557,7 +557,7 @@ export default function RealizedGainsPage() {
                         {kindMeta && (
                           <Badge
                             variant="outline"
-                            className={`text-xs h-4 px-1 ${kindMeta.className}`}
+                            className={`text-xs h-5 px-1 ${kindMeta.className}`}
                             title={kindMeta.tooltip}
                           >
                             {kindMeta.label}

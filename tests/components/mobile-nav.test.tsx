@@ -111,12 +111,16 @@ describe("mobile bottom bar", () => {
     expect(links.find((l) => l.textContent === "Accounts")!.getAttribute("aria-current")).toBeNull();
   });
 
-  it("fits 5 tabs: equal-width flex items, no truncation", () => {
+  it("fits 5 tabs: equal-width flex items; the link stays a flex item and its label span truncates", () => {
     render(<Nav />);
     for (const l of within(bar()).getAllByRole("link")) {
       expect(l.className).toContain("flex-1");
       expect(l.className).toContain("min-w-0");
       expect(l.className).not.toContain("truncate");
+      const label = l.querySelector("span")!;
+      expect(label.className).toContain("truncate");
+      expect(label.className).toContain("max-w-full");
+      expect(l.className).toContain("text-xs");
     }
   });
 });

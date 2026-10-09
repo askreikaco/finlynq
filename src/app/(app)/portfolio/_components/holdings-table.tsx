@@ -137,7 +137,7 @@ export function HoldingsTable({
                   onClick={() => setFilter(t)}
                 >
                   {t === "all" ? "All" : ASSET_TYPE_CONFIG[t]?.label ?? t}
-                  <Badge variant="secondary" className={`ml-1 text-xs h-4 px-1 bg-transparent ${filter === t ? "text-primary-foreground" : ""}`}>
+                  <Badge variant="secondary" className={`ml-1 text-xs h-5 px-1 bg-transparent ${filter === t ? "text-primary-foreground" : ""}`}>
                     {t === "all" ? summary.totalHoldings : byType[t]?.count ?? 0}
                   </Badge>
                 </Button>
@@ -275,7 +275,7 @@ export function HoldingsTable({
                             meaningful description (cash/metals/custom). */}
                         <div className="flex items-center gap-1.5 flex-wrap">
                           {r.image && <img src={r.image} alt="" className="h-5 w-5 rounded-full flex-shrink-0" />}
-                          {r.symbol && <Badge variant="secondary" className="font-mono text-xs h-4 px-1">{r.symbol}</Badge>}
+                          {r.symbol && <Badge variant="secondary" className="font-mono text-xs h-5 px-1">{r.symbol}</Badge>}
                           {description ? (
                             <span className="font-medium text-sm">{description}</span>
                           ) : (
@@ -283,7 +283,7 @@ export function HoldingsTable({
                           )}
                           <Badge
                             variant="outline"
-                            className="text-xs h-4 px-1"
+                            className="text-xs h-5 px-1"
                             ref={(el) => {
                               if (el && typeConf?.color) {
                                 el.style.borderColor = typeConf.color;
@@ -296,7 +296,7 @@ export function HoldingsTable({
                           {r.totalQty < 0 && (
                             <Badge
                               variant="outline"
-                              className="text-xs h-4 px-1 border-destructive text-destructive"
+                              className="text-xs h-5 px-1 border-destructive text-destructive"
                               title="Net-short position — sales exceeded buys. Lots are tracked via holding_lots.side='short'; close by buying to cover."
                             >
                               Short

@@ -78,7 +78,7 @@ export function HoldingsByAccount({
                     {etfs > 0 && (
                       <Badge
                         variant="secondary"
-                        className="text-xs h-4"
+                        className="text-xs h-5"
                         ref={(el: HTMLElement | null) => {
                           if (el) {
                             el.style.borderColor = ASSET_TYPE_CONFIG.etf.color;
@@ -92,7 +92,7 @@ export function HoldingsByAccount({
                     {stocks > 0 && (
                       <Badge
                         variant="secondary"
-                        className="text-xs h-4"
+                        className="text-xs h-5"
                         ref={(el: HTMLElement | null) => {
                           if (el) {
                             el.style.borderColor = ASSET_TYPE_CONFIG.stock.color;
@@ -106,7 +106,7 @@ export function HoldingsByAccount({
                     {cryptos > 0 && (
                       <Badge
                         variant="secondary"
-                        className="text-xs h-4"
+                        className="text-xs h-5"
                         ref={(el: HTMLElement | null) => {
                           if (el) {
                             el.style.borderColor = ASSET_TYPE_CONFIG.crypto.color;
@@ -120,7 +120,7 @@ export function HoldingsByAccount({
                     {cash > 0 && (
                       <Badge
                         variant="secondary"
-                        className="text-xs h-4"
+                        className="text-xs h-5"
                         ref={(el: HTMLElement | null) => {
                           if (el) {
                             el.style.borderColor = ASSET_TYPE_CONFIG.cash.color;
@@ -134,7 +134,7 @@ export function HoldingsByAccount({
                     {metals > 0 && (
                       <Badge
                         variant="secondary"
-                        className="text-xs h-4"
+                        className="text-xs h-5"
                         ref={(el: HTMLElement | null) => {
                           if (el) {
                             el.style.borderColor = ASSET_TYPE_CONFIG.metal.color;
@@ -212,10 +212,10 @@ export function HoldingsByAccount({
                                 <TableCell>
                                   <div className="flex items-center gap-1.5 flex-wrap">
                                     {h.image && <img src={h.image} alt="" className="h-5 w-5 rounded-full flex-shrink-0" />}
-                                    {h.symbol && <Badge variant="secondary" className="font-mono text-xs h-4 px-1">{h.symbol}</Badge>}
+                                    {h.symbol && <Badge variant="secondary" className="font-mono text-xs h-5 px-1">{h.symbol}</Badge>}
                                     <span className="font-medium text-sm">{label}</span>
                                     {hasMetrics && h.quantity != null && h.quantity < 0 && (
-                                      <Badge variant="outline" className="text-xs h-4 px-1 border-destructive text-destructive" title="Net-short position">Short</Badge>
+                                      <Badge variant="outline" className="text-xs h-5 px-1 border-destructive text-destructive" title="Net-short position">Short</Badge>
                                     )}
                                   </div>
                                 </TableCell>
