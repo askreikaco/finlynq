@@ -58,7 +58,7 @@ describe("SettingsHub", () => {
     const actualLabels = settingsLinks
       .slice(0, 7)
       .map((l) => {
-        const titleSpan = l.querySelector("span.text-\\[15px\\]");
+        const titleSpan = l.querySelector("span.text-\\[17px\\]");
         return titleSpan?.textContent?.trim();
       })
       .filter(Boolean);
@@ -66,7 +66,7 @@ describe("SettingsHub", () => {
     expect(actualLabels).toEqual(expectedOrder);
   });
 
-  it("renders section card without a separate label (title is the page title)", () => {
+  it("renders grouped inset lists without a separate label (title is the page title)", () => {
     render(<SettingsHub />);
 
     // SectionCard is rendered without a label prop, so no separate section-label element
@@ -100,10 +100,10 @@ describe("SettingsHub", () => {
     expect(settingsLinks).toEqual(expectedPaths);
   });
 
-  it("renders entries with their registry icons in list-row-tile per row", () => {
+  it("renders entries with their registry icons in an icon tile per row", () => {
     render(<SettingsHub />);
 
-    // Check that each settings link has exactly one SVG icon in the list-row-tile slot
+    // Check that each settings link has exactly one SVG icon in the settings-hub-icon tile
     const settingsLinks = screen.getAllByRole("link")
       .filter((l) => {
         const href = l.getAttribute("href");
@@ -113,19 +113,19 @@ describe("SettingsHub", () => {
     expect(settingsLinks.length).toBeGreaterThanOrEqual(7);
 
     settingsLinks.forEach((link) => {
-      const tileSvg = link.querySelector('[data-slot="list-row-tile"] svg');
+      const tileSvg = link.querySelector('[data-slot="settings-hub-icon"] svg');
       expect(tileSvg).not.toBeNull();
       expect(tileSvg).toBeDefined();
     });
   });
 
-  it("renders entries with data-slot attributes for styling", () => {
+  it("renders entries with data-slot attributes for styling (grouped list)", () => {
     render(<SettingsHub />);
 
     const listRows = screen.getAllByText(/General|Categories|Reconciliation/);
     expect(listRows.length).toBeGreaterThan(0);
 
-    const sectionCard = document.querySelector('[data-slot="section-card"]');
+    const sectionCard = document.querySelector('[data-slot="settings-hub-group"]');
     expect(sectionCard).not.toBeNull();
   });
 
@@ -146,17 +146,17 @@ describe("SettingsHub", () => {
     expect(settingsLinks.length).toBe(expectedCount);
   });
 
-  it("renders rows with proper visual structure", () => {
+  it("renders rows with proper visual structure (inset row links)", () => {
     render(<SettingsHub />);
 
-    const listRowContainers = document.querySelectorAll('[data-slot="list-row"]');
+    const listRowContainers = document.querySelectorAll('[data-slot="settings-hub-row"]');
     expect(listRowContainers.length).toBeGreaterThanOrEqual(7);
   });
 
-  it("renders each row with chevron for navigation", () => {
+  it("renders each row with chevron-right for navigation", () => {
     render(<SettingsHub />);
 
-    const chevrons = document.querySelectorAll('[data-slot="list-row-chevron"]');
+    const chevrons = document.querySelectorAll('[data-slot="settings-hub-chevron"]');
     expect(chevrons.length).toBeGreaterThanOrEqual(7);
   });
 
@@ -201,7 +201,7 @@ describe("SettingsHub", () => {
     );
 
     // Verify the hub content is present with the section card
-    const sectionCard = document.querySelector('[data-slot="section-card"]');
+    const sectionCard = document.querySelector('[data-slot="settings-hub-group"]');
     expect(sectionCard).not.toBeNull();
 
     // Verify that the mobile pill nav is NOT rendered when isHub=true

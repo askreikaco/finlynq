@@ -22,6 +22,8 @@ export function BackButton({
         "inline-flex items-center justify-center",
         "min-h-11 min-w-11",
         "rounded-md hover:bg-accent transition-colors",
+        // Phones: round liquid-glass button, 44px (see .glass-capsule in globals.css).
+        "glass-capsule max-md:size-11 max-md:rounded-full",
         className
       )}
       aria-label={label}
