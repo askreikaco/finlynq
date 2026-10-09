@@ -16,6 +16,8 @@ const TITLE_EXEMPTIONS: Record<string, string> = {
   "/settings": "Redirect to /settings/general",
   "/categories": "Feature-flagged: page.tsx delegates to _page-content.tsx (merged layout titles 'Categories' tabs)",
   "/dev/gallery": "Dev-only tool page; descriptive title 'Component Gallery'",
+  "/portfolio/new": "Op-catalog chooser (buy, sell, deposit...); header 'New operation' is the catalog heading, registry label is the nav child name",
+  "/account": "Redirects to /account/info (or AccountHub); the Account title comes from the AccountShell layout, not this page",
 };
 
 /** Attribute text of the first <PageHeader ...> opening tag. Brace-aware: `lead={<X />}` contains '>'. */
@@ -119,6 +121,14 @@ describe("Page titles", () => {
         const h1Match = pageContent.match(/<h1[^>]*>([^<]+)<\/h1>/);
         if (h1Match) {
           pageHeaderTitle = h1Match[1].trim();
+        }
+      }
+
+      // Server pages with no visible heading export their title as metadata
+      if (!pageHeaderTitle) {
+        const metaMatch = pageContent.match(/export\s+const\s+metadata\b[^=]*=\s*\{[^}]*?title:\s*"([^"]+)"/);
+        if (metaMatch) {
+          pageHeaderTitle = metaMatch[1];
         }
       }
 

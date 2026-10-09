@@ -9,6 +9,8 @@ const H = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn(), search: "", linkI
 const ROUTER = { push: H.push, replace: H.replace, back: vi.fn() };
 vi.mock("next/navigation", () => ({
   useRouter: () => ROUTER,
+  // PageHeader resolves its auto back target from the nav registry (useBackTarget -> usePathname).
+  usePathname: () => "/transactions",
   useSearchParams: () => new URLSearchParams(H.search),
   useParams: () => ({ linkId: H.linkId }),
 }));
