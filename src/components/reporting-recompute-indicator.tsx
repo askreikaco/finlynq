@@ -95,7 +95,7 @@ export function ReportingRecomputeIndicator({ avoidFab = false }: ReportingRecom
     <div className={`fixed ${bottomClasses} right-4 z-50 flex items-center gap-2 rounded-full bg-background px-3.5 py-2 text-xs text-muted-foreground shadow-lg ring-1 ring-foreground/10`}>
       {view.running ? (
         <>
-          <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-500" />
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-warning" />
           <span>
             Recalculating reports{view.target ? ` in ${view.target}` : ""}
             {view.total > 0 ? ` (${view.done}/${view.total})` : "…"}
@@ -103,7 +103,7 @@ export function ReportingRecomputeIndicator({ avoidFab = false }: ReportingRecom
         </>
       ) : (
         <>
-          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+          <CheckCircle2 className="h-3.5 w-3.5 text-pos" />
           <span>Reports updated{view.target ? ` to ${view.target}` : ""}</span>
         </>
       )}
