@@ -51,7 +51,7 @@ describe("MetricCard layout and sizing", () => {
     expect(container).toBeTruthy();
   });
 
-  it("caps the wide column with correct classes at @xl", () => {
+  it("caps the wide column with correct classes at @[36rem]", () => {
     const sparkData = [100, 120, 110, 130, 125];
     const { container } = render(
       <MetricCard
@@ -69,9 +69,9 @@ describe("MetricCard layout and sizing", () => {
     let wideColumn = null;
     for (const div of allDivs) {
       if (
-        div.className.includes("@xl:w-[40%]") &&
-        div.className.includes("@xl:max-w-[18rem]") &&
-        div.className.includes("@xl:self-center")
+        div.className.includes("@[36rem]:w-[40%]") &&
+        div.className.includes("@[36rem]:max-w-[18rem]") &&
+        div.className.includes("@[36rem]:self-center")
       ) {
         wideColumn = div;
         break;
@@ -79,9 +79,9 @@ describe("MetricCard layout and sizing", () => {
     }
 
     expect(wideColumn).toBeTruthy();
-    expect(wideColumn?.className).toContain("@xl:w-[40%]");
-    expect(wideColumn?.className).toContain("@xl:max-w-[18rem]");
-    expect(wideColumn?.className).toContain("@xl:self-center");
+    expect(wideColumn?.className).toContain("@[36rem]:w-[40%]");
+    expect(wideColumn?.className).toContain("@[36rem]:max-w-[18rem]");
+    expect(wideColumn?.className).toContain("@[36rem]:self-center");
   });
 
   it("sets narrow strip to 44px height on non-wide screens", () => {
@@ -97,7 +97,7 @@ describe("MetricCard layout and sizing", () => {
       />
     );
 
-    // Find the LazyView for narrow card (the one with @xl:hidden)
+    // Find the LazyView for narrow card (the one with @[36rem]:hidden)
     const lazyViews = container.querySelectorAll('[data-testid="lazy-view"]');
     // The last LazyView should be the narrow strip with minHeight={44}
     const narrowStrip = lazyViews[lazyViews.length - 1] as HTMLElement;

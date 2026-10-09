@@ -108,15 +108,15 @@ export function MetricCard({
   const motionVariants = animationsEnabled ? itemVariants : noAnimationVariants;
   const hasSpark = !!sparkData && sparkData.length > 1;
   // Sized by the card's own width so a narrow card (2-up grid on a phone) never clips the number.
-  const numberSize = size === "hero" ? "text-3xl @sm:text-4xl @xl:text-5xl" : "text-xl @[13rem]:text-2xl @[18rem]:text-3xl";
+  const numberSize = size === "hero" ? "text-3xl @[24rem]:text-4xl @[36rem]:text-5xl" : "text-xl @[13rem]:text-2xl @[18rem]:text-3xl";
   const toneClasses = tone in METRIC_TONES ? METRIC_TONES[tone as MetricTone] : tone;
   const card = (
     <Card
       className={`@container relative overflow-hidden group card-hover gradient-border hover:scale-[1.005] transition-transform duration-300 h-full${href ? " cursor-pointer" : ""} ${className}`}
       onMouseMove={onMouseMove}
     >
-      <div className="@xl:flex @xl:items-stretch @xl:gap-6 h-full">
-        <CardContent className={`pt-4 px-5 min-w-0 @xl:flex-1 ${hasSpark ? "pb-0 @xl:pb-4" : "pb-0"}`}>
+      <div className="@[36rem]:flex @[36rem]:items-stretch @[36rem]:gap-6 h-full">
+        <CardContent className={`pt-4 px-5 min-w-0 @[36rem]:flex-1 ${hasSpark ? "pb-0 @[36rem]:pb-4" : "pb-0"}`}>
           <div className="flex items-center gap-2.5 mb-3">
             <div
               className={`flex h-8 w-8 items-center justify-center rounded-lg shrink-0 transition-transform duration-300 group-hover:scale-110 ${toneClasses}`}
@@ -155,13 +155,13 @@ export function MetricCard({
         {hasSpark && (
           <>
             {/* wide card: right-hand column, full height */}
-            <div className="hidden @xl:block @xl:w-[40%] @xl:max-w-[18rem] @xl:self-center shrink-0 pr-5 py-5 opacity-60 group-hover:opacity-100 transition-opacity duration-300">
+            <div className="hidden @[36rem]:block @[36rem]:w-[40%] @[36rem]:max-w-[18rem] @[36rem]:self-center shrink-0 pr-5 py-5 opacity-60 group-hover:opacity-100 transition-opacity duration-300">
               <LazyView minHeight={96} className="w-full">
                 <Sparkline data={sparkData!} color={sparkColor} labels={sparkLabels} currency={resolvedCurrency} height={96} className="w-full sparkline-fade" />
               </LazyView>
             </div>
             {/* narrow card: full-bleed strip along the bottom */}
-            <div className="@xl:hidden opacity-50 group-hover:opacity-100 transition-opacity duration-300 -mx-px">
+            <div className="@[36rem]:hidden opacity-50 group-hover:opacity-100 transition-opacity duration-300 -mx-px">
               <LazyView minHeight={44} className="w-full">
                 <Sparkline data={sparkData!} color={sparkColor} labels={sparkLabels} currency={resolvedCurrency} height={44} />
               </LazyView>
