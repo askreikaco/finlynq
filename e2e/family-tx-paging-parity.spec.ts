@@ -175,7 +175,7 @@ async function cursorWalk(s: Scn): Promise<{ ids: number[]; firstTotal: number |
     pages++;
     expect(body.data.length).toBeLessThanOrEqual(PAGE);
     if (pages === 1) firstTotal = body.total === undefined ? undefined : Number(body.total);
-    else laterTotals.push(body.total);
+    else laterTotals.push(body.total === undefined ? undefined : Number(body.total));
     ids.push(...body.data.map((r) => r.id));
     if (!body.nextCursor) {
       expect(body.hasMore).toBe(false);

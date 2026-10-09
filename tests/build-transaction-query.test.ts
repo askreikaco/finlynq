@@ -17,6 +17,7 @@ import {
   type TxSortPref,
   type TxColFilter,
   type TxQueryAccount,
+  type TxQueryPage,
 } from "@/lib/transactions/build-query";
 
 const EMPTY_FILTERS: TxFilters = {
@@ -29,7 +30,7 @@ const EMPTY_FILTERS: TxFilters = {
   tag: "",
 };
 const NO_SORT: TxSortPref = { columnId: null, direction: null };
-const PAGE0: { page: number; limit: number } = { page: 0, limit: 50 };
+const PAGE0: TxQueryPage = { page: 0, limit: 50 };
 
 const ACCOUNTS: TxQueryAccount[] = [
   { id: 1, type: "checking" },
