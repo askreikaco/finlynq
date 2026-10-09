@@ -112,8 +112,8 @@ describe("Account Detail Page", () => {
       expect(screen.getByText("In")).toBeTruthy();
       expect(screen.getByText("Out")).toBeTruthy();
       expect(screen.getByText("Transfer")).toBeTruthy();
-      // More appears twice: mobile and desktop
-      expect(screen.getAllByText("More").length).toBeGreaterThanOrEqual(2);
+      // One More control at every size (owner D8): it opens the Actions sheet, no second dropdown.
+      expect(screen.getAllByText("More")).toHaveLength(1);
     });
   });
 
@@ -209,10 +209,7 @@ describe("Account Detail Page", () => {
     });
   });
 
-  it("shows mobile More sheet on small screens", async () => {
-    // Mock window width for mobile
-    Object.defineProperty(window, "innerWidth", { value: 375, configurable: true });
-
+  it("More opens the Actions bottom sheet (one menu, no size check)", async () => {
     render(<AccountDetailPage />);
     await waitFor(() => {
       const moreButton = screen.getAllByText("More")[0];

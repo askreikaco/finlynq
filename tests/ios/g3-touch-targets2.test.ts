@@ -70,12 +70,14 @@ describe("page-level targets", () => {
   it("transactions 'Search and filter' link has min-h-11", () => {
     expect(workspace).toMatch(/className="flex min-h-11 flex-1 items-center gap-2 px-3 py-2\.5 bg-muted rounded-lg/);
   });
-  it("accounts/[id] 'Back to Accounts' links are 44px tall below md (both render paths)", () => {
-    const n = accountPage.split('className="inline-flex max-md:min-h-11 items-center gap-1.5').length - 1;
+  it("accounts/[id] 'Back to Accounts' links are 44px tall on coarse pointers (both render paths)", () => {
+    const n = accountPage.split('className="inline-flex pointer-coarse:min-h-11 items-center gap-1.5').length - 1;
     expect(n).toBe(2);
+    expect(accountPage).not.toContain("max-md:min-h-11");
   });
-  it("accounts/[id] Information edit icon button is 44px wide below md", () => {
-    expect(accountPage).toMatch(/variant="ghost"\s*\n\s*className="max-md:w-11 max-md:px-0"\s*\n\s*onClick=\{\(\) => openEdit\("details"\)\}\s*\n\s*title="Edit account"/);
+  it("accounts/[id] Information edit icon button is 44px wide on coarse pointers", () => {
+    expect(accountPage).toMatch(/variant="ghost"\s*\n\s*className="pointer-coarse:w-11 pointer-coarse:px-0"\s*\n\s*onClick=\{\(\) => openEdit\("details"\)\}\s*\n\s*title="Edit account"/);
+    expect(accountPage).not.toContain("max-md:w-11");
   });
   it("more-menu theme segment: min-h-9 at md+, min-h-11 below, with pressed bg", () => {
     expect(moreMenu).toContain("min-h-9 max-md:min-h-11 rounded-md px-2.5");
