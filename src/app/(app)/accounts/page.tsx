@@ -20,7 +20,6 @@ import {
   type AccountGroupType,
 } from "@/lib/accounts/groups";
 import { excludeInvisible } from "@/lib/account-visibility";
-import { ManageGroupsDialog } from "./_components/manage-groups-dialog";
 import { AccountDialog } from "./_components/account-dialog";
 import {
   TrendingUp,
@@ -151,10 +150,8 @@ export default function AccountsPage() {
 
   // FINLYNQ-179: user-customizable account groups. The saved per-type display
   // order is a settings key/value (no migration); the management surface
-  // (rename / reorder / merge-into-Other) lives behind the "Manage groups"
-  // button.
+  // (rename / reorder / merge-into-Other) is the /accounts/groups page.
   const [groupOrder, setGroupOrder] = useState<AccountGroupOrder>({ A: [], L: [] });
-  const [manageGroupsOpen, setManageGroupsOpen] = useState(false);
 
   function loadGroupOrder() {
     fetch("/api/settings/account-group-order")
@@ -206,10 +203,6 @@ export default function AccountsPage() {
   const existingGroups = Array.from(
     new Set(accounts.map((a) => (a.accountGroup || "").trim()).filter(Boolean)),
   );
-  const groupsByType: Record<AccountGroupType, string[]> = {
-    A: Array.from(new Set(assets.map((a) => a.accountGroup || "Other"))),
-    L: Array.from(new Set(liabilities.map((a) => a.accountGroup || "Other"))),
-  };
 
   const groups = (list: AccountBalance[]) => {
     const map = new Map<string, AccountBalance[]>();
@@ -441,7 +434,7 @@ export default function AccountsPage() {
         title="Accounts"
         subtitle="Overview of your assets, liabilities, and net worth"
         overflow={[
-          { label: "Manage groups", icon: FolderCog, onSelect: () => setManageGroupsOpen(true) },
+          { label: "Manage groups", icon: FolderCog, href: "/accounts/groups" },
           { label: showArchived ? "Hide archived" : "Show archived", icon: Archive, onSelect: () => setShowArchived((v) => !v) },
         ]}
         actions={
@@ -450,7 +443,7 @@ export default function AccountsPage() {
               variant="outline"
               size="sm"
               className={HEADER_DESKTOP_ONLY}
-              onClick={() => setManageGroupsOpen(true)}
+              render={<Link href="/accounts/groups" />}
               title="Rename, reorder, or merge account groups"
             >
               <FolderCog className="h-4 w-4 mr-1.5" />
@@ -508,16 +501,6 @@ export default function AccountsPage() {
         {renderSection("Liabilities", liabilities, "text-destructive", ArrowDownRight, "bg-destructive/10 text-destructive")}
       </FromMd>
 
-      {/* FINLYNQ-179 — rename / reorder / merge-into-Other account groups */}
-      <ManageGroupsDialog
-        open={manageGroupsOpen}
-        onOpenChange={setManageGroupsOpen}
-        groupsByType={groupsByType}
-        onChanged={() => {
-          loadAccounts();
-          loadGroupOrder();
-        }}
-      />
     </div>
   );
 }

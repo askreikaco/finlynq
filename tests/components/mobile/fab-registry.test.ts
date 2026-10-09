@@ -86,14 +86,14 @@ describe("resolveFab", () => {
 });
 
 describe("FAB_ROUTES table", () => {
-  it("has 69 route keys", () => {
-    expect(Object.keys(FAB_ROUTES)).toHaveLength(69);
+  it("has 70 route keys", () => {
+    expect(Object.keys(FAB_ROUTES)).toHaveLength(70);
   });
 
-  it("kind counts are 38 fallback, 8 route, 15 handler, 5 hidden, 3 redirect", () => {
+  it("kind counts are 38 fallback, 8 route, 15 handler, 6 hidden, 3 redirect", () => {
     const counts: Record<string, number> = {};
     for (const e of Object.values(FAB_ROUTES)) counts[e.kind] = (counts[e.kind] ?? 0) + 1;
-    expect(counts).toEqual({ fallback: 38, route: 8, handler: 15, hidden: 5, redirect: 3 });
+    expect(counts).toEqual({ fallback: 38, route: 8, handler: 15, hidden: 6, redirect: 3 });
   });
 
   it("label/href table for the route entries", () => {

@@ -6,7 +6,7 @@
  *
  * This module is **client-safe**: it contains ONLY pure functions + constants
  * and imports NOTHING from the DB layer. Client components (`group-field.tsx`,
- * `manage-groups-dialog.tsx`, the `"use client"` accounts page) import from
+ * `manage-groups-panel.tsx`, the `"use client"` accounts pages) import from
  * HERE. The server-only DB/settings/rename functions live in the sibling
  * [groups-server.ts](./groups-server.ts) (which imports `@/db` → `pg`) and are
  * imported ONLY by API routes — keeping `pg`/`dns` out of the browser bundle.

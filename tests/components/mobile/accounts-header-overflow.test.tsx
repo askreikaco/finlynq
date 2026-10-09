@@ -15,9 +15,6 @@ vi.mock("@/components/dropdown-order-provider", () => ({
 }));
 vi.mock("@/components/onboarding-tips", () => ({ OnboardingTips: () => null }));
 vi.mock("@/app/(app)/accounts/_components/account-dialog", () => ({ AccountDialog: () => null }));
-vi.mock("@/app/(app)/accounts/_components/manage-groups-dialog", () => ({
-  ManageGroupsDialog: ({ open }: { open: boolean }) => (open ? <div role="dialog">manage-groups-open</div> : null),
-}));
 
 import AccountsPage from "@/app/(app)/accounts/page";
 
@@ -54,16 +51,17 @@ describe("Accounts header on mobile", () => {
     expect(within(menu).getAllByRole("menuitem").map((i) => i.textContent)).toEqual(["Manage groups", "Show archived"]);
   });
 
-  it("overflow items run the same handlers as the inline buttons", async () => {
+  it("Manage groups (inline and overflow) links to /accounts/groups; overflow Show archived still toggles", async () => {
     render(<AccountsPage />);
     await screen.findByRole("heading", { level: 1, name: "Accounts" });
+    expect(screen.getByTitle("Rename, reorder, or merge account groups").closest("a")?.getAttribute("href")).toBe("/accounts/groups");
+
     fireEvent.click(screen.getByRole("button", { name: "More actions" }));
-    fireEvent.click(within(await screen.findByRole("menu", undefined, { timeout: 5000 })).getByText("Manage groups"));
-    await waitFor(() => expect(screen.getByText("manage-groups-open")).toBeTruthy());
+    const menu = within(await screen.findByRole("menu", undefined, { timeout: 5000 }));
+    expect(menu.getByText("Manage groups").closest("a")?.getAttribute("href")).toBe("/accounts/groups");
 
     // "Show archived" toggles the label to "Hide archived"
-    fireEvent.click(screen.getByRole("button", { name: "More actions" }));
-    fireEvent.click(within(await screen.findByRole("menu", undefined, { timeout: 5000 })).getByText("Show archived"));
+    fireEvent.click(menu.getByText("Show archived"));
     await waitFor(() => expect(screen.getByTitle("Hide archived accounts")).toBeTruthy());
   });
 

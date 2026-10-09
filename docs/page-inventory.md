@@ -37,6 +37,7 @@ Pages with PageSkeleton: `/budgets`, `/categories/[id]`, `/categories`, `/goals`
 | `/account/security` | `src/app/(app)/account/security/page.tsx` | app > account/layout.tsx (AccountShell) | no (layout only: account-shell.tsx:51) | no | no | AccountShell header (account-shell.tsx:51) |
 | `/accounts/[id]` | `src/app/(app)/accounts/[id]/page.tsx` | app | yes (page.tsx:526) | no | yes (page.tsx:470) | - |
 | `/accounts` | `src/app/(app)/accounts/page.tsx` | app | yes (page.tsx:416) | no | yes (page.tsx:410) | - |
+| `/accounts/groups` | `src/app/(app)/accounts/groups/page.tsx` | app | yes (page.tsx:56) | no | yes (page.tsx:63) | list body: _components/manage-groups-panel.tsx |
 | `/admin/(env)/api-log` | `src/app/(app)/admin/(env)/api-log/page.tsx` | app > admin/(env)/layout.tsx (EnvLayout) | yes (page.tsx:192); + layout PageHeader (admin/(env)/layout.tsx:53) | no | no | stacked under layout PageHeader (admin/(env)/layout.tsx:53) |
 | `/admin/(env)/diagnostics` | `src/app/(app)/admin/(env)/diagnostics/page.tsx` | app > admin/(env)/layout.tsx (EnvLayout) | yes (page.tsx:215); + layout PageHeader (admin/(env)/layout.tsx:53) | no | no | stacked under layout PageHeader (admin/(env)/layout.tsx:53) |
 | `/admin/(env)/integrations` | `src/app/(app)/admin/(env)/integrations/page.tsx` | app > admin/(env)/layout.tsx (EnvLayout) | yes (page.tsx:247); + layout PageHeader (admin/(env)/layout.tsx:53) | no | no | stacked under layout PageHeader (admin/(env)/layout.tsx:53) |

@@ -81,6 +81,7 @@ export const FAB_ROUTES: Record<string, FabEntry> = {
     handlerKey: "accounts.detail.add",
     fallbackHref: "/transactions/new",
   },
+  "/accounts/groups": { kind: "hidden", reason: "manage list; no create action" },
   "/admin": FALLBACK,
   "/admin/announcements": {
     kind: "handler",
