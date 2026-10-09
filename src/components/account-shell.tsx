@@ -2,7 +2,7 @@
 
 /**
  * Account shell component — Header + Info/Security tab navigation.
- * Handles client-side layout for /account with support for nav-v2 back button.
+ * Client-side layout for /account. Sub-pages show a back button to the /account hub.
  */
 
 import Link from "next/link";
@@ -29,32 +29,24 @@ function getAccountTabs(): TabItem[] {
 
 const TABS: TabItem[] = getAccountTabs();
 
-export function AccountShell({
-  children,
-  navV2,
-}: {
-  children: React.ReactNode;
-  navV2: boolean;
-}) {
+export function AccountShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isHub = pathname === "/account";
 
   // Determine active tab
   const activeTab = TABS.find((t) => pathname === t.href)?.href || "/account/info";
 
-  // On sub-pages with navV2, show back button
-  const showBackButton = !isHub && navV2;
+  // Sub-pages show a back button to the hub (every size).
+  const showBackButton = !isHub;
 
   return (
     <div className="max-w-2xl space-y-6">
       {/* Header */}
       <PageHeader
         title="Account"
-        titleClassName="text-2xl font-bold tracking-tight"
         subtitle={
           <>Profile, login, API key, privacy, and backup / restore</>
         }
-        subtitleClassName="text-sm text-muted-foreground mt-0.5"
         backHref={showBackButton ? "/account" : undefined}
         backLabel={showBackButton ? "Back to Account" : undefined}
       />
@@ -71,7 +63,7 @@ export function AccountShell({
                 role="tab"
                 aria-selected={isActive}
                 className={cn(
-                  "pb-3 text-sm font-medium transition-colors border-b-2 -mb-[2px] max-md:flex max-md:min-h-11 max-md:min-w-11 max-md:items-end max-md:justify-center",
+                  "pb-3 text-sm font-medium transition-colors border-b-2 -mb-[2px] pointer-coarse:flex pointer-coarse:min-h-11 pointer-coarse:min-w-11 pointer-coarse:items-end pointer-coarse:justify-center",
                   isActive
                     ? "text-foreground border-b-primary"
                     : "text-muted-foreground border-b-transparent hover:text-foreground"

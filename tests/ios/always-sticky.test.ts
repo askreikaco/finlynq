@@ -57,7 +57,7 @@ describe("PHONE_BAR is sticky at every breakpoint", () => {
 
 describe("bars that must use the sticky bar", () => {
   it("settings detail row (back row) is built from PHONE_BAR", () => {
-    expect(settingsShell).toMatch(/cn\(PHONE_BAR,/);
+    expect(settingsShell).toMatch(/data-slot="settings-detail-bar" className=\{PHONE_BAR\}/);
   });
 
   it("new-transaction header is built from PHONE_BAR_STICKY", () => {

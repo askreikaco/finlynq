@@ -1,6 +1,5 @@
 /**
- * Account hub page — iOS grouped list showing all account sections.
- * Rendered when FINLYNQ_NAV_V2 is enabled; otherwise the shell navigation is used.
+ * Account hub page: iOS grouped list showing all account sections (every size).
  */
 
 import { getEntriesBySurface } from "@/lib/nav-config";

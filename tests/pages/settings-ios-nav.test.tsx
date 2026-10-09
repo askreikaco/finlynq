@@ -55,63 +55,82 @@ describe("Settings iOS multi-level menu: hub (level 1)", () => {
   });
 });
 
-describe("Settings iOS multi-level menu: detail pages (level 2)", () => {
-  it("renders no pill strip on phones when nav v2 is on, but keeps the desktop aside", () => {
-    mockPath = "/settings/general";
-    const { container } = render(
-      <SettingsShell hubBackHref="/settings">
-        <div>Detail</div>
-      </SettingsShell>
-    );
-
-    expect(pillNav(container)).toBeNull();
-    const aside = container.querySelector('aside[aria-label="Settings sections"]');
-    expect(aside).not.toBeNull();
-    expect(cls(aside)).toContain("md:block");
-  });
-
-  it("keeps the pill strip when nav v2 is off (no hub to switch sections)", () => {
+describe("Settings detail pages (level 2): one detail bar at every size", () => {
+  it("renders no pill strip and no side nav at any size (the hub is the only section switcher)", () => {
     mockPath = "/settings/general";
     const { container } = render(
       <SettingsShell>
         <div>Detail</div>
       </SettingsShell>
     );
-    expect(pillNav(container)).not.toBeNull();
+    expect(pillNav(container)).toBeNull();
+    expect(container.querySelector("aside")).toBeNull();
+    expect(container.querySelector('[data-slot="settings-detail-bar"]')).not.toBeNull();
   });
 
-  it("puts a round 44px glass back button and the centred active section title in the shared glass bar", () => {
+  it("puts a round glass back button to the hub and the active section title in the shared glass bar", () => {
     mockPath = "/settings/investments";
     const { container } = render(
-      <SettingsShell hubBackHref="/settings">
+      <SettingsShell>
         <div>Detail</div>
       </SettingsShell>
     );
-
     const back = screen.getByRole("link", { name: "Back to Settings" });
     expect(back.getAttribute("href")).toBe("/settings");
     expect(cls(back)).toEqual(expect.arrayContaining(["glass-capsule", "max-regular:size-11", "max-regular:rounded-full"]));
 
-    const title = container.querySelector('[data-slot="page-header-title-block"], span[aria-hidden].max-regular\\:col-start-2');
-    expect(title?.textContent).toBe("Investments");
+    const bar = container.querySelector('[data-slot="settings-detail-bar"]');
+    expect(bar?.contains(back)).toBe(true);
+    expect(cls(bar)).toEqual(expect.arrayContaining(["glass-bar", "sticky", "max-regular:-mx-4", "regular:bg-background/90"]));
 
-    const row = back.parentElement;
-    expect(row?.contains(title as Node)).toBe(true);
-    expect(cls(row)).toEqual(expect.arrayContaining(["glass-bar", "sticky", "max-regular:-mx-4"]));
-    expect(cls(title)).toEqual(expect.arrayContaining(["max-regular:col-start-2", "max-regular:text-base", "max-regular:font-semibold"]));
-    expect(cls(title)).not.toContain("max-regular:absolute");
+    const title = bar?.querySelector('span[aria-hidden]');
+    expect(title?.textContent).toBe("Investments");
+    expect(cls(title)).toEqual(expect.arrayContaining(["text-3xl/9", "font-extrabold", "max-regular:text-base"]));
   });
 
-  it("hides the page's own large h1 on phones but keeps it in the DOM", () => {
+  it("the detail bar is never hidden at any size (no viewport-only display classes)", () => {
     mockPath = "/settings/general";
     const { container } = render(
-      <SettingsShell hubBackHref="/settings">
-        <PageHeader title="General" titleClassName="text-2xl font-bold tracking-tight" />
+      <SettingsShell>
+        <div>Detail</div>
+      </SettingsShell>
+    );
+    const bar = container.querySelector('[data-slot="settings-detail-bar"]');
+    const title = bar?.querySelector("span[aria-hidden]");
+    for (const el of [bar, title]) {
+      expect(cls(el)).not.toContain("hidden");
+      expect(cls(el).some((c) => /^max-md:|^md:/.test(c))).toBe(false);
+    }
+  });
+
+  it("the page's own header stays in the DOM but never sticks next to the detail bar, at any size", () => {
+    mockPath = "/settings/general";
+    const { container } = render(
+      <SettingsShell>
+        <PageHeader title="General" subtitle="Preferences" />
       </SettingsShell>
     );
     const h1 = screen.getByRole("heading", { level: 1, name: "General" });
     expect(h1).not.toBeNull();
-    expect(cls(container.querySelector('[data-slot="settings-content"]'))).toContain("max-md:[&_[data-slot=page-header-title]]:sr-only");
+    const content = container.querySelector('[data-slot="settings-content"]');
+    expect(cls(content)).toEqual(
+      expect.arrayContaining([
+        "[&_[data-slot=page-header]]:static",
+        "[&_[data-slot=page-header-title]]:sr-only",
+        "[&_[data-slot=page-header-subtitle]]:hidden",
+      ]),
+    );
+    expect(content?.className).not.toMatch(/max-md:|(^|\s)md:/);
+  });
+
+  it("the reconcile-visibility page keeps its own back button and gets no detail bar", () => {
+    mockPath = "/settings/import/reconcile-visibility";
+    const { container } = render(
+      <SettingsShell>
+        <div>Detail</div>
+      </SettingsShell>
+    );
+    expect(container.querySelector('[data-slot="settings-detail-bar"]')).toBeNull();
   });
 });
 

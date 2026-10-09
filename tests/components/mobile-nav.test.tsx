@@ -228,7 +228,8 @@ describe("safe-area shell wiring (source)", () => {
     expect(read("src/components/ui/sheet.tsx")).toContain("pt-[var(--sat)]");
     expect(read("src/components/ui/dialog.tsx")).toContain("var(--sat)");
     expect(read("src/components/inbox/upload-drawer.tsx")).toContain("pt-safe");
-    expect(read("src/components/settings-shell.tsx")).toContain("sticky top-[calc(1.5rem+var(--sat))]");
+    expect(read("src/components/settings-shell.tsx")).toContain('className={PHONE_BAR}');
+    expect(read("src/components/settings-shell.tsx")).not.toContain("top-[calc(1.5rem+var(--sat))]");
     // Fixed top banner (unlock on 423) clears the iOS status bar.
     expect(read("src/components/unlock-panel.tsx")).toContain("pt-[calc(0.75rem+var(--sat))]");
   });
