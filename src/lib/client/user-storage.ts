@@ -11,7 +11,7 @@
  * - Legacy un-namespaced per-user keys (pre multi-account) are DROPPED, never
  *   migrated: a bare key cannot be attributed to a user, so copying it to
  *   whoever is logged in would leak A's data into B.
- * - Device-level keys (pf-font, pf-density, pf-sidebar-collapsed, analytics consent) are
+ * - Device-level keys (pf-font, pf-density, analytics consent) are
  *   not per-user and are not listed here.
  */
 

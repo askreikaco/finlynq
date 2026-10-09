@@ -153,6 +153,14 @@ Excluded from the adaptive guard scan (see 3e).
 - JS-only cases: `AppSizeClassProvider` / `useAppSizeClass()` (`components/adaptive/size-class-context.tsx`) measure `[data-app-main]`.
 - Pinned by `tests/components/adaptive/size-class-css.test.ts`.
 
+### 3g. App tabs (G2-04)
+- `AppTabs` (`components/nav.tsx`): one tab list (registry mobileBar tabs + More), two layouts.
+- Below 640px: floating glass bar, `regular:hidden`. From 640px: fixed left rail `hidden regular:flex`, width `5rem + --sal`, icon over label (`mobile-tab-label`), active = `mobile-glass-pill`.
+- Bar hidden on full-screen entry routes (`isTabBarHidden`); the rail is never hidden.
+- No groups, collapse toggle, admin group or account switcher. Admin entries are reached from More (`surfaces` include `more`).
+- One unread dot on More (announcements + feedback unread), both layouts.
+- Shell (`(app)/layout.tsx` main): `regular:pb-0 regular:pl-[calc(5rem+var(--sal))]`.
+
 ## 4. Inconsistencies
 
 Each item was re-checked at the base sha. Counts come from grep runs on `src/app` + `src/components` on 2026-10-09.

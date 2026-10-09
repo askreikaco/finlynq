@@ -11,7 +11,7 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
 }));
 
-import { Nav } from "@/components/nav";
+import { AppTabs } from "@/components/nav";
 
 const queryBar = () => screen.queryByRole("navigation", { name: "Mobile navigation" });
 
@@ -32,14 +32,14 @@ describe("mobile tab bar visibility by route", () => {
     for (const p of ["/dashboard", "/transactions"]) {
       mockPath = p;
       cleanup();
-      render(<Nav />);
+      render(<AppTabs />);
       expect(queryBar(), `bar on ${p}`).not.toBeNull();
     }
   });
 
   it.each(["/transactions/new", "/accounts/new", "/loans/new", "/loans/7/edit", "/subscriptions/new", "/subscriptions/3/edit", "/accounts/7/edit", "/budgets/new", "/budgets/templates/new", "/budgets/move-money", "/goals/new", "/goals/12/edit"])("is absent on %s (full-screen entry flow)", (p) => {
     mockPath = p;
-    render(<Nav />);
+    render(<AppTabs />);
     expect(queryBar()).toBeNull();
   });
 
@@ -54,13 +54,13 @@ describe("mobile tab bar visibility by route", () => {
     "/portfolio/new/withdrawal",
   ])("is absent on %s (operation form, full-screen)", (p) => {
     mockPath = p;
-    render(<Nav />);
+    render(<AppTabs />);
     expect(queryBar(), `bar on ${p}`).toBeNull();
   });
 
   it("is present on /portfolio/new (operation list keeps the tab bar)", () => {
     mockPath = "/portfolio/new";
-    render(<Nav />);
+    render(<AppTabs />);
     expect(queryBar()).not.toBeNull();
   });
 
@@ -73,7 +73,16 @@ describe("mobile tab bar visibility by route", () => {
     "/transactions/search",
   ])("is present on %s (not hidden)", (p) => {
     mockPath = p;
-    render(<Nav />);
+    render(<AppTabs />);
     expect(queryBar(), `bar on ${p}`).not.toBeNull();
   });
+
+  it.each(["/transactions/new", "/loans/7/edit", "/portfolio/new/buy", "/dashboard"])(
+    "the rail stays on %s (it sits left of the content, so it never overlaps a form)",
+    (p) => {
+      mockPath = p;
+      render(<AppTabs />);
+      expect(screen.getByRole("navigation", { name: "Main navigation" })).not.toBeNull();
+    },
+  );
 });

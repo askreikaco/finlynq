@@ -25,7 +25,8 @@ const barNavClass = (() => {
 
 describe("floating capsule geometry (nav.tsx)", () => {
   it("is fixed, z-50, mobile only, with 16px side insets plus safe-area", () => {
-    expect(barNavClass).toContain("md:hidden");
+    expect(barNavClass).toContain("regular:hidden");
+    expect(barNavClass).not.toContain("md:hidden");
     expect(barNavClass).toContain("fixed");
     expect(barNavClass).toContain("z-50");
     expect(barNavClass).toContain("left-[calc(16px+var(--sal))]");
@@ -116,10 +117,11 @@ describe("tabs and active state (nav.tsx)", () => {
   });
 
   it("tabs keep aria-current and a 44px minimum touch height", () => {
+    // One shared bar tab literal for all five tabs (registry tabs + More); the rail has its own literal (min-h-14).
     const tabBlocks = nav.match(/min-h-11/g) ?? [];
-    expect(tabBlocks.length).toBe(2); // mobileBarItems link + More link
-    expect(nav).toContain("aria-current={isActive");
-    expect(nav).toContain("aria-current={moreActive");
+    expect(tabBlocks.length).toBe(1);
+    expect(nav).toContain('aria-current={isActive ? "page" : undefined}');
+    expect(nav).toContain("min-h-14");
   });
 
   it("row keeps data-testid mobile-bar-row and fills the capsule", () => {
@@ -133,7 +135,7 @@ describe("clearance above the bar", () => {
   });
 
   it("app shell content padding uses the clearance var (with PageFab +80px)", () => {
-    expect(layout).toContain("pb-[calc(var(--mobile-bar-clearance)+80px)] md:pb-0");
+    expect(layout).toContain("pb-[calc(var(--mobile-bar-clearance)+80px)] regular:pb-0");
     expect(layout).not.toContain("132px");
     expect(layout).not.toContain("60px+var(--sab)");
   });

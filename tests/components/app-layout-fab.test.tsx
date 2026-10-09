@@ -15,7 +15,7 @@ vi.mock("@/components/mobile/page-fab", () => ({
 }));
 
 vi.mock("@/components/nav", () => ({
-  Nav: () => <div data-testid="nav">Nav</div>,
+  AppTabs: () => <div data-testid="nav">Nav</div>,
 }));
 
 vi.mock("@/components/unlock-gate", () => ({

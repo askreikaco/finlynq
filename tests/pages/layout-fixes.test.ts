@@ -122,7 +122,7 @@ describe("accounts/[id] at 390", () => {
   });
 
   it("bottom clearance comes from the (app) layout <main> (clearance + 80px below md), which every page inherits", () => {
-    expect(read(APP_LAYOUT)).toContain("pb-[calc(var(--mobile-bar-clearance)+80px)] md:pb-0");
+    expect(read(APP_LAYOUT)).toContain("pb-[calc(var(--mobile-bar-clearance)+80px)] regular:pb-0");
   });
 });
 

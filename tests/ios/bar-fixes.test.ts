@@ -26,7 +26,7 @@ const h = React.createElement;
 const read = (p: string) => readFileSync(resolve(__dirname, "../../", p), "utf-8");
 const css = read("src/app/globals.css");
 const nav = read("src/components/nav.tsx");
-const navBar = nav.slice(nav.indexOf("export const MobileBottomBar"));
+const navBar = nav.slice(nav.indexOf("export const AppTabs"));
 const moreMenu = read("src/components/more-menu.tsx");
 const newTx = read("src/app/(app)/transactions/new/page.tsx");
 const pageHeaderSrc = read("src/components/mobile/page-header.tsx");
@@ -203,11 +203,11 @@ describe("3. one tab-label size token, iOS tab bar geometry", () => {
   it("icons are 24px (size-6) and the tap target is 44pt+ (min-h-11)", () => {
     expect(navBar.match(/size-6/g)?.length).toBe(2);
     expect(navBar).not.toContain("size-[22px]");
-    expect(navBar.match(/min-h-11/g)?.length).toBe(2);
+    expect(navBar.match(/min-h-11/g)?.length).toBe(1); // one shared bar tab literal
   });
 
   it("tab padding is tight (px-0) so the label box is the whole per-tab width", () => {
-    expect(navBar.match(/rounded-full px-0 whitespace-nowrap/g)?.length).toBe(2);
+    expect(navBar.match(/rounded-full px-0 whitespace-nowrap/g)?.length).toBe(1); // one shared bar tab literal
     expect(navBar).not.toMatch(/px-0\.5/);
   });
 

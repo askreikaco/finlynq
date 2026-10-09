@@ -58,12 +58,12 @@ describe("2. MFA 6-digit input keeps wide digit spacing", () => {
 
 describe("3. mobile bottom bar labels truncate at 320-390px", () => {
   const src = read("src/components/nav.tsx");
-  const bar = src.slice(src.indexOf("export const MobileBottomBar"));
+  const bar = src.slice(src.indexOf("export const AppTabs"));
 
-  it("each tab label is wrapped in a truncating span", () => {
+  it("each tab label is wrapped in a truncating span (one per layout: bar and rail)", () => {
     const spans = bar.match(/<span className="[^"]*truncate[^"]*">\{item\.label\}<\/span>/g) ?? [];
-    expect(spans.length).toBe(1);
-    expect(bar).toMatch(/<span className="mobile-tab-label block max-w-full truncate">More<\/span>/);
+    expect(spans.length).toBe(2);
+    expect(src).toContain('{ href: "/more", label: "More", icon: MoreHorizontal, ariaLabel: "More" }');
   });
 
   it("link keeps min-w-0 flex-1 and takes no text-size step (the label size is mobile-tab-label)", () => {

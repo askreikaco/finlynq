@@ -86,7 +86,7 @@ describe("app shell below md", () => {
     const l = read("src/app/(app)/layout.tsx");
     expect(l).toContain("px-4 py-3 sm:px-6 sm:py-8 lg:px-8");
     // Main pads for the PageFab on phones; no padding on desktop
-    expect(l).toContain("pb-[calc(var(--mobile-bar-clearance)+80px)] md:pb-0");
+    expect(l).toContain("pb-[calc(var(--mobile-bar-clearance)+80px)] regular:pb-0");
     // Assert bg-dot-pattern is still present
     expect(l).toMatch(/bg-dot-pattern/);
   });

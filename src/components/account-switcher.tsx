@@ -25,9 +25,8 @@ export type { Account };
 export { MAX_ACCOUNTS };
 
 export interface AccountSwitcherProps {
-  compact?: boolean;
   /**
-   * "dropdown" (default, desktop sidebar): current-user trigger opens a menu.
+   * "dropdown" (default): current-user trigger opens a menu.
    * "list" (More page): rows rendered in place, no overlay.
    * Same items, same order: visible accounts (current first), Add another
    * account, Manage accounts.
@@ -111,7 +110,7 @@ function AccountBody({ account, busy }: { account: Account; busy: string | null 
   );
 }
 
-export const AccountSwitcher = memo(function AccountSwitcher({ compact = false, variant = "dropdown" }: AccountSwitcherProps) {
+export const AccountSwitcher = memo(function AccountSwitcher({ variant = "dropdown" }: AccountSwitcherProps) {
   const router = useRouter();
   const a = useAccountActions();
 
@@ -169,7 +168,7 @@ export const AccountSwitcher = memo(function AccountSwitcher({ compact = false, 
           title="Account menu"
           className={cn(
             "group/account relative flex items-center gap-3 rounded-lg transition-all duration-200 bg-transparent border-0",
-            compact ? "size-9 mx-auto p-0 justify-center" : "px-3 py-2 w-full text-left hover:bg-white/[0.05]",
+            "px-3 py-2 w-full text-left hover:bg-white/[0.05]",
           )}
         >
           <span
@@ -178,24 +177,20 @@ export const AccountSwitcher = memo(function AccountSwitcher({ compact = false, 
           >
             {initialsOf(a.active)}
           </span>
-          {!compact && (
-            <>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium text-sidebar-foreground">
-                  {a.active.displayName || "Account"}
-                </span>
-                <span className="block truncate text-xs text-sidebar-foreground/60">{a.active.email}</span>
-              </span>
-              <ChevronDown
-                aria-hidden="true"
-                className="h-4 w-4 shrink-0 text-sidebar-foreground/40 transition-colors group-hover/account:text-sidebar-foreground/60"
-              />
-            </>
-          )}
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-medium text-sidebar-foreground">
+              {a.active.displayName || "Account"}
+            </span>
+            <span className="block truncate text-xs text-sidebar-foreground/60">{a.active.email}</span>
+          </span>
+          <ChevronDown
+            aria-hidden="true"
+            className="h-4 w-4 shrink-0 text-sidebar-foreground/40 transition-colors group-hover/account:text-sidebar-foreground/60"
+          />
         </DropdownMenuTrigger>
         <DropdownMenuContent
-          side={compact ? "right" : "bottom"}
-          align={compact ? "end" : "start"}
+          side="bottom"
+          align="start"
           className="min-w-64 max-w-[calc(100vw-2rem)]"
         >
           {a.visible.map((acc) => (
