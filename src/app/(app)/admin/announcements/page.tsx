@@ -150,7 +150,7 @@ export default function AdminAnnouncementsPage() {
     <div className="mx-auto max-w-3xl">
       <div className="mb-6 flex items-center gap-2">
         <Megaphone className="h-5 w-5 text-primary" />
-        <PageHeader title="Announcements" titleClassName="text-2xl font-semibold tracking-tight" />
+        <PageHeader title="Announcements" titleClassName="text-2xl font-bold tracking-tight" />
       </div>
 
       {error && <p className="mb-4 text-sm text-destructive">{error}</p>}

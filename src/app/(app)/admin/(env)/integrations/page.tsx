@@ -245,7 +245,7 @@ export default function AdminIntegrationsPage() {
   const Heading = (
     <div className="mb-6">
       <PageHeader title={<><Plug className="w-8 h-8" />
-        Integrations</>} titleClassName="text-3xl font-bold mb-2 flex items-center gap-2" />
+        Integrations</>} titleClassName="text-2xl font-bold tracking-tight flex items-center gap-2" />
     </div>
   );
 
