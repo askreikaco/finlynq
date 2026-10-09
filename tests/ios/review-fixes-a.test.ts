@@ -15,9 +15,9 @@ const pageFab = read("src/components/mobile/page-fab.tsx");
 
 const GLASS_SEL = '[data-slot="page-header-actions"] > :is(button, a):not([data-variant="default"])';
 
-// Text of the first @media (width < 48rem) block in the glass section.
+// Text of the phone-only glass block (from its opening @media to the tab bar section).
 function phoneGlassBlock(): string {
-  const start = css.indexOf("@media (width < 48rem) {\n  /* Glass material");
+  const start = css.indexOf("@media (width < 48rem) {\n  .glass-capsule {");
   const end = css.indexOf("/* Mobile bottom tab bar", start);
   expect(start).toBeGreaterThan(-1);
   return css.slice(start, end);
@@ -35,9 +35,9 @@ describe("M1: header glass excludes primary-filled buttons", () => {
     expect(button).toContain("data-variant={variant}");
   });
 
-  it("material selectors carry the :not(default) exclusion, sizing does not", () => {
+  it("non-primary action children are bare on the capsule; the exclusion is on the rule", () => {
     const block = phoneGlassBlock();
-    expect(block).toContain(`  .glass-capsule,\n  ${GLASS_SEL} {\n    background: oklch(1 0 0 / 55%)`);
+    expect(block).toContain(`${GLASS_SEL} {\n    background: transparent;`);
     // Sizing/shape rule stays unscoped so primary CTAs become round 44px too.
     const sizing = bodyOf(block, '  [data-slot="page-header-actions"] > :is(button, a)');
     expect(sizing).toContain("border-radius: 9999px");
@@ -61,23 +61,25 @@ describe("M1: header glass excludes primary-filled buttons", () => {
 });
 
 describe("m1: dark fallbacks in both no-backdrop blocks", () => {
-  it("@supports not block covers dark glass-capsule and header actions", () => {
+  it("@supports not block covers dark glass-capsule and glass-bar", () => {
     const block = phoneGlassBlock();
     const at = block.indexOf("@supports not ((backdrop-filter");
     const mq = block.indexOf("@media (prefers-reduced-transparency: reduce)");
     expect(at).toBeGreaterThan(-1);
     expect(mq).toBeGreaterThan(at);
     const supports = block.slice(at, mq);
-    expect(supports).toContain(`.dark .glass-capsule,\n    .dark ${GLASS_SEL} {`);
+    expect(supports).toContain(".glass-bar,\n    .dark .glass-bar {");
+    expect(supports).toContain(".glass-capsule,\n    .dark .glass-capsule {");
     expect(supports).toContain("-webkit-backdrop-filter: none;");
   });
 
-  it("prefers-reduced-transparency block covers dark glass-capsule and header actions", () => {
+  it("prefers-reduced-transparency block covers dark glass-capsule and glass-bar", () => {
     const block = phoneGlassBlock();
     const mq = block.indexOf("@media (prefers-reduced-transparency: reduce)");
     expect(mq).toBeGreaterThan(-1);
     const tail = block.slice(mq);
-    expect(tail).toContain(`.dark .glass-capsule,\n    .dark ${GLASS_SEL} {`);
+    expect(tail).toContain(".glass-bar,\n    .dark .glass-bar {");
+    expect(tail).toContain(".glass-capsule,\n    .dark .glass-capsule {");
     expect(tail).toContain("backdrop-filter: none;");
   });
 });

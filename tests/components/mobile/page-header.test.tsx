@@ -22,10 +22,11 @@ describe("PageHeader: mobile title", () => {
     expect(cls(h1)).toContain("font-extrabold");
   });
 
-  it("hides the subtitle below md and keeps its original classes at md+", () => {
+  it("shows the subtitle on phones in the bar (muted, one line) and keeps its original classes at md+", () => {
     render(<PageHeader title="Budgets" subtitle="Set limits" subtitleClassName="text-sm text-muted-foreground mt-0.5" />);
     const sub = screen.getByText("Set limits");
-    expect(cls(sub)).toEqual(expect.arrayContaining(["hidden", "md:block", "text-sm", "text-muted-foreground", "mt-0.5"]));
+    expect(cls(sub)).toEqual(expect.arrayContaining(["block", "max-md:text-xs", "max-md:truncate", "text-sm", "text-muted-foreground", "mt-0.5"]));
+    expect(cls(sub)).not.toContain("hidden");
   });
 });
 
@@ -61,14 +62,18 @@ describe("PageHeader: desktop classes unchanged (md: variants)", () => {
     expect(c.some((t) => t.startsWith("md:font-"))).toBe(true);
   });
 
-  it("title only: one sticky phone wrapper around just the h1", () => {
+  it("title only: one glass sticky phone bar, empty left spacer, title block centred", () => {
     const { container } = render(<PageHeader title="Solo" />);
     const wrap = container.firstElementChild as HTMLElement;
     expect(wrap.tagName).toBe("DIV");
     expect(wrap.getAttribute("data-slot")).toBe("page-header");
-    expect(wrap.children.length).toBe(1);
-    expect(wrap.firstElementChild?.tagName).toBe("H1");
-    expect(cls(wrap)).toEqual(expect.arrayContaining(["max-md:sticky", "max-md:bg-background"]));
+    expect(wrap.querySelector('[data-slot="page-header-actions"]')).toBeNull();
+    const spacer = wrap.querySelector('[data-slot="page-header-spacer"]');
+    expect(spacer?.textContent).toBe("");
+    expect(cls(wrap)).toEqual(expect.arrayContaining(["glass-bar", "max-md:sticky", "max-md:-mx-4"]));
+    const block = wrap.querySelector('[data-slot="page-header-title-block"]') as HTMLElement;
+    expect(cls(block)).toEqual(expect.arrayContaining(["max-md:absolute", "max-md:inset-x-[3.75rem]", "max-md:pointer-events-none"]));
+    expect(block.firstElementChild?.tagName).toBe("H1");
   });
 
   it("applies the original wrapper + actions classes verbatim", () => {

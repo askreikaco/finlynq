@@ -26,29 +26,34 @@ export interface OverflowAction {
 export const HEADER_DESKTOP_ONLY = "max-md:hidden";
 
 /**
- * Phone sticky header, shared by every PageHeader row and the settings back row (max-md only).
- * Top offset is the safe-area inset alone: body already pads its in-flow top by --sat, but a
- * sticky box pins to the scrollport edge (y=0) and ignores that padding, so top:0 would slide
- * under the notch/status bar on iOS standalone. Stuck box = [sat, sat+56px]; content scrolls
- * under it. Row height = --phone-header-h (3.5rem). Opaque bg, no backdrop blur. z-30 sits above
- * the section labels (z-10). Hairline border-b keeps the bar separate from content.
- * No pt-[var(--sat)]: the row is in flow below body's pad, so adding it again would double the inset.
+ * Phone top bar (max-md only), shared by PageHeader and the settings detail row. One liquid-glass
+ * bar (.glass-bar, globals.css): full-bleed (-mx-4 cancels the app shell's px-4), sticky under the
+ * safe-area inset, z-30 above section labels (z-10). Content scrolls under it and shows blurred.
+ * Sticky is also the containing block for the absolutely centred title (no `relative`: twMerge drops sticky).
+ * Row = min-h --phone-header-h (3.75rem, fits a 44px control and a title + subtitle pair).
+ * No pt-[var(--sat)]: body already pads its in-flow top by --sat.
  */
-export const PHONE_HEADER_STICKY =
-  "max-md:sticky max-md:top-[var(--sat,0px)] max-md:z-30 max-md:min-h-[var(--phone-header-h)] max-md:border-b max-md:border-border max-md:bg-background";
+export const PHONE_BAR =
+  "glass-bar max-md:sticky max-md:top-[var(--sat,0px)] max-md:z-30 max-md:-mx-4 max-md:flex max-md:min-h-[var(--phone-header-h)] max-md:flex-nowrap max-md:items-center max-md:justify-start max-md:px-4";
 
-/** Phone header row for pages with a back control (iOS 26 style): [round glass back | glass
- * title island, centred | actions]. Grid with equal side columns so the island stays
- * centred in the viewport. md+ keeps the page's original classes (nothing here applies there). */
-export const PHONE_HEADER_ROW =
-  `max-md:grid max-md:grid-cols-[minmax(0,1fr)_minmax(0,auto)_minmax(0,1fr)] max-md:items-center max-md:gap-2 ${PHONE_HEADER_STICKY}`;
+/** Left slot placeholder (no back target): keeps the centred title centred. */
+export const PHONE_BAR_SIDE = "hidden max-md:flex max-md:size-11 max-md:shrink-0";
 
-/** Plain (no back) header wrapper on phones: sticky bar, h1 vertically centred. */
-export const PHONE_HEADER_PLAIN = cn(PHONE_HEADER_STICKY, "max-md:flex max-md:flex-col max-md:justify-center");
+/** Centred title block. Absolute so it is centred on the bar whatever the side slots measure;
+ * inset 3.75rem clears the 44px left slot. pointer-events-none: taps reach the buttons. */
+export const PHONE_BAR_CENTER =
+  "max-md:absolute max-md:inset-x-[3.75rem] max-md:top-0 max-md:bottom-0 max-md:flex max-md:min-w-0 max-md:flex-col max-md:items-center max-md:justify-center max-md:text-center max-md:pointer-events-none";
 
-/** The h1 as the glass title island on phones (large title hidden; the h1 stays in the DOM). */
-export const PHONE_TITLE_ISLAND =
-  "glass-capsule max-md:block max-md:h-11 max-md:min-w-0 max-md:max-w-[min(60vw,20rem)] max-md:justify-self-center max-md:truncate max-md:rounded-full max-md:px-4 max-md:text-center max-md:text-[15px]/11 max-md:font-semibold max-md:tracking-normal";
+/** Title on phones: system scale (iOS headline is 17pt semibold; text-base is the nearest step), one line. */
+export const PHONE_BAR_TITLE =
+  "max-md:max-w-full max-md:text-base max-md:font-semibold max-md:tracking-normal max-md:truncate max-md:text-center";
+
+/** Subtitle line under the title on phones (muted, one line). */
+export const PHONE_BAR_SUBTITLE = "max-md:mt-0 max-md:w-full max-md:truncate max-md:text-center max-md:text-xs";
+
+/** Right slot on phones: ONE glass capsule (pill, 44px high, no padding); buttons inside are 44px circles. */
+export const PHONE_BAR_RIGHT =
+  "glass-capsule max-md:ml-auto max-md:flex max-md:h-11 max-md:shrink-0 max-md:flex-nowrap max-md:items-center max-md:gap-0 max-md:rounded-full max-md:p-0";
 
 /**
  * Turn the page's ORIGINAL desktop h1 classes into md+ classes so the desktop heading is
@@ -68,11 +73,11 @@ export function desktopClasses(original: string): string {
 }
 
 /**
- * Page header. Below md (native): big title (28/800) left + the page's ONE primary action
- * right, subtitle hidden, every secondary action in a "⋯" overflow menu (44px targets).
- * At md+ it renders exactly the page's original markup: the original classes are passed in
- * (`className`, `titleClassName`, `subtitleClassName`, `actionsClassName`) and re-emitted
- * with `md:` prefixes.
+ * Page header. Below md (native): one glass top bar (PHONE_BAR): [left 44px circle back | lead |
+ * spacer] [title centred, subtitle under it] [ONE glass capsule holding the actions and the ⋯
+ * overflow menu]. Subtitle shows on phones too. At md+ it renders the page's original markup:
+ * the original classes (`className`, `titleClassName`, `subtitleClassName`, `actionsClassName`)
+ * are re-emitted with `md:` prefixes; every phone class is max-md only.
  *
  * `actions` is the page's original action node(s). Secondary buttons inside it must carry
  * HEADER_DESKTOP_ONLY and have a matching entry in `overflow`; the primary stays visible.
@@ -117,80 +122,47 @@ export function PageHeader({
     <h1
       data-slot="page-header-title"
       className={cn(
-        "text-[28px]/9 font-extrabold tracking-tight max-md:flex max-md:items-center max-md:gap-2",
+        "text-[28px]/9 font-extrabold tracking-tight",
         noTracking && "md:tracking-normal",
         desktopClasses(titleClassName),
-        backHref && PHONE_TITLE_ISLAND,
+        PHONE_BAR_TITLE,
       )}
     >
       {title}
     </h1>
   );
-  // Title only: sticky wrapper around just the h1 (no other nodes).
-  if (!subtitle && !belowTitle && !lead && !hasRight && !backHref) {
-    return (
-      <div data-slot="page-header" className={cn(className, PHONE_HEADER_PLAIN)}>
-        {h1}
-      </div>
-    );
-  }
   const titleBlock = (
-    <div className={cn(!lead && "max-md:min-w-0", !lead && hasRight && "max-md:flex-1", backHref && "max-md:contents")} data-slot="page-header-title-block">
+    <div data-slot="page-header-title-block" className={PHONE_BAR_CENTER}>
       {h1}
       {subtitle ? (
-        <p data-slot="page-header-subtitle" className={cn("hidden md:block", subtitleClassName)}>
+        <p data-slot="page-header-subtitle" className={cn("block", subtitleClassName, PHONE_BAR_SUBTITLE)}>
           {subtitle}
         </p>
       ) : null}
       {belowTitle}
     </div>
   );
-  const heading = lead ? (
-    <div className={cn(leadClassName, "max-md:min-w-0", hasRight && "max-md:flex-1", backHref && "max-md:contents")}>
-      {lead}
-      {titleBlock}
-    </div>
-  ) : (
-    titleBlock
-  );
-  const headingWithBack = backHref ? (
-    <div className={cn(leadClassName, "max-md:min-w-0", hasRight && "max-md:flex-1", "max-md:contents")}>
-      <BackButton href={backHref} label={backLabel} className="justify-self-start" />
-      {heading}
-    </div>
-  ) : (
-    heading
-  );
-  if (backHref) {
-    return (
-      <div data-slot="page-header" className={cn(className, PHONE_HEADER_ROW)}>
-        {headingWithBack}
-        {hasRight ? (
-          <div data-slot="page-header-actions" className={cn(actionsClassName, "max-md:col-start-3 max-md:justify-self-end max-md:shrink-0 max-md:flex-nowrap max-md:gap-2")}>
-            {overflow && overflow.length > 0 ? <OverflowMenu items={overflow} /> : null}
-            {actions}
-          </div>
-        ) : null}
-      </div>
-    );
-  }
-  if (!hasRight) {
-    return (
-      <div data-slot="page-header" className={cn(className, PHONE_HEADER_PLAIN)}>
-        {headingWithBack}
-      </div>
-    );
-  }
+  const hasLeft = !!backHref || !!lead;
   return (
-    <div
-      data-slot="page-header"
-      className={cn(className, PHONE_HEADER_STICKY, "max-md:flex max-md:flex-row max-md:flex-nowrap max-md:items-center max-md:justify-between max-md:gap-3")}
-    >
-      {headingWithBack}
-      <div data-slot="page-header-actions" className={cn(actionsClassName, "max-md:w-auto max-md:shrink-0 max-md:flex-nowrap max-md:gap-2")}>
-        {overflow && overflow.length > 0 ? <OverflowMenu items={overflow} /> : null}
-        {actions}
-      </div>
+    <div data-slot="page-header" className={cn(className, PHONE_BAR)}>
+      {hasLeft ? (
+        <div className={cn(leadClassName, "max-md:contents")}>
+          {backHref ? <BackButton href={backHref} label={backLabel} className="justify-self-start" /> : null}
+          {lead}
+          {titleBlock}
+        </div>
+      ) : (
+        <>
+          <span aria-hidden data-slot="page-header-spacer" className={PHONE_BAR_SIDE} />
+          {titleBlock}
+        </>
+      )}
+      {hasRight ? (
+        <div data-slot="page-header-actions" className={cn(actionsClassName, PHONE_BAR_RIGHT)}>
+          {overflow && overflow.length > 0 ? <OverflowMenu items={overflow} /> : null}
+          {actions}
+        </div>
+      ) : null}
     </div>
   );
 }

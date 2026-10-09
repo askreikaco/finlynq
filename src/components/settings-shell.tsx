@@ -8,7 +8,7 @@
  *
  * - md+ : vertical left nav (~220px) + content slot.
  * - <md, nav v2 on (hubBackHref set): iOS multi-level menu. /settings is the hub list;
- *   detail pages get one glass header row (round back + title island), no pill strip.
+ *   detail pages get one glass top bar (round back + centred title), no pill strip.
  * - <md, nav v2 off: horizontal scrollable pill row above the content (unchanged).
  *
  * Active state mirrors the global app sidebar idiom (`pf-app/src/components/nav.tsx`):
@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 import { getEntriesBySurface, ALIASES } from "@/lib/nav-config";
 import { BackButton } from "@/components/mobile/back-button";
-import { PHONE_HEADER_STICKY } from "@/components/mobile/page-header";
+import { PHONE_BAR, PHONE_BAR_CENTER, PHONE_BAR_TITLE } from "@/components/mobile/page-header";
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
 
@@ -192,19 +192,16 @@ export function SettingsShell({ children, hubBackHref }: { children: React.React
           // row is then not a second sticky bar: its h1 is sr-only (a11y) and the row collapses to static, 0 height,
           // no border. Specificity of these arbitrary variants (0,2,x) beats PHONE_HEADER_STICKY's single class.
           showDetailHeader &&
-            "max-md:[&_[data-slot=page-header-title]]:sr-only max-md:[&_[data-slot=page-header]]:static max-md:[&_[data-slot=page-header]]:min-h-0 max-md:[&_[data-slot=page-header]]:border-0"
+            "max-md:[&_[data-slot=page-header-title]]:sr-only max-md:[&_[data-slot=page-header-subtitle]]:hidden max-md:[&_[data-slot=page-header]]:static max-md:[&_[data-slot=page-header]]:min-h-0 max-md:[&_[data-slot=page-header]]:border-0"
         )}
         data-slot="settings-content"
       >
         {/* Not inside the overflow container below: sticky needs a non-overflow ancestor. */}
         {showDetailHeader && (
-          // Phones: [round glass back | glass title island of the active section]. md+: back button only.
-          <div className={cn("grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2", PHONE_HEADER_STICKY)}>
+          // Phones: the shared glass top bar (round back | centred active section title). md+: back button only.
+          <div className={PHONE_BAR}>
             <BackButton href={hubBackHref!} label="Back to Settings" className="justify-self-start" />
-            <span
-              aria-hidden
-              className="glass-capsule hidden max-md:block max-md:h-11 max-md:min-w-0 max-md:max-w-[min(60vw,20rem)] max-md:justify-self-center max-md:truncate max-md:rounded-full max-md:px-4 max-md:text-center max-md:text-[15px]/11 max-md:font-semibold"
-            >
+            <span aria-hidden className={cn("hidden", PHONE_BAR_CENTER, PHONE_BAR_TITLE)}>
               {activeLabel}
             </span>
           </div>

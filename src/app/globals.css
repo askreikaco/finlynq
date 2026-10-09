@@ -290,52 +290,71 @@ html {
   box-shadow: 0 1px 2px oklch(0 0 0 / 30%);
 }
 
-/* iOS 26-style liquid-glass capsule. Phones only (below md): the round back
-   button, the header title island, and round action buttons in page headers.
-   The md+ layout never receives this material. */
+/* iOS 26-style liquid glass, phones only (below md). Three parts: the round back button
+   (.glass-capsule on BackButton), the page top bar (.glass-bar), and the grouped action capsule
+   (.glass-capsule on [data-slot=page-header-actions]). The md+ layout never receives any of it. */
 @media (width < 48rem) {
-  /* Glass material only on non-primary header buttons: Button default variant
-     (data-variant="default") keeps its own fill. Sizing and shape apply to all. */
-  .glass-capsule,
-  [data-slot="page-header-actions"] > :is(button, a):not([data-variant="default"]) {
+  .glass-capsule {
     background: oklch(1 0 0 / 55%);
     -webkit-backdrop-filter: blur(24px) saturate(1.8);
     backdrop-filter: blur(24px) saturate(1.8);
     border: 1px solid oklch(0 0 0 / 8%);
     box-shadow: inset 0 1px 0 oklch(1 0 0 / 60%), 0 2px 8px oklch(0 0 0 / 10%);
   }
-  .dark .glass-capsule,
-  .dark [data-slot="page-header-actions"] > :is(button, a):not([data-variant="default"]) {
+  .dark .glass-capsule {
     background: oklch(1 0 0 / 8%);
     border-color: oklch(1 0 0 / 14%);
     box-shadow: inset 0 1px 0 oklch(1 0 0 / 14%), 0 2px 8px oklch(0 0 0 / 35%);
   }
+  /* Action buttons sit as 44px circles on the capsule. Non-primary ones are bare (the capsule is the
+     glass). Primary (data-variant="default") keeps its own fill, never see-through. */
   [data-slot="page-header-actions"] > :is(button, a) {
     min-width: 2.75rem;
     height: 2.75rem;
     border-radius: 9999px;
   }
+  [data-slot="page-header-actions"] > :is(button, a):not([data-variant="default"]) {
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  /* The top bar: translucent tint, blur, saturate, 1px bottom rim. */
+  .glass-bar {
+    background: oklch(1 0 0 / 60%);
+    -webkit-backdrop-filter: blur(28px) saturate(1.8);
+    backdrop-filter: blur(28px) saturate(1.8);
+    border-bottom: 1px solid oklch(0 0 0 / 8%);
+  }
+  .dark .glass-bar {
+    background: oklch(0.14 0.01 245 / 55%);
+    border-bottom-color: oklch(1 0 0 / 10%);
+  }
+  /* Opaque fallbacks, light and dark, after the base rules so they win at equal specificity. */
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-    .glass-capsule,
-    [data-slot="page-header-actions"] > :is(button, a):not([data-variant="default"]) {
-      background: var(--card);
+    .glass-bar,
+    .dark .glass-bar {
+      background: var(--background);
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
     }
-    .dark .glass-capsule,
-    .dark [data-slot="page-header-actions"] > :is(button, a):not([data-variant="default"]) {
+    .glass-capsule,
+    .dark .glass-capsule {
       background: var(--card);
       -webkit-backdrop-filter: none;
       backdrop-filter: none;
     }
   }
   @media (prefers-reduced-transparency: reduce) {
-    .glass-capsule,
-    [data-slot="page-header-actions"] > :is(button, a):not([data-variant="default"]) {
-      background: var(--card);
+    .glass-bar,
+    .dark .glass-bar {
+      background: var(--background);
       -webkit-backdrop-filter: none;
       backdrop-filter: none;
     }
-    .dark .glass-capsule,
-    .dark [data-slot="page-header-actions"] > :is(button, a):not([data-variant="default"]) {
+    .glass-capsule,
+    .dark .glass-capsule {
       background: var(--card);
       -webkit-backdrop-filter: none;
       backdrop-filter: none;
@@ -653,9 +672,9 @@ html[data-keyboard-open] [data-testid="page-fab"] { display: none; }
    or the utilities below instead of raw env(...). */
 :root {
   --sat: env(safe-area-inset-top, 0px);
-  /* Phone page-header row height (PageHeader + settings back row, 56px). Sticky elements that sit
-     under the header offset by sat + this. Measured: row = min-h 3.5rem, content 44px + centred. */
-  --phone-header-h: 3.5rem;
+  /* Phone top bar height (PageHeader + settings back row, 60px): one fixed height on every page so the
+     bar does not jump between pages. Sticky elements under the bar offset by sat + this. */
+  --phone-header-h: 3.75rem;
   --sab: env(safe-area-inset-bottom, 0px);
   --sal: env(safe-area-inset-left, 0px);
   --sar: env(safe-area-inset-right, 0px);

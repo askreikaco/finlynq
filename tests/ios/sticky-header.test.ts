@@ -20,14 +20,14 @@ function constant(name: string): string {
   return m![1];
 }
 
-describe("phone header: sticky on every PageHeader row (max-md only)", () => {
-  const sticky = constant("PHONE_HEADER_STICKY");
-  const tokens = sticky.split(/\s+/);
+describe("phone top bar: sticky on every PageHeader row (max-md only)", () => {
+  const bar = constant("PHONE_BAR");
+  const tokens = bar.split(/\s+/);
 
   it("is sticky below md and nothing else (desktop unchanged)", () => {
     expect(tokens).toContain("max-md:sticky");
     expect(tokens.filter((t) => t.startsWith("sticky") || t.startsWith("md:sticky"))).toEqual([]);
-    expect(tokens.every((t) => t.startsWith("max-md:"))).toBe(true);
+    expect(tokens.filter((t) => /^(md:|sm:|lg:)/.test(t))).toEqual([]);
   });
 
   it("is pinned at the safe-area inset, not 0 (iOS status bar)", () => {
@@ -35,45 +35,42 @@ describe("phone header: sticky on every PageHeader row (max-md only)", () => {
     expect(tokens).not.toContain("max-md:top-0");
   });
 
-  it("uses an opaque background and no backdrop blur", () => {
-    expect(tokens).toContain("max-md:bg-background");
-    expect(sticky).not.toMatch(/backdrop|blur/);
+  it("uses the glass-bar material (no opaque bg token on the bar itself)", () => {
+    expect(tokens).toContain("glass-bar");
+    expect(tokens).not.toContain("max-md:bg-background");
   });
 
-  it("sits above section labels (z-30 > z-10) and keeps a hairline border", () => {
+  it("sits above section labels (z-30 > z-10)", () => {
     expect(tokens).toContain("max-md:z-30");
-    expect(tokens).toContain("max-md:border-b");
-    expect(tokens).toContain("max-md:border-border");
   });
 
   it("row height comes from --phone-header-h", () => {
     expect(tokens).toContain("max-md:min-h-[var(--phone-header-h)]");
   });
 
-  it("the back row and the plain row both use the shared sticky set", () => {
-    expect(constant("PHONE_HEADER_ROW")).toContain("${PHONE_HEADER_STICKY}");
-    expect(pageHeader).toMatch(/PHONE_HEADER_PLAIN = cn\(PHONE_HEADER_STICKY,/);
-    // every PageHeader branch that renders a row carries the sticky set
-    const openers = pageHeader.match(/data-slot="page-header"/g) ?? [];
-    expect(openers.length).toBeGreaterThanOrEqual(4);
-    expect(pageHeader).toMatch(/data-slot="page-header"\s+className=\{cn\(className, PHONE_HEADER_ROW\)\}/);
-    expect(pageHeader).toMatch(/className=\{cn\(className, PHONE_HEADER_PLAIN\)\}/);
-    expect(pageHeader).toMatch(/className=\{cn\(className, PHONE_HEADER_STICKY, "max-md:flex max-md:flex-row/);
+  it("is full-bleed inside the app shell gutter (-mx-4 + px-4)", () => {
+    expect(tokens).toContain("max-md:-mx-4");
+    expect(tokens).toContain("max-md:px-4");
   });
 
-  it("the row no longer adds its own top safe-area padding (body already pads it in flow)", () => {
-    expect(constant("PHONE_HEADER_ROW")).not.toMatch(/pt-\[var\(--sat\)\]/);
-    expect(sticky).not.toMatch(/pt-\[var\(--sat\)\]/);
+  it("every PageHeader row (title only, back, actions) renders the shared bar", () => {
+    const openers = pageHeader.match(/data-slot="page-header"/g) ?? [];
+    expect(openers.length).toBe(1);
+    expect(pageHeader).toMatch(/data-slot="page-header" className=\{cn\(className, PHONE_BAR\)\}/);
+  });
+
+  it("the bar adds no top safe-area padding (body already pads it in flow)", () => {
+    expect(bar).not.toMatch(/pt-\[var\(--sat\)\]/);
   });
 });
 
 describe("--phone-header-h", () => {
-  it("is defined on :root as 3.5rem", () => {
+  it("is defined on :root as 3.75rem (one bar height on every page)", () => {
     // the :root block that also holds the safe-area vars (--sat) carries the header height
     const blocks = [...css.matchAll(/:root\s*\{[\s\S]*?\n\}/g)].map((m) => m[0]);
     const withSat = blocks.filter((b) => b.includes("--sat:"));
     expect(withSat.length).toBe(1);
-    expect(withSat[0]).toMatch(/--phone-header-h:\s*3\.5rem;/);
+    expect(withSat[0]).toMatch(/--phone-header-h:\s*3\.75rem;/);
   });
 });
 
@@ -89,8 +86,8 @@ describe("elements under the header offset by sat + header height", () => {
     expect(overview).not.toMatch(/sticky top-\[var\(--sat\)\]/);
   });
 
-  it("settings back row uses the shared sticky set", () => {
-    expect(settingsShell).toContain("PHONE_HEADER_STICKY");
+  it("settings back row uses the shared bar", () => {
+    expect(settingsShell).toContain("<div className={PHONE_BAR}>");
     expect(settingsShell).not.toContain("max-md:pt-[var(--sat)]");
   });
 

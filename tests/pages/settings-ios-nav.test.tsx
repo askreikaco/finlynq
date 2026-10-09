@@ -46,10 +46,11 @@ describe("Settings iOS multi-level menu: hub (level 1)", () => {
     });
   });
 
-  it("uses a large 34px Settings title on phones (24px at md+ as before)", () => {
+  it("uses the shared bar title on phones (system text-base semibold; md+ keeps text-2xl)", () => {
     render(<SettingsHub />);
     const h1 = screen.getByRole("heading", { level: 1, name: "Settings" });
-    expect(cls(h1)).toContain("max-md:text-[34px]/[41px]");
+    expect(cls(h1)).toContain("max-md:text-base");
+    expect(cls(h1)).toContain("max-md:font-semibold");
     expect(cls(h1)).toContain("md:text-2xl");
   });
 });
@@ -79,7 +80,7 @@ describe("Settings iOS multi-level menu: detail pages (level 2)", () => {
     expect(pillNav(container)).not.toBeNull();
   });
 
-  it("puts a round 44px glass back button and the active section title island in one row", () => {
+  it("puts a round 44px glass back button and the centred active section title in the shared glass bar", () => {
     mockPath = "/settings/investments";
     const { container } = render(
       <SettingsShell hubBackHref="/settings">
@@ -91,13 +92,13 @@ describe("Settings iOS multi-level menu: detail pages (level 2)", () => {
     expect(back.getAttribute("href")).toBe("/settings");
     expect(cls(back)).toEqual(expect.arrayContaining(["glass-capsule", "max-md:size-11", "max-md:rounded-full"]));
 
-    const island = container.querySelector(".glass-capsule.max-md\\:justify-self-center");
-    expect(island?.textContent).toBe("Investments");
+    const title = container.querySelector('[data-slot="page-header-title-block"], span[aria-hidden].max-md\\:absolute');
+    expect(title?.textContent).toBe("Investments");
 
     const row = back.parentElement;
-    expect(row?.contains(island as Node)).toBe(true);
-    expect(cls(row)).toContain("grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]");
-    expect(cls(row)).toContain("max-md:sticky");
+    expect(row?.contains(title as Node)).toBe(true);
+    expect(cls(row)).toEqual(expect.arrayContaining(["glass-bar", "max-md:sticky", "max-md:-mx-4"]));
+    expect(cls(title)).toEqual(expect.arrayContaining(["max-md:absolute", "max-md:text-base", "max-md:font-semibold"]));
   });
 
   it("hides the page's own large h1 on phones but keeps it in the DOM", () => {
@@ -114,18 +115,18 @@ describe("Settings iOS multi-level menu: detail pages (level 2)", () => {
 });
 
 describe("PageHeader with backHref: phone glass header row", () => {
-  it("renders a round glass back button and a centred title island, with the h1 still present", () => {
+  it("renders a round glass back button and a centred title in the glass bar, with the h1 still present", () => {
     const { container } = render(<PageHeader title="Currency Review" backHref="/transactions" backLabel="Back to Transactions" />);
 
     const back = screen.getByRole("link", { name: "Back to Transactions" });
     expect(cls(back)).toEqual(expect.arrayContaining(["glass-capsule", "max-md:size-11", "max-md:rounded-full"]));
 
     const h1 = screen.getByRole("heading", { level: 1, name: "Currency Review" });
-    expect(cls(h1)).toEqual(expect.arrayContaining(["glass-capsule", "max-md:rounded-full", "max-md:h-11", "max-md:truncate", "max-md:justify-self-center"]));
+    expect(cls(h1)).toEqual(expect.arrayContaining(["max-md:truncate", "max-md:text-base", "max-md:font-semibold"]));
+    expect(cls(h1)).not.toContain("glass-capsule");
 
     const row = container.querySelector('[data-slot="page-header"]');
-    expect(cls(row)).toContain("max-md:grid");
-    expect(cls(row)).toContain("grid-cols-[minmax(0,1fr)_minmax(0,auto)_minmax(0,1fr)]".replace("grid-cols", "max-md:grid-cols"));
+    expect(cls(row)).toEqual(expect.arrayContaining(["glass-bar", "max-md:sticky"]));
     expect(row?.contains(back)).toBe(true);
     expect(row?.contains(h1)).toBe(true);
   });
@@ -146,7 +147,7 @@ describe("PageHeader with backHref: phone glass header row", () => {
     );
     const actions = container.querySelector('[data-slot="page-header-actions"]');
     expect(actions).not.toBeNull();
-    expect(cls(actions)).toContain("max-md:col-start-3");
+    expect(cls(actions)).toEqual(expect.arrayContaining(["glass-capsule", "max-md:h-11", "max-md:rounded-full"]));
     expect(screen.getByRole("button", { name: "Add" })).toBeTruthy();
   });
 
@@ -165,10 +166,10 @@ describe("PageHeader with backHref: phone glass header row", () => {
     expect(cls(triggers[0])).toContain("max-md:size-11");
   });
 
-  it("ships the glass-capsule material and round action rule phone-only in globals.css", () => {
+  it("ships the glass-capsule and glass-bar material phone-only in globals.css", () => {
     const css = readFileSync(resolve(__dirname, "../../src/app/globals.css"), "utf-8");
-    expect(css).toMatch(/@media \(width < 48rem\) \{[\s\S]*?\.glass-capsule,\s*\[data-slot="page-header-actions"\] > :is\(button, a\):not\(\[data-variant="default"\]\)/);
-    expect(css).toContain("blur(24px) saturate(1.8)");
+    expect(css).toMatch(/@media \(width < 48rem\) \{\s*\.glass-capsule \{/);
+    expect(css).toMatch(/\.glass-bar \{[^}]*blur\(28px\) saturate\(1\.8\)/);
     expect(css).toContain("prefers-reduced-transparency");
   });
 });
