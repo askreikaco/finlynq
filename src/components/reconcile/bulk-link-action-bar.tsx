@@ -21,6 +21,7 @@
 import { Button } from "@/components/ui/button";
 import { Link as LinkIcon, X } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
+import { useHidePageFab } from "@/components/mobile/page-fab";
 
 export function BulkLinkActionBar({
   txCount,
@@ -45,6 +46,7 @@ export function BulkLinkActionBar({
   onReconcile: () => void;
   onClear: () => void;
 }) {
+  useHidePageFab(txCount > 0 || bankCount > 0);
   if (txCount === 0 && bankCount === 0) return null;
   const total = txCount * bankCount;
   const canReconcile = txCount > 0 && bankCount > 0 && total > 0;
