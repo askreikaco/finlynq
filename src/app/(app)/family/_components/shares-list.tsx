@@ -95,7 +95,7 @@ export function SharesList({ shares, incoming, emptyMessage, role, onChanged }: 
             <li key={share.id}>
               <Card>
                 <CardContent className="pt-6">
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="flex flex-col gap-4 regular:flex-row regular:items-start regular:justify-between">
                     <div className="flex-1 min-w-0 space-y-2">
                       <div className="min-w-0">
                         <p className="font-medium break-words">

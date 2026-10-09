@@ -62,7 +62,7 @@ export function ChangeSectionsDialog({ share, lockedSections = [], onClose, onSa
   return (
     <>
       <Dialog open={!stepUp.open} onOpenChange={(open) => !open && !busy && onClose()}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="regular:max-w-md">
           <DialogHeader>
             <DialogTitle>{FAMILY_STRINGS.update_sections_dialog_title}</DialogTitle>
             <DialogDescription>

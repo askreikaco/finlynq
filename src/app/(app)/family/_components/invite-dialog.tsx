@@ -69,7 +69,7 @@ export function InviteDialog({ onClose, onSuccess }: InviteDialogProps) {
   return (
     <>
       <Dialog open={!stepUp.open} onOpenChange={(open) => !open && !busy && onClose()}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="regular:max-w-md">
           <DialogHeader>
             <DialogTitle>{FAMILY_STRINGS.invite_dialog_title}</DialogTitle>
             <DialogDescription>{FAMILY_STRINGS.page_description}</DialogDescription>

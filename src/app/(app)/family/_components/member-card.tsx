@@ -56,7 +56,7 @@ function MoversCards({ member, movers, currency }: { member: MemberDto; movers?:
     };
   }
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 regular:grid-cols-2 gap-4">
       <TopMoversCard kind="gainers" movers={body.g} currency={currency}>
         {body.gainers}
       </TopMoversCard>
@@ -157,7 +157,7 @@ export function MemberCard({
             />
 
             {(cs.net_worth || cs.cashflow) && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 wide:grid-cols-2 gap-4">
                 {cs.net_worth && (
                   <NetWorthOverTimeCard
                     history={cs.net_worth.history}
