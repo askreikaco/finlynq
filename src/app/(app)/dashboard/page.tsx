@@ -537,8 +537,8 @@ export default function DashboardPage() {
         <PageHeader
           className="flex flex-wrap items-center justify-between gap-3"
           title={greeting}
-          titleClassName="text-xl font-semibold tracking-tight"
-          subtitleClassName="text-[13px] text-muted-foreground mt-0.5"
+          titleClassName="text-2xl font-bold tracking-tight"
+          subtitleClassName="text-sm text-muted-foreground mt-0.5"
           subtitle="Here's your financial overview"
           overflow={[{ label: "Customize", icon: SlidersHorizontal, onSelect: () => setCustomizeOpen(true) }]}
           actions={

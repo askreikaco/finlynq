@@ -21,8 +21,8 @@ export function ErrorState({
       className="flex flex-col items-center justify-center py-16 px-4 text-center"
       role="alert"
     >
-      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-rose-100 dark:bg-rose-950/40 mb-4">
-        <AlertCircle className="h-8 w-8 text-rose-500" />
+      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-destructive/10 mb-4">
+        <AlertCircle className="h-8 w-8 text-destructive" />
       </div>
       <h3 className="text-lg font-semibold">{title}</h3>
       <p className="text-sm text-muted-foreground mt-1 max-w-sm">{message}</p>
