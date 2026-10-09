@@ -11,28 +11,38 @@
  * Empty-state copy is "No closed lots yet" rather than "no data" —
  * users whose lots backfill hasn't run yet (portfolio_lots_status not
  * populated) see this naturally.
+ *
+ * Presentation: a PageHeader page (not a dialog). Below md the lots are
+ * grouped by close month as ListRows (tap = DetailSheet with every field);
+ * md+ keeps the table with a sticky header inside its own scroll box.
  */
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Download, ArrowDownLeft, ArrowUpLeft, RefreshCw, Coins } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Download, ArrowDownLeft, ArrowUpLeft, RefreshCw, Coins, SlidersHorizontal } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { exportCsv, type CsvColumn } from "@/lib/csv-export";
-import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
+import {
+  PageHeader,
+  HEADER_DESKTOP_ONLY,
+  Amount,
+  CompactOnly,
+  FromMd,
+  ListRow,
+  DetailSheet,
+  MetricGrid,
+  SectionCard,
+  SectionLabel,
+  type DetailItem,
+  type MetricItem,
+} from "@/components/mobile";
 import { ErrorState } from "@/components/error-state";
+import { EmptyState } from "@/components/empty-state";
 import { PageSkeleton } from "@/components/page-skeleton";
+import { ChipGroup, ReportFilterSheet, monthLabel, signedPercent } from "../_components/report-controls";
 
 // Phase 3 follow-up (2026-05-26): short_close = a Buy that covered a short
 // position; gain inverts (cost − buy_price). short_open = the audit-marker
@@ -133,6 +143,12 @@ interface GroupRow {
 const holdingLabelOf = (r: ApiRow) => r.holdingName ?? `#${r.holdingId}`;
 const accountLabelOf = (r: ApiRow) => r.accountName ?? `#${r.accountId}`;
 
+/** Realized gain as a percent of the cost of the closed shares (native terms). */
+function gainPctOf(r: ApiRow): number | null {
+  const cost = r.costPerShare * r.qtyClosed;
+  return cost > 0 ? (r.realizedGain / cost) * 100 : null;
+}
+
 /**
  * Aggregate flat closure rows into group rows. Pure. Caller guarantees
  * `unified` rows carry `realizedGainInBase` (grouping is unified-only), so the
@@ -173,6 +189,32 @@ function buildGroupRows(rows: ApiRow[], mode: GroupMode): GroupRow[] {
   );
 }
 
+/** The fields a mobile lot row leaves out, shown in its DetailSheet. */
+function lotDetailItems(r: ApiRow): DetailItem[] {
+  const items: DetailItem[] = [
+    { label: "Closed", value: r.closeDate },
+    { label: "Opened", value: r.openDate },
+    { label: "Days held", value: r.daysHeld },
+    { label: "Term", value: r.term === "long" ? "Long-term" : "Short-term" },
+    { label: "Account", value: accountLabelOf(r) },
+    { label: "Qty closed", value: r.qtyClosed },
+    { label: "Cost / share", value: formatCurrency(r.costPerShare, r.currency) },
+    { label: "Proceeds / share", value: formatCurrency(r.proceedsPerShare, r.currency) },
+    {
+      label: `Realized (${r.currency})`,
+      value: <Amount value={r.realizedGain} currency={r.currency} size="md" tone="auto" showSign />,
+    },
+  ];
+  if (r.realizedGainInBase != null && r.baseCurrency) {
+    items.push({
+      label: `Realized (${r.baseCurrency})`,
+      value: <Amount value={r.realizedGainInBase} currency={r.baseCurrency} size="md" tone="auto" showSign />,
+    });
+  }
+  items.push({ label: "Kind", value: CLOSE_KIND_META[r.closeKind]?.label ?? r.closeKind });
+  return items;
+}
+
 export default function RealizedGainsPage() {
   const { displayCurrency } = useDisplayCurrency();
   const [taxYear, setTaxYear] = useState<number | null>(CURRENT_YEAR);
@@ -188,6 +230,8 @@ export default function RealizedGainsPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [openLot, setOpenLot] = useState<ApiRow | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -245,7 +289,7 @@ export default function RealizedGainsPage() {
     [grouped, visibleRows, groupMode],
   );
 
-  // Summary badges + closed-lot count reflect the VISIBLE (filtered/grouped)
+  // Summary tiles + closed-lot count reflect the VISIBLE (filtered/grouped)
   // set — consistent with hide-zero and grouping.
   const visibleCount = grouped ? groupRows.length : visibleRows.length;
   const visibleByCurrency = useMemo(() => {
@@ -262,6 +306,19 @@ export default function RealizedGainsPage() {
     () => visibleRows.reduce((s, r) => s + (r.realizedGainInBase ?? 0), 0),
     [visibleRows],
   );
+
+  const summaryMetrics = useMemo<MetricItem[]>(() => {
+    const items: MetricItem[] = [];
+    if (showUnified && data?.totalRealizedGainInBase != null) {
+      items.push({ label: `Realized (${unifiedCurrency})`, value: visibleTotalInBase, currency: unifiedCurrency, tone: "auto", showSign: true });
+    } else {
+      for (const [ccy, t] of Object.entries(visibleByCurrency)) {
+        items.push({ label: `Realized (${ccy})`, value: t.realizedGain, currency: ccy, tone: "auto", showSign: true });
+      }
+    }
+    items.push({ label: "Closed lots", value: visibleRows.length });
+    return items;
+  }, [data, showUnified, unifiedCurrency, visibleTotalInBase, visibleByCurrency, visibleRows.length]);
 
   // FINLYNQ-193 — CSV now reflects the active hide-zero + group-by state, so
   // the download byte-matches what's on screen. Built CLIENT-SIDE from the
@@ -321,279 +378,319 @@ export default function RealizedGainsPage() {
     CURRENT_YEAR - 3,
   ];
 
+  const exportDisabled = loading || !data || visibleCount === 0;
+
+  // Subtitle = the active period and view, so the header says what is on screen.
+  const periodLabel = [
+    taxYear ? String(taxYear) : "All time",
+    term === "all" ? "All terms" : term === "short" ? "Short-term" : "Long-term",
+    showUnified ? unifiedCurrency : "Native currency",
+  ].join(" · ");
+
+  // Rendered twice (md+ toolbar and the mobile sheet); no element ids inside, so no clash.
+  const filterFields = (
+    <>
+      <ChipGroup
+        label="Tax year"
+        options={[
+          ...yearChoices.map((y) => ({ value: String(y), label: String(y) })),
+          { value: "all", label: "All time" },
+        ]}
+        value={taxYear === null ? "all" : String(taxYear)}
+        onChange={(v) => setTaxYear(v === "all" ? null : Number(v))}
+      />
+      <ChipGroup
+        label="Term"
+        options={[
+          { value: "all", label: "All" },
+          { value: "short", label: "Short (≤365d)" },
+          { value: "long", label: "Long (>365d)" },
+        ]}
+        value={term}
+        onChange={(v) => setTerm(v)}
+      />
+      <ChipGroup
+        label="Currency"
+        options={[
+          { value: "native", label: "Native" },
+          { value: "unified", label: `In ${unifiedCurrency}` },
+        ]}
+        value={showUnified ? "unified" : "native"}
+        onChange={(v) => setShowUnified(v === "unified")}
+      />
+      <ChipGroup
+        label="Zero-gain rows"
+        options={[
+          { value: "show", label: "Show all" },
+          { value: "hide", label: "Hide zero-gain" },
+        ]}
+        value={hideZero ? "hide" : "show"}
+        onChange={(v) => setHideZero(v === "hide")}
+      />
+      {/* Mixed-currency rule: grouping sums realized gain across closures,
+          which is only single-currency-safe in the unified display view. */}
+      <ChipGroup
+        label="Group by"
+        options={(["off", "holding", "account", "holding_account"] as const).map((m) => ({ value: m, label: GROUP_MODE_LABELS[m] }))}
+        value={groupMode}
+        onChange={(v) => setGroupMode(v)}
+        disabled={!showUnified}
+      />
+      {!showUnified && (
+        <p className="text-xs text-muted-foreground">
+          Switch to “In {unifiedCurrency}” to group (avoids summing across native currencies).
+        </p>
+      )}
+    </>
+  );
+
   return (
-    <div className="container mx-auto space-y-6 p-6">
+    <div className="space-y-4 md:space-y-6">
       <PageHeader
-        className="flex flex-wrap items-center justify-between gap-3"
+        backHref="/portfolio"
+        backLabel="Back to portfolio"
         title="Realized gains"
+        subtitle={periodLabel}
         titleClassName="text-2xl font-bold tracking-tight"
-        subtitle={<>Lot-level realized gain on every closed sell / transfer-out, per (holding, account).</>}
         subtitleClassName="text-sm text-muted-foreground mt-0.5"
         actions={
-          <div className="flex gap-2">
-            <Link href="/portfolio" className={`text-sm text-muted-foreground hover:underline self-center ${HEADER_DESKTOP_ONLY}`}>
-              ← Overview
-            </Link>
+          <>
+            <CompactOnly as="span">
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label="Filters"
+                onClick={() => setFiltersOpen(true)}
+              >
+                <SlidersHorizontal className="size-4" />
+              </Button>
+            </CompactOnly>
             <Button
               variant="outline"
               size="sm"
               onClick={handleExportCsv}
-              disabled={loading || !data || visibleCount === 0}
+              disabled={exportDisabled}
               className={HEADER_DESKTOP_ONLY}
             >
               <Download className="mr-2 h-4 w-4" /> CSV
             </Button>
-          </div>
+          </>
         }
-        overflow={[
-          { label: "Overview", href: "/portfolio" },
-          { label: "Export CSV", onSelect: handleExportCsv, disabled: loading || !data || visibleCount === 0 },
-        ]}
+        overflow={[{ label: "Export CSV", icon: Download, onSelect: handleExportCsv, disabled: exportDisabled }]}
       />
 
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm text-muted-foreground">Tax year:</span>
-        {yearChoices.map((y) => (
-          <Button
-            key={y}
-            size="sm"
-            variant={taxYear === y ? "default" : "outline"}
-            onClick={() => setTaxYear(y)}
-          >
-            {y}
-          </Button>
-        ))}
-        <Button
-          size="sm"
-          variant={taxYear === null ? "default" : "outline"}
-          onClick={() => setTaxYear(null)}
-        >
-          All time
-        </Button>
-        <span className="ml-4 text-sm text-muted-foreground">Term:</span>
-        {(["all", "short", "long"] as const).map((t) => (
-          <Button
-            key={t}
-            size="sm"
-            variant={term === t ? "default" : "outline"}
-            onClick={() => setTerm(t)}
-          >
-            {t === "short" ? "Short (≤365d)" : t === "long" ? "Long (>365d)" : "All"}
-          </Button>
-        ))}
-        <label className="ml-4 flex items-center gap-2 text-sm cursor-pointer">
-          <input
-            type="checkbox"
-            checked={showUnified}
-            onChange={(e) => setShowUnified(e.target.checked)}
-            className="h-3.5 w-3.5"
-          />
-          <span>Show in {unifiedCurrency}</span>
-        </label>
-        <label className="ml-4 flex items-center gap-2 text-sm cursor-pointer">
-          <input
-            type="checkbox"
-            checked={hideZero}
-            onChange={(e) => setHideZero(e.target.checked)}
-            className="h-3.5 w-3.5"
-          />
-          <span>Hide zero-gain rows</span>
-        </label>
-      </div>
+      {/* md+ filter toolbar (below md the same fields live in ReportFilterSheet). */}
+      <FromMd className="flex flex-wrap gap-x-8 gap-y-4 rounded-xl border border-border/50 bg-card p-4">
+        {filterFields}
+      </FromMd>
+      <ReportFilterSheet open={filtersOpen} onOpenChange={setFiltersOpen} title="Filter realized gains">
+        {filterFields}
+      </ReportFilterSheet>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm text-muted-foreground">Group by:</span>
-        {(["off", "holding", "account", "holding_account"] as const).map((m) => (
-          <Button
-            key={m}
-            size="sm"
-            variant={groupMode === m ? "default" : "outline"}
-            // Mixed-currency rule: grouping sums realized gain across closures,
-            // which is only single-currency-safe in the unified display view.
-            // Disable every non-"off" mode in the native view.
-            disabled={m !== "off" && !showUnified}
-            onClick={() => setGroupMode(m)}
-          >
-            {GROUP_MODE_LABELS[m]}
-          </Button>
-        ))}
-        {!showUnified && (
-          <span className="text-xs text-muted-foreground">
-            Enable “Show in {unifiedCurrency}” to group (avoids summing across native currencies).
-          </span>
-        )}
-      </div>
+      {!loading && data && data.rows.length > 0 && <MetricGrid metrics={summaryMetrics} />}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            {loading
-              ? "Loading…"
-              : data
-                ? grouped
-                  ? `${visibleCount} ${groupMode === "account" ? "account" : groupMode === "holding" ? "holding" : "group"}${visibleCount === 1 ? "" : "s"} · ${visibleRows.length} closed lot${visibleRows.length === 1 ? "" : "s"}`
-                  : `${visibleCount} closed lot${visibleCount === 1 ? "" : "s"}`
-                : "—"}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {/* Summary badges reflect the VISIBLE (hide-zero-filtered) set. */}
-          {!loading && data && Object.entries(visibleByCurrency).length > 0 && (
-            <div className="mb-4 flex flex-wrap gap-3 text-sm">
-              {showUnified && data.totalRealizedGainInBase != null ? (
-                <Badge
-                  variant={visibleTotalInBase >= 0 ? "default" : "destructive"}
-                  className="px-3 py-1"
-                >
-                  {formatCurrency(visibleTotalInBase, unifiedCurrency)}{" "}
-                  {unifiedCurrency}
-                </Badge>
+      <section aria-label="Closed lots" className="space-y-2">
+        {loading ? (
+          <PageSkeleton variant="list" rows={3} />
+        ) : loadError ? (
+          <ErrorState title="Couldn't load realized gains" message="We couldn't load your realized gains. Please try again." onRetry={() => setReloadKey((k) => k + 1)} />
+        ) : !data || data.rows.length === 0 ? (
+          <EmptyState
+            icon={Coins}
+            title="No closed lots yet"
+            description="Lots are created on every new sell or in-kind transfer. Pre-Phase-1 history is filled in by the lot backfill admin script."
+            action={{ label: "Record a sale", href: "/portfolio/new?op=sell" }}
+          />
+        ) : visibleCount === 0 ? (
+          <div className="flex flex-col items-start gap-3 rounded-xl border border-border/50 bg-card p-4">
+            <p className="text-sm text-muted-foreground">
+              No rows match the current filters. Every closure in this range has a zero realized gain.
+            </p>
+            <Button variant="outline" size="sm" onClick={() => setHideZero(false)}>
+              Show zero-gain rows
+            </Button>
+          </div>
+        ) : (
+          <>
+            <CompactOnly>
+              {grouped ? (
+                <SectionCard label={groupMode === "account" ? "By account" : groupMode === "holding" ? "By holding" : "By holding and account"} padded={false} className="divide-y divide-border/50 px-3">
+                  {groupRows.map((g) => (
+                    <ListRow
+                      key={g.key}
+                      title={groupMode === "account" ? g.accountLabel : g.holdingLabel}
+                      subtitle={`${g.closureCount} closure${g.closureCount === 1 ? "" : "s"} · ${g.qtyClosed} sh · ${g.earliestClose === g.latestClose ? g.earliestClose : `${g.earliestClose} → ${g.latestClose}`}`}
+                      value={<Amount value={g.realizedGain} currency={unifiedCurrency} size="md" tone="auto" showSign />}
+                    />
+                  ))}
+                </SectionCard>
               ) : (
-                Object.entries(visibleByCurrency).map(([ccy, t]) => (
-                  <Badge
-                    key={ccy}
-                    variant={t.realizedGain >= 0 ? "default" : "destructive"}
-                    className="px-3 py-1"
-                  >
-                    {formatCurrency(t.realizedGain, ccy)} {ccy}
-                  </Badge>
+                Array.from(groupLotsByMonth(visibleRows)).map(([ym, lots]) => (
+                  <section key={ym} className="space-y-2">
+                    <SectionLabel>{monthLabel(ym)}</SectionLabel>
+                    <SectionCard padded={false} className="divide-y divide-border/50 px-3">
+                      {lots.map((r) => {
+                        const inBase = showUnified && r.realizedGainInBase != null && r.baseCurrency;
+                        const amount = inBase ? r.realizedGainInBase! : r.realizedGain;
+                        const ccy = inBase ? r.baseCurrency! : r.currency;
+                        const pct = gainPctOf(r);
+                        return (
+                          <ListRow
+                            key={r.closureId}
+                            title={holdingLabelOf(r)}
+                            subtitle={`${r.closeDate} · ${accountLabelOf(r)}`}
+                            value={<Amount value={amount} currency={ccy} size="md" tone="auto" showSign />}
+                            secondary={pct == null ? undefined : signedPercent(pct)}
+                            secondaryTone={pct == null ? "muted" : pct >= 0 ? "pos" : "neg"}
+                            onPress={() => setOpenLot(r)}
+                            aria-label={`${holdingLabelOf(r)}, closed ${r.closeDate}`}
+                          />
+                        );
+                      })}
+                    </SectionCard>
+                  </section>
                 ))
               )}
-            </div>
-          )}
-          {loading ? (
-            <PageSkeleton variant="list" rows={3} />
-          ) : loadError ? (
-            <ErrorState title="Couldn't load realized gains" message="We couldn't load your realized gains. Please try again." onRetry={() => setReloadKey((k) => k + 1)} />
-          ) : !data || data.rows.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No closed lots in this range yet. Lots are created on every new sell / in-kind
-              transfer; pre-Phase-1 history is filled in by the lot backfill admin script.
-            </p>
-          ) : visibleCount === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No rows match the current filters. Every closure in this range has a zero
-              realized gain — turn off “Hide zero-gain rows” to see them.
-            </p>
-          ) : grouped ? (
-            // FINLYNQ-193 — rolled-up grouped view. Per-share + date columns
-            // collapse (not meaningful aggregated); we show qty + a closure
-            // count + a date range + the summed realized gain (always in the
-            // unified display currency, since grouping is unified-only).
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  {groupMode !== "account" && <TableHead>Holding</TableHead>}
-                  {groupMode !== "holding" && <TableHead>Account</TableHead>}
-                  <TableHead className="text-right">Closures</TableHead>
-                  <TableHead className="text-right">Qty</TableHead>
-                  <TableHead>Date range</TableHead>
-                  <TableHead className="text-right">Realized ({unifiedCurrency})</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {groupRows.map((g) => (
-                  <TableRow key={g.key}>
-                    {groupMode !== "account" && (
-                      <TableCell>{g.holdingLabel}</TableCell>
-                    )}
-                    {groupMode !== "holding" && (
-                      <TableCell>{g.accountLabel}</TableCell>
-                    )}
-                    <TableCell className="text-right">{g.closureCount}</TableCell>
-                    <TableCell className="text-right">{g.qtyClosed}</TableCell>
-                    <TableCell className="font-mono text-xs">
-                      {g.earliestClose === g.latestClose
-                        ? g.earliestClose
-                        : `${g.earliestClose} → ${g.latestClose}`}
-                    </TableCell>
-                    <TableCell
-                      className={`text-right font-mono ${
-                        g.realizedGain >= 0 ? "text-pos" : "text-destructive"
-                      }`}
-                    >
-                      {formatCurrency(g.realizedGain, unifiedCurrency)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Closed</TableHead>
-                  <TableHead>Opened</TableHead>
-                  <TableHead>Days</TableHead>
-                  <TableHead>Term</TableHead>
-                  <TableHead>Holding</TableHead>
-                  <TableHead>Account</TableHead>
-                  <TableHead className="text-right">Qty</TableHead>
-                  <TableHead className="text-right">Cost / sh</TableHead>
-                  <TableHead className="text-right">Proceeds / sh</TableHead>
-                  <TableHead className="text-right">Realized</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {visibleRows.map((r) => {
-                  const kindMeta = CLOSE_KIND_META[r.closeKind] ?? null;
-                  const KindIcon = kindMeta?.icon ?? null;
-                  return (
-                  <TableRow key={r.closureId}>
-                    <TableCell className="font-mono text-xs">{r.closeDate}</TableCell>
-                    <TableCell className="font-mono text-xs">{r.openDate}</TableCell>
-                    <TableCell className="text-xs">{r.daysHeld}</TableCell>
-                    <TableCell>
-                      <Badge variant={r.term === "long" ? "secondary" : "outline"}>
-                        {r.term}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {KindIcon && (
-                          <KindIcon className={`h-3.5 w-3.5 ${kindMeta!.className.split(" ").filter(c => c.startsWith("text-")).join(" ")}`} />
+            </CompactOnly>
+
+            <FromMd>
+              {grouped ? (
+                // FINLYNQ-193 — rolled-up grouped view. Per-share + date columns
+                // collapse (not meaningful aggregated); we show qty + a closure
+                // count + a date range + the summed realized gain (always in the
+                // unified display currency, since grouping is unified-only).
+                <Table containerClassName="max-h-[70dvh] overflow-y-auto rounded-xl border border-border/50">
+                  <TableHeader className="sticky top-0 z-10 bg-card">
+                    <TableRow>
+                      {groupMode !== "account" && <TableHead>Holding</TableHead>}
+                      {groupMode !== "holding" && <TableHead>Account</TableHead>}
+                      <TableHead className="text-right">Closures</TableHead>
+                      <TableHead className="text-right">Qty</TableHead>
+                      <TableHead>Date range</TableHead>
+                      <TableHead className="text-right">Realized ({unifiedCurrency})</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {groupRows.map((g) => (
+                      <TableRow key={g.key}>
+                        {groupMode !== "account" && (
+                          <TableCell>{g.holdingLabel}</TableCell>
                         )}
-                        <span>{r.holdingName ?? `#${r.holdingId}`}</span>
-                        {kindMeta && (
-                          <Badge
-                            variant="outline"
-                            className={`text-xs h-5 px-1 ${kindMeta.className}`}
-                            title={kindMeta.tooltip}
-                          >
-                            {kindMeta.label}
-                          </Badge>
+                        {groupMode !== "holding" && (
+                          <TableCell>{g.accountLabel}</TableCell>
                         )}
-                      </div>
-                    </TableCell>
-                    <TableCell>{r.accountName ?? `#${r.accountId}`}</TableCell>
-                    <TableCell className="text-right">{r.qtyClosed}</TableCell>
-                    <TableCell className="text-right font-mono">
-                      {formatCurrency(r.costPerShare, r.currency)}
-                    </TableCell>
-                    <TableCell className="text-right font-mono">
-                      {formatCurrency(r.proceedsPerShare, r.currency)}
-                    </TableCell>
-                    <TableCell
-                      className={`text-right font-mono ${
-                        (showUnified && r.realizedGainInBase != null
-                          ? r.realizedGainInBase
-                          : r.realizedGain) >= 0
-                          ? "text-pos"
-                          : "text-destructive"
-                      }`}
-                    >
-                      {showUnified && r.realizedGainInBase != null && r.baseCurrency
-                        ? formatCurrency(r.realizedGainInBase, r.baseCurrency)
-                        : formatCurrency(r.realizedGain, r.currency)}
-                    </TableCell>
-                  </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+                        <TableCell className="text-right">{g.closureCount}</TableCell>
+                        <TableCell className="text-right">{g.qtyClosed}</TableCell>
+                        <TableCell className="font-mono text-xs">
+                          {g.earliestClose === g.latestClose
+                            ? g.earliestClose
+                            : `${g.earliestClose} → ${g.latestClose}`}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Amount value={g.realizedGain} currency={unifiedCurrency} size="md" tone="auto" showSign className="font-mono" />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <Table containerClassName="max-h-[70dvh] overflow-y-auto rounded-xl border border-border/50">
+                  <TableHeader className="sticky top-0 z-10 bg-card">
+                    <TableRow>
+                      <TableHead>Closed</TableHead>
+                      <TableHead>Opened</TableHead>
+                      <TableHead>Days</TableHead>
+                      <TableHead>Term</TableHead>
+                      <TableHead>Holding</TableHead>
+                      <TableHead>Account</TableHead>
+                      <TableHead className="text-right">Qty</TableHead>
+                      <TableHead className="text-right">Cost / sh</TableHead>
+                      <TableHead className="text-right">Proceeds / sh</TableHead>
+                      <TableHead className="text-right">Realized</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {visibleRows.map((r) => {
+                      const kindMeta = CLOSE_KIND_META[r.closeKind] ?? null;
+                      const KindIcon = kindMeta?.icon ?? null;
+                      const inBase = showUnified && r.realizedGainInBase != null && r.baseCurrency;
+                      return (
+                        <TableRow key={r.closureId}>
+                          <TableCell className="font-mono text-xs">{r.closeDate}</TableCell>
+                          <TableCell className="font-mono text-xs">{r.openDate}</TableCell>
+                          <TableCell className="text-xs">{r.daysHeld}</TableCell>
+                          <TableCell>
+                            <Badge variant={r.term === "long" ? "secondary" : "outline"}>
+                              {r.term}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              {KindIcon && (
+                                <KindIcon className={`h-3.5 w-3.5 ${kindMeta!.className.split(" ").filter(c => c.startsWith("text-")).join(" ")}`} />
+                              )}
+                              <span>{holdingLabelOf(r)}</span>
+                              {kindMeta && (
+                                <Badge
+                                  variant="outline"
+                                  className={`text-xs h-5 px-1 ${kindMeta.className}`}
+                                  title={kindMeta.tooltip}
+                                >
+                                  {kindMeta.label}
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>{accountLabelOf(r)}</TableCell>
+                          <TableCell className="text-right">{r.qtyClosed}</TableCell>
+                          <TableCell className="text-right font-mono">
+                            {formatCurrency(r.costPerShare, r.currency)}
+                          </TableCell>
+                          <TableCell className="text-right font-mono">
+                            {formatCurrency(r.proceedsPerShare, r.currency)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Amount
+                              value={inBase ? r.realizedGainInBase! : r.realizedGain}
+                              currency={inBase ? r.baseCurrency! : r.currency}
+                              size="md"
+                              tone="auto"
+                              showSign
+                              className="font-mono"
+                            />
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              )}
+            </FromMd>
+          </>
+        )}
+      </section>
+
+      {openLot && (
+        <DetailSheet
+          open
+          onOpenChange={(o) => !o && setOpenLot(null)}
+          title={holdingLabelOf(openLot)}
+          description={CLOSE_KIND_META[openLot.closeKind]?.tooltip}
+          items={lotDetailItems(openLot)}
+        />
+      )}
     </div>
   );
+}
+
+/** Lots bucketed by close month ("YYYY-MM"), keeping the API's newest-first order. */
+function groupLotsByMonth(rows: ApiRow[]): Map<string, ApiRow[]> {
+  const out = new Map<string, ApiRow[]>();
+  for (const r of rows) {
+    const ym = r.closeDate.slice(0, 7);
+    const list = out.get(ym);
+    if (list) list.push(r);
+    else out.set(ym, [r]);
+  }
+  return out;
 }

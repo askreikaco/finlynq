@@ -13,28 +13,34 @@
  * collapses to a single reporting-currency Total computed from STORED
  * `reporting_amount` (`reportingCurrency=1`, never a render-time FX
  * conversion); date filters (from/to + tax-year) wired across all three views.
+ *
+ * Presentation: a PageHeader page (not a dialog). Below md the groups are
+ * ListRows (tap = DetailSheet); md+ keeps the table with a sticky header.
  */
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Download } from "lucide-react";
-import { formatCurrency } from "@/lib/currency";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Download, SlidersHorizontal, Coins } from "lucide-react";
 import { useDisplayCurrency } from "@/components/currency-provider";
-import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
+import {
+  PageHeader,
+  HEADER_DESKTOP_ONLY,
+  Amount,
+  CompactOnly,
+  DetailSheet,
+  FromMd,
+  ListRow,
+  MetricGrid,
+  SectionCard,
+  type DetailItem,
+  type MetricItem,
+} from "@/components/mobile";
 import { ErrorState } from "@/components/error-state";
+import { EmptyState } from "@/components/empty-state";
 import { PageSkeleton } from "@/components/page-skeleton";
+import { ChipGroup, ReportFilterSheet } from "../_components/report-controls";
 
 interface CurrencyCell {
   amount: number;
@@ -87,6 +93,8 @@ export default function DividendsPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [openGroup, setOpenGroup] = useState<GroupRow | null>(null);
 
   // Build the shared param set (used by both the fetch and the CSV link) so
   // the export always reflects the active mode + filters.
@@ -140,73 +148,62 @@ export default function DividendsPage() {
     setTaxYear("");
   }
 
-  return (
-    <div className="container mx-auto space-y-6 p-6">
-      <PageHeader
-        className="flex flex-wrap items-start justify-between gap-3"
-        title="Dividend income"
-        titleClassName="text-2xl font-bold tracking-tight"
-        subtitle={<>Every transaction categorized as Dividends, including reinvestments and
-        withholding-tax entries.</>}
-        subtitleClassName="text-sm text-muted-foreground mt-0.5"
-        actions={
-          <div className="flex gap-2">
-            <Link href="/portfolio" className={`text-sm text-muted-foreground hover:underline self-center ${HEADER_DESKTOP_ONLY}`}>
-              ← Overview
-            </Link>
-            <a
-              href={csvHref}
-              className={`${buttonVariants({ variant: "outline", size: "sm" })} ${HEADER_DESKTOP_ONLY}`}
-            >
-              <Download className="mr-2 h-4 w-4" /> CSV
-            </a>
-          </div>
-        }
-        overflow={[
-          { label: "Overview", href: "/portfolio" },
-          { label: "Export CSV", onSelect: () => window.location.assign(csvHref) },
-        ]}
+  const summaryMetrics = useMemo<MetricItem[]>(() => {
+    if (!data) return [];
+    const items: MetricItem[] = [];
+    if (reporting) {
+      items.push({ label: `Total (${reportingCcy})`, value: data.totals.amount, currency: reportingCcy, tone: "auto", showSign: true });
+    } else {
+      for (const [ccy, total] of Object.entries(data.totals.byCurrency)) {
+        items.push({ label: `Total (${ccy})`, value: total, currency: ccy, tone: "auto", showSign: true });
+      }
+    }
+    items.push({ label: "Dividend rows", value: data.totals.rowCount });
+    return items;
+  }, [data, reporting, reportingCcy]);
+
+  const periodLabel = [
+    groupBy === "year" ? "By year" : groupBy === "quarter" ? "By quarter" : "By holding",
+    reporting ? reportingCcy : "Native currency",
+    hasFilters ? "Filtered" : taxYear ? taxYear : "All years",
+  ].join(" · ");
+
+  // Amounts for one group: reporting total, or one amount per currency (native pivot).
+  const groupAmounts = (g: GroupRow) =>
+    reporting ? (
+      <Amount value={g.amount} currency={reportingCcy} size="md" tone="auto" showSign />
+    ) : (
+      currencyColumns.map((c) => {
+        const cell = g.byCurrency?.[c];
+        return cell ? (
+          <Amount key={c} value={cell.amount} currency={c} size="md" tone="auto" showSign />
+        ) : null;
+      })
+    );
+
+  // idp keeps element ids unique: the fields render twice (md+ toolbar and the mobile sheet).
+  const filterFields = (idp: string) => (
+    <>
+      <ChipGroup
+        label="Group by"
+        options={(["year", "quarter", "holding"] as const).map((g) => ({ value: g, label: g[0].toUpperCase() + g.slice(1) }))}
+        value={groupBy}
+        onChange={(v) => setGroupBy(v)}
       />
-
-      {/* Controls: group-by + reporting toggle */}
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm text-muted-foreground">Group by:</span>
-          {(["year", "quarter", "holding"] as const).map((g) => (
-            <Button
-              key={g}
-              size="sm"
-              variant={groupBy === g ? "default" : "outline"}
-              onClick={() => setGroupBy(g)}
-            >
-              {g[0].toUpperCase() + g.slice(1)}
-            </Button>
-          ))}
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Show in:</span>
-          <Button
-            size="sm"
-            variant={reporting ? "outline" : "default"}
-            onClick={() => setReporting(false)}
-          >
-            Native currency
-          </Button>
-          <Button
-            size="sm"
-            variant={reporting ? "default" : "outline"}
-            onClick={() => setReporting(true)}
-          >
-            Reporting currency
-          </Button>
-        </div>
-      </div>
-
-      {/* Date filters — apply across all three views */}
+      <ChipGroup
+        label="Show in"
+        options={[
+          { value: "native", label: "Native currency" },
+          { value: "reporting", label: "Reporting currency" },
+        ]}
+        value={reporting ? "reporting" : "native"}
+        onChange={(v) => setReporting(v === "reporting")}
+      />
       <div className="flex flex-wrap items-end gap-3">
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-muted-foreground">Tax year</label>
+          <label htmlFor={`${idp}-tax-year`} className="text-xs font-semibold text-muted-foreground">Tax year</label>
           <select
+            id={`${idp}-tax-year`}
             value={taxYear}
             onChange={(e) => {
               setTaxYear(e.target.value);
@@ -216,7 +213,7 @@ export default function DividendsPage() {
                 setTo("");
               }
             }}
-            className="h-8 rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+            className="h-11 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30 md:h-8 md:text-sm"
           >
             <option value="">All years</option>
             {TAX_YEARS.map((y) => (
@@ -227,8 +224,9 @@ export default function DividendsPage() {
           </select>
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-muted-foreground">From</label>
+          <label htmlFor={`${idp}-from`} className="text-xs font-semibold text-muted-foreground">From</label>
           <Input
+            id={`${idp}-from`}
             type="date"
             value={from}
             onChange={(e) => {
@@ -239,8 +237,9 @@ export default function DividendsPage() {
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-muted-foreground">To</label>
+          <label htmlFor={`${idp}-to`} className="text-xs font-semibold text-muted-foreground">To</label>
           <Input
+            id={`${idp}-to`}
             type="date"
             value={to}
             onChange={(e) => {
@@ -256,63 +255,91 @@ export default function DividendsPage() {
           </Button>
         )}
       </div>
+    </>
+  );
 
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            {loading
-              ? "Loading…"
-              : data
-                ? `${data.totals.rowCount} dividend row${data.totals.rowCount === 1 ? "" : "s"}`
-                : "—"}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {/* Total badges — collapse to a single reporting-currency badge in reporting mode */}
-          {!loading && data && Object.entries(data.totals.byCurrency).length > 0 && (
-            <div className="mb-4 flex flex-wrap gap-3 text-sm">
-              {reporting ? (
-                <Badge
-                  variant={data.totals.amount >= 0 ? "default" : "destructive"}
-                  className="px-3 py-1"
-                >
-                  {formatCurrency(data.totals.amount, reportingCcy)} {reportingCcy}
-                </Badge>
-              ) : (
-                Object.entries(data.totals.byCurrency).map(([ccy, total]) => (
-                  <Badge
-                    key={ccy}
-                    variant={total >= 0 ? "default" : "destructive"}
-                    className="px-3 py-1"
-                  >
-                    {formatCurrency(total, ccy)} {ccy}
-                  </Badge>
-                ))
-              )}
-            </div>
-          )}
+  return (
+    <div className="space-y-4 md:space-y-6">
+      <PageHeader
+        backHref="/portfolio"
+        backLabel="Back to portfolio"
+        title="Dividend income"
+        subtitle={periodLabel}
+        titleClassName="text-2xl font-bold tracking-tight"
+        subtitleClassName="text-sm text-muted-foreground mt-0.5"
+        actions={
+          <>
+            <CompactOnly as="span">
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label="Filters"
+                onClick={() => setFiltersOpen(true)}
+              >
+                <SlidersHorizontal className="size-4" />
+              </Button>
+            </CompactOnly>
+            <a
+              href={csvHref}
+              className={`${buttonVariants({ variant: "outline", size: "sm" })} ${HEADER_DESKTOP_ONLY}`}
+            >
+              <Download className="mr-2 h-4 w-4" /> CSV
+            </a>
+          </>
+        }
+        overflow={[{ label: "Export CSV", icon: Download, onSelect: () => window.location.assign(csvHref) }]}
+      />
 
-          {reporting && data && (data.totals.unratedCount ?? 0) > 0 && (
-            <p className="mb-3 text-xs text-warning">
-              Re-rating in progress: {data.totals.unratedCount} row
-              {data.totals.unratedCount === 1 ? "" : "s"} not yet converted to{" "}
-              {reportingCcy} and excluded from the totals. Reload shortly.
-            </p>
-          )}
+      {/* md+ filter toolbar (below md the same fields live in ReportFilterSheet). */}
+      <FromMd className="flex flex-wrap gap-x-8 gap-y-4 rounded-xl border border-border/50 bg-card p-4">
+        {filterFields("toolbar")}
+      </FromMd>
+      <ReportFilterSheet open={filtersOpen} onOpenChange={setFiltersOpen} title="Filter dividends">
+        {filterFields("sheet")}
+      </ReportFilterSheet>
 
-          {loading ? (
-            <PageSkeleton variant="list" rows={3} />
-          ) : loadError ? (
-            <ErrorState title="Couldn't load dividends" message="We couldn't load your dividend income. Please try again." onRetry={() => setReloadKey((k) => k + 1)} />
-          ) : !data || !data.groups || data.groups.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No dividend transactions yet. Tag dividend payouts with a category named
-              &quot;Dividends&quot; for them to show up here.
-            </p>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
+      {!loading && data && data.totals.rowCount > 0 && <MetricGrid metrics={summaryMetrics} />}
+
+      {reporting && data && (data.totals.unratedCount ?? 0) > 0 && (
+        <p className="text-xs text-warning">
+          Re-rating in progress: {data.totals.unratedCount} row
+          {data.totals.unratedCount === 1 ? "" : "s"} not yet converted to{" "}
+          {reportingCcy} and excluded from the totals. Reload shortly.
+        </p>
+      )}
+
+      <section aria-label="Dividend groups" className="space-y-2">
+        {loading ? (
+          <PageSkeleton variant="list" rows={3} />
+        ) : loadError ? (
+          <ErrorState title="Couldn't load dividends" message="We couldn't load your dividend income. Please try again." onRetry={() => setReloadKey((k) => k + 1)} />
+        ) : !data || !data.groups || data.groups.length === 0 ? (
+          <EmptyState
+            icon={Coins}
+            title="No dividend income yet"
+            description='Tag dividend payouts with a category named "Dividends" for them to show up here.'
+            action={{ label: "Record a dividend", href: "/portfolio/new?op=income-expense" }}
+          />
+        ) : (
+          <>
+            <CompactOnly>
+              <SectionCard label={firstHeader} padded={false} className="divide-y divide-border/50 px-3">
+                {data.groups.map((g) => (
+                  <ListRow
+                    key={g.bucket}
+                    title={g.label}
+                    subtitle={`${g.rowCount} row${g.rowCount === 1 ? "" : "s"} · ${g.reinvestedCount} reinvested · ${g.withholdingCount} withholding`}
+                    value={groupAmounts(g)}
+                    onPress={() => setOpenGroup(g)}
+                    aria-label={`${g.label}, ${g.rowCount} dividend rows`}
+                  />
+                ))}
+              </SectionCard>
+            </CompactOnly>
+
+            <FromMd>
+              <Table containerClassName="max-h-[70dvh] overflow-y-auto rounded-xl border border-border/50">
+                <TableHeader className="sticky top-0 z-10 bg-card">
                   <TableRow>
                     <TableHead>{firstHeader}</TableHead>
                     <TableHead className="text-right">Rows</TableHead>
@@ -337,28 +364,19 @@ export default function DividendsPage() {
                       <TableCell className="text-right">{g.reinvestedCount}</TableCell>
                       <TableCell className="text-right">{g.withholdingCount}</TableCell>
                       {reporting ? (
-                        <TableCell
-                          className={`text-right font-mono ${
-                            g.amount >= 0 ? "text-pos" : "text-destructive"
-                          }`}
-                        >
-                          {formatCurrency(g.amount, reportingCcy)}
+                        <TableCell className="text-right">
+                          <Amount value={g.amount} currency={reportingCcy} size="md" tone="auto" showSign className="font-mono" />
                         </TableCell>
                       ) : (
                         currencyColumns.map((c) => {
                           const cell = g.byCurrency?.[c];
                           return (
-                            <TableCell
-                              key={c}
-                              className={`text-right font-mono ${
-                                cell
-                                  ? cell.amount >= 0
-                                    ? "text-pos"
-                                    : "text-destructive"
-                                  : "text-muted-foreground"
-                              }`}
-                            >
-                              {cell ? formatCurrency(cell.amount, c) : "—"}
+                            <TableCell key={c} className="text-right">
+                              {cell ? (
+                                <Amount value={cell.amount} currency={c} size="md" tone="auto" showSign className="font-mono" />
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
                             </TableCell>
                           );
                         })
@@ -367,10 +385,41 @@ export default function DividendsPage() {
                   ))}
                 </TableBody>
               </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            </FromMd>
+          </>
+        )}
+      </section>
+
+      {openGroup && (
+        <DetailSheet
+          open
+          onOpenChange={(o) => !o && setOpenGroup(null)}
+          title={openGroup.label}
+          description={`${firstHeader} · ${reporting ? reportingCcy : "native currency"}`}
+          items={groupDetailItems(openGroup, reporting, reportingCcy, currencyColumns)}
+        />
+      )}
     </div>
   );
+}
+
+/** Fields a dividend group row leaves out: counts and each currency's amount. */
+function groupDetailItems(g: GroupRow, reporting: boolean, reportingCcy: string, currencies: string[]): DetailItem[] {
+  const items: DetailItem[] = [
+    { label: "Dividend rows", value: g.rowCount },
+    { label: "Reinvested", value: g.reinvestedCount },
+    { label: "Withholding", value: g.withholdingCount },
+  ];
+  if (reporting) {
+    items.push({ label: `Total (${reportingCcy})`, value: <Amount value={g.amount} currency={reportingCcy} size="md" tone="auto" showSign /> });
+  } else {
+    for (const c of currencies) {
+      const cell = g.byCurrency?.[c];
+      items.push({
+        label: `Total (${c})`,
+        value: cell ? <Amount value={cell.amount} currency={c} size="md" tone="auto" showSign /> : "—",
+      });
+    }
+  }
+  return items;
 }
