@@ -94,7 +94,7 @@ describe("compact new-transaction layout", () => {
     seedPrefill({ amount: "" });
     render(<Page />);
     fireEvent.click(screen.getByText("0.00").closest("button") as HTMLElement);
-    const wrapper = screen.getByRole("button", { name: "OK" }).closest(".fixed") as HTMLElement;
+    const wrapper = screen.getByRole("button", { name: "Done" }).closest(".fixed") as HTMLElement;
     expect(wrapper).toBeTruthy();
     expect(wrapper.className).toContain("max-md:bottom-[var(--sab,0px)]");
     expect(wrapper.className).not.toContain("--mobile-bar-clearance");
