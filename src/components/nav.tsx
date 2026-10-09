@@ -420,7 +420,13 @@ export const Nav = memo(function Nav({ instanceAdminEnabled = false, categoriesM
 });
 
 // Full-screen entry flows: the mobile tab bar is hidden so the form and its Save/Continue are never overlapped.
-const FULL_SCREEN_ENTRY_ROUTES = ["/transactions/new", "/accounts/new"] as const;
+const FULL_SCREEN_ENTRY_ROUTES = [
+  "/transactions/new",
+  "/accounts/new",
+  "/settings/investments/securities",
+  "/settings/investments/accounts",
+  "/settings/investments/cash-sleeves",
+] as const;
 
 // Mobile bottom bar
 export const MobileBottomBar = memo(function MobileBottomBar({ pathname }: { pathname: string }) {

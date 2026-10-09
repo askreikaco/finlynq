@@ -86,14 +86,14 @@ describe("resolveFab", () => {
 });
 
 describe("FAB_ROUTES table", () => {
-  it("has 79 route keys (71 + 8 portfolio operation pages)", () => {
-    expect(Object.keys(FAB_ROUTES)).toHaveLength(79);
+  it("has 85 route keys (79 + 6 investments settings pages)", () => {
+    expect(Object.keys(FAB_ROUTES)).toHaveLength(85);
   });
 
-  it("kind counts are 38 fallback, 9 route, 14 handler, 15 hidden, 3 redirect", () => {
+  it("kind counts are 38 fallback, 10 route, 13 handler, 21 hidden, 3 redirect", () => {
     const counts: Record<string, number> = {};
     for (const e of Object.values(FAB_ROUTES)) counts[e.kind] = (counts[e.kind] ?? 0) + 1;
-    expect(counts).toEqual({ fallback: 38, route: 9, handler: 14, hidden: 15, redirect: 3 });
+    expect(counts).toEqual({ fallback: 38, route: 10, handler: 13, hidden: 21, redirect: 3 });
   });
 
   it("label/href table for the route entries", () => {
@@ -110,13 +110,14 @@ describe("FAB_ROUTES table", () => {
       ["/portfolio/dividends", "Record dividend", "/portfolio/new/income-expense"],
       ["/portfolio/realized-gains", "Record sale", "/portfolio/new/sell"],
       ["/settings/backfill/[runId]", "New run", "/settings/backfill"],
+      ["/settings/investments", "Add security", "/settings/investments/securities/new"],
       ["/transactions", "Add transaction", "/transactions/new"],
     ]);
   });
 
-  it("every handler key is unique and the 14 keys are all used", () => {
+  it("every handler key is unique and the 13 keys are all used", () => {
     const used = Object.values(FAB_ROUTES).flatMap((e) => (e.kind === "handler" ? [e.handlerKey] : []));
-    expect(used).toHaveLength(14);
+    expect(used).toHaveLength(13);
     expect(new Set(used).size).toBe(used.length);
     expect([...used].sort()).toEqual([...FAB_HANDLER_KEYS].sort());
   });

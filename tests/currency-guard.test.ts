@@ -217,8 +217,8 @@ const ALLOW_LIST = [
     reason: "Onboarding form useState currency default",
   },
   {
-    file: "src/app/(app)/settings/investments/page.tsx",
-    line: `const [addCurrency, setAddCurrency] = useState("USD");`,
+    file: "src/app/(app)/settings/investments/_components/add-security-form.tsx",
+    line: `const [currency, setCurrency] = useState("USD");`,
     count: 1,
     reason: "Investment settings form useState currency default",
   },

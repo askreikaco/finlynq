@@ -6,14 +6,14 @@ Base `99e332df` (branch `wave4/w4-4-5-docs`). Generated 2026-10-09 (UTC+7 VN). S
 
 | check | value |
 |---|---|
-| `find "src/app/(app)" -name page.tsx \| sort \| wc -l` | 79 |
-| table rows below (route rows) | 79 |
-| pages with own `<PageHeader` in page.tsx | 49 |
+| `find "src/app/(app)" -name page.tsx \| sort \| wc -l` | 85 |
+| table rows below (route rows) | 85 |
+| pages with own `<PageHeader` in page.tsx | 55 |
 | pages with PageHeader only via an imported module or alias | 12 |
 | pages with header from a layout only | 3 |
 | pages with no PageHeader found | 7 |
 | pages with ErrorState (direct or via imports) | 10 |
-| pages with PageSkeleton (direct or via imports) | 7 |
+| pages with PageSkeleton (direct or via imports) | 11 |
 | pages that re-export another page module | 7 |
 
 Pages with ErrorState: `/accounts/[id]`, `/accounts`, `/budgets`, `/categories/[id]`, `/categories`, `/dashboard`, `/goals`, `/loans`, `/settings/investments`, `/subscriptions`.
@@ -99,7 +99,13 @@ Pages with PageSkeleton: `/budgets`, `/categories/[id]`, `/categories`, `/goals`
 | `/settings/import` | `src/app/(app)/settings/import/page.tsx` | app > settings/layout.tsx (SettingsShell) | via import (settings/reconciliation/page.tsx:136) | no | no | re-exports `/settings/reconciliation/page` (page source) |
 | `/settings/import/reconcile-visibility` | `src/app/(app)/settings/import/reconcile-visibility/page.tsx` | app > settings/layout.tsx (SettingsShell) | yes (page.tsx:20); backHref + backLabel | no | no | in SELF_BACK_PATHS (src/components/settings-shell.tsx:79) |
 | `/settings/integrations` | `src/app/(app)/settings/integrations/page.tsx` | app > settings/layout.tsx (SettingsShell) | yes (page.tsx:76) | no | no | - |
-| `/settings/investments` | `src/app/(app)/settings/investments/page.tsx` | app > settings/layout.tsx (SettingsShell) | yes (page.tsx:788) | yes (page.tsx:739) | yes (page.tsx:746) | - |
+| `/settings/investments` | `src/app/(app)/settings/investments/page.tsx` | app > settings/layout.tsx (SettingsShell) | yes (page.tsx:358) | yes (page.tsx:309) | yes (page.tsx:316) | - |
+| `/settings/investments/securities/new` | `src/app/(app)/settings/investments/securities/new/page.tsx` | app > settings/layout.tsx (SettingsShell) | yes (page.tsx:18) | no | no | form: _components/add-security-form.tsx |
+| `/settings/investments/securities/[id]/edit` | `src/app/(app)/settings/investments/securities/[id]/edit/page.tsx` | app > settings/layout.tsx (SettingsShell) | yes (page.tsx:48) | yes (page.tsx:26) | no | form: _components/edit-security-form.tsx |
+| `/settings/investments/securities/[id]/link` | `src/app/(app)/settings/investments/securities/[id]/link/page.tsx` | app > settings/layout.tsx (SettingsShell) | yes (page.tsx:50) | yes (page.tsx:26) | no | form: _components/link-form.tsx |
+| `/settings/investments/securities/[id]/prices` | `src/app/(app)/settings/investments/securities/[id]/prices/page.tsx` | app > settings/layout.tsx (SettingsShell) | yes (page.tsx:48) | yes (page.tsx:26) | no | panel: _components/manage-prices-dialog.tsx |
+| `/settings/investments/accounts/[id]/link` | `src/app/(app)/settings/investments/accounts/[id]/link/page.tsx` | app > settings/layout.tsx (SettingsShell) | yes (page.tsx:50) | yes (page.tsx:26) | no | form: _components/link-form.tsx |
+| `/settings/investments/cash-sleeves/new` | `src/app/(app)/settings/investments/cash-sleeves/new/page.tsx` | app > settings/layout.tsx (SettingsShell) | yes (page.tsx:23) | no | no | form: src/components/portfolio/cash-sleeve-form.tsx |
 | `/settings` | `src/app/(app)/settings/page.tsx` | app > settings/layout.tsx (SettingsShell) | via import (components/settings-hub.tsx:42) | no | no | - |
 | `/settings/reconciliation` | `src/app/(app)/settings/reconciliation/page.tsx` | app > settings/layout.tsx (SettingsShell) | yes (page.tsx:136) | no | no | - |
 | `/settings/rules` | `src/app/(app)/settings/rules/page.tsx` | app > settings/layout.tsx (SettingsShell) | via import (settings/reconciliation/page.tsx:136) | no | no | re-exports `/settings/reconciliation/page` (page source) |

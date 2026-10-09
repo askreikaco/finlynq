@@ -4,29 +4,27 @@
  * /settings/investments — the consolidated Investments surface (3 tabs).
  *
  * Tab "Securities"   — the catalog: one row per security (Symbol / Description /
- *   Type / Currency), filterable by column header. "Add security" DEFINES a bare
- *   security from a ticker (auto-filling name + currency from the quote lookup
- *   when possible) with NO account — it's a catalog entry until linked. Rename;
- *   Delete is offered only for securities not held in any account.
+ *   Type / Currency), filterable by column header. "Add security" opens the
+ *   full page /settings/investments/securities/new (a bare security with NO
+ *   account until linked). Edit / Prices / link / cash are full pages too; this
+ *   list only navigates to them, passing returnTo=/settings/investments?tab=…
+ *   Delete is offered only for securities not held in any account (confirm dialog).
  * Tab "By security" — collapsible securities → the accounts that hold them, with
- *   "+ Account" to link another account (creates an empty position).
+ *   "+ Account" (page: securities/[id]/link).
  * Tab "By account"  — the reverse: collapsible investment accounts → the
- *   securities they hold, with "+ Security" to add one.
+ *   securities they hold, with "+ Security" (page: accounts/[id]/link) and
+ *   "+ Cash" (page: cash-sleeves/new).
  *
- * Linking (Tab 2/3) reuses POST /api/securities {securityId, accountId};
- * unlinking a tx-free position uses DELETE /api/securities?positionId. Bare
- * create/delete use /api/securities/define; ticker auto-fill uses
- * /api/securities/lookup. Absorbs the former /settings/holding-accounts +
- * /settings/securities pages (both redirect here). Bespoke fetch/useState (NO
- * SWR). → plan/architecture/securities.md
+ * Unlinking a tx-free position uses DELETE /api/securities?positionId; bare
+ * delete uses /api/securities/define. Ticker change and delete stay confirm
+ * dialogs. Bespoke fetch/useState (NO SWR). → plan/architecture/securities.md
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { cn } from "@/lib/utils";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -36,21 +34,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { PageSkeleton } from "@/components/page-skeleton";
@@ -58,7 +41,6 @@ import { ErrorState } from "@/components/error-state";
 import { EmptyState } from "@/components/empty-state";
 import { parseSaveError } from "@/lib/save-error";
 import { formatCurrency } from "@/lib/currency";
-import { useDisplayCurrency } from "@/components/currency-provider";
 import {
   Briefcase,
   Plus,
@@ -72,70 +54,19 @@ import {
   AlertTriangle,
   DollarSign,
 } from "lucide-react";
-import { resolveTickerAdvisory } from "@/lib/securities/ticker-advisories";
-import { ManagePricesDialog } from "./_components/manage-prices-dialog";
+import {
+  INVESTMENTS_HOME,
+  advisoryFor,
+  descriptionOf,
+  noticeText,
+  parseTab,
+  symbolLabel,
+  useInvestmentData,
+  type Account,
+  type InvestmentsTab,
+  type Security,
+} from "./_components/shared";
 import { PageHeader } from "@/components/mobile";
-import { usePageFab } from "@/components/mobile/page-fab";
-
-type SecurityAccount = {
-  accountId: number;
-  accountName: string | null;
-  isInvestment: boolean;
-  positionId: number;
-  isCash: boolean;
-};
-
-type Security = {
-  id: number;
-  symbol: string | null;
-  name: string | null;
-  assetType: string;
-  currency: string;
-  isCash: boolean;
-  isCrypto: boolean;
-  // Manual / custom pricing (excluded from the Yahoo/CoinGecko API; valued off
-  // the user's price marks). `latestPrice` is the newest mark for the status cell.
-  priceSource: "auto" | "manual";
-  latestPrice: { date: string; price: number } | null;
-  // Server-detected: this held, auto-priced ticker has never produced a single
-  // price_cache row — no provider recognizes it. Drives the `unpriced` advisory.
-  neverPriced?: boolean;
-  image: string | null;
-  accounts: SecurityAccount[];
-};
-
-type Account = {
-  id: number;
-  name: string;
-  type: string;
-  currency: string;
-  isInvestment: boolean;
-  archived?: boolean;
-};
-
-// base-ui Select needs an items value→label map so the trigger shows the label
-// (not the raw value). FINLYNQ-201: user-settable asset type for tradable
-// securities. Cosmetic — never re-clusters.
-const ASSET_TYPE_LABELS: Record<string, string> = { stock: "Stock", etf: "ETF" };
-
-function symbolLabel(s: Security): string {
-  return s.symbol?.trim() || s.name?.trim() || "—";
-}
-
-/** The human display name, only when it's distinct from the ticker code. */
-function descriptionOf(s: Security): string {
-  const sym = symbolLabel(s);
-  const nm = s.name?.trim() ?? "";
-  return nm && nm.toUpperCase() !== sym.toUpperCase() ? nm : "";
-}
-
-/**
- * The pricing advisory for a security: a curated entry (POL → MATIC …) if one
- * exists, else the server-detected "we've never priced this ticker" warning.
- */
-function advisoryFor(s: Security) {
-  return resolveTickerAdvisory(s.symbol, { neverPriced: s.neverPriced });
-}
 
 type SortKey = "symbol" | "description" | "type" | "currency";
 type SortDir = "asc" | "desc";
@@ -148,66 +79,19 @@ const EMPTY_FILTERS: Record<FilterKey, string> = {
   currency: "",
 };
 
-type LinkDialogState =
-  | { mode: "account"; securityId: number } // pick an account for this security
-  | { mode: "security"; accountId: number } // pick a security for this account
-  | null;
-
-export default function InvestmentsSettingsPage() {
-  const { displayCurrency } = useDisplayCurrency();
-  const [securities, setSecurities] = useState<Security[] | null>(null);
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+function InvestmentsSettingsPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { securities, accounts, loading, error, reload: load } = useInvestmentData();
   const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
+
+  // Which tab is showing. Routes return here with ?tab=… so the user lands back
+  // where they left off.
+  const [tab, setTab] = useState<InvestmentsTab>(() => parseTab(searchParams.get("tab")));
 
   // Tab 1 table controls.
   const [filters, setFilters] = useState<Record<FilterKey, string>>(EMPTY_FILTERS);
   const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>({ key: "symbol", dir: "asc" });
-
-  // Add-security dialog (bare catalog entry — no account).
-  const [addOpen, setAddOpen] = useState(false);
-  const [addSymbol, setAddSymbol] = useState("");
-  const [addName, setAddName] = useState("");
-  const [addCurrency, setAddCurrency] = useState("USD");
-  const [addIsCrypto, setAddIsCrypto] = useState(false);
-  const [addErrors, setAddErrors] = useState<Record<string, string>>({});
-  const [adding, setAdding] = useState(false);
-  const [lookupLoading, setLookupLoading] = useState(false);
-  // Manual / custom pricing for the new security. `addPriceSource` defaults from
-  // the ticker lookup (found a live price → 'auto', else 'manual') unless the
-  // user toggles it. `addLookupFound` drives the status line (null = not looked
-  // up yet).
-  const [addPriceSource, setAddPriceSource] = useState<"auto" | "manual">("auto");
-  const [addLookupFound, setAddLookupFound] = useState<boolean | null>(null);
-  const priceSourceTouchedRef = useRef(false);
-  // Auto-fill bookkeeping (refs avoid stale-closure reads inside the async
-  // lookup): which fields the user edited by hand + a sequence guard so a slow
-  // lookup for a previous ticker can't clobber a newer one.
-  const nameTouchedRef = useRef(false);
-  const currencyTouchedRef = useRef(false);
-  const cryptoTouchedRef = useRef(false);
-  const lookupSeqRef = useRef(0);
-
-  // Add-cash-sleeve dialog (Tab 3 "+ Cash").
-  const [cashAccountId, setCashAccountId] = useState<number | null>(null);
-  const [cashCurrency, setCashCurrency] = useState("");
-  const [cashError, setCashError] = useState("");
-  const [cashSubmitting, setCashSubmitting] = useState(false);
-
-  // Edit dialog (rename + FINLYNQ-201 user-settable asset type + pricing mode).
-  const [renameSecurity, setRenameSecurity] = useState<Security | null>(null);
-  const [renameValue, setRenameValue] = useState("");
-  // Ticker. Changing it RE-CLUSTERS (PATCH {symbol}) — the fix for a mistyped or
-  // provider-unknown symbol surfaced by the `unpriced` advisory.
-  const [renameSymbol, setRenameSymbol] = useState("");
-  const [assetTypeValue, setAssetTypeValue] = useState("stock");
-  const [editPriceSource, setEditPriceSource] = useState<"auto" | "manual">("auto");
-  const [renameErrors, setRenameErrors] = useState<Record<string, string>>({});
-  const [renaming, setRenaming] = useState(false);
-
-  // Manage-prices dialog (manual securities).
-  const [pricesTarget, setPricesTarget] = useState<Security | null>(null);
 
   // Delete confirm (catalog cleanup, unused securities only).
   const [deleteTarget, setDeleteTarget] = useState<Security | null>(null);
@@ -219,38 +103,16 @@ export default function InvestmentsSettingsPage() {
   // Which security is mid-flight switching to manual pricing (advisory action).
   const [manualBusyId, setManualBusyId] = useState<number | null>(null);
 
-  // Link dialog (Tab 2 "+ Account" / Tab 3 "+ Security").
-  const [linkDialog, setLinkDialog] = useState<LinkDialogState>(null);
-  const [linkValue, setLinkValue] = useState("");
-  const [linkError, setLinkError] = useState("");
-  const [linking, setLinking] = useState(false);
-
   // Collapsible expand sets.
   const [expandedSecurities, setExpandedSecurities] = useState<Set<number>>(new Set());
   const [expandedAccounts, setExpandedAccounts] = useState<Set<number>>(new Set());
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const [sRes, aRes] = await Promise.all([
-        fetch("/api/securities"),
-        fetch("/api/accounts"),
-      ]);
-      if (!sRes.ok) throw new Error("Failed to load securities");
-      const json: { data: Security[] } = await sRes.json();
-      setSecurities(json.data ?? []);
-      setAccounts(aRes.ok ? ((await aRes.json()) as Account[]) : []);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
+  // A route that just saved sends ?notice=<code>; show it once.
   useEffect(() => {
-    load();
-  }, [load]);
+    const text = noticeText(searchParams.get("notice"));
+    if (text) showToast("success", text);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot on arrival
+  }, []);
 
   function showToast(type: "success" | "error", msg: string) {
     setToast({ type, msg });
@@ -263,20 +125,19 @@ export default function InvestmentsSettingsPage() {
     );
   }
 
-  // ---- value→label maps (base-ui Select shows the raw value otherwise) ----
-  const securityLabelById = useMemo(() => {
-    const m: Record<string, string> = {};
-    for (const s of securities ?? []) {
-      const d = descriptionOf(s);
-      m[String(s.id)] = `${symbolLabel(s)}${d ? ` — ${d}` : ""} (${s.currency})`;
-    }
-    return m;
-  }, [securities]);
-  const accountLabelById = useMemo(() => {
-    const m: Record<string, string> = {};
-    for (const a of accounts) m[String(a.id)] = `${a.name} (${a.currency})`;
-    return m;
-  }, [accounts]);
+  // ---- Navigation to the full-page flows (returnTo = this list, same tab) ----
+  const here = `${INVESTMENTS_HOME}?tab=${tab}`;
+  function go(path: string) {
+    const sep = path.includes("?") ? "&" : "?";
+    router.push(`${path}${sep}returnTo=${encodeURIComponent(here)}`);
+  }
+  const openAdd = () => go(`${INVESTMENTS_HOME}/securities/new`);
+  const openEdit = (s: Security) => go(`${INVESTMENTS_HOME}/securities/${s.id}/edit`);
+  const openPrices = (s: Security) => go(`${INVESTMENTS_HOME}/securities/${s.id}/prices`);
+  const openLinkAccount = (securityId: number) => go(`${INVESTMENTS_HOME}/securities/${securityId}/link`);
+  const openLinkSecurity = (accountId: number) => go(`${INVESTMENTS_HOME}/accounts/${accountId}/link`);
+  const openCash = (accountId: number) =>
+    go(`${INVESTMENTS_HOME}/cash-sleeves/new?accountId=${accountId}`);
 
   // ---- Tab 1 rows ----
   const rows = useMemo(() => {
@@ -334,229 +195,9 @@ export default function InvestmentsSettingsPage() {
     );
   }, [securities, accounts]);
 
-  // ---- Add security (bare catalog entry) ----
-  function openAdd() {
-    setAddSymbol("");
-    setAddName("");
-    setAddCurrency("USD");
-    setAddIsCrypto(false);
-    setAddPriceSource("auto");
-    setAddLookupFound(null);
-    priceSourceTouchedRef.current = false;
-    nameTouchedRef.current = false;
-    currencyTouchedRef.current = false;
-    cryptoTouchedRef.current = false;
-    lookupSeqRef.current++; // invalidate any in-flight lookup
-    setAddErrors({});
-    setAddOpen(true);
-  }
+  // ---- Edit-adjacent confirms (kept as dialogs) ----
 
-  // Resolve name/currency (+ crypto detection) for a ticker. Refreshes the
-  // auto-managed fields to match THIS ticker — clearing a stale auto-name when
-  // the new ticker is unknown — but never overwrites a field the user edited.
-  async function lookupTicker(rawSymbol: string, crypto: boolean) {
-    const symbol = rawSymbol.trim();
-    const seq = ++lookupSeqRef.current;
-    if (!symbol) {
-      if (!nameTouchedRef.current) setAddName("");
-      setAddLookupFound(null);
-      return;
-    }
-    setLookupLoading(true);
-    try {
-      // Only FORCE the crypto path when the user MANUALLY ticked the box — an
-      // auto-detected crypto flag left over from a previous ticker must not
-      // force-classify the next one (else BTC→AAPL stays "crypto" + no name).
-      const forceCrypto = cryptoTouchedRef.current && crypto;
-      const res = await fetch(
-        `/api/securities/lookup?symbol=${encodeURIComponent(symbol)}${forceCrypto ? "&crypto=1" : ""}`,
-      );
-      let name: string | null = null;
-      let currency: string | null = null;
-      let isCrypto: boolean | undefined;
-      let found = false;
-      if (res.ok) {
-        const json = await res.json();
-        const d = (json.data ?? json) as {
-          found?: boolean;
-          name?: string | null;
-          currency?: string | null;
-          isCrypto?: boolean;
-        };
-        name = d?.name ?? null;
-        currency = d?.currency ?? null;
-        isCrypto = d?.isCrypto;
-        found = d?.found === true;
-      }
-      if (seq !== lookupSeqRef.current) return; // superseded by a newer lookup
-      if (!nameTouchedRef.current) setAddName(name ?? "");
-      if (!currencyTouchedRef.current && currency) setAddCurrency(currency);
-      if (!cryptoTouchedRef.current && typeof isCrypto === "boolean") setAddIsCrypto(isCrypto);
-      // A live price was found ⇒ auto-fetch; nothing found ⇒ this is a custom
-      // holding the user must price manually. The user can still override.
-      setAddLookupFound(found);
-      if (!priceSourceTouchedRef.current) setAddPriceSource(found ? "auto" : "manual");
-    } catch {
-      /* best-effort — manual entry */
-    } finally {
-      if (seq === lookupSeqRef.current) setLookupLoading(false);
-    }
-  }
-
-  function openCash(accountId: number) {
-    setCashAccountId(accountId);
-    setCashCurrency("");
-    setCashError("");
-  }
-
-  async function submitCash() {
-    if (cashAccountId == null) return;
-    const currency = cashCurrency.trim().toUpperCase();
-    if (!/^[A-Z]{3,4}$/.test(currency)) {
-      setCashError("Enter a 3-4 letter currency code");
-      return;
-    }
-    setCashSubmitting(true);
-    try {
-      const res = await fetch("/api/portfolio/holdings/cash-sleeve", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ accountId: cashAccountId, currency }),
-      });
-      if (!res.ok) {
-        const msg = await parseSaveError(res, "Failed to add cash sleeve");
-        setCashError(msg);
-        return;
-      }
-      setCashAccountId(null);
-      showToast("success", "Cash sleeve added");
-      await load();
-    } catch (e) {
-      setCashError(e instanceof Error ? e.message : "Failed");
-    } finally {
-      setCashSubmitting(false);
-    }
-  }
-
-  async function submitAddSecurity() {
-    const symbol = addSymbol.trim();
-    const currency = addCurrency.trim().toUpperCase();
-    const errs: Record<string, string> = {};
-    if (!symbol) errs.symbol = "Ticker is required";
-    if (!/^[A-Z]{3,4}$/.test(currency)) errs.currency = "Enter a 3-4 letter currency code";
-    setAddErrors(errs);
-    if (Object.keys(errs).length > 0) return;
-    setAdding(true);
-    try {
-      const res = await fetch("/api/securities/define", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          symbol,
-          name: addName.trim() || undefined,
-          currency,
-          isCrypto: addIsCrypto,
-          priceSource: addPriceSource,
-        }),
-      });
-      if (!res.ok) {
-        const msg = await parseSaveError(res, "Failed to add security");
-        setAddErrors({ symbol: msg });
-        return;
-      }
-      setAddOpen(false);
-      showToast(
-        "success",
-        addPriceSource === "manual"
-          ? "Security added — add a price under “Prices”."
-          : "Security added",
-      );
-      await load();
-    } catch (e) {
-      setAddErrors({ symbol: e instanceof Error ? e.message : "Failed" });
-    } finally {
-      setAdding(false);
-    }
-  }
-
-  // ---- Edit (rename + asset type) ----
-  function openRename(s: Security) {
-    setRenameSecurity(s);
-    setRenameValue(s.name ?? "");
-    setRenameSymbol(s.symbol ?? "");
-    setAssetTypeValue(s.assetType || "stock");
-    setEditPriceSource(s.priceSource ?? "auto");
-    setRenameErrors({});
-  }
-
-  async function submitRename() {
-    if (!renameSecurity) return;
-    const name = renameValue.trim();
-    if (!name) {
-      setRenameErrors({ name: "Name is required" });
-      return;
-    }
-    const symbol = renameSymbol.trim();
-    const symbolChanged =
-      !renameSecurity.isCash && symbol !== "" && symbol !== (renameSecurity.symbol ?? "").trim();
-    setRenameErrors({});
-    setRenaming(true);
-    try {
-      // A ticker change is a RE-CLUSTER and the server handles it EXCLUSIVELY —
-      // PATCH {symbol} returns before it looks at name/assetType/priceSource. So
-      // send it as its own request FIRST, then fold the remaining edits into the
-      // usual PATCH against whichever security the re-cluster landed on (an
-      // existing security for the new ticker is reused = a legitimate merge, and
-      // that target's id is what the rest of the edits must address).
-      let targetId = renameSecurity.id;
-      if (symbolChanged) {
-        const symRes = await fetch("/api/securities", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: renameSecurity.id, symbol }),
-        });
-        if (!symRes.ok) {
-          setRenameErrors({ symbol: await parseSaveError(symRes, "Failed to change ticker") });
-          return;
-        }
-        const symJson = await symRes.json().catch(() => null);
-        const newId = symJson?.data?.newSecurityId;
-        if (typeof newId === "number") targetId = newId;
-      }
-
-      // Send the asset type only when the user changed it (FINLYNQ-201). It's a
-      // cosmetic, user-settable override — the server never re-clusters on it.
-      const body: { id: number; name: string; assetType?: string; priceSource?: "auto" | "manual" } = {
-        id: targetId,
-        name,
-      };
-      if (assetTypeValue && assetTypeValue !== renameSecurity.assetType) {
-        body.assetType = assetTypeValue;
-      }
-      if (editPriceSource !== renameSecurity.priceSource) {
-        body.priceSource = editPriceSource;
-      }
-      const res = await fetch("/api/securities", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) {
-        const msg = await parseSaveError(res, "Failed to update security");
-        setRenameErrors({ name: msg });
-        return;
-      }
-      setRenameSecurity(null);
-      showToast("success", symbolChanged ? `Ticker changed to ${symbol}` : "Security updated");
-      await load();
-    } catch (e) {
-      setRenameErrors({ name: e instanceof Error ? e.message : "Update failed" });
-    } finally {
-      setRenaming(false);
-    }
-  }
-
-  // ---- Ticker change (re-cluster) from the unpriceable-ticker advisory ----
+  // Ticker change (re-cluster) from the unpriceable-ticker advisory.
   async function confirmTickerChange() {
     if (!tickerTarget) return;
     setTickerBusy(true);
@@ -581,12 +222,11 @@ export default function InvestmentsSettingsPage() {
     }
   }
 
-  // ---- Switch an unpriceable ticker to manual pricing ----
-  // The other half of the `unpriced` advisory's fix (the first being "correct
-  // the symbol", handled by the Edit dialog). Flipping price_source to 'manual'
-  // takes the security out of the Yahoo/CoinGecko path entirely — no more
-  // doomed 404s — and values it off the user's own marks, entered via the
-  // "Prices" button that appears on the row once the mode has changed.
+  // Switch an unpriceable ticker to manual pricing. The other half of the
+  // `unpriced` advisory's fix (the first being "correct the symbol" on the edit
+  // page). Flipping price_source to 'manual' takes the security out of the
+  // Yahoo/CoinGecko path entirely — values it off the user's own marks, entered
+  // via the "Prices" button that appears on the row once the mode has changed.
   // NB: not named `use…` — that reads as a React Hook to rules-of-hooks.
   async function switchToManualPricing(s: Security) {
     setManualBusyId(s.id);
@@ -630,77 +270,6 @@ export default function InvestmentsSettingsPage() {
     }
   }
 
-  // ---- Link / unlink (Tab 2 + Tab 3) ----
-  function openLinkAccount(securityId: number) {
-    setLinkDialog({ mode: "account", securityId });
-    setLinkValue("");
-    setLinkError("");
-  }
-  function openLinkSecurity(accountId: number) {
-    setLinkDialog({ mode: "security", accountId });
-    setLinkValue("");
-    setLinkError("");
-  }
-
-  const linkEligible = useMemo(() => {
-    if (!linkDialog) return [] as { value: string; label: string }[];
-    if (linkDialog.mode === "account") {
-      const sec = securities?.find((s) => s.id === linkDialog.securityId);
-      const taken = new Set(sec?.accounts.map((a) => a.accountId) ?? []);
-      return accounts
-        .filter((a) => a.isInvestment && !a.archived && !taken.has(a.id))
-        .map((a) => ({ value: String(a.id), label: `${a.name} (${a.currency})` }));
-    }
-    const heldHere = new Set(
-      (securities ?? [])
-        .filter((s) => s.accounts.some((a) => a.accountId === linkDialog.accountId))
-        .map((s) => s.id),
-    );
-    return (securities ?? [])
-      .filter((s) => !heldHere.has(s.id))
-      .map((s) => {
-        const d = descriptionOf(s);
-        return { value: String(s.id), label: `${symbolLabel(s)}${d ? ` — ${d}` : ""} (${s.currency})` };
-      });
-  }, [linkDialog, securities, accounts]);
-
-  const linkItems = useMemo(() => {
-    const m: Record<string, string> = {};
-    for (const e of linkEligible) m[e.value] = e.label;
-    return m;
-  }, [linkEligible]);
-
-  async function submitLink() {
-    if (!linkDialog) return;
-    const picked = parseInt(linkValue, 10);
-    if (!Number.isFinite(picked) || picked <= 0) {
-      setLinkError(linkDialog.mode === "account" ? "Pick an account" : "Pick a security");
-      return;
-    }
-    const securityId = linkDialog.mode === "account" ? linkDialog.securityId : picked;
-    const accountId = linkDialog.mode === "account" ? picked : linkDialog.accountId;
-    setLinking(true);
-    try {
-      const res = await fetch("/api/securities", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ securityId, accountId }),
-      });
-      if (!res.ok) {
-        const msg = await parseSaveError(res, "Failed to link");
-        setLinkError(msg);
-        return;
-      }
-      setLinkDialog(null);
-      showToast("success", "Linked");
-      await load();
-    } catch (e) {
-      setLinkError(e instanceof Error ? e.message : "Failed");
-    } finally {
-      setLinking(false);
-    }
-  }
-
   async function unlinkPosition(positionId: number) {
     try {
       const res = await fetch(`/api/securities?positionId=${positionId}`, { method: "DELETE" });
@@ -732,8 +301,6 @@ export default function InvestmentsSettingsPage() {
       return next;
     });
   }
-
-  usePageFab("investments.security.create", openAdd);
 
   // ---- Render ----
   if (loading && !securities) {
@@ -808,7 +375,7 @@ export default function InvestmentsSettingsPage() {
         </div>
       )}
 
-      <Tabs defaultValue="securities" className="w-full">
+      <Tabs value={tab} onValueChange={(v) => setTab(parseTab(String(v)))} className="w-full">
         <TabsList>
           <TabsTrigger value="securities">Securities</TabsTrigger>
           <TabsTrigger value="by-security">By security</TabsTrigger>
@@ -868,7 +435,7 @@ export default function InvestmentsSettingsPage() {
                                 variant="outline"
                                 size="sm"
                                 className="h-6 shrink-0 border-warning/30 px-2 text-xs text-warning hover:bg-warning/10"
-                                onClick={() => openRename(s)}
+                                onClick={() => openEdit(s)}
                               >
                                 Fix symbol
                               </Button>
@@ -994,11 +561,11 @@ export default function InvestmentsSettingsPage() {
                         <TableCell className="text-right">
                           <div className="inline-flex gap-1">
                             {r.s.priceSource === "manual" && (
-                              <Button variant="ghost" size="sm" onClick={() => setPricesTarget(r.s)}>
+                              <Button variant="ghost" size="sm" onClick={() => openPrices(r.s)}>
                                 <DollarSign className="h-3.5 w-3.5 mr-1" /> Prices
                               </Button>
                             )}
-                            <Button variant="ghost" size="sm" onClick={() => openRename(r.s)}>
+                            <Button variant="ghost" size="sm" onClick={() => openEdit(r.s)}>
                               <Pencil className="h-3.5 w-3.5 mr-1" /> Edit
                             </Button>
                             {r.s.accounts.length === 0 && (
@@ -1190,319 +757,6 @@ export default function InvestmentsSettingsPage() {
         </TabsContent>
       </Tabs>
 
-      {/* ── Add security dialog (bare catalog entry) ───────────────────── */}
-      <Dialog open={addOpen} onOpenChange={(o) => { if (!o) setAddOpen(false); }}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add security</DialogTitle>
-            <DialogDescription>
-              Define a security by its ticker. Link it to an account later under “By
-              security” / “By account”.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div>
-              <Label>Ticker</Label>
-              <div className="relative">
-                <Input
-                  value={addSymbol}
-                  onChange={(e) => {
-                    setAddSymbol(e.target.value);
-                    if (!nameTouchedRef.current) setAddName(""); // drop stale auto-name
-                  }}
-                  onBlur={() => lookupTicker(addSymbol, addIsCrypto)}
-                  placeholder="e.g. AAPL, VTI, BTC"
-                  autoFocus
-                />
-                {lookupLoading && (
-                  <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
-                )}
-              </div>
-              {addErrors.symbol && <p className="text-xs text-destructive mt-1">{addErrors.symbol}</p>}
-              <p className="text-xs text-muted-foreground mt-1">
-                We’ll try to fill the name + currency from the ticker; edit them if needed.
-              </p>
-            </div>
-            <div>
-              <Label>Name</Label>
-              <Input
-                value={addName}
-                onChange={(e) => {
-                  setAddName(e.target.value);
-                  nameTouchedRef.current = true;
-                }}
-                placeholder="auto-filled from the ticker, or type it"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Holding currency</Label>
-                <Input
-                  value={addCurrency}
-                  onChange={(e) => {
-                    setAddCurrency(e.target.value.toUpperCase());
-                    currencyTouchedRef.current = true;
-                  }}
-                  placeholder="USD"
-                  maxLength={4}
-                />
-                {addErrors.currency && <p className="text-xs text-destructive mt-1">{addErrors.currency}</p>}
-              </div>
-              <label className="flex items-end gap-2 text-sm cursor-pointer pb-2">
-                <input
-                  type="checkbox"
-                  checked={addIsCrypto}
-                  onChange={(e) => {
-                    setAddIsCrypto(e.target.checked);
-                    cryptoTouchedRef.current = true;
-                    lookupTicker(addSymbol, e.target.checked);
-                  }}
-                />
-                Crypto asset
-              </label>
-            </div>
-            <div>
-              <Label>Pricing</Label>
-              <div className="mt-1 inline-flex rounded-lg border p-0.5">
-                {(["auto", "manual"] as const).map((mode) => (
-                  <button
-                    key={mode}
-                    type="button"
-                    onClick={() => {
-                      setAddPriceSource(mode);
-                      priceSourceTouchedRef.current = true;
-                    }}
-                    className={cn(
-                      "rounded-md px-3 py-1 text-xs font-medium transition-colors",
-                      addPriceSource === mode
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    {mode === "auto" ? "Auto-fetch" : "Manual"}
-                  </button>
-                ))}
-              </div>
-              <p
-                className={cn(
-                  "text-xs mt-1",
-                  addPriceSource === "manual"
-                    ? "text-warning"
-                    : "text-muted-foreground",
-                )}
-              >
-                {addPriceSource === "manual"
-                  ? "Custom holding — prices aren’t fetched. Add them under “Prices” after creating it."
-                  : addLookupFound === true
-                    ? "✓ A live price was found — it’ll update automatically."
-                    : addLookupFound === false
-                      ? "No live price was found for this ticker — switch to Manual if it can’t be priced."
-                      : "Prices are fetched automatically from the market."}
-              </p>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAddOpen(false)} disabled={adding}>
-              Cancel
-            </Button>
-            <Button onClick={submitAddSecurity} disabled={adding}>
-              {adding ? "Adding…" : "Add security"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* ── Link dialog (Tab 2 "+ Account" / Tab 3 "+ Security") ───────── */}
-      <Dialog open={linkDialog != null} onOpenChange={(o) => { if (!o) setLinkDialog(null); }}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{linkDialog?.mode === "account" ? "Add to an account" : "Add a security"}</DialogTitle>
-            <DialogDescription>
-              {linkDialog?.mode === "account"
-                ? "Choose an account to hold this security. Quantity and cost basis come from a transaction."
-                : "Choose a security to add to this account. Quantity and cost basis come from a transaction."}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div>
-              <Label>{linkDialog?.mode === "account" ? "Account" : "Security"}</Label>
-              <Select items={linkItems} value={linkValue} onValueChange={(v) => setLinkValue(v ?? "")}>
-                <SelectTrigger>
-                  <SelectValue placeholder={linkDialog?.mode === "account" ? "Choose an account" : "Choose a security"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {linkEligible.length === 0 ? (
-                    <SelectItem value="__none__" disabled>
-                      {linkDialog?.mode === "account" ? "No eligible accounts" : "No eligible securities"}
-                    </SelectItem>
-                  ) : (
-                    linkEligible.map((e) => (
-                      <SelectItem key={e.value} value={e.value}>
-                        {e.label}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-              {linkError && <p className="text-xs text-destructive mt-1">{linkError}</p>}
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setLinkDialog(null)} disabled={linking}>
-              Cancel
-            </Button>
-            <Button onClick={submitLink} disabled={linking}>
-              {linking ? "Adding…" : "Add"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* ── Add cash sleeve dialog (Tab 3 "+ Cash") ───────────────────── */}
-      <Dialog open={cashAccountId != null} onOpenChange={(o) => { if (!o) setCashAccountId(null); }}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add cash sleeve</DialogTitle>
-            <DialogDescription>
-              Add a per-currency cash position to this account (e.g. a USD sleeve in a
-              CAD account). One sleeve per currency.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div>
-              <Label>Currency</Label>
-              <Input
-                value={cashCurrency}
-                onChange={(e) => setCashCurrency(e.target.value.toUpperCase())}
-                placeholder="e.g. USD, EUR, XAU"
-                maxLength={4}
-                autoFocus
-              />
-              {cashError && <p className="text-xs text-destructive mt-1">{cashError}</p>}
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCashAccountId(null)} disabled={cashSubmitting}>
-              Cancel
-            </Button>
-            <Button onClick={submitCash} disabled={cashSubmitting}>
-              {cashSubmitting ? "Adding…" : "Add cash sleeve"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* ── Edit dialog (rename + asset type, FINLYNQ-201) ─────────────── */}
-      <Dialog open={renameSecurity != null} onOpenChange={(o) => { if (!o) setRenameSecurity(null); }}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Edit security</DialogTitle>
-            <DialogDescription>
-              Update the display label for {renameSecurity ? symbolLabel(renameSecurity) : "this security"}.
-              This applies across every account that holds it.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            {/* Ticker. Hidden for cash sleeves — their symbol IS a currency code
-                and is structural, not a lookup key. Changing it re-points every
-                position (and its full history) at the new ticker; the server
-                reuses an existing security for that symbol if there is one. */}
-            {renameSecurity && !renameSecurity.isCash && (
-              <div>
-                <Label>Ticker</Label>
-                <Input
-                  value={renameSymbol}
-                  onChange={(e) => setRenameSymbol(e.target.value)}
-                  placeholder="e.g. AMZN"
-                  className="font-mono"
-                />
-                {renameErrors.symbol ? (
-                  <p className="text-xs text-destructive mt-1">{renameErrors.symbol}</p>
-                ) : (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {advisoryFor(renameSecurity)
-                      ? "This ticker can't be priced. Correct it here, or switch Pricing to Manual below."
-                      : "Changing this re-points the holding and its history to the new ticker."}
-                  </p>
-                )}
-              </div>
-            )}
-            <div>
-              <Label>Display name</Label>
-              <Input
-                value={renameValue}
-                onChange={(e) => setRenameValue(e.target.value)}
-                placeholder="e.g. Apple Inc."
-              />
-              {renameErrors.name && <p className="text-xs text-destructive mt-1">{renameErrors.name}</p>}
-            </div>
-            {/* Asset type override is meaningful only for tradable securities
-                (the eq: stock/etf bucket). Cash sleeves / metals / crypto derive
-                their type and aren't user-retypable here. Changing it is purely
-                a display override (never re-clusters). */}
-            {renameSecurity && !renameSecurity.isCash && !renameSecurity.isCrypto && (
-              <div>
-                <Label>Asset type</Label>
-                <Select
-                  items={ASSET_TYPE_LABELS}
-                  value={assetTypeValue}
-                  onValueChange={(v) => setAssetTypeValue(v ?? "stock")}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Asset type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="stock">Stock</SelectItem>
-                    <SelectItem value="etf">ETF</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Overrides the automatic classification (from Yahoo) for the badge.
-                </p>
-              </div>
-            )}
-            {/* Pricing mode — manual securities are excluded from the market
-                price API and valued off the prices you enter. Hidden for cash
-                sleeves (always priced at 1). */}
-            {renameSecurity && !renameSecurity.isCash && (
-              <div>
-                <Label>Pricing</Label>
-                <div className="mt-1 inline-flex rounded-lg border p-0.5">
-                  {(["auto", "manual"] as const).map((mode) => (
-                    <button
-                      key={mode}
-                      type="button"
-                      onClick={() => setEditPriceSource(mode)}
-                      className={cn(
-                        "rounded-md px-3 py-1 text-xs font-medium transition-colors",
-                        editPriceSource === mode
-                          ? "bg-primary text-primary-foreground"
-                          : "text-muted-foreground hover:text-foreground",
-                      )}
-                    >
-                      {mode === "auto" ? "Auto-fetch" : "Manual"}
-                    </button>
-                  ))}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {editPriceSource === "manual"
-                    ? "Not fetched from the market — set prices under “Prices”."
-                    : "Prices are fetched automatically from Yahoo/CoinGecko."}
-                </p>
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRenameSecurity(null)} disabled={renaming}>
-              Cancel
-            </Button>
-            <Button onClick={submitRename} disabled={renaming}>
-              {renaming ? "Saving…" : "Save"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* ── Delete confirm (unused securities only) ────────────────────── */}
       <ConfirmDialog
         open={deleteTarget != null}
@@ -1534,18 +788,14 @@ export default function InvestmentsSettingsPage() {
         busy={tickerBusy}
         onConfirm={confirmTickerChange}
       />
-
-      {/* ── Manage prices (manual securities) ──────────────────────────── */}
-      <ManagePricesDialog
-        securityId={pricesTarget?.id ?? null}
-        securityLabel={pricesTarget ? symbolLabel(pricesTarget) : ""}
-        currency={pricesTarget?.currency ?? displayCurrency}
-        open={pricesTarget != null}
-        onOpenChange={(o) => {
-          if (!o) setPricesTarget(null);
-        }}
-        onChanged={load}
-      />
     </div>
+  );
+}
+
+export default function InvestmentsSettingsRoute() {
+  return (
+    <Suspense fallback={null}>
+      <InvestmentsSettingsPage />
+    </Suspense>
   );
 }

@@ -25,12 +25,6 @@ const WIRED = [
     component: "CategoryManagement",
   },
   {
-    key: "investments.security.create",
-    route: "/settings/investments",
-    file: "src/app/(app)/settings/investments/page.tsx",
-    component: "InvestmentsSettingsPage",
-  },
-  {
     key: "rules.create",
     route: "/settings/rules",
     file: "src/components/settings/sections/rules-section.tsx",

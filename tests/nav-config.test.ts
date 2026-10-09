@@ -187,6 +187,8 @@ describe("nav-config", () => {
         "/transactions/search",
         "/settings/account", // not in nav, account is separate
         "/settings/backfill",
+        "/settings/investments/securities/new", // create-security page, opened from the investments list (no nav entry)
+        "/settings/investments/cash-sleeves/new", // add-cash-sleeve page, opened from the investments list
         "/settings/import/reconcile-visibility",
         "/import/pending", // live route, not redirected
         "/manage-accounts",
