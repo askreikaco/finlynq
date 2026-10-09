@@ -62,8 +62,12 @@ export type TxColFilter =
  */
 export type TxQueryAccount = { id: number; type?: string | null };
 
-/** Pagination — `page` is 0-indexed, the offset is `page * limit`. */
-export type TxQueryPage = { page: number; limit: number };
+/**
+ * Pagination. Legacy mode (`cursor` undefined): `page` is 0-indexed, the offset
+ * is `page * limit`. Cursor mode (`cursor` defined, `""` = first page): emits
+ * `limit` + `cursor` and NO `offset`.
+ */
+export type TxQueryPage = { page: number; limit: number; cursor?: string | null };
 
 /**
  * Build the `URLSearchParams` for a GET `/api/transactions` request.
@@ -154,7 +158,12 @@ export function buildTransactionQuery(
   }
 
   params.set("limit", String(page.limit));
-  params.set("offset", String(page.page * page.limit));
+  if (page.cursor !== undefined) {
+    // Cursor mode: keyset cursor, empty string = first page. No offset.
+    params.set("cursor", page.cursor ?? "");
+  } else {
+    params.set("offset", String(page.page * page.limit));
+  }
 
   return params;
 }
