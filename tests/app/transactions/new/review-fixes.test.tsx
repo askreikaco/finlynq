@@ -17,7 +17,7 @@ vi.mock("next/link", () => ({
   default: ({ children, href }: { children: React.ReactNode; href: string }) =>
     React.createElement("a", { href }, children),
 }));
-vi.mock("swr", () => ({ mutate: H.mutate }));
+vi.mock("swr", () => ({ mutate: H.mutate, useSWRConfig: () => ({ mutate: H.mutate, cache: new Map() }) }));
 vi.mock("@/lib/data/use-api", () => ({
   useApi: (url: string) => {
     if (url === "/api/accounts") return { isLoading: false, data: H.accounts };

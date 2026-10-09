@@ -8,7 +8,7 @@ import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/re
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), back: vi.fn() }),
 }));
-vi.mock("swr", () => ({ mutate: vi.fn() }));
+vi.mock("swr", () => ({ mutate: vi.fn(), useSWRConfig: () => ({ mutate: vi.fn(), cache: new Map() }) }));
 vi.mock("@/lib/data/use-api", () => ({
   useApi: (url: string) => {
     if (url === "/api/accounts")

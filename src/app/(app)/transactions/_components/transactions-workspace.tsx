@@ -32,7 +32,7 @@ import type {
   LinkedSibling,
 } from "../_types";
 import { useLookups, useTxColumnPrefs, useTxSortPref, useTxFilterPrefs } from "../_hooks/use-tx-prefs";
-import { useTransactions, isNonDefaultTxView } from "../_hooks/use-transactions";
+import { useTransactions } from "../_hooks/use-transactions";
 import { TransactionTable } from "./transaction-table";
 import { buildTransactionQuery } from "@/lib/transactions/build-query";
 import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
@@ -180,13 +180,14 @@ export function TransactionsWorkspace({
   const { colFilters, setColFilters, findColFilter, setColFilter } = useTxFilterPrefs(() => setPage(0));
 
   // Main list (txns / total / loading) + loadTxns + infinite scroll loadNextPage
-  const { txns, total, loading, limit, loadTxns, loadNextPage, resetPage, hasMore, loadError, isPartial, fullLoadError } = useTransactions(
+  const { txns, total, loading, limit, loadTxns, loadNextPage, resetPage, hasMore, loadError, loadMoreError, isLoadingMore } = useTransactions(
     filters,
     sortPref,
     colFilters,
     accounts,
   );
-  resetPageRef.current = resetPage;
+  // Assigned in an effect (not during render); setPage is only called from handlers and effects.
+  useEffect(() => { resetPageRef.current = resetPage; }, [resetPage]);
 
   // Infinite scroll trigger via native IntersectionObserver
   const observerTargetRef = useRef<HTMLDivElement | null>(null);
@@ -198,7 +199,9 @@ export function TransactionsWorkspace({
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0]?.isIntersecting && !loading) {
+        // One page in flight at a time. A failed later page waits for the Retry
+        // control; the sentinel must not re-request it on every observer restart.
+        if (entries[0]?.isIntersecting && !loading && !isLoadingMore && !loadMoreError) {
           loadNextPage();
         }
       },
@@ -213,7 +216,7 @@ export function TransactionsWorkspace({
     return () => {
       observer.disconnect();
     };
-  }, [loadNextPage, hasMore, loading]);
+  }, [loadNextPage, hasMore, loading, isLoadingMore, loadMoreError]);
 
   // Post-mutation refresh: reload the list AND notify the embedding page so it
   // can refresh sibling data (e.g. the account balance header). Used after
@@ -333,16 +336,8 @@ export function TransactionsWorkspace({
   // ── CSV export of the current filtered view ──────────────────────────
   // Re-fetches GET /api/transactions with the SAME buildTransactionQuery the
   // table uses (FINLYNQ-115 — never hand-roll params), but with page 0 + a
-  // high limit so a single request returns the whole filtered set. The route
-  // caps the underlying candidate set at 1000 rows whenever a post-decrypt
-  // (search / tag / encrypted-substring) filter is active — surfaced inline.
+  // high limit so a single request returns the whole filtered set.
   const [exporting, setExporting] = useState(false);
-  // Mirrors the server's `postDecryptFilter`: text search, tag, or any
-  // text-type per-column filter forces the in-memory 1000-row pass.
-  const hasTextSearchFilter =
-    !!filters.search ||
-    !!filters.tag ||
-    colFilters.some((f) => f.type === "text");
   const exportColumns: CsvColumn<Transaction>[] = [
     { header: "Date", accessor: (t) => t.date },
     { header: "Account", accessor: (t) => t.accountAlias || t.accountName },
@@ -362,8 +357,9 @@ export function TransactionsWorkspace({
     setExporting(true);
     try {
       // Same builder + filter/sort state the table uses; page 0 + high limit
-      // pulls the entire filtered view in one shot (the route honors `limit`
-      // directly when no post-decrypt filter is set, else caps at 1000).
+      // pulls the entire filtered view in one shot.
+      // Intentionally NO cursor: this is the legacy (non-cursor) mode, kept on
+      // purpose for export. The paged list uses cursor mode; export does not.
       const params = buildTransactionQuery(filters, sortPref, colFilters, accounts, {
         page: 0,
         limit: 100000,
@@ -845,6 +841,7 @@ export function TransactionsWorkspace({
         <MobileTxList
           transactions={txns}
           isLoading={loading && txns.length === 0}
+          isLoadingMore={isLoadingMore}
           onEdit={startEdit}
           showAccountName={!locked}
         />
@@ -960,17 +957,12 @@ export function TransactionsWorkspace({
               size="sm"
               className="h-8 text-xs gap-1.5 ml-auto"
               onClick={handleExport}
-              disabled={exporting || (!isPartial && total === 0)}
+              disabled={exporting || total === 0}
             >
               <Download className="h-3.5 w-3.5" />
               {exporting ? "Exporting…" : "Export CSV"}
             </Button>
           </div>
-          {hasTextSearchFilter && (
-            <p className="text-xs text-muted-foreground">
-              Exports of a text-searched view are capped at the first 1,000 matching transactions.
-            </p>
-          )}
           {/* Issue #59 — per-column filter chips. Each chip drops just its
               own filter when clicked; "Clear all" above wipes the lot. */}
           {(colFilters.length > 0 || sortPref.columnId) && (
@@ -1163,11 +1155,6 @@ export function TransactionsWorkspace({
         </div>
       )}
 
-      {/* Progressive load: the list is the recent-200 window until the full history lands. */}
-      {isPartial && !fullLoadError && isNonDefaultTxView(filters, sortPref, colFilters) && (
-        <p role="status" className="text-xs text-muted-foreground">Loading full history...</p>
-      )}
-
       {/* Table — extracted to <TransactionTable> (FINLYNQ-111 Phase 2). */}
       <Card className="max-md:hidden">
         <CardContent className="p-0">
@@ -1206,9 +1193,9 @@ export function TransactionsWorkspace({
         data-testid="infinite-scroll-trigger"
         className="h-14 w-full flex items-center justify-center text-xs text-muted-foreground"
       >
-        {isPartial && fullLoadError ? (
+        {loadMoreError ? (
           <span className="flex flex-wrap items-center justify-center gap-2">
-            <span>Full history failed to load. Showing the most recent 200 transactions.</span>
+            <span>Couldn&apos;t load more.</span>
             <Button
               variant="outline"
               size="sm"

@@ -16,7 +16,14 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
-vi.mock("swr", () => ({ mutate: vi.fn() }));
+const H = vi.hoisted(() => ({
+  swrMutate: vi.fn(),
+  cache: new Map(),
+  revalidate: vi.fn(async (..._args: unknown[]) => {}),
+  onSaved: null as null | (() => void),
+}));
+vi.mock("swr", () => ({ mutate: vi.fn(), useSWRConfig: () => ({ mutate: H.swrMutate, cache: H.cache }) }));
+vi.mock("@/lib/transactions/revalidate", () => ({ revalidateTransactionLists: (...a: unknown[]) => H.revalidate(...a) }));
 
 vi.mock("@/components/currency-provider", () => ({ useDisplayCurrency: () => ({ displayCurrency: "VND" }) }));
 vi.mock("@/components/dropdown-order-provider", () => ({ useDropdownOrder: () => <T,>(items: T[]) => items }));
@@ -25,7 +32,10 @@ vi.mock("@/components/inbox/mode-picker", () => ({ ModePicker: () => null }));
 vi.mock("@/components/inbox/import-prefs-picker", () => ({ ImportPrefsPicker: () => null }));
 vi.mock("@/components/net-worth-history-chart", () => ({ NetWorthHistoryChart: () => null }));
 vi.mock("@/components/transactions/transaction-dialog", () => ({
-  TransactionDialog: () => null,
+  TransactionDialog: (props: { onSaved?: () => void }) => {
+    H.onSaved = props.onSaved ?? null;
+    return null;
+  },
 }));
 vi.mock("@/app/(app)/transactions/_components/transactions-workspace", () => ({
   TransactionsWorkspace: () => <div>Transactions Workspace</div>,
@@ -259,5 +269,14 @@ describe("Account Detail Page", () => {
       const put = fetchSpy.mock.calls.find(([, init]) => (init as RequestInit | undefined)?.method === "PUT");
       expect(put && JSON.parse(String((put[1] as RequestInit).body))).toEqual({ id: 1, archived: true });
     });
+  });
+
+  it("a transaction saved from the account page revalidates paged lists through the prefix helper", async () => {
+    render(<AccountDetailPage />);
+    await waitFor(() => expect(H.onSaved).not.toBeNull());
+    H.revalidate.mockClear();
+    H.onSaved!();
+    expect(H.revalidate).toHaveBeenCalledTimes(1);
+    expect(H.revalidate).toHaveBeenCalledWith(H.swrMutate, H.cache);
   });
 });

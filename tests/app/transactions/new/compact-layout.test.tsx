@@ -14,7 +14,7 @@ vi.mock("next/link", () => ({
   default: ({ children, href }: { children: React.ReactNode; href: string }) =>
     React.createElement("a", { href }, children),
 }));
-vi.mock("swr", () => ({ mutate: vi.fn() }));
+vi.mock("swr", () => ({ mutate: vi.fn(), useSWRConfig: () => ({ mutate: vi.fn(), cache: new Map() }) }));
 vi.mock("@/lib/data/use-api", () => ({
   useApi: (url: string) => {
     if (url === "/api/accounts")

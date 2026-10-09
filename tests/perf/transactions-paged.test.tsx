@@ -291,7 +291,7 @@ function canned(extra: Record<string, unknown> = {}) {
   return {
     txns: [], total: 0, loading: false, limit: 50, loadTxns: vi.fn(),
     loadNextPage: () => {}, resetPage: () => {}, page: 1, hasMore: true, loadError: false,
-    isPartial: false, fullLoadError: false, ...extra,
+    isPartial: false, fullLoadError: false, isLoadingMore: false, loadMoreError: false, ...extra,
   };
 }
 
@@ -305,11 +305,11 @@ describe("TransactionsWorkspace partial-state rendering (canned hook result)", (
     vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => ({ data: [] }) })));
   });
 
-  it("shows 'Loading full history...' while partial and a search filter is active", () => {
+  it("no 'Loading full history' note while partial and a search filter is active (partial UI removed)", () => {
     H.SP = new URLSearchParams("search=coffee");
     H.RES = canned({ isPartial: true, total: 200, hasMore: true, txns: [] });
     render(<TransactionsWorkspace />);
-    expect(screen.getByText("Loading full history...")).toBeTruthy();
+    expect(screen.queryByText("Loading full history...")).toBeNull();
   });
 
   it("shows no note on the default view while partial", () => {
@@ -326,11 +326,11 @@ describe("TransactionsWorkspace partial-state rendering (canned hook result)", (
     expect(screen.queryByText("Loading full history...")).toBeNull();
   });
 
-  it("(a) while a no-match filter is still loading: 'Loading full history...' and no empty state", () => {
+  it("(a) while a no-match filter is still loading: no partial note and no empty state", () => {
     H.SP = new URLSearchParams("search=zzz-no-such-payee");
     H.RES = canned({ loading: true, isPartial: true });
     render(<TransactionsWorkspace />);
-    expect(screen.getByText("Loading full history...")).toBeTruthy();
+    expect(screen.queryByText("Loading full history...")).toBeNull();
     expect(screen.queryByText("No transactions yet")).toBeNull();
     expect(screen.queryByText("No transactions found")).toBeNull();
   });
@@ -342,9 +342,9 @@ describe("TransactionsWorkspace partial-state rendering (canned hook result)", (
     expect(screen.getAllByText("No transactions yet").length).toBeGreaterThan(0);
   });
 
-  it("(b) export is enabled while partial with zero window matches", () => {
+  it("(b) export is enabled whenever total > 0, even while partial", () => {
     H.SP = new URLSearchParams("");
-    H.RES = canned({ isPartial: true, total: 0 });
+    H.RES = canned({ isPartial: true, total: 200 });
     render(<TransactionsWorkspace />);
     const btn = screen.getByRole("button", { name: /Export CSV/ }) as HTMLButtonElement;
     expect(btn.disabled).toBe(false);
@@ -358,12 +358,12 @@ describe("TransactionsWorkspace partial-state rendering (canned hook result)", (
     expect(btn.disabled).toBe(true);
   });
 
-  it("(d) Retry after a full-load error calls loadTxns", () => {
+  it("(d) Retry after a later-page error calls loadTxns", () => {
     H.SP = new URLSearchParams("");
     const loadTxns = vi.fn();
-    H.RES = canned({ isPartial: true, fullLoadError: true, total: 200, txns: [], loadTxns, hasMore: false });
+    H.RES = canned({ loadMoreError: true, total: 200, txns: [], loadTxns, hasMore: true });
     render(<TransactionsWorkspace />);
-    expect(screen.getByText(/Full history failed to load/)).toBeTruthy();
+    expect(screen.getByText("Couldn't load more.")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
     expect(loadTxns).toHaveBeenCalledTimes(1);
   });

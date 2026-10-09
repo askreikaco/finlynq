@@ -167,6 +167,8 @@ export function useTransactions(
     loading,
     limit: PAGE,
     loadError: Boolean(error) && !first,
+    /** A later page failed; loaded pages stay on screen. Retry with loadTxns. */
+    loadMoreError: Boolean(error) && Boolean(first),
     isPartial: false,
     fullLoadError: false,
     isLoadingMore,

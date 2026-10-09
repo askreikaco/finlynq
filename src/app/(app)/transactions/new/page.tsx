@@ -20,7 +20,8 @@ import {
   Coins,
 } from "lucide-react";
 import { useApi } from "@/lib/data/use-api";
-import { mutate } from "swr";
+import { mutate, useSWRConfig } from "swr";
+import { revalidateTransactionLists } from "@/lib/transactions/revalidate";
 import { formatCurrency, fxPreviewText } from "@/lib/currency";
 import Link from "next/link";
 import { useDisplayCurrency } from "@/components/currency-provider";
@@ -51,6 +52,7 @@ import {
 type TxType = "Expense" | "Income" | "Transfer";
 
 export default function MobileTransactionPage() {
+  const { mutate: swrMutate, cache } = useSWRConfig();
   const router = useRouter();
   const { displayCurrency } = useDisplayCurrency();
 
@@ -349,7 +351,7 @@ export default function MobileTransactionPage() {
         doneRef.current = true;
         setDone(true);
         setSuccessNotice("Transfer recorded successfully!");
-        mutate((k) => typeof k === "string" && k.startsWith("/api/transactions"));
+        void revalidateTransactionLists(swrMutate, cache);
         mutate("/api/accounts");
         setTimeout(() => router.push("/transactions"), 600);
         return;
@@ -462,7 +464,7 @@ export default function MobileTransactionPage() {
           // Saved already: show why and leave (a second Save would book the transaction twice).
           doneRef.current = true;
           setDone(true);
-          mutate((k) => typeof k === "string" && k.startsWith("/api/transactions"));
+          void revalidateTransactionLists(swrMutate, cache);
           mutate("/api/accounts");
           setErrorMessage(ruleFailure);
           setTimeout(() => router.push("/transactions"), 2500);
@@ -473,7 +475,7 @@ export default function MobileTransactionPage() {
       doneRef.current = true;
       setDone(true);
       setSuccessNotice(`${txType} saved successfully!`);
-      mutate((k) => typeof k === "string" && k.startsWith("/api/transactions"));
+      void revalidateTransactionLists(swrMutate, cache);
       mutate("/api/accounts");
       setTimeout(() => router.push("/transactions"), 600);
     } catch (err: unknown) {

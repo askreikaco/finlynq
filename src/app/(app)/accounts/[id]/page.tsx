@@ -2,7 +2,8 @@
 
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { mutate as globalMutate } from "swr";
+import { useSWRConfig } from "swr";
+import { revalidateTransactionLists } from "@/lib/transactions/revalidate";
 import Link from "next/link";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { Card, CardContent } from "@/components/ui/card";
@@ -115,6 +116,7 @@ const INVESTMENT_OPS: { op: string; label: string }[] = [
 ];
 
 export default function AccountDetailPage() {
+  const { mutate: swrMutate, cache } = useSWRConfig();
   const { id } = useParams();
   const router = useRouter();
   const { displayCurrency } = useDisplayCurrency();
@@ -897,9 +899,7 @@ export default function AccountDetailPage() {
           // Refresh the header tiles (balance + count) and revalidate the
           // embedded workspace's SWR list so the new row shows immediately.
           refreshBalanceAndTxns();
-          void globalMutate(
-            (key) => typeof key === "string" && key.startsWith("/api/transactions"),
-          );
+          void revalidateTransactionLists(swrMutate, cache);
         }}
       />
 
