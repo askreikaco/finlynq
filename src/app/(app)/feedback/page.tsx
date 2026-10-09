@@ -39,7 +39,7 @@ function fmtBytes(n: number): string {
 const typeColor: Record<string, string> = {
   bug: "bg-destructive/15 text-destructive",
   idea: "bg-primary/15 text-primary",
-  question: "bg-blue-500/15 text-blue-500",
+  question: "bg-info/15 text-info",
   other: "bg-muted text-muted-foreground",
 };
 

@@ -50,10 +50,10 @@ type FormState = {
 };
 
 const goalTypeConfig: Record<string, { label: string; badgeClass: string; borderClass: string }> = {
-  savings: { label: "Savings", badgeClass: "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-900/60", borderClass: "border-l-emerald-500" },
-  debt_payoff: { label: "Debt Payoff", badgeClass: "bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-900/60", borderClass: "border-l-rose-500" },
-  investment: { label: "Investment", badgeClass: "bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-950/50 dark:text-indigo-300 dark:border-indigo-900/60", borderClass: "border-l-indigo-500" },
-  emergency_fund: { label: "Emergency Fund", badgeClass: "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-900/60", borderClass: "border-l-amber-500" },
+  savings: { label: "Savings", badgeClass: "bg-pos/10 text-pos border-pos/30", borderClass: "border-l-pos" },
+  debt_payoff: { label: "Debt Payoff", badgeClass: "bg-destructive/10 text-destructive border-destructive/30", borderClass: "border-l-destructive" },
+  investment: { label: "Investment", badgeClass: "bg-primary/10 text-primary border-primary/30", borderClass: "border-l-primary" },
+  emergency_fund: { label: "Emergency Fund", badgeClass: "bg-warning/10 text-warning border-warning/30", borderClass: "border-l-warning" },
 };
 
 // value→label maps for base-ui Select triggers (FINLYNQ-197).
@@ -70,15 +70,15 @@ const GOAL_PRIORITY_LABELS: Record<string, string> = {
 };
 
 function progressColorClass(progress: number): string {
-  if (progress < 33) return "[&_[data-slot=progress-indicator]]:bg-rose-500";
-  if (progress <= 66) return "[&_[data-slot=progress-indicator]]:bg-amber-500";
-  return "[&_[data-slot=progress-indicator]]:bg-emerald-500";
+  if (progress < 33) return "[&_[data-slot=progress-indicator]]:bg-destructive";
+  if (progress <= 66) return "[&_[data-slot=progress-indicator]]:bg-warning";
+  return "[&_[data-slot=progress-indicator]]:bg-pos";
 }
 
 function progressTextClass(progress: number): string {
-  if (progress < 33) return "text-rose-600";
-  if (progress <= 66) return "text-amber-600";
-  return "text-emerald-600";
+  if (progress < 33) return "text-destructive";
+  if (progress <= 66) return "text-warning";
+  return "text-pos";
 }
 
 function emptyForm(displayCurrency: string): FormState {
@@ -426,8 +426,8 @@ export default function GoalsPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
             <CardContent className="flex items-center gap-4 pt-6">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 dark:bg-indigo-950/40">
-                <Target className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                <Target className="h-5 w-5 text-primary" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Target</p>
@@ -438,20 +438,20 @@ export default function GoalsPage() {
           </Card>
           <Card>
             <CardContent className="flex items-center gap-4 pt-6">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-950/40">
-                <TrendingUp className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-pos/10">
+                <TrendingUp className="h-5 w-5 text-pos" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Current Progress</p>
-                <p className="text-2xl font-bold text-emerald-600">{formatCurrency(totalCurrent, displayCurrency)}</p>
+                <p className="text-2xl font-bold text-pos">{formatCurrency(totalCurrent, displayCurrency)}</p>
                 {hasForeignGoal && <p className="text-xs text-muted-foreground mt-1">converted at today&apos;s rates</p>}
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="flex items-center gap-4 pt-6">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-950/40">
-                <CheckCircle2 className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-chart-5/10">
+                <CheckCircle2 className="h-5 w-5 text-chart-5" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Completed</p>
@@ -466,8 +466,8 @@ export default function GoalsPage() {
       {goals.length === 0 && (
         <Card className="border-dashed">
           <CardContent className="py-16 flex flex-col items-center text-center">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-indigo-100 dark:bg-indigo-950/60 mb-4">
-              <Target className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary/10 mb-4">
+              <Target className="h-8 w-8 text-primary" />
             </div>
             <h3 className="text-lg font-semibold mb-2">Set your first financial goal</h3>
             <p className="text-sm text-muted-foreground max-w-sm mb-6">
@@ -497,7 +497,7 @@ export default function GoalsPage() {
       {goals.length > 0 && active.length === 0 && (
         <Card>
           <CardContent className="py-10 flex flex-col items-center text-center">
-            <CheckCircle2 className="h-10 w-10 text-emerald-500 mb-3" />
+            <CheckCircle2 className="h-10 w-10 text-pos mb-3" />
             <h3 className="text-base font-semibold mb-1">All goals completed!</h3>
             <p className="text-sm text-muted-foreground">Add a new goal to keep building momentum.</p>
           </CardContent>
@@ -554,7 +554,7 @@ export default function GoalsPage() {
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>Remaining: <span className="font-medium text-foreground">{formatCurrency(g.remaining, g.currency || displayCurrency)}</span></span>
                   {g.monthlyNeeded > 0 && (
-                    <span className="inline-flex items-center rounded-md bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700 ring-1 ring-inset ring-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:ring-indigo-900/60">
+                    <span className="inline-flex items-center rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary ring-1 ring-inset ring-primary/30">
                       {formatCurrency(g.monthlyNeeded, g.currency || displayCurrency)}/mo needed
                     </span>
                   )}
@@ -569,17 +569,17 @@ export default function GoalsPage() {
       {completed.length > 0 && (
         <div className="space-y-3">
           <h2 className="text-lg font-semibold text-muted-foreground flex items-center gap-2">
-            <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+            <CheckCircle2 className="h-5 w-5 text-pos" />
             Completed Goals
           </h2>
           {completed.map((g) => (
-            <Card key={g.id} className="border-l-4 border-l-emerald-400 bg-emerald-50/30 dark:bg-emerald-950/20">
+            <Card key={g.id} className="border-l-4 border-l-pos/30 bg-pos/10">
               <CardContent className="py-3 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <CheckCircle2 className="h-5 w-5 text-pos shrink-0" />
                   <div>
                     <span className="line-through text-muted-foreground">{g.name}</span>
-                    <Badge className="ml-2 bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-900/60">{formatCurrency(g.targetAmount, g.currency || displayCurrency)}</Badge>
+                    <Badge className="ml-2 bg-pos/10 text-pos border-pos/30">{formatCurrency(g.targetAmount, g.currency || displayCurrency)}</Badge>
                   </div>
                 </div>
                 <div className="flex gap-1">
