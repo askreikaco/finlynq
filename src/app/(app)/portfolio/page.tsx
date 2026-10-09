@@ -28,6 +28,7 @@ import {
 } from "./_types";
 import { usePortfolioOverview, useBenchmarks } from "./_hooks/use-portfolio";
 import { PortfolioSkeleton } from "./_components/portfolio-ui";
+import { ErrorState } from "@/components/error-state";
 import { TopMoversCard } from "./_components/top-movers-card";
 import { HoldingsTable } from "./_components/holdings-table";
 import { EtfXrayCard } from "./_components/etf-xray-card";
@@ -156,7 +157,7 @@ export default function PortfolioPage() {
   };
 
   if (loading) return <PortfolioSkeleton />;
-  if (!data) return <div className="text-center py-12 text-muted-foreground">Unable to load portfolio data.</div>;
+  if (!data || !data.summary) return <ErrorState title="Couldn't load portfolio" message="We couldn't load your portfolio. Please try again." onRetry={reload} />;
 
   // Empty state — no holdings yet
   if (data.summary.totalHoldings === 0) {
