@@ -15,6 +15,7 @@
   --container-wide: 64rem;
 }
 @custom-variant regular (@media (width >= 40rem));
+@custom-variant max-regular (@media (width < 40rem));
 @custom-variant wide (@media (width > 64rem));
 @custom-variant dense (&:where([data-density=compact] *));
 
@@ -315,10 +316,10 @@ html {
   box-shadow: 0 1px 2px oklch(0 0 0 / 30%);
 }
 
-/* iOS 26-style liquid glass, phones only (below md). Three parts: the round back button
+/* iOS 26-style liquid glass, phones only (below regular, 40rem = 640px). Three parts: the round back button
    (.glass-capsule on BackButton), the page top bar (.glass-bar), and the grouped action capsule
-   (.glass-capsule on [data-slot=page-header-actions]). The md+ layout never receives any of it. */
-@media (width < 48rem) {
+   (.glass-capsule on [data-slot=page-header-actions]). The regular+ layout never receives any of it. */
+@media (width < 40rem) {
   .glass-capsule {
     background: oklch(1 0 0 / 55%);
     -webkit-backdrop-filter: blur(24px) saturate(1.8);

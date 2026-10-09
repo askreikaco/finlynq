@@ -41,10 +41,10 @@ describe("PHONE_BAR is sticky at every breakpoint", () => {
     expect(tokens.filter((t) => /^(max-|md:|sm:|lg:)sticky$/.test(t))).toEqual([]);
   });
 
-  it("pins at the safe-area inset below md and at 0 on md+", () => {
+  it("pins at the safe-area inset below regular and at 0 from regular (640px)", () => {
     expect(tokens).toContain("top-[var(--sat,0px)]");
-    expect(tokens).toContain("md:top-0");
-    expect(tokens).not.toContain("max-md:top-0");
+    expect(tokens).toContain("regular:top-0");
+    expect(tokens).not.toContain("max-regular:top-0");
   });
 
   it("keeps the glass material and the sticky core shared with the new-transaction header", () => {

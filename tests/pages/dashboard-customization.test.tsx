@@ -2,6 +2,7 @@
  * @vitest-environment jsdom
  */
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
+import { HEADER_SECONDARY } from "@/components/mobile";
 import * as React from "react";
 import { render, screen, cleanup, fireEvent, waitFor, within } from "@testing-library/react";
 import { DASHBOARD_CARDS, DEFAULT_CARD_ORDER } from "@/lib/dashboard-layout";
@@ -176,7 +177,7 @@ describe("Customize flow", () => {
 
   it("header has a Customize action (desktop button + mobile overflow entry)", async () => {
     await dashboard();
-    expect(screen.getByRole("button", { name: /Customize/ }).className).toContain("max-md:hidden");
+    expect(screen.getByRole("button", { name: /Customize/ }).className).toContain(HEADER_SECONDARY);
     fireEvent.click(screen.getByRole("button", { name: "More actions" }));
     const menu = await screen.findByRole("menu");
     expect(within(menu).getByText("Customize")).toBeTruthy();

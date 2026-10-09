@@ -1,5 +1,5 @@
 // @vitest-environment node
-// Sticky phone header on every PageHeader page (max-md only). Source-level: the header is
+// Sticky header on every PageHeader page, every size (D5). Phone layer is max-regular (below 640px). Source-level: the header is
 // pinned by CSS classes, so we assert the class strings, the offset arithmetic and the
 // collision offsets for the elements that sit under it.
 import { describe, it, expect } from "vitest";
@@ -20,25 +20,25 @@ function constant(name: string): string {
   return m![1];
 }
 
-describe("phone top bar: sticky on every PageHeader row (max-md only)", () => {
+describe("phone top bar: sticky on every PageHeader row (below regular)", () => {
   const bar = constant("PHONE_BAR");
   const tokens = bar.split(/\s+/);
 
-  it("is sticky at every breakpoint (no max-md: gate on the position)", () => {
+  it("is sticky at every breakpoint (no max-regular: gate on the position)", () => {
     expect(tokens).toContain("sticky");
-    expect(tokens).not.toContain("max-md:sticky");
+    expect(tokens).not.toContain("max-regular:sticky");
     expect(tokens.filter((t) => /^(md:|sm:|lg:)?(sticky|relative|absolute|fixed|static)$/.test(t))).toEqual(["sticky"]);
   });
 
-  it("is pinned at the safe-area inset, not 0 (iOS status bar)", () => {
+  it("is pinned at the safe-area inset below regular, 0 from regular (iOS status bar)", () => {
     expect(tokens).toContain("top-[var(--sat,0px)]");
-    expect(tokens).toContain("md:top-0");
-    expect(tokens).not.toContain("max-md:top-0");
+    expect(tokens).toContain("regular:top-0");
+    expect(tokens).not.toContain("max-regular:top-0");
   });
 
   it("uses the glass-bar material (no opaque bg token on the bar itself)", () => {
     expect(tokens).toContain("glass-bar");
-    expect(tokens).not.toContain("max-md:bg-background");
+    expect(tokens).not.toContain("max-regular:bg-background");
   });
 
   it("sits above section labels (z-30 > z-10)", () => {
@@ -46,12 +46,12 @@ describe("phone top bar: sticky on every PageHeader row (max-md only)", () => {
   });
 
   it("row height comes from --phone-header-h", () => {
-    expect(tokens).toContain("max-md:min-h-[var(--phone-header-h)]");
+    expect(tokens).toContain("max-regular:min-h-[var(--phone-header-h)]");
   });
 
   it("is full-bleed inside the app shell gutter (-mx-4 + px-4)", () => {
-    expect(tokens).toContain("max-md:-mx-4");
-    expect(tokens).toContain("max-md:px-4");
+    expect(tokens).toContain("max-regular:-mx-4");
+    expect(tokens).toContain("max-regular:px-4");
   });
 
   it("every PageHeader row (title only, back, actions) renders the shared bar", () => {

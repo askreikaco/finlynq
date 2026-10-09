@@ -34,11 +34,11 @@ const cls = (el: Element | null | undefined) => (el?.getAttribute("class") ?? ""
 
 afterEach(() => cleanup());
 
-/** Body of the phone block: every rule inside @media (width < 48rem). */
+/** Body of the phone block: every rule inside @media (width < 40rem). */
 function phoneBlock(): string {
   const marker = css.indexOf("iOS 26-style liquid glass, phones only");
   expect(marker).toBeGreaterThan(-1);
-  const i = css.indexOf("@media (width < 48rem) {", marker);
+  const i = css.indexOf("@media (width < 40rem) {", marker);
   expect(i).toBeGreaterThan(-1);
   return css.slice(i, css.indexOf("\n}\n", i));
 }
@@ -80,7 +80,7 @@ function contrast(x: RGB, y: RGB): number {
   return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
 }
 
-describe("1. phone primary action is an icon-only 44pt filled circle (below md)", () => {
+describe("1. phone primary action is an icon-only 44pt filled circle (below regular)", () => {
   it("PageHeader marks the visible primary with phone-icon-action and keeps its text as aria-label", () => {
     render(h(PageHeader, { title: "Transactions", actions: h(Button, null, "Add") }));
     const primary = screen.getByRole("button", { name: "Add" });
@@ -94,7 +94,7 @@ describe("1. phone primary action is an icon-only 44pt filled circle (below md)"
     expect(screen.getByRole("button", { name: "Add transaction" }).getAttribute("aria-label")).toBe("Add transaction");
   });
 
-  it("secondary actions hidden below md are skipped: the last VISIBLE action is the primary", () => {
+  it("secondary actions hidden below regular are skipped: the last VISIBLE action is the primary", () => {
     render(
       h(PageHeader, {
         title: "Budgets",
@@ -108,7 +108,7 @@ describe("1. phone primary action is an icon-only 44pt filled circle (below md)"
     expect(cls(screen.getByRole("button", { name: "Export" }))).not.toContain(PHONE_PRIMARY_CLASS);
   });
 
-  it("the phone rule sits inside the phone media block only, with size, icon-only text and token fill", () => {
+  it("the phone rule sits inside the phone media block only (below regular), with size, icon-only text and token fill", () => {
     const phone = phoneBlock();
     const rule = body(phone, '[data-slot="page-header-actions"] > :is(button, a).phone-icon-action');
     expect(rule).toMatch(/width:\s*2\.75rem;/);
@@ -129,7 +129,7 @@ describe("1. phone primary action is an icon-only 44pt filled circle (below md)"
   });
 
   it("the tab-bar and bar pieces the render relies on are in the source (no text-[Npx] in the bar code)", () => {
-    expect(PHONE_BAR).toContain("max-md:grid");
+    expect(PHONE_BAR).toContain("max-regular:grid");
     expect(pageHeaderSrc).not.toMatch(/text-\[\d/);
     expect(navBar).not.toMatch(/text-\[\d/);
   });
@@ -137,32 +137,32 @@ describe("1. phone primary action is an icon-only 44pt filled circle (below md)"
 
 describe("2. title block insets equal the measured left slot and right capsule", () => {
   it("the bar is a three-column grid: side tracks min 2.75rem (44pt) and auto, title in the 1fr middle", () => {
-    expect(PHONE_BAR).toContain("max-md:grid-cols-[minmax(2.75rem,auto)_minmax(0,1fr)_minmax(2.75rem,auto)]");
-    expect(PHONE_BAR).toContain("max-md:items-center");
-    expect(PHONE_BAR).toContain("max-md:min-h-[var(--phone-header-h)]");
+    expect(PHONE_BAR).toContain("max-regular:grid-cols-[minmax(2.75rem,auto)_minmax(0,1fr)_minmax(2.75rem,auto)]");
+    expect(PHONE_BAR).toContain("max-regular:items-center");
+    expect(PHONE_BAR).toContain("max-regular:min-h-[var(--phone-header-h)]");
   });
 
   it("the title block is the middle column, min-w-0, not an absolute overlay", () => {
-    expect(PHONE_BAR_CENTER).toContain("max-md:col-start-2");
-    expect(PHONE_BAR_CENTER).toContain("max-md:min-w-0");
-    expect(PHONE_BAR_CENTER).toContain("max-md:pointer-events-none");
-    expect(PHONE_BAR_CENTER).not.toContain("max-md:absolute");
+    expect(PHONE_BAR_CENTER).toContain("max-regular:col-start-2");
+    expect(PHONE_BAR_CENTER).toContain("max-regular:min-w-0");
+    expect(PHONE_BAR_CENTER).toContain("max-regular:pointer-events-none");
+    expect(PHONE_BAR_CENTER).not.toContain("max-regular:absolute");
     expect(PHONE_BAR_CENTER).not.toMatch(/inset-x-\[/);
   });
 
   it("the capsule is the third column, capped at 9.5rem and scrolling inside the cap (never past the edge)", () => {
-    expect(PHONE_BAR_RIGHT).toContain("max-md:col-start-3");
-    expect(PHONE_BAR_RIGHT).toContain("max-md:justify-self-end");
-    expect(PHONE_BAR_RIGHT).toContain("max-md:max-w-[9.5rem]");
-    expect(PHONE_BAR_RIGHT).toContain("max-md:overflow-x-auto");
+    expect(PHONE_BAR_RIGHT).toContain("max-regular:col-start-3");
+    expect(PHONE_BAR_RIGHT).toContain("max-regular:justify-self-end");
+    expect(PHONE_BAR_RIGHT).toContain("max-regular:max-w-[9.5rem]");
+    expect(PHONE_BAR_RIGHT).toContain("max-regular:overflow-x-auto");
     // Arithmetic: three 44px circles = 132px; the cap is 9.5rem = 152px at 16px root.
     expect(3 * 44).toBeLessThanOrEqual(9.5 * 16);
   });
 
   it("the title and subtitle truncate with ellipsis (one line each)", () => {
-    expect(PHONE_BAR_TITLE).toContain("max-md:truncate");
-    expect(PHONE_BAR_SUBTITLE).toContain("max-md:truncate");
-    expect(PHONE_BAR_SUBTITLE).toContain("max-md:text-xs");
+    expect(PHONE_BAR_TITLE).toContain("max-regular:truncate");
+    expect(PHONE_BAR_SUBTITLE).toContain("max-regular:truncate");
+    expect(PHONE_BAR_SUBTITLE).toContain("max-regular:text-xs");
   });
 
   it("render: title block in the middle column, capsule in the third, subtitle visible", () => {
@@ -175,10 +175,10 @@ describe("2. title block insets equal the measured left slot and right capsule",
       }),
     );
     const block = container.querySelector('[data-slot="page-header-title-block"]');
-    expect(cls(block)).toContain("max-md:col-start-2");
+    expect(cls(block)).toContain("max-regular:col-start-2");
     const capsule = container.querySelector('[data-slot="page-header-actions"]');
-    expect(cls(capsule)).toEqual(expect.arrayContaining(["max-md:col-start-3", "max-md:max-w-[9.5rem]"]));
-    expect(cls(screen.getByText("Every account you track, in one list"))).toContain("max-md:truncate");
+    expect(cls(capsule)).toEqual(expect.arrayContaining(["max-regular:col-start-3", "max-regular:max-w-[9.5rem]"]));
+    expect(cls(screen.getByText("Every account you track, in one list"))).toContain("max-regular:truncate");
   });
 
   it("the bar keeps the sticky glass material and the fixed min height (one row, 60px)", () => {
@@ -298,8 +298,8 @@ describe("5. More page: PageHeader title and bottom clearance", () => {
 describe("6. back circle is centred in the 60px bar (shared bar and new-transaction header)", () => {
   it("the shared bar is 3.75rem (60px) with items-center, so a 44px circle leaves 8px clear above and below", () => {
     // Arithmetic: (60 - 44) / 2 = 8px.
-    expect(PHONE_BAR).toContain("max-md:min-h-[var(--phone-header-h)]");
-    expect(PHONE_BAR).toContain("max-md:items-center");
+    expect(PHONE_BAR).toContain("max-regular:min-h-[var(--phone-header-h)]");
+    expect(PHONE_BAR).toContain("max-regular:items-center");
     expect((60 - 44) / 2).toBe(8);
   });
 

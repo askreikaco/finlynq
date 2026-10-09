@@ -25,21 +25,27 @@ export interface OverflowAction {
   destructive?: boolean;
 }
 
-/** Tailwind class for header buttons that must disappear below md (they live in the overflow menu there). */
-export const HEADER_DESKTOP_ONLY = "max-md:hidden";
+/**
+ * Secondary header action: visible from regular (640px) up, moved to the overflow menu below it.
+ * Viewport variant `max-regular:` (globals.css), not a container query (design-system-spec 3f).
+ */
+export const HEADER_SECONDARY = "max-regular:hidden";
+
+/** Alias of HEADER_SECONDARY, kept so existing callers keep working. */
+export const HEADER_DESKTOP_ONLY = HEADER_SECONDARY;
 
 /**
- * Sticky top bar, every breakpoint. Pinned at the top of the scroll container: the window on phones
- * (safe-area inset), <main> on md+ (top 0). z-30 above section labels (z-10).
- * md+ gets a translucent background (glass-bar only exists below md) so scrolled content does not show through.
+ * Sticky top bar, every size (owner D5). Pinned at the top of the scroll container: the window below
+ * regular (safe-area inset), <main> from regular (top 0). z-30 above section labels (z-10).
+ * From regular the bar is opaque (translucent background + blur, no glass).
  * Sticky is inert if any ancestor between the bar and the scroller has overflow-* other than visible/clip.
  * Keep ONE position class on the bar: cn()/twMerge drops sticky if a relative/absolute/fixed class is merged in.
  */
 export const PHONE_BAR_STICKY =
-  "glass-bar sticky top-[var(--sat,0px)] z-30 md:top-0 md:bg-background/90 md:backdrop-blur-sm";
+  "glass-bar sticky top-[var(--sat,0px)] z-30 regular:top-0 regular:bg-background/90 regular:backdrop-blur-sm";
 
 /**
- * Phone top bar (max-md layout), shared by PageHeader and the settings detail row. Adds to PHONE_BAR_STICKY:
+ * Phone top bar (below regular), shared by PageHeader and the settings detail row. Adds to PHONE_BAR_STICKY:
  * full-bleed (-mx-4 cancels the app shell's px-4), a three-column grid, min-h --phone-header-h (3.75rem).
  * Columns: [left slot | title | right capsule]. The side tracks are min 2.75rem (one 44pt target) and
  * size to their content, so the title column is exactly the space between the MEASURED slots: a title or
@@ -48,47 +54,37 @@ export const PHONE_BAR_STICKY =
  * No pt-[var(--sat)]: body already pads its in-flow top by --sat.
  */
 export const PHONE_BAR =
-  "glass-bar sticky top-[var(--sat,0px)] z-30 md:top-0 md:bg-background/90 md:backdrop-blur-sm max-md:-mx-4 max-md:grid max-md:min-h-[var(--phone-header-h)] max-md:grid-cols-[minmax(2.75rem,auto)_minmax(0,1fr)_minmax(2.75rem,auto)] max-md:items-center max-md:px-4";
+  "glass-bar sticky top-[var(--sat,0px)] z-30 regular:top-0 regular:bg-background/90 regular:backdrop-blur-sm max-regular:-mx-4 max-regular:grid max-regular:min-h-[var(--phone-header-h)] max-regular:grid-cols-[minmax(2.75rem,auto)_minmax(0,1fr)_minmax(2.75rem,auto)] max-regular:items-center max-regular:px-4";
 
 /** Left slot placeholder (no back target): keeps the title column aligned. */
-export const PHONE_BAR_SIDE = "hidden max-md:flex max-md:size-11 max-md:shrink-0 max-md:col-start-1 max-md:row-start-1";
+export const PHONE_BAR_SIDE = "hidden max-regular:flex max-regular:size-11 max-regular:shrink-0 max-regular:col-start-1 max-regular:row-start-1";
 
 /** Title block: the middle grid column (between the measured slots). min-w-0 lets the title truncate.
  * pointer-events-none: taps reach the buttons. */
 export const PHONE_BAR_CENTER =
-  "max-md:col-start-2 max-md:row-start-1 max-md:flex max-md:min-w-0 max-md:flex-col max-md:items-center max-md:justify-center max-md:text-center max-md:pointer-events-none";
+  "max-regular:col-start-2 max-regular:row-start-1 max-regular:flex max-regular:min-w-0 max-regular:flex-col max-regular:items-center max-regular:justify-center max-regular:text-center max-regular:pointer-events-none";
 
-/** Class added to the primary action on phones: an icon-only 44px filled circle (see globals.css). */
+/** Class added to the primary action below regular: an icon-only 44px filled circle (see globals.css). */
 export const PHONE_PRIMARY_CLASS = "phone-icon-action";
 
-/** Title on phones: system scale (iOS headline is 17pt semibold; text-base is the nearest step), one line. */
+/** Title at regular and up: one system style at every size (owner D4, 28/800). text-3xl is the nearest
+ * system step to 28px, so no arbitrary size. */
+export const HEADER_TITLE_CLASS = "text-3xl/9 font-extrabold tracking-tight";
+
+/** Title below regular: system scale (iOS headline is 17pt semibold; text-base is the nearest step), one line. */
 export const PHONE_BAR_TITLE =
-  "max-md:max-w-full max-md:text-base max-md:font-semibold max-md:tracking-normal max-md:truncate max-md:text-center";
+  "max-regular:max-w-full max-regular:text-base max-regular:font-semibold max-regular:tracking-normal max-regular:truncate max-regular:text-center";
 
-/** Subtitle line under the title on phones (muted, one line, ellipsis). text-xs = 12px, the system caption step. */
-export const PHONE_BAR_SUBTITLE = "max-md:mt-0 max-md:w-full max-md:truncate max-md:text-center max-md:text-xs";
+/** Subtitle, every size: muted, one line. Shown from regular up as a line under the title; below regular it
+ * is a truncated caption (text-xs, the system caption step) centred under the title. */
+export const HEADER_SUBTITLE_CLASS = "block text-sm text-muted-foreground mt-1";
+export const PHONE_BAR_SUBTITLE = "max-regular:mt-0 max-regular:w-full max-regular:truncate max-regular:text-center max-regular:text-xs";
 
-/** Right slot on phones: ONE glass capsule (pill, 44px high, no padding) in the third grid column. Its width
- * is capped at 9.5rem (three 44px circles) and it scrolls inside that cap, so it never runs past the right edge. */
+/** Right slot below regular: ONE glass capsule (pill, 44px high, no padding) in the third grid column. Its width
+ * is capped at 9.5rem (three 44px circles) and it scrolls inside that cap, so it never runs past the right edge.
+ * From regular the slot is the plain actions row (actionsClassName). */
 export const PHONE_BAR_RIGHT =
-  "glass-capsule max-md:col-start-3 max-md:row-start-1 max-md:flex max-md:h-11 max-md:max-w-[9.5rem] max-md:min-w-0 max-md:shrink-0 max-md:flex-nowrap max-md:items-center max-md:justify-self-end max-md:gap-0 max-md:overflow-x-auto max-md:rounded-full max-md:p-0";
-
-/**
- * Turn the page's ORIGINAL desktop h1 classes into md+ classes so the desktop heading is
- * byte-for-byte what it was: every plain token gets `md:`, `sm:` tokens move to `md:`
- * (below md the title is always 28/800), other variants are kept as-is.
- */
-export function desktopClasses(original: string): string {
-  const out = original
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((t) => {
-      if (t.startsWith("sm:")) return `md:${t.slice(3)}`;
-      if (t.includes(":")) return t;
-      return `md:${t}`;
-    });
-  return cn(out.join(" "));
-}
+  "glass-capsule max-regular:col-start-3 max-regular:row-start-1 max-regular:flex max-regular:h-11 max-regular:max-w-[9.5rem] max-regular:min-w-0 max-regular:shrink-0 max-regular:flex-nowrap max-regular:items-center max-regular:justify-self-end max-regular:gap-0 max-regular:overflow-x-auto max-regular:rounded-full max-regular:p-0";
 
 /** Flatten Fragments so a fragment-wrapped action is seen as its own child (no DOM change). */
 function flattenActions(node: React.ReactNode): React.ReactNode[] {
@@ -108,15 +104,15 @@ function isPhoneInvisible(c: React.ReactElement): boolean {
   return c.type === Dialog || c.type === DropdownMenu || c.type === FromMd;
 }
 
-/** The primary action is the last visible (not max-md:hidden) child of the actions. Returns the children with
- * that one gaining an aria-label (its visible text, if none was set) and the icon-only phone class. */
+/** The primary action is the last child that is not a secondary action (HEADER_SECONDARY). Returns the children
+ * with that one gaining an aria-label (its visible text, if none was set) and the icon-only class below regular. */
 export function withPhonePrimary(actions: React.ReactNode): React.ReactNode {
   const items = flattenActions(actions);
   let idx = -1;
   items.forEach((c, i) => {
     if (!React.isValidElement(c) || isPhoneInvisible(c)) return;
     const cn0 = String((c.props as { className?: string }).className ?? "");
-    if (!cn0.includes("max-md:hidden")) idx = i;
+    if (!cn0.includes(HEADER_SECONDARY)) idx = i;
   });
   if (idx < 0) return items;
   return items.map((c, i) => {
@@ -140,14 +136,15 @@ function textOf(node: React.ReactNode): string {
 }
 
 /**
- * Page header. Below md (native): one glass top bar (PHONE_BAR): [left 44px circle back | lead |
- * spacer] [title centred, subtitle under it] [ONE glass capsule holding the actions and the ⋯
- * overflow menu]. Subtitle shows on phones too. At md+ it renders the page's original markup:
- * the original classes (`className`, `titleClassName`, `subtitleClassName`, `actionsClassName`)
- * are re-emitted with `md:` prefixes; every phone class is max-md only.
+ * Page header, one component for every size. The phone design is the base: below regular (640px) it is one
+ * glass top bar (PHONE_BAR): [left 44px circle back | lead | spacer] [title centred, subtitle under it]
+ * [ONE glass capsule holding the primary action and the ⋯ overflow menu]. From regular up the same bar is
+ * opaque, the title and subtitle use the system style, the primary action shows its label, and secondary
+ * actions (HEADER_SECONDARY) appear inline. `className` and `actionsClassName` are the page's own layout
+ * classes and apply at every size.
  *
- * `actions` is the page's original action node(s). Secondary buttons inside it must carry
- * HEADER_DESKTOP_ONLY and have a matching entry in `overflow`; the primary stays visible.
+ * `actions` is the page's action node(s). Secondary buttons inside it must carry HEADER_SECONDARY and have a
+ * matching entry in `overflow`; the primary stays visible at every size.
  */
 export function PageHeader({
   title,
@@ -155,8 +152,6 @@ export function PageHeader({
   actions,
   overflow,
   className,
-  titleClassName = "text-2xl font-bold",
-  subtitleClassName = "text-sm text-muted-foreground mt-1",
   actionsClassName = "flex items-center gap-2",
   lead,
   leadClassName = "flex items-center gap-3",
@@ -168,9 +163,17 @@ export function PageHeader({
   subtitle?: React.ReactNode;
   actions?: React.ReactNode;
   overflow?: OverflowAction[];
-  /** Original wrapper classes (desktop). */
+  /** Page layout classes for the bar (apply at every size). */
   className?: string;
+  /**
+   * @deprecated No-op since G2-07: the title is one system style at every size. Still accepted and ignored,
+   * so existing callers keep compiling. Remove the prop at the call site.
+   */
   titleClassName?: string;
+  /**
+   * @deprecated No-op since G2-07: the subtitle is one system style at every size. Still accepted and ignored.
+   * Remove the prop at the call site.
+   */
   subtitleClassName?: string;
   actionsClassName?: string;
   /** Node left of the title block (e.g. an avatar tile); wrapped with `leadClassName`. */
@@ -183,21 +186,12 @@ export function PageHeader({
   /** Optional back button label (defaults to "Back"). */
   backLabel?: string;
 }) {
-  // No backHref: a level 2+ route (per the nav registry) gets a back button to its parent.
+  // No backHref: a level 2+ route (per the nav registry) gets a back button to its parent. An explicit backHref wins.
   const autoBack = useBackTarget();
   const effectiveBackHref = backHref ?? (autoBack && autoBack.level >= 2 ? autoBack.href ?? undefined : undefined);
   const hasRight = !!actions || (overflow?.length ?? 0) > 0;
-  const noTracking = !/(^|\s)tracking-/.test(titleClassName);
   const h1 = (
-    <h1
-      data-slot="page-header-title"
-      className={cn(
-        "text-3xl/9 font-bold tracking-tight",
-        noTracking && "md:tracking-normal",
-        desktopClasses(titleClassName),
-        PHONE_BAR_TITLE,
-      )}
-    >
+    <h1 data-slot="page-header-title" className={cn(HEADER_TITLE_CLASS, PHONE_BAR_TITLE)}>
       {title}
     </h1>
   );
@@ -205,7 +199,7 @@ export function PageHeader({
     <div data-slot="page-header-title-block" className={PHONE_BAR_CENTER}>
       {h1}
       {subtitle ? (
-        <p data-slot="page-header-subtitle" className={cn("block", subtitleClassName, PHONE_BAR_SUBTITLE)}>
+        <p data-slot="page-header-subtitle" className={cn(HEADER_SUBTITLE_CLASS, PHONE_BAR_SUBTITLE)}>
           {subtitle}
         </p>
       ) : null}
@@ -217,7 +211,7 @@ export function PageHeader({
   return (
     <div data-slot="page-header" className={cn(className, PHONE_BAR)}>
       {hasLeft ? (
-        <div className={cn(leadClassName, "max-md:contents")}>
+        <div className={cn(leadClassName, "max-regular:contents")}>
           {effectiveBackHref ? <BackButton href={effectiveBackHref} label={backLabel} className="justify-self-start" /> : null}
           {lead}
           {titleBlock}
@@ -238,7 +232,7 @@ export function PageHeader({
   );
 }
 
-/** "⋯" button (44px) + accessible menu. Visible below md only. */
+/** "⋯" button (44px below regular) + accessible menu. Visible below regular only. */
 export function OverflowMenu({ items }: { items: OverflowAction[] }) {
   return (
     <DropdownMenu>
@@ -249,7 +243,7 @@ export function OverflowMenu({ items }: { items: OverflowAction[] }) {
             size="icon"
             aria-label="More actions"
             data-slot="overflow-trigger"
-            className="md:hidden"
+            className="regular:hidden"
           />
         }
       >

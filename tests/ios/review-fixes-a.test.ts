@@ -17,7 +17,7 @@ const GLASS_SEL = '[data-slot="page-header-actions"] > :is(button, a):not([data-
 
 // Text of the phone-only glass block (from its opening @media to the tab bar section).
 function phoneGlassBlock(): string {
-  const start = css.indexOf("@media (width < 48rem) {\n  .glass-capsule {");
+  const start = css.indexOf("@media (width < 40rem) {\n  .glass-capsule {");
   const end = css.indexOf("/* Mobile bottom tab bar", start);
   expect(start).toBeGreaterThan(-1);
   return css.slice(start, end);

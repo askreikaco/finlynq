@@ -46,12 +46,12 @@ describe("Settings iOS multi-level menu: hub (level 1)", () => {
     });
   });
 
-  it("uses the shared bar title on phones (system text-base semibold; md+ keeps text-2xl)", () => {
+  it("uses the shared bar title: text-base semibold below regular, text-3xl/9 extrabold from regular", () => {
     render(<SettingsHub />);
     const h1 = screen.getByRole("heading", { level: 1, name: "Settings" });
-    expect(cls(h1)).toContain("max-md:text-base");
-    expect(cls(h1)).toContain("max-md:font-semibold");
-    expect(cls(h1)).toContain("md:text-2xl");
+    expect(cls(h1)).toContain("max-regular:text-base");
+    expect(cls(h1)).toContain("max-regular:font-semibold");
+    expect(cls(h1)).toEqual(expect.arrayContaining(["text-3xl/9", "font-extrabold"]));
   });
 });
 
@@ -90,16 +90,16 @@ describe("Settings iOS multi-level menu: detail pages (level 2)", () => {
 
     const back = screen.getByRole("link", { name: "Back to Settings" });
     expect(back.getAttribute("href")).toBe("/settings");
-    expect(cls(back)).toEqual(expect.arrayContaining(["glass-capsule", "max-md:size-11", "max-md:rounded-full"]));
+    expect(cls(back)).toEqual(expect.arrayContaining(["glass-capsule", "max-regular:size-11", "max-regular:rounded-full"]));
 
-    const title = container.querySelector('[data-slot="page-header-title-block"], span[aria-hidden].max-md\\:col-start-2');
+    const title = container.querySelector('[data-slot="page-header-title-block"], span[aria-hidden].max-regular\\:col-start-2');
     expect(title?.textContent).toBe("Investments");
 
     const row = back.parentElement;
     expect(row?.contains(title as Node)).toBe(true);
-    expect(cls(row)).toEqual(expect.arrayContaining(["glass-bar", "sticky", "max-md:-mx-4"]));
-    expect(cls(title)).toEqual(expect.arrayContaining(["max-md:col-start-2", "max-md:text-base", "max-md:font-semibold"]));
-    expect(cls(title)).not.toContain("max-md:absolute");
+    expect(cls(row)).toEqual(expect.arrayContaining(["glass-bar", "sticky", "max-regular:-mx-4"]));
+    expect(cls(title)).toEqual(expect.arrayContaining(["max-regular:col-start-2", "max-regular:text-base", "max-regular:font-semibold"]));
+    expect(cls(title)).not.toContain("max-regular:absolute");
   });
 
   it("hides the page's own large h1 on phones but keeps it in the DOM", () => {
@@ -120,10 +120,10 @@ describe("PageHeader with backHref: phone glass header row", () => {
     const { container } = render(<PageHeader title="Currency Review" backHref="/transactions" backLabel="Back to Transactions" />);
 
     const back = screen.getByRole("link", { name: "Back to Transactions" });
-    expect(cls(back)).toEqual(expect.arrayContaining(["glass-capsule", "max-md:size-11", "max-md:rounded-full"]));
+    expect(cls(back)).toEqual(expect.arrayContaining(["glass-capsule", "max-regular:size-11", "max-regular:rounded-full"]));
 
     const h1 = screen.getByRole("heading", { level: 1, name: "Currency Review" });
-    expect(cls(h1)).toEqual(expect.arrayContaining(["max-md:truncate", "max-md:text-base", "max-md:font-semibold"]));
+    expect(cls(h1)).toEqual(expect.arrayContaining(["max-regular:truncate", "max-regular:text-base", "max-regular:font-semibold"]));
     expect(cls(h1)).not.toContain("glass-capsule");
 
     const row = container.querySelector('[data-slot="page-header"]');
@@ -148,7 +148,7 @@ describe("PageHeader with backHref: phone glass header row", () => {
     );
     const actions = container.querySelector('[data-slot="page-header-actions"]');
     expect(actions).not.toBeNull();
-    expect(cls(actions)).toEqual(expect.arrayContaining(["glass-capsule", "max-md:h-11", "max-md:rounded-full"]));
+    expect(cls(actions)).toEqual(expect.arrayContaining(["glass-capsule", "max-regular:h-11", "max-regular:rounded-full"]));
     expect(screen.getByRole("button", { name: "Add" })).toBeTruthy();
   });
 
@@ -169,7 +169,7 @@ describe("PageHeader with backHref: phone glass header row", () => {
 
   it("ships the glass-capsule and glass-bar material phone-only in globals.css", () => {
     const css = readFileSync(resolve(__dirname, "../../src/app/globals.css"), "utf-8");
-    expect(css).toMatch(/@media \(width < 48rem\) \{\s*\.glass-capsule \{/);
+    expect(css).toMatch(/@media \(width < 40rem\) \{\s*\.glass-capsule \{/);
     expect(css).toMatch(/\.glass-bar \{[^}]*blur\(28px\) saturate\(1\.8\)/);
     expect(css).toContain("prefers-reduced-transparency");
   });

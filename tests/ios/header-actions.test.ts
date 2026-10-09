@@ -6,7 +6,7 @@
  *    Any other phone-visible action must be icon-only (no text), or the 9.5rem capsule overflows.
  *  - no phone-visible `lead`: a lead must carry HEADER_DESKTOP_ONLY (or be a hidden spacer).
  *
- * Hidden on phones: className containing max-md:hidden or HEADER_DESKTOP_ONLY, className="hidden",
+ * Hidden on phones: className containing max-regular:hidden, HEADER_SECONDARY or HEADER_DESKTOP_ONLY (alias), className="hidden",
  * or a FromMd element. Non-visual roots (Dialog, DropdownMenu) render no element of their own:
  * their *Trigger children (rendered via `render={...}` or the trigger itself) are the actions.
  */
@@ -79,7 +79,7 @@ function openOf(node: ts.JsxElement | ts.JsxSelfClosingElement): ts.JsxOpeningLi
 function hiddenOnPhone(el: ts.JsxOpeningLikeElement): boolean {
   if (el.tagName.getText() === "FromMd") return true;
   const cls = getAttr(el, "className")?.initializer?.getText() ?? "";
-  return /max-md:hidden|HEADER_DESKTOP_ONLY/.test(cls) || /^(\{\s*)?["']hidden["'](\s*\})?$/.test(cls);
+  return /max-regular:hidden|max-md:hidden|HEADER_SECONDARY|HEADER_DESKTOP_ONLY/.test(cls) || /^(\{\s*)?["']hidden["'](\s*\})?$/.test(cls);
 }
 
 function outermostJsx(node: ts.Node, out: ts.Node[] = []): ts.Node[] {

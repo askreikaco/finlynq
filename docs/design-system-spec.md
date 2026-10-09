@@ -84,7 +84,7 @@ Barrel: `src/components/mobile/index.ts:1-14`.
 
 | File | Export (file:line) | Purpose |
 |---|---|---|
-| `mobile/page-header.tsx` | `:55` PageHeader, `:159` OverflowMenu, `:26` HEADER_DESKTOP_ONLY, `:33` desktopClasses | Page title + back + primary action; secondary actions in "..." menu below md (`:45-54`) |
+| `mobile/page-header.tsx` | PageHeader, OverflowMenu, HEADER_SECONDARY (alias HEADER_DESKTOP_ONLY) | One header for all sizes (see 3d); secondary actions in "..." menu below regular |
 | `mobile/back-button.tsx` | `:8` BackButton | 44px back link (`min-h-11 min-w-11`, `:23`) |
 | `mobile/pill-button.tsx` | `:12` PillButton | Header pill; visual h-9 with 44px hit area via `after:-inset-y-1` (`:6-7`) |
 | `mobile/list-row.tsx` | `:41` ListRow, `:13` ListRowProps | Native list row, min-h 56px (`:37-39` doc) |
@@ -129,13 +129,16 @@ Excluded from the adaptive guard scan (see 3e).
 - `tabular-nums lining-nums` on `.tabular-nums, td, th, [data-value]` (`globals.css:145-149`), on `.hero-number` (`:308-313`).
 - Numbers render system mono on md+; UI font below md.
 
-### 3d. Titles and subtitles (PageHeader)
-- Default title classes `text-2xl font-bold` (`mobile/page-header.tsx:61`); default subtitle `text-sm text-muted-foreground mt-1` (`:62`).
-- Title base classes on the h1: `text-[28px]/9 font-extrabold tracking-tight max-md:flex ...` (`:95`). Below md the title is 28px/800 (`:31` doc, `:46` doc).
-- Subtitle hidden below md: `hidden md:block` (`:118`).
-- Secondary header actions carry `HEADER_DESKTOP_ONLY` (`max-md:hidden`, `:26`) and a matching `overflow` entry (`:52-53` doc). Overflow menu renders with `OverflowMenu` (`:151`, `:159`).
-- Back link: `backHref` renders BackButton (`:104-113`, `:133-135`). `backLabel` defaults to "Back" (`back-button.tsx:10`).
-- `desktopClasses(original)` re-emits original desktop classes with `md:` prefixes (`:33-43`).
+### 3d. Titles, subtitles, actions (PageHeader, G2-07)
+- One component, phone design as base. Below regular (640px) = `max-regular:` classes; regular+ = base/`regular:` classes. `mobile/page-header.tsx` has no `md:` tokens.
+- Title: below regular `text-base font-semibold` (`PHONE_BAR_TITLE`); regular+ `text-3xl/9 font-extrabold` (`HEADER_TITLE_CLASS`). 28/800 has no system size, so text-3xl is used (owner D4).
+- Subtitle: visible at every size. Below regular a truncated `text-xs` line; regular+ `text-sm` (`HEADER_SUBTITLE_CLASS`).
+- `titleClassName` / `subtitleClassName`: `@deprecated` no-ops, still accepted and ignored. `desktopClasses()` removed.
+- Secondary actions: `HEADER_SECONDARY` = `max-regular:hidden`; below regular they go to the `overflow` menu. `HEADER_DESKTOP_ONLY` is an alias of the same value.
+- Primary action: icon-only 44px circle below regular (`phone-icon-action`, globals.css `width < 40rem`); label visible from regular.
+- Bar: sticky at every size (D5). Glass only below regular; opaque `regular:bg-background/90` from regular. `className` / `actionsClassName` stay caller-owned at every size.
+- Back link: `backHref` renders BackButton at every size. `backLabel` defaults to "Back" (`back-button.tsx`).
+- Overflow trigger: `regular:hidden`.
 
 ### 3e. Adaptive guard (ratchet)
 - Test: `tests/design-system-guard.test.ts`. Banned regex `:6`: `/md:hidden|hidden\s+md:|isMobile|window\.innerWidth/gi`.
