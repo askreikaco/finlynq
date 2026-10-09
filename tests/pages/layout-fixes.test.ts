@@ -44,10 +44,10 @@ describe("settings/general at 390", () => {
     expect(src).toContain('lead={<span aria-hidden className="hidden" />}');
   });
 
-  it("Display Currency row is a column below md and a row from md (control full width below md)", () => {
+  it("Display Currency row is a column below regular and a row from regular (control full width below regular)", () => {
     const src = read(SETTINGS_GENERAL);
-    expect(src).toContain('<div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between md:gap-4">');
-    expect(src).toContain('<div className="w-full md:w-56 md:shrink-0">');
+    expect(src).toContain('<div className="flex flex-col gap-2 regular:flex-row regular:items-center regular:justify-between regular:gap-4">');
+    expect(src).toContain('<div className="w-full regular:w-56 regular:shrink-0">');
     expect(src).not.toContain('<div className="w-56">');
   });
 
@@ -55,13 +55,13 @@ describe("settings/general at 390", () => {
     const src = read(SETTINGS_GENERAL);
     expect(src).toContain('<div className="flex items-center justify-between gap-3">\n            <div className="min-w-0 flex-1">\n              <Label>UI Font</Label>');
     expect(src).toContain('<div className="flex items-center justify-between gap-3">\n            <div className="min-w-0 flex-1">\n              <Label htmlFor="animation-toggle">');
-    expect(src).toContain('<SelectTrigger className="w-44 shrink-0 md:w-48">');
+    expect(src).toContain('<SelectTrigger className="w-44 shrink-0 regular:w-48">');
   });
 
-  it("Appearance row stacks below md; segmented control is not forced to full width", () => {
+  it("Appearance row stacks below regular; segmented control is not forced to full width", () => {
     const src = read(SETTINGS_GENERAL);
-    expect(src).toContain('<div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between md:gap-3">');
-    expect(src).toContain('self-start rounded-lg border p-0.5 md:self-auto');
+    expect(src).toContain('<div className="flex flex-col gap-2 regular:flex-row regular:items-center regular:justify-between regular:gap-3">');
+    expect(src).toContain('self-start rounded-lg border p-0.5 regular:self-auto');
   });
 
   it("PageHeader keeps desktop placement (lead is display:none, so no gap is added at md+)", () => {

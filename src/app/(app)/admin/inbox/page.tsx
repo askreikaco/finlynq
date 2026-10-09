@@ -266,7 +266,7 @@ export default function AdminInboxPage() {
         </Card>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-[340px_minmax(0,1fr)] items-start">
+      <div className="grid gap-4 wide:grid-cols-[340px_minmax(0,1fr)] items-start">
         {/* ─── Left: list ─── */}
         <Card className="overflow-hidden">
           <Tabs value={category} onValueChange={(v) => setCategory(v as "mailbox" | "trash")}>

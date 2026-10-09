@@ -123,8 +123,8 @@ export default function GeneralSettingsPage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between md:gap-4">
-            <div className="min-w-0 md:flex-1">
+          <div className="flex flex-col gap-2 regular:flex-row regular:items-center regular:justify-between regular:gap-4">
+            <div className="min-w-0 regular:flex-1">
               <Label>Display Currency</Label>
               <p className="text-xs text-muted-foreground">
                 Totals and aggregations across the app are converted to this currency.
@@ -136,7 +136,7 @@ export default function GeneralSettingsPage() {
                 for. Without that, the PUT route's own rejection message ("Add a
                 custom rate via Settings → Custom exchange rates first") was a
                 dead end — after adding the rate, no picker listed the currency. */}
-            <div className="w-full md:w-56 md:shrink-0">
+            <div className="w-full regular:w-56 regular:shrink-0">
               <Combobox
                 value={displayCurrency}
                 onValueChange={handleCurrencySelect}
@@ -156,7 +156,7 @@ export default function GeneralSettingsPage() {
               </p>
             </div>
             <Select value={font} onValueChange={(v) => setFont(v as FontKey)}>
-              <SelectTrigger className="w-44 shrink-0 md:w-48"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-44 shrink-0 regular:w-48"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {FONT_OPTIONS.map((o) => (
                   <SelectItem key={o.key} value={o.key}>
@@ -167,8 +167,8 @@ export default function GeneralSettingsPage() {
             </Select>
           </div>
 
-          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between md:gap-3">
-            <div className="min-w-0 md:flex-1">
+          <div className="flex flex-col gap-2 regular:flex-row regular:items-center regular:justify-between regular:gap-3">
+            <div className="min-w-0 regular:flex-1">
               <Label id="appearance-label">Appearance</Label>
               <p className="text-xs text-muted-foreground">
                 System, light, or dark.
@@ -177,7 +177,7 @@ export default function GeneralSettingsPage() {
             <div
               role="radiogroup"
               aria-labelledby="appearance-label"
-              className="inline-flex max-w-full self-start rounded-lg border p-0.5 md:self-auto"
+              className="inline-flex max-w-full self-start rounded-lg border p-0.5 regular:self-auto"
             >
               {([
                 { value: "system", label: "System", icon: Monitor },

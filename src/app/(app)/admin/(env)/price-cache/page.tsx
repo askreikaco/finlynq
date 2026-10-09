@@ -324,7 +324,7 @@ export default function AdminPriceCachePage() {
       {/* Summary */}
       {data && (
         <Card>
-          <CardContent className="grid grid-cols-2 gap-x-6 gap-y-2 py-4 sm:grid-cols-3 lg:grid-cols-6">
+          <CardContent className="grid grid-cols-2 gap-x-6 gap-y-2 py-4 regular:grid-cols-3 wide:grid-cols-6">
             <Stat label="Total rows" value={data.summary.totalRows.toLocaleString()} />
             <Stat label={tab === "fx" ? "Currencies" : "Symbols"} value={data.summary.distinctKeys.toLocaleString()} />
             <Stat label="First date" value={data.summary.firstDate ?? "—"} />

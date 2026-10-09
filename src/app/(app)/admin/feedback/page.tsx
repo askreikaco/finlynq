@@ -225,7 +225,7 @@ function AdminThreadDialog({
 
   return (
     <Dialog open={feedbackId != null} onOpenChange={(v) => { if (!v) onClose(); }}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="regular:max-w-lg">
         <DialogHeader>
           <DialogTitle className="capitalize">
             {thread ? `${thread.type} feedback` : "Feedback"}

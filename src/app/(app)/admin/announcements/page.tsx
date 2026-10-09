@@ -203,7 +203,7 @@ export default function AdminAnnouncementsPage() {
             />
           </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 regular:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="a-category">Category</Label>
               <select

@@ -617,7 +617,7 @@ export default function AdminPage() {
     return (
       <div className="space-y-5">
         <div className="h-7 w-52 animate-shimmer rounded-lg" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+        <div className="grid grid-cols-1 regular:grid-cols-2 wide:grid-cols-4 gap-4 mt-4">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="h-24 animate-shimmer rounded-2xl" />
           ))}
@@ -658,7 +658,7 @@ export default function AdminPage() {
 
       {/* Stats Grid */}
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 regular:grid-cols-2 wide:grid-cols-4 gap-4">
           <StatCard
             label="Total Users"
             value={stats.totalUsers}
@@ -708,7 +708,7 @@ export default function AdminPage() {
               Live activity
             </h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 regular:grid-cols-3 gap-4">
             <StatCard
               label="Active now (15 min)"
               value={stats.activeUsersLast15Min ?? 0}
@@ -778,7 +778,7 @@ export default function AdminPage() {
       {/* Plan Breakdown */}
       {stats && (
         <motion.div variants={itemVariants}>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 regular:grid-cols-3 gap-4">
             {Object.entries(stats.planBreakdown).map(([plan, count]) => (
               <Card key={plan}>
                 <CardContent className="p-4 flex items-center justify-between">

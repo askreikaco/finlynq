@@ -530,7 +530,7 @@ export function ImportMigrateItem() {
                   </a>
                   . Pick an app to start.
                 </p>
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-3 regular:grid-cols-2">
                   <button
                     type="button"
                     onClick={() => setProvider("wealthposition")}

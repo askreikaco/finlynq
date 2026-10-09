@@ -334,7 +334,7 @@ export default function AdminIntegrationsPage() {
                 <p className="text-sm text-muted-foreground">
                   Values saved here override the server environment. Secrets are write-only: leave a field empty to keep it.
                 </p>
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid gap-4 regular:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="email-provider">Provider</Label>
                     <select
