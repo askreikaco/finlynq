@@ -16,8 +16,6 @@ const PAGES = [
   { file: `${APP}/accounts/[id]/page.tsx`, component: "AccountDetailPage", route: "/accounts/[id]", key: "accounts.detail.add" },
   { file: `${APP}/budgets/page.tsx`, component: "BudgetsPage", route: "/budgets", key: "budgets.create" },
   { file: `${APP}/goals/page.tsx`, component: "GoalsPage", route: "/goals", key: "goals.create" },
-  { file: `${APP}/loans/page.tsx`, component: "LoansPageContent", route: "/loans", key: "loans.create" },
-  { file: `${APP}/subscriptions/page.tsx`, component: "SubscriptionsPageContent", route: "/subscriptions", key: "subscriptions.create" },
 ] as const;
 
 function read(rel: string): string {
@@ -59,6 +57,22 @@ describe("finance pages wire usePageFab", () => {
         expect(hookIdx).toBeGreaterThan(-1);
         expect(hookIdx).toBeLessThan(firstEarlyReturnIndex(src, p.component));
       });
+    });
+  }
+});
+
+// Loans and subscriptions converted: the list pages no longer register a create
+// handler. Their create FAB is a route to the full create page instead.
+describe("loans and subscriptions FAB is a route to the create page", () => {
+  for (const [route, target] of [["/loans", "/loans/new"], ["/subscriptions", "/subscriptions/new"]] as const) {
+    it(`${route} routes its FAB to ${target}`, () => {
+      const entry = FAB_ROUTES[route];
+      expect(entry.kind).toBe("route");
+      if (entry.kind === "route") expect(entry.href).toBe(target);
+    });
+    it(`${route} page does not register a create handler`, () => {
+      const src = read(`${APP}/${route.slice(1)}/page.tsx`);
+      expect(src).not.toMatch(/usePageFab\(/);
     });
   }
 });

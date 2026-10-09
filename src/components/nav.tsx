@@ -426,7 +426,11 @@ const FULL_SCREEN_ENTRY_ROUTES = [
   "/settings/investments/securities",
   "/settings/investments/accounts",
   "/settings/investments/cash-sleeves",
+  "/loans/new",
+  "/subscriptions/new",
 ] as const;
+// Edit forms for a single loan / subscription (/loans/<id>/edit, /subscriptions/<id>/edit).
+const FULL_SCREEN_EDIT_ROUTE = /^\/(loans|subscriptions)\/[^/]+\/edit$/;
 
 // Mobile bottom bar
 export const MobileBottomBar = memo(function MobileBottomBar({ pathname }: { pathname: string }) {
@@ -435,6 +439,7 @@ export const MobileBottomBar = memo(function MobileBottomBar({ pathname }: { pat
   // Portfolio operation forms (/portfolio/new/<op>) follow the same rule; the /portfolio/new list keeps the bar.
   const hidden =
     FULL_SCREEN_ENTRY_ROUTES.some((r) => pathname === r || pathname.startsWith(r + "/")) ||
+    FULL_SCREEN_EDIT_ROUTE.test(pathname) ||
     pathname.startsWith("/portfolio/new/");
   if (hidden) return null;
   return (

@@ -29,11 +29,9 @@ export const FAB_HANDLER_KEYS = [
   "feedback.send",
   "goals.create",
   "import.upload",
-  "loans.create",
   "manage-accounts.add",
   "settings.categories.create",
   "rules.create",
-  "subscriptions.create",
 ] as const;
 
 export type FabHandlerKey = (typeof FAB_HANDLER_KEYS)[number];
@@ -120,7 +118,9 @@ export const FAB_ROUTES: Record<string, FabEntry> = {
   "/goals": { kind: "handler", label: "Add goal", icon: Plus, handlerKey: "goals.create" },
   "/import": { kind: "handler", label: "Upload statement", icon: Upload, handlerKey: "import.upload" },
   "/import/pending": { kind: "route", label: "Upload statement", icon: Upload, href: "/import" },
-  "/loans": { kind: "handler", label: "Add loan", icon: Plus, handlerKey: "loans.create" },
+  "/loans": { kind: "route", label: "Add loan", icon: Plus, href: "/loans/new" },
+  "/loans/new": { kind: "hidden", reason: "is the create flow" },
+  "/loans/[id]/edit": { kind: "hidden", reason: "is the edit flow" },
   "/manage-accounts": {
     kind: "handler",
     label: "Add another account",
@@ -188,7 +188,9 @@ export const FAB_ROUTES: Record<string, FabEntry> = {
   "/settings/reconciliation": FALLBACK,
   "/settings/rules": { kind: "handler", label: "Add rule", icon: Zap, handlerKey: "rules.create" },
   "/settings/securities": { kind: "redirect" },
-  "/subscriptions": { kind: "handler", label: "Add subscription", icon: Plus, handlerKey: "subscriptions.create" },
+  "/subscriptions": { kind: "route", label: "Add subscription", icon: Plus, href: "/subscriptions/new" },
+  "/subscriptions/new": { kind: "hidden", reason: "is the create flow" },
+  "/subscriptions/[id]/edit": { kind: "hidden", reason: "is the edit flow" },
   "/tax": FALLBACK,
   "/transactions": { kind: "route", label: "Add transaction", icon: Plus, href: "/transactions/new" },
   "/transactions/audit": FALLBACK,

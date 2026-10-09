@@ -67,7 +67,9 @@ Pages with PageSkeleton: `/budgets`, `/categories/[id]`, `/categories`, `/goals`
 | `/goals` | `src/app/(app)/goals/page.tsx` | app | yes (page.tsx:383) | yes (page.tsx:378) | yes (page.tsx:379) | - |
 | `/import` | `src/app/(app)/import/page.tsx` | app | yes (page.tsx:324) | no | no | - |
 | `/import/pending` | `src/app/(app)/import/pending/page.tsx` | app | via import (import/pending/_components/staged-list-view.tsx:103) | no | no | header from import/pending/_components/reconcile-header.tsx:66 (reachable) |
-| `/loans` | `src/app/(app)/loans/page.tsx` | app | yes (page.tsx:414) | no | yes (page.tsx:410) | - |
+| `/loans` | `src/app/(app)/loans/page.tsx` | app | yes | no | yes | - |
+| `/loans/new` | `src/app/(app)/loans/new/page.tsx` | app | yes | no | no | form: _components/loan-form.tsx |
+| `/loans/[id]/edit` | `src/app/(app)/loans/[id]/edit/page.tsx` | app | yes | yes | yes | form: _components/loan-form.tsx; delete in overflow |
 | `/manage-accounts` | `src/app/(app)/manage-accounts/page.tsx` | app | no | no | no | UNVERIFIED: no header/error/skeleton in depth-3 imports |
 | `/more` | `src/app/(app)/more/page.tsx` | app | no | no | no | UNVERIFIED: no header in depth-3 imports |
 | `/portfolio/dividends` | `src/app/(app)/portfolio/dividends/page.tsx` | app | yes (page.tsx:141) | no | no | - |
@@ -110,7 +112,9 @@ Pages with PageSkeleton: `/budgets`, `/categories/[id]`, `/categories`, `/goals`
 | `/settings/reconciliation` | `src/app/(app)/settings/reconciliation/page.tsx` | app > settings/layout.tsx (SettingsShell) | yes (page.tsx:136) | no | no | - |
 | `/settings/rules` | `src/app/(app)/settings/rules/page.tsx` | app > settings/layout.tsx (SettingsShell) | via import (settings/reconciliation/page.tsx:136) | no | no | re-exports `/settings/reconciliation/page` (page source) |
 | `/settings/securities` | `src/app/(app)/settings/securities/page.tsx` | app > settings/layout.tsx (SettingsShell) | no | no | no | UNVERIFIED: 1-file closure, no header |
-| `/subscriptions` | `src/app/(app)/subscriptions/page.tsx` | app | yes (page.tsx:335) | yes (page.tsx:107) | yes (page.tsx:322) | - |
+| `/subscriptions` | `src/app/(app)/subscriptions/page.tsx` | app | yes | yes | yes | - |
+| `/subscriptions/new` | `src/app/(app)/subscriptions/new/page.tsx` | app | yes | no | no | form: _components/subscription-form.tsx |
+| `/subscriptions/[id]/edit` | `src/app/(app)/subscriptions/[id]/edit/page.tsx` | app | yes | yes | yes | form: _components/subscription-form.tsx; delete in overflow |
 | `/tax` | `src/app/(app)/tax/page.tsx` | app | yes (page.tsx:65) | no | no | - |
 | `/transactions/audit` | `src/app/(app)/transactions/audit/page.tsx` | app | yes (page.tsx:111); backHref + backLabel | no | no | titleClassName text-xl font-semibold tracking-tight |
 | `/transactions/new` | `src/app/(app)/transactions/new/page.tsx` | app | no | no | no | UNVERIFIED: no header in depth-3 imports |

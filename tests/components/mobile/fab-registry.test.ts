@@ -86,14 +86,14 @@ describe("resolveFab", () => {
 });
 
 describe("FAB_ROUTES table", () => {
-  it("has 85 route keys (79 + 6 investments settings pages)", () => {
-    expect(Object.keys(FAB_ROUTES)).toHaveLength(85);
+  it("has 89 route keys (85 + 4 loan/subscription create and edit pages)", () => {
+    expect(Object.keys(FAB_ROUTES)).toHaveLength(89);
   });
 
-  it("kind counts are 38 fallback, 10 route, 13 handler, 21 hidden, 3 redirect", () => {
+  it("kind counts are 38 fallback, 12 route, 11 handler, 25 hidden, 3 redirect", () => {
     const counts: Record<string, number> = {};
     for (const e of Object.values(FAB_ROUTES)) counts[e.kind] = (counts[e.kind] ?? 0) + 1;
-    expect(counts).toEqual({ fallback: 38, route: 10, handler: 13, hidden: 21, redirect: 3 });
+    expect(counts).toEqual({ fallback: 38, route: 12, handler: 11, hidden: 25, redirect: 3 });
   });
 
   it("label/href table for the route entries", () => {
@@ -106,18 +106,20 @@ describe("FAB_ROUTES table", () => {
       ["/dashboard", "New transaction", "/transactions/new"],
       ["/family", "Invite", "/family/share"],
       ["/import/pending", "Upload statement", "/import"],
+      ["/loans", "Add loan", "/loans/new"],
       ["/portfolio", "Add holding", "/settings/investments"],
       ["/portfolio/dividends", "Record dividend", "/portfolio/new/income-expense"],
       ["/portfolio/realized-gains", "Record sale", "/portfolio/new/sell"],
       ["/settings/backfill/[runId]", "New run", "/settings/backfill"],
       ["/settings/investments", "Add security", "/settings/investments/securities/new"],
+      ["/subscriptions", "Add subscription", "/subscriptions/new"],
       ["/transactions", "Add transaction", "/transactions/new"],
     ]);
   });
 
-  it("every handler key is unique and the 13 keys are all used", () => {
+  it("every handler key is unique and the 11 keys are all used", () => {
     const used = Object.values(FAB_ROUTES).flatMap((e) => (e.kind === "handler" ? [e.handlerKey] : []));
-    expect(used).toHaveLength(13);
+    expect(used).toHaveLength(11);
     expect(new Set(used).size).toBe(used.length);
     expect([...used].sort()).toEqual([...FAB_HANDLER_KEYS].sort());
   });
