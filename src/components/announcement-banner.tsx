@@ -45,7 +45,7 @@ export function AnnouncementBanner() {
   const warning = item.severity === "warning";
 
   return (
-    <div className="fixed left-4 right-4 max-w-sm bottom-[calc(5rem+var(--sab))] md:bottom-4 md:right-auto z-50 rounded-xl border border-border/50 bg-card p-4 shadow-lg">
+    <div className="fixed left-4 right-4 max-w-sm bottom-[calc(var(--mobile-bar-clearance)-8px)] md:bottom-4 md:right-auto z-50 rounded-xl border border-border/50 bg-card p-4 shadow-lg">
       <div className="flex items-start gap-3">
         {warning ? (
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />

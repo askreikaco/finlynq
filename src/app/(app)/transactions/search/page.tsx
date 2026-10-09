@@ -153,7 +153,7 @@ export default function TransactionSearchPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background pb-[calc(60px+var(--sab))]">
+    <div className="min-h-screen flex flex-col bg-background pb-[var(--mobile-bar-clearance)]">
       {/* Header */}
       <PageHeader
         title="Search & filter"

@@ -46,7 +46,7 @@ describe("ReportingRecomputeIndicator", () => {
     await waitFor(() => {
       const indicator = container.querySelector("div.fixed");
       expect(indicator).toBeTruthy();
-      expect(indicator?.className).toContain("bottom-[calc(80px+var(--sab))]");
+      expect(indicator?.className).toContain("bottom-[calc(var(--mobile-bar-clearance)-8px)]");
       expect(indicator?.className).toContain("md:bottom-4");
     });
   });
@@ -59,7 +59,7 @@ describe("ReportingRecomputeIndicator", () => {
     await waitFor(() => {
       const indicator = container.querySelector("div.fixed");
       expect(indicator).toBeTruthy();
-      expect(indicator?.className).toContain("bottom-[calc(80px+var(--sab))]");
+      expect(indicator?.className).toContain("bottom-[calc(var(--mobile-bar-clearance)-8px)]");
       expect(indicator?.className).toContain("md:bottom-4");
     });
   });
@@ -72,7 +72,7 @@ describe("ReportingRecomputeIndicator", () => {
     await waitFor(() => {
       const indicator = container.querySelector("div.fixed");
       expect(indicator).toBeTruthy();
-      expect(indicator?.className).toContain("bottom-[calc(144px+var(--sab))]");
+      expect(indicator?.className).toContain("bottom-[calc(var(--mobile-bar-clearance)+64px)]");
       expect(indicator?.className).toContain("md:bottom-24");
     });
   });
@@ -85,7 +85,7 @@ describe("ReportingRecomputeIndicator", () => {
     await waitFor(() => {
       const indicator = container.querySelector("div.fixed");
       expect(indicator).toBeTruthy();
-      expect(indicator?.className).toContain("bottom-[calc(144px+var(--sab))]");
+      expect(indicator?.className).toContain("bottom-[calc(var(--mobile-bar-clearance)+64px)]");
       expect(indicator?.className).toContain("md:bottom-24");
     });
   });
@@ -98,7 +98,7 @@ describe("ReportingRecomputeIndicator", () => {
     await waitFor(() => {
       const indicator = container.querySelector("div.fixed");
       expect(indicator).toBeTruthy();
-      expect(indicator?.className).toContain("bottom-[calc(80px+var(--sab))]");
+      expect(indicator?.className).toContain("bottom-[calc(var(--mobile-bar-clearance)-8px)]");
       expect(indicator?.className).toContain("md:bottom-4");
     });
   });

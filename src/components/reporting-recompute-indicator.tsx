@@ -88,8 +88,8 @@ export function ReportingRecomputeIndicator({ avoidFab = false }: ReportingRecom
   if (!view) return null;
 
   const bottomClasses = shouldAvoidFab
-    ? "bottom-[calc(144px+var(--sab))] md:bottom-24"
-    : "bottom-[calc(80px+var(--sab))] md:bottom-4";
+    ? "bottom-[calc(var(--mobile-bar-clearance)+64px)] md:bottom-24"
+    : "bottom-[calc(var(--mobile-bar-clearance)-8px)] md:bottom-4";
 
   return (
     <div className={`fixed ${bottomClasses} right-4 z-50 flex items-center gap-2 rounded-full bg-background px-3.5 py-2 text-xs text-muted-foreground shadow-lg ring-1 ring-foreground/10`}>

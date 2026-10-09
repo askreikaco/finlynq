@@ -87,7 +87,7 @@ describe("app shell below md", () => {
     expect(l).toContain("px-4 py-3 sm:px-6 sm:py-8 lg:px-8");
     // Assert the binding condition between QuickAdd enabled state and padding values
     // Flag-on branch includes md:pb-24 for desktop FAB clearance
-    expect(l).toMatch(/isQuickAddEnabled\(\)\s*\?\s*"pb-\[calc\(132px\+var\(--sab\)\)\]\s+md:pb-24"\s*:\s*"pb-\[calc\(60px\+var\(--sab\)\)\]\s+md:pb-0"/);
+    expect(l).toMatch(/isQuickAddEnabled\(\)\s*\?\s*"pb-\[calc\(var\(--mobile-bar-clearance\)\+64px\)\]\s+md:pb-24"\s*:\s*"pb-\[var\(--mobile-bar-clearance\)\]\s+md:pb-0"/);
     // Assert bg-dot-pattern is still present
     expect(l).toMatch(/bg-dot-pattern/);
   });

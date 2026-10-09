@@ -290,15 +290,42 @@ html {
   box-shadow: 0 1px 2px oklch(0 0 0 / 30%);
 }
 
-/* Mobile bottom tab bar glass (S8): opaque fallback where blur/color-mix is unsupported or transparency is reduced. */
+/* Mobile bottom tab bar: floating iOS 26 liquid-glass capsule (nav.tsx MobileBottomBar).
+   Geometry (fixed, 16px insets, bottom max(12px,--sab), h-16, rounded-[28px]) is on the nav classes. */
+.mobile-glass-bar {
+  background: oklch(1 0 0 / 55%);
+  -webkit-backdrop-filter: blur(28px) saturate(1.8);
+  backdrop-filter: blur(28px) saturate(1.8);
+  border: 1px solid oklch(0 0 0 / 8%);
+  box-shadow: inset 0 1px 0 oklch(1 0 0 / 18%), 0 8px 32px oklch(0 0 0 / 35%);
+}
+.dark .mobile-glass-bar {
+  background: oklch(1 0 0 / 8%);
+  border-color: oklch(1 0 0 / 14%);
+}
+/* Active tab pill, sits behind icon + label. */
+.mobile-glass-pill {
+  background: oklch(0 0 0 / 7%);
+}
+.dark .mobile-glass-pill {
+  background: oklch(1 0 0 / 12%);
+}
+/* Mobile bar fallbacks: opaque sidebar fill where blur is unsupported, color-mix is unsupported, or transparency is reduced. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .mobile-glass-bar { background-color: var(--sidebar); }
+  .dark .mobile-glass-bar { background-color: var(--sidebar); }
 }
 @supports not (color: color-mix(in oklab, red, blue)) {
   .mobile-glass-bar { background-color: var(--sidebar); }
+  .dark .mobile-glass-bar { background-color: var(--sidebar); }
 }
 @media (prefers-reduced-transparency: reduce) {
   .mobile-glass-bar { background-color: var(--sidebar); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .dark .mobile-glass-bar { background-color: var(--sidebar); }
+}
+/* Reduced motion: no transitions or animations on the bar and its tabs. */
+@media (prefers-reduced-motion: reduce) {
+  .mobile-glass-bar, .mobile-glass-bar * { transition: none !important; animation: none !important; }
 }
 
 /* ═══════════════════════════════════════════════
@@ -557,6 +584,8 @@ html {
   --sab: env(safe-area-inset-bottom, 0px);
   --sal: env(safe-area-inset-left, 0px);
   --sar: env(safe-area-inset-right, 0px);
+  /* Bottom clearance for content and floating UI above the mobile tab bar (~64px bar + 12px gap + sab). */
+  --mobile-bar-clearance: calc(96px + var(--sab));
 }
 
 /* Body already carries the top padding, so full-height roots subtract it to

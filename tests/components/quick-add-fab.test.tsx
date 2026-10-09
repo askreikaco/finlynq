@@ -53,8 +53,8 @@ describe("QuickAddFAB", () => {
     render(<QuickAddFAB />);
     const link = screen.getByLabelText("Add transaction");
     const classString = link.getAttribute("class");
-    expect(classString).toContain("var(--sab)");
-    expect(classString).toContain("bottom-[calc(76px+var(--sab))]");
+    expect(classString).toContain("var(--mobile-bar-clearance)");
+    expect(classString).toContain("bottom-[calc(var(--mobile-bar-clearance)-8px)]");
     expect(classString).toContain("z-40");
   });
 

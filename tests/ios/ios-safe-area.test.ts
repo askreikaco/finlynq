@@ -34,14 +34,14 @@ describe("safe-area offsets", () => {
   it("new transaction header reserves top safe area", () => {
     expect(newTx).toContain("pt-[var(--sat)]");
   });
-  it("bottom-fixed toasts and bars clear the home indicator", () => {
+  it("bottom-fixed toasts and bars clear the floating tab bar (--mobile-bar-clearance)", () => {
     for (const src of [banner, toast, bulk]) {
-      expect(src).toContain("bottom-[calc(5rem+var(--sab))]");
+      expect(src).toContain("bottom-[calc(var(--mobile-bar-clearance)-8px)]");
       expect(src).not.toMatch(/(^|\s)bottom-20(\s|")/);
     }
   });
   it("account switcher (fixed) clears the home indicator", () => {
-    expect(switcher).toContain("fixed bottom-[calc(1rem+var(--sab))] left-4");
+    expect(switcher).toContain("fixed bottom-[calc(var(--mobile-bar-clearance)-8px)] md:bottom-4 left-4");
     expect(switcher).not.toContain("fixed bottom-4 ");
   });
 });
