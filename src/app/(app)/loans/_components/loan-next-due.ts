@@ -15,9 +15,9 @@ export function loanNextDue(loan: Pick<Loan, "startDate" | "paymentFrequency">, 
   if (completed) return null;
   const freq = normalizeFrequency(loan.paymentFrequency);
   if (!freq || !loan.startDate) return null;
-  const first = nextOnOrAfter(loan.startDate, freq, today);
-  if (!first) return null;
-  // Occurrence 0 is the start date itself, which is not a payment. Skip it.
-  if (first === loan.startDate) return nextOnOrAfter(loan.startDate, freq, addDays(loan.startDate, 1));
-  return first;
+  // Occurrence 0 is the start date itself, which is not a payment. Search from the later of
+  // today and the day after the start. nextOnOrAfter also projects occurrences before the anchor,
+  // so this lower bound is what keeps the result a real payment date.
+  const from = today > loan.startDate ? today : addDays(loan.startDate, 1);
+  return nextOnOrAfter(loan.startDate, freq, from);
 }
