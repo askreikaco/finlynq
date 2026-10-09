@@ -47,7 +47,6 @@
   "src/app/(app)/import/components/save-template-dialog.tsx": 4,
   "src/app/(app)/import/pending/_components/reconcile-header.tsx": 1,
   "src/app/(app)/layout.tsx": 3,
-  "src/app/(app)/loans/page.tsx": 4,
   "src/app/(app)/portfolio/_components/allocation-charts.tsx": 1,
   "src/app/(app)/portfolio/_components/benchmark-chart.tsx": 1,
   "src/app/(app)/portfolio/_components/etf-xray-card.tsx": 8,
