@@ -13,6 +13,7 @@ import { DataProvider } from "@/lib/data";
 import { WebVitals } from "@/components/web-vitals";
 import { PageFab, PageFabProvider } from "@/components/mobile/page-fab";
 import { KeyboardInsetObserver } from "@/components/mobile/keyboard-inset-observer";
+import { AppSizeClassProvider } from "@/components/adaptive/size-class-context";
 import { isInstanceAdminEnabled } from "@/lib/admin/instance-flag";
 import { isCategoriesMergedEnabled } from "@/lib/categories/flag";
 
@@ -32,6 +33,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <AnimationProvider>
         <LanguageProvider>
         <PageFabProvider>
+        <AppSizeClassProvider>
         <div className="relative flex min-h-screen flex-col">
           <AnnouncementBanner />
           <PromptGate />
@@ -40,7 +42,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <Nav instanceAdminEnabled={instanceAdminEnabled} categoriesMerged={categoriesMerged} />
             {/* overflow-x-clip, not overflow-x-hidden: hidden forces overflow-y to auto, which makes <main> a scroll container.
                 Its height is content height, so it never scrolls, and the sticky PageHeader inside would never pin to the window. */}
-            <main className="flex-1 overflow-x-clip min-w-0 pb-[calc(var(--mobile-bar-clearance)+80px)] md:pb-0 bg-dot-pattern ambient-glow">
+            <main data-app-main="" className="flex-1 overflow-x-clip min-w-0 pb-[calc(var(--mobile-bar-clearance)+80px)] md:pb-0 bg-dot-pattern ambient-glow">
               {/* FINLYNQ-52: no width cap on the (app) shell — content fills
                   the viewport to the right of the sidebar. Per-page wrappers
                   may still impose their own readability cap (e.g. settings,
@@ -55,6 +57,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
           <PageFab />
         </div>
+        </AppSizeClassProvider>
         </PageFabProvider>
         </LanguageProvider>
         </AnimationProvider>

@@ -3,7 +3,7 @@
  */
 import React from "react";
 import { renderHook, act } from "@testing-library/react";
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { sizeClassFor, useSizeClass } from "@/components/ui/size-class";
 
 describe("sizeClassFor", () => {
@@ -57,11 +57,22 @@ describe("useSizeClass", () => {
     delete (globalThis as Record<string, unknown>).ResizeObserver;
   });
 
-  it("initializes to 'compact' before observer fires", () => {
+  it("initializes to 'compact' when the element has no width", () => {
     const ref = { current: document.createElement("div") };
     const { result } = renderHook(() => useSizeClass(ref));
 
     expect(result.current).toBe("compact");
+  });
+
+  it("measures synchronously on mount, before any observer callback", () => {
+    const element = document.createElement("div");
+    vi.spyOn(element, "getBoundingClientRect").mockReturnValue({ width: 800 } as DOMRect);
+    const ref = { current: element };
+
+    const { result } = renderHook(() => useSizeClass(ref));
+
+    expect(result.current).toBe("regular");
+    expect(resizeObserverCallbacks.length).toBe(1);
   });
 
   it("updates size class on ResizeObserver callback", () => {

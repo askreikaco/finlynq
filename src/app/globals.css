@@ -4,6 +4,18 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Size classes (G2-01). Container sizes equal the sizeClassFor() px thresholds in
+   src/components/ui/size-class.ts at the 16px root: 40rem = 640px (regular from),
+   64rem = 1024px (wide above; sizeClassFor uses <=1024 for regular). The static test
+   tests/components/adaptive/size-class-css.test.ts pins these values to the TS constants. */
+@theme {
+  --container-regular: 40rem;
+  --container-wide: 64rem;
+}
+@custom-variant regular (@container app (width >= 40rem));
+@custom-variant wide (@container app (width > 64rem));
+@custom-variant dense (&:where([data-density=compact] *));
+
 /* Font stacks: system fonts only (no next/font, no network fetch). Owner 2026-10-09.
    The runtime UI font (Settings > General) is --font-ui on html, set by [data-font]. */
 html {
