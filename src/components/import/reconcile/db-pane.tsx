@@ -190,7 +190,7 @@ export function DbPane({
               // Ring (not a bg) so the click highlight layers cleanly over the
               // persistent full-row match tint.
               const highlightClass = highlighted
-                ? "ring-2 ring-inset ring-sky-500/60"
+                ? "ring-2 ring-inset ring-info/60"
                 : "";
               const ms = matchStatus?.get(r.id);
               const clickable = onRowClick != null;
@@ -230,7 +230,7 @@ export function DbPane({
                       ) : r.txType === "I" ? (
                         <Badge
                           variant="outline"
-                          className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200"
+                          className="text-[10px] bg-pos/10 text-pos border-pos/30"
                         >
                           Income
                         </Badge>
@@ -246,7 +246,7 @@ export function DbPane({
                       {r.linkedStagedRowId != null && (
                         <Badge
                           variant="outline"
-                          className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200"
+                          className="text-[10px] bg-pos/10 text-pos border-pos/30"
                           title={`Linked to staged row ${r.linkedStagedRowId}`}
                         >
                           linked
@@ -255,7 +255,7 @@ export function DbPane({
                       {r.reconciliationFlag && (
                         <Badge
                           variant="outline"
-                          className="text-[10px] bg-rose-50 text-rose-700 border-rose-200"
+                          className="text-[10px] bg-destructive/10 text-destructive border-destructive/30"
                           title={r.reconciliationFlag.note ?? undefined}
                         >
                           missing from statement

@@ -23,11 +23,11 @@ export type PaneMatchStatus = "matched" | "only_file" | "only_ledger";
 export function matchRowClass(status: PaneMatchStatus | undefined): string {
   switch (status) {
     case "matched":
-      return "bg-emerald-500/10";
+      return "bg-pos/10";
     case "only_file":
-      return "bg-amber-500/10";
+      return "bg-warning/10";
     case "only_ledger":
-      return "bg-slate-500/10";
+      return "bg-muted-foreground/10";
     default:
       return "";
   }
@@ -38,15 +38,15 @@ export function MatchStatusLegend() {
   return (
     <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
       <span className="flex items-center gap-1">
-        <span className="inline-block h-2.5 w-2.5 rounded-sm bg-emerald-500/70" />
+        <span className="inline-block h-2.5 w-2.5 rounded-sm bg-pos/70" />
         Matched
       </span>
       <span className="flex items-center gap-1">
-        <span className="inline-block h-2.5 w-2.5 rounded-sm bg-amber-500/70" />
+        <span className="inline-block h-2.5 w-2.5 rounded-sm bg-warning/70" />
         Only in file
       </span>
       <span className="flex items-center gap-1">
-        <span className="inline-block h-2.5 w-2.5 rounded-sm bg-slate-400/60" />
+        <span className="inline-block h-2.5 w-2.5 rounded-sm bg-muted-foreground/60" />
         Only in ledger
       </span>
     </div>
