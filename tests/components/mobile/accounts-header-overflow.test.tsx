@@ -69,7 +69,10 @@ describe("Accounts header on mobile", () => {
     render(<AccountsPage />);
     const h1 = await screen.findByRole("heading", { level: 1, name: "Accounts" });
     expect(cls(h1)).toEqual(expect.arrayContaining(["md:text-2xl", "md:font-bold"]));
+    // Subtitle is a phone-bar line (max-md: classes) and has no hide class, so it shows at every width.
     const sub = screen.getByText("Overview of your assets, liabilities, and net worth");
-    expect(cls(sub)).toEqual(expect.arrayContaining(["hidden", "md:block"]));
+    expect(cls(sub)).toEqual(expect.arrayContaining(["block", "max-md:text-xs", "max-md:truncate"]));
+    expect(cls(sub)).not.toContain("hidden");
+    expect(cls(sub)).not.toContain("max-md:hidden");
   });
 });

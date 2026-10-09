@@ -170,6 +170,8 @@ describe("nav-config", () => {
         "/portfolio/dividends",
         "/portfolio/realized-gains",
         "/portfolio/new",
+        "/accounts/new", // create-account page, opened from the accounts header (no nav entry)
+        "/accounts/groups", // manage-groups page, opened from the accounts header (no nav entry)
         "/portfolio/new/buy", // level-2 operation pages (create flow, no nav entry)
         "/portfolio/new/sell",
         "/portfolio/new/swap",

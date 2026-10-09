@@ -129,6 +129,25 @@ describe("New account page: returnTo", () => {
     expect(H.push).toHaveBeenCalledWith("/portfolio");
   });
 
+  it("after a successful create with a valid returnTo, navigates to returnTo instead of the new account", async () => {
+    H.search = "returnTo=/portfolio";
+    render(<NewAccountRoute />);
+    fireEvent.change(screen.getByLabelText("Account Name"), { target: { value: "Wallet" } });
+    fireEvent.click(screen.getByRole("button", { name: "Create Account" }));
+    await waitFor(() => expect(H.push).toHaveBeenCalledWith("/portfolio"));
+    expect(H.push).not.toHaveBeenCalledWith("/accounts/42");
+    expect(postCalls()).toHaveLength(1);
+  });
+
+  it("after a successful create with an invalid returnTo, still opens the new account", async () => {
+    H.search = "returnTo=" + encodeURIComponent("//evil.example/x");
+    render(<NewAccountRoute />);
+    fireEvent.change(screen.getByLabelText("Account Name"), { target: { value: "Wallet" } });
+    fireEvent.click(screen.getByRole("button", { name: "Create Account" }));
+    await waitFor(() => expect(H.push).toHaveBeenCalledWith("/accounts/42"));
+    expect(H.push).not.toHaveBeenCalledWith("//evil.example/x");
+  });
+
   it.each(["//evil.example/x", "https://evil.example", "/\\evil.example", "javascript:alert(1)"])(
     "rejects returnTo=%s and falls back to /accounts",
     (raw) => {

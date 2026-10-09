@@ -29,6 +29,9 @@ function NewAccountPage() {
   const searchParams = useSearchParams();
   // Back / Cancel go to returnTo (same-app path only), else the accounts list.
   const returnTo = safeReturnTo(searchParams.get("returnTo"));
+  // Only a present, valid returnTo overrides the post-create destination (fallback "" = none).
+  const rawReturnTo = searchParams.get("returnTo");
+  const createdReturnTo = rawReturnTo ? safeReturnTo(rawReturnTo, "") : "";
   const { displayCurrency } = useDisplayCurrency();
 
   // Existing accounts (archived included) feed the group suggestions and the alias-clash warning.
@@ -67,7 +70,7 @@ function NewAccountPage() {
           existingGroups={existingGroups}
           aliasWarning={(alias, excludeId) => aliasClash(accounts, alias, excludeId)}
           onCancel={() => router.push(returnTo)}
-          onCreated={(created) => router.push(`/accounts/${created.id}`)}
+          onCreated={(created) => router.push(createdReturnTo || `/accounts/${created.id}`)}
         />
       </div>
     </div>
