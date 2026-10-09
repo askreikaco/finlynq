@@ -38,12 +38,12 @@ const noAnimationVariants = {
 
 /** Icon tile colours, so pages pick a name instead of hand-writing classes. */
 export const METRIC_TONES = {
-  indigo: "bg-indigo-100 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400",
-  emerald: "bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400",
-  rose: "bg-rose-100 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400",
-  amber: "bg-amber-100 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400",
-  cyan: "bg-cyan-100 text-cyan-600 dark:bg-cyan-500/10 dark:text-cyan-400",
-  violet: "bg-violet-100 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400",
+  indigo: "bg-primary/10 text-primary",
+  emerald: "bg-pos/10 text-pos",
+  rose: "bg-destructive/10 text-destructive",
+  amber: "bg-warning/10 text-warning",
+  cyan: "bg-info/10 text-info",
+  violet: "bg-chart-5/10 text-chart-5",
   muted: "bg-muted text-muted-foreground",
 } as const;
 export type MetricTone = keyof typeof METRIC_TONES;
@@ -209,15 +209,15 @@ export function MetricCardSkeleton({
     <Card className={`@container relative overflow-hidden h-full ${className}`}>
       <CardContent className="pt-4 px-5 pb-4 min-w-0">
         <div className="flex items-center gap-2.5 mb-3">
-          <div className="h-8 w-8 rounded-lg bg-muted/60 animate-pulse shrink-0" />
-          <div className="h-3 w-20 bg-muted/60 animate-pulse rounded" />
+          <div className="h-8 w-8 rounded-lg animate-shimmer shrink-0" />
+          <div className="h-3 w-20 animate-shimmer rounded" />
         </div>
         <div
-          className={`bg-muted/60 animate-pulse rounded mb-3 ${
+          className={`animate-shimmer rounded mb-3 ${
             size === "hero" ? "h-10 w-48" : "h-7 w-32"
           }`}
         />
-        <div className="h-3 w-24 bg-muted/60 animate-pulse rounded" />
+        <div className="h-3 w-24 animate-shimmer rounded" />
       </CardContent>
     </Card>
   );
@@ -231,8 +231,8 @@ export function PctBadge({ pct }: { pct: number }) {
     <span
       className={`inline-flex items-center gap-1 text-[12px] font-semibold px-2.5 py-0.5 rounded-full ${
         up
-          ? "text-emerald-600 bg-emerald-100/80 dark:bg-emerald-950/60 dark:text-emerald-400"
-          : "text-rose-600 bg-rose-100/80 dark:bg-rose-950/60 dark:text-rose-400"
+          ? "text-pos bg-pos/10"
+          : "text-destructive bg-destructive/10"
       }`}
     >
       <Arrow className="h-3 w-3" aria-hidden="true" />

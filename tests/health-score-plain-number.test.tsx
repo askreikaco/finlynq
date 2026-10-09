@@ -173,10 +173,10 @@ describe("HealthScoreCard Tone Boundaries (VND)", () => {
       const text = container.textContent || "";
       expect(text).toContain("71");
       // Check that emerald class is applied to the icon wrapper
-      const iconWrapper = container.querySelector('.bg-emerald-100');
+      const iconWrapper = container.querySelector('.bg-pos\\/10');
       expect(iconWrapper).toBeTruthy();
       // Also check the value color class
-      const valueDiv = container.querySelector('.text-emerald-500');
+      const valueDiv = container.querySelector('.text-pos');
       expect(valueDiv).toBeTruthy();
     });
   });
@@ -192,9 +192,9 @@ describe("HealthScoreCard Tone Boundaries (VND)", () => {
     await waitFor(() => {
       const text = container.textContent || "";
       expect(text).toContain("70");
-      const iconWrapper = container.querySelector('.bg-amber-100');
+      const iconWrapper = container.querySelector('.bg-warning\\/10');
       expect(iconWrapper).toBeTruthy();
-      const valueDiv = container.querySelector('.text-amber-500');
+      const valueDiv = container.querySelector('.text-warning');
       expect(valueDiv).toBeTruthy();
     });
   });
@@ -210,9 +210,9 @@ describe("HealthScoreCard Tone Boundaries (VND)", () => {
     await waitFor(() => {
       const text = container.textContent || "";
       expect(text).toContain("40");
-      const iconWrapper = container.querySelector('.bg-amber-100');
+      const iconWrapper = container.querySelector('.bg-warning\\/10');
       expect(iconWrapper).toBeTruthy();
-      const valueDiv = container.querySelector('.text-amber-500');
+      const valueDiv = container.querySelector('.text-warning');
       expect(valueDiv).toBeTruthy();
     });
   });
@@ -228,9 +228,9 @@ describe("HealthScoreCard Tone Boundaries (VND)", () => {
     await waitFor(() => {
       const text = container.textContent || "";
       expect(text).toContain("39");
-      const iconWrapper = container.querySelector('.bg-rose-100');
+      const iconWrapper = container.querySelector('.bg-destructive\\/10');
       expect(iconWrapper).toBeTruthy();
-      const valueDiv = container.querySelector('.text-rose-500');
+      const valueDiv = container.querySelector('.text-destructive');
       expect(valueDiv).toBeTruthy();
     });
   });
