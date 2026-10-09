@@ -79,7 +79,7 @@ export function StagedListView({
       )}
 
       {embedded ? (
-        <div className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2.5 text-xs flex items-center justify-between gap-2">
+        <div className="rounded-md border border-warning/30 bg-warning/5 px-3 py-2.5 text-xs flex items-center justify-between gap-2">
           <span>
             Staged imports for this account waiting for parse review. Click a
             batch to open the two-pane staging surface for approve / discard /
@@ -118,8 +118,8 @@ export function StagedListView({
         <Card
           className={
             toast.type === "success"
-              ? "border-emerald-200 bg-emerald-50/30"
-              : "border-rose-200 bg-rose-50/30"
+              ? "border-pos/30 bg-pos/10"
+              : "border-destructive/30 bg-destructive/10"
           }
         >
           <CardContent className="py-3 text-sm">{toast.msg}</CardContent>
@@ -127,8 +127,8 @@ export function StagedListView({
       )}
 
       {error && (
-        <Card className="border-rose-200 bg-rose-50/30">
-          <CardContent className="py-3 text-sm text-rose-700">{error}</CardContent>
+        <Card className="border-destructive/30 bg-destructive/10">
+          <CardContent className="py-3 text-sm text-destructive">{error}</CardContent>
         </Card>
       )}
 
@@ -138,7 +138,7 @@ export function StagedListView({
       {embedded && list && (
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <span className="inline-flex items-center gap-1.5 rounded-md border bg-card px-2.5 py-1">
-            <Hourglass className="h-3.5 w-3.5 text-amber-600" />
+            <Hourglass className="h-3.5 w-3.5 text-warning" />
             <span className="font-medium">{pendingBatches}</span>
             <span className="text-muted-foreground">
               batch{pendingBatches === 1 ? "" : "es"} pending review
@@ -151,7 +151,7 @@ export function StagedListView({
             </span>
           </span>
           {pendingDupes > 0 && (
-            <span className="inline-flex items-center gap-1.5 rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1 text-amber-700">
+            <span className="inline-flex items-center gap-1.5 rounded-md border border-warning/30 bg-warning/10 px-2.5 py-1 text-warning">
               <span className="font-medium">{pendingDupes}</span>
               <span>duplicate{pendingDupes === 1 ? "" : "s"} (skipped by default)</span>
             </span>
@@ -244,7 +244,7 @@ export function StagedListView({
                       {row.duplicateCount > 0 && (
                         <Badge
                           variant="outline"
-                          className="bg-amber-50 text-amber-700 border-amber-200"
+                          className="bg-warning/10 text-warning border-warning/30"
                         >
                           {row.duplicateCount} dupe{row.duplicateCount === 1 ? "" : "s"}
                         </Badge>
@@ -271,7 +271,7 @@ export function StagedListView({
       {embedded && accountScope != null && (
         <div className="pt-1">
           <div className="mb-2 flex items-center gap-1.5 text-xs text-muted-foreground">
-            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+            <CheckCircle2 className="h-3.5 w-3.5 text-pos" />
             Already processed into the bank ledger
           </div>
           <RecentUploadsPanel

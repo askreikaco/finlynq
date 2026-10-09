@@ -72,7 +72,7 @@ export function BankPane({
             disabled={deleteBusy}
             title="Delete this bank-ledger row"
             aria-label="Delete bank row"
-            className="h-7 w-7 p-0 text-muted-foreground hover:text-rose-700"
+            className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
           >
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
@@ -129,12 +129,12 @@ export function BankPane({
         if (r.reconciliationFlag) {
           return (
             <div className="flex items-center justify-end gap-1">
-              <Button
+              <Button aria-label="Remove 'missing from statement' flag"
                 size="sm"
                 variant="ghost"
                 onClick={() => unflagDbRow(txId)}
                 disabled={flagBusy}
-                className="h-7 px-2 text-rose-700"
+                className="h-7 px-2 text-destructive"
                 title="Remove 'missing from statement' flag"
               >
                 <XIcon className="h-3.5 w-3.5" />
@@ -145,12 +145,12 @@ export function BankPane({
         }
         return (
           <div className="flex items-center justify-end gap-1">
-            <Button
+            <Button aria-label="Mark as missing from this statement"
               size="sm"
               variant="ghost"
               onClick={() => flagDbRow(txId)}
               disabled={flagBusy}
-              className="h-7 px-2 text-muted-foreground hover:text-rose-700"
+              className="h-7 px-2 text-muted-foreground hover:text-destructive"
               title="Mark as missing from this statement"
             >
               <Flag className="h-3.5 w-3.5" />

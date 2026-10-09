@@ -107,7 +107,7 @@ export function StagedPane({
         const unlinkBusy = busyKey === `unlink:${r.id}`;
         if (r.reconcileState === "linked") {
           return (
-            <Button
+            <Button aria-label="Unlink"
               size="sm"
               variant="ghost"
               onClick={() => unlinkStagedRow(r.id)}
@@ -121,7 +121,7 @@ export function StagedPane({
         }
         if (r.reconcileState === "skipped_duplicate") {
           return (
-            <Button
+            <Button aria-label="Un-skip"
               size="sm"
               variant="ghost"
               onClick={() => unskipStagedRow(r.id)}
@@ -136,7 +136,7 @@ export function StagedPane({
         // Default state — show Link + Skip.
         return (
           <div className="flex items-center gap-1 justify-end">
-            <Button
+            <Button aria-label="Link to a DB row"
               size="sm"
               variant="ghost"
               onClick={() => beginLink(r.id)}
@@ -146,7 +146,7 @@ export function StagedPane({
             >
               <LinkIcon className="h-3.5 w-3.5" />
             </Button>
-            <Button
+            <Button aria-label="Mark as already imported"
               size="sm"
               variant="ghost"
               onClick={() => skipStagedRow(r.id)}
