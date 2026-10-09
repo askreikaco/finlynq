@@ -15,30 +15,41 @@ afterEach(cleanup);
 const cls = (s: string) => s.split(/\s+/);
 const read = (p: string) => readFileSync(join(__dirname, "../../../", p), "utf8");
 
-describe("mobile-only touch targets (max-md:) — desktop sizes untouched", () => {
+// Width-based tokens (sm:/md:/lg:/max-md:) must not carry a touch size. Pointer-based touch sizes use pointer-coarse:.
+const WIDTH_TOKEN = /(^|\s)(max-)?(sm|md|lg|xl|2xl):/;
+
+describe("pointer-based touch targets (pointer-coarse: 44px, every coarse device incl. iPad)", () => {
   it.each([
-    ["default", "h-8", "max-md:h-11"],
-    ["sm", "h-7", "max-md:h-11"],
-    ["lg", "h-9", "max-md:h-11"],
-    ["icon", "size-8", "max-md:size-11"],
-    ["icon-sm", "size-7", "max-md:size-11"],
-    ["icon-lg", "size-9", "max-md:size-11"],
-  ] as const)("Button size=%s keeps %s and adds %s", (size, desktop, mobile) => {
+    ["default", "h-8", "pointer-coarse:h-11"],
+    ["sm", "h-7", "pointer-coarse:h-11"],
+    ["lg", "h-9", "pointer-coarse:h-11"],
+    ["icon", "size-8", "pointer-coarse:size-11"],
+    ["icon-sm", "size-7", "pointer-coarse:size-11"],
+    ["icon-lg", "size-9", "pointer-coarse:size-11"],
+  ] as const)("Button size=%s keeps %s and adds %s", (size, desktop, touch) => {
     const c = cls(buttonVariants({ size }));
     expect(c).toContain(desktop);
-    expect(c).toContain(mobile);
+    expect(c).toContain(touch);
   });
 
-  it("xs buttons keep their box but extend the hit area to >=44px", () => {
+  it("xs buttons keep their box but extend the hit area to >=44px on coarse pointers", () => {
     const c = cls(buttonVariants({ size: "xs" }));
     expect(c).toContain("h-6");
-    expect(c).toContain("max-md:before:-inset-2.5");
+    expect(c).toContain("pointer-coarse:before:-inset-2.5");
+    expect(c).toContain("pointer-coarse:relative");
   });
 
-  it("every mobile Button class is max-md: scoped (no un-scoped size change)", () => {
+  it("no Button size uses a width-based touch token", () => {
+    for (const size of ["default", "xs", "sm", "lg", "icon", "icon-xs", "icon-sm", "icon-lg"] as const) {
+      expect(cls(buttonVariants({ size })).filter((t) => WIDTH_TOKEN.test(` ${t}`))).toEqual([]);
+    }
+  });
+
+  it("every rendered Button size class is pointer-scoped (no un-scoped size change)", () => {
     render(<Button>Go</Button>);
     const c = cls(screen.getByRole("button").className);
     expect(c).toContain("h-8");
+    expect(c).toContain("pointer-coarse:h-11");
     expect(c.filter((t) => /^h-1[0-9]$|^size-1[0-9]$/.test(t))).toEqual([]);
   });
 
@@ -47,21 +58,25 @@ describe("mobile-only touch targets (max-md:) — desktop sizes untouched", () =
     expect(screen.getByRole("button").getAttribute("data-size")).toBe("sm");
   });
 
-  it("Input: h-8 at md+, h-11 below", () => {
+  it("Input: h-8 at every width, pointer-coarse:h-11 for touch; 16px text stays on touch", () => {
     render(<Input aria-label="n" />);
     const c = cls(screen.getByLabelText("n").className);
     expect(c).toContain("h-8");
-    expect(c).toContain("max-md:h-11");
+    expect(c).toContain("pointer-coarse:h-11");
+    expect(c).toContain("text-base");
+    expect(c).toContain("regular:pointer-fine:text-sm");
+    expect(c.filter((t) => WIDTH_TOKEN.test(` ${t}`))).toEqual([]);
   });
 
-  it("Select trigger: both sizes become 44px below md only", () => {
+  it("Select trigger: both sizes become 44px on coarse pointers only", () => {
     const src = read("src/components/ui/select.tsx");
     expect(src).toContain("data-[size=default]:h-8");
-    expect(src).toContain("max-md:data-[size=default]:h-11");
-    expect(src).toContain("max-md:data-[size=sm]:h-11");
+    expect(src).toContain("pointer-coarse:data-[size=default]:h-11");
+    expect(src).toContain("pointer-coarse:data-[size=sm]:h-11");
+    expect(src).not.toMatch(/max-md:/);
   });
 
-  it("Tabs list: h-8 at md+, h-11 below; still horizontally scrollable", () => {
+  it("Tabs list: h-8 everywhere, pointer-coarse:h-11 for touch; still horizontally scrollable", () => {
     render(
       <Tabs defaultValue="a">
         <TabsList data-testid="l">
@@ -71,13 +86,15 @@ describe("mobile-only touch targets (max-md:) — desktop sizes untouched", () =
     );
     const c = cls(screen.getByTestId("l").className);
     expect(c).toContain("group-data-horizontal/tabs:h-8");
-    expect(c).toContain("max-md:group-data-horizontal/tabs:h-11");
+    expect(c).toContain("pointer-coarse:group-data-horizontal/tabs:h-11");
     expect(c).toContain("overflow-x-auto");
+    expect(c.filter((t) => WIDTH_TOKEN.test(` ${t}`))).toEqual([]);
   });
 
-  it("Card is denser below md only", () => {
+  it("Card padding is a layout token: py-3 by default, regular:py-4 from 640px", () => {
     const src = read("src/components/ui/card.tsx");
-    expect(src).toContain("py-4 max-md:py-3");
+    expect(src).toContain("py-3 regular:py-4");
+    expect(src).not.toMatch(/max-md:/);
   });
 });
 

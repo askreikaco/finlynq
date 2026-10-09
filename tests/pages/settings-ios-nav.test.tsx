@@ -183,7 +183,7 @@ describe("PageHeader with backHref: phone glass header row", () => {
     );
     const triggers = screen.getAllByRole("button", { name: "More actions" });
     expect(triggers.length).toBe(1);
-    expect(cls(triggers[0])).toContain("max-md:size-11");
+    expect(cls(triggers[0])).toContain("pointer-coarse:size-11");
   });
 
   it("ships the glass-capsule and glass-bar material phone-only in globals.css", () => {

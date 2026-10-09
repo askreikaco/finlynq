@@ -123,7 +123,7 @@ describe("PageHeader: overflow menu (Accounts-style)", () => {
     );
     const trigger = screen.getByRole("button", { name: "More actions" });
     expect(cls(trigger)).toContain("regular:hidden");
-    expect(cls(trigger)).toContain("max-md:size-11");
+    expect(cls(trigger)).toContain("pointer-coarse:size-11");
     expect(cls(screen.getByText("Manage groups", { selector: "button" }))).toContain("max-regular:hidden");
     expect(cls(screen.getByText("Add"))).not.toContain("max-regular:hidden");
   });

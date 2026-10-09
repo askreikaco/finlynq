@@ -21,14 +21,14 @@ describe("Pagination", () => {
     expect(getByLabelText("Next page")).toBeTruthy();
   });
 
-  it("page number buttons have hidden sm:inline-flex classes for responsive behavior", () => {
+  it("page number buttons have hidden regular:inline-flex classes for responsive behavior", () => {
     const { getByLabelText } = render(
       <Pagination page={0} limit={10} total={50} onPageChange={() => {}} />
     );
     // Page 1 button should have the responsive hiding classes
     const pageButton = getByLabelText("Page 1");
     expect(pageButton.className).toContain("hidden");
-    expect(pageButton.className).toContain("sm:inline-flex");
+    expect(pageButton.className).toContain("regular:inline-flex");
   });
 
   it("disables prev button on first page", () => {

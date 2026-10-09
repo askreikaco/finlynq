@@ -1,5 +1,5 @@
 // @vitest-environment node
-// G3 touch targets (round 2): >=44pt hit areas below md via max-md: variants, pressed states on
+// G3 touch targets (round 2): >=44pt hit areas on coarse pointers via pointer-coarse: variants, pressed states on
 // switch / checkbox / tabs. Static source assertions only (no dev server, no Playwright).
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
@@ -21,10 +21,11 @@ const consent = read("src/components/analytics-consent.tsx");
 
 const BANNED = /md:hidden|hidden\s+md:|isMobile|window\.innerWidth/;
 
-describe("switch hit area (44pt tall below md, desktop track unchanged)", () => {
-  it("hit-slop is 12px top and bottom below md (22px padding box + 24px = 46px)", () => {
-    expect(switchSrc).toContain("max-md:before:-inset-y-3");
-    expect(switchSrc).toContain("max-md:before:-inset-x-2");
+describe("switch hit area (44pt tall on coarse pointers, desktop track unchanged)", () => {
+  it("hit-slop is 12px top and bottom on coarse pointers (22px padding box + 24px = 46px)", () => {
+    expect(switchSrc).toContain("pointer-coarse:before:-inset-y-3");
+    expect(switchSrc).toContain("pointer-coarse:before:-inset-x-2");
+    expect(switchSrc).not.toMatch(/max-md:/);
   });
   it("visual track stays h-6 w-10", () => {
     expect(switchSrc).toContain("h-6 w-10");
@@ -36,12 +37,13 @@ describe("switch hit area (44pt tall below md, desktop track unchanged)", () => 
 });
 
 describe("tabs trigger hit area and pressed state", () => {
-  it("trigger hit-slop below md reaches the 44px list height (clipped by the list)", () => {
-    expect(tabsSrc).toContain("max-md:before:-inset-y-1.5");
-    expect(tabsSrc).toContain("max-md:before:absolute");
+  it("trigger hit-slop on coarse pointers reaches the 44px list height (clipped by the list)", () => {
+    expect(tabsSrc).toContain("pointer-coarse:before:-inset-y-1.5");
+    expect(tabsSrc).toContain("pointer-coarse:before:absolute");
+    expect(tabsSrc).not.toMatch(/max-md:/);
   });
-  it("list keeps h-11 below md", () => {
-    expect(tabsSrc).toContain("max-md:group-data-horizontal/tabs:h-11");
+  it("list is h-11 on coarse pointers at every width", () => {
+    expect(tabsSrc).toContain("pointer-coarse:group-data-horizontal/tabs:h-11");
   });
   it("pressed state on triggers (text and default-variant background)", () => {
     expect(tabsSrc).toContain("active:text-foreground");
@@ -55,10 +57,11 @@ describe("checkbox pressed state", () => {
   });
 });
 
-describe("combobox trigger reaches 44px below md (matches select.tsx)", () => {
-  it("default and sm sizes are h-11 below md", () => {
-    expect(comboSrc).toContain("max-md:data-[size=default]:h-11");
-    expect(comboSrc).toContain("max-md:data-[size=sm]:h-11");
+describe("combobox trigger reaches 44px on coarse pointers (matches select.tsx)", () => {
+  it("default and sm sizes are h-11 on coarse pointers", () => {
+    expect(comboSrc).toContain("pointer-coarse:data-[size=default]:h-11");
+    expect(comboSrc).toContain("pointer-coarse:data-[size=sm]:h-11");
+    expect(comboSrc).not.toMatch(/max-md:/);
   });
   it("desktop heights unchanged", () => {
     expect(comboSrc).toContain("data-[size=default]:h-8");
@@ -89,8 +92,9 @@ describe("page-level targets", () => {
   it("family overview Refresh button is 44x44 on coarse pointers, 36x36 otherwise", () => {
     expect(family).toContain("w-9 h-9 pointer-coarse:w-11 pointer-coarse:h-11");
   });
-  it("account shell Info/Security tabs are 44px tall and wide below md", () => {
-    expect(shell).toContain("max-md:flex max-md:min-h-11 max-md:min-w-11 max-md:items-end");
+  it("account shell Info/Security tabs are 44px tall and wide on coarse pointers", () => {
+    expect(shell).toContain("pointer-coarse:flex pointer-coarse:min-h-11 pointer-coarse:min-w-11 pointer-coarse:items-end");
+    expect(shell).not.toContain("max-md:min-h-11");
   });
   it("consent banner z-[9999] is still pinned (tests/ios/g3a-dvh-overscroll.test.ts)", () => {
     expect(consent).toContain("z-[9999]");
