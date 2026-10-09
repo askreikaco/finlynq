@@ -75,6 +75,9 @@ import {
   XCircle,
 } from "lucide-react";
 import { MetricCard } from "@/components/metric-card";
+import { DataView, ViewModeToggle } from "@/components/adaptive";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import Link from "next/link";
 
 type Option = { id: number; name: string | null };
 type SortField = "nextDate" | "name" | "cost";
@@ -307,6 +310,71 @@ function SubscriptionsPageContent() {
 
   const visibleSuggestions = showAllSuggestions ? suggestions : suggestions.slice(0, SUGGESTIONS_PREVIEW);
 
+  // List view: one table of every tracked subscription, in the sort order chosen above.
+  // Name opens the edit page (same href as openEditById in list mode).
+  const subsList = subs.length === 0 ? null : (
+    <Table containerClassName="rounded-xl border bg-card">
+      <TableHeader>
+        <TableRow>
+          <TableHead>Name</TableHead>
+          <TableHead className="text-right">Amount</TableHead>
+          <TableHead>Frequency</TableHead>
+          <TableHead>Next date</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead><span className="sr-only">Actions</span></TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {sorted.map((sub) => {
+          const freq = frequencyOrMonthly(sub.frequency);
+          const next = effectiveNextDate(sub, today);
+          const rel = next && sub.status === "active" ? relativeDue(next, today) : null;
+          const statusBadge = STATUS_BADGE[sub.status];
+          return (
+            <TableRow key={sub.id} className={`relative ${sub.status !== "active" ? "text-muted-foreground" : ""}`}>
+              <TableCell className="font-medium">
+                <Link
+                  href={`/subscriptions/${sub.id}/edit?returnTo=${encodeURIComponent(LIST_HREF)}`}
+                  className="after:absolute after:inset-0 hover:underline"
+                >
+                  {sub.name ?? "Subscription"}
+                </Link>
+              </TableCell>
+              <TableCell className="text-right font-mono tabular-nums">
+                {formatCurrency(sub.amount, sub.currency)}
+                <span className="ml-1 text-xs text-muted-foreground">/ {FREQUENCY_SUFFIX[freq]}</span>
+              </TableCell>
+              <TableCell>{FREQUENCY_LABELS[freq]}</TableCell>
+              <TableCell className="tabular-nums">
+                {sub.status === "active" && next ? formatDate(next) : "—"}
+                {rel && <span className="ml-1.5 text-xs text-muted-foreground">({rel})</span>}
+              </TableCell>
+              <TableCell>
+                {statusBadge ? (
+                  <Badge className={statusBadge.className}>{statusBadge.label}</Badge>
+                ) : (
+                  <Badge className="bg-pos/10 text-pos border-pos/30">Active</Badge>
+                )}
+              </TableCell>
+              <TableCell className="text-right">
+                <div className="relative z-10 inline-flex">
+                  <SubscriptionActionsMenu
+                    sub={sub}
+                    busy={busyKey !== null}
+                    onEdit={() => openEditById(sub.id)}
+                    onStatus={(s) => changeStatus(sub, s)}
+                    onToggleReminder={() => toggleReminder(sub)}
+                    onDelete={() => setDeleteId(sub.id)}
+                  />
+                </div>
+              </TableCell>
+            </TableRow>
+          );
+        })}
+      </TableBody>
+    </Table>
+  );
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -324,7 +392,7 @@ function SubscriptionsPageContent() {
       />
 
       {/* Summary */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 wide:grid-cols-4 gap-3">
         <MetricCard icon={Wallet} tone="indigo" label="Per month" value={totals.monthly} currency={displayCurrency} />
         <MetricCard icon={CalendarDays} tone="rose" label="Per year" value={totals.annual} currency={displayCurrency} />
         <MetricCard
@@ -358,7 +426,11 @@ function SubscriptionsPageContent() {
             <TabsTrigger value="calendar" className="px-3"><CalendarDays className="h-4 w-4" /> Calendar</TabsTrigger>
           </TabsList>
         </Tabs>
-        {view === "list" && subs.length > 1 && (
+        {view === "list" && (
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Cards / List applies to the list view only. The Calendar view has its own layout. */}
+            <ViewModeToggle viewKey="subscriptions" />
+            {subs.length > 1 && (
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Sort by</span>
             <Select value={sortField} onValueChange={(v) => setSortField((v as SortField) ?? "nextDate")}>
@@ -371,6 +443,8 @@ function SubscriptionsPageContent() {
                 <SelectItem value="name">Name</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+            )}
           </div>
         )}
       </div>
@@ -453,6 +527,11 @@ function SubscriptionsPageContent() {
             </Card>
           )}
 
+          {/* Cards (default on phones) or List (table rows). Only the selected view is mounted. */}
+          <DataView
+            viewKey="subscriptions"
+            cards={() => (
+          <div className="space-y-6">
           {groups.map((g) =>
             g.rows.length === 0 ? null : (
               <section key={g.key} className="space-y-2">
@@ -478,6 +557,10 @@ function SubscriptionsPageContent() {
               </section>
             ),
           )}
+          </div>
+            )}
+            list={() => subsList}
+          />
         </div>
       )}
 
@@ -564,37 +647,65 @@ function SubscriptionRowCard({
           )}
         </div>
         <div onClick={(e) => e.stopPropagation()}>
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Actions for ${sub.name ?? "subscription"}`} disabled={busy}>
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              }
-            />
-            <DropdownMenuContent align="end" className="min-w-48">
-              <DropdownMenuItem onClick={onEdit}><Pencil /> Edit</DropdownMenuItem>
-              {sub.status === "active" && (
-                <>
-                  <DropdownMenuItem onClick={onToggleReminder}>
-                    {sub.cancelReminderDate ? <><BellOff /> Remove cancel reminder</> : <><Bell /> Remind me to cancel</>}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onStatus("paused")}><Pause /> Pause</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onStatus("cancelled")}><XCircle /> Mark cancelled</DropdownMenuItem>
-                </>
-              )}
-              {sub.status === "paused" && (
-                <DropdownMenuItem onClick={() => onStatus("active")}><Play /> Resume</DropdownMenuItem>
-              )}
-              {sub.status === "cancelled" && (
-                <DropdownMenuItem onClick={() => onStatus("active")}><RotateCcw /> Reactivate</DropdownMenuItem>
-              )}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem variant="destructive" onClick={onDelete}><Trash2 /> Delete</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <SubscriptionActionsMenu
+            sub={sub}
+            busy={busy}
+            onEdit={onEdit}
+            onStatus={onStatus}
+            onToggleReminder={onToggleReminder}
+            onDelete={onDelete}
+          />
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+/** Row actions (edit, reminder, status, delete). Shared by the Cards and List views. */
+function SubscriptionActionsMenu({
+  sub,
+  busy,
+  onEdit,
+  onStatus,
+  onToggleReminder,
+  onDelete,
+}: {
+  sub: Subscription;
+  busy: boolean;
+  onEdit: () => void;
+  onStatus: (status: string) => void;
+  onToggleReminder: () => void;
+  onDelete: () => void;
+}) {
+  return (
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Actions for ${sub.name ?? "subscription"}`} disabled={busy}>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            }
+          />
+          <DropdownMenuContent align="end" className="min-w-48">
+            <DropdownMenuItem onClick={onEdit}><Pencil /> Edit</DropdownMenuItem>
+            {sub.status === "active" && (
+              <>
+                <DropdownMenuItem onClick={onToggleReminder}>
+                  {sub.cancelReminderDate ? <><BellOff /> Remove cancel reminder</> : <><Bell /> Remind me to cancel</>}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onStatus("paused")}><Pause /> Pause</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onStatus("cancelled")}><XCircle /> Mark cancelled</DropdownMenuItem>
+              </>
+            )}
+            {sub.status === "paused" && (
+              <DropdownMenuItem onClick={() => onStatus("active")}><Play /> Resume</DropdownMenuItem>
+            )}
+            {sub.status === "cancelled" && (
+              <DropdownMenuItem onClick={() => onStatus("active")}><RotateCcw /> Reactivate</DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem variant="destructive" onClick={onDelete}><Trash2 /> Delete</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
   );
 }

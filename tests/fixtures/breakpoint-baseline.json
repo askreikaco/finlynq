@@ -64,8 +64,6 @@
   "src/app/(app)/settings/backfill/[runId]/page.tsx": 6,
   "src/app/(app)/settings/general/page.tsx": 14,
   "src/app/(app)/settings/investments/_components/manage-prices-dialog.tsx": 1,
-  "src/app/(app)/subscriptions/_components/subscriptions-calendar.tsx": 7,
-  "src/app/(app)/subscriptions/page.tsx": 1,
   "src/app/(app)/tax/page.tsx": 1,
   "src/app/(app)/transactions/_components/transaction-edit-form.tsx": 1,
   "src/app/(app)/transactions/_components/transactions-workspace.tsx": 16,
