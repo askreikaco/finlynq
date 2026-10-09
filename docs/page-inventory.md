@@ -6,8 +6,8 @@ Base `99e332df` (branch `wave4/w4-4-5-docs`). Generated 2026-10-09 (UTC+7 VN). S
 
 | check | value |
 |---|---|
-| `find "src/app/(app)" -name page.tsx \| sort \| wc -l` | 85 |
-| table rows below (route rows) | 85 |
+| `find "src/app/(app)" -name page.tsx \| sort \| wc -l` | 94 |
+| table rows below (route rows) | 94 |
 | pages with own `<PageHeader` in page.tsx | 55 |
 | pages with PageHeader only via an imported module or alias | 12 |
 | pages with header from a layout only | 3 |
@@ -56,6 +56,8 @@ Pages with PageSkeleton: `/budgets`, `/categories/[id]`, `/categories`, `/goals`
 | `/budgets` | `src/app/(app)/budgets/page.tsx` | app | yes (page.tsx:414) | yes (page.tsx:408) | yes (page.tsx:409) | - |
 | `/categories/[id]` | `src/app/(app)/categories/[id]/page.tsx` | app | yes (page.tsx:167); backHref + backLabel | yes (page.tsx:76) | yes (page.tsx:144) | - |
 | `/categories` | `src/app/(app)/categories/page.tsx` | app | no | via import (categories/_page-content.tsx:58) | via import (categories/_page-content.tsx:139) | ErrorState/PageSkeleton from categories/_page-content.tsx (reachable); no PageHeader in depth-3 imports |
+| `/categories/new` | `src/app/(app)/categories/new/page.tsx` | app | yes (PageHeader in categories/_components/category-form.tsx) | no | no | PKG5 create-category page (shared by hub + /settings/categorization) |
+| `/categories/[id]/edit` | `src/app/(app)/categories/[id]/edit/page.tsx` | app | yes (PageHeader in categories/_components/category-form.tsx) | no | no | PKG5 rename-category page |
 | `/chat` | `src/app/(app)/chat/page.tsx` | app | no | no | no | UNVERIFIED: no header in depth-3 imports |
 | `/connect` | `src/app/(app)/connect/page.tsx` | app | via import (settings/integrations/page.tsx:76) | no | no | re-exports `/settings/integrations/page` (page source); renders SettingsShell and imports ../settings/integrations/page |
 | `/dashboard` | `src/app/(app)/dashboard/page.tsx` | app | yes (page.tsx:537) | no | yes (page.tsx:174) | subtitleClassName text-[13px] (:541); titleClassName text-xl font-semibold tracking-tight (:540) |
@@ -112,6 +114,8 @@ Pages with PageSkeleton: `/budgets`, `/categories/[id]`, `/categories`, `/goals`
 | `/settings` | `src/app/(app)/settings/page.tsx` | app > settings/layout.tsx (SettingsShell) | via import (components/settings-hub.tsx:42) | no | no | - |
 | `/settings/reconciliation` | `src/app/(app)/settings/reconciliation/page.tsx` | app > settings/layout.tsx (SettingsShell) | yes (page.tsx:136) | no | no | - |
 | `/settings/rules` | `src/app/(app)/settings/rules/page.tsx` | app > settings/layout.tsx (SettingsShell) | via import (settings/reconciliation/page.tsx:136) | no | no | re-exports `/settings/reconciliation/page` (page source) |
+| `/settings/rules/new` | `src/app/(app)/settings/rules/new/page.tsx` | app > settings/layout.tsx (SettingsShell) | yes (PageHeader in settings/rules/_components/rule-form-screen.tsx) | no | no | PKG5 create-rule page; prefill via query params |
+| `/settings/rules/[id]/edit` | `src/app/(app)/settings/rules/[id]/edit/page.tsx` | app > settings/layout.tsx (SettingsShell) | yes (PageHeader in settings/rules/_components/rule-form-screen.tsx) | no | no | PKG5 edit-rule page |
 | `/settings/securities` | `src/app/(app)/settings/securities/page.tsx` | app > settings/layout.tsx (SettingsShell) | no | no | no | UNVERIFIED: 1-file closure, no header |
 | `/subscriptions` | `src/app/(app)/subscriptions/page.tsx` | app | yes | yes | yes | - |
 | `/subscriptions/new` | `src/app/(app)/subscriptions/new/page.tsx` | app | yes | no | no | form: _components/subscription-form.tsx |

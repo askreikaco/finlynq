@@ -198,6 +198,10 @@ describe("nav-config", () => {
         "/import/pending", // live route, not redirected
         "/manage-accounts",
         "/more", // mobile-only route
+        "/categories/new", // create-category page, opened from the categories Add button (no nav entry)
+        "/categories/[id]/edit", // rename-category page, opened from the category row (no nav entry)
+        "/settings/rules/new", // create-rule page, opened from the rules Add button (no nav entry)
+        "/settings/rules/[id]/edit", // edit-rule page, opened from the rule row (no nav entry)
       ]);
 
       const missing = pagePaths.filter(

@@ -423,6 +423,8 @@ export const Nav = memo(function Nav({ instanceAdminEnabled = false, categoriesM
 const FULL_SCREEN_ENTRY_ROUTES = [
   "/transactions/new",
   "/accounts/new",
+  "/settings/rules/new",
+  "/categories/new",
   "/settings/investments/securities",
   "/settings/investments/accounts",
   "/settings/investments/cash-sleeves",
@@ -430,8 +432,8 @@ const FULL_SCREEN_ENTRY_ROUTES = [
   "/subscriptions/new",
 ] as const;
 // Edit forms for a single loan / subscription / account (/loans/<id>/edit, /subscriptions/<id>/edit,
-// /accounts/<id>/edit).
-const FULL_SCREEN_EDIT_ROUTE = /^\/(loans|subscriptions|accounts)\/[^/]+\/edit$/;
+// /accounts/<id>/edit) and rule / category rename pages.
+const FULL_SCREEN_EDIT_ROUTE = /^\/(loans|subscriptions|accounts|categories|settings\/rules)\/[^/]+\/edit$/;
 
 // Mobile bottom bar
 export const MobileBottomBar = memo(function MobileBottomBar({ pathname }: { pathname: string }) {
