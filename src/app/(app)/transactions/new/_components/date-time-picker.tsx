@@ -98,10 +98,10 @@ export function DateTimePickerSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="flex flex-col p-0 rounded-t-3xl bg-zinc-950 border-t border-zinc-800 text-white max-h-[85vh]"
+        className="flex flex-col p-0 rounded-t-3xl bg-background border-t border-border text-foreground max-h-[85vh]"
       >
-        <SheetHeader className="px-5 py-4 border-b border-zinc-900 shrink-0">
-          <SheetTitle className="text-white text-lg font-semibold">
+        <SheetHeader className="px-5 py-4 border-b border-border shrink-0">
+          <SheetTitle className="text-foreground text-lg font-semibold">
             Date & Time
           </SheetTitle>
         </SheetHeader>
@@ -112,21 +112,21 @@ export function DateTimePickerSheet({
             <button
               type="button"
               onClick={setNow}
-              className="flex-1 py-2 px-3 rounded-xl bg-zinc-900 border border-zinc-800 text-xs font-medium text-zinc-300 active:bg-zinc-800 transition-colors"
+              className="flex-1 py-2 px-3 rounded-xl bg-card border border-border text-xs font-medium text-foreground active:bg-muted transition-colors"
             >
               Right Now
             </button>
             <button
               type="button"
               onClick={setToday}
-              className="flex-1 py-2 px-3 rounded-xl bg-zinc-900 border border-zinc-800 text-xs font-medium text-zinc-300 active:bg-zinc-800 transition-colors"
+              className="flex-1 py-2 px-3 rounded-xl bg-card border border-border text-xs font-medium text-foreground active:bg-muted transition-colors"
             >
               Today
             </button>
             <button
               type="button"
               onClick={setYesterday}
-              className="flex-1 py-2 px-3 rounded-xl bg-zinc-900 border border-zinc-800 text-xs font-medium text-zinc-300 active:bg-zinc-800 transition-colors"
+              className="flex-1 py-2 px-3 rounded-xl bg-card border border-border text-xs font-medium text-foreground active:bg-muted transition-colors"
             >
               Yesterday
             </button>
@@ -134,7 +134,7 @@ export function DateTimePickerSheet({
 
           {/* Date Picker Input */}
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
               <Calendar className="w-3.5 h-3.5" />
               Date
             </label>
@@ -143,14 +143,14 @@ export function DateTimePickerSheet({
                 type="date"
                 value={tempDate}
                 onChange={(e) => setTempDate(e.target.value)}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-3.5 text-white text-base focus:border-indigo-500 focus:outline-none transition-colors [color-scheme:dark]"
+                className="w-full bg-card border border-border rounded-xl p-3.5 text-foreground text-base focus:border-ring focus:outline-none transition-colors [color-scheme:dark]"
               />
             </div>
           </div>
 
           {/* Time Picker Input */}
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5" />
               Time
             </label>
@@ -159,15 +159,15 @@ export function DateTimePickerSheet({
                 type="time"
                 value={tempTime}
                 onChange={(e) => setTempTime(e.target.value)}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-3.5 text-white text-base focus:border-indigo-500 focus:outline-none transition-colors [color-scheme:dark]"
+                className="w-full bg-card border border-border rounded-xl p-3.5 text-foreground text-base focus:border-ring focus:outline-none transition-colors [color-scheme:dark]"
               />
             </div>
           </div>
 
           {/* Summary Display */}
-          <div className="p-3.5 rounded-xl bg-zinc-900/60 border border-zinc-800/80 text-center">
-            <span className="text-xs text-zinc-400">Selected: </span>
-            <span className="text-sm font-medium text-indigo-400">
+          <div className="p-3.5 rounded-xl bg-card/60 border border-border/80 text-center">
+            <span className="text-xs text-muted-foreground">Selected: </span>
+            <span className="text-sm font-medium text-primary">
               {formatDateTimeDisplay(tempDate, tempTime)}
             </span>
           </div>
@@ -176,7 +176,7 @@ export function DateTimePickerSheet({
           <Button
             type="button"
             onClick={handleDone}
-            className="w-full h-12 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-base flex items-center justify-center gap-2"
+            className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl text-base flex items-center justify-center gap-2"
           >
             <Check className="w-5 h-5" />
             Done
