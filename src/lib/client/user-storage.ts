@@ -11,7 +11,7 @@
  * - Legacy un-namespaced per-user keys (pre multi-account) are DROPPED, never
  *   migrated: a bare key cannot be attributed to a user, so copying it to
  *   whoever is logged in would leak A's data into B.
- * - Device-level keys (pf-font, pf-sidebar-collapsed, analytics consent) are
+ * - Device-level keys (pf-font, pf-density, pf-sidebar-collapsed, analytics consent) are
  *   not per-user and are not listed here.
  */
 
@@ -22,6 +22,7 @@ export const PER_USER_STORAGE_KEYS = [
   "pf-chat-history",
   "pf-dismissed-tips",
   "pf-spotlight-dismissed",
+  "pf-view-mode", // G2-08: JSON { "<viewKey>:<sizeClass>": "cards" | "list" }
 ] as const;
 
 /** Old un-namespaced per-user keys, removed on sight (see header). */

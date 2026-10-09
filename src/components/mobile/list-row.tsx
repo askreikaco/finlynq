@@ -35,7 +35,7 @@ export interface ListRowProps {
 
 /**
  * Native list row: [36px circle tile | title + subtitle | value + secondary | chevron],
- * min-h 56px. Below md lists never use multi-column tables: one primary value on the
+ * min-h 56px (44px when data-density=compact; never below 44px). Below md lists never use multi-column tables: one primary value on the
  * right, everything else lives in a detail sheet.
  */
 export function ListRow({
@@ -81,7 +81,7 @@ export function ListRow({
   );
 
   const cls = cn(
-    "flex min-h-[56px] w-full items-center gap-3 px-1 py-2 text-left",
+    "flex min-h-[56px] dense:min-h-11 w-full items-center gap-3 px-1 py-2 text-left",
     interactive && "outline-none transition-colors hover:bg-muted/50 active:bg-muted/60 focus-visible:ring-3 focus-visible:ring-ring/50 rounded-lg",
     className,
   );
