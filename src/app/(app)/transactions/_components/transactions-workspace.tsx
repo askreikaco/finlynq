@@ -727,6 +727,7 @@ export function TransactionsWorkspace({
               <Button
                 className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-sm"
                 onClick={() => router.push("/transactions/new")}
+                aria-label="Add Transaction"
               >
                 <Plus className="h-4 w-4 mr-2" /> <span className="max-md:hidden">Add Transaction</span><span className="md:hidden">Add</span>
               </Button>

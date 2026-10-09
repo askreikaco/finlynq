@@ -171,6 +171,7 @@ function CategoryPageContent() {
         backLabel="Back to Categories"
         actions={
           <>
+            <span className={HEADER_DESKTOP_ONLY}>
             {switcherItems.length > 0 && (
               <Combobox
                 value={String(categoryId)}
@@ -184,6 +185,7 @@ function CategoryPageContent() {
                 className="w-56 max-md:w-40"
               />
             )}
+            </span>
             <span className={HEADER_DESKTOP_ONLY}>
               <Tabs value={String(months)} onValueChange={(v) => setMonths(Number(v) || 12)}>
                 <TabsList>
@@ -195,11 +197,14 @@ function CategoryPageContent() {
             </span>
           </>
         }
-        overflow={CATEGORY_WINDOWS.map((m) => ({
-          label: `Show ${m} months`,
-          onSelect: () => setMonths(m),
-          disabled: months === m,
-        }))}
+        overflow={[
+          ...CATEGORY_WINDOWS.map((m) => ({
+            label: `Show ${m} months`,
+            onSelect: () => setMonths(m),
+            disabled: months === m,
+          })),
+          { label: "All categories", href: "/categories" },
+        ]}
       />
       <div className="flex flex-wrap items-center gap-1.5 mt-1">
         <Badge variant="outline">{isIncome ? "Income" : category.type === "R" ? "Transfer" : "Expense"}</Badge>

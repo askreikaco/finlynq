@@ -542,7 +542,7 @@ export default function AccountDetailPage() {
         titleClassName="text-2xl font-bold tracking-tight"
         actionsClassName="flex min-w-0 flex-wrap items-center gap-1.5 sm:w-auto"
         lead={
-          <div className={`h-10 w-10 shrink-0 rounded-xl flex items-center justify-center text-sm font-bold ${account.type === "A" ? "bg-pos/10 text-pos" : "bg-destructive/10 text-destructive"}`}>
+          <div className={`${HEADER_DESKTOP_ONLY} h-10 w-10 shrink-0 rounded-xl flex items-center justify-center text-sm font-bold ${account.type === "A" ? "bg-pos/10 text-pos" : "bg-destructive/10 text-destructive"}`}>
             {(account.name ?? "?").charAt(0)}
           </div>
         }
@@ -579,7 +579,7 @@ export default function AccountDetailPage() {
         actions={
         <>
           {!isInvestment && (
-            <Button size="sm" onClick={() => router.push(`/transactions/new?account=${account.id}`)}>
+            <Button size="sm" aria-label="New transaction" onClick={() => router.push(`/transactions/new?account=${account.id}`)}>
               <Receipt className="h-3.5 w-3.5 mr-1.5" /> <FromMd as="span">New transaction</FromMd><CompactOnly as="span">Add</CompactOnly>
             </Button>
           )}

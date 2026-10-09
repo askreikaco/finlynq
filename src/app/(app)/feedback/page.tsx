@@ -19,7 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { Paperclip, X } from "lucide-react";
+import { Paperclip, Send, X } from "lucide-react";
 import { FeedbackDialog } from "@/components/feedback-dialog";
 import { FeedbackAttachmentView } from "@/components/feedback/attachment-view";
 import { validateFeedbackAttachment } from "@/lib/feedback/attachment";
@@ -28,7 +28,7 @@ import type {
   FeedbackThread,
   FeedbackThreadSummary,
 } from "@shared/types";
-import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
+import { PageHeader } from "@/components/mobile";
 import { usePageFab } from "@/components/mobile/page-fab";
 
 function fmtBytes(n: number): string {
@@ -355,7 +355,12 @@ export default function FeedbackPage() {
         titleClassName="text-2xl font-bold tracking-tight"
         subtitle="Track your reports and follow up on replies from the team."
         subtitleClassName="text-sm text-muted-foreground mt-0.5"
-        actions={<Button onClick={() => setSendOpen(true)}>Send feedback</Button>}
+        actions={
+          <Button onClick={() => setSendOpen(true)}>
+            <Send className="hidden size-4 max-md:block" aria-hidden />
+            Send feedback
+          </Button>
+        }
       />
       <div className="mt-6">
       {error && <p className="mb-4 text-sm text-destructive">{error}</p>}

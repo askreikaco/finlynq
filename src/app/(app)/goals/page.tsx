@@ -20,7 +20,7 @@ import { ErrorState } from "@/components/error-state";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { parseSaveError } from "@/lib/save-error";
 import { AmountInput } from "@/components/amount-input";
-import { PageHeader } from "@/components/mobile";
+import { PageHeader, PHONE_PRIMARY_CLASS } from "@/components/mobile";
 import { usePageFab } from "@/components/mobile/page-fab";
 
 type Goal = {
@@ -390,7 +390,7 @@ export default function GoalsPage() {
         actionsClassName="contents"
         actions={
         <Dialog open={addOpen} onOpenChange={(o) => { setAddOpen(o); if (!o) setSeedForm(emptyForm(displayCurrency)); }}>
-          <DialogTrigger render={<Button />}><Plus className="h-4 w-4 mr-1" /> Add Goal</DialogTrigger>
+          <DialogTrigger render={<Button className={PHONE_PRIMARY_CLASS} aria-label="Add Goal" />}><Plus className="h-4 w-4 mr-1" /> Add Goal</DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>New Financial Goal</DialogTitle></DialogHeader>
             <GoalEditForm

@@ -288,8 +288,16 @@ describe("MobileBottomBar with more-active sidebar logic", () => {
     expect(moreLink?.getAttribute("aria-current")).toBeNull();
   });
 
-  it("at /transactions/new: Transactions aria-current=page, More not current", () => {
+  it("at /transactions/new (full-screen entry): bar is hidden by design", () => {
     mockPath = "/transactions/new";
+    const { container } = render(<MobileBottomBar pathname={mockPath} />);
+    expect(container.querySelector('nav[aria-label="Mobile navigation"]')).toBeNull();
+    expect(container.querySelector('a[href="/more"]')).toBeNull();
+    expect(container.querySelectorAll('a[aria-current="page"]')).toHaveLength(0);
+  });
+
+  it("at /transactions (non-full-screen): Transactions aria-current=page, More not current", () => {
+    mockPath = "/transactions";
     const { container } = render(<MobileBottomBar pathname={mockPath} />);
     const transactionsLink = container.querySelector('a[href="/transactions"]');
     const moreLink = container.querySelector('a[href="/more"]');

@@ -11,7 +11,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Dialog } from "@/components/ui/dialog";
 import { BackButton } from "./back-button";
+import { FromMd } from "./adaptive";
 
 export interface OverflowAction {
   label: string;
@@ -87,19 +89,37 @@ export function desktopClasses(original: string): string {
   return cn(out.join(" "));
 }
 
+/** Flatten Fragments so a fragment-wrapped action is seen as its own child (no DOM change). */
+function flattenActions(node: React.ReactNode): React.ReactNode[] {
+  return React.Children.toArray(node).flatMap((c) => {
+    if (React.isValidElement(c) && c.type === React.Fragment) {
+      const inner = (c.props as { children?: React.ReactNode }).children;
+      return flattenActions(inner).map((child) =>
+        React.isValidElement(child) ? React.cloneElement(child, { key: `${String(c.key)}/${String(child.key)}` }) : child,
+      );
+    }
+    return [c];
+  });
+}
+
+/** Non-visual roots render no element; their triggers are the real actions. Never the primary themselves. */
+function isPhoneInvisible(c: React.ReactElement): boolean {
+  return c.type === Dialog || c.type === DropdownMenu || c.type === FromMd;
+}
+
 /** The primary action is the last visible (not max-md:hidden) child of the actions. Returns the children with
  * that one gaining an aria-label (its visible text, if none was set) and the icon-only phone class. */
 export function withPhonePrimary(actions: React.ReactNode): React.ReactNode {
-  const items = React.Children.toArray(actions);
+  const items = flattenActions(actions);
   let idx = -1;
   items.forEach((c, i) => {
-    if (!React.isValidElement(c) || c.type === React.Fragment) return;
+    if (!React.isValidElement(c) || isPhoneInvisible(c)) return;
     const cn0 = String((c.props as { className?: string }).className ?? "");
     if (!cn0.includes("max-md:hidden")) idx = i;
   });
-  if (idx < 0) return actions;
+  if (idx < 0) return items;
   return items.map((c, i) => {
-    if (i !== idx || !React.isValidElement(c) || c.type === React.Fragment) return c;
+    if (i !== idx || !React.isValidElement(c)) return c;
     const p = c.props as { className?: string; "aria-label"?: string; children?: React.ReactNode };
     const label = p["aria-label"] ?? textOf(p.children);
     return React.cloneElement(c as React.ReactElement<{ className?: string; "aria-label"?: string }>, {

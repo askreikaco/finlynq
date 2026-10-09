@@ -69,8 +69,9 @@ export function ReconcileHeader({
                 : detail.staged.subject || "(no subject)"
               : "Loading…"}
         titleClassName="text-2xl font-bold tracking-tight"
+        actionsClassName="flex flex-wrap items-center gap-2"
         actions={
-          <div className="flex flex-wrap items-center gap-2">
+          <>
             <Link
               href={
                 accountId != null
@@ -105,7 +106,7 @@ export function ReconcileHeader({
               <Check className="h-4 w-4 mr-1.5" />
               Send to bank ledger {selectedCount > 0 && `(${selectedCount})`}
             </Button>
-          </div>
+          </>
         }
         overflow={[
           { label: "Open reconciliation", href: accountId != null ? `/reconcile?account=${accountId}` : "/reconcile" },

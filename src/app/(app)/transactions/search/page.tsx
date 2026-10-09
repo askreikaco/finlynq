@@ -2,8 +2,6 @@
 
 import { useSearchParams, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { ChevronLeft } from "lucide-react";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
@@ -157,12 +155,8 @@ export default function TransactionSearchPage() {
       {/* Header */}
       <PageHeader
         title="Search & filter"
-        lead={
-          <Link href={returnTo} className="p-2 rounded-lg hover:bg-muted transition-colors">
-            <ChevronLeft className="h-5 w-5" />
-          </Link>
-        }
-        leadClassName="flex items-center gap-0"
+        backHref={returnTo}
+        backLabel="Back"
       />
 
       {/* Form */}

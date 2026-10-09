@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/currency";
 import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
 import { AlertTriangle, RefreshCw, Check, X } from "lucide-react";
-import { PageHeader } from "@/components/mobile";
+import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
 
 type AuditRow = {
   id: number;
@@ -112,8 +112,14 @@ export default function CurrencyAuditPage() {
         titleClassName="text-2xl font-bold tracking-tight"
         backHref="/transactions"
         backLabel="Back to Transactions"
+        overflow={[
+          {
+            label: includeResolved ? "Hide resolved" : "Show resolved",
+            onSelect: () => setIncludeResolved((v) => !v),
+          },
+        ]}
         actions={
-          <label className="flex items-center gap-2 text-xs text-muted-foreground max-md:px-3">
+          <label className={`${HEADER_DESKTOP_ONLY} flex items-center gap-2 text-xs text-muted-foreground`}>
             <input
               type="checkbox"
               checked={includeResolved}

@@ -339,6 +339,7 @@ export default function AccountsPage() {
   const createAccountLink = (
     <Link
       href="/accounts/new"
+      aria-label="Create Account"
       className={buttonVariants({ size: "sm", className: "bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-sm" })}
     >
       <Plus className="h-4 w-4 mr-1.5" /> <FromMd as="span">Create Account</FromMd><CompactOnly as="span">Add</CompactOnly>
