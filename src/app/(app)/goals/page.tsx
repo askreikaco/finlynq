@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { Plus, Trash2, Target, CheckCircle2, TrendingUp, Calendar, Pencil } from "lucide-react";
@@ -13,6 +14,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/error-state";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { PageHeader, PHONE_PRIMARY_CLASS } from "@/components/mobile";
+import { DataView, ViewModeToggle } from "@/components/adaptive";
 import type { Goal } from "./_components/goal-form";
 
 const goalTypeConfig: Record<string, { label: string; badgeClass: string; borderClass: string }> = {
@@ -90,86 +92,36 @@ export default function GoalsPage() {
   if (loading) return <PageSkeleton variant="cards" rows={3} />;
   if (loadError) return <ErrorState title="Couldn't load goals" message="We couldn't load your goals. Please try again." onRetry={() => { setLoading(true); load(); }} />;
 
-  return (
-    <div className="space-y-6">
-      <PageHeader
-        className="flex flex-wrap items-center justify-between gap-3"
-        title="Goals"
-        subtitle="Track your savings targets and measure progress over time"
-        actionsClassName="contents"
-        actions={
-        <Button className={PHONE_PRIMARY_CLASS} aria-label="Add Goal" render={<Link href="/goals/new" />}>
-          <Plus className="h-4 w-4 mr-1" /> Add Goal
-        </Button>
-        }
-      />
-
-      {/* Summary cards — only show when there are goals */}
-      {goals.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardContent className="flex items-center gap-4 pt-6">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                <Target className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Target</p>
-                <p className="text-2xl font-bold">{formatCurrency(totalTarget, displayCurrency)}</p>
-                {hasForeignGoal && <p className="text-xs text-muted-foreground mt-1">converted at today&apos;s rates</p>}
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="flex items-center gap-4 pt-6">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-pos/10">
-                <TrendingUp className="h-5 w-5 text-pos" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Current Progress</p>
-                <p className="text-2xl font-bold text-pos">{formatCurrency(totalCurrent, displayCurrency)}</p>
-                {hasForeignGoal && <p className="text-xs text-muted-foreground mt-1">converted at today&apos;s rates</p>}
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="flex items-center gap-4 pt-6">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-chart-5/10">
-                <CheckCircle2 className="h-5 w-5 text-chart-5" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Completed</p>
-                <p className="text-2xl font-bold">{completed.length} <span className="text-base font-normal text-muted-foreground">/ {goals.length}</span></p>
-              </div>
-            </CardContent>
-          </Card>
+  const emptyGoals = (
+    <Card className="border-dashed">
+      <CardContent className="py-16 flex flex-col items-center text-center">
+        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary/10 mb-4">
+          <Target className="h-8 w-8 text-primary" />
         </div>
-      )}
+        <h3 className="text-lg font-semibold mb-2">Set your first financial goal</h3>
+        <p className="text-sm text-muted-foreground max-w-sm mb-6">
+          Goals help you stay focused and measure real progress. Start with an emergency fund, debt payoff target, or a savings milestone.
+        </p>
+        <div className="flex flex-wrap gap-2 justify-center">
+          {EMPTY_STATE_CHIPS.map(({ label, type }) => (
+            <Link
+              key={label}
+              href={`/goals/new?name=${encodeURIComponent(label)}&type=${type}`}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-border/60 bg-muted/40 hover:bg-muted transition-colors"
+            >
+              <Plus className="h-3 w-3" />{label}
+            </Link>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
 
+  // Cards view: the goal cards (the phone layout).
+  const goalCards = (
+    <div className="space-y-6">
       {/* Empty state — no goals at all */}
-      {goals.length === 0 && (
-        <Card className="border-dashed">
-          <CardContent className="py-16 flex flex-col items-center text-center">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary/10 mb-4">
-              <Target className="h-8 w-8 text-primary" />
-            </div>
-            <h3 className="text-lg font-semibold mb-2">Set your first financial goal</h3>
-            <p className="text-sm text-muted-foreground max-w-sm mb-6">
-              Goals help you stay focused and measure real progress. Start with an emergency fund, debt payoff target, or a savings milestone.
-            </p>
-            <div className="flex flex-wrap gap-2 justify-center">
-              {EMPTY_STATE_CHIPS.map(({ label, type }) => (
-                <Link
-                  key={label}
-                  href={`/goals/new?name=${encodeURIComponent(label)}&type=${type}`}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-border/60 bg-muted/40 hover:bg-muted transition-colors"
-                >
-                  <Plus className="h-3 w-3" />{label}
-                </Link>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {goals.length === 0 && emptyGoals}
 
       {/* Empty state — has completed goals but no active */}
       {goals.length > 0 && active.length === 0 && (
@@ -276,6 +228,138 @@ export default function GoalsPage() {
           ))}
         </div>
       )}
+    </div>
+  );
+
+  // List view: one table of every goal (active first, then completed). Row opens the edit page.
+  const goalList = goals.length === 0 ? emptyGoals : (
+    <Table containerClassName="rounded-xl border bg-card">
+      <TableHeader>
+        <TableRow>
+          <TableHead>Goal</TableHead>
+          <TableHead className="text-right">Target</TableHead>
+          <TableHead className="text-right">Saved</TableHead>
+          <TableHead className="w-44">Progress</TableHead>
+          <TableHead>Deadline</TableHead>
+          <TableHead><span className="sr-only">Actions</span></TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {[...active, ...completed].map((g) => {
+          const currency = g.currency || displayCurrency;
+          const done = g.status === "completed";
+          return (
+            <TableRow key={g.id} className="relative">
+              <TableCell className="font-medium">
+                <div className="flex items-center gap-2">
+                  <Link href={`/goals/${g.id}/edit`} className="after:absolute after:inset-0 hover:underline">
+                    {g.name}
+                  </Link>
+                  {done && <Badge className="bg-pos/10 text-pos border-pos/30">Completed</Badge>}
+                </div>
+              </TableCell>
+              <TableCell className="text-right font-mono tabular-nums">{formatCurrency(g.targetAmount, currency)}</TableCell>
+              <TableCell className="text-right font-mono tabular-nums">{formatCurrency(g.currentAmount, currency)}</TableCell>
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  <Progress value={g.progress} className={`h-2 w-24 ${progressColorClass(g.progress)}`} />
+                  <span className={`text-xs font-bold tabular-nums ${progressTextClass(g.progress)}`}>{g.progress}%</span>
+                </div>
+              </TableCell>
+              <TableCell className="tabular-nums">{g.deadline ?? "—"}</TableCell>
+              <TableCell className="text-right">
+                <div className="relative z-10 flex items-center justify-end gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => toggleStatus(g)}
+                    title={done ? "Reactivate" : "Mark complete"}
+                    aria-label={done ? `Reactivate goal ${g.name}` : `Mark goal ${g.name} complete`}
+                  >
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-destructive"
+                    onClick={() => setDeleteId(g.id)}
+                    title="Delete"
+                    aria-label={`Delete goal ${g.name}`}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          );
+        })}
+      </TableBody>
+    </Table>
+  );
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        className="flex flex-wrap items-center justify-between gap-3"
+        title="Goals"
+        subtitle="Track your savings targets and measure progress over time"
+        actionsClassName="contents"
+        actions={
+        <Button className={PHONE_PRIMARY_CLASS} aria-label="Add Goal" render={<Link href="/goals/new" />}>
+          <Plus className="h-4 w-4 mr-1" /> Add Goal
+        </Button>
+        }
+      />
+
+      {/* Summary cards — only show when there are goals */}
+      {goals.length > 0 && (
+        <div className="grid grid-cols-1 regular:grid-cols-3 gap-4">
+          <Card>
+            <CardContent className="flex items-center gap-4 pt-6">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                <Target className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Total Target</p>
+                <p className="text-2xl font-bold">{formatCurrency(totalTarget, displayCurrency)}</p>
+                {hasForeignGoal && <p className="text-xs text-muted-foreground mt-1">converted at today&apos;s rates</p>}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="flex items-center gap-4 pt-6">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-pos/10">
+                <TrendingUp className="h-5 w-5 text-pos" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Current Progress</p>
+                <p className="text-2xl font-bold text-pos">{formatCurrency(totalCurrent, displayCurrency)}</p>
+                {hasForeignGoal && <p className="text-xs text-muted-foreground mt-1">converted at today&apos;s rates</p>}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="flex items-center gap-4 pt-6">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-chart-5/10">
+                <CheckCircle2 className="h-5 w-5 text-chart-5" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Completed</p>
+                <p className="text-2xl font-bold">{completed.length} <span className="text-base font-normal text-muted-foreground">/ {goals.length}</span></p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Toolbar: Cards / List view switch */}
+      <div className="flex justify-end">
+        <ViewModeToggle viewKey="goals" />
+      </div>
+
+      {/* Goals: Cards (default on phones) or List (table rows). Only the selected view is mounted. */}
+      <DataView viewKey="goals" cards={() => goalCards} list={() => goalList} />
 
       <ConfirmDialog
         open={deleteId !== null}
