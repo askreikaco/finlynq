@@ -139,7 +139,7 @@ export function EditUserModal({
             <div
               role="alert"
               id="edit-user-error"
-              className="rounded-md bg-red-50 p-3 text-sm text-red-700 border border-red-200"
+              className="rounded-md bg-destructive/10 p-3 text-sm text-destructive border border-destructive/30"
             >
               <div className="flex gap-2">
                 <AlertCircle aria-hidden="true" className="h-5 w-5 flex-shrink-0 mt-0.5" />
