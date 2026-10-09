@@ -11,6 +11,7 @@ import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { ErrorState } from "@/components/error-state";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { OnboardingTips } from "@/components/onboarding-tips";
 import { Badge } from "@/components/ui/badge";
 import { Plus, SlidersHorizontal, ChevronDown, Receipt, Search, X, AlertTriangle, ArrowRightLeft, Columns3, TrendingUp, Download } from "lucide-react";
@@ -270,6 +271,8 @@ export function TransactionsWorkspace({
   } | null>(null);
   const [deleteConfirmPayee, setDeleteConfirmPayee] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  useEffect(() => { setDeleteError(null); }, [deleteConfirmId]);
   // FINLYNQ-176 — warn-and-reallocate. When a delete is lot-locked, fetch the
   // dry-run preview so the user can see the proposed reallocation (affected
   // calendar years + any short lot that will open) and choose to proceed.
@@ -527,6 +530,7 @@ export function TransactionsWorkspace({
   async function handleDelete() {
     if (!deleteConfirmId) return;
     setDeleting(true);
+    setDeleteError(null);
     setDeleteBlockedError(null);
     const res = await fetch(`/api/transactions?id=${deleteConfirmId}`, { method: "DELETE" });
     setDeleting(false);
@@ -562,7 +566,7 @@ export function TransactionsWorkspace({
         }
         return;
       }
-      alert(data?.error ?? `Delete failed (${res.status})`);
+      setDeleteError(data?.error ?? `Delete failed (${res.status})`);
       return;
     }
     setDeleteConfirmId(null);
@@ -574,6 +578,7 @@ export function TransactionsWorkspace({
   async function handleReallocateDelete() {
     if (!deleteConfirmId) return;
     setDeleting(true);
+    setDeleteError(null);
     const res = await fetch(
       `/api/transactions?id=${deleteConfirmId}&confirmReallocation=1`,
       { method: "DELETE" },
@@ -581,7 +586,7 @@ export function TransactionsWorkspace({
     setDeleting(false);
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      alert(data?.error ?? `Delete failed (${res.status})`);
+      setDeleteError(data?.error ?? `Delete failed (${res.status})`);
       return;
     }
     setDeleteConfirmId(null);
@@ -702,7 +707,7 @@ export function TransactionsWorkspace({
             className="flex flex-wrap items-center justify-between gap-3"
             title="Transactions"
             subtitle="Manage and track all your financial transactions"
-            titleClassName="text-2xl font-bold"
+            titleClassName="text-2xl font-bold tracking-tight"
             subtitleClassName="text-sm text-muted-foreground mt-0.5"
             actionsClassName="flex flex-wrap items-center gap-1.5"
             overflow={[
@@ -870,7 +875,7 @@ export function TransactionsWorkspace({
               onChange={(e) => handleSearchChange(e.target.value)}
             />
             {searchInput && (
-              <button onClick={() => { setSearchInput(""); setFilters({ ...filters, search: "" }); setPage(0); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-muted transition-colors">
+              <button onClick={() => { setSearchInput(""); setFilters({ ...filters, search: "" }); setPage(0); }} type="button" aria-label="Clear search" className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-muted transition-colors max-md:right-0 max-md:flex max-md:size-11 max-md:items-center max-md:justify-center">
                 <X className="h-3.5 w-3.5 text-muted-foreground" />
               </button>
             )}
@@ -1234,6 +1239,9 @@ export function TransactionsWorkspace({
               Delete Transaction
             </DialogTitle>
           </DialogHeader>
+          {deleteError && (
+            <Alert variant="destructive"><AlertDescription>{deleteError}</AlertDescription></Alert>
+          )}
           {deleteBlockedError ? (
             <div className="space-y-3">
               <p className="text-sm text-amber-900 dark:text-amber-200">

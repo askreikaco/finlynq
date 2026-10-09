@@ -88,4 +88,28 @@ describe("workspace", () => {
       Object.assign(H.RES, saved);
     }
   });
+
+  it("delete failure shows an inline Alert in the dialog, not native alert()", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (_url: string, init?: any) => init?.method === "DELETE"
+      ? ({ ok: false, status: 500, json: async () => ({ error: "boom" }) })
+      : ({ ok: true, json: async () => ({ data: [] }) })));
+    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
+    try {
+      render(<TransactionsWorkspace />);
+      fireEvent.click(screen.getAllByTitle("Delete")[0]);
+      const dlg = await screen.findByRole("dialog");
+      fireEvent.click(within(dlg).getByRole("button", { name: "Delete" }));
+      const alertEl = await within(dlg).findByRole("alert");
+      expect(alertEl.textContent).toContain("boom");
+      expect(alertSpy).not.toHaveBeenCalled();
+    } finally {
+      alertSpy.mockRestore();
+    }
+  });
+  it("search input shows a Clear search button with a mobile hit area", () => {
+    render(<TransactionsWorkspace />);
+    fireEvent.change(screen.getByPlaceholderText("Search payee, note, or tags…"), { target: { value: "x" } });
+    const btn = screen.getByLabelText("Clear search");
+    expect(btn.className).toContain("max-md:size-11");
+  });
 });
