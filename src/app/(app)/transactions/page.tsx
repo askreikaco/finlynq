@@ -15,13 +15,13 @@ function TableSkeleton() {
     <div className="p-4 space-y-3">
       {Array.from({ length: 8 }).map((_, i) => (
         <div key={i} className="flex items-center gap-4">
-          <div className="h-4 w-20 rounded bg-muted animate-pulse" />
-          <div className="h-4 w-24 rounded bg-muted animate-pulse" />
-          <div className="h-5 w-16 rounded-full bg-muted animate-pulse" />
-          <div className="h-4 w-28 rounded bg-muted animate-pulse" />
-          <div className="h-4 w-32 rounded bg-muted animate-pulse flex-1" />
-          <div className="h-4 w-20 rounded bg-muted animate-pulse ml-auto" />
-          <div className="h-6 w-14 rounded bg-muted animate-pulse" />
+          <div className="h-4 w-20 rounded animate-shimmer" />
+          <div className="h-4 w-24 rounded animate-shimmer" />
+          <div className="h-5 w-16 rounded-full animate-shimmer" />
+          <div className="h-4 w-28 rounded animate-shimmer" />
+          <div className="h-4 w-32 rounded animate-shimmer flex-1" />
+          <div className="h-4 w-20 rounded animate-shimmer ml-auto" />
+          <div className="h-6 w-14 rounded animate-shimmer" />
         </div>
       ))}
     </div>

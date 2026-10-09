@@ -1062,11 +1062,11 @@ export function TransactionsWorkspace({
           {filters.tag && (
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">Tag:</span>
-              <Badge variant="outline" className="h-7 gap-1.5 pr-1 border-sky-300 bg-sky-50 text-sky-700 dark:border-sky-800 dark:bg-sky-950 dark:text-sky-300">
+              <Badge variant="outline" className="h-7 gap-1.5 pr-1 border-info/30 bg-info/10 text-info">
                 <span className="font-medium font-mono">{filters.tag}</span>
                 <button
                   onClick={() => { setFilters({ ...filters, tag: "" }); setPage(0); }}
-                  className="p-0.5 rounded hover:bg-sky-100 dark:hover:bg-sky-900 transition-colors"
+                  className="p-0.5 rounded hover:bg-info/10 transition-colors"
                   aria-label="Clear tag filter"
                 >
                   <X className="h-3 w-3" />
@@ -1170,7 +1170,7 @@ export function TransactionsWorkspace({
               {bulkProcessing ? "Processing…" : "Apply"}
             </Button>
           </div>
-          <button onClick={() => setSelected(new Set())} className="text-muted-foreground hover:text-foreground transition-colors">
+          <button aria-label="Clear selection" onClick={() => setSelected(new Set())} className="text-muted-foreground hover:text-foreground transition-colors">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -1244,7 +1244,7 @@ export function TransactionsWorkspace({
           )}
           {deleteBlockedError ? (
             <div className="space-y-3">
-              <p className="text-sm text-amber-900 dark:text-amber-200">
+              <p className="text-sm text-warning">
                 This transaction opened a lot that has since been sold or
                 transferred out. You can still delete it — the dependent
                 transactions below will be re-matched to your other lots.
