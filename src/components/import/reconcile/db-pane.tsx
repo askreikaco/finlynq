@@ -224,29 +224,29 @@ export function DbPane({
                   <TableCell className="text-xs">
                     <div className="flex items-center gap-1 flex-nowrap">
                       {r.txType === "R" ? (
-                        <Badge variant="outline" className="text-[10px]">
+                        <Badge variant="outline" className="text-xs">
                           Transfer
                         </Badge>
                       ) : r.txType === "I" ? (
                         <Badge
                           variant="outline"
-                          className="text-[10px] bg-pos/10 text-pos border-pos/30"
+                          className="text-xs bg-pos/10 text-pos border-pos/30"
                         >
                           Income
                         </Badge>
                       ) : r.txType === "T" ? (
-                        <Badge variant="outline" className="text-[10px]">
+                        <Badge variant="outline" className="text-xs">
                           True-up
                         </Badge>
                       ) : r.txType === "E" ? (
-                        <Badge variant="outline" className="text-[10px]">
+                        <Badge variant="outline" className="text-xs">
                           Expense
                         </Badge>
                       ) : null}
                       {r.linkedStagedRowId != null && (
                         <Badge
                           variant="outline"
-                          className="text-[10px] bg-pos/10 text-pos border-pos/30"
+                          className="text-xs bg-pos/10 text-pos border-pos/30"
                           title={`Linked to staged row ${r.linkedStagedRowId}`}
                         >
                           linked
@@ -255,7 +255,7 @@ export function DbPane({
                       {r.reconciliationFlag && (
                         <Badge
                           variant="outline"
-                          className="text-[10px] bg-destructive/10 text-destructive border-destructive/30"
+                          className="text-xs bg-destructive/10 text-destructive border-destructive/30"
                           title={r.reconciliationFlag.note ?? undefined}
                         >
                           missing from statement

@@ -18,10 +18,10 @@ function ScoreBar({ label, score, detail }: { label: string; score: number; deta
   return (
     <div className="group/bar">
       <div className="flex items-center justify-between mb-1">
-        <span className="text-[11px] text-muted-foreground group-hover/bar:text-foreground transition-colors">
+        <span className="text-xs text-muted-foreground group-hover/bar:text-foreground transition-colors">
           {label}
         </span>
-        <span className="text-[11px] font-semibold tabular-nums">{score}</span>
+        <span className="text-xs font-semibold tabular-nums">{score}</span>
       </div>
       <div className="w-full h-1.5 rounded-full bg-muted/60 overflow-hidden">
         <motion.div
@@ -31,7 +31,7 @@ function ScoreBar({ label, score, detail }: { label: string; score: number; deta
           transition={{ duration: 1, ease: "easeOut", delay: 0.3 }}
         />
       </div>
-      <p className="text-[10px] text-muted-foreground/60 mt-0.5 opacity-0 group-hover/bar:opacity-100 transition-opacity">
+      <p className="text-xs text-muted-foreground/60 mt-0.5 opacity-0 group-hover/bar:opacity-100 transition-opacity">
         {detail}
       </p>
     </div>

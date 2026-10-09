@@ -234,7 +234,7 @@ export function SankeyChart({ incomeData, expenseData, currency = "CAD" }: Sanke
               y={node.y + node.h / 2}
               textAnchor="end"
               dominantBaseline="central"
-              className="fill-foreground text-[11px]"
+              className="fill-foreground text-xs"
             >
               {truncateLabel(node.name, maxLabelChars)}
             </text>
@@ -262,7 +262,7 @@ export function SankeyChart({ incomeData, expenseData, currency = "CAD" }: Sanke
               y={node.y + node.h / 2}
               textAnchor="start"
               dominantBaseline="central"
-              className="fill-foreground text-[11px]"
+              className="fill-foreground text-xs"
             >
               {truncateLabel(node.name, maxLabelChars)}
             </text>
@@ -292,7 +292,7 @@ export function SankeyChart({ incomeData, expenseData, currency = "CAD" }: Sanke
             <text
               x={flowAreaLeft + 8}
               y={height + 21}
-              className="fill-white text-[11px] font-medium"
+              className="fill-white text-xs font-medium"
             >
               Savings: {formatCurrency(savings, currency)} ({formatPercent((savings / totalIncome) * 100, 1)})
             </text>

@@ -77,7 +77,7 @@ function SparklineTooltip({
   return (
     <div className="rounded-lg border border-border/50 bg-card/95 backdrop-blur-sm px-2.5 py-1.5 shadow-lg">
       {label && (
-        <p className="text-[10px] font-medium text-muted-foreground mb-0.5">{getMonthLabel(label)}</p>
+        <p className="text-xs font-medium text-muted-foreground mb-0.5">{getMonthLabel(label)}</p>
       )}
       <div className="flex items-center gap-1.5 text-xs font-semibold tabular-nums">
         {/* Dot color set via ref-callback to keep inline style= off the HTML (CSP). */}

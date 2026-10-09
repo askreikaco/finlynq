@@ -704,12 +704,12 @@ export default function MobileTransactionPage() {
           type="button"
           aria-label="Back to transactions"
           onClick={goBack}
-          className="inline-flex min-h-11 min-w-11 items-center justify-self-start text-[15px] font-medium text-primary transition-opacity active:opacity-70"
+          className="inline-flex min-h-11 min-w-11 items-center justify-self-start text-sm font-medium text-primary transition-opacity active:opacity-70"
         >
           <ChevronLeft className="mr-0.5 h-5 w-5" aria-hidden="true" />
           Back
         </button>
-        <h1 className="text-[17px] font-semibold text-foreground">
+        <h1 className="text-base font-semibold text-foreground">
           <span className="sr-only">New</span>{" "}
           {txType}
         </h1>

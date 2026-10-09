@@ -413,7 +413,7 @@ export function HoldingEditForm({
           placeholder={isCreateMode ? "e.g. Apple Inc., Bitcoin, Cash USD" : undefined}
         />
         {errors.name && (
-          <p className="text-[11px] text-destructive">{errors.name}</p>
+          <p className="text-xs text-destructive">{errors.name}</p>
         )}
       </div>
 
@@ -444,7 +444,7 @@ export function HoldingEditForm({
             </SelectContent>
           </Select>
           {errors.accountId && (
-            <p className="text-[11px] text-destructive">
+            <p className="text-xs text-destructive">
               {errors.accountId}
             </p>
           )}
@@ -464,14 +464,14 @@ export function HoldingEditForm({
             <option key={c} value={c} />
           ))}
         </datalist>
-        <p className="text-[11px] text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           Stock or ETF ticker (Yahoo Finance), crypto symbol, or a currency code for a cash position.
           Custom currencies you&apos;ve added in Settings are recognized here too.
         </p>
         {symbolLoading ? (
-          <p className="text-[11px] text-muted-foreground">Looking up…</p>
+          <p className="text-xs text-muted-foreground">Looking up…</p>
         ) : symbolInfo ? (
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             <span className="font-medium text-foreground">{symbolInfo.label}</span>
           </p>
         ) : null}
@@ -486,7 +486,7 @@ export function HoldingEditForm({
             setCurrencyTouched(true);
           }}
         />
-        <p className="text-[11px] text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           {currencyAutoSource ? (
             <>
               Auto-detected from <strong>{currencyAutoSource}</strong>.{" "}
@@ -510,7 +510,7 @@ export function HoldingEditForm({
           )}
         </p>
         {errors.currency && (
-          <p className="text-[11px] text-destructive">
+          <p className="text-xs text-destructive">
             {errors.currency}
           </p>
         )}

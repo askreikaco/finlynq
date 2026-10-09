@@ -17,7 +17,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
 
-export type FontKey = "geist" | "inter" | "ibm-plex-sans" | "atkinson" | "system";
+export type FontKey = "system" | "rounded" | "serif" | "mono";
 
 export type FontOption = {
   key: FontKey;
@@ -25,15 +25,16 @@ export type FontOption = {
 };
 
 export const FONT_OPTIONS: FontOption[] = [
-  { key: "geist",         label: "Geist" },
-  { key: "inter",         label: "Inter" },
-  { key: "ibm-plex-sans", label: "IBM Plex Sans" },
-  { key: "atkinson",      label: "Atkinson Hyperlegible" },
-  { key: "system",        label: "System UI" },
+  { key: "system",  label: "System (default)" },
+  { key: "rounded", label: "Rounded" },
+  { key: "serif",   label: "Serif" },
+  { key: "mono",    label: "Monospace" },
 ];
 
 export const FONT_STORAGE_KEY = "pf-font";
-const DEFAULT_FONT: FontKey = "geist";
+const DEFAULT_FONT: FontKey = "system";
+/** Legacy keys from the web-font era (Geist, Inter, IBM Plex, Atkinson): fall back to the default. */
+const LEGACY_FONT_KEYS = ["geist", "inter", "ibm-plex-sans", "atkinson"];
 
 type FontContextValue = {
   font: FontKey;
@@ -58,9 +59,12 @@ export function FontProvider({ children }: { children: ReactNode }) {
   // after hydration so we don't get a server/client mismatch.
   useEffect(() => {
     try {
-      const stored = localStorage.getItem(FONT_STORAGE_KEY) as FontKey | null;
-      if (stored && FONT_OPTIONS.some((o) => o.key === stored)) {
-        setFontState(stored);
+      const stored = localStorage.getItem(FONT_STORAGE_KEY);
+      if (stored && LEGACY_FONT_KEYS.includes(stored)) {
+        // Migrate a removed web font to the system default (no error, no stale data-font).
+        localStorage.removeItem(FONT_STORAGE_KEY);
+      } else if (stored && FONT_OPTIONS.some((o) => o.key === stored)) {
+        setFontState(stored as FontKey);
         // The FOUC script already set data-font; just sync state.
       }
     } catch {

@@ -99,7 +99,7 @@ describe("S1: phone main does not become a scroll container", () => {
 
 describe("m10: mobile bottom bar links have a focus ring", () => {
   it("both MobileBottomBar link classes include focus-visible ring on sidebar-ring", () => {
-    const links = nav.split("\n").filter((l) => l.includes("rounded-full px-0.5 text-[11px]"));
+    const links = nav.split("\n").filter((l) => l.includes("rounded-full px-0.5 text-xs"));
     expect(links.length).toBe(2);
     for (const l of links) {
       expect(l).toContain("focus-visible:ring-2");

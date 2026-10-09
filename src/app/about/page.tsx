@@ -109,7 +109,7 @@ export default function AboutPage() {
           >
             ← Finlynq
           </Link>
-          <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-border bg-muted/40 px-3 py-1 text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
+          <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-border bg-muted/40 px-3 py-1 text-xs font-mono uppercase tracking-wider text-muted-foreground">
             <span className="h-1.5 w-1.5 rounded-full bg-primary" />
             About
           </div>
@@ -127,7 +127,7 @@ export default function AboutPage() {
           </p>
         </header>
 
-        <section className="prose prose-invert max-w-none space-y-6 text-[15px] leading-relaxed">
+        <section className="prose prose-invert max-w-none space-y-6 text-sm leading-relaxed">
           <h2 className="text-xl font-semibold mt-8 mb-3">
             The short version
           </h2>

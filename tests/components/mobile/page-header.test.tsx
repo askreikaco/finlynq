@@ -15,11 +15,11 @@ afterEach(cleanup);
 const cls = (el: HTMLElement) => el.className.split(/\s+/);
 
 describe("PageHeader: mobile title", () => {
-  it("renders an h1 with the native 28/800 title below md", () => {
+  it("renders an h1 with the native 30/700 title (text-3xl) below md", () => {
     render(<PageHeader title="Accounts" />);
     const h1 = screen.getByRole("heading", { level: 1, name: "Accounts" });
-    expect(cls(h1)).toContain("text-[28px]/9");
-    expect(cls(h1)).toContain("font-extrabold");
+    expect(cls(h1)).toContain("text-3xl/9");
+    expect(cls(h1)).toContain("font-bold");
   });
 
   it("shows the subtitle on phones in the bar (muted, one line) and keeps its original classes at md+", () => {

@@ -110,7 +110,7 @@ export default async function ReleaseNotesPage({
               <h2 className="text-xl font-semibold tracking-tight">
                 {section.heading}
               </h2>
-              <ul className="mt-3 list-disc space-y-2 pl-6 text-[15px] leading-relaxed text-foreground/90">
+              <ul className="mt-3 list-disc space-y-2 pl-6 text-sm leading-relaxed text-foreground/90">
                 {section.items.map((item, i) => (
                   <li key={i}>{item}</li>
                 ))}

@@ -18,10 +18,10 @@ export function StoreBadges({ className = "" }: { className?: string }) {
       >
         <AppleLogo />
         <span className="flex flex-col leading-none">
-          <span className="text-[10px] font-medium opacity-80">
+          <span className="text-xs font-medium opacity-80">
             Download on the
           </span>
-          <span className="text-[17px] font-semibold tracking-tight">
+          <span className="text-base font-semibold tracking-tight">
             App Store
           </span>
         </span>
@@ -35,10 +35,10 @@ export function StoreBadges({ className = "" }: { className?: string }) {
       >
         <GooglePlayLogo />
         <span className="flex flex-col leading-none">
-          <span className="text-[10px] font-medium uppercase tracking-wide opacity-80">
+          <span className="text-xs font-medium uppercase tracking-wide opacity-80">
             Get it on
           </span>
-          <span className="text-[17px] font-semibold tracking-tight">
+          <span className="text-base font-semibold tracking-tight">
             Google Play
           </span>
         </span>

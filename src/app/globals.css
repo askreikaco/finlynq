@@ -4,12 +4,23 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Font stacks: system fonts only (no next/font, no network fetch). Owner 2026-10-09.
+   The runtime UI font (Settings > General) is --font-ui on html, set by [data-font]. */
+html {
+  --font-stack-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-stack-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --font-stack-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-stack-rounded: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-ui: var(--font-stack-sans);
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  /* Default: Geist. Overridden by [data-font] rules below (FINLYNQ-225). */
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-stack-sans);
+  --font-mono: var(--font-stack-mono);
+  --font-serif: var(--font-stack-serif);
+  --font-rounded: var(--font-stack-rounded);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -163,60 +174,56 @@
 }
 
 /* ═══════════════════════════════════════════════
-   FONT SELECTOR (FINLYNQ-225)
-   The data-font attribute on <html> sets a RUNTIME --font-sans custom property
-   (the @theme inline --font-sans on line 11 is inlined into the font-sans utility
-   at build time and is NOT a readable :root property — so the html font-family
-   rule below reads --font-sans DIRECTLY to honor the selection).
-   Geist is the default (no attribute / :root). Numerics are pinned to Geist Mono
-   below via --font-geist-mono directly (never overridden by [data-font]).
+   FONT SELECTOR (FINLYNQ-225, system-only since 2026-10-09)
+   The data-font attribute on <html> sets the runtime --font-ui custom property.
+   The html font-family rule reads --font-ui directly. "system" (default) = no
+   attribute. Numerics use --font-stack-mono and are never overridden by [data-font].
    ═══════════════════════════════════════════════ */
-:root,
-[data-font="geist"] {
-  --font-sans: var(--font-geist-sans);
+html[data-font="rounded"] {
+  --font-ui: var(--font-stack-rounded);
 }
-[data-font="inter"] {
-  --font-sans: var(--font-inter);
+html[data-font="serif"] {
+  --font-ui: var(--font-stack-serif);
 }
-[data-font="ibm-plex-sans"] {
-  --font-sans: var(--font-ibm-plex-sans);
-}
-[data-font="atkinson"] {
-  --font-sans: var(--font-atkinson);
-}
-[data-font="system"] {
-  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+html[data-font="mono"] {
+  --font-ui: var(--font-stack-mono);
 }
 
-/* Unlayered (beats the @layer base `html { @apply font-sans }` Geist pin) so the
-   selected runtime --font-sans actually drives the UI. Body inherits from html. */
+/* iOS body style (Dynamic Type aware in WebKit); family then re-set so the UI font
+   picker still applies. Browsers without the keyword skip this block. */
+@supports (font: -apple-system-body) {
+  body {
+    font: -apple-system-body;
+    font-family: var(--font-ui);
+  }
+}
+
+/* Unlayered so the selected --font-ui drives the UI; body inherits from html. */
 html {
-  font-family: var(--font-sans);
+  font-family: var(--font-ui);
 }
 
-/* Numerics/tabular figures stay Geist Mono regardless of the chosen UI font.
-   Reference --font-geist-mono DIRECTLY (the next/font runtime var on <html>) —
-   NOT --font-mono, which is @theme inline and not a readable :root property.
-   Number-only spans/cells only — td/th carry table TEXT and keep the sans. */
+/* Numerics/tabular figures use the system mono stack on md+ (unchanged layout);
+   they do not follow the UI font picker. Number-only spans/cells only. */
 .tabular-nums, [data-value] {
-  font-family: var(--font-geist-mono);
+  font-family: var(--font-stack-mono);
 }
 
-/* Hero number uses sans font for better proportions, even with tabular-nums variant */
+/* Hero number uses the UI sans for better proportions, even with tabular-nums variant */
 .hero-number.tabular-nums {
-  font-family: var(--font-sans);
+  font-family: var(--font-ui);
 }
 
 /* Mobile (<md): amounts use the system sans (tabular figures), like the native app. */
 @media (width < 48rem) {
   .tabular-nums, [data-value] {
-    font-family: var(--font-sans);
+    font-family: var(--font-ui);
   }
   /* Existing amounts are styled with the Tailwind `font-mono` class: same switch inside the app
      shell, except real code (pre/code/kbd/samp), key/URL displays (.break-all/.select-all) and
      anything tagged data-keep-mono. Tabular figures keep columns of numbers aligned. */
   main .font-mono:not(pre, code, kbd, samp, textarea, input, .break-all, .select-all, [data-keep-mono]):not(pre *, code *) {
-    font-family: var(--font-sans);
+    font-family: var(--font-ui);
     font-variant-numeric: tabular-nums lining-nums;
   }
 }
@@ -440,7 +447,6 @@ html[data-keyboard-open] [data-testid="page-fab"] { display: none; }
 .hero-number {
   font-variant-numeric: tabular-nums lining-nums;
   font-feature-settings: "tnum" 1, "lnum" 1;
-  letter-spacing: -0.025em;
 }
 
 /* Sparkline fade — left-edge mask for smooth appearance */

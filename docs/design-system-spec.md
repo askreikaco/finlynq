@@ -39,9 +39,9 @@ Light and dark token names (values at the lines given):
 Chart meaning (dark comments): chart-1 amber, chart-2 teal (positive), chart-3 coral (negative), chart-4 muted blue, chart-5 muted violet (`globals.css:113-117`).
 
 Font rules:
-- Default UI font is Geist via `--font-sans: var(--font-geist-sans)` (`globals.css:10-11`). Font selector maps `data-font` values `geist`, `inter`, `ibm-plex-sans`, `atkinson`, `system` to `--font-sans` (`globals.css:161-176`).
+- Default UI font is the system stack (`--font-stack-sans`, `globals.css`). No web fonts (next/font removed 2026-10-09). Font selector maps `data-font` values `rounded`, `serif`, `mono` to `--font-ui`; default = no attribute.
 - Unlayered `html { font-family: var(--font-sans) }` (`globals.css:180-182`).
-- Numerics pinned to Geist Mono: `.tabular-nums, [data-value]` (`globals.css:188-190`). Hero number uses sans (`globals.css:193-195`).
+- Numerics pinned to system mono: `.tabular-nums, [data-value]` (`--font-stack-mono`). Hero number uses `--font-ui`.
 - Below md (`width < 48rem`) amounts switch to sans with tabular figures (`globals.css:197-201`). `main .font-mono` is also switched to sans there, with opt-outs for pre/code/kbd/samp, `.break-all`, `.select-all`, `[data-keep-mono]` (`globals.css:202-208`).
 
 Breakpoint: `md` = 48rem (768px). `globals.css:198` and `:225` use the same `width < 48rem` boundary. Form-control rule uses `max-width: 767.98px` (`globals.css:574`).
@@ -127,7 +127,7 @@ Excluded from the adaptive guard scan (see 3e).
 
 ### 3c. Numerics
 - `tabular-nums lining-nums` on `.tabular-nums, td, th, [data-value]` (`globals.css:145-149`), on `.hero-number` (`:308-313`).
-- Numbers render Geist Mono on md+ (`globals.css:188-190`); sans below md (`:199-201`).
+- Numbers render system mono on md+; UI font below md.
 
 ### 3d. Titles and subtitles (PageHeader)
 - Default title classes `text-2xl font-bold` (`mobile/page-header.tsx:61`); default subtitle `text-sm text-muted-foreground mt-1` (`:62`).
@@ -190,7 +190,7 @@ Each item was re-checked at the base sha. Counts come from grep runs on `src/app
 - Rendered result of stacked admin PageHeaders (section 4 item 8).
 - Whether `max-md:hidden` counting in the guard is intended (section 4 item 10).
 - Vitest run of `tests/design-system-guard.test.ts`: NOT run. The worktree has no `node_modules` and `npm install`/`npm ci` is out of scope for this task. The replica scan in 3e is the substitute.
-- Whether `--font-geist-sans`, `--font-inter`, `--font-ibm-plex-sans`, `--font-atkinson` are defined (only referenced at `globals.css:11`, `:163`, `:166`, `:169`, `:172`).
+- Resolved 2026-10-09: web fonts removed; system stacks only.
 - Rendered appearance of any token (no screenshots taken).
 - TODO PWA icons: `src/app/manifest.ts` `any` and `maskable` entries both point to the same unpadded `public/icons/icon-192.png` and `icon-512.png`. A padded maskable asset (logo inside central 80% safe zone) is needed; until then Android masks may crop the logo. Do not point maskable at a non-existent file.
 

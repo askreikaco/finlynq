@@ -768,7 +768,7 @@ function RowDetailsLine({
   if (items.length === 0) return null;
   return (
     <tr key={`details`} className="bg-muted/20">
-      <td colSpan={colSpan} className="px-2 py-1 text-[11px] text-muted-foreground">
+      <td colSpan={colSpan} className="px-2 py-1 text-xs text-muted-foreground">
         <div className="flex flex-wrap gap-x-3 gap-y-1">
           {items.map((it) => {
             const isHi = highlight?.has(it.key);
@@ -1356,7 +1356,7 @@ function KindOverridePicker({
             ))}
           </select>
           {autoCategoryName && chosenCategoryId == null && (
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               Leaving this blank tags the row as <span className="font-medium">{autoCategoryName}</span> so it
               shows in the dividend / income report. Pick a different category to override.
             </p>
@@ -1753,7 +1753,7 @@ function WillBecomeTable({
         </table>
       </div>
       {existing.kind !== willBecome.kind && (
-        <p className="text-[11px] text-muted-foreground mt-1">
+        <p className="text-xs text-muted-foreground mt-1">
           Existing kind: <span className="font-mono">{existing.kind ?? "—"}</span> → new: <span className="font-mono font-semibold">{willBecome.kind}</span>
         </p>
       )}

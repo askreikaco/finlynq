@@ -91,7 +91,7 @@ function Bubble({
       >
         {body}
       </div>
-      <span className="mt-1 text-[10px] text-muted-foreground">
+      <span className="mt-1 text-xs text-muted-foreground">
         {label} · {fmt(at)}
       </span>
     </div>

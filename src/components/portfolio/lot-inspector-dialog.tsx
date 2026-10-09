@@ -521,15 +521,15 @@ export function LotInspectorDialog({
                   <div className="flex flex-wrap items-center justify-between gap-2 bg-muted/40 px-3 py-2">
                     <div className="flex items-center gap-2 text-sm">
                       <span className="font-medium">Lot #{lot.id}</span>
-                      <Badge variant="outline" className="text-[10px]">
+                      <Badge variant="outline" className="text-xs">
                         {lot.side}
                       </Badge>
-                      <Badge variant="secondary" className="text-[10px]">
+                      <Badge variant="secondary" className="text-xs">
                         {lot.origin}
                       </Badge>
                       <Badge
                         variant="outline"
-                        className={`text-[10px] ${lot.status === "open" ? "border-pos text-pos" : ""}`}
+                        className={`text-xs ${lot.status === "open" ? "border-pos text-pos" : ""}`}
                       >
                         {lot.status}
                       </Badge>
@@ -579,7 +579,7 @@ export function LotInspectorDialog({
                             {c.closeKind === "sell" && (
                               <button
                                 type="button"
-                                className="text-[11px] text-primary underline-offset-2 hover:underline"
+                                className="text-xs text-primary underline-offset-2 hover:underline"
                                 onClick={() => startEdit(c.closeTxId)}
                               >
                                 Edit allocation

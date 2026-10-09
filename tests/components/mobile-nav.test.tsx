@@ -235,10 +235,10 @@ describe("mobile bar matches the native tab bar (mobile/src/navigation/TabNaviga
     expect(bar().className).toContain("bottom-[max(12px,var(--sab))]");
   });
 
-  it("icons are 22px and labels 11px semibold on every tab", () => {
+  it("icons are 22px and labels text-xs semibold on every tab", () => {
     render(<Nav />);
     for (const l of within(bar()).getAllByRole("link")) {
-      expect(l.className).toContain("text-[11px]");
+      expect(l.className).toContain("text-xs");
       expect(l.className).toContain("font-semibold");
       const svg = l.querySelector("svg")!;
       expect(svg.getAttribute("class")).toContain("size-[22px]");

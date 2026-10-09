@@ -298,21 +298,21 @@ export default function AdminInboxPage() {
                           <span className={`text-xs font-mono truncate ${r.triagedAt ? "text-muted-foreground" : "font-semibold"}`}>
                             {r.fromAddress}
                           </span>
-                          <span className="text-[10px] text-muted-foreground whitespace-nowrap">{fmtTime(r.receivedAt)}</span>
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">{fmtTime(r.receivedAt)}</span>
                         </div>
                         <div className="text-xs mt-0.5 truncate">
                           {r.subject || <span className="text-muted-foreground">(no subject)</span>}
                         </div>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className="text-[10px] text-muted-foreground truncate">→ {r.toAddress}</span>
+                          <span className="text-xs text-muted-foreground truncate">→ {r.toAddress}</span>
                           {!r.triagedAt && (
-                            <Badge variant="outline" className="bg-warning/10 text-warning border-warning/30 text-[9px] px-1 py-0">new</Badge>
+                            <Badge variant="outline" className="bg-warning/10 text-warning border-warning/30 text-xs px-1 py-0">new</Badge>
                           )}
                           {r.attachmentCount > 0 && (
-                            <span className="text-[10px] text-muted-foreground">📎 {r.attachmentCount}</span>
+                            <span className="text-xs text-muted-foreground">📎 {r.attachmentCount}</span>
                           )}
                           {category === "trash" && r.expiresAt && (
-                            <span className="text-[10px] text-muted-foreground ml-auto">{hoursUntil(r.expiresAt)}h left</span>
+                            <span className="text-xs text-muted-foreground ml-auto">{hoursUntil(r.expiresAt)}h left</span>
                           )}
                         </div>
                       </button>
@@ -388,7 +388,7 @@ export default function AdminInboxPage() {
                             m.fromAddress
                           )}
                         </span>
-                        <span className="text-[10px] text-muted-foreground whitespace-nowrap">{fmtTime(m.at)}</span>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">{fmtTime(m.at)}</span>
                       </div>
                       <MessageBody m={m} />
                     </div>

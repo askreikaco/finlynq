@@ -149,7 +149,7 @@ export default function GeneralSettingsPage() {
             <div>
               <Label>UI Font</Label>
               <p className="text-xs text-muted-foreground">
-                Applies to this browser only. Numeric figures always use Geist Mono.
+                Applies to this browser only. Numeric figures use tabular numerals.
               </p>
             </div>
             <Select value={font} onValueChange={(v) => setFont(v as FontKey)}>

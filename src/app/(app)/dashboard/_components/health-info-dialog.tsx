@@ -77,7 +77,7 @@ function ComponentBlock({
       <div className="flex items-baseline justify-between gap-2">
         <h4 className="text-sm font-semibold">{name}</h4>
         {excluded ? (
-          <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+          <span className="text-xs uppercase tracking-wide text-muted-foreground">
             Excluded
           </span>
         ) : (
@@ -94,11 +94,11 @@ function ComponentBlock({
       {blurb ? (
         <>
           <p className="text-xs text-muted-foreground">{blurb.what}</p>
-          <p className="text-[11px] font-mono text-muted-foreground/80 bg-background/50 rounded px-2 py-1">
+          <p className="text-xs font-mono text-muted-foreground/80 bg-background/50 rounded px-2 py-1">
             {blurb.formula}
           </p>
           {blurb.note ? (
-            <p className="text-[11px] text-muted-foreground/80">{blurb.note}</p>
+            <p className="text-xs text-muted-foreground/80">{blurb.note}</p>
           ) : null}
         </>
       ) : null}
@@ -159,7 +159,7 @@ export function HealthInfoDialog({ data, open, onOpenChange }: HealthInfoDialogP
               are in <span className="font-mono">{reporting}</span>.
             </p>
             {excluded.length > 0 ? (
-              <p className="text-[11px] text-muted-foreground/80">
+              <p className="text-xs text-muted-foreground/80">
                 Renormalized after excluding: {excluded.map((e) => e.name).join(", ")}.
               </p>
             ) : null}

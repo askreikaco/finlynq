@@ -96,7 +96,7 @@ function TaxPageContent() {
                 <span className="font-semibold">{Math.round(tfsaPct)}%</span>
               </div>
               <Progress value={tfsaPct} className="h-2.5" />
-              <p className="text-[11px] text-muted-foreground">Total room: {formatCurrency(data.tfsa.totalRoom, displayCurrency)} &middot; This year: {formatCurrency(data.tfsa.currentYearLimit, displayCurrency)}</p>
+              <p className="text-xs text-muted-foreground">Total room: {formatCurrency(data.tfsa.totalRoom, displayCurrency)} &middot; This year: {formatCurrency(data.tfsa.currentYearLimit, displayCurrency)}</p>
             </div>
           </CardContent>
         </Card>
@@ -111,7 +111,7 @@ function TaxPageContent() {
                 <GraduationCap className="h-5 w-5" />
               </div>
             </div>
-            <p className="text-[11px] text-muted-foreground mt-2">CESG: 20% on first $2,500/year (max $500/yr, $7,200 lifetime)</p>
+            <p className="text-xs text-muted-foreground mt-2">CESG: 20% on first $2,500/year (max $500/yr, $7,200 lifetime)</p>
           </CardContent>
         </Card>
         <Card>
@@ -125,7 +125,7 @@ function TaxPageContent() {
                 <Percent className="h-5 w-5" />
               </div>
             </div>
-            <p className="text-[11px] text-muted-foreground mt-2">Federal: {data.marginalRates.at100k.federal}% &middot; Provincial: {data.marginalRates.at100k.provincial}%</p>
+            <p className="text-xs text-muted-foreground mt-2">Federal: {data.marginalRates.at100k.federal}% &middot; Provincial: {data.marginalRates.at100k.provincial}%</p>
           </CardContent>
         </Card>
       </div>

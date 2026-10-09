@@ -22,7 +22,7 @@ export function SplitBadge({ transactionId }: { transactionId: number }) {
 
   if (!hasSplits) return null;
   return (
-    <Badge variant="outline" className="text-[10px] border-chart-5/30 bg-chart-5/10 text-chart-5 ml-1">
+    <Badge variant="outline" className="text-xs border-chart-5/30 bg-chart-5/10 text-chart-5 ml-1">
       split
     </Badge>
   );

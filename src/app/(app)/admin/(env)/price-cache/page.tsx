@@ -88,17 +88,17 @@ function ago(iso: string): string {
 function Freshness({ row, today }: { row: Row; today: string }) {
   if (row.date !== today) {
     return (
-      <Badge variant="outline" className="text-[10px] bg-muted text-muted-foreground">
+      <Badge variant="outline" className="text-xs bg-muted text-muted-foreground">
         Cached
       </Badge>
     );
   }
   return row.stale ? (
-    <Badge variant="outline" className="text-[10px] bg-warning/15 text-warning border-warning/30">
+    <Badge variant="outline" className="text-xs bg-warning/15 text-warning border-warning/30">
       Stale
     </Badge>
   ) : (
-    <Badge variant="outline" className="text-[10px] bg-pos/15 text-pos border-pos/30">
+    <Badge variant="outline" className="text-xs bg-pos/15 text-pos border-pos/30">
       Fresh
     </Badge>
   );
@@ -509,7 +509,7 @@ export default function AdminPriceCachePage() {
 function Stat({ label, value, warn }: { label: string; value: string; warn?: boolean }) {
   return (
     <div className="flex flex-col">
-      <span className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</span>
+      <span className="text-xs uppercase tracking-wider text-muted-foreground">{label}</span>
       <span className={`text-sm font-semibold tabular-nums ${warn ? "text-warning" : ""}`}>{value}</span>
     </div>
   );

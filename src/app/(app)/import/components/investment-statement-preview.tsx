@@ -200,13 +200,13 @@ export function InvestmentStatementPreview({
                 </span>
                 <Badge
                   variant="outline"
-                  className="shrink-0 text-[10px] px-1.5 max-w-[12ch] truncate"
+                  className="shrink-0 text-xs px-1.5 max-w-[12ch] truncate"
                 >
                   {row.portfolioHolding ?? "—"}
                 </Badge>
                 <span className="flex-1 truncate">{row.payee}</span>
                 {row.quantity != null && row.quantity !== 0 && (
-                  <span className="font-mono text-[10px] text-muted-foreground shrink-0">
+                  <span className="font-mono text-xs text-muted-foreground shrink-0">
                     qty {row.quantity}
                   </span>
                 )}

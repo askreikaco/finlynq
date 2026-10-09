@@ -69,7 +69,7 @@ export default function FinlynqMobileAppPage() {
           </p>
         </header>
 
-        <article className="prose prose-invert max-w-none space-y-6 text-[15px] leading-relaxed">
+        <article className="prose prose-invert max-w-none space-y-6 text-sm leading-relaxed">
           <p className="text-base">
             Finlynq has always been two things: a web app where you track your
             money, and an MCP server that lets your AI assistant dig into it. The

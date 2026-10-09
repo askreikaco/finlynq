@@ -30,7 +30,7 @@ export function RowBadge({
       return (
         <Badge
           variant="outline"
-          className="text-[10px] bg-pos/10 text-pos border-pos/30"
+          className="text-xs bg-pos/10 text-pos border-pos/30"
           title={
             linkedTransactionId != null
               ? `Linked to tx #${linkedTransactionId}`
@@ -44,7 +44,7 @@ export function RowBadge({
       return (
         <Badge
           variant="outline"
-          className="text-[10px] bg-info/10 text-info border-info/30"
+          className="text-xs bg-info/10 text-info border-info/30"
         >
           suggested
         </Badge>
@@ -53,7 +53,7 @@ export function RowBadge({
       return (
         <Badge
           variant="outline"
-          className="text-[10px] bg-warning/10 text-warning border-warning/30"
+          className="text-xs bg-warning/10 text-warning border-warning/30"
         >
           already imported
         </Badge>

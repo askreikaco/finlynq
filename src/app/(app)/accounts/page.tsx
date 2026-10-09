@@ -250,7 +250,7 @@ export default function AccountsPage() {
       <span className="flex min-w-0 items-center gap-2">
         <span className="min-w-0 truncate" data-testid="group-name">{group}</span>
         <span
-          className="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-muted px-1.5 text-[11px] font-medium text-muted-foreground"
+          className="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-muted px-1.5 text-xs font-medium text-muted-foreground"
           aria-label={`${accts.length} accounts`}
           data-testid="group-count"
         >
@@ -301,12 +301,12 @@ export default function AccountsPage() {
                         {a.accountName}
                         {a.alias && <span className="ml-1.5 text-xs text-muted-foreground font-normal">({a.alias})</span>}
                       </p>
-                      <Badge variant="outline" className="text-[10px] shrink-0">{a.currency}</Badge>
-                      {a.archived && <Badge variant="secondary" className="text-[10px] shrink-0">Archived</Badge>}
+                      <Badge variant="outline" className="text-xs shrink-0">{a.currency}</Badge>
+                      {a.archived && <Badge variant="secondary" className="text-xs shrink-0">Archived</Badge>}
                       {a.invisible && (
                         <Badge
                           variant="secondary"
-                          className="text-[10px] shrink-0"
+                          className="text-xs shrink-0"
                           title="Hidden from net worth, totals, reports and metrics"
                         >
                           Invisible
@@ -325,7 +325,7 @@ export default function AccountsPage() {
                     </span>
                     {a.convertedBalance != null &&
                       a.currency.toUpperCase() !== displayCurrency.toUpperCase() && (
-                        <span className="font-mono text-[11px] text-muted-foreground block">
+                        <span className="font-mono text-xs text-muted-foreground block">
                           {formatCurrency(a.convertedBalance, displayCurrency)}
                         </span>
                       )}

@@ -123,7 +123,7 @@ function SuggestionLine({ s }: { s: RowCardSuggestionAny | null }) {
           {s.txPayee ? ` · ${s.txPayee}` : ""}
         </span>
         {s.txCategoryName && (
-          <Badge variant="secondary" className="font-mono text-[10px]">
+          <Badge variant="secondary" className="font-mono text-xs">
             {s.txCategoryName}
           </Badge>
         )}
@@ -135,7 +135,7 @@ function SuggestionLine({ s }: { s: RowCardSuggestionAny | null }) {
       <span className="inline-flex items-center gap-1.5 text-xs">
         <ArrowLeftRight className="h-3.5 w-3.5 text-chart-5" />
         <span className="text-muted-foreground">transfer to</span>
-        <Badge variant="secondary" className="font-mono text-[10px]">
+        <Badge variant="secondary" className="font-mono text-xs">
           {s.destAccountName}
         </Badge>
       </span>
@@ -146,7 +146,7 @@ function SuggestionLine({ s }: { s: RowCardSuggestionAny | null }) {
       <span className="inline-flex items-center gap-1.5 text-xs">
         <Sparkles className="h-3.5 w-3.5 text-pos" />
         <span className="text-muted-foreground">record</span>
-        <Badge variant="secondary" className="font-mono text-[10px] uppercase">
+        <Badge variant="secondary" className="font-mono text-xs uppercase">
           {s.op}
         </Badge>
       </span>
@@ -157,7 +157,7 @@ function SuggestionLine({ s }: { s: RowCardSuggestionAny | null }) {
     <span className="inline-flex items-center gap-1.5 text-xs">
       <Sparkles className="h-3.5 w-3.5 text-pos" />
       <span className="text-muted-foreground">create as</span>
-      <Badge variant="secondary" className="font-mono text-[10px]">
+      <Badge variant="secondary" className="font-mono text-xs">
         {s.categoryName}
       </Badge>
     </span>

@@ -82,7 +82,7 @@ function ConsentBanner({ onChoice }: { onChoice: (v: "accepted" | "declined") =>
       aria-label="Analytics cookies"
       className="fixed left-0 right-0 bottom-0 max-md:bottom-[calc(var(--mobile-bar-clearance)-1rem)] z-[9999] bg-[#0e1116] border-t border-[#2a3139] text-[#e8eaed] pt-[14px] pb-[max(14px,var(--sab))] pl-[max(18px,var(--sal))] pr-[max(18px,var(--sar))] shadow-[0_-8px_24px_rgba(0,0,0,0.35)]"
     >
-      <div className="max-w-[1100px] mx-auto flex gap-[18px] items-center flex-wrap text-[13px] leading-[1.45]">
+      <div className="max-w-[1100px] mx-auto flex gap-[18px] items-center flex-wrap text-sm leading-normal">
         <p className="flex-[1_1_320px] m-0 text-[#cdd2d8]">
           We use Google Analytics on our public marketing pages to understand
           which posts bring people here. We don&apos;t use any analytics inside
@@ -97,14 +97,14 @@ function ConsentBanner({ onChoice }: { onChoice: (v: "accepted" | "declined") =>
           <button
             type="button"
             onClick={() => onChoice("declined")}
-            className="bg-transparent text-[#9aa3ad] border border-[#2a3139] px-[14px] py-2 rounded-md cursor-pointer text-[13px]"
+            className="bg-transparent text-[#9aa3ad] border border-[#2a3139] px-[14px] py-2 rounded-md cursor-pointer text-sm"
           >
             Decline
           </button>
           <button
             type="button"
             onClick={() => onChoice("accepted")}
-            className="bg-[#f5a623] text-[#0e1116] border border-[#f5a623] px-[14px] py-2 rounded-md cursor-pointer text-[13px] font-semibold"
+            className="bg-[#f5a623] text-[#0e1116] border border-[#f5a623] px-[14px] py-2 rounded-md cursor-pointer text-sm font-semibold"
           >
             Accept
           </button>

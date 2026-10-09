@@ -81,7 +81,7 @@ export function BankPane({
           if (!eligibleForLink) {
             return (
               <div className="flex items-center justify-end gap-1">
-                <span className="text-[10px] text-muted-foreground italic">
+                <span className="text-xs text-muted-foreground italic">
                   already linked
                 </span>
                 {deleteBtn}
@@ -91,7 +91,7 @@ export function BankPane({
           if (txId == null) {
             return (
               <div className="flex items-center justify-end gap-1">
-                <span className="text-[10px] text-muted-foreground italic">
+                <span className="text-xs text-muted-foreground italic">
                   bank-only
                 </span>
                 {deleteBtn}

@@ -69,8 +69,8 @@ export function SuggestionsGroup({
                 variant="outline"
                 className={
                   s.confidence === "exact"
-                    ? "text-[10px] bg-pos/10 text-pos border-pos/30"
-                    : "text-[10px] bg-warning/10 text-warning border-warning/30"
+                    ? "text-xs bg-pos/10 text-pos border-pos/30"
+                    : "text-xs bg-warning/10 text-warning border-warning/30"
                 }
               >
                 {s.confidence}

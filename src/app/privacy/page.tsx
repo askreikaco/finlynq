@@ -34,7 +34,7 @@ export default function PrivacyPage() {
           </p>
         </header>
 
-        <section className="prose prose-invert max-w-none space-y-8 text-[15px] leading-relaxed">
+        <section className="prose prose-invert max-w-none space-y-8 text-sm leading-relaxed">
           <p className="text-base">
             Finlynq is an open-source personal-finance app (AGPL v3). You can run
             it on your own hardware or use our managed cloud at{" "}

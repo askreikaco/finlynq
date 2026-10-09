@@ -154,7 +154,7 @@ export default function AdminApiLogPage() {
         accessor: (r) => r.provider,
         filter: "select",
         render: (r) => (
-          <Badge variant="outline" className="text-[10px]">
+          <Badge variant="outline" className="text-xs">
             {r.provider}
           </Badge>
         ),
@@ -236,20 +236,20 @@ export default function AdminApiLogPage() {
         <Card>
           <CardContent className="flex flex-wrap items-center gap-x-6 gap-y-2 py-4 text-sm">
             <div className="flex flex-col">
-              <span className="text-[11px] uppercase tracking-wider text-muted-foreground">Buffered</span>
+              <span className="text-xs uppercase tracking-wider text-muted-foreground">Buffered</span>
               <span className="font-semibold tabular-nums">
                 {data.meta.count.toLocaleString()} / {data.meta.cap.toLocaleString()}
               </span>
             </div>
             <div className="flex flex-col">
-              <span className="text-[11px] uppercase tracking-wider text-muted-foreground">Errors</span>
+              <span className="text-xs uppercase tracking-wider text-muted-foreground">Errors</span>
               <span className={`font-semibold tabular-nums ${summary.errors > 0 ? "text-destructive" : ""}`}>
                 {summary.errors.toLocaleString()}
               </span>
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
               {summary.byProvider.map(([prov, n]) => (
-                <Badge key={prov} variant="outline" className="text-[11px]">
+                <Badge key={prov} variant="outline" className="text-xs">
                   {prov}: {n.toLocaleString()}
                 </Badge>
               ))}

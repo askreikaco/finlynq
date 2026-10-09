@@ -152,7 +152,7 @@ export default function AdminDiagnosticsPage() {
         header: "Kind",
         accessor: (r) => r.kind,
         render: (r) => (
-          <Badge className={`text-[10px] ${kindClass(r.kind)}`}>
+          <Badge className={`text-xs ${kindClass(r.kind)}`}>
             {KIND_LABEL[r.kind] ?? r.kind}
           </Badge>
         ),
@@ -267,12 +267,12 @@ export default function AdminDiagnosticsPage() {
           )}
           {(data?.summary ?? []).map((s) => (
             <div key={s.kind} className="flex flex-col">
-              <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
+              <span className="text-xs uppercase tracking-wider text-muted-foreground">
                 {KIND_LABEL[s.kind] ?? s.kind}
               </span>
               <span className="font-semibold tabular-nums">
                 {s.total.toLocaleString()}
-                <span className="ml-1 text-[11px] font-normal text-muted-foreground">
+                <span className="ml-1 text-xs font-normal text-muted-foreground">
                   ({s.last24h.toLocaleString()} / 24h)
                 </span>
               </span>

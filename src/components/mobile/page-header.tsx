@@ -122,7 +122,7 @@ export function PageHeader({
     <h1
       data-slot="page-header-title"
       className={cn(
-        "text-[28px]/9 font-extrabold tracking-tight",
+        "text-3xl/9 font-bold tracking-tight",
         noTracking && "md:tracking-normal",
         desktopClasses(titleClassName),
         PHONE_BAR_TITLE,

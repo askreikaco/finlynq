@@ -90,7 +90,7 @@ export default function BlogIndexPage() {
               <p className="mt-2 text-xs font-mono uppercase tracking-wider text-muted-foreground">
                 {post.date}
               </p>
-              <p className="mt-4 text-[15px] leading-relaxed text-foreground/90">
+              <p className="mt-4 text-sm leading-relaxed text-foreground/90">
                 {post.blurb}
               </p>
               <p className="mt-4">

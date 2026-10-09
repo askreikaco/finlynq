@@ -862,7 +862,7 @@ function InvestmentOpFields({
           <VarBindingRow label="Quantity" value={action.qty} onChange={(qty) => onChange({ qty } as Partial<Action>)} />
           <VarBindingRow label={isShares ? "Dollar value" : "Total amount"} value={action.total} onChange={(total) => onChange({ total } as Partial<Action>)} />
           <VarBindingRow label="Price/unit" value={action.price} onChange={(price) => onChange({ price } as Partial<Action>)} optional />
-          <p className="text-[11px] text-muted-foreground italic">
+          <p className="text-xs text-muted-foreground italic">
             {isShares
               ? "Bind any two of quantity / value / price; the third is computed. The income is recorded as shares (a lot opens at value ÷ quantity) — no cash sleeve is touched."
               : "Bind any two of quantity / total / price; the third is computed. Lots are matched FIFO automatically."}

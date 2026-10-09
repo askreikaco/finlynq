@@ -67,7 +67,7 @@ export function SuggestionCard({
       </div>
       <div className="grid grid-cols-2 gap-3 text-xs">
         <div className="space-y-0.5">
-          <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+          <div className="text-xs uppercase tracking-wide text-muted-foreground">
             Transaction
           </div>
           <div className="font-mono">{suggestion.txDate}</div>
@@ -81,7 +81,7 @@ export function SuggestionCard({
           </div>
         </div>
         <div className="space-y-0.5">
-          <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+          <div className="text-xs uppercase tracking-wide text-muted-foreground">
             Bank row
           </div>
           <div className="font-mono">{suggestion.bankDate}</div>

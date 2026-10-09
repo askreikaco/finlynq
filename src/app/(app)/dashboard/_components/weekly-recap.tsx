@@ -69,7 +69,7 @@ export function WeeklyRecap() {
               </div>
               <div>
                 <CardTitle className="text-sm font-semibold">Weekly Recap</CardTitle>
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   {recap.weekStart} — {recap.weekEnd}
                 </p>
               </div>
@@ -93,23 +93,23 @@ export function WeeklyRecap() {
           {/* Summary: Spent / Income / Cash Flow */}
           <div className="grid grid-cols-3 gap-4 mb-4">
             <div>
-              <p className="text-[11px] text-muted-foreground mb-0.5">Spent</p>
+              <p className="text-xs text-muted-foreground mb-0.5">Spent</p>
               <p className="text-lg font-bold tracking-tight tabular-nums">
                 {formatCurrency(recap.spending.total, displayCurrency)}
               </p>
-              <span className={`inline-flex items-center gap-0.5 text-[11px] font-semibold ${spendingUp ? "text-destructive" : "text-pos"}`}>
+              <span className={`inline-flex items-center gap-0.5 text-xs font-semibold ${spendingUp ? "text-destructive" : "text-pos"}`}>
                 {spendingUp ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
                 {Math.abs(recap.spending.changePercent)}%
               </span>
             </div>
             <div>
-              <p className="text-[11px] text-muted-foreground mb-0.5">Income</p>
+              <p className="text-xs text-muted-foreground mb-0.5">Income</p>
               <p className="text-lg font-bold tracking-tight text-pos tabular-nums">
                 {formatCurrency(recap.income.total, displayCurrency)}
               </p>
             </div>
             <div>
-              <p className="text-[11px] text-muted-foreground mb-0.5">Net Flow</p>
+              <p className="text-xs text-muted-foreground mb-0.5">Net Flow</p>
               <p className={`text-lg font-bold tracking-tight tabular-nums ${recap.netCashFlow >= 0 ? "text-pos" : "text-destructive"}`}>
                 {formatCurrency(recap.netCashFlow, displayCurrency)}
               </p>
@@ -119,7 +119,7 @@ export function WeeklyRecap() {
           {/* Top categories bar chart */}
           {chartData.length > 0 && (
             <div>
-              <p className="text-[11px] font-medium text-muted-foreground mb-2">Top categories</p>
+              <p className="text-xs font-medium text-muted-foreground mb-2">Top categories</p>
               <ResponsiveContainer width="100%" height={110} minWidth={0}>
                 <BarChart data={chartData} layout="vertical" barSize={12}>
                   <XAxis type="number" hide />
@@ -167,11 +167,11 @@ export function WeeklyRecap() {
                   {/* Budget status */}
                   {recap.budgetStatus.length > 0 && (
                     <div>
-                      <p className="text-[11px] font-medium text-muted-foreground mb-2">Budget Status (MTD)</p>
+                      <p className="text-xs font-medium text-muted-foreground mb-2">Budget Status (MTD)</p>
                       <div className="space-y-2.5">
                         {recap.budgetStatus.slice(0, 5).map((b) => (
                           <div key={b.category}>
-                            <div className="flex items-center justify-between text-[11px] mb-1">
+                            <div className="flex items-center justify-between text-xs mb-1">
                               <span>{b.category}</span>
                               <span className={`font-semibold tabular-nums ${b.pctUsed > 100 ? "text-destructive" : b.pctUsed > 80 ? "text-warning" : "text-muted-foreground"}`}>
                                 {b.pctUsed}%
@@ -197,13 +197,13 @@ export function WeeklyRecap() {
                   {/* Notable transactions */}
                   {recap.notableTransactions.length > 0 && (
                     <div>
-                      <p className="text-[11px] font-medium text-muted-foreground mb-2">Largest Expenses</p>
+                      <p className="text-xs font-medium text-muted-foreground mb-2">Largest Expenses</p>
                       <div className="space-y-0.5">
                         {recap.notableTransactions.map((t, i) => (
-                          <div key={i} className="flex items-center justify-between text-[12px] py-1.5 px-2 rounded-lg hover:bg-muted/30 transition-colors">
+                          <div key={i} className="flex items-center justify-between text-xs py-1.5 px-2 rounded-lg hover:bg-muted/30 transition-colors">
                             <div className="min-w-0">
                               <span className="font-medium">{t.payee || t.category}</span>
-                              <span className="text-muted-foreground ml-2 text-[11px]">{t.date}</span>
+                              <span className="text-muted-foreground ml-2 text-xs">{t.date}</span>
                             </div>
                             <span className="font-mono font-semibold text-destructive tabular-nums shrink-0 ml-2">
                               {formatCurrency(t.amount, displayCurrency)}
@@ -217,13 +217,13 @@ export function WeeklyRecap() {
                   {/* Upcoming bills */}
                   {recap.upcomingBills.length > 0 && (
                     <div>
-                      <p className="text-[11px] font-medium text-muted-foreground mb-2">Upcoming Bills</p>
+                      <p className="text-xs font-medium text-muted-foreground mb-2">Upcoming Bills</p>
                       <div className="space-y-0.5">
                         {recap.upcomingBills.map((b, i) => (
-                          <div key={i} className="flex items-center justify-between text-[12px] py-1.5 px-2 rounded-lg hover:bg-muted/30 transition-colors">
+                          <div key={i} className="flex items-center justify-between text-xs py-1.5 px-2 rounded-lg hover:bg-muted/30 transition-colors">
                             <div className="min-w-0">
                               <span className="font-medium">{b.name}</span>
-                              <span className="text-muted-foreground ml-2 text-[11px]">{b.date}</span>
+                              <span className="text-muted-foreground ml-2 text-xs">{b.date}</span>
                             </div>
                             <span className="font-mono font-semibold tabular-nums shrink-0 ml-2">
                               {formatCurrency(b.amount, displayCurrency)}
@@ -235,7 +235,7 @@ export function WeeklyRecap() {
                   )}
 
                   {/* Net worth change */}
-                  <div className="flex items-center justify-between text-[12px] border-t pt-2.5">
+                  <div className="flex items-center justify-between text-xs border-t pt-2.5">
                     <span className="text-muted-foreground">Net worth change this week</span>
                     <span className={`font-semibold tabular-nums ${recap.netWorthChange >= 0 ? "text-pos" : "text-destructive"}`}>
                       {recap.netWorthChange >= 0 ? "+" : ""}{formatCurrency(recap.netWorthChange, displayCurrency)}

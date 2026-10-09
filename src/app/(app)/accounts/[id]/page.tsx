@@ -545,20 +545,20 @@ export default function AccountDetailPage() {
         }
         belowTitle={
             <div className="flex flex-wrap gap-2 mt-0.5">
-              <Badge variant="outline" className="text-[10px]">{account.currency}</Badge>
-              <Badge variant={account.type === "A" ? "default" : "destructive"} className="text-[10px]">
+              <Badge variant="outline" className="text-xs">{account.currency}</Badge>
+              <Badge variant={account.type === "A" ? "default" : "destructive"} className="text-xs">
                 {account.type === "A" ? "Asset" : "Liability"}
               </Badge>
               {isInvestment && (
-                <Badge variant="secondary" className="text-[10px]">Investment</Badge>
+                <Badge variant="secondary" className="text-xs">Investment</Badge>
               )}
               {account.archived === true && (
-                <Badge variant="secondary" className="text-[10px]">Archived</Badge>
+                <Badge variant="secondary" className="text-xs">Archived</Badge>
               )}
               {account.invisible === true && (
                 <Badge
                   variant="secondary"
-                  className="text-[10px]"
+                  className="text-xs"
                   title="Hidden from net worth, totals, reports and metrics"
                 >
                   Invisible
@@ -788,12 +788,12 @@ export default function AccountDetailPage() {
               <p className="text-xs font-medium text-muted-foreground">Type</p>
               <div className="flex gap-1">
                 {account.type === "A" ? (
-                  <Badge variant="default" className="text-[10px]">Asset</Badge>
+                  <Badge variant="default" className="text-xs">Asset</Badge>
                 ) : (
-                  <Badge variant="destructive" className="text-[10px]">Liability</Badge>
+                  <Badge variant="destructive" className="text-xs">Liability</Badge>
                 )}
                 {isInvestment && (
-                  <Badge variant="secondary" className="text-[10px]">Investment</Badge>
+                  <Badge variant="secondary" className="text-xs">Investment</Badge>
                 )}
               </div>
             </div>
@@ -838,7 +838,7 @@ export default function AccountDetailPage() {
             {account.archived === true && (
               <div className="flex items-center justify-between py-3">
                 <p className="text-xs font-medium text-muted-foreground">Status</p>
-                <Badge variant="secondary" className="text-[10px]">Archived</Badge>
+                <Badge variant="secondary" className="text-xs">Archived</Badge>
               </div>
             )}
           </div>
@@ -1088,7 +1088,7 @@ export default function AccountDetailPage() {
                 </div>
                 <p className="text-xs text-muted-foreground">
                   How uploads to this account flow through the pipeline. The{" "}
-                  <code className="px-1 mx-0.5 rounded bg-muted text-[10px]">/inbox</code>{" "}
+                  <code className="px-1 mx-0.5 rounded bg-muted text-xs">/inbox</code>{" "}
                   chip is a per-render lens; this picker is the persisted policy.
                 </p>
                 <ModePicker
@@ -1169,7 +1169,7 @@ export default function AccountDetailPage() {
                       {sleeves.map((s) => (
                         <TableRow key={s.id} className="hover:bg-muted/30">
                           <TableCell>
-                            <Badge variant="outline" className="text-[10px] font-mono">
+                            <Badge variant="outline" className="text-xs font-mono">
                               {s.currency}
                             </Badge>
                           </TableCell>

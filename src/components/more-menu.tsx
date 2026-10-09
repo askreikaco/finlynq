@@ -310,7 +310,7 @@ export const MoreMenu = memo(function MoreMenu({ instanceAdminEnabled = false, c
                   </span>
                   <span className="flex-1 truncate">{r.label}</span>
                   {showUnreadBadge && (
-                    <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold leading-none text-primary-foreground">
+                    <span className="rounded-full bg-primary px-1.5 py-0.5 text-xs font-semibold leading-none text-primary-foreground">
                       {unread}
                     </span>
                   )}

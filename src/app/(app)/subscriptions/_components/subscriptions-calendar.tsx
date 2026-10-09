@@ -167,14 +167,14 @@ export function SubscriptionsCalendar({
                     {dayEvents.slice(0, 2).map((ev, idx) => (
                       <span
                         key={idx}
-                        className={`truncate rounded px-1 text-[11px] leading-4 ${eventTone(ev).chip}`}
+                        className={`truncate rounded px-1 text-xs leading-4 ${eventTone(ev).chip}`}
                         title={`${ev.name} · ${formatCurrency(ev.amount, ev.currency)}`}
                       >
                         {ev.name}
                       </span>
                     ))}
                     {dayEvents.length > 2 && (
-                      <span className="text-[10px] text-muted-foreground leading-3 px-1">+{dayEvents.length - 2} more</span>
+                      <span className="text-xs text-muted-foreground leading-3 px-1">+{dayEvents.length - 2} more</span>
                     )}
                   </div>
                 </button>

@@ -146,7 +146,7 @@ export function SettingsShell({ children, hubBackHref }: { children: React.React
           className="hidden md:block w-56 shrink-0"
         >
           <div className="sticky top-[calc(1.5rem+var(--sat))]">
-            <p className="px-3 mb-2 text-[10px] font-semibold tracking-widest uppercase text-muted-foreground">
+            <p className="px-3 mb-2 text-xs font-semibold tracking-widest uppercase text-muted-foreground">
               Settings
             </p>
             <nav className="space-y-0.5">
@@ -158,7 +158,7 @@ export function SettingsShell({ children, hubBackHref }: { children: React.React
                     href={item.href}
                     aria-current={isActive ? "page" : undefined}
                     className={cn(
-                      "group/link relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-200",
+                      "group/link relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200",
                       isActive
                         ? "bg-white/[0.08] text-foreground"
                         : "text-muted-foreground hover:bg-white/[0.05] hover:text-foreground"

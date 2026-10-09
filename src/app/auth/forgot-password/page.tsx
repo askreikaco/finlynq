@@ -27,7 +27,7 @@ export default function ForgotPasswordPage() {
           </span>
         </div>
 
-        <h1 className="mb-2 text-3xl font-bold tracking-tight text-foreground max-md:mb-3 max-md:text-[28px] max-md:font-extrabold">Forgot password</h1>
+        <h1 className="mb-2 text-3xl font-bold tracking-tight text-foreground max-md:mb-3 max-md:text-3xl max-md:font-bold">Forgot password</h1>
 
         <ForgotPasswordChooser />
       </div>

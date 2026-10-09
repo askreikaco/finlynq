@@ -369,7 +369,7 @@ export function DataSection() {
                 <label className={`flex flex-col items-center gap-2 border rounded-lg p-3 cursor-pointer hover:bg-muted/50 transition-colors text-center ${importSection === key ? "border-primary bg-primary/5" : ""}`}>
                   <Icon className={`h-5 w-5 ${color}`} />
                   <span className="text-sm font-medium">{label}</span>
-                  <span className="text-[10px] text-muted-foreground">{hint}</span>
+                  <span className="text-xs text-muted-foreground">{hint}</span>
                   <input
                     type="file"
                     accept=".csv"
@@ -387,7 +387,7 @@ export function DataSection() {
               <div className="flex items-center gap-2 text-sm">
                 <FileText className="h-4 w-4 text-muted-foreground" />
                 <span className="font-medium truncate">{importFileName}</span>
-                <Badge variant="outline" className="text-[10px]">Preview</Badge>
+                <Badge variant="outline" className="text-xs">Preview</Badge>
               </div>
               <div className="overflow-x-auto rounded border text-xs">
                 <table className="w-full">
@@ -409,7 +409,7 @@ export function DataSection() {
                   </tbody>
                 </table>
               </div>
-              <p className="text-[10px] text-muted-foreground">Showing first {importPreview.length} rows. Full file will be imported on confirm.</p>
+              <p className="text-xs text-muted-foreground">Showing first {importPreview.length} rows. Full file will be imported on confirm.</p>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={() => { setImportPreview([]); setImportSection(null); setImportFileName(""); setImportStatus(""); }}>
                   Cancel
@@ -449,7 +449,7 @@ export function DataSection() {
                 <item.icon className={`h-4 w-4 mr-2 ${item.iconColor}`} />
                 <div className="text-left">
                   <p className="text-sm font-medium">{item.label}</p>
-                  <p className="text-[10px] text-muted-foreground">Download CSV</p>
+                  <p className="text-xs text-muted-foreground">Download CSV</p>
                 </div>
               </Button>
             ))}

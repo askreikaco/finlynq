@@ -87,7 +87,7 @@ export default async function GlossaryTermPage({
           </p>
         </header>
 
-        <article className="prose prose-invert max-w-none space-y-5 text-[15px] leading-relaxed">
+        <article className="prose prose-invert max-w-none space-y-5 text-sm leading-relaxed">
           {entry.blocks.map((block, i) => {
             if (block.type === "h2") {
               return (

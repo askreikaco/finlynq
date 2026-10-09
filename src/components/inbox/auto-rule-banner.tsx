@@ -96,7 +96,7 @@ export function AutoRuleBanner({
           </p>
           <Badge
             variant="outline"
-            className="text-[10px] font-mono uppercase border-pos/40 text-pos"
+            className="text-xs font-mono uppercase border-pos/40 text-pos"
           >
             rule
           </Badge>
@@ -117,7 +117,7 @@ export function AutoRuleBanner({
                   {item.payee ?? "(no payee)"}
                 </span>
                 {item.categoryName && (
-                  <Badge variant="secondary" className="text-[10px] font-mono">
+                  <Badge variant="secondary" className="text-xs font-mono">
                     {item.categoryName}
                   </Badge>
                 )}

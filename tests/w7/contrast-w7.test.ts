@@ -64,7 +64,7 @@ describe("W7 contrast class strings", () => {
 
   it("preview table pos badge is dark text in dark mode", () => {
     expect(read("src/components/reconcile/preview-table.tsx")).toContain(
-      '<Badge className="bg-pos text-white dark:text-primary-foreground text-[10px]">',
+      '<Badge className="bg-pos text-white dark:text-primary-foreground text-xs">',
     );
   });
 

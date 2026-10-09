@@ -42,7 +42,7 @@ export function FeedbackAttachmentView({
           target="_blank"
           rel="noopener noreferrer"
           download={name}
-          className="mt-1 text-[10px] text-primary underline-offset-2 hover:underline"
+          className="mt-1 text-xs text-primary underline-offset-2 hover:underline"
         >
           {name}
         </a>

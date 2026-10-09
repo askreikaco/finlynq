@@ -62,10 +62,10 @@ export function UnavailableCard({ title, text }: { title: string; text: string }
         <CardTitle className="text-xs font-medium text-muted-foreground tracking-wide uppercase">{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-[1.75rem] font-bold leading-none text-muted-foreground" aria-hidden="true">
+        <p className="text-3xl font-bold leading-none text-muted-foreground" aria-hidden="true">
           {FAMILY_STRINGS.overview_none}
         </p>
-        <p className="text-[11px] text-muted-foreground mt-1">{text}</p>
+        <p className="text-xs text-muted-foreground mt-1">{text}</p>
       </CardContent>
     </Card>
   );
@@ -199,7 +199,7 @@ export function NetWorthOverTimeCard({
       <CardHeader className="pb-1 px-5 pt-5">
         <div>
           <CardTitle className="text-sm font-semibold">{title}</CardTitle>
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             {currency}{period === "all" ? " · All time" : ""}
           </p>
         </div>
@@ -229,7 +229,7 @@ export function NetWorthOverTimeCard({
             />
           </div>
         )}
-        {note && <p className="text-[11px] text-muted-foreground mt-2">{note}</p>}
+        {note && <p className="text-xs text-muted-foreground mt-2">{note}</p>}
       </CardContent>
     </Card>
   );
@@ -303,7 +303,7 @@ export function PerformanceCard({ performance, currency }: { performance: Perfor
         ) : (
           <>
             <PerformanceBadges twrr={performance.twrr} mwrr={performance.mwrr} gapsFilledDays={performance.gapsFilledDays} />
-            <p className="text-[11px] text-muted-foreground mb-1">{`Market value (${currency})`}</p>
+            <p className="text-xs text-muted-foreground mb-1">{`Market value (${currency})`}</p>
             <div className="h-72 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <PerformanceLineChart

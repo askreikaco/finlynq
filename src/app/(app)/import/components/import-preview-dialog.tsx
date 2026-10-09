@@ -200,7 +200,7 @@ export function ImportPreviewDialog({
             </Badge>
           )}
           {appliedTemplateId && (
-            <Badge variant="outline" className="text-[10px] text-info border-info/30 bg-info/15">
+            <Badge variant="outline" className="text-xs text-info border-info/30 bg-info/15">
               Template applied
             </Badge>
           )}
@@ -231,7 +231,7 @@ export function ImportPreviewDialog({
               <Button
                 size="sm"
                 variant="outline"
-                className="h-6 text-[11px]"
+                className="h-6 text-xs"
                 onClick={skipAllProbable}
                 disabled={skipProbable.size === probableDuplicates.length}
               >
@@ -240,7 +240,7 @@ export function ImportPreviewDialog({
               <Button
                 size="sm"
                 variant="outline"
-                className="h-6 text-[11px]"
+                className="h-6 text-xs"
                 onClick={commitAllProbable}
                 disabled={skipProbable.size === 0}
               >
@@ -320,12 +320,12 @@ export function ImportPreviewDialog({
                               className="inline-flex items-center gap-1"
                               title="Click to view match details"
                             >
-                              <Badge variant="secondary" className="text-[10px] bg-warning/20 text-warning border border-warning/30 cursor-pointer hover:bg-warning/30">
+                              <Badge variant="secondary" className="text-xs bg-warning/20 text-warning border border-warning/30 cursor-pointer hover:bg-warning/30">
                                 Duplicate
                               </Badge>
                             </button>
                           ) : (
-                            <Badge variant="secondary" className="text-[10px] bg-warning/20 text-warning border border-warning/30">
+                            <Badge variant="secondary" className="text-xs bg-warning/20 text-warning border border-warning/30">
                               Duplicate
                             </Badge>
                           )
@@ -336,13 +336,13 @@ export function ImportPreviewDialog({
                             className="inline-flex items-center gap-1"
                             title="Click to view match details"
                           >
-                            <Badge variant="secondary" className="text-[10px] bg-warning/20 text-warning border border-warning/30 cursor-pointer hover:bg-warning/30">
+                            <Badge variant="secondary" className="text-xs bg-warning/20 text-warning border border-warning/30 cursor-pointer hover:bg-warning/30">
                               <AlertTriangle className="h-3 w-3 mr-0.5" />
                               Probable dup
                             </Badge>
                           </button>
                         ) : (
-                          <Badge variant="secondary" className="text-[10px] bg-pos/20 text-pos border border-pos/30">
+                          <Badge variant="secondary" className="text-xs bg-pos/20 text-pos border border-pos/30">
                             New
                           </Badge>
                         )}

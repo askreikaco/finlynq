@@ -422,7 +422,7 @@ export default function InfoPage() {
               placeholder="+1 (555) 123-4567"
               maxLength={32}
             />
-            <p className="text-[11px] text-muted-foreground">Accepts +, digits, spaces, parentheses, and hyphens.</p>
+            <p className="text-xs text-muted-foreground">Accepts +, digits, spaces, parentheses, and hyphens.</p>
             {phoneError && <p className="text-sm text-destructive">{phoneError}</p>}
             {phoneStatus && <p className="text-sm text-pos flex items-center gap-1"><Check className="h-3.5 w-3.5" /> {phoneStatus}</p>}
             <Button type="submit" disabled={phoneSaving}>

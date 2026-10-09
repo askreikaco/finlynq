@@ -143,12 +143,12 @@ export function ReconcileHideAccountsCard() {
                       {a.currency}
                     </span>
                     {a.archived && (
-                      <span className="ml-1.5 rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                      <span className="ml-1.5 rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
                         archived
                       </span>
                     )}
                     {isHidden && (
-                      <span className="ml-1.5 rounded bg-warning/10 px-1.5 py-0.5 text-[10px] text-warning">
+                      <span className="ml-1.5 rounded bg-warning/10 px-1.5 py-0.5 text-xs text-warning">
                         hidden
                       </span>
                     )}

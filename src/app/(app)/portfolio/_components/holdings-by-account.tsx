@@ -71,14 +71,14 @@ export function HoldingsByAccount({
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <span className="font-medium text-sm truncate">{accountName}</span>
-                  <Badge variant="outline" className="text-[10px] flex-shrink-0">
+                  <Badge variant="outline" className="text-xs flex-shrink-0">
                     {items.length} holding{items.length !== 1 ? "s" : ""}
                   </Badge>
                   <div className="hidden sm:flex items-center gap-1.5">
                     {etfs > 0 && (
                       <Badge
                         variant="secondary"
-                        className="text-[10px] h-4"
+                        className="text-xs h-4"
                         ref={(el: HTMLElement | null) => {
                           if (el) {
                             el.style.borderColor = ASSET_TYPE_CONFIG.etf.color;
@@ -92,7 +92,7 @@ export function HoldingsByAccount({
                     {stocks > 0 && (
                       <Badge
                         variant="secondary"
-                        className="text-[10px] h-4"
+                        className="text-xs h-4"
                         ref={(el: HTMLElement | null) => {
                           if (el) {
                             el.style.borderColor = ASSET_TYPE_CONFIG.stock.color;
@@ -106,7 +106,7 @@ export function HoldingsByAccount({
                     {cryptos > 0 && (
                       <Badge
                         variant="secondary"
-                        className="text-[10px] h-4"
+                        className="text-xs h-4"
                         ref={(el: HTMLElement | null) => {
                           if (el) {
                             el.style.borderColor = ASSET_TYPE_CONFIG.crypto.color;
@@ -120,7 +120,7 @@ export function HoldingsByAccount({
                     {cash > 0 && (
                       <Badge
                         variant="secondary"
-                        className="text-[10px] h-4"
+                        className="text-xs h-4"
                         ref={(el: HTMLElement | null) => {
                           if (el) {
                             el.style.borderColor = ASSET_TYPE_CONFIG.cash.color;
@@ -134,7 +134,7 @@ export function HoldingsByAccount({
                     {metals > 0 && (
                       <Badge
                         variant="secondary"
-                        className="text-[10px] h-4"
+                        className="text-xs h-4"
                         ref={(el: HTMLElement | null) => {
                           if (el) {
                             el.style.borderColor = ASSET_TYPE_CONFIG.metal.color;
@@ -150,17 +150,17 @@ export function HoldingsByAccount({
                 <div className="flex items-center gap-4">
                   <div className="hidden md:flex items-center gap-3 text-xs">
                     <div className="text-right">
-                      <p className="text-muted-foreground text-[10px]">Mkt Value</p>
+                      <p className="text-muted-foreground text-xs">Mkt Value</p>
                       <p className="font-mono font-medium">{formatCurrency(acctMktValue, displayCurrency)}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-muted-foreground text-[10px]">Unrealized</p>
+                      <p className="text-muted-foreground text-xs">Unrealized</p>
                       <p className={`font-mono font-medium ${acctUnrealized >= 0 ? "text-pos" : "text-destructive"}`}>
                         {acctUnrealized >= 0 ? "+" : ""}{formatCurrency(acctUnrealized, displayCurrency)}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-muted-foreground text-[10px]">Realized</p>
+                      <p className="text-muted-foreground text-xs">Realized</p>
                       <p className={`font-mono font-medium ${acctRealized >= 0 ? "text-pos" : "text-destructive"}`}>
                         {acctRealized !== 0 ? `${acctRealized >= 0 ? "+" : ""}${formatCurrency(acctRealized, displayCurrency)}` : "--"}
                       </p>
@@ -212,10 +212,10 @@ export function HoldingsByAccount({
                                 <TableCell>
                                   <div className="flex items-center gap-1.5 flex-wrap">
                                     {h.image && <img src={h.image} alt="" className="h-5 w-5 rounded-full flex-shrink-0" />}
-                                    {h.symbol && <Badge variant="secondary" className="font-mono text-[10px] h-4 px-1">{h.symbol}</Badge>}
+                                    {h.symbol && <Badge variant="secondary" className="font-mono text-xs h-4 px-1">{h.symbol}</Badge>}
                                     <span className="font-medium text-sm">{label}</span>
                                     {hasMetrics && h.quantity != null && h.quantity < 0 && (
-                                      <Badge variant="outline" className="text-[10px] h-4 px-1 border-destructive text-destructive" title="Net-short position">Short</Badge>
+                                      <Badge variant="outline" className="text-xs h-4 px-1 border-destructive text-destructive" title="Net-short position">Short</Badge>
                                     )}
                                   </div>
                                 </TableCell>
@@ -259,7 +259,7 @@ export function HoldingsByAccount({
                                             {h.unrealizedGainDisplay >= 0 ? "+" : ""}{formatCurrency(h.unrealizedGainDisplay, displayCurrency)}
                                           </p>
                                           {pct != null && (
-                                            <p className={`text-[10px] font-mono ${pct >= 0 ? "text-pos" : "text-destructive"}`}>
+                                            <p className={`text-xs font-mono ${pct >= 0 ? "text-pos" : "text-destructive"}`}>
                                               {pct >= 0 ? "+" : ""}{formatPercent(pct, 2)}
                                             </p>
                                           )}
@@ -275,7 +275,7 @@ export function HoldingsByAccount({
                                   <Link
                                     href={buildTxDrillUrl({ portfolioHolding: h.name, accountId: h.accountId ? String(h.accountId) : undefined })}
                                     onClick={(e) => e.stopPropagation()}
-                                    className="text-[11px] text-primary hover:underline whitespace-nowrap"
+                                    className="text-xs text-primary hover:underline whitespace-nowrap"
                                     title="View transactions for this holding in this account"
                                   >
                                     View txns →

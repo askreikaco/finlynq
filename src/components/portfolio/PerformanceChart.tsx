@@ -221,7 +221,7 @@ export function PerformanceChart({ accountId }: PerformanceChartProps) {
             <PerformanceBadges twrr={data.twrr} mwrr={data.mwrr} gapsFilledDays={data.gapsFilledDays} />
             {/* Axis-unit label — flips from the TWRR/value line to a per-holding
                 dollar stack in stacked mode (tc-2: "y-axis switches to $"). */}
-            <p className="text-[11px] text-muted-foreground mb-1">
+            <p className="text-xs text-muted-foreground mb-1">
               {showStacked
                 ? `Market value by ${axisGroupLabel} (${stackCurrency})`
                 : `Market value (${data.currency})`}

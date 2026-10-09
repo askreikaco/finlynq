@@ -8,9 +8,9 @@ export type AmountSize = "hero" | "lg" | "md";
 export type AmountTone = "auto" | "pos" | "neg" | "muted" | "none";
 
 const SIZE: Record<AmountSize, string> = {
-  hero: "text-[32px] leading-10 font-extrabold",
+  hero: "text-3xl leading-10 font-bold",
   lg: "text-xl font-bold",
-  md: "text-[15px] font-semibold",
+  md: "text-sm font-semibold",
 };
 
 /** Tone -> semantic color token (text-pos / text-neg come from globals.css @theme). */

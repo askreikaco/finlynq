@@ -121,7 +121,7 @@ export function EtfXrayCard({
                           <TableCell>
                             <Badge
                               variant="outline"
-                              className="text-[10px]"
+                              className="text-xs"
                               ref={(el: HTMLElement | null) => {
                                 if (el) {
                                   const c = SECTOR_COLORS[s.sector] ?? "#64748b";
@@ -153,7 +153,7 @@ export function EtfXrayCard({
                           <TableCell>
                             <div className="flex gap-1 flex-wrap">
                               {s.contributingEtfs.map((e, ei) => (
-                                <span key={`${e.symbol}-${ei}`} className="text-[10px] font-mono text-muted-foreground bg-muted px-1 py-0.5 rounded">
+                                <span key={`${e.symbol}-${ei}`} className="text-xs font-mono text-muted-foreground bg-muted px-1 py-0.5 rounded">
                                   {e.symbol} {e.weight}%
                                 </span>
                               ))}

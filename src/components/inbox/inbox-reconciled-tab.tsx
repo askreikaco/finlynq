@@ -161,13 +161,13 @@ export function InboxReconciledTab({
               </span>
               <Badge
                 variant="outline"
-                className="gap-1 text-[10px] font-mono uppercase border-pos/40 text-pos"
+                className="gap-1 text-xs font-mono uppercase border-pos/40 text-pos"
               >
                 <Check className="h-2.5 w-2.5" />
                 {link.linkType === "primary" ? "primary" : "extra"}
               </Badge>
               {tx.categoryName && (
-                <Badge variant="secondary" className="text-[10px] font-mono">
+                <Badge variant="secondary" className="text-xs font-mono">
                   {tx.categoryName}
                 </Badge>
               )}

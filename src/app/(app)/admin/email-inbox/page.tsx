@@ -340,7 +340,7 @@ export default function AdminEmailInboxPage() {
                     <TableCell>
                       <Badge
                         variant="outline"
-                        className={`text-[10px] ${actionColor[r.action] ?? "bg-muted text-muted-foreground"}`}
+                        className={`text-xs ${actionColor[r.action] ?? "bg-muted text-muted-foreground"}`}
                       >
                         {r.action.replace(/_/g, " ")}
                       </Badge>
@@ -350,7 +350,7 @@ export default function AdminEmailInboxPage() {
                       {r.parseConfidence ?? <span className="text-muted-foreground">—</span>}
                     </TableCell>
                     <TableCell className="text-xs">
-                      <Badge variant="outline" className="text-[10px]">
+                      <Badge variant="outline" className="text-xs">
                         {r.encryptionTier ?? "service"}
                       </Badge>
                     </TableCell>

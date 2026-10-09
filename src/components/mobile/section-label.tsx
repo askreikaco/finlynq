@@ -11,7 +11,7 @@ export function SectionLabel({
   return (
     <Tag
       data-slot="section-label"
-      className={cn("px-1 text-xs font-bold uppercase tracking-[0.5px] text-muted-foreground", className)}
+      className={cn("px-1 text-xs font-bold uppercase tracking-normal text-muted-foreground", className)}
       {...props}
     >
       {children}

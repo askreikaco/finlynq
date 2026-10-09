@@ -67,7 +67,7 @@ function StackedSideChart({
 
   return (
     <div>
-      <p className="text-[11px] font-medium text-muted-foreground mb-1">{title}</p>
+      <p className="text-xs font-medium text-muted-foreground mb-1">{title}</p>
       <ResponsiveContainer width="100%" height={170}>
         <AreaChart data={rows} margin={{ top: 8, right: 4, bottom: 0, left: -10 }}>
           <XAxis
@@ -136,7 +136,7 @@ export function IncomeExpenseChart({
           <div className="flex items-center justify-between gap-3">
             <div>
               <CardTitle className="text-sm font-semibold">Income vs Expenses</CardTitle>
-              <p className="text-[11px] text-muted-foreground">Last 12 months</p>
+              <p className="text-xs text-muted-foreground">Last 12 months</p>
             </div>
             {stackable && (
               <Button
@@ -224,10 +224,10 @@ export function IncomeExpenseChart({
 
               {/* Legend */}
               <div className="flex items-center justify-center gap-5 mt-2">
-                <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <div className="h-2 w-2 rounded-full bg-pos" /> Income
                 </div>
-                <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <div className="h-2 w-2 rounded-full bg-destructive" /> Expenses
                 </div>
               </div>

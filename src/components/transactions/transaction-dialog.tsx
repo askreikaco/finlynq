@@ -1314,7 +1314,7 @@ export function TransactionDialog({
                     emptyMessage="No matches"
                     className="w-full"
                   />
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     {sel.name} is an investment account — every transaction must reference a holding. Pick the symbol you traded, or leave the default Cash sleeve for cash legs (deposits, fees, dividends paid as cash).
                   </p>
                 </div>
@@ -1323,7 +1323,7 @@ export function TransactionDialog({
 
             {editId && linkedSiblings.length > 0 && (
               <div className="space-y-2 rounded-lg border border-info/30 bg-info/10 p-3">
-                <div className="text-[11px] text-info/80">
+                <div className="text-xs text-info/80">
                   This transaction is part of a multi-leg group; legs are edited individually.
                 </div>
                 <div className="flex items-center gap-1.5 text-xs font-medium text-info">
@@ -1442,11 +1442,11 @@ export function TransactionDialog({
                     <span className="font-mono">{formatCurrency(splitAllocated, form.currency)}</span>
                   </span>
                   {splitBalanced ? (
-                    <Badge variant="outline" className="text-[10px] border-pos/30 text-pos bg-pos/10">
+                    <Badge variant="outline" className="text-xs border-pos/30 text-pos bg-pos/10">
                       Balanced
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="text-[10px] border-destructive/30 text-destructive bg-destructive/10">
+                    <Badge variant="outline" className="text-xs border-destructive/30 text-destructive bg-destructive/10">
                       {splitRemaining > 0
                         ? `${formatCurrency(splitRemaining, form.currency)} left`
                         : `${formatCurrency(Math.abs(splitRemaining), form.currency)} over`}
@@ -1565,11 +1565,11 @@ export function TransactionDialog({
               const sourceLabel = editingTx.source ? labelForSource(editingTx.source) : null;
               if (!created && !updated && !sourceLabel) return null;
               return (
-                <div className="text-[11px] text-muted-foreground border-t pt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+                <div className="text-xs text-muted-foreground border-t pt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
                   {created && <span>Created {created}</span>}
                   {updated && <span>· Updated {updated}</span>}
                   {sourceLabel && (
-                    <Badge variant="outline" className="text-[10px] py-0 px-1.5">
+                    <Badge variant="outline" className="text-xs py-0 px-1.5">
                       {sourceLabel}
                     </Badge>
                   )}
@@ -1593,7 +1593,7 @@ export function TransactionDialog({
                     Also create a rule for next time
                   </Label>
                 </div>
-                <p className="text-[11px] text-muted-foreground pl-6">
+                <p className="text-xs text-muted-foreground pl-6">
                   Payee contains{" "}
                   <span className="font-mono text-foreground">
                     &ldquo;{form.payee.trim()}&rdquo;
@@ -1775,11 +1775,11 @@ export function TransactionDialog({
                     : destSentinel;
                 return (
                   <div className="space-y-3 rounded-md border border-chart-5/30 bg-chart-5/10 p-3">
-                    <p className="text-[11px] text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       Both accounts are investment accounts — pick the holding to transfer and the quantity. Source holding must already exist. Destination defaults to the same holding name (auto-created if missing). Cash amount may be 0 for a pure in-kind move.
                     </p>
                     {fromAcct && toAcct && fromAcct.id === toAcct.id && (
-                      <p className="text-[11px] text-warning">
+                      <p className="text-xs text-warning">
                         Same-account rebalance — pick a different destination holding to move shares between two positions in this brokerage.
                       </p>
                     )}
@@ -1900,14 +1900,14 @@ export function TransactionDialog({
                         {destQuantityTouched &&
                           transferForm.destQuantity &&
                           parseFloat(transferForm.destQuantity) !== parseFloat(transferForm.quantity || "0") && (
-                            <p className="text-[11px] text-warning">
+                            <p className="text-xs text-warning">
                               Asymmetric — the destination will receive a different share count (split / merger / conversion).
                             </p>
                           )}
                         {destQuantityTouched && (
                           <button
                             type="button"
-                            className="text-[11px] text-muted-foreground hover:text-foreground underline"
+                            className="text-xs text-muted-foreground hover:text-foreground underline"
                             onClick={() => {
                               setDestQuantityTouched(false);
                               setTransferForm({ ...transferForm, destQuantity: "" });
@@ -1925,7 +1925,7 @@ export function TransactionDialog({
               if (transferEdit) return null;
               return (
                 <div className="space-y-2 rounded-md border border-chart-5/30 bg-chart-5/10 p-3">
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     Investment account leg — every transfer into an investment account must reference a holding and the share count moving through it.
                   </p>
                   {fromInv && fromAcct && (
@@ -2034,13 +2034,13 @@ export function TransactionDialog({
                   <div className="flex items-center justify-between">
                     <Label className="text-xs">Amount received ({toAcct!.currency})</Label>
                     {impliedRate != null ? (
-                      <span className="text-[11px] text-muted-foreground">
+                      <span className="text-xs text-muted-foreground">
                         rate {impliedRate.toFixed(6)} · {rateSource}
                       </span>
                     ) : transferFxPreview.state === "loading" ? (
-                      <span className="text-[11px] text-muted-foreground">Calculating…</span>
+                      <span className="text-xs text-muted-foreground">Calculating…</span>
                     ) : transferFxPreview.state === "ok" ? (
-                      <span className="text-[11px] text-muted-foreground">
+                      <span className="text-xs text-muted-foreground">
                         rate {transferFxPreview.rate.toFixed(6)} · {transferFxPreview.source}
                       </span>
                     ) : null}
@@ -2059,20 +2059,20 @@ export function TransactionDialog({
                         : `0.${"0".repeat(currencyDecimals(toAcct?.currency ?? displayCurrency))}`
                     }
                   />
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     {isAsBooked
                       ? "Saved from the original transfer. Override with the actual amount your bank credited."
                       : "Pre-filled from market FX. Override with the actual amount your bank credited."}
                   </p>
                   {showMarketRef && transferFxPreview.state === "ok" && (
-                    <p className="text-[11px] text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       Market rate on {formatDate(transferFxPreview.date)}:{" "}
                       {transferFxPreview.rate.toFixed(6)} ({transferFxPreview.source}) →{" "}
                       {formatCurrency(transferFxPreview.converted, transferFxPreview.to)}
                     </p>
                   )}
                   {transferFxPreview.state === "needs-override" && (
-                    <p className="text-[11px] text-warning">
+                    <p className="text-xs text-warning">
                       No FX rate cached for this pair —{" "}
                       <Link href="/settings/general" className="underline">
                         add a custom rate
@@ -2081,7 +2081,7 @@ export function TransactionDialog({
                     </p>
                   )}
                   {transferFxPreview.state === "error" && (
-                    <p className="text-[11px] text-destructive">{transferFxPreview.message}</p>
+                    <p className="text-xs text-destructive">{transferFxPreview.message}</p>
                   )}
                 </div>
               );
@@ -2125,11 +2125,11 @@ export function TransactionDialog({
               const sourceLabel = src ? labelForSource(src) : null;
               if (!created && !updated && !sourceLabel) return null;
               return (
-                <div className="text-[11px] text-muted-foreground border-t pt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+                <div className="text-xs text-muted-foreground border-t pt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
                   {created && <span>Created {created}</span>}
                   {updated && <span>· Updated {updated}</span>}
                   {sourceLabel && (
-                    <Badge variant="outline" className="text-[10px] py-0 px-1.5">
+                    <Badge variant="outline" className="text-xs py-0 px-1.5">
                       {sourceLabel}
                     </Badge>
                   )}

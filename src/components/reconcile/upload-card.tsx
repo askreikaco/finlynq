@@ -218,7 +218,7 @@ export function ReconcileUploadCard({
       </div>
 
       {ofxPayeeSource && (
-        <p className="rounded-md border bg-muted/20 px-3 py-2 text-[11px] text-muted-foreground">
+        <p className="rounded-md border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
           For OFX/QFX statements you&apos;ll get a preview to confirm how rows map
           (and pick whether the Payee comes from the Name or Memo field) before
           they&apos;re imported.

@@ -202,14 +202,14 @@ export function RecentUploadsPanel({
                       <span className="font-mono text-xs text-muted-foreground">
                         {dateLabel}
                       </span>
-                      <span className="inline-block rounded border border-border bg-muted/40 px-1.5 py-0 text-[10px] uppercase">
+                      <span className="inline-block rounded border border-border bg-muted/40 px-1.5 py-0 text-xs uppercase">
                         {b.mode}
                       </span>
-                      <span className="inline-block rounded border border-border bg-muted/40 px-1.5 py-0 text-[10px] uppercase">
+                      <span className="inline-block rounded border border-border bg-muted/40 px-1.5 py-0 text-xs uppercase">
                         {b.source}
                       </span>
                       {b.hasLinkedTransactions && (
-                        <span className="inline-block rounded border border-warning/30 bg-warning/10 px-1.5 py-0 text-[10px] text-warning">
+                        <span className="inline-block rounded border border-warning/30 bg-warning/10 px-1.5 py-0 text-xs text-warning">
                           has linked tx
                         </span>
                       )}

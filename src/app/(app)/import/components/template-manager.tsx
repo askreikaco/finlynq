@@ -60,7 +60,7 @@ export function TemplateManager({ templates, accounts, onDeleted, onUpdated }: T
                   <p className="text-xs text-muted-foreground">
                     {t.fileHeaders.length} headers
                     {t.defaultAccount && <> · {t.defaultAccount}</>}
-                    {t.isDefault && <> · <Badge variant="secondary" className="text-[10px] px-1 py-0">default</Badge></>}
+                    {t.isDefault && <> · <Badge variant="secondary" className="text-xs px-1 py-0">default</Badge></>}
                   </p>
                 </div>
                 <Button aria-label="Edit template" size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditing(t)}>

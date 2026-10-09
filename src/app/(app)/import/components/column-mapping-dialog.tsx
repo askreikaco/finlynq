@@ -636,7 +636,7 @@ export function ColumnMappingDialog({
                 />
                 <span>
                   <span className="font-medium">Ask me to confirm first</span>
-                  <span className="block text-[11px] text-muted-foreground">
+                  <span className="block text-xs text-muted-foreground">
                     Show this mapping for review each time (recommended).
                   </span>
                 </span>
@@ -651,7 +651,7 @@ export function ColumnMappingDialog({
                 />
                 <span>
                   <span className="font-medium">Apply this mapping automatically</span>
-                  <span className="block text-[11px] text-muted-foreground">
+                  <span className="block text-xs text-muted-foreground">
                     Import silently — don&apos;t ask again for this account. Reset
                     anytime on the account&apos;s page → Import preferences.
                   </span>

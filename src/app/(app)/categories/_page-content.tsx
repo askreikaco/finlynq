@@ -307,7 +307,7 @@ function CategoriesOverview({ embedded = false }: CategoriesOverviewProps) {
                         <div className="h-1.5 rounded-full bg-muted overflow-hidden">
                           <div className="h-full rounded-full" style={{ width: `${Math.min(100, c.share * 100)}%`, backgroundColor: dot }} />
                         </div>
-                        <p className="text-[11px] text-muted-foreground mt-1">{Math.round(c.share * 100)}% of {monthName(month, "short")}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{Math.round(c.share * 100)}% of {monthName(month, "short")}</p>
                       </div>
                       <div className="flex items-center gap-2 justify-end">
                         <div className="text-right">

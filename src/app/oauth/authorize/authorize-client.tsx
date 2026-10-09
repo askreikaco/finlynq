@@ -397,7 +397,7 @@ function AuthorizePageInner({ accountSlot }: { accountSlot?: React.ReactNode }) 
             harmless ("https://api.example.com/...") while the path goes
             somewhere unexpected. */}
         <div className="rounded-lg border border-border bg-card p-3 mb-5">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-1">
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/60 mb-1">
             Authorization code will be sent to
           </p>
           <p className="text-xs font-mono text-foreground break-all">

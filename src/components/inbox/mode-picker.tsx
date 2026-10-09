@@ -100,14 +100,14 @@ export function ModePicker({
                     <span className="text-sm font-medium">{cfg.label}</span>
                     <Badge
                       variant="outline"
-                      className="text-[10px] font-mono"
+                      className="text-xs font-mono"
                     >
                       {cfg.gates} {cfg.gates === 1 ? "gate" : "gates"}
                     </Badge>
                     {isCurrent && (
                       <Badge
                         variant="outline"
-                        className="text-[10px] font-mono uppercase tracking-wider ml-auto"
+                        className="text-xs font-mono uppercase tracking-wider ml-auto"
                       >
                         current
                       </Badge>

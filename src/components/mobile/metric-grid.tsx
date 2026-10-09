@@ -22,7 +22,7 @@ export function MetricGrid({ metrics }: { metrics: MetricItem[] }) {
             m.currency ? (
               <Amount value={m.value} currency={m.currency} size="md" tone={m.tone ?? "none"} showSign={m.showSign} />
             ) : (
-              <span className="tabular-nums text-[15px] font-semibold">{m.value}</span>
+              <span className="tabular-nums text-sm font-semibold">{m.value}</span>
             )
           }
         />

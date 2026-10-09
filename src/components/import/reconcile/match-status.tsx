@@ -36,7 +36,7 @@ export function matchRowClass(status: PaneMatchStatus | undefined): string {
 /** Inline legend for the two-pane toolbar so the row tints are self-explanatory. */
 export function MatchStatusLegend() {
   return (
-    <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+    <div className="flex items-center gap-3 text-xs text-muted-foreground">
       <span className="flex items-center gap-1">
         <span className="inline-block h-2.5 w-2.5 rounded-sm bg-pos/70" />
         Matched

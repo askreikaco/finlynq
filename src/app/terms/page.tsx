@@ -33,7 +33,7 @@ export default function TermsPage() {
           </p>
         </header>
 
-        <section className="prose prose-invert max-w-none space-y-8 text-[15px] leading-relaxed">
+        <section className="prose prose-invert max-w-none space-y-8 text-sm leading-relaxed">
           <p className="text-base">
             These Terms of Service (&ldquo;Terms&rdquo;) govern your use of the
             Finlynq managed cloud service available at <code>finlynq.com</code>{" "}

@@ -565,7 +565,7 @@ export function EmailRuleDialog({
               </Select>
             </div>
             {targetKind === "transfer" && (
-              <p className="mt-1 text-[11px] text-muted-foreground">
+              <p className="mt-1 text-xs text-muted-foreground">
                 Records a transfer from the account above into the destination. Same-currency only for now.
               </p>
             )}
@@ -643,7 +643,7 @@ export function EmailRuleDialog({
             </div>
           )}
 
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             Auto-record needs a category (the income/expense sign must match). Without one, the rule resolves
             the account and waits for a click.
           </p>
