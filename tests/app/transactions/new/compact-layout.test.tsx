@@ -47,57 +47,70 @@ function seedPrefill(over: Record<string, unknown> = {}) {
   window.history.replaceState({}, "", "/transactions/new?prefill=1");
 }
 
+// Testids of the direct children of the field list (one ListCard of FormRows).
+const rowIds = () =>
+  Array.from(screen.getByTestId("txnew-list").children).map((el) => el.getAttribute("data-testid"));
+
 beforeEach(() => {
   sessionStorage.clear();
+  localStorage.clear(); // last-used account and recent picks persist per browser
   window.history.replaceState({}, "", "/transactions/new");
 });
 afterEach(() => cleanup());
 
 describe("compact new-transaction layout", () => {
-  it("Expense tiles sit in a two-column grid: Date & Time | Category, Account | Payee", () => {
+  it("Expense fields are one ListCard of rows: Date, Amount, Category, Account, Payee, Note", () => {
     seedPrefill();
     render(<Page />);
-    const grid = screen.getByText("Date & Time").closest("div.grid") as HTMLElement;
-    expect(grid).toBeTruthy();
-    expect(grid.className).toContain("grid-cols-2");
-    expect(grid.textContent).toContain("Category");
-    expect(grid.textContent).toContain("Account");
-    expect(grid.querySelector('input[aria-label="Payee"]')).toBeTruthy();
-    expect(grid.children.length).toBe(4);
+    const list = screen.getByTestId("txnew-list");
+    expect(list.className).toContain("divide-y");
+    expect(rowIds()).toEqual([
+      "txnew-row-date",
+      "txnew-row-amount",
+      "txnew-row-category",
+      "txnew-row-account",
+      "txnew-row-payee",
+      "txnew-row-note",
+    ]);
   });
 
-  it("Transfer tiles sit in the same two-column grid: From | To, plus Date & Time", () => {
+  it("Transfer rows: Date, Amount, From Account, To Account, Note (no Category or Payee)", () => {
     seedPrefill({ txType: "Transfer" });
     render(<Page />);
-    fireEvent.click(screen.getByRole("button", { name: "Transfer" }));
-    const grid = screen.getByText("From Account").closest("div.grid") as HTMLElement;
-    expect(grid.className).toContain("grid-cols-2");
-    expect(grid.textContent).toContain("To Account");
-    expect(grid.textContent).toContain("Date & Time");
-    expect(grid.textContent).not.toContain("Category");
+    expect(rowIds()).toEqual([
+      "txnew-row-date",
+      "txnew-row-amount",
+      "txnew-row-account",
+      "txnew-row-to-account",
+      "txnew-row-note",
+    ]);
+    expect(screen.getByTestId("txnew-row-account").textContent).toContain("From Account");
   });
 
-  it("notes and tags are collapsed by default and expand on click", () => {
+  it("More details is collapsed by default, and expands to Tags, Business and Split", () => {
     seedPrefill();
     render(<Page />);
-    expect(screen.queryByPlaceholderText("Note / Description")).toBeNull();
-    expect(screen.queryByPlaceholderText("Tags (comma-separated)")).toBeNull();
-    const toggle = screen.getByRole("button", { name: /Notes & tags/ });
+    expect(screen.queryByPlaceholderText("Comma-separated")).toBeNull();
+    const toggle = screen.getByRole("button", { name: /More details/ });
     expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(toggle.getAttribute("aria-controls")).toBeNull();
     fireEvent.click(toggle);
     expect(toggle.getAttribute("aria-expanded")).toBe("true");
-    expect(screen.getByPlaceholderText("Note / Description")).toBeTruthy();
-    expect(screen.getByPlaceholderText("Tags (comma-separated)")).toBeTruthy();
+    expect(toggle.getAttribute("aria-controls")).toBe("txnew-more-panel");
+    expect(screen.getByPlaceholderText("Comma-separated")).toBeTruthy();
+    expect(screen.getByRole("switch")).toBeTruthy();
   });
 
-  it("numpad wrapper docks at the safe-area bottom (tab bar hidden on this route)", () => {
+  it("numpad dock is touch-only (pointer-coarse) and docks at the safe-area bottom (tab bar hidden on this route)", () => {
     seedPrefill({ amount: "" });
     render(<Page />);
-    fireEvent.click(screen.getByText("0.00").closest("button") as HTMLElement);
-    const wrapper = screen.getByRole("button", { name: "Done" }).closest(".fixed") as HTMLElement;
-    expect(wrapper).toBeTruthy();
-    expect(wrapper.className).toContain("max-md:bottom-[var(--sab,0px)]");
-    expect(wrapper.className).not.toContain("--mobile-bar-clearance");
+    fireEvent.focus(screen.getByLabelText("Amount"));
+    const dock = screen.getByTestId("numpad-dock");
+    expect(dock.className).toContain("hidden");
+    expect(dock.className).toContain("pointer-coarse:block");
+    expect(dock.className).toContain("bottom-[var(--sab,0px)]");
+    expect(dock.className).not.toContain("--mobile-bar-clearance");
+    expect(dock.className).not.toMatch(/(^|\s)md:(block|flex)(\s|$)/);
   });
 
   it("the new-transaction header does not repeat the top safe-area inset (body already pads --sat)", () => {
@@ -112,11 +125,11 @@ describe("compact new-transaction layout", () => {
     expect(css).toMatch(/body\s*\{[^}]*padding-top:\s*var\(--sat\)/);
   });
 
-  it("Save button is present with the numpad closed and hidden while the numpad is open", () => {
+  it("Save and Continue stay rendered while the numpad is open (they are in normal flow)", () => {
     seedPrefill();
     render(<Page />);
-    expect(screen.getByRole("button", { name: "Save Expense" })).toBeTruthy();
-    fireEvent.click(screen.getByText("150").closest("button") as HTMLElement);
-    expect(screen.queryByRole("button", { name: "Save Expense" })).toBeNull();
+    fireEvent.focus(screen.getByLabelText("Amount"));
+    expect(screen.getByRole("button", { name: "Save" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Continue" })).toBeTruthy();
   });
 });

@@ -52,6 +52,7 @@ let fxResponse: () => { ok: boolean; json: () => Promise<unknown> };
 
 beforeEach(() => {
   sessionStorage.clear();
+  localStorage.clear(); // last-used account and recent picks persist per browser
   window.history.replaceState({}, "", "/transactions/new");
   H.accounts = DEFAULT_ACCOUNTS.map((a) => ({ ...a }));
   H.mutate.mockReset();
@@ -90,7 +91,7 @@ describe("new transaction page review fixes", () => {
   it("double Save posts once, and stays locked after the save has succeeded", async () => {
     seedPrefill();
     render(<Page />);
-    const save = screen.getByRole("button", { name: "Save Expense" });
+    const save = screen.getByRole("button", { name: "Save" });
     fireEvent.click(save);
     fireEvent.click(save);
     await waitFor(() => expect(screen.getByText("Expense saved successfully!")).toBeTruthy());
@@ -132,11 +133,11 @@ describe("new transaction page review fixes", () => {
     fireEvent.click(screen.getByText("Select Destination Account"));
     fireEvent.click(await screen.findByText("Euro Account"));
 
-    const received = (await screen.findByLabelText(/Amount received \(EUR\)/)) as HTMLInputElement;
+    const received = (await screen.findByLabelText("Received (EUR)")) as HTMLInputElement;
     await waitFor(() => expect(received.value).toBe("125.00"));
     fireEvent.change(received, { target: { value: "130" } });
 
-    fireEvent.click(screen.getByRole("button", { name: "Save Transfer" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(postsTo("/api/transactions/transfer").length).toBe(1));
     expect(bodyOf(postsTo("/api/transactions/transfer")[0])).toMatchObject({
       fromAccountId: 1,
@@ -169,7 +170,7 @@ describe("new transaction page review fixes", () => {
     render(<Page />);
     fireEvent.click(screen.getByText("Select Destination Account"));
     fireEvent.click(await screen.findByText("Euro Account"));
-    fireEvent.click(await screen.findByRole("button", { name: "Save Transfer" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Save" }));
     expect(await screen.findByText("No FX rate for EUR.")).toBeTruthy();
     expect(screen.queryByText("raw")).toBeNull();
   });
@@ -177,7 +178,7 @@ describe("new transaction page review fixes", () => {
   it("invalidates transaction lists with a key predicate, not an exact key", async () => {
     seedPrefill();
     render(<Page />);
-    fireEvent.click(screen.getByRole("button", { name: "Save Expense" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(H.mutate).toHaveBeenCalled());
     const predicate = H.mutate.mock.calls.find((c) => typeof c[0] === "function")?.[0] as (
       k: unknown,

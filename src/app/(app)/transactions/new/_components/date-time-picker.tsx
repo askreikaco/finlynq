@@ -11,6 +11,8 @@ interface DateTimePickerSheetProps {
   date: string; // YYYY-MM-DD
   time: string; // HH:mm
   onConfirm: (date: string, time: string) => void;
+  /** Show the time input. The New Transaction page passes false: time is never saved. */
+  showTime?: boolean;
 }
 
 export function formatDateTimeDisplay(dateStr: string, timeStr?: string): string {
@@ -57,6 +59,7 @@ export function DateTimePickerSheet({
   date,
   time,
   onConfirm,
+  showTime = true,
 }: DateTimePickerSheetProps) {
   const [tempDate, setTempDate] = useState(date);
   const [tempTime, setTempTime] = useState(time);
@@ -149,6 +152,7 @@ export function DateTimePickerSheet({
           </div>
 
           {/* Time Picker Input */}
+          {showTime && (
           <div className="space-y-2">
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5" />
@@ -163,12 +167,13 @@ export function DateTimePickerSheet({
               />
             </div>
           </div>
+          )}
 
           {/* Summary Display */}
           <div className="p-3.5 rounded-xl bg-card/60 border border-border/80 text-center">
             <span className="text-xs text-muted-foreground">Selected: </span>
             <span className="text-sm font-medium text-primary">
-              {formatDateTimeDisplay(tempDate, tempTime)}
+              {formatDateTimeDisplay(tempDate, showTime ? tempTime : undefined)}
             </span>
           </div>
 

@@ -36,6 +36,7 @@ export interface FormRowInputProps extends FormRowBaseProps {
   autoComplete?: string;
   onInputFocus?: () => void;
   onInputBlur?: () => void;
+  onInputKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
 }
 
 export type FormRowProps = FormRowButtonProps | FormRowInputProps;
@@ -99,6 +100,7 @@ export function FormRow(props: FormRowProps) {
         onChange={(e) => props.onInputChange(e.target.value)}
         onFocus={props.onInputFocus}
         onBlur={props.onInputBlur}
+        onKeyDown={props.onInputKeyDown}
         inputMode={props.inputMode}
         enterKeyHint={props.enterKeyHint}
         autoComplete={props.autoComplete}

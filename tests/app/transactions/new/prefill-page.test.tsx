@@ -35,6 +35,7 @@ const mk = (o: Record<string, unknown> = {}) => ({
 let fetchMock: ReturnType<typeof vi.fn>;
 beforeEach(() => {
   sessionStorage.clear();
+  localStorage.clear(); // last-used account and recent picks persist per browser
   window.history.replaceState({}, "", "/transactions/new");
   fetchMock = vi.fn(async () => ({ ok: true, json: async () => ({ id: 99 }) }));
   vi.stubGlobal("fetch", fetchMock);
@@ -42,7 +43,7 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 async function saveAndGetPayload(type: string) {
-  fireEvent.click(screen.getByRole("button", { name: `Save ${type}` }));
+  fireEvent.click(screen.getByRole("button", { name: "Save" }));
   await waitFor(() => expect(fetchMock).toHaveBeenCalled());
   // First POST to /api/transactions (the page also GETs active currencies on mount).
   const post = fetchMock.mock.calls.find((c: unknown[]) => c[0] === "/api/transactions" && (c[1] as RequestInit | undefined)?.method === "POST");
@@ -56,7 +57,7 @@ describe("page prefill", () => {
     window.history.replaceState({}, "", "/transactions/new?prefill=1");
     render(<Page />);
     expect(sessionStorage.getItem(KEY)).toBeNull();
-    expect(screen.getByText("New Income")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "New Income" })).toBeTruthy();
     expect(screen.queryByText(/Prefill data expired/)).toBeNull();
     const p = await saveAndGetPayload("Income");
     expect(p).toMatchObject({ enteredAmount: 150000, categoryId: 20, payee: "ACME", note: "N1", tags: "t1,t2", isBusiness: 1, date: today() });
@@ -80,7 +81,7 @@ describe("page prefill", () => {
     window.history.replaceState({}, "", "/transactions/new?prefill=1");
     render(<Page />);
     expect(screen.getByText(/Prefill data expired or invalid/)).toBeTruthy();
-    expect(screen.getByText("New Expense")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "New Expense" })).toBeTruthy();
     expect(sessionStorage.getItem(KEY)).toBeNull();
   });
   it("malformed -> notice", () => {
@@ -103,21 +104,21 @@ describe("page prefill", () => {
   it("legacy: no prefill, no query -> untouched, no notice, storage not touched", () => {
     render(<Page />);
     expect(screen.queryByText(/Prefill data/)).toBeNull();
-    expect(screen.getByText("New Expense")).toBeTruthy();
-    expect(screen.getByText("0.00")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "New Expense" })).toBeTruthy();
+    expect((screen.getByLabelText("Amount") as HTMLInputElement).value).toBe("");
   });
   it("legacy: stale storage but no ?prefill query -> data still consumed/applied (documents behaviour)", () => {
     sessionStorage.setItem(KEY, JSON.stringify(mk()));
     render(<Page />);
     expect(sessionStorage.getItem(KEY)).toBeNull();
-    expect(screen.getByText("New Income")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "New Income" })).toBeTruthy();
   });
   it("StrictMode: data survives 2nd mount, applied once, NO spurious notice", async () => {
     sessionStorage.setItem(KEY, JSON.stringify(mk()));
     window.history.replaceState({}, "", "/transactions/new?prefill=1");
     render(<React.StrictMode><Page /></React.StrictMode>);
-    expect(screen.getByText("New Income")).toBeTruthy();
-    expect(screen.getByText("150000")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "New Income" })).toBeTruthy();
+    expect((screen.getByLabelText("Amount") as HTMLInputElement).value).toBe("150000");
     const p = await saveAndGetPayload("Income");
     expect(p.payee).toBe("ACME");
     expect(p.enteredAmount).toBe(150000);
@@ -140,7 +141,7 @@ describe("page prefill", () => {
     const r = render(<Page />);
     r.unmount();
     render(<Page />);
-    expect(screen.getByText("New Expense")).toBeTruthy();
-    expect(screen.getByText("0.00")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "New Expense" })).toBeTruthy();
+    expect((screen.getByLabelText("Amount") as HTMLInputElement).value).toBe("");
   });
 });

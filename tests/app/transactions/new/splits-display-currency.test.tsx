@@ -96,6 +96,7 @@ describe("SplitSection display currency", () => {
   beforeEach(() => {
     capturedSplitSectionProps = [];
     sessionStorage.clear();
+  localStorage.clear(); // last-used account and recent picks persist per browser
     window.history.replaceState({}, "", "/transactions/new");
     fetchMock = vi.fn(async () => ({
       ok: true,
@@ -119,7 +120,7 @@ describe("SplitSection display currency", () => {
 
     // Wait for page to render
     await waitFor(() => {
-      expect(screen.getByText("New Expense")).toBeTruthy();
+      expect(screen.getByRole("heading", { name: "New Expense" })).toBeTruthy();
     });
 
     // Verify correct account is selected
@@ -127,9 +128,9 @@ describe("SplitSection display currency", () => {
       expect(screen.getByText("Savings No Currency")).toBeTruthy();
     });
 
-    // Expand advanced options
+    // Expand More details
     const advancedBtn = screen.getByRole("button", {
-      name: /Advanced Options/i,
+      name: /More details/i,
     });
     fireEvent.click(advancedBtn);
 
@@ -155,7 +156,7 @@ describe("SplitSection display currency", () => {
 
     // Wait for page to render
     await waitFor(() => {
-      expect(screen.getByText("New Expense")).toBeTruthy();
+      expect(screen.getByRole("heading", { name: "New Expense" })).toBeTruthy();
     });
 
     // Verify correct account is selected
@@ -163,9 +164,9 @@ describe("SplitSection display currency", () => {
       expect(screen.getByText("Checking CAD")).toBeTruthy();
     });
 
-    // Expand advanced options
+    // Expand More details
     const advancedBtn = screen.getByRole("button", {
-      name: /Advanced Options/i,
+      name: /More details/i,
     });
     fireEvent.click(advancedBtn);
 
