@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useEffect, memo } from "react";
+import { memo } from "react";
 import { cn } from "@/lib/utils";
 import { MoreHorizontal } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { getEntriesBySurface, getMobileBarItemsSorted } from "@/lib/nav-config";
+import { useNavUnread } from "@/components/nav-unread";
 
 type NavItem = { href: string; label: string; icon: LucideIcon; color: string; mode?: "prod" | "dev"; activePrefixes?: string[]; flag?: "family" | "announcements" | "feedback" | "instance" };
 
@@ -177,33 +178,6 @@ const TAB_LINKS: { href: string; label: string; icon: LucideIcon; color?: string
   { href: "/more", label: "More", icon: MoreHorizontal, ariaLabel: "More" },
 ];
 
-// Unread total behind the More dot: announcements + feedback replies. Same endpoints and
-// refetch-on-navigation as the old sidebar badges, so the badge clears after visiting the page.
-function useMoreUnread(pathname: string): number {
-  const [announcementsUnread, setAnnouncementsUnread] = useState(0);
-  const [feedbackUnread, setFeedbackUnread] = useState(0);
-
-  useEffect(() => {
-    fetch("/api/announcements")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((list) => {
-        if (Array.isArray(list)) setAnnouncementsUnread(list.filter((a: { read?: boolean }) => !a.read).length);
-      })
-      .catch(() => {});
-  }, [pathname]);
-
-  useEffect(() => {
-    fetch("/api/feedback")
-      .then((r) => (r.ok ? r.json() : []))
-      .then((list) => {
-        if (Array.isArray(list)) setFeedbackUnread(list.filter((t: { unread?: boolean }) => t.unread).length);
-      })
-      .catch(() => {});
-  }, [pathname]);
-
-  return announcementsUnread + feedbackUnread;
-}
-
 /**
  * App navigation: one tab list, two layouts. Below 640px (`regular:` is a viewport query) the
  * floating glass bottom bar. From 640px up a fixed left rail with the same tabs in the same order.
@@ -211,7 +185,8 @@ function useMoreUnread(pathname: string): number {
  */
 export const AppTabs = memo(function AppTabs() {
   const pathname = usePathname();
-  const moreUnread = useMoreUnread(pathname);
+  const nav = useNavUnread();
+  const moreUnread = nav.announcementsUnread + nav.feedbackUnread;
   const barHidden = isTabBarHidden(pathname);
   const moreActive = !mobileBarItems.some((i) => isTabActive(pathname, i.href));
   const tabActive = (href: string) => (href === "/more" ? moreActive : isTabActive(pathname, href));

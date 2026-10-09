@@ -201,3 +201,21 @@ describe("unread dot on More (both layouts)", () => {
     }
   });
 });
+
+describe("unread badges come from the shared store (nav-unread)", () => {
+  it("AppTabs asks the store once per render: one announcements request and one feedback request", async () => {
+    const fn = vi.fn(async () => ({ ok: true, status: 200, json: async () => [] }));
+    vi.stubGlobal("fetch", fn);
+    render(<AppTabs />);
+    await waitFor(() => expect(fn).toHaveBeenCalled());
+    const urls = fn.mock.calls.map((c) => c[0]);
+    expect(urls.filter((u) => u === "/api/announcements")).toHaveLength(1);
+    expect(urls.filter((u) => u === "/api/feedback")).toHaveLength(1);
+  });
+
+  it("the source reads counts from useNavUnread and keeps no fetch of its own", () => {
+    expect(APP_TABS_SRC).toContain('from "@/components/nav-unread"');
+    expect(APP_TABS_SRC).toContain("useNavUnread()");
+    expect(APP_TABS_SRC).not.toContain("fetch(");
+  });
+});

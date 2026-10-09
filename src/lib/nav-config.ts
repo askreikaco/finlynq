@@ -53,6 +53,7 @@ import {
   Database,
   Plug,
   Cloud,
+  MoreHorizontal,
   type LucideIcon,
 } from "lucide-react";
 
@@ -97,6 +98,7 @@ export const NAV_REGISTRY: NavPageEntry[] = [
   {
     id: "whats-new",
     path: "/whats-new",
+    parent: "/more",
     label: "What's new",
     icon: Megaphone,
     group: "Top",
@@ -107,6 +109,7 @@ export const NAV_REGISTRY: NavPageEntry[] = [
   {
     id: "chat",
     path: "/chat",
+    parent: "/more",
     label: "AI Chat",
     icon: MessageSquare,
     group: "Top",
@@ -128,6 +131,7 @@ export const NAV_REGISTRY: NavPageEntry[] = [
   {
     id: "budgets",
     path: "/budgets",
+    parent: "/more",
     label: "Budgets",
     icon: PiggyBank,
     group: "Tracking",
@@ -137,6 +141,7 @@ export const NAV_REGISTRY: NavPageEntry[] = [
   {
     id: "goals",
     path: "/goals",
+    parent: "/more",
     label: "Goals",
     icon: Target,
     group: "Tracking",
@@ -146,6 +151,7 @@ export const NAV_REGISTRY: NavPageEntry[] = [
   {
     id: "subscriptions",
     path: "/subscriptions",
+    parent: "/more",
     label: "Subscriptions",
     icon: CreditCard,
     group: "Tracking",
@@ -178,6 +184,7 @@ export const NAV_REGISTRY: NavPageEntry[] = [
   {
     id: "loans",
     path: "/loans",
+    parent: "/more",
     label: "Loans & Debt",
     icon: Landmark,
     group: "Wealth",
@@ -187,6 +194,7 @@ export const NAV_REGISTRY: NavPageEntry[] = [
   {
     id: "family",
     path: "/family",
+    parent: "/more",
     label: "Family Wealth",
     icon: Users,
     group: "Wealth",
@@ -200,6 +208,7 @@ export const NAV_REGISTRY: NavPageEntry[] = [
   {
     id: "reports",
     path: "/reports",
+    parent: "/more",
     label: "Reports",
     icon: FileText,
     group: "Analysis",
@@ -209,6 +218,7 @@ export const NAV_REGISTRY: NavPageEntry[] = [
   {
     id: "categories",
     path: "/categories",
+    parent: "/more",
     label: "Spending by category",
     icon: ChartPie,
     group: "Analysis",
@@ -218,6 +228,7 @@ export const NAV_REGISTRY: NavPageEntry[] = [
   {
     id: "tax",
     path: "/tax",
+    parent: "/more",
     label: "Tax",
     icon: Calculator,
     group: "Analysis",
@@ -229,6 +240,7 @@ export const NAV_REGISTRY: NavPageEntry[] = [
   {
     id: "scenarios",
     path: "/scenarios",
+    parent: "/more",
     label: "Scenarios",
     icon: GitBranch,
     group: "Planning",
@@ -238,6 +250,7 @@ export const NAV_REGISTRY: NavPageEntry[] = [
   {
     id: "fire",
     path: "/fire",
+    parent: "/more",
     label: "FIRE Calculator",
     icon: FlameKindling,
     group: "Planning",
@@ -249,6 +262,7 @@ export const NAV_REGISTRY: NavPageEntry[] = [
   {
     id: "import",
     path: "/import",
+    parent: "/more",
     label: "Import",
     icon: Upload,
     group: "Tools",
@@ -259,6 +273,7 @@ export const NAV_REGISTRY: NavPageEntry[] = [
   {
     id: "api-docs",
     path: "/api-docs",
+    parent: "/more",
     label: "API Docs",
     icon: FileText,
     group: "Tools",
@@ -268,22 +283,66 @@ export const NAV_REGISTRY: NavPageEntry[] = [
   {
     id: "feedback",
     path: "/feedback",
+    parent: "/more",
     label: "Feedback",
     icon: MessageCircle,
     group: "Tools",
     mode: "prod",
     flag: "feedback",
-    surfaces: ["sidebar"],
+    surfaces: ["sidebar", "more"],
   },
   {
     id: "settings",
     path: "/settings",
+    parent: "/more",
     label: "Settings",
     icon: Settings,
     group: "Tools",
     mode: "prod",
     surfaces: ["sidebar", "more"],
     activePrefixes: ["/settings"],
+  },
+
+  // Non-surface parents: the More screen, the account hub and the portfolio create flow.
+  // They have no nav surface; they exist so useBackTarget() can resolve their children.
+  {
+    id: "more",
+    path: "/more",
+    label: "More",
+    icon: MoreHorizontal,
+    group: "Top",
+    mode: "prod",
+    surfaces: [],
+  },
+  {
+    id: "portfolio-new",
+    path: "/portfolio/new",
+    label: "New position",
+    icon: TrendingUp,
+    group: "Wealth",
+    mode: "prod",
+    surfaces: [],
+    parent: "/portfolio",
+  },
+  {
+    id: "manage-accounts",
+    path: "/manage-accounts",
+    label: "Manage accounts",
+    icon: Wallet,
+    group: "Account",
+    mode: "prod",
+    surfaces: [],
+    parent: "/more",
+  },
+  {
+    id: "account",
+    path: "/account",
+    label: "Account",
+    icon: Settings,
+    group: "Account",
+    mode: "prod",
+    surfaces: [],
+    parent: "/more",
   },
 
   // Settings subsections (in settings shell)
@@ -384,6 +443,7 @@ export const NAV_REGISTRY: NavPageEntry[] = [
   {
     id: "admin",
     path: "/admin",
+    parent: "/more",
     label: "Admin",
     icon: ShieldCheck,
     group: "Admin",
@@ -394,6 +454,7 @@ export const NAV_REGISTRY: NavPageEntry[] = [
   {
     id: "admin-inbox",
     path: "/admin/inbox",
+    parent: "/more",
     label: "Admin Inbox",
     icon: Inbox,
     group: "Admin",
@@ -404,6 +465,7 @@ export const NAV_REGISTRY: NavPageEntry[] = [
   {
     id: "admin-email-inbox",
     path: "/admin/email-inbox",
+    parent: "/more",
     label: "Email Oversight",
     icon: Mailbox,
     group: "Admin",
@@ -414,6 +476,7 @@ export const NAV_REGISTRY: NavPageEntry[] = [
   {
     id: "admin-env",
     path: "/admin/env",
+    parent: "/more",
     label: "Environment",
     icon: Server,
     group: "Admin",
@@ -432,6 +495,7 @@ export const NAV_REGISTRY: NavPageEntry[] = [
   {
     id: "admin-announcements",
     path: "/admin/announcements",
+    parent: "/more",
     label: "Announcements",
     icon: Megaphone,
     group: "Admin",
@@ -442,6 +506,7 @@ export const NAV_REGISTRY: NavPageEntry[] = [
   {
     id: "admin-feedback",
     path: "/admin/feedback",
+    parent: "/more",
     label: "User feedback",
     icon: MessageCircle,
     group: "Admin",
@@ -452,6 +517,7 @@ export const NAV_REGISTRY: NavPageEntry[] = [
   {
     id: "admin-instance",
     path: "/admin/instance",
+    parent: "/more",
     label: "Instance config",
     icon: Cloud,
     group: "Admin",
@@ -522,6 +588,7 @@ export const NAV_REGISTRY: NavPageEntry[] = [
   {
     id: "import-reconcile",
     path: "/import?tab=reconcile",
+    parent: "/more",
     label: "Reconcile",
     icon: Inbox,
     group: "Tools",
@@ -533,6 +600,7 @@ export const NAV_REGISTRY: NavPageEntry[] = [
   {
     id: "gallery",
     path: "/dev/gallery",
+    parent: "/more",
     label: "Gallery",
     icon: Wrench,
     group: "Tools",

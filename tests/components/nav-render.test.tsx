@@ -58,9 +58,12 @@ describe("AppTabs data loading", () => {
     expect(urls.sort()).toEqual(["/api/announcements", "/api/feedback"]);
   });
 
-  it("both effects refetch on pathname change (the dot clears after visiting the page); source check", () => {
+  it("the unread fetches live in the shared store, which refetches on pathname change; AppTabs only reads it", () => {
     const src = readFileSync(join(__dirname, "../../src/components/nav.tsx"), "utf8");
-    expect(src.match(/\}, \[pathname\]\);/g)?.length).toBe(2);
+    const store = readFileSync(join(__dirname, "../../src/components/nav-unread.ts"), "utf8");
+    expect(src).toContain("useNavUnread");
+    expect(src).not.toContain("/api/announcements");
+    expect(store.match(/\}, \[pathname\]\);/g)?.length).toBe(1);
   });
 });
 

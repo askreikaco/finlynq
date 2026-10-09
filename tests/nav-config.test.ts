@@ -723,3 +723,64 @@ describe("nav-config", () => {
     });
   });
 });
+
+describe("parent map (back targets)", () => {
+  const TABS = ["/dashboard", "/accounts", "/portfolio", "/transactions"];
+  const MORE_CHILDREN = [
+    "/whats-new", "/chat", "/budgets", "/goals", "/subscriptions", "/loans", "/family", "/reports",
+    "/categories", "/tax", "/scenarios", "/fire", "/import", "/api-docs", "/feedback", "/settings",
+    "/admin", "/admin/inbox", "/admin/email-inbox", "/admin/env", "/admin/announcements",
+    "/admin/feedback", "/admin/instance", "/dev/gallery", "/manage-accounts", "/account",
+  ];
+
+  it("tabs are level 1 (no parent) and the More page is a registry parent with no parent of its own", () => {
+    for (const p of [...TABS, "/more"]) {
+      expect(getNavEntry(p)?.parent, p).toBeUndefined();
+    }
+  });
+
+  it("every More entry (plus manage-accounts and account) has parent /more", () => {
+    for (const p of MORE_CHILDREN) {
+      expect(getNavEntry(p)?.parent, p).toBe("/more");
+    }
+  });
+
+  it("settings subpages parent /settings; account subpages parent /account; admin env subpages parent /admin/env", () => {
+    for (const e of getEntriesByGroup("Settings").filter((x) => x.path !== "/settings")) {
+      expect(e.parent, e.path).toBe("/settings");
+    }
+    expect(getNavEntry("/account/info")?.parent).toBe("/account");
+    expect(getNavEntry("/account/security")?.parent).toBe("/account");
+    for (const p of ["/admin/system", "/admin/diagnostics", "/admin/api-log", "/admin/price-cache", "/admin/integrations"]) {
+      expect(getNavEntry(p)?.parent, p).toBe("/admin/env");
+    }
+  });
+
+  it("portfolio create flow parents /portfolio", () => {
+    expect(getNavEntry("/portfolio/new")?.parent).toBe("/portfolio");
+  });
+
+  it("/feedback is on the more surface (reachable again after the sidebar was replaced) and keeps its flag", () => {
+    const entry = getNavEntry("/feedback");
+    expect(entry?.surfaces).toContain("more");
+    expect(entry?.flag).toBe("feedback");
+    expect(getEntriesBySurface("more").map((e) => e.path)).toContain("/feedback");
+  });
+
+  it("every parent names a registry entry, and no chain loops", () => {
+    for (const e of NAV_REGISTRY) {
+      if (!e.parent) continue;
+      expect(getNavEntry(e.parent), `${e.path} -> ${e.parent}`).toBeDefined();
+      const seen = new Set<string>([e.path]);
+      let cur: string | undefined = e.parent;
+      let steps = 0;
+      while (cur) {
+        expect(seen.has(cur), `cycle at ${cur}`).toBe(false);
+        seen.add(cur);
+        cur = getNavEntry(cur)?.parent;
+        steps += 1;
+        expect(steps).toBeLessThan(10);
+      }
+    }
+  });
+});
