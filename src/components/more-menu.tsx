@@ -24,6 +24,7 @@ import { AccountSwitcher } from "@/components/account-switcher";
 import { hardReload, clearPerUserStorage } from "@/lib/client/hard-reload";
 import { setPasskeyAutoSkip } from "@/lib/client/passkey-auto";
 import { getEntriesBySurface, navLabel } from "@/lib/nav-config";
+import { CompactOnly } from "@/components/mobile";
 
 export type MoreRow = { href: string; label: string; icon: LucideIcon; id: string };
 export type MoreGroup = { id: string; header?: string; rows: MoreRow[] };
@@ -282,7 +283,7 @@ export const MoreMenu = memo(function MoreMenu({ instanceAdminEnabled = false, c
   const groups = buildMoreGroups(flags);
 
   return (
-    <div className="mx-auto max-w-xl space-y-6 md:hidden" data-testid="more-menu">
+    <CompactOnly className="mx-auto max-w-xl space-y-6" data-testid="more-menu">
       <h1 className="text-4xl font-bold tracking-tight">More</h1>
 
       <section data-testid="more-account" className="space-y-2">
@@ -329,6 +330,6 @@ export const MoreMenu = memo(function MoreMenu({ instanceAdminEnabled = false, c
           </Card>
         </section>
       ))}
-    </div>
+    </CompactOnly>
   );
 });

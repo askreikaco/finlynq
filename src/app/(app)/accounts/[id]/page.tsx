@@ -60,7 +60,7 @@ import {
   type DialogHolding,
 } from "@/components/transactions/transaction-dialog";
 import { TransactionsWorkspace } from "../../transactions/_components/transactions-workspace";
-import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
+import { PageHeader, HEADER_DESKTOP_ONLY, CompactOnly, FromMd } from "@/components/mobile";
 
 type Account = {
   id: number;
@@ -567,7 +567,7 @@ export default function AccountDetailPage() {
         <>
           {!isInvestment && (
             <Button size="sm" onClick={() => openTxDialog()}>
-              <Receipt className="h-3.5 w-3.5 mr-1.5" /> <span className="max-md:hidden">New transaction</span><span className="md:hidden">Add</span>
+              <Receipt className="h-3.5 w-3.5 mr-1.5" /> <FromMd as="span">New transaction</FromMd><CompactOnly as="span">Add</CompactOnly>
             </Button>
           )}
           <DropdownMenu>
@@ -686,7 +686,7 @@ export default function AccountDetailPage() {
             </button>
 
             {/* More */}
-            <div className="md:hidden">
+            <CompactOnly>
               <button
                 onClick={() => setActionsSheetOpen(true)}
                 className="flex flex-col items-center justify-center gap-2 flex-1 p-3 rounded-lg hover:bg-muted transition-colors"
@@ -697,7 +697,7 @@ export default function AccountDetailPage() {
                 </div>
                 <span className="text-xs font-medium text-center">More</span>
               </button>
-            </div>
+            </CompactOnly>
 
             {/* Desktop More dropdown */}
             <div className="hidden md:block flex-1">

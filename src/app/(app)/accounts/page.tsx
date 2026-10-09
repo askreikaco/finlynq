@@ -32,7 +32,7 @@ import {
   Archive,
   FolderCog,
 } from "lucide-react";
-import { PageHeader, HEADER_DESKTOP_ONLY, NetWorthHero, SectionLabel, AccountRow } from "@/components/mobile";
+import { PageHeader, HEADER_DESKTOP_ONLY, NetWorthHero, SectionLabel, AccountRow, CompactOnly, FromMd } from "@/components/mobile";
 
 type AccountBalance = {
   accountId: number;
@@ -390,7 +390,7 @@ export default function AccountsPage() {
         className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-sm"
         onClick={() => setDialogOpen(true)}
       >
-        <Plus className="h-4 w-4 mr-1.5" /> <span className="max-md:hidden">Create Account</span><span className="md:hidden">Add</span>
+        <Plus className="h-4 w-4 mr-1.5" /> <FromMd as="span">Create Account</FromMd><CompactOnly as="span">Add</CompactOnly>
       </Button>
       <AccountDialog
         mode="create"
@@ -471,11 +471,11 @@ export default function AccountsPage() {
       <OnboardingTips page="accounts" />
 
       {/* Below md the Net Worth hero (assets/liabilities tiles) replaces these two stat cards. */}
-      <div className="md:hidden">
+      <CompactOnly>
         <NetWorthHero totalAssets={totalAssetsConverted} totalLiabilities={totalLiabilitiesConverted} currency={displayCurrency} />
-      </div>
+      </CompactOnly>
 
-      <div className="grid grid-cols-2 gap-3 max-md:hidden">
+      <FromMd className="grid grid-cols-2 gap-3">
         {[
           { label: "Total Assets", value: totalAssetsConverted, Icon: TrendingUp, color: "emerald" },
           { label: "Total Liabilities", value: totalLiabilitiesConverted, Icon: TrendingDown, color: "rose" },
@@ -492,18 +492,18 @@ export default function AccountsPage() {
             </CardContent>
           </Card>
         ))}
-      </div>
+      </FromMd>
 
       {/* Below md: groups as native SectionCards of AccountRows (tap → /accounts/[id]). */}
-      <div data-slot="accounts-mobile-list" className="space-y-4 md:hidden">
+      <CompactOnly data-slot="accounts-mobile-list" className="space-y-4">
         {renderMobileSection("Assets", assets, "asset")}
         {renderMobileSection("Liabilities", liabilities, "liability")}
-      </div>
+      </CompactOnly>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-md:hidden">
+      <FromMd className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {renderSection("Assets", assets, "text-emerald-600", ArrowUpRight, "bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300")}
         {renderSection("Liabilities", liabilities, "text-rose-600", ArrowDownRight, "bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300")}
-      </div>
+      </FromMd>
 
       {/* FINLYNQ-179 — rename / reorder / merge-into-Other account groups */}
       <ManageGroupsDialog

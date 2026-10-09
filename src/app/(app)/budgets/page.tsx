@@ -24,7 +24,7 @@ import {
   AlertTriangle, ArrowDownRight, Copy,
 } from "lucide-react";
 import { AmountInput } from "@/components/amount-input";
-import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
+import { PageHeader, HEADER_DESKTOP_ONLY, FromMd } from "@/components/mobile";
 
 type Budget = {
   id: number;
@@ -427,7 +427,7 @@ export default function BudgetsPage() {
         actions={
         <>
           {/* Mode toggle */}
-          <div className="inline-flex items-center rounded-lg border bg-background p-0.5 shadow-sm max-md:hidden">
+          <FromMd className="inline-flex items-center rounded-lg border bg-background p-0.5 shadow-sm">
             <button
               className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-150 flex items-center gap-1.5 ${
                 mode === "traditional"
@@ -452,7 +452,7 @@ export default function BudgetsPage() {
               <Wallet className="h-3 w-3" />
               <span className="hidden sm:inline">Envelope</span>
             </button>
-          </div>
+          </FromMd>
 
           {/* Template buttons */}
           {budgets.length > 0 && (
