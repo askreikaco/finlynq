@@ -18,6 +18,13 @@ const H = vi.hoisted(() => {
   };
 });
 const push = H.push;
+// Size class drives the default view: regular defaults to List (the table rows these tests use).
+// Cards (phone rows) are covered in tests/pages/transactions-dataview.test.tsx.
+const SIZE = vi.hoisted(() => ({ current: "regular" as "compact" | "regular" | "wide" }));
+vi.mock("@/components/adaptive/size-class-context", async (orig) => ({
+  ...(await orig<typeof import("@/components/adaptive/size-class-context")>()),
+  useAppSizeClass: () => SIZE.current,
+}));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: H.push, replace: vi.fn(), back: vi.fn() }), useSearchParams: () => H.SP, usePathname: () => "/transactions" }));
 vi.mock("next/link", () => ({ default: ({ children, href }: any) => React.createElement("a", { href }, children) }));
 vi.mock("@/components/currency-provider", () => ({ useDisplayCurrency: () => ({ displayCurrency: "USD" }) }));
@@ -40,7 +47,7 @@ class FakeIntersectionObserver {
   disconnect() {}
   takeRecords() { return []; }
 }
-beforeEach(() => { sessionStorage.clear(); push.mockClear(); H.IO.cbs.length = 0;
+beforeEach(() => { sessionStorage.clear(); push.mockClear(); H.IO.cbs.length = 0; SIZE.current = "regular";
   vi.stubGlobal("IntersectionObserver", FakeIntersectionObserver);
   vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => ({ data: [] }) })));
   (globalThis as any).ResizeObserver ??= class { observe(){} unobserve(){} disconnect(){} };
@@ -207,10 +214,10 @@ describe("workspace", () => {
     }
   });
 
-  it("search input shows a Clear search button with a mobile hit area", () => {
+  it("search input shows a Clear search button with a touch hit area (coarse pointers, any width)", () => {
     render(<TransactionsWorkspace />);
     fireEvent.change(screen.getByPlaceholderText("Search payee, note, or tags…"), { target: { value: "x" } });
     const btn = screen.getByLabelText("Clear search");
-    expect(btn.className).toContain("max-md:size-11");
+    expect(btn.className).toContain("pointer-coarse:size-11");
   });
 });

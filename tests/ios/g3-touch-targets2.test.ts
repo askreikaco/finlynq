@@ -68,7 +68,7 @@ describe("combobox trigger reaches 44px below md (matches select.tsx)", () => {
 
 describe("page-level targets", () => {
   it("transactions 'Search and filter' link has min-h-11", () => {
-    expect(workspace).toMatch(/className="flex min-h-11 flex-1 items-center gap-2 px-3 py-2\.5 bg-muted rounded-lg/);
+    expect(workspace).toMatch(/"flex min-h-11 flex-1 items-center gap-2 px-3 py-2\.5 bg-muted rounded-lg/);
   });
   it("accounts/[id] 'Back to Accounts' links are 44px tall on coarse pointers (both render paths)", () => {
     const n = accountPage.split('className="inline-flex pointer-coarse:min-h-11 items-center gap-1.5').length - 1;

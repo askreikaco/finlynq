@@ -127,9 +127,10 @@ export function TransactionTable({
       />
     );
   }
+  // List view only (DataView mounts it under data-view="list"). Horizontal scroll stays on the
+  // table's own container, so the page sticky header is not affected. No viewport classes.
   return (
-    <div className="overflow-x-auto">
-    <Table>
+    <Table containerClassName="overflow-x-auto">
       <TableHeader>
         <TableRow>
           {columnPrefs.filter((c) => c.visible).map((c) => {
@@ -508,6 +509,5 @@ export function TransactionTable({
         ))}
       </TableBody>
     </Table>
-    </div>
   );
 }

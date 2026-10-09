@@ -14,6 +14,12 @@ const H = vi.hoisted(() => ({
   SP: new URLSearchParams(""),
   RES: {} as Record<string, unknown>,
   useMock: false,
+  // Size class for the workspace section: regular defaults to List (the "No transactions yet" empty state).
+  size: "regular" as "compact" | "regular" | "wide",
+}));
+vi.mock("@/components/adaptive/size-class-context", async (orig) => ({
+  ...(await orig<typeof import("@/components/adaptive/size-class-context")>()),
+  useAppSizeClass: () => H.size,
 }));
 
 import {
@@ -298,6 +304,7 @@ function canned(extra: Record<string, unknown> = {}) {
 describe("TransactionsWorkspace partial-state rendering (canned hook result)", () => {
   beforeEach(() => {
     H.useMock = true;
+    H.size = "regular";
     (globalThis as any).ResizeObserver ??= class { observe() {} unobserve() {} disconnect() {} };
     (Element.prototype as any).scrollIntoView ??= () => {};
     (Element.prototype as any).hasPointerCapture ??= () => false;

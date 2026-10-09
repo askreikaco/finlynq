@@ -8,6 +8,8 @@ vi.mock("next/link", () => ({ default: ({ children, href }: any) => React.create
 vi.mock("@/components/currency-provider", () => ({ useDisplayCurrency: () => ({ displayCurrency: "VND" }) }));
 import { TransactionTable } from "@/app/(app)/transactions/_components/transaction-table";
 import { DEFAULT_COLUMNS } from "@/lib/transactions/columns";
+import * as fs from "fs";
+import * as path from "path";
 afterEach(cleanup);
 const tx = (o: any) => ({ id: 1, date: "2026-01-01", accountId: 1, accountName: "A", categoryId: 1, categoryName: "C", categoryType: "E", currency: "USD", amount: -5, enteredAmount: -5, enteredCurrency: "USD", quantity: null, portfolioHolding: null, note: "", payee: "p", tags: "", isBusiness: 0, linkId: null, tradeLinkId: null, kind: null, ...o });
 function mount(txns: any[], h: any = {}) {
@@ -28,5 +30,14 @@ describe("table", () => {
     fireEvent.click(screen.getAllByTitle("Edit")[1]); expect(startEdit).toHaveBeenCalledWith(expect.objectContaining({ id: 2 }));
     fireEvent.click(screen.getAllByTitle("Delete")[0]); expect(confirmDelete).toHaveBeenCalledWith(expect.objectContaining({ id: 1 }));
     expect(startDuplicate).toHaveBeenCalledTimes(1);
+  });
+  it("the List table keeps its own horizontal scroller and mounts no size wrapper or breakpoint token", () => {
+    const { container } = mount([tx({ id: 1 })]);
+    const scroller = container.querySelector(".overflow-x-auto");
+    expect(scroller).not.toBeNull();
+    expect(scroller?.querySelector("table")).not.toBeNull();
+    const src = fs.readFileSync(path.resolve(__dirname, "../../../src/app/(app)/transactions/_components/transaction-table.tsx"), "utf-8");
+    expect(src.match(/(?<![\w-])(max-)?(sm|md|lg|xl|2xl):/g) ?? []).toEqual([]);
+    expect(src).not.toMatch(/<(CompactOnly|FromMd)\b/);
   });
 });
