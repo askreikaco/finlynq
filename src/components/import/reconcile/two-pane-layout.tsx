@@ -35,7 +35,7 @@ export function TwoPaneLayout({
   return (
     <div
       className={`grid grid-cols-1 gap-4 ${
-        rightWide ? "lg:grid-cols-[2fr_3fr]" : "lg:grid-cols-2"
+        rightWide ? "wide:grid-cols-[2fr_3fr]" : "wide:grid-cols-2"
       }`}
     >
       <section className="flex flex-col min-h-0">

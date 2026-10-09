@@ -86,7 +86,7 @@ export function ConnectorMappingDialog({ open, onOpenChange, probe, state, onCon
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl max-h-[85dvh] flex flex-col overflow-hidden">
+      <DialogContent className="regular:max-w-3xl max-h-[85dvh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>Map WealthPosition to Finlynq</DialogTitle>
           <DialogDescription>
@@ -123,7 +123,7 @@ export function ConnectorMappingDialog({ open, onOpenChange, probe, state, onCon
           </div>
 
           {/* System categories */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 regular:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs">Transfer category (for 2-account transfers)</Label>
               <Select

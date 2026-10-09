@@ -72,7 +72,7 @@ export function InvestmentOpPreviewDialog({
         onOpenChange(next);
       }}
     >
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="regular:max-w-md">
         <DialogHeader>
           <DialogTitle>Record investment transaction</DialogTitle>
         </DialogHeader>

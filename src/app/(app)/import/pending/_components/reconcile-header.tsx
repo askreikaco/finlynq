@@ -132,7 +132,7 @@ export function ReconcileHeader({
 
       {/* FINLYNQ-88 — Re-apply rules confirmation modal. */}
       <Dialog open={reapplyModalOpen} onOpenChange={setReapplyModalOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="regular:max-w-md">
           <DialogHeader>
             <DialogTitle>Re-apply rules?</DialogTitle>
             <DialogDescription className="space-y-3 pt-2">

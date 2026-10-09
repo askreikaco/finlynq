@@ -157,7 +157,7 @@ export function EditTemplateDialog({
       {/* `flex flex-col` overrides DialogContent's default `grid` via tailwind-merge;
           `max-h-[90dvh]` + the inner scroll region keeps the footer reachable when
           the import-options panel is expanded. */}
-      <DialogContent className="sm:max-w-2xl max-h-[90dvh] flex flex-col overflow-hidden">
+      <DialogContent className="regular:max-w-2xl max-h-[90dvh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>Edit Template</DialogTitle>
           <DialogDescription>
@@ -166,7 +166,7 @@ export function EditTemplateDialog({
         </DialogHeader>
 
         <div className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1">
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 regular:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="edit-tpl-name">Template Name</Label>
               <Input
@@ -221,7 +221,7 @@ export function EditTemplateDialog({
               lands rows directly in the bank ledger, skipping staged review. */}
           <div className="space-y-2">
             <Label className="text-sm font-medium">Upload Mode</Label>
-            <div className="grid gap-2 sm:grid-cols-2">
+            <div className="grid gap-2 regular:grid-cols-2">
               <label
                 className={`flex flex-col gap-1 rounded-lg border p-3 cursor-pointer text-sm transition-colors ${
                   importMode === "detailed"
@@ -272,7 +272,7 @@ export function EditTemplateDialog({
           <div className="space-y-2">
             <Label className="text-sm font-medium">Column Mapping</Label>
             <p className="text-xs text-muted-foreground">Map CSV columns to transaction fields.</p>
-            <div className="grid gap-2 sm:grid-cols-2 rounded-lg border p-2">
+            <div className="grid gap-2 regular:grid-cols-2 rounded-lg border p-2">
               {MAPPING_FIELDS.map((field) => (
                 <div key={field} className="flex items-center gap-2 px-2 py-1.5">
                   <span className="w-28 text-xs text-muted-foreground shrink-0">
@@ -307,7 +307,7 @@ export function EditTemplateDialog({
               <p className="text-xs text-muted-foreground">
                 Apply these parser knobs whenever this template is used. Leave at defaults for canonical exports.
               </p>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3 regular:grid-cols-2">
                 <div className="space-y-1">
                   <Label htmlFor="edit-tpl-skip-h" className="text-xs">Skip N header rows</Label>
                   <Input

@@ -321,7 +321,7 @@ export function ColumnMappingDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl max-h-[88dvh] overflow-hidden flex flex-col">
+      <DialogContent className="regular:max-w-4xl max-h-[88dvh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>
             {confirmMode ? "Confirm Column Mapping" : "Map CSV Columns"}
@@ -367,7 +367,7 @@ export function ColumnMappingDialog({
                 summary row sits above them), skip those rows — the columns below
                 refresh automatically.
               </p>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3 regular:grid-cols-2">
                 <div className="space-y-1">
                   <Label htmlFor="map-skip-h" className="text-xs">Skip N header rows</Label>
                   <Input

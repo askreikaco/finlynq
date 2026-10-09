@@ -54,7 +54,7 @@ export function BalanceSummaryCard({
 
   if (loading || !summary) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 regular:grid-cols-3 gap-4">
         <MetricCard label="Bank says" icon={Landmark} value="—" loading />
         <MetricCard label="Finlynq has" icon={Database} value="—" loading />
         <MetricCard label="Delta" icon={Info} value="—" loading />
@@ -87,7 +87,7 @@ export function BalanceSummaryCard({
         : "text-info";
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 regular:grid-cols-3 gap-4">
       <MetricCard
         label="Bank says"
         icon={Landmark}

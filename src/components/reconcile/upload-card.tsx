@@ -144,7 +144,7 @@ export function ReconcileUploadCard({
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 regular:grid-cols-2">
         <div className="space-y-1">
           <label className="text-xs font-medium text-muted-foreground">
             {lockedAccount ? "Account" : "Default account (required for OFX/QFX)"}
@@ -180,7 +180,7 @@ export function ReconcileUploadCard({
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 regular:grid-cols-2">
         <div className="space-y-1">
           <label className="text-xs font-medium text-muted-foreground">
             CSV template (optional — for non-standard formats like IBKR)
