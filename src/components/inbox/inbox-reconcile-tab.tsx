@@ -194,6 +194,9 @@ export function InboxReconcileTab({
   const [dateTo, setDateTo] = useState<string | null>(null);
   const [categories, setCategories] = useState<DialogCategory[]>([]);
   const [holdings, setHoldings] = useState<DialogHolding[]>([]);
+// TODO(PKG1 tx-edit): materialize-from-bank-row still opens TransactionDialog in create mode.
+// It saves, then links the bank row to the new transaction (onSaved + setMaterializeBankId). /transactions/new
+// cannot do that link yet, and that page is outside PKG1. Move this to a route once it can.
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogInitial, setDialogInitial] =
     useState<TransactionDialogInitialState | null>(null);
