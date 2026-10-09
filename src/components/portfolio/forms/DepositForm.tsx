@@ -317,11 +317,11 @@ export default function DepositForm() {
           </div>
 
           {sourceAcct && destAcct && currencyMismatch && (
-            <div className="rounded-md border border-amber-300/60 bg-amber-50 dark:bg-amber-950/40 dark:border-amber-800/60 p-3 text-xs">
-              <p className="font-medium text-amber-900 dark:text-amber-200 mb-1">
+            <div className="rounded-md border border-warning/30 bg-warning/10 p-3 text-xs">
+              <p className="font-medium text-warning mb-1">
                 No {sourceAcct.currency} cash sleeve in this brokerage
               </p>
-              <p className="text-amber-800/80 dark:text-amber-300/80">
+              <p className="text-warning/80">
                 Either create a {sourceAcct.currency} sleeve on the brokerage
                 via its Cash sleeves panel, or{" "}
                 <Link
