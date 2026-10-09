@@ -32,7 +32,7 @@ describe("safe-area offsets", () => {
     expect(search).not.toContain("safe-area-inset-bottom");
   });
   it("new transaction reserves the top safe area once (fixed root offset, no header pt-[var(--sat)] duplicate)", () => {
-    expect(newTx).toContain("max-md:top-[var(--sat)]");
+    expect(newTx).toContain("max-regular:top-[var(--sat)]");
     expect(newTx).not.toContain("pt-[var(--sat)]");
   });
   it("bottom-fixed toasts and bars clear the floating tab bar (--mobile-bar-clearance)", () => {

@@ -114,9 +114,9 @@ describe("m10: mobile bottom bar links have a focus ring", () => {
 
 describe("m3: chat height uses the mobile bar clearance on phones", () => {
   it("phone height uses --mobile-bar-clearance, desktop height unchanged", () => {
-    expect(chat).toContain("max-md:h-[calc(100dvh-var(--mobile-bar-clearance)-3.75rem)]");
-    expect(chat).toContain("md:h-[calc(100dvh-4rem)]");
-    expect(chat).toContain("max-md:-mb-20");
+    expect(chat).toContain("max-regular:h-[calc(100dvh-var(--mobile-bar-clearance)-3.75rem)]");
+    expect(chat).toContain("regular:h-[calc(100dvh-4rem)]");
+    expect(chat).toContain("max-regular:-mb-20");
     expect(chat).not.toContain("h-[calc(100dvh-8.5rem)]");
   });
 });
