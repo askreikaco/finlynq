@@ -32,7 +32,7 @@ import type {
   LinkedSibling,
 } from "../_types";
 import { useLookups, useTxColumnPrefs, useTxSortPref, useTxFilterPrefs } from "../_hooks/use-tx-prefs";
-import { useTransactions } from "../_hooks/use-transactions";
+import { useTransactions, isNonDefaultTxView } from "../_hooks/use-transactions";
 import { TransactionTable } from "./transaction-table";
 import { buildTransactionQuery } from "@/lib/transactions/build-query";
 import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
@@ -180,7 +180,7 @@ export function TransactionsWorkspace({
   const { colFilters, setColFilters, findColFilter, setColFilter } = useTxFilterPrefs(() => setPage(0));
 
   // Main list (txns / total / loading) + loadTxns + infinite scroll loadNextPage
-  const { txns, total, loading, limit, loadTxns, loadNextPage, resetPage, hasMore, loadError } = useTransactions(
+  const { txns, total, loading, limit, loadTxns, loadNextPage, resetPage, hasMore, loadError, isPartial, fullLoadError } = useTransactions(
     filters,
     sortPref,
     colFilters,
@@ -1168,6 +1168,11 @@ export function TransactionsWorkspace({
         </div>
       )}
 
+      {/* Progressive load: the list is the recent-200 window until the full history lands. */}
+      {isPartial && !fullLoadError && isNonDefaultTxView(filters, sortPref, colFilters) && (
+        <p role="status" className="text-xs text-muted-foreground">Loading full history...</p>
+      )}
+
       {/* Table — extracted to <TransactionTable> (FINLYNQ-111 Phase 2). */}
       <Card className="max-md:hidden">
         <CardContent className="p-0">
@@ -1206,7 +1211,9 @@ export function TransactionsWorkspace({
         data-testid="infinite-scroll-trigger"
         className="h-14 w-full flex items-center justify-center text-xs text-muted-foreground"
       >
-        {hasMore ? (
+        {isPartial && fullLoadError ? (
+          <span>Full history failed to load. Showing the most recent 200 transactions.</span>
+        ) : hasMore ? (
           <span className="flex items-center gap-2">
             <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
             Loading more transactions…
