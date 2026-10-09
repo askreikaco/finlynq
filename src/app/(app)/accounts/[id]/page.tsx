@@ -1065,11 +1065,10 @@ export default function AccountDetailPage() {
       </Sheet>
 
       {/* Edit account dialog — the shared <AccountDialog> (FINLYNQ-206
-          follow-up). Identical form to the Create dialog; only the title and
-          footer buttons differ. Reconciliation / Import / Cash sleeves are
-          edit-only extra tabs (they act on this account's id). */}
+          follow-up). Its form is the same <AccountForm> the New account page
+          uses. Reconciliation / Import / Cash sleeves are edit-only extra tabs
+          (they act on this account's id). */}
       <AccountDialog
-        mode="edit"
         open={editOpen}
         onOpenChange={setEditOpen}
         account={account}

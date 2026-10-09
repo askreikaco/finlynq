@@ -65,7 +65,7 @@ describe("resolveFab", () => {
   });
 
   it("hidden and redirect routes -> null", () => {
-    for (const p of ["/chat", "/family/accept", "/portfolio/new", "/transactions/new", "/transactions/search", "/admin/env", "/settings/holding-accounts", "/settings/securities"]) {
+    for (const p of ["/chat", "/family/accept", "/portfolio/new", "/transactions/new", "/accounts/new", "/transactions/search", "/admin/env", "/settings/holding-accounts", "/settings/securities"]) {
       expect(resolveFab(p, none), p).toBeNull();
     }
   });
@@ -86,14 +86,14 @@ describe("resolveFab", () => {
 });
 
 describe("FAB_ROUTES table", () => {
-  it("has 70 route keys", () => {
-    expect(Object.keys(FAB_ROUTES)).toHaveLength(70);
+  it("has 71 route keys", () => {
+    expect(Object.keys(FAB_ROUTES)).toHaveLength(71);
   });
 
-  it("kind counts are 38 fallback, 8 route, 15 handler, 6 hidden, 3 redirect", () => {
+  it("kind counts are 38 fallback, 9 route, 14 handler, 7 hidden, 3 redirect", () => {
     const counts: Record<string, number> = {};
     for (const e of Object.values(FAB_ROUTES)) counts[e.kind] = (counts[e.kind] ?? 0) + 1;
-    expect(counts).toEqual({ fallback: 38, route: 8, handler: 15, hidden: 6, redirect: 3 });
+    expect(counts).toEqual({ fallback: 38, route: 9, handler: 14, hidden: 7, redirect: 3 });
   });
 
   it("label/href table for the route entries", () => {
@@ -102,6 +102,7 @@ describe("FAB_ROUTES table", () => {
       .map(([p, e]) => (e.kind === "route" ? [p, e.label, e.href] : []))
       .sort();
     expect(rows).toEqual([
+      ["/accounts", "Add account", "/accounts/new"],
       ["/dashboard", "New transaction", "/transactions/new"],
       ["/family", "Invite", "/family/share"],
       ["/import/pending", "Upload statement", "/import"],
@@ -113,9 +114,9 @@ describe("FAB_ROUTES table", () => {
     ]);
   });
 
-  it("every handler key is unique and the 15 keys are all used", () => {
+  it("every handler key is unique and the 14 keys are all used", () => {
     const used = Object.values(FAB_ROUTES).flatMap((e) => (e.kind === "handler" ? [e.handlerKey] : []));
-    expect(used).toHaveLength(15);
+    expect(used).toHaveLength(14);
     expect(new Set(used).size).toBe(used.length);
     expect([...used].sort()).toEqual([...FAB_HANDLER_KEYS].sort());
   });

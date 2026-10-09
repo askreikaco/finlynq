@@ -21,7 +21,6 @@ import {
  */
 
 export const FAB_HANDLER_KEYS = [
-  "accounts.create",
   "accounts.detail.add",
   "admin.announcements.new",
   "budgets.create",
@@ -73,7 +72,8 @@ export const FAB_ROUTES: Record<string, FabEntry> = {
   "/account": FALLBACK,
   "/account/info": FALLBACK,
   "/account/security": FALLBACK,
-  "/accounts": { kind: "handler", label: "Add account", icon: Plus, handlerKey: "accounts.create" },
+  "/accounts": { kind: "route", label: "Add account", icon: Plus, href: "/accounts/new" },
+  "/accounts/new": { kind: "hidden", reason: "is the create flow" },
   "/accounts/[id]": {
     kind: "handler",
     label: "New transaction",

@@ -43,7 +43,7 @@ describe("Accounts header on mobile", () => {
     expect(cls(manageInline)).toContain("max-md:hidden");
     expect(cls(archivedInline)).toContain("max-md:hidden");
 
-    const primary = screen.getByRole("button", { name: /Create Account|Add/ });
+    const primary = screen.getByRole("link", { name: /Create Account|Add/ });
     expect(cls(primary)).not.toContain("max-md:hidden");
 
     fireEvent.click(screen.getByRole("button", { name: "More actions" }));

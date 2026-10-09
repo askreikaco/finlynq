@@ -37,8 +37,8 @@ describe("mobile tab bar visibility by route", () => {
     }
   });
 
-  it("is absent on /transactions/new (full-screen entry flow)", () => {
-    mockPath = "/transactions/new";
+  it.each(["/transactions/new", "/accounts/new"])("is absent on %s (full-screen entry flow)", (p) => {
+    mockPath = p;
     render(<Nav />);
     expect(queryBar()).toBeNull();
   });

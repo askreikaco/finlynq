@@ -6,9 +6,9 @@ Base `99e332df` (branch `wave4/w4-4-5-docs`). Generated 2026-10-09 (UTC+7 VN). S
 
 | check | value |
 |---|---|
-| `find "src/app/(app)" -name page.tsx \| sort \| wc -l` | 69 |
-| table rows below (route rows) | 69 |
-| pages with own `<PageHeader` in page.tsx | 47 |
+| `find "src/app/(app)" -name page.tsx \| sort \| wc -l` | 71 |
+| table rows below (route rows) | 71 |
+| pages with own `<PageHeader` in page.tsx | 49 |
 | pages with PageHeader only via an imported module or alias | 12 |
 | pages with header from a layout only | 3 |
 | pages with no PageHeader found | 7 |
@@ -36,8 +36,9 @@ Pages with PageSkeleton: `/budgets`, `/categories/[id]`, `/categories`, `/goals`
 | `/account` | `src/app/(app)/account/page.tsx` | app > account/layout.tsx (AccountShell) | no (layout only: account-shell.tsx:51) | no | no | AccountShell header (account-shell.tsx:51) |
 | `/account/security` | `src/app/(app)/account/security/page.tsx` | app > account/layout.tsx (AccountShell) | no (layout only: account-shell.tsx:51) | no | no | AccountShell header (account-shell.tsx:51) |
 | `/accounts/[id]` | `src/app/(app)/accounts/[id]/page.tsx` | app | yes (page.tsx:526) | no | yes (page.tsx:470) | - |
-| `/accounts` | `src/app/(app)/accounts/page.tsx` | app | yes (page.tsx:416) | no | yes (page.tsx:410) | - |
 | `/accounts/groups` | `src/app/(app)/accounts/groups/page.tsx` | app | yes (page.tsx:56) | no | yes (page.tsx:63) | list body: _components/manage-groups-panel.tsx |
+| `/accounts` | `src/app/(app)/accounts/page.tsx` | app | yes (page.tsx:377) | no | yes (page.tsx:351) | - |
+| `/accounts/new` | `src/app/(app)/accounts/new/page.tsx` | app | yes (page.tsx:56) | no | no | - |
 | `/admin/(env)/api-log` | `src/app/(app)/admin/(env)/api-log/page.tsx` | app > admin/(env)/layout.tsx (EnvLayout) | yes (page.tsx:192); + layout PageHeader (admin/(env)/layout.tsx:53) | no | no | stacked under layout PageHeader (admin/(env)/layout.tsx:53) |
 | `/admin/(env)/diagnostics` | `src/app/(app)/admin/(env)/diagnostics/page.tsx` | app > admin/(env)/layout.tsx (EnvLayout) | yes (page.tsx:215); + layout PageHeader (admin/(env)/layout.tsx:53) | no | no | stacked under layout PageHeader (admin/(env)/layout.tsx:53) |
 | `/admin/(env)/integrations` | `src/app/(app)/admin/(env)/integrations/page.tsx` | app > admin/(env)/layout.tsx (EnvLayout) | yes (page.tsx:247); + layout PageHeader (admin/(env)/layout.tsx:53) | no | no | stacked under layout PageHeader (admin/(env)/layout.tsx:53) |

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
@@ -13,14 +13,12 @@ import { OnboardingTips } from "@/components/onboarding-tips";
 import { EmptyState } from "@/components/empty-state";
 import { ErrorState } from "@/components/error-state";
 import {
-  ACCOUNT_GROUP_DEFAULTS,
   orderGroups,
   parseGroupOrder,
   type AccountGroupOrder,
   type AccountGroupType,
 } from "@/lib/accounts/groups";
 import { excludeInvisible } from "@/lib/account-visibility";
-import { AccountDialog } from "./_components/account-dialog";
 import {
   TrendingUp,
   TrendingDown,
@@ -32,7 +30,6 @@ import {
   FolderCog,
 } from "lucide-react";
 import { PageHeader, HEADER_DESKTOP_ONLY, NetWorthHero, SectionLabel, AccountRow, CompactOnly, FromMd } from "@/components/mobile";
-import { usePageFab } from "@/components/mobile/page-fab";
 
 type AccountBalance = {
   accountId: number;
@@ -48,35 +45,6 @@ type AccountBalance = {
   invisible?: boolean;
   alias?: string | null;
 };
-
-const ACCOUNT_TYPES = [
-  { value: "A", label: "Asset" },
-  { value: "L", label: "Liability" },
-];
-// value→label map for base-ui Select trigger (FINLYNQ-197).
-const ACCOUNT_TYPE_LABELS: Record<string, string> = Object.fromEntries(
-  ACCOUNT_TYPES.map((t) => [t.value, t.label]),
-);
-
-// FINLYNQ-179: the default group suggestions now live in the shared
-// src/lib/accounts/groups.ts (single source of truth, also used by the
-// settings route + management dialog). The group field is free-text — these
-// are seed suggestions, NOT an allow-list.
-const ACCOUNT_GROUPS: Record<string, string[]> = ACCOUNT_GROUP_DEFAULTS;
-
-function aliasWarning(list: AccountBalance[], alias: string, excludeId: number | null): string {
-  const a = alias.trim().toLowerCase();
-  if (!a) return "";
-  const clash = list.find((acc) => {
-    if (acc.accountId === excludeId) return false;
-    const otherAlias = (acc.alias ?? "").trim().toLowerCase();
-    const otherName = acc.accountName.trim().toLowerCase();
-    return otherAlias === a || otherName === a;
-  });
-  return clash
-    ? `Another account ("${clash.accountName}") already uses this name or alias — matches may be ambiguous.`
-    : "";
-}
 
 function SummarySkeleton() {
   return (
@@ -132,11 +100,6 @@ export default function AccountsPage() {
   const [accounts, setAccounts] = useState<AccountBalance[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-
-  // Create account dialog — the form + save flow live in the shared
-  // <AccountDialog> (FINLYNQ-206 follow-up); this page only owns open state.
-  // Editing an account lives on its detail page (/accounts/[id]).
-  const [dialogOpen, setDialogOpen] = useState(false);
 
   // Show-archived toggle (persists archived accounts in the list with a badge)
   const [showArchived, setShowArchived] = useState(false);
@@ -198,11 +161,6 @@ export default function AccountsPage() {
   const activeAssets = counted.filter((a) => a.accountType === "A");
   const activeLiabilities = counted.filter((a) => a.accountType === "L");
 
-  // FINLYNQ-179: the set of group names currently in use, for combobox
-  // suggestions (any type) and the management dialog (scoped per type).
-  const existingGroups = Array.from(
-    new Set(accounts.map((a) => (a.accountGroup || "").trim()).filter(Boolean)),
-  );
 
   const groups = (list: AccountBalance[]) => {
     const map = new Map<string, AccountBalance[]>();
@@ -377,28 +335,15 @@ export default function AccountsPage() {
   const totalAssetsConverted = activeAssets.reduce((s, a) => s + (a.convertedBalance ?? a.balance), 0);
   const totalLiabilitiesConverted = activeLiabilities.reduce((s, a) => s + (a.convertedBalance ?? a.balance), 0);
 
-  const createAccountDialog = (
-    <>
-      <Button
-        size="sm"
-        className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-sm"
-        onClick={() => setDialogOpen(true)}
-      >
-        <Plus className="h-4 w-4 mr-1.5" /> <FromMd as="span">Create Account</FromMd><CompactOnly as="span">Add</CompactOnly>
-      </Button>
-      <AccountDialog
-        mode="create"
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        defaultCurrency={displayCurrency}
-        existingGroups={existingGroups}
-        aliasWarning={(alias, excludeId) => aliasWarning(accounts, alias, excludeId)}
-        onCreated={() => loadAccounts()}
-      />
-    </>
+  // Create account is its own page (/accounts/new), not a dialog.
+  const createAccountLink = (
+    <Link
+      href="/accounts/new"
+      className={buttonVariants({ size: "sm", className: "bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-sm" })}
+    >
+      <Plus className="h-4 w-4 mr-1.5" /> <FromMd as="span">Create Account</FromMd><CompactOnly as="span">Add</CompactOnly>
+    </Link>
   );
-
-  usePageFab("accounts.create", () => setDialogOpen(true));
 
   if (loading) return <SummarySkeleton />;
 
@@ -413,7 +358,7 @@ export default function AccountsPage() {
           className="flex flex-wrap items-center justify-between gap-3"
           title="Accounts"
           subtitle="Overview of your assets, liabilities, and net worth"
-          actions={createAccountDialog}
+          actions={createAccountLink}
           actionsClassName="contents"
         />
         <OnboardingTips page="accounts" />
@@ -459,7 +404,7 @@ export default function AccountsPage() {
               <Archive className="h-4 w-4 mr-1.5" />
               {showArchived ? "Hide archived" : "Show archived"}
             </Button>
-            {createAccountDialog}
+            {createAccountLink}
           </>
         }
       />
