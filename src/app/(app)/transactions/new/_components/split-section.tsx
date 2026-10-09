@@ -83,7 +83,7 @@ export function SplitSection({
                 Balanced ({formatCurrency(splitSum, currency)})
               </span>
             ) : diff > 0 ? (
-              <span className="flex items-center gap-1 text-amber-400 font-medium">
+              <span className="flex items-center gap-1 text-warning font-medium">
                 <AlertCircle className="w-3.5 h-3.5" />
                 {formatCurrency(diff, currency)} remaining
               </span>

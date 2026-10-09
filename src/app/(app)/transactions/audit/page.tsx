@@ -134,7 +134,7 @@ export default function CurrencyAuditPage() {
       {!loading && unresolved.length === 0 && !includeResolved ? (
         <Card>
           <CardContent className="py-10 text-center text-muted-foreground">
-            <Check className="h-8 w-8 mx-auto mb-3 text-emerald-500" />
+            <Check className="h-8 w-8 mx-auto mb-3 text-pos" />
             <p className="text-sm font-medium text-foreground">No flagged transactions</p>
             <p className="text-xs mt-1">All transactions match their account currency or have been reviewed.</p>
           </CardContent>
@@ -150,7 +150,7 @@ export default function CurrencyAuditPage() {
               <div className="flex items-start justify-between gap-3">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4 text-amber-500" />
+                    <AlertTriangle className="h-4 w-4 text-warning" />
                     <CardTitle className="text-sm">
                       Transaction #{row.transactionId}
                       {row.txDate ? <span className="text-xs text-muted-foreground font-normal ml-2">{row.txDate}</span> : null}

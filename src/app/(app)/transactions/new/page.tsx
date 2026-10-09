@@ -385,8 +385,8 @@ export default function MobileTransactionPage() {
       {/* Notice & Error Banners */}
       <div className="px-4 pt-2 space-y-2">
         {prefillNotice && (
-          <div className="flex items-start gap-2.5 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs animate-in fade-in">
-            <Info className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
+          <div className="flex items-start gap-2.5 p-3 rounded-xl bg-warning/10 border border-warning/30 text-warning text-xs animate-in fade-in">
+            <Info className="w-4 h-4 shrink-0 mt-0.5 text-warning" />
             <span className="flex-1 leading-relaxed">{prefillNotice}</span>
           </div>
         )}
@@ -497,7 +497,7 @@ export default function MobileTransactionPage() {
           >
             <div className="flex items-center gap-3 min-w-0">
               <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center text-muted-foreground shrink-0">
-                <Wallet className="w-4 h-4 text-amber-400" />
+                <Wallet className="w-4 h-4 text-warning" />
               </div>
               <div className="flex flex-col text-left min-w-0">
                 <span className="text-xs text-muted-foreground font-medium">
@@ -530,7 +530,7 @@ export default function MobileTransactionPage() {
             >
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center text-muted-foreground shrink-0">
-                  <ArrowRightLeft className="w-4 h-4 text-sky-400" />
+                  <ArrowRightLeft className="w-4 h-4 text-info" />
                 </div>
                 <div className="flex flex-col text-left min-w-0">
                   <span className="text-xs text-muted-foreground font-medium">To Account</span>
@@ -560,7 +560,7 @@ export default function MobileTransactionPage() {
               />
               <div className="flex items-center bg-card/90 border border-border/80 p-3.5 rounded-2xl focus-within:border-ring transition-colors">
                 <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center text-muted-foreground mr-3 shrink-0">
-                  <User className="w-4 h-4 text-violet-400" />
+                  <User className="w-4 h-4 text-chart-5" />
                 </div>
                 <input
                   type="text"
@@ -613,7 +613,7 @@ export default function MobileTransactionPage() {
             />
             <div className="flex items-center bg-card/90 border border-border/80 p-3.5 rounded-2xl focus-within:border-ring transition-colors">
               <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center text-muted-foreground mr-3 shrink-0">
-                <Tags className="w-4 h-4 text-pink-400" />
+                <Tags className="w-4 h-4 text-chart-5" />
               </div>
               <input
                 type="text"

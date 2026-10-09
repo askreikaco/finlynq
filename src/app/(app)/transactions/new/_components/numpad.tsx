@@ -76,7 +76,7 @@ export function Numpad({ value, onChange, onConfirm }: NumpadProps) {
       <button type="button" onClick={() => handlePress("C")} className={btnClass}>C</button>
       <button type="button" onClick={() => handlePress("/")} className={opClass}>/</button>
       <button type="button" onClick={() => handlePress("*")} className={opClass}>*</button>
-      <button type="button" onClick={() => handlePress("DEL")} className={btnClass}>
+      <button aria-label="Delete last digit" type="button" onClick={() => handlePress("DEL")} className={btnClass}>
         <Delete className="w-6 h-6" />
       </button>
 
