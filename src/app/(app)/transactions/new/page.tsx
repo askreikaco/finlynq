@@ -695,21 +695,21 @@ export default function MobileTransactionPage() {
         "md:relative md:mx-auto md:h-[min(46rem,calc(100dvh-8rem))] md:w-full md:max-w-md md:rounded-2xl md:border md:border-border/80",
       )}
     >
-      {/* Top bar (44px). The top safe area is reserved once, by the fixed root's top offset. */}
+      {/* Top bar (44px): one liquid-glass bar on phones (.glass-bar), the same as the other pages.
+          The top safe area is reserved once, by the fixed root's top offset. Back is a round 44px glass button. */}
       <header
         data-testid="txnew-topbar"
-        className="grid h-11 shrink-0 grid-cols-[1fr_auto_1fr] items-center px-4"
+        className="glass-bar grid h-11 shrink-0 grid-cols-[2.75rem_1fr_2.75rem] items-center px-4"
       >
         <button
           type="button"
           aria-label="Back to transactions"
           onClick={goBack}
-          className="inline-flex min-h-11 min-w-11 items-center justify-self-start text-sm font-medium text-primary transition-opacity active:opacity-70"
+          className="glass-capsule inline-flex size-11 items-center justify-center justify-self-start rounded-full text-primary transition-opacity active:opacity-70"
         >
-          <ChevronLeft className="mr-0.5 h-5 w-5" aria-hidden="true" />
-          Back
+          <ChevronLeft className="h-5 w-5" aria-hidden="true" />
         </button>
-        <h1 className="text-base font-semibold text-foreground">
+        <h1 className="truncate text-center text-base font-semibold text-foreground">
           <span className="sr-only">New</span>{" "}
           {txType}
         </h1>
