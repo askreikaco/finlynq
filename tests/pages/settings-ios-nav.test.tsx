@@ -167,7 +167,7 @@ describe("PageHeader with backHref: phone glass header row", () => {
 
   it("ships the glass-capsule material and round action rule phone-only in globals.css", () => {
     const css = readFileSync(resolve(__dirname, "../../src/app/globals.css"), "utf-8");
-    expect(css).toMatch(/@media \(width < 48rem\) \{\s*\.glass-capsule,\s*\[data-slot="page-header-actions"\] > :is\(button, a\)/);
+    expect(css).toMatch(/@media \(width < 48rem\) \{[\s\S]*?\.glass-capsule,\s*\[data-slot="page-header-actions"\] > :is\(button, a\):not\(\[data-variant="default"\]\)/);
     expect(css).toContain("blur(24px) saturate(1.8)");
     expect(css).toContain("prefers-reduced-transparency");
   });

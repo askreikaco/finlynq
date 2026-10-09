@@ -433,7 +433,7 @@ export const MobileBottomBar = memo(function MobileBottomBar({ pathname }: { pat
               aria-current={isActive ? "page" : undefined}
               href={item.href}
               className={cn(
-                "flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full px-0.5 text-[11px] font-semibold tracking-tight whitespace-nowrap transition-colors",
+                "flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full px-0.5 text-[11px] font-semibold tracking-tight whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
                 isActive ? "mobile-glass-pill text-sidebar-primary" : "text-sidebar-foreground/60"
               )}
             >
@@ -447,7 +447,7 @@ export const MobileBottomBar = memo(function MobileBottomBar({ pathname }: { pat
           aria-label="More"
           aria-current={moreActive ? "page" : undefined}
           className={cn(
-            "flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full px-0.5 text-[11px] font-semibold tracking-tight whitespace-nowrap transition-colors",
+            "flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full px-0.5 text-[11px] font-semibold tracking-tight whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
             moreActive ? "mobile-glass-pill text-sidebar-primary" : "text-sidebar-foreground/60"
           )}
         >

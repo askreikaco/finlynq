@@ -129,14 +129,26 @@ function useOverlayOpen(): boolean {
   useEffect(() => {
     const check = () => setOpen(document.querySelector(OVERLAY_SELECTOR) !== null);
     check();
-    const observer = new MutationObserver(check);
+    // Coalesce mutation bursts (large list renders) into one query per frame.
+    let frame = 0;
+    const schedule = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        check();
+      });
+    };
+    const observer = new MutationObserver(schedule);
     observer.observe(document.body, {
       childList: true,
       subtree: true,
       attributes: true,
       attributeFilter: ["data-open"],
     });
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      if (frame) cancelAnimationFrame(frame);
+    };
   }, []);
   return open;
 }

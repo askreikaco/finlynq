@@ -294,8 +294,10 @@ html {
    button, the header title island, and round action buttons in page headers.
    The md+ layout never receives this material. */
 @media (width < 48rem) {
+  /* Glass material only on non-primary header buttons: Button default variant
+     (data-variant="default") keeps its own fill. Sizing and shape apply to all. */
   .glass-capsule,
-  [data-slot="page-header-actions"] > :is(button, a) {
+  [data-slot="page-header-actions"] > :is(button, a):not([data-variant="default"]) {
     background: oklch(1 0 0 / 55%);
     -webkit-backdrop-filter: blur(24px) saturate(1.8);
     backdrop-filter: blur(24px) saturate(1.8);
@@ -303,7 +305,7 @@ html {
     box-shadow: inset 0 1px 0 oklch(1 0 0 / 60%), 0 2px 8px oklch(0 0 0 / 10%);
   }
   .dark .glass-capsule,
-  .dark [data-slot="page-header-actions"] > :is(button, a) {
+  .dark [data-slot="page-header-actions"] > :is(button, a):not([data-variant="default"]) {
     background: oklch(1 0 0 / 8%);
     border-color: oklch(1 0 0 / 14%);
     box-shadow: inset 0 1px 0 oklch(1 0 0 / 14%), 0 2px 8px oklch(0 0 0 / 35%);
@@ -315,13 +317,25 @@ html {
   }
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     .glass-capsule,
-    [data-slot="page-header-actions"] > :is(button, a) {
+    [data-slot="page-header-actions"] > :is(button, a):not([data-variant="default"]) {
       background: var(--card);
+    }
+    .dark .glass-capsule,
+    .dark [data-slot="page-header-actions"] > :is(button, a):not([data-variant="default"]) {
+      background: var(--card);
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
     }
   }
   @media (prefers-reduced-transparency: reduce) {
     .glass-capsule,
-    [data-slot="page-header-actions"] > :is(button, a) {
+    [data-slot="page-header-actions"] > :is(button, a):not([data-variant="default"]) {
+      background: var(--card);
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+    .dark .glass-capsule,
+    .dark [data-slot="page-header-actions"] > :is(button, a):not([data-variant="default"]) {
       background: var(--card);
       -webkit-backdrop-filter: none;
       backdrop-filter: none;
