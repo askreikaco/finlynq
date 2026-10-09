@@ -42,25 +42,25 @@ const CLOSE_KIND_META: Record<string, { icon: typeof ArrowDownLeft; label: strin
   short_open: {
     icon: ArrowDownLeft,
     label: "Short open",
-    className: "border-rose-500 text-rose-600 dark:border-rose-400 dark:text-rose-400",
+    className: "border-destructive text-destructive",
     tooltip: "Short opened — a Sell exceeded the open longs and opened a new side='short' lot at the sell price.",
   },
   short_close: {
     icon: ArrowUpLeft,
     label: "Short close",
-    className: "border-amber-500 text-amber-600 dark:border-amber-400 dark:text-amber-400",
+    className: "border-warning text-warning",
     tooltip: "Short covered — a Buy on this holding/account closed an open short lot. Realized gain = (open cost − buy price) × qty.",
   },
   swap_out: {
     icon: RefreshCw,
     label: "Swap",
-    className: "border-sky-500 text-sky-600 dark:border-sky-400 dark:text-sky-400",
+    className: "border-info text-info",
     tooltip: "Closure originated from a Swap (sell-out leg of an in-place rebalance).",
   },
   fx_conversion: {
     icon: Coins,
     label: "Currency",
-    className: "border-violet-500 text-violet-600 dark:border-violet-400 dark:text-violet-400",
+    className: "border-chart-5 text-chart-5",
     tooltip: "Currency-on-currency FX gain — a cash lot in this sleeve was closed by an FX conversion. The realized gain in the sleeve currency is 0 (cost=1, proceeds=1); the actual gain shows in the unified display-currency view (toggle above).",
   },
 };
@@ -503,7 +503,7 @@ export default function RealizedGainsPage() {
                     </TableCell>
                     <TableCell
                       className={`text-right font-mono ${
-                        g.realizedGain >= 0 ? "text-green-600" : "text-red-600"
+                        g.realizedGain >= 0 ? "text-pos" : "text-destructive"
                       }`}
                     >
                       {formatCurrency(g.realizedGain, unifiedCurrency)}
@@ -572,8 +572,8 @@ export default function RealizedGainsPage() {
                         (showUnified && r.realizedGainInBase != null
                           ? r.realizedGainInBase
                           : r.realizedGain) >= 0
-                          ? "text-green-600"
-                          : "text-red-600"
+                          ? "text-pos"
+                          : "text-destructive"
                       }`}
                     >
                       {showUnified && r.realizedGainInBase != null && r.baseCurrency

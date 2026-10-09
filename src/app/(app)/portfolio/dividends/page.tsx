@@ -288,7 +288,7 @@ export default function DividendsPage() {
           )}
 
           {reporting && data && (data.totals.unratedCount ?? 0) > 0 && (
-            <p className="mb-3 text-xs text-amber-600 dark:text-amber-500">
+            <p className="mb-3 text-xs text-warning">
               Re-rating in progress: {data.totals.unratedCount} row
               {data.totals.unratedCount === 1 ? "" : "s"} not yet converted to{" "}
               {reportingCcy} and excluded from the totals. Reload shortly.
@@ -334,7 +334,7 @@ export default function DividendsPage() {
                       {reporting ? (
                         <TableCell
                           className={`text-right font-mono ${
-                            g.amount >= 0 ? "text-green-600" : "text-red-600"
+                            g.amount >= 0 ? "text-pos" : "text-destructive"
                           }`}
                         >
                           {formatCurrency(g.amount, reportingCcy)}
@@ -348,8 +348,8 @@ export default function DividendsPage() {
                               className={`text-right font-mono ${
                                 cell
                                   ? cell.amount >= 0
-                                    ? "text-green-600"
-                                    : "text-red-600"
+                                    ? "text-pos"
+                                    : "text-destructive"
                                   : "text-muted-foreground"
                               }`}
                             >

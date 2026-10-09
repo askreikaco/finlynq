@@ -61,7 +61,7 @@ export function ChangeBadge({ value, className = "" }: { value: number | null; c
   if (value === null || value === undefined) return <span className="text-muted-foreground">--</span>;
   const isPositive = value >= 0;
   return (
-    <span className={`inline-flex items-center gap-0.5 font-mono text-sm font-medium ${isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"} ${className}`}>
+    <span className={`inline-flex items-center gap-0.5 font-mono text-sm font-medium ${isPositive ? "text-pos" : "text-destructive"} ${className}`}>
       {isPositive ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
       {formatPercent(Math.abs(value), 2)}
     </span>
@@ -81,7 +81,7 @@ export function DayChange({
     <span className="inline-flex items-center justify-end gap-1.5 whitespace-nowrap">
       <ChangeBadge value={pct} />
       {amount !== null && amount !== undefined && (
-        <span className={`text-xs font-mono ${amount >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+        <span className={`text-xs font-mono ${amount >= 0 ? "text-pos" : "text-destructive"}`}>
           {amount >= 0 ? "+" : ""}{formatCurrency(amount, currency)}
         </span>
       )}

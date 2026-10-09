@@ -26,7 +26,7 @@ export function TopMoversCard({
     <Card>
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
-          <Icon className={`h-4 w-4 ${kind === "gainers" ? "text-emerald-500" : "text-rose-500"}`} />
+          <Icon className={`h-4 w-4 ${kind === "gainers" ? "text-pos" : "text-destructive"}`} />
           <CardTitle className="text-sm font-medium">{kind === "gainers" ? "Top Gainers" : "Top Losers"}</CardTitle>
         </div>
       </CardHeader>
