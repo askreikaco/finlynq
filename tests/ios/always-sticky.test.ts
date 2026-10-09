@@ -127,3 +127,77 @@ describe("no ancestor breaks sticky (scroll container and containing block)", ()
     expect(bad).toEqual([]);
   });
 });
+
+describe("admin pages", () => {
+  const ADMIN = "src/app/(app)/admin";
+  /** Admin pages whose PageHeader (or the shared `Heading` element) must pin to a tall container. */
+  const PAGES: Array<{ file: string; anchor: string }> = [
+    { file: `${ADMIN}/email-inbox/page.tsx`, anchor: "<PageHeader" },
+    { file: `${ADMIN}/feedback/page.tsx`, anchor: "<PageHeader" },
+    { file: `${ADMIN}/(env)/api-log/page.tsx`, anchor: "<PageHeader" },
+    { file: `${ADMIN}/(env)/system/page.tsx`, anchor: "<PageHeader" },
+    { file: `${ADMIN}/(env)/price-cache/page.tsx`, anchor: "<PageHeader" },
+    { file: `${ADMIN}/(env)/diagnostics/page.tsx`, anchor: "<PageHeader" },
+    { file: `${ADMIN}/announcements/page.tsx`, anchor: "<PageHeader" },
+    { file: `${ADMIN}/inbox/page.tsx`, anchor: "<PageHeader" },
+    { file: `${ADMIN}/page.tsx`, anchor: "<PageHeader" },
+    { file: `${ADMIN}/(env)/integrations/page.tsx`, anchor: "{Heading}" },
+  ];
+
+  /** Every occurrence of `anchor` in `src`, as indices. */
+  function occurrences(src: string, anchor: string): number[] {
+    const out: number[] = [];
+    for (let i = src.indexOf(anchor); i > -1; i = src.indexOf(anchor, i + 1)) out.push(i);
+    return out;
+  }
+
+  /** className of each open <div>/<motion.div> enclosing `idx`, outermost first, inside the JSX of the nearest `return (` before it. */
+  function divAncestors(src: string, idx: number): string[] {
+    const start = src.lastIndexOf("return (", idx);
+    expect(start, "a `return (` precedes the anchor").toBeGreaterThan(-1);
+    const stack: string[] = [];
+    const re = /<(\/?)((?:motion\.)?div)\b([^>]*)>/g;
+    re.lastIndex = start;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(src)) && m.index < idx) {
+      if (m[1]) stack.pop();
+      else if (!m[3].trimEnd().endsWith("/")) stack.push(m[3].match(/className="([^"]*)"/)?.[1] ?? "");
+    }
+    return stack;
+  }
+
+  it("every PageHeader is a direct child of the page root or inside display:contents wrappers only", () => {
+    const bad: string[] = [];
+    for (const { file, anchor } of PAGES) {
+      const src = read(file);
+      for (const idx of occurrences(src, anchor)) {
+        const anc = divAncestors(src, idx);
+        if (anc.slice(1).some((c) => !/(^|\s)contents(\s|$)/.test(c))) bad.push(`${file}@${idx}`);
+      }
+    }
+    expect(bad).toEqual([]);
+  });
+
+  it("no admin PageHeader carries a margin on its own bar (margins go on the next sibling)", () => {
+    const bad: string[] = [];
+    for (const { file } of PAGES) {
+      const src = read(file);
+      for (const m of src.matchAll(/<PageHeader\b([\s\S]*?)\/>/g)) {
+        const cls = m[1].match(/className="([^"]*)"/)?.[1] ?? "";
+        if (/(^|\s)(max-md:|md:)?-?m[trblxy]?-/.test(cls)) bad.push(file);
+      }
+    }
+    expect(bad).toEqual([]);
+  });
+
+  it("no ancestor of an admin PageHeader is a scroll container (overflow-hidden/auto/scroll breaks sticky)", () => {
+    const bad: string[] = [];
+    for (const { file, anchor } of PAGES) {
+      const src = read(file);
+      for (const idx of occurrences(src, anchor)) {
+        if (divAncestors(src, idx).some((c) => /(^|\s)(max-md:|md:)?overflow-(x-|y-)?(hidden|auto|scroll)(\s|$)/.test(c))) bad.push(`${file}@${idx}`);
+      }
+    }
+    expect(bad).toEqual([]);
+  });
+});

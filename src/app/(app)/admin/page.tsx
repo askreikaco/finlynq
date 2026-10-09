@@ -651,12 +651,10 @@ export default function AdminPage() {
       className="space-y-6"
     >
       {/* Header */}
-      <motion.div variants={itemVariants}>
-        <PageHeader title="Admin" titleClassName="text-2xl font-bold tracking-tight" />
-        <p className="text-muted-foreground">
-          Manage users and monitor platform usage
-        </p>
-      </motion.div>
+      <PageHeader title="Admin" titleClassName="text-2xl font-bold tracking-tight" />
+      <motion.p variants={itemVariants} className="mt-0 text-muted-foreground">
+        Manage users and monitor platform usage
+      </motion.p>
 
       {/* Stats Grid */}
       {stats && (

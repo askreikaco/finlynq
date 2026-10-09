@@ -34,7 +34,7 @@ import {
   History,
   Gauge,
 } from "lucide-react";
-import { PageHeader } from "@/components/mobile";
+import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
 
 interface SysSample {
   at: number;
@@ -408,40 +408,47 @@ export default function AdminSystemPage() {
 
   return (
     <div className="max-w-7xl space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <Server className="h-5 w-5 text-primary" />
-            <PageHeader title="System" titleClassName="text-2xl font-bold tracking-tight" />
+      <PageHeader
+        className="flex flex-wrap items-center justify-between gap-3"
+        lead={<Server className={`h-5 w-5 text-primary ${HEADER_DESKTOP_ONLY}`} />}
+        leadClassName="flex items-center gap-2"
+        title={
+          <>
+            System
             {data?.env && (
               <Badge variant="outline" className="ml-1 uppercase">
                 {data.env}
               </Badge>
             )}
-          </div>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            Live CPU / memory / disk, active database queries, and snapshot-rebuild activity. CPU /
-            memory / disk are <span className="font-medium text-foreground">the whole VPS</span> (prod
-            and dev share this box); database queries, snapshots and rebuilds are{" "}
-            <span className="font-medium text-foreground">this environment only</span>.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <input
-              type="checkbox"
-              checked={auto}
-              onChange={(e) => setAuto(e.target.checked)}
-              className="h-3.5 w-3.5 accent-primary"
-            />
-            Auto-refresh
-          </label>
-          <Button variant="outline" size="sm" onClick={load} disabled={loading}>
-            <RefreshCw className={`mr-1.5 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
-        </div>
-      </div>
+          </>
+        }
+        titleClassName="text-2xl font-bold tracking-tight"
+        overflow={[{ label: auto ? "Auto-refresh: on" : "Auto-refresh: off", onSelect: () => setAuto(!auto) }]}
+        actionsClassName="flex flex-wrap items-center gap-2"
+        actions={
+          <>
+            <label className={`${HEADER_DESKTOP_ONLY} flex items-center gap-1.5 text-xs text-muted-foreground`}>
+              <input
+                type="checkbox"
+                checked={auto}
+                onChange={(e) => setAuto(e.target.checked)}
+                className="h-3.5 w-3.5 accent-primary"
+              />
+              Auto-refresh
+            </label>
+            <Button variant="outline" size="sm" onClick={load} disabled={loading}>
+              <RefreshCw className={`mr-1.5 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+              Refresh
+            </Button>
+          </>
+        }
+      />
+      <p className="mt-0.5 text-sm text-muted-foreground">
+        Live CPU / memory / disk, active database queries, and snapshot-rebuild activity. CPU /
+        memory / disk are <span className="font-medium text-foreground">the whole VPS</span> (prod
+        and dev share this box); database queries, snapshots and rebuilds are{" "}
+        <span className="font-medium text-foreground">this environment only</span>.
+      </p>
 
       {error && (
         <Card className="border-destructive/30 bg-destructive/10">

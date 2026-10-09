@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Megaphone, Pencil, Trash2, Plus } from "lucide-react";
-import { PageHeader } from "@/components/mobile";
+import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
 import { usePageFab } from "@/components/mobile/page-fab";
 
 interface AdminAnnouncement {
@@ -156,15 +156,17 @@ export default function AdminAnnouncementsPage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <div className="mb-6 flex items-center gap-2">
-        <Megaphone className="h-5 w-5 text-primary" />
-        <PageHeader title="Announcements" titleClassName="text-2xl font-bold tracking-tight" />
-      </div>
+      <PageHeader
+        lead={<Megaphone className={`h-5 w-5 text-primary ${HEADER_DESKTOP_ONLY}`} />}
+        leadClassName="flex items-center gap-2"
+        title="Announcements"
+        titleClassName="text-2xl font-bold tracking-tight"
+      />
 
-      {error && <p className="mb-4 text-sm text-destructive">{error}</p>}
+      {error && <p className="mt-6 mb-4 text-sm text-destructive">{error}</p>}
 
       {/* Create / edit form */}
-      <Card ref={formRef} className="mb-8 p-4">
+      <Card ref={formRef} className={`mb-8 p-4 ${error ? "" : "mt-6"}`}>
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-medium">
             {editingId ? `Editing #${editingId}` : "New announcement"}

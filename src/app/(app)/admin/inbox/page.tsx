@@ -246,18 +246,19 @@ export default function AdminInboxPage() {
 
   return (
     <div className="max-w-7xl space-y-4">
-      <div className="flex items-start justify-between gap-4">
-        <PageHeader
-            title="Admin Inbox"
-            titleClassName="text-2xl font-bold tracking-tight"
-            subtitle={<>Non-import email routed to this app. Mailbox is kept indefinitely; trash auto-deletes after 24 hours.</>}
-            subtitleClassName="text-sm text-muted-foreground mt-0.5"
-          />
-        <Button variant="outline" size="sm" onClick={load} disabled={loading}>
-          <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? "animate-spin" : ""}`} />
-          Refresh
-        </Button>
-      </div>
+      <PageHeader
+        className="flex items-start justify-between gap-4"
+        title="Admin Inbox"
+        titleClassName="text-2xl font-bold tracking-tight"
+        subtitle={<>Non-import email routed to this app. Mailbox is kept indefinitely; trash auto-deletes after 24 hours.</>}
+        subtitleClassName="text-sm text-muted-foreground mt-0.5"
+        actions={
+          <Button variant="outline" size="sm" onClick={load} disabled={loading}>
+            <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        }
+      />
 
       {error && (
         <Card className="border-destructive/30 bg-destructive/10">

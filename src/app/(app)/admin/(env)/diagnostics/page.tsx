@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ScrollText, RefreshCw, Trash2 } from "lucide-react";
-import { PageHeader } from "@/components/mobile";
+import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
 
 interface Row {
   id: number;
@@ -208,50 +208,66 @@ export default function AdminDiagnosticsPage() {
 
   return (
     <div className="max-w-7xl space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <ScrollText className="h-5 w-5 text-primary" />
-            <PageHeader title="Diagnostics" titleClassName="text-2xl font-bold tracking-tight" />
+      <PageHeader
+        className="flex flex-wrap items-center justify-between gap-3"
+        lead={<ScrollText className={`h-5 w-5 text-primary ${HEADER_DESKTOP_ONLY}`} />}
+        leadClassName="flex items-center gap-2"
+        title={
+          <>
+            Diagnostics
             {data?.meta.env && (
               <Badge variant="outline" className="ml-1 uppercase">
                 {data.meta.env}
               </Badge>
             )}
-          </div>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            Persistent log of slow queries (≥ {(data?.meta.slowQueryMs ?? 2000).toLocaleString()}ms),
-            database errors, API 5xx errors, and outbound provider failures for{" "}
-            <span className="font-medium text-foreground">this environment</span>. Survives restarts;
-            kept to the newest {(data?.meta.cap ?? 5000).toLocaleString()} rows.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <input
-              type="checkbox"
-              checked={auto}
-              onChange={(e) => setAuto(e.target.checked)}
-              className="h-3.5 w-3.5 accent-primary"
-            />
-            Auto-refresh
-          </label>
-          <Button variant="outline" size="sm" onClick={load} disabled={loading}>
-            <RefreshCw className={`mr-1.5 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
-            onClick={() => setClearOpen(true)}
-            disabled={rows.length === 0 || clearing}
-          >
-            <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-            Clear
-          </Button>
-        </div>
-      </div>
+          </>
+        }
+        titleClassName="text-2xl font-bold tracking-tight"
+        overflow={[
+          { label: auto ? "Auto-refresh: on" : "Auto-refresh: off", onSelect: () => setAuto(!auto) },
+          {
+            label: "Clear",
+            icon: Trash2,
+            destructive: true,
+            onSelect: () => setClearOpen(true),
+            disabled: rows.length === 0 || clearing,
+          },
+        ]}
+        actionsClassName="flex flex-wrap items-center gap-2"
+        actions={
+          <>
+            <label className={`${HEADER_DESKTOP_ONLY} flex items-center gap-1.5 text-xs text-muted-foreground`}>
+              <input
+                type="checkbox"
+                checked={auto}
+                onChange={(e) => setAuto(e.target.checked)}
+                className="h-3.5 w-3.5 accent-primary"
+              />
+              Auto-refresh
+            </label>
+            <Button variant="outline" size="sm" onClick={load} disabled={loading}>
+              <RefreshCw className={`mr-1.5 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+              Refresh
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className={`${HEADER_DESKTOP_ONLY} border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive`}
+              onClick={() => setClearOpen(true)}
+              disabled={rows.length === 0 || clearing}
+            >
+              <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+              Clear
+            </Button>
+          </>
+        }
+      />
+      <p className="mt-0.5 text-sm text-muted-foreground">
+        Persistent log of slow queries (≥ {(data?.meta.slowQueryMs ?? 2000).toLocaleString()}ms),
+        database errors, API 5xx errors, and outbound provider failures for{" "}
+        <span className="font-medium text-foreground">this environment</span>. Survives restarts;
+        kept to the newest {(data?.meta.cap ?? 5000).toLocaleString()} rows.
+      </p>
 
       {error && (
         <Card className="border-destructive/30 bg-destructive/10">
