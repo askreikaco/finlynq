@@ -54,7 +54,7 @@ const SECTIONS: Section[] = [
     key: "live",
     label: "Live now",
     blurb: "Already shipped, and in the app today.",
-    badge: "bg-emerald-500/15 text-emerald-500",
+    badge: "bg-pos/15 text-pos",
     items: [
       {
         title: "Talk to your money with any AI assistant",
@@ -114,7 +114,7 @@ const SECTIONS: Section[] = [
     key: "building",
     label: "Building now",
     blurb: "In active development.",
-    badge: "bg-amber-500/15 text-amber-500",
+    badge: "bg-warning/15 text-warning",
     items: [
       {
         title: "In-app AI chat",
@@ -130,7 +130,7 @@ const SECTIONS: Section[] = [
     key: "next",
     label: "Up next",
     blurb: "Planned direction, no dates yet.",
-    badge: "bg-sky-500/15 text-sky-500",
+    badge: "bg-info/15 text-info",
     items: [
       {
         title: "Snap a receipt, skip the typing",
@@ -166,7 +166,7 @@ const SECTIONS: Section[] = [
     key: "exploring",
     label: "Exploring",
     blurb: "Ideas we're weighing. Vote for what matters to you.",
-    badge: "bg-violet-500/15 text-violet-400",
+    badge: "bg-chart-5/15 text-chart-5",
     items: [
       {
         title: "Full retirement planning",

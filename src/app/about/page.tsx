@@ -152,7 +152,7 @@ export default function AboutPage() {
             advertising, no selling your data.
           </p>
 
-          <div className="not-prose my-8 rounded-2xl border border-yellow-500/30 bg-yellow-500/5 p-6">
+          <div className="not-prose my-8 rounded-2xl border border-warning/30 bg-warning/5 p-6">
             <h3 className="text-base font-semibold text-foreground">
               Not to be confused with
             </h3>

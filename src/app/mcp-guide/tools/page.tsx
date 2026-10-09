@@ -45,7 +45,7 @@ const CATEGORY_ORDER: CategoryMeta[] = [
     blurb:
       "Pure queries: balances, net worth, budgets, transactions, portfolios, goals, loans, FX rates, spending trends, recurring bills, weekly recaps. Read-only. Allowed under both mcp:read and mcp:write OAuth scopes.",
     icon: Eye,
-    badgeClass: "bg-emerald-500/15 text-emerald-400 ring-emerald-500/30",
+    badgeClass: "bg-pos/15 text-pos ring-pos/30",
   },
   {
     key: "analyze",
@@ -53,7 +53,7 @@ const CATEGORY_ORDER: CategoryMeta[] = [
     blurb:
       "Read-only deep-dives that walk individual holdings through their cost-basis history. Surface per-position attribution rather than aggregate views.",
     icon: Microscope,
-    badgeClass: "bg-sky-500/15 text-sky-400 ring-sky-500/30",
+    badgeClass: "bg-info/15 text-info ring-info/30",
   },
   {
     key: "preview",
@@ -61,7 +61,7 @@ const CATEGORY_ORDER: CategoryMeta[] = [
     blurb:
       "Dry-run pair for every destructive bulk op. Returns a sample of the affected rows plus a signed confirmation token scoped to the exact payload. Read-only, so nothing is written.",
     icon: Sparkles,
-    badgeClass: "bg-indigo-500/15 text-indigo-300 ring-indigo-500/30",
+    badgeClass: "bg-primary/15 text-primary ring-primary/30",
   },
   {
     key: "execute",
@@ -69,7 +69,7 @@ const CATEGORY_ORDER: CategoryMeta[] = [
     blurb:
       "Commits a previously-previewed bulk operation. Refuses to run unless the caller passes the matching signed token from preview, so the AI can't skip the confirmation step or mutate the payload between steps.",
     icon: Bot,
-    badgeClass: "bg-violet-500/15 text-violet-300 ring-violet-500/30",
+    badgeClass: "bg-chart-5/15 text-chart-5 ring-chart-5/30",
   },
   {
     key: "write",
@@ -77,7 +77,7 @@ const CATEGORY_ORDER: CategoryMeta[] = [
     blurb:
       "Mutations: record / update transactions, transfers, trades; create or edit accounts, categories, rules, subscriptions, loans, goals, splits, holdings, snapshots, FX overrides. Requires mcp:write OAuth scope.",
     icon: Pencil,
-    badgeClass: "bg-amber-500/15 text-amber-300 ring-amber-500/30",
+    badgeClass: "bg-warning/15 text-warning ring-warning/30",
   },
   {
     key: "destructive",
@@ -85,7 +85,7 @@ const CATEGORY_ORDER: CategoryMeta[] = [
     blurb:
       "Delete a row, reject a staged import, or cancel an in-flight import. Marked with the MCP destructiveHint so clients can surface a confirmation prompt. Requires mcp:write OAuth scope.",
     icon: ShieldAlert,
-    badgeClass: "bg-rose-500/15 text-rose-300 ring-rose-500/30",
+    badgeClass: "bg-destructive/15 text-destructive ring-destructive/30",
   },
 ];
 
@@ -171,10 +171,10 @@ export default function ToolCatalogPage() {
         </header>
 
         {/* OAuth scope note */}
-        <section className="mb-10 rounded-xl border border-indigo-500/20 bg-indigo-500/5 p-4 sm:p-5">
+        <section className="mb-10 rounded-xl border border-primary/20 bg-primary/5 p-4 sm:p-5">
           <div className="flex items-start gap-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-500/10">
-              <Lock className="h-4 w-4 text-indigo-300" />
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+              <Lock className="h-4 w-4 text-primary" />
             </div>
             <div className="text-sm text-muted-foreground leading-relaxed">
               <p className="text-foreground font-semibold mb-1">
@@ -337,7 +337,7 @@ function ToolRow({
           scope: {tool.requiresWriteScope ? "mcp:write" : "mcp:read"}
         </span>
         {tool.deprecated ? (
-          <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 ring-1 ring-amber-500/30">
+          <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-warning/15 text-warning ring-1 ring-warning/30">
             Deprecated
           </span>
         ) : null}
