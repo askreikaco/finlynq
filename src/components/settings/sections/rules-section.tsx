@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { usePageFab } from "@/components/mobile/page-fab";
 import {
   Zap, Plus, Trash2, AlertTriangle,
 } from "lucide-react";
@@ -185,6 +186,8 @@ export function RulesSection() {
     setEditing(rule ?? null);
     setShowEditor(true);
   }
+
+  usePageFab("rules.create", () => startEditor());
 
   return (
     <div className="space-y-6">
