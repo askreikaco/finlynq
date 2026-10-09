@@ -22,7 +22,6 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PageHeader } from "@/components/mobile";
-import { usePageFab } from "@/components/mobile/page-fab";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -53,7 +52,8 @@ import {
   subscriptionTotals,
   type RecurringRow,
 } from "@/lib/subscriptions/calendar-events";
-import { SubscriptionDialog, EMPTY_DRAFT, type SubscriptionDraft } from "./_components/subscription-dialog";
+import { EMPTY_DRAFT, type SubscriptionDraft } from "./_components/subscription-form";
+import { draftSearchParams } from "./_components/draft-params";
 import { SubscriptionsCalendar } from "./_components/subscriptions-calendar";
 import type { Subscription } from "./_components/types";
 import {
@@ -119,14 +119,8 @@ function SubscriptionsPageContent() {
 
   const [subs, setSubs] = useState<Subscription[]>([]);
   const [recurring, setRecurring] = useState<RecurringRow[]>([]);
-  const [categories, setCategories] = useState<Option[]>([]);
-  const [accounts, setAccounts] = useState<Option[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
-
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editing, setEditing] = useState<Subscription | null>(null);
-  const [initialDraft, setInitialDraft] = useState<SubscriptionDraft>(EMPTY_DRAFT);
 
   const [sortField, setSortField] = useState<SortField>("nextDate");
   const [showAllSuggestions, setShowAllSuggestions] = useState(false);
@@ -167,14 +161,6 @@ function SubscriptionsPageContent() {
   useEffect(() => {
     loadSubs();
     loadRecurring();
-    fetch("/api/categories")
-      .then((r) => (r.ok ? r.json() : []))
-      .then((data) => setCategories(Array.isArray(data) ? data : []))
-      .catch(() => {});
-    fetch("/api/accounts")
-      .then((r) => (r.ok ? r.json() : []))
-      .then((data) => setAccounts(Array.isArray(data) ? data : []))
-      .catch(() => {});
   }, [loadSubs, loadRecurring]);
 
   function setView(next: View) {
@@ -208,21 +194,14 @@ function SubscriptionsPageContent() {
     { key: "cancelled", title: "Cancelled", icon: <XCircle className="h-4 w-4 text-destructive" />, rows: sorted.filter((s) => s.status === "cancelled") },
   ];
 
-  // ── dialog openers ─────────────────────────────────────────────────────────
+  // ── navigation (create / edit are full pages, not dialogs) ─────────────────
+  const LIST_HREF = "/subscriptions";
   function openAdd() {
-    setEditing(null);
-    setInitialDraft(EMPTY_DRAFT);
-    setDialogOpen(true);
-  }
-
-  function openEdit(sub: Subscription) {
-    setEditing(sub);
-    setDialogOpen(true);
+    router.push("/subscriptions/new");
   }
 
   function openEditById(id: number) {
-    const sub = subs.find((s) => s.id === id);
-    if (sub) openEdit(sub);
+    router.push(`/subscriptions/${id}/edit?returnTo=${encodeURIComponent(view === "calendar" ? "/subscriptions?view=calendar" : LIST_HREF)}`);
   }
 
   function draftFromDetected(r: RecurringRow): SubscriptionDraft {
@@ -240,9 +219,7 @@ function SubscriptionsPageContent() {
   }
 
   function reviewDetected(r: RecurringRow) {
-    setEditing(null);
-    setInitialDraft(draftFromDetected(r));
-    setDialogOpen(true);
+    router.push(draftSearchParams(draftFromDetected(r), LIST_HREF));
   }
 
   // ── mutations (each: in-flight guard, try/catch, res.ok) ───────────────────
@@ -316,8 +293,6 @@ function SubscriptionsPageContent() {
   }
 
   const deletingSub = subs.find((s) => s.id === deleteId) ?? null;
-
-  usePageFab("subscriptions.create", () => openAdd());
 
   if (loading) return <PageSkeleton variant="list" rows={5} />;
   if (loadError) {
@@ -493,7 +468,7 @@ function SubscriptionsPageContent() {
                       today={today}
                       displayCurrency={displayCurrency}
                       busy={busyKey !== null}
-                      onEdit={() => openEdit(sub)}
+                      onEdit={() => openEditById(sub.id)}
                       onStatus={(s) => changeStatus(sub, s)}
                       onToggleReminder={() => toggleReminder(sub)}
                       onDelete={() => setDeleteId(sub.id)}
@@ -506,15 +481,6 @@ function SubscriptionsPageContent() {
         </div>
       )}
 
-      <SubscriptionDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        editing={editing}
-        initial={initialDraft}
-        categories={categories}
-        accounts={accounts}
-        onSaved={() => { loadSubs(); }}
-      />
 
       <ConfirmDialog
         open={deleteId !== null}
