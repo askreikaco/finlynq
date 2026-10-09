@@ -42,7 +42,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <Nav instanceAdminEnabled={instanceAdminEnabled} categoriesMerged={categoriesMerged} />
             {/* overflow-x-clip, not overflow-x-hidden: hidden forces overflow-y to auto, which makes <main> a scroll container.
                 Its height is content height, so it never scrolls, and the sticky PageHeader inside would never pin to the window. */}
-            <main data-app-main="" className="flex-1 overflow-x-clip min-w-0 pb-[calc(var(--mobile-bar-clearance)+80px)] md:pb-0 bg-dot-pattern ambient-glow">
+            <main className="flex-1 overflow-x-clip min-w-0 pb-[calc(var(--mobile-bar-clearance)+80px)] md:pb-0 bg-dot-pattern ambient-glow" data-app-main="">
               {/* FINLYNQ-52: no width cap on the (app) shell — content fills
                   the viewport to the right of the sidebar. Per-page wrappers
                   may still impose their own readability cap (e.g. settings,

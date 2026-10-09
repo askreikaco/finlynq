@@ -36,7 +36,7 @@ describe("size-class CSS (globals.css)", () => {
 
 describe("size-class wiring (layout.tsx)", () => {
   it("tags <main> so the app size-class provider can measure it", () => {
-    expect(layout).toMatch(/<main\s+data-app-main=""/);
+    expect(layout).toMatch(/<main\b[^>]*data-app-main=""/);
   });
 
   it("mounts AppSizeClassProvider in the (app) layout", () => {
