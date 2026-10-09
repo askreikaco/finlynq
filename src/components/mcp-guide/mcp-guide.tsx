@@ -924,7 +924,7 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
         <section className="mb-10">
           <h2 className="mb-1 text-lg font-semibold text-foreground">Example Prompts</h2>
           <p className="mb-4 text-sm text-muted-foreground">Click any prompt to copy it, then paste into your AI assistant.</p>
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid gap-2 regular:grid-cols-2">
             {examplePrompts.map((item, i) => (
               <button
                 key={i}
@@ -950,7 +950,7 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
             Paste any of these into Claude to watch a preview / confirm / execute flow run end-to-end. Claude
             always asks before it commits anything destructive.
           </p>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 regular:grid-cols-2">
             {workedExamples.map((ex) => (
               <button
                 key={ex.title}
@@ -980,7 +980,7 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
             Or use <code className="bg-muted px-1 rounded">/api-docs</code> /{" "}
             <code className="bg-muted px-1 rounded">/.well-known/mcp.json</code> for the JSON-Schema view.
           </p>
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 regular:grid-cols-2">
             {toolGroups.map((group) => {
               const Icon = group.icon;
               return (
