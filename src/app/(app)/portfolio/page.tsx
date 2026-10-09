@@ -259,6 +259,7 @@ export default function PortfolioPage() {
           <Link
             href="/settings/investments"
             className={buttonVariants({ size: "sm" })}
+            aria-label="Add holding"
           >
             <Plus className="h-4 w-4 mr-1.5" /> <span className="max-md:hidden">Add holding</span><span className="md:hidden">Add</span>
           </Link>

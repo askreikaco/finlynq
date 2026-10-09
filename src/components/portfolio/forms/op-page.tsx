@@ -9,6 +9,7 @@
 
 import * as React from "react";
 import { PageHeader, SectionLabel } from "@/components/mobile";
+import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { NEW_OP_HREF } from "./op-catalog";
@@ -66,6 +67,7 @@ export function OpPage({
               className="h-11 px-3 text-sm font-semibold text-primary md:h-8"
               disabled={saving || saveDisabled}
             >
+              <Check className="hidden size-4 max-md:block" aria-hidden />
               {saving ? "Saving…" : saveLabel}
             </Button>
           ) : null

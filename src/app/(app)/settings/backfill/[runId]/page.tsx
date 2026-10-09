@@ -306,14 +306,15 @@ export default function BackfillReviewPage({ params }: { params: Promise<{ runId
         subtitle={<>{proposals.length} proposal(s) · {approvedCount} approved · {appliedCount} applied</>}
         subtitleClassName="text-sm text-muted-foreground mt-0.5"
         actions={
-          <div className="flex gap-2">
+          <>
             <Button variant="outline" onClick={() => router.push("/settings/backfill")} className={HEADER_DESKTOP_ONLY}>
               <RefreshCw className="size-4 mr-2" /> New run
             </Button>
             <Button onClick={applyAll} disabled={applying || approvedCount === 0}>
+              {!applying && <CheckCircle2 className="hidden size-4 max-md:block" aria-hidden />}
               {applying ? (<><Loader2 className="size-4 animate-spin mr-2" /> Applying…</>) : `Apply ${approvedCount} approved`}
             </Button>
-          </div>
+          </>
         }
         overflow={[{ label: "New run", onSelect: () => router.push("/settings/backfill") }]}
       />

@@ -58,7 +58,8 @@ describe("SettingsHub", () => {
     const actualLabels = settingsLinks
       .slice(0, 7)
       .map((l) => {
-        const titleSpan = l.querySelector("span.text-\\[17px\\]");
+        // Row label is the truncating span (size token changed from text-[17px] to text-base).
+        const titleSpan = l.querySelector("span.truncate");
         return titleSpan?.textContent?.trim();
       })
       .filter(Boolean);

@@ -14,7 +14,75 @@ const TITLE_EXEMPTIONS: Record<string, string> = {
   "/transactions": "Dynamic transactions page",
   "/admin/env": "Group page, rendered by layout",
   "/settings": "Redirect to /settings/general",
+  "/categories": "Feature-flagged: page.tsx delegates to _page-content.tsx (merged layout titles 'Categories' tabs)",
+  "/dev/gallery": "Dev-only tool page; descriptive title 'Component Gallery'",
 };
+
+/** Attribute text of the first <PageHeader ...> opening tag. Brace-aware: `lead={<X />}` contains '>'. */
+function pageHeaderAttrs(src: string): string | null {
+  const m = src.match(/<PageHeader[\s>]/);
+  if (!m || m.index === undefined) return null;
+  const from = m.index + "<PageHeader".length;
+  let depth = 0;
+  let i = from;
+  for (; i < src.length; i++) {
+    const c = src[i];
+    if (c === "{") depth++;
+    else if (c === "}") depth--;
+    else if (depth === 0 && c === ">") break;
+  }
+  return src.slice(from, i);
+}
+
+/** Top-level (non-nested) attribute value: title="x", title='x' or title={expr}. */
+function topLevelAttr(attrs: string, name: string): { kind: "str" | "expr"; value: string } | null {
+  let depth = 0;
+  for (let i = 0; i < attrs.length; i++) {
+    const c = attrs[i];
+    if (c === "{") depth++;
+    else if (c === "}") depth--;
+    else if (depth === 0 && attrs.startsWith(name + "=", i) && /\s/.test(attrs[i - 1] ?? " ")) {
+      const start = i + name.length + 1;
+      const q = attrs[start];
+      if (q === '"' || q === "'") {
+        const end = attrs.indexOf(q, start + 1);
+        return { kind: "str", value: attrs.slice(start + 1, end) };
+      }
+      if (q === "{") {
+        let d = 0;
+        let j = start;
+        for (; j < attrs.length; j++) {
+          if (attrs[j] === "{") d++;
+          else if (attrs[j] === "}") {
+            d--;
+            if (d === 0) break;
+          }
+        }
+        return { kind: "expr", value: attrs.slice(start + 1, j).trim() };
+      }
+    }
+  }
+  return null;
+}
+
+/** Text of a JSX title fragment: drop tags, keep the leading words before any nested expression. */
+function fragmentText(expr: string): string {
+  const inner = expr.replace(/^<>/, "").replace(/<\/>$/, "");
+  const noTags = inner.replace(/<[^>]*\/>/g, "").replace(/<\/?[A-Za-z][^>]*>/g, "");
+  return noTags.split("{")[0].trim();
+}
+
+function extractPageHeaderTitle(src: string): string | null {
+  const attrs = pageHeaderAttrs(src);
+  if (attrs === null) return null;
+  const t = topLevelAttr(attrs, "title");
+  if (!t) return null;
+  if (t.kind === "str") return t.value;
+  if (t.value.startsWith("<>")) return fragmentText(t.value) || null;
+  if (t.value === "FAMILY_STRINGS.page_title") return "Family Wealth";
+  const lit = t.value.match(/^(["'])(.*)\1$/);
+  return lit ? lit[2] : null;
+}
 
 describe("Page titles", () => {
   it("every registry page has title matching label or documented exemption", () => {
@@ -43,48 +111,8 @@ describe("Page titles", () => {
 
       if (!pageContent) continue; // Page file doesn't exist, skip
 
-      // Extract title from PageHeader component
-      let pageHeaderTitle: string | null = null;
-
-      // Try matching double-quoted string title
-      const doubleQuoteMatch = pageContent.match(/<PageHeader[^>]*?title="([^"]*)"/);
-      if (doubleQuoteMatch) {
-        pageHeaderTitle = doubleQuoteMatch[1];
-      } else {
-        // Try single-quoted string title
-        const singleQuoteMatch = pageContent.match(/<PageHeader[^>]*?title='([^']*)'/);
-        if (singleQuoteMatch) {
-          pageHeaderTitle = singleQuoteMatch[1];
-        } else {
-          // Try JSX fragment title: title={<>...text...</>}
-          // Look for text content within JSX fragments (strips icons/tags)
-          const fragmentMatch = pageContent.match(/<PageHeader[^>]*?title=\{\<\>([\s\S]*?)<\/\>\}/);
-          if (fragmentMatch) {
-            // Extract text content, removing tags and trimming
-            const fragmentContent = fragmentMatch[1];
-            const textMatch = fragmentContent.match(/>\s*([A-Za-z\s]+?)\s*<|>\s*([A-Za-z\s]+?)\s*$/);
-            if (textMatch) {
-              pageHeaderTitle = (textMatch[1] || textMatch[2] || "").trim();
-            } else {
-              // Fallback: just get text nodes (words after tags)
-              const words = fragmentContent.match(/\b[A-Z][a-zA-Z\s]+\b/);
-              if (words) {
-                pageHeaderTitle = words[0].trim();
-              }
-            }
-          } else {
-            // Try title={CONSTANT.property} pattern for dynamic titles
-            const constantMatch = pageContent.match(/<PageHeader[^>]*?title=\{([A-Z_]+\.[a-z_]+)\}/);
-            if (constantMatch) {
-              const constantPath = constantMatch[1];
-              // Special handling for FAMILY_STRINGS.page_title
-              if (constantPath === "FAMILY_STRINGS.page_title") {
-                pageHeaderTitle = "Family Wealth";
-              }
-            }
-          }
-        }
-      }
+      // Extract title from PageHeader component (attribute-aware: lead={<Icon/>} contains '>')
+      let pageHeaderTitle: string | null = extractPageHeaderTitle(pageContent);
 
       // Match first h1 if no PageHeader found
       if (!pageHeaderTitle) {

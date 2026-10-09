@@ -24,7 +24,7 @@ import {
   AlertTriangle, ArrowDownRight, Copy,
 } from "lucide-react";
 import { AmountInput } from "@/components/amount-input";
-import { PageHeader, HEADER_DESKTOP_ONLY, FromMd } from "@/components/mobile";
+import { PageHeader, HEADER_DESKTOP_ONLY, FromMd, PHONE_PRIMARY_CLASS } from "@/components/mobile";
 import { usePageFab } from "@/components/mobile/page-fab";
 
 type Budget = {
@@ -609,7 +609,7 @@ export default function BudgetsPage() {
           )}
 
           <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) { setFormError(""); setErrors({}); } }}>
-            <DialogTrigger render={<Button />}>
+            <DialogTrigger render={<Button className={PHONE_PRIMARY_CLASS} aria-label="Add Budget" />}>
               <Plus className="h-4 w-4 mr-1" /> Add Budget
             </DialogTrigger>
             <DialogContent>
