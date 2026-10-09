@@ -16,8 +16,7 @@ import { OnboardingTips } from "@/components/onboarding-tips";
 import { Badge } from "@/components/ui/badge";
 import { Plus, SlidersHorizontal, ChevronDown, Receipt, Search, X, AlertTriangle, ArrowRightLeft, Columns3, TrendingUp, Download } from "lucide-react";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuGroup, DropdownMenuLabel, DropdownMenuCheckboxItem, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { SplitDialog } from "./split-dialog";
-import { TransactionDialog, type TransactionDialogInitialState, type DialogLinkedSibling } from "@/components/transactions/transaction-dialog";
+import { portfolioEditHref, transactionEditHref, transactionSplitHref } from "@/lib/transactions/edit-flow";
 import { MobileTxList } from "@/components/transactions/mobile-tx-list";
 import { formatAccountLabel } from "@/lib/account-label";
 import { type TransactionSource, labelForSource } from "@/lib/tx-source";
@@ -29,7 +28,6 @@ import {
 } from "@/lib/transactions/columns";
 import type {
   Transaction,
-  LinkedSibling,
 } from "../_types";
 import { useLookups, useTxColumnPrefs, useTxSortPref, useTxFilterPrefs } from "../_hooks/use-tx-prefs";
 import { useTransactions } from "../_hooks/use-transactions";
@@ -41,7 +39,6 @@ import { todayISO } from "@/lib/utils/date";
 import { LotReallocationNotice } from "@/components/portfolio/lot-reallocation-notice";
 import type { LotReallocationPreview } from "@/lib/portfolio/lots/types";
 import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
-import { opHref, type OpKey } from "@/components/portfolio/forms/op-catalog";
 
 /**
  * TransactionsWorkspace — the full transactions surface (filters, per-column
@@ -83,10 +80,9 @@ export function TransactionsWorkspace({
   const router = useRouter();
   // Lookups (accounts / categories / holdings) — extracted to useLookups
   // (FINLYNQ-111 Phase 2). Same uncoordinated mount-time parallel fetch.
-  const { accounts, categories, holdings } = useLookups();
+  const { accounts, categories } = useLookups();
   const sortAccount = useDropdownOrder("account");
   const sortCategory = useDropdownOrder("category");
-  const sortHolding = useDropdownOrder("holding");
   const [searchInput, setSearchInput] = useState("");
   // Filter state is synced FROM the URL via the `useEffect` below (not a
   // `useState(urlParams.get(...))` initialiser). `useState` only runs on
@@ -255,14 +251,6 @@ export function TransactionsWorkspace({
     setColumnPrefs((prev) => prev.map((c) => (c.id === id ? { ...c, visible: value } : c)));
   };
 
-  // Add/edit dialog. State that used to live inline (form, transferForm,
-  // FX preview, splits, etc.) now belongs to TransactionDialog. The parent
-  // only tracks open + the seed `initialState` it hands the dialog on
-  // open. startEdit builds the appropriate initialState; the dialog reads
-  // it on the open transition.
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [dialogInitial, setDialogInitial] = useState<TransactionDialogInitialState | null>(null);
-
   // Delete confirmation
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   // Phase 2 portfolio-ops refactor: server returns 409 with this shape when
@@ -282,10 +270,6 @@ export function TransactionsWorkspace({
   // calendar years + any short lot that will open) and choose to proceed.
   const [reallocPreview, setReallocPreview] = useState<LotReallocationPreview | null>(null);
   const [reallocLoading, setReallocLoading] = useState(false);
-
-  // Split dialog (for existing transactions)
-  const [splitDialogOpen, setSplitDialogOpen] = useState(false);
-  const [splitTxn, setSplitTxn] = useState<Transaction | null>(null);
 
   // Bulk selection
   const [selected, setSelected] = useState<Set<number>>(new Set());
@@ -375,148 +359,16 @@ export function TransactionsWorkspace({
     }
   }
 
-  /* resetForm / handleSubmit / handleTransferSubmit / handleTransferDelete
-   * now live inside <TransactionDialog>. The parent only builds the
-   * initialState seed in startEdit and refreshes the table via onSaved. */
-
-
-  /** Edit-row entry point. Runs the four-check transfer detection by
-   *  fetching siblings off `linkId` and decides which TransactionDialog
-   *  initialState shape to seed. Async to keep the dialog from flickering
-   *  open in transaction mode before flipping to transfer mode. */
-  async function startEdit(t: Transaction) {
-    // Phase 2 portfolio-ops refactor: portfolio-kind rows go to /portfolio/new
-    // — the generic dialog can't safely edit paired rows because it would
-    // leave the cash-leg sibling stale. `*_cash_leg` rows resolve back via
-    // trade_link_id on the form's load path.
-    if (t.kind) {
-      const portfolioKinds = new Set([
-        "buy",
-        "sell",
-        "buy_cash_leg",
-        "sell_cash_leg",
-        "in_kind_transfer_in",
-        "in_kind_transfer_out",
-        "fx_from",
-        "fx_to",
-        "fx_fee",
-        "portfolio_income",
-        "portfolio_expense",
-        "brokerage_deposit_in",
-        "brokerage_deposit_out",
-        "brokerage_withdrawal_in",
-        "brokerage_withdrawal_out",
-      ]);
-      if (portfolioKinds.has(t.kind)) {
-        const opForKind: Record<string, string> = {
-          buy: "buy",
-          buy_cash_leg: "buy",
-          sell: "sell",
-          sell_cash_leg: "sell",
-          in_kind_transfer_in: "transfer",
-          in_kind_transfer_out: "transfer",
-          fx_from: "fx-conversion",
-          fx_to: "fx-conversion",
-          fx_fee: "fx-conversion",
-          portfolio_income: "income-expense",
-          portfolio_expense: "income-expense",
-          brokerage_deposit_in: "deposit",
-          brokerage_deposit_out: "deposit",
-          brokerage_withdrawal_in: "withdrawal",
-          brokerage_withdrawal_out: "withdrawal",
-        };
-        const op = (opForKind[t.kind] ?? "buy") as OpKey;
-        router.push(opHref(op, `?editId=${t.id}`));
-        return;
-      }
-    }
-
-    // Four-check rule for "open this in unified Transfer mode":
-    //   1. row has link_id
-    //   2. exactly one sibling shares the link_id (so N≤2 legs)
-    //   3. the two rows reference DIFFERENT accounts
-    // The legacy `category_type === 'R'` check was intentionally relaxed
-    // (#8): transfer-shaped pairs whose category was renamed by the user
-    // (e.g. `Non-Cash - Transfers`) still open here. Anything that fails
-    // the rule (WP liquidations with N>2 legs, same-account conversions)
-    // falls back to the standard transaction-mode edit + linked-siblings.
-    let siblings: LinkedSibling[] = [];
-    if (t.linkId) {
-      try {
-        const r = await fetch(
-          `/api/transactions/linked?linkId=${encodeURIComponent(t.linkId)}&excludeId=${t.id}`,
-        );
-        const d = r.ok ? ((await r.json()) as { data?: LinkedSibling[] }) : { data: [] };
-        siblings = Array.isArray(d.data) ? d.data : [];
-      } catch {
-        siblings = [];
-      }
-      const isCleanPair =
-        siblings.length === 1 &&
-        siblings[0].accountId != null &&
-        siblings[0].accountId !== t.accountId;
-      if (isCleanPair) {
-        const sibling = siblings[0];
-        // Direction: the negative-amount leg is the source.
-        const debit: Transaction = t.amount < 0 ? t : ({ ...siblingToTransaction(sibling) });
-        const credit: Transaction = t.amount < 0 ? siblingToTransaction(sibling) : t;
-        setDialogInitial({
-          kind: "transfer-edit",
-          debit: debit as never,
-          credit: credit as never,
-          linkId: t.linkId!,
-        });
-        setDialogOpen(true);
-        return;
-      }
-    }
-
-    setDialogInitial({
-      kind: "transaction-edit",
-      tx: t as never,
-      linkedSiblings: siblings as unknown as DialogLinkedSibling[],
-    });
-    setDialogOpen(true);
+  /** Where Back on an edit page should return: the list as it is right now (filters, page). */
+  function currentReturnTo(): string {
+    return typeof window === "undefined" ? "/transactions" : `${window.location.pathname}${window.location.search}`;
   }
 
-  /** Convert a /api/transactions/linked sibling row into the Transaction
-   *  shape the dialog expects. Sibling responses are partial — we coerce
-   *  defaults where the table-row shape is wider. */
-  function siblingToTransaction(s: LinkedSibling): Transaction {
-    return {
-      id: s.id,
-      date: s.date,
-      accountId: s.accountId ?? 0,
-      accountName: s.accountName ?? "",
-      categoryId: s.categoryId ?? 0,
-      categoryName: s.categoryName ?? "",
-      categoryType: s.categoryType ?? "",
-      currency: s.currency,
-      amount: s.amount,
-      enteredAmount: s.enteredAmount,
-      enteredCurrency: s.enteredCurrency,
-      enteredFxRate: s.enteredFxRate,
-      quantity: s.quantity,
-      portfolioHolding: s.portfolioHolding,
-      note: s.note ?? "",
-      payee: s.payee ?? "",
-      tags: s.tags ?? "",
-      isBusiness: null,
-      linkId: null,
-    };
-  }
-
-  function openLinkedSibling(sibling: LinkedSibling) {
-    const match = txns.find((t) => t.id === sibling.id);
-    if (match) {
-      startEdit(match);
-      return;
-    }
-    // Sibling isn't on the current page — jump to the first page filtered
-    // by date so the user can find it. The user can then click Edit.
-    setFilters((f) => ({ ...f, startDate: sibling.date, endDate: sibling.date }));
-    setPage(0);
-    setDialogOpen(false);
+  /** Edit-row entry point: navigates to the edit page. That page loads the row and
+   *  hands transfer pairs to the transfer edit page and portfolio rows to their op page. */
+  function startEdit(t: Transaction) {
+    const portfolioHref = portfolioEditHref(t.kind, t.id);
+    router.push(portfolioHref ?? transactionEditHref(t.id, currentReturnTo()));
   }
 
   function confirmDelete(t: Transaction) {
@@ -599,8 +451,7 @@ export function TransactionsWorkspace({
   }
 
   function openSplitDialog(t: Transaction) {
-    setSplitTxn(t);
-    setSplitDialogOpen(true);
+    router.push(transactionSplitHref(t.id, currentReturnTo()));
   }
 
   // Bulk selection helpers
@@ -797,23 +648,6 @@ export function TransactionsWorkspace({
           <OnboardingTips page="transactions" />
         </>
       )}
-      {/* Add/edit dialog is always mounted — startEdit opens it even when the
-          page header (and its Add button) is hidden on the account embed. */}
-      <TransactionDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        accounts={accounts}
-        categories={categories}
-        holdings={holdings}
-        initialState={dialogInitial}
-        onSaved={async () => {
-          afterMutate();
-        }}
-        onRequestDelete={(t) => confirmDelete(t as Transaction)}
-        onRequestDuplicate={(t) => startDuplicate(t as Transaction)}
-        onLinkedSiblingClick={(s) => openLinkedSibling(s as LinkedSibling)}
-      />
-
       {/* Mobile search + filter button (below md) */}
       <div className="md:hidden flex gap-2 items-center">
         <Link
@@ -1326,19 +1160,6 @@ export function TransactionsWorkspace({
         </DialogContent>
       </Dialog>
 
-      {/* Split dialog (for existing transactions) */}
-      {splitTxn && (
-        <SplitDialog
-          open={splitDialogOpen}
-          onOpenChange={(open) => { setSplitDialogOpen(open); if (!open) setSplitTxn(null); }}
-          transactionId={splitTxn.id}
-          totalAmount={splitTxn.amount}
-          currency={splitTxn.currency}
-          categories={categories}
-          accounts={accounts}
-          onSaved={afterMutate}
-        />
-      )}
     </div>
   );
 }

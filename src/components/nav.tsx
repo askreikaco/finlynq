@@ -438,6 +438,8 @@ const FULL_SCREEN_ENTRY_ROUTES = [
 // Edit forms for a single loan / subscription / account / goal / category / rule (/loans/<id>/edit,
 // /subscriptions/<id>/edit, /accounts/<id>/edit, /goals/<id>/edit) and rule / category rename pages.
 const FULL_SCREEN_EDIT_ROUTE = /^\/(loans|subscriptions|accounts|goals|categories|settings\/rules)\/[^/]+\/edit$/;
+// Full-page transaction edit flows (PKG1): /transactions/<id>/edit and /split, /transactions/transfer/<linkId>/edit.
+const FULL_SCREEN_ENTRY_PATTERNS = [/^\/transactions\/\d+\/(edit|split)$/, /^\/transactions\/transfer\/[^/]+\/edit$/];
 
 // Mobile bottom bar
 export const MobileBottomBar = memo(function MobileBottomBar({ pathname }: { pathname: string }) {
@@ -447,6 +449,7 @@ export const MobileBottomBar = memo(function MobileBottomBar({ pathname }: { pat
   const hidden =
     FULL_SCREEN_ENTRY_ROUTES.some((r) => pathname === r || pathname.startsWith(r + "/")) ||
     FULL_SCREEN_EDIT_ROUTE.test(pathname) ||
+    FULL_SCREEN_ENTRY_PATTERNS.some((re) => re.test(pathname)) ||
     pathname.startsWith("/portfolio/new/");
   if (hidden) return null;
   return (

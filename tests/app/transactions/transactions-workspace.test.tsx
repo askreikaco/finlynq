@@ -66,19 +66,18 @@ describe("workspace", () => {
     const d = JSON.parse(sessionStorage.getItem(KEY)!);
     expect(d).toMatchObject({ v: 1, amount: "50", accountId: "1", categoryId: "4", payee: "pp", note: "nn", tags: "t", isBusiness: true, txType: "Expense" });
   });
-  it("W2 dialog Duplicate (edit plain row) -> writes prefill + pushes", () => {
+  it("W2 Edit navigates to /transactions/<id>/edit with the current list as returnTo (no dialog)", () => {
     render(<TransactionsWorkspace />);
     fireEvent.click(screen.getAllByTitle("Edit")[0]);
-    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Duplicate transaction" }));
-    expect(push).toHaveBeenCalledWith("/transactions/new?prefill=1");
-    expect(JSON.parse(sessionStorage.getItem(KEY)!).payee).toBe("pp");
+    expect(push).toHaveBeenCalledWith(expect.stringMatching(/^\/transactions\/\d+\/edit\?returnTo=/));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(sessionStorage.getItem(KEY)).toBeNull();
   });
-  it("W3 dialog on transfer row: no Duplicate; nothing written", async () => {
+  it("W3 Edit on a transfer row also navigates; the edit page decides transfer mode (no dialog)", () => {
     render(<TransactionsWorkspace />);
     fireEvent.click(screen.getAllByTitle("Edit")[1]);
-    const dlg = await screen.findByRole("dialog"); console.log("W3 dialog text:", dlg.textContent?.slice(0,120));
-    expect(within(dlg).queryByRole("button", { name: "Duplicate transaction" })).toBeNull();
-    expect(push).not.toHaveBeenCalled(); expect(sessionStorage.getItem(KEY)).toBeNull();
+    expect(push).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
   it("loadError: shows shared ErrorState with retry and calls loadTxns once", () => {
     const saved = { ...H.RES };

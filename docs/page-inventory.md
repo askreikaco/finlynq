@@ -129,6 +129,9 @@ Pages with PageSkeleton: `/budgets`, `/categories/[id]`, `/categories`, `/goals`
 | `/tax` | `src/app/(app)/tax/page.tsx` | app | yes (page.tsx:65) | no | no | - |
 | `/transactions/audit` | `src/app/(app)/transactions/audit/page.tsx` | app | yes (page.tsx:111); backHref + backLabel | no | no | titleClassName text-xl font-semibold tracking-tight |
 | `/transactions/new` | `src/app/(app)/transactions/new/page.tsx` | app | no | no | no | UNVERIFIED: no header in depth-3 imports |
+| `/transactions/[id]/edit` | `src/app/(app)/transactions/[id]/edit/page.tsx` | app | yes (_components/transaction-edit-form.tsx PageHeader) | no | no | full-page Edit transaction; hidden FAB + tab bar |
+| `/transactions/transfer/[linkId]/edit` | `src/app/(app)/transactions/transfer/[linkId]/edit/page.tsx` | app | yes (_components/transaction-edit-form.tsx PageHeader) | no | no | full-page Edit transfer; hidden FAB + tab bar |
+| `/transactions/[id]/split` | `src/app/(app)/transactions/[id]/split/page.tsx` | app | yes (_components/transaction-split-form.tsx PageHeader) | no | no | full-page Split transaction (replaces split-dialog.tsx); hidden FAB + tab bar |
 | `/transactions` | `src/app/(app)/transactions/page.tsx` | app | via import (transactions/_components/transactions-workspace.tsx:698) | no | no | header from transactions/_components/transactions-workspace.tsx:698 (reachable) |
 | `/transactions/search` | `src/app/(app)/transactions/search/page.tsx` | app | yes (page.tsx:158) | no | no | - |
 | `/whats-new` | `src/app/(app)/whats-new/page.tsx` | app | yes (page.tsx:56) | no | no | - |

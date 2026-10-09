@@ -190,6 +190,9 @@ export const FAB_ROUTES: Record<string, FabEntry> = {
   "/transactions": { kind: "route", label: "Add transaction", icon: Plus, href: "/transactions/new" },
   "/transactions/audit": FALLBACK,
   "/transactions/new": { kind: "hidden", reason: "is the create flow" },
+  "/transactions/[id]/edit": { kind: "hidden", reason: "is the edit flow" },
+  "/transactions/transfer/[linkId]/edit": { kind: "hidden", reason: "is the edit flow" },
+  "/transactions/[id]/split": { kind: "hidden", reason: "is the split flow" },
   "/transactions/search": { kind: "hidden", reason: "sticky bottom Reset/Search bar" },
   "/whats-new": FALLBACK,
 };

@@ -21,30 +21,19 @@ function mount(extra: any, init: any) {
   render(<TransactionDialog open onOpenChange={onOpenChange} accounts={accounts} categories={cats} holdings={[]} initialState={init} onSaved={vi.fn()} {...extra} />);
   return onOpenChange;
 }
-describe("dialog", () => {
-  it("edit mode: Duplicate shown, calls handler, closes; Delete unchanged", () => {
-    const dup = vi.fn(), del = vi.fn();
-    const oc = mount({ onRequestDuplicate: dup, onRequestDelete: del }, { kind: "transaction-edit", tx, linkedSiblings: [] });
-    fireEvent.click(screen.getByRole("button", { name: "Duplicate transaction" }));
-    expect(dup).toHaveBeenCalledWith(expect.objectContaining({ id: 7 }));
-    expect(oc).toHaveBeenCalledWith(false);
-    fireEvent.click(screen.getByRole("button", { name: /Delete/ }));
-    expect(del).toHaveBeenCalledWith(expect.objectContaining({ id: 7 }));
-  });
-  it("create mode: no Duplicate", () => {
-    mount({ onRequestDuplicate: vi.fn() }, null);
-    expect(screen.queryByRole("button", { name: "Duplicate transaction" })).toBeNull();
-  });
-  it("no handler: no Duplicate", () => {
+describe("dialog (create callers only; edit lives on /transactions/[id]/edit)", () => {
+  it("edit-kind state renders the shared fields but offers no Duplicate or Delete (the page owns them)", () => {
     mount({}, { kind: "transaction-edit", tx, linkedSiblings: [] });
     expect(screen.queryByRole("button", { name: "Duplicate transaction" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Delete/ })).toBeNull();
   });
-  it("KNOWN-BUG C: edit of a transfer-leg row (linkId, non-clean pair) must NOT offer Duplicate", () => {
-    mount({ onRequestDuplicate: vi.fn() }, { kind: "transaction-edit", tx: { ...tx, linkId: "L" }, linkedSiblings: [] });
+  it("create mode: submit button only, no Duplicate", () => {
+    mount({}, null);
     expect(screen.queryByRole("button", { name: "Duplicate transaction" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Create Transaction" })).toBeTruthy();
   });
-  it("KNOWN-BUG C2: edit of fx-mismatch row must NOT offer Duplicate", () => {
-    mount({ onRequestDuplicate: vi.fn() }, { kind: "transaction-edit", tx: { ...tx, enteredCurrency: "EUR" }, linkedSiblings: [] });
+  it("transfer-leg edit state: no Duplicate", () => {
+    mount({}, { kind: "transaction-edit", tx: { ...tx, linkId: "L" }, linkedSiblings: [] });
     expect(screen.queryByRole("button", { name: "Duplicate transaction" })).toBeNull();
   });
 });

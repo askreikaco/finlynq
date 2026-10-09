@@ -8,14 +8,14 @@ const FILES: string[] = [
   "src/app/(app)/transactions/page.tsx",
   "src/app/(app)/transactions/_components/transaction-table.tsx",
   "src/app/(app)/transactions/_components/transactions-workspace.tsx",
-  "src/app/(app)/transactions/_components/split-dialog.tsx",
+  "src/app/(app)/transactions/_components/transaction-split-form.tsx",
 ];
 const ARIA: [string, string, number][] = [
   ["src/app/(app)/transactions/_components/transaction-table.tsx", "aria-label=\"Edit\"", 1],
   ["src/app/(app)/transactions/_components/transaction-table.tsx", "aria-label=\"Split\"", 1],
   ["src/app/(app)/transactions/_components/transaction-table.tsx", "aria-label=\"Delete\"", 1],
   ["src/app/(app)/transactions/_components/transactions-workspace.tsx", "aria-label=\"Clear selection\"", 1],
-  ["src/app/(app)/transactions/_components/split-dialog.tsx", "aria-label=\"Remove split row\"", 1],
+  ["src/app/(app)/transactions/_components/transaction-split-form.tsx", "aria-label=\"Remove split row\"", 1],
 ];
 const SKELETON: [string, string, number][] = [
   ["src/app/(app)/transactions/page.tsx", "bg-muted animate-pulse", 7],
