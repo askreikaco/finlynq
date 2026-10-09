@@ -1,67 +1,37 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useDropdownOrder } from "@/components/dropdown-order-provider";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
-import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from "recharts";
-import { Plus, Pencil, Trash2, Landmark, CreditCard, FileText, Calendar, CheckCircle2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Landmark, FileText, Calendar, CheckCircle2 } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { ErrorState } from "@/components/error-state";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { parseSaveError } from "@/lib/save-error";
 import { CspSafeBar } from "@/components/csp-safe-bar";
-import { AmountInput } from "@/components/amount-input";
 import { PageHeader } from "@/components/mobile";
-import { usePageFab } from "@/components/mobile/page-fab";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
 import { isLoanCompleted } from "@/lib/loan-status";
+import type { Loan } from "./_components/loan-types";
 
-type Loan = {
-  id: number; name: string; type: string; principal: number; annualRate: number;
-  termMonths: number | null; startDate: string; paymentFrequency: string; extraPayment: number;
-  paymentAmount: number | null; residualValue: number | null;
-  monthlyPayment: number; paymentPerPeriod: number; monthlyEquivalentPayment: number;
-  totalInterest: number; payoffDate: string;
-  remainingBalance: number; balanceSource: "account" | "projection" | null;
-  principalPaid: number; interestPaid: number; periodsRemaining: number;
-  accountName: string | null;
-  accountId: number | null;
-  // FINLYNQ-123 dual basis. Every amount above is in `currency` (the loan's
-  // own). The `*Display` companions are the server's current-rate conversion
-  // into `displayCurrency` and are the ONLY figures safe to sum across loans.
-  currency: string;
-  displayCurrency: string;
-  remainingBalanceDisplay: number | null;
-  monthlyEquivalentPaymentDisplay: number | null;
-};
 type AmortRow = { period: number; date: string; payment: number; principal: number; interest: number; balance: number };
 type AccrualRow = { month: string; interest: number };
 type AmortResult = { monthlyPayment: number; totalPayments: number; totalInterest: number; payoffDate: string; residualValue: number; schedule: AmortRow[]; monthlyAccrual: AccrualRow[] };
 
-const FREQUENCY_OPTIONS = [
-  { value: "weekly", label: "Weekly" },
-  { value: "biweekly", label: "Biweekly" },
-  { value: "semi_monthly", label: "Semi-monthly" },
-  { value: "monthly", label: "Monthly" },
-  { value: "quarterly", label: "Quarterly" },
-  { value: "annual", label: "Annual" },
-] as const;
-
-const FREQUENCY_LABELS: Record<string, string> = Object.fromEntries(
-  FREQUENCY_OPTIONS.map((f) => [f.value, f.label])
-);
+const FREQUENCY_LABELS: Record<string, string> = {
+  weekly: "Weekly",
+  biweekly: "Biweekly",
+  semi_monthly: "Semi-monthly",
+  monthly: "Monthly",
+  quarterly: "Quarterly",
+  annual: "Annual",
+};
 
 const PERIODS_PER_YEAR: Record<string, number> = { weekly: 52, biweekly: 26, semi_monthly: 24, monthly: 12, quarterly: 4, annual: 1 };
 
@@ -73,7 +43,6 @@ function equivalentTermMonths(loan: Loan): number {
   return Math.max(1, Math.round((loan.periodsRemaining / perYear) * 12));
 }
 type WhatIf = { extraPayment: number; monthsSaved: number; interestSaved: number; newPayoffDate: string; totalInterest: number };
-type Account = { id: number; name: string; currency?: string | null };
 
 const LOAN_TYPE_COLORS: Record<string, string> = {
   mortgage: "border-l-primary",
@@ -151,83 +120,16 @@ function LoansSkeleton() {
 }
 
 function LoansPageContent() {
+  const router = useRouter();
   const { displayCurrency } = useDisplayCurrency();
   const [loans, setLoans] = useState<Loan[]>([]);
-  const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  // ONE dialog serves create and edit. `editingLoan` is the only mode switch,
-  // so any field added to the form below is automatically editable too — the
-  // whole reason this isn't a second copy of the layout.
-  const [editingLoan, setEditingLoan] = useState<Loan | null>(null);
-  const [saving, setSaving] = useState(false);
-  // A currency change on an existing loan RE-DENOMINATES it (reinterprets the
-  // stored numbers); it does not convert them. Held here pending confirmation.
-  const [pendingRedenominate, setPendingRedenominate] = useState<{ from: string; to: string } | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
   const [amort, setAmort] = useState<AmortResult | null>(null);
   const [whatIf, setWhatIf] = useState<WhatIf[]>([]);
-  const [form, setForm] = useState({ name: "", type: "mortgage", principal: "", currency: displayCurrency, annualRate: "", termMonths: "", startDate: "", paymentAmount: "", paymentFrequency: "monthly", extraPayment: "0", residualValue: "", accountId: "" });
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  // Built-in fiat UNION the user's active currencies (#291).
-  const currencyOptions = useActiveCurrencies(form.currency);
-
-  function validateForm() {
-    const e: Record<string, string> = {};
-    if (!form.name.trim()) e.name = "Name is required";
-    if (!form.principal || parseFloat(form.principal) <= 0) e.principal = "Principal must be greater than 0";
-    if (!form.annualRate || parseFloat(form.annualRate) < 0) e.annualRate = "Rate must be 0 or more";
-    if (form.annualRate && parseFloat(form.annualRate) > 100) e.annualRate = "Rate must be 100 or less";
-    // FINLYNQ-136: term OR payment — payment-driven loans solve for the term.
-    if (!form.termMonths && !form.paymentAmount) e.termMonths = "Enter a term or a payment amount";
-    if (form.termMonths && parseInt(form.termMonths) <= 0) e.termMonths = "Term must be greater than 0";
-    if (form.paymentAmount && parseFloat(form.paymentAmount) <= 0) e.paymentAmount = "Payment must be greater than 0";
-    if (form.residualValue && form.principal && parseFloat(form.residualValue) >= parseFloat(form.principal)) e.residualValue = "Residual must be less than principal";
-    if (!form.startDate) e.startDate = "Start date is required";
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  }
-
-  const isFormValid = form.name.trim() !== "" && form.principal !== "" && parseFloat(form.principal) > 0 && form.annualRate !== "" && parseFloat(form.annualRate) >= 0 && parseFloat(form.annualRate) <= 100 && (form.termMonths !== "" ? parseInt(form.termMonths) > 0 : form.paymentAmount !== "" && parseFloat(form.paymentAmount) > 0) && form.startDate !== "";
-
-  const BLANK_FORM = {
-    name: "", type: "mortgage", principal: "", currency: displayCurrency, annualRate: "",
-    termMonths: "", startDate: "", paymentAmount: "", paymentFrequency: "monthly",
-    extraPayment: "0", residualValue: "", accountId: "",
-  };
-
-  function openCreate() {
-    setEditingLoan(null);
-    setErrors({});
-    setForm({ ...BLANK_FORM, currency: displayCurrency });
-    setDialogOpen(true);
-  }
-
-  function openEdit(loan: Loan) {
-    setEditingLoan(loan);
-    setErrors({});
-    // Seed from the loan's NATIVE fields — never the converted companions, or
-    // saving would silently rewrite the principal in the display currency.
-    setForm({
-      name: loan.name ?? "",
-      type: loan.type,
-      principal: String(loan.principal),
-      currency: loan.currency,
-      annualRate: String(loan.annualRate),
-      termMonths: loan.termMonths == null ? "" : String(loan.termMonths),
-      startDate: loan.startDate,
-      paymentAmount: loan.paymentAmount == null ? "" : String(loan.paymentAmount),
-      paymentFrequency: loan.paymentFrequency,
-      extraPayment: String(loan.extraPayment ?? 0),
-      residualValue: loan.residualValue == null ? "" : String(loan.residualValue),
-      accountId: loan.accountId == null ? "" : String(loan.accountId),
-    });
-    setDialogOpen(true);
-  }
-
   const load = useCallback(() => {
     setLoadError(false);
     fetch("/api/loans")
@@ -238,13 +140,7 @@ function LoansPageContent() {
   }, []);
   useEffect(() => {
     load();
-    fetch("/api/accounts")
-      .then((r) => (r.ok ? r.json() : []))
-      .then((data) => setAccounts(Array.isArray(data) ? data : []))
-      .catch(() => {});
   }, [load]);
-
-  const sortAccount = useDropdownOrder("account");
 
   async function viewAmortization(loan: Loan) {
     setSelectedLoan(loan);
@@ -254,73 +150,6 @@ function LoansPageContent() {
     ]);
     setAmort(amortRes);
     setWhatIf(Array.isArray(whatIfRes) ? whatIfRes : []);
-  }
-
-  // ONE payload shape for both verbs, so a field added to the form reaches
-  // create and edit together rather than silently working in only one.
-  function buildPayload() {
-    return {
-      name: form.name,
-      type: form.type,
-      principal: parseFloat(form.principal),
-      currency: form.currency || displayCurrency,
-      annualRate: parseFloat(form.annualRate),
-      termMonths: form.termMonths ? parseInt(form.termMonths) : null,
-      startDate: form.startDate,
-      paymentAmount: form.paymentAmount ? parseFloat(form.paymentAmount) : null,
-      paymentFrequency: form.paymentFrequency,
-      extraPayment: parseFloat(form.extraPayment) || 0,
-      residualValue: form.type === "lease" && form.residualValue ? parseFloat(form.residualValue) : null,
-      accountId: form.accountId ? parseInt(form.accountId) : null,
-    };
-  }
-
-  async function doSave() {
-    // `saving` gates re-entry — /api/loans has no idempotency key, so a
-    // double-submit would book the loan twice.
-    if (saving) return;
-    setSaving(true);
-    setPendingRedenominate(null);
-    const editing = editingLoan;
-    try {
-      const res = await fetch("/api/loans", {
-        method: editing ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editing ? { id: editing.id, ...buildPayload() } : buildPayload()),
-      });
-      if (!res.ok) {
-        // e.g. payment below the period interest, or 423 with no DEK. Keep the
-        // dialog OPEN and the input intact.
-        const message = await parseSaveError(res, editing ? "Failed to save loan" : "Failed to create loan");
-        setErrors((prev) => ({ ...prev, form: message }));
-        return;
-      }
-      setDialogOpen(false);
-      setEditingLoan(null);
-      setForm({ ...BLANK_FORM, currency: displayCurrency });
-      setErrors({});
-      load();
-    } catch {
-      // A thrown fetch (offline, DNS, aborted) would otherwise leave the
-      // dialog sitting there looking like nothing happened.
-      setErrors((prev) => ({ ...prev, form: "Couldn't reach the server. Check your connection and try again." }));
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (saving || !validateForm()) return;
-    const from = editingLoan?.currency;
-    const to = form.currency || displayCurrency;
-    // Changing the currency of an EXISTING loan reinterprets its stored
-    // numbers rather than converting them — confirm before that lands.
-    if (editingLoan && from && from !== to) {
-      setPendingRedenominate({ from, to });
-      return;
-    }
-    await doSave();
   }
 
   async function handleDelete() {
@@ -368,7 +197,7 @@ function LoansPageContent() {
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" onClick={() => viewAmortization(loan)}>View Schedule</Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Edit loan ${loan.name}`} onClick={() => openEdit(loan)}><Pencil className="h-4 w-4" /></Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={`Edit loan ${loan.name}`} onClick={() => router.push(`/loans/${loan.id}/edit`)}><Pencil className="h-4 w-4" /></Button>
                   <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" aria-label={`Delete loan ${loan.name}`} onClick={() => setDeleteId(loan.id)}><Trash2 className="h-4 w-4" /></Button>
                 </div>
               </div>
@@ -407,8 +236,6 @@ function LoansPageContent() {
         );
   };
 
-  usePageFab("loans.create", () => openCreate());
-
   if (loading) return <LoansSkeleton />;
   if (loadError) return <ErrorState title="Couldn't load loans" message="We couldn't load your loans. Please try again." onRetry={() => { setLoading(true); load(); }} />;
 
@@ -421,125 +248,8 @@ function LoansPageContent() {
         actionsClassName="contents"
         actions={
         <>
-        {/* Opening is routed through openCreate/openEdit rather than a
-            DialogTrigger, so the form is seeded before the dialog paints.
-            `displayCurrency` starts at the USD default and only resolves once
-            /api/auth/session lands, so seeding at open (not at useState) is
-            what stops a RUB user being shown USD preselected — the form SENDS
-            that value, persisting the wrong currency rather than displaying it. */}
-        <Button id="add-loan-btn" onClick={openCreate}><Plus className="h-4 w-4 mr-1" /> Add Loan</Button>
-        <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) setEditingLoan(null); }}>
-          <DialogContent>
-            <DialogHeader><DialogTitle>{editingLoan ? "Edit Loan" : "Add Loan"}</DialogTitle></DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>Name</Label>
-                  <Input value={form.name} onChange={(e) => { setForm({ ...form, name: e.target.value }); setErrors({ ...errors, name: "" }); }} />
-                  {errors.name && <p className="text-xs text-destructive mt-1">{errors.name}</p>}
-                </div>
-                <div><Label>Type</Label>
-                  <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v ?? "mortgage" })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="mortgage">Mortgage</SelectItem>
-                      <SelectItem value="lease">Lease</SelectItem>
-                      <SelectItem value="loan">Loan</SelectItem>
-                      <SelectItem value="student_loan">Student Loan</SelectItem>
-                      <SelectItem value="credit_card">Credit Card</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <Label>Currency</Label>
-                  <Select value={form.currency} onValueChange={(v) => setForm({ ...form, currency: v ?? displayCurrency })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {currencyOptions.map(c => (<SelectItem key={c} value={c}>{c}</SelectItem>))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Principal</Label>
-                  <AmountInput  step="0.01" value={form.principal} onValueChange={(nv) => { setForm({ ...form, principal: nv }); setErrors({ ...errors, principal: "" }); }} />
-                  {errors.principal && <p className="text-xs text-destructive mt-1">{errors.principal}</p>}
-                </div>
-                <div>
-                  <Label>Annual Rate (%)</Label>
-                  <AmountInput  step="0.01" value={form.annualRate} onValueChange={(nv) => { setForm({ ...form, annualRate: nv }); setErrors({ ...errors, annualRate: "" }); }} />
-                  {errors.annualRate && <p className="text-xs text-destructive mt-1">{errors.annualRate}</p>}
-                </div>
-                <div>
-                  <Label>Term (months)</Label>
-                  <Input type="number" placeholder="From payment" value={form.termMonths} onChange={(e) => { setForm({ ...form, termMonths: e.target.value }); setErrors({ ...errors, termMonths: "" }); }} />
-                  {errors.termMonths && <p className="text-xs text-destructive mt-1">{errors.termMonths}</p>}
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <Label>Payment</Label>
-                  <AmountInput step="0.01" placeholder="From term" value={form.paymentAmount} onValueChange={(nv) => { setForm({ ...form, paymentAmount: nv }); setErrors({ ...errors, paymentAmount: "", termMonths: "" }); }} />
-                  {errors.paymentAmount && <p className="text-xs text-destructive mt-1">{errors.paymentAmount}</p>}
-                </div>
-                <div><Label>Frequency</Label>
-                  <Select value={form.paymentFrequency} onValueChange={(v) => setForm({ ...form, paymentFrequency: v ?? "monthly" })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {FREQUENCY_OPTIONS.map((f) => (<SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div><Label>Extra/Payment</Label><AmountInput  step="0.01" value={form.extraPayment} onValueChange={(nv) => setForm({ ...form, extraPayment: nv })} /></div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>Start Date</Label>
-                  <Input type="date" value={form.startDate} onChange={(e) => { setForm({ ...form, startDate: e.target.value }); setErrors({ ...errors, startDate: "" }); }} />
-                  {errors.startDate && <p className="text-xs text-destructive mt-1">{errors.startDate}</p>}
-                </div>
-                {form.type === "lease" && (
-                  <div>
-                    <Label>Residual / Buyout</Label>
-                    <AmountInput  step="0.01" placeholder="Balance at term end" value={form.residualValue} onValueChange={(nv) => { setForm({ ...form, residualValue: nv }); setErrors({ ...errors, residualValue: "" }); }} />
-                    {errors.residualValue && <p className="text-xs text-destructive mt-1">{errors.residualValue}</p>}
-                  </div>
-                )}
-              </div>
-              <div><Label>Linked Account</Label>
-                <Combobox
-                  value={form.accountId}
-                  // Mirror the server's precedence (explicit > linked account >
-                  // display currency): picking an account moves the currency
-                  // with it, so the form can't imply one and store another.
-                  onValueChange={(v) => {
-                    const acct = accounts.find((a) => String(a.id) === v);
-                    setForm((f) => ({ ...f, accountId: v, currency: acct?.currency || f.currency }));
-                  }}
-                  items={sortAccount(
-                    accounts.map((a): ComboboxItemShape => ({ value: String(a.id), label: a.name })),
-                    (a) => Number(a.value),
-                    (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
-                  )}
-                  placeholder="None"
-                  searchPlaceholder="Search accounts…"
-                  emptyMessage="No matches"
-                  className="w-full"
-                />
-              </div>
-              {editingLoan && form.currency !== editingLoan.currency && (
-                <p className="text-xs text-warning">
-                  Changing the currency re-labels the amounts above as {form.currency}. It does not convert them.
-                </p>
-              )}
-              {errors.form && <p className="text-xs text-destructive">{errors.form}</p>}
-              <Button type="submit" className="w-full" disabled={!isFormValid || saving}>
-                {saving ? "Saving…" : editingLoan ? "Save changes" : "Add Loan"}
-              </Button>
-            </form>
-          </DialogContent>
-        </Dialog>
+        {/* Create is a full page (iOS navigation), not a dialog. */}
+        <Button id="add-loan-btn" onClick={() => router.push("/loans/new")}><Plus className="h-4 w-4 mr-1" /> Add Loan</Button>
         </>
         }
       />
@@ -592,7 +302,7 @@ function LoansPageContent() {
           icon={Landmark}
           title="No loans tracked yet"
           description="Add a mortgage, car loan, student loan, or any other debt to see amortization schedules and payoff projections."
-          action={{ label: "Add your first loan", onClick: () => document.getElementById("add-loan-btn")?.click() }}
+          action={{ label: "Add your first loan", onClick: () => router.push("/loans/new") }}
         />
       )}
 
@@ -677,27 +387,6 @@ function LoansPageContent() {
           </CardContent>
         </Card>
       )}
-
-      {/* Re-denomination is not a conversion: the stored numbers stay put and
-          only their currency label changes. That is the right primitive for
-          repairing a loan booked in the wrong currency, but it silently
-          restates the debt if the user expected a conversion. */}
-      <ConfirmDialog
-        open={pendingRedenominate !== null}
-        onOpenChange={(open) => { if (!open) setPendingRedenominate(null); }}
-        title="Change loan currency?"
-        description={
-          <>
-            This re-labels the loan from <strong>{pendingRedenominate?.from}</strong> to{" "}
-            <strong>{pendingRedenominate?.to}</strong>. The amounts are <strong>not</strong> converted —
-            a principal of {form.principal || "0"} stays {form.principal || "0"}, now read as{" "}
-            {pendingRedenominate?.to}.
-          </>
-        }
-        confirmLabel="Change currency"
-        busy={saving}
-        onConfirm={doSave}
-      />
 
       <ConfirmDialog
         open={deleteId !== null}
