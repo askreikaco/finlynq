@@ -1268,7 +1268,7 @@ export function TransactionDialog({
                   </span>
                 )}
                 {fxPreview.state === "needs-override" && (
-                  <span className="text-amber-600 dark:text-amber-400">
+                  <span className="text-warning">
                     Rate not available —{" "}
                     <Link href="/settings/general" className="underline hover:no-underline">
                       add an override
@@ -1277,7 +1277,7 @@ export function TransactionDialog({
                   </span>
                 )}
                 {fxPreview.state === "error" && (
-                  <span className="text-rose-600 dark:text-rose-400">{fxPreview.message}</span>
+                  <span className="text-destructive">{fxPreview.message}</span>
                 )}
               </div>
             )}
@@ -1384,9 +1384,9 @@ export function TransactionDialog({
                 ),
               ];
               return (
-                <div className="space-y-1.5 rounded-md border border-violet-200 dark:border-violet-900 bg-violet-50/40 dark:bg-violet-950/20 p-3">
+                <div className="space-y-1.5 rounded-md border border-chart-5/30 bg-chart-5/10 p-3">
                   <Label>
-                    Portfolio Holding <span className="text-rose-600">*</span>
+                    Portfolio Holding <span className="text-destructive">*</span>
                   </Label>
                   <Combobox
                     value={form.portfolioHoldingId}
@@ -1405,11 +1405,11 @@ export function TransactionDialog({
             })()}
 
             {editId && linkedSiblings.length > 0 && (
-              <div className="space-y-2 rounded-lg border border-sky-200 dark:border-sky-900 bg-sky-50/50 dark:bg-sky-950/30 p-3">
-                <div className="text-[11px] text-sky-700/80 dark:text-sky-300/80">
+              <div className="space-y-2 rounded-lg border border-info/30 bg-info/10 p-3">
+                <div className="text-[11px] text-info/80">
                   This transaction is part of a multi-leg group; legs are edited individually.
                 </div>
-                <div className="flex items-center gap-1.5 text-xs font-medium text-sky-700 dark:text-sky-300">
+                <div className="flex items-center gap-1.5 text-xs font-medium text-info">
                   <Link2 className="h-3.5 w-3.5" />
                   Linked transaction{linkedSiblings.length > 1 ? "s" : ""}
                 </div>
@@ -1419,7 +1419,7 @@ export function TransactionDialog({
                       key={s.id}
                       type="button"
                       onClick={() => onLinkedSiblingClick?.(s)}
-                      className="flex w-full items-center justify-between gap-2 rounded-md bg-background/50 px-2 py-1.5 text-xs hover:bg-background transition-colors border border-transparent hover:border-sky-200 dark:hover:border-sky-800"
+                      className="flex w-full items-center justify-between gap-2 rounded-md bg-background/50 px-2 py-1.5 text-xs hover:bg-background transition-colors border border-transparent hover:border-info/30"
                     >
                       <div className="flex items-center gap-2 min-w-0">
                         <span className="text-muted-foreground font-mono shrink-0">{formatDate(s.date)}</span>
@@ -1429,7 +1429,7 @@ export function TransactionDialog({
                         )}
                       </div>
                       <span
-                        className={`font-mono font-semibold shrink-0 ${s.amount >= 0 ? "text-emerald-600" : "text-rose-600"}`}
+                        className={`font-mono font-semibold shrink-0 ${s.amount >= 0 ? "text-pos" : "text-destructive"}`}
                       >
                         {formatCurrency(s.amount, s.currency)}
                       </span>
@@ -1444,7 +1444,7 @@ export function TransactionDialog({
               className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors w-full"
               onClick={() => setShowSplits(!showSplits)}
             >
-              <Scissors className={`h-4 w-4 transition-transform ${showSplits ? "text-violet-500" : ""}`} />
+              <Scissors className={`h-4 w-4 transition-transform ${showSplits ? "text-chart-5" : ""}`} />
               {showSplits ? "Hide splits" : "Split this transaction"}
             </button>
 
@@ -1498,7 +1498,7 @@ export function TransactionDialog({
                         setSplitRows(next);
                       }}
                     />
-                    <Button
+                    <Button aria-label="Remove split row"
                       type="button"
                       variant="ghost"
                       size="icon"
@@ -1525,11 +1525,11 @@ export function TransactionDialog({
                     <span className="font-mono">{formatCurrency(splitAllocated, form.currency)}</span>
                   </span>
                   {splitBalanced ? (
-                    <Badge variant="outline" className="text-[10px] border-emerald-300 text-emerald-600 bg-emerald-50">
+                    <Badge variant="outline" className="text-[10px] border-pos/30 text-pos bg-pos/10">
                       Balanced
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="text-[10px] border-rose-300 text-rose-600 bg-rose-50">
+                    <Badge variant="outline" className="text-[10px] border-destructive/30 text-destructive bg-destructive/10">
                       {splitRemaining > 0
                         ? `${formatCurrency(splitRemaining, form.currency)} left`
                         : `${formatCurrency(Math.abs(splitRemaining), form.currency)} over`}
@@ -1614,7 +1614,7 @@ export function TransactionDialog({
             )}
 
             {submitError && (
-              <div className="rounded-md border border-rose-300 bg-rose-50 dark:border-rose-800 dark:bg-rose-950/40 px-3 py-2 text-xs text-rose-700 dark:text-rose-300">
+              <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
                 {submitError.message}{" "}
                 {submitError.currency && (
                   <Link href="/settings/general" className="underline hover:no-underline">
@@ -1663,7 +1663,7 @@ export function TransactionDialog({
             {/* Rule suggestion (FINLYNQ-125) — opt-in, new-entry tx mode only.
                 The tx saves + reconciles first; the rule is best-effort. */}
             {ruleEligible && (
-              <div className="space-y-1.5 rounded-md border border-sky-200 dark:border-sky-900 bg-sky-50/40 dark:bg-sky-950/20 p-3">
+              <div className="space-y-1.5 rounded-md border border-info/30 bg-info/10 p-3">
                 <div className="flex items-center gap-2">
                   <input
                     type="checkbox"
@@ -1685,7 +1685,7 @@ export function TransactionDialog({
                   {" · "}
                   <button
                     type="button"
-                    className="underline hover:no-underline text-sky-700 dark:text-sky-300 disabled:opacity-50"
+                    className="underline hover:no-underline text-info disabled:opacity-50"
                     disabled={saving}
                     onClick={(e) => handleSubmit(e, "customize")}
                   >
@@ -1696,7 +1696,7 @@ export function TransactionDialog({
             )}
 
             {ruleNotice && (
-              <div className="rounded-md border border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40 px-3 py-2 text-xs text-amber-800 dark:text-amber-300">
+              <div className="rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning">
                 {ruleNotice}
               </div>
             )}
@@ -1857,12 +1857,12 @@ export function TransactionDialog({
                     ? transferForm.destHoldingName.trim()
                     : destSentinel;
                 return (
-                  <div className="space-y-3 rounded-md border border-violet-200 dark:border-violet-900 bg-violet-50/40 dark:bg-violet-950/20 p-3">
+                  <div className="space-y-3 rounded-md border border-chart-5/30 bg-chart-5/10 p-3">
                     <p className="text-[11px] text-muted-foreground">
                       Both accounts are investment accounts — pick the holding to transfer and the quantity. Source holding must already exist. Destination defaults to the same holding name (auto-created if missing). Cash amount may be 0 for a pure in-kind move.
                     </p>
                     {fromAcct && toAcct && fromAcct.id === toAcct.id && (
-                      <p className="text-[11px] text-amber-700 dark:text-amber-300">
+                      <p className="text-[11px] text-warning">
                         Same-account rebalance — pick a different destination holding to move shares between two positions in this brokerage.
                       </p>
                     )}
@@ -1870,7 +1870,7 @@ export function TransactionDialog({
                       <div className="space-y-1">
                         <Label className="text-xs">
                           Source holding (in {fromAcct?.name ?? "—"}){" "}
-                          <span className="text-rose-600">*</span>
+                          <span className="text-destructive">*</span>
                         </Label>
                         <Combobox
                           value={transferForm.holdingName}
@@ -1885,7 +1885,7 @@ export function TransactionDialog({
                       </div>
                       <div className="space-y-1">
                         <Label className="text-xs">
-                          Quantity (shares) <span className="text-rose-600">*</span>
+                          Quantity (shares) <span className="text-destructive">*</span>
                         </Label>
                         <AmountInput
                           step="0.0001"
@@ -1983,7 +1983,7 @@ export function TransactionDialog({
                         {destQuantityTouched &&
                           transferForm.destQuantity &&
                           parseFloat(transferForm.destQuantity) !== parseFloat(transferForm.quantity || "0") && (
-                            <p className="text-[11px] text-amber-700 dark:text-amber-300">
+                            <p className="text-[11px] text-warning">
                               Asymmetric — the destination will receive a different share count (split / merger / conversion).
                             </p>
                           )}
@@ -2007,7 +2007,7 @@ export function TransactionDialog({
 
               if (transferEdit) return null;
               return (
-                <div className="space-y-2 rounded-md border border-violet-200 dark:border-violet-900 bg-violet-50/40 dark:bg-violet-950/20 p-3">
+                <div className="space-y-2 rounded-md border border-chart-5/30 bg-chart-5/10 p-3">
                   <p className="text-[11px] text-muted-foreground">
                     Investment account leg — every transfer into an investment account must reference a holding and the share count moving through it.
                   </p>
@@ -2015,7 +2015,7 @@ export function TransactionDialog({
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
                         <Label className="text-xs">
-                          Holding in {fromAcct.name} <span className="text-rose-600">*</span>
+                          Holding in {fromAcct.name} <span className="text-destructive">*</span>
                         </Label>
                         <Combobox
                           value={transferForm.fromHoldingId}
@@ -2030,7 +2030,7 @@ export function TransactionDialog({
                       </div>
                       <div className="space-y-1">
                         <Label className="text-xs">
-                          Quantity (shares) <span className="text-rose-600">*</span>
+                          Quantity (shares) <span className="text-destructive">*</span>
                         </Label>
                         <AmountInput
                           step="0.0001"
@@ -2046,7 +2046,7 @@ export function TransactionDialog({
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
                         <Label className="text-xs">
-                          Holding in {toAcct.name} <span className="text-rose-600">*</span>
+                          Holding in {toAcct.name} <span className="text-destructive">*</span>
                         </Label>
                         <Combobox
                           value={transferForm.toHoldingId}
@@ -2061,7 +2061,7 @@ export function TransactionDialog({
                       </div>
                       <div className="space-y-1">
                         <Label className="text-xs">
-                          Quantity (shares) <span className="text-rose-600">*</span>
+                          Quantity (shares) <span className="text-destructive">*</span>
                         </Label>
                         <AmountInput
                           step="0.0001"
@@ -2113,7 +2113,7 @@ export function TransactionDialog({
               const showMarketRef =
                 transferFxPreview.state === "ok" && impliedRate != null && !matchesPreview;
               return (
-                <div className="space-y-2 rounded-md border border-amber-200 dark:border-amber-900 bg-amber-50/50 dark:bg-amber-950/20 p-3">
+                <div className="space-y-2 rounded-md border border-warning/30 bg-warning/10 p-3">
                   <div className="flex items-center justify-between">
                     <Label className="text-xs">Amount received ({toAcct!.currency})</Label>
                     {impliedRate != null ? (
@@ -2155,7 +2155,7 @@ export function TransactionDialog({
                     </p>
                   )}
                   {transferFxPreview.state === "needs-override" && (
-                    <p className="text-[11px] text-amber-700 dark:text-amber-300">
+                    <p className="text-[11px] text-warning">
                       No FX rate cached for this pair —{" "}
                       <Link href="/settings/general" className="underline">
                         add a custom rate
@@ -2164,7 +2164,7 @@ export function TransactionDialog({
                     </p>
                   )}
                   {transferFxPreview.state === "error" && (
-                    <p className="text-[11px] text-rose-600 dark:text-rose-400">{transferFxPreview.message}</p>
+                    <p className="text-[11px] text-destructive">{transferFxPreview.message}</p>
                   )}
                 </div>
               );
@@ -2221,7 +2221,7 @@ export function TransactionDialog({
             })()}
 
             {submitError && (
-              <div className="rounded-md border border-rose-300 bg-rose-50 dark:border-rose-800 dark:bg-rose-950/40 px-3 py-2 text-xs text-rose-700 dark:text-rose-300">
+              <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
                 {submitError.message}{" "}
                 {submitError.currency && (
                   <Link href="/settings/general" className="underline hover:no-underline">
