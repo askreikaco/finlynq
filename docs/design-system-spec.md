@@ -113,7 +113,7 @@ Excluded from the adaptive guard scan (see 3e).
 | ErrorState | `src/components/error-state.tsx:12` | role=alert block with optional "Try again" (`min-h-11`, `:32`) |
 | EmptyState | `src/components/empty-state.tsx:19` | Icon, title, description, optional action |
 | PageSkeleton | `src/components/page-skeleton.tsx:10` (`variant` type `:6-7`) | Shimmer skeleton, variants table / cards / list |
-| QuickAddFAB | `src/components/quick-add-fab.tsx:15` | Fixed bottom-right round button (`:55`; doc `:11-12`); paths from `src/lib/quick-add/flag.ts:15` (`/dashboard`, `/transactions`) |
+| PageFab | `src/components/mobile/page-fab.tsx` | Per-page FAB (mobile only, `md:hidden`); mounted once in `(app)/layout.tsx`; action from `fab-registry.ts` `FAB_ROUTES` |
 
 ## 3. Rules
 

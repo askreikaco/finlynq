@@ -38,75 +38,30 @@ describe("ReportingRecomputeIndicator", () => {
     vi.clearAllMocks();
   });
 
-  it("renders with normal classes when avoidFab is not set", async () => {
-    vi.mocked(usePathname).mockReturnValue("/budgets");
+  it.each(["/budgets", "/dashboard", "/transactions"])(
+    "sits above the PageFab on phones and at md:bottom-4 on %s",
+    async (path) => {
+      vi.mocked(usePathname).mockReturnValue(path);
 
-    const { container } = render(<ReportingRecomputeIndicator />);
+      const { container } = render(<ReportingRecomputeIndicator />);
 
-    await waitFor(() => {
-      const indicator = container.querySelector("div.fixed");
-      expect(indicator).toBeTruthy();
-      expect(indicator?.className).toContain("bottom-[calc(var(--mobile-bar-clearance)-8px)]");
-      expect(indicator?.className).toContain("md:bottom-4");
-    });
-  });
-
-  it("renders with normal classes when avoidFab is false", async () => {
-    vi.mocked(usePathname).mockReturnValue("/dashboard");
-
-    const { container } = render(<ReportingRecomputeIndicator avoidFab={false} />);
-
-    await waitFor(() => {
-      const indicator = container.querySelector("div.fixed");
-      expect(indicator).toBeTruthy();
-      expect(indicator?.className).toContain("bottom-[calc(var(--mobile-bar-clearance)-8px)]");
-      expect(indicator?.className).toContain("md:bottom-4");
-    });
-  });
-
-  it("renders with FAB-avoidance classes on /dashboard when avoidFab is true", async () => {
-    vi.mocked(usePathname).mockReturnValue("/dashboard");
-
-    const { container } = render(<ReportingRecomputeIndicator avoidFab={true} />);
-
-    await waitFor(() => {
-      const indicator = container.querySelector("div.fixed");
-      expect(indicator).toBeTruthy();
-      expect(indicator?.className).toContain("bottom-[calc(var(--mobile-bar-clearance)+64px)]");
-      expect(indicator?.className).toContain("md:bottom-24");
-    });
-  });
-
-  it("renders with FAB-avoidance classes on /transactions when avoidFab is true", async () => {
-    vi.mocked(usePathname).mockReturnValue("/transactions");
-
-    const { container } = render(<ReportingRecomputeIndicator avoidFab={true} />);
-
-    await waitFor(() => {
-      const indicator = container.querySelector("div.fixed");
-      expect(indicator).toBeTruthy();
-      expect(indicator?.className).toContain("bottom-[calc(var(--mobile-bar-clearance)+64px)]");
-      expect(indicator?.className).toContain("md:bottom-24");
-    });
-  });
-
-  it("renders with normal classes on /budgets when avoidFab is true", async () => {
-    vi.mocked(usePathname).mockReturnValue("/budgets");
-
-    const { container } = render(<ReportingRecomputeIndicator avoidFab={true} />);
-
-    await waitFor(() => {
-      const indicator = container.querySelector("div.fixed");
-      expect(indicator).toBeTruthy();
-      expect(indicator?.className).toContain("bottom-[calc(var(--mobile-bar-clearance)-8px)]");
-      expect(indicator?.className).toContain("md:bottom-4");
-    });
-  });
+      await waitFor(() => {
+        const indicator = container.querySelector("div.fixed");
+        expect(indicator).toBeTruthy();
+        expect(indicator?.className).toContain(
+          "max-md:bottom-[calc(var(--mobile-bar-clearance)+80px)]",
+        );
+        expect(indicator?.className).toContain("md:bottom-4");
+        expect(indicator?.className).not.toContain("md:bottom-24");
+        expect(indicator?.className).not.toContain("+64px");
+      });
+    },
+  );
 
   it("displays running state with progress", async () => {
     vi.mocked(usePathname).mockReturnValue("/dashboard");
 
-    const { getByText } = render(<ReportingRecomputeIndicator avoidFab={false} />);
+    const { getByText } = render(<ReportingRecomputeIndicator />);
 
     await waitFor(() => {
       expect(getByText(/Recalculating reports/)).toBeTruthy();
@@ -132,7 +87,7 @@ describe("ReportingRecomputeIndicator", () => {
       } as unknown as Response),
     );
 
-    const { getByText } = render(<ReportingRecomputeIndicator avoidFab={false} />);
+    const { getByText } = render(<ReportingRecomputeIndicator />);
 
     await waitFor(() => {
       expect(getByText(/Reports updated/)).toBeTruthy();
@@ -157,7 +112,7 @@ describe("ReportingRecomputeIndicator", () => {
       } as unknown as Response),
     );
 
-    const { container } = render(<ReportingRecomputeIndicator avoidFab={false} />);
+    const { container } = render(<ReportingRecomputeIndicator />);
 
     await waitFor(() => {
       const indicators = container.querySelectorAll("div.fixed");
