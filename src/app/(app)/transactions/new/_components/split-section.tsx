@@ -66,19 +66,19 @@ export function SplitSection({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <label className="text-sm font-medium text-white flex items-center gap-2 cursor-pointer">
+        <label className="text-sm font-medium text-foreground flex items-center gap-2 cursor-pointer">
           <input
             type="checkbox"
             checked={enabled}
             onChange={(e) => onToggle(e.target.checked)}
-            className="w-4 h-4 rounded bg-zinc-900 border-zinc-700 text-indigo-600 focus:ring-indigo-500 accent-indigo-600 cursor-pointer"
+            className="w-4 h-4 rounded bg-card border-border text-primary focus:ring-ring accent-primary cursor-pointer"
           />
           <span>Split this transaction</span>
         </label>
         {enabled && (
           <div className="flex items-center text-xs">
             {isBalanced ? (
-              <span className="flex items-center gap-1 text-emerald-400 font-medium">
+              <span className="flex items-center gap-1 text-pos font-medium">
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 Balanced ({formatCurrency(splitSum, currency)})
               </span>
@@ -88,7 +88,7 @@ export function SplitSection({
                 {formatCurrency(diff, currency)} remaining
               </span>
             ) : (
-              <span className="flex items-center gap-1 text-rose-400 font-medium">
+              <span className="flex items-center gap-1 text-neg font-medium">
                 <AlertCircle className="w-3.5 h-3.5" />
                 Over by {formatCurrency(Math.abs(diff), currency)}
               </span>
@@ -104,18 +104,19 @@ export function SplitSection({
             return (
               <div
                 key={row.id}
-                className="p-3 bg-zinc-900/90 border border-zinc-800 rounded-xl space-y-2.5"
+                className="p-3 bg-card/90 border border-border rounded-xl space-y-2.5"
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Split #{idx + 1}
                   </span>
                   {rows.length > 2 && (
                     <button
                       type="button"
                       onClick={() => handleRemoveRow(idx)}
-                      className="text-zinc-500 hover:text-rose-400 p-1 rounded-md transition-colors"
+                      className="text-muted-foreground hover:text-destructive p-1 max-md:p-3 max-md:-m-3 rounded-md transition-colors"
                       title="Remove split"
+                      aria-label="Remove split"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -127,9 +128,9 @@ export function SplitSection({
                   <button
                     type="button"
                     onClick={() => onOpenCategorySelector(idx)}
-                    className="flex items-center justify-between px-3 py-2 bg-zinc-800/80 hover:bg-zinc-800 border border-zinc-700/60 rounded-lg text-left transition-colors"
+                    className="flex items-center justify-between px-3 py-2 bg-muted/80 hover:bg-muted border border-border/60 rounded-lg text-left transition-colors"
                   >
-                    <span className="text-xs truncate font-medium text-white">
+                    <span className="text-xs truncate font-medium text-foreground">
                       {cat?.name || "Pick category"}
                     </span>
                   </button>
@@ -139,7 +140,7 @@ export function SplitSection({
                     value={row.amount}
                     onValueChange={(val) => handleUpdateRow(idx, "amount", val)}
                     placeholder={`0${currencyDecimals(currency) > 0 ? ".00" : ""}`}
-                    className="h-8 px-2.5 py-1.5 bg-zinc-800/80 border border-zinc-700/60 rounded-lg text-xs text-white placeholder:text-zinc-500 outline-none focus:border-indigo-500 transition-colors"
+                    className="h-8 px-2.5 py-1.5 bg-muted/80 border border-border/60 rounded-lg text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-ring transition-colors"
                   />
                 </div>
 
@@ -149,7 +150,7 @@ export function SplitSection({
                   placeholder="Split note (optional)"
                   value={row.note}
                   onChange={(e) => handleUpdateRow(idx, "note", e.target.value)}
-                  className="w-full px-3 py-1.5 bg-zinc-800/50 border border-zinc-800 rounded-lg text-xs text-zinc-200 placeholder:text-zinc-600 outline-none focus:border-zinc-700 transition-colors"
+                  className="w-full px-3 py-1.5 bg-muted/50 border border-border rounded-lg text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-ring transition-colors"
                 />
               </div>
             );
@@ -158,7 +159,7 @@ export function SplitSection({
           <button
             type="button"
             onClick={handleAddRow}
-            className="w-full py-2.5 border border-dashed border-zinc-700/70 hover:border-indigo-500/50 rounded-xl text-xs font-medium text-zinc-400 hover:text-indigo-300 flex items-center justify-center gap-1.5 transition-colors"
+            className="w-full py-2.5 border border-dashed border-border/70 hover:border-primary/50 rounded-xl text-xs font-medium text-muted-foreground hover:text-primary/80 flex items-center justify-center gap-1.5 transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
             Add Split Row
