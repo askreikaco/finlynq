@@ -45,4 +45,11 @@ describe("portfolio page error state", () => {
     const alert = await screen.findByRole("alert");
     expect(alert.textContent).toContain("Couldn't load portfolio");
   });
+
+  it("shows ErrorState (no crash) when the API returns an error object without holdings", async () => {
+    overview.current = { error: "Internal error" };
+    render(<PortfolioPage />);
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toContain("Couldn't load portfolio");
+  });
 });

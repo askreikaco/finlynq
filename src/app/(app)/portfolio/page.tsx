@@ -126,7 +126,7 @@ export default function PortfolioPage() {
 
   // Account groups for collapsible section
   const accountGroups = useMemo(() => {
-    if (!data) return [];
+    if (!data?.holdings) return [];
     const groups = new Map<string, EnrichedHolding[]>();
     for (const h of data.holdings) {
       const acc = h.accountName;
@@ -163,7 +163,7 @@ export default function PortfolioPage() {
   if (data.summary.totalHoldings === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center gap-4">
-        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-cyan-100 text-cyan-600">
+        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-info/10 text-info">
           <TrendingUp className="h-8 w-8" />
         </div>
         <div>
@@ -279,15 +279,15 @@ export default function PortfolioPage() {
           Without this the page would render every encrypted tx as a separate
           orphan row because each AES-GCM IV is unique. */}
       {(data.undecryptedTxCount ?? 0) > 0 && (
-        <div className="rounded-lg border border-amber-300 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/40 p-4 flex items-start gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/50 shrink-0">
-            <span className="text-amber-700 dark:text-amber-300 font-semibold">!</span>
+        <div className="rounded-lg border border-warning/30 bg-warning/10 p-4 flex items-start gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-warning/10 shrink-0">
+            <span className="text-warning font-semibold">!</span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-amber-900 dark:text-amber-200">
+            <p className="text-sm font-medium text-warning">
               {data.undecryptedTxCount} transaction{data.undecryptedTxCount === 1 ? "" : "s"} couldn&apos;t be decrypted
             </p>
-            <p className="text-xs text-amber-800/80 dark:text-amber-300/80 mt-0.5">
+            <p className="text-xs text-warning/80 mt-0.5">
               Your session needs to refresh after the last deploy.{" "}
               {/* Link to /cloud (sign-in page) instead of non-existent /login route */}
               <Link href="/cloud" className="underline font-medium">Sign in again</Link>{" "}
@@ -314,9 +314,9 @@ export default function PortfolioPage() {
           tone={summary.dayChangePct >= 0 ? "emerald" : "rose"}
           label="Day Change"
           value={summary.dayChangePct == null ? "--" : `${summary.dayChangePct >= 0 ? "+" : "−"}${formatPercent(Math.abs(summary.dayChangePct), 2)}`}
-          valueClassName={summary.dayChangePct >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}
+          valueClassName={summary.dayChangePct >= 0 ? "text-pos" : "text-destructive"}
           sub={
-            <span className={`font-mono ${summary.dayChangeDisplay >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+            <span className={`font-mono ${summary.dayChangeDisplay >= 0 ? "text-pos" : "text-destructive"}`}>
               {summary.dayChangeDisplay >= 0 ? "+" : ""}
               {formatCurrency(summary.dayChangeDisplay, displayCurrency)}
             </span>
@@ -363,7 +363,7 @@ export default function PortfolioPage() {
               tone={summary.totalUnrealizedGainDisplay >= 0 ? "emerald" : "rose"}
               value={summary.totalUnrealizedGainDisplay}
               currency={displayCurrency}
-              valueClassName={summary.totalUnrealizedGainDisplay >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}
+              valueClassName={summary.totalUnrealizedGainDisplay >= 0 ? "text-pos" : "text-destructive"}
               badgePct={summary.totalUnrealizedGainPct}
             />
             <MetricCard
@@ -372,7 +372,7 @@ export default function PortfolioPage() {
               tone={summary.totalRealizedGainDisplay >= 0 ? "emerald" : "rose"}
               value={summary.totalRealizedGainDisplay}
               currency={displayCurrency}
-              valueClassName={summary.totalRealizedGainDisplay >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}
+              valueClassName={summary.totalRealizedGainDisplay >= 0 ? "text-pos" : "text-destructive"}
             />
             <MetricCard
               label="Dividends"
@@ -380,7 +380,7 @@ export default function PortfolioPage() {
               tone="emerald"
               value={summary.totalDividendsDisplay}
               currency={displayCurrency}
-              valueClassName="text-emerald-600 dark:text-emerald-400"
+              valueClassName="text-pos"
             />
             <MetricCard
               label="Total Return"
@@ -388,7 +388,7 @@ export default function PortfolioPage() {
               tone={summary.totalReturnDisplay >= 0 ? "emerald" : "rose"}
               value={summary.totalReturnDisplay}
               currency={displayCurrency}
-              valueClassName={summary.totalReturnDisplay >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}
+              valueClassName={summary.totalReturnDisplay >= 0 ? "text-pos" : "text-destructive"}
               badgePct={summary.totalReturnPct}
             />
           </div>
