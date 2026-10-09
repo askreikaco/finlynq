@@ -355,7 +355,7 @@ function CategoryPageContent() {
                           {formatDate(t.date)}{t.accountName ? ` · ${t.accountName}` : ""}
                         </p>
                       </div>
-                      <span className={`shrink-0 tabular-nums font-medium ${t.amount < 0 ? "text-rose-600" : "text-emerald-600"}`}>
+                      <span className={`shrink-0 tabular-nums font-medium ${t.amount < 0 ? "text-destructive" : "text-pos"}`}>
                         {formatCurrency(t.amount, t.currency)}
                       </span>
                     </li>
@@ -402,7 +402,7 @@ function StatTile({
         <p className="text-xs text-muted-foreground truncate">{label}</p>
         <p className="text-xl font-bold mt-1 tabular-nums truncate">{value}</p>
         {sub && (
-          <p className={`text-xs mt-0.5 flex items-center gap-0.5 ${good == null ? "text-muted-foreground" : good ? "text-emerald-600" : "text-rose-600"}`}>
+          <p className={`text-xs mt-0.5 flex items-center gap-0.5 ${good == null ? "text-muted-foreground" : good ? "text-pos" : "text-destructive"}`}>
             {trend === "up" && <ArrowUpRight className="h-3 w-3" />}
             {trend === "down" && <ArrowDownRight className="h-3 w-3" />}
             {sub}
