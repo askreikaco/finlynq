@@ -56,7 +56,7 @@ export function AccountShell({
         }
         subtitleClassName="text-sm text-muted-foreground mt-0.5"
         backHref={showBackButton ? "/account" : undefined}
-        backLabel={showBackButton ? "Account" : undefined}
+        backLabel={showBackButton ? "Back to Account" : undefined}
       />
 
       {/* Tab Navigation */}

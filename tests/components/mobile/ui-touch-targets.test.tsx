@@ -96,7 +96,7 @@ describe("app shell below md", () => {
     const css = read("src/app/globals.css");
     expect(css).toMatch(/@media \(width < 48rem\) \{\s*\.bg-dot-pattern \{ background-image: none !important; \}\s*\.ambient-glow::after \{ display: none !important; \}/);
     expect(css).toMatch(/@media \(width < 48rem\) \{\s*\.tabular-nums, \[data-value\] \{\s*font-family: var\(--font-sans\);/);
-    expect(css).toContain("--color-pos: var(--chart-2)");
+    expect(css).toContain("--color-pos: var(--pos)");
     expect(css).toContain("--color-neg: var(--destructive)");
     // existing `font-mono` amounts switch too (inside <main>, minus code/keys), still only under 48rem
     expect(css).toMatch(/@media \(width < 48rem\) \{[^@]*main \.font-mono:not\(pre, code, kbd, samp, textarea, input, \.break-all, \.select-all, \[data-keep-mono\]\)/);

@@ -81,10 +81,10 @@ export default function IntegrationsSettingsPage() {
         />
 
       {loaded && !isConnected && (
-        <Card className="border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30">
+        <Card className="border-warning/30 bg-warning/10">
           <CardHeader>
             <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400 shrink-0">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-warning/10 text-warning shrink-0">
                 <Zap className="h-5 w-5" />
               </div>
               <div>
@@ -97,7 +97,7 @@ export default function IntegrationsSettingsPage() {
           </CardHeader>
           <CardContent>
             <Link href="/connect" onClick={(e) => { e.preventDefault(); setTab("connect"); }}>
-              <Button variant="outline" className="border-amber-300 hover:bg-amber-100 dark:border-amber-800 dark:hover:bg-amber-900/50">
+              <Button variant="outline" className="border-warning/30 hover:bg-warning/10">
                 View MCP Guide
               </Button>
             </Link>

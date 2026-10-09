@@ -56,7 +56,7 @@ export function EtfXrayCard({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
-              <Search className="h-4 w-4 text-indigo-500" />
+              <Search className="h-4 w-4 text-primary" />
               <CardTitle className="text-base">ETF X-Ray</CardTitle>
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
@@ -143,7 +143,7 @@ export function EtfXrayCard({
                           <TableCell>
                             <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
                               <div
-                                className="h-full rounded-full bg-indigo-500"
+                                className="h-full rounded-full bg-primary"
                                 ref={(el) => {
                                   if (el) el.style.width = `${Math.min(s.effectiveWeight * 10, 100)}%`;
                                 }}
@@ -176,7 +176,7 @@ export function EtfXrayCard({
                   <div className="flex items-center gap-2">
                     {totalPages > 1 && (
                       <div className="flex items-center gap-1">
-                        <Button
+                        <Button aria-label="Previous page"
                           variant="outline"
                           size="sm"
                           className="h-7 w-7 p-0"
@@ -188,7 +188,7 @@ export function EtfXrayCard({
                         <span className="text-xs text-muted-foreground px-1">
                           {stocksPage} / {totalPages}
                         </span>
-                        <Button
+                        <Button aria-label="Next page"
                           variant="outline"
                           size="sm"
                           className="h-7 w-7 p-0"
@@ -347,7 +347,7 @@ export function EtfXrayCard({
                     <TableCell>
                       <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
                         <div
-                          className="h-full rounded-full bg-indigo-500"
+                          className="h-full rounded-full bg-primary"
                           ref={(el) => {
                             if (el) el.style.width = `${Math.min(etf.weightPct, 100)}%`;
                           }}

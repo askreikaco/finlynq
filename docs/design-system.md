@@ -49,11 +49,13 @@ The `design-system-guard.test.ts` scans for banned patterns in `src/app/**` and 
 - `md:hidden` / `hidden md:` (breakpoint-driven hiding; replace with SizeClass logic)
 - `window.innerWidth` (SSR-unsafe; use ResizeObserver hook)
 
-Baseline recorded in `tests/fixtures/adaptive-baseline.json` (13 files, 43 instances). The ratchet **fails** on:
+Baseline recorded in `tests/fixtures/adaptive-baseline.json` (9 files, 31 instances). The ratchet **fails** on:
 1. New files containing patterns (regression guard)
 2. Increased count in existing files (no new uses)
 3. Decreased count without baseline update (enforce migration)
 4. Stale entries (file deleted or usage completely removed)
+
+`CompactOnly` / `FromMd` (src/components/mobile/adaptive.tsx) emit the md:hidden / max-md:hidden classes from the sanctioned primitive directory; prefer them over raw classes in new code.
 
 ### Shrinking the Baseline
 When reducing a banned pattern from a file:
@@ -62,3 +64,16 @@ When reducing a banned pattern from a file:
 3. Push to PR; the ratchet validates the change
 
 Target: reduce baseline to 0 over multiple PRs (migrate all pages to SizeClass).
+
+## Colour tokens (W6, 2026-10-09)
+Raw Tailwind palette classes (emerald, rose, amber, sky, indigo, violet, zinc, ...) are banned in src/app and src/components; guard: tests/design-system-palette-guard.test.ts (baseline tests/fixtures/palette-baseline.json, ratchet like the adaptive guard). Scan at 9b731f5: files=0 hits=0.
+| meaning | token classes |
+|---|---|
+| gain / positive / success | text-pos, bg-pos/10, border-pos/30 (--pos: light oklch(0.55 0.11 170), dark oklch(0.75 0.11 170)) |
+| loss / negative / error / danger | text-destructive, bg-destructive/10, border-destructive/30 (--color-neg is the same colour) |
+| warning / pending / stale | text-warning, bg-warning/10, border-warning/30 (--warning: light oklch(0.56 0.14 60), dark oklch(0.80 0.15 75)) |
+| info / neutral highlight | text-info, bg-info/10, border-info/30 (--info: light oklch(0.52 0.13 250), dark oklch(0.74 0.11 245)) |
+| brand / selected | text-primary, bg-primary/10 |
+| extra category hue | text-chart-5, bg-chart-5/10 |
+| neutrals | foreground, muted-foreground, muted, card, background, border |
+Tints: bg-<token>/10, borders /30; no dark: variants needed (tokens switch with the theme). Skeletons: animate-shimmer only (animate-pulse is for activity dots). Charts keep chart-1..5.

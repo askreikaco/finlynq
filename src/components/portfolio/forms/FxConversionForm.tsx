@@ -309,7 +309,7 @@ export default function FxConversionForm() {
           </div>
 
           {selectedAccount && sleeveCurrencies.length < 2 && (
-            <div className="rounded-md border border-amber-500/50 bg-amber-500/5 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+            <div className="rounded-md border border-warning/50 bg-warning/5 px-3 py-2 text-xs text-warning">
               This account has fewer than 2 cash sleeves. Add another currency
               sleeve in the{" "}
               <Link
@@ -511,8 +511,8 @@ export default function FxConversionForm() {
           )}
 
           {blockingClosureTxIds.length > 0 && (
-            <div className="rounded-md border border-amber-300/60 bg-amber-50 dark:bg-amber-950/40 dark:border-amber-800/60 p-3 text-xs">
-              <p className="font-medium text-amber-900 dark:text-amber-200 mb-1.5">
+            <div className="rounded-md border border-warning/30 bg-warning/10 p-3 text-xs">
+              <p className="font-medium text-warning mb-1.5">
                 Delete these dependent transactions first:
               </p>
               <ul className="space-y-1">
@@ -520,7 +520,7 @@ export default function FxConversionForm() {
                   <li key={id}>
                     <Link
                       href={buildTxDrillUrl({ id: String(id) })}
-                      className="text-amber-700 dark:text-amber-300 underline hover:no-underline"
+                      className="text-warning underline hover:no-underline"
                     >
                       Transaction #{id}
                     </Link>

@@ -133,7 +133,7 @@ export function HeadlineCards(d: HeadlineData) {
         value={d.flows.income}
         sub={caption}
         icon={TrendingUp}
-        iconBg="bg-emerald-100 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400"
+        iconBg="bg-pos/10 text-pos"
         sparkColor="#10b981"
         sparkData={last.map((p) => p.income)}
         sparkLabels={labels}
@@ -146,7 +146,7 @@ export function HeadlineCards(d: HeadlineData) {
         value={d.flows.expenses}
         sub={share == null ? caption : `${caption} · ${fill(FAMILY_STRINGS.overview_card_pct_of_income, { pct: share })}`}
         icon={CreditCard}
-        iconBg="bg-rose-100 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400"
+        iconBg="bg-destructive/10 text-destructive"
         sparkColor="#f43f5e"
         sparkData={last.map((p) => p.expenses)}
         sparkLabels={labels}

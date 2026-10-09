@@ -24,7 +24,7 @@ import {
   AlertTriangle, ArrowDownRight, Copy,
 } from "lucide-react";
 import { AmountInput } from "@/components/amount-input";
-import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
+import { PageHeader, HEADER_DESKTOP_ONLY, FromMd } from "@/components/mobile";
 
 type Budget = {
   id: number;
@@ -400,8 +400,8 @@ export default function BudgetsPage() {
   function progressColorClass(spent: number, budgetAmt: number) {
     if (budgetAmt <= 0) return "";
     const ratio = spent / budgetAmt;
-    if (ratio > 1) return "[&_[data-slot=progress-indicator]]:bg-rose-500";
-    if (ratio >= 0.75) return "[&_[data-slot=progress-indicator]]:bg-amber-500";
+    if (ratio > 1) return "[&_[data-slot=progress-indicator]]:bg-destructive";
+    if (ratio >= 0.75) return "[&_[data-slot=progress-indicator]]:bg-warning";
     return "[&_[data-slot=progress-indicator]]:bg-primary";
   }
 
@@ -427,7 +427,7 @@ export default function BudgetsPage() {
         actions={
         <>
           {/* Mode toggle */}
-          <div className="inline-flex items-center rounded-lg border bg-background p-0.5 shadow-sm max-md:hidden">
+          <FromMd className="inline-flex items-center rounded-lg border bg-background p-0.5 shadow-sm">
             <button
               className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-150 flex items-center gap-1.5 ${
                 mode === "traditional"
@@ -452,7 +452,7 @@ export default function BudgetsPage() {
               <Wallet className="h-3 w-3" />
               <span className="hidden sm:inline">Envelope</span>
             </button>
-          </div>
+          </FromMd>
 
           {/* Template buttons */}
           {budgets.length > 0 && (
@@ -664,15 +664,15 @@ export default function BudgetsPage() {
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm text-muted-foreground">Total Budget</CardTitle>
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 dark:bg-indigo-950/40">
-                <PiggyBank className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                <PiggyBank className="h-5 w-5 text-primary" />
               </div>
             </div>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{formatCurrency(totalBudget, displayCurrency)}</p>
             {totalRollover > 0 && (
-              <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+              <p className="text-xs text-warning mt-1 flex items-center gap-1">
                 <ArrowDownRight className="h-3 w-3" />
                 {formatCurrency(totalRollover, displayCurrency)} rolled over
               </p>
@@ -683,13 +683,13 @@ export default function BudgetsPage() {
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm text-muted-foreground">Total Spent</CardTitle>
-              <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${totalSpent > totalBudget ? "bg-rose-100 dark:bg-rose-950/40" : "bg-emerald-100 dark:bg-emerald-950/40"}`}>
-                <TrendingDown className={`h-5 w-5 ${totalSpent > totalBudget ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400"}`} />
+              <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${totalSpent > totalBudget ? "bg-destructive/10" : "bg-pos/10"}`}>
+                <TrendingDown className={`h-5 w-5 ${totalSpent > totalBudget ? "text-destructive" : "text-pos"}`} />
               </div>
             </div>
           </CardHeader>
           <CardContent>
-            <p className={`text-2xl font-bold ${totalSpent > totalBudget ? "text-rose-600" : "text-emerald-600"}`}>
+            <p className={`text-2xl font-bold ${totalSpent > totalBudget ? "text-destructive" : "text-pos"}`}>
               {formatCurrency(totalSpent, displayCurrency)}
             </p>
           </CardContent>
@@ -698,13 +698,13 @@ export default function BudgetsPage() {
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm text-muted-foreground">Remaining</CardTitle>
-              <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${totalRemaining >= 0 ? "bg-emerald-100 dark:bg-emerald-950/40" : "bg-rose-100 dark:bg-rose-950/40"}`}>
-                <Wallet className={`h-5 w-5 ${totalRemaining >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`} />
+              <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${totalRemaining >= 0 ? "bg-pos/10" : "bg-destructive/10"}`}>
+                <Wallet className={`h-5 w-5 ${totalRemaining >= 0 ? "text-pos" : "text-destructive"}`} />
               </div>
             </div>
           </CardHeader>
           <CardContent>
-            <p className={`text-2xl font-bold ${totalRemaining >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+            <p className={`text-2xl font-bold ${totalRemaining >= 0 ? "text-pos" : "text-destructive"}`}>
               {formatCurrency(totalRemaining, displayCurrency)}
             </p>
           </CardContent>
@@ -716,17 +716,17 @@ export default function BudgetsPage() {
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm text-muted-foreground">Available to Budget</CardTitle>
-                <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${availableToBudget >= 0 ? "bg-emerald-100 dark:bg-emerald-950/40" : "bg-rose-100 dark:bg-rose-950/40"}`}>
-                  <Wallet className={`h-5 w-5 ${availableToBudget >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`} />
+                <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${availableToBudget >= 0 ? "bg-pos/10" : "bg-destructive/10"}`}>
+                  <Wallet className={`h-5 w-5 ${availableToBudget >= 0 ? "text-pos" : "text-destructive"}`} />
                 </div>
               </div>
             </CardHeader>
             <CardContent>
-              <p className={`text-2xl font-bold ${availableToBudget >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+              <p className={`text-2xl font-bold ${availableToBudget >= 0 ? "text-pos" : "text-destructive"}`}>
                 {formatCurrency(availableToBudget, displayCurrency)}
               </p>
               {availableToBudget < 0 && (
-                <p className="text-xs text-rose-600 mt-1 flex items-center gap-1">
+                <p className="text-xs text-destructive mt-1 flex items-center gap-1">
                   <AlertTriangle className="h-3 w-3" />
                   Over-budgeted! Reduce or move funds.
                 </p>
@@ -738,15 +738,15 @@ export default function BudgetsPage() {
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm text-muted-foreground">Age of Money</CardTitle>
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-950/40">
-                  <Clock className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-chart-5/10">
+                  <Clock className="h-5 w-5 text-chart-5" />
                 </div>
               </div>
             </CardHeader>
             <CardContent>
               <p className="text-2xl font-bold">{ageOfMoney.ageInDays} days</p>
               {ageOfMoney.trend !== 0 && (
-                <p className={`text-xs mt-1 ${ageOfMoney.trend > 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                <p className={`text-xs mt-1 ${ageOfMoney.trend > 0 ? "text-pos" : "text-destructive"}`}>
                   {ageOfMoney.trend > 0 ? "+" : ""}{ageOfMoney.trend}d vs previous period
                 </p>
               )}
@@ -757,7 +757,7 @@ export default function BudgetsPage() {
 
       {/* Envelope mode: zero-sum warning */}
       {mode === "envelope" && availableToBudget < 0 && budgets.length > 0 && (
-        <div className="flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-200">
+        <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           <AlertTriangle className="h-4 w-4 shrink-0" />
           <span>
             You&apos;ve budgeted <strong>{formatCurrency(Math.abs(availableToBudget), displayCurrency)}</strong> more than your income.
@@ -770,8 +770,8 @@ export default function BudgetsPage() {
       {budgets.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-14 text-center">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-indigo-100 dark:bg-indigo-950/60 mb-4">
-              <LayoutGrid className="h-7 w-7 text-indigo-600 dark:text-indigo-400" />
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary/10 mb-4">
+              <LayoutGrid className="h-7 w-7 text-primary" />
             </div>
             <p className="text-base font-semibold mb-1">No budgets for {getMonthLabel(month)}</p>
             <p className="text-sm text-muted-foreground max-w-xs mb-5">
@@ -826,16 +826,16 @@ export default function BudgetsPage() {
                         </Link>
                         <span className={`shrink-0 text-xs font-medium tabular-nums px-1.5 py-0.5 rounded-full ${
                           over
-                            ? "bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300"
+                            ? "bg-destructive/10 text-destructive"
                             : rawPct >= 75
-                              ? "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300"
+                              ? "bg-warning/10 text-warning"
                               : "bg-primary/10 text-primary"
                         }`}>
                           {Math.round(rawPct)}%
                         </span>
                         {rollover > 0 && (
                           <span
-                            className="text-xs font-medium tabular-nums px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400 flex items-center gap-0.5"
+                            className="text-xs font-medium tabular-nums px-1.5 py-0.5 rounded-full bg-warning/10 text-warning flex items-center gap-0.5"
                             title={`${formatCurrency(rollover, displayCurrency)} rolled over from last month`}
                           >
                             <Clock className="h-3 w-3" />
@@ -847,7 +847,7 @@ export default function BudgetsPage() {
                         {mode === "envelope" ? (
                           <Link
                             href={buildTxDrillUrl({ categoryId: String(b.categoryId), startDate: budgetMonthStart, endDate: budgetMonthEnd })}
-                            className={`text-sm font-mono tabular-nums hover:underline ${envelopeAvailable < 0 ? "text-rose-600" : ""}`}
+                            className={`text-sm font-mono tabular-nums hover:underline ${envelopeAvailable < 0 ? "text-destructive" : ""}`}
                             title={b.categoryName ? `View ${b.categoryName} transactions for ${getMonthLabel(month)}` : `View transactions for ${getMonthLabel(month)}`}
                           >
                             {formatCurrency(envelopeAvailable, displayCurrency)} left
@@ -855,7 +855,7 @@ export default function BudgetsPage() {
                         ) : (
                           <Link
                             href={buildTxDrillUrl({ categoryId: String(b.categoryId), startDate: budgetMonthStart, endDate: budgetMonthEnd })}
-                            className={`text-sm font-mono tabular-nums hover:underline ${over ? "text-rose-600" : ""}`}
+                            className={`text-sm font-mono tabular-nums hover:underline ${over ? "text-destructive" : ""}`}
                             title={b.categoryName ? `View ${b.categoryName} transactions for ${getMonthLabel(month)}` : `View transactions for ${getMonthLabel(month)}`}
                           >
                             {formatCurrency(spent, displayCurrency)} / {formatCurrency(effectiveBudget, displayCurrency)}

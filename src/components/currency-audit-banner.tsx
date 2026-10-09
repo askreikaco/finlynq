@@ -38,8 +38,8 @@ export function CurrencyAuditBanner() {
       href="/transactions/audit"
       className="block group"
     >
-      <div className="rounded-lg border border-amber-500/40 bg-amber-50/40 dark:bg-amber-950/30 px-3 py-2 flex items-center gap-3 hover:border-amber-500/60 transition-colors">
-        <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+      <div className="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 flex items-center gap-3 hover:border-warning/60 transition-colors">
+        <AlertTriangle className="h-4 w-4 text-warning shrink-0" />
         <p className="text-xs">
           <strong className="font-semibold">{count} transaction{count === 1 ? "" : "s"}</strong> need a currency review.{" "}
           <span className="text-muted-foreground group-hover:text-foreground transition-colors">

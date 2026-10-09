@@ -52,8 +52,8 @@ export function SuggestionsGroup({
 }) {
   if (suggestions.length === 0) return null;
   return (
-    <div className="border-b bg-sky-50/40 p-3 space-y-2">
-      <div className="text-xs font-semibold uppercase tracking-wide text-sky-900">
+    <div className="border-b bg-info/10 p-3 space-y-2">
+      <div className="text-xs font-semibold uppercase tracking-wide text-info">
         Suggested matches ({suggestions.length})
       </div>
       <div className="space-y-1.5">
@@ -69,8 +69,8 @@ export function SuggestionsGroup({
                 variant="outline"
                 className={
                   s.confidence === "exact"
-                    ? "text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200"
-                    : "text-[10px] bg-amber-50 text-amber-700 border-amber-200"
+                    ? "text-[10px] bg-pos/10 text-pos border-pos/30"
+                    : "text-[10px] bg-warning/10 text-warning border-warning/30"
                 }
               >
                 {s.confidence}
@@ -102,7 +102,7 @@ export function SuggestionsGroup({
                 <Check className="h-3.5 w-3.5 mr-1" />
                 Link
               </Button>
-              <Button
+              <Button aria-label="Reject suggestion"
                 size="sm"
                 variant="ghost"
                 onClick={() => onReject(s)}

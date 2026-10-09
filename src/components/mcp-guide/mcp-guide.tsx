@@ -230,7 +230,7 @@ const workedExamples: { title: string; prompt: string; flow: string }[] = [
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
   return (
-    <button
+    <button aria-label="Copy to clipboard"
       onClick={() => {
         navigator.clipboard.writeText(text);
         trackEvent("mcp_guide_copy");
@@ -240,7 +240,7 @@ function CopyButton({ text }: { text: string }) {
       className="absolute right-2 top-2 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors"
       title="Copy to clipboard"
     >
-      {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+      {copied ? <Check className="h-3.5 w-3.5 text-pos" /> : <Copy className="h-3.5 w-3.5" />}
     </button>
   );
 }
@@ -329,7 +329,7 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-4">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 shadow-lg shadow-indigo-500/30">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-chart-5 shadow-lg shadow-primary/30">
               <Bot className="h-5 w-5 text-white" />
             </div>
             <div>
@@ -342,9 +342,9 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
           <div
             className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium border ${
               status === "connected"
-                ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                ? "bg-pos/10 border-pos/20 text-pos"
                 : status === "disconnected"
-                  ? "bg-rose-500/10 border-rose-500/20 text-rose-400"
+                  ? "bg-destructive/10 border-destructive/20 text-destructive"
                   : "bg-muted border-border text-muted-foreground"
             }`}
           >
@@ -385,9 +385,9 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
             {activeTab === "claude-web" && (
               <div className="space-y-5 text-sm text-foreground">
                 {/* Easy-mode callout */}
-                <div className="flex items-start gap-3 rounded-xl border border-indigo-500/25 bg-indigo-500/8 p-4">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-indigo-500/15">
-                    <Globe className="h-4 w-4 text-indigo-400" />
+                <div className="flex items-start gap-3 rounded-xl border border-primary/25 bg-primary/8 p-4">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/15">
+                    <Globe className="h-4 w-4 text-primary" />
                   </div>
                   <div>
                     <p className="font-semibold text-foreground mb-0.5">Easiest way to connect</p>
@@ -471,11 +471,11 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
                   </li>
 
                   <li className="flex gap-3">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[11px] font-bold text-emerald-500 mt-0.5">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-pos/20 text-[11px] font-bold text-pos mt-0.5">
                       ✓
                     </span>
                     <div>
-                      <p className="font-medium mb-1 text-emerald-500">You&apos;re connected!</p>
+                      <p className="font-medium mb-1 text-pos">You&apos;re connected!</p>
                       <p className="text-muted-foreground mb-3">
                         The Finlynq tools are now available in every Claude conversation. Try one of these:
                       </p>
@@ -501,8 +501,8 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
                   </li>
                 </ol>
 
-                <div className="flex items-start gap-2 rounded-lg bg-amber-500/5 border border-amber-500/20 p-3">
-                  <Shield className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                <div className="flex items-start gap-2 rounded-lg bg-warning/5 border border-warning/20 p-3">
+                  <Shield className="h-4 w-4 text-warning shrink-0 mt-0.5" />
                   <p className="text-xs text-muted-foreground">
                     <strong className="text-foreground">Privacy note:</strong> Claude Web uses OAuth 2.1, so your
                     Finlynq passphrase and financial data are never shared with Anthropic. Only the tool
@@ -514,9 +514,9 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
 
             {activeTab === "claude-desktop" && (
               <div className="space-y-5 text-sm text-foreground">
-                <div className="flex items-start gap-3 rounded-xl border border-indigo-500/25 bg-indigo-500/8 p-4">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-indigo-500/15">
-                    <Bot className="h-4 w-4 text-indigo-400" />
+                <div className="flex items-start gap-3 rounded-xl border border-primary/25 bg-primary/8 p-4">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/15">
+                    <Bot className="h-4 w-4 text-primary" />
                   </div>
                   <div>
                     <p className="font-semibold text-foreground mb-0.5">One line, then OAuth in the browser</p>
@@ -591,11 +591,11 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
                   </li>
 
                   <li className="flex gap-3">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[11px] font-bold text-emerald-500 mt-0.5">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-pos/20 text-[11px] font-bold text-pos mt-0.5">
                       ✓
                     </span>
                     <div>
-                      <p className="font-medium mb-1 text-emerald-500">You&apos;re connected!</p>
+                      <p className="font-medium mb-1 text-pos">You&apos;re connected!</p>
                       <p className="text-muted-foreground">
                         Finlynq&apos;s tools appear under the tools icon in the chat input. If they don&apos;t,
                         see the troubleshooting section below.
@@ -604,8 +604,8 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
                   </li>
                 </ol>
 
-                <div className="flex items-start gap-2 rounded-lg bg-amber-500/5 border border-amber-500/20 p-3">
-                  <LifeBuoy className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                <div className="flex items-start gap-2 rounded-lg bg-warning/5 border border-warning/20 p-3">
+                  <LifeBuoy className="h-4 w-4 text-warning shrink-0 mt-0.5" />
                   <p className="text-xs text-muted-foreground">
                     <strong className="text-foreground">Re-connecting after an upgrade?</strong> Delete{" "}
                     <code className="bg-muted px-1 rounded">~/.mcp-auth</code> first. It caches the client
@@ -619,9 +619,9 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
             {activeTab === "chatgpt" && (
               <div className="space-y-5 text-sm text-foreground">
                 {/* Same-server callout */}
-                <div className="flex items-start gap-3 rounded-xl border border-indigo-500/25 bg-indigo-500/8 p-4">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-indigo-500/15">
-                    <Globe className="h-4 w-4 text-indigo-400" />
+                <div className="flex items-start gap-3 rounded-xl border border-primary/25 bg-primary/8 p-4">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/15">
+                    <Globe className="h-4 w-4 text-primary" />
                   </div>
                   <div>
                     <p className="font-semibold text-foreground mb-0.5">Same server, no rewrite</p>
@@ -700,8 +700,8 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
                   </li>
                 </ol>
 
-                <div className="flex items-start gap-2 rounded-lg bg-amber-500/5 border border-amber-500/20 p-3">
-                  <Shield className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                <div className="flex items-start gap-2 rounded-lg bg-warning/5 border border-warning/20 p-3">
+                  <Shield className="h-4 w-4 text-warning shrink-0 mt-0.5" />
                   <p className="text-xs text-muted-foreground">
                     <strong className="text-foreground">Connecting your own ChatGPT</strong> via developer mode
                     is separate from <strong>publishing</strong> Finlynq to the ChatGPT app directory (a
@@ -868,7 +868,7 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
 
                 <div>
                   <h3 className="font-semibold mb-2 flex items-center gap-2">
-                    <Zap className="h-4 w-4 text-amber-400" />
+                    <Zap className="h-4 w-4 text-warning" />
                     HTTP Transport (recommended)
                   </h3>
                   <p className="text-xs text-muted-foreground mb-2">
@@ -884,7 +884,7 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
 
                 <div>
                   <h3 className="font-semibold mb-2 flex items-center gap-2">
-                    <Terminal className="h-4 w-4 text-slate-400" />
+                    <Terminal className="h-4 w-4 text-muted-foreground" />
                     Stdio Transport (self-hosted only)
                   </h3>
                   <p className="text-xs text-muted-foreground mb-2">
@@ -903,7 +903,7 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
                   </p>
                 </div>
 
-                <div className="rounded-lg bg-amber-500/5 border border-amber-500/20 p-4">
+                <div className="rounded-lg bg-warning/5 border border-warning/20 p-4">
                   <p className="text-xs text-muted-foreground">
                     <strong className="text-foreground">Windsurf:</strong> Use the dedicated{" "}
                     <button

@@ -535,16 +535,16 @@ function CloudAuthPageInner() {
     <div className="flex min-h-screen items-center justify-center bg-dot-pattern ambient-glow" style={{ paddingTop: "max(var(--sat, 0px), 1rem)", paddingBottom: "max(var(--sab, 0px), 1rem)" }}>
       <div className="mx-auto w-full max-w-sm px-6 py-12 flex flex-col items-center justify-center">
         {addingAccount && stayEmail && (
-          <div className="mb-6 rounded-lg border border-blue-500/30 bg-blue-500/5 px-4 py-3 w-full">
+          <div className="mb-6 rounded-lg border border-info/30 bg-info/5 px-4 py-3 w-full">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-sm text-blue-600 dark:text-blue-400 min-w-0 break-words">
+              <p className="text-sm text-info min-w-0 break-words">
                 Adding another account — you&apos;ll stay signed in as {stayEmail}
               </p>
               <button
                 type="button"
                 data-testid="add-cancel"
                 onClick={cancelAdd}
-                className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline whitespace-nowrap"
+                className="text-sm font-medium text-info hover:underline whitespace-nowrap"
               >
                 Cancel
               </button>

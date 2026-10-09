@@ -150,7 +150,7 @@ function CategoriesOverview({ embedded = false }: CategoriesOverviewProps) {
   const sparkLabels = data.windowMonths.map((m) => monthName(m, "short"));
   // Up is bad for spending, good for income.
   const toneFor = (change: number | null) =>
-    change == null ? "text-muted-foreground" : (change > 0) === isIncome ? "text-emerald-600" : "text-rose-600";
+    change == null ? "text-muted-foreground" : (change > 0) === isIncome ? "text-pos" : "text-destructive";
 
   return (
     <div className="space-y-6">

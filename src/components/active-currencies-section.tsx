@@ -149,7 +149,7 @@ export function ActiveCurrenciesSection() {
     <Card>
       <CardHeader>
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-100 text-cyan-600">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-info/10 text-info">
             <Globe className="h-5 w-5" />
           </div>
           <div>
@@ -157,7 +157,7 @@ export function ActiveCurrenciesSection() {
             <CardDescription>
               These are the only currencies offered in the app&apos;s dropdowns
               (transaction form, account form, FX rates). {source === "derived" ? (
-                <span className="block mt-1 text-amber-600 dark:text-amber-400 text-xs">
+                <span className="block mt-1 text-warning text-xs">
                   This list was derived from your existing data — add or remove a currency to lock it in.
                 </span>
               ) : null}
@@ -227,9 +227,9 @@ export function ActiveCurrenciesSection() {
                     <Loader2 className="h-3.5 w-3.5 animate-spin" /> Checking <span className="font-mono font-semibold">{lookup.code}</span>…
                   </p>
                 ) : lookup.status === "supported" ? (
-                  <div className="flex items-center justify-between gap-2 rounded-md border border-emerald-500/30 bg-emerald-500/5 px-3 py-2">
+                  <div className="flex items-center justify-between gap-2 rounded-md border border-pos/30 bg-pos/5 px-3 py-2">
                     <div className="min-w-0 text-xs">
-                      <span className="inline-flex items-center gap-1.5 font-medium text-emerald-700 dark:text-emerald-400">
+                      <span className="inline-flex items-center gap-1.5 font-medium text-pos">
                         <Check className="h-3.5 w-3.5" /> Supported
                       </span>
                       <span className="ml-2 font-mono font-semibold">{lookup.code}</span>
@@ -243,9 +243,9 @@ export function ActiveCurrenciesSection() {
                     <Button size="sm" onClick={() => addCode(lookup.code)} disabled={saving}>Add</Button>
                   </div>
                 ) : lookup.status === "custom" ? (
-                  <div className="flex items-center justify-between gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2">
+                  <div className="flex items-center justify-between gap-2 rounded-md border border-warning/30 bg-warning/5 px-3 py-2">
                     <div className="min-w-0 text-xs">
-                      <span className="inline-flex items-center gap-1.5 font-medium text-amber-700 dark:text-amber-400">
+                      <span className="inline-flex items-center gap-1.5 font-medium text-warning">
                         <AlertTriangle className="h-3.5 w-3.5" /> Custom currency
                       </span>
                       <span className="ml-2 font-mono font-semibold">{lookup.code}</span>

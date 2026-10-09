@@ -155,7 +155,7 @@ export function TrustedDevices() {
     <Card>
       <CardHeader>
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-pos/10 text-pos">
             <SmartphoneIcon className="h-5 w-5" />
           </div>
           <div>
@@ -169,7 +169,7 @@ export function TrustedDevices() {
 
         <div role="status" aria-live="polite">
           {message && (
-            <p className="text-sm text-emerald-600 flex items-center gap-2">
+            <p className="text-sm text-pos flex items-center gap-2">
               <Check className="h-4 w-4" aria-hidden="true" />
               {message}
             </p>
@@ -185,7 +185,7 @@ export function TrustedDevices() {
                     <div className="flex items-center gap-2">
                       <p className="font-medium text-foreground">{device.label}</p>
                       {device.current && (
-                        <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                        <span className="inline-flex items-center rounded-full bg-pos/10 px-2 py-0.5 text-xs font-medium text-pos">
                           {STRINGS.deviceCurrent}
                         </span>
                       )}

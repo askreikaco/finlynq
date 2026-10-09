@@ -39,7 +39,7 @@ function fmtBytes(n: number): string {
 const typeColor: Record<string, string> = {
   bug: "bg-destructive/15 text-destructive",
   idea: "bg-primary/15 text-primary",
-  question: "bg-blue-500/15 text-blue-500",
+  question: "bg-info/15 text-info",
   other: "bg-muted text-muted-foreground",
 };
 
@@ -349,9 +349,9 @@ export default function FeedbackPage() {
       <div className="mb-6 flex items-start justify-between gap-3">
         <PageHeader
             title="Feedback"
-            titleClassName="text-2xl font-semibold tracking-tight"
+            titleClassName="text-2xl font-bold tracking-tight"
             subtitle="Track your reports and follow up on replies from the team."
-            subtitleClassName="mt-1 text-sm text-muted-foreground"
+            subtitleClassName="text-sm text-muted-foreground mt-0.5"
           />
         <Button onClick={() => setSendOpen(true)}>Send feedback</Button>
       </div>

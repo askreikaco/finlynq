@@ -100,7 +100,7 @@ export function MemberCard({
         </div>
         <div className="flex flex-wrap gap-2">
           {member.partial && (
-            <Badge variant="outline" className="bg-amber-50 text-amber-900 border-amber-200">
+            <Badge variant="outline" className="bg-warning/10 text-warning border-warning/30">
               {FAMILY_STRINGS.overview_partial_flag}
             </Badge>
           )}
@@ -110,7 +110,7 @@ export function MemberCard({
 
       <div className="space-y-4">
         {member.error && (
-          <p role="alert" className="text-sm text-red-700">
+          <p role="alert" className="text-sm text-destructive">
             {FAMILY_STRINGS.overview_section_error}
           </p>
         )}
@@ -130,11 +130,11 @@ export function MemberCard({
 
         {member.unavailable.length > 0 && (
           <div>
-            <h4 className="text-sm font-medium mb-2 text-red-700">{FAMILY_STRINGS.overview_unavailable_heading}</h4>
+            <h4 className="text-sm font-medium mb-2 text-destructive">{FAMILY_STRINGS.overview_unavailable_heading}</h4>
             <ul className="flex flex-wrap gap-2">
               {member.unavailable.map((section) => (
                 <li key={section}>
-                  <Badge variant="outline" className="bg-red-50 text-red-900 border-red-200">
+                  <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30">
                     {getSectionLabel(section)}
                   </Badge>
                 </li>

@@ -58,7 +58,7 @@ export function ReconsentBanner({ parent, reciprocal, onChanged }: Props) {
 
   return (
     <>
-      <Alert className="border-amber-300 bg-amber-50 text-amber-950 dark:bg-amber-950 dark:text-amber-50">
+      <Alert className="border-warning/30 bg-warning/10 text-warning">
         <AlertTitle>{fill(FAMILY_STRINGS.reconsent_title, { name })}</AlertTitle>
         <AlertDescription className="space-y-2 mt-1">
           <p>{fill(FAMILY_STRINGS.reconsent_message, { name, sections: sectionsText })}</p>

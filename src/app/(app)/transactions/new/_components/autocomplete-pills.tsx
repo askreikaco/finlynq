@@ -70,8 +70,8 @@ export function AutocompletePills({
 
   return (
     <div className="flex items-center gap-1.5 overflow-x-auto py-1 scrollbar-none animate-in fade-in duration-200">
-      <div className="flex items-center text-[10px] text-zinc-500 font-medium mr-0.5 shrink-0">
-        <Sparkles className="w-3 h-3 text-indigo-400 mr-1" />
+      <div className="flex items-center text-[10px] text-muted-foreground font-medium mr-0.5 shrink-0">
+        <Sparkles className="w-3 h-3 text-primary mr-1" />
         Suggestions:
       </div>
       {filtered.map((item) => (
@@ -83,7 +83,7 @@ export function AutocompletePills({
             e.preventDefault();
             handlePillClick(item);
           }}
-          className="px-2.5 py-1 text-xs font-medium rounded-full bg-zinc-800/90 hover:bg-zinc-700 active:bg-indigo-600 text-zinc-300 active:text-white border border-zinc-700/60 whitespace-nowrap active:scale-95 transition-all shadow-sm"
+          className="px-2.5 py-1 text-xs font-medium rounded-full bg-muted/90 hover:bg-muted active:bg-primary/90 text-foreground active:text-primary-foreground border border-border/60 whitespace-nowrap active:scale-95 transition-all shadow-sm"
         >
           {item}
         </button>

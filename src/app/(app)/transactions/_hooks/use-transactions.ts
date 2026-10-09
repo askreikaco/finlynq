@@ -61,7 +61,7 @@ export function useTransactions(
   // 1. Fetch all transactions (limit=100000). Persisted and encrypted by SWR IndexedDB cache.
   const SWR_KEY = "/api/transactions?limit=100000";
 
-  const { data, isLoading, isValidating, mutate } = useSWR<TxListResponse>(
+  const { data, error, isLoading, isValidating, mutate } = useSWR<TxListResponse>(
     SWR_KEY,
     jsonFetcher,
     swrListOptions,
@@ -319,6 +319,7 @@ export function useTransactions(
     total: filteredTxns.length,
     loading: isLoading || isValidating,
     limit,
+    loadError: Boolean(error) && !data,
     loadTxns: mutate,
     loadNextPage,
     resetPage,

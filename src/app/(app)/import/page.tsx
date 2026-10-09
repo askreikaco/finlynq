@@ -321,7 +321,7 @@ function ImportPageInner() {
   if (visibleAccounts.length === 0) {
     return (
       <div className="container mx-auto p-4 space-y-3">
-        <PageHeader title="Import" titleClassName="text-2xl font-semibold" />
+        <PageHeader title="Import" titleClassName="text-2xl font-bold tracking-tight" />
         <p className="text-sm text-muted-foreground">
           No accounts found. Create an account first to start importing.
         </p>
@@ -332,7 +332,7 @@ function ImportPageInner() {
   if (account == null) {
     return (
       <div className="container mx-auto p-4 space-y-3">
-        <PageHeader title="Import" titleClassName="text-2xl font-semibold" />
+        <PageHeader title="Import" titleClassName="text-2xl font-bold tracking-tight" />
         <p className="text-sm text-muted-foreground">
           Pick an account to start importing.
         </p>
@@ -349,8 +349,8 @@ function ImportPageInner() {
       <PageHeader
         className="flex items-center justify-between flex-wrap gap-3"
         title="Import"
-        titleClassName="text-2xl font-semibold"
-        subtitleClassName="text-sm text-muted-foreground"
+        titleClassName="text-2xl font-bold tracking-tight"
+        subtitleClassName="text-sm text-muted-foreground mt-0.5"
         subtitle={<>
             One surface per account. Upload a statement, then review it the way
             this account is set up — pick a lens to flip the view, or change
@@ -368,7 +368,7 @@ function ImportPageInner() {
       />
 
       {error && (
-        <div className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
+        <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
         </div>
       )}

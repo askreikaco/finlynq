@@ -161,7 +161,7 @@ export function InboxReconciledTab({
               </span>
               <Badge
                 variant="outline"
-                className="gap-1 text-[10px] font-mono uppercase border-emerald-500/40 text-emerald-600 dark:text-emerald-400"
+                className="gap-1 text-[10px] font-mono uppercase border-pos/40 text-pos"
               >
                 <Check className="h-2.5 w-2.5" />
                 {link.linkType === "primary" ? "primary" : "extra"}
@@ -173,7 +173,7 @@ export function InboxReconciledTab({
               )}
               <span
                 className={`text-sm font-mono w-28 text-right shrink-0 ${
-                  bank.amount < 0 ? "text-rose-500" : "text-emerald-500"
+                  bank.amount < 0 ? "text-destructive" : "text-pos"
                 }`}
               >
                 {formatCurrency(bank.amount, bank.currency)}

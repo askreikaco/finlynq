@@ -152,7 +152,7 @@ export function ConnectorReconciliationDialog({ open, onOpenChange }: ConnectorR
                     <TableCell className="text-right font-mono">{formatCurrency(row.pfBalance, row.currency)}</TableCell>
                     <TableCell
                       className={`text-right font-mono ${
-                        row.matches ? "text-green-600 dark:text-green-400" : "text-amber-600 dark:text-amber-400"
+                        row.matches ? "text-pos" : "text-warning"
                       }`}
                     >
                       {row.matches ? (

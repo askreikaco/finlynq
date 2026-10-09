@@ -23,6 +23,7 @@ import { getPresetRange } from "@/lib/reports/preset-range";
 import { AccountFilter } from "./_components/account-filter";
 import { serializeAccountIds } from "@/lib/reports/account-filter";
 import { PageSkeleton } from "@/components/page-skeleton";
+import { ErrorState } from "@/components/error-state";
 import { SankeyChart } from "@/components/sankey-chart";
 import {
   Download,
@@ -165,6 +166,8 @@ export default function ReportsPage() {
   // First-paint gate: the page is full of charts that render blank axes against
   // null data. Show a skeleton until the primary (trends) fetch resolves once.
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [yoyYear1, setYoyYear1] = useState(currentYear - 1);
   const [yoyYear2, setYoyYear2] = useState(currentYear);
 
@@ -197,12 +200,21 @@ export default function ReportsPage() {
     let cancelled = false;
     const biz = isBusiness ? "&business=true" : "";
     fetch(`/api/reports/trends?startDate=${startDate}&endDate=${endDate}&period=${period}&groupBy=${groupBy}${biz}${acctParam}&currency=${encodeURIComponent(displayCurrency)}`)
-      .then((r) => (r.ok ? r.json() : null))
+      .then((r) => {
+        if (!r.ok) throw new Error(`trends ${r.status}`);
+        return r.json();
+      })
       .then((d) => {
-        if (!cancelled) setTrendsData(d && typeof d === "object" ? (d as TrendsData) : null);
+        if (!cancelled) {
+          setTrendsData(d && typeof d === "object" ? (d as TrendsData) : null);
+          setLoadError(false);
+        }
       })
       .catch(() => {
-        if (!cancelled) setTrendsData(null);
+        if (!cancelled) {
+          setTrendsData(null);
+          setLoadError(true);
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -210,7 +222,7 @@ export default function ReportsPage() {
     return () => {
       cancelled = true;
     };
-  }, [startDate, endDate, period, groupBy, isBusiness, displayCurrency, acctParam]);
+  }, [startDate, endDate, period, groupBy, isBusiness, displayCurrency, acctParam, reloadKey]);
 
   // Fetch balance sheet
   useEffect(() => {
@@ -339,6 +351,20 @@ export default function ReportsPage() {
   // axes against null data.
   if (loading && !trendsData) {
     return <PageSkeleton variant="cards" rows={6} />;
+  }
+
+  if (loadError && !trendsData) {
+    return (
+      <ErrorState
+        title="Couldn't load reports"
+        message="We couldn't load your reports. Please try again."
+        onRetry={() => {
+          setLoadError(false);
+          setLoading(true);
+          setReloadKey((k) => k + 1);
+        }}
+      />
+    );
   }
 
   return (
@@ -470,12 +496,12 @@ export default function ReportsPage() {
           <Card className="card-hover">
             <CardContent className="pt-4 pb-4">
               <div className="flex items-center gap-2 mb-1">
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-pos/10 text-pos">
                   <TrendingUp className="h-3.5 w-3.5" />
                 </div>
                 <span className="text-xs text-muted-foreground font-medium">Total Income</span>
               </div>
-              <p className="text-xl font-bold font-mono hero-number text-emerald-600 dark:text-emerald-400">
+              <p className="text-xl font-bold font-mono hero-number text-pos">
                 {formatCurrency(trendsData.totalIncome, displayCurrency)}
               </p>
             </CardContent>
@@ -483,12 +509,12 @@ export default function ReportsPage() {
           <Card className="card-hover">
             <CardContent className="pt-4 pb-4">
               <div className="flex items-center gap-2 mb-1">
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-rose-100 text-rose-600 dark:bg-rose-950 dark:text-rose-400">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-destructive/10 text-destructive">
                   <TrendingDown className="h-3.5 w-3.5" />
                 </div>
                 <span className="text-xs text-muted-foreground font-medium">Total Expenses</span>
               </div>
-              <p className="text-xl font-bold font-mono hero-number text-rose-600 dark:text-rose-400">
+              <p className="text-xl font-bold font-mono hero-number text-destructive">
                 {formatCurrency(trendsData.totalExpenses, displayCurrency)}
               </p>
             </CardContent>
@@ -496,12 +522,12 @@ export default function ReportsPage() {
           <Card className="card-hover">
             <CardContent className="pt-4 pb-4">
               <div className="flex items-center gap-2 mb-1">
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                   <DollarSign className="h-3.5 w-3.5" />
                 </div>
                 <span className="text-xs text-muted-foreground font-medium">Net Savings</span>
               </div>
-              <p className={`text-xl font-bold font-mono hero-number ${trendsData.netSavings >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+              <p className={`text-xl font-bold font-mono hero-number ${trendsData.netSavings >= 0 ? "text-pos" : "text-destructive"}`}>
                 {formatCurrency(trendsData.netSavings, displayCurrency)}
               </p>
             </CardContent>
@@ -509,12 +535,12 @@ export default function ReportsPage() {
           <Card className="card-hover">
             <CardContent className="pt-4 pb-4">
               <div className="flex items-center gap-2 mb-1">
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-600 dark:bg-violet-950 dark:text-violet-400">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-chart-5/10 text-chart-5">
                   <PiggyBank className="h-3.5 w-3.5" />
                 </div>
                 <span className="text-xs text-muted-foreground font-medium">Savings Rate</span>
               </div>
-              <p className={`text-xl font-bold font-mono hero-number ${trendsData.savingsRate >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+              <p className={`text-xl font-bold font-mono hero-number ${trendsData.savingsRate >= 0 ? "text-pos" : "text-destructive"}`}>
                 {trendsData.savingsRate}%
               </p>
             </CardContent>
@@ -566,7 +592,7 @@ export default function ReportsPage() {
               </p>
               <a
                 href="/import"
-                className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700"
+                className="inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary"
               >
                 Import transactions
               </a>
@@ -624,7 +650,7 @@ export default function ReportsPage() {
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-pos/10 text-pos">
                         <ArrowUpRight className="h-5 w-5" />
                       </div>
                       <div>
@@ -649,7 +675,7 @@ export default function ReportsPage() {
                       groups={groupItems(trendsData.income)}
                       expanded={expandedIncomeGroups}
                       onToggle={(g) => toggleGroup("income", g)}
-                      colorClass="text-emerald-600 dark:text-emerald-400"
+                      colorClass="text-pos"
                       total={trendsData.totalIncome}
                       currency={displayCurrency}
                       startDate={startDate}
@@ -657,11 +683,11 @@ export default function ReportsPage() {
                       timeseries={trendsData.timeseries}
                     />
                   ) : (
-                    <FlatTable items={trendsData.income} colorClass="text-emerald-600 dark:text-emerald-400" currency={displayCurrency} startDate={startDate} endDate={endDate} timeseries={trendsData.timeseries} />
+                    <FlatTable items={trendsData.income} colorClass="text-pos" currency={displayCurrency} startDate={startDate} endDate={endDate} timeseries={trendsData.timeseries} />
                   )}
                   <div className="flex justify-between items-center p-3 mt-3 rounded-xl bg-muted/50">
                     <span className="font-semibold text-sm">Total Income</span>
-                    <span className="font-bold font-mono text-emerald-600 dark:text-emerald-400">
+                    <span className="font-bold font-mono text-pos">
                       {formatCurrency(trendsData.totalIncome, displayCurrency)}
                     </span>
                   </div>
@@ -673,7 +699,7 @@ export default function ReportsPage() {
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-600 dark:bg-rose-950 dark:text-rose-400">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
                         <ArrowDownRight className="h-5 w-5" />
                       </div>
                       <div>
@@ -698,7 +724,7 @@ export default function ReportsPage() {
                       groups={groupItems(trendsData.expenses)}
                       expanded={expandedExpenseGroups}
                       onToggle={(g) => toggleGroup("expense", g)}
-                      colorClass="text-rose-600 dark:text-rose-400"
+                      colorClass="text-destructive"
                       total={trendsData.totalExpenses}
                       currency={displayCurrency}
                       startDate={startDate}
@@ -706,11 +732,11 @@ export default function ReportsPage() {
                       timeseries={trendsData.timeseries}
                     />
                   ) : (
-                    <FlatTable items={trendsData.expenses} colorClass="text-rose-600 dark:text-rose-400" currency={displayCurrency} startDate={startDate} endDate={endDate} timeseries={trendsData.timeseries} />
+                    <FlatTable items={trendsData.expenses} colorClass="text-destructive" currency={displayCurrency} startDate={startDate} endDate={endDate} timeseries={trendsData.timeseries} />
                   )}
                   <div className="flex justify-between items-center p-3 mt-3 rounded-xl bg-muted/50">
                     <span className="font-semibold text-sm">Total Expenses</span>
-                    <span className="font-bold font-mono text-rose-600 dark:text-rose-400">
+                    <span className="font-bold font-mono text-destructive">
                       {formatCurrency(trendsData.totalExpenses, displayCurrency)}
                     </span>
                   </div>
@@ -729,7 +755,7 @@ export default function ReportsPage() {
                     </div>
                     <p
                       className={`text-2xl font-bold font-mono hero-number ${
-                        trendsData.netSavings >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                        trendsData.netSavings >= 0 ? "text-pos" : "text-destructive"
                       }`}
                     >
                       {formatCurrency(trendsData.netSavings, displayCurrency)}
@@ -757,7 +783,7 @@ export default function ReportsPage() {
                         <p className="text-xs text-muted-foreground">Valuation G/L</p>
                         <p
                           className={`text-xl font-bold font-mono mt-1 ${
-                            unrealizedData.totals.valuationGL >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                            unrealizedData.totals.valuationGL >= 0 ? "text-pos" : "text-destructive"
                           }`}
                         >
                           {formatCurrency(unrealizedData.totals.valuationGL, displayCurrency)}
@@ -767,7 +793,7 @@ export default function ReportsPage() {
                         <p className="text-xs text-muted-foreground">FX G/L</p>
                         <p
                           className={`text-xl font-bold font-mono mt-1 ${
-                            unrealizedData.totals.fxGL >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                            unrealizedData.totals.fxGL >= 0 ? "text-pos" : "text-destructive"
                           }`}
                         >
                           {formatCurrency(unrealizedData.totals.fxGL, displayCurrency)}
@@ -777,7 +803,7 @@ export default function ReportsPage() {
                         <p className="text-xs text-muted-foreground">Total unrealized</p>
                         <p
                           className={`text-xl font-bold font-mono mt-1 ${
-                            unrealizedData.totals.totalGL >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                            unrealizedData.totals.totalGL >= 0 ? "text-pos" : "text-destructive"
                           }`}
                         >
                           {formatCurrency(unrealizedData.totals.totalGL, displayCurrency)}
@@ -805,7 +831,7 @@ export default function ReportsPage() {
                               <TableCell className="font-medium">
                                 {a.accountName}
                                 {a.costBasisMissing && (
-                                  <span className="ml-2 text-[10px] text-amber-600 dark:text-amber-400" title="Cost basis defaulted to market value (no buy transactions)">
+                                  <span className="ml-2 text-[10px] text-warning" title="Cost basis defaulted to market value (no buy transactions)">
                                     no cost basis
                                   </span>
                                 )}
@@ -821,21 +847,21 @@ export default function ReportsPage() {
                               </TableCell>
                               <TableCell
                                 className={`text-right font-mono text-xs ${
-                                  a.valuationGL >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                                  a.valuationGL >= 0 ? "text-pos" : "text-destructive"
                                 }`}
                               >
                                 {formatCurrency(a.valuationGL, displayCurrency)}
                               </TableCell>
                               <TableCell
                                 className={`text-right font-mono text-xs ${
-                                  a.fxGL >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                                  a.fxGL >= 0 ? "text-pos" : "text-destructive"
                                 }`}
                               >
                                 {formatCurrency(a.fxGL, displayCurrency)}
                               </TableCell>
                               <TableCell
                                 className={`text-right font-mono text-xs font-semibold ${
-                                  a.totalGL >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                                  a.totalGL >= 0 ? "text-pos" : "text-destructive"
                                 }`}
                               >
                                 {formatCurrency(a.totalGL, displayCurrency)}
@@ -859,7 +885,7 @@ export default function ReportsPage() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-600 dark:bg-violet-950 dark:text-violet-400">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-chart-5/10 text-chart-5">
                       <FileText className="h-5 w-5" />
                     </div>
                     <div>
@@ -886,8 +912,8 @@ export default function ReportsPage() {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-2 mb-3">
-                  <ArrowUpRight className="h-4 w-4 text-emerald-600" />
-                  <h3 className="font-semibold text-emerald-600 dark:text-emerald-400">Assets</h3>
+                  <ArrowUpRight className="h-4 w-4 text-pos" />
+                  <h3 className="font-semibold text-pos">Assets</h3>
                 </div>
                 <Table>
                   <TableBody>
@@ -907,7 +933,7 @@ export default function ReportsPage() {
                     ))}
                     <TableRow className="font-bold border-t-2">
                       <TableCell colSpan={3}>Total Assets</TableCell>
-                      <TableCell className="text-right font-mono text-emerald-600 dark:text-emerald-400">
+                      <TableCell className="text-right font-mono text-pos">
                         {formatCurrency(balanceSheet.totalAssets, displayCurrency)}
                       </TableCell>
                     </TableRow>
@@ -915,8 +941,8 @@ export default function ReportsPage() {
                 </Table>
                 <Separator className="my-5" />
                 <div className="flex items-center gap-2 mb-3">
-                  <ArrowDownRight className="h-4 w-4 text-rose-600" />
-                  <h3 className="font-semibold text-rose-600 dark:text-rose-400">Liabilities</h3>
+                  <ArrowDownRight className="h-4 w-4 text-destructive" />
+                  <h3 className="font-semibold text-destructive">Liabilities</h3>
                 </div>
                 <Table>
                   <TableBody>
@@ -936,7 +962,7 @@ export default function ReportsPage() {
                     ))}
                     <TableRow className="font-bold border-t-2">
                       <TableCell colSpan={3}>Total Liabilities</TableCell>
-                      <TableCell className="text-right font-mono text-rose-600 dark:text-rose-400">
+                      <TableCell className="text-right font-mono text-destructive">
                         {formatCurrency(balanceSheet.totalLiabilities, displayCurrency)}
                       </TableCell>
                     </TableRow>
@@ -947,7 +973,7 @@ export default function ReportsPage() {
                   <p className="text-lg font-bold">Net Worth</p>
                   <p
                     className={`text-2xl font-bold font-mono hero-number ${
-                      balanceSheet.netWorth >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                      balanceSheet.netWorth >= 0 ? "text-pos" : "text-destructive"
                     }`}
                   >
                     {formatCurrency(balanceSheet.netWorth, displayCurrency)}
@@ -964,7 +990,7 @@ export default function ReportsPage() {
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-100 text-cyan-600 dark:bg-cyan-950 dark:text-cyan-400">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-info/10 text-info">
                     <Workflow className="h-5 w-5" />
                   </div>
                   <div>
@@ -1019,7 +1045,7 @@ export default function ReportsPage() {
                 <Card>
                   <CardHeader>
                     <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-950 dark:text-amber-400">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-warning/10 text-warning">
                         <GitCompareArrows className="h-5 w-5" />
                       </div>
                       <div>
@@ -1135,9 +1161,9 @@ export default function ReportsPage() {
                                 variant="outline"
                                 className={
                                   cat.change > 5
-                                    ? "text-rose-600 border-rose-200 bg-rose-50 dark:bg-rose-950/50 dark:border-rose-800"
+                                    ? "text-destructive border-destructive/30 bg-destructive/10"
                                     : cat.change < -5
-                                    ? "text-emerald-600 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/50 dark:border-emerald-800"
+                                    ? "text-pos border-pos/30 bg-pos/10"
                                     : "text-muted-foreground"
                                 }
                               >
@@ -1228,7 +1254,7 @@ function TotalsRow({
 function TruncationNotice({ visible, shown, total }: { visible: boolean; shown: number; total: number }) {
   if (!visible) return null;
   return (
-    <p className="text-xs text-amber-600 dark:text-amber-400 mb-2">
+    <p className="text-xs text-warning mb-2">
       Showing the most recent {shown} of {total} periods &mdash; Total reflects the full range.
     </p>
   );

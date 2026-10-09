@@ -1173,8 +1173,8 @@ export function StagedReviewSurface({
         <Card
           className={
             toast.type === "success"
-              ? "border-emerald-200 bg-emerald-50/30"
-              : "border-rose-200 bg-rose-50/30"
+              ? "border-pos/30 bg-pos/10"
+              : "border-destructive/30 bg-destructive/10"
           }
         >
           <CardContent className="py-3 text-sm">{toast.msg}</CardContent>
@@ -1220,10 +1220,10 @@ export function StagedReviewSurface({
         )}
 
       {anchorsOnlyHint && (
-        <Card className="border-sky-300 bg-sky-50/50">
+        <Card className="border-info/30 bg-info/10">
           <CardContent className="py-2.5 px-3 text-sm flex items-start gap-3">
-            <Info className="h-4 w-4 text-sky-700 shrink-0 mt-0.5" />
-            <div className="text-sky-900">
+            <Info className="h-4 w-4 text-info shrink-0 mt-0.5" />
+            <div className="text-info">
               All {anchorsOnlyHint.totalRows} transaction
               {anchorsOnlyHint.totalRows === 1 ? "" : "s"} in this file are
               already in the bank ledger. Clicking <strong>Approve</strong> will
@@ -1257,7 +1257,7 @@ export function StagedReviewSurface({
       )}
 
       {linkMode && (
-        <Card className="border-sky-300 bg-sky-50/50">
+        <Card className="border-info/30 bg-info/10">
           <CardContent className="py-2 px-3 text-sm flex items-center justify-between gap-3">
             <span>
               <LinkIcon className="h-3.5 w-3.5 inline mr-1.5" />

@@ -9,7 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
+import { ErrorState } from "@/components/error-state";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { OnboardingTips } from "@/components/onboarding-tips";
 import { Badge } from "@/components/ui/badge";
 import { Plus, SlidersHorizontal, ChevronDown, Receipt, Search, X, AlertTriangle, ArrowRightLeft, Columns3, TrendingUp, Download } from "lucide-react";
@@ -178,7 +180,7 @@ export function TransactionsWorkspace({
   const { colFilters, setColFilters, findColFilter, setColFilter } = useTxFilterPrefs(() => setPage(0));
 
   // Main list (txns / total / loading) + loadTxns + infinite scroll loadNextPage
-  const { txns, total, loading, limit, loadTxns, loadNextPage, resetPage, hasMore } = useTransactions(
+  const { txns, total, loading, limit, loadTxns, loadNextPage, resetPage, hasMore, loadError } = useTransactions(
     filters,
     sortPref,
     colFilters,
@@ -269,6 +271,8 @@ export function TransactionsWorkspace({
   } | null>(null);
   const [deleteConfirmPayee, setDeleteConfirmPayee] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  useEffect(() => { setDeleteError(null); }, [deleteConfirmId]);
   // FINLYNQ-176 — warn-and-reallocate. When a delete is lot-locked, fetch the
   // dry-run preview so the user can see the proposed reallocation (affected
   // calendar years + any short lot that will open) and choose to proceed.
@@ -526,6 +530,7 @@ export function TransactionsWorkspace({
   async function handleDelete() {
     if (!deleteConfirmId) return;
     setDeleting(true);
+    setDeleteError(null);
     setDeleteBlockedError(null);
     const res = await fetch(`/api/transactions?id=${deleteConfirmId}`, { method: "DELETE" });
     setDeleting(false);
@@ -561,7 +566,7 @@ export function TransactionsWorkspace({
         }
         return;
       }
-      alert(data?.error ?? `Delete failed (${res.status})`);
+      setDeleteError(data?.error ?? `Delete failed (${res.status})`);
       return;
     }
     setDeleteConfirmId(null);
@@ -573,6 +578,7 @@ export function TransactionsWorkspace({
   async function handleReallocateDelete() {
     if (!deleteConfirmId) return;
     setDeleting(true);
+    setDeleteError(null);
     const res = await fetch(
       `/api/transactions?id=${deleteConfirmId}&confirmReallocation=1`,
       { method: "DELETE" },
@@ -580,7 +586,7 @@ export function TransactionsWorkspace({
     setDeleting(false);
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      alert(data?.error ?? `Delete failed (${res.status})`);
+      setDeleteError(data?.error ?? `Delete failed (${res.status})`);
       return;
     }
     setDeleteConfirmId(null);
@@ -686,6 +692,8 @@ export function TransactionsWorkspace({
   // admin users table could reuse it instead of forking a third copy.
 
   // Split allocated total for inline split editor
+  if (loadError) return <ErrorState title="Couldn't load transactions" message="We couldn't load your transactions. Please try again." onRetry={() => { void loadTxns(); }} />;
+
   return (
     /* FINLYNQ-52 (was issue #59 workaround): the (app)-shell width clamp
        was removed in src/app/(app)/layout.tsx, so this page no longer
@@ -699,7 +707,7 @@ export function TransactionsWorkspace({
             className="flex flex-wrap items-center justify-between gap-3"
             title="Transactions"
             subtitle="Manage and track all your financial transactions"
-            titleClassName="text-2xl font-bold"
+            titleClassName="text-2xl font-bold tracking-tight"
             subtitleClassName="text-sm text-muted-foreground mt-0.5"
             actionsClassName="flex flex-wrap items-center gap-1.5"
             overflow={[
@@ -867,7 +875,7 @@ export function TransactionsWorkspace({
               onChange={(e) => handleSearchChange(e.target.value)}
             />
             {searchInput && (
-              <button onClick={() => { setSearchInput(""); setFilters({ ...filters, search: "" }); setPage(0); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-muted transition-colors">
+              <button onClick={() => { setSearchInput(""); setFilters({ ...filters, search: "" }); setPage(0); }} type="button" aria-label="Clear search" className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-muted transition-colors max-md:right-0 max-md:flex max-md:size-11 max-md:items-center max-md:justify-center">
                 <X className="h-3.5 w-3.5 text-muted-foreground" />
               </button>
             )}
@@ -1054,11 +1062,11 @@ export function TransactionsWorkspace({
           {filters.tag && (
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">Tag:</span>
-              <Badge variant="outline" className="h-7 gap-1.5 pr-1 border-sky-300 bg-sky-50 text-sky-700 dark:border-sky-800 dark:bg-sky-950 dark:text-sky-300">
+              <Badge variant="outline" className="h-7 gap-1.5 pr-1 border-info/30 bg-info/10 text-info">
                 <span className="font-medium font-mono">{filters.tag}</span>
                 <button
                   onClick={() => { setFilters({ ...filters, tag: "" }); setPage(0); }}
-                  className="p-0.5 rounded hover:bg-sky-100 dark:hover:bg-sky-900 transition-colors"
+                  className="p-0.5 rounded hover:bg-info/10 transition-colors"
                   aria-label="Clear tag filter"
                 >
                   <X className="h-3 w-3" />
@@ -1162,7 +1170,7 @@ export function TransactionsWorkspace({
               {bulkProcessing ? "Processing…" : "Apply"}
             </Button>
           </div>
-          <button onClick={() => setSelected(new Set())} className="text-muted-foreground hover:text-foreground transition-colors">
+          <button aria-label="Clear selection" onClick={() => setSelected(new Set())} className="text-muted-foreground hover:text-foreground transition-colors">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -1231,9 +1239,12 @@ export function TransactionsWorkspace({
               Delete Transaction
             </DialogTitle>
           </DialogHeader>
+          {deleteError && (
+            <Alert variant="destructive"><AlertDescription>{deleteError}</AlertDescription></Alert>
+          )}
           {deleteBlockedError ? (
             <div className="space-y-3">
-              <p className="text-sm text-amber-900 dark:text-amber-200">
+              <p className="text-sm text-warning">
                 This transaction opened a lot that has since been sold or
                 transferred out. You can still delete it — the dependent
                 transactions below will be re-matched to your other lots.

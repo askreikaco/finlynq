@@ -140,7 +140,7 @@ export function TransactionsPane({
                 suggestionKey != null && busySuggestionKey === suggestionKey;
               const highlighted = highlightedTxIds?.has(r.id) ?? false;
               const highlightClass = highlighted
-                ? "bg-sky-500/10 outline outline-2 outline-sky-500/40"
+                ? "bg-info/10 outline outline-2 outline-info/40"
                 : "";
               const checked = selectedTxIds?.has(r.id) ?? false;
               return (

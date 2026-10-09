@@ -282,14 +282,14 @@ export function BankFeedsSection() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-warning/10 text-warning">
               <Landmark className="h-5 w-5" />
             </div>
             <div className="min-w-0">
               <CardTitle className="text-base flex items-center gap-2">
                 SimpleFIN
                 {status?.connected && (
-                  <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-600/40">
+                  <Badge variant="outline" className="text-xs text-pos border-pos/40">
                     <CheckCircle2 className="h-3 w-3 mr-1" /> Connected
                   </Badge>
                 )}
@@ -353,7 +353,7 @@ export function BankFeedsSection() {
               {status.lastSync && !status.lastSync.ok && (
                 <div
                   role="status"
-                  className="flex items-start gap-2 rounded-lg border border-amber-600/30 bg-amber-50 dark:bg-amber-950/30 px-3 py-2 text-xs text-amber-700 dark:text-amber-400"
+                  className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning"
                 >
                   <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
                   <span>
@@ -368,7 +368,7 @@ export function BankFeedsSection() {
                           type="button"
                           onClick={handleDetect}
                           disabled={detecting}
-                          className="underline underline-offset-2 hover:text-amber-900 dark:hover:text-amber-300 disabled:opacity-50"
+                          className="underline underline-offset-2 hover:text-warning disabled:opacity-50"
                         >
                           Sync now
                         </button>{" "}
@@ -497,7 +497,7 @@ export function BankFeedsSection() {
                     .
                   </p>
                   {stageResult.skippedNoChoice.length > 0 && (
-                    <p className="text-xs text-amber-600">
+                    <p className="text-xs text-warning">
                       Skipped (no choice made):{" "}
                       {stageResult.skippedNoChoice.map((s) => s.name).join(", ")}
                     </p>
@@ -560,7 +560,7 @@ export function BankFeedsSection() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground dark:text-foreground">
                 <Clock className="h-5 w-5" />
               </div>
               <div className="min-w-0">

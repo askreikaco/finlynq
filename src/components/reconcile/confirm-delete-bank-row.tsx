@@ -89,7 +89,7 @@ export function ConfirmDeleteBankRow({
           <Button
             onClick={() => onConfirm(true)}
             disabled={busy}
-            className="bg-rose-700 hover:bg-rose-800 text-white"
+            className="bg-destructive hover:bg-destructive/90 text-white"
           >
             Delete all (bank row + {isPlural ? "transactions" : "transaction"})
           </Button>

@@ -155,14 +155,14 @@ export function ManagePricesDialog({
                   <span className="ml-auto font-medium tabular-nums">
                     {formatCurrency(m.price, m.currency)}
                   </span>
-                  <Button
+                  <Button aria-label="Delete this price"
                     variant="ghost"
                     size="sm"
                     className="h-7 px-2"
                     onClick={() => setDeleteId(m.id)}
                     title="Delete this price"
                   >
-                    <Trash2 className="h-3.5 w-3.5 text-rose-500" />
+                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
                   </Button>
                 </div>
               ))
@@ -184,7 +184,7 @@ export function ManagePricesDialog({
               />
             </div>
           </div>
-          {error && <p className="text-xs text-rose-600">{error}</p>}
+          {error && <p className="text-xs text-destructive">{error}</p>}
 
           <DialogFooter>
             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>

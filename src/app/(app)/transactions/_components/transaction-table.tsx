@@ -35,15 +35,15 @@ const COLUMN_LABELS = SHARED_COLUMN_LABELS;
 const TOGGLEABLE_COLUMNS = new Set<ColumnId>(SHARED_TOGGLEABLE_COLUMN_IDS);
 
 const categoryColorMap: Record<string, string> = {
-  income: "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-300",
-  expense: "border-rose-300 bg-rose-50 text-rose-700 dark:border-rose-700 dark:bg-rose-950 dark:text-rose-300",
-  transfer: "border-sky-300 bg-sky-50 text-sky-700 dark:border-sky-700 dark:bg-sky-950 dark:text-sky-300",
-  investment: "border-violet-300 bg-violet-50 text-violet-700 dark:border-violet-700 dark:bg-violet-950 dark:text-violet-300",
+  income: "border-pos/30 bg-pos/10 text-pos",
+  expense: "border-destructive/30 bg-destructive/10 text-destructive",
+  transfer: "border-info/30 bg-info/10 text-info",
+  investment: "border-chart-5/30 bg-chart-5/10 text-chart-5",
 };
 
 function getCategoryBadgeClass(categoryType: string): string {
   const key = categoryType?.toLowerCase() ?? "";
-  return categoryColorMap[key] ?? "border-zinc-300 bg-zinc-50 text-zinc-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300";
+  return categoryColorMap[key] ?? "border-border bg-muted text-foreground dark:bg-background";
 }
 
 function TableSkeleton() {
@@ -51,13 +51,13 @@ function TableSkeleton() {
     <div className="p-4 space-y-3">
       {Array.from({ length: 8 }).map((_, i) => (
         <div key={i} className="flex items-center gap-4">
-          <div className="h-4 w-20 rounded bg-muted animate-pulse" />
-          <div className="h-4 w-24 rounded bg-muted animate-pulse" />
-          <div className="h-5 w-16 rounded-full bg-muted animate-pulse" />
-          <div className="h-4 w-28 rounded bg-muted animate-pulse" />
-          <div className="h-4 w-32 rounded bg-muted animate-pulse flex-1" />
-          <div className="h-4 w-20 rounded bg-muted animate-pulse ml-auto" />
-          <div className="h-6 w-14 rounded bg-muted animate-pulse" />
+          <div className="h-4 w-20 rounded animate-shimmer" />
+          <div className="h-4 w-24 rounded animate-shimmer" />
+          <div className="h-5 w-16 rounded-full animate-shimmer" />
+          <div className="h-4 w-28 rounded animate-shimmer" />
+          <div className="h-4 w-32 rounded animate-shimmer flex-1" />
+          <div className="h-4 w-20 rounded animate-shimmer ml-auto" />
+          <div className="h-6 w-14 rounded animate-shimmer" />
         </div>
       ))}
     </div>
@@ -246,7 +246,7 @@ export function TransactionTable({
                         )}
                         <SplitBadge transactionId={t.id} />
                         {t.linkId && (
-                          <Link2 className="h-3 w-3 text-sky-500 shrink-0" aria-label="Linked transaction" />
+                          <Link2 className="h-3 w-3 text-info shrink-0" aria-label="Linked transaction" />
                         )}
                       </span>
                     </TableCell>
@@ -287,7 +287,7 @@ export function TransactionTable({
                                 setFilters({ ...filters, tag: tagValue });
                                 setPage(0);
                               }}
-                              className="inline-flex items-center rounded-md border border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-800 dark:bg-sky-950 dark:text-sky-300 px-1.5 py-0 text-[10px] font-mono hover:border-sky-400 hover:bg-sky-100 dark:hover:bg-sky-900 transition-colors"
+                              className="inline-flex items-center rounded-md border border-info/30 bg-info/10 text-info px-1.5 py-0 text-[10px] font-mono hover:border-info/30 hover:bg-info/10 transition-colors"
                               title={`Filter by tag: ${tagValue}`}
                             >
                               {tagValue}
@@ -320,7 +320,7 @@ export function TransactionTable({
                   const enteredCcy = t.enteredCurrency ?? t.currency;
                   const showSecondary = enteredCcy !== t.currency;
                   return (
-                    <TableCell key={c.id} className={`text-right font-mono text-sm font-semibold ${t.amount >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                    <TableCell key={c.id} className={`text-right font-mono text-sm font-semibold ${t.amount >= 0 ? "text-pos" : "text-destructive"}`}>
                       <div className="flex flex-col items-end">
                         <span>{formatCurrency(enteredAmt, enteredCcy)}</span>
                         {showSecondary && (
@@ -398,12 +398,12 @@ export function TransactionTable({
                           variant="outline"
                           className={`text-[10px] ${borderStyle} ${
                             /_cash_leg$/.test(t.kind)
-                              ? "border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-300"
+                              ? "border-info/40 bg-info/10 text-info"
                               : t.kind === "dividend" || t.kind === "interest"
-                                ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                                ? "border-pos/40 bg-pos/10 text-pos"
                                 : t.kind === "opening_balance"
-                                  ? "border-violet-500/40 bg-violet-500/10 text-violet-700 dark:text-violet-300"
-                                  : "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                                  ? "border-chart-5/40 bg-chart-5/10 text-chart-5"
+                                  : "border-warning/40 bg-warning/10 text-warning"
                           }`}
                           title={
                             isCanonical
@@ -449,7 +449,7 @@ export function TransactionTable({
                       {status === "canonical" ? (
                         <Badge
                           variant="outline"
-                          className="text-[10px] border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                          className="text-[10px] border-pos/40 bg-pos/10 text-pos"
                           title="Row has a canonical Phase-2 shape — kind set AND (pair-less kind OR trade_link_id OR link_id)."
                         >
                           canonical
@@ -457,7 +457,7 @@ export function TransactionTable({
                       ) : status === "pending" ? (
                         <Badge
                           variant="outline"
-                          className="text-[10px] border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300 border-dashed"
+                          className="text-[10px] border-warning/40 bg-warning/10 text-warning border-dashed"
                           title={`Kind is '${t.kind}' but row lacks the canonical pair shape — visit /settings/backfill to canonicalize.`}
                         >
                           pending
@@ -477,14 +477,14 @@ export function TransactionTable({
                   return (
                     <TableCell key={c.id}>
                       <div className="flex gap-0.5">
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startEdit(t)} title="Edit">
+                        <Button aria-label="Edit" variant="ghost" size="icon" className="h-7 w-7" onClick={() => startEdit(t)} title="Edit">
                           <Pencil className="h-3 w-3" />
                         </Button>
                         {canDuplicate(t, t.currency) && (
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-7 w-7 text-sky-500"
+                            className="h-7 w-7 text-info"
                             onClick={() => startDuplicate(t)}
                             title="Duplicate"
                             aria-label="Duplicate transaction"
@@ -492,10 +492,10 @@ export function TransactionTable({
                             <Copy className="h-3 w-3" />
                           </Button>
                         )}
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-violet-500" onClick={() => openSplitDialog(t)} title="Split">
+                        <Button aria-label="Split" variant="ghost" size="icon" className="h-7 w-7 text-chart-5" onClick={() => openSplitDialog(t)} title="Split">
                           <Scissors className="h-3 w-3" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => confirmDelete(t)} title="Delete">
+                        <Button aria-label="Delete" variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => confirmDelete(t)} title="Delete">
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>

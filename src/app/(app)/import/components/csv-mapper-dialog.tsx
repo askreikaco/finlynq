@@ -165,13 +165,13 @@ export function CsvMapperDialog({
         </div>
 
         {(!hasDate || !hasAmount) && (
-          <p className="text-xs text-amber-600">
+          <p className="text-xs text-warning">
             {!hasDate && "Date mapping is required. "}
             {!hasAmount && "Amount mapping is required."}
           </p>
         )}
         {hasDate && hasAmount && !hasAccount && defaultAccount.trim() === "" && (
-          <p className="text-xs text-amber-600">
+          <p className="text-xs text-warning">
             Select a default account or map an Account column.
           </p>
         )}

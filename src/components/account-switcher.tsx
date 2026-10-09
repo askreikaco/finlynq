@@ -88,7 +88,7 @@ function AccountBody({ account, busy }: { account: Account; busy: string | null 
         <span className="block truncate text-xs text-muted-foreground">{account.email}</span>
       </span>
       {account.isAdmin && (
-        <span className="shrink-0 rounded bg-amber-500/20 px-1.5 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+        <span className="shrink-0 rounded bg-warning/20 px-1.5 py-0.5 text-xs font-medium text-warning">
           Admin
         </span>
       )}

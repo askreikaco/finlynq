@@ -20,10 +20,10 @@ type ImportRow = Record<string, string>;
 type ImportSection = "accounts" | "categories" | "portfolio";
 
 const exportItems = [
-  { type: "accounts", label: "Accounts", icon: Wallet, iconColor: "text-violet-500" },
-  { type: "categories", label: "Categories", icon: Tag, iconColor: "text-emerald-500" },
-  { type: "transactions", label: "Transactions", icon: ArrowLeftRight, iconColor: "text-amber-500" },
-  { type: "portfolio", label: "Portfolio", icon: Briefcase, iconColor: "text-cyan-500" },
+  { type: "accounts", label: "Accounts", icon: Wallet, iconColor: "text-chart-5" },
+  { type: "categories", label: "Categories", icon: Tag, iconColor: "text-pos" },
+  { type: "transactions", label: "Transactions", icon: ArrowLeftRight, iconColor: "text-warning" },
+  { type: "portfolio", label: "Portfolio", icon: Briefcase, iconColor: "text-info" },
 ];
 
 export function DataSection() {
@@ -348,7 +348,7 @@ export function DataSection() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-100 text-teal-600">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-pos/10 text-pos">
               <Upload className="h-5 w-5" />
             </div>
             <div>
@@ -361,9 +361,9 @@ export function DataSection() {
           {/* Import type buttons */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {([
-              { key: "accounts" as const, label: "Accounts", icon: Wallet, color: "text-violet-500", hint: "Columns: name, type, group, currency, note" },
-              { key: "categories" as const, label: "Categories", icon: Tag, color: "text-emerald-500", hint: "Columns: name, type, group, note" },
-              { key: "portfolio" as const, label: "Portfolio", icon: Briefcase, color: "text-cyan-500", hint: "Columns: symbol, name, quantity, currency, note" },
+              { key: "accounts" as const, label: "Accounts", icon: Wallet, color: "text-chart-5", hint: "Columns: name, type, group, currency, note" },
+              { key: "categories" as const, label: "Categories", icon: Tag, color: "text-pos", hint: "Columns: name, type, group, note" },
+              { key: "portfolio" as const, label: "Portfolio", icon: Briefcase, color: "text-info", hint: "Columns: symbol, name, quantity, currency, note" },
             ] as const).map(({ key, label, icon: Icon, color, hint }) => (
               <div key={key} className="space-y-1">
                 <label className={`flex flex-col items-center gap-2 border rounded-lg p-3 cursor-pointer hover:bg-muted/50 transition-colors text-center ${importSection === key ? "border-primary bg-primary/5" : ""}`}>
@@ -433,7 +433,7 @@ export function DataSection() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
               <Database className="h-5 w-5" />
             </div>
             <div>
@@ -466,7 +466,7 @@ export function DataSection() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-warning/10 text-warning">
               <ArrowLeftRight className="h-5 w-5" />
             </div>
             <div>
@@ -489,7 +489,7 @@ export function DataSection() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
               <History className="h-5 w-5" />
             </div>
             <div>
@@ -512,7 +512,7 @@ export function DataSection() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-600">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
               <AlertTriangle className="h-5 w-5" />
             </div>
             <div>
@@ -556,7 +556,7 @@ export function DataSection() {
           )}
 
           {clearStatus && (
-            <p className={`text-xs ${clearStatus.includes("success") ? "text-emerald-600" : "text-destructive"}`}>
+            <p className={`text-xs ${clearStatus.includes("success") ? "text-pos" : "text-destructive"}`}>
               {clearStatus}
             </p>
           )}

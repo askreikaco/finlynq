@@ -198,8 +198,9 @@ function EmailConditionRow({
         <Button
           size="icon"
           variant="ghost"
-          className="h-8 w-8 text-muted-foreground hover:text-rose-600"
+          className="h-8 w-8 text-muted-foreground hover:text-destructive"
           onClick={onRemove}
+          aria-label="Remove condition"
           title="Remove condition"
         >
           <Trash2 className="h-3.5 w-3.5" />
@@ -438,12 +439,12 @@ export function EmailRuleDialog({
 
         <div className="space-y-3">
           {error && (
-            <div className="rounded-md border border-rose-200 bg-rose-50 p-2 text-xs text-rose-800 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-200">
+            <div className="rounded-md border border-destructive/30 bg-destructive/10 p-2 text-xs text-destructive">
               {error}
             </div>
           )}
           {notice && (
-            <div className="rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+            <div className="rounded-md border border-warning/30 bg-warning/10 p-2 text-xs text-warning">
               {notice}
             </div>
           )}
@@ -632,7 +633,7 @@ export function EmailRuleDialog({
 
           {/* Live preview (fromEmail) */}
           {preview && (
-            <div className="rounded-md border border-emerald-200 bg-emerald-50/60 p-2.5 text-sm dark:border-emerald-900 dark:bg-emerald-950/30">
+            <div className="rounded-md border border-pos/30 bg-pos/10 p-2.5 text-sm">
               <span className="text-xs text-muted-foreground">Will record: </span>
               <span className="font-medium">{formatCurrency(preview.amount, preview.currency)}</span>
               <span className="mx-1.5 text-muted-foreground">·</span>

@@ -71,4 +71,45 @@ describe("workspace", () => {
     expect(within(dlg).queryByRole("button", { name: "Duplicate transaction" })).toBeNull();
     expect(push).not.toHaveBeenCalled(); expect(sessionStorage.getItem(KEY)).toBeNull();
   });
+  it("loadError: shows shared ErrorState with retry and calls loadTxns once", () => {
+    const saved = { ...H.RES };
+    const loadTxns = vi.fn();
+    try {
+      Object.assign(H.RES, { loadError: true, txns: [], total: 0, loadTxns });
+      render(<TransactionsWorkspace />);
+      expect(screen.getByRole("alert")).toBeTruthy();
+      expect(screen.getByText("Try again")).toBeTruthy();
+      const btn = screen.getByText("Try again").closest("button")!;
+      expect(btn.className).toContain("min-h-11");
+      fireEvent.click(btn);
+      expect(loadTxns).toHaveBeenCalledTimes(1);
+    } finally {
+      for (const k of Object.keys(H.RES)) delete (H.RES as any)[k];
+      Object.assign(H.RES, saved);
+    }
+  });
+
+  it("delete failure shows an inline Alert in the dialog, not native alert()", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (_url: string, init?: any) => init?.method === "DELETE"
+      ? ({ ok: false, status: 500, json: async () => ({ error: "boom" }) })
+      : ({ ok: true, json: async () => ({ data: [] }) })));
+    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
+    try {
+      render(<TransactionsWorkspace />);
+      fireEvent.click(screen.getAllByTitle("Delete")[0]);
+      const dlg = await screen.findByRole("dialog");
+      fireEvent.click(within(dlg).getByRole("button", { name: "Delete" }));
+      const alertEl = await within(dlg).findByRole("alert");
+      expect(alertEl.textContent).toContain("boom");
+      expect(alertSpy).not.toHaveBeenCalled();
+    } finally {
+      alertSpy.mockRestore();
+    }
+  });
+  it("search input shows a Clear search button with a mobile hit area", () => {
+    render(<TransactionsWorkspace />);
+    fireEvent.change(screen.getByPlaceholderText("Search payee, note, or tags…"), { target: { value: "x" } });
+    const btn = screen.getByLabelText("Clear search");
+    expect(btn.className).toContain("max-md:size-11");
+  });
 });

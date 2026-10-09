@@ -296,7 +296,7 @@ export function HoldingsTable({
                           {r.totalQty < 0 && (
                             <Badge
                               variant="outline"
-                              className="text-[10px] h-4 px-1 border-rose-500 text-rose-600 dark:border-rose-400 dark:text-rose-400"
+                              className="text-[10px] h-4 px-1 border-destructive text-destructive"
                               title="Net-short position — sales exceeded buys. Lots are tracked via holding_lots.side='short'; close by buying to cover."
                             >
                               Short
@@ -304,7 +304,7 @@ export function HoldingsTable({
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className={`text-right font-mono text-sm ${r.totalQty < 0 ? "text-rose-600 dark:text-rose-400" : ""}`}>
+                      <TableCell className={`text-right font-mono text-sm ${r.totalQty < 0 ? "text-destructive" : ""}`}>
                         {r.totalQty !== 0
                           ? r.totalQty.toLocaleString(getDisplayLocale(), { minimumFractionDigits: 0, maximumFractionDigits: magnitudeDecimals(r.totalQty) })
                           : <span className="text-muted-foreground text-xs">--</span>}
@@ -324,7 +324,7 @@ export function HoldingsTable({
                       {/* Day G/L $ — split from % (FINLYNQ-245) */}
                       <TableCell className="text-right font-mono text-sm">
                         {dayAmt != null ? (
-                          <span className={`${dayAmt >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                          <span className={`${dayAmt >= 0 ? "text-pos" : "text-destructive"}`}>
                             {dayAmt >= 0 ? "+" : ""}{formatCurrencyAdaptive(dayAmt, ccy)}
                           </span>
                         ) : <span className="text-muted-foreground text-xs">--</span>}
@@ -332,28 +332,28 @@ export function HoldingsTable({
                       {/* Day % — separate sortable column (FINLYNQ-245) */}
                       <TableCell className="text-right font-mono text-sm">
                         {r.dayChangePct != null ? (
-                          <span className={`${r.dayChangePct >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                          <span className={`${r.dayChangePct >= 0 ? "text-pos" : "text-destructive"}`}>
                             {r.dayChangePct >= 0 ? "+" : ""}{formatPercent(r.dayChangePct, 2)}
                           </span>
                         ) : <span className="text-muted-foreground text-xs">--</span>}
                       </TableCell>
                       {/* Unrealized G/L $ — split from % (FINLYNQ-245) */}
                       <TableCell className="text-right font-mono text-sm">
-                        <span className={`font-medium ${unreal >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                        <span className={`font-medium ${unreal >= 0 ? "text-pos" : "text-destructive"}`}>
                           {unreal >= 0 ? "+" : ""}{formatCurrencyAdaptive(unreal, ccy)}
                         </span>
                       </TableCell>
                       {/* Unrealized % — separate sortable column (FINLYNQ-245) */}
                       <TableCell className="text-right font-mono text-sm">
                         {r.unrealizedGainPct != null ? (
-                          <span className={`font-medium ${r.unrealizedGainPct >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                          <span className={`font-medium ${r.unrealizedGainPct >= 0 ? "text-pos" : "text-destructive"}`}>
                             {r.unrealizedGainPct >= 0 ? "+" : ""}{formatPercent(r.unrealizedGainPct, 2)}
                           </span>
                         ) : <span className="text-muted-foreground text-xs">--</span>}
                       </TableCell>
                       <TableCell className="text-right font-mono text-sm">
                         {realized !== 0 ? (
-                          <span className={`${realized >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                          <span className={`${realized >= 0 ? "text-pos" : "text-destructive"}`}>
                             {realized >= 0 ? "+" : ""}{formatCurrencyAdaptive(realized, ccy)}
                           </span>
                         ) : <span className="text-muted-foreground text-xs">--</span>}
@@ -389,13 +389,13 @@ export function HoldingsTable({
                             </div>
                             <div>
                               <p className="text-muted-foreground">Dividends</p>
-                              <p className="font-medium font-mono text-emerald-600 dark:text-emerald-400">
+                              <p className="font-medium font-mono text-pos">
                                 {divs > 0 ? `+${formatCurrencyAdaptive(divs, ccy)}` : "--"}
                               </p>
                             </div>
                             <div>
                               <p className="text-muted-foreground">Total Return</p>
-                              <p className={`font-medium font-mono ${totalReturn >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                              <p className={`font-medium font-mono ${totalReturn >= 0 ? "text-pos" : "text-destructive"}`}>
                                 {totalReturn !== 0 ? `${totalReturn >= 0 ? "+" : ""}${formatCurrencyAdaptive(totalReturn, ccy)}` : "--"}
                                 {r.totalReturnPct != null && (
                                   <span className="ml-1 text-[10px]">({r.totalReturnPct >= 0 ? "+" : ""}{formatPercent(r.totalReturnPct, 1)})</span>
@@ -459,12 +459,12 @@ export function HoldingsTable({
                                             {h.accountName}
                                           </button>
                                         </TableCell>
-                                        <TableCell className={`text-right font-mono text-xs ${hasMetrics && h.quantity != null && h.quantity < 0 ? "text-rose-600 dark:text-rose-400" : ""}`}>
+                                        <TableCell className={`text-right font-mono text-xs ${hasMetrics && h.quantity != null && h.quantity < 0 ? "text-destructive" : ""}`}>
                                           {hasMetrics && h.quantity != null
                                             ? h.quantity.toLocaleString(getDisplayLocale(), { minimumFractionDigits: 0, maximumFractionDigits: magnitudeDecimals(h.quantity) })
                                             : <span className="text-muted-foreground">--</span>}
                                           {hasMetrics && h.quantity != null && h.quantity < 0 && (
-                                            <span className="ml-1 text-[9px] uppercase tracking-wider text-rose-500" title="Short position">short</span>
+                                            <span className="ml-1 text-[9px] uppercase tracking-wider text-destructive" title="Short position">short</span>
                                           )}
                                         </TableCell>
                                         <TableCell className="text-right font-mono text-xs">
@@ -479,14 +479,14 @@ export function HoldingsTable({
                                         </TableCell>
                                         <TableCell className="text-right text-xs">
                                           {hasMetrics && rowUnreal != null ? (
-                                            <span className={`font-mono ${rowUnreal >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                                            <span className={`font-mono ${rowUnreal >= 0 ? "text-pos" : "text-destructive"}`}>
                                               {rowUnreal >= 0 ? "+" : ""}{formatCurrencyAdaptive(rowUnreal, rowCcy)}
                                             </span>
                                           ) : <span className="text-muted-foreground">--</span>}
                                         </TableCell>
                                         <TableCell className="text-right text-xs">
                                           {rowRealized != null && rowRealized !== 0 ? (
-                                            <span className={`font-mono ${rowRealized >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                                            <span className={`font-mono ${rowRealized >= 0 ? "text-pos" : "text-destructive"}`}>
                                               {rowRealized >= 0 ? "+" : ""}{formatCurrencyAdaptive(rowRealized, rowCcy)}
                                             </span>
                                           ) : <span className="text-muted-foreground">--</span>}

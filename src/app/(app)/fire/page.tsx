@@ -58,7 +58,7 @@ function ResultCard({ label, value, icon, color }: { label: string; value: strin
     <Card>
       <CardHeader className="pb-2">
         <div className="flex items-center gap-3">
-          <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${color ?? "bg-gray-100"}`}>
+          <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${color ?? "bg-muted"}`}>
             {icon}
           </div>
           <CardTitle className="text-sm text-muted-foreground">{label}</CardTitle>
@@ -201,12 +201,12 @@ function FirePageContent() {
   return (
     <div className="space-y-6">
       <div>
-        <PageHeader title={<><Flame className="h-6 w-6 text-orange-500" /> FIRE Calculator</>} titleClassName="text-2xl font-bold flex items-center gap-2" />
+        <PageHeader title={<><Flame className="h-6 w-6 text-warning" /> FIRE Calculator</>} titleClassName="text-2xl font-bold tracking-tight flex items-center gap-2" />
         <p className="text-sm text-muted-foreground mt-1">
           Calculate your Financial Independence, Retire Early number and timeline
         </p>
         {dashboardLoaded && (
-          <p className="text-xs text-emerald-600 mt-1">Some values pre-filled from your dashboard data.</p>
+          <p className="text-xs text-pos mt-1">Some values pre-filled from your dashboard data.</p>
         )}
       </div>
 
@@ -267,8 +267,8 @@ function FirePageContent() {
                 <ResultCard
                   label="FIRE Number"
                   value={formatCurrency(result.fireNumber, displayCurrency)}
-                  icon={<Target className="h-5 w-5 text-orange-600 dark:text-orange-400" />}
-                  color="bg-orange-100 dark:bg-orange-950/60"
+                  icon={<Target className="h-5 w-5 text-warning" />}
+                  color="bg-warning/10"
                 />
                 <ResultCard
                   label="Years to FIRE"
@@ -279,33 +279,33 @@ function FirePageContent() {
                 <ResultCard
                   label="FIRE Age"
                   value={`Age ${result.fireAge}`}
-                  icon={<Flame className="h-5 w-5 text-rose-600 dark:text-rose-400" />}
-                  color="bg-rose-100 dark:bg-rose-950/60"
+                  icon={<Flame className="h-5 w-5 text-destructive" />}
+                  color="bg-destructive/10"
                 />
                 <ResultCard
                   label="Projected FIRE Date"
                   value={result.fireDate}
-                  icon={<Calendar className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />}
-                  color="bg-cyan-100 dark:bg-cyan-950/60"
+                  icon={<Calendar className="h-5 w-5 text-info" />}
+                  color="bg-info/10"
                 />
                 <ResultCard
                   label="Coast FIRE Number"
                   value={formatCurrency(result.coastFireNumber, displayCurrency)}
-                  icon={<Wallet className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />}
-                  color="bg-emerald-100 dark:bg-emerald-950/60"
+                  icon={<Wallet className="h-5 w-5 text-pos" />}
+                  color="bg-pos/10"
                 />
                 <ResultCard
                   label="Coast FIRE Age"
                   value={`Age ${result.coastFireAge}`}
-                  icon={<TrendingUp className="h-5 w-5 text-violet-600 dark:text-violet-400" />}
-                  color="bg-violet-100 dark:bg-violet-950/60"
+                  icon={<TrendingUp className="h-5 w-5 text-chart-5" />}
+                  color="bg-chart-5/10"
                 />
               </div>
 
               {/* Coast FIRE explanation */}
-              <Card className="bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-900/50">
+              <Card className="bg-pos/10 border-pos/30">
                 <CardContent className="py-3">
-                  <p className="text-sm text-emerald-700 dark:text-emerald-300">
+                  <p className="text-sm text-pos">
                     <strong>Coast FIRE:</strong> If you already have {formatCurrency(result.coastFireNumber, displayCurrency)} invested,
                     you could stop saving entirely and still reach your FIRE number by age {parseInt(form.targetRetirementAge)} through investment growth alone.
                     At your current savings rate, you will reach Coast FIRE at age {result.coastFireAge}.
@@ -361,7 +361,7 @@ function FirePageContent() {
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Dice5 className="h-5 w-5 text-violet-500" />
+                      <Dice5 className="h-5 w-5 text-chart-5" />
                       <CardTitle className="text-sm">Monte Carlo Analysis</CardTitle>
                     </div>
                     {mcResult && (
@@ -369,10 +369,10 @@ function FirePageContent() {
                         variant="outline"
                         className={`text-sm font-mono ${
                           mcResult.successProbability >= 80
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800"
+                            ? "bg-pos/10 text-pos border-pos/30"
                             : mcResult.successProbability >= 50
-                            ? "bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800"
-                            : "bg-rose-50 text-rose-700 border-rose-300 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800"
+                            ? "bg-warning/10 text-warning border-warning/30"
+                            : "bg-destructive/10 text-destructive border-destructive/30"
                         }`}
                       >
                         {mcResult.successProbability}% success
@@ -505,11 +505,11 @@ function FirePageContent() {
                       {/* Final value percentiles */}
                       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 text-center">
                         {([
-                          { label: "Worst Case (P10)", value: mcResult.finalValues.p10, color: "text-rose-600 dark:text-rose-400" },
-                          { label: "P25", value: mcResult.finalValues.p25, color: "text-amber-600 dark:text-amber-400" },
+                          { label: "Worst Case (P10)", value: mcResult.finalValues.p10, color: "text-destructive" },
+                          { label: "P25", value: mcResult.finalValues.p25, color: "text-warning" },
                           { label: "Median (P50)", value: mcResult.finalValues.p50, color: "text-primary" },
-                          { label: "P75", value: mcResult.finalValues.p75, color: "text-emerald-600 dark:text-emerald-400" },
-                          { label: "Best Case (P90)", value: mcResult.finalValues.p90, color: "text-emerald-700 dark:text-emerald-300" },
+                          { label: "P75", value: mcResult.finalValues.p75, color: "text-pos" },
+                          { label: "Best Case (P90)", value: mcResult.finalValues.p90, color: "text-pos" },
                         ]).map((item) => (
                           <div key={item.label} className="space-y-1">
                             <p className="text-xs text-muted-foreground">{item.label}</p>
@@ -574,8 +574,8 @@ function FirePageContent() {
                                       : years === -1
                                       ? "text-muted-foreground"
                                       : years <= result.yearsToFire
-                                      ? "text-emerald-600 dark:text-emerald-400"
-                                      : "text-amber-600 dark:text-amber-400"
+                                      ? "text-pos"
+                                      : "text-warning"
                                   }`}
                                 >
                                   {years === -1 ? "50+" : `${years} yr`}

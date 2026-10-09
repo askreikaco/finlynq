@@ -302,9 +302,9 @@ export default function BackfillReviewPage({ params }: { params: Promise<{ runId
       <div className="flex flex-wrap items-center justify-between gap-3">
         <PageHeader
             title="Backfill review"
-            titleClassName="text-2xl font-semibold"
+            titleClassName="text-2xl font-bold tracking-tight"
             subtitle={<>{proposals.length} proposal(s) · {approvedCount} approved · {appliedCount} applied</>}
-            subtitleClassName="text-sm text-muted-foreground mt-1"
+            subtitleClassName="text-sm text-muted-foreground mt-0.5"
           />
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => router.push("/settings/backfill")}>
@@ -317,7 +317,7 @@ export default function BackfillReviewPage({ params }: { params: Promise<{ runId
       </div>
 
       {error && <div className="border border-destructive bg-destructive/10 text-destructive rounded p-3 text-sm">{error}</div>}
-      {info && <div className="border border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 rounded p-3 text-sm flex items-center gap-2"><CheckCircle2 className="size-4" /> {info}</div>}
+      {info && <div className="border border-pos/40 bg-pos/10 text-pos rounded p-3 text-sm flex items-center gap-2"><CheckCircle2 className="size-4" /> {info}</div>}
 
       {coverage && <CoverageDashboard coverage={coverage} proposals={proposals} />}
 
@@ -455,7 +455,7 @@ function ProposalCard({
           <div className="flex items-center gap-1.5 flex-wrap">
             <ConfidenceBadge confidence={proposal.confidence} />
             <Badge variant="outline" className="text-xs">{proposal.proposalKind}</Badge>
-            {isApplied && <Badge className="text-xs bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/40">Applied</Badge>}
+            {isApplied && <Badge className="text-xs bg-pos/20 text-pos border-pos/40">Applied</Badge>}
           </div>
           <div className="text-sm font-medium mt-1.5 truncate">{proposal.summary}</div>
           <div className="text-xs text-muted-foreground mt-1 flex gap-3">
@@ -470,9 +470,9 @@ function ProposalCard({
 
 function ConfidenceBadge({ confidence }: { confidence: Proposal["confidence"] }) {
   const styles: Record<Proposal["confidence"], string> = {
-    high: "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/40",
-    medium: "bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/40",
-    low: "bg-orange-500/20 text-orange-700 dark:text-orange-300 border-orange-500/40",
+    high: "bg-pos/20 text-pos border-pos/40",
+    medium: "bg-warning/20 text-warning border-warning/40",
+    low: "bg-warning/20 text-warning border-warning/40",
     refused: "bg-destructive/20 text-destructive border-destructive/40",
   };
   return <Badge className={`text-xs ${styles[confidence]}`}>{confidence}</Badge>;
@@ -540,7 +540,7 @@ function ProposalDetail({
       </CardHeader>
       <CardContent className="space-y-4 text-sm">
         {(isRefused || isOrphan) && (
-          <div className="border border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300 rounded p-3 flex items-start gap-2">
+          <div className="border border-warning/40 bg-warning/10 text-warning rounded p-3 flex items-start gap-2">
             <AlertTriangle className="size-4 mt-0.5 shrink-0" />
             <div>
               <div className="font-medium">
@@ -562,7 +562,7 @@ function ProposalDetail({
         )}
 
         {isOpeningBalance && (
-          <div className="border border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-300 rounded p-3 flex items-start gap-2">
+          <div className="border border-info/40 bg-info/10 text-info rounded p-3 flex items-start gap-2">
             <AlertTriangle className="size-4 mt-0.5 shrink-0" />
             <div>
               <div className="font-medium">Opening balance</div>
@@ -574,7 +574,7 @@ function ProposalDetail({
         )}
 
         {proposal.dependsOnProposalIds.length > 0 && (
-          <div className="border border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-300 rounded p-3 text-xs">
+          <div className="border border-info/40 bg-info/10 text-info rounded p-3 text-xs">
             Depends on proposal(s): #{proposal.dependsOnProposalIds.join(", #")}. Apply those first.
           </div>
         )}
@@ -838,9 +838,9 @@ function ReplacementPreviewTable({
       {synth.length > 0 && (
         <div>
           <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">New rows (synthesized — tagged source=&apos;backfill_synth&apos;)</div>
-          <div className="rounded border border-amber-500/40 bg-amber-500/5 overflow-x-auto">
+          <div className="rounded border border-warning/40 bg-warning/5 overflow-x-auto">
             <table className="w-full text-xs">
-              <thead className="bg-amber-500/10">
+              <thead className="bg-warning/10">
                 <tr>
                   <th className="text-left px-2 py-1.5">Date</th>
                   <th className="text-left px-2 py-1.5">Account</th>
@@ -852,7 +852,7 @@ function ReplacementPreviewTable({
               </thead>
               <tbody>
                 {synth.map((r, i) => (
-                  <tr key={i} className="border-t border-amber-500/30">
+                  <tr key={i} className="border-t border-warning/30">
                     <td className="px-2 py-1.5">{r.date}</td>
                     <td className="px-2 py-1.5">{accountLabelFor(r.accountId, accountMap)}</td>
                     <td className="px-2 py-1.5">{holdingLabelFor(r.portfolioHoldingId, holdingMap)}</td>
@@ -951,7 +951,7 @@ function HoldingPicker({
   });
   if (candidates.length === 0) {
     return (
-      <div className="text-xs text-amber-700 dark:text-amber-300 border border-amber-500/40 bg-amber-500/10 rounded p-2">
+      <div className="text-xs text-warning border border-warning/40 bg-warning/10 rounded p-2">
         No non-cash holdings in this account to choose from. Create the underlying stock holding from the account-detail page, then re-run the backfill.
       </div>
     );
@@ -1717,9 +1717,9 @@ function WillBecomeTable({
   return (
     <div>
       <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Will become</div>
-      <div className="rounded border border-emerald-500/40 bg-emerald-500/5 overflow-x-auto">
+      <div className="rounded border border-pos/40 bg-pos/5 overflow-x-auto">
         <table className="w-full text-xs">
-          <thead className="bg-emerald-500/10">
+          <thead className="bg-pos/10">
             <tr>
               <th className="text-left px-2 py-1.5">Tx</th>
               <th className="text-left px-2 py-1.5">Date</th>
@@ -1941,13 +1941,13 @@ function CoverageDashboard({ coverage, proposals }: { coverage: Coverage; propos
         <div className="mt-4 space-y-1">
           <div className="h-2 w-full rounded-full bg-muted/40 overflow-hidden relative">
             <div
-              className="h-full bg-emerald-500/70 absolute left-0 top-0"
+              className="h-full bg-pos/70 absolute left-0 top-0"
               style={{ width: `${coverage.canonicalPct}%` }}
               title={`${coverage.canonicalPct}% already canonical`}
             />
             {willCanonicalize > 0 && (
               <div
-                className="h-full bg-amber-500/60 absolute top-0"
+                className="h-full bg-warning/60 absolute top-0"
                 style={{ left: `${coverage.canonicalPct}%`, width: `${projectedPct - coverage.canonicalPct}%` }}
                 title={`+${willCanonicalize} after applying ${approvedCount + appliedCount} approved/applied proposals → ${projectedPct}%`}
               />
@@ -1983,14 +1983,14 @@ function CoverageDashboard({ coverage, proposals }: { coverage: Coverage; propos
                       <td className="px-2 py-1.5 text-right font-mono">{a.canonical}</td>
                       <td className="px-2 py-1.5 text-right font-mono">
                         {a.pending > 0 ? (
-                          <span className="text-amber-600 dark:text-amber-400">{a.pending}</span>
+                          <span className="text-warning">{a.pending}</span>
                         ) : (
-                          <span className="text-emerald-600 dark:text-emerald-400">0</span>
+                          <span className="text-pos">0</span>
                         )}
                       </td>
                       <td className="px-2 py-1.5 text-right font-mono">
                         {(a.nonInvestmentRows ?? 0) > 0 ? (
-                          <span className="text-amber-600 dark:text-amber-400">{a.nonInvestmentRows}</span>
+                          <span className="text-warning">{a.nonInvestmentRows}</span>
                         ) : (
                           <span className="text-muted-foreground">0</span>
                         )}
@@ -1998,7 +1998,7 @@ function CoverageDashboard({ coverage, proposals }: { coverage: Coverage; propos
                       <td className="px-2 py-1.5">
                         <div className="h-1.5 w-full rounded-full bg-muted/40 overflow-hidden">
                           <div
-                            className="h-full bg-emerald-500/70"
+                            className="h-full bg-pos/70"
                             style={{ width: `${100 - a.pendingPct}%` }}
                           />
                         </div>
@@ -2016,7 +2016,7 @@ function CoverageDashboard({ coverage, proposals }: { coverage: Coverage; propos
 }
 
 function Metric({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: "good" | "warn" }) {
-  const toneClass = tone === "good" ? "text-emerald-600 dark:text-emerald-400" : tone === "warn" ? "text-amber-600 dark:text-amber-400" : "";
+  const toneClass = tone === "good" ? "text-pos" : tone === "warn" ? "text-warning" : "";
   return (
     <div>
       <div className="text-xs text-muted-foreground">{label}</div>

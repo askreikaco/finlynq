@@ -64,4 +64,11 @@ describe("ErrorState", () => {
     const alert = getByRole("alert");
     expect(alert).toBeTruthy();
   });
+  it("icon container uses destructive tokens and no rose classes", () => {
+    const { container } = render(<ErrorState />);
+    const iconContainer = container.querySelector('[class~="bg-destructive/10"]');
+    expect(iconContainer).not.toBeNull();
+    expect(container.querySelector('[class~="text-destructive"]')).not.toBeNull();
+    expect(container.innerHTML).not.toContain("rose");
+  });
 });

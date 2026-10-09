@@ -56,9 +56,9 @@ export function PdfPreview({
 
   const confidencePct = Math.round(confidence * 100);
   const confidenceColor =
-    confidencePct >= 70 ? "bg-emerald-100 text-emerald-700" :
-    confidencePct >= 40 ? "bg-amber-100 text-amber-700" :
-    "bg-rose-100 text-rose-700";
+    confidencePct >= 70 ? "bg-pos/10 text-pos" :
+    confidencePct >= 40 ? "bg-warning/10 text-warning" :
+    "bg-destructive/10 text-destructive";
 
   const handleConfirm = () => {
     // Assign the selected account to all rows that don't have one
@@ -74,7 +74,7 @@ export function PdfPreview({
       <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <File className="h-5 w-5 text-blue-600" />
+            <File className="h-5 w-5 text-info" />
             PDF Import Preview
           </DialogTitle>
           <DialogDescription>
@@ -134,7 +134,7 @@ export function PdfPreview({
                   <span className="font-mono text-muted-foreground w-20 shrink-0">{row.date}</span>
                   <span className="flex-1 truncate">{row.payee}</span>
                   <ArrowRight className="h-3 w-3 text-muted-foreground shrink-0" />
-                  <span className={`font-mono w-20 text-right shrink-0 ${row.amount < 0 ? "text-rose-600" : "text-emerald-600"}`}>
+                  <span className={`font-mono w-20 text-right shrink-0 ${row.amount < 0 ? "text-destructive" : "text-pos"}`}>
                     {formatCurrency(row.amount, row.currency ?? displayCurrency)}
                   </span>
                 </div>

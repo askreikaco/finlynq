@@ -194,7 +194,7 @@ function StatCard({
 function RoleBadge({ role }: { role: string }) {
   if (role === "admin") {
     return (
-      <Badge variant="default" className="bg-amber-500/15 text-amber-600 border-amber-500/30">
+      <Badge variant="default" className="bg-warning/15 text-warning border-warning/30">
         Admin
       </Badge>
     );
@@ -204,9 +204,9 @@ function RoleBadge({ role }: { role: string }) {
 
 function PlanBadge({ plan }: { plan: string }) {
   const colors: Record<string, string> = {
-    free: "bg-zinc-100 text-zinc-600 border-zinc-200",
-    pro: "bg-blue-500/15 text-blue-600 border-blue-500/30",
-    premium: "bg-purple-500/15 text-purple-600 border-purple-500/30",
+    free: "bg-muted text-muted-foreground border-border",
+    pro: "bg-info/15 text-info border-info/30",
+    premium: "bg-chart-5/15 text-chart-5 border-chart-5/30",
   };
   return (
     <Badge variant="outline" className={colors[plan] || colors.free}>
@@ -465,7 +465,7 @@ export default function AdminPage() {
         accessor: (u) => (u.emailVerified ? 1 : 0),
         render: (u) =>
           u.emailVerified ? (
-            <CheckCircle className="h-4 w-4 text-emerald-500" />
+            <CheckCircle className="h-4 w-4 text-pos" />
           ) : (
             <XCircle className="h-4 w-4 text-muted-foreground" />
           ),
@@ -481,7 +481,7 @@ export default function AdminPage() {
         accessor: (u) => (u.mfaEnabled ? 1 : 0),
         render: (u) =>
           u.mfaEnabled ? (
-            <Shield className="h-4 w-4 text-emerald-500" />
+            <Shield className="h-4 w-4 text-pos" />
           ) : (
             <span className="text-muted-foreground">—</span>
           ),
@@ -665,25 +665,25 @@ export default function AdminPage() {
             label="Total Users"
             value={stats.totalUsers}
             icon={Users}
-            color="bg-blue-500/15 text-blue-600"
+            color="bg-info/15 text-info"
           />
           <StatCard
             label="Transactions"
             value={stats.totalTransactions.toLocaleString()}
             icon={Activity}
-            color="bg-emerald-500/15 text-emerald-600"
+            color="bg-pos/15 text-pos"
           />
           <StatCard
             label="New (7d)"
             value={stats.registrationsLast7Days}
             icon={BarChart3}
-            color="bg-violet-500/15 text-violet-600"
+            color="bg-chart-5/15 text-chart-5"
           />
           <StatCard
             label="MFA Enabled"
             value={stats.mfaEnabledUsers}
             icon={Shield}
-            color="bg-amber-500/15 text-amber-600"
+            color="bg-warning/15 text-warning"
           />
         </div>
       )}
@@ -696,13 +696,13 @@ export default function AdminPage() {
           <div className="flex items-center gap-2 mb-3">
             <span className="relative flex h-2 w-2 shrink-0">
               {(stats.activeUsersLast15Min ?? 0) > 0 && (
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-pos/20 opacity-75" />
               )}
               <span
                 className={`relative inline-flex h-2 w-2 rounded-full ${
                   (stats.activeUsersLast15Min ?? 0) > 0
-                    ? "bg-emerald-500"
-                    : "bg-zinc-300"
+                    ? "bg-pos"
+                    : "bg-muted"
                 }`}
               />
             </span>
@@ -715,19 +715,19 @@ export default function AdminPage() {
               label="Active now (15 min)"
               value={stats.activeUsersLast15Min ?? 0}
               icon={Activity}
-              color="bg-emerald-500/15 text-emerald-600"
+              color="bg-pos/15 text-pos"
             />
             <StatCard
               label="Active (last hour)"
               value={stats.activeUsersLast60Min ?? 0}
               icon={Activity}
-              color="bg-teal-500/15 text-teal-600"
+              color="bg-pos/15 text-pos"
             />
             <StatCard
               label="Active (last 24h)"
               value={stats.activeUsersLast24Hours ?? 0}
               icon={Activity}
-              color="bg-sky-500/15 text-sky-600"
+              color="bg-info/15 text-info"
             />
           </div>
           <p className="text-xs text-muted-foreground mt-2">
@@ -1048,14 +1048,14 @@ export default function AdminPage() {
                               {dormant ? (
                                 <Badge
                                   variant="outline"
-                                  className="bg-zinc-100 text-zinc-500 border-zinc-200"
+                                  className="bg-muted text-muted-foreground border-border"
                                 >
                                   Dormant
                                 </Badge>
                               ) : (
                                 <Badge
                                   variant="outline"
-                                  className="bg-emerald-500/15 text-emerald-600 border-emerald-500/30"
+                                  className="bg-pos/15 text-pos border-pos/30"
                                 >
                                   Active
                                 </Badge>

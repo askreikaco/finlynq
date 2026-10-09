@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import type { Announcement } from "@shared/types";
 import { formatDateTimeLocal } from "@/lib/currency";
 import { PageHeader } from "@/components/mobile";
+import { ErrorState } from "@/components/error-state";
 
 function fmtDate(iso: string | null): string {
   if (!iso) return "";
@@ -23,6 +24,7 @@ function fmtDate(iso: string | null): string {
 export default function WhatsNewPage() {
   const [items, setItems] = useState<Announcement[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -48,18 +50,27 @@ export default function WhatsNewPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [reloadKey]);
 
   return (
     <div className="mx-auto max-w-2xl">
       <div className="mb-6">
-        <PageHeader title="What's new" titleClassName="text-2xl font-semibold tracking-tight" />
+        <PageHeader title="What's new" titleClassName="text-2xl font-bold tracking-tight" />
         <p className="mt-1 text-sm text-muted-foreground">
           Product news, updates, and announcements.
         </p>
       </div>
 
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && (
+        <ErrorState
+          title="Couldn't load announcements"
+          message="Please try again."
+          onRetry={() => {
+            setError(null);
+            setReloadKey((k) => k + 1);
+          }}
+        />
+      )}
 
       {items && items.length === 0 && !error && (
         <Card className="p-8 text-center text-sm text-muted-foreground">
@@ -74,7 +85,7 @@ export default function WhatsNewPage() {
             <Card key={a.id} className="p-4">
               <div className="flex items-start gap-3">
                 {warning ? (
-                  <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" />
+                  <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-warning" />
                 ) : (
                   <Megaphone className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
                 )}

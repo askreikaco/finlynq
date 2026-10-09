@@ -120,7 +120,7 @@ export function ExcelMapperDialog({
       <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <FileSpreadsheet className="h-5 w-5 text-emerald-600" />
+            <FileSpreadsheet className="h-5 w-5 text-pos" />
             Map Excel Columns
           </DialogTitle>
           <DialogDescription>
@@ -153,7 +153,7 @@ export function ExcelMapperDialog({
             type="checkbox"
             checked={hasHeaders}
             onChange={(e) => setHasHeaders(e.target.checked)}
-            className="h-4 w-4 rounded border-gray-300"
+            className="h-4 w-4 rounded border-border"
           />
           First row contains headers
         </label>
@@ -211,7 +211,7 @@ export function ExcelMapperDialog({
 
         {/* Validation */}
         {!isValid && (
-          <p className="text-xs text-amber-600">
+          <p className="text-xs text-warning">
             {!hasDate && "Date mapping is required. "}
             {!hasAmount && "Amount mapping is required."}
           </p>

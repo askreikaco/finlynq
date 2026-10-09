@@ -178,7 +178,7 @@ export function FilePane({
                     ? "opacity-60"
                     : "";
               const importedClass = isImported
-                ? "bg-emerald-500/10 hover:bg-emerald-500/15"
+                ? "bg-pos/10 hover:bg-pos/15"
                 : "";
               const dayBalance = hasAnyAnchor ? anchorsByDate?.get(r.date) : undefined;
               const showBalance =
@@ -190,7 +190,7 @@ export function FilePane({
               // Ring (not a bg) so the click highlight layers cleanly over the
               // persistent full-row match tint.
               const highlightClass = highlighted
-                ? "ring-2 ring-inset ring-sky-500/60"
+                ? "ring-2 ring-inset ring-info/60"
                 : "";
               const ms = matchStatus?.get(r.id);
               const clickable = onRowClick != null;
@@ -256,7 +256,7 @@ export function FilePane({
                         ) : r.txType === "I" ? (
                           <Badge
                             variant="outline"
-                            className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200"
+                            className="text-[10px] bg-pos/10 text-pos border-pos/30"
                           >
                             Income
                           </Badge>
@@ -273,7 +273,7 @@ export function FilePane({
                         {isImported && (
                           <Badge
                             variant="outline"
-                            className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200"
+                            className="text-[10px] bg-pos/10 text-pos border-pos/30"
                           >
                             imported
                           </Badge>

@@ -721,8 +721,8 @@ export function UploadDrawer({
         <div className="p-5 space-y-5 flex-1 overflow-y-auto">
           {result ? (
             <div className="space-y-4">
-              <div className="rounded-lg border border-emerald-200 bg-emerald-50/40 dark:bg-emerald-950/10 px-4 py-4 text-center">
-                <CheckCircle2 className="mx-auto h-7 w-7 text-emerald-600" />
+              <div className="rounded-lg border border-pos/30 bg-pos/10 px-4 py-4 text-center">
+                <CheckCircle2 className="mx-auto h-7 w-7 text-pos" />
                 <p className="mt-2 text-sm font-medium">Upload complete</p>
                 <p className="text-xs text-muted-foreground mt-1">
                   {newCount} row{newCount === 1 ? "" : "s"} from your{" "}
@@ -787,8 +787,8 @@ export function UploadDrawer({
           ) : (
             <>
               {acctCsvMode === "auto" && (
-                <div className="rounded-md border border-amber-200 bg-amber-50/60 dark:bg-amber-950/10 px-3 py-2.5 text-xs">
-                  <p className="font-medium text-amber-800 dark:text-amber-300">
+                <div className="rounded-md border border-warning/30 bg-warning/10 px-3 py-2.5 text-xs">
+                  <p className="font-medium text-warning">
                     This account imports automatically
                   </p>
                   <p className="mt-0.5 text-muted-foreground">
@@ -821,7 +821,7 @@ export function UploadDrawer({
                 onUpload={(params) => void submitUpload(params)}
               />
               {error && (
-                <div className="flex items-start gap-2 rounded-md border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">
+                <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
                   <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
                   <div className="flex-1">{error}</div>
                 </div>

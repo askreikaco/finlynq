@@ -9,15 +9,15 @@ import type { HealthData } from "./types";
 // suspect number green/red.
 const NEUTRAL = "text-muted-foreground";
 function toneForSavings(pct: number): string {
-  if (pct >= 20) return "text-emerald-600 dark:text-emerald-400";
-  if (pct >= 5) return "text-amber-600 dark:text-amber-400";
-  return "text-rose-600 dark:text-rose-400";
+  if (pct >= 20) return "text-pos";
+  if (pct >= 5) return "text-warning";
+  return "text-destructive";
 }
 // 36% / 43% are the conventional mortgage-lending front/back-end DTI thresholds.
 function toneForDti(pct: number): string {
-  if (pct <= 36) return "text-emerald-600 dark:text-emerald-400";
-  if (pct <= 43) return "text-amber-600 dark:text-amber-400";
-  return "text-rose-600 dark:text-rose-400";
+  if (pct <= 36) return "text-pos";
+  if (pct <= 43) return "text-warning";
+  return "text-destructive";
 }
 
 /**

@@ -342,26 +342,26 @@ export default function MobileTransactionPage() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-zinc-950 text-white">
+    <div className="flex flex-col min-h-screen bg-background text-foreground">
       {/* Top Nav Bar */}
-      <header className="flex items-center justify-between px-4 py-3.5 border-b border-zinc-900 bg-zinc-950/80 backdrop-blur-md sticky top-0 z-20">
+      <header className="flex items-center justify-between px-4 py-3.5 border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-20">
         <button
           type="button"
           onClick={() => router.back()}
-          className="flex items-center text-indigo-400 font-medium active:opacity-70 transition-opacity"
+          className="flex items-center text-primary font-medium active:opacity-70 transition-opacity"
         >
           <ChevronLeft className="w-5 h-5 mr-0.5" />
           Cancel
         </button>
-        <h1 className="text-base font-semibold text-white">New {txType}</h1>
+        <h1 className="text-base font-semibold text-foreground">New {txType}</h1>
         <div className="w-12 flex justify-end">
-          {saving && <Loader2 className="w-4 h-4 text-indigo-400 animate-spin" />}
+          {saving && <Loader2 className="w-4 h-4 text-primary animate-spin" />}
         </div>
       </header>
 
       {/* Segmented Control */}
       <div className="px-4 pt-3 pb-1">
-        <div className="flex bg-zinc-900/90 border border-zinc-800/80 rounded-xl p-1">
+        <div className="flex bg-card/90 border border-border/80 rounded-xl p-1">
           {(["Expense", "Income", "Transfer"] as TxType[]).map((type) => (
             <button
               key={type}
@@ -372,8 +372,8 @@ export default function MobileTransactionPage() {
               }}
               className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${
                 txType === type
-                  ? "bg-zinc-800 text-white shadow-sm"
-                  : "text-zinc-400 hover:text-zinc-200"
+                  ? "bg-muted text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {type}
@@ -385,20 +385,20 @@ export default function MobileTransactionPage() {
       {/* Notice & Error Banners */}
       <div className="px-4 pt-2 space-y-2">
         {prefillNotice && (
-          <div className="flex items-start gap-2.5 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs animate-in fade-in">
-            <Info className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
+          <div className="flex items-start gap-2.5 p-3 rounded-xl bg-warning/10 border border-warning/30 text-warning text-xs animate-in fade-in">
+            <Info className="w-4 h-4 shrink-0 mt-0.5 text-warning" />
             <span className="flex-1 leading-relaxed">{prefillNotice}</span>
           </div>
         )}
         {errorMessage && (
-          <div className="flex items-start gap-2.5 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs animate-in fade-in">
-            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-400" />
+          <div className="flex items-start gap-2.5 p-3 rounded-xl bg-neg/10 border border-neg/30 text-neg text-xs animate-in fade-in">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-neg" />
             <span className="flex-1 leading-relaxed">{errorMessage}</span>
           </div>
         )}
         {successNotice && (
-          <div className="flex items-start gap-2.5 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs animate-in fade-in">
-            <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-emerald-400" />
+          <div className="flex items-start gap-2.5 p-3 rounded-xl bg-pos/10 border border-pos/30 text-pos text-xs animate-in fade-in">
+            <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-pos" />
             <span className="flex-1 leading-relaxed">{successNotice}</span>
           </div>
         )}
@@ -408,7 +408,7 @@ export default function MobileTransactionPage() {
       <main className="flex-1 flex flex-col gap-4 px-4 py-2 overflow-y-auto pb-44">
         {/* Amount Hero */}
         <div className="flex flex-col items-center justify-center py-5">
-          <span className="text-zinc-400 text-xs font-medium uppercase tracking-wider mb-1">
+          <span className="text-muted-foreground text-xs font-medium uppercase tracking-wider mb-1">
             Amount
           </span>
           <button
@@ -419,8 +419,8 @@ export default function MobileTransactionPage() {
               setFocusedField(null);
             }}
           >
-            <span className="text-zinc-500 mr-2 text-4xl">$</span>
-            <span className={amount ? "text-white" : "text-zinc-600"}>
+            <span className="text-muted-foreground mr-2 text-4xl">$</span>
+            <span className={amount ? "text-foreground" : "text-muted-foreground"}>
               {amount || "0.00"}
             </span>
           </button>
@@ -436,20 +436,20 @@ export default function MobileTransactionPage() {
               setShowNumpad(false);
               setFocusedField(null);
             }}
-            className="w-full flex items-center justify-between bg-zinc-900/90 border border-zinc-800/80 p-3.5 rounded-2xl active:bg-zinc-800 transition-colors"
+            className="w-full flex items-center justify-between bg-card/90 border border-border/80 p-3.5 rounded-2xl active:bg-muted transition-colors"
           >
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-400 shrink-0">
-                <Calendar className="w-4 h-4 text-indigo-400" />
+              <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center text-muted-foreground shrink-0">
+                <Calendar className="w-4 h-4 text-primary" />
               </div>
               <div className="flex flex-col text-left">
-                <span className="text-xs text-zinc-400 font-medium">Date & Time</span>
-                <span className="text-white text-sm font-semibold">
+                <span className="text-xs text-muted-foreground font-medium">Date & Time</span>
+                <span className="text-foreground text-sm font-semibold">
                   {formatDateTimeDisplay(date, time)}
                 </span>
               </div>
             </div>
-            <ChevronDown className="w-4 h-4 text-zinc-500" />
+            <ChevronDown className="w-4 h-4 text-muted-foreground" />
           </button>
 
           {/* Category Selector (Expense & Income) */}
@@ -462,17 +462,17 @@ export default function MobileTransactionPage() {
                 setShowNumpad(false);
                 setFocusedField(null);
               }}
-              className="w-full flex items-center justify-between bg-zinc-900/90 border border-zinc-800/80 p-3.5 rounded-2xl active:bg-zinc-800 transition-colors"
+              className="w-full flex items-center justify-between bg-card/90 border border-border/80 p-3.5 rounded-2xl active:bg-muted transition-colors"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-9 h-9 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-400 shrink-0">
-                  <Tags className="w-4 h-4 text-emerald-400" />
+                <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center text-muted-foreground shrink-0">
+                  <Tags className="w-4 h-4 text-pos" />
                 </div>
                 <div className="flex flex-col text-left min-w-0">
-                  <span className="text-xs text-zinc-400 font-medium">Category</span>
+                  <span className="text-xs text-muted-foreground font-medium">Category</span>
                   <span
                     className={`text-sm font-semibold truncate ${
-                      selectedCat ? "text-white" : "text-zinc-500"
+                      selectedCat ? "text-foreground" : "text-muted-foreground"
                     }`}
                   >
                     {loadingCategories
@@ -481,7 +481,7 @@ export default function MobileTransactionPage() {
                   </span>
                 </div>
               </div>
-              <ChevronDown className="w-4 h-4 text-zinc-500 shrink-0" />
+              <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
             </button>
           )}
 
@@ -493,19 +493,19 @@ export default function MobileTransactionPage() {
               setShowNumpad(false);
               setFocusedField(null);
             }}
-            className="w-full flex items-center justify-between bg-zinc-900/90 border border-zinc-800/80 p-3.5 rounded-2xl active:bg-zinc-800 transition-colors"
+            className="w-full flex items-center justify-between bg-card/90 border border-border/80 p-3.5 rounded-2xl active:bg-muted transition-colors"
           >
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-9 h-9 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-400 shrink-0">
-                <Wallet className="w-4 h-4 text-amber-400" />
+              <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center text-muted-foreground shrink-0">
+                <Wallet className="w-4 h-4 text-warning" />
               </div>
               <div className="flex flex-col text-left min-w-0">
-                <span className="text-xs text-zinc-400 font-medium">
+                <span className="text-xs text-muted-foreground font-medium">
                   {txType === "Transfer" ? "From Account" : "Account"}
                 </span>
                 <span
                   className={`text-sm font-semibold truncate ${
-                    selectedAcc ? "text-white" : "text-zinc-500"
+                    selectedAcc ? "text-foreground" : "text-muted-foreground"
                   }`}
                 >
                   {loadingAccounts
@@ -514,7 +514,7 @@ export default function MobileTransactionPage() {
                 </span>
               </div>
             </div>
-            <ChevronDown className="w-4 h-4 text-zinc-500 shrink-0" />
+            <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
           </button>
 
           {/* Destination Account (Transfer Mode Only) */}
@@ -526,17 +526,17 @@ export default function MobileTransactionPage() {
                 setShowNumpad(false);
                 setFocusedField(null);
               }}
-              className="w-full flex items-center justify-between bg-zinc-900/90 border border-zinc-800/80 p-3.5 rounded-2xl active:bg-zinc-800 transition-colors"
+              className="w-full flex items-center justify-between bg-card/90 border border-border/80 p-3.5 rounded-2xl active:bg-muted transition-colors"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-9 h-9 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-400 shrink-0">
-                  <ArrowRightLeft className="w-4 h-4 text-sky-400" />
+                <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center text-muted-foreground shrink-0">
+                  <ArrowRightLeft className="w-4 h-4 text-info" />
                 </div>
                 <div className="flex flex-col text-left min-w-0">
-                  <span className="text-xs text-zinc-400 font-medium">To Account</span>
+                  <span className="text-xs text-muted-foreground font-medium">To Account</span>
                   <span
                     className={`text-sm font-semibold truncate ${
-                      selectedToAcc ? "text-white" : "text-zinc-500"
+                      selectedToAcc ? "text-foreground" : "text-muted-foreground"
                     }`}
                   >
                     {loadingAccounts
@@ -545,7 +545,7 @@ export default function MobileTransactionPage() {
                   </span>
                 </div>
               </div>
-              <ChevronDown className="w-4 h-4 text-zinc-500 shrink-0" />
+              <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
             </button>
           )}
 
@@ -558,9 +558,9 @@ export default function MobileTransactionPage() {
                 onSelect={(val) => setPayee(val)}
                 visible={focusedField === "payee"}
               />
-              <div className="flex items-center bg-zinc-900/90 border border-zinc-800/80 p-3.5 rounded-2xl focus-within:border-indigo-500 transition-colors">
-                <div className="w-9 h-9 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-400 mr-3 shrink-0">
-                  <User className="w-4 h-4 text-violet-400" />
+              <div className="flex items-center bg-card/90 border border-border/80 p-3.5 rounded-2xl focus-within:border-ring transition-colors">
+                <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center text-muted-foreground mr-3 shrink-0">
+                  <User className="w-4 h-4 text-chart-5" />
                 </div>
                 <input
                   type="text"
@@ -571,7 +571,7 @@ export default function MobileTransactionPage() {
                     setShowNumpad(false);
                     setFocusedField("payee");
                   }}
-                  className="bg-transparent border-none outline-none text-white text-sm font-medium w-full placeholder:text-zinc-500"
+                  className="bg-transparent border-none outline-none text-foreground text-sm font-medium w-full placeholder:text-muted-foreground"
                 />
               </div>
             </div>
@@ -585,9 +585,9 @@ export default function MobileTransactionPage() {
               onSelect={(val) => setNote(val)}
               visible={focusedField === "note"}
             />
-            <div className="flex items-center bg-zinc-900/90 border border-zinc-800/80 p-3.5 rounded-2xl focus-within:border-indigo-500 transition-colors">
-              <div className="w-9 h-9 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-400 mr-3 shrink-0">
-                <AlignLeft className="w-4 h-4 text-zinc-400" />
+            <div className="flex items-center bg-card/90 border border-border/80 p-3.5 rounded-2xl focus-within:border-ring transition-colors">
+              <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center text-muted-foreground mr-3 shrink-0">
+                <AlignLeft className="w-4 h-4 text-muted-foreground" />
               </div>
               <input
                 type="text"
@@ -598,7 +598,7 @@ export default function MobileTransactionPage() {
                   setShowNumpad(false);
                   setFocusedField("note");
                 }}
-                className="bg-transparent border-none outline-none text-white text-sm font-medium w-full placeholder:text-zinc-500"
+                className="bg-transparent border-none outline-none text-foreground text-sm font-medium w-full placeholder:text-muted-foreground"
               />
             </div>
           </div>
@@ -611,9 +611,9 @@ export default function MobileTransactionPage() {
               onSelect={(val) => setTags(val)}
               visible={focusedField === "tags"}
             />
-            <div className="flex items-center bg-zinc-900/90 border border-zinc-800/80 p-3.5 rounded-2xl focus-within:border-indigo-500 transition-colors">
-              <div className="w-9 h-9 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-400 mr-3 shrink-0">
-                <Tags className="w-4 h-4 text-pink-400" />
+            <div className="flex items-center bg-card/90 border border-border/80 p-3.5 rounded-2xl focus-within:border-ring transition-colors">
+              <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center text-muted-foreground mr-3 shrink-0">
+                <Tags className="w-4 h-4 text-chart-5" />
               </div>
               <input
                 type="text"
@@ -624,34 +624,34 @@ export default function MobileTransactionPage() {
                   setShowNumpad(false);
                   setFocusedField("tags");
                 }}
-                className="bg-transparent border-none outline-none text-white text-sm font-medium w-full placeholder:text-zinc-500"
+                className="bg-transparent border-none outline-none text-foreground text-sm font-medium w-full placeholder:text-muted-foreground"
               />
             </div>
           </div>
 
           {/* Collapsible Advanced Options Accordion */}
-          <div className="border border-zinc-800/80 bg-zinc-900/60 rounded-2xl overflow-hidden transition-all">
+          <div className="border border-border/80 bg-card/60 rounded-2xl overflow-hidden transition-all">
             <button
               type="button"
               onClick={() => setShowAdvanced(!showAdvanced)}
-              className="w-full flex items-center justify-between p-3.5 text-left text-xs font-semibold text-zinc-400 hover:text-white transition-colors"
+              className="w-full flex items-center justify-between p-3.5 text-left text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
             >
               <div className="flex items-center gap-2">
-                <Briefcase className="w-4 h-4 text-zinc-400" />
+                <Briefcase className="w-4 h-4 text-muted-foreground" />
                 <span>Advanced Options</span>
                 {(splitEnabled || isBusiness) && (
-                  <span className="w-2 h-2 rounded-full bg-indigo-500" />
+                  <span className="w-2 h-2 rounded-full bg-primary" />
                 )}
               </div>
               {showAdvanced ? (
-                <ChevronUp className="w-4 h-4 text-zinc-500" />
+                <ChevronUp className="w-4 h-4 text-muted-foreground" />
               ) : (
-                <ChevronDown className="w-4 h-4 text-zinc-500" />
+                <ChevronDown className="w-4 h-4 text-muted-foreground" />
               )}
             </button>
 
             {showAdvanced && (
-              <div className="p-4 pt-1 space-y-4 border-t border-zinc-800/80 animate-in fade-in duration-200">
+              <div className="p-4 pt-1 space-y-4 border-t border-border/80 animate-in fade-in duration-200">
                 {/* Split Transaction Option (only for Expense/Income) */}
                 {txType !== "Transfer" && (
                   <SplitSection
@@ -672,10 +672,10 @@ export default function MobileTransactionPage() {
                 {/* Business Expense Flag */}
                 <div className="flex items-center justify-between pt-1">
                   <div className="flex flex-col">
-                    <span className="text-sm font-medium text-white">
+                    <span className="text-sm font-medium text-foreground">
                       Business Transaction
                     </span>
-                    <span className="text-xs text-zinc-500">
+                    <span className="text-xs text-muted-foreground">
                       Tag for business accounting and tax reporting
                     </span>
                   </div>
@@ -686,7 +686,7 @@ export default function MobileTransactionPage() {
                       onChange={(e) => setIsBusiness(e.target.checked)}
                       className="sr-only peer"
                     />
-                    <div className="w-11 h-6 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                    <div className="w-11 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                   </label>
                 </div>
               </div>
@@ -701,7 +701,7 @@ export default function MobileTransactionPage() {
               type="button"
               disabled={saving}
               onClick={handleSave}
-              className="w-full h-12 text-base font-semibold bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-2xl shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2"
+              className="w-full h-12 text-base font-semibold bg-primary hover:bg-primary/90 active:bg-primary/80 text-primary-foreground rounded-2xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
             >
               {saving ? (
                 <>
@@ -718,7 +718,7 @@ export default function MobileTransactionPage() {
 
       {/* Numpad Anchored Bottom */}
       {showNumpad && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-zinc-950 animate-in slide-in-from-bottom duration-200">
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-background animate-in slide-in-from-bottom duration-200">
           <Numpad
             value={amount}
             onChange={setAmount}

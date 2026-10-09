@@ -184,7 +184,7 @@ export function RecentUploadsPanel({
       {!collapsed && (
         <div className="border-t">
           {error && (
-            <div className="px-4 py-2 text-xs text-rose-600 bg-rose-50">{error}</div>
+            <div className="px-4 py-2 text-xs text-destructive bg-destructive/10">{error}</div>
           )}
           {batches.length === 0 && !loading && (
             <div className="px-4 py-6 text-center text-sm text-muted-foreground">
@@ -209,7 +209,7 @@ export function RecentUploadsPanel({
                         {b.source}
                       </span>
                       {b.hasLinkedTransactions && (
-                        <span className="inline-block rounded border border-amber-200 bg-amber-50 px-1.5 py-0 text-[10px] text-amber-800">
+                        <span className="inline-block rounded border border-warning/30 bg-warning/10 px-1.5 py-0 text-[10px] text-warning">
                           has linked tx
                         </span>
                       )}
@@ -241,7 +241,7 @@ export function RecentUploadsPanel({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-rose-700 hover:text-rose-800 hover:bg-rose-50"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
                         onClick={() => void deleteBatch(b.id, false)}
                         disabled={deletingId === b.id}
                       >
@@ -275,7 +275,7 @@ export function RecentUploadsPanel({
               <Button
                 onClick={() => void deleteBatch(confirm.batch.id, true)}
                 disabled={deletingId === confirm.batch.id}
-                className="bg-rose-700 hover:bg-rose-800 text-white"
+                className="bg-destructive hover:bg-destructive/90 text-white"
               >
                 Delete all (bank rows + transactions)
               </Button>

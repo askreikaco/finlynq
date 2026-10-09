@@ -116,7 +116,7 @@ function getTransactionIcon(transaction: Transaction): { Icon: LucideIcon; bgCla
   if (transaction.linkId) {
     return {
       Icon: ArrowLeftRight,
-      bgClass: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300",
+      bgClass: "bg-muted text-muted-foreground dark:text-foreground",
     };
   }
 
@@ -124,14 +124,14 @@ function getTransactionIcon(transaction: Transaction): { Icon: LucideIcon; bgCla
   if (transaction.amount > 0) {
     return {
       Icon: ArrowDownLeft,
-      bgClass: "bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400",
+      bgClass: "bg-pos/10 text-pos",
     };
   }
 
   // Money out: amount < 0
   return {
     Icon: ArrowUpRight,
-    bgClass: "bg-neutral-100 dark:bg-neutral-900 text-neutral-600 dark:text-neutral-600",
+    bgClass: "bg-muted dark:bg-card text-muted-foreground",
   };
 }
 
@@ -155,7 +155,7 @@ function TransactionRow({
   const formattedAmount = formatCurrency(t.amount, t.currency);
   const displayAmount = isIncoming ? `+${formattedAmount.replace(/-/, "")}` : formattedAmount;
   const amountColor = isIncoming
-    ? "text-emerald-600 dark:text-emerald-400"
+    ? "text-pos"
     : "text-foreground";
 
   return (

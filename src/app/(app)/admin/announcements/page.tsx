@@ -150,7 +150,7 @@ export default function AdminAnnouncementsPage() {
     <div className="mx-auto max-w-3xl">
       <div className="mb-6 flex items-center gap-2">
         <Megaphone className="h-5 w-5 text-primary" />
-        <PageHeader title="Announcements" titleClassName="text-2xl font-semibold tracking-tight" />
+        <PageHeader title="Announcements" titleClassName="text-2xl font-bold tracking-tight" />
       </div>
 
       {error && <p className="mb-4 text-sm text-destructive">{error}</p>}
@@ -278,7 +278,7 @@ export default function AdminAnnouncementsPage() {
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-medium">{a.title}</span>
                   {a.published ? (
-                    <Badge className="bg-emerald-500/15 text-emerald-500">Published</Badge>
+                    <Badge className="bg-pos/15 text-pos">Published</Badge>
                   ) : (
                     <Badge variant="outline">Draft</Badge>
                   )}
@@ -287,7 +287,7 @@ export default function AdminAnnouncementsPage() {
                     {a.category}
                   </Badge>
                   {a.severity === "warning" && (
-                    <Badge className="bg-amber-500/15 text-amber-500">Warning</Badge>
+                    <Badge className="bg-warning/15 text-warning">Warning</Badge>
                   )}
                 </div>
                 <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{a.body}</p>

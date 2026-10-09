@@ -32,4 +32,18 @@ describe("CSS rules guard", () => {
     ).toBe(true);
   });
 
+  it("globals.css has no legacy hue 265 inside any oklch() color", () => {
+    const content = fs.readFileSync("src/app/globals.css", "utf-8");
+    const calls = content.match(/oklch\([^)]*\)/g) ?? [];
+    const legacy = calls.filter((c) => /\b265\b/.test(c));
+    expect(legacy, "legacy hue 265 found in oklch()").toEqual([]);
+  });
+
+  it("::selection uses the primary token", () => {
+    const content = fs.readFileSync("src/app/globals.css", "utf-8");
+    const m = content.match(/::selection\s*\{[^}]*\}/);
+    expect(m, "::selection rule missing").not.toBeNull();
+    expect(m![0]).toContain("var(--primary)");
+  });
+
 });

@@ -249,7 +249,7 @@ export function SplitDialog({
                   className="h-7 text-xs"
                   placeholder="Tags"
                 />
-                <Button
+                <Button aria-label="Remove split row"
                   variant="ghost"
                   size="icon"
                   className="h-7 w-7 shrink-0 text-muted-foreground"
@@ -273,11 +273,11 @@ export function SplitDialog({
             <div className="flex items-center gap-2">
               <span className="font-mono">{formatCurrency(allocated, currency)}</span>
               {isBalanced ? (
-                <Badge variant="outline" className="text-[10px] border-emerald-300 text-emerald-600 bg-emerald-50">
+                <Badge variant="outline" className="text-[10px] border-pos/30 text-pos bg-pos/10">
                   Balanced
                 </Badge>
               ) : (
-                <Badge variant="outline" className="text-[10px] border-rose-300 text-rose-600 bg-rose-50">
+                <Badge variant="outline" className="text-[10px] border-destructive/30 text-destructive bg-destructive/10">
                   {remaining > 0 ? `${formatCurrency(remaining, currency)} left` : `${formatCurrency(Math.abs(remaining), currency)} over`}
                 </Badge>
               )}

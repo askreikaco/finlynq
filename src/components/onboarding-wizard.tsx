@@ -321,7 +321,7 @@ export function OnboardingWizard({
                     animate={{ scale: 1 }}
                     transition={{ delay: 0.15, type: "spring", stiffness: 200 }}
                   >
-                    <Sparkles className="h-14 w-14 text-amber-500 mb-4" />
+                    <Sparkles className="h-14 w-14 text-warning mb-4" />
                   </motion.div>
                   <h2 className="text-2xl font-bold mb-2">Welcome to Finlynq</h2>
                   <p className="text-muted-foreground max-w-sm mb-4">
@@ -438,7 +438,7 @@ export function OnboardingWizard({
                         >
                           <Icon className="h-5 w-5 shrink-0" />
                           <span className="text-sm font-medium leading-tight">{preset.name}</span>
-                          {selected && <Check className="h-4 w-4 ml-auto text-emerald-500" />}
+                          {selected && <Check className="h-4 w-4 ml-auto text-pos" />}
                         </button>
                       );
                     })}
@@ -492,7 +492,7 @@ export function OnboardingWizard({
                           <p className="text-xs text-muted-foreground">{desc}</p>
                         </div>
                         {dataChoice === key && (
-                          <Check className="h-4 w-4 ml-auto mt-0.5 text-emerald-500 shrink-0" />
+                          <Check className="h-4 w-4 ml-auto mt-0.5 text-pos shrink-0" />
                         )}
                       </button>
                     ))}
@@ -566,7 +566,7 @@ export function OnboardingWizard({
                         className="flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm hover:bg-muted transition-colors shrink-0"
                       >
                         {copied ? (
-                          <CheckCheck className="h-4 w-4 text-emerald-500" />
+                          <CheckCheck className="h-4 w-4 text-pos" />
                         ) : (
                           <Copy className="h-4 w-4" />
                         )}
@@ -600,9 +600,9 @@ export function OnboardingWizard({
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ type: "spring", stiffness: 200 }}
-                    className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 mb-4"
+                    className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-pos/15 mb-4"
                   >
-                    <Check className="h-8 w-8 text-emerald-500" />
+                    <Check className="h-8 w-8 text-pos" />
                   </motion.div>
                   <h2 className="text-2xl font-bold mb-2">You&apos;re all set!</h2>
                   <p className="text-muted-foreground max-w-sm">

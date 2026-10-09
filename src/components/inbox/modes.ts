@@ -30,14 +30,14 @@ export const MODES: Record<Mode, ModeMeta> = {
     subLabel: "File → ledger. Rules auto-categorize.",
     icon: Zap,
     gates: 0,
-    tone: "text-emerald-500 bg-emerald-500/10 border-emerald-500/30",
+    tone: "text-pos bg-pos/10 border-pos/30",
   },
   approve: {
     label: "Approve-each",
     subLabel: "File → bank. You approve each ledger entry.",
     icon: ShieldCheck,
     gates: 1,
-    tone: "text-sky-500 bg-sky-500/10 border-sky-500/30",
+    tone: "text-info bg-info/10 border-info/30",
   },
   manual: {
     label: "Manual review",
@@ -45,7 +45,7 @@ export const MODES: Record<Mode, ModeMeta> = {
       "Two gates. Staging two-pane, then bank-vs-transactions two-pane.",
     icon: Eye,
     gates: 2,
-    tone: "text-amber-500 bg-amber-500/10 border-amber-500/30",
+    tone: "text-warning bg-warning/10 border-warning/30",
   },
 };
 

@@ -33,6 +33,8 @@ import { Download } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { PageHeader } from "@/components/mobile";
+import { ErrorState } from "@/components/error-state";
+import { PageSkeleton } from "@/components/page-skeleton";
 
 interface CurrencyCell {
   amount: number;
@@ -83,6 +85,8 @@ export default function DividendsPage() {
   const [taxYear, setTaxYear] = useState<string>("");
   const [data, setData] = useState<ApiResponse["data"] | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   // Build the shared param set (used by both the fetch and the CSV link) so
   // the export always reflects the active mode + filters.
@@ -99,15 +103,16 @@ export default function DividendsPage() {
 
   useEffect(() => {
     setLoading(true);
+    setLoadError(false);
     fetch(`/api/portfolio/dividends?${queryParams.toString()}`)
       .then((r) => r.json())
       .then((json: ApiResponse) => {
         if (json.success) setData(json.data);
-        else setData(null);
+        else { setData(null); setLoadError(true); }
       })
-      .catch(() => setData(null))
+      .catch(() => { setData(null); setLoadError(true); })
       .finally(() => setLoading(false));
-  }, [queryParams]);
+  }, [queryParams, reloadKey]);
 
   const csvHref = useMemo(() => {
     const params = new URLSearchParams(queryParams);
@@ -140,10 +145,10 @@ export default function DividendsPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <PageHeader
             title="Dividend income"
-            titleClassName="text-2xl font-semibold"
+            titleClassName="text-2xl font-bold tracking-tight"
             subtitle={<>Every transaction categorized as Dividends, including reinvestments and
             withholding-tax entries.</>}
-            subtitleClassName="text-sm text-muted-foreground"
+            subtitleClassName="text-sm text-muted-foreground mt-0.5"
           />
         <div className="flex gap-2">
           <Link href="/portfolio" className="text-sm text-muted-foreground hover:underline self-center">
@@ -283,7 +288,7 @@ export default function DividendsPage() {
           )}
 
           {reporting && data && (data.totals.unratedCount ?? 0) > 0 && (
-            <p className="mb-3 text-xs text-amber-600 dark:text-amber-500">
+            <p className="mb-3 text-xs text-warning">
               Re-rating in progress: {data.totals.unratedCount} row
               {data.totals.unratedCount === 1 ? "" : "s"} not yet converted to{" "}
               {reportingCcy} and excluded from the totals. Reload shortly.
@@ -291,7 +296,9 @@ export default function DividendsPage() {
           )}
 
           {loading ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
+            <PageSkeleton variant="list" rows={3} />
+          ) : loadError ? (
+            <ErrorState title="Couldn't load dividends" message="We couldn't load your dividend income. Please try again." onRetry={() => setReloadKey((k) => k + 1)} />
           ) : !data || !data.groups || data.groups.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               No dividend transactions yet. Tag dividend payouts with a category named
@@ -327,7 +334,7 @@ export default function DividendsPage() {
                       {reporting ? (
                         <TableCell
                           className={`text-right font-mono ${
-                            g.amount >= 0 ? "text-green-600" : "text-red-600"
+                            g.amount >= 0 ? "text-pos" : "text-destructive"
                           }`}
                         >
                           {formatCurrency(g.amount, reportingCcy)}
@@ -341,8 +348,8 @@ export default function DividendsPage() {
                               className={`text-right font-mono ${
                                 cell
                                   ? cell.amount >= 0
-                                    ? "text-green-600"
-                                    : "text-red-600"
+                                    ? "text-pos"
+                                    : "text-destructive"
                                   : "text-muted-foreground"
                               }`}
                             >

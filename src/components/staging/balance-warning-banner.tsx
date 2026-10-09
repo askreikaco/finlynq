@@ -50,15 +50,15 @@ export function BalanceWarningBanner({
       : `${warnings.length} days don't match the bank's reported balance`;
 
   return (
-    <Card className="border-amber-300 bg-amber-50/60">
+    <Card className="border-warning/30 bg-warning/10">
       <CardContent className="py-2.5 px-3 space-y-2">
         <div className="flex items-start gap-2.5">
-          <AlertTriangle className="h-4 w-4 text-amber-700 shrink-0 mt-0.5" />
+          <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0 text-sm">
-            <div className="font-medium text-amber-900">
+            <div className="font-medium text-warning">
               Bank balance check: {label}
             </div>
-            <p className="text-xs text-amber-800/90 mt-0.5">
+            <p className="text-xs text-warning/90 mt-0.5">
               Approve still works — this is a heads-up that one or more
               transactions may be missing, duplicated, or wrong on the
               affected days.
@@ -67,7 +67,7 @@ export function BalanceWarningBanner({
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 px-2 text-amber-900 hover:bg-amber-100"
+            className="h-7 px-2 text-warning hover:bg-warning/10"
             onClick={() => setOpen((o) => !o)}
             aria-expanded={open}
           >
@@ -85,9 +85,9 @@ export function BalanceWarningBanner({
           </Button>
         </div>
         {open && (
-          <div className="rounded-md border border-amber-200 bg-white overflow-x-auto">
+          <div className="rounded-md border border-warning/30 bg-white overflow-x-auto">
             <table className="w-full text-xs">
-              <thead className="bg-amber-100/60 text-amber-900">
+              <thead className="bg-warning/10 text-warning">
                 <tr>
                   <th className="text-left px-2 py-1.5 font-medium">Date</th>
                   <th className="text-left px-2 py-1.5 font-medium">
@@ -102,13 +102,13 @@ export function BalanceWarningBanner({
                   <th className="text-right px-2 py-1.5 font-medium">Δ</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-amber-100 text-amber-950">
+              <tbody className="divide-y divide-warning/30 text-warning">
                 {warnings.map((w) => (
                   <tr key={w.date}>
                     <td className="px-2 py-1.5 font-mono">{w.date}</td>
                     <td className="px-2 py-1.5">
                       <span className="font-mono">{w.priorAnchorDate}</span>
-                      <span className="text-amber-800/80 ml-1">
+                      <span className="text-warning/80 ml-1">
                         ({fmt(w.priorAnchorBalance, currency)})
                       </span>
                     </td>
@@ -121,7 +121,7 @@ export function BalanceWarningBanner({
                     <td
                       className={
                         "px-2 py-1.5 text-right font-mono " +
-                        (w.delta >= 0 ? "text-emerald-700" : "text-rose-700")
+                        (w.delta >= 0 ? "text-pos" : "text-destructive")
                       }
                     >
                       {w.delta >= 0 ? "+" : ""}

@@ -207,7 +207,7 @@ export function RebuildSnapshotsButton({
         </Button>
         {msg && !isRunning && (
           <span
-            className={`text-xs ${status === "error" ? "text-rose-600" : "text-muted-foreground"}`}
+            className={`text-xs ${status === "error" ? "text-destructive" : "text-muted-foreground"}`}
           >
             {msg}
           </span>
@@ -217,23 +217,23 @@ export function RebuildSnapshotsButton({
       {/* Unmistakable in-progress panel with a determinate day count + bar. */}
       {isRunning && (
         <div
-          className="w-full max-w-sm rounded-lg border border-indigo-200 bg-indigo-50/60 px-3 py-2.5 dark:border-indigo-900/50 dark:bg-indigo-950/30"
+          className="w-full max-w-sm rounded-lg border border-primary/30 bg-primary/10 px-3 py-2.5"
           aria-live="polite"
         >
           <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-medium text-indigo-700 dark:text-indigo-300">
+            <span className="text-xs font-medium text-primary">
               {phase === "cash"
                 ? "Rebuilding cash balances…"
                 : "Rebuilding balance history…"}
             </span>
-            <span className="text-[11px] tabular-nums text-indigo-600/80 dark:text-indigo-400/80">
+            <span className="text-[11px] tabular-nums text-primary/80">
               {indeterminate
                 ? "starting…"
                 : `Processing day ${progress.done} of ${progress.total}`}
             </span>
           </div>
           <div
-            className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-indigo-200/70 dark:bg-indigo-900/60"
+            className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-primary/10"
             role="progressbar"
             aria-valuemin={0}
             aria-valuemax={100}
@@ -241,7 +241,7 @@ export function RebuildSnapshotsButton({
             aria-label="Rebuild progress"
           >
             <div
-              className={`h-full rounded-full bg-indigo-600 transition-[width] duration-500 ease-out ${
+              className={`h-full rounded-full bg-primary transition-[width] duration-500 ease-out ${
                 indeterminate ? "w-1/3 animate-pulse" : ""
               }`}
               style={indeterminate ? undefined : { width: `${pct}%` }}

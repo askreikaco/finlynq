@@ -101,10 +101,10 @@ interface CategoryOpt {
 
 const BADGE: Record<Action, { label: string; cls: string }> = {
   pending: { label: "Pending", cls: "bg-muted text-muted-foreground" },
-  needs_review: { label: "Needs review", cls: "bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-200" },
-  auto_recorded: { label: "Auto-recorded", cls: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200" },
-  manually_recorded: { label: "Recorded", cls: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200" },
-  duplicate_skipped: { label: "Duplicate", cls: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200" },
+  needs_review: { label: "Needs review", cls: "bg-info/10 text-info" },
+  auto_recorded: { label: "Auto-recorded", cls: "bg-pos/10 text-pos" },
+  manually_recorded: { label: "Recorded", cls: "bg-pos/10 text-pos" },
+  duplicate_skipped: { label: "Duplicate", cls: "bg-warning/10 text-warning" },
   unparseable: { label: "Unparseable", cls: "bg-muted text-muted-foreground" },
   discarded: { label: "Discarded", cls: "bg-muted text-muted-foreground line-through" },
 };
@@ -291,7 +291,7 @@ export function InboxEmailTab() {
       </div>
 
       {error && (
-        <div className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
+        <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
         </div>
       )}
@@ -355,10 +355,10 @@ export function InboxEmailTab() {
                         )}
                       </div>
                     </button>
-                    <Button
+                    <Button aria-label="Delete email"
                       size="icon"
                       variant="ghost"
-                      className="h-7 w-7 text-muted-foreground hover:text-rose-600"
+                      className="h-7 w-7 text-muted-foreground hover:text-destructive"
                       onClick={() => void remove(it.id)}
                       disabled={acting}
                       title="Delete email"
@@ -443,7 +443,7 @@ export function InboxEmailTab() {
                             if (detail.candidate?.payee === "Unknown") reasons.push("couldn't identify a payee");
                             if (reasons.length === 0) return null;
                             return (
-                              <div className="mt-1.5 border-t pt-1.5 text-xs text-amber-700 dark:text-amber-300">
+                              <div className="mt-1.5 border-t pt-1.5 text-xs text-warning">
                                 <span className="font-medium">Why this needs review:</span>
                                 <ul className="ml-4 list-disc">
                                   {reasons.map((r) => (
@@ -568,7 +568,7 @@ export function InboxEmailTab() {
                       )}
 
                       {canRecord && dupPrompt?.id === it.id && (
-                        <div className="rounded-md border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                        <div className="rounded-md border border-warning/30 bg-warning/10 p-2.5 text-xs text-warning">
                           <p>
                             Possible duplicate of an existing transaction
                             {dupPrompt.txId != null ? ` (#${dupPrompt.txId})` : ""} on this account
@@ -596,7 +596,7 @@ export function InboxEmailTab() {
                       )}
 
                       {it.recordedTransactionId != null && (
-                        <p className="text-xs text-emerald-700 dark:text-emerald-300">
+                        <p className="text-xs text-pos">
                           Recorded as transaction #{it.recordedTransactionId}.
                         </p>
                       )}

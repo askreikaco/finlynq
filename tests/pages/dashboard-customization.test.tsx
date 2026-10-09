@@ -149,13 +149,14 @@ describe("Dashboard card layout", () => {
     expect(nwTile.className).toBe("hidden md:contents");
     expect(screen.getByTestId("stat-Monthly Income").parentElement!.className).not.toContain("hidden");
 
-    const wrapper = (id: string) => screen.getByTestId(`card-${id}`).parentElement!;
+    // extra cards sit in a [data-card-id] wrapper; LazyView adds its own div between it and the card
+    const wrapper = (id: string) => screen.getByTestId(`card-${id}`).closest("[data-card-id]") as HTMLElement;
     expect(wrapper("weekly-recap").className).toBe("hidden md:contents");
     expect(wrapper("insights").className).toBe("hidden md:contents");
     // the whole chart grid vanishes below md (no empty gap) while md+ keeps it
     expect(screen.getByTestId("card-income-expense-chart").closest("div.grid")!.className).toContain("max-md:hidden");
     // core cards are never collapsed
-    expect(screen.getByTestId("card-action-center").parentElement!.className).not.toContain("hidden");
+    expect(screen.getByTestId("card-action-center").closest("[data-card-id]")).toBeNull();
 
     const toggle = screen.getByRole("button", { name: "More insights" });
     expect(toggle.className).toContain("md:hidden");

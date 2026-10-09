@@ -67,7 +67,7 @@ export function ReconcileHeader({
               ? detail.staged.source === "upload"
                 ? detail.staged.originalFilename || "Uploaded file"
                 : detail.staged.subject || "(no subject)"
-              : "Loading…"} titleClassName="text-xl font-semibold tracking-tight" />
+              : "Loading…"} titleClassName="text-2xl font-bold tracking-tight" />
           {detail && (
             <p className="text-xs text-muted-foreground mt-0.5">
               {detail.staged.source === "upload" && detail.staged.fileFormat
@@ -109,7 +109,7 @@ export function ReconcileHeader({
             variant="ghost"
             onClick={reject}
             disabled={acting}
-            className="text-rose-700 hover:text-rose-800 hover:bg-rose-50"
+            className="text-destructive hover:text-destructive hover:bg-destructive/10"
           >
             <X className="h-4 w-4 mr-1.5" />
             Discard all

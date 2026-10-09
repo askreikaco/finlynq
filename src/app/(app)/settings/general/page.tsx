@@ -110,7 +110,7 @@ export default function GeneralSettingsPage() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-warning/10 text-warning">
               <Settings2 className="h-5 w-5" />
             </div>
             <div>
@@ -224,7 +224,7 @@ export default function GeneralSettingsPage() {
           {recompute?.active ? (
             <div className="flex items-center gap-2 rounded-lg bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
               {recompute.finished ? (
-                <span className="text-emerald-600">
+                <span className="text-pos">
                   Reports updated to {recompute.target}.
                 </span>
               ) : (

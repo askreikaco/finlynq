@@ -34,12 +34,12 @@ export function LotReallocationNotice({
   const years = Object.keys(preview.realizedGainDeltaByYear).sort();
 
   return (
-    <div className="rounded-md border border-amber-300/60 bg-amber-50 dark:bg-amber-950/40 dark:border-amber-800/60 p-3 text-xs space-y-2">
-      <p className="flex items-center gap-1.5 font-medium text-amber-900 dark:text-amber-200">
+    <div className="rounded-md border border-warning/30 bg-warning/10 p-3 text-xs space-y-2">
+      <p className="flex items-center gap-1.5 font-medium text-warning">
         <AlertTriangle className="h-3.5 w-3.5" />
         Proceeding will reallocate dependent transactions
       </p>
-      <ul className="space-y-1 text-amber-900/90 dark:text-amber-200/90">
+      <ul className="space-y-1 text-warning/90">
         <li>
           {preview.dependentCloseTxIds.length} dependent transaction
           {preview.dependentCloseTxIds.length === 1 ? "" : "s"} will be

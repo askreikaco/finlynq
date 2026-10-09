@@ -15,9 +15,9 @@ const itemVariants = {
 };
 
 const SEVERITY_ICON = {
-  critical: { icon: AlertTriangle, color: "text-rose-500", dot: "bg-rose-500" },
-  warning: { icon: AlertTriangle, color: "text-amber-500", dot: "bg-amber-500" },
-  info: { icon: Bell, color: "text-blue-500", dot: "bg-blue-500" },
+  critical: { icon: AlertTriangle, color: "text-destructive", dot: "bg-destructive" },
+  warning: { icon: AlertTriangle, color: "text-warning", dot: "bg-warning" },
+  info: { icon: Bell, color: "text-info", dot: "bg-info" },
 };
 
 const MAX_VISIBLE = 3;
@@ -75,7 +75,7 @@ export function ActionCenter() {
       <Card className="card-hover">
         <CardHeader className="pb-2 px-5 pt-5">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
               <Shield className="h-4 w-4" />
             </div>
             <div className="flex-1">
@@ -89,10 +89,10 @@ export function ActionCenter() {
 
         <CardContent className="px-5 pb-4">
           {visible.length === 0 ? (
-            <div className="flex items-center gap-3 py-3 px-3 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30">
-              <CheckCircle2 className="h-4.5 w-4.5 text-emerald-500 shrink-0" />
+            <div className="flex items-center gap-3 py-3 px-3 rounded-xl bg-pos/10 border border-pos/30">
+              <CheckCircle2 className="h-4.5 w-4.5 text-pos shrink-0" />
               <div>
-                <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">All good!</p>
+                <p className="text-sm font-medium text-pos">All good!</p>
                 <p className="text-[11px] text-muted-foreground">No items need your attention right now.</p>
               </div>
             </div>
@@ -145,7 +145,7 @@ export function ActionCenter() {
                         </Link>
                         <button
                           onClick={() => dismiss(item.id)}
-                          className="p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-muted/80 transition-all"
+                          className="p-1 rounded-md opacity-0 group-hover:opacity-100 focus-visible:opacity-100 max-md:opacity-100 max-md:p-3 max-md:-m-3 hover:bg-muted/80 transition-all"
                           title="Dismiss"
                           aria-label="Dismiss alert"
                         >

@@ -121,7 +121,7 @@ export function InvestmentStatementPreview({
       <DialogContent className="sm:max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Landmark className="h-5 w-5 text-indigo-600" />
+            <Landmark className="h-5 w-5 text-primary" />
             {formatLabel} Investment Statement Preview
           </DialogTitle>
           <DialogDescription>
@@ -169,9 +169,9 @@ export function InvestmentStatementPreview({
                 </SelectContent>
               </Select>
               {bindings[acc.externalId] ? (
-                <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                <CheckCircle2 className="h-3 w-3 text-pos" />
               ) : (
-                <AlertTriangle className="h-3 w-3 text-amber-600" />
+                <AlertTriangle className="h-3 w-3 text-warning" />
               )}
             </div>
           ))}
@@ -179,10 +179,10 @@ export function InvestmentStatementPreview({
 
         {/* Totals summary */}
         <div className="flex flex-wrap gap-4 text-xs px-1">
-          <span className="text-emerald-600">
+          <span className="text-pos">
             Credits: +{formatCurrency(totalCredits, displayCurrency)}
           </span>
-          <span className="text-rose-600">
+          <span className="text-destructive">
             Debits: {formatCurrency(totalDebits, displayCurrency)}
           </span>
         </div>
@@ -211,7 +211,7 @@ export function InvestmentStatementPreview({
                   </span>
                 )}
                 <span
-                  className={`font-mono w-20 text-right shrink-0 ${row.amount < 0 ? "text-rose-600" : "text-emerald-600"}`}
+                  className={`font-mono w-20 text-right shrink-0 ${row.amount < 0 ? "text-destructive" : "text-pos"}`}
                 >
                   {formatCurrency(row.amount, row.currency ?? displayCurrency)}
                 </span>

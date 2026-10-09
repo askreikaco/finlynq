@@ -172,7 +172,7 @@ export default function LotPicker({
                   placeholder="0"
                   className={`h-7 w-20 rounded border bg-background px-2 text-right text-xs ${
                     overflow
-                      ? "border-amber-500/60 text-amber-600 dark:text-amber-400"
+                      ? "border-warning/60 text-warning"
                       : "border-border/60"
                   }`}
                 />
@@ -189,7 +189,7 @@ export default function LotPicker({
         {" / "}
         <span className="font-mono">{totalAvailable}</span> open.
         {totalSelected > totalAvailable && (
-          <span className="ml-2 text-amber-600 dark:text-amber-400">
+          <span className="ml-2 text-warning">
             Excess {totalSelected - totalAvailable} will open a short position.
           </span>
         )}

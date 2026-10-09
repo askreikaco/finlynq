@@ -31,6 +31,8 @@ import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { exportCsv, type CsvColumn } from "@/lib/csv-export";
 import { PageHeader } from "@/components/mobile";
+import { ErrorState } from "@/components/error-state";
+import { PageSkeleton } from "@/components/page-skeleton";
 
 // Phase 3 follow-up (2026-05-26): short_close = a Buy that covered a short
 // position; gain inverts (cost − buy_price). short_open = the audit-marker
@@ -40,25 +42,25 @@ const CLOSE_KIND_META: Record<string, { icon: typeof ArrowDownLeft; label: strin
   short_open: {
     icon: ArrowDownLeft,
     label: "Short open",
-    className: "border-rose-500 text-rose-600 dark:border-rose-400 dark:text-rose-400",
+    className: "border-destructive text-destructive",
     tooltip: "Short opened — a Sell exceeded the open longs and opened a new side='short' lot at the sell price.",
   },
   short_close: {
     icon: ArrowUpLeft,
     label: "Short close",
-    className: "border-amber-500 text-amber-600 dark:border-amber-400 dark:text-amber-400",
+    className: "border-warning text-warning",
     tooltip: "Short covered — a Buy on this holding/account closed an open short lot. Realized gain = (open cost − buy price) × qty.",
   },
   swap_out: {
     icon: RefreshCw,
     label: "Swap",
-    className: "border-sky-500 text-sky-600 dark:border-sky-400 dark:text-sky-400",
+    className: "border-info text-info",
     tooltip: "Closure originated from a Swap (sell-out leg of an in-place rebalance).",
   },
   fx_conversion: {
     icon: Coins,
     label: "Currency",
-    className: "border-violet-500 text-violet-600 dark:border-violet-400 dark:text-violet-400",
+    className: "border-chart-5 text-chart-5",
     tooltip: "Currency-on-currency FX gain — a cash lot in this sleeve was closed by an FX conversion. The realized gain in the sleeve currency is 0 (cost=1, proceeds=1); the actual gain shows in the unified display-currency view (toggle above).",
   },
 };
@@ -184,6 +186,8 @@ export default function RealizedGainsPage() {
   const [groupMode, setGroupMode] = useState<GroupMode>("off");
   const [data, setData] = useState<ApiResponse["data"] | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -191,15 +195,16 @@ export default function RealizedGainsPage() {
     params.set("term", term);
     if (showUnified) params.set("unified", "1");
     setLoading(true);
+    setLoadError(false);
     fetch(`/api/portfolio/realized-gains?${params.toString()}`)
       .then((r) => r.json())
       .then((json: ApiResponse) => {
         if (json.success) setData(json.data);
-        else setData(null);
+        else { setData(null); setLoadError(true); }
       })
-      .catch(() => setData(null))
+      .catch(() => { setData(null); setLoadError(true); })
       .finally(() => setLoading(false));
-  }, [taxYear, term, showUnified]);
+  }, [taxYear, term, showUnified, reloadKey]);
 
   // FINLYNQ-193 mixed-currency rule: group-by is UNIFIED-VIEW-ONLY. The
   // unified view converts every closure into the single display currency, so
@@ -321,9 +326,9 @@ export default function RealizedGainsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <PageHeader
             title="Realized gains"
-            titleClassName="text-2xl font-semibold"
+            titleClassName="text-2xl font-bold tracking-tight"
             subtitle={<>Lot-level realized gain on every closed sell / transfer-out, per (holding, account).</>}
-            subtitleClassName="text-sm text-muted-foreground"
+            subtitleClassName="text-sm text-muted-foreground mt-0.5"
           />
         <div className="flex gap-2">
           <Link href="/portfolio" className="text-sm text-muted-foreground hover:underline self-center">
@@ -451,7 +456,9 @@ export default function RealizedGainsPage() {
             </div>
           )}
           {loading ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
+            <PageSkeleton variant="list" rows={3} />
+          ) : loadError ? (
+            <ErrorState title="Couldn't load realized gains" message="We couldn't load your realized gains. Please try again." onRetry={() => setReloadKey((k) => k + 1)} />
           ) : !data || data.rows.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               No closed lots in this range yet. Lots are created on every new sell / in-kind
@@ -496,7 +503,7 @@ export default function RealizedGainsPage() {
                     </TableCell>
                     <TableCell
                       className={`text-right font-mono ${
-                        g.realizedGain >= 0 ? "text-green-600" : "text-red-600"
+                        g.realizedGain >= 0 ? "text-pos" : "text-destructive"
                       }`}
                     >
                       {formatCurrency(g.realizedGain, unifiedCurrency)}
@@ -565,8 +572,8 @@ export default function RealizedGainsPage() {
                         (showUnified && r.realizedGainInBase != null
                           ? r.realizedGainInBase
                           : r.realizedGain) >= 0
-                          ? "text-green-600"
-                          : "text-red-600"
+                          ? "text-pos"
+                          : "text-destructive"
                       }`}
                     >
                       {showUnified && r.realizedGainInBase != null && r.baseCurrency

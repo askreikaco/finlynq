@@ -97,20 +97,20 @@ export function WeeklyRecap() {
               <p className="text-lg font-bold tracking-tight tabular-nums">
                 {formatCurrency(recap.spending.total, displayCurrency)}
               </p>
-              <span className={`inline-flex items-center gap-0.5 text-[11px] font-semibold ${spendingUp ? "text-rose-500" : "text-emerald-500"}`}>
+              <span className={`inline-flex items-center gap-0.5 text-[11px] font-semibold ${spendingUp ? "text-destructive" : "text-pos"}`}>
                 {spendingUp ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
                 {Math.abs(recap.spending.changePercent)}%
               </span>
             </div>
             <div>
               <p className="text-[11px] text-muted-foreground mb-0.5">Income</p>
-              <p className="text-lg font-bold tracking-tight text-emerald-600 dark:text-emerald-400 tabular-nums">
+              <p className="text-lg font-bold tracking-tight text-pos tabular-nums">
                 {formatCurrency(recap.income.total, displayCurrency)}
               </p>
             </div>
             <div>
               <p className="text-[11px] text-muted-foreground mb-0.5">Net Flow</p>
-              <p className={`text-lg font-bold tracking-tight tabular-nums ${recap.netCashFlow >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-500"}`}>
+              <p className={`text-lg font-bold tracking-tight tabular-nums ${recap.netCashFlow >= 0 ? "text-pos" : "text-destructive"}`}>
                 {formatCurrency(recap.netCashFlow, displayCurrency)}
               </p>
             </div>
@@ -173,7 +173,7 @@ export function WeeklyRecap() {
                           <div key={b.category}>
                             <div className="flex items-center justify-between text-[11px] mb-1">
                               <span>{b.category}</span>
-                              <span className={`font-semibold tabular-nums ${b.pctUsed > 100 ? "text-rose-500" : b.pctUsed > 80 ? "text-amber-500" : "text-muted-foreground"}`}>
+                              <span className={`font-semibold tabular-nums ${b.pctUsed > 100 ? "text-destructive" : b.pctUsed > 80 ? "text-warning" : "text-muted-foreground"}`}>
                                 {b.pctUsed}%
                               </span>
                             </div>
@@ -182,9 +182,9 @@ export function WeeklyRecap() {
                               className="bg-muted/60 h-1.5"
                               fillClassName={
                                 b.pctUsed > 100
-                                  ? "bg-rose-500"
+                                  ? "bg-destructive"
                                   : b.pctUsed > 80
-                                    ? "bg-amber-500"
+                                    ? "bg-warning"
                                     : "bg-primary"
                               }
                             />
@@ -205,7 +205,7 @@ export function WeeklyRecap() {
                               <span className="font-medium">{t.payee || t.category}</span>
                               <span className="text-muted-foreground ml-2 text-[11px]">{t.date}</span>
                             </div>
-                            <span className="font-mono font-semibold text-rose-500 tabular-nums shrink-0 ml-2">
+                            <span className="font-mono font-semibold text-destructive tabular-nums shrink-0 ml-2">
                               {formatCurrency(t.amount, displayCurrency)}
                             </span>
                           </div>
@@ -237,7 +237,7 @@ export function WeeklyRecap() {
                   {/* Net worth change */}
                   <div className="flex items-center justify-between text-[12px] border-t pt-2.5">
                     <span className="text-muted-foreground">Net worth change this week</span>
-                    <span className={`font-semibold tabular-nums ${recap.netWorthChange >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
+                    <span className={`font-semibold tabular-nums ${recap.netWorthChange >= 0 ? "text-pos" : "text-destructive"}`}>
                       {recap.netWorthChange >= 0 ? "+" : ""}{formatCurrency(recap.netWorthChange, displayCurrency)}
                     </span>
                   </div>

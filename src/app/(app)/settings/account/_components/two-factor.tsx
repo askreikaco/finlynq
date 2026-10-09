@@ -268,7 +268,7 @@ export function TwoFactor() {
     <Card>
       <CardHeader>
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-chart-5/10 text-chart-5">
             <Shield className="h-5 w-5" />
           </div>
           <div>
@@ -280,13 +280,13 @@ export function TwoFactor() {
       <CardContent className="space-y-4">
         {mfaEnabled ? (
           <>
-            <p className="text-sm text-emerald-600 flex items-center gap-2">
+            <p className="text-sm text-pos flex items-center gap-2">
               <Check className="h-4 w-4" />
               {STRINGS.statusEnabled}
             </p>
 
             {status && state.type !== "disabling" && (
-              <p className="text-sm text-emerald-600 flex items-center gap-1" role="status">
+              <p className="text-sm text-pos flex items-center gap-1" role="status">
                 <Check className="h-3.5 w-3.5" />
                 {status}
               </p>
@@ -338,7 +338,7 @@ export function TwoFactor() {
                   </p>
                 )}
                 {status && (
-                  <p className="text-sm text-emerald-600 flex items-center gap-1" role="status">
+                  <p className="text-sm text-pos flex items-center gap-1" role="status">
                     <Check className="h-3.5 w-3.5" />
                     {status}
                   </p>

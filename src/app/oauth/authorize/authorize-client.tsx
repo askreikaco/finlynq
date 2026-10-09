@@ -244,7 +244,7 @@ function AuthorizePageInner({ accountSlot }: { accountSlot?: React.ReactNode }) 
     return (
       <div className="flex min-h-screen items-center justify-center bg-background bg-dot-pattern">
         <div className="mx-auto w-full max-w-md px-6 py-12 text-center space-y-4">
-          <AlertTriangle className="h-12 w-12 text-amber-400 mx-auto" />
+          <AlertTriangle className="h-12 w-12 text-warning mx-auto" />
           <h1 className="text-xl font-bold text-foreground">Invalid Request</h1>
           <p className="text-sm text-muted-foreground">{paramError}</p>
         </div>
@@ -260,7 +260,7 @@ function AuthorizePageInner({ accountSlot }: { accountSlot?: React.ReactNode }) 
     return (
       <div className="flex min-h-screen items-center justify-center bg-background bg-dot-pattern">
         <div className="mx-auto w-full max-w-md px-6 py-12 text-center space-y-4">
-          <AlertTriangle className="h-12 w-12 text-amber-400 mx-auto" />
+          <AlertTriangle className="h-12 w-12 text-warning mx-auto" />
           <h1 className="text-xl font-bold text-foreground">Cannot Authorize</h1>
           <p className="text-sm text-muted-foreground">{clientLookupError}</p>
         </div>
@@ -310,7 +310,7 @@ function AuthorizePageInner({ accountSlot }: { accountSlot?: React.ReactNode }) 
         {/* Logo + connecting indicator */}
         <div className="flex items-center justify-center gap-4 mb-8">
           {/* Finlynq logo */}
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 via-violet-500 to-purple-600 shadow-lg shadow-indigo-500/30">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary via-chart-5 to-chart-5 shadow-lg shadow-primary/30">
             <span className="text-lg font-bold text-white tracking-tight">PF</span>
           </div>
           {/* Connection dots */}
@@ -369,9 +369,9 @@ function AuthorizePageInner({ accountSlot }: { accountSlot?: React.ReactNode }) 
         {/* Scope-aware warning. Read+write clients get the legacy amber
             warning; read-only clients get a green note instead. */}
         {wantsWrite ? (
-          <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 mb-4">
+          <div className="rounded-lg border border-warning/30 bg-warning/5 p-3 mb-4">
             <div className="flex items-start gap-2">
-              <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+              <AlertTriangle className="h-4 w-4 text-warning mt-0.5 shrink-0" />
               <p className="text-xs text-foreground/80 leading-relaxed">
                 {displayName} will be able to <strong>read AND write</strong> your
                 financial data — including creating, editing, and deleting
@@ -380,9 +380,9 @@ function AuthorizePageInner({ accountSlot }: { accountSlot?: React.ReactNode }) 
             </div>
           </div>
         ) : (
-          <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 mb-4">
+          <div className="rounded-lg border border-pos/30 bg-pos/5 p-3 mb-4">
             <div className="flex items-start gap-2">
-              <Database className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
+              <Database className="h-4 w-4 text-pos mt-0.5 shrink-0" />
               <p className="text-xs text-foreground/80 leading-relaxed">
                 {displayName} requested <strong>read-only</strong> access. It
                 cannot create, edit, or delete any of your data — only read it.
@@ -411,11 +411,11 @@ function AuthorizePageInner({ accountSlot }: { accountSlot?: React.ReactNode }) 
             localhost allowlist. A user who started a legitimate MCP
             connection sees this for an arbitrary DCR client and can abort. */}
         {showUnverifiedBanner && (
-          <div className="rounded-lg border border-red-500/40 bg-red-500/8 p-3 mb-4">
+          <div className="rounded-lg border border-destructive/40 bg-destructive/8 p-3 mb-4">
             <div className="flex items-start gap-2">
-              <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
+              <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
               <p className="text-xs text-foreground/80 leading-relaxed">
-                <strong className="text-red-500">This is not a verified Finlynq app.</strong>{" "}
+                <strong className="text-destructive">This is not a verified Finlynq app.</strong>{" "}
                 It will send an authorization code to{" "}
                 <span className="font-mono font-semibold">
                   {redirectHost ?? redirectUri}

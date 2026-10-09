@@ -271,17 +271,17 @@ export function OverviewTab({ reloadKey = 0 }: { reloadKey?: number }) {
 
       <div className="flex flex-wrap gap-2 empty:hidden">
         {data.partial && (
-          <Badge variant="outline" className="bg-amber-50 text-amber-900 border-amber-200">
+          <Badge variant="outline" className="bg-warning/10 text-warning border-warning/30">
             {FAMILY_STRINGS.overview_rate_unavailable}
           </Badge>
         )}
         {data.members.some((m) => m.partialReasons.includes("investment_unpriced")) && (
-          <Badge variant="outline" className="bg-amber-50 text-amber-900 border-amber-200">
+          <Badge variant="outline" className="bg-warning/10 text-warning border-warning/30">
             {FAMILY_STRINGS.overview_investment_unpriced}
           </Badge>
         )}
         {data.members.some((m) => m.partialReasons.includes("section_error")) && (
-          <Badge variant="outline" className="bg-red-50 text-red-900 border-red-200">
+          <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30">
             {FAMILY_STRINGS.overview_section_error}
           </Badge>
         )}

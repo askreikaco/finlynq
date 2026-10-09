@@ -367,7 +367,7 @@ export function AccountDialog({
         <p className="text-xs text-muted-foreground">
           Short nickname used when matching transactions — e.g. last 4 digits of a card, or a receipt label.
         </p>
-        {aliasMsg && <p className="text-xs text-amber-600">{aliasMsg}</p>}
+        {aliasMsg && <p className="text-xs text-warning">{aliasMsg}</p>}
       </div>
 
       <div className="grid grid-cols-2 gap-3">

@@ -423,10 +423,10 @@ export function ConnectorTab() {
             )}
 
             {zipSummary && (
-              <div className="rounded-md border border-green-500/30 bg-green-500/5 p-3 text-sm space-y-3">
+              <div className="rounded-md border border-pos/30 bg-pos/5 p-3 text-sm space-y-3">
                 <div>
                   <div className="font-medium flex items-center gap-1.5">
-                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    <CheckCircle2 className="h-4 w-4 text-pos" />
                     Import complete
                   </div>
                   <div className="text-xs text-muted-foreground space-y-0.5 font-mono mt-1">
@@ -438,7 +438,7 @@ export function ConnectorTab() {
                       <div className="text-destructive">Split insert errors: {zipSummary.splitInsertErrors.length}</div>
                     )}
                     {zipSummary.transformErrors.length > 0 && (
-                      <div className="text-amber-600 dark:text-amber-400">
+                      <div className="text-warning">
                         Transform warnings: {zipSummary.transformErrors.length}
                       </div>
                     )}
@@ -446,7 +446,7 @@ export function ConnectorTab() {
                 </div>
 
                 {zipSummary.reconciliation && (
-                  <div className="pt-2 border-t border-green-500/20 space-y-2">
+                  <div className="pt-2 border-t border-pos/20 space-y-2">
                     <div className="text-xs font-medium">Balance reconciliation (as of {zipSummary.reconciliation.date})</div>
                     <div className="max-h-56 overflow-y-auto">
                       <table className="w-full text-xs font-mono">
@@ -460,7 +460,7 @@ export function ConnectorTab() {
                         </thead>
                         <tbody>
                           {zipSummary.reconciliation.rows.map((r) => (
-                            <tr key={r.finlynqAccountId} className={r.matches ? "" : "text-amber-700 dark:text-amber-400"}>
+                            <tr key={r.finlynqAccountId} className={r.matches ? "" : "text-warning"}>
                               <td className="py-0.5 pr-2">{r.accountName} <span className="text-muted-foreground">{r.currency}</span></td>
                               <td className="py-0.5 text-right">{formatCurrency(r.wpBalance, r.currency)}</td>
                               <td className="py-0.5 text-right">{formatCurrency(r.pfBalance, r.currency)}</td>
@@ -478,12 +478,12 @@ export function ConnectorTab() {
                   </div>
                 )}
                 {!zipSummary.reconciliation && !zipSummary.reconciliationError && (
-                  <div className="pt-2 border-t border-green-500/20 text-xs text-muted-foreground">
+                  <div className="pt-2 border-t border-pos/20 text-xs text-muted-foreground">
                     Save your API key below to reconcile balances against WealthPosition&rsquo;s live data.
                   </div>
                 )}
                 {zipSummary.reconciliationError && (
-                  <div className="pt-2 border-t border-green-500/20 text-xs text-amber-700 dark:text-amber-400">
+                  <div className="pt-2 border-t border-pos/20 text-xs text-warning">
                     Reconciliation failed: {zipSummary.reconciliationError}
                   </div>
                 )}

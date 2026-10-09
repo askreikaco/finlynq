@@ -17,7 +17,7 @@ export default function ReconcileVisibilityPage() {
   return (
     <div className="max-w-2xl space-y-6">
       <div>
-        <PageHeader title="Reconcile dropdown visibility" titleClassName="text-2xl font-bold tracking-tight" backHref="/settings/import" backLabel="Import settings" />
+        <PageHeader title="Reconcile dropdown visibility" titleClassName="text-2xl font-bold tracking-tight" backHref="/settings/import" backLabel="Back to Import settings" />
         <p className="text-sm text-muted-foreground mt-0.5">
           Choose which accounts appear in the account picker on the Import page.
         </p>

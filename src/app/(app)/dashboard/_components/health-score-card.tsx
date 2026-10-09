@@ -13,7 +13,7 @@ const itemVariants = {
 };
 
 function ScoreBar({ label, score, detail }: { label: string; score: number; detail: string }) {
-  const color = score > 70 ? "bg-emerald-500" : score >= 40 ? "bg-amber-500" : "bg-rose-500";
+  const color = score > 70 ? "bg-pos" : score >= 40 ? "bg-warning" : "bg-destructive";
 
   return (
     <div className="group/bar">
@@ -63,7 +63,7 @@ export function HealthScoreCard({ health: healthProp }: { health?: HealthData | 
         icon={Activity}
         tone={health ? (health.score > 70 ? "emerald" : health.score >= 40 ? "amber" : "rose") : "muted"}
         value={health ? <span>{Math.round(health.score)}</span> : <span className="inline-block h-7 w-24 animate-shimmer rounded-md align-middle" />}
-        valueClassName={health ? (health.score > 70 ? "text-emerald-500" : health.score >= 40 ? "text-amber-500" : "text-rose-500") : ""}
+        valueClassName={health ? (health.score > 70 ? "text-pos" : health.score >= 40 ? "text-warning" : "text-destructive") : ""}
         sub={
           health ? (
             <span className="flex items-center gap-2 cursor-pointer hover:text-foreground transition-colors" onClick={() => setDialogOpen(true)}>

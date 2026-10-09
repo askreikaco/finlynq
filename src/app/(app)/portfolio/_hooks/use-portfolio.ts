@@ -39,7 +39,8 @@ export function usePortfolioOverview(displayCurrency: string) {
       .then((d) => {
         setData(d);
         setLoading(false);
-      });
+      })
+      .catch(() => setLoading(false));
   }, [displayCurrency]);
 
   return { data, loading, reload };

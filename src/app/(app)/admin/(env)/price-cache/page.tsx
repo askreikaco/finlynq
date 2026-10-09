@@ -94,11 +94,11 @@ function Freshness({ row, today }: { row: Row; today: string }) {
     );
   }
   return row.stale ? (
-    <Badge variant="outline" className="text-[10px] bg-amber-500/15 text-amber-600 border-amber-500/30">
+    <Badge variant="outline" className="text-[10px] bg-warning/15 text-warning border-warning/30">
       Stale
     </Badge>
   ) : (
-    <Badge variant="outline" className="text-[10px] bg-emerald-500/15 text-emerald-600 border-emerald-500/30">
+    <Badge variant="outline" className="text-[10px] bg-pos/15 text-pos border-pos/30">
       Fresh
     </Badge>
   );
@@ -245,11 +245,11 @@ export default function AdminPriceCachePage() {
       align: "right",
       accessor: () => null,
       render: (r) => (
-        <button
+        <button aria-label="Delete this cache row"
           type="button"
           onClick={() => setRowToDelete(r)}
           title="Delete this cache row"
-          className="inline-flex text-muted-foreground transition-colors hover:text-rose-600"
+          className="inline-flex text-muted-foreground transition-colors hover:text-destructive"
         >
           <Trash2 className="h-3.5 w-3.5" />
         </button>
@@ -295,7 +295,7 @@ export default function AdminPriceCachePage() {
           <p className="text-sm text-muted-foreground mt-0.5">
             Read-only view of the server-side <code className="text-xs">price_cache</code> and{" "}
             <code className="text-xs">fx_rates</code> tables. Today-dated rows past the 30-min TTL show as{" "}
-            <span className="text-amber-600">Stale</span> (re-fetched on next read); historical rows are{" "}
+            <span className="text-warning">Stale</span> (re-fetched on next read); historical rows are{" "}
             <span className="text-muted-foreground">Cached</span> (immutable).
           </p>
         </div>
@@ -410,8 +410,8 @@ export default function AdminPriceCachePage() {
       </div>
 
       {error && (
-        <Card className="border-rose-200 bg-rose-50/30">
-          <CardContent className="py-3 text-sm text-rose-700">{error}</CardContent>
+        <Card className="border-destructive/30 bg-destructive/10">
+          <CardContent className="py-3 text-sm text-destructive">{error}</CardContent>
         </Card>
       )}
 
@@ -429,7 +429,7 @@ export default function AdminPriceCachePage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="mr-1 border-rose-300 text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:border-rose-900/60 dark:hover:bg-rose-950/30"
+                  className="mr-1 border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
                   disabled={loading || bulkDeleting}
                   onClick={() => setBulkOpen(true)}
                 >
@@ -437,7 +437,7 @@ export default function AdminPriceCachePage() {
                   Delete {total.toLocaleString()} matching
                 </Button>
               )}
-              <Button
+              <Button aria-label="Previous page"
                 variant="outline"
                 size="sm"
                 disabled={offset <= 0 || loading}
@@ -445,7 +445,7 @@ export default function AdminPriceCachePage() {
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <Button
+              <Button aria-label="Next page"
                 variant="outline"
                 size="sm"
                 disabled={showingTo >= total || loading}
@@ -510,7 +510,7 @@ function Stat({ label, value, warn }: { label: string; value: string; warn?: boo
   return (
     <div className="flex flex-col">
       <span className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</span>
-      <span className={`text-sm font-semibold tabular-nums ${warn ? "text-amber-600" : ""}`}>{value}</span>
+      <span className={`text-sm font-semibold tabular-nums ${warn ? "text-warning" : ""}`}>{value}</span>
     </div>
   );
 }

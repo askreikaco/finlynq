@@ -123,11 +123,11 @@ export function ReconciliationCallout(props: ReconciliationCalloutProps) {
   const isMatch = Math.abs(result - statementBalance) <= MATCH_TOLERANCE;
 
   const cardCls = isMatch
-    ? "border-emerald-200 bg-emerald-50/30 dark:bg-emerald-950/10"
-    : "border-amber-200 bg-amber-50/30 dark:bg-amber-950/10";
+    ? "border-pos/30 bg-pos/10"
+    : "border-warning/30 bg-warning/10";
   const resultCls = isMatch
-    ? "text-emerald-700 dark:text-emerald-400"
-    : "text-amber-700 dark:text-amber-400";
+    ? "text-pos"
+    : "text-warning";
 
   return (
     <Card className={cardCls} data-testid="reconciliation-callout">
@@ -175,12 +175,12 @@ export function ReconciliationCallout(props: ReconciliationCalloutProps) {
           <div className="shrink-0 pt-1">
             {isMatch ? (
               <CheckCircle2
-                className="h-6 w-6 text-emerald-600 dark:text-emerald-400"
+                className="h-6 w-6 text-pos"
                 aria-label="Reconciled — bank ledger matches statement"
               />
             ) : (
               <AlertTriangle
-                className="h-6 w-6 text-amber-600 dark:text-amber-400"
+                className="h-6 w-6 text-warning"
                 aria-label="Mismatch — bank ledger does not match statement"
               />
             )}

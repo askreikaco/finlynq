@@ -57,7 +57,7 @@ export function UnlockPanel({ onDismiss }: { onDismiss: () => void }) {
     <div
       role="alertdialog"
       aria-label="Unlock your data"
-      className="fixed inset-x-0 top-0 z-50 flex flex-wrap items-center justify-center gap-3 border-b border-amber-500/40 bg-amber-50 px-[max(1rem,var(--sal))] pb-3 pt-[calc(0.75rem+var(--sat))] text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-100"
+      className="fixed inset-x-0 top-0 z-50 flex flex-wrap items-center justify-center gap-3 border-b border-warning/40 bg-warning/10 px-[max(1rem,var(--sal))] pb-3 pt-[calc(0.75rem+var(--sat))] text-sm text-warning"
     >
       <span>Your data is locked. Unlock it to make changes.</span>
       {supported && (
@@ -65,7 +65,7 @@ export function UnlockPanel({ onDismiss }: { onDismiss: () => void }) {
           type="button"
           onClick={unlockWithPasskey}
           disabled={busy}
-          className="rounded-md bg-amber-600 px-3 py-1 font-medium text-white disabled:opacity-50"
+          className="rounded-md bg-warning px-3 py-1 font-medium text-white disabled:opacity-50"
         >
           Unlock with passkey
         </button>
@@ -74,7 +74,7 @@ export function UnlockPanel({ onDismiss }: { onDismiss: () => void }) {
         type="button"
         onClick={unlockWithPassword}
         disabled={busy}
-        className="rounded-md border border-amber-600 px-3 py-1 font-medium disabled:opacity-50"
+        className="rounded-md border border-warning px-3 py-1 font-medium disabled:opacity-50"
       >
         Unlock with password
       </button>
@@ -82,7 +82,7 @@ export function UnlockPanel({ onDismiss }: { onDismiss: () => void }) {
         Dismiss
       </button>
       {error && (
-        <p role="alert" className="w-full text-center text-red-700 dark:text-red-300">
+        <p role="alert" className="w-full text-center text-destructive">
           {error}
         </p>
       )}

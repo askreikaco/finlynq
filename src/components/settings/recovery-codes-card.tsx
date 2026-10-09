@@ -175,7 +175,7 @@ export function RecoveryCodesCard() {
     <Card>
       <CardHeader>
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-warning/10 text-warning">
             <LifeBuoy className="h-5 w-5" />
           </div>
           <div>
@@ -188,7 +188,7 @@ export function RecoveryCodesCard() {
         {loadFailed && <p className="text-sm text-destructive">{STRINGS.loadError}</p>}
 
         {notice && !codes && (
-          <p className="flex items-center gap-2 text-sm text-emerald-600" role="status">
+          <p className="flex items-center gap-2 text-sm text-pos" role="status">
             <Check className="h-4 w-4" aria-hidden="true" />
             {notice}
           </p>
@@ -196,7 +196,7 @@ export function RecoveryCodesCard() {
 
         {codes ? (
           <div className="space-y-3" role="group" aria-label={STRINGS.codesTitle}>
-            <p className="flex items-start gap-2 text-sm font-medium text-amber-700 dark:text-amber-300">
+            <p className="flex items-start gap-2 text-sm font-medium text-warning">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
               {STRINGS.codesWarning}
             </p>
@@ -241,7 +241,7 @@ export function RecoveryCodesCard() {
                   <p className="text-muted-foreground">{STRINGS.statusNone}</p>
                 )}
                 {low && (
-                  <p className="flex items-start gap-2 text-amber-700 dark:text-amber-300" role="alert">
+                  <p className="flex items-start gap-2 text-warning" role="alert">
                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
                     {status.unused === 0 ? STRINGS.noneLeftWarning : STRINGS.lowWarning(status.unused)}
                   </p>

@@ -117,14 +117,14 @@ interface ApiResponse {
 const POLL_MS = 5000;
 
 function pctColor(p: number): string {
-  if (p >= 85) return "text-rose-600";
-  if (p >= 60) return "text-amber-600";
-  return "text-emerald-600";
+  if (p >= 85) return "text-destructive";
+  if (p >= 60) return "text-warning";
+  return "text-pos";
 }
 function barColor(p: number): string {
-  if (p >= 85) return "bg-rose-500";
-  if (p >= 60) return "bg-amber-500";
-  return "bg-emerald-500";
+  if (p >= 85) return "bg-destructive";
+  if (p >= 60) return "bg-warning";
+  return "bg-pos";
 }
 function fmtDuration(ms: number): string {
   if (!Number.isFinite(ms) || ms < 0) return "";
@@ -227,8 +227,8 @@ function History24Chart({ points }: { points: Hist24[] }) {
       <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
         <span>{hourLabel(points[0].at)}</span>
         <span className="flex items-center gap-3">
-          <span className="text-rose-500">● avg</span>
-          <span className="text-amber-500">● peak</span>
+          <span className="text-destructive">● avg</span>
+          <span className="text-warning">● peak</span>
           <span>24h peak {peak.toFixed(0)}%</span>
         </span>
         <span>now</span>
@@ -307,7 +307,7 @@ export default function AdminSystemPage() {
         align: "right",
         accessor: (r) => r.runtimeMs,
         render: (r) => (
-          <span className={r.runtimeMs > 5000 ? "font-semibold text-amber-600" : ""}>
+          <span className={r.runtimeMs > 5000 ? "font-semibold text-warning" : ""}>
             {fmtDuration(r.runtimeMs)}
           </span>
         ),
@@ -385,7 +385,7 @@ export default function AdminSystemPage() {
         accessor: (r) => r.slowCount,
         render: (r) =>
           r.slowCount ? (
-            <span className="text-amber-600">{r.slowCount.toLocaleString()}</span>
+            <span className="text-warning">{r.slowCount.toLocaleString()}</span>
           ) : (
             <span className="text-muted-foreground">0</span>
           ),
@@ -397,7 +397,7 @@ export default function AdminSystemPage() {
         accessor: (r) => r.errorCount,
         render: (r) =>
           r.errorCount ? (
-            <span className="text-rose-600">{r.errorCount.toLocaleString()}</span>
+            <span className="text-destructive">{r.errorCount.toLocaleString()}</span>
           ) : (
             <span className="text-muted-foreground">0</span>
           ),
@@ -444,8 +444,8 @@ export default function AdminSystemPage() {
       </div>
 
       {error && (
-        <Card className="border-rose-200 bg-rose-50/30">
-          <CardContent className="py-3 text-sm text-rose-700">{error}</CardContent>
+        <Card className="border-destructive/30 bg-destructive/10">
+          <CardContent className="py-3 text-sm text-destructive">{error}</CardContent>
         </Card>
       )}
 
@@ -628,9 +628,9 @@ export default function AdminSystemPage() {
                         className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border px-3 py-1.5"
                       >
                         {r.running ? (
-                          <Badge className="bg-amber-500/15 text-amber-700">running</Badge>
+                          <Badge className="bg-warning/15 text-warning">running</Badge>
                         ) : r.error ? (
-                          <Badge className="bg-rose-500/15 text-rose-700">error</Badge>
+                          <Badge className="bg-destructive/15 text-destructive">error</Badge>
                         ) : (
                           <Badge variant="outline">done</Badge>
                         )}
@@ -646,7 +646,7 @@ export default function AdminSystemPage() {
                             rebuilt {r.lastResult.daysProcessed} days
                           </span>
                         ) : null}
-                        {r.error && <span className="text-rose-600">{r.error}</span>}
+                        {r.error && <span className="text-destructive">{r.error}</span>}
                       </div>
                     ))}
                     {data?.cashRebuildsInFlight.map((u) => (
@@ -654,7 +654,7 @@ export default function AdminSystemPage() {
                         key={`cash-${u.userId}`}
                         className="flex items-center gap-3 rounded-md border px-3 py-1.5"
                       >
-                        <Badge className="bg-amber-500/15 text-amber-700">cash running</Badge>
+                        <Badge className="bg-warning/15 text-warning">cash running</Badge>
                         <span className="font-mono text-xs" title={u.userId}>
                           {userLabel(u.username, u.userId)}
                         </span>
@@ -676,7 +676,7 @@ export default function AdminSystemPage() {
                       <Badge
                         key={m.userId}
                         variant="outline"
-                        className={m.ageMs > 86400000 ? "border-amber-400 text-amber-700" : ""}
+                        className={m.ageMs > 86400000 ? "border-warning/30 text-warning" : ""}
                         title={`${m.userId} · marked ${m.markedAt}`}
                       >
                         {userLabel(m.username, m.userId)} · {fmtDuration(m.ageMs)} old
@@ -725,7 +725,7 @@ export default function AdminSystemPage() {
                   Errors / timeouts
                 </span>
                 <span
-                  className={`font-semibold tabular-nums ${(data?.api.errors ?? 0) > 0 ? "text-rose-600" : ""}`}
+                  className={`font-semibold tabular-nums ${(data?.api.errors ?? 0) > 0 ? "text-destructive" : ""}`}
                 >
                   {data?.api.errors.toLocaleString() ?? 0}
                 </span>

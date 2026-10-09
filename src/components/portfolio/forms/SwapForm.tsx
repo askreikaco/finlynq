@@ -360,7 +360,7 @@ function SwapCreateForm() {
           </div>
 
           {currencyMismatch && (
-            <div className="rounded-md border border-amber-500/50 bg-amber-500/5 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+            <div className="rounded-md border border-warning/50 bg-warning/5 px-3 py-2 text-xs text-warning">
               Source ({sourceHolding?.currency}) and destination (
               {destHolding?.currency}) currencies differ. The server will reject
               this — FX-convert first, then swap inside the new currency.

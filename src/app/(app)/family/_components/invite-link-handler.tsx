@@ -80,7 +80,7 @@ export function InviteLinkHandler({ onDone, requireToken = false }: { onDone?: (
 
   return (
     <>
-      <Card className="border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950">
+      <Card className="border-info/30 bg-info/10">
         <CardHeader>
           <CardTitle className="text-base">{FAMILY_STRINGS.accept_card_title}</CardTitle>
         </CardHeader>

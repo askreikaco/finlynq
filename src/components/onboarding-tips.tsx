@@ -129,7 +129,7 @@ export function OnboardingTips({ page }: OnboardingTipsProps) {
       animate={{ opacity: 1, y: 0 }}
       data-testid="onboarding-tips-compact"
       className={cn(
-        "rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50/50 dark:bg-indigo-950/20 p-4 space-y-3",
+        "rounded-xl border border-primary/30 bg-primary/10 p-4 space-y-3",
         "max-md:px-3 max-md:py-1 max-md:space-y-0",
         expanded && "max-md:py-2 max-md:space-y-3",
       )}
@@ -141,12 +141,12 @@ export function OnboardingTips({ page }: OnboardingTipsProps) {
           onClick={() => setExpanded((v) => !v)}
           className="flex items-center gap-2 text-left max-md:min-h-11 md:pointer-events-none md:cursor-default"
         >
-          <Lightbulb className="h-4 w-4 text-indigo-500" />
-          <span className="text-sm font-medium text-indigo-700 dark:text-indigo-300">
+          <Lightbulb className="h-4 w-4 text-primary" />
+          <span className="text-sm font-medium text-primary">
             <span className="md:hidden">Tips ({tips.length})</span>
             <span className="max-md:hidden">Tips for getting started</span>
           </span>
-          <ChevronDown className={cn("h-4 w-4 text-indigo-500 md:hidden transition-transform", expanded && "rotate-180")} aria-hidden />
+          <ChevronDown className={cn("h-4 w-4 text-primary md:hidden transition-transform", expanded && "rotate-180")} aria-hidden />
         </button>
         <button
           onClick={dismissAll}
@@ -171,7 +171,7 @@ export function OnboardingTips({ page }: OnboardingTipsProps) {
               {tip.action && (
                 <Link
                   href={tip.action.href}
-                  className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline mt-1.5"
+                  className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline mt-1.5"
                 >
                   {tip.action.label}
                   <ArrowRight className="h-3 w-3" />

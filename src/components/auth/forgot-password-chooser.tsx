@@ -465,7 +465,7 @@ function EmailReset({ onBack }: { onBack: () => void }) {
     <div className="space-y-4">
       <BackButton onBack={onBack} />
       <h2 className="text-base font-semibold text-foreground">Reset by email</h2>
-      <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2.5 text-xs text-amber-200/90" role="note">
+      <div className="rounded-lg border border-warning/30 bg-warning/5 px-3 py-2.5 text-xs text-warning/90" role="note">
         Your data is encrypted with your password and there is no recovery key. Resetting the password by email{" "}
         <strong>erases all data in the account</strong> and starts it empty. If you still know your password, change it in
         Settings → Account instead — that keeps your data.

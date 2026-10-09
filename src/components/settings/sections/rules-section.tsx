@@ -197,7 +197,7 @@ export function RulesSection() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-100 text-orange-600">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-warning/10 text-warning">
                 <Zap className="h-5 w-5" />
               </div>
               <div>
@@ -252,7 +252,7 @@ export function RulesSection() {
                   <Button variant="ghost" size="sm" onClick={() => startEditor(rule)}>
                     Edit
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(rule)}>
+                  <Button aria-label="Delete rule" variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(rule)}>
                     <Trash2 className="h-3 w-3" />
                   </Button>
                 </div>

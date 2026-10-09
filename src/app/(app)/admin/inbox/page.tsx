@@ -260,8 +260,8 @@ export default function AdminInboxPage() {
       </div>
 
       {error && (
-        <Card className="border-rose-200 bg-rose-50/30">
-          <CardContent className="py-3 text-sm text-rose-700">{error}</CardContent>
+        <Card className="border-destructive/30 bg-destructive/10">
+          <CardContent className="py-3 text-sm text-destructive">{error}</CardContent>
         </Card>
       )}
 
@@ -306,7 +306,7 @@ export default function AdminInboxPage() {
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-[10px] text-muted-foreground truncate">→ {r.toAddress}</span>
                           {!r.triagedAt && (
-                            <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[9px] px-1 py-0">new</Badge>
+                            <Badge variant="outline" className="bg-warning/10 text-warning border-warning/30 text-[9px] px-1 py-0">new</Badge>
                           )}
                           {r.attachmentCount > 0 && (
                             <span className="text-[10px] text-muted-foreground">📎 {r.attachmentCount}</span>
@@ -361,12 +361,13 @@ export default function AdminInboxPage() {
                       variant="ghost"
                       size="sm"
                       onClick={remove}
+                      aria-label="Delete email"
                       disabled={acting}
-                      className="text-rose-700 hover:text-rose-800 hover:bg-rose-50"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={closeThread}>
+                    <Button variant="ghost" size="sm" onClick={closeThread} aria-label="Close thread">
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
@@ -377,12 +378,12 @@ export default function AdminInboxPage() {
                   {thread.messages.map((m) => (
                     <div
                       key={m.id}
-                      className={`rounded-lg border p-3 ${m.kind === "outbound" ? "bg-indigo-50/60 border-indigo-100 ml-6" : "bg-muted/40 mr-6"}`}
+                      className={`rounded-lg border p-3 ${m.kind === "outbound" ? "bg-primary/10 border-primary/30 ml-6" : "bg-muted/40 mr-6"}`}
                     >
                       <div className="flex items-center justify-between gap-2 mb-1.5">
                         <span className="text-xs font-mono truncate">
                           {m.kind === "outbound" ? (
-                            <><span className="font-semibold text-indigo-700">You</span> · {m.fromAddress}</>
+                            <><span className="font-semibold text-primary">You</span> · {m.fromAddress}</>
                           ) : (
                             m.fromAddress
                           )}
@@ -409,7 +410,7 @@ export default function AdminInboxPage() {
                       disabled={sending}
                       className="w-full resize-y rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-60"
                     />
-                    {replyError && <p className="text-xs text-rose-700">{replyError}</p>}
+                    {replyError && <p className="text-xs text-destructive">{replyError}</p>}
                     <div className="flex justify-end">
                       <Button size="sm" onClick={sendReply} disabled={sending || !replyText.trim()}>
                         <Send className={`h-4 w-4 mr-1.5 ${sending ? "animate-pulse" : ""}`} />

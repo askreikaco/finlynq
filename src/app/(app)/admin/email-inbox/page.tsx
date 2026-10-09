@@ -79,13 +79,13 @@ const SOURCE_KINDS = ["all", "body", "attachment"] as const;
 type SourceFilter = (typeof SOURCE_KINDS)[number];
 
 const actionColor: Record<string, string> = {
-  needs_review: "bg-amber-500/15 text-amber-600 border-amber-500/30",
+  needs_review: "bg-warning/15 text-warning border-warning/30",
   unparseable: "bg-destructive/15 text-destructive",
-  auto_recorded: "bg-emerald-500/15 text-emerald-600",
-  manually_recorded: "bg-emerald-500/15 text-emerald-600",
+  auto_recorded: "bg-pos/15 text-pos",
+  manually_recorded: "bg-pos/15 text-pos",
   duplicate_skipped: "bg-muted text-muted-foreground",
   discarded: "bg-muted text-muted-foreground",
-  pending: "bg-blue-500/15 text-blue-500",
+  pending: "bg-info/15 text-info",
 };
 
 function who(u: { username: string | null; email: string | null; userId: string }): string {
@@ -161,8 +161,8 @@ export default function AdminEmailInboxPage() {
       </div>
 
       {error && (
-        <Card className="border-rose-200 bg-rose-50/30">
-          <CardContent className="py-3 text-sm text-rose-700">{error}</CardContent>
+        <Card className="border-destructive/30 bg-destructive/10">
+          <CardContent className="py-3 text-sm text-destructive">{error}</CardContent>
         </Card>
       )}
 
@@ -194,7 +194,7 @@ export default function AdminEmailInboxPage() {
                   <TableCell className="text-right font-mono text-sm">{g.total}</TableCell>
                   <TableCell className="text-right font-mono text-sm">
                     {g.needsReview > 0 ? (
-                      <span className="text-amber-600">{g.needsReview}</span>
+                      <span className="text-warning">{g.needsReview}</span>
                     ) : (
                       g.needsReview
                     )}

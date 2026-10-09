@@ -551,7 +551,7 @@ function ConditionRow({
         </>
       )}
 
-      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={onRemove}>
+      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={onRemove} aria-label="Remove condition">
         <Trash2 className="h-3 w-3" />
       </Button>
     </div>
@@ -598,7 +598,7 @@ function ActionRow({
 
   return (
     <div
-      className={`${isSideEffect ? "border-l-2 border-amber-500/50 pl-2" : ""} ${
+      className={`${isSideEffect ? "border-l-2 border-warning/50 pl-2" : ""} ${
         isInvestmentOp ? "flex flex-col gap-2" : "flex items-center gap-2"
       }`}
     >
@@ -670,17 +670,17 @@ function ActionRow({
 
       <div className="flex">
         {onMoveUp && (
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onMoveUp}>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onMoveUp} aria-label="Move up">
             <ChevronUp className="h-3 w-3" />
           </Button>
         )}
         {onMoveDown && (
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onMoveDown}>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onMoveDown} aria-label="Move down">
             <ChevronDown className="h-3 w-3" />
           </Button>
         )}
       </div>
-      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={onRemove}>
+      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={onRemove} aria-label="Remove action">
         <Trash2 className="h-3 w-3" />
       </Button>
       </div>

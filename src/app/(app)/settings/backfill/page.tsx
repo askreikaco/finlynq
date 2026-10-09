@@ -114,10 +114,10 @@ export default function BackfillWizardPage() {
     <div className="max-w-3xl mx-auto p-6 space-y-6">
       <PageHeader
           title="Backfill transactions"
-          titleClassName="text-2xl font-semibold"
+          titleClassName="text-2xl font-bold tracking-tight"
           subtitle={<>One-time fix for imported transactions so realized gains and lot tracking work correctly.
           Won&apos;t change your account balances.</>}
-          subtitleClassName="text-sm text-muted-foreground mt-1"
+          subtitleClassName="text-sm text-muted-foreground mt-0.5"
         />
 
       <CashSleeveSymbolFix />
@@ -228,7 +228,7 @@ function ModeCard({
         <div className="flex-1">
           <div className="font-medium text-sm">{label}</div>
           <div className="text-xs text-muted-foreground mt-1 flex items-start gap-1">
-            {warning && <AlertTriangle className="size-3 text-amber-500 mt-0.5 shrink-0" />}
+            {warning && <AlertTriangle className="size-3 text-warning mt-0.5 shrink-0" />}
             <span>{description}</span>
           </div>
         </div>

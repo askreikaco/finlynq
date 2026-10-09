@@ -277,7 +277,7 @@ export function SaveTemplateDialog({
                   onChange={(e) =>
                     setMapping((prev) => ({ ...prev, flipSign: e.target.checked }))
                   }
-                  className="h-4 w-4 mt-0.5 rounded border-gray-300"
+                  className="h-4 w-4 mt-0.5 rounded border-border"
                 />
                 <span className="flex-1">
                   <span className="block text-sm font-medium">Flip sign of amounts</span>
@@ -290,7 +290,7 @@ export function SaveTemplateDialog({
             </div>
           </details>
 
-          {error && <p className="text-xs text-rose-600">{error}</p>}
+          {error && <p className="text-xs text-destructive">{error}</p>}
         </div>
 
         <DialogFooter>

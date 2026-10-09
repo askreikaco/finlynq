@@ -130,7 +130,7 @@ export function InvestmentStatementImporter() {
     <div className="space-y-4">
       <div className="rounded-lg border bg-muted/30 p-4 space-y-1.5">
         <p className="text-sm font-medium flex items-center gap-2">
-          <Landmark className="h-4 w-4 text-indigo-600" />
+          <Landmark className="h-4 w-4 text-primary" />
           Investment statements
         </p>
         <p className="text-xs text-muted-foreground">
@@ -154,19 +154,19 @@ export function InvestmentStatementImporter() {
         <Card
           className={
             status.type === "success"
-              ? "border-emerald-200 bg-emerald-50/30"
-              : "border-rose-200 bg-rose-50/30"
+              ? "border-pos/30 bg-pos/10"
+              : "border-destructive/30 bg-destructive/10"
           }
         >
           <CardContent className="py-3">
             <div className="flex items-start gap-2">
               {status.type === "success" ? (
-                <CheckCircle2 className="h-4 w-4 text-emerald-600 mt-0.5" />
+                <CheckCircle2 className="h-4 w-4 text-pos mt-0.5" />
               ) : (
-                <AlertCircle className="h-4 w-4 text-rose-600 mt-0.5" />
+                <AlertCircle className="h-4 w-4 text-destructive mt-0.5" />
               )}
               <p
-                className={`text-sm ${status.type === "success" ? "text-emerald-700" : "text-rose-700"}`}
+                className={`text-sm ${status.type === "success" ? "text-pos" : "text-destructive"}`}
               >
                 {status.message}
               </p>

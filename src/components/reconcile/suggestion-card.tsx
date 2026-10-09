@@ -54,12 +54,12 @@ export function SuggestionCard({
 }) {
   const isExact = suggestion.strategy === "exact_hash";
   return (
-    <div className="border-b bg-sky-50/40 p-3 space-y-2">
+    <div className="border-b bg-info/10 p-3 space-y-2">
       <div className="flex items-center gap-2 text-xs">
-        <span className="font-semibold uppercase tracking-wide text-sky-900">
+        <span className="font-semibold uppercase tracking-wide text-info">
           {isExact ? "Exact match" : "Fuzzy match"}
         </span>
-        <span className="text-sky-700/80">
+        <span className="text-info/80">
           {isExact
             ? "import_hash match"
             : `score ${suggestion.score.toFixed(2)} · ${suggestion.reason}`}
@@ -111,7 +111,7 @@ export function SuggestionCard({
           variant="outline"
           disabled={busy}
           onClick={() => onAccept(suggestion)}
-          className="h-7 text-xs bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+          className="h-7 text-xs bg-pos/10 text-pos border-pos/30 hover:bg-pos/10"
         >
           <Check className="h-3 w-3 mr-1" />
           Accept

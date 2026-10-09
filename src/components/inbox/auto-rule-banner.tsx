@@ -86,17 +86,17 @@ export function AutoRuleBanner({
   const hasMore = data.items.length > PREVIEW_LIMIT;
 
   return (
-    <Card className="border-emerald-500/30 bg-emerald-500/5">
+    <Card className="border-pos/30 bg-pos/5">
       <CardContent className="py-4 space-y-3">
         <div className="flex items-center gap-2 flex-wrap">
-          <Sparkles className="h-4 w-4 text-emerald-500" />
+          <Sparkles className="h-4 w-4 text-pos" />
           <p className="text-sm font-medium">
             {data.count} row{data.count === 1 ? "" : "s"} auto-applied by rules
             in the last {data.windowDays} day{data.windowDays === 1 ? "" : "s"}
           </p>
           <Badge
             variant="outline"
-            className="text-[10px] font-mono uppercase border-emerald-500/40 text-emerald-600 dark:text-emerald-400"
+            className="text-[10px] font-mono uppercase border-pos/40 text-pos"
           >
             rule
           </Badge>
@@ -123,7 +123,7 @@ export function AutoRuleBanner({
                 )}
                 <span
                   className={`font-mono w-20 text-right shrink-0 ${
-                    item.amount < 0 ? "text-rose-500" : "text-emerald-500"
+                    item.amount < 0 ? "text-destructive" : "text-pos"
                   }`}
                 >
                   {formatCurrency(item.amount, item.currency || "CAD")}

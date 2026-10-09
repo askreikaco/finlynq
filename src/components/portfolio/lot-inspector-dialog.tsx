@@ -323,7 +323,7 @@ export function LotInspectorDialog({
 
         {loading && <p className="text-sm text-muted-foreground">Loading lots…</p>}
         {error && !loading && (
-          <p className="text-sm text-rose-600 dark:text-rose-400">{error}</p>
+          <p className="text-sm text-destructive">{error}</p>
         )}
         {!loading && !error && lots.length === 0 && (
           <p className="text-sm text-muted-foreground">
@@ -373,7 +373,7 @@ export function LotInspectorDialog({
               </div>
             </div>
             {hasTemporalWarning && (
-              <div className="rounded-md border border-amber-300 dark:border-amber-700 bg-amber-50/60 dark:bg-amber-950/30 px-3 py-2 text-xs text-amber-800 dark:text-amber-300">
+              <div className="rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning">
                 Some closures below consume a lot that opened{" "}
                 <strong>after</strong> the close date (marked ⚠). This usually
                 means a sell was imported before its buy, opening a phantom
@@ -381,10 +381,10 @@ export function LotInspectorDialog({
               </div>
             )}
             {rebuildError && (
-              <p className="text-xs text-rose-600 dark:text-rose-400">{rebuildError}</p>
+              <p className="text-xs text-destructive">{rebuildError}</p>
             )}
             {rebuildResult && (
-              <div className="rounded-md border border-emerald-300 dark:border-emerald-700 bg-emerald-50/60 dark:bg-emerald-950/30 px-3 py-2 text-xs text-emerald-800 dark:text-emerald-300 space-y-1">
+              <div className="rounded-md border border-pos/30 bg-pos/10 px-3 py-2 text-xs text-pos space-y-1">
                 <p>
                   Rebuilt {rebuildResult.lotsWritten} lot
                   {rebuildResult.lotsWritten === 1 ? "" : "s"} and{" "}
@@ -394,7 +394,7 @@ export function LotInspectorDialog({
                   {rebuildResult.txProcessed === 1 ? "" : "s"}.
                 </p>
                 {rebuildResult.warnings.length > 0 && (
-                  <ul className="list-disc pl-4 text-amber-700 dark:text-amber-400">
+                  <ul className="list-disc pl-4 text-warning">
                     {rebuildResult.warnings.map((w, i) => (
                       <li key={i}>{w}</li>
                     ))}
@@ -413,7 +413,7 @@ export function LotInspectorDialog({
                 Reassign sell tx #{editTxId}
               </h3>
               <span
-                className={`text-xs font-mono ${sumMatches ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}
+                className={`text-xs font-mono ${sumMatches ? "text-pos" : "text-destructive"}`}
               >
                 {allocTotal.toLocaleString(getDisplayLocale())} / {closureTotalForEdit.toLocaleString(getDisplayLocale())} sh
               </span>
@@ -458,12 +458,12 @@ export function LotInspectorDialog({
             </div>
 
             {reassignError && (
-              <p className="text-xs text-rose-600 dark:text-rose-400">{reassignError}</p>
+              <p className="text-xs text-destructive">{reassignError}</p>
             )}
 
             {preview && (
-              <div className="rounded-md border border-amber-300 dark:border-amber-700 bg-amber-50/60 dark:bg-amber-950/30 px-3 py-2 text-xs space-y-1">
-                <p className="font-medium text-amber-800 dark:text-amber-300">Preview</p>
+              <div className="rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-xs space-y-1">
+                <p className="font-medium text-warning">Preview</p>
                 {preview.openedShortLots.length > 0 ? (
                   <p>
                     Opens {preview.openedShortLots.length} short lot
@@ -529,7 +529,7 @@ export function LotInspectorDialog({
                       </Badge>
                       <Badge
                         variant="outline"
-                        className={`text-[10px] ${lot.status === "open" ? "border-emerald-500 text-emerald-600 dark:text-emerald-400" : ""}`}
+                        className={`text-[10px] ${lot.status === "open" ? "border-pos text-pos" : ""}`}
                       >
                         {lot.status}
                       </Badge>
@@ -553,7 +553,7 @@ export function LotInspectorDialog({
                           <span className="text-muted-foreground flex items-center gap-1.5">
                             {c.openAfterClose && (
                               <span
-                                className="text-amber-600 dark:text-amber-400"
+                                className="text-warning"
                                 title={`This closure (${c.closeDate}) consumes a lot that opened later — likely a sell imported before its buy. Rebuild this ticker to fix.`}
                               >
                                 ⚠
@@ -569,8 +569,8 @@ export function LotInspectorDialog({
                             <span
                               className={
                                 c.realizedGain >= 0
-                                  ? "text-emerald-600 dark:text-emerald-400"
-                                  : "text-rose-600 dark:text-rose-400"
+                                  ? "text-pos"
+                                  : "text-destructive"
                               }
                             >
                               {c.realizedGain >= 0 ? "+" : ""}

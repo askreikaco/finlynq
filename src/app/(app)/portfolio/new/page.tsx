@@ -158,9 +158,9 @@ function PortfolioNewInner() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <PageHeader
             title="New portfolio operation"
-            titleClassName="text-2xl font-semibold"
+            titleClassName="text-2xl font-bold tracking-tight"
             subtitle="Pick the operation that matches what happened in your account."
-            subtitleClassName="text-sm text-muted-foreground"
+            subtitleClassName="text-sm text-muted-foreground mt-0.5"
           />
         <Link
           href="/portfolio"

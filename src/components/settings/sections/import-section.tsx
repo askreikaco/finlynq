@@ -131,7 +131,7 @@ export function ImportSettingsCard() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-info/10 text-info">
               {confirmCsvMapping ? (
                 <ToggleRight className="h-5 w-5" />
               ) : (
@@ -179,7 +179,7 @@ export function ImportSettingsCard() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-warning/10 text-warning">
               <EyeOff className="h-5 w-5" />
             </div>
             <div>
@@ -202,7 +202,7 @@ export function ImportSettingsCard() {
             <EyeOff className="h-4 w-4 text-muted-foreground" />
             Manage account visibility
             {hiddenAccountCount !== null && hiddenAccountCount > 0 && (
-              <span className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+              <span className="ml-1 rounded-full bg-warning/10 px-2 py-0.5 text-[11px] font-medium text-warning">
                 {hiddenAccountCount} hidden
               </span>
             )}
@@ -369,7 +369,7 @@ export function ImportEmailItem() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Mail className="h-5 w-5 text-blue-600" />
+                  <Mail className="h-5 w-5 text-info" />
                   Import via Email
                 </CardTitle>
                 <CardDescription>
@@ -536,7 +536,7 @@ export function ImportMigrateItem() {
                     onClick={() => setProvider("wealthposition")}
                     className="flex items-start gap-3 rounded-lg border p-4 text-left transition-colors hover:bg-muted/40"
                   >
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                       <LinkIcon className="h-5 w-5" />
                     </div>
                     <div>
@@ -552,7 +552,7 @@ export function ImportMigrateItem() {
                     onClick={() => setProvider("moneypro")}
                     className="flex items-start gap-3 rounded-lg border p-4 text-left transition-colors hover:bg-muted/40"
                   >
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-pos/10 text-pos">
                       <FileSpreadsheet className="h-5 w-5" />
                     </div>
                     <div>
@@ -567,7 +567,7 @@ export function ImportMigrateItem() {
                     onClick={() => setProvider("generic-csv")}
                     className="flex items-start gap-3 rounded-lg border p-4 text-left transition-colors hover:bg-muted/40"
                   >
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-100 text-sky-600">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-info/10 text-info">
                       <FileSpreadsheet className="h-5 w-5" />
                     </div>
                     <div>

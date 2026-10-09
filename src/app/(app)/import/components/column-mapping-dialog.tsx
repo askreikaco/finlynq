@@ -345,9 +345,9 @@ export function ColumnMappingDialog({
 
         <div className="overflow-auto flex-1 space-y-4 pr-1">
           {localSuggested && (
-            <div className="flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50/40 p-2.5">
-              <Sparkles className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
-              <p className="text-xs text-blue-800">
+            <div className="flex items-start gap-2 rounded-lg border border-info/30 bg-info/10 p-2.5">
+              <Sparkles className="h-4 w-4 text-info shrink-0 mt-0.5" />
+              <p className="text-xs text-info">
                 We&apos;ve pre-filled our best guesses. Double-check Date, Amount, and Account
                 before continuing.
               </p>
@@ -437,7 +437,7 @@ export function ColumnMappingDialog({
                   onChange={(e) =>
                     setMapping((prev) => ({ ...prev, flipSign: e.target.checked }))
                   }
-                  className="h-4 w-4 mt-0.5 rounded border-gray-300"
+                  className="h-4 w-4 mt-0.5 rounded border-border"
                 />
                 <span className="flex-1">
                   <span className="block text-sm font-medium">Flip sign of amounts</span>
@@ -458,9 +458,9 @@ export function ColumnMappingDialog({
           </details>
 
           {noColumns && (
-            <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50/50 px-3 py-2">
-              <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
-              <p className="text-xs text-amber-700">
+            <div className="flex items-center gap-2 rounded-lg border border-warning/30 bg-warning/10 px-3 py-2">
+              <AlertCircle className="h-4 w-4 text-warning shrink-0" />
+              <p className="text-xs text-warning">
                 No columns found — you may have skipped past the end of the file.
                 Lower the skip count.
               </p>
@@ -661,9 +661,9 @@ export function ColumnMappingDialog({
           </div>
 
           {error && (
-            <div className="flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50/50 px-3 py-2">
-              <AlertCircle className="h-4 w-4 text-rose-600 shrink-0" />
-              <p className="text-xs text-rose-700">{error}</p>
+            <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2">
+              <AlertCircle className="h-4 w-4 text-destructive shrink-0" />
+              <p className="text-xs text-destructive">{error}</p>
             </div>
           )}
         </div>

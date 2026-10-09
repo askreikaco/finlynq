@@ -85,11 +85,11 @@ const DUE_SOON_DAYS = 30;
 const STATUS_BADGE: Record<string, { label: string; className: string }> = {
   paused: {
     label: "Paused",
-    className: "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-900/60",
+    className: "bg-warning/10 text-warning border-warning/30",
   },
   cancelled: {
     label: "Cancelled",
-    className: "bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-900/60",
+    className: "bg-destructive/10 text-destructive border-destructive/30",
   },
 };
 
@@ -202,9 +202,9 @@ function SubscriptionsPageContent() {
   }, [subs, sortField, today]);
 
   const groups: { key: string; title: string; icon: React.ReactNode; rows: Subscription[] }[] = [
-    { key: "active", title: "Active", icon: <Play className="h-4 w-4 text-emerald-500" />, rows: sorted.filter((s) => s.status === "active") },
-    { key: "paused", title: "Paused", icon: <Pause className="h-4 w-4 text-amber-500" />, rows: sorted.filter((s) => s.status === "paused") },
-    { key: "cancelled", title: "Cancelled", icon: <XCircle className="h-4 w-4 text-rose-500" />, rows: sorted.filter((s) => s.status === "cancelled") },
+    { key: "active", title: "Active", icon: <Play className="h-4 w-4 text-pos" />, rows: sorted.filter((s) => s.status === "active") },
+    { key: "paused", title: "Paused", icon: <Pause className="h-4 w-4 text-warning" />, rows: sorted.filter((s) => s.status === "paused") },
+    { key: "cancelled", title: "Cancelled", icon: <XCircle className="h-4 w-4 text-destructive" />, rows: sorted.filter((s) => s.status === "cancelled") },
   ];
 
   // ── dialog openers ─────────────────────────────────────────────────────────
@@ -336,8 +336,8 @@ function SubscriptionsPageContent() {
         className="flex flex-wrap items-start justify-between gap-3"
         title="Subscriptions"
         subtitle="Recurring bills and subscriptions: what they cost and when they're due."
-        titleClassName="text-2xl font-bold"
-        subtitleClassName="text-sm text-muted-foreground mt-1"
+        titleClassName="text-2xl font-bold tracking-tight"
+        subtitleClassName="text-sm text-muted-foreground mt-0.5"
         actions={
           <Button onClick={openAdd}>
             <Plus className="h-4 w-4 mr-1" /> Add subscription
@@ -573,14 +573,14 @@ function SubscriptionRowCard({
             <h3 className="font-semibold truncate">{sub.name ?? "Subscription"}</h3>
             {statusBadge && <Badge className={statusBadge.className}>{statusBadge.label}</Badge>}
             {rel === "today" || rel === "tomorrow" ? (
-              <Badge className="bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-900/60">
+              <Badge className="bg-warning/10 text-warning border-warning/30">
                 Due {rel}
               </Badge>
             ) : null}
           </div>
           <p className="text-xs text-muted-foreground mt-0.5 truncate">{meta}</p>
           {sub.cancelReminderDate && (
-            <p className="text-xs text-orange-600 dark:text-orange-400 mt-0.5 flex items-center gap-1">
+            <p className="text-xs text-warning mt-0.5 flex items-center gap-1">
               <Bell className="h-3 w-3" /> Cancel reminder {formatDate(sub.cancelReminderDate)}
             </p>
           )}

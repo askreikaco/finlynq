@@ -797,8 +797,8 @@ export default function InvestmentsSettingsPage() {
         <div
           className={`rounded-lg border p-3 text-sm ${
             toast.type === "success"
-              ? "border-emerald-300 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200 dark:border-emerald-900"
-              : "border-rose-300 bg-rose-50 text-rose-800 dark:bg-rose-950/40 dark:text-rose-200 dark:border-rose-900"
+              ? "border-pos/30 bg-pos/10 text-pos"
+              : "border-destructive/30 bg-destructive/10 text-destructive"
           }`}
         >
           {toast.msg}
@@ -827,13 +827,13 @@ export default function InvestmentsSettingsPage() {
             const flagged = allSecurities.filter((s) => advisoryFor(s));
             if (flagged.length === 0) return null;
             return (
-              <Card className="border-amber-300 bg-amber-50/50 dark:border-amber-900/50 dark:bg-amber-950/20">
+              <Card className="border-warning/30 bg-warning/10">
                 <CardContent className="space-y-2 py-3">
-                  <div className="flex items-center gap-2 text-sm font-medium text-amber-700 dark:text-amber-400">
+                  <div className="flex items-center gap-2 text-sm font-medium text-warning">
                     <AlertTriangle className="h-4 w-4" />
                     {flagged.length === 1 ? "A ticker can't be priced" : "Some tickers can't be priced"}
                   </div>
-                  <ul className="space-y-1 text-xs text-amber-800/90 dark:text-amber-200/80">
+                  <ul className="space-y-1 text-xs text-warning/90">
                     {flagged.map((s) => {
                       const a = advisoryFor(s)!;
                       return (
@@ -852,7 +852,7 @@ export default function InvestmentsSettingsPage() {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="h-6 shrink-0 border-amber-400 px-2 text-[11px] text-amber-800 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-200 dark:hover:bg-amber-900/40"
+                              className="h-6 shrink-0 border-warning/30 px-2 text-[11px] text-warning hover:bg-warning/10"
                               onClick={() => setTickerTarget({ security: s, toSymbol: a.suggestedSymbol! })}
                             >
                               Change to {a.suggestedSymbol}
@@ -864,7 +864,7 @@ export default function InvestmentsSettingsPage() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="h-6 shrink-0 border-amber-400 px-2 text-[11px] text-amber-800 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-200 dark:hover:bg-amber-900/40"
+                                className="h-6 shrink-0 border-warning/30 px-2 text-[11px] text-warning hover:bg-warning/10"
                                 onClick={() => openRename(s)}
                               >
                                 Fix symbol
@@ -873,7 +873,7 @@ export default function InvestmentsSettingsPage() {
                                 variant="outline"
                                 size="sm"
                                 disabled={manualBusyId === s.id}
-                                className="h-6 shrink-0 border-amber-400 px-2 text-[11px] text-amber-800 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-200 dark:hover:bg-amber-900/40"
+                                className="h-6 shrink-0 border-warning/30 px-2 text-[11px] text-warning hover:bg-warning/10"
                                 onClick={() => switchToManualPricing(s)}
                               >
                                 {manualBusyId === s.id && (
@@ -887,7 +887,7 @@ export default function InvestmentsSettingsPage() {
                       );
                     })}
                   </ul>
-                  <p className="text-[11px] text-amber-700/80 dark:text-amber-300/70">
+                  <p className="text-[11px] text-warning/80">
                     Until this is resolved these holdings have no market price, so they don&apos;t
                     contribute to your portfolio value.
                   </p>
@@ -946,7 +946,7 @@ export default function InvestmentsSettingsPage() {
                               className="ml-1.5 inline-flex align-text-bottom"
                               title={advisoryFor(r.s)!.message}
                             >
-                              <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                              <AlertTriangle className="h-3.5 w-3.5 text-warning" />
                             </span>
                           )}
                         </TableCell>
@@ -968,7 +968,7 @@ export default function InvestmentsSettingsPage() {
                             <div className="flex flex-col gap-0.5">
                               <Badge
                                 variant="secondary"
-                                className="w-fit text-[10px] border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-300"
+                                className="w-fit text-[10px] border-warning/30 bg-warning/10 text-warning"
                               >
                                 Manual
                               </Badge>
@@ -977,7 +977,7 @@ export default function InvestmentsSettingsPage() {
                                   {formatCurrency(r.s.latestPrice.price, r.s.currency)} · {r.s.latestPrice.date}
                                 </span>
                               ) : (
-                                <span className="text-[11px] text-amber-600 dark:text-amber-400">
+                                <span className="text-[11px] text-warning">
                                   No price yet
                                 </span>
                               )}
@@ -999,13 +999,13 @@ export default function InvestmentsSettingsPage() {
                               <Pencil className="h-3.5 w-3.5 mr-1" /> Edit
                             </Button>
                             {r.s.accounts.length === 0 && (
-                              <Button
+                              <Button aria-label="Delete this unused security"
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => setDeleteTarget(r.s)}
                                 title="Delete this unused security"
                               >
-                                <Trash2 className="h-3.5 w-3.5 text-rose-500" />
+                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
                               </Button>
                             )}
                           </div>
@@ -1078,14 +1078,14 @@ export default function InvestmentsSettingsPage() {
                                   <span className="ml-1.5 text-[10px] text-muted-foreground">cash sleeve</span>
                                 )}
                               </span>
-                              <Button
+                              <Button aria-label="Unlink (transaction-free positions only)"
                                 variant="ghost"
                                 size="sm"
                                 className="h-7 px-2 text-xs"
                                 onClick={() => unlinkPosition(a.positionId)}
                                 title="Unlink (transaction-free positions only)"
                               >
-                                <Trash2 className="h-3.5 w-3.5 text-rose-500" />
+                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
                               </Button>
                             </div>
                           ))
@@ -1157,14 +1157,14 @@ export default function InvestmentsSettingsPage() {
                                   </span>
                                 )}
                               </span>
-                              <Button
+                              <Button aria-label="Unlink (transaction-free positions only)"
                                 variant="ghost"
                                 size="sm"
                                 className="h-7 px-2 text-xs"
                                 onClick={() => unlinkPosition(positionId)}
                                 title="Unlink (transaction-free positions only)"
                               >
-                                <Trash2 className="h-3.5 w-3.5 text-rose-500" />
+                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
                               </Button>
                             </div>
                           ))
@@ -1215,7 +1215,7 @@ export default function InvestmentsSettingsPage() {
                   <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
                 )}
               </div>
-              {addErrors.symbol && <p className="text-xs text-rose-600 mt-1">{addErrors.symbol}</p>}
+              {addErrors.symbol && <p className="text-xs text-destructive mt-1">{addErrors.symbol}</p>}
               <p className="text-[11px] text-muted-foreground mt-1">
                 We’ll try to fill the name + currency from the ticker; edit them if needed.
               </p>
@@ -1243,7 +1243,7 @@ export default function InvestmentsSettingsPage() {
                   placeholder="USD"
                   maxLength={4}
                 />
-                {addErrors.currency && <p className="text-xs text-rose-600 mt-1">{addErrors.currency}</p>}
+                {addErrors.currency && <p className="text-xs text-destructive mt-1">{addErrors.currency}</p>}
               </div>
               <label className="flex items-end gap-2 text-sm cursor-pointer pb-2">
                 <input
@@ -1284,7 +1284,7 @@ export default function InvestmentsSettingsPage() {
                 className={cn(
                   "text-[11px] mt-1",
                   addPriceSource === "manual"
-                    ? "text-amber-600 dark:text-amber-400"
+                    ? "text-warning"
                     : "text-muted-foreground",
                 )}
               >
@@ -1341,7 +1341,7 @@ export default function InvestmentsSettingsPage() {
                   )}
                 </SelectContent>
               </Select>
-              {linkError && <p className="text-xs text-rose-600 mt-1">{linkError}</p>}
+              {linkError && <p className="text-xs text-destructive mt-1">{linkError}</p>}
             </div>
           </div>
           <DialogFooter>
@@ -1375,7 +1375,7 @@ export default function InvestmentsSettingsPage() {
                 maxLength={4}
                 autoFocus
               />
-              {cashError && <p className="text-xs text-rose-600 mt-1">{cashError}</p>}
+              {cashError && <p className="text-xs text-destructive mt-1">{cashError}</p>}
             </div>
           </div>
           <DialogFooter>
@@ -1414,7 +1414,7 @@ export default function InvestmentsSettingsPage() {
                   className="font-mono"
                 />
                 {renameErrors.symbol ? (
-                  <p className="text-xs text-rose-600 mt-1">{renameErrors.symbol}</p>
+                  <p className="text-xs text-destructive mt-1">{renameErrors.symbol}</p>
                 ) : (
                   <p className="text-[11px] text-muted-foreground mt-1">
                     {advisoryFor(renameSecurity)
@@ -1431,7 +1431,7 @@ export default function InvestmentsSettingsPage() {
                 onChange={(e) => setRenameValue(e.target.value)}
                 placeholder="e.g. Apple Inc."
               />
-              {renameErrors.name && <p className="text-xs text-rose-600 mt-1">{renameErrors.name}</p>}
+              {renameErrors.name && <p className="text-xs text-destructive mt-1">{renameErrors.name}</p>}
             </div>
             {/* Asset type override is meaningful only for tradable securities
                 (the eq: stock/etf bucket). Cash sleeves / metals / crypto derive

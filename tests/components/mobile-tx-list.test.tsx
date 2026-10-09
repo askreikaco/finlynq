@@ -103,7 +103,7 @@ describe("MobileTxList", () => {
       const row = screen.getByRole("button", { name: /Walmart/i });
       // Check for emerald color on the amount
       const amount = within(row as HTMLElement).getByText(/\+\$100/);
-      expect(amount).toHaveClass("text-emerald-600");
+      expect(amount).toHaveClass("text-pos");
     });
 
     it("shows outgoing icon and default color for negative amounts", () => {

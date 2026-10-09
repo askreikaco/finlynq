@@ -36,6 +36,7 @@ vi.mock("next/navigation", () => ({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   useParams: vi.fn() as any,
   useSearchParams: () => new URLSearchParams(),
+  usePathname: () => "/account/info",
 }));
 
 // Mock fetch globally
@@ -47,7 +48,7 @@ afterEach(() => {
 });
 
 describe("BackButton adoption: ReconcileVisibility page", () => {
-  it("renders with back button href=/settings/import and aria-label='Import settings'", async () => {
+  it("renders with back button href=/settings/import and aria-label='Back to Import settings'", async () => {
     const { useParams } = await import("next/navigation");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.mocked(useParams).mockReturnValue({} as any);
@@ -59,7 +60,7 @@ describe("BackButton adoption: ReconcileVisibility page", () => {
 
     render(<ReconcileVisibilityPage />);
 
-    const backButton = screen.queryByRole("link", { name: /Import settings/i });
+    const backButton = screen.queryByRole("link", { name: "Back to Import settings" });
     expect(backButton).toBeTruthy();
     expect(backButton?.getAttribute("href")).toBe("/settings/import");
     expect(backButton?.getAttribute("data-slot")).toBe("back-button");
@@ -174,7 +175,7 @@ describe("BackButton adoption: Category page", () => {
     // Wait for async rendering
     await new Promise((resolve) => setTimeout(resolve, 100));
 
-    const backButton = screen.queryByRole("link", { name: /Categories/i });
+    const backButton = screen.queryByRole("link", { name: "Back to Categories" });
     expect(backButton).toBeTruthy();
     expect(backButton?.getAttribute("href")).toBe("/categories");
     expect(backButton?.getAttribute("data-slot")).toBe("back-button");
@@ -236,7 +237,7 @@ describe("BackButton adoption: Category page", () => {
     // Wait for async rendering
     await new Promise((resolve) => setTimeout(resolve, 100));
 
-    const backButton = screen.queryByRole("link", { name: /Categories/i });
+    const backButton = screen.queryByRole("link", { name: "Back to Categories" });
     expect(backButton).toBeTruthy();
     expect(backButton?.getAttribute("href")).toBe("/categories?type=I");
     expect(backButton?.getAttribute("data-slot")).toBe("back-button");
@@ -244,5 +245,21 @@ describe("BackButton adoption: Category page", () => {
     // Check page content is present (h1 with category name)
     const heading = screen.queryByRole("heading", { name: /Salary/i });
     expect(heading).toBeTruthy();
+  });
+});
+
+describe("BackButton adoption: AccountShell", () => {
+  it("renders back button href=/account with aria-label='Back to Account' on sub-pages when navV2 is on", async () => {
+    const { AccountShell } = await import("@/components/account-shell");
+
+    render(
+      <AccountShell navV2={true}>
+        <div>Account sub-page content</div>
+      </AccountShell>
+    );
+
+    const backButton = screen.getByRole("link", { name: "Back to Account" });
+    expect(backButton.getAttribute("href")).toBe("/account");
+    expect(backButton.getAttribute("data-slot")).toBe("back-button");
   });
 });

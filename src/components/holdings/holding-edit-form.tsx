@@ -413,7 +413,7 @@ export function HoldingEditForm({
           placeholder={isCreateMode ? "e.g. Apple Inc., Bitcoin, Cash USD" : undefined}
         />
         {errors.name && (
-          <p className="text-[11px] text-rose-600 dark:text-rose-400">{errors.name}</p>
+          <p className="text-[11px] text-destructive">{errors.name}</p>
         )}
       </div>
 
@@ -444,7 +444,7 @@ export function HoldingEditForm({
             </SelectContent>
           </Select>
           {errors.accountId && (
-            <p className="text-[11px] text-rose-600 dark:text-rose-400">
+            <p className="text-[11px] text-destructive">
               {errors.accountId}
             </p>
           )}
@@ -510,7 +510,7 @@ export function HoldingEditForm({
           )}
         </p>
         {errors.currency && (
-          <p className="text-[11px] text-rose-600 dark:text-rose-400">
+          <p className="text-[11px] text-destructive">
             {errors.currency}
           </p>
         )}
