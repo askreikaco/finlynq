@@ -225,10 +225,10 @@ export function IncomeExpenseChart({
               {/* Legend */}
               <div className="flex items-center justify-center gap-5 mt-2">
                 <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                  <div className="h-2 w-2 rounded-full bg-emerald-500" /> Income
+                  <div className="h-2 w-2 rounded-full bg-pos" /> Income
                 </div>
                 <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                  <div className="h-2 w-2 rounded-full bg-rose-500" /> Expenses
+                  <div className="h-2 w-2 rounded-full bg-destructive" /> Expenses
                 </div>
               </div>
             </>

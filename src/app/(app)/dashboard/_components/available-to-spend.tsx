@@ -28,32 +28,32 @@ export function AvailableToSpend({ income, expenses, currency, monthLabel }: Pro
       tone="cyan"
       value={Math.abs(available)}
       currency={resolvedCurrency}
-      valueClassName={available >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-500"}
+      valueClassName={available >= 0 ? "text-pos" : "text-destructive"}
       sub={monthLabel ? `${monthLabel} remaining` : "This month remaining"}
     >
       {income > 0 && (
         <div className="mt-4 space-y-2">
           <div className="flex justify-between text-[12px]">
             <span className="text-muted-foreground">Income</span>
-            <span className="font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">
+            <span className="font-semibold text-pos tabular-nums">
               {formatCurrency(income, resolvedCurrency)}
             </span>
           </div>
           <div className="flex justify-between text-[12px]">
             <span className="text-muted-foreground">Spent so far</span>
-            <span className="font-semibold text-rose-500 tabular-nums">
+            <span className="font-semibold text-destructive tabular-nums">
               -{formatCurrency(expenses, resolvedCurrency)}
             </span>
           </div>
           <div className="border-t pt-2 flex justify-between text-[12px] font-semibold">
             <span>Remaining</span>
-            <span className={`tabular-nums ${available >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-500"}`}>
+            <span className={`tabular-nums ${available >= 0 ? "text-pos" : "text-destructive"}`}>
               {formatCurrency(available, resolvedCurrency)}
             </span>
           </div>
           <div className="w-full bg-muted/50 rounded-full h-2 overflow-hidden mt-3">
             <motion.div
-              className={`h-full rounded-full ${pctSpent > 100 ? "bg-rose-500" : pctSpent > 80 ? "bg-amber-500" : "bg-emerald-500"}`}
+              className={`h-full rounded-full ${pctSpent > 100 ? "bg-destructive" : pctSpent > 80 ? "bg-warning" : "bg-pos"}`}
               initial={{ width: 0 }}
               animate={{ width: `${Math.min(100, pctSpent)}%` }}
               transition={{ duration: 1, ease: "easeOut", delay: 0.5 }}

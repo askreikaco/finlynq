@@ -94,7 +94,7 @@ export function InsightsSection({ currency }: { currency?: string }) {
       {insights && insights.anomalies.length > 0 && (
         <InsightCard
           icon={AlertTriangle}
-          iconBg="bg-amber-100 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400"
+          iconBg="bg-warning/10 text-warning"
           title="Spending Alerts"
           subtitle="Categories above average"
         >
@@ -102,14 +102,14 @@ export function InsightsSection({ currency }: { currency?: string }) {
             {insights.anomalies.slice(0, 5).map((a, i) => (
               <div
                 key={i}
-                className="flex items-center justify-between p-2.5 rounded-xl bg-amber-50/50 border border-amber-100/80 dark:bg-amber-950/20 dark:border-amber-900/30"
+                className="flex items-center justify-between p-2.5 rounded-xl bg-warning/10 border border-warning/30"
               >
                 <div className="min-w-0">
                   <p className="text-[13px] font-medium">{a.category}</p>
                   <p className="text-[11px] text-muted-foreground">{a.percentAbove}% above avg</p>
                 </div>
                 <div className="text-right shrink-0 ml-2">
-                  <p className="text-[13px] font-mono font-semibold text-amber-700 dark:text-amber-400 tabular-nums">
+                  <p className="text-[13px] font-mono font-semibold text-warning tabular-nums">
                     {formatCurrency(a.currentMonth, resolvedCurrency)}
                   </p>
                   <p className="text-[10px] text-muted-foreground tabular-nums">
@@ -126,7 +126,7 @@ export function InsightsSection({ currency }: { currency?: string }) {
       {recurring && recurring.count > 0 && (
         <InsightCard
           icon={RefreshCw}
-          iconBg="bg-cyan-100 text-cyan-600 dark:bg-cyan-950/60 dark:text-cyan-400"
+          iconBg="bg-info/10 text-info"
           title={`Recurring (${recurring.count})`}
           subtitle={`${formatCurrency(recurring.monthlyRecurringTotal, recurring.displayCurrency || resolvedCurrency)}/month`}
         >
@@ -137,7 +137,7 @@ export function InsightsSection({ currency }: { currency?: string }) {
                   <p className="text-[13px] font-medium">{r.payee}</p>
                   <p className="text-[11px] text-muted-foreground">{r.frequency} &middot; next: {r.nextDate}</p>
                 </div>
-                <p className={`text-[13px] font-mono font-semibold tabular-nums shrink-0 ml-2 ${r.avgAmount < 0 ? "text-rose-500" : "text-emerald-500"}`}>
+                <p className={`text-[13px] font-mono font-semibold tabular-nums shrink-0 ml-2 ${r.avgAmount < 0 ? "text-destructive" : "text-pos"}`}>
                   {formatCurrency(r.avgAmount, r.currency || resolvedCurrency)}
                 </p>
               </div>
@@ -150,7 +150,7 @@ export function InsightsSection({ currency }: { currency?: string }) {
       {insights && insights.topMerchants.length > 0 && (
         <InsightCard
           icon={Store}
-          iconBg="bg-violet-100 text-violet-600 dark:bg-violet-950/60 dark:text-violet-400"
+          iconBg="bg-chart-5/10 text-chart-5"
           title="Top Merchants"
           subtitle="Last 6 months spending"
         >
@@ -161,7 +161,7 @@ export function InsightsSection({ currency }: { currency?: string }) {
                   <p className="text-[13px] font-medium">{m.payee}</p>
                   <p className="text-[11px] text-muted-foreground">{m.count} transactions</p>
                 </div>
-                <p className="text-[13px] font-mono font-semibold text-rose-500 tabular-nums shrink-0 ml-2">
+                <p className="text-[13px] font-mono font-semibold text-destructive tabular-nums shrink-0 ml-2">
                   {formatCurrency(m.totalSpent, resolvedCurrency)}
                 </p>
               </div>
@@ -184,9 +184,9 @@ export function InsightsSection({ currency }: { currency?: string }) {
                 <p className="text-[13px]">{t.category}</p>
                 <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full ${
                   t.trend === "rising"
-                    ? "bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-400"
+                    ? "bg-destructive/10 text-destructive"
                     : t.trend === "declining"
-                      ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400"
+                      ? "bg-pos/10 text-pos"
                       : "bg-muted text-muted-foreground"
                 }`}>
                   {t.trend === "rising" ? <ArrowUpRight className="h-3 w-3" /> : t.trend === "declining" ? <ArrowDownRight className="h-3 w-3" /> : null}
