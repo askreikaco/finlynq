@@ -76,20 +76,20 @@ interface Props {
 function StatusBadge({ status, match }: { status: ReconcileStatus; match?: ReconcileMatch }) {
   if (status === "new") {
     return (
-      <Badge className="bg-emerald-600 text-white text-[10px]">
+      <Badge className="bg-pos text-white text-[10px]">
         <Sparkles className="h-3 w-3 mr-1" /> New
       </Badge>
     );
   }
   if (status === "existing") {
     return (
-      <Badge variant="secondary" className="text-[10px] bg-slate-200 text-slate-700">
+      <Badge variant="secondary" className="text-[10px] bg-muted text-foreground">
         <CheckCircle2 className="h-3 w-3 mr-1" /> Existing
       </Badge>
     );
   }
   return (
-    <Badge variant="secondary" className="text-[10px] bg-amber-100 text-amber-800">
+    <Badge variant="secondary" className="text-[10px] bg-warning/10 text-warning">
       <AlertTriangle className="h-3 w-3 mr-1" />
       Probable duplicate
       {match && match.daysOff > 0 ? ` · ${match.daysOff}d off` : ""}
@@ -171,9 +171,9 @@ export function ReconcilePreviewTable({
                 key={row.rowIndex}
                 className={
                   isExisting
-                    ? "opacity-60 bg-slate-50/40"
+                    ? "opacity-60 bg-muted/40"
                     : isProbable && !row.forceCommit
-                      ? "bg-amber-50/40"
+                      ? "bg-warning/10"
                       : ""
                 }
               >
@@ -181,10 +181,10 @@ export function ReconcilePreviewTable({
                   <div className="flex flex-col gap-1">
                     <StatusBadge status={row.status} match={row.match} />
                     {isProbable && (
-                      <label className="flex items-center gap-1 text-[11px] text-amber-700">
+                      <label className="flex items-center gap-1 text-[11px] text-warning">
                         <input
                           type="checkbox"
-                          className="h-3 w-3 rounded border-amber-400"
+                          className="h-3 w-3 rounded border-warning/30"
                           checked={!!row.forceCommit}
                           onChange={(e) =>
                             onChange(row.rowIndex, { forceCommit: e.target.checked })
@@ -210,7 +210,7 @@ export function ReconcilePreviewTable({
                   )}
                 </TableCell>
                 <TableCell
-                  className={`text-right font-mono text-xs align-top pt-3 ${row.amount < 0 ? "text-rose-600" : "text-emerald-600"}`}
+                  className={`text-right font-mono text-xs align-top pt-3 ${row.amount < 0 ? "text-destructive" : "text-pos"}`}
                 >
                   {formatCurrency(row.amount, row.currency ?? accountCurrency ?? displayCurrency)}
                 </TableCell>
@@ -264,7 +264,7 @@ export function ReconcilePreviewTable({
                     placeholder={needsHolding ? "Required" : "—"}
                     searchPlaceholder="Search…"
                     emptyMessage="No holdings on this account"
-                    className={`h-7 text-xs w-full ${needsHolding && row.portfolioHoldingId == null ? "border-amber-400" : ""}`}
+                    className={`h-7 text-xs w-full ${needsHolding && row.portfolioHoldingId == null ? "border-warning/30" : ""}`}
                     disabled={row.accountId === null}
                   />
                 </TableCell>
