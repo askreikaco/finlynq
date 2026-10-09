@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { cn } from "@/lib/utils";
-import { X, Lightbulb, ArrowRight, ChevronDown } from "lucide-react";
+import { X, Lightbulb, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useSessionUserId, readUserItem, writeUserItem } from "@/lib/client/user-storage";
+import { Disclosure } from "@/components/adaptive";
 
 interface OnboardingTip {
   id: string;
@@ -94,8 +94,6 @@ const TIPS_BY_PAGE: Record<string, OnboardingTip[]> = {
 export function OnboardingTips({ page }: OnboardingTipsProps) {
   const [dismissed, setDismissedState] = useState<Set<string>>(new Set());
   const [mounted, setMounted] = useState(false);
-  // Mobile (<md): collapsed to a one-line "Tips (n)" chip until tapped. Not persisted; dismissal is.
-  const [expanded, setExpanded] = useState(false);
 
   const { userId, ready } = useSessionUserId();
 
@@ -123,72 +121,69 @@ export function OnboardingTips({ page }: OnboardingTipsProps) {
 
   if (!mounted || tips.length === 0) return null;
 
+  // One tree at every size. Below regular the list sits behind the Disclosure header (collapsed by
+  // default); from regular up it is open. Base classes are the phone layout, regular: the desktop one.
   return (
     <motion.div
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
       data-testid="onboarding-tips-compact"
-      className={cn(
-        "rounded-xl border border-primary/30 bg-primary/10 p-4 space-y-3",
-        "max-md:px-3 max-md:py-1 max-md:space-y-0",
-        expanded && "max-md:py-2 max-md:space-y-3",
-      )}
+      className="rounded-xl border border-primary/30 bg-primary/10 px-3 py-1 has-[[data-state=open]]:py-2 regular:p-4 regular:has-[[data-state=open]]:py-4"
     >
-      <div className="flex items-center justify-between">
-        <button
-          type="button"
-          aria-expanded={expanded}
-          onClick={() => setExpanded((v) => !v)}
-          className="flex items-center gap-2 text-left max-md:min-h-11 md:pointer-events-none md:cursor-default"
-        >
-          <Lightbulb className="h-4 w-4 text-primary" />
-          <span className="text-sm font-medium text-primary-text">
-            <span className="md:hidden">Tips ({tips.length})</span>
-            <span className="max-md:hidden">Tips for getting started</span>
-          </span>
-          <ChevronDown className={cn("h-4 w-4 text-primary md:hidden transition-transform", expanded && "rotate-180")} aria-hidden />
-        </button>
-        <button
-          onClick={dismissAll}
-          className="text-xs text-muted-foreground hover:text-foreground transition-colors max-md:min-h-11 max-md:px-2"
-        >
-          Dismiss all
-        </button>
-      </div>
-
-      <div className={cn(!expanded && "max-md:hidden", "space-y-3")}>
-      <AnimatePresence>
-        {tips.map((tip) => (
-          <motion.div
-            key={tip.id}
-            layout
-            exit={{ opacity: 0, height: 0, marginTop: 0 }}
-            className="flex items-start gap-3 rounded-lg bg-white dark:bg-card border border-border p-3"
+      <Disclosure
+        collapseBelow="regular"
+        headerClassName="min-h-11 gap-2 text-left text-primary hover:bg-transparent regular:min-h-0"
+        contentClassName="space-y-3 pt-3"
+        title={
+          <>
+            <Lightbulb className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium text-primary-text">
+              <span className="regular:hidden">Tips ({tips.length})</span>
+              <span className="max-regular:hidden">Tips for getting started</span>
+            </span>
+          </>
+        }
+        trailing={
+          <button
+            onClick={dismissAll}
+            className="min-h-11 px-2 text-xs text-muted-foreground transition-colors hover:text-foreground regular:min-h-0 regular:px-0"
           >
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium">{tip.title}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{tip.description}</p>
-              {tip.action && (
-                <Link
-                  href={tip.action.href}
-                  className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline mt-1.5"
-                >
-                  {tip.action.label}
-                  <ArrowRight className="h-3 w-3" />
-                </Link>
-              )}
-            </div>
-            <button
-              onClick={() => dismiss(tip.id)}
-              aria-label="Dismiss tip"
-              className="text-muted-foreground hover:text-foreground shrink-0 max-md:p-3 max-md:-m-3"
+            Dismiss all
+          </button>
+        }
+      >
+        <AnimatePresence>
+          {tips.map((tip) => (
+            <motion.div
+              key={tip.id}
+              layout
+              exit={{ opacity: 0, height: 0, marginTop: 0 }}
+              className="flex items-start gap-3 rounded-lg bg-white dark:bg-card border border-border p-3"
             >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          </motion.div>
-        ))}
-      </AnimatePresence>
-      </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">{tip.title}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{tip.description}</p>
+                {tip.action && (
+                  <Link
+                    href={tip.action.href}
+                    className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline mt-1.5"
+                  >
+                    {tip.action.label}
+                    <ArrowRight className="h-3 w-3" />
+                  </Link>
+                )}
+              </div>
+              <button
+                onClick={() => dismiss(tip.id)}
+                aria-label="Dismiss tip"
+                className="text-muted-foreground hover:text-foreground shrink-0 p-3 -m-3 regular:m-0 regular:p-0"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </Disclosure>
     </motion.div>
   );
 }
