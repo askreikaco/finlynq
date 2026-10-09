@@ -38,7 +38,7 @@ export function AllocationCharts({
       <Card>
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
-            <PieChartIcon className="h-4 w-4 text-indigo-500" />
+            <PieChartIcon className="h-4 w-4 text-primary" />
             <CardTitle className="text-base">By Asset Type</CardTitle>
           </div>
         </CardHeader>
@@ -84,7 +84,7 @@ export function AllocationCharts({
       <Card>
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
-            <Wallet className="h-4 w-4 text-violet-500" />
+            <Wallet className="h-4 w-4 text-chart-5" />
             <CardTitle className="text-base">By Account</CardTitle>
           </div>
         </CardHeader>

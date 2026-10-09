@@ -40,7 +40,7 @@ export function HoldingsByAccount({
     <Card>
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
-          <Wallet className="h-4 w-4 text-indigo-500" />
+          <Wallet className="h-4 w-4 text-primary" />
           <CardTitle className="text-base">Holdings by Account</CardTitle>
         </div>
         <p className="text-xs text-muted-foreground">Click to expand account details</p>
@@ -155,13 +155,13 @@ export function HoldingsByAccount({
                     </div>
                     <div className="text-right">
                       <p className="text-muted-foreground text-[10px]">Unrealized</p>
-                      <p className={`font-mono font-medium ${acctUnrealized >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                      <p className={`font-mono font-medium ${acctUnrealized >= 0 ? "text-pos" : "text-destructive"}`}>
                         {acctUnrealized >= 0 ? "+" : ""}{formatCurrency(acctUnrealized, displayCurrency)}
                       </p>
                     </div>
                     <div className="text-right">
                       <p className="text-muted-foreground text-[10px]">Realized</p>
-                      <p className={`font-mono font-medium ${acctRealized >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                      <p className={`font-mono font-medium ${acctRealized >= 0 ? "text-pos" : "text-destructive"}`}>
                         {acctRealized !== 0 ? `${acctRealized >= 0 ? "+" : ""}${formatCurrency(acctRealized, displayCurrency)}` : "--"}
                       </p>
                     </div>
@@ -215,11 +215,11 @@ export function HoldingsByAccount({
                                     {h.symbol && <Badge variant="secondary" className="font-mono text-[10px] h-4 px-1">{h.symbol}</Badge>}
                                     <span className="font-medium text-sm">{label}</span>
                                     {hasMetrics && h.quantity != null && h.quantity < 0 && (
-                                      <Badge variant="outline" className="text-[10px] h-4 px-1 border-rose-500 text-rose-600 dark:border-rose-400 dark:text-rose-400" title="Net-short position">Short</Badge>
+                                      <Badge variant="outline" className="text-[10px] h-4 px-1 border-destructive text-destructive" title="Net-short position">Short</Badge>
                                     )}
                                   </div>
                                 </TableCell>
-                                <TableCell className={`text-right font-mono text-sm ${hasMetrics && h.quantity != null && h.quantity < 0 ? "text-rose-600 dark:text-rose-400" : ""}`}>
+                                <TableCell className={`text-right font-mono text-sm ${hasMetrics && h.quantity != null && h.quantity < 0 ? "text-destructive" : ""}`}>
                                   {hasMetrics && h.quantity != null
                                     ? h.quantity.toLocaleString(getDisplayLocale(), { minimumFractionDigits: 0, maximumFractionDigits: h.quantity % 1 === 0 ? 0 : 4 })
                                     : <span className="text-muted-foreground text-xs">--</span>}
@@ -255,11 +255,11 @@ export function HoldingsByAccount({
                                       const pct = h.costBasisDisplay ? (h.unrealizedGainDisplay / h.costBasisDisplay) * 100 : null;
                                       return (
                                         <div>
-                                          <p className={`text-xs font-mono font-medium ${h.unrealizedGainDisplay >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                                          <p className={`text-xs font-mono font-medium ${h.unrealizedGainDisplay >= 0 ? "text-pos" : "text-destructive"}`}>
                                             {h.unrealizedGainDisplay >= 0 ? "+" : ""}{formatCurrency(h.unrealizedGainDisplay, displayCurrency)}
                                           </p>
                                           {pct != null && (
-                                            <p className={`text-[10px] font-mono ${pct >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                                            <p className={`text-[10px] font-mono ${pct >= 0 ? "text-pos" : "text-destructive"}`}>
                                               {pct >= 0 ? "+" : ""}{formatPercent(pct, 2)}
                                             </p>
                                           )}

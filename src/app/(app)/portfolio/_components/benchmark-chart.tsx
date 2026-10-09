@@ -89,7 +89,7 @@ export function BenchmarkChart({
       <CardContent>
         {benchmarkLoading ? (
           <div className="h-64 flex items-center justify-center">
-            <div className="h-8 w-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+            <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
         ) : benchmarks.length > 0 ? (
           <>
@@ -140,7 +140,7 @@ export function BenchmarkChart({
                   <ColorDot color={b.color} className="h-2.5 w-2.5" />
                   <div className="min-w-0 flex-1">
                     <p className="text-xs text-muted-foreground truncate">{b.name}</p>
-                    <p className={`text-sm font-mono font-semibold ${b.returnPct >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                    <p className={`text-sm font-mono font-semibold ${b.returnPct >= 0 ? "text-pos" : "text-destructive"}`}>
                       {b.returnPct >= 0 ? "+" : ""}{formatPercent(b.returnPct, 2)}
                     </p>
                   </div>
