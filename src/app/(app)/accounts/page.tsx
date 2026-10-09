@@ -82,20 +82,20 @@ function SummarySkeleton() {
   return (
     <div className="space-y-6">
       <div>
-        <div className="h-8 w-40 bg-muted animate-pulse rounded-lg" />
-        <div className="h-4 w-64 bg-muted animate-pulse rounded-lg mt-2" />
+        <div className="h-8 w-40 animate-shimmer rounded-lg" />
+        <div className="h-4 w-64 animate-shimmer rounded-lg mt-2" />
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <Card key={i}>
             <CardHeader className="pb-2">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-muted animate-pulse" />
-                <div className="h-4 w-24 bg-muted animate-pulse rounded" />
+                <div className="h-10 w-10 rounded-xl animate-shimmer" />
+                <div className="h-4 w-24 animate-shimmer rounded" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="h-7 w-32 bg-muted animate-pulse rounded mt-1" />
+              <div className="h-7 w-32 animate-shimmer rounded mt-1" />
             </CardContent>
           </Card>
         ))}
@@ -103,19 +103,19 @@ function SummarySkeleton() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {Array.from({ length: 2 }).map((_, i) => (
           <div key={i} className="space-y-4">
-            <div className="h-6 w-28 bg-muted animate-pulse rounded" />
+            <div className="h-6 w-28 animate-shimmer rounded" />
             <Card>
               <CardHeader className="pb-2">
-                <div className="h-4 w-20 bg-muted animate-pulse rounded" />
+                <div className="h-4 w-20 animate-shimmer rounded" />
               </CardHeader>
               <CardContent className="space-y-3">
                 {Array.from({ length: 3 }).map((_, j) => (
                   <div key={j} className="flex items-center justify-between py-2.5 px-3">
                     <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-lg bg-muted animate-pulse" />
-                      <div className="h-4 w-32 bg-muted animate-pulse rounded" />
+                      <div className="h-8 w-8 rounded-lg animate-shimmer" />
+                      <div className="h-4 w-32 animate-shimmer rounded" />
                     </div>
-                    <div className="h-4 w-20 bg-muted animate-pulse rounded" />
+                    <div className="h-4 w-20 animate-shimmer rounded" />
                   </div>
                 ))}
               </CardContent>
@@ -319,7 +319,7 @@ export default function AccountsPage() {
                       remain reporting-only (a cross-currency sum has no native
                       basis). */}
                   <span className="shrink-0 mr-2 text-right">
-                    <span className={`font-mono text-sm font-semibold block ${a.balance >= 0 ? color : "text-rose-600"}`}>
+                    <span className={`font-mono text-sm font-semibold block ${a.balance >= 0 ? color : "text-destructive"}`}>
                       {formatCurrency(a.balance, a.currency)}
                     </span>
                     {a.convertedBalance != null &&
@@ -482,11 +482,11 @@ export default function AccountsPage() {
         ].map(({ label, value, Icon, color }) => (
           <Card key={label}>
             <CardContent className="pt-3 pb-3">
-              <div className={`flex h-7 w-7 items-center justify-center rounded-lg mb-1.5 ${color === "emerald" ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400" : "bg-rose-100 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400"}`}>
+              <div className={`flex h-7 w-7 items-center justify-center rounded-lg mb-1.5 ${color === "emerald" ? "bg-pos/10 text-pos" : "bg-destructive/10 text-destructive"}`}>
                 <Icon className="h-4 w-4" />
               </div>
               <p className="text-xs text-muted-foreground truncate">{label}</p>
-              <p className={`text-lg font-bold mt-0 ${color === "emerald" ? "text-emerald-600" : "text-rose-600"}`}>
+              <p className={`text-lg font-bold mt-0 ${color === "emerald" ? "text-pos" : "text-destructive"}`}>
                 {formatCurrency(value, displayCurrency)}
               </p>
             </CardContent>
@@ -501,8 +501,8 @@ export default function AccountsPage() {
       </CompactOnly>
 
       <FromMd className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {renderSection("Assets", assets, "text-emerald-600", ArrowUpRight, "bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300")}
-        {renderSection("Liabilities", liabilities, "text-rose-600", ArrowDownRight, "bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300")}
+        {renderSection("Assets", assets, "text-pos", ArrowUpRight, "bg-primary/10 text-primary")}
+        {renderSection("Liabilities", liabilities, "text-destructive", ArrowDownRight, "bg-destructive/10 text-destructive")}
       </FromMd>
 
       {/* FINLYNQ-179 — rename / reorder / merge-into-Other account groups */}

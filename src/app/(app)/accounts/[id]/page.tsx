@@ -476,10 +476,10 @@ export default function AccountDetailPage() {
 
   if (!account) return (
     <div className="space-y-6">
-      <div className="h-4 w-32 bg-muted animate-pulse rounded" />
-      <div className="h-8 w-64 bg-muted animate-pulse rounded-lg" />
+      <div className="h-4 w-32 animate-shimmer rounded" />
+      <div className="h-8 w-64 animate-shimmer rounded-lg" />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {[1, 2, 3].map((i) => <div key={i} className="h-24 bg-muted animate-pulse rounded-xl" />)}
+        {[1, 2, 3].map((i) => <div key={i} className="h-24 animate-shimmer rounded-xl" />)}
       </div>
     </div>
   );
@@ -529,7 +529,7 @@ export default function AccountDetailPage() {
         titleClassName="text-2xl font-bold tracking-tight"
         actionsClassName="flex flex-wrap items-center gap-1.5 w-full sm:w-auto"
         lead={
-          <div className={`h-10 w-10 shrink-0 rounded-xl flex items-center justify-center text-sm font-bold ${account.type === "A" ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
+          <div className={`h-10 w-10 shrink-0 rounded-xl flex items-center justify-center text-sm font-bold ${account.type === "A" ? "bg-pos/10 text-pos" : "bg-destructive/10 text-destructive"}`}>
             {(account.name ?? "?").charAt(0)}
           </div>
         }
@@ -609,7 +609,7 @@ export default function AccountDetailPage() {
             <p className="text-xs font-medium text-muted-foreground">
               {holdingsValue && holdingsValue > 0 ? "Market value" : "Balance"}
             </p>
-            <p className={`text-3xl font-bold tracking-tight mt-2 ${displayBalance >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+            <p className={`text-3xl font-bold tracking-tight mt-2 ${displayBalance >= 0 ? "text-pos" : "text-destructive"}`}>
               {formatCurrency(displayBalance, account.currency)}
             </p>
             {holdingsValue && holdingsValue > 0 && cashFlowBasis !== null ? (
@@ -877,7 +877,7 @@ export default function AccountDetailPage() {
           disables URL sync; the other filter options stay available.
           `onDataChange` keeps the header tiles (balance + tx count) in sync
           after a bulk/inline edit. Wrapped in Suspense for its useSearchParams. */}
-      <Suspense fallback={<div className="h-40 bg-muted animate-pulse rounded-xl" />}>
+      <Suspense fallback={<div className="h-40 animate-shimmer rounded-xl" />}>
         <TransactionsWorkspace
           lockedAccountId={account.id}
           showHeader={false}
@@ -1099,7 +1099,7 @@ export default function AccountDetailPage() {
             content: (
               <>
                 <div className="flex items-center gap-2">
-                  <Inbox className="h-4 w-4 text-sky-600" />
+                  <Inbox className="h-4 w-4 text-info" />
                   <h3 className="text-sm font-medium">Reconciliation mode</h3>
                 </div>
                 <p className="text-xs text-muted-foreground">
@@ -1121,7 +1121,7 @@ export default function AccountDetailPage() {
             content: (
               <>
                 <div className="flex items-center gap-2">
-                  <FileCog className="h-4 w-4 text-violet-600" />
+                  <FileCog className="h-4 w-4 text-chart-5" />
                   <h3 className="text-sm font-medium">Import preferences</h3>
                 </div>
                 <p className="text-xs text-muted-foreground">
@@ -1152,7 +1152,7 @@ export default function AccountDetailPage() {
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <div className="flex items-center gap-2">
-                      <Coins className="h-4 w-4 text-emerald-600" />
+                      <Coins className="h-4 w-4 text-pos" />
                       <h3 className="text-sm font-medium">Cash sleeves</h3>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
@@ -1166,7 +1166,7 @@ export default function AccountDetailPage() {
                   </Button>
                 </div>
                 {sleevesLoading && sleeves.length === 0 ? (
-                  <div className="h-12 bg-muted animate-pulse rounded-md" />
+                  <div className="h-12 animate-shimmer rounded-md" />
                 ) : sleeves.length === 0 ? (
                   <p className="text-sm text-muted-foreground py-4 text-center">
                     No cash sleeves yet. Add one to start recording trades.
@@ -1194,7 +1194,7 @@ export default function AccountDetailPage() {
                             {s.txCount ?? 0}
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button
+                            <Button aria-label="Delete sleeve"
                               size="sm"
                               variant="ghost"
                               disabled={(s.txCount ?? 0) > 0}
@@ -1208,7 +1208,7 @@ export default function AccountDetailPage() {
                                 setDeleteSleeveId(s.id);
                               }}
                             >
-                              <Trash2 className="h-3.5 w-3.5 text-rose-600" />
+                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
                             </Button>
                           </TableCell>
                         </TableRow>
