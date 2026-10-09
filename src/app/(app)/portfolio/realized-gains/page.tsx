@@ -30,7 +30,7 @@ import { Download, ArrowDownLeft, ArrowUpLeft, RefreshCw, Coins } from "lucide-r
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { exportCsv, type CsvColumn } from "@/lib/csv-export";
-import { PageHeader } from "@/components/mobile";
+import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
 import { ErrorState } from "@/components/error-state";
 import { PageSkeleton } from "@/components/page-skeleton";
 
@@ -323,27 +323,33 @@ export default function RealizedGainsPage() {
 
   return (
     <div className="container mx-auto space-y-6 p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <PageHeader
-            title="Realized gains"
-            titleClassName="text-2xl font-bold tracking-tight"
-            subtitle={<>Lot-level realized gain on every closed sell / transfer-out, per (holding, account).</>}
-            subtitleClassName="text-sm text-muted-foreground mt-0.5"
-          />
-        <div className="flex gap-2">
-          <Link href="/portfolio" className="text-sm text-muted-foreground hover:underline self-center">
-            ← Overview
-          </Link>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExportCsv}
-            disabled={loading || !data || visibleCount === 0}
-          >
-            <Download className="mr-2 h-4 w-4" /> CSV
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        className="flex flex-wrap items-center justify-between gap-3"
+        title="Realized gains"
+        titleClassName="text-2xl font-bold tracking-tight"
+        subtitle={<>Lot-level realized gain on every closed sell / transfer-out, per (holding, account).</>}
+        subtitleClassName="text-sm text-muted-foreground mt-0.5"
+        actions={
+          <div className="flex gap-2">
+            <Link href="/portfolio" className={`text-sm text-muted-foreground hover:underline self-center ${HEADER_DESKTOP_ONLY}`}>
+              ← Overview
+            </Link>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportCsv}
+              disabled={loading || !data || visibleCount === 0}
+              className={HEADER_DESKTOP_ONLY}
+            >
+              <Download className="mr-2 h-4 w-4" /> CSV
+            </Button>
+          </div>
+        }
+        overflow={[
+          { label: "Overview", href: "/portfolio" },
+          { label: "Export CSV", onSelect: handleExportCsv, disabled: loading || !data || visibleCount === 0 },
+        ]}
+      />
 
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-sm text-muted-foreground">Tax year:</span>

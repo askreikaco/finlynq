@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { RecentUploadsPanel } from "@/components/reconcile/recent-uploads-panel";
 import { daysUntil, type StagedRow } from "../_types";
-import { PageHeader } from "@/components/mobile";
+import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
 
 export function StagedListView({
   list,
@@ -65,7 +65,7 @@ export function StagedListView({
   );
 
   return (
-    <div className={embedded ? "space-y-3" : "space-y-6"}>
+    <div className={embedded ? "space-y-3" : "flex flex-col gap-6"}>
       {!embedded && (
         <div className="flex items-center gap-3">
           <Link
@@ -99,19 +99,21 @@ export function StagedListView({
           </Button>
         </div>
       ) : (
-        <div className="flex items-start justify-between gap-4">
-          <PageHeader
-              title="Pending Imports"
-              titleClassName="text-2xl font-bold tracking-tight"
-              subtitle={<>Transactions from email forwards or file uploads (CSV / OFX /
-              QFX), waiting for your review. Rows auto-expire after 60 days.</>}
-              subtitleClassName="text-sm text-muted-foreground mt-0.5"
-            />
-          <Button variant="outline" size="sm" onClick={loadList} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
-        </div>
+        <PageHeader
+          className="flex items-start justify-between gap-4"
+          title="Pending Imports"
+          titleClassName="text-2xl font-bold tracking-tight"
+          subtitle={<>Transactions from email forwards or file uploads (CSV / OFX /
+          QFX), waiting for your review. Rows auto-expire after 60 days.</>}
+          subtitleClassName="text-sm text-muted-foreground mt-0.5"
+          actions={
+            <Button variant="outline" size="sm" onClick={loadList} disabled={loading} className={HEADER_DESKTOP_ONLY}>
+              <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? "animate-spin" : ""}`} />
+              Refresh
+            </Button>
+          }
+          overflow={[{ label: "Refresh", onSelect: loadList, disabled: loading }]}
+        />
       )}
 
       {toast && (

@@ -564,9 +564,9 @@ function ApiDocsPageContent() {
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-4xl px-6 py-12">
         {/* Header */}
-        <div className="mb-8">
+        <div className="contents">
           <PageHeader title="API Docs" titleClassName="text-2xl font-bold tracking-tight" />
-          <p className="mt-2 text-muted-foreground">
+          <p className="mb-8 mt-2 text-muted-foreground">
             PF exposes both a REST API (Next.js routes) and an MCP server for AI assistant integration.
             All data is local — no external services required.
           </p>

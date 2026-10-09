@@ -106,24 +106,28 @@ export default function CurrencyAuditPage() {
 
   return (
     <div className="space-y-5 max-w-4xl">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <PageHeader title="Currency Review" titleClassName="text-2xl font-bold tracking-tight" backHref="/transactions" backLabel="Back to Transactions" />
-          <p className="text-sm text-muted-foreground mt-1">
-            Transactions with a currency that doesn&apos;t match their account&apos;s currency.
-            These were flagged when we added the entered/account/reporting model — they need
-            a decision before balances reflect them correctly.
-          </p>
-        </div>
-        <label className="flex items-center gap-2 text-xs text-muted-foreground">
-          <input
-            type="checkbox"
-            checked={includeResolved}
-            onChange={(e) => setIncludeResolved(e.target.checked)}
-          />
-          Show resolved
-        </label>
-      </div>
+      <PageHeader
+        className="flex flex-wrap items-center justify-between gap-3"
+        title="Currency Review"
+        titleClassName="text-2xl font-bold tracking-tight"
+        backHref="/transactions"
+        backLabel="Back to Transactions"
+        actions={
+          <label className="flex items-center gap-2 text-xs text-muted-foreground max-md:px-3">
+            <input
+              type="checkbox"
+              checked={includeResolved}
+              onChange={(e) => setIncludeResolved(e.target.checked)}
+            />
+            Show resolved
+          </label>
+        }
+      />
+      <p className="text-sm text-muted-foreground mt-1">
+        Transactions with a currency that doesn&apos;t match their account&apos;s currency.
+        These were flagged when we added the entered/account/reporting model — they need
+        a decision before balances reflect them correctly.
+      </p>
 
       {error ? (
         <Card className="border-destructive/40 bg-destructive/5">

@@ -40,7 +40,7 @@ import IncomeExpenseForm from "@/components/portfolio/forms/IncomeExpenseForm";
 import FxConversionForm from "@/components/portfolio/forms/FxConversionForm";
 import DepositForm from "@/components/portfolio/forms/DepositForm";
 import WithdrawalForm from "@/components/portfolio/forms/WithdrawalForm";
-import { PageHeader } from "@/components/mobile";
+import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
 
 type OpKey =
   | "buy"
@@ -155,20 +155,22 @@ function PortfolioNewInner() {
 
   return (
     <div className="container mx-auto max-w-4xl space-y-6 p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <PageHeader
-            title="New portfolio operation"
-            titleClassName="text-2xl font-bold tracking-tight"
-            subtitle="Pick the operation that matches what happened in your account."
-            subtitleClassName="text-sm text-muted-foreground mt-0.5"
-          />
-        <Link
-          href="/portfolio"
-          className="text-sm text-muted-foreground hover:underline self-center"
-        >
-          ← Portfolio
-        </Link>
-      </div>
+      <PageHeader
+        className="flex flex-wrap items-center justify-between gap-3"
+        title="New portfolio operation"
+        titleClassName="text-2xl font-bold tracking-tight"
+        subtitle="Pick the operation that matches what happened in your account."
+        subtitleClassName="text-sm text-muted-foreground mt-0.5"
+        actions={
+          <Link
+            href="/portfolio"
+            className={`text-sm text-muted-foreground hover:underline self-center ${HEADER_DESKTOP_ONLY}`}
+          >
+            ← Portfolio
+          </Link>
+        }
+        overflow={[{ label: "Portfolio", href: "/portfolio" }]}
+      />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {OPS.map((o) => {

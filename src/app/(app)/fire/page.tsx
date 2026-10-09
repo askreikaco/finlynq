@@ -200,7 +200,7 @@ function FirePageContent() {
 
   return (
     <div className="space-y-6">
-      <div>
+      <div className="contents">
         <PageHeader title={<><Flame className="h-6 w-6 text-warning" /> FIRE Calculator</>} titleClassName="text-2xl font-bold tracking-tight flex items-center gap-2" />
         <p className="text-sm text-muted-foreground mt-1">
           Calculate your Financial Independence, Retire Early number and timeline

@@ -39,7 +39,7 @@ import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
 import { todayISO } from "@/lib/utils/date";
 import { CATEGORY_WINDOWS, type CategoryDetail } from "@/lib/reports/category-detail";
 import { ArrowDownRight, ArrowUpRight, Receipt, Store } from "lucide-react";
-import { PageHeader } from "@/components/mobile";
+import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
 
 type CategoryResponse = CategoryDetail & {
   category: { id: number; name: string | null; type: "E" | "I" | "R"; group: string };
@@ -162,36 +162,48 @@ function CategoryPageContent() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <PageHeader title={category.name ?? "Category"} titleClassName="text-2xl font-bold tracking-tight truncate" backHref={categoriesBackHref} backLabel="Back to Categories" />
-          <div className="flex flex-wrap items-center gap-1.5 mt-1">
-            <Badge variant="outline">{isIncome ? "Income" : category.type === "R" ? "Transfer" : "Expense"}</Badge>
-            {category.group && <Badge variant="secondary">{category.group}</Badge>}
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {switcherItems.length > 0 && (
-            <Combobox
-              value={String(categoryId)}
-              onValueChange={(v) => {
-                if (v && v !== String(categoryId)) router.push(`/categories/${v}${months === 12 ? "" : `?months=${months}`}`);
-              }}
-              items={switcherItems}
-              placeholder="Switch category"
-              searchPlaceholder="Search categories…"
-              emptyMessage="No matches"
-              className="w-56"
-            />
-          )}
-          <Tabs value={String(months)} onValueChange={(v) => setMonths(Number(v) || 12)}>
-            <TabsList>
-              {CATEGORY_WINDOWS.map((m) => (
-                <TabsTrigger key={m} value={String(m)} className="px-3">{m}M</TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-        </div>
+      <PageHeader
+        className="flex flex-wrap items-start justify-between gap-3"
+        leadClassName="flex min-w-0 items-center gap-3"
+        title={category.name ?? "Category"}
+        titleClassName="text-2xl font-bold tracking-tight truncate"
+        backHref={categoriesBackHref}
+        backLabel="Back to Categories"
+        actions={
+          <>
+            {switcherItems.length > 0 && (
+              <Combobox
+                value={String(categoryId)}
+                onValueChange={(v) => {
+                  if (v && v !== String(categoryId)) router.push(`/categories/${v}${months === 12 ? "" : `?months=${months}`}`);
+                }}
+                items={switcherItems}
+                placeholder="Switch category"
+                searchPlaceholder="Search categories…"
+                emptyMessage="No matches"
+                className="w-56 max-md:w-40"
+              />
+            )}
+            <span className={HEADER_DESKTOP_ONLY}>
+              <Tabs value={String(months)} onValueChange={(v) => setMonths(Number(v) || 12)}>
+                <TabsList>
+                  {CATEGORY_WINDOWS.map((m) => (
+                    <TabsTrigger key={m} value={String(m)} className="px-3">{m}M</TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
+            </span>
+          </>
+        }
+        overflow={CATEGORY_WINDOWS.map((m) => ({
+          label: `Show ${m} months`,
+          onSelect: () => setMonths(m),
+          disabled: months === m,
+        }))}
+      />
+      <div className="flex flex-wrap items-center gap-1.5 mt-1">
+        <Badge variant="outline">{isIncome ? "Income" : category.type === "R" ? "Transfer" : "Expense"}</Badge>
+        {category.group && <Badge variant="secondary">{category.group}</Badge>}
       </div>
 
       {/* Stat tiles */}

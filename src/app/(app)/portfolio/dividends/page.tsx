@@ -32,7 +32,7 @@ import { Input } from "@/components/ui/input";
 import { Download } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
-import { PageHeader } from "@/components/mobile";
+import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
 import { ErrorState } from "@/components/error-state";
 import { PageSkeleton } from "@/components/page-skeleton";
 
@@ -142,26 +142,31 @@ export default function DividendsPage() {
 
   return (
     <div className="container mx-auto space-y-6 p-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <PageHeader
-            title="Dividend income"
-            titleClassName="text-2xl font-bold tracking-tight"
-            subtitle={<>Every transaction categorized as Dividends, including reinvestments and
-            withholding-tax entries.</>}
-            subtitleClassName="text-sm text-muted-foreground mt-0.5"
-          />
-        <div className="flex gap-2">
-          <Link href="/portfolio" className="text-sm text-muted-foreground hover:underline self-center">
-            ← Overview
-          </Link>
-          <a
-            href={csvHref}
-            className={buttonVariants({ variant: "outline", size: "sm" })}
-          >
-            <Download className="mr-2 h-4 w-4" /> CSV
-          </a>
-        </div>
-      </div>
+      <PageHeader
+        className="flex flex-wrap items-start justify-between gap-3"
+        title="Dividend income"
+        titleClassName="text-2xl font-bold tracking-tight"
+        subtitle={<>Every transaction categorized as Dividends, including reinvestments and
+        withholding-tax entries.</>}
+        subtitleClassName="text-sm text-muted-foreground mt-0.5"
+        actions={
+          <div className="flex gap-2">
+            <Link href="/portfolio" className={`text-sm text-muted-foreground hover:underline self-center ${HEADER_DESKTOP_ONLY}`}>
+              ← Overview
+            </Link>
+            <a
+              href={csvHref}
+              className={`${buttonVariants({ variant: "outline", size: "sm" })} ${HEADER_DESKTOP_ONLY}`}
+            >
+              <Download className="mr-2 h-4 w-4" /> CSV
+            </a>
+          </div>
+        }
+        overflow={[
+          { label: "Overview", href: "/portfolio" },
+          { label: "Export CSV", onSelect: () => window.location.assign(csvHref) },
+        ]}
+      />
 
       {/* Controls: group-by + reporting toggle */}
       <div className="flex flex-wrap items-center gap-x-6 gap-y-3">

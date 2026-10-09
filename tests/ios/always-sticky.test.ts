@@ -201,3 +201,87 @@ describe("admin pages", () => {
     expect(bad).toEqual([]);
   });
 });
+
+describe("non-admin pages", () => {
+  // Sticky pins only inside its containing block: the nearest ancestor that spans the page. A PageHeader
+  // whose parent is a header-only wrapper (a flex row or a short div) never stays on screen.
+  // Static check: walk the open div-like ancestors of the PageHeader tag, skipping display:contents
+  // wrappers, and require the first real ancestor to be a tall page container.
+  const TALL = /(^|\s)(space-y-\d+|flex-col|min-h-screen|container|mx-auto|max-w-\w+)(\s|$)/;
+
+  function classOf(attrs: string): string {
+    const m = attrs.match(/className=\{?[^"'`]*["'`]([^"'`]*)/);
+    return m ? m[1] : "";
+  }
+
+  /** Open div-like ancestors of `at`, outermost first (self-closing tags and closed elements excluded). */
+  function ancestorsAt(src: string, at: number): string[] {
+    const stack: string[] = [];
+    const re = /<(\/?)(div|motion\.div)\b((?:[^>]|=>)*)>/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(src)) && m.index < at) {
+      if (m[1]) stack.pop();
+      else if (!m[3].trimEnd().endsWith("/")) stack.push(classOf(m[3]));
+    }
+    return stack;
+  }
+
+  /** Class list of the first ancestor that is not a display:contents wrapper ("" if none). */
+  function effectiveParent(src: string, at: number): string {
+    const stack = ancestorsAt(src, at).filter((c) => !/(^|\s)contents(\s|$)/.test(c));
+    return stack.length ? stack[stack.length - 1] : "";
+  }
+
+  function pageHeaderParent(file: string, nth = 0): string {
+    const src = read(file);
+    let idx = -1;
+    for (let i = 0; i <= nth; i++) idx = src.indexOf("<PageHeader", idx + 1);
+    expect(idx, `${file} has PageHeader #${nth}`).toBeGreaterThan(-1);
+    return effectiveParent(src, idx);
+  }
+
+  const FIXED_PAGES = [
+    "src/app/(app)/fire/page.tsx",
+    "src/app/(app)/whats-new/page.tsx",
+    "src/app/(app)/api-docs/page.tsx",
+    "src/app/(app)/settings/import/reconcile-visibility/page.tsx",
+    "src/app/(app)/transactions/audit/page.tsx",
+    "src/app/(app)/categories/[id]/page.tsx",
+    "src/app/(app)/portfolio/new/page.tsx",
+    "src/app/(app)/portfolio/realized-gains/page.tsx",
+    "src/app/(app)/portfolio/dividends/page.tsx",
+    "src/app/(app)/settings/backfill/[runId]/page.tsx",
+    "src/app/(app)/feedback/page.tsx",
+    "src/app/(app)/import/pending/_components/staged-list-view.tsx",
+  ];
+
+  it.each(FIXED_PAGES)("%s: PageHeader sits directly in a tall page container", (file) => {
+    const parent = pageHeaderParent(file);
+    expect(parent).toMatch(TALL);
+    expect(parent).not.toMatch(/justify-between/);
+  });
+
+  it("import/pending reconcile-header is a fragment rendered directly in the tall staged-review root", () => {
+    const header = read("src/app/(app)/import/pending/_components/reconcile-header.tsx");
+    expect(header).toMatch(/return \(\s*<>\s*<button[\s\S]*?<PageHeader\b/);
+    const surface = read("src/components/import/staged-review-surface.tsx");
+    expect(surface).toMatch(/<div className="flex flex-col gap-4 md:h-\[calc\(100dvh-8rem\)\]">\s*<ReconcileHeader/);
+  });
+
+  it("no header-only wrapper: no page or component in (app) holds a PageHeader in a justify-between row or a bare div", () => {
+    const files = walk(join(ROOT, "src/app/(app)"))
+      .filter((f) => f.endsWith(".tsx") && !f.includes("/admin/"));
+    const bad: string[] = [];
+    for (const f of files) {
+      const src = readFileSync(f, "utf8");
+      let idx = src.indexOf("<PageHeader");
+      while (idx > -1) {
+        const parent = effectiveParent(src, idx);
+        // Fragment-returning components have no in-file wrapper; their caller is checked above.
+        if (parent !== "" && !TALL.test(parent)) bad.push(`${relative(ROOT, f)}: "${parent}"`);
+        idx = src.indexOf("<PageHeader", idx + 1);
+      }
+    }
+    expect(bad).toEqual([]);
+  });
+});

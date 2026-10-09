@@ -18,7 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, CheckCircle2, Loader2, RefreshCw, Undo2 } from "lucide-react";
-import { PageHeader } from "@/components/mobile";
+import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
 
 // MUST stay in sync with the CHECK constraint on
 // backfill_proposals.chosen_kind (migration 20260609), with OverrideKind
@@ -299,22 +299,24 @@ export default function BackfillReviewPage({ params }: { params: Promise<{ runId
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <PageHeader
-            title="Backfill review"
-            titleClassName="text-2xl font-bold tracking-tight"
-            subtitle={<>{proposals.length} proposal(s) · {approvedCount} approved · {appliedCount} applied</>}
-            subtitleClassName="text-sm text-muted-foreground mt-0.5"
-          />
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => router.push("/settings/backfill")}>
-            <RefreshCw className="size-4 mr-2" /> New run
-          </Button>
-          <Button onClick={applyAll} disabled={applying || approvedCount === 0}>
-            {applying ? (<><Loader2 className="size-4 animate-spin mr-2" /> Applying…</>) : `Apply ${approvedCount} approved`}
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        className="flex flex-wrap items-center justify-between gap-3"
+        title="Backfill review"
+        titleClassName="text-2xl font-bold tracking-tight"
+        subtitle={<>{proposals.length} proposal(s) · {approvedCount} approved · {appliedCount} applied</>}
+        subtitleClassName="text-sm text-muted-foreground mt-0.5"
+        actions={
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => router.push("/settings/backfill")} className={HEADER_DESKTOP_ONLY}>
+              <RefreshCw className="size-4 mr-2" /> New run
+            </Button>
+            <Button onClick={applyAll} disabled={applying || approvedCount === 0}>
+              {applying ? (<><Loader2 className="size-4 animate-spin mr-2" /> Applying…</>) : `Apply ${approvedCount} approved`}
+            </Button>
+          </div>
+        }
+        overflow={[{ label: "New run", onSelect: () => router.push("/settings/backfill") }]}
+      />
 
       {error && <div className="border border-destructive bg-destructive/10 text-destructive rounded p-3 text-sm">{error}</div>}
       {info && <div className="border border-pos/40 bg-pos/10 text-pos rounded p-3 text-sm flex items-center gap-2"><CheckCircle2 className="size-4" /> {info}</div>}
