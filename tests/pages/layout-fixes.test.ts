@@ -73,7 +73,7 @@ describe("budgets at 390", () => {
   it("summary values are text-xl with tabular figures and step up to text-2xl only at md+", () => {
     const src = read(BUDGETS);
     expect(src).not.toMatch(/(?<![:\w-])text-2xl font-bold/);
-    expect(src.match(/min-w-0 break-words text-xl font-bold tabular-nums md:text-2xl/g)?.length).toBe(5);
+    expect(src.match(/min-w-0 break-words text-xl font-bold tabular-nums regular:text-2xl/g)?.length).toBe(5);
   });
 
   it("essentials (group) cards use gap-1 so the header is not 16px + padding away from the first row", () => {
