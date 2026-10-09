@@ -1,73 +1,25 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
-import { useDropdownOrder } from "@/components/dropdown-order-provider";
-import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
-import { Plus, Trash2, Target, CheckCircle2, TrendingUp, Calendar, Pencil, X } from "lucide-react";
+import { Plus, Trash2, Target, CheckCircle2, TrendingUp, Calendar, Pencil } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/error-state";
 import { PageSkeleton } from "@/components/page-skeleton";
-import { parseSaveError } from "@/lib/save-error";
-import { AmountInput } from "@/components/amount-input";
 import { PageHeader, PHONE_PRIMARY_CLASS } from "@/components/mobile";
-import { usePageFab } from "@/components/mobile/page-fab";
-
-type Goal = {
-  id: number; name: string; type: string; targetAmount: number; currentAmount: number;
-  currency: string;
-  deadline: string | null;
-  // Issue #130 — multi-account linking. `accountIds` is the canonical list;
-  // `accounts` carries decrypted display names; `accountName` is the legacy
-  // first-only string preserved for any consumer that hasn't migrated yet.
-  accountIds: number[]; accounts: string[]; accountName: string | null;
-  priority: number; status: string;
-  progress: number; remaining: number; monthlyNeeded: number; note: string;
-  // FINLYNQ-123: current-rate conversions into the display currency. The ONLY
-  // figures the summary tiles may sum — per-goal amounts stay in `currency`.
-  targetAmountDisplay?: number; currentAmountDisplay?: number;
-};
-type Account = { id: number; name: string };
-
-type FormState = {
-  name: string;
-  type: string;
-  targetAmount: string;
-  currency: string;
-  deadline: string;
-  accountIds: number[]; // issue #130 — multi-account
-  priority: string;
-  note: string;
-};
+import type { Goal } from "./_components/goal-form";
 
 const goalTypeConfig: Record<string, { label: string; badgeClass: string; borderClass: string }> = {
   savings: { label: "Savings", badgeClass: "bg-pos/10 text-pos border-pos/30", borderClass: "border-l-pos" },
   debt_payoff: { label: "Debt Payoff", badgeClass: "bg-destructive/10 text-destructive border-destructive/30", borderClass: "border-l-destructive" },
   investment: { label: "Investment", badgeClass: "bg-primary/10 text-primary border-primary/30", borderClass: "border-l-primary" },
   emergency_fund: { label: "Emergency Fund", badgeClass: "bg-warning/10 text-warning border-warning/30", borderClass: "border-l-warning" },
-};
-
-// value→label maps for base-ui Select triggers (FINLYNQ-197).
-const GOAL_TYPE_LABELS: Record<string, string> = {
-  savings: "Savings",
-  debt_payoff: "Debt Payoff",
-  investment: "Investment",
-  emergency_fund: "Emergency Fund",
-};
-const GOAL_PRIORITY_LABELS: Record<string, string> = {
-  "1": "High",
-  "2": "Medium",
-  "3": "Low",
 };
 
 function progressColorClass(progress: number): string {
@@ -82,256 +34,19 @@ function progressTextClass(progress: number): string {
   return "text-pos";
 }
 
-function emptyForm(displayCurrency: string): FormState {
-  return {
-    name: "",
-    type: "savings",
-    targetAmount: "",
-    currency: displayCurrency,
-    deadline: "",
-    accountIds: [],
-    priority: "1",
-    note: "",
-  };
-}
-
-function goalToForm(g: Goal, displayCurrency: string): FormState {
-  return {
-    name: g.name ?? "",
-    type: g.type,
-    targetAmount: String(g.targetAmount),
-    currency: g.currency || displayCurrency,
-    deadline: g.deadline ?? "",
-    accountIds: g.accountIds ?? [],
-    priority: String(g.priority ?? 1),
-    note: g.note ?? "",
-  };
-}
-
-/**
- * <GoalEditForm> — shared Add/Edit goal form (issue #130). Mode is set by
- * `mode`: "add" routes to POST /api/goals; "edit" carries the goal id and
- * routes to PUT /api/goals. The form fully owns its state; the parent
- * triggers `onSave()` once persistence completes so it can refresh the
- * list.
- */
-function GoalEditForm({
-  mode,
-  goalId,
-  initial,
-  accounts,
-  onSave,
-  onCancel,
-  displayCurrency,
-}: {
-  mode: "add" | "edit";
-  goalId?: number;
-  initial: FormState;
-  accounts: Account[];
-  onSave: () => void;
-  onCancel: () => void;
-  displayCurrency: string;
-}) {
-  const [form, setForm] = useState<FormState>(initial);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [submitting, setSubmitting] = useState(false);
-  const sortAccount = useDropdownOrder("account");
-  // Built-in fiat UNION the user's active currencies (#291).
-  const currencyOptions = useActiveCurrencies(form.currency);
-
-  function validateForm() {
-    const e: Record<string, string> = {};
-    if (!form.name.trim()) e.name = "Name is required";
-    if (!form.targetAmount || parseFloat(form.targetAmount) <= 0) e.targetAmount = "Target amount must be greater than 0";
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  }
-
-  const isFormValid = form.name.trim() !== "" && form.targetAmount !== "" && parseFloat(form.targetAmount) > 0;
-
-  // Account chip selector — pick from the unselected pool, remove via the X
-  // on each chip. Single-select Combobox is reused as the picker; the
-  // selected ids drive the chip row.
-  const selectedSet = new Set(form.accountIds);
-  const availableAccounts = accounts.filter((a) => !selectedSet.has(a.id));
-
-  function addAccount(idStr: string) {
-    if (!idStr) return;
-    const id = parseInt(idStr);
-    if (Number.isNaN(id)) return;
-    if (selectedSet.has(id)) return;
-    setForm({ ...form, accountIds: [...form.accountIds, id] });
-  }
-
-  function removeAccount(id: number) {
-    setForm({ ...form, accountIds: form.accountIds.filter((x) => x !== id) });
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!validateForm()) return;
-    setSubmitting(true);
-    try {
-      const payload: Record<string, unknown> = {
-        name: form.name,
-        type: form.type,
-        targetAmount: parseFloat(form.targetAmount),
-        currency: form.currency || displayCurrency,
-        deadline: form.deadline || null,
-        accountIds: form.accountIds,
-        priority: parseInt(form.priority),
-        note: form.note,
-      };
-      let res: Response;
-      if (mode === "edit" && goalId != null) {
-        payload.id = goalId;
-        res = await fetch("/api/goals", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-      } else {
-        res = await fetch("/api/goals", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-      }
-      if (!res.ok) {
-        // Keep the dialog open with input intact; surface the reason.
-        setErrors({ ...errors, form: await parseSaveError(res, "Failed to save goal") });
-        return;
-      }
-      setErrors({ ...errors, form: "" });
-      onSave();
-    } catch {
-      setErrors({ ...errors, form: "Network error. Please try again." });
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-3">
-      <div>
-        <Label>Goal Name</Label>
-        <Input value={form.name} onChange={(e) => { setForm({ ...form, name: e.target.value }); setErrors({ ...errors, name: "" }); }} placeholder="e.g. Emergency Fund" />
-        {errors.name && <p className="text-xs text-destructive mt-1">{errors.name}</p>}
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <Label>Type</Label>
-          <Select items={GOAL_TYPE_LABELS} value={form.type} onValueChange={(v) => setForm({ ...form, type: v ?? "savings" })}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="savings">Savings</SelectItem>
-              <SelectItem value="debt_payoff">Debt Payoff</SelectItem>
-              <SelectItem value="investment">Investment</SelectItem>
-              <SelectItem value="emergency_fund">Emergency Fund</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label>Currency</Label>
-          <Select value={form.currency} onValueChange={(v) => setForm({ ...form, currency: v ?? displayCurrency })}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {currencyOptions.map((c) => (
-                <SelectItem key={c} value={c}>{c}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-      <div>
-        <Label>Target Amount</Label>
-        <AmountInput  step="0.01" value={form.targetAmount} onValueChange={(nv) => { setForm({ ...form, targetAmount: nv }); setErrors({ ...errors, targetAmount: "" }); }} />
-        {errors.targetAmount && <p className="text-xs text-destructive mt-1">{errors.targetAmount}</p>}
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <Label>Deadline</Label>
-          <Input type="date" value={form.deadline} onChange={(e) => setForm({ ...form, deadline: e.target.value })} />
-        </div>
-        <div>
-          <Label>Priority</Label>
-          <Select items={GOAL_PRIORITY_LABELS} value={form.priority} onValueChange={(v) => setForm({ ...form, priority: v ?? "1" })}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="1">High</SelectItem>
-              <SelectItem value="2">Medium</SelectItem>
-              <SelectItem value="3">Low</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-      <div>
-        <Label>Linked Accounts</Label>
-        {form.accountIds.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mb-2">
-            {form.accountIds.map((id) => {
-              const a = accounts.find((x) => x.id === id);
-              return (
-                <span key={id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-muted text-xs font-medium border border-border/60">
-                  {a?.name ?? `#${id}`}
-                  <button
-                    type="button"
-                    aria-label={`Remove ${a?.name ?? `#${id}`}`}
-                    onClick={() => removeAccount(id)}
-                    className="hover:text-destructive"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </span>
-              );
-            })}
-          </div>
-        )}
-        <Combobox
-          value=""
-          onValueChange={(v) => addAccount(v ?? "")}
-          items={sortAccount(
-            availableAccounts.map((a): ComboboxItemShape => ({ value: String(a.id), label: a.name })),
-            (a) => Number(a.value),
-            (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
-          )}
-          placeholder={form.accountIds.length === 0 ? "Add an account…" : "Add another…"}
-          searchPlaceholder="Search accounts…"
-          emptyMessage="No matches"
-          className="w-full"
-        />
-        <p className="text-xs text-muted-foreground mt-1">
-          Goal progress sums transactions across every linked account. Leave empty for manual tracking.
-        </p>
-      </div>
-      <div>
-        <Label>Note</Label>
-        <Input value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
-      </div>
-      {errors.form && <p className="text-sm text-destructive">{errors.form}</p>}
-      <div className="flex gap-2">
-        {mode === "edit" && (
-          <Button type="button" variant="outline" className="flex-1" onClick={onCancel} disabled={submitting}>
-            Cancel
-          </Button>
-        )}
-        <Button type="submit" className="flex-1" disabled={!isFormValid || submitting}>
-          {submitting ? "Saving…" : mode === "edit" ? "Save Changes" : "Create Goal"}
-        </Button>
-      </div>
-    </form>
-  );
-}
+/** Prefilled create links for the empty-state chips (name + type go in the query, read by /goals/new). */
+const EMPTY_STATE_CHIPS = [
+  { label: "Emergency Fund", type: "emergency_fund" },
+  { label: "Pay off debt", type: "debt_payoff" },
+  { label: "Save for vacation", type: "savings" },
+  { label: "Build investments", type: "investment" },
+];
 
 export default function GoalsPage() {
   const { displayCurrency } = useDisplayCurrency();
   const [goals, setGoals] = useState<Goal[]>([]);
-  const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
-  const [addOpen, setAddOpen] = useState(false);
-  const [editGoal, setEditGoal] = useState<Goal | null>(null);
-  const [seedForm, setSeedForm] = useState<FormState>(emptyForm(displayCurrency));
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -345,10 +60,6 @@ export default function GoalsPage() {
   }, []);
   useEffect(() => {
     load();
-    fetch("/api/accounts")
-      .then((r) => (r.ok ? r.json() : []))
-      .then((data) => setAccounts(Array.isArray(data) ? data : []))
-      .catch(() => {});
   }, [load]);
 
   async function toggleStatus(goal: Goal) {
@@ -376,8 +87,6 @@ export default function GoalsPage() {
   const totalCurrent = active.reduce((s, g) => s + (g.currentAmountDisplay ?? g.currentAmount), 0);
   const hasForeignGoal = active.some((g) => g.currency && g.currency !== displayCurrency);
 
-  usePageFab("goals.create", () => setAddOpen(true));
-
   if (loading) return <PageSkeleton variant="cards" rows={3} />;
   if (loadError) return <ErrorState title="Couldn't load goals" message="We couldn't load your goals. Please try again." onRetry={() => { setLoading(true); load(); }} />;
 
@@ -389,40 +98,11 @@ export default function GoalsPage() {
         subtitle="Track your savings targets and measure progress over time"
         actionsClassName="contents"
         actions={
-        <Dialog open={addOpen} onOpenChange={(o) => { setAddOpen(o); if (!o) setSeedForm(emptyForm(displayCurrency)); }}>
-          <DialogTrigger render={<Button className={PHONE_PRIMARY_CLASS} aria-label="Add Goal" />}><Plus className="h-4 w-4 mr-1" /> Add Goal</DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle>New Financial Goal</DialogTitle></DialogHeader>
-            <GoalEditForm
-              mode="add"
-              initial={seedForm}
-              accounts={accounts}
-              displayCurrency={displayCurrency}
-              onSave={() => { setAddOpen(false); setSeedForm(emptyForm(displayCurrency)); load(); }}
-              onCancel={() => { setAddOpen(false); setSeedForm(emptyForm(displayCurrency)); }}
-            />
-          </DialogContent>
-        </Dialog>
+        <Button className={PHONE_PRIMARY_CLASS} aria-label="Add Goal" render={<Link href="/goals/new" />}>
+          <Plus className="h-4 w-4 mr-1" /> Add Goal
+        </Button>
         }
       />
-
-      {/* Edit dialog — issue #130 */}
-      <Dialog open={editGoal !== null} onOpenChange={(o) => { if (!o) setEditGoal(null); }}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Edit Goal</DialogTitle></DialogHeader>
-          {editGoal && (
-            <GoalEditForm
-              mode="edit"
-              goalId={editGoal.id}
-              initial={goalToForm(editGoal, displayCurrency)}
-              accounts={accounts}
-              displayCurrency={displayCurrency}
-              onSave={() => { setEditGoal(null); load(); }}
-              onCancel={() => setEditGoal(null)}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
 
       {/* Summary cards — only show when there are goals */}
       {goals.length > 0 && (
@@ -477,19 +157,14 @@ export default function GoalsPage() {
               Goals help you stay focused and measure real progress. Start with an emergency fund, debt payoff target, or a savings milestone.
             </p>
             <div className="flex flex-wrap gap-2 justify-center">
-              {[
-                { label: "Emergency Fund", type: "emergency_fund" },
-                { label: "Pay off debt", type: "debt_payoff" },
-                { label: "Save for vacation", type: "savings" },
-                { label: "Build investments", type: "investment" },
-              ].map(({ label, type }) => (
-                <button
+              {EMPTY_STATE_CHIPS.map(({ label, type }) => (
+                <Link
                   key={label}
-                  onClick={() => { setSeedForm({ ...emptyForm(displayCurrency), name: label, type }); setAddOpen(true); }}
+                  href={`/goals/new?name=${encodeURIComponent(label)}&type=${type}`}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-border/60 bg-muted/40 hover:bg-muted transition-colors"
                 >
                   <Plus className="h-3 w-3" />{label}
-                </button>
+                </Link>
               ))}
             </div>
           </CardContent>
@@ -537,7 +212,7 @@ export default function GoalsPage() {
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditGoal(g)} title="Edit" aria-label={`Edit goal ${g.name}`}>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" render={<Link href={`/goals/${g.id}/edit`} />} title="Edit" aria-label={`Edit goal ${g.name}`}>
                     <Pencil className="h-4 w-4" />
                   </Button>
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleStatus(g)} title="Mark complete" aria-label={`Mark goal ${g.name} complete`}>
@@ -586,7 +261,7 @@ export default function GoalsPage() {
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditGoal(g)} title="Edit" aria-label={`Edit goal ${g.name}`}>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" render={<Link href={`/goals/${g.id}/edit`} />} title="Edit" aria-label={`Edit goal ${g.name}`}>
                     <Pencil className="h-3 w-3" />
                   </Button>
                   <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => toggleStatus(g)} title="Reactivate" aria-label={`Reactivate goal ${g.name}`}>

@@ -171,6 +171,12 @@ describe("nav-config", () => {
         "/portfolio/realized-gains",
         "/portfolio/new",
         "/accounts/new", // create-account page, opened from the accounts header (no nav entry)
+        "/budgets/new", // set-budget page, opened from the budgets header/FAB (no nav entry)
+        "/budgets/templates/new", // save-template page, opened from the budgets overflow menu
+        "/budgets/templates/apply", // apply-template page, opened from the budgets overflow menu
+        "/budgets/move-money", // move-money page, opened from the budgets overflow menu (envelope mode)
+        "/goals/new", // create-goal page, opened from the goals header/FAB (no nav entry)
+        "/goals/[id]/edit", // edit-goal page, opened from the goals list (no nav entry)
         "/accounts/groups", // manage-groups page, opened from the accounts header (no nav entry)
         "/loans/new", // create-loan page, opened from the loans header / FAB (no nav entry)
         "/loans/[id]/edit", // edit-loan page, opened from a loan card (no nav entry)

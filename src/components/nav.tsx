@@ -430,10 +430,14 @@ const FULL_SCREEN_ENTRY_ROUTES = [
   "/settings/investments/cash-sleeves",
   "/loans/new",
   "/subscriptions/new",
+  "/budgets/new",
+  "/budgets/templates/new",
+  "/budgets/move-money",
+  "/goals/new",
 ] as const;
-// Edit forms for a single loan / subscription / account (/loans/<id>/edit, /subscriptions/<id>/edit,
-// /accounts/<id>/edit) and rule / category rename pages.
-const FULL_SCREEN_EDIT_ROUTE = /^\/(loans|subscriptions|accounts|categories|settings\/rules)\/[^/]+\/edit$/;
+// Edit forms for a single loan / subscription / account / goal / category / rule (/loans/<id>/edit,
+// /subscriptions/<id>/edit, /accounts/<id>/edit, /goals/<id>/edit) and rule / category rename pages.
+const FULL_SCREEN_EDIT_ROUTE = /^\/(loans|subscriptions|accounts|goals|categories|settings\/rules)\/[^/]+\/edit$/;
 
 // Mobile bottom bar
 export const MobileBottomBar = memo(function MobileBottomBar({ pathname }: { pathname: string }) {

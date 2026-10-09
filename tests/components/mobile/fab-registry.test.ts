@@ -40,14 +40,18 @@ describe("matchFabRoute", () => {
 describe("resolveFab", () => {
   it("handler registered -> button with the registration's onClick", () => {
     const spy = vi.fn();
-    const r = resolveFab("/goals", withHandler("goals.create", { onClick: spy }));
-    expect(r).toMatchObject({ type: "button", label: "Add goal", disabled: false, pattern: "/goals" });
+    const r = resolveFab("/admin/announcements", withHandler("admin.announcements.new", { onClick: spy }));
+    expect(r).toMatchObject({ type: "button", label: "New announcement", disabled: false, pattern: "/admin/announcements" });
     if (r?.type === "button") r.onClick();
     expect(spy).toHaveBeenCalledTimes(1);
   });
 
+  it("route entry -> link to the create page, no handler needed (goals)", () => {
+    expect(resolveFab("/goals", none)).toMatchObject({ type: "link", label: "Add goal", href: "/goals/new", pattern: "/goals" });
+  });
+
   it("handler not registered and no fallbackHref -> null", () => {
-    expect(resolveFab("/goals", none)).toBeNull();
+    expect(resolveFab("/admin/announcements", none)).toBeNull();
   });
 
   it("handler not registered with fallbackHref -> link to the fallback", () => {
@@ -86,14 +90,14 @@ describe("resolveFab", () => {
 });
 
 describe("FAB_ROUTES table", () => {
-  it("has 94 route keys (89 + accounts edit page + 4 PKG5 create/edit pages)", () => {
-    expect(Object.keys(FAB_ROUTES)).toHaveLength(94);
+  it("has 100 route keys (94 + 6 budget/goal pages)", () => {
+    expect(Object.keys(FAB_ROUTES)).toHaveLength(100);
   });
 
-  it("kind counts are 38 fallback, 15 route, 8 handler, 30 hidden, 3 redirect", () => {
+  it("kind counts are 38 fallback, 17 route, 6 handler, 36 hidden, 3 redirect", () => {
     const counts: Record<string, number> = {};
     for (const e of Object.values(FAB_ROUTES)) counts[e.kind] = (counts[e.kind] ?? 0) + 1;
-    expect(counts).toEqual({ fallback: 38, route: 15, handler: 8, hidden: 30, redirect: 3 });
+    expect(counts).toEqual({ fallback: 38, route: 17, handler: 6, hidden: 36, redirect: 3 });
   });
 
   it("label/href table for the route entries", () => {
@@ -103,9 +107,11 @@ describe("FAB_ROUTES table", () => {
       .sort();
     expect(rows).toEqual([
       ["/accounts", "Add account", "/accounts/new"],
+      ["/budgets", "Add budget", "/budgets/new"],
       ["/categories", "Add category", "/categories/new"],
       ["/dashboard", "New transaction", "/transactions/new"],
       ["/family", "Invite", "/family/share"],
+      ["/goals", "Add goal", "/goals/new"],
       ["/import/pending", "Upload statement", "/import"],
       ["/loans", "Add loan", "/loans/new"],
       ["/portfolio", "Add holding", "/settings/investments"],
@@ -120,9 +126,9 @@ describe("FAB_ROUTES table", () => {
     ]);
   });
 
-  it("every handler key is unique and the 8 keys are all used", () => {
+  it("every handler key is unique and the 6 keys are all used", () => {
     const used = Object.values(FAB_ROUTES).flatMap((e) => (e.kind === "handler" ? [e.handlerKey] : []));
-    expect(used).toHaveLength(8);
+    expect(used).toHaveLength(6);
     expect(new Set(used).size).toBe(used.length);
     expect([...used].sort()).toEqual([...FAB_HANDLER_KEYS].sort());
   });

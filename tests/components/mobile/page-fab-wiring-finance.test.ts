@@ -14,8 +14,6 @@ const APP = "src/app/(app)";
 
 const PAGES = [
   { file: `${APP}/accounts/[id]/page.tsx`, component: "AccountDetailPage", route: "/accounts/[id]", key: "accounts.detail.add" },
-  { file: `${APP}/budgets/page.tsx`, component: "BudgetsPage", route: "/budgets", key: "budgets.create" },
-  { file: `${APP}/goals/page.tsx`, component: "GoalsPage", route: "/goals", key: "goals.create" },
 ] as const;
 
 function read(rel: string): string {
@@ -61,18 +59,24 @@ describe("finance pages wire usePageFab", () => {
   }
 });
 
-// Loans and subscriptions converted: the list pages no longer register a create
-// handler. Their create FAB is a route to the full create page instead.
-describe("loans and subscriptions FAB is a route to the create page", () => {
-  for (const [route, target] of [["/loans", "/loans/new"], ["/subscriptions", "/subscriptions/new"]] as const) {
-    it(`${route} routes its FAB to ${target}`, () => {
-      const entry = FAB_ROUTES[route];
-      expect(entry.kind).toBe("route");
-      if (entry.kind === "route") expect(entry.href).toBe(target);
+// Loans, subscriptions, budgets and goals create through their own form pages
+// (route entries, not a usePageFab handler): the list pages must not register a
+// create handler, and their FAB links to the create page.
+describe("create FABs are routes to the create page (loans, subscriptions, budgets, goals)", () => {
+  const LIST_PAGES = [
+    { file: `${APP}/loans/page.tsx`, route: "/loans", href: "/loans/new" },
+    { file: `${APP}/subscriptions/page.tsx`, route: "/subscriptions", href: "/subscriptions/new" },
+    { file: `${APP}/budgets/page.tsx`, route: "/budgets", href: "/budgets/new" },
+    { file: `${APP}/goals/page.tsx`, route: "/goals", href: "/goals/new" },
+  ] as const;
+
+  for (const p of LIST_PAGES) {
+    it(`${p.route} FAB is a route link to ${p.href}`, () => {
+      expect(FAB_ROUTES[p.route]).toMatchObject({ kind: "route", href: p.href });
     });
-    it(`${route} page does not register a create handler`, () => {
-      const src = read(`${APP}/${route.slice(1)}/page.tsx`);
-      expect(src).not.toMatch(/usePageFab\(/);
+
+    it(`${p.route} list page does not register a create handler`, () => {
+      expect(read(p.file)).not.toMatch(/usePageFab\(/);
     });
   }
 });

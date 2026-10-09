@@ -29,7 +29,7 @@ afterEach(() => {
 });
 
 function Registers({ onClick, disabled }: { onClick: () => void; disabled?: boolean }) {
-  usePageFab("goals.create", onClick, { disabled });
+  usePageFab("admin.announcements.new", onClick, { disabled });
   return null;
 }
 
@@ -85,14 +85,14 @@ describe("PageFab: hidden and handler states", () => {
   });
 
   it("a handler page with nothing registered renders nothing", () => {
-    renderAt("/goals");
+    renderAt("/admin/announcements");
     expect(fab()).toBeNull();
   });
 
   it("a registered handler renders a button that calls the spy", () => {
     const spy = vi.fn();
-    renderAt("/goals", <Registers onClick={spy} />);
-    const el = screen.getByRole("button", { name: "Add goal" });
+    renderAt("/admin/announcements", <Registers onClick={spy} />);
+    const el = screen.getByRole("button", { name: "New announcement" });
     expect(el).toBe(screen.getByTestId("page-fab"));
     fireEvent.click(el);
     expect(spy).toHaveBeenCalledTimes(1);
@@ -101,20 +101,20 @@ describe("PageFab: hidden and handler states", () => {
   it("calls the latest onClick without re-registering", () => {
     const first = vi.fn();
     const second = vi.fn();
-    const { rerender } = renderAt("/goals", <Registers onClick={first} />);
+    const { rerender } = renderAt("/admin/announcements", <Registers onClick={first} />);
     rerender(
       <PageFabProvider>
         <Registers onClick={second} />
         <PageFab />
       </PageFabProvider>,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Add goal" }));
+    fireEvent.click(screen.getByRole("button", { name: "New announcement" }));
     expect(first).not.toHaveBeenCalled();
     expect(second).toHaveBeenCalledTimes(1);
   });
 
   it("unmounting the registering child removes the button", () => {
-    const { rerender } = renderAt("/goals", <Registers onClick={() => {}} />);
+    const { rerender } = renderAt("/admin/announcements", <Registers onClick={() => {}} />);
     expect(fab()).not.toBeNull();
     rerender(
       <PageFabProvider>
@@ -126,8 +126,8 @@ describe("PageFab: hidden and handler states", () => {
 
   it("a disabled registration gives aria-disabled and does not call the spy", () => {
     const spy = vi.fn();
-    renderAt("/goals", <Registers onClick={spy} disabled />);
-    const el = screen.getByRole("button", { name: "Add goal" });
+    renderAt("/admin/announcements", <Registers onClick={spy} disabled />);
+    const el = screen.getByRole("button", { name: "New announcement" });
     expect(el.getAttribute("aria-disabled")).toBe("true");
     fireEvent.click(el);
     expect(spy).not.toHaveBeenCalled();

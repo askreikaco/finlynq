@@ -6,9 +6,9 @@ Base `99e332df` (branch `wave4/w4-4-5-docs`). Generated 2026-10-09 (UTC+7 VN). S
 
 | check | value |
 |---|---|
-| `find "src/app/(app)" -name page.tsx \| sort \| wc -l` | 94 |
-| table rows below (route rows) | 94 |
-| pages with own `<PageHeader` in page.tsx | 55 |
+| `find "src/app/(app)" -name page.tsx \| sort \| wc -l` | 100 |
+| table rows below (route rows) | 100 |
+| pages with own `<PageHeader` in page.tsx | 66 |
 | pages with PageHeader only via an imported module or alias | 12 |
 | pages with header from a layout only | 3 |
 | pages with no PageHeader found | 7 |
@@ -53,11 +53,17 @@ Pages with PageSkeleton: `/budgets`, `/categories/[id]`, `/categories`, `/goals`
 | `/admin/instance` | `src/app/(app)/admin/instance/page.tsx` | app | yes (page.tsx:131) | no | no | - |
 | `/admin` | `src/app/(app)/admin/page.tsx` | app | yes (page.tsx:655) | no | no | - |
 | `/api-docs` | `src/app/(app)/api-docs/page.tsx` | app | yes (page.tsx:567) | no | no | titleClassName text-3xl font-bold text-zinc-900 dark:text-zinc-50 |
-| `/budgets` | `src/app/(app)/budgets/page.tsx` | app | yes (page.tsx:414) | yes (page.tsx:408) | yes (page.tsx:409) | - |
+| `/budgets` | `src/app/(app)/budgets/page.tsx` | app | yes (page.tsx:235) | yes (page.tsx:221) | yes (page.tsx:220) | - |
+| `/budgets/move-money` | `src/app/(app)/budgets/move-money/page.tsx` | app | yes (page.tsx:21) | no | no | - |
+| `/budgets/new` | `src/app/(app)/budgets/new/page.tsx` | app | yes (page.tsx:22) | no | no | - |
+| `/budgets/templates/apply` | `src/app/(app)/budgets/templates/apply/page.tsx` | app | yes (page.tsx:21) | no | no | - |
+| `/budgets/templates/new` | `src/app/(app)/budgets/templates/new/page.tsx` | app | yes (page.tsx:36) | no | yes (page.tsx:45) | - |
 | `/categories/[id]` | `src/app/(app)/categories/[id]/page.tsx` | app | yes (page.tsx:167); backHref + backLabel | yes (page.tsx:76) | yes (page.tsx:144) | - |
+| `/categories/[id]/edit` | `src/app/(app)/categories/[id]/edit/page.tsx` | app | no | no | no | - |
+| `/categories/new` | `src/app/(app)/categories/new/page.tsx` | app | no | no | no | - |
+| `/settings/rules/[id]/edit` | `src/app/(app)/settings/rules/[id]/edit/page.tsx` | app | no | no | no | - |
+| `/settings/rules/new` | `src/app/(app)/settings/rules/new/page.tsx` | app | no | no | no | - |
 | `/categories` | `src/app/(app)/categories/page.tsx` | app | no | via import (categories/_page-content.tsx:58) | via import (categories/_page-content.tsx:139) | ErrorState/PageSkeleton from categories/_page-content.tsx (reachable); no PageHeader in depth-3 imports |
-| `/categories/new` | `src/app/(app)/categories/new/page.tsx` | app | yes (PageHeader in categories/_components/category-form.tsx) | no | no | PKG5 create-category page (shared by hub + /settings/categorization) |
-| `/categories/[id]/edit` | `src/app/(app)/categories/[id]/edit/page.tsx` | app | yes (PageHeader in categories/_components/category-form.tsx) | no | no | PKG5 rename-category page |
 | `/chat` | `src/app/(app)/chat/page.tsx` | app | no | no | no | UNVERIFIED: no header in depth-3 imports |
 | `/connect` | `src/app/(app)/connect/page.tsx` | app | via import (settings/integrations/page.tsx:76) | no | no | re-exports `/settings/integrations/page` (page source); renders SettingsShell and imports ../settings/integrations/page |
 | `/dashboard` | `src/app/(app)/dashboard/page.tsx` | app | yes (page.tsx:537) | no | yes (page.tsx:174) | subtitleClassName text-[13px] (:541); titleClassName text-xl font-semibold tracking-tight (:540) |
@@ -67,7 +73,9 @@ Pages with PageSkeleton: `/budgets`, `/categories/[id]`, `/categories`, `/goals`
 | `/family/share` | `src/app/(app)/family/share/page.tsx` | app | yes (page.tsx:13); backHref + backLabel | no | no | titleClassName text-2xl sm:text-3xl font-bold |
 | `/feedback` | `src/app/(app)/feedback/page.tsx` | app | yes (page.tsx:350) | no | no | - |
 | `/fire` | `src/app/(app)/fire/page.tsx` | app | yes (page.tsx:204) | no | no | - |
-| `/goals` | `src/app/(app)/goals/page.tsx` | app | yes (page.tsx:383) | yes (page.tsx:378) | yes (page.tsx:379) | - |
+| `/goals` | `src/app/(app)/goals/page.tsx` | app | yes (page.tsx:95) | yes (page.tsx:91) | yes (page.tsx:90) | - |
+| `/goals/[id]/edit` | `src/app/(app)/goals/[id]/edit/page.tsx` | app | yes (page.tsx:75) | yes (page.tsx:71) | yes (page.tsx:70) | - |
+| `/goals/new` | `src/app/(app)/goals/new/page.tsx` | app | yes (page.tsx:45) | no | no | - |
 | `/import` | `src/app/(app)/import/page.tsx` | app | yes (page.tsx:324) | no | no | - |
 | `/import/pending` | `src/app/(app)/import/pending/page.tsx` | app | via import (import/pending/_components/staged-list-view.tsx:103) | no | no | header from import/pending/_components/reconcile-header.tsx:66 (reachable) |
 | `/loans` | `src/app/(app)/loans/page.tsx` | app | yes | no | yes | - |
@@ -114,8 +122,6 @@ Pages with PageSkeleton: `/budgets`, `/categories/[id]`, `/categories`, `/goals`
 | `/settings` | `src/app/(app)/settings/page.tsx` | app > settings/layout.tsx (SettingsShell) | via import (components/settings-hub.tsx:42) | no | no | - |
 | `/settings/reconciliation` | `src/app/(app)/settings/reconciliation/page.tsx` | app > settings/layout.tsx (SettingsShell) | yes (page.tsx:136) | no | no | - |
 | `/settings/rules` | `src/app/(app)/settings/rules/page.tsx` | app > settings/layout.tsx (SettingsShell) | via import (settings/reconciliation/page.tsx:136) | no | no | re-exports `/settings/reconciliation/page` (page source) |
-| `/settings/rules/new` | `src/app/(app)/settings/rules/new/page.tsx` | app > settings/layout.tsx (SettingsShell) | yes (PageHeader in settings/rules/_components/rule-form-screen.tsx) | no | no | PKG5 create-rule page; prefill via query params |
-| `/settings/rules/[id]/edit` | `src/app/(app)/settings/rules/[id]/edit/page.tsx` | app > settings/layout.tsx (SettingsShell) | yes (PageHeader in settings/rules/_components/rule-form-screen.tsx) | no | no | PKG5 edit-rule page |
 | `/settings/securities` | `src/app/(app)/settings/securities/page.tsx` | app > settings/layout.tsx (SettingsShell) | no | no | no | UNVERIFIED: 1-file closure, no header |
 | `/subscriptions` | `src/app/(app)/subscriptions/page.tsx` | app | yes | yes | yes | - |
 | `/subscriptions/new` | `src/app/(app)/subscriptions/new/page.tsx` | app | yes | no | no | form: _components/subscription-form.tsx |
