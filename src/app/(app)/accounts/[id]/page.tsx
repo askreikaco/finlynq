@@ -501,7 +501,7 @@ export default function AccountDetailPage() {
   // op launched from THIS account. The accountField tells Deposit/Withdrawal
   // which of their two account sides this account fills.
   function opHref(op: string): string {
-    const params = new URLSearchParams({ op, account: String(account!.id) });
+    const params = new URLSearchParams({ account: String(account!.id) });
     if (isInvestment) {
       // Investment account: it is the brokerage side. For Deposit that's the
       // DEST; for everything else (incl. Withdrawal source) it's the default.
@@ -511,7 +511,8 @@ export default function AccountDetailPage() {
       // Withdrawal dest needs the override.
       if (op === "withdrawal") params.set("accountField", "dest");
     }
-    return `/portfolio/new?${params.toString()}`;
+    const slug = op === "transfer" ? "in-kind-transfer" : op;
+    return `/portfolio/new/${slug}?${params.toString()}`;
   }
 
   // Normal accounts can only deposit to / withdraw from a brokerage.

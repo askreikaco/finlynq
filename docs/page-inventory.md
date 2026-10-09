@@ -6,8 +6,8 @@ Base `99e332df` (branch `wave4/w4-4-5-docs`). Generated 2026-10-09 (UTC+7 VN). S
 
 | check | value |
 |---|---|
-| `find "src/app/(app)" -name page.tsx \| sort \| wc -l` | 71 |
-| table rows below (route rows) | 71 |
+| `find "src/app/(app)" -name page.tsx \| sort \| wc -l` | 79 |
+| table rows below (route rows) | 79 |
 | pages with own `<PageHeader` in page.tsx | 49 |
 | pages with PageHeader only via an imported module or alias | 12 |
 | pages with header from a layout only | 3 |
@@ -71,7 +71,15 @@ Pages with PageSkeleton: `/budgets`, `/categories/[id]`, `/categories`, `/goals`
 | `/manage-accounts` | `src/app/(app)/manage-accounts/page.tsx` | app | no | no | no | UNVERIFIED: no header/error/skeleton in depth-3 imports |
 | `/more` | `src/app/(app)/more/page.tsx` | app | no | no | no | UNVERIFIED: no header in depth-3 imports |
 | `/portfolio/dividends` | `src/app/(app)/portfolio/dividends/page.tsx` | app | yes (page.tsx:141) | no | no | - |
-| `/portfolio/new` | `src/app/(app)/portfolio/new/page.tsx` | app | yes (page.tsx:159) | no | no | - |
+| `/portfolio/new` | `src/app/(app)/portfolio/new/page.tsx` | app | yes (page.tsx:40) | no | no | - |
+| `/portfolio/new/buy` | `src/app/(app)/portfolio/new/buy/page.tsx` | app | no | no | no | - |
+| `/portfolio/new/sell` | `src/app/(app)/portfolio/new/sell/page.tsx` | app | no | no | no | - |
+| `/portfolio/new/swap` | `src/app/(app)/portfolio/new/swap/page.tsx` | app | no | no | no | - |
+| `/portfolio/new/in-kind-transfer` | `src/app/(app)/portfolio/new/in-kind-transfer/page.tsx` | app | no | no | no | - |
+| `/portfolio/new/income-expense` | `src/app/(app)/portfolio/new/income-expense/page.tsx` | app | no | no | no | - |
+| `/portfolio/new/fx-conversion` | `src/app/(app)/portfolio/new/fx-conversion/page.tsx` | app | no | no | no | - |
+| `/portfolio/new/deposit` | `src/app/(app)/portfolio/new/deposit/page.tsx` | app | no | no | no | - |
+| `/portfolio/new/withdrawal` | `src/app/(app)/portfolio/new/withdrawal/page.tsx` | app | no | no | no | - |
 | `/portfolio` | `src/app/(app)/portfolio/page.tsx` | app | yes (page.tsx:230) | no | no | - |
 | `/portfolio/realized-gains` | `src/app/(app)/portfolio/realized-gains/page.tsx` | app | yes (page.tsx:322) | no | no | - |
 | `/reports` | `src/app/(app)/reports/page.tsx` | app | yes (page.tsx:347) | yes (page.tsx:341) | no | - |
@@ -241,6 +249,14 @@ Count: 59 of 69. No `<ErrorState` in the page file or in its import closure to d
 - `/more`  `src/app/(app)/more/page.tsx`
 - `/portfolio/dividends`  `src/app/(app)/portfolio/dividends/page.tsx`
 - `/portfolio/new`  `src/app/(app)/portfolio/new/page.tsx`
+- `/portfolio/new/buy`  `src/app/(app)/portfolio/new/buy/page.tsx`
+- `/portfolio/new/sell`  `src/app/(app)/portfolio/new/sell/page.tsx`
+- `/portfolio/new/swap`  `src/app/(app)/portfolio/new/swap/page.tsx`
+- `/portfolio/new/in-kind-transfer`  `src/app/(app)/portfolio/new/in-kind-transfer/page.tsx`
+- `/portfolio/new/income-expense`  `src/app/(app)/portfolio/new/income-expense/page.tsx`
+- `/portfolio/new/fx-conversion`  `src/app/(app)/portfolio/new/fx-conversion/page.tsx`
+- `/portfolio/new/deposit`  `src/app/(app)/portfolio/new/deposit/page.tsx`
+- `/portfolio/new/withdrawal`  `src/app/(app)/portfolio/new/withdrawal/page.tsx`
 - `/portfolio`  `src/app/(app)/portfolio/page.tsx`
 - `/portfolio/realized-gains`  `src/app/(app)/portfolio/realized-gains/page.tsx`
 - `/reports`  `src/app/(app)/reports/page.tsx`

@@ -12,18 +12,9 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -41,9 +32,13 @@ import { useSeedAccountFromParam } from "@/lib/hooks/useSeedAccountFromParam";
 import { AmountInput } from "@/components/amount-input";
 import { getDisplayLocale } from "@/lib/locale";
 
+import { OpFooter, OpGroup, OpNote, OpPage, OpRow, OP_INPUT, OP_SELECT, safeReturnHref } from "./op-page";
+
 export default function BuyForm() {
   const router = useRouter();
   const { editId, isEdit } = useEditId();
+  const searchParams = useSearchParams();
+  const returnHref = safeReturnHref(searchParams.get("returnTo"));
 
   const { accounts, holdings, loading, loadError, editData } =
     usePortfolioFormData({ editId, opType: "buy" });
@@ -206,7 +201,7 @@ export default function BuyForm() {
         }
         return;
       }
-      router.push("/transactions");
+      router.push(returnHref);
     } catch (err: unknown) {
       setSubmitError(err instanceof Error ? err.message : "Save failed");
     } finally {
@@ -216,38 +211,35 @@ export default function BuyForm() {
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="py-8 text-sm text-muted-foreground">
-          Loading…
-        </CardContent>
-      </Card>
+      <OpPage title={isEdit ? "Edit Buy" : "Buy"}>
+        <OpGroup>
+          <OpNote>Loading…</OpNote>
+        </OpGroup>
+      </OpPage>
     );
   }
   if (loadError) {
     return (
-      <Card>
-        <CardContent className="py-8 text-sm text-destructive">
-          {loadError}
-        </CardContent>
-      </Card>
+      <OpPage title={isEdit ? "Edit Buy" : "Buy"}>
+        <OpGroup>
+          <OpNote tone="destructive">{loadError}</OpNote>
+        </OpGroup>
+      </OpPage>
     );
   }
   if (investmentAccounts.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>No investment accounts</CardTitle>
-          <CardDescription>
-            Buy operations require an investment account. Mark one of your
-            accounts as an investment account first.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Link href="/accounts" className="text-sm text-primary underline">
+      <OpPage title="Buy">
+        <OpGroup>
+          <OpNote>
+            No investment accounts. Buy operations require an investment account. Mark one of
+            your accounts as an investment account first.
+          </OpNote>
+          <Link href="/accounts" className="block px-4 py-3 text-sm text-primary">
             Go to Accounts →
           </Link>
-        </CardContent>
-      </Card>
+        </OpGroup>
+      </OpPage>
     );
   }
 
@@ -256,239 +248,178 @@ export default function BuyForm() {
     selectedHolding && !Number.isNaN(costNum) && costNum > 0 && !!cashSleeve;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{isEdit ? "Edit Buy" : "Buy"}</CardTitle>
-        <CardDescription>
-          Acquire shares in an existing holding. The cash leg is debited from the
-          matching {selectedHolding?.currency ?? "<currency>"} sleeve in the same
-          account.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label>Account</Label>
-            <Select
-              items={accountLabelById}
-              value={accountId}
-              onValueChange={(v) => {
-                setAccountId(v ?? "");
-                setHoldingId("");
-              }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Pick an investment account" />
-              </SelectTrigger>
-              <SelectContent alignItemWithTrigger={false} side="bottom">
-                {investmentAccounts.map((a) => (
-                  <SelectItem key={a.id} value={String(a.id)}>
-                    {a.name ?? `#${a.id}`} ({a.currency})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.accountId && (
-              <p className="text-xs text-destructive">{errors.accountId}</p>
-            )}
-          </div>
+    <OpPage
+      title={isEdit ? "Edit Buy" : "Buy"}
+      saveLabel={isEdit ? "Save" : "Record"}
+      saving={submitting}
+      saveDisabled={cashSleeveMissing || !!loadError}
+      onSubmit={handleSubmit}
+    >
+      <OpGroup label="Trade">
+        <OpRow label="Account" error={errors.accountId}>
+          <Select
+            items={accountLabelById}
+            value={accountId}
+            onValueChange={(v) => {
+              setAccountId(v ?? "");
+              setHoldingId("");
+            }}
+          >
+            <SelectTrigger className={OP_SELECT}>
+              <SelectValue placeholder="Pick an investment account" />
+            </SelectTrigger>
+            <SelectContent alignItemWithTrigger={false} side="bottom">
+              {investmentAccounts.map((a) => (
+                <SelectItem key={a.id} value={String(a.id)}>
+                  {a.name ?? `#${a.id}`} ({a.currency})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </OpRow>
 
-          <div className="space-y-1.5">
-            <Label>Holding</Label>
-            <Select
-              items={holdingLabelById}
-              value={holdingId}
-              onValueChange={(v) => setHoldingId(v ?? "")}
-              disabled={!selectedAccount}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue
-                  placeholder={
-                    selectedAccount
-                      ? accountHoldings.length === 0
-                        ? "No non-cash holdings in this account"
-                        : "Pick a holding"
-                      : "Pick an account first"
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent alignItemWithTrigger={false} side="bottom">
-                {accountHoldings.map((h) => (
-                  <SelectItem key={h.id} value={String(h.id)}>
-                    {h.symbol ? `${h.symbol} — ` : ""}
-                    {h.name ?? `#${h.id}`} ({h.currency})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.holdingId && (
-              <p className="text-xs text-destructive">{errors.holdingId}</p>
-            )}
-            {selectedHolding && (
-              <p className="text-xs text-muted-foreground">
-                Currently holding {Number(selectedHolding.currentShares ?? 0).toLocaleString(getDisplayLocale())} shares.
-              </p>
-            )}
-          </div>
-
-          {cashSleeveMissing && (
-            <div className="rounded-md border border-destructive/50 bg-destructive/5 px-3 py-2 text-xs text-destructive">
-              No {selectedHolding?.currency} cash sleeve exists in this account.
-              Create one in the{" "}
-              <Link
-                href={`/accounts/${selectedAccount?.id ?? ""}`}
-                className="underline"
-              >
-                account page
-              </Link>{" "}
-              first.
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>Quantity</Label>
-              <AmountInput
-                step="any"
-                inputMode="decimal"
-                value={qty}
-                onValueChange={(nv) => setQty(nv)}
-                placeholder="100"
+        <OpRow label="Holding" error={errors.holdingId}>
+          <Select
+            items={holdingLabelById}
+            value={holdingId}
+            onValueChange={(v) => setHoldingId(v ?? "")}
+            disabled={!selectedAccount}
+          >
+            <SelectTrigger className={OP_SELECT}>
+              <SelectValue
+                placeholder={
+                  selectedAccount
+                    ? accountHoldings.length === 0
+                      ? "No non-cash holdings in this account"
+                      : "Pick a holding"
+                    : "Pick an account first"
+                }
               />
-              {errors.qty && (
-                <p className="text-xs text-destructive">{errors.qty}</p>
-              )}
-            </div>
-            <div className="space-y-1.5">
-              <Label>
-                Total cost{" "}
-                {selectedHolding ? (
-                  <span className="text-muted-foreground text-xs">
-                    ({selectedHolding.currency})
-                  </span>
-                ) : null}
-              </Label>
-              <AmountInput
-                step="any"
-                inputMode="decimal"
-                value={totalCost}
-                onValueChange={(nv) => setTotalCost(nv)}
-                placeholder="1000.00"
-              />
-              {errors.totalCost && (
-                <p className="text-xs text-destructive">{errors.totalCost}</p>
-              )}
-            </div>
-          </div>
+            </SelectTrigger>
+            <SelectContent alignItemWithTrigger={false} side="bottom">
+              {accountHoldings.map((h) => (
+                <SelectItem key={h.id} value={String(h.id)}>
+                  {h.symbol ? `${h.symbol} — ` : ""}
+                  {h.name ?? `#${h.id}`} ({h.currency})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </OpRow>
 
-          <div className="space-y-1.5">
-            <Label>Date</Label>
-            <Input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-            />
-            {errors.date && (
-              <p className="text-xs text-destructive">{errors.date}</p>
-            )}
-          </div>
+        {cashSleeveMissing && (
+          <OpNote tone="destructive">
+            No {selectedHolding?.currency} cash sleeve exists in this account. Create one in the{" "}
+            <Link href={`/accounts/${selectedAccount?.id ?? ""}`} className="underline">
+              account page
+            </Link>{" "}
+            first.
+          </OpNote>
+        )}
 
-          {showPreview && selectedHolding && (
-            <div className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-              Will debit the {selectedHolding.currency} cash sleeve by{" "}
-              <span className="font-mono text-foreground">
-                {formatCurrency(costNum, selectedHolding.currency)}
-              </span>
-              .
-            </div>
-          )}
+        <OpRow label="Quantity" error={errors.qty}>
+          <AmountInput
+            step="any"
+            inputMode="decimal"
+            value={qty}
+            onValueChange={(nv) => setQty(nv)}
+            placeholder="100"
+            className={OP_INPUT}
+          />
+        </OpRow>
 
-          <div className="space-y-1.5">
-            <Label>
-              Payee{" "}
-              <span className="text-muted-foreground text-xs">(optional)</span>
-            </Label>
-            <Input
-              value={payee}
-              onChange={(e) => setPayee(e.target.value)}
-              placeholder="Broker name"
-            />
-          </div>
+        <OpRow
+          label={
+            <>
+              Total cost
+              {selectedHolding ? ` (${selectedHolding.currency})` : ""}
+            </>
+          }
+          error={errors.totalCost}
+        >
+          <AmountInput
+            step="any"
+            inputMode="decimal"
+            value={totalCost}
+            onValueChange={(nv) => setTotalCost(nv)}
+            placeholder="1000.00"
+            className={OP_INPUT}
+          />
+        </OpRow>
 
-          <div className="space-y-1.5">
-            <Label>
-              Note{" "}
-              <span className="text-muted-foreground text-xs">(optional)</span>
-            </Label>
-            <Input
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder=""
-            />
-          </div>
+        <OpRow label="Date" error={errors.date}>
+          <Input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className={OP_INPUT}
+          />
+        </OpRow>
+      </OpGroup>
 
-          <div className="space-y-1.5">
-            <Label>
-              Tags{" "}
-              <span className="text-muted-foreground text-xs">(optional)</span>
-            </Label>
-            <Input
-              value={tags}
-              onChange={(e) => setTags(e.target.value)}
-              placeholder="tag1, tag2"
-            />
-          </div>
+      {selectedHolding && (
+        <OpFooter>
+          Currently holding{" "}
+          {Number(selectedHolding.currentShares ?? 0).toLocaleString(getDisplayLocale())} shares.
+        </OpFooter>
+      )}
+      {showPreview && selectedHolding && (
+        <OpFooter>
+          Will debit the {selectedHolding.currency} cash sleeve by{" "}
+          <span className="font-mono text-foreground">
+            {formatCurrency(costNum, selectedHolding.currency)}
+          </span>
+          .
+        </OpFooter>
+      )}
 
-          {submitError && (
-            <p className="text-sm text-destructive">{submitError}</p>
-          )}
+      <OpGroup label="Details">
+        <OpRow label="Payee">
+          <Input
+            value={payee}
+            onChange={(e) => setPayee(e.target.value)}
+            placeholder="Broker name (optional)"
+            className={OP_INPUT}
+          />
+        </OpRow>
+        <OpRow label="Note">
+          <Input
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Optional"
+            className={OP_INPUT}
+          />
+        </OpRow>
+        <OpRow label="Tags">
+          <Input
+            value={tags}
+            onChange={(e) => setTags(e.target.value)}
+            placeholder="tag1, tag2 (optional)"
+            className={OP_INPUT}
+          />
+        </OpRow>
+      </OpGroup>
 
-          {blockingClosureTxIds.length > 0 && (
-            <div className="rounded-md border border-warning/30 bg-warning/10 p-3 text-xs">
-              <p className="font-medium text-warning mb-1.5">
-                Delete these dependent transactions first:
-              </p>
-              <ul className="space-y-1">
-                {blockingClosureTxIds.map((id) => (
-                  <li key={id}>
-                    <Link
-                      href={buildTxDrillUrl({ id: String(id) })}
-                      className="text-warning underline hover:no-underline"
-                    >
-                      Transaction #{id}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+      {submitError && (
+        <OpGroup>
+          <OpNote tone="destructive">{submitError}</OpNote>
+        </OpGroup>
+      )}
 
-          <div className="flex gap-2 pt-1">
-            <Button
-              type="button"
-              variant="outline"
-              className="flex-1"
-              onClick={() => router.push("/portfolio/new")}
-              disabled={submitting}
+      {blockingClosureTxIds.length > 0 && (
+        <OpGroup label="Blocked by">
+          <OpNote tone="warning">Delete these dependent transactions first:</OpNote>
+          {blockingClosureTxIds.map((id) => (
+            <Link
+              key={id}
+              href={buildTxDrillUrl({ id: String(id) })}
+              className="block px-4 py-3 text-sm text-warning underline hover:no-underline"
             >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              className="flex-1"
-              disabled={submitting || cashSleeveMissing || !!loadError}
-            >
-              {submitting
-                ? isEdit
-                  ? "Saving…"
-                  : "Recording…"
-                : isEdit
-                  ? "Save edit"
-                  : "Record buy"}
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+              Transaction #{id}
+            </Link>
+          ))}
+        </OpGroup>
+      )}
+    </OpPage>
   );
 }

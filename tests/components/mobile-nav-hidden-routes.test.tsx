@@ -44,6 +44,27 @@ describe("mobile tab bar visibility by route", () => {
   });
 
   it.each([
+    "/portfolio/new/buy",
+    "/portfolio/new/sell",
+    "/portfolio/new/swap",
+    "/portfolio/new/in-kind-transfer",
+    "/portfolio/new/income-expense",
+    "/portfolio/new/fx-conversion",
+    "/portfolio/new/deposit",
+    "/portfolio/new/withdrawal",
+  ])("is absent on %s (operation form, full-screen)", (p) => {
+    mockPath = p;
+    render(<Nav />);
+    expect(queryBar(), `bar on ${p}`).toBeNull();
+  });
+
+  it("is present on /portfolio/new (operation list keeps the tab bar)", () => {
+    mockPath = "/portfolio/new";
+    render(<Nav />);
+    expect(queryBar()).not.toBeNull();
+  });
+
+  it.each([
     "/dashboard",
     "/accounts",
     "/portfolio",

@@ -13,18 +13,9 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -43,9 +34,13 @@ import { getDisplayLocale } from "@/lib/locale";
 
 type Direction = "income" | "expense";
 
+import { OpFooter, OpGroup, OpNote, OpPage, OpRow, OP_INPUT, OP_SELECT, safeReturnHref } from "./op-page";
+
 export default function IncomeExpenseForm() {
   const router = useRouter();
   const { editId, isEdit } = useEditId();
+  const searchParams = useSearchParams();
+  const returnHref = safeReturnHref(searchParams.get("returnTo"));
 
   const { accounts, holdings, categories, loading, loadError, editData } =
     usePortfolioFormData({ editId, opType: "income-expense", includeCategories: true });
@@ -309,7 +304,7 @@ export default function IncomeExpenseForm() {
         }
         return;
       }
-      router.push("/transactions");
+      router.push(returnHref);
     } catch (err: unknown) {
       setSubmitError(err instanceof Error ? err.message : "Save failed");
     } finally {
@@ -319,443 +314,337 @@ export default function IncomeExpenseForm() {
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="py-8 text-sm text-muted-foreground">
-          Loading…
-        </CardContent>
-      </Card>
+      <OpPage title={isEdit ? "Edit Income / expense" : "Income / expense"}>
+        <OpGroup>
+          <OpNote>Loading…</OpNote>
+        </OpGroup>
+      </OpPage>
     );
   }
   if (loadError) {
     return (
-      <Card>
-        <CardContent className="py-8 text-sm text-destructive">
-          {loadError}
-        </CardContent>
-      </Card>
+      <OpPage title={isEdit ? "Edit Income / expense" : "Income / expense"}>
+        <OpGroup>
+          <OpNote tone="destructive">{loadError}</OpNote>
+        </OpGroup>
+      </OpPage>
     );
   }
   if (investmentAccounts.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>No investment accounts</CardTitle>
-          <CardDescription>
-            Portfolio income/expense requires an investment account.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Link href="/accounts" className="text-sm text-primary underline">
+      <OpPage title="Income / expense">
+        <OpGroup>
+          <OpNote>Portfolio income and expense require an investment account.</OpNote>
+          <Link href="/accounts" className="block px-4 py-3 text-sm text-primary">
             Go to Accounts →
           </Link>
-        </CardContent>
-      </Card>
+        </OpGroup>
+      </OpPage>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
-          {isEdit
-            ? "Edit Income / expense"
-            : "Portfolio income / expense"}
-        </CardTitle>
-        <CardDescription>
-          Dividends and interest land as income on the matching cash sleeve;
-          custodial fees land as expenses. Pick a related holding to attribute
-          income to a specific position for reporting. For income received as
-          shares (a DRIP), switch &ldquo;Settle into&rdquo; to{" "}
-          <span className="font-medium">Holding (shares)</span> to book it in a
-          single entry.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label>Account</Label>
+    <OpPage
+      title={isEdit ? "Edit Income / expense" : "Income / expense"}
+      saveLabel={isEdit ? "Save" : sharesMode ? "Record income" : direction === "income" ? "Record income" : "Record expense"}
+      saving={submitting}
+      saveDisabled={submitting || !!loadError}
+      onSubmit={handleSubmit}
+    >
+      <OpGroup label="Entry">
+        <OpRow label="Account" error={errors.accountId}>
+          <Select
+            items={accountLabelById}
+            value={accountId}
+            onValueChange={(v) => {
+              setAccountId(v ?? "");
+              setRelatedHoldingId("");
+            }}
+          >
+            <SelectTrigger className={OP_SELECT}>
+              <SelectValue placeholder="Pick an investment account" />
+            </SelectTrigger>
+            <SelectContent alignItemWithTrigger={false} side="bottom">
+              {investmentAccounts.map((a) => (
+                <SelectItem key={a.id} value={String(a.id)}>
+                  {a.name ?? `#${a.id}`} ({a.currency})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </OpRow>
+
+        <OpRow label="Direction">
+          <Select
+            items={directionLabels}
+            value={direction}
+            onValueChange={(v) => {
+              const d = (v ?? "income") as Direction;
+              setDirection(d);
+              // Reset the entry-type preset to the sensible default for the
+              // new sign (income→dividend, expense→fee).
+              setIncomeType(d === "income" ? "dividend" : "fee");
+              // Income-as-shares is income-only — drop back to cash for an
+              // expense so the form stays consistent.
+              if (d === "expense") setSettleAs("cash");
+            }}
+          >
+            <SelectTrigger className={OP_SELECT}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent alignItemWithTrigger={false} side="bottom">
+              <SelectItem value="income">Income (+)</SelectItem>
+              <SelectItem value="expense">Expense (−)</SelectItem>
+            </SelectContent>
+          </Select>
+        </OpRow>
+
+        {sharesMode ? (
+          <OpRow label="Shares" error={errors.quantity}>
+            <AmountInput
+              step="any"
+              inputMode="decimal"
+              value={quantity}
+              onValueChange={(nv) => setQuantity(nv)}
+              placeholder="e.g. 1.2345"
+              className={OP_INPUT}
+            />
+          </OpRow>
+        ) : (
+          <OpRow label="Sleeve" error={errors.currency}>
             <Select
-              items={accountLabelById}
-              value={accountId}
-              onValueChange={(v) => {
-                setAccountId(v ?? "");
-                setRelatedHoldingId("");
-              }}
+              value={currency}
+              onValueChange={(v) => setCurrency(v ?? "")}
+              disabled={!selectedAccount || cashSleeves.length === 0}
             >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Pick an investment account" />
-              </SelectTrigger>
-              <SelectContent alignItemWithTrigger={false} side="bottom">
-                {investmentAccounts.map((a) => (
-                  <SelectItem key={a.id} value={String(a.id)}>
-                    {a.name ?? `#${a.id}`} ({a.currency})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.accountId && (
-              <p className="text-xs text-destructive">{errors.accountId}</p>
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>Direction</Label>
-              <Select
-                items={directionLabels}
-                value={direction}
-                onValueChange={(v) => {
-                  const d = (v ?? "income") as Direction;
-                  setDirection(d);
-                  // Reset the entry-type preset to the sensible default for the
-                  // new sign (income→dividend, expense→fee).
-                  setIncomeType(d === "income" ? "dividend" : "fee");
-                  // Income-as-shares is income-only — drop back to cash for an
-                  // expense so the form stays consistent.
-                  if (d === "expense") setSettleAs("cash");
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent alignItemWithTrigger={false} side="bottom">
-                  <SelectItem value="income">Income (+)</SelectItem>
-                  <SelectItem value="expense">Expense (−)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {sharesMode ? (
-              <div className="space-y-1.5">
-                <Label>Quantity (shares)</Label>
-                <AmountInput
-                  step="any"
-                  inputMode="decimal"
-                  value={quantity}
-                  onValueChange={(nv) => setQuantity(nv)}
-                  placeholder="e.g. 1.2345"
-                />
-                {errors.quantity && (
-                  <p className="text-xs text-destructive">{errors.quantity}</p>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-1.5">
-                <Label>Currency / cash sleeve</Label>
-                <Select
-                  value={currency}
-                  onValueChange={(v) => setCurrency(v ?? "")}
-                  disabled={!selectedAccount || cashSleeves.length === 0}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue
-                      placeholder={
-                        selectedAccount && cashSleeves.length === 0
-                          ? "No cash sleeves on this account"
-                          : "Pick a sleeve"
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent alignItemWithTrigger={false} side="bottom">
-                    {cashSleeves.map((s) => (
-                      <SelectItem key={s.id} value={s.currency}>
-                        {s.currency}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.currency && (
-                  <p className="text-xs text-destructive">{errors.currency}</p>
-                )}
-              </div>
-            )}
-          </div>
-
-          {sharesAllowed && (
-            <div className="space-y-1.5">
-              <Label>Settle into</Label>
-              <Select
-                items={{
-                  cash: "Cash sleeve",
-                  shares: "Holding (shares)",
-                }}
-                value={settleAs}
-                onValueChange={(v) =>
-                  setSettleAs((v ?? "cash") as "cash" | "shares")
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent alignItemWithTrigger={false} side="bottom">
-                  <SelectItem value="cash">Cash sleeve</SelectItem>
-                  <SelectItem value="shares">Holding (shares)</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                {settleAs === "shares"
-                  ? "Dividend/income received AS SHARES — books one entry that adds shares to a holding (cost basis = value ÷ quantity). No cash sleeve is touched."
-                  : "Income lands as cash on the matching cash sleeve."}
-              </p>
-            </div>
-          )}
-
-          <div className="space-y-1.5">
-            <Label>Entry type</Label>
-            <Select
-              items={incomeTypeLabels}
-              value={incomeType}
-              onValueChange={(v) =>
-                setIncomeType(
-                  (v ?? "other") as "dividend" | "interest" | "fee" | "other",
-                )
-              }
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent alignItemWithTrigger={false} side="bottom">
-                {direction === "income" ? (
-                  <>
-                    <SelectItem value="dividend">Dividend</SelectItem>
-                    <SelectItem value="interest">Interest</SelectItem>
-                    <SelectItem value="other">Other income</SelectItem>
-                  </>
-                ) : (
-                  <>
-                    <SelectItem value="fee">Fee</SelectItem>
-                    <SelectItem value="other">Other expense</SelectItem>
-                  </>
-                )}
-              </SelectContent>
-            </Select>
-            {incomeType !== "other" && (
-              <p className="text-xs text-muted-foreground">
-                Auto-categorized as{" "}
-                <span className="font-medium">
-                  {incomeType === "dividend"
-                    ? "Dividends"
-                    : incomeType === "interest"
-                      ? "Interest"
-                      : "Investment Fees"}
-                </span>{" "}
-                so it shows in the right report (the category is created if you
-                don&apos;t have it yet). Choose &ldquo;Other&rdquo; to pick a
-                category manually.
-              </p>
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>
-                {sharesMode ? "Dollar value" : "Amount"}{" "}
-                <span className="text-muted-foreground text-xs">
-                  (positive)
-                </span>
-              </Label>
-              <AmountInput
-                step="any"
-                inputMode="decimal"
-                value={amount}
-                onValueChange={(nv) => setAmount(nv)}
-                placeholder="25.00"
-              />
-              {errors.amount && (
-                <p className="text-xs text-destructive">{errors.amount}</p>
-              )}
-            </div>
-            <div className="space-y-1.5">
-              <Label>Date</Label>
-              <Input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-              />
-              {errors.date && (
-                <p className="text-xs text-destructive">{errors.date}</p>
-              )}
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>
-              {sharesMode ? (
-                "Holding to receive shares"
-              ) : (
-                <>
-                  Related holding{" "}
-                  <span className="text-muted-foreground text-xs">
-                    (optional)
-                  </span>
-                </>
-              )}
-            </Label>
-            <Select
-              items={relatedHoldingLabelById}
-              value={relatedHoldingId}
-              onValueChange={(v) => setRelatedHoldingId(v ?? "")}
-              disabled={!selectedAccount || accountHoldings.length === 0}
-            >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className={OP_SELECT}>
                 <SelectValue
                   placeholder={
-                    selectedAccount
-                      ? accountHoldings.length === 0
-                        ? "No non-cash holdings"
-                        : sharesMode
-                          ? "Pick the holding the shares land on"
-                          : "Pick a holding for attribution"
-                      : "Pick an account first"
+                    selectedAccount && cashSleeves.length === 0
+                      ? "No cash sleeves on this account"
+                      : "Pick a sleeve"
                   }
                 />
               </SelectTrigger>
               <SelectContent alignItemWithTrigger={false} side="bottom">
-                {accountHoldings.map((h) => (
-                  <SelectItem key={h.id} value={String(h.id)}>
-                    {h.symbol ? `${h.symbol} — ` : ""}
-                    {h.name ?? `#${h.id}`}
+                {cashSleeves.map((s) => (
+                  <SelectItem key={s.id} value={s.currency}>
+                    {s.currency}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            {sharesMode && errors.relatedHoldingId && (
-              <p className="text-xs text-destructive">
-                {errors.relatedHoldingId}
-              </p>
-            )}
-            {sharesMode && impliedPricePerShare != null && (
-              <p className="text-xs text-muted-foreground">
-                ≈ {impliedPricePerShare.toLocaleString(getDisplayLocale(), {
-                  maximumFractionDigits: 6,
-                })}{" "}
-                per share
-              </p>
-            )}
-          </div>
+          </OpRow>
+        )}
 
-          {incomeType === "other" && (
-            <div className="space-y-1.5">
-              <Label>
-                Category{" "}
-                <span className="text-muted-foreground text-xs">(optional)</span>
-              </Label>
-              <Select
-                items={categoryLabelById}
-                value={categoryId}
-                onValueChange={(v) => setCategoryId(v ?? "")}
-                disabled={categories.length === 0}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue
-                    placeholder={
-                      categories.length === 0
-                        ? "No categories available"
-                        : "Pick a category (e.g. Dividends)"
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent alignItemWithTrigger={false} side="bottom">
-                  {categories.map((c) => (
-                    <SelectItem key={c.id} value={String(c.id)}>
-                      {c.name ?? `#${c.id}`}
-                      {c.group ? ` (${c.group})` : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+        {sharesAllowed && (
+          <OpRow label="Settle into">
+            <Select
+              items={{
+                cash: "Cash sleeve",
+                shares: "Holding (shares)",
+              }}
+              value={settleAs}
+              onValueChange={(v) => setSettleAs((v ?? "cash") as "cash" | "shares")}
+            >
+              <SelectTrigger className={OP_SELECT}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent alignItemWithTrigger={false} side="bottom">
+                <SelectItem value="cash">Cash sleeve</SelectItem>
+                <SelectItem value="shares">Holding (shares)</SelectItem>
+              </SelectContent>
+            </Select>
+          </OpRow>
+        )}
 
-          <div className="space-y-1.5">
-            <Label>
-              Payee{" "}
-              <span className="text-muted-foreground text-xs">(optional)</span>
-            </Label>
-            <Input
-              value={payee}
-              onChange={(e) => setPayee(e.target.value)}
-              placeholder="e.g. Quarterly dividend"
-            />
-          </div>
+        <OpRow label="Entry type">
+          <Select
+            items={incomeTypeLabels}
+            value={incomeType}
+            onValueChange={(v) =>
+              setIncomeType((v ?? "other") as "dividend" | "interest" | "fee" | "other")
+            }
+          >
+            <SelectTrigger className={OP_SELECT}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent alignItemWithTrigger={false} side="bottom">
+              {direction === "income" ? (
+                <>
+                  <SelectItem value="dividend">Dividend</SelectItem>
+                  <SelectItem value="interest">Interest</SelectItem>
+                  <SelectItem value="other">Other income</SelectItem>
+                </>
+              ) : (
+                <>
+                  <SelectItem value="fee">Fee</SelectItem>
+                  <SelectItem value="other">Other expense</SelectItem>
+                </>
+              )}
+            </SelectContent>
+          </Select>
+        </OpRow>
 
-          <div className="space-y-1.5">
-            <Label>
-              Note{" "}
-              <span className="text-muted-foreground text-xs">(optional)</span>
-            </Label>
-            <Input
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder=""
-            />
-          </div>
+        <OpRow label={sharesMode ? "Dollar value" : "Amount"} error={errors.amount}>
+          <AmountInput
+            step="any"
+            inputMode="decimal"
+            value={amount}
+            onValueChange={(nv) => setAmount(nv)}
+            placeholder="25.00"
+            className={OP_INPUT}
+          />
+        </OpRow>
 
-          <div className="space-y-1.5">
-            <Label>
-              Tags{" "}
-              <span className="text-muted-foreground text-xs">(optional)</span>
-            </Label>
-            <Input
-              value={tags}
-              onChange={(e) => setTags(e.target.value)}
-              placeholder="tag1, tag2"
-            />
-          </div>
+        <OpRow label="Date" error={errors.date}>
+          <Input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className={OP_INPUT}
+          />
+        </OpRow>
 
-          {submitError && (
-            <p className="text-sm text-destructive">{submitError}</p>
-          )}
+        <OpRow label={sharesMode ? "Receives" : "Holding"} error={sharesMode ? errors.relatedHoldingId : undefined}>
+          <Select
+            items={relatedHoldingLabelById}
+            value={relatedHoldingId}
+            onValueChange={(v) => setRelatedHoldingId(v ?? "")}
+            disabled={!selectedAccount || accountHoldings.length === 0}
+          >
+            <SelectTrigger className={OP_SELECT}>
+              <SelectValue
+                placeholder={
+                  selectedAccount
+                    ? accountHoldings.length === 0
+                      ? "No non-cash holdings"
+                      : sharesMode
+                        ? "Pick the holding the shares land on"
+                        : "Optional, for attribution"
+                    : "Pick an account first"
+                }
+              />
+            </SelectTrigger>
+            <SelectContent alignItemWithTrigger={false} side="bottom">
+              {accountHoldings.map((h) => (
+                <SelectItem key={h.id} value={String(h.id)}>
+                  {h.symbol ? `${h.symbol} — ` : ""}
+                  {h.name ?? `#${h.id}`}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </OpRow>
 
-          {blockingClosureTxIds.length > 0 && (
-            <div className="rounded-md border border-warning/30 bg-warning/10 p-3 text-xs">
-              <p className="font-medium text-warning mb-1.5">
-                Delete these dependent transactions first:
-              </p>
-              <ul className="space-y-1">
-                {blockingClosureTxIds.map((id) => (
-                  <li key={id}>
-                    <Link
-                      href={buildTxDrillUrl({ id: String(id) })}
-                      className="text-warning underline hover:no-underline"
-                    >
-                      Transaction #{id}
-                    </Link>
-                  </li>
+        {incomeType === "other" && (
+          <OpRow label="Category">
+            <Select
+              items={categoryLabelById}
+              value={categoryId}
+              onValueChange={(v) => setCategoryId(v ?? "")}
+              disabled={categories.length === 0}
+            >
+              <SelectTrigger className={OP_SELECT}>
+                <SelectValue
+                  placeholder={
+                    categories.length === 0
+                      ? "No categories available"
+                      : "Pick a category (optional)"
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent alignItemWithTrigger={false} side="bottom">
+                {categories.map((c) => (
+                  <SelectItem key={c.id} value={String(c.id)}>
+                    {c.name ?? `#${c.id}`}
+                    {c.group ? ` (${c.group})` : ""}
+                  </SelectItem>
                 ))}
-              </ul>
-            </div>
-          )}
+              </SelectContent>
+            </Select>
+          </OpRow>
+        )}
+      </OpGroup>
 
-          <div className="flex gap-2 pt-1">
-            <Button
-              type="button"
-              variant="outline"
-              className="flex-1"
-              onClick={() => router.push("/portfolio/new")}
-              disabled={submitting}
+      {sharesAllowed && (
+        <OpFooter>
+          {settleAs === "shares"
+            ? "Dividend/income received AS SHARES: books one entry that adds shares to a holding (cost basis = value ÷ quantity). No cash sleeve is touched."
+            : "Income lands as cash on the matching cash sleeve."}
+        </OpFooter>
+      )}
+      {sharesMode && impliedPricePerShare != null && (
+        <OpFooter>
+          ≈{" "}
+          {impliedPricePerShare.toLocaleString(getDisplayLocale(), {
+            maximumFractionDigits: 6,
+          })}{" "}
+          per share
+        </OpFooter>
+      )}
+      {incomeType !== "other" && (
+        <OpFooter>
+          Auto-categorized as{" "}
+          <span className="font-medium">
+            {incomeType === "dividend"
+              ? "Dividends"
+              : incomeType === "interest"
+                ? "Interest"
+                : "Investment Fees"}
+          </span>{" "}
+          so it shows in the right report (the category is created if you don&apos;t have it yet).
+          Choose &ldquo;Other&rdquo; to pick a category manually.
+        </OpFooter>
+      )}
+
+      <OpGroup label="Details">
+        <OpRow label="Payee">
+          <Input
+            value={payee}
+            onChange={(e) => setPayee(e.target.value)}
+            placeholder="e.g. Quarterly dividend (optional)"
+            className={OP_INPUT}
+          />
+        </OpRow>
+        <OpRow label="Note">
+          <Input
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Optional"
+            className={OP_INPUT}
+          />
+        </OpRow>
+        <OpRow label="Tags">
+          <Input
+            value={tags}
+            onChange={(e) => setTags(e.target.value)}
+            placeholder="tag1, tag2 (optional)"
+            className={OP_INPUT}
+          />
+        </OpRow>
+      </OpGroup>
+
+      {submitError && (
+        <OpGroup>
+          <OpNote tone="destructive">{submitError}</OpNote>
+        </OpGroup>
+      )}
+
+      {blockingClosureTxIds.length > 0 && (
+        <OpGroup label="Blocked by">
+          <OpNote tone="warning">Delete these dependent transactions first:</OpNote>
+          {blockingClosureTxIds.map((id) => (
+            <Link
+              key={id}
+              href={buildTxDrillUrl({ id: String(id) })}
+              className="block px-4 py-3 text-sm text-warning underline hover:no-underline"
             >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              className="flex-1"
-              disabled={submitting || !!loadError}
-            >
-              {submitting
-                ? isEdit
-                  ? "Saving…"
-                  : "Recording…"
-                : isEdit
-                  ? "Save edit"
-                  : sharesMode
-                    ? "Record income (shares)"
-                    : direction === "income"
-                      ? "Record income"
-                      : "Record expense"}
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+              Transaction #{id}
+            </Link>
+          ))}
+        </OpGroup>
+      )}
+    </OpPage>
   );
 }

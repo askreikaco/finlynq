@@ -425,8 +425,11 @@ const FULL_SCREEN_ENTRY_ROUTES = ["/transactions/new", "/accounts/new"] as const
 // Mobile bottom bar
 export const MobileBottomBar = memo(function MobileBottomBar({ pathname }: { pathname: string }) {
   const moreActive = !mobileBarItems.some(i => pathname === i.href || pathname.startsWith(i.href + "/"));
-  // Full-screen entry flow: the bar is hidden so the numpad and Save/Continue are never overlapped.
-  const hidden = FULL_SCREEN_ENTRY_ROUTES.some((r) => pathname === r || pathname.startsWith(r + "/"));
+  // Full-screen entry flows: the bar is hidden so the numpad and Save/Continue are never overlapped.
+  // Portfolio operation forms (/portfolio/new/<op>) follow the same rule; the /portfolio/new list keeps the bar.
+  const hidden =
+    FULL_SCREEN_ENTRY_ROUTES.some((r) => pathname === r || pathname.startsWith(r + "/")) ||
+    pathname.startsWith("/portfolio/new/");
   if (hidden) return null;
   return (
     <nav aria-label="Mobile navigation" className="md:hidden fixed z-50 mobile-glass-bar bottom-[max(12px,var(--sab))] left-[calc(16px+var(--sal))] right-[calc(16px+var(--sar))] h-16 rounded-[28px]">

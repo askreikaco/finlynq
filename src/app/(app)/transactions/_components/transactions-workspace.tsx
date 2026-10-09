@@ -41,6 +41,7 @@ import { todayISO } from "@/lib/utils/date";
 import { LotReallocationNotice } from "@/components/portfolio/lot-reallocation-notice";
 import type { LotReallocationPreview } from "@/lib/portfolio/lots/types";
 import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
+import { opHref, type OpKey } from "@/components/portfolio/forms/op-catalog";
 
 /**
  * TransactionsWorkspace — the full transactions surface (filters, per-column
@@ -424,8 +425,8 @@ export function TransactionsWorkspace({
           brokerage_withdrawal_in: "withdrawal",
           brokerage_withdrawal_out: "withdrawal",
         };
-        const op = opForKind[t.kind] ?? "buy";
-        router.push(`/portfolio/new?op=${op}&editId=${t.id}`);
+        const op = (opForKind[t.kind] ?? "buy") as OpKey;
+        router.push(opHref(op, `?editId=${t.id}`));
         return;
       }
     }
@@ -708,14 +709,14 @@ export function TransactionsWorkspace({
             actionsClassName="flex flex-wrap items-center gap-1.5"
             overflow={[
           { label: "Transfer", icon: ArrowRightLeft, onSelect: () => router.push("/transactions/new?kind=transfer") },
-          { label: "Buy", onSelect: () => router.push("/portfolio/new?op=buy") },
-          { label: "Sell", onSelect: () => router.push("/portfolio/new?op=sell") },
-          { label: "Swap", onSelect: () => router.push("/portfolio/new?op=swap") },
-          { label: "In-kind transfer", onSelect: () => router.push("/portfolio/new?op=transfer") },
-          { label: "Income / expense", onSelect: () => router.push("/portfolio/new?op=income-expense") },
-          { label: "FX conversion", onSelect: () => router.push("/portfolio/new?op=fx-conversion") },
-          { label: "Brokerage deposit", onSelect: () => router.push("/portfolio/new?op=deposit") },
-          { label: "Brokerage withdrawal", onSelect: () => router.push("/portfolio/new?op=withdrawal") },
+          { label: "Buy", onSelect: () => router.push("/portfolio/new/buy") },
+          { label: "Sell", onSelect: () => router.push("/portfolio/new/sell") },
+          { label: "Swap", onSelect: () => router.push("/portfolio/new/swap") },
+          { label: "In-kind transfer", onSelect: () => router.push("/portfolio/new/in-kind-transfer") },
+          { label: "Income / expense", onSelect: () => router.push("/portfolio/new/income-expense") },
+          { label: "FX conversion", onSelect: () => router.push("/portfolio/new/fx-conversion") },
+          { label: "Brokerage deposit", onSelect: () => router.push("/portfolio/new/deposit") },
+          { label: "Brokerage withdrawal", onSelect: () => router.push("/portfolio/new/withdrawal") },
           { label: "Investment Transactions", icon: TrendingUp, onSelect: () => router.push("/portfolio/new") },
             ]}
             actions={
@@ -755,28 +756,28 @@ export function TransactionsWorkspace({
                   <DropdownMenuSeparator />
                   <DropdownMenuGroup>
                     <DropdownMenuLabel>Portfolio operations</DropdownMenuLabel>
-                    <DropdownMenuItem onClick={() => router.push("/portfolio/new?op=buy")}>
+                    <DropdownMenuItem onClick={() => router.push("/portfolio/new/buy")}>
                       Buy
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push("/portfolio/new?op=sell")}>
+                    <DropdownMenuItem onClick={() => router.push("/portfolio/new/sell")}>
                       Sell
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push("/portfolio/new?op=swap")}>
+                    <DropdownMenuItem onClick={() => router.push("/portfolio/new/swap")}>
                       Swap
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push("/portfolio/new?op=transfer")}>
+                    <DropdownMenuItem onClick={() => router.push("/portfolio/new/in-kind-transfer")}>
                       In-kind transfer
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push("/portfolio/new?op=income-expense")}>
+                    <DropdownMenuItem onClick={() => router.push("/portfolio/new/income-expense")}>
                       Income / expense
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push("/portfolio/new?op=fx-conversion")}>
+                    <DropdownMenuItem onClick={() => router.push("/portfolio/new/fx-conversion")}>
                       FX conversion
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push("/portfolio/new?op=deposit")}>
+                    <DropdownMenuItem onClick={() => router.push("/portfolio/new/deposit")}>
                       Brokerage deposit
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push("/portfolio/new?op=withdrawal")}>
+                    <DropdownMenuItem onClick={() => router.push("/portfolio/new/withdrawal")}>
                       Brokerage withdrawal
                     </DropdownMenuItem>
                   </DropdownMenuGroup>
