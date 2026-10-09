@@ -15,9 +15,12 @@ export interface AppSizeClassProviderProps {
 }
 
 /**
- * One ResizeObserver for the whole app content column. Renders no DOM of its own,
- * so it adds no markup depth. Thresholds come from sizeClassFor() in ui/size-class.ts.
- * SSR and the first render use "compact"; a layout effect measures before paint.
+ * One ResizeObserver on the app <main> ([data-app-main]). Renders no DOM of its own, so it adds
+ * no markup depth. Thresholds come from sizeClassFor() in ui/size-class.ts. SSR and the first
+ * render use "compact"; a layout effect measures before paint.
+ * Use this only for JS-only decisions. Layout and styling use the CSS variants `regular:` and
+ * `wide:`, which are viewport media queries by design: container-type creates a containing block
+ * for position:fixed descendants (mobile tab bar, page FAB, banners, toasts).
  */
 export function AppSizeClassProvider({ children, target }: AppSizeClassProviderProps) {
   const [sizeClass, setSizeClass] = React.useState<SizeClass>("compact");

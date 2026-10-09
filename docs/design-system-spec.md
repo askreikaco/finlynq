@@ -146,6 +146,13 @@ Excluded from the adaptive guard scan (see 3e).
 - Note: `max-md:hidden` contains the substring `md:hidden`, so it is counted (see 4 and section 5).
 - New code must not use `md:hidden`, `hidden md:`, `isMobile`, `window.innerWidth`.
 
+### 3f. Size classes (G2-01)
+- Variants `regular:` (`@media (width >= 40rem)`) and `wide:` (`@media (width > 64rem)`) in `globals.css`. Thresholds mirror `sizeClassFor()` (`ui/size-class.ts`: compact <640, regular 640-1024, wide >1024).
+- Viewport based by design: `container-type` applies layout containment, so a size container on `<main>` or the shell would become the containing block for `position:fixed` descendants (tab bar, page FAB, banners, toasts). Do not add `@container/app` or `container-type` to the shell or main.
+- Accepted difference: the content column is the viewport minus the 80px rail at >= 640px, so a column-based class can differ near the edges.
+- JS-only cases: `AppSizeClassProvider` / `useAppSizeClass()` (`components/adaptive/size-class-context.tsx`) measure `[data-app-main]`.
+- Pinned by `tests/components/adaptive/size-class-css.test.ts`.
+
 ## 4. Inconsistencies
 
 Each item was re-checked at the base sha. Counts come from grep runs on `src/app` + `src/components` on 2026-10-09.

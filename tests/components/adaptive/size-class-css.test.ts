@@ -16,16 +16,22 @@ describe("size-class CSS (globals.css)", () => {
     expect(css).toMatch(/@theme\s*\{[^}]*--container-wide:\s*64rem;/);
   });
 
-  it("declares the regular custom variant on the 'app' container", () => {
-    expect(css).toContain("@custom-variant regular (@container app (width >= 40rem));");
+  it("declares the regular custom variant as a viewport media query", () => {
+    expect(css).toContain("@custom-variant regular (@media (width >= 40rem));");
   });
 
-  it("declares the wide custom variant on the 'app' container", () => {
-    expect(css).toContain("@custom-variant wide (@container app (width > 64rem));");
+  it("declares the wide custom variant as a viewport media query", () => {
+    expect(css).toContain("@custom-variant wide (@media (width > 64rem));");
   });
 
   it("declares the dense custom variant on data-density=compact", () => {
     expect(css).toContain("@custom-variant dense (&:where([data-density=compact] *));");
+  });
+
+  it("creates no size container on the shell or main (fixed descendants stay viewport-anchored)", () => {
+    expect(css).not.toMatch(/container-type\s*:/);
+    expect(layout).not.toMatch(/@container\/app|@container\/shell/);
+    expect(layout).not.toMatch(/container-type\s*:/);
   });
 
   it("keeps the rem container sizes equal to the px thresholds in size-class.ts", () => {
