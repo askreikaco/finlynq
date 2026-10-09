@@ -1,18 +1,21 @@
 "use client";
 
 /**
- * Portfolio below md (native layout): hero (total value, day / total gain), 2-col metric grid,
- * and the holdings as simple rows (Name | Market value + Unrealized %). Tapping a row opens a
- * DetailSheet with every field the row leaves out. The desktop table/cards stay `max-md:hidden`
- * on the page; this component is `md:hidden`.
+ * Portfolio summary and holdings Cards view (G2-11, one adaptive UI).
+ *
+ * - PortfolioSummary: hero (total value, day change, total gain) and a metric grid. Shown at
+ *   every size. The grid gains columns with the size class (2 compact, 3 regular, 6 wide).
+ * - HoldingCards: the Cards view of the holdings, one row each (name | market value | unrealized %).
+ *   Tapping a row opens a DetailSheet with the fields the row leaves out.
+ * The type filter chips and the Cards/List toggle live in the page toolbar (portfolio-ui.tsx).
  */
 
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { formatCurrency, formatCurrencyAdaptive } from "@/lib/currency";
 import { formatPercent, getDisplayLocale } from "@/lib/locale";
-import { Amount, DetailSheet, HoldingRow, MetricGrid, SectionCard, SectionLabel, type MetricItem } from "@/components/mobile";
-import { ASSET_TYPE_CONFIG, type ByHoldingRow, type EnrichedHolding, type FilterType, type OverviewData } from "../_types";
+import { Amount, DetailSheet, HoldingRow, SectionCard, SectionLabel, StatTile, type MetricItem } from "@/components/mobile";
+import type { ByHoldingRow, EnrichedHolding, OverviewData } from "../_types";
 
 const signed = (n: number, digits = 2) => `${n >= 0 ? "+" : ""}${formatPercent(n, digits)}`;
 const tone = (n: number) => (n >= 0 ? "text-pos" : "text-neg");
@@ -22,9 +25,14 @@ export function holdingRowTitle(r: ByHoldingRow): string {
   return r.assetType === "cash" ? `Cash · ${base}` : base;
 }
 
-export function PortfolioMobileHero({ summary, currency }: { summary: OverviewData["summary"]; currency: string }) {
+type SummaryMetric = MetricItem & {
+  /** Shown from the regular size class up only. */
+  regularOnly?: boolean;
+};
+
+export function PortfolioSummary({ summary, currency }: { summary: OverviewData["summary"]; currency: string }) {
   const hasBasis = summary.hasQuantityData && summary.totalCostBasisDisplay > 0;
-  const metrics: MetricItem[] = [
+  const metrics: SummaryMetric[] = [
     { label: "Holdings", value: summary.totalHoldings },
     { label: "Accounts", value: summary.totalAccounts },
     ...(hasBasis
@@ -33,11 +41,12 @@ export function PortfolioMobileHero({ summary, currency }: { summary: OverviewDa
           { label: "Unrealized G/L", value: summary.totalUnrealizedGainDisplay, currency, tone: "auto", showSign: true },
           { label: "Realized G/L", value: summary.totalRealizedGainDisplay, currency, tone: "auto", showSign: true },
           { label: "Dividends", value: summary.totalDividendsDisplay, currency, tone: "pos", showSign: true },
-        ] as MetricItem[])
-      : [{ label: "Dividends", value: summary.totalDividendsDisplay, currency, tone: "pos", showSign: true } as MetricItem]),
+          { label: "Total return", value: summary.totalReturnDisplay, currency, tone: "auto", showSign: true, regularOnly: true },
+        ] as SummaryMetric[])
+      : [{ label: "Dividends", value: summary.totalDividendsDisplay, currency, tone: "pos", showSign: true } as SummaryMetric]),
   ];
   return (
-    <div data-slot="portfolio-mobile-hero" className="space-y-3 md:hidden">
+    <div data-slot="portfolio-summary" className="space-y-3">
       <SectionCard className="space-y-3">
         <div>
           <SectionLabel>Total value</SectionLabel>
@@ -62,51 +71,41 @@ export function PortfolioMobileHero({ summary, currency }: { summary: OverviewDa
           )}
         </div>
       </SectionCard>
-      <MetricGrid metrics={metrics} />
+      <div data-slot="metric-grid" className="grid grid-cols-2 gap-3 regular:grid-cols-3 wide:grid-cols-6">
+        {metrics.map((m) => (
+          <StatTile
+            key={m.label}
+            label={m.label}
+            className={m.regularOnly ? "hidden regular:block" : undefined}
+            value={
+              m.currency ? (
+                <Amount value={m.value} currency={m.currency} size="md" tone={m.tone ?? "none"} showSign={m.showSign} />
+              ) : (
+                <span className="tabular-nums text-sm font-semibold">{m.value}</span>
+              )
+            }
+          />
+        ))}
+      </div>
     </div>
   );
 }
 
-const CHIPS = ["all", "etf", "stock", "crypto", "metal", "cash"] as const;
-
-export function MobileHoldingsList({
+export function HoldingCards({
   holdings,
   members,
   currency,
-  filter,
-  setFilter,
-  counts,
 }: {
   holdings: ByHoldingRow[];
   members: Map<string, EnrichedHolding[]>;
   currency: string;
-  filter: FilterType;
-  setFilter: (f: FilterType) => void;
-  counts: Record<string, number>;
 }) {
   const [open, setOpen] = useState<ByHoldingRow | null>(null);
   const money = (n: number | null | undefined) => (n == null ? "--" : formatCurrencyAdaptive(n, currency));
   const accounts = open ? Array.from(new Set((members.get(open.key) ?? []).map((h) => h.accountName).filter(Boolean))) : [];
   return (
-    <section data-slot="portfolio-mobile-holdings" className="space-y-2 md:hidden">
+    <section data-slot="portfolio-holding-cards" className="space-y-2">
       <SectionLabel>Holdings</SectionLabel>
-      <div role="group" aria-label="Filter holdings by type" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
-        {CHIPS.map((t) => (
-          <button
-            key={t}
-            type="button"
-            aria-pressed={filter === t}
-            onClick={() => setFilter(t)}
-            className={cn(
-              "inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border px-4 text-sm font-semibold outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
-              filter === t ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground",
-            )}
-          >
-            {t === "all" ? "All" : ASSET_TYPE_CONFIG[t]?.label ?? t}
-            <span className="text-xs opacity-80">{counts[t] ?? 0}</span>
-          </button>
-        ))}
-      </div>
       <SectionCard padded={false} className="divide-y divide-border/50 px-3">
         {holdings.length === 0 ? (
           <p className="py-6 text-center text-sm text-muted-foreground">No holdings match this filter.</p>

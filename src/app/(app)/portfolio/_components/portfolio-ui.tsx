@@ -13,6 +13,8 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/currency";
 import { ColorDot } from "@/components/csp-safe-bar";
 import { formatPercent } from "@/lib/locale";
+import { cn } from "@/lib/utils";
+import { ASSET_TYPE_CONFIG, type FilterType } from "../_types";
 
 // ── Tooltip Components ──────────────────────────────────────────────
 export function GlassTooltip({
@@ -97,7 +99,7 @@ export function PortfolioSkeleton() {
         <div className="h-8 w-48 bg-muted animate-shimmer rounded-lg" />
         <div className="h-4 w-72 bg-muted animate-shimmer rounded-lg mt-2" />
       </div>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 wide:grid-cols-4 gap-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <Card key={i}>
             <CardContent className="pt-5">
@@ -123,6 +125,45 @@ export function PortfolioSkeleton() {
           ))}
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+// ── Holding type filter (page toolbar, shared by Cards and List) ───
+const HOLDING_TYPES = ["all", "etf", "stock", "crypto", "metal", "cash"] as const;
+
+/** Type chips with counts. Scrolls sideways below regular, wraps from regular up. */
+export function HoldingTypeChips({
+  filter,
+  setFilter,
+  counts,
+}: {
+  filter: FilterType;
+  setFilter: (f: FilterType) => void;
+  counts: Record<string, number>;
+}) {
+  return (
+    <div
+      role="group"
+      aria-label="Filter holdings by type"
+      className="-mx-4 flex min-w-0 gap-2 overflow-x-auto px-4 pb-1 regular:mx-0 regular:flex-wrap regular:px-0"
+    >
+      {HOLDING_TYPES.map((t) => (
+        <button
+          key={t}
+          type="button"
+          aria-pressed={filter === t}
+          onClick={() => setFilter(t)}
+          className={cn(
+            "inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border px-4 text-sm font-semibold outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+            "regular:min-h-8 regular:px-3 regular:text-xs pointer-coarse:min-h-11",
+            filter === t ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground",
+          )}
+        >
+          {t === "all" ? "All" : ASSET_TYPE_CONFIG[t]?.label ?? t}
+          <span className="text-xs opacity-80">{counts[t] ?? 0}</span>
+        </button>
+      ))}
     </div>
   );
 }

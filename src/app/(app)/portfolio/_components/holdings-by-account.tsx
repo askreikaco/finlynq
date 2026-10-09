@@ -74,7 +74,7 @@ export function HoldingsByAccount({
                   <Badge variant="outline" className="text-xs flex-shrink-0">
                     {items.length} holding{items.length !== 1 ? "s" : ""}
                   </Badge>
-                  <div className="hidden sm:flex items-center gap-1.5">
+                  <div className="hidden regular:flex items-center gap-1.5">
                     {etfs > 0 && (
                       <Badge
                         variant="secondary"
@@ -148,7 +148,7 @@ export function HoldingsByAccount({
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
-                  <div className="hidden md:flex items-center gap-3 text-xs">
+                  <div className="hidden regular:flex items-center gap-3 text-xs">
                     <div className="text-right">
                       <p className="text-muted-foreground text-xs">Mkt Value</p>
                       <p className="font-mono font-medium">{formatCurrency(acctMktValue, displayCurrency)}</p>
