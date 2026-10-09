@@ -5,7 +5,7 @@
  * Extracted from /settings/categorization for reuse in merged categories hub.
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import { GroupCombobox } from "@/components/ui/group-combobox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tag, Plus, AlertTriangle, Pencil, Trash2, Check, X } from "lucide-react";
 import Link from "next/link";
+import { usePageFab } from "@/components/mobile/page-fab";
 
 const TYPE_LABELS = { E: "Expense", I: "Income", R: "Reconciliation" } as const;
 const TYPE_ORDER = ["E", "I", "R"] as const;
@@ -121,6 +122,13 @@ export function CategoryManagement() {
     (a ?? "").localeCompare(b ?? "")
   );
 
+  const addCatFormRef = useRef<HTMLFormElement>(null);
+  const openAddCategoryForm = () => {
+    setShowAddCat(true);
+    requestAnimationFrame(() => addCatFormRef.current?.scrollIntoView({ block: "center" }));
+  };
+  usePageFab("categories.create", openAddCategoryForm);
+
   return (
     <div className="space-y-6">
       <div>
@@ -160,7 +168,7 @@ export function CategoryManagement() {
           )}
 
           {showAddCat && (
-            <form onSubmit={handleAddCategory} className="space-y-3 p-3 rounded-lg border bg-muted/30">
+            <form ref={addCatFormRef} onSubmit={handleAddCategory} className="space-y-3 p-3 rounded-lg border bg-muted/30">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <Input

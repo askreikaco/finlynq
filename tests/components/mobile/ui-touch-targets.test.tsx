@@ -85,9 +85,8 @@ describe("app shell below md", () => {
   it("(app) layout: flat bg + tight top padding below md, desktop padding unchanged", () => {
     const l = read("src/app/(app)/layout.tsx");
     expect(l).toContain("px-4 py-3 sm:px-6 sm:py-8 lg:px-8");
-    // Assert the binding condition between QuickAdd enabled state and padding values
-    // Flag-on branch includes md:pb-24 for desktop FAB clearance
-    expect(l).toMatch(/isQuickAddEnabled\(\)\s*\?\s*"pb-\[calc\(132px\+var\(--sab\)\)\]\s+md:pb-24"\s*:\s*"pb-\[calc\(60px\+var\(--sab\)\)\]\s+md:pb-0"/);
+    // Main pads for the PageFab on phones; no padding on desktop
+    expect(l).toContain("pb-[calc(var(--mobile-bar-clearance)+80px)] md:pb-0");
     // Assert bg-dot-pattern is still present
     expect(l).toMatch(/bg-dot-pattern/);
   });

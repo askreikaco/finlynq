@@ -74,8 +74,9 @@ vi.mock("@/components/web-vitals", () => ({
   WebVitals: () => null,
 }));
 
-vi.mock("@/components/quick-add-fab", () => ({
-  QuickAddFAB: () => null,
+vi.mock("@/components/mobile/page-fab", () => ({
+  PageFab: () => null,
+  PageFabProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
 vi.mock("next/navigation", () => ({

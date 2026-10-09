@@ -17,10 +17,12 @@ import {
   CheckCircle2,
   Wallet,
   Info,
+  Coins,
 } from "lucide-react";
 import { useApi } from "@/lib/data/use-api";
 import { mutate } from "swr";
-import { formatCurrency } from "@/lib/currency";
+import { formatCurrency, fxPreviewText } from "@/lib/currency";
+import Link from "next/link";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { Button } from "@/components/ui/button";
 import { Numpad } from "./_components/numpad";
@@ -33,6 +35,17 @@ import {
 import { AutocompletePills } from "./_components/autocomplete-pills";
 import { SplitSection, type SplitRow } from "./_components/split-section";
 import { readAndClearPrefill } from "@/lib/transactions/prefill";
+import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
+import { useFxPreview } from "@/lib/hooks/use-fx-preview";
+import { FxPreviewLine } from "@/components/transactions/fx-preview-line";
+import { buildPayeeCategoryRule } from "@/lib/rules/build-payee-category-rule";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type TxType = "Expense" | "Income" | "Transfer";
 
@@ -43,6 +56,12 @@ export default function MobileTransactionPage() {
   // Refs to handle StrictMode and prefill application
   const prefillReadRef = useRef(false);
   const prefillAppliedRef = useRef(false);
+  // ?account=<id> (set by the account page's New transaction button) preselects the source account.
+  const preselectAccountRef = useRef<string | null>(null);
+  // ?account=<id> as read from the URL (state, so the investment notice can render).
+  const [urlAccountId] = useState<string | null>(() =>
+    typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("account")
+  );
 
   // Mode
   const [txType, setTxType] = useState<TxType>("Expense");
@@ -64,6 +83,13 @@ export default function MobileTransactionPage() {
   const [payee, setPayee] = useState("");
   const [note, setNote] = useState("");
   const [tags, setTags] = useState("");
+  // Entered currency; blank = follow the selected account's currency (as the dialog does).
+  const [currencyChoice, setCurrencyChoice] = useState("");
+  // "Also create a rule for next time" (Expense/Income with payee + category).
+  const [alsoCreateRule, setAlsoCreateRule] = useState(false);
+  // Cross-currency transfer: amount the destination account receives (user-overridable).
+  const [receivedAmount, setReceivedAmount] = useState("");
+  const [receivedTouched, setReceivedTouched] = useState(false);
 
   // Date & Time State
   const [date, setDate] = useState(() => {
@@ -94,6 +120,8 @@ export default function MobileTransactionPage() {
     if (prefillReadRef.current) return;
     prefillReadRef.current = true;
 
+    preselectAccountRef.current = new URLSearchParams(window.location.search).get("account");
+
     const prefill = readAndClearPrefill(Date.now());
     if (prefill) {
       setAmount(prefill.amount);
@@ -109,6 +137,12 @@ export default function MobileTransactionPage() {
       // prefill=1 in URL but no valid data = show notice
       setPrefillNotice("Prefill data expired or invalid. Please fill the form manually.");
     }
+
+    // ?kind=transfer|expense|income opens that tab (account page Transfer action, workspace links). Other values ignored.
+    const kindParam = new URLSearchParams(window.location.search).get("kind");
+    if (kindParam === "transfer") setTxType("Transfer");
+    else if (kindParam === "expense") setTxType("Expense");
+    else if (kindParam === "income") setTxType("Income");
   }, []);
 
   // UI / Modal States
@@ -124,6 +158,9 @@ export default function MobileTransactionPage() {
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
+  // Set once a save has booked: the button stays locked so a second click cannot book it again.
+  const [done, setDone] = useState(false);
+  const doneRef = useRef(false);
 
   // Filter Categories by TxType
   const filteredCategories = useMemo(() => {
@@ -143,17 +180,32 @@ export default function MobileTransactionPage() {
   }, [rawCategories, txType]);
 
   // Non-archived Accounts
+  // Investment accounts are excluded: they are booked through Buy/Sell, not here.
   const activeAccounts = useMemo(() => {
-    return rawAccounts.filter((a) => !a.archived);
+    return rawAccounts.filter((a) => !a.archived && a.isInvestment !== true);
   }, [rawAccounts]);
+
+  // ?account=<id> pointing at an investment account: shown as a notice, never selected.
+  const urlInvestmentAccount = useMemo(
+    () =>
+      urlAccountId
+        ? rawAccounts.find((a) => String(a.id) === urlAccountId && a.isInvestment === true)
+        : undefined,
+    [rawAccounts, urlAccountId]
+  );
 
   // Auto-select initial account if available
   // Skip if prefill was applied (to avoid clobbering prefilled accountId)
   useEffect(() => {
     if (!accountId && activeAccounts.length > 0 && !prefillAppliedRef.current) {
-      setAccountId(String(activeAccounts[0].id));
+      const pre = preselectAccountRef.current;
+      // ?account=<investment id>: leave the picker empty (the notice explains). Read the ref,
+      // not the state, because this runs before the mount effect's state update lands.
+      if (pre && rawAccounts.some((a) => String(a.id) === pre && a.isInvestment === true)) return;
+      const match = pre ? activeAccounts.find((a) => String(a.id) === pre) : undefined;
+      setAccountId(String((match ?? activeAccounts[0]).id));
     }
-  }, [activeAccounts, accountId]);
+  }, [activeAccounts, accountId, rawAccounts]);
 
   // Reset category when switching between Expense and Income if invalid
   useEffect(() => {
@@ -181,6 +233,40 @@ export default function MobileTransactionPage() {
 
   const parsedAmount = parseFloat(amount) || 0;
 
+  // Entered currency: explicit choice, else the account's currency, else the display currency.
+  const currency = currencyChoice || selectedAcc?.currency || displayCurrency;
+  const currencyOptions = useActiveCurrencies(currency);
+  const fxPreview = useFxPreview({
+    enabled: txType !== "Transfer",
+    from: currency,
+    to: selectedAcc?.currency || displayCurrency,
+    amount: parsedAmount,
+    date,
+  });
+  // Cross-currency transfer: FX preview of the destination amount (same hook as the dialog).
+  const transferCrossCcy =
+    txType === "Transfer" &&
+    !!selectedAcc &&
+    !!selectedToAcc &&
+    selectedAcc.currency !== selectedToAcc.currency;
+  const transferFxPreview = useFxPreview({
+    enabled: transferCrossCcy,
+    from: selectedAcc?.currency ?? "",
+    to: selectedToAcc?.currency,
+    amount: parsedAmount,
+    date,
+  });
+  // Pre-fill the received amount from the market rate until the user types their own (as the dialog does).
+  useEffect(() => {
+    if (transferFxPreview.state === "ok" && !receivedTouched) {
+      setReceivedAmount(fxPreviewText(transferFxPreview.converted, selectedToAcc?.currency ?? displayCurrency));
+    }
+  }, [transferFxPreview, receivedTouched, selectedToAcc, displayCurrency]);
+
+  // Rule suggestion needs a payee + category on a plain (non-split) Expense/Income.
+  const ruleEligible =
+    txType !== "Transfer" && !splitEnabled && payee.trim().length > 0 && !!categoryId;
+
   // Handle Category Selection for either main category or split row
   const handleCategorySelect = (selectedId: string) => {
     if (activeSplitIndex !== null) {
@@ -200,6 +286,7 @@ export default function MobileTransactionPage() {
 
   // Submit Handler
   const handleSave = async () => {
+    if (saving || doneRef.current) return;
     setErrorMessage(null);
     setSuccessNotice(null);
 
@@ -225,6 +312,12 @@ export default function MobileTransactionPage() {
           throw new Error("Destination account must be different from source account");
         }
 
+        let receivedNum: number | undefined;
+        if (transferCrossCcy && receivedAmount) {
+          const parsedReceived = parseFloat(receivedAmount);
+          if (Number.isFinite(parsedReceived) && parsedReceived >= 0) receivedNum = parsedReceived;
+        }
+
         const transferPayload = {
           fromAccountId: Number(accountId),
           toAccountId: Number(toAccountId),
@@ -232,6 +325,7 @@ export default function MobileTransactionPage() {
           date,
           note: note.trim() || undefined,
           tags: tags.trim() || undefined,
+          ...(receivedNum != null ? { receivedAmount: receivedNum } : {}),
         };
 
         const res = await fetch("/api/transactions/transfer", {
@@ -242,11 +336,16 @@ export default function MobileTransactionPage() {
 
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
+          if (errData?.code === "fx-currency-needs-override") {
+            throw new Error(`No FX rate for ${errData.currency ?? selectedToAcc?.currency ?? "destination currency"}.`);
+          }
           throw new Error(errData?.error || `Transfer failed (${res.status})`);
         }
 
+        doneRef.current = true;
+        setDone(true);
         setSuccessNotice("Transfer recorded successfully!");
-        mutate("/api/transactions");
+        mutate((k) => typeof k === "string" && k.startsWith("/api/transactions"));
         mutate("/api/accounts");
         setTimeout(() => router.push("/transactions"), 600);
         return;
@@ -283,6 +382,7 @@ export default function MobileTransactionPage() {
         date,
         accountId: Number(accountId),
         categoryId: effectiveCategoryId,
+        enteredCurrency: currency,
         enteredAmount: signedAmount,
         payee: payee.trim() || undefined,
         note: note.trim() || undefined,
@@ -298,6 +398,9 @@ export default function MobileTransactionPage() {
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
+        if (errData?.code === "fx-currency-needs-override") {
+          throw new Error(`No FX rate for ${errData.currency ?? currency}.`);
+        }
         throw new Error(errData?.error || `Failed to create transaction (${res.status})`);
       }
 
@@ -330,13 +433,49 @@ export default function MobileTransactionPage() {
         }
       }
 
+      // Rule step runs after the transaction is saved; a failure never undoes it.
+      if (alsoCreateRule && ruleEligible) {
+        let ruleFailure: string | null = null;
+        try {
+          const ruleRes = await fetch("/api/rules", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(buildPayeeCategoryRule(payee.trim(), Number(categoryId))),
+          });
+          if (!ruleRes.ok) {
+            const ruleErr = await ruleRes.json().catch(() => ({}));
+            ruleFailure = ruleErr?.error
+              ? `Transaction saved, but the rule could not be created: ${ruleErr.error}`
+              : "Transaction saved, but the rule could not be created.";
+          }
+        } catch (ruleErr: unknown) {
+          ruleFailure =
+            ruleErr instanceof Error
+              ? `Transaction saved, but the rule could not be created: ${ruleErr.message}`
+              : "Transaction saved, but the rule could not be created.";
+        }
+        if (ruleFailure) {
+          // Saved already: show why and leave (a second Save would book the transaction twice).
+          doneRef.current = true;
+          setDone(true);
+          mutate((k) => typeof k === "string" && k.startsWith("/api/transactions"));
+          mutate("/api/accounts");
+          setErrorMessage(ruleFailure);
+          setTimeout(() => router.push("/transactions"), 2500);
+          return;
+        }
+      }
+
+      doneRef.current = true;
+      setDone(true);
       setSuccessNotice(`${txType} saved successfully!`);
-      mutate("/api/transactions");
+      mutate((k) => typeof k === "string" && k.startsWith("/api/transactions"));
       mutate("/api/accounts");
       setTimeout(() => router.push("/transactions"), 600);
     } catch (err: unknown) {
       setErrorMessage(err instanceof Error ? err.message : "An unexpected error occurred");
     } finally {
+      // Booked saves stay locked through `done`; the in-flight flag always clears.
       setSaving(false);
     }
   };
@@ -344,7 +483,7 @@ export default function MobileTransactionPage() {
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
       {/* Top Nav Bar */}
-      <header className="flex items-center justify-between px-4 py-3.5 border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-20">
+      <header className="flex items-center justify-between px-4 py-3.5 pt-[var(--sat)] border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-20">
         <button
           type="button"
           onClick={() => router.back()}
@@ -396,6 +535,17 @@ export default function MobileTransactionPage() {
             <span className="flex-1 leading-relaxed">{errorMessage}</span>
           </div>
         )}
+        {urlInvestmentAccount && (
+          <div className="flex items-start gap-2.5 p-3 rounded-xl bg-warning/10 border border-warning/30 text-warning text-xs animate-in fade-in">
+            <Info className="w-4 h-4 shrink-0 mt-0.5 text-warning" />
+            <span className="flex-1 leading-relaxed">
+              Investment accounts use Buy/Sell.{" "}
+              <Link href={`/portfolio/new?account=${urlInvestmentAccount.id}`} className="underline font-medium hover:no-underline">
+                Open Buy/Sell
+              </Link>
+            </span>
+          </div>
+        )}
         {successNotice && (
           <div className="flex items-start gap-2.5 p-3 rounded-xl bg-pos/10 border border-pos/30 text-pos text-xs animate-in fade-in">
             <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-pos" />
@@ -424,6 +574,7 @@ export default function MobileTransactionPage() {
               {amount || "0.00"}
             </span>
           </button>
+          <FxPreviewLine preview={fxPreview} className="text-xs text-muted-foreground text-center" />
         </div>
 
         {/* Core Form Fields */}
@@ -517,6 +668,30 @@ export default function MobileTransactionPage() {
             <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
           </button>
 
+          {/* Currency (Expense & Income); defaults to the account's currency */}
+          {txType !== "Transfer" && (
+            <div className="w-full flex items-center justify-between bg-card/90 border border-border/80 p-3.5 rounded-2xl">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center text-muted-foreground shrink-0">
+                  <Coins className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <span className="text-xs text-muted-foreground font-medium">Currency</span>
+              </div>
+              <Select value={currency} onValueChange={(v) => setCurrencyChoice(v ?? "")}>
+                <SelectTrigger aria-label="Currency" size="sm" className="w-28">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {currencyOptions.map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {c}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           {/* Destination Account (Transfer Mode Only) */}
           {txType === "Transfer" && (
             <button
@@ -547,6 +722,34 @@ export default function MobileTransactionPage() {
               </div>
               <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
             </button>
+          )}
+
+          {/* Cross-currency transfer: what the destination account actually receives */}
+          {transferCrossCcy && (
+            <div className="space-y-1.5 bg-card/90 border border-border/80 p-3.5 rounded-2xl">
+              <label htmlFor="transfer-received" className="text-xs text-muted-foreground font-medium">
+                Amount received ({selectedToAcc?.currency})
+              </label>
+              <input
+                id="transfer-received"
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                min="0"
+                value={receivedAmount}
+                onChange={(e) => {
+                  setReceivedTouched(true);
+                  setReceivedAmount(e.target.value);
+                }}
+                placeholder={
+                  transferFxPreview.state === "ok"
+                    ? fxPreviewText(transferFxPreview.converted, selectedToAcc?.currency ?? displayCurrency)
+                    : "0.00"
+                }
+                className="bg-transparent border-none outline-none text-foreground text-sm font-medium w-full placeholder:text-muted-foreground"
+              />
+              <FxPreviewLine preview={transferFxPreview} className="text-xs text-muted-foreground" />
+            </div>
           )}
 
           {/* Payee Input (Expense & Income) with Auto-suggest */}
@@ -694,12 +897,30 @@ export default function MobileTransactionPage() {
           </div>
         </div>
 
+        {/* Rule suggestion (Expense/Income, payee + category set) */}
+        {ruleEligible && (
+          <label className="flex items-start gap-3 p-3.5 rounded-2xl border border-info/30 bg-info/10 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={alsoCreateRule}
+              onChange={(e) => setAlsoCreateRule(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-input"
+            />
+            <span className="flex flex-col gap-0.5">
+              <span className="text-sm font-medium text-foreground">Also create a rule for next time</span>
+              <span className="text-xs text-muted-foreground">
+                Payee contains &ldquo;{payee.trim()}&rdquo; → {selectedCat?.name}
+              </span>
+            </span>
+          </label>
+        )}
+
         {/* Save Action Button */}
         {!showNumpad && (
           <div className="pt-2">
             <Button
               type="button"
-              disabled={saving}
+              disabled={saving || done}
               onClick={handleSave}
               className="w-full h-12 text-base font-semibold bg-primary hover:bg-primary/90 active:bg-primary/80 text-primary-foreground rounded-2xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
             >
@@ -708,6 +929,8 @@ export default function MobileTransactionPage() {
                   <Loader2 className="w-5 h-5 animate-spin" />
                   Saving...
                 </>
+              ) : done ? (
+                "Saved"
               ) : (
                 `Save ${txType}`
               )}
@@ -718,7 +941,7 @@ export default function MobileTransactionPage() {
 
       {/* Numpad Anchored Bottom */}
       {showNumpad && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-background animate-in slide-in-from-bottom duration-200">
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-background animate-in slide-in-from-bottom duration-200 max-md:pb-[calc(var(--mobile-bar-clearance)-1rem)]">
           <Numpad
             value={amount}
             onChange={setAmount}
@@ -746,7 +969,10 @@ export default function MobileTransactionPage() {
         accounts={activeAccounts}
         selectedAccountId={accountId}
         title={txType === "Transfer" ? "Select Source Account" : "Select Account"}
-        onSelect={setAccountId}
+        onSelect={(id) => {
+          setAccountId(id);
+          setCurrencyChoice("");
+        }}
       />
 
       <AccountSelector

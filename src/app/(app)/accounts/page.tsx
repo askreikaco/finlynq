@@ -33,6 +33,7 @@ import {
   FolderCog,
 } from "lucide-react";
 import { PageHeader, HEADER_DESKTOP_ONLY, NetWorthHero, SectionLabel, AccountRow, CompactOnly, FromMd } from "@/components/mobile";
+import { usePageFab } from "@/components/mobile/page-fab";
 
 type AccountBalance = {
   accountId: number;
@@ -403,6 +404,8 @@ export default function AccountsPage() {
       />
     </>
   );
+
+  usePageFab("accounts.create", () => setDialogOpen(true));
 
   if (loading) return <SummarySkeleton />;
 

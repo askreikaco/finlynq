@@ -115,7 +115,8 @@ export function TransactionTable({
   confirmDelete: (t: Transaction) => void;
   startDuplicate: (t: Transaction) => void;
 }) {
-  if (loading) return <TableSkeleton />;
+  // Skeleton only on the first load: background revalidation keeps existing rows mounted.
+  if (loading && txns.length === 0) return <TableSkeleton />;
   if (txns.length === 0) {
     return (
       <EmptyState

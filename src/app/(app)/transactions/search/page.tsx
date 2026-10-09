@@ -146,14 +146,14 @@ export default function TransactionSearchPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center h-dvh">
         <div className="text-muted-foreground">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background pb-[calc(60px+var(--sab))]">
+    <div className="min-h-screen flex flex-col bg-background pb-[var(--mobile-bar-clearance)]">
       {/* Header */}
       <PageHeader
         title="Search & filter"
@@ -336,7 +336,7 @@ export default function TransactionSearchPage() {
       </div>
 
       {/* Sticky bottom bar */}
-      <div className="sticky bottom-0 border-t border-border bg-background px-4 py-3 flex gap-2 safe-area-inset-bottom">
+      <div className="sticky bottom-0 border-t border-border bg-background px-4 py-3 flex gap-2 pb-[var(--sab)]">
         <Button
           variant="ghost"
           className="flex-1 h-10"

@@ -42,7 +42,7 @@ export function MobileTxList({
   // Group transactions by date
   const grouped = groupTransactionsByDate(transactions, today, yesterdayISO);
 
-  if (isLoading) {
+  if (isLoading && transactions.length === 0) {
     return <div className="px-4 py-8 text-center text-sm text-muted-foreground">Loading transactions...</div>;
   }
 

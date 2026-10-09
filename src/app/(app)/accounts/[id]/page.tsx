@@ -61,6 +61,7 @@ import {
 } from "@/components/transactions/transaction-dialog";
 import { TransactionsWorkspace } from "../../transactions/_components/transactions-workspace";
 import { PageHeader, HEADER_DESKTOP_ONLY, CompactOnly, FromMd } from "@/components/mobile";
+import { usePageFab } from "@/components/mobile/page-fab";
 
 type Account = {
   id: number;
@@ -137,7 +138,7 @@ export default function AccountDetailPage() {
   // Generic "New transaction" dialog (normal accounts only) — embeds the shared
   // TransactionDialog seeded with this account pre-selected (FINLYNQ-227).
   const [txDialogOpen, setTxDialogOpen] = useState(false);
-  const [txDialogType, setTxDialogType] = useState<"income" | "expense" | "transfer" | null>(null);
+  const [txDialogType, setTxDialogType] = useState<"income" | "expense" | null>(null);
   const [dialogCategories, setDialogCategories] = useState<DialogCategory[]>([]);
   const [dialogHoldings, setDialogHoldings] = useState<DialogHolding[]>([]);
 
@@ -150,8 +151,6 @@ export default function AccountDetailPage() {
   const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [accountActionError, setAccountActionError] = useState<string | null>(null);
-  // Every account (for the Transfer action's destination picker).
-  const [allAccounts, setAllAccounts] = useState<DialogAccount[]>([]);
 
   // Invisible toggle state
   const [invisible, setInvisible] = useState(account?.invisible === true);
@@ -462,6 +461,15 @@ export default function AccountDetailPage() {
     }
   }, [account?.id]);
 
+  // Mobile FAB: normal account adds a transaction; investment account buys.
+  const fabIsInvestment = account?.isInvestment === true;
+  const fabAdd = () => {
+    if (!account) return;
+    if (account.isInvestment === true) router.push(`/portfolio/new?op=buy&account=${account.id}`);
+    else router.push(`/transactions/new?account=${account.id}`);
+  };
+  usePageFab("accounts.detail.add", fabAdd, fabIsInvestment ? { label: "Buy", icon: TrendingUp } : {});
+
   if (!account && loadFailed) return (
     <div className="space-y-6">
       <Link href="/accounts" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
@@ -566,7 +574,7 @@ export default function AccountDetailPage() {
         actions={
         <>
           {!isInvestment && (
-            <Button size="sm" onClick={() => openTxDialog()}>
+            <Button size="sm" onClick={() => router.push(`/transactions/new?account=${account.id}`)}>
               <Receipt className="h-3.5 w-3.5 mr-1.5" /> <FromMd as="span">New transaction</FromMd><CompactOnly as="span">Add</CompactOnly>
             </Button>
           )}
@@ -654,28 +662,7 @@ export default function AccountDetailPage() {
 
             {/* Transfer */}
             <button
-              onClick={() => {
-                setTxDialogType("transfer");
-                setTxDialogOpen(true);
-                fetch("/api/accounts")
-                  .then((r) => (r.ok ? r.json() : []))
-                  .then((rows: Array<{ id: number; name: string | null; currency: string; type?: string | null; isInvestment?: boolean }>) =>
-                    setAllAccounts(
-                      Array.isArray(rows)
-                        ? rows.map((a) => ({ id: a.id, name: a.name ?? "", currency: a.currency, type: a.type, isInvestment: a.isInvestment }))
-                        : [],
-                    ),
-                  )
-                  .catch(() => {});
-                fetch("/api/categories")
-                  .then((r) => (r.ok ? r.json() : []))
-                  .then((c) => setDialogCategories(Array.isArray(c) ? c : []))
-                  .catch(() => {});
-                fetch("/api/portfolio")
-                  .then((r) => (r.ok ? r.json() : []))
-                  .then((h) => setDialogHoldings(Array.isArray(h) ? h : []))
-                  .catch(() => {});
-              }}
+              onClick={() => router.push(`/transactions/new?kind=transfer&account=${account.id}`)}
               className="flex flex-col items-center justify-center gap-2 flex-1 p-3 rounded-lg hover:bg-muted transition-colors"
               title="Transfer between accounts"
             >
@@ -885,13 +872,12 @@ export default function AccountDetailPage() {
         />
       </Suspense>
 
-      {/* Generic transaction dialog — normal accounts only, seeded with THIS
-          account pre-selected (FINLYNQ-227). For the Transfer action, we use
-          transfer-create mode instead. */}
+      {/* Generic transaction dialog (In / Out) — seeded with THIS account
+          pre-selected (FINLYNQ-227). Transfer now opens /transactions/new?kind=transfer. */}
       <TransactionDialog
         open={txDialogOpen}
         onOpenChange={setTxDialogOpen}
-        accounts={txDialogType === "transfer" && allAccounts.length > 0 ? allAccounts : [dialogAccount]}
+        accounts={[dialogAccount]}
         categories={
           // In / Out: offer only income or expense categories, which is how
           // the dialog decides the transaction's direction.
@@ -902,12 +888,10 @@ export default function AccountDetailPage() {
               : dialogCategories
         }
         holdings={dialogHoldings}
-        initialState={
-          txDialogType === "transfer" ? { kind: "transfer-create", fromAccountId: String(account.id) } : {
-            kind: "transaction-prefill",
-            values: { accountId: String(account.id), currency: account.currency },
-          }
-        }
+        initialState={{
+          kind: "transaction-prefill",
+          values: { accountId: String(account.id), currency: account.currency },
+        }}
         onSaved={() => {
           setTxDialogOpen(false);
           // Refresh the header tiles (balance + count) and revalidate the

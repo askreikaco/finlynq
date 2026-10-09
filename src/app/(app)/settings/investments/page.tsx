@@ -75,6 +75,7 @@ import {
 import { resolveTickerAdvisory } from "@/lib/securities/ticker-advisories";
 import { ManagePricesDialog } from "./_components/manage-prices-dialog";
 import { PageHeader } from "@/components/mobile";
+import { usePageFab } from "@/components/mobile/page-fab";
 
 type SecurityAccount = {
   accountId: number;
@@ -731,6 +732,8 @@ export default function InvestmentsSettingsPage() {
       return next;
     });
   }
+
+  usePageFab("investments.security.create", openAdd);
 
   // ---- Render ----
   if (loading && !securities) {

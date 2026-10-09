@@ -3,12 +3,18 @@
 /**
  * useTransactions (Phase 4b: local-first client compute).
  *
- * SWR fetches /api/transactions?limit=100000 once; SWR's createPersistentCache
- * automatically encrypts and persists this payload to IndexedDB.
+ * Progressive load (perf): two SWR fetches run in parallel.
+ *   - TX_FAST_KEY (limit=200): the most recent 200 rows (server default order
+ *     date DESC, id DESC). Renders the first pages immediately.
+ *   - TX_FULL_KEY (limit=100000): the whole ledger. It stays in memory only:
+ *     persist-policy does not allow /api/transactions into IndexedDB. When it
+ *     arrives it replaces the fast window with no skeleton (keepPreviousData),
+ *     and TX_FAST_KEY is dropped (null key) so it is not refetched.
+ * While the full list is pending, `isPartial` is true. Totals and sums from a
+ * partial set are not final.
  *
- * Filtering, sorting, and pagination are executed entirely in the client via
- * useMemo on the cached transaction dataset for instant response without network
- * roundtrips.
+ * Filtering, sorting, and pagination are executed in the client via useMemo on
+ * the active dataset (full list when present, else the fast window).
  */
 
 import { useMemo, useState, useEffect, useCallback } from "react";
@@ -19,6 +25,9 @@ import type { Account, ColFilterShape, SortPref, Transaction } from "../_types";
 const limit = 10;
 
 export const TX_PAGE_LIMIT = limit;
+
+export const TX_FULL_KEY = "/api/transactions?limit=100000";
+export const TX_FAST_KEY = "/api/transactions?limit=200";
 
 type TxListResponse = { data?: Transaction[]; total?: number };
 
@@ -51,6 +60,26 @@ export type UseTransactionsColFilter =
   | { id: string; value: string[] }
   | { id?: string; columnId?: string; value?: unknown; values?: string[] };
 
+/**
+ * True when the view differs from the default recent-first list (any filter
+ * value, any column filter, or a sort other than the default date DESC).
+ * Used to decide whether to show the "Loading full history..." note while
+ * the list is partial.
+ */
+export function isNonDefaultTxView(
+  filters: UseTransactionsFilters,
+  sortPref?: SortPref | null,
+  colFilters?: readonly unknown[] | null,
+): boolean {
+  if (Object.values(filters ?? {}).some((v) => typeof v === "string" && v.trim() !== "")) {
+    return true;
+  }
+  if (colFilters && colFilters.length > 0) return true;
+  const col = sortPref?.columnId;
+  if (col && !(col === "date" && sortPref?.direction !== "asc")) return true;
+  return false;
+}
+
 export function useTransactions(
   filters: UseTransactionsFilters,
   sortPref?: UseTransactionsSortPref,
@@ -58,15 +87,16 @@ export function useTransactions(
   _accounts?: Account[],
   initialPage: number = 1,
 ) {
-  // 1. Fetch all transactions (limit=100000). Persisted and encrypted by SWR IndexedDB cache.
-  const SWR_KEY = "/api/transactions?limit=100000";
+  // 1. Two parallel fetches. FAST renders first; FULL replaces it when it lands.
+  const full = useSWR<TxListResponse>(TX_FULL_KEY, jsonFetcher, swrListOptions);
+  const fast = useSWR<TxListResponse>(full.data ? null : TX_FAST_KEY, jsonFetcher, swrListOptions);
+  const { mutate: mutateFull } = full;
+  const { mutate: mutateFast } = fast;
 
-  const { data, error, isLoading, isValidating, mutate } = useSWR<TxListResponse>(
-    SWR_KEY,
-    jsonFetcher,
-    swrListOptions,
-  );
-
+  const isPartial = !full.data;
+  const sourceRows = full.data?.data ?? fast.data?.data;
+  const fullLoadError = Boolean(full.error) && !full.data;
+  const loadError = fullLoadError && !fast.data;
   const [page, setPage] = useState(initialPage > 0 ? initialPage : 1);
 
   // Reset page slice to 1 whenever filters, sortPref, or colFilters change
@@ -84,7 +114,7 @@ export function useTransactions(
 
   // 2. Replicate server-side filter and sort logic locally using useMemo
   const filteredTxns = useMemo(() => {
-    const all = data?.data ?? [];
+    const all = sourceRows ?? [];
     if (!Array.isArray(all) || all.length === 0) return [];
 
     // Pre-parse filters for optimal performance across large arrays
@@ -308,22 +338,43 @@ export function useTransactions(
     });
 
     return filtered;
-  }, [data?.data, filters, sortPref, colFilters]);
+  }, [sourceRows, filters, sortPref, colFilters]);
+
+  // While partial, a window with no match is not "empty": the full history may
+  // still hold matches, so keep loading until the full load settles.
+  const awaitingFullMatch =
+    isPartial &&
+    filteredTxns.length === 0 &&
+    !fullLoadError &&
+    (full.isLoading || full.isValidating);
+  const loading = isPartial
+    ? (sourceRows == null && (full.isLoading || fast.isLoading)) || awaitingFullMatch
+    : full.isLoading || full.isValidating;
 
   // 3. Paginate the filtered array: const paginatedTxns = filteredTxns.slice(0, page * limit)
   const paginatedTxns = filteredTxns.slice(0, page * limit);
 
-  // 4. Return { txns: paginatedTxns, total: filteredTxns.length, loading: isLoading || isValidating, limit, loadTxns: mutate }
+  // Refresh both keys so edits show in the fast window and the full list.
+  const loadTxns = useCallback(
+    () => Promise.all([mutateFull(), mutateFast()]),
+    [mutateFull, mutateFast],
+  );
+
+  // 4. Return the page slice. While partial, more rows are coming (unless the
+  // full load failed), so hasMore stays true.
   return {
     txns: paginatedTxns,
     total: filteredTxns.length,
-    loading: isLoading || isValidating,
+    loading,
     limit,
-    loadError: Boolean(error) && !data,
-    loadTxns: mutate,
+    loadError,
+    isPartial,
+    fullLoadError,
+    loadTxns,
     loadNextPage,
     resetPage,
     page,
-    hasMore: paginatedTxns.length < filteredTxns.length,
+    hasMore:
+      paginatedTxns.length < filteredTxns.length || (isPartial && !fullLoadError),
   };
 }

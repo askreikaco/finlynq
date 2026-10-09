@@ -122,25 +122,28 @@ describe("mobile bottom bar", () => {
 });
 
 describe("mobile bottom bar glass (S8)", () => {
-  it("bar has mobile-glass-bar, bg-sidebar/80, backdrop-blur, fixed bottom positioning, and safe-area insets", () => {
+  it("bar is a floating glass capsule: mobile-glass-bar, fixed, 16px side insets, safe-area bottom, rounded-[28px], h-16", () => {
     render(<Nav />);
     const nav = bar();
     const c = nav.className;
     expect(c).toContain("mobile-glass-bar");
-    expect(c).toContain("bg-sidebar/80");
     expect(c).toContain("fixed");
-    expect(c).toContain("bottom-0");
-    expect(c).toContain("pb-[var(--sab)]");
-    expect(c).toContain("pl-[var(--sal)]");
-    expect(c).toContain("pr-[var(--sar)]");
-    // Check backdrop-blur as an actual class token, not substring
-    expect(nav.classList.contains("backdrop-blur")).toBe(true);
+    expect(c).toContain("bottom-[max(12px,var(--sab))]");
+    expect(c).toContain("left-[calc(16px+var(--sal))]");
+    expect(c).toContain("right-[calc(16px+var(--sar))]");
+    expect(c).toContain("rounded-[28px]");
+    expect(c).toContain("h-16");
+    // The old flat full-width strip is gone.
+    expect(c).not.toContain("bg-sidebar/80");
+    expect(c).not.toContain("border-t");
+    expect(nav.classList.contains("backdrop-blur")).toBe(false);
   });
 
-  it("bar row maintains h-[59px] height", () => {
+  it("bar row fills the capsule (h-full) with 6px inner padding", () => {
     render(<Nav />);
     const row = within(bar()).getByTestId("mobile-bar-row");
-    expect(row.className).toContain("h-[59px]");
+    expect(row.className).toContain("h-full");
+    expect(row.className).toContain("p-1.5");
   });
 
   it("active link has text-sidebar-primary with aria-current='page'", () => {
@@ -173,12 +176,12 @@ describe("mobile bottom bar glass (S8)", () => {
 });
 
 describe("safe-area classes", () => {
-  it("mobile bar reserves bottom + side insets via the shared vars", () => {
+  it("mobile bar offsets from the bottom and sides via the shared safe-area vars", () => {
     render(<Nav />);
     const c = bar().className;
-    expect(c).toContain("pb-[var(--sab)]");
-    expect(c).toContain("pl-[var(--sal)]");
-    expect(c).toContain("pr-[var(--sar)]");
+    expect(c).toContain("bottom-[max(12px,var(--sab))]");
+    expect(c).toContain("left-[calc(16px+var(--sal))]");
+    expect(c).toContain("right-[calc(16px+var(--sar))]");
   });
 
   it("desktop sidebar sticks below the top inset", () => {
@@ -203,15 +206,16 @@ describe("safe-area shell wiring (source)", () => {
     expect(css).not.toContain(".safe-top-backdrop");
   });
 
-  it("root layout renders NO status-bar backdrop and keeps cover + translucent", () => {
+  it("root layout renders NO status-bar backdrop and keeps cover + opaque status bar", () => {
     const l = read("src/app/layout.tsx");
     expect(l).not.toContain("safe-top-backdrop");
     expect(l).toContain('viewportFit: "cover"');
-    expect(l).toContain('statusBarStyle: "black-translucent"');
+    expect(l).toContain('statusBarStyle: "black"');
   });
 
   it("app shell and top-anchored surfaces use the shared var, not raw env()", () => {
-    expect(read("src/app/(app)/layout.tsx")).toContain("var(--sab)");
+    expect(read("src/app/(app)/layout.tsx")).toContain("var(--mobile-bar-clearance)");
+    expect(read("src/app/(app)/layout.tsx")).not.toContain("env(");
     expect(read("src/components/ui/sheet.tsx")).toContain("pt-[var(--sat)]");
     expect(read("src/components/ui/dialog.tsx")).toContain("var(--sat)");
     expect(read("src/components/inbox/upload-drawer.tsx")).toContain("pt-safe");
@@ -223,12 +227,12 @@ describe("safe-area shell wiring (source)", () => {
 
 describe("mobile bar matches the native tab bar (mobile/src/navigation/TabNavigator.tsx)", () => {
   // native: height 60 + inset.bottom, paddingTop 6, icon 22, label 11/600
-  it("bar row is 59px + 1px top border = native 60; the bottom inset is added via --sab (total 60 + sab)", () => {
+  it("bar is a 64px capsule (h-16); the bottom inset is applied through the bottom offset (max(12px,--sab))", () => {
     render(<Nav />);
     const row = within(bar()).getByTestId("mobile-bar-row");
-    expect(row.className).toContain("h-[59px]");
-    expect(row.className).toContain("pt-1.5");
-    expect(bar().className).toContain("pb-[var(--sab)]");
+    expect(bar().className).toContain("h-16");
+    expect(row.className).toContain("p-1.5");
+    expect(bar().className).toContain("bottom-[max(12px,var(--sab))]");
   });
 
   it("icons are 22px and labels 11px semibold on every tab", () => {
@@ -241,9 +245,11 @@ describe("mobile bar matches the native tab bar (mobile/src/navigation/TabNaviga
     }
   });
 
-  it("app shell bottom padding equals the bar height + inset", () => {
+  it("app shell bottom padding uses the shared --mobile-bar-clearance var", () => {
     const layout = readFileSync(join(__dirname, "../../src/app/(app)/layout.tsx"), "utf8");
-    expect(layout).toContain("pb-[calc(60px+var(--sab))]");
+    expect(layout).toContain("pb-[calc(var(--mobile-bar-clearance)+80px)] md:pb-0");
+    const css = readFileSync(join(__dirname, "../../src/app/globals.css"), "utf8");
+    expect(css).toMatch(/--mobile-bar-clearance:\s*calc\(96px\s*\+\s*var\(--sab\)\)/);
   });
 });
 

@@ -12,6 +12,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Megaphone, AlertTriangle, X } from "lucide-react";
 import type { Announcement } from "@shared/types";
+import { useHidePageFab } from "@/components/mobile/page-fab";
 
 export function AnnouncementBanner() {
   const [item, setItem] = useState<Announcement | null>(null);
@@ -40,12 +41,13 @@ export function AnnouncementBanner() {
     fetch(`/api/announcements/${id}/read`, { method: "POST" }).catch(() => {});
   };
 
+  useHidePageFab(item !== null);
   if (!item) return null;
 
   const warning = item.severity === "warning";
 
   return (
-    <div className="fixed left-4 right-4 max-w-sm bottom-20 md:bottom-4 md:right-auto z-50 rounded-xl border border-border/50 bg-card p-4 shadow-lg">
+    <div className="fixed left-4 right-4 max-w-sm bottom-[calc(var(--mobile-bar-clearance)-8px)] md:bottom-4 md:right-auto z-50 rounded-xl border border-border/50 bg-card p-4 shadow-lg">
       <div className="flex items-start gap-3">
         {warning ? (
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />

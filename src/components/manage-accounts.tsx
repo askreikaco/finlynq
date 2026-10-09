@@ -8,10 +8,14 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { AccountAlert } from "@/components/account-switcher";
 import { initialsOf, useAccountActions, MAX_ACCOUNTS, CAP_MESSAGE, type Account } from "@/lib/client/use-account-actions";
 import { cn } from "@/lib/utils";
+import { usePageFab } from "@/components/mobile/page-fab";
 
 /** /manage-accounts: per-device show/hide, remove, add, sign out of all. */
 export function ManageAccounts() {
   const a = useAccountActions();
+  usePageFab("manage-accounts.add", a.handleAdd, {
+    disabled: a.busy !== null || a.atCap,
+  });
   const [removing, setRemoving] = useState<Account | null>(null);
   const [confirmAll, setConfirmAll] = useState(false);
 

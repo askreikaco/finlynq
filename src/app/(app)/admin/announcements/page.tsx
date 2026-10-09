@@ -6,7 +6,7 @@
  * the nav also hides this link for non-admins.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Megaphone, Pencil, Trash2, Plus } from "lucide-react";
 import { PageHeader } from "@/components/mobile";
+import { usePageFab } from "@/components/mobile/page-fab";
 
 interface AdminAnnouncement {
   id: number;
@@ -55,6 +56,7 @@ export default function AdminAnnouncementsPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState({ ...EMPTY });
   const [saving, setSaving] = useState(false);
+  const formRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
     setError(null);
@@ -76,6 +78,12 @@ export default function AdminAnnouncementsPage() {
     setEditingId(null);
     setForm({ ...EMPTY });
   };
+
+  const openNewForm = () => {
+    startNew();
+    formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+  usePageFab("admin.announcements.new", openNewForm);
 
   const startEdit = (a: AdminAnnouncement) => {
     setEditingId(a.id);
@@ -156,7 +164,7 @@ export default function AdminAnnouncementsPage() {
       {error && <p className="mb-4 text-sm text-destructive">{error}</p>}
 
       {/* Create / edit form */}
-      <Card className="mb-8 p-4">
+      <Card ref={formRef} className="mb-8 p-4">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-medium">
             {editingId ? `Editing #${editingId}` : "New announcement"}

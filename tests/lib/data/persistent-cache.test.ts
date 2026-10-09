@@ -31,13 +31,13 @@ describe("persistent SWR cache", () => {
     expect(savePersisted).not.toHaveBeenCalled();
 
     cache.set("/api/dashboard", { data: { nw: 1 } });
-    cache.set("/api/transactions?page=1", { data: { data: [] } });
+    cache.set("/api/goals?page=1", { data: { data: [] } });
     cache.set("$swr$internal", { data: 1 }); // not an API key
     cache.set("/api/loading", { isValidating: true }); // no data
     vi.advanceTimersByTime(600);
     expect(savePersisted).toHaveBeenCalledTimes(1);
     const batch = (savePersisted.mock.calls[0] as unknown[])[2] as Map<string, unknown>;
-    expect([...batch.keys()].sort()).toEqual(["/api/dashboard", "/api/transactions?page=1"]);
+    expect([...batch.keys()].sort()).toEqual(["/api/dashboard", "/api/goals?page=1"]);
 
     // same data reference again: not re-written
     const d = cache.get("/api/dashboard")!.data;
@@ -67,7 +67,7 @@ describe("persistent SWR cache", () => {
 
     // Safe endpoints should persist
     cache.set("/api/accounts", { data: [{ id: 1 }] });
-    cache.set("/api/transactions", { data: { items: [] } });
+    cache.set("/api/goals", { data: { goals: [] } });
     cache.set("/api/dashboard?currency=VND", { data: { balance: 100 } });
 
     // Blocked auth endpoints
@@ -98,7 +98,7 @@ describe("persistent SWR cache", () => {
     const persistedKeys = [...batch.keys()].sort();
 
     // Only safe endpoints should persist
-    expect(persistedKeys).toEqual(["/api/accounts", "/api/dashboard?currency=VND", "/api/transactions"]);
+    expect(persistedKeys).toEqual(["/api/accounts", "/api/dashboard?currency=VND", "/api/goals"]);
   });
 
   describe("bypass resistance", () => {
@@ -190,7 +190,7 @@ describe("persistent SWR cache", () => {
 
       // Allowed endpoints
       cache.set("/api/accounts", { data: [{ id: 1 }] });
-      cache.set("/api/transactions", { data: { items: [] } });
+      cache.set("/api/loans", { data: { loans: [] } });
       cache.set("/api/budgets", { data: { budgets: [] } });
       cache.set("/api/goals", { data: { goals: [] } });
       cache.set("/api/portfolio", { data: { holdings: [] } });
@@ -205,7 +205,7 @@ describe("persistent SWR cache", () => {
       const batch = (savePersisted.mock.calls[0] as unknown[])[2] as Map<string, unknown>;
       const persistedKeys = [...batch.keys()].sort();
 
-      expect(persistedKeys).toEqual(["/api/accounts", "/api/budgets", "/api/goals", "/api/portfolio", "/api/transactions"]);
+      expect(persistedKeys).toEqual(["/api/accounts", "/api/budgets", "/api/goals", "/api/loans", "/api/portfolio"]);
     });
 
     it("persists safe settings endpoints only", () => {
@@ -365,7 +365,6 @@ describe("persistent SWR cache", () => {
   describe("policy functions: isSafeToPersist()", () => {
     it("allows safe endpoints on the allow-list", () => {
       expect(isSafeToPersist("/api/accounts")).toBe(true);
-      expect(isSafeToPersist("/api/transactions")).toBe(true);
       expect(isSafeToPersist("/api/budgets")).toBe(true);
       expect(isSafeToPersist("/api/goals")).toBe(true);
       expect(isSafeToPersist("/api/portfolio")).toBe(true);
@@ -411,11 +410,13 @@ describe("persistent SWR cache", () => {
       expect(isSafeToPersist("/api/unknown-endpoint")).toBe(false);
       expect(isSafeToPersist("/api/data/export")).toBe(false);
       expect(isSafeToPersist("/api/random/path")).toBe(false);
+      // whole ledger list is not persisted (perf: avoids encrypting it on every change)
+      expect(isSafeToPersist("/api/transactions")).toBe(false);
     });
 
     it("allows sub-paths of allowed endpoints", () => {
       expect(isSafeToPersist("/api/accounts/123")).toBe(true);
-      expect(isSafeToPersist("/api/transactions?page=1")).toBe(true);
+      expect(isSafeToPersist("/api/budgets?page=1")).toBe(true);
       expect(isSafeToPersist("/api/dashboard/yearly")).toBe(true);
     });
 

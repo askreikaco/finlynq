@@ -7,7 +7,9 @@
  * sub-pages; this layout is what makes them feel like one section.
  *
  * - md+ : vertical left nav (~220px) + content slot.
- * - <md : horizontal scrollable pill row above the content.
+ * - <md, nav v2 on (hubBackHref set): iOS multi-level menu. /settings is the hub list;
+ *   detail pages get one glass header row (round back + title island), no pill strip.
+ * - <md, nav v2 off: horizontal scrollable pill row above the content (unchanged).
  *
  * Active state mirrors the global app sidebar idiom (`pf-app/src/components/nav.tsx`):
  * amber left-edge marker + `bg-white/[0.08]` highlight.
@@ -99,11 +101,15 @@ export function SettingsShell({ children, hubBackHref }: { children: React.React
   const pathname = usePathname();
   const active = activeHref(pathname);
   const isHub = pathname === "/settings";
+  // Nav v2 (hub list on phones) replaces the pill strip; without it the pill strip is the only section switcher.
+  const showPills = !isHub && !hubBackHref;
+  const activeLabel = NAV_ITEMS.find((item) => item.href === active)?.label ?? "Settings";
+  const showDetailHeader = !!hubBackHref && !isHub && !SELF_BACK_PATHS.some((p) => pathname.startsWith(p));
 
   return (
     <div className="flex flex-col gap-6 md:flex-row md:gap-8">
-      {/* Mobile pill row — hidden on hub page */}
-      {!isHub && (
+      {/* Mobile pill row (nav v2 off only) */}
+      {showPills && (
         <nav
           aria-label="Settings sections"
           className="md:hidden -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8"
@@ -178,11 +184,28 @@ export function SettingsShell({ children, hubBackHref }: { children: React.React
       {/* Content slot — `min-w-0` lets the flex item shrink below intrinsic
           content width; `overflow-x-auto` makes wide tables (issue #88)
           scroll inside the slot instead of pushing the page wider. */}
-      <div className="flex-1 min-w-0 overflow-x-auto" data-slot="settings-content">
-        {hubBackHref && !isHub && !SELF_BACK_PATHS.some((p) => pathname.startsWith(p)) && (
-          <BackButton href={hubBackHref} label="Back to Settings" />
+      <div
+        className={cn(
+          "flex-1 min-w-0",
+          // Detail pages: the glass title island above is the visible title on phones; the page h1 stays for a11y.
+          showDetailHeader && "max-md:[&_[data-slot=page-header-title]]:sr-only"
         )}
-        {children}
+        data-slot="settings-content"
+      >
+        {/* Not inside the overflow container below: sticky needs a non-overflow ancestor. */}
+        {showDetailHeader && (
+          // Phones: [round glass back | glass title island of the active section]. md+: back button only.
+          <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 max-md:sticky max-md:top-0 max-md:z-10 max-md:bg-background max-md:pt-[var(--sat)]">
+            <BackButton href={hubBackHref!} label="Back to Settings" className="justify-self-start" />
+            <span
+              aria-hidden
+              className="glass-capsule hidden max-md:block max-md:h-11 max-md:min-w-0 max-md:max-w-[min(60vw,20rem)] max-md:justify-self-center max-md:truncate max-md:rounded-full max-md:px-4 max-md:text-center max-md:text-[15px]/11 max-md:font-semibold"
+            >
+              {activeLabel}
+            </span>
+          </div>
+        )}
+        <div className="overflow-x-auto">{children}</div>
       </div>
     </div>
   );

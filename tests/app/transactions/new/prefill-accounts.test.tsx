@@ -28,7 +28,9 @@ afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 async function save(type: string) {
   fireEvent.click(screen.getByRole("button", { name: `Save ${type}` }));
   await waitFor(() => expect(fetchMock).toHaveBeenCalled());
-  return JSON.parse(fetchMock.mock.calls[0][1].body);
+  // First POST to /api/transactions (the page also GETs active currencies on mount).
+  const post = fetchMock.mock.calls.find((c: unknown[]) => c[0] === "/api/transactions" && (c[1] as RequestInit | undefined)?.method === "POST");
+  return JSON.parse(String((post![1] as RequestInit).body));
 }
 describe("account selection", () => {
   it("R1 no prefill, accounts at mount -> first account shown", () => {
@@ -76,6 +78,18 @@ describe("account selection", () => {
     r.rerender(<React.StrictMode><Page /></React.StrictMode>);
     expect((await save("Income")).accountId).toBe(2);
   });
+  it("R8 ?account=2 (no prefill) -> account 2 preselected", () => {
+    window.history.replaceState({}, "", "/transactions/new?account=2");
+    render(<Page />);
+    expect(screen.queryByText("Savings")).toBeTruthy();
+    expect(screen.queryByText("Checking")).toBeNull();
+  });
+  it("R10 ?account=999 (unknown id) -> falls back to first account", () => {
+    window.history.replaceState({}, "", "/transactions/new?account=999");
+    render(<Page />);
+    expect(screen.queryByText("Checking")).toBeTruthy();
+    expect(screen.queryByText("Savings")).toBeNull();
+  });
   it("R7 invalid prefill (expired) -> notice AND first account auto-selected", () => {
     sessionStorage.setItem(KEY, JSON.stringify(mk({ ts: 1 })));
     window.history.replaceState({}, "", "/transactions/new?prefill=1");
@@ -95,6 +109,6 @@ describe("account selection", () => {
     render(<Page />);
     fireEvent.click(screen.getByRole("button", { name: "Save Income" }));
     await new Promise(r => setTimeout(r, 50));
-    console.log("R9 fetch calls:", fetchMock.mock.calls.length, fetchMock.mock.calls[0] && fetchMock.mock.calls[0][1].body);
+    console.log("R9 fetch calls:", fetchMock.mock.calls.length, fetchMock.mock.calls[0] && fetchMock.mock.calls[0][1]?.body);
   });
 });

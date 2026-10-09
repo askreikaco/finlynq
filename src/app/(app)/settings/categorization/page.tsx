@@ -11,7 +11,7 @@
  * `pf-app/docs/transaction-rules-v2.md`.
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,7 @@ import { GroupCombobox } from "@/components/ui/group-combobox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tag, Plus, AlertTriangle, Pencil, Trash2, Check, X } from "lucide-react";
 import { PageHeader } from "@/components/mobile";
+import { usePageFab } from "@/components/mobile/page-fab";
 
 const TYPE_LABELS = { E: "Expense", I: "Income", R: "Reconciliation" } as const;
 const TYPE_ORDER = ["E", "I", "R"] as const;
@@ -126,6 +127,13 @@ export default function CategorizationSettingsPage() {
   // Get unique groups for the add form
   const uniqueGroups = Array.from(new Set(categories.map((c) => c.group).filter(Boolean))).sort((a, b) => (a ?? "").localeCompare(b ?? ""));
 
+  const addCatFormRef = useRef<HTMLFormElement>(null);
+  const openAddCategoryForm = () => {
+    setShowAddCat(true);
+    requestAnimationFrame(() => addCatFormRef.current?.scrollIntoView({ block: "center" }));
+  };
+  usePageFab("settings.categories.create", openAddCategoryForm);
+
   return (
     <div className="max-w-2xl space-y-6">
       <PageHeader
@@ -163,7 +171,7 @@ export default function CategorizationSettingsPage() {
 
           {/* Add category form */}
           {showAddCat && (
-            <form onSubmit={handleAddCategory} className="space-y-3 p-3 rounded-lg border bg-muted/30">
+            <form ref={addCatFormRef} onSubmit={handleAddCategory} className="space-y-3 p-3 rounded-lg border bg-muted/30">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <Input aria-label="Category name" aria-invalid={!!newCatErrors.name || undefined} className="h-11 md:h-8 text-base md:text-sm" value={newCatForm.name} onChange={(e) => { setNewCatForm({ ...newCatForm, name: e.target.value }); setNewCatErrors({ ...newCatErrors, name: "" }); }} placeholder="Category name" />

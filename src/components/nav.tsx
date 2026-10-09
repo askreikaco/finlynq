@@ -423,8 +423,8 @@ export const Nav = memo(function Nav({ instanceAdminEnabled = false, categoriesM
 export const MobileBottomBar = memo(function MobileBottomBar({ pathname }: { pathname: string }) {
   const moreActive = !mobileBarItems.some(i => pathname === i.href || pathname.startsWith(i.href + "/"));
   return (
-    <nav aria-label="Mobile navigation" className="md:hidden fixed bottom-0 left-0 right-0 z-50 mobile-glass-bar bg-sidebar/80 backdrop-blur border-t border-sidebar-border pb-[var(--sab)] pl-[var(--sal)] pr-[var(--sar)]">
-      <div className="flex h-[59px] items-stretch justify-around pt-1.5 pb-1.5" data-testid="mobile-bar-row">
+    <nav aria-label="Mobile navigation" className="md:hidden fixed z-50 mobile-glass-bar bottom-[max(12px,var(--sab))] left-[calc(16px+var(--sal))] right-[calc(16px+var(--sar))] h-16 rounded-[28px]">
+      <div className="flex h-full items-stretch justify-around p-1.5" data-testid="mobile-bar-row">
         {mobileBarItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
           return (
@@ -433,8 +433,8 @@ export const MobileBottomBar = memo(function MobileBottomBar({ pathname }: { pat
               aria-current={isActive ? "page" : undefined}
               href={item.href}
               className={cn(
-                "flex min-w-0 flex-1 flex-col items-center justify-center gap-1 px-0.5 text-[11px] font-semibold tracking-tight whitespace-nowrap transition-colors",
-                isActive ? "text-sidebar-primary" : "text-sidebar-foreground/50"
+                "flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full px-0.5 text-[11px] font-semibold tracking-tight whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
+                isActive ? "mobile-glass-pill text-sidebar-primary" : "text-sidebar-foreground/60"
               )}
             >
               <item.icon className={cn("size-[22px]", isActive && item.color)} />
@@ -447,8 +447,8 @@ export const MobileBottomBar = memo(function MobileBottomBar({ pathname }: { pat
           aria-label="More"
           aria-current={moreActive ? "page" : undefined}
           className={cn(
-            "flex min-w-0 flex-1 flex-col items-center justify-center gap-1 px-0.5 text-[11px] font-semibold tracking-tight whitespace-nowrap transition-colors",
-            moreActive ? "text-sidebar-primary" : "text-sidebar-foreground/50"
+            "flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full px-0.5 text-[11px] font-semibold tracking-tight whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
+            moreActive ? "mobile-glass-pill text-sidebar-primary" : "text-sidebar-foreground/60"
           )}
         >
           <MoreHorizontal className="size-[22px]" />
