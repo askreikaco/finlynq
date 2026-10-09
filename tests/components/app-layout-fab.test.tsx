@@ -108,7 +108,7 @@ describe("AppLayout mounts the per-page FAB", () => {
   it("no longer passes avoidFab to ReportingRecomputeIndicator", () => {
     render(<AppLayout><div>Test Content</div></AppLayout>);
 
-    const callArgs = vi.mocked(indicatorModule.ReportingRecomputeIndicator).mock.calls[0];
+    const callArgs = vi.mocked(indicatorModule.ReportingRecomputeIndicator).mock.calls[0] as unknown as [Record<string, unknown>];
     expect(callArgs[0]).not.toHaveProperty("avoidFab");
   });
 
