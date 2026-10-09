@@ -109,8 +109,15 @@ const categoryRow = () => screen.getByTestId("txnew-row-category");
 const payeeInput = () => screen.getByLabelText("Payee") as HTMLInputElement;
 const amountInput = () => screen.getByLabelText("Amount") as HTMLInputElement;
 
+/** Groups start collapsed; expand the open picker sheet's collapsed group rows like a user would. */
+function expandCollapsedGroups() {
+  const headers = document.querySelectorAll('[data-slot="sheet-content"] [aria-expanded="false"]');
+  headers.forEach((h) => fireEvent.click(h));
+}
+
 function pickCategory(name: string) {
   fireEvent.click(categoryRow());
+  expandCollapsedGroups();
   const sheetItems = screen.getAllByText(name);
   fireEvent.click(sheetItems[sheetItems.length - 1]);
 }

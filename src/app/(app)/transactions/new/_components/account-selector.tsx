@@ -1,9 +1,12 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Search, Check, Wallet } from "lucide-react";
-import { filterRecent } from "@/lib/transactions/recent-picks";
+import React, { useMemo } from "react";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import {
+  GroupedPickerPanel,
+  PICKER_SHEET_CLASS,
+  type PickerEntry,
+} from "./grouped-picker";
 
 export interface Account {
   id: string | number;
@@ -21,9 +24,11 @@ interface AccountSelectorProps {
   onSelect: (accountId: string) => void;
   selectedAccountId?: string;
   title?: string;
-  /** Recently picked account IDs, most recent first. Shown as a "Recent" chip section when they match. */
+  /** Recently picked account IDs, most recent first. Shown as a "Recent" section when they match. */
   recentIds?: string[];
 }
+
+const OTHER_GROUP = "Other";
 
 export function AccountSelector({
   open,
@@ -34,138 +39,39 @@ export function AccountSelector({
   title = "Select Account",
   recentIds,
 }: AccountSelectorProps) {
-  const [search, setSearch] = useState("");
-
-  const filteredAccounts = useMemo(() => {
-    const nonArchived = accounts.filter((a) => !a.archived);
-    if (!search.trim()) return nonArchived;
-    const term = search.toLowerCase();
-    return nonArchived.filter(
-      (acc) =>
-        acc.name.toLowerCase().includes(term) ||
-        (acc.type && acc.type.toLowerCase().includes(term)) ||
-        (acc.currency && acc.currency.toLowerCase().includes(term))
-    );
-  }, [accounts, search]);
-
-  const groupedAccounts = useMemo(() => {
-    const groups: Record<string, Account[]> = {};
-    filteredAccounts.forEach((acc) => {
-      const typeName = acc.type || "Other";
-      if (!groups[typeName]) {
-        groups[typeName] = [];
-      }
-      groups[typeName].push(acc);
-    });
-    return groups;
-  }, [filteredAccounts]);
-
-  const recentList = useMemo(() => {
-    if (!recentIds || recentIds.length === 0) return [];
-    const byId = new Map(filteredAccounts.map((acc) => [String(acc.id), acc] as const));
-    return filterRecent(recentIds, [...byId.keys()])
-      .map((id) => byId.get(id))
-      .filter((acc): acc is Account => acc !== undefined);
-  }, [recentIds, filteredAccounts]);
+  const entries = useMemo<PickerEntry[]>(
+    () =>
+      accounts
+        .filter((acc) => !acc.archived)
+        .map((acc) => {
+          const type = acc.type || OTHER_GROUP;
+          return {
+            id: String(acc.id),
+            name: acc.name,
+            group: type,
+            groupDetail: acc.currency || undefined,
+            flatDetail: [type, acc.currency].filter(Boolean).join(" · "),
+            searchText: [acc.name, acc.type ?? "", acc.currency ?? ""],
+          };
+        }),
+    [accounts],
+  );
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="bottom"
-        className="flex flex-col p-0 pt-0 rounded-t-3xl bg-background border-t border-border text-foreground max-h-[75dvh] h-auto"
-      >
-        <SheetHeader className="px-5 py-4 border-b border-border shrink-0">
-          <SheetTitle className="text-foreground text-lg font-semibold">{title}</SheetTitle>
-          <div className="relative mt-3">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Search account..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-card border border-border rounded-xl text-base text-foreground placeholder:text-muted-foreground outline-none focus:border-ring transition-colors"
-            />
-          </div>
-        </SheetHeader>
-
-        <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-6">
-          {recentList.length > 0 && (
-            <div className="space-y-2.5">
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">
-                Recent
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {recentList.map((acc) => (
-                  <button
-                    key={`recent-${acc.id}`}
-                    type="button"
-                    onClick={() => {
-                      onSelect(String(acc.id));
-                      onOpenChange(false);
-                      setSearch("");
-                    }}
-                    className="min-h-11 px-3.5 rounded-full border border-border bg-card text-sm font-medium text-foreground hover:bg-muted active:scale-[0.98] transition-all"
-                  >
-                    {acc.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-          {Object.keys(groupedAccounts).length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground text-sm">
-              No accounts found
-            </div>
-          ) : (
-            Object.entries(groupedAccounts).map(([type, accs]) => (
-              <div key={type} className="space-y-2.5">
-                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">
-                  {type}
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {accs.map((acc) => {
-                    const isSelected = String(acc.id) === selectedAccountId;
-                    return (
-                      <button
-                        key={acc.id}
-                        type="button"
-                        onClick={() => {
-                          onSelect(String(acc.id));
-                          onOpenChange(false);
-                          setSearch("");
-                        }}
-                        className={`flex items-center justify-between min-h-12 p-3.5 rounded-xl border text-left transition-all active:scale-[0.98] ${
-                          isSelected
-                            ? "bg-primary/20 border-primary text-primary"
-                            : "bg-card/90 border-border hover:bg-muted text-foreground"
-                        }`}
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0 text-muted-foreground">
-                            <Wallet className="w-4 h-4" />
-                          </div>
-                          <div className="flex flex-col min-w-0">
-                            <span className="text-sm font-medium truncate">
-                              {acc.name}
-                            </span>
-                            {acc.currency && (
-                              <span className="text-xs text-muted-foreground">
-                                {acc.currency}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        {isSelected && (
-                          <Check className="w-4 h-4 text-primary shrink-0 ml-2" />
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
+      <SheetContent side="bottom" className={PICKER_SHEET_CLASS}>
+        <GroupedPickerPanel
+          title={title}
+          placeholder="Search account..."
+          emptyText="No accounts found"
+          entries={entries}
+          selectedId={selectedAccountId}
+          recentIds={recentIds}
+          onPick={(id) => {
+            onSelect(id);
+            onOpenChange(false);
+          }}
+        />
       </SheetContent>
     </Sheet>
   );

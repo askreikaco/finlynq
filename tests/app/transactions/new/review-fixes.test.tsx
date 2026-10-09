@@ -87,6 +87,12 @@ afterEach(() => {
 const postsTo = (url: string) => calls.filter((c) => c.url === url && c.init?.method === "POST");
 const bodyOf = (c: { init?: RequestInit }) => JSON.parse(String(c.init?.body));
 
+/** Groups start collapsed; expand the open picker sheet's collapsed group rows like a user would. */
+function expandCollapsedGroups() {
+  const headers = document.querySelectorAll('[data-slot="sheet-content"] [aria-expanded="false"]');
+  headers.forEach((h) => fireEvent.click(h));
+}
+
 describe("new transaction page review fixes", () => {
   it("double Save posts once, and stays locked after the save has succeeded", async () => {
     seedPrefill();
@@ -131,6 +137,7 @@ describe("new transaction page review fixes", () => {
     window.history.replaceState({}, "", "/transactions/new?prefill=1&kind=transfer");
     render(<Page />);
     fireEvent.click(screen.getByText("Select Destination Account"));
+    expandCollapsedGroups();
     fireEvent.click(await screen.findByText("Euro Account"));
 
     const received = (await screen.findByLabelText("Received (EUR)")) as HTMLInputElement;
@@ -169,6 +176,7 @@ describe("new transaction page review fixes", () => {
     );
     render(<Page />);
     fireEvent.click(screen.getByText("Select Destination Account"));
+    expandCollapsedGroups();
     fireEvent.click(await screen.findByText("Euro Account"));
     fireEvent.click(await screen.findByRole("button", { name: "Save" }));
     expect(await screen.findByText("No FX rate for EUR.")).toBeTruthy();
