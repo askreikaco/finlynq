@@ -388,7 +388,7 @@ const METHOD_COLORS: Record<string, string> = {
   GET: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300",
   POST: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300",
   PUT: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
-  DELETE: "bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300",
+  DELETE: "bg-destructive/10 text-destructive",
 };
 
 function MethodBadge({ method }: { method: string }) {
@@ -401,7 +401,7 @@ function MethodBadge({ method }: { method: string }) {
 
 function CodeBlock({ children }: { children: string }) {
   return (
-    <pre className="mt-2 overflow-x-auto rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-xs leading-relaxed text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
+    <pre className="mt-2 overflow-x-auto rounded-lg border border-border bg-muted p-3 text-xs leading-relaxed text-foreground">
       <code>{children}</code>
     </pre>
   );
@@ -410,24 +410,24 @@ function CodeBlock({ children }: { children: string }) {
 function ParamTable({ params, label }: { params: ApiParam[]; label: string }) {
   return (
     <div className="mt-3">
-      <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{label}</p>
-      <div className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-700">
+      <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
+      <div className="overflow-x-auto rounded-lg border border-border">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/50">
-              <th className="px-3 py-2 text-left font-medium text-zinc-600 dark:text-zinc-300">Name</th>
-              <th className="px-3 py-2 text-left font-medium text-zinc-600 dark:text-zinc-300">Type</th>
-              <th className="px-3 py-2 text-left font-medium text-zinc-600 dark:text-zinc-300">Required</th>
-              <th className="px-3 py-2 text-left font-medium text-zinc-600 dark:text-zinc-300">Description</th>
+            <tr className="border-b border-border bg-muted">
+              <th className="px-3 py-2 text-left font-medium text-muted-foreground">Name</th>
+              <th className="px-3 py-2 text-left font-medium text-muted-foreground">Type</th>
+              <th className="px-3 py-2 text-left font-medium text-muted-foreground">Required</th>
+              <th className="px-3 py-2 text-left font-medium text-muted-foreground">Description</th>
             </tr>
           </thead>
           <tbody>
             {params.map((p) => (
-              <tr key={p.name} className="border-b border-zinc-100 last:border-0 dark:border-zinc-800">
+              <tr key={p.name} className="border-b border-border last:border-0">
                 <td className="px-3 py-2 font-mono text-xs text-indigo-600 dark:text-indigo-400">{p.name}</td>
-                <td className="px-3 py-2 text-xs text-zinc-500 dark:text-zinc-400">{p.type}</td>
-                <td className="px-3 py-2 text-xs">{p.required ? <span className="text-rose-600 dark:text-rose-400">yes</span> : <span className="text-zinc-400">no</span>}</td>
-                <td className="px-3 py-2 text-xs text-zinc-600 dark:text-zinc-300">{p.description}</td>
+                <td className="px-3 py-2 text-xs text-muted-foreground">{p.type}</td>
+                <td className="px-3 py-2 text-xs">{p.required ? <span className="text-destructive">yes</span> : <span className="text-muted-foreground">no</span>}</td>
+                <td className="px-3 py-2 text-xs text-muted-foreground">{p.description}</td>
               </tr>
             ))}
           </tbody>
@@ -441,26 +441,26 @@ function RouteCard({ route }: { route: ApiRoute }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="rounded-lg border border-zinc-200 dark:border-zinc-700">
+    <div className="rounded-lg border border-border">
       <button
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+        className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-muted"
       >
         <MethodBadge method={route.method} />
-        <code className="flex-1 text-sm font-medium text-zinc-800 dark:text-zinc-200">{route.path}</code>
-        <span className="hidden text-xs text-zinc-500 dark:text-zinc-400 sm:inline">{route.description}</span>
-        <svg className={`h-4 w-4 shrink-0 text-zinc-400 transition-transform ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <code className="flex-1 text-sm font-medium text-foreground">{route.path}</code>
+        <span className="hidden text-xs text-muted-foreground sm:inline">{route.description}</span>
+        <svg className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
       {open && (
-        <div className="border-t border-zinc-200 px-4 py-3 dark:border-zinc-700">
-          <p className="text-sm text-zinc-600 dark:text-zinc-300">{route.description}</p>
+        <div className="border-t border-border px-4 py-3">
+          <p className="text-sm text-muted-foreground">{route.description}</p>
           {route.params && <ParamTable params={route.params} label="Query Parameters" />}
           {route.body && <ParamTable params={route.body} label="Request Body (JSON)" />}
           {route.example && (
             <div className="mt-3">
-              <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Example Response</p>
+              <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Example Response</p>
               <CodeBlock>{route.example}</CodeBlock>
             </div>
           )}
@@ -560,12 +560,12 @@ function ApiDocsPageContent() {
   const [activeTab, setActiveTab] = useState<"rest" | "mcp">("rest");
 
   return (
-    <div className="min-h-screen bg-white dark:bg-zinc-950">
+    <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-4xl px-6 py-12">
         {/* Header */}
         <div className="mb-8">
-          <PageHeader title="API Docs" titleClassName="text-3xl font-bold text-zinc-900 dark:text-zinc-50" />
-          <p className="mt-2 text-zinc-600 dark:text-zinc-400">
+          <PageHeader title="API Docs" titleClassName="text-2xl font-bold tracking-tight" />
+          <p className="mt-2 text-muted-foreground">
             PF exposes both a REST API (Next.js routes) and an MCP server for AI assistant integration.
             All data is local — no external services required.
           </p>
@@ -581,13 +581,13 @@ function ApiDocsPageContent() {
         </div>
 
         {/* Tab Switcher */}
-        <div className="mb-6 flex gap-1 rounded-lg border border-zinc-200 bg-zinc-100 p-1 dark:border-zinc-700 dark:bg-zinc-800">
+        <div className="mb-6 flex gap-1 rounded-lg border border-border bg-muted p-1">
           <button
             onClick={() => setActiveTab("rest")}
             className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
               activeTab === "rest"
-                ? "bg-white text-zinc-900 shadow-sm dark:bg-zinc-700 dark:text-zinc-100"
-                : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
             REST API ({API_GROUPS.reduce((s, g) => s + g.routes.length, 0)} routes)
@@ -596,8 +596,8 @@ function ApiDocsPageContent() {
             onClick={() => setActiveTab("mcp")}
             className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
               activeTab === "mcp"
-                ? "bg-white text-zinc-900 shadow-sm dark:bg-zinc-700 dark:text-zinc-100"
-                : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
             MCP Server ({MCP_TOOLS.length} tools)
@@ -609,13 +609,13 @@ function ApiDocsPageContent() {
           <div className="space-y-8">
             {/* Base URL */}
             <div>
-              <h3 className="mb-2 text-sm font-semibold text-zinc-500 dark:text-zinc-400">Base URL</h3>
+              <h3 className="mb-2 text-sm font-semibold text-muted-foreground">Base URL</h3>
               <CodeBlock>{"http://localhost:3000"}</CodeBlock>
             </div>
 
             {/* Response Format */}
             <div>
-              <h3 className="mb-2 text-sm font-semibold text-zinc-500 dark:text-zinc-400">Standard Response Format (with apiSuccess/apiError helpers)</h3>
+              <h3 className="mb-2 text-sm font-semibold text-muted-foreground">Standard Response Format (with apiSuccess/apiError helpers)</h3>
               <CodeBlock>{`// Success
 { "success": true, "data": { ... }, "meta": { "total": 42 } }
 
@@ -626,8 +626,8 @@ function ApiDocsPageContent() {
             {/* Route Groups */}
             {API_GROUPS.map((group) => (
               <div key={group.name}>
-                <h2 className="mb-1 text-xl font-bold text-zinc-800 dark:text-zinc-100">{group.name}</h2>
-                <p className="mb-3 text-sm text-zinc-500 dark:text-zinc-400">{group.description}</p>
+                <h2 className="mb-1 text-xl font-bold text-foreground">{group.name}</h2>
+                <p className="mb-3 text-sm text-muted-foreground">{group.description}</p>
                 <div className="space-y-2">
                   {group.routes.map((route) => (
                     <RouteCard key={`${route.method}-${route.path}`} route={route} />
@@ -643,7 +643,7 @@ function ApiDocsPageContent() {
           <div className="space-y-6">
             {/* Connection Info */}
             <div>
-              <h3 className="mb-2 text-sm font-semibold text-zinc-500 dark:text-zinc-400">Connection</h3>
+              <h3 className="mb-2 text-sm font-semibold text-muted-foreground">Connection</h3>
               <CodeBlock>{`Transport: stdio
 Server name: finlynq
 Version: 2.2.0
@@ -664,31 +664,31 @@ npx tsx mcp-server/index.ts
 
             {/* Discovery */}
             <div>
-              <h3 className="mb-2 text-sm font-semibold text-zinc-500 dark:text-zinc-400">Discovery</h3>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400">
+              <h3 className="mb-2 text-sm font-semibold text-muted-foreground">Discovery</h3>
+              <p className="text-sm text-muted-foreground">
                 Server metadata is available at{" "}
-                <code className="rounded bg-zinc-100 px-1 py-0.5 text-xs dark:bg-zinc-800">/.well-known/mcp.json</code>
+                <code className="rounded bg-muted px-1 py-0.5 text-xs">/.well-known/mcp.json</code>
               </p>
             </div>
 
             {/* Tools */}
             <div>
-              <h3 className="mb-2 text-sm font-semibold text-zinc-500 dark:text-zinc-400">
+              <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
                 Read Tools ({MCP_TOOLS.filter((t) => t.type === "read").length})
               </h3>
-              <div className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-700">
+              <div className="overflow-x-auto rounded-lg border border-border">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/50">
-                      <th className="px-4 py-2 text-left font-medium text-zinc-600 dark:text-zinc-300">Tool</th>
-                      <th className="px-4 py-2 text-left font-medium text-zinc-600 dark:text-zinc-300">Description</th>
+                    <tr className="border-b border-border bg-muted">
+                      <th className="px-4 py-2 text-left font-medium text-muted-foreground">Tool</th>
+                      <th className="px-4 py-2 text-left font-medium text-muted-foreground">Description</th>
                     </tr>
                   </thead>
                   <tbody>
                     {MCP_TOOLS.filter((t) => t.type === "read").map((tool) => (
-                      <tr key={tool.name} className="border-b border-zinc-100 last:border-0 dark:border-zinc-800">
+                      <tr key={tool.name} className="border-b border-border last:border-0">
                         <td className="px-4 py-2 font-mono text-xs text-emerald-600 dark:text-emerald-400">{tool.name}</td>
-                        <td className="px-4 py-2 text-xs text-zinc-600 dark:text-zinc-300">{tool.description}</td>
+                        <td className="px-4 py-2 text-xs text-muted-foreground">{tool.description}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -697,22 +697,22 @@ npx tsx mcp-server/index.ts
             </div>
 
             <div>
-              <h3 className="mb-2 text-sm font-semibold text-zinc-500 dark:text-zinc-400">
+              <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
                 Write Tools ({MCP_TOOLS.filter((t) => t.type === "write").length})
               </h3>
-              <div className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-700">
+              <div className="overflow-x-auto rounded-lg border border-border">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/50">
-                      <th className="px-4 py-2 text-left font-medium text-zinc-600 dark:text-zinc-300">Tool</th>
-                      <th className="px-4 py-2 text-left font-medium text-zinc-600 dark:text-zinc-300">Description</th>
+                    <tr className="border-b border-border bg-muted">
+                      <th className="px-4 py-2 text-left font-medium text-muted-foreground">Tool</th>
+                      <th className="px-4 py-2 text-left font-medium text-muted-foreground">Description</th>
                     </tr>
                   </thead>
                   <tbody>
                     {MCP_TOOLS.filter((t) => t.type === "write").map((tool) => (
-                      <tr key={tool.name} className="border-b border-zinc-100 last:border-0 dark:border-zinc-800">
+                      <tr key={tool.name} className="border-b border-border last:border-0">
                         <td className="px-4 py-2 font-mono text-xs text-indigo-600 dark:text-indigo-400">{tool.name}</td>
-                        <td className="px-4 py-2 text-xs text-zinc-600 dark:text-zinc-300">{tool.description}</td>
+                        <td className="px-4 py-2 text-xs text-muted-foreground">{tool.description}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -721,9 +721,9 @@ npx tsx mcp-server/index.ts
             </div>
 
             {/* Security Model */}
-            <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-800/50">
-              <h3 className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">Security Model</h3>
-              <ul className="mt-2 space-y-1 text-sm text-zinc-600 dark:text-zinc-400">
+            <div className="rounded-lg border border-border bg-muted p-4">
+              <h3 className="text-sm font-semibold text-foreground">Security Model</h3>
+              <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
                 <li>Local-only: MCP server runs on localhost via stdio transport</li>
                 <li>Zero-knowledge: No data leaves your machine</li>
                 <li>Read + controlled writes: Write tools are limited to safe operations</li>
@@ -734,7 +734,7 @@ npx tsx mcp-server/index.ts
         )}
 
         {/* Footer */}
-        <div className="mt-12 border-t border-zinc-200 pt-6 text-center text-xs text-zinc-400 dark:border-zinc-800">
+        <div className="mt-12 border-t border-border pt-6 text-center text-xs text-muted-foreground">
           Finlynq v2.3 &mdash; Local-first personal finance. Track your money here, analyze it anywhere.
         </div>
       </div>
