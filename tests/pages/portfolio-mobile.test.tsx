@@ -80,7 +80,7 @@ describe("Portfolio page below md", () => {
     expect(within(grid as HTMLElement).getByText("Realized G/L")).toBeTruthy();
     // desktop blocks only hidden below md
     expect(cls(screen.getByText("Total Holdings").closest("div.grid")!)).toContain("max-md:hidden");
-    expect(cls(screen.getByText("Investment Returns").closest("[data-slot=card]")!)).toContain("max-md:hidden");
+    expect(cls(screen.getByText("Investment Returns").parentElement!)).toContain("max-md:hidden");
   });
 
   it("holdings rows show ONLY name | market value + unrealized % in text-pos / text-neg", () => {
