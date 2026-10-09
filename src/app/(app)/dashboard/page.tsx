@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatCurrency, getCurrentMonth, getMonthLabel } from "@/lib/currency";
 import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
-import { DollarSign, TrendingUp, CreditCard, Target, User, Upload, FileUp, SlidersHorizontal, ChevronUp, ChevronDown } from "lucide-react";
+import { DollarSign, TrendingUp, CreditCard, Target, User, Upload, FileUp, SlidersHorizontal } from "lucide-react";
 import { motion } from "framer-motion";
 import { StatCard } from "./_components/stat-card";
 import { NetWorthHeroCard } from "./_components/net-worth-hero-card";
@@ -28,9 +28,9 @@ import { useDevMode } from "@/hooks/use-dev-mode";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { CurrencyAuditBanner } from "@/components/currency-audit-banner";
 import type { DashboardData, HealthData } from "./_components/types";
-import { PageHeader, HEADER_DESKTOP_ONLY, CustomizeDashboardSheet } from "@/components/mobile";
+import { PageHeader, HEADER_SECONDARY, CustomizeDashboardSheet } from "@/components/mobile";
+import { Disclosure } from "@/components/adaptive";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { DASHBOARD_CARDS } from "@/lib/dashboard-layout";
 import { useDashboardLayout } from "./_components/use-dashboard-layout";
 import { sumAssetsLiabilities } from "@/lib/account-visibility";
@@ -106,14 +106,14 @@ function DashboardSkeleton() {
     <div className="space-y-5">
       <div className="h-7 w-52 animate-shimmer rounded-lg" />
       <div className="h-4 w-36 animate-shimmer rounded-md" />
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
-        <div className="lg:col-span-2 h-44 animate-shimmer rounded-2xl" />
+      <div className="grid grid-cols-1 wide:grid-cols-3 gap-4 mt-4">
+        <div className="wide:col-span-2 h-44 animate-shimmer rounded-2xl" />
         <div className="h-44 animate-shimmer rounded-2xl" />
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 regular:grid-cols-2 wide:grid-cols-4 gap-4">
         {[1, 2, 3, 4].map((i) => <div key={i} className="h-32 animate-shimmer rounded-2xl" />)}
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 wide:grid-cols-3 gap-5">
         {[1, 2, 3].map((i) => <div key={i} className="h-52 animate-shimmer rounded-2xl" />)}
       </div>
     </div>
@@ -131,8 +131,6 @@ export default function DashboardPage() {
   const [customizeOpen, setCustomizeOpen] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
-  // Below md the secondary cards ("extra insights") sit behind a disclosure.
-  const [showMore, setShowMore] = useState(false);
 
   useEffect(() => {
     if (currencyLoading) return; // wait until provider has read settings
@@ -294,17 +292,6 @@ export default function DashboardPage() {
   // Stat cards config
   const summaryCards = [
     {
-      label: "Net Worth",
-      value: totalNetWorth,
-      sub: `Assets ${formatCurrency(totalAssets, apiDisplayCurrency)}`,
-      icon: DollarSign,
-      iconBg: "bg-primary/10 text-primary",
-      sparkColor: "#6366f1",
-      sparkData: nwSparkline,
-      sparkLabels: nwSparkLabels,
-      href: "/accounts",
-    },
-    {
       label: "Monthly Income",
       // Name the month the figure covers — it's the last COMPLETE month, not
       // necessarily the current one (FINLYNQ-291 C1), so the label must be explicit.
@@ -346,7 +333,7 @@ export default function DashboardPage() {
   // order share the original responsive grid wrapper, so the default order renders the
   // exact same grids as before customisation.
   const heroNode = (grouped: boolean) => (
-    <motion.div key="net-worth" variants={itemVariants} className={grouped ? "lg:col-span-2" : undefined}>
+    <motion.div key="net-worth" variants={itemVariants} className={grouped ? "wide:col-span-2" : undefined}>
       <NetWorthHeroCard
         href="/accounts"
         onMouseMove={handleMouseMove}
@@ -364,14 +351,14 @@ export default function DashboardPage() {
   type CardDef = {
     /** Adjacent cards with the same group share this wrapper's grid classes. */
     group?: { key: string; className: string };
-    /** Collapsed under "More insights" below md (always visible at md+). */
+    /** Secondary card: rendered inside the single "More insights" Disclosure (collapsed below regular). */
     extra?: boolean;
     render: (ctx: { grouped: boolean }) => React.ReactNode;
   };
-  const HERO_GRID = { key: "hero", className: "grid grid-cols-1 lg:grid-cols-3 gap-4" };
-  const ROW3_GRID = { key: "row3", className: "grid grid-cols-1 lg:grid-cols-3 gap-5" };
-  const CHARTS_GRID = { key: "charts", className: "grid grid-cols-1 lg:grid-cols-2 gap-5" };
-  const SPEND_GRID = { key: "spend", className: "grid grid-cols-1 lg:grid-cols-3 gap-5" };
+  const HERO_GRID = { key: "hero", className: "grid grid-cols-1 wide:grid-cols-3 gap-4" };
+  const ROW3_GRID = { key: "row3", className: "grid grid-cols-1 wide:grid-cols-3 gap-5" };
+  const CHARTS_GRID = { key: "charts", className: "grid grid-cols-1 wide:grid-cols-2 gap-5" };
+  const SPEND_GRID = { key: "spend", className: "grid grid-cols-1 wide:grid-cols-3 gap-5" };
 
   const CARDS: Record<string, CardDef> = {
     "onboarding-tips": {
@@ -386,17 +373,10 @@ export default function DashboardPage() {
     "health-score": { group: HERO_GRID, render: () => <HealthScoreCard key="health-score" health={health} /> },
     "summary-stats": {
       render: () => (
-        <div key="summary-stats" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {summaryCards.map((card) =>
-            card.label === "Net Worth" ? (
-              // The hero card above already shows net worth: drop the duplicate tile below md.
-              <div key={card.label} className="hidden md:contents">
-                <StatCard {...card} currency={apiDisplayCurrency} />
-              </div>
-            ) : (
-              <StatCard key={card.label} {...card} currency={apiDisplayCurrency} />
-            ),
-          )}
+        <div key="summary-stats" className="grid grid-cols-1 regular:grid-cols-3 gap-4">
+          {summaryCards.map((card) => (
+            <StatCard key={card.label} {...card} currency={apiDisplayCurrency} />
+          ))}
         </div>
       ),
     },
@@ -492,28 +472,72 @@ export default function DashboardPage() {
   const visibleIds = layout.order.filter((id) => CARDS[id] && !layout.hidden.includes(id) && (devMode || !devOnly.has(id)));
   const availableIds = DASHBOARD_CARDS.filter((c) => devMode || !c.devOnly).map((c) => c.id);
 
-  // Coalesce neighbours sharing a group into one wrapper (original grid markup).
+  // One tree at every size. Main cards keep their responsive grid rows. Secondary (extra) cards
+  // render once, inside one "More insights" Disclosure: collapsed below regular, open from regular up.
+  // The Disclosure takes the first extra card's place in the saved order. When that card's grid row
+  // also holds a main card (the action center), the Disclosure sits inside that row, so the desktop
+  // row keeps its shape. The saved order of the extras is kept inside the Disclosure.
   type Run = { group?: CardDef["group"]; ids: string[] };
-  const runs: Run[] = [];
-  for (const id of visibleIds) {
-    const g = CARDS[id].group;
-    const last = runs[runs.length - 1];
-    if (g && last?.group?.key === g.key) last.ids.push(id);
-    else runs.push({ group: g, ids: [id] });
-  }
-  const hasExtra = visibleIds.some((id) => CARDS[id].extra);
-  const extraClass = (extra?: boolean) => (extra ? (showMore ? "contents" : "hidden md:contents") : undefined);
-  const renderCard = (id: string, grouped: boolean) => {
-    const def = CARDS[id];
-    const node = def.render({ grouped });
-    return def.extra ? (
-      <div key={id} data-card-id={id} className={extraClass(true)}>
-        {node}
-      </div>
-    ) : (
-      node
-    );
+  const toRuns = (ids: string[]) => {
+    const out: Run[] = [];
+    for (const id of ids) {
+      const g = CARDS[id].group;
+      const last = out[out.length - 1];
+      if (g && last?.group?.key === g.key) last.ids.push(id);
+      else out.push({ group: g, ids: [id] });
+    }
+    return out;
   };
+  const isExtra = (id: string) => !!CARDS[id].extra;
+  const extraIds = visibleIds.filter(isExtra);
+  const extraRuns = toRuns(extraIds);
+  const mainRuns = toRuns(visibleIds.filter((id) => !isExtra(id)));
+  const firstExtraAt = visibleIds.findIndex(isExtra);
+  const firstExtraGroup = firstExtraAt >= 0 ? CARDS[visibleIds[firstExtraAt]].group?.key : undefined;
+  const hostIndex = firstExtraGroup ? mainRuns.findIndex((run) => run.group?.key === firstExtraGroup) : -1;
+  // Without a host row, the Disclosure goes in the run that follows the first extra in the saved order.
+  const standaloneAt = (() => {
+    const k = mainRuns.findIndex((run) => visibleIds.indexOf(run.ids[0]) > firstExtraAt);
+    return k === -1 ? mainRuns.length : k;
+  })();
+  // Inside the host row the 3-up action row becomes 2-up beside the disclosure header.
+  const extraGroupClass = (g: NonNullable<CardDef["group"]>) =>
+    g.key === ROW3_GRID.key ? "grid grid-cols-1 wide:grid-cols-2 gap-5" : g.className;
+  const renderCard = (id: string, grouped: boolean) => CARDS[id].render({ grouped });
+
+  const moreInsights =
+    extraIds.length > 0 ? (
+      <Disclosure
+        key="more-insights"
+        title="More insights"
+        expandedTitle="Fewer insights"
+        collapseBelow="regular"
+        className={hostIndex >= 0 ? "wide:col-span-2" : undefined}
+        headerClassName="min-h-11 w-full justify-center rounded-xl border border-border/60 font-semibold hover:bg-muted/50 regular:min-h-9"
+        contentClassName="space-y-5 pt-5"
+      >
+        {extraRuns.map((run) =>
+          run.group ? (
+            <div key={run.ids.join("+")} className={extraGroupClass(run.group)}>
+              {run.ids.map((id) => renderCard(id, run.ids.length > 1))}
+            </div>
+          ) : (
+            renderCard(run.ids[0], false)
+          ),
+        )}
+      </Disclosure>
+    ) : null;
+
+  const rows = mainRuns.map((run, i) => {
+    if (!run.group) return renderCard(run.ids[0], false);
+    return (
+      <div key={run.ids.join("+")} className={run.group.className}>
+        {run.ids.map((id) => renderCard(id, run.ids.length > 1))}
+        {i === hostIndex && moreInsights}
+      </div>
+    );
+  });
+  if (hostIndex < 0 && moreInsights) rows.splice(standaloneAt, 0, moreInsights);
 
   return (
     <>
@@ -546,7 +570,7 @@ export default function DashboardPage() {
         <Button
           variant="outline"
           size="sm"
-          className={HEADER_DESKTOP_ONLY}
+          className={HEADER_SECONDARY}
           onClick={() => setCustomizeOpen(true)}
           title="Show, hide and reorder dashboard cards"
         >
@@ -555,7 +579,7 @@ export default function DashboardPage() {
         </Button>
         <Link
           href="/settings/general"
-          className="flex h-9 w-9 shrink-0 max-md:h-11 max-md:w-11 items-center justify-center rounded-full bg-muted/60 hover:bg-muted transition-colors"
+          className="flex h-11 w-11 regular:h-9 regular:w-9 shrink-0 items-center justify-center rounded-full bg-muted/60 hover:bg-muted transition-colors"
           title="Settings"
         >
           <User className="h-4 w-4 text-muted-foreground" />
@@ -571,31 +595,7 @@ export default function DashboardPage() {
       </motion.div>
 
       {/* Cards, in the user's saved order (default = the original dashboard order). */}
-      {runs.map((run) => {
-        if (!run.group) return renderCard(run.ids[0], false);
-        const allExtra = run.ids.every((id) => CARDS[id].extra);
-        return (
-          <div
-            key={run.ids.join("+")}
-            className={cn(run.group.className, allExtra && !showMore && "max-md:hidden")}
-          >
-            {run.ids.map((id) => renderCard(id, run.ids.length > 1))}
-          </div>
-        );
-      })}
-
-      {hasExtra && (
-        <button
-          type="button"
-          data-slot="more-insights-toggle"
-          aria-expanded={showMore}
-          onClick={() => setShowMore((v) => !v)}
-          className="md:hidden flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl border border-border/60 text-sm font-semibold text-muted-foreground outline-none hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50"
-        >
-          {showMore ? "Fewer insights" : "More insights"}
-          {showMore ? <ChevronUp className="size-4" aria-hidden /> : <ChevronDown className="size-4" aria-hidden />}
-        </button>
-      )}
+      {rows}
     </motion.div>
 
       <CustomizeDashboardSheet
