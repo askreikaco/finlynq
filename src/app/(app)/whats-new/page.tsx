@@ -53,7 +53,7 @@ export default function WhatsNewPage() {
   return (
     <div className="mx-auto max-w-2xl">
       <div className="mb-6">
-        <PageHeader title="What's new" titleClassName="text-2xl font-semibold tracking-tight" />
+        <PageHeader title="What's new" titleClassName="text-2xl font-bold tracking-tight" />
         <p className="mt-1 text-sm text-muted-foreground">
           Product news, updates, and announcements.
         </p>

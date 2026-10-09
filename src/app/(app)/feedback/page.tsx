@@ -349,9 +349,9 @@ export default function FeedbackPage() {
       <div className="mb-6 flex items-start justify-between gap-3">
         <PageHeader
             title="Feedback"
-            titleClassName="text-2xl font-semibold tracking-tight"
+            titleClassName="text-2xl font-bold tracking-tight"
             subtitle="Track your reports and follow up on replies from the team."
-            subtitleClassName="mt-1 text-sm text-muted-foreground"
+            subtitleClassName="text-sm text-muted-foreground mt-0.5"
           />
         <Button onClick={() => setSendOpen(true)}>Send feedback</Button>
       </div>
