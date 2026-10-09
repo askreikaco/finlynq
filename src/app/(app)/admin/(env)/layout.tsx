@@ -16,7 +16,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
-import { PageHeader, CompactOnly } from "@/components/mobile";
+import { CompactOnly } from "@/components/mobile";
 import { getEntriesBySurface } from "@/lib/nav-config";
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
@@ -49,9 +49,6 @@ export default function EnvLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Heading */}
-      <PageHeader title="Environment" titleClassName="text-2xl font-bold tracking-tight" />
-
       {/* Scrollable horizontal tab row (responsive) */}
       <nav
         aria-label="Environment sections"

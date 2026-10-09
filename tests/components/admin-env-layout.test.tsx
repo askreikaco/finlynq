@@ -22,14 +22,15 @@ afterEach(() => {
 });
 
 describe("Admin Environment Layout", () => {
-  it("renders heading and 5 tabs in correct order", () => {
+  it("renders the section nav (no stacked page heading) and 5 tabs in correct order", () => {
     render(
       <Layout>
         <div>Test content</div>
       </Layout>
     );
 
-    expect(screen.getByText("Environment")).toBeTruthy();
+    expect(screen.getByRole("navigation", { name: "Environment sections" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
 
     const links = screen.getAllByRole("link");
     const tabLinks = links.filter(l => l.getAttribute("href")?.startsWith("/admin/"));
