@@ -104,10 +104,10 @@ export function UnboundImportPicker({
   };
 
   return (
-    <Card className="border-amber-300/60 bg-amber-50/40 dark:bg-amber-950/10">
+    <Card className="border-warning/30 bg-warning/10">
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
-          <AlertCircle className="h-4 w-4 text-amber-600" />
+          <AlertCircle className="h-4 w-4 text-warning" />
           This email import didn&apos;t match any saved template
         </CardTitle>
         <p className="text-xs text-muted-foreground mt-1.5">
@@ -236,7 +236,7 @@ export function UnboundImportPicker({
         </div>
 
         {error && (
-          <div className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1.5">
+          <div className="text-xs text-destructive flex items-center gap-1.5">
             <AlertCircle className="h-3.5 w-3.5" />
             {error}
           </div>

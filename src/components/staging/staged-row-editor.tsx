@@ -188,7 +188,7 @@ export function StagedRowEditor({
   return (
     <div className="space-y-3 p-3 border-t bg-muted/30">
       {error && (
-        <div className="text-xs text-rose-600 dark:text-rose-400">
+        <div className="text-xs text-destructive">
           {error}
         </div>
       )}
