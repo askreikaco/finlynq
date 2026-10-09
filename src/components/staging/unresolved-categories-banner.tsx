@@ -12,58 +12,43 @@
  *      at /api/import/staged/[id]/rows/[rowId] (NOT re-implemented here).
  *      The user just expands the row in the table below and uses the
  *      StagedRowEditor; this banner stays out of the way for that path.
- *   2. Create a rule + apply to current batch → POST
- *      /api/import/staged/[id]/create-rule. FINLYNQ-90 swapped the inline
- *      legacy 3-field form for the shared `RuleEditorDialog`; the user
- *      now gets the full v2 surface (multi-condition AND group, 7 action
- *      kinds, priority + isActive, live preview) seeded from the row's
- *      payee. Historical `transactions` are untouched (scoped per the
- *      item spec).
+ *   2. Create a rule + apply to current batch → opens the full-page rule
+ *      editor /settings/rules/new with the row's payee seeded (query params,
+ *      see lib/rules/rule-prefill.ts). The page submits to
+ *      POST /api/import/staged/[id]/create-rule. Historical `transactions`
+ *      are untouched (scoped per the item spec).
  *   3. Cancel → dismiss the banner; user is free to manually assign or
  *      re-approve. The unresolved set will reappear on the next approve
  *      attempt if any row still lacks a category.
  *
- * After a rule applies, the parent re-fetches the staged detail and the
- * banner's row list shrinks via the parent's `setUnresolved` filter. The
- * `onRuleApplied` callback is the trigger.
+ * "Create rule" navigates to the rule page with returnTo = the current
+ * /import/pending URL (its ?id= reopens this batch). The page remounts on
+ * return, so the unresolved set is recomputed on the next Approve attempt
+ * instead of shrinking in place.
  *
- * Lazy-fetch — the 3 FK option lists (categories / accounts / holdings)
- * are NOT fetched on banner mount. They're fetched on the FIRST per-row
- * "Create rule" click and cached in component state; subsequent clicks
- * reuse the cache. Dismissing the banner without ever clicking "Create
- * rule" triggers ZERO fetches. Load-bearing for the banner-only-on-error
- * traffic shape.
+ * No FK lists are fetched here: the rule page loads them itself.
  */
 
-import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { AlertTriangle, X, PlusCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  RuleEditorDialog,
-  type Category,
-  type Account,
-  type Holding,
-} from "@/components/rules/rule-editor-dialog";
-import type { Condition } from "@/lib/rules/schema";
 
 export interface UnresolvedRow {
   id: string;
   payee: string;
 }
 
-interface FkCache {
-  categories?: Category[];
-  accounts?: Account[];
-  holdings?: Holding[];
-}
-
 interface Props {
   stagedImportId: string;
   rowIds: string[];
   payees: string[];
-  /** Called after a rule POST succeeds; parent re-fetches detail + recomputes set. */
-  onRuleApplied: () => void;
+  /**
+   * Legacy: called after a rule POST succeeded in the old in-place dialog. Rule
+   * creation now navigates away, so this is no longer invoked. Optional so the
+   * parent (staged-review-surface.tsx) keeps compiling until it is removed.
+   */
+  onRuleApplied?: () => void;
   /** User-dismissed the banner without resolving. Parent clears state. */
   onDismiss: () => void;
 }
@@ -72,87 +57,23 @@ export function UnresolvedCategoriesBanner({
   stagedImportId,
   rowIds,
   payees,
-  onRuleApplied,
   onDismiss,
 }: Props) {
-  // Which row's dialog is open (null = none). One dialog open at a time.
-  const [dialogRowId, setDialogRowId] = useState<string | null>(null);
-  // Per-banner-instance lazy cache for the 3 FK option lists.
-  const [cache, setCache] = useState<FkCache>({});
-  const [loading, setLoading] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const router = useRouter();
 
-  // Fetch categories / accounts / holdings on FIRST dialog open. Re-opening
-  // a second row reuses the cache. Dismissing the banner without clicking
-  // any "Create rule" triggers zero fetches.
-  const openDialogForRow = async (rowId: string) => {
-    setLoadError(null);
-    if (cache.categories && cache.accounts && cache.holdings) {
-      setDialogRowId(rowId);
-      return;
-    }
-    setLoading(true);
-    try {
-      const [catsRes, acctsRes, holdRes] = await Promise.all([
-        fetch("/api/categories"),
-        fetch("/api/accounts"),
-        fetch("/api/portfolio"),
-      ]);
-      if (!catsRes.ok || !acctsRes.ok || !holdRes.ok) {
-        setLoadError("Failed to load category / account / holding lists.");
-        return;
-      }
-      const catsRaw = (await catsRes.json()) as Array<{
-        id?: number;
-        name?: string;
-        type?: string;
-        group?: string;
-      }>;
-      const acctsRaw = (await acctsRes.json()) as Array<{ id?: number; name?: string | null }>;
-      const holdRaw = (await holdRes.json()) as Array<{ id?: number; name?: string | null }>;
-      const categories: Category[] = catsRaw
-        .filter((c) => c.id != null && c.name)
-        .map((c) => ({
-          id: c.id as number,
-          name: c.name as string,
-          type: c.type ?? "",
-          group: c.group ?? "",
-        }));
-      const accounts: Account[] = acctsRaw
-        .filter((a) => a.id != null && a.name)
-        .map((a) => ({ id: a.id as number, name: a.name as string }));
-      const holdings: Holding[] = holdRaw
-        .filter((h) => h.id != null && h.name)
-        .map((h) => ({ id: h.id as number, name: h.name as string }));
-      setCache({ categories, accounts, holdings });
-      setDialogRowId(rowId);
-    } catch (e) {
-      setLoadError(e instanceof Error ? e.message : "Failed to load");
-    } finally {
-      setLoading(false);
-    }
+  // "Create rule" → full-page editor. returnTo is this page (keeps ?id= so the
+  // batch reopens). Read at click time; no state or effects needed.
+  const createRuleForRow = (payee: string) => {
+    const here = typeof window !== "undefined" ? window.location.pathname + window.location.search : "/import/pending";
+    const qs = new URLSearchParams({
+      payee: (payee || "").trim(),
+      stagedImportId,
+      returnTo: here,
+    });
+    router.push(`/settings/rules/new?${qs.toString()}`);
   };
 
   if (rowIds.length === 0) return null;
-
-  // Figure out the row payee to seed the dialog with.
-  const dialogRow = dialogRowId
-    ? (() => {
-        const idx = rowIds.indexOf(dialogRowId);
-        if (idx < 0) return null;
-        return { id: dialogRowId, payee: payees[idx] ?? "" };
-      })()
-    : null;
-
-  // Seed the rule name from the row's payee, truncated for the 120-char
-  // `transaction_rules.name` length cap. `Match "<payee>"` adds 9 chars of
-  // surround, so cap the payee slice at 100 to stay well inside.
-  const initialName = dialogRow
-    ? `Match "${(dialogRow.payee || "").trim().slice(0, 100)}"`
-    : "";
-  const initialConditions: Condition[] = dialogRow
-    ? [{ field: "payee", op: "contains", value: (dialogRow.payee || "").trim() }]
-    : [];
 
   return (
     <Card className="border-warning/30 bg-warning/10">
@@ -180,10 +101,6 @@ export function UnresolvedCategoriesBanner({
           </button>
         </div>
 
-        {loadError && (
-          <p className="ml-6 text-xs text-destructive">{loadError}</p>
-        )}
-
         <ul className="space-y-1.5 ml-6">
           {rowIds.map((rid, idx) => {
             const payee = payees[idx] ?? "(no payee)";
@@ -198,11 +115,10 @@ export function UnresolvedCategoriesBanner({
                     variant="outline"
                     size="sm"
                     className="h-6 px-2 text-xs border-warning/30 hover:bg-warning/10"
-                    onClick={() => openDialogForRow(rid)}
-                    disabled={loading}
+                    onClick={() => createRuleForRow(payees[idx] ?? "")}
                   >
                     <PlusCircle className="h-3 w-3 mr-1" />
-                    {loading && dialogRowId === null ? "Loading…" : "Create rule"}
+                    Create rule
                   </Button>
                 </div>
               </li>
@@ -211,38 +127,6 @@ export function UnresolvedCategoriesBanner({
         </ul>
       </CardContent>
 
-      {dialogRow && cache.categories && cache.accounts && cache.holdings && (
-        <RuleEditorDialog
-          initialName={initialName}
-          initialConditions={initialConditions}
-          initialActions={[]}
-          categories={cache.categories}
-          accounts={cache.accounts}
-          holdings={cache.holdings}
-          submitLabel="Create rule + apply"
-          title="Create rule from row"
-          onClose={(saved) => {
-            setDialogRowId(null);
-            if (saved) onRuleApplied();
-          }}
-          onSubmit={async (payload) => {
-            try {
-              const res = await fetch(`/api/import/staged/${stagedImportId}/create-rule`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
-              });
-              if (!res.ok) {
-                const data = await res.json().catch(() => ({}));
-                return { ok: false, error: data?.error ?? "Rule creation failed" };
-              }
-              return { ok: true };
-            } catch (e) {
-              return { ok: false, error: e instanceof Error ? e.message : "Rule creation failed" };
-            }
-          }}
-        />
-      )}
     </Card>
   );
 }

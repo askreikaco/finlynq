@@ -21,8 +21,8 @@ describe("W5-14 aria-labels on icon-only buttons", () => {
     expect(src).not.toContain("hover:text-rose-600");
   });
 
-  it("rule editor dialog: condition/action remove and move buttons are labelled in their rows", () => {
-    const src = read("src/components/rules/rule-editor-dialog.tsx");
+  it("rule editor form: condition/action remove and move buttons are labelled in their rows", () => {
+    const src = read("src/components/rules/rule-editor-form.tsx");
     const condStart = src.indexOf("function ConditionRow");
     const actStart = src.indexOf("function ActionRow");
     expect(condStart).toBeGreaterThan(-1);
