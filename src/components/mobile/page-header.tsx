@@ -37,31 +37,38 @@ export const PHONE_BAR_STICKY =
 
 /**
  * Phone top bar (max-md layout), shared by PageHeader and the settings detail row. Adds to PHONE_BAR_STICKY:
- * full-bleed (-mx-4 cancels the app shell's px-4), flex row, min-h --phone-header-h (3.75rem, fits a 44px
- * control and a title + subtitle pair). The absolutely centred title uses the sticky bar as containing block.
+ * full-bleed (-mx-4 cancels the app shell's px-4), a three-column grid, min-h --phone-header-h (3.75rem).
+ * Columns: [left slot | title | right capsule]. The side tracks are min 2.75rem (one 44pt target) and
+ * size to their content, so the title column is exactly the space between the MEASURED slots: a title or
+ * subtitle can never run under the capsule. Equal min sides keep the title centred when one side is empty.
+ * items-center puts a 44px control centred in the 60px bar (no ring on the hairline).
  * No pt-[var(--sat)]: body already pads its in-flow top by --sat.
  */
 export const PHONE_BAR =
-  "glass-bar sticky top-[var(--sat,0px)] z-30 md:top-0 md:bg-background/90 md:backdrop-blur-sm max-md:-mx-4 max-md:flex max-md:min-h-[var(--phone-header-h)] max-md:flex-nowrap max-md:items-center max-md:justify-start max-md:px-4";
+  "glass-bar sticky top-[var(--sat,0px)] z-30 md:top-0 md:bg-background/90 md:backdrop-blur-sm max-md:-mx-4 max-md:grid max-md:min-h-[var(--phone-header-h)] max-md:grid-cols-[minmax(2.75rem,auto)_minmax(0,1fr)_minmax(2.75rem,auto)] max-md:items-center max-md:px-4";
 
-/** Left slot placeholder (no back target): keeps the centred title centred. */
-export const PHONE_BAR_SIDE = "hidden max-md:flex max-md:size-11 max-md:shrink-0";
+/** Left slot placeholder (no back target): keeps the title column aligned. */
+export const PHONE_BAR_SIDE = "hidden max-md:flex max-md:size-11 max-md:shrink-0 max-md:col-start-1 max-md:row-start-1";
 
-/** Centred title block. Absolute so it is centred on the bar whatever the side slots measure;
- * inset 3.75rem clears the 44px left slot. pointer-events-none: taps reach the buttons. */
+/** Title block: the middle grid column (between the measured slots). min-w-0 lets the title truncate.
+ * pointer-events-none: taps reach the buttons. */
 export const PHONE_BAR_CENTER =
-  "max-md:absolute max-md:inset-x-[3.75rem] max-md:top-0 max-md:bottom-0 max-md:flex max-md:min-w-0 max-md:flex-col max-md:items-center max-md:justify-center max-md:text-center max-md:pointer-events-none";
+  "max-md:col-start-2 max-md:row-start-1 max-md:flex max-md:min-w-0 max-md:flex-col max-md:items-center max-md:justify-center max-md:text-center max-md:pointer-events-none";
+
+/** Class added to the primary action on phones: an icon-only 44px filled circle (see globals.css). */
+export const PHONE_PRIMARY_CLASS = "phone-icon-action";
 
 /** Title on phones: system scale (iOS headline is 17pt semibold; text-base is the nearest step), one line. */
 export const PHONE_BAR_TITLE =
   "max-md:max-w-full max-md:text-base max-md:font-semibold max-md:tracking-normal max-md:truncate max-md:text-center";
 
-/** Subtitle line under the title on phones (muted, one line). */
+/** Subtitle line under the title on phones (muted, one line, ellipsis). text-xs = 12px, the system caption step. */
 export const PHONE_BAR_SUBTITLE = "max-md:mt-0 max-md:w-full max-md:truncate max-md:text-center max-md:text-xs";
 
-/** Right slot on phones: ONE glass capsule (pill, 44px high, no padding); buttons inside are 44px circles. */
+/** Right slot on phones: ONE glass capsule (pill, 44px high, no padding) in the third grid column. Its width
+ * is capped at 9.5rem (three 44px circles) and it scrolls inside that cap, so it never runs past the right edge. */
 export const PHONE_BAR_RIGHT =
-  "glass-capsule max-md:ml-auto max-md:flex max-md:h-11 max-md:shrink-0 max-md:flex-nowrap max-md:items-center max-md:gap-0 max-md:rounded-full max-md:p-0";
+  "glass-capsule max-md:col-start-3 max-md:row-start-1 max-md:flex max-md:h-11 max-md:max-w-[9.5rem] max-md:min-w-0 max-md:shrink-0 max-md:flex-nowrap max-md:items-center max-md:justify-self-end max-md:gap-0 max-md:overflow-x-auto max-md:rounded-full max-md:p-0";
 
 /**
  * Turn the page's ORIGINAL desktop h1 classes into md+ classes so the desktop heading is
@@ -78,6 +85,37 @@ export function desktopClasses(original: string): string {
       return `md:${t}`;
     });
   return cn(out.join(" "));
+}
+
+/** The primary action is the last visible (not max-md:hidden) child of the actions. Returns the children with
+ * that one gaining an aria-label (its visible text, if none was set) and the icon-only phone class. */
+export function withPhonePrimary(actions: React.ReactNode): React.ReactNode {
+  const items = React.Children.toArray(actions);
+  let idx = -1;
+  items.forEach((c, i) => {
+    if (!React.isValidElement(c) || c.type === React.Fragment) return;
+    const cn0 = String((c.props as { className?: string }).className ?? "");
+    if (!cn0.includes("max-md:hidden")) idx = i;
+  });
+  if (idx < 0) return actions;
+  return items.map((c, i) => {
+    if (i !== idx || !React.isValidElement(c) || c.type === React.Fragment) return c;
+    const p = c.props as { className?: string; "aria-label"?: string; children?: React.ReactNode };
+    const label = p["aria-label"] ?? textOf(p.children);
+    return React.cloneElement(c as React.ReactElement<{ className?: string; "aria-label"?: string }>, {
+      "aria-label": label || undefined,
+      className: cn(p.className, PHONE_PRIMARY_CLASS),
+    });
+  });
+}
+
+/** Visible text of a node (strings and nested children; icons contribute nothing). */
+function textOf(node: React.ReactNode): string {
+  if (node == null || typeof node === "boolean") return "";
+  if (typeof node === "string" || typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(textOf).join("");
+  if (React.isValidElement(node)) return textOf((node.props as { children?: React.ReactNode }).children);
+  return "";
 }
 
 /**
@@ -151,6 +189,7 @@ export function PageHeader({
     </div>
   );
   const hasLeft = !!backHref || !!lead;
+  const phoneActions = withPhonePrimary(actions);
   return (
     <div data-slot="page-header" className={cn(className, PHONE_BAR)}>
       {hasLeft ? (
@@ -168,7 +207,7 @@ export function PageHeader({
       {hasRight ? (
         <div data-slot="page-header-actions" className={cn(actionsClassName, PHONE_BAR_RIGHT)}>
           {overflow && overflow.length > 0 ? <OverflowMenu items={overflow} /> : null}
-          {actions}
+          {phoneActions}
         </div>
       ) : null}
     </div>

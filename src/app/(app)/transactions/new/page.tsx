@@ -696,11 +696,12 @@ export default function MobileTransactionPage() {
         "md:relative md:mx-auto md:h-[min(46rem,calc(100dvh-8rem))] md:w-full md:max-w-md md:rounded-2xl md:border md:border-border/80",
       )}
     >
-      {/* Top bar (44px): PHONE_BAR_STICKY, the same glass bar as the other pages.
-          The top safe area is reserved once, by the fixed root's top offset. Back is a round 44px glass button. */}
+      {/* Top bar (--phone-header-h, 60px): PHONE_BAR_STICKY, the same glass bar height as the other pages.
+          The 44px back circle is centred in it, clear of the bottom hairline. The top safe area is reserved once,
+          by the fixed root's top offset. */}
       <header
         data-testid="txnew-topbar"
-        className={cn(PHONE_BAR_STICKY, "grid h-11 shrink-0 grid-cols-[2.75rem_1fr_2.75rem] items-center px-4")}
+        className={cn(PHONE_BAR_STICKY, "grid h-[var(--phone-header-h)] shrink-0 grid-cols-[2.75rem_1fr_2.75rem] items-center px-4")}
       >
         <button
           type="button"

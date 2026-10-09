@@ -62,7 +62,7 @@ describe("PageHeader: desktop classes unchanged (md: variants)", () => {
     expect(c.some((t) => t.startsWith("md:font-"))).toBe(true);
   });
 
-  it("title only: one glass sticky phone bar, empty left spacer, title block centred", () => {
+  it("title only: one glass sticky phone bar (grid), empty left spacer, title in the middle column", () => {
     const { container } = render(<PageHeader title="Solo" />);
     const wrap = container.firstElementChild as HTMLElement;
     expect(wrap.tagName).toBe("DIV");
@@ -72,7 +72,8 @@ describe("PageHeader: desktop classes unchanged (md: variants)", () => {
     expect(spacer?.textContent).toBe("");
     expect(cls(wrap)).toEqual(expect.arrayContaining(["glass-bar", "sticky", "max-md:-mx-4"]));
     const block = wrap.querySelector('[data-slot="page-header-title-block"]') as HTMLElement;
-    expect(cls(block)).toEqual(expect.arrayContaining(["max-md:absolute", "max-md:inset-x-[3.75rem]", "max-md:pointer-events-none"]));
+    expect(cls(block)).toEqual(expect.arrayContaining(["max-md:col-start-2", "max-md:min-w-0", "max-md:pointer-events-none"]));
+    expect(cls(block)).not.toContain("max-md:absolute");
     expect(block.firstElementChild?.tagName).toBe("H1");
   });
 

@@ -74,11 +74,12 @@ describe("glass-bar material (globals.css, phones only)", () => {
 });
 
 describe("PageHeader phone bar (render)", () => {
-  it("renders the title centred in the bar (absolute title block, pointer-events none)", () => {
+  it("renders the title in the middle grid column between the measured slots (no absolute overlay, pointer-events none)", () => {
     const { container } = render(h(PageHeader, { title: "Accounts" }));
     const h1 = screen.getByRole("heading", { level: 1, name: "Accounts" });
     const block = h1.parentElement as HTMLElement;
-    expect(cls(block)).toEqual(expect.arrayContaining(["max-md:absolute", "max-md:inset-x-[3.75rem]", "max-md:text-center", "max-md:pointer-events-none"]));
+    expect(cls(block)).toEqual(expect.arrayContaining(["max-md:col-start-2", "max-md:row-start-1", "max-md:min-w-0", "max-md:text-center", "max-md:pointer-events-none"]));
+    expect(cls(block)).not.toContain("max-md:absolute");
     expect(container.querySelector('[data-slot="page-header"]')).not.toBeNull();
   });
 
@@ -109,7 +110,7 @@ describe("PageHeader phone bar (render)", () => {
     rerender(h(PageHeader, { title: "Acts", actions: h("button", { type: "button", "aria-label": "Add" }, "+") }));
     const capsule = container.querySelector('[data-slot="page-header-actions"]');
     expect(capsule).not.toBeNull();
-    expect(cls(capsule)).toEqual(expect.arrayContaining(["glass-capsule", "max-md:rounded-full", "max-md:h-11"]));
+    expect(cls(capsule)).toEqual(expect.arrayContaining(["glass-capsule", "max-md:rounded-full", "max-md:h-11", "max-md:col-start-3"]));
   });
 
   it("the primary (default-variant) action keeps its own fill and sits inside the capsule, not see-through glass", () => {

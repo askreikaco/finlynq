@@ -120,7 +120,9 @@ describe("mobile bottom bar", () => {
       const label = l.querySelector("span")!;
       expect(label.className).toContain("truncate");
       expect(label.className).toContain("max-w-full");
-      expect(l.className).toContain("text-xs");
+      // The label size is the single --tab-label-size token (globals.css .mobile-tab-label), not a text-xs step.
+      expect(label.className).toContain("mobile-tab-label");
+      expect(l.className).not.toMatch(/\btext-(xs|sm|base|\[)/);
     }
   });
 });
@@ -150,13 +152,13 @@ describe("mobile bottom bar glass (S8)", () => {
     expect(row.className).toContain("p-1.5");
   });
 
-  it("active link has text-sidebar-primary with aria-current='page'", () => {
+  it("active link has text-tab-active (token) with aria-current='page'", () => {
     mockPath = "/dashboard";
     render(<Nav />);
     const links = within(bar()).getAllByRole("link");
     const homeLink = links[0];
     expect(homeLink.getAttribute("aria-current")).toBe("page");
-    expect(homeLink.className).toContain("text-sidebar-primary");
+    expect(homeLink.className).toContain("text-tab-active");
   });
 
   it("inactive links lack text-sidebar-primary class", () => {
@@ -164,7 +166,7 @@ describe("mobile bottom bar glass (S8)", () => {
     render(<Nav />);
     const links = within(bar()).getAllByRole("link");
     const accountsLink = links[1];
-    expect(accountsLink.className).not.toContain("text-sidebar-primary");
+    expect(accountsLink.className).not.toContain("text-tab-active");
   });
 
   it("globals.css has @supports blocks for backdrop-filter and color-mix fallbacks", () => {
@@ -239,13 +241,13 @@ describe("mobile bar matches the native tab bar (mobile/src/navigation/TabNaviga
     expect(bar().className).toContain("bottom-[max(12px,var(--sab))]");
   });
 
-  it("icons are 22px and labels text-xs semibold on every tab", () => {
+  it("icons are 24px (size-6) and labels use the mobile-tab-label token (iOS 10pt) on every tab", () => {
     render(<Nav />);
     for (const l of within(bar()).getAllByRole("link")) {
-      expect(l.className).toContain("text-xs");
-      expect(l.className).toContain("font-semibold");
+      expect(l.querySelector("span")!.className).toContain("mobile-tab-label");
       const svg = l.querySelector("svg")!;
-      expect(svg.getAttribute("class")).toContain("size-[22px]");
+      expect(svg.getAttribute("class")).toContain("size-6");
+      expect(svg.getAttribute("class")).not.toContain("size-[22px]");
     }
   });
 

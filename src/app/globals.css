@@ -29,6 +29,9 @@ html {
   --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-foreground: var(--sidebar-foreground);
+  /* Mobile tab bar label/icon colours (tokens below, light and dark). */
+  --color-tab-inactive: var(--tab-inactive);
+  --color-tab-active: var(--tab-active);
   --color-sidebar: var(--sidebar);
   --color-chart-5: var(--chart-5);
   --color-chart-4: var(--chart-4);
@@ -315,7 +318,7 @@ html {
     box-shadow: inset 0 1px 0 oklch(1 0 0 / 14%), 0 2px 8px oklch(0 0 0 / 35%);
   }
   /* Action buttons sit as 44px circles on the capsule. Non-primary ones are bare (the capsule is the
-     glass). Primary (data-variant="default") keeps its own fill, never see-through. */
+     glass). */
   [data-slot="page-header-actions"] > :is(button, a) {
     min-width: 2.75rem;
     height: 2.75rem;
@@ -323,6 +326,24 @@ html {
   }
   [data-slot="page-header-actions"] > :is(button, a):not([data-variant="default"]) {
     background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  /* Primary action (PageHeader adds .phone-icon-action to the last visible action): iOS-style icon-only
+     44pt filled circle. Text is hidden with font-size 0; its accessible name is the aria-label PageHeader sets.
+     Solid token fill, never glass: --primary-foreground on --primary is 5.14:1 (AA) in light and dark. */
+  [data-slot="page-header-actions"] > :is(button, a).phone-icon-action {
+    width: 2.75rem;
+    min-width: 2.75rem;
+    height: 2.75rem;
+    padding: 0;
+    gap: 0;
+    font-size: 0;
+    border-radius: 9999px;
+    background: var(--primary);
+    color: var(--primary-foreground);
     border-color: transparent;
     box-shadow: none;
     -webkit-backdrop-filter: none;
@@ -371,16 +392,35 @@ html {
 }
 
 /* Mobile bottom tab bar: floating iOS 26 liquid-glass capsule (nav.tsx MobileBottomBar).
-   Geometry (fixed, 16px insets, bottom max(12px,--sab), h-16, rounded-[28px]) is on the nav classes. */
+   Geometry (fixed, 16px insets, bottom max(12px,--sab), h-16, rounded-[28px]) is on the nav classes.
+   Tab label size = the single --tab-label-size token. iOS UITabBar labels are 10pt (HIG); 10px here (1pt = 1px
+   on the 1x-scale reference). Icons are 24px (size-6), targets min 44px. Colours are tokens, so light
+   inactive text is 18:1 on the light glass (was 1.4:1 with sidebar-foreground/60). */
+:root {
+  --tab-label-size: 0.625rem;
+  --tab-inactive: oklch(0.42 0.012 250);
+  --tab-active: oklch(0.45 0.13 70);
+}
+.dark {
+  --tab-inactive: oklch(0.80 0.006 245);
+  --tab-active: oklch(0.75 0.165 70);
+}
+/* Tab label: iOS tab labels are medium weight, no tracking, one line. */
+.mobile-tab-label {
+  font-size: var(--tab-label-size);
+  line-height: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0;
+}
 .mobile-glass-bar {
-  background: oklch(1 0 0 / 55%);
+  background: oklch(1 0 0 / 80%);
   -webkit-backdrop-filter: blur(28px) saturate(1.8);
   backdrop-filter: blur(28px) saturate(1.8);
   border: 1px solid oklch(0 0 0 / 8%);
   box-shadow: inset 0 1px 0 oklch(1 0 0 / 18%), 0 8px 32px oklch(0 0 0 / 35%);
 }
 .dark .mobile-glass-bar {
-  background: oklch(1 0 0 / 8%);
+  background: oklch(0.16 0.008 245 / 78%);
   border-color: oklch(1 0 0 / 14%);
 }
 /* Active tab pill, sits behind icon + label. */

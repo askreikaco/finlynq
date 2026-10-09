@@ -442,12 +442,12 @@ export const MobileBottomBar = memo(function MobileBottomBar({ pathname }: { pat
               aria-current={isActive ? "page" : undefined}
               href={item.href}
               className={cn(
-                "flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full px-0.5 text-xs font-semibold tracking-tight whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
-                isActive ? "mobile-glass-pill text-sidebar-primary" : "text-sidebar-foreground/60"
+                "flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full px-0 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
+                isActive ? "mobile-glass-pill text-tab-active" : "text-tab-inactive"
               )}
             >
-              <item.icon className={cn("size-[22px]", isActive && item.color)} />
-              <span className="block max-w-full truncate">{item.label}</span>
+              <item.icon className={cn("size-6", isActive && item.color)} />
+              <span className="mobile-tab-label block max-w-full truncate">{item.label}</span>
             </Link>
           );
         })}
@@ -456,12 +456,12 @@ export const MobileBottomBar = memo(function MobileBottomBar({ pathname }: { pat
           aria-label="More"
           aria-current={moreActive ? "page" : undefined}
           className={cn(
-            "flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full px-0.5 text-xs font-semibold tracking-tight whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
-            moreActive ? "mobile-glass-pill text-sidebar-primary" : "text-sidebar-foreground/60"
+            "flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full px-0 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
+            moreActive ? "mobile-glass-pill text-tab-active" : "text-tab-inactive"
           )}
         >
-          <MoreHorizontal className="size-[22px]" />
-          <span className="block max-w-full truncate">More</span>
+          <MoreHorizontal className="size-6" />
+          <span className="mobile-tab-label block max-w-full truncate">More</span>
         </Link>
       </div>
     </nav>

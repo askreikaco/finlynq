@@ -92,13 +92,14 @@ describe("Settings iOS multi-level menu: detail pages (level 2)", () => {
     expect(back.getAttribute("href")).toBe("/settings");
     expect(cls(back)).toEqual(expect.arrayContaining(["glass-capsule", "max-md:size-11", "max-md:rounded-full"]));
 
-    const title = container.querySelector('[data-slot="page-header-title-block"], span[aria-hidden].max-md\\:absolute');
+    const title = container.querySelector('[data-slot="page-header-title-block"], span[aria-hidden].max-md\\:col-start-2');
     expect(title?.textContent).toBe("Investments");
 
     const row = back.parentElement;
     expect(row?.contains(title as Node)).toBe(true);
     expect(cls(row)).toEqual(expect.arrayContaining(["glass-bar", "sticky", "max-md:-mx-4"]));
-    expect(cls(title)).toEqual(expect.arrayContaining(["max-md:absolute", "max-md:text-base", "max-md:font-semibold"]));
+    expect(cls(title)).toEqual(expect.arrayContaining(["max-md:col-start-2", "max-md:text-base", "max-md:font-semibold"]));
+    expect(cls(title)).not.toContain("max-md:absolute");
   });
 
   it("hides the page's own large h1 on phones but keeps it in the DOM", () => {

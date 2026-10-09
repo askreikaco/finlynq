@@ -63,13 +63,13 @@ describe("3. mobile bottom bar labels truncate at 320-390px", () => {
   it("each tab label is wrapped in a truncating span", () => {
     const spans = bar.match(/<span className="[^"]*truncate[^"]*">\{item\.label\}<\/span>/g) ?? [];
     expect(spans.length).toBe(1);
-    expect(bar).toMatch(/<span className="block max-w-full truncate">More<\/span>/);
+    expect(bar).toMatch(/<span className="mobile-tab-label block max-w-full truncate">More<\/span>/);
   });
 
-  it("link keeps text-xs and min-w-0 flex-1 (no truncate on the flex item itself)", () => {
+  it("link keeps min-w-0 flex-1 and takes no text-size step (the label size is mobile-tab-label)", () => {
     const linkCls = bar.match(/className=\{cn\(\s*"([^"]*flex-1[^"]*)"/);
     expect(linkCls).not.toBeNull();
-    expect(linkCls![1]).toContain("text-xs");
+    expect(linkCls![1]).not.toMatch(/\btext-(xs|sm|base)\b/);
     expect(linkCls![1]).toContain("min-w-0");
     expect(linkCls![1]).not.toMatch(/\btruncate\b/);
   });
