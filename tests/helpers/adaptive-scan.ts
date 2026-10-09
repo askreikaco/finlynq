@@ -10,8 +10,9 @@ export const BANNED_PATTERN =
   /md:hidden|hidden\s+md:|hidden\s+max-md:|isMobile|window\.innerWidth|matchMedia|useMediaQuery/gi;
 
 // Viewport breakpoint tokens (ratchet via tests/fixtures/breakpoint-baseline.json).
-// `max-md:` counts as one token; `foo-md:` and `hidden-md:` do not.
-export const BREAKPOINT_PATTERN = /(?<![\w-])(max-)?(sm|md|lg|xl|2xl):/g;
+// `max-md:` counts as one token; `foo-md:`, `hidden-md:` and container tokens `@md:` do not.
+// Container-query tokens (`@sm:`, `@lg:`, `@[24rem]:`) are NOT viewport tokens: a `@` before the name skips the match.
+export const BREAKPOINT_PATTERN = /(?<![\w@.-])(max-)?(sm|md|lg|xl|2xl):/g;
 
 // Approximate size-class wrapper usage (ratchet via tests/fixtures/size-class-wrapper-baseline.json).
 export const SIZE_CLASS_WRAPPER_PATTERN = /<(CompactOnly|FromMd)\b/g;

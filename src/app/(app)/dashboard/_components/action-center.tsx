@@ -145,7 +145,7 @@ export function ActionCenter() {
                         </Link>
                         <button
                           onClick={() => dismiss(item.id)}
-                          className="p-1 rounded-md opacity-0 group-hover:opacity-100 focus-visible:opacity-100 max-md:opacity-100 max-md:p-3 max-md:-m-3 hover:bg-muted/80 transition-all"
+                          className="p-1 rounded-md opacity-0 group-hover:opacity-100 focus-visible:opacity-100 max-regular:opacity-100 max-regular:p-3 max-regular:-m-3 hover:bg-muted/80 transition-all"
                           title="Dismiss"
                           aria-label="Dismiss alert"
                         >

@@ -134,7 +134,7 @@ export function HealthInfoDialog({ data, open, onOpenChange }: HealthInfoDialogP
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[90dvh] flex flex-col overflow-hidden">
+      <DialogContent className="regular:max-w-2xl max-h-[90dvh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>How is the Financial Health score calculated?</DialogTitle>
           <DialogDescription>
@@ -183,7 +183,7 @@ export function HealthInfoDialog({ data, open, onOpenChange }: HealthInfoDialogP
           {totals ? (
             <div className="rounded-lg border bg-muted/30 p-3 space-y-1.5">
               <h4 className="text-sm font-semibold">Your inputs</h4>
-              <dl className="grid gap-x-4 gap-y-1 text-xs sm:grid-cols-2">
+              <dl className="grid gap-x-4 gap-y-1 text-xs regular:grid-cols-2">
                 {totals.totalIncome3m ? (
                   <div className="flex justify-between">
                     <dt className="text-muted-foreground">Income (3m)</dt>

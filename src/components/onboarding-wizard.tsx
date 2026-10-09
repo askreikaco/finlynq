@@ -684,7 +684,7 @@ export function OnboardingWizard({
 
       {/* Skip setup confirmation dialog */}
       <Dialog open={showSkipConfirm} onOpenChange={setShowSkipConfirm}>
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent className="regular:max-w-sm">
           <DialogHeader>
             <DialogTitle>Skip setup?</DialogTitle>
           </DialogHeader>

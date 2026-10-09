@@ -153,7 +153,7 @@ export function TransactionEditForm({
           if (!open) setDeleteError(null);
         }}
       >
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent className="regular:max-w-sm">
           <DialogHeader>
             <DialogTitle>{isTransfer ? "Delete this transfer?" : "Delete this transaction?"}</DialogTitle>
           </DialogHeader>

@@ -39,7 +39,7 @@ export function AccountAlert({ message, onDismiss }: { message: string | null; o
   return (
     <div
       role="alert"
-      className="fixed bottom-[calc(var(--mobile-bar-clearance)-8px)] md:bottom-4 left-4 z-[60] flex max-w-[calc(100vw-2rem)] items-start gap-2 rounded-lg border border-destructive/30 bg-popover px-3 py-2 text-sm text-destructive shadow-md"
+      className="fixed bottom-[calc(var(--mobile-bar-clearance)-8px)] regular:bottom-4 left-4 z-[60] flex max-w-[calc(100vw-2rem)] items-start gap-2 rounded-lg border border-destructive/30 bg-popover px-3 py-2 text-sm text-destructive shadow-md"
     >
       <span className="break-words">{message}</span>
       <button type="button" aria-label="Dismiss" onClick={onDismiss} className="shrink-0 text-xs underline">
@@ -51,7 +51,7 @@ export function AccountAlert({ message, onDismiss }: { message: string | null; o
 
 const rowCls =
   "flex w-full min-h-11 items-center gap-3 px-3 py-1.5 text-left text-base font-medium text-foreground transition-colors hover:bg-muted/40 active:bg-muted/60 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
-const itemCls = "flex items-center gap-2 cursor-pointer min-h-11 md:min-h-0";
+const itemCls = "flex items-center gap-2 cursor-pointer min-h-11 regular:pointer-fine:min-h-0";
 
 function Avatar({ account, ring }: { account: Pick<Account, "displayName" | "email">; ring?: boolean }) {
   return (

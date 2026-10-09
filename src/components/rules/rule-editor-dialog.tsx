@@ -41,7 +41,7 @@ export function RuleEditorDialog({
 
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onClose(false); }}>
-      <DialogContent className="sm:max-w-3xl max-h-[90dvh] overflow-y-auto">
+      <DialogContent className="regular:max-w-3xl max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{computedTitle}</DialogTitle>
         </DialogHeader>

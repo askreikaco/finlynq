@@ -445,7 +445,7 @@ export default function RealizedGainsPage() {
   );
 
   return (
-    <div className="space-y-4 md:space-y-6">
+    <div className="space-y-4 regular:space-y-6">
       <PageHeader
         backHref="/portfolio"
         backLabel="Back to portfolio"

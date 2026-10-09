@@ -190,6 +190,14 @@ describe("design-system-guard: scanner self-test (synthetic strings)", () => {
     expect(countMatches("sm:a md:b max-sm:c", BREAKPOINT_PATTERN)).toBe(3);
   });
 
+  it("breakpoint pattern ignores container-query tokens (@sm:, @lg:, @[24rem]:) and file-name dots", () => {
+    expect(countMatches("@md:grid-cols-2 @lg:p-4", BREAKPOINT_PATTERN)).toBe(0);
+    expect(countMatches("@sm:flex @xl:w-1 @[24rem]:p-2", BREAKPOINT_PATTERN)).toBe(0);
+    expect(countMatches("md:a @md:b", BREAKPOINT_PATTERN)).toBe(1);
+    expect(countMatches("hover:@md:x max-@lg:y", BREAKPOINT_PATTERN)).toBe(0);
+    expect(countMatches("see CLAUDE.md: and foo.sm:", BREAKPOINT_PATTERN)).toBe(0);
+  });
+
   it("breakpoint pattern ignores words that merely contain a token", () => {
     expect(countMatches("foo-md:bar hidden-md:x xmd:y", BREAKPOINT_PATTERN)).toBe(0);
     expect(countMatches("md-foo sm lg xl", BREAKPOINT_PATTERN)).toBe(0);
