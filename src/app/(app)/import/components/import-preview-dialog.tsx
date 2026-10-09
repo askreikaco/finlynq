@@ -177,18 +177,18 @@ export function ImportPreviewDialog({
 
         {/* Summary badges */}
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="default" className="bg-emerald-600">
+          <Badge variant="default" className="bg-pos">
             <CheckCircle2 className="h-3 w-3 mr-1" />
             {validRows.length} new
           </Badge>
           {duplicateRows.length > 0 && (
-            <Badge variant="secondary" className="bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+            <Badge variant="secondary" className="bg-warning/20 text-warning border border-warning/30">
               <Copy className="h-3 w-3 mr-1" />
               {duplicateRows.length} duplicates
             </Badge>
           )}
           {probableDuplicates.length > 0 && (
-            <Badge variant="secondary" className="bg-orange-500/20 text-orange-700 dark:text-orange-300 border border-orange-500/30">
+            <Badge variant="secondary" className="bg-warning/20 text-warning border border-warning/30">
               <AlertTriangle className="h-3 w-3 mr-1" />
               {probableDuplicates.length} probable duplicates
             </Badge>
@@ -200,7 +200,7 @@ export function ImportPreviewDialog({
             </Badge>
           )}
           {appliedTemplateId && (
-            <Badge variant="outline" className="text-[10px] text-blue-700 dark:text-blue-300 border-blue-500/30 bg-blue-500/15">
+            <Badge variant="outline" className="text-[10px] text-info border-info/30 bg-info/15">
               Template applied
             </Badge>
           )}
@@ -222,9 +222,9 @@ export function ImportPreviewDialog({
             to "commit anyway" (this is a warning, not a hard block) so the
             user can skip-all if they want every flagged row gone in one click. */}
         {probableDuplicates.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2 rounded-md border border-orange-500/30 bg-orange-500/10 px-3 py-2 text-xs">
-            <AlertTriangle className="h-3.5 w-3.5 text-orange-600 dark:text-orange-400" />
-            <span className="text-orange-700 dark:text-orange-300 font-medium">
+          <div className="flex flex-wrap items-center gap-2 rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-xs">
+            <AlertTriangle className="h-3.5 w-3.5 text-warning" />
+            <span className="text-warning font-medium">
               {probableNotSkipped} of {probableDuplicates.length} probable duplicates will be imported
             </span>
             <div className="ml-auto flex items-center gap-1">
@@ -275,11 +275,11 @@ export function ImportPreviewDialog({
                 const dupMatch = isDuplicate ? duplicateByRowIndex.get(row.rowIndex) : undefined;
                 const isDupExpanded = isDuplicate && expandedDuplicate.has(row.rowIndex);
                 const rowClass = isDuplicate && !isForced
-                  ? "bg-amber-500/10 text-muted-foreground"
+                  ? "bg-warning/10 text-muted-foreground"
                   : isProbable
                     ? isSkipped
-                      ? "bg-orange-500/5 text-muted-foreground"
-                      : "bg-orange-500/10"
+                      ? "bg-warning/5 text-muted-foreground"
+                      : "bg-warning/10"
                     : "";
                 return (
                   <>
@@ -290,7 +290,7 @@ export function ImportPreviewDialog({
                             type="checkbox"
                             checked={isForced}
                             onChange={() => toggleDuplicate(row.rowIndex)}
-                            className="h-4 w-4 rounded border-gray-300"
+                            className="h-4 w-4 rounded border-border"
                             title="Force import this duplicate"
                           />
                         )}
@@ -299,7 +299,7 @@ export function ImportPreviewDialog({
                             type="checkbox"
                             checked={!isSkipped}
                             onChange={() => toggleSkipProbable(row.rowIndex)}
-                            className="h-4 w-4 rounded border-orange-400"
+                            className="h-4 w-4 rounded border-warning/30"
                             title="Uncheck to skip this probable duplicate"
                           />
                         )}
@@ -307,7 +307,7 @@ export function ImportPreviewDialog({
                       <TableCell className="font-mono text-xs">{row.date}</TableCell>
                       <TableCell className="text-xs">{row.account}</TableCell>
                       <TableCell className="text-xs max-w-[200px] truncate">{row.payee}</TableCell>
-                      <TableCell className={`text-right font-mono text-xs ${row.amount < 0 ? "text-rose-600" : "text-emerald-600"}`}>
+                      <TableCell className={`text-right font-mono text-xs ${row.amount < 0 ? "text-destructive" : "text-pos"}`}>
                         {formatCurrency(row.amount, row.currency ?? displayCurrency)}
                       </TableCell>
                       <TableCell className="text-xs">{row.category || "—"}</TableCell>
@@ -320,12 +320,12 @@ export function ImportPreviewDialog({
                               className="inline-flex items-center gap-1"
                               title="Click to view match details"
                             >
-                              <Badge variant="secondary" className="text-[10px] bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 cursor-pointer hover:bg-amber-500/30">
+                              <Badge variant="secondary" className="text-[10px] bg-warning/20 text-warning border border-warning/30 cursor-pointer hover:bg-warning/30">
                                 Duplicate
                               </Badge>
                             </button>
                           ) : (
-                            <Badge variant="secondary" className="text-[10px] bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                            <Badge variant="secondary" className="text-[10px] bg-warning/20 text-warning border border-warning/30">
                               Duplicate
                             </Badge>
                           )
@@ -336,24 +336,24 @@ export function ImportPreviewDialog({
                             className="inline-flex items-center gap-1"
                             title="Click to view match details"
                           >
-                            <Badge variant="secondary" className="text-[10px] bg-orange-500/20 text-orange-700 dark:text-orange-300 border border-orange-500/30 cursor-pointer hover:bg-orange-500/30">
+                            <Badge variant="secondary" className="text-[10px] bg-warning/20 text-warning border border-warning/30 cursor-pointer hover:bg-warning/30">
                               <AlertTriangle className="h-3 w-3 mr-0.5" />
                               Probable dup
                             </Badge>
                           </button>
                         ) : (
-                          <Badge variant="secondary" className="text-[10px] bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                          <Badge variant="secondary" className="text-[10px] bg-pos/20 text-pos border border-pos/30">
                             New
                           </Badge>
                         )}
                       </TableCell>
                     </TableRow>
                     {isProbable && isExpanded && probable && (
-                      <TableRow key={`${row.rowIndex}-detail`} className="bg-orange-500/10 border-l-2 border-orange-500/50">
+                      <TableRow key={`${row.rowIndex}-detail`} className="bg-warning/10 border-l-2 border-warning/50">
                         <TableCell colSpan={7} className="text-xs text-foreground px-6 py-3">
                           <div className="space-y-1">
                             <div>
-                              Matches existing transaction <span className="font-mono text-orange-700 dark:text-orange-300">#{probable.matchedTx.id}</span>
+                              Matches existing transaction <span className="font-mono text-warning">#{probable.matchedTx.id}</span>
                               {probable.matchedTx.source && (
                                 <> (source: <span className="font-mono">{probable.matchedTx.source}</span>)</>
                               )}
@@ -363,7 +363,7 @@ export function ImportPreviewDialog({
                               {" "}<span className="font-medium text-foreground">{probable.matchedTx.daysOff}d</span> off,
                               {" "}delta <span className="font-mono text-foreground">{formatCurrency(probable.matchedTx.amountDeltaAbs, displayCurrency)}</span> ({formatPercent(probable.matchedTx.amountDeltaPct * 100, 2)})
                             </div>
-                            <div className="text-orange-700 dark:text-orange-300 font-medium">
+                            <div className="text-warning font-medium">
                               Score {probable.matchScore.toFixed(2)} · {probable.matchReason}
                             </div>
                           </div>
@@ -371,16 +371,16 @@ export function ImportPreviewDialog({
                       </TableRow>
                     )}
                     {isDuplicate && isDupExpanded && dupMatch && (
-                      <TableRow key={`${row.rowIndex}-dup-detail`} className="bg-amber-500/10 border-l-2 border-amber-500/50">
+                      <TableRow key={`${row.rowIndex}-dup-detail`} className="bg-warning/10 border-l-2 border-warning/50">
                         <TableCell colSpan={7} className="text-xs text-foreground px-6 py-3">
                           <div className="space-y-1">
                             <div>
                               {dupMatch.matchedTx.id != null ? (
                                 <>
-                                  Matches existing transaction <span className="font-mono text-amber-700 dark:text-amber-300">#{dupMatch.matchedTx.id}</span>
+                                  Matches existing transaction <span className="font-mono text-warning">#{dupMatch.matchedTx.id}</span>
                                 </>
                               ) : (
-                                <span className="text-amber-700 dark:text-amber-300">Previously imported (no current transaction)</span>
+                                <span className="text-warning">Previously imported (no current transaction)</span>
                               )}
                               {dupMatch.matchedTx.source && (
                                 <> (source: <span className="font-mono">{dupMatch.matchedTx.source}</span>)</>
@@ -389,7 +389,7 @@ export function ImportPreviewDialog({
                             <div className="text-muted-foreground">
                               Existing: <span className="font-mono text-foreground">{dupMatch.matchedTx.date}</span> <span className="font-mono text-foreground">{formatCurrency(dupMatch.matchedTx.amount, displayCurrency)}</span>
                             </div>
-                            <div className="text-amber-700 dark:text-amber-300 font-medium">
+                            <div className="text-warning font-medium">
                               {dupMatch.matchBasis === "fit_id"
                                 ? "Exact match · bank-provided fitId"
                                 : "Exact match · date + account + amount + payee"}
@@ -415,10 +415,10 @@ export function ImportPreviewDialog({
 
         {/* Errors */}
         {errorRows.length > 0 && (
-          <div className="rounded-lg border border-rose-500/30 bg-rose-500/10 p-3 max-h-32 overflow-auto">
-            <p className="text-xs font-medium text-rose-700 dark:text-rose-300 mb-1">Errors ({errorRows.length})</p>
+          <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 max-h-32 overflow-auto">
+            <p className="text-xs font-medium text-destructive mb-1">Errors ({errorRows.length})</p>
             {errorRows.slice(0, 10).map((err) => (
-              <p key={err.rowIndex} className="text-xs text-rose-700 dark:text-rose-300/90">
+              <p key={err.rowIndex} className="text-xs text-destructive">
                 Row {err.rowIndex + 1}: {err.message}
               </p>
             ))}
