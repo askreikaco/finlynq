@@ -1,68 +1,19 @@
 /**
  * @vitest-environment jsdom
  */
-// Self-test for the client oracle: for every scenario in the paging matrix,
-// the test-only oracle (copy of the hook's filter/sort) must give the same
-// row order as the REAL useTransactions hook on the same fixture. Also pins
-// independent golden facts (null ordering, tie order) so a broken copy fails
-// by name.
-import { describe, it, expect, vi, afterEach, beforeAll } from "vitest";
-import * as React from "react";
-import { renderHook, waitFor, act, cleanup } from "@testing-library/react";
-import { SWRConfig } from "swr";
-import {
-  useTransactions,
-  type UseTransactionsFilters,
-  type UseTransactionsSortPref,
-  type UseTransactionsColFilter,
-} from "@/app/(app)/transactions/_hooks/use-transactions";
+// Self-test for the client oracle (tests/helpers/tx-client-oracle.ts).
+// The oracle is now the reference for the SERVER: route parity is asserted in
+// tests/api/transactions-paging.test.ts and keyset order in the paging
+// verification. The useTransactions hook no longer filters or sorts on the
+// client, so this file no longer runs the hook. It pins the fixture, the
+// scenario matrix, golden facts (null ordering, tie order) and the divergence list.
+import { describe, it, expect } from "vitest";
 import type { Transaction } from "@/app/(app)/transactions/_types";
 import { oracleFilterSort } from "../helpers/tx-client-oracle";
 import { buildTxPagingFixture, FIXTURE_SIZE } from "../helpers/tx-paging-fixture";
-import { SCENARIOS, EXPECTED_DIVERGENCES, type TxScenario } from "../helpers/tx-paging-scenarios";
+import { SCENARIOS, EXPECTED_DIVERGENCES } from "../helpers/tx-paging-scenarios";
 
 const ROWS: Transaction[] = buildTxPagingFixture();
-
-function wrapper({ children }: { children: React.ReactNode }) {
-  return React.createElement(SWRConfig, { value: { provider: () => new Map() } }, children);
-}
-
-beforeAll(() => {
-  vi.stubGlobal(
-    "fetch",
-    vi.fn(async () => ({
-      ok: true,
-      status: 200,
-      json: async () => ({ data: JSON.parse(JSON.stringify(ROWS)), total: ROWS.length }),
-    })),
-  );
-});
-
-afterEach(() => {
-  cleanup();
-});
-
-/** Runs the real hook on the fixture and returns every filtered row id, in order. */
-async function hookIds(
-  filters: UseTransactionsFilters,
-  sortPref?: UseTransactionsSortPref,
-  colFilters?: UseTransactionsColFilter[],
-): Promise<number[]> {
-  const { result } = renderHook(() => useTransactions(filters, sortPref, colFilters), { wrapper });
-  await waitFor(() => expect(result.current.isPartial).toBe(false));
-  // Walk the local pagination until every filtered row is rendered.
-  for (let guard = 0; guard < 1000 && result.current.txns.length < result.current.total; guard++) {
-    act(() => {
-      result.current.loadNextPage();
-    });
-  }
-  expect(result.current.txns.length).toBe(result.current.total);
-  return result.current.txns.map((t) => t.id);
-}
-
-function oracleIds(s: TxScenario): number[] {
-  return oracleFilterSort(ROWS, s.filters, s.sortPref, s.colFilters).map((t) => t.id);
-}
 
 describe("tx-client-oracle: fixture", () => {
   it("is deterministic and has the required coverage", () => {
@@ -108,17 +59,10 @@ describe("tx-client-oracle: golden facts (independent of the hook)", () => {
   });
 });
 
-describe("tx-client-oracle: parity with the real hook", () => {
+describe("tx-client-oracle: scenario matrix", () => {
   it("runs at least 10 scenarios", () => {
     expect(SCENARIOS.length).toBeGreaterThanOrEqual(10);
     expect(new Set(SCENARIOS.map((s) => s.id)).size).toBe(SCENARIOS.length);
-  });
-
-  describe.each(SCENARIOS.map((s) => [s.id, s] as const))("scenario %s", (_id, s) => {
-    it("oracle order equals hook order", async () => {
-      const hook = await hookIds(s.filters, s.sortPref, s.colFilters);
-      expect(oracleIds(s)).toEqual(hook);
-    }, 60000);
   });
 });
 
