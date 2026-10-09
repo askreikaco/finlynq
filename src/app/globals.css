@@ -27,7 +27,9 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
-  --color-pos: var(--chart-2);
+  --color-pos: var(--pos);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
   --color-neg: var(--destructive);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
@@ -71,6 +73,10 @@
   --accent: oklch(0.94 0.02 70);
   --accent-foreground: oklch(0.32 0.08 70);
   --destructive: oklch(0.62 0.19 28);
+  /* Status text tokens (W6): AA contrast on light card. */
+  --pos: oklch(0.55 0.11 170);
+  --warning: oklch(0.56 0.14 60);
+  --info: oklch(0.52 0.13 250);
   --border: oklch(0.92 0.008 250);
   --input: oklch(0.92 0.008 250);
   --ring: oklch(0.75 0.165 70);
@@ -107,6 +113,9 @@
   --accent: oklch(0.22 0.010 245);
   --accent-foreground: oklch(0.925 0.003 250);
   --destructive: oklch(0.63 0.17 28);            /* ~#e5624b */
+  --pos: oklch(0.75 0.11 170);                   /* teal, = chart-2 */
+  --warning: oklch(0.80 0.15 75);                /* amber status */
+  --info: oklch(0.74 0.11 245);                  /* blue status */
   --border: oklch(0.22 0.010 245);               /* ~#1e242b */
   --input: oklch(0.22 0.010 245);
   --ring: oklch(0.75 0.165 70);
