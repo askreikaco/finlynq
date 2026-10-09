@@ -16,6 +16,8 @@ import { useDisplayCurrency } from "@/components/currency-provider";
 import { Calculator, PiggyBank, GraduationCap, Percent, ArrowRight, Lightbulb } from "lucide-react";
 import { AmountInput } from "@/components/amount-input";
 import { PageHeader } from "@/components/mobile";
+import { ErrorState } from "@/components/error-state";
+import { PageSkeleton } from "@/components/page-skeleton";
 
 type TaxData = {
   tfsa: { totalRoom: number; used: number; remaining: number; currentYearLimit: number };
@@ -29,6 +31,7 @@ function TaxPageContent() {
   const { displayCurrency } = useDisplayCurrency();
   const [data, setData] = useState<TaxData | null>(null);
   const [loadError, setLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [income, setIncome] = useState("100000");
   const [contribution, setContribution] = useState("10000");
   const [comparison, setComparison] = useState<{ rrspBenefit: number; tfsaBenefit: string; recommendation: string } | null>(null);
@@ -48,7 +51,7 @@ function TaxPageContent() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [reloadKey]);
 
   async function compareRrspTfsa() {
     const res = await fetch("/api/tax", {
@@ -59,27 +62,9 @@ function TaxPageContent() {
     setComparison(await res.json());
   }
 
-  if (loadError) return (
-    <div className="space-y-6">
-      <div>
-        <PageHeader title="Tax" titleClassName="text-2xl font-bold tracking-tight" />
-      </div>
-      <Card>
-        <CardContent className="py-10 text-center text-sm text-muted-foreground">
-          We couldn&apos;t load your tax data. Please refresh to try again.
-        </CardContent>
-      </Card>
-    </div>
-  );
+  if (loadError) return <ErrorState title="Couldn't load tax data" message="We couldn't load your tax data. Please try again." onRetry={() => { setLoadError(false); setReloadKey((k) => k + 1); }} />;
 
-  if (!data) return (
-    <div className="space-y-6">
-      <div className="h-8 w-56 bg-muted animate-pulse rounded-lg" />
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {[1, 2, 3].map((i) => <div key={i} className="h-32 bg-muted animate-pulse rounded-xl" />)}
-      </div>
-    </div>
-  );
+  if (!data) return <PageSkeleton variant="cards" rows={3} />;
 
   const tfsaPct = data.tfsa.totalRoom > 0 ? (data.tfsa.used / data.tfsa.totalRoom) * 100 : 0;
 
