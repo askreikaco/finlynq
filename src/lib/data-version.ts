@@ -102,7 +102,15 @@ export function generateETag(
 export async function checkETag(
   request: NextRequest,
   extra?: string
-): Promise<{ response?: NextResponse; etag?: string; authContext?: AuthContext }> {
+): Promise<{
+  response?: NextResponse;
+  etag?: string;
+  authContext?: AuthContext;
+  /** users.data_version this ETag was computed from. Present whenever
+   *  `authContext` or a 304 `response` is returned (additive; callers that
+   *  ignore it are unaffected). */
+  dataVersion?: number;
+}> {
   const auth = await requireAuth(request);
   if (!auth.authenticated) return { response: auth.response };
 
@@ -126,10 +134,11 @@ export async function checkETag(
           "Cache-Control": "private, no-cache",
         },
       }),
+      dataVersion,
     };
   }
 
-  return { etag, authContext: auth.context };
+  return { etag, authContext: auth.context, dataVersion };
 }
 
 /**
