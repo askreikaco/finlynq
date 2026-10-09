@@ -214,7 +214,7 @@ export default function ReconciliationSettingsPage() {
           />
 
           {error && (
-            <div className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
+            <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
               {error}
             </div>
           )}
@@ -232,7 +232,7 @@ export default function ReconciliationSettingsPage() {
               </span>
             )}
             {savedAt && (
-              <span className="text-xs text-emerald-700">Saved.</span>
+              <span className="text-xs text-pos">Saved.</span>
             )}
           </div>
         </CardContent>
