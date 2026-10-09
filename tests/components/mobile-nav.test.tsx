@@ -206,11 +206,11 @@ describe("safe-area shell wiring (source)", () => {
     expect(css).not.toContain(".safe-top-backdrop");
   });
 
-  it("root layout renders NO status-bar backdrop and keeps cover + translucent", () => {
+  it("root layout renders NO status-bar backdrop and keeps cover + opaque status bar", () => {
     const l = read("src/app/layout.tsx");
     expect(l).not.toContain("safe-top-backdrop");
     expect(l).toContain('viewportFit: "cover"');
-    expect(l).toContain('statusBarStyle: "black-translucent"');
+    expect(l).toContain('statusBarStyle: "black"');
   });
 
   it("app shell and top-anchored surfaces use the shared var, not raw env()", () => {
