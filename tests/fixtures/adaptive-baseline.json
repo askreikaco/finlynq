@@ -3,7 +3,6 @@
   "src/app/(app)/portfolio/_components/holdings-by-account.tsx": 1,
   "src/app/(app)/portfolio/_components/mobile-portfolio.tsx": 4,
   "src/app/(app)/portfolio/page.tsx": 7,
-  "src/app/(app)/accounts/[id]/page.tsx": 1,
   "src/app/(app)/dashboard/page.tsx": 4,
   "src/components/onboarding-tips.tsx": 4,
   "src/components/settings-shell.tsx": 3,
