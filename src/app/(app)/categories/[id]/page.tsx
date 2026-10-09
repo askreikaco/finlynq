@@ -164,7 +164,7 @@ function CategoryPageContent() {
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <PageHeader title={category.name ?? "Category"} titleClassName="text-2xl font-bold truncate" backHref={categoriesBackHref} backLabel="Categories" />
+          <PageHeader title={category.name ?? "Category"} titleClassName="text-2xl font-bold truncate" backHref={categoriesBackHref} backLabel="Back to Categories" />
           <div className="flex flex-wrap items-center gap-1.5 mt-1">
             <Badge variant="outline">{isIncome ? "Income" : category.type === "R" ? "Transfer" : "Expense"}</Badge>
             {category.group && <Badge variant="secondary">{category.group}</Badge>}
