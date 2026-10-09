@@ -1,0 +1,9 @@
+{
+  "src/app/(app)/accounts/[id]/page.tsx": 3,
+  "src/app/(app)/accounts/page.tsx": 6,
+  "src/app/(app)/admin/(env)/layout.tsx": 1,
+  "src/app/(app)/budgets/page.tsx": 1,
+  "src/app/(app)/portfolio/dividends/page.tsx": 4,
+  "src/app/(app)/portfolio/realized-gains/page.tsx": 4,
+  "src/components/more-menu.tsx": 1
+}
