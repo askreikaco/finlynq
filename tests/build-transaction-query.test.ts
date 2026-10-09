@@ -17,6 +17,7 @@ import {
   type TxSortPref,
   type TxColFilter,
   type TxQueryAccount,
+  type TxQueryPage,
 } from "@/lib/transactions/build-query";
 
 const EMPTY_FILTERS: TxFilters = {
@@ -29,7 +30,7 @@ const EMPTY_FILTERS: TxFilters = {
   tag: "",
 };
 const NO_SORT: TxSortPref = { columnId: null, direction: null };
-const PAGE0: { page: number; limit: number } = { page: 0, limit: 50 };
+const PAGE0: TxQueryPage = { page: 0, limit: 50 };
 
 const ACCOUNTS: TxQueryAccount[] = [
   { id: 1, type: "checking" },
@@ -214,5 +215,43 @@ describe("buildTransactionQuery", () => {
     expect(build(filters, sort, cf, { page: 1, limit: 50 })).toBe(
       "accountId=8&search=groceries&sort=date&sortDir=asc&filter_payee=Whole+Foods&amountMin=20&accountIds=1%2C4&limit=50&offset=50",
     );
+  });
+
+  // ---- cursor mode (P5): cursor defined → limit + cursor, no offset ----
+
+  it("cursor mode: empty cursor emits cursor= (first page) and no offset", () => {
+    const out = build(EMPTY_FILTERS, NO_SORT, [], { page: 0, limit: 50, cursor: "" });
+    expect(out).toBe("limit=50&cursor=");
+    expect(out).not.toContain("offset");
+  });
+
+  it("cursor mode: non-empty cursor round-trips through URLSearchParams", () => {
+    const cursor = "eyJkYXRlIjoiMjAyNi0wMS0wMSIsImlkIjo0Mn0=";
+    const out = build(EMPTY_FILTERS, NO_SORT, [], { page: 0, limit: 50, cursor });
+    expect(out).toBe("limit=50&cursor=eyJkYXRlIjoiMjAyNi0wMS0wMSIsImlkIjo0Mn0%3D");
+    expect(new URLSearchParams(out).get("cursor")).toBe(cursor);
+    expect(new URLSearchParams(out).get("limit")).toBe("50");
+  });
+
+  it("cursor mode: offset is absent even when page is non-zero", () => {
+    const out = build(EMPTY_FILTERS, NO_SORT, [], { page: 3, limit: 50, cursor: "abc" });
+    expect(out).toBe("limit=50&cursor=abc");
+    expect(new URLSearchParams(out).has("offset")).toBe(false);
+  });
+
+  it("cursor mode: top-bar and sort params keep their order ahead of limit/cursor", () => {
+    const filters: TxFilters = { ...EMPTY_FILTERS, accountId: "8" };
+    const sort: TxSortPref = { columnId: "date", direction: "desc" };
+    expect(build(filters, sort, [], { page: 0, limit: 50, cursor: "" })).toBe(
+      "accountId=8&sort=date&sortDir=desc&limit=50&cursor=",
+    );
+  });
+
+  it("legacy mode (cursor undefined): output unchanged, offset still emitted", () => {
+    // Explicitly passing an undefined cursor key must match the legacy path.
+    expect(build(EMPTY_FILTERS, NO_SORT, [], { page: 2, limit: 25, cursor: undefined })).toBe(
+      "limit=25&offset=50",
+    );
+    expect(build(EMPTY_FILTERS, NO_SORT, [], { page: 0, limit: 50 })).toBe("limit=50&offset=0");
   });
 });

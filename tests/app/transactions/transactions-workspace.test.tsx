@@ -12,7 +12,8 @@ const H = vi.hoisted(() => {
   return {
     push: vi.fn(), IDENT: (items: any) => items, NOF: [] as any[], SORT: { columnId: "date", direction: "desc" },
     LK: { accounts: [{ id: 1, name: "A", currency: "USD", type: "A", group: "g", archived: false }], categories: [{ id: 4, name: "C", type: "E", group: "g" }], holdings: [] as any[] },
-    RES: { txns: TXNS, total: 3, loading: false, limit: 50, loadTxns: () => {}, loadNextPage: () => {}, resetPage: () => {}, page: 1, hasMore: false },
+    RES: { txns: TXNS, total: 3, loading: false, limit: 50, loadTxns: () => {}, loadNextPage: () => {}, resetPage: () => {}, page: 1, hasMore: false, isLoadingMore: false, loadMoreError: false, loadError: false },
+    IO: { cbs: [] as Array<(e: any[]) => void> },
     SP: new URLSearchParams(""), ACT: ["USD"],
   };
 });
@@ -32,7 +33,15 @@ vi.mock("@/app/(app)/transactions/_hooks/use-tx-prefs", async () => {
 vi.mock("@/app/(app)/transactions/_hooks/use-transactions", () => ({ useTransactions: () => H.RES }));
 import { TransactionsWorkspace } from "@/app/(app)/transactions/_components/transactions-workspace";
 const KEY = "finlynq:tx-prefill";
-beforeEach(() => { sessionStorage.clear(); push.mockClear();
+class FakeIntersectionObserver {
+  constructor(cb: (e: any[]) => void) { H.IO.cbs.push(cb); }
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+  takeRecords() { return []; }
+}
+beforeEach(() => { sessionStorage.clear(); push.mockClear(); H.IO.cbs.length = 0;
+  vi.stubGlobal("IntersectionObserver", FakeIntersectionObserver);
   vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => ({ data: [] }) })));
   (globalThis as any).ResizeObserver ??= class { observe(){} unobserve(){} disconnect(){} };
   (Element.prototype as any).scrollIntoView ??= () => {}; (Element.prototype as any).hasPointerCapture ??= () => false;
@@ -106,6 +115,99 @@ describe("workspace", () => {
       alertSpy.mockRestore();
     }
   });
+  it("observer loads the next page only when idle: no load in flight, no failed page, more to load", () => {
+    const loadNextPage = vi.fn();
+    const saved = { ...H.RES };
+    try {
+      Object.assign(H.RES, { hasMore: true, loadNextPage, loading: false, isLoadingMore: false, loadMoreError: false });
+      const { rerender } = render(<TransactionsWorkspace />);
+      const fire = () => H.IO.cbs[H.IO.cbs.length - 1]([{ isIntersecting: true }]);
+      fire();
+      expect(loadNextPage).toHaveBeenCalledTimes(1);
+
+      H.RES.isLoadingMore = true;
+      rerender(<TransactionsWorkspace />);
+      fire();
+      expect(loadNextPage).toHaveBeenCalledTimes(1);
+
+      H.RES.isLoadingMore = false;
+      H.RES.loading = true;
+      rerender(<TransactionsWorkspace />);
+      fire();
+      expect(loadNextPage).toHaveBeenCalledTimes(1);
+
+      H.RES.loading = false;
+      H.RES.loadMoreError = true;
+      rerender(<TransactionsWorkspace />);
+      fire();
+      expect(loadNextPage).toHaveBeenCalledTimes(1);
+
+      H.RES.loadMoreError = false;
+      H.RES.hasMore = false;
+      const before = H.IO.cbs.length;
+      rerender(<TransactionsWorkspace />);
+      expect(H.IO.cbs.length).toBe(before);
+    } finally {
+      for (const k of Object.keys(H.RES)) delete (H.RES as any)[k];
+      Object.assign(H.RES, saved);
+    }
+  });
+
+  it("a page landing re-arms the observer so a still-visible sentinel loads the next page", () => {
+    const loadNextPage = vi.fn();
+    const saved = { ...H.RES };
+    try {
+      Object.assign(H.RES, { hasMore: true, loadNextPage, isLoadingMore: true, loading: false, loadMoreError: false });
+      const { rerender } = render(<TransactionsWorkspace />);
+      const before = H.IO.cbs.length;
+      H.RES.isLoadingMore = false;
+      rerender(<TransactionsWorkspace />);
+      expect(H.IO.cbs.length).toBeGreaterThan(before);
+      H.IO.cbs[H.IO.cbs.length - 1]([{ isIntersecting: true }]);
+      expect(loadNextPage).toHaveBeenCalledTimes(1);
+    } finally {
+      for (const k of Object.keys(H.RES)) delete (H.RES as any)[k];
+      Object.assign(H.RES, saved);
+    }
+  });
+
+  it("a failed later page shows Couldn't load more with a Retry that calls loadTxns; no partial-load copy", () => {
+    const loadTxns = vi.fn();
+    const saved = { ...H.RES };
+    try {
+      Object.assign(H.RES, { loadMoreError: true, hasMore: true, loadTxns });
+      render(<TransactionsWorkspace />);
+      expect(screen.getByText("Couldn't load more.")).toBeTruthy();
+      const btn = screen.getByRole("button", { name: "Retry" });
+      expect(btn.className).toContain("min-h-11");
+      fireEvent.click(btn);
+      expect(loadTxns).toHaveBeenCalledTimes(1);
+      expect(screen.queryByText(/Loading full history/)).toBeNull();
+      expect(screen.queryByText(/Full history failed/)).toBeNull();
+    } finally {
+      for (const k of Object.keys(H.RES)) delete (H.RES as any)[k];
+      Object.assign(H.RES, saved);
+    }
+  });
+
+  it("export is enabled whenever the list has rows, even under a text search; disabled at zero", () => {
+    const savedSP = H.SP;
+    const saved = { ...H.RES };
+    try {
+      H.SP = new URLSearchParams("search=coffee");
+      render(<TransactionsWorkspace />);
+      expect((screen.getByRole("button", { name: /Export CSV/ }) as HTMLButtonElement).disabled).toBe(false);
+      cleanup();
+      Object.assign(H.RES, { total: 0, txns: [] });
+      render(<TransactionsWorkspace />);
+      expect((screen.getByRole("button", { name: /Export CSV/ }) as HTMLButtonElement).disabled).toBe(true);
+    } finally {
+      H.SP = savedSP;
+      for (const k of Object.keys(H.RES)) delete (H.RES as any)[k];
+      Object.assign(H.RES, saved);
+    }
+  });
+
   it("search input shows a Clear search button with a mobile hit area", () => {
     render(<TransactionsWorkspace />);
     fireEvent.change(screen.getByPlaceholderText("Search payee, note, or tags…"), { target: { value: "x" } });

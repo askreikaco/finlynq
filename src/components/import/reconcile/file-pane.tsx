@@ -250,30 +250,30 @@ export function FilePane({
                     <TableCell className="text-xs">
                       <div className="flex items-center gap-1 flex-nowrap">
                         {r.txType === "R" ? (
-                          <Badge variant="outline" className="text-[10px]">
+                          <Badge variant="outline" className="text-xs">
                             Transfer
                           </Badge>
                         ) : r.txType === "I" ? (
                           <Badge
                             variant="outline"
-                            className="text-[10px] bg-pos/10 text-pos border-pos/30"
+                            className="text-xs bg-pos/10 text-pos border-pos/30"
                           >
                             Income
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="text-[10px]">
+                          <Badge variant="outline" className="text-xs">
                             Expense
                           </Badge>
                         )}
                         {r.isDuplicate && r.reconcileState !== "skipped_duplicate" && (
-                          <Badge variant="outline" className="text-[10px]">
+                          <Badge variant="outline" className="text-xs">
                             dupe
                           </Badge>
                         )}
                         {isImported && (
                           <Badge
                             variant="outline"
-                            className="text-[10px] bg-pos/10 text-pos border-pos/30"
+                            className="text-xs bg-pos/10 text-pos border-pos/30"
                           >
                             imported
                           </Badge>

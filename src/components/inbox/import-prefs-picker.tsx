@@ -53,7 +53,7 @@ function Radio<T extends string>({
           />
           <span>
             <span className="font-medium">{opt.label}</span>
-            <span className="block text-[11px] text-muted-foreground">
+            <span className="block text-xs text-muted-foreground">
               {opt.hint}
             </span>
           </span>

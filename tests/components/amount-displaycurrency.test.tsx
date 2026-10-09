@@ -117,8 +117,8 @@ describe("Amount component with real CurrencyProvider", () => {
     );
 
     const span = screen.getByTestId("amount");
-    expect(span.className).toContain("text-[32px]");
-    expect(span.className).toContain("font-extrabold");
+    expect(span.className).toContain("text-3xl");
+    expect(span.className).toContain("font-bold");
   });
 
   it("respects tone prop (pos)", () => {

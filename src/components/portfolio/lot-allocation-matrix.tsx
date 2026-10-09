@@ -280,10 +280,10 @@ export function LotAllocationMatrix({
   const cur = sells[0].currency;
   const thBase = "px-2 py-1.5 text-right font-medium align-bottom whitespace-nowrap";
   const tdBase = "px-2 py-1 text-right align-top whitespace-nowrap";
-  // md:text-[10px] is REQUIRED: the base Input carries `md:text-sm`, a md:
-  // responsive variant that beats a plain `text-[10px]` at ≥768px — so the
+  // md:text-xs is REQUIRED: the base Input carries `md:text-sm`, a md:
+  // responsive variant that beats a plain `text-xs` at ≥768px — so the
   // override must also be md:-prefixed for tailwind-merge to drop md:text-sm.
-  const inputCls = "h-6 w-[58px] px-1 text-right text-[10px] md:text-[10px] tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
+  const inputCls = "h-7 w-16 px-1 text-right text-xs md:text-xs tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
 
   return (
     <div className="flex flex-1 min-h-0 flex-col gap-2.5">
@@ -291,16 +291,16 @@ export function LotAllocationMatrix({
       <div className="shrink-0 flex items-center justify-between gap-2 flex-wrap">
         <h3 className="text-sm font-medium">Edit all allocations</h3>
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[11px] text-muted-foreground">Auto:</span>
+          <span className="text-xs text-muted-foreground">Auto:</span>
           {(["fifo", "hifo", "lifo", "current"] as const).map((s) => (
-            <button key={s} type="button" onClick={() => fill(s)} className="text-[11px] rounded-md border border-border px-2 py-0.5 hover:bg-muted">
+            <button key={s} type="button" onClick={() => fill(s)} className="text-xs rounded-md border border-border px-2 py-0.5 hover:bg-muted">
               {s === "hifo" ? "HIFO" : s === "current" ? "Current" : s.toUpperCase()}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="shrink-0 space-y-1 text-[11px] text-muted-foreground">
+      <div className="shrink-0 space-y-1 text-xs text-muted-foreground">
         {/* Sales filter — columns */}
         <div className="flex items-center gap-x-3 gap-y-1 flex-wrap">
           <span className="font-medium w-9 shrink-0">Sales:</span>
@@ -318,10 +318,10 @@ export function LotAllocationMatrix({
           </div>
           <span className="text-border">|</span>
           <label className="flex items-center gap-1">From
-            <Input type="date" value={fromDate} onChange={(e) => { setFromDate(e.target.value); setYearFilter("all"); }} className="h-6 w-[130px] text-[11px] px-1.5" />
+            <Input type="date" value={fromDate} onChange={(e) => { setFromDate(e.target.value); setYearFilter("all"); }} className="h-6 w-[130px] text-xs px-1.5" />
           </label>
           <label className="flex items-center gap-1">To
-            <Input type="date" value={toDate} onChange={(e) => { setToDate(e.target.value); setYearFilter("all"); }} className="h-6 w-[130px] text-[11px] px-1.5" />
+            <Input type="date" value={toDate} onChange={(e) => { setToDate(e.target.value); setYearFilter("all"); }} className="h-6 w-[130px] text-xs px-1.5" />
           </label>
         </div>
         {/* Buys filter — rows */}
@@ -341,10 +341,10 @@ export function LotAllocationMatrix({
           </div>
           <span className="text-border">|</span>
           <label className="flex items-center gap-1">From
-            <Input type="date" value={buyFrom} onChange={(e) => { setBuyFrom(e.target.value); setBuyYear("all"); }} className="h-6 w-[130px] text-[11px] px-1.5" />
+            <Input type="date" value={buyFrom} onChange={(e) => { setBuyFrom(e.target.value); setBuyYear("all"); }} className="h-6 w-[130px] text-xs px-1.5" />
           </label>
           <label className="flex items-center gap-1">To
-            <Input type="date" value={buyTo} onChange={(e) => { setBuyTo(e.target.value); setBuyYear("all"); }} className="h-6 w-[130px] text-[11px] px-1.5" />
+            <Input type="date" value={buyTo} onChange={(e) => { setBuyTo(e.target.value); setBuyYear("all"); }} className="h-6 w-[130px] text-xs px-1.5" />
           </label>
           <span className="text-border">|</span>
           <label className="flex items-center gap-1.5 cursor-pointer select-none">
@@ -363,13 +363,13 @@ export function LotAllocationMatrix({
           : plan.errors[0]}
       </div>
 
-      <div className="shrink-0 text-[11px] text-muted-foreground">
+      <div className="shrink-0 text-xs text-muted-foreground">
         Each <span className="font-medium text-foreground">row is a buy lot</span> (a purchase) · each <span className="font-medium text-foreground">column is a sell</span>. A cell = shares of that lot the sale closes; the <span className="text-destructive">Open short</span> row holds any remainder.
       </div>
 
       {/* Scrollable grid — sticky header row + sticky lot column + sticky total column */}
       <div className="flex-1 min-h-0 overflow-auto rounded-md border border-border">
-        <table className="text-[11px] border-collapse">
+        <table className="text-xs border-collapse">
           <thead>
             <tr>
               <th className={`${thBase} text-left sticky left-0 top-0 z-20 bg-muted min-w-[150px]`}>
@@ -377,14 +377,14 @@ export function LotAllocationMatrix({
                 <div className="font-normal text-muted-foreground">sells →</div>
               </th>
               {visibleSells.map((s) => (
-                <th key={s.closeTxId} className={`${thBase} sticky top-0 z-10 bg-muted border-b-2 border-primary/40 min-w-[92px]`}>
+                <th key={s.closeTxId} className={`${thBase} sticky top-0 z-10 bg-muted border-b-2 border-primary/40 min-w-28`}>
                   <div className="font-medium text-foreground">Sell #{s.closeTxId}</div>
                   <div className="font-normal text-muted-foreground">{s.closeDate}</div>
                   <div className="font-normal text-muted-foreground">@{formatCurrency(s.proceedsPerShare, s.currency)}</div>
                   <div className="font-normal text-muted-foreground/80">need {qf(s.qty)}</div>
                 </th>
               ))}
-              <th className={`${thBase} sticky right-0 top-0 z-20 bg-muted border-l border-border min-w-[92px]`}>
+              <th className={`${thBase} sticky right-0 top-0 z-20 bg-muted border-l border-border min-w-28`}>
                 <div className="text-foreground">Lot total</div>
                 <div className="font-normal text-muted-foreground">alloc / avail</div>
               </th>
@@ -408,13 +408,13 @@ export function LotAllocationMatrix({
                           <AmountInput  min={0} step="any" value={alloc[k] ?? ""} placeholder="0"
                             onValueChange={(nv) => setCell(s.closeTxId, lot.id, nv)} className={inputCls} />
                           {g && num(k) > EPS && (
-                            <span className={`text-[9px] leading-none tabular-nums ${g.gain >= 0 ? "text-pos" : "text-destructive"}`}>
+                            <span className={`text-xs leading-none tabular-nums ${g.gain >= 0 ? "text-pos" : "text-destructive"}`}>
                               {g.gain >= 0 ? "+" : ""}{formatCurrency(g.gain, s.currency)} {g.term === "long" ? "LT" : "ST"}
                             </span>
                           )}
                         </div>
                       ) : (
-                        <span className="text-[9px] text-warning" title={`Lot opened ${lot.openDate}, after this sale on ${s.closeDate}.`}>⚠ later</span>
+                        <span className="text-xs text-warning" title={`Lot opened ${lot.openDate}, after this sale on ${s.closeDate}.`}>⚠ later</span>
                       )}
                     </td>
                   );
@@ -484,7 +484,7 @@ export function LotAllocationMatrix({
       {err && <p className="shrink-0 text-xs text-destructive">{err}</p>}
 
       <div className="shrink-0 flex items-center justify-between gap-2">
-        <button type="button" onClick={() => fill("clear")} className="text-[11px] text-muted-foreground hover:underline">Clear all</button>
+        <button type="button" onClick={() => fill("clear")} className="text-xs text-muted-foreground hover:underline">Clear all</button>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={onCancel} disabled={busy}>Cancel</Button>
           <Button size="sm" onClick={commit} disabled={!plan.ok || busy}>{busy ? "Saving…" : "Save allocation"}</Button>

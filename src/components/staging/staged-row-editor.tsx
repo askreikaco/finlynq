@@ -97,7 +97,7 @@ interface Props {
 // render (react-hooks/static-components, FINLYNQ-119). Depends only on `shown`.
 function Spinner({ shown }: { shown: boolean }) {
   return shown ? (
-    <span className="text-[10px] text-muted-foreground ml-1">saving…</span>
+    <span className="text-xs text-muted-foreground ml-1">saving…</span>
   ) : null;
 }
 
@@ -196,7 +196,7 @@ export function StagedRowEditor({
       <div className="grid grid-cols-2 gap-3">
         {/* Type */}
         <div className="space-y-1">
-          <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
+          <Label className="text-xs uppercase tracking-wide text-muted-foreground">
             Type <Spinner shown={savingField === "txType"} />
           </Label>
           <Select
@@ -221,7 +221,7 @@ export function StagedRowEditor({
         {/* Category — text field for now; the live UI uses a typeahead
             but staging keeps it simple. */}
         <div className="space-y-1">
-          <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
+          <Label className="text-xs uppercase tracking-wide text-muted-foreground">
             Category <Spinner shown={savingField === "category"} />
           </Label>
           <Input
@@ -239,7 +239,7 @@ export function StagedRowEditor({
 
         {/* Payee */}
         <div className="space-y-1 col-span-2">
-          <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
+          <Label className="text-xs uppercase tracking-wide text-muted-foreground">
             Payee <Spinner shown={savingField === "payee"} />
           </Label>
           <Input
@@ -259,13 +259,13 @@ export function StagedRowEditor({
       {/* Transfer pair editors — visible only for tx_type='R'. */}
       {local.txType === "R" && (
         <div className="space-y-2 p-2 border rounded-md bg-background">
-          <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-            Transfer pairing <Badge variant="outline" className="ml-1 text-[9px]">choose one</Badge>
+          <div className="text-xs uppercase tracking-wide text-muted-foreground">
+            Transfer pairing <Badge variant="outline" className="ml-1 text-xs">choose one</Badge>
           </div>
           <div className="grid grid-cols-2 gap-2">
             {/* Peer staged row */}
             <div className="space-y-1">
-              <Label className="text-[10px] text-muted-foreground">
+              <Label className="text-xs text-muted-foreground">
                 Pair with sibling row <Spinner shown={savingField === "peerStagedId"} />
               </Label>
               <Select
@@ -309,7 +309,7 @@ export function StagedRowEditor({
 
             {/* Target account */}
             <div className="space-y-1">
-              <Label className="text-[10px] text-muted-foreground">
+              <Label className="text-xs text-muted-foreground">
                 Or target account <Spinner shown={savingField === "targetAccountId"} />
               </Label>
               <Select
@@ -355,7 +355,7 @@ export function StagedRowEditor({
       {isInvestmentAcct && local.txType !== "R" && (
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
-            <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
+            <Label className="text-xs uppercase tracking-wide text-muted-foreground">
               Holding <Spinner shown={savingField === "portfolioHoldingId"} />
             </Label>
             <Select
@@ -386,7 +386,7 @@ export function StagedRowEditor({
             </Select>
           </div>
           <div className="space-y-1">
-            <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
+            <Label className="text-xs uppercase tracking-wide text-muted-foreground">
               Quantity <Spinner shown={savingField === "quantity"} />
             </Label>
             <AmountInput
@@ -411,7 +411,7 @@ export function StagedRowEditor({
       {/* Cross-currency override + tags + note */}
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
-          <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
+          <Label className="text-xs uppercase tracking-wide text-muted-foreground">
             Entered amount <Spinner shown={savingField === "enteredAmount"} />
           </Label>
           <AmountInput
@@ -431,7 +431,7 @@ export function StagedRowEditor({
           />
         </div>
         <div className="space-y-1">
-          <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
+          <Label className="text-xs uppercase tracking-wide text-muted-foreground">
             Entered currency <Spinner shown={savingField === "enteredCurrency"} />
           </Label>
           <Input
@@ -454,7 +454,7 @@ export function StagedRowEditor({
       </div>
 
       <div className="space-y-1">
-        <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
+        <Label className="text-xs uppercase tracking-wide text-muted-foreground">
           Tags <Spinner shown={savingField === "tags"} />
         </Label>
         <Input
@@ -471,7 +471,7 @@ export function StagedRowEditor({
       </div>
 
       <div className="space-y-1">
-        <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
+        <Label className="text-xs uppercase tracking-wide text-muted-foreground">
           Note <Spinner shown={savingField === "note"} />
         </Label>
         <textarea

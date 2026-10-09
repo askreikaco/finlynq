@@ -181,7 +181,7 @@ export function UnresolvedCategoriesBanner({
         </div>
 
         {loadError && (
-          <p className="ml-6 text-[11px] text-destructive">{loadError}</p>
+          <p className="ml-6 text-xs text-destructive">{loadError}</p>
         )}
 
         <ul className="space-y-1.5 ml-6">
@@ -197,7 +197,7 @@ export function UnresolvedCategoriesBanner({
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="h-6 px-2 text-[11px] border-warning/30 hover:bg-warning/10"
+                    className="h-6 px-2 text-xs border-warning/30 hover:bg-warning/10"
                     onClick={() => openDialogForRow(rid)}
                     disabled={loading}
                   >

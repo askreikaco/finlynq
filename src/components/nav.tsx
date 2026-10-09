@@ -257,7 +257,7 @@ export const Nav = memo(function Nav({ instanceAdminEnabled = false, categoriesM
         title={!showLabel ? displayLabel : undefined}
         aria-current={isActive ? "page" : undefined}
         className={cn(
-          "group/link relative flex items-center gap-3 rounded-lg text-[13px] font-medium transition-all duration-200",
+          "group/link relative flex items-center gap-3 rounded-lg text-sm font-medium transition-all duration-200",
           showLabel ? "px-3 py-2" : "size-9 mx-auto p-0 justify-center",
           isActive
             ? "bg-white/[0.08] text-sidebar-accent-foreground"
@@ -277,7 +277,7 @@ export const Nav = memo(function Nav({ instanceAdminEnabled = false, categoriesM
         )}
         {showLabel && <span className="truncate">{displayLabel}</span>}
         {showLabel && badge > 0 ? (
-          <span className="ml-auto rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold leading-none text-primary-foreground">
+          <span className="ml-auto rounded-full bg-primary px-1.5 py-0.5 text-xs font-semibold leading-none text-primary-foreground">
             {badge}
           </span>
         ) : (
@@ -311,7 +311,7 @@ export const Nav = memo(function Nav({ instanceAdminEnabled = false, categoriesM
             {group.label && !collapsed && (
               <button
                 onClick={() => toggleGroup(group.label)}
-                className="flex items-center w-full px-3 mb-1 mt-5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground hover:text-sidebar-foreground/50 transition-colors"
+                className="flex items-center w-full px-3 mb-1 mt-5 text-xs font-semibold uppercase tracking-widest text-muted-foreground hover:text-sidebar-foreground/50 transition-colors"
               >
                 <ChevronDown
                   className={cn(
@@ -347,7 +347,7 @@ export const Nav = memo(function Nav({ instanceAdminEnabled = false, categoriesM
                   onClick={toggleAdminGroup}
                   aria-expanded={adminOpen}
                   aria-controls="nav-admin-links"
-                  className="flex items-center w-full px-3 mb-1 mt-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground hover:text-sidebar-foreground/50 transition-colors"
+                  className="flex items-center w-full px-3 mb-1 mt-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground hover:text-sidebar-foreground/50 transition-colors"
                 >
                   <ChevronDown
                     className={cn(
@@ -364,7 +364,7 @@ export const Nav = memo(function Nav({ instanceAdminEnabled = false, categoriesM
                   title="Admin"
                   aria-label="Admin"
                   className={cn(
-                    "group/link relative flex items-center gap-3 rounded-lg text-[13px] font-medium transition-all duration-200 size-9 mx-auto p-0 justify-center",
+                    "group/link relative flex items-center gap-3 rounded-lg text-sm font-medium transition-all duration-200 size-9 mx-auto p-0 justify-center",
                     pathname.startsWith("/admin")
                       ? "bg-white/[0.08] text-sidebar-accent-foreground"
                       : "text-sidebar-foreground/50 hover:bg-white/[0.05] hover:text-sidebar-foreground"
@@ -419,9 +419,18 @@ export const Nav = memo(function Nav({ instanceAdminEnabled = false, categoriesM
   );
 });
 
+// Full-screen entry flows: the mobile tab bar is hidden so the form and its Save/Continue are never overlapped.
+const FULL_SCREEN_ENTRY_ROUTES = ["/transactions/new", "/accounts/new"] as const;
+
 // Mobile bottom bar
 export const MobileBottomBar = memo(function MobileBottomBar({ pathname }: { pathname: string }) {
   const moreActive = !mobileBarItems.some(i => pathname === i.href || pathname.startsWith(i.href + "/"));
+  // Full-screen entry flows: the bar is hidden so the numpad and Save/Continue are never overlapped.
+  // Portfolio operation forms (/portfolio/new/<op>) follow the same rule; the /portfolio/new list keeps the bar.
+  const hidden =
+    FULL_SCREEN_ENTRY_ROUTES.some((r) => pathname === r || pathname.startsWith(r + "/")) ||
+    pathname.startsWith("/portfolio/new/");
+  if (hidden) return null;
   return (
     <nav aria-label="Mobile navigation" className="md:hidden fixed z-50 mobile-glass-bar bottom-[max(12px,var(--sab))] left-[calc(16px+var(--sal))] right-[calc(16px+var(--sar))] h-16 rounded-[28px]">
       <div className="flex h-full items-stretch justify-around p-1.5" data-testid="mobile-bar-row">
@@ -433,12 +442,12 @@ export const MobileBottomBar = memo(function MobileBottomBar({ pathname }: { pat
               aria-current={isActive ? "page" : undefined}
               href={item.href}
               className={cn(
-                "flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full px-0.5 text-[11px] font-semibold tracking-tight whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
-                isActive ? "mobile-glass-pill text-sidebar-primary" : "text-sidebar-foreground/60"
+                "flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full px-0 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
+                isActive ? "mobile-glass-pill text-tab-active" : "text-tab-inactive"
               )}
             >
-              <item.icon className={cn("size-[22px]", isActive && item.color)} />
-              {item.label}
+              <item.icon className={cn("size-6", isActive && item.color)} />
+              <span className="mobile-tab-label block max-w-full truncate">{item.label}</span>
             </Link>
           );
         })}
@@ -447,12 +456,12 @@ export const MobileBottomBar = memo(function MobileBottomBar({ pathname }: { pat
           aria-label="More"
           aria-current={moreActive ? "page" : undefined}
           className={cn(
-            "flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full px-0.5 text-[11px] font-semibold tracking-tight whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
-            moreActive ? "mobile-glass-pill text-sidebar-primary" : "text-sidebar-foreground/60"
+            "flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full px-0 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
+            moreActive ? "mobile-glass-pill text-tab-active" : "text-tab-inactive"
           )}
         >
-          <MoreHorizontal className="size-[22px]" />
-          More
+          <MoreHorizontal className="size-6" />
+          <span className="mobile-tab-label block max-w-full truncate">More</span>
         </Link>
       </div>
     </nav>

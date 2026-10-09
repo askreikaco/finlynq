@@ -288,7 +288,7 @@ export function TransactionTable({
                                 setFilters({ ...filters, tag: tagValue });
                                 setPage(0);
                               }}
-                              className="inline-flex items-center rounded-md border border-info/30 bg-info/10 text-info px-1.5 py-0 text-[10px] font-mono hover:border-info/30 hover:bg-info/10 transition-colors"
+                              className="inline-flex items-center rounded-md border border-info/30 bg-info/10 text-info px-1.5 py-0 text-xs font-mono hover:border-info/30 hover:bg-info/10 transition-colors"
                               title={`Filter by tag: ${tagValue}`}
                             >
                               {tagValue}
@@ -325,7 +325,7 @@ export function TransactionTable({
                       <div className="flex flex-col items-end">
                         <span>{formatCurrency(enteredAmt, enteredCcy)}</span>
                         {showSecondary && (
-                          <span className="text-[10px] font-normal text-muted-foreground">
+                          <span className="text-xs font-normal text-muted-foreground">
                             → {formatCurrency(t.amount, t.currency)}
                           </span>
                         )}
@@ -349,7 +349,7 @@ export function TransactionTable({
                   return (
                     <TableCell key={c.id} className="text-sm">
                       {t.source ? (
-                        <Badge variant="outline" className="text-[10px]">
+                        <Badge variant="outline" className="text-xs">
                           {labelForSource(t.source)}
                         </Badge>
                       ) : (
@@ -397,7 +397,7 @@ export function TransactionTable({
                       {t.kind ? (
                         <Badge
                           variant="outline"
-                          className={`text-[10px] ${borderStyle} ${
+                          className={`text-xs ${borderStyle} ${
                             /_cash_leg$/.test(t.kind)
                               ? "border-info/40 bg-info/10 text-info"
                               : t.kind === "dividend" || t.kind === "interest"
@@ -450,7 +450,7 @@ export function TransactionTable({
                       {status === "canonical" ? (
                         <Badge
                           variant="outline"
-                          className="text-[10px] border-pos/40 bg-pos/10 text-pos"
+                          className="text-xs border-pos/40 bg-pos/10 text-pos"
                           title="Row has a canonical Phase-2 shape — kind set AND (pair-less kind OR trade_link_id OR link_id)."
                         >
                           canonical
@@ -458,7 +458,7 @@ export function TransactionTable({
                       ) : status === "pending" ? (
                         <Badge
                           variant="outline"
-                          className="text-[10px] border-warning/40 bg-warning/10 text-warning border-dashed"
+                          className="text-xs border-warning/40 bg-warning/10 text-warning border-dashed"
                           title={`Kind is '${t.kind}' but row lacks the canonical pair shape — visit /settings/backfill to canonicalize.`}
                         >
                           pending

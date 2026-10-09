@@ -33,19 +33,19 @@ export function AvailableToSpend({ income, expenses, currency, monthLabel }: Pro
     >
       {income > 0 && (
         <div className="mt-4 space-y-2">
-          <div className="flex justify-between text-[12px]">
+          <div className="flex justify-between text-xs">
             <span className="text-muted-foreground">Income</span>
             <span className="font-semibold text-pos tabular-nums">
               {formatCurrency(income, resolvedCurrency)}
             </span>
           </div>
-          <div className="flex justify-between text-[12px]">
+          <div className="flex justify-between text-xs">
             <span className="text-muted-foreground">Spent so far</span>
             <span className="font-semibold text-destructive tabular-nums">
               -{formatCurrency(expenses, resolvedCurrency)}
             </span>
           </div>
-          <div className="border-t pt-2 flex justify-between text-[12px] font-semibold">
+          <div className="border-t pt-2 flex justify-between text-xs font-semibold">
             <span>Remaining</span>
             <span className={`tabular-nums ${available >= 0 ? "text-pos" : "text-destructive"}`}>
               {formatCurrency(available, resolvedCurrency)}
@@ -59,7 +59,7 @@ export function AvailableToSpend({ income, expenses, currency, monthLabel }: Pro
               transition={{ duration: 1, ease: "easeOut", delay: 0.5 }}
             />
           </div>
-          <p className="text-[10px] text-muted-foreground text-center mt-1.5 tabular-nums">
+          <p className="text-xs text-muted-foreground text-center mt-1.5 tabular-nums">
             {Math.round(pctSpent)}% of income spent
           </p>
         </div>

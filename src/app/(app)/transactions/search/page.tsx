@@ -169,7 +169,7 @@ export default function TransactionSearchPage() {
       <div className="flex-1 space-y-4 px-4 py-4">
         {/* Search input */}
         <div>
-          <label className="text-xs font-semibold uppercase tracking-[0.5px] text-muted-foreground mb-2 block">
+          <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground mb-2 block">
             Search
           </label>
           <Input
@@ -182,7 +182,7 @@ export default function TransactionSearchPage() {
 
         {/* Direction */}
         <div>
-          <label className="text-xs font-semibold uppercase tracking-[0.5px] text-muted-foreground mb-2 block">
+          <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground mb-2 block">
             Direction
           </label>
           <div role="radiogroup" aria-label="Direction" className="grid grid-cols-3 gap-1 rounded-lg bg-muted p-1">
@@ -205,7 +205,7 @@ export default function TransactionSearchPage() {
 
         {/* Date presets */}
         <div>
-          <label className="text-xs font-semibold uppercase tracking-[0.5px] text-muted-foreground mb-2 block">
+          <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground mb-2 block">
             Date
           </label>
           <div className="flex flex-wrap gap-2">
@@ -237,7 +237,7 @@ export default function TransactionSearchPage() {
         {datePreset === "custom" && (
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-semibold uppercase tracking-[0.5px] text-muted-foreground mb-2 block">
+              <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground mb-2 block">
                 From
               </label>
               <Input
@@ -248,7 +248,7 @@ export default function TransactionSearchPage() {
               />
             </div>
             <div>
-              <label className="text-xs font-semibold uppercase tracking-[0.5px] text-muted-foreground mb-2 block">
+              <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground mb-2 block">
                 To
               </label>
               <Input
@@ -263,7 +263,7 @@ export default function TransactionSearchPage() {
 
         {/* Amount range */}
         <div>
-          <label className="text-xs font-semibold uppercase tracking-[0.5px] text-muted-foreground mb-2 block">
+          <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground mb-2 block">
             Amount
           </label>
           <div className="grid grid-cols-2 gap-3">
@@ -289,7 +289,7 @@ export default function TransactionSearchPage() {
         {/* Account select (hidden when scoped to an account) */}
         {!isAccountPage && (
           <div>
-            <label className="text-xs font-semibold uppercase tracking-[0.5px] text-muted-foreground mb-2 block">
+            <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground mb-2 block">
               Account
             </label>
             <Combobox
@@ -313,7 +313,7 @@ export default function TransactionSearchPage() {
 
         {/* Category select */}
         <div>
-          <label className="text-xs font-semibold uppercase tracking-[0.5px] text-muted-foreground mb-2 block">
+          <label className="text-xs font-semibold uppercase tracking-normal text-muted-foreground mb-2 block">
             Category
           </label>
           <Combobox

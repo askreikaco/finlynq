@@ -32,7 +32,7 @@ import type {
   LinkedSibling,
 } from "../_types";
 import { useLookups, useTxColumnPrefs, useTxSortPref, useTxFilterPrefs } from "../_hooks/use-tx-prefs";
-import { useTransactions, isNonDefaultTxView } from "../_hooks/use-transactions";
+import { useTransactions } from "../_hooks/use-transactions";
 import { TransactionTable } from "./transaction-table";
 import { buildTransactionQuery } from "@/lib/transactions/build-query";
 import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
@@ -41,6 +41,7 @@ import { todayISO } from "@/lib/utils/date";
 import { LotReallocationNotice } from "@/components/portfolio/lot-reallocation-notice";
 import type { LotReallocationPreview } from "@/lib/portfolio/lots/types";
 import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
+import { opHref, type OpKey } from "@/components/portfolio/forms/op-catalog";
 
 /**
  * TransactionsWorkspace — the full transactions surface (filters, per-column
@@ -180,13 +181,14 @@ export function TransactionsWorkspace({
   const { colFilters, setColFilters, findColFilter, setColFilter } = useTxFilterPrefs(() => setPage(0));
 
   // Main list (txns / total / loading) + loadTxns + infinite scroll loadNextPage
-  const { txns, total, loading, limit, loadTxns, loadNextPage, resetPage, hasMore, loadError, isPartial, fullLoadError } = useTransactions(
+  const { txns, total, loading, limit, loadTxns, loadNextPage, resetPage, hasMore, loadError, loadMoreError, isLoadingMore } = useTransactions(
     filters,
     sortPref,
     colFilters,
     accounts,
   );
-  resetPageRef.current = resetPage;
+  // Assigned in an effect (not during render); setPage is only called from handlers and effects.
+  useEffect(() => { resetPageRef.current = resetPage; }, [resetPage]);
 
   // Infinite scroll trigger via native IntersectionObserver
   const observerTargetRef = useRef<HTMLDivElement | null>(null);
@@ -198,7 +200,9 @@ export function TransactionsWorkspace({
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0]?.isIntersecting && !loading) {
+        // One page in flight at a time. A failed later page waits for the Retry
+        // control; the sentinel must not re-request it on every observer restart.
+        if (entries[0]?.isIntersecting && !loading && !isLoadingMore && !loadMoreError) {
           loadNextPage();
         }
       },
@@ -213,7 +217,7 @@ export function TransactionsWorkspace({
     return () => {
       observer.disconnect();
     };
-  }, [loadNextPage, hasMore, loading]);
+  }, [loadNextPage, hasMore, loading, isLoadingMore, loadMoreError]);
 
   // Post-mutation refresh: reload the list AND notify the embedding page so it
   // can refresh sibling data (e.g. the account balance header). Used after
@@ -333,16 +337,8 @@ export function TransactionsWorkspace({
   // ── CSV export of the current filtered view ──────────────────────────
   // Re-fetches GET /api/transactions with the SAME buildTransactionQuery the
   // table uses (FINLYNQ-115 — never hand-roll params), but with page 0 + a
-  // high limit so a single request returns the whole filtered set. The route
-  // caps the underlying candidate set at 1000 rows whenever a post-decrypt
-  // (search / tag / encrypted-substring) filter is active — surfaced inline.
+  // high limit so a single request returns the whole filtered set.
   const [exporting, setExporting] = useState(false);
-  // Mirrors the server's `postDecryptFilter`: text search, tag, or any
-  // text-type per-column filter forces the in-memory 1000-row pass.
-  const hasTextSearchFilter =
-    !!filters.search ||
-    !!filters.tag ||
-    colFilters.some((f) => f.type === "text");
   const exportColumns: CsvColumn<Transaction>[] = [
     { header: "Date", accessor: (t) => t.date },
     { header: "Account", accessor: (t) => t.accountAlias || t.accountName },
@@ -362,8 +358,9 @@ export function TransactionsWorkspace({
     setExporting(true);
     try {
       // Same builder + filter/sort state the table uses; page 0 + high limit
-      // pulls the entire filtered view in one shot (the route honors `limit`
-      // directly when no post-decrypt filter is set, else caps at 1000).
+      // pulls the entire filtered view in one shot.
+      // Intentionally NO cursor: this is the legacy (non-cursor) mode, kept on
+      // purpose for export. The paged list uses cursor mode; export does not.
       const params = buildTransactionQuery(filters, sortPref, colFilters, accounts, {
         page: 0,
         limit: 100000,
@@ -428,8 +425,8 @@ export function TransactionsWorkspace({
           brokerage_withdrawal_in: "withdrawal",
           brokerage_withdrawal_out: "withdrawal",
         };
-        const op = opForKind[t.kind] ?? "buy";
-        router.push(`/portfolio/new?op=${op}&editId=${t.id}`);
+        const op = (opForKind[t.kind] ?? "buy") as OpKey;
+        router.push(opHref(op, `?editId=${t.id}`));
         return;
       }
     }
@@ -712,14 +709,14 @@ export function TransactionsWorkspace({
             actionsClassName="flex flex-wrap items-center gap-1.5"
             overflow={[
           { label: "Transfer", icon: ArrowRightLeft, onSelect: () => router.push("/transactions/new?kind=transfer") },
-          { label: "Buy", onSelect: () => router.push("/portfolio/new?op=buy") },
-          { label: "Sell", onSelect: () => router.push("/portfolio/new?op=sell") },
-          { label: "Swap", onSelect: () => router.push("/portfolio/new?op=swap") },
-          { label: "In-kind transfer", onSelect: () => router.push("/portfolio/new?op=transfer") },
-          { label: "Income / expense", onSelect: () => router.push("/portfolio/new?op=income-expense") },
-          { label: "FX conversion", onSelect: () => router.push("/portfolio/new?op=fx-conversion") },
-          { label: "Brokerage deposit", onSelect: () => router.push("/portfolio/new?op=deposit") },
-          { label: "Brokerage withdrawal", onSelect: () => router.push("/portfolio/new?op=withdrawal") },
+          { label: "Buy", onSelect: () => router.push("/portfolio/new/buy") },
+          { label: "Sell", onSelect: () => router.push("/portfolio/new/sell") },
+          { label: "Swap", onSelect: () => router.push("/portfolio/new/swap") },
+          { label: "In-kind transfer", onSelect: () => router.push("/portfolio/new/in-kind-transfer") },
+          { label: "Income / expense", onSelect: () => router.push("/portfolio/new/income-expense") },
+          { label: "FX conversion", onSelect: () => router.push("/portfolio/new/fx-conversion") },
+          { label: "Brokerage deposit", onSelect: () => router.push("/portfolio/new/deposit") },
+          { label: "Brokerage withdrawal", onSelect: () => router.push("/portfolio/new/withdrawal") },
           { label: "Investment Transactions", icon: TrendingUp, onSelect: () => router.push("/portfolio/new") },
             ]}
             actions={
@@ -759,28 +756,28 @@ export function TransactionsWorkspace({
                   <DropdownMenuSeparator />
                   <DropdownMenuGroup>
                     <DropdownMenuLabel>Portfolio operations</DropdownMenuLabel>
-                    <DropdownMenuItem onClick={() => router.push("/portfolio/new?op=buy")}>
+                    <DropdownMenuItem onClick={() => router.push("/portfolio/new/buy")}>
                       Buy
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push("/portfolio/new?op=sell")}>
+                    <DropdownMenuItem onClick={() => router.push("/portfolio/new/sell")}>
                       Sell
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push("/portfolio/new?op=swap")}>
+                    <DropdownMenuItem onClick={() => router.push("/portfolio/new/swap")}>
                       Swap
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push("/portfolio/new?op=transfer")}>
+                    <DropdownMenuItem onClick={() => router.push("/portfolio/new/in-kind-transfer")}>
                       In-kind transfer
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push("/portfolio/new?op=income-expense")}>
+                    <DropdownMenuItem onClick={() => router.push("/portfolio/new/income-expense")}>
                       Income / expense
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push("/portfolio/new?op=fx-conversion")}>
+                    <DropdownMenuItem onClick={() => router.push("/portfolio/new/fx-conversion")}>
                       FX conversion
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push("/portfolio/new?op=deposit")}>
+                    <DropdownMenuItem onClick={() => router.push("/portfolio/new/deposit")}>
                       Brokerage deposit
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push("/portfolio/new?op=withdrawal")}>
+                    <DropdownMenuItem onClick={() => router.push("/portfolio/new/withdrawal")}>
                       Brokerage withdrawal
                     </DropdownMenuItem>
                   </DropdownMenuGroup>
@@ -821,7 +818,7 @@ export function TransactionsWorkspace({
         <Link
           href={`/transactions/search?${mobileSearchQuery}`}
           aria-label="Search and filter"
-          className="flex-1 flex items-center gap-2 px-3 py-2.5 bg-muted rounded-lg text-sm text-muted-foreground hover:bg-muted/80 transition-colors"
+          className="flex min-h-11 flex-1 items-center gap-2 px-3 py-2.5 bg-muted rounded-lg text-sm text-muted-foreground hover:bg-muted/80 transition-colors"
         >
           <Search className="h-4 w-4" />
           <span>Search and filter</span>
@@ -845,6 +842,7 @@ export function TransactionsWorkspace({
         <MobileTxList
           transactions={txns}
           isLoading={loading && txns.length === 0}
+          isLoadingMore={isLoadingMore}
           onEdit={startEdit}
           showAccountName={!locked}
         />
@@ -960,17 +958,12 @@ export function TransactionsWorkspace({
               size="sm"
               className="h-8 text-xs gap-1.5 ml-auto"
               onClick={handleExport}
-              disabled={exporting || (!isPartial && total === 0)}
+              disabled={exporting || total === 0}
             >
               <Download className="h-3.5 w-3.5" />
               {exporting ? "Exporting…" : "Export CSV"}
             </Button>
           </div>
-          {hasTextSearchFilter && (
-            <p className="text-xs text-muted-foreground">
-              Exports of a text-searched view are capped at the first 1,000 matching transactions.
-            </p>
-          )}
           {/* Issue #59 — per-column filter chips. Each chip drops just its
               own filter when clicked; "Clear all" above wipes the lot. */}
           {(colFilters.length > 0 || sortPref.columnId) && (
@@ -1163,11 +1156,6 @@ export function TransactionsWorkspace({
         </div>
       )}
 
-      {/* Progressive load: the list is the recent-200 window until the full history lands. */}
-      {isPartial && !fullLoadError && isNonDefaultTxView(filters, sortPref, colFilters) && (
-        <p role="status" className="text-xs text-muted-foreground">Loading full history...</p>
-      )}
-
       {/* Table — extracted to <TransactionTable> (FINLYNQ-111 Phase 2). */}
       <Card className="max-md:hidden">
         <CardContent className="p-0">
@@ -1206,9 +1194,9 @@ export function TransactionsWorkspace({
         data-testid="infinite-scroll-trigger"
         className="h-14 w-full flex items-center justify-center text-xs text-muted-foreground"
       >
-        {isPartial && fullLoadError ? (
+        {loadMoreError ? (
           <span className="flex flex-wrap items-center justify-center gap-2">
-            <span>Full history failed to load. Showing the most recent 200 transactions.</span>
+            <span>Couldn&apos;t load more.</span>
             <Button
               variant="outline"
               size="sm"

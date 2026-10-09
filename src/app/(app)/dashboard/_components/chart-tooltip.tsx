@@ -25,7 +25,7 @@ export function ChartTooltip({
   const row = payload[0]?.payload;
   return (
     <div className="rounded-xl border border-border/50 bg-card/95 backdrop-blur-sm px-3.5 py-2.5 shadow-lg max-w-[260px]">
-      <p className="text-[11px] font-medium text-muted-foreground mb-1.5">{label}</p>
+      <p className="text-xs font-medium text-muted-foreground mb-1.5">{label}</p>
       {payload.map((entry, i) => {
         // FINLYNQ-128 — append the per-category breakdown beneath the series
         // total it decomposes (income → incomeBreakdown, expenses → expenseBreakdown).
@@ -66,7 +66,7 @@ export function PieTooltip({
   if (!active || !payload?.length) return null;
   return (
     <div className="rounded-xl border border-border/50 bg-card/95 backdrop-blur-sm px-3.5 py-2.5 shadow-lg">
-      <p className="text-[11px] font-semibold mb-0.5">{payload[0].payload.name}</p>
+      <p className="text-xs font-semibold mb-0.5">{payload[0].payload.name}</p>
       <p className="text-sm font-bold tabular-nums">{formatCurrency(Number(payload[0].value), currency)}</p>
     </div>
   );

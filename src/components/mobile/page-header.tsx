@@ -26,16 +26,49 @@ export interface OverflowAction {
 export const HEADER_DESKTOP_ONLY = "max-md:hidden";
 
 /**
- * Phone header row for pages with a back control (iOS 26 style): [round glass back | glass
- * title island, centred | actions]. Sticky, grid with equal side columns so the island stays
- * centred in the viewport. md+ keeps the page's original classes (nothing here applies there).
+ * Sticky top bar, every breakpoint. Pinned at the top of the scroll container: the window on phones
+ * (safe-area inset), <main> on md+ (top 0). z-30 above section labels (z-10).
+ * md+ gets a translucent background (glass-bar only exists below md) so scrolled content does not show through.
+ * Sticky is inert if any ancestor between the bar and the scroller has overflow-* other than visible/clip.
+ * Keep ONE position class on the bar: cn()/twMerge drops sticky if a relative/absolute/fixed class is merged in.
  */
-export const PHONE_HEADER_ROW =
-  "max-md:grid max-md:grid-cols-[minmax(0,1fr)_minmax(0,auto)_minmax(0,1fr)] max-md:items-center max-md:gap-2 max-md:sticky max-md:top-0 max-md:z-10 max-md:bg-background max-md:pt-[var(--sat)]";
+export const PHONE_BAR_STICKY =
+  "glass-bar sticky top-[var(--sat,0px)] z-30 md:top-0 md:bg-background/90 md:backdrop-blur-sm";
 
-/** The h1 as the glass title island on phones (large title hidden; the h1 stays in the DOM). */
-export const PHONE_TITLE_ISLAND =
-  "glass-capsule max-md:block max-md:h-11 max-md:min-w-0 max-md:max-w-[min(60vw,20rem)] max-md:justify-self-center max-md:truncate max-md:rounded-full max-md:px-4 max-md:text-center max-md:text-[15px]/11 max-md:font-semibold max-md:tracking-normal";
+/**
+ * Phone top bar (max-md layout), shared by PageHeader and the settings detail row. Adds to PHONE_BAR_STICKY:
+ * full-bleed (-mx-4 cancels the app shell's px-4), a three-column grid, min-h --phone-header-h (3.75rem).
+ * Columns: [left slot | title | right capsule]. The side tracks are min 2.75rem (one 44pt target) and
+ * size to their content, so the title column is exactly the space between the MEASURED slots: a title or
+ * subtitle can never run under the capsule. Equal min sides keep the title centred when one side is empty.
+ * items-center puts a 44px control centred in the 60px bar (no ring on the hairline).
+ * No pt-[var(--sat)]: body already pads its in-flow top by --sat.
+ */
+export const PHONE_BAR =
+  "glass-bar sticky top-[var(--sat,0px)] z-30 md:top-0 md:bg-background/90 md:backdrop-blur-sm max-md:-mx-4 max-md:grid max-md:min-h-[var(--phone-header-h)] max-md:grid-cols-[minmax(2.75rem,auto)_minmax(0,1fr)_minmax(2.75rem,auto)] max-md:items-center max-md:px-4";
+
+/** Left slot placeholder (no back target): keeps the title column aligned. */
+export const PHONE_BAR_SIDE = "hidden max-md:flex max-md:size-11 max-md:shrink-0 max-md:col-start-1 max-md:row-start-1";
+
+/** Title block: the middle grid column (between the measured slots). min-w-0 lets the title truncate.
+ * pointer-events-none: taps reach the buttons. */
+export const PHONE_BAR_CENTER =
+  "max-md:col-start-2 max-md:row-start-1 max-md:flex max-md:min-w-0 max-md:flex-col max-md:items-center max-md:justify-center max-md:text-center max-md:pointer-events-none";
+
+/** Class added to the primary action on phones: an icon-only 44px filled circle (see globals.css). */
+export const PHONE_PRIMARY_CLASS = "phone-icon-action";
+
+/** Title on phones: system scale (iOS headline is 17pt semibold; text-base is the nearest step), one line. */
+export const PHONE_BAR_TITLE =
+  "max-md:max-w-full max-md:text-base max-md:font-semibold max-md:tracking-normal max-md:truncate max-md:text-center";
+
+/** Subtitle line under the title on phones (muted, one line, ellipsis). text-xs = 12px, the system caption step. */
+export const PHONE_BAR_SUBTITLE = "max-md:mt-0 max-md:w-full max-md:truncate max-md:text-center max-md:text-xs";
+
+/** Right slot on phones: ONE glass capsule (pill, 44px high, no padding) in the third grid column. Its width
+ * is capped at 9.5rem (three 44px circles) and it scrolls inside that cap, so it never runs past the right edge. */
+export const PHONE_BAR_RIGHT =
+  "glass-capsule max-md:col-start-3 max-md:row-start-1 max-md:flex max-md:h-11 max-md:max-w-[9.5rem] max-md:min-w-0 max-md:shrink-0 max-md:flex-nowrap max-md:items-center max-md:justify-self-end max-md:gap-0 max-md:overflow-x-auto max-md:rounded-full max-md:p-0";
 
 /**
  * Turn the page's ORIGINAL desktop h1 classes into md+ classes so the desktop heading is
@@ -54,12 +87,43 @@ export function desktopClasses(original: string): string {
   return cn(out.join(" "));
 }
 
+/** The primary action is the last visible (not max-md:hidden) child of the actions. Returns the children with
+ * that one gaining an aria-label (its visible text, if none was set) and the icon-only phone class. */
+export function withPhonePrimary(actions: React.ReactNode): React.ReactNode {
+  const items = React.Children.toArray(actions);
+  let idx = -1;
+  items.forEach((c, i) => {
+    if (!React.isValidElement(c) || c.type === React.Fragment) return;
+    const cn0 = String((c.props as { className?: string }).className ?? "");
+    if (!cn0.includes("max-md:hidden")) idx = i;
+  });
+  if (idx < 0) return actions;
+  return items.map((c, i) => {
+    if (i !== idx || !React.isValidElement(c) || c.type === React.Fragment) return c;
+    const p = c.props as { className?: string; "aria-label"?: string; children?: React.ReactNode };
+    const label = p["aria-label"] ?? textOf(p.children);
+    return React.cloneElement(c as React.ReactElement<{ className?: string; "aria-label"?: string }>, {
+      "aria-label": label || undefined,
+      className: cn(p.className, PHONE_PRIMARY_CLASS),
+    });
+  });
+}
+
+/** Visible text of a node (strings and nested children; icons contribute nothing). */
+function textOf(node: React.ReactNode): string {
+  if (node == null || typeof node === "boolean") return "";
+  if (typeof node === "string" || typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(textOf).join("");
+  if (React.isValidElement(node)) return textOf((node.props as { children?: React.ReactNode }).children);
+  return "";
+}
+
 /**
- * Page header. Below md (native): big title (28/800) left + the page's ONE primary action
- * right, subtitle hidden, every secondary action in a "⋯" overflow menu (44px targets).
- * At md+ it renders exactly the page's original markup: the original classes are passed in
- * (`className`, `titleClassName`, `subtitleClassName`, `actionsClassName`) and re-emitted
- * with `md:` prefixes.
+ * Page header. Below md (native): one glass top bar (PHONE_BAR): [left 44px circle back | lead |
+ * spacer] [title centred, subtitle under it] [ONE glass capsule holding the actions and the ⋯
+ * overflow menu]. Subtitle shows on phones too. At md+ it renders the page's original markup:
+ * the original classes (`className`, `titleClassName`, `subtitleClassName`, `actionsClassName`)
+ * are re-emitted with `md:` prefixes; every phone class is max-md only.
  *
  * `actions` is the page's original action node(s). Secondary buttons inside it must carry
  * HEADER_DESKTOP_ONLY and have a matching entry in `overflow`; the primary stays visible.
@@ -104,70 +168,48 @@ export function PageHeader({
     <h1
       data-slot="page-header-title"
       className={cn(
-        "text-[28px]/9 font-extrabold tracking-tight max-md:flex max-md:items-center max-md:gap-2",
+        "text-3xl/9 font-bold tracking-tight",
         noTracking && "md:tracking-normal",
         desktopClasses(titleClassName),
-        backHref && PHONE_TITLE_ISLAND,
+        PHONE_BAR_TITLE,
       )}
     >
       {title}
     </h1>
   );
-  // Title only: emit just the h1 so the page's DOM stays exactly as it was.
-  if (!subtitle && !belowTitle && !lead && !hasRight && !className && !backHref) return h1;
   const titleBlock = (
-    <div className={cn(!lead && "max-md:min-w-0", !lead && hasRight && "max-md:flex-1", backHref && "max-md:contents")} data-slot="page-header-title-block">
+    <div data-slot="page-header-title-block" className={PHONE_BAR_CENTER}>
       {h1}
       {subtitle ? (
-        <p data-slot="page-header-subtitle" className={cn("hidden md:block", subtitleClassName)}>
+        <p data-slot="page-header-subtitle" className={cn("block", subtitleClassName, PHONE_BAR_SUBTITLE)}>
           {subtitle}
         </p>
       ) : null}
       {belowTitle}
     </div>
   );
-  const heading = lead ? (
-    <div className={cn(leadClassName, "max-md:min-w-0", hasRight && "max-md:flex-1", backHref && "max-md:contents")}>
-      {lead}
-      {titleBlock}
-    </div>
-  ) : (
-    titleBlock
-  );
-  const headingWithBack = backHref ? (
-    <div className={cn(leadClassName, "max-md:min-w-0", hasRight && "max-md:flex-1", "max-md:contents")}>
-      <BackButton href={backHref} label={backLabel} className="justify-self-start" />
-      {heading}
-    </div>
-  ) : (
-    heading
-  );
-  if (backHref) {
-    return (
-      <div data-slot="page-header" className={cn(className, PHONE_HEADER_ROW)}>
-        {headingWithBack}
-        {hasRight ? (
-          <div data-slot="page-header-actions" className={cn(actionsClassName, "max-md:col-start-3 max-md:justify-self-end max-md:shrink-0 max-md:flex-nowrap max-md:gap-2")}>
-            {overflow && overflow.length > 0 ? <OverflowMenu items={overflow} /> : null}
-            {actions}
-          </div>
-        ) : null}
-      </div>
-    );
-  }
-  if (!hasRight) {
-    return className ? <div className={className}>{headingWithBack}</div> : headingWithBack;
-  }
+  const hasLeft = !!backHref || !!lead;
+  const phoneActions = withPhonePrimary(actions);
   return (
-    <div
-      data-slot="page-header"
-      className={cn(className, "max-md:flex max-md:flex-row max-md:flex-nowrap max-md:items-center max-md:justify-between max-md:gap-3")}
-    >
-      {headingWithBack}
-      <div data-slot="page-header-actions" className={cn(actionsClassName, "max-md:w-auto max-md:shrink-0 max-md:flex-nowrap max-md:gap-2")}>
-        {overflow && overflow.length > 0 ? <OverflowMenu items={overflow} /> : null}
-        {actions}
-      </div>
+    <div data-slot="page-header" className={cn(className, PHONE_BAR)}>
+      {hasLeft ? (
+        <div className={cn(leadClassName, "max-md:contents")}>
+          {backHref ? <BackButton href={backHref} label={backLabel} className="justify-self-start" /> : null}
+          {lead}
+          {titleBlock}
+        </div>
+      ) : (
+        <>
+          <span aria-hidden data-slot="page-header-spacer" className={PHONE_BAR_SIDE} />
+          {titleBlock}
+        </>
+      )}
+      {hasRight ? (
+        <div data-slot="page-header-actions" className={cn(actionsClassName, PHONE_BAR_RIGHT)}>
+          {overflow && overflow.length > 0 ? <OverflowMenu items={overflow} /> : null}
+          {phoneActions}
+        </div>
+      ) : null}
     </div>
   );
 }

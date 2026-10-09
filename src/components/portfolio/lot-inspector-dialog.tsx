@@ -312,7 +312,7 @@ export function LotInspectorDialog({
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={showMatrix ? "sm:max-w-[97vw] w-[97vw] h-[95vh] max-h-[95vh] flex flex-col overflow-hidden overflow-y-hidden" : "sm:max-w-2xl"}>
+      <DialogContent className={showMatrix ? "sm:max-w-[97vw] w-[97vw] h-[95dvh] max-h-[95dvh] flex flex-col overflow-hidden overflow-y-hidden" : "sm:max-w-2xl"}>
         <DialogHeader>
           <DialogTitle className="text-base">
             Lot inspector
@@ -424,7 +424,7 @@ export function LotInspectorDialog({
               than a lot holds opens a short for the overflow.
             </p>
 
-            <div className="space-y-1.5 max-h-[40vh] overflow-y-auto">
+            <div className="space-y-1.5 max-h-[40dvh] overflow-y-auto">
               {openLongLots.length === 0 && (
                 <p className="text-xs text-muted-foreground">
                   No open long lots available — the closure will open a short.
@@ -510,7 +510,7 @@ export function LotInspectorDialog({
         )}
 
         {!loading && !error && editTxId == null && !showMatrix && lots.length > 0 && (
-          <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+          <div className="space-y-3 max-h-[60dvh] overflow-y-auto">
             {lots.map((lot) => {
               const lotClosures = closuresByLot.get(lot.id) ?? [];
               return (
@@ -521,15 +521,15 @@ export function LotInspectorDialog({
                   <div className="flex flex-wrap items-center justify-between gap-2 bg-muted/40 px-3 py-2">
                     <div className="flex items-center gap-2 text-sm">
                       <span className="font-medium">Lot #{lot.id}</span>
-                      <Badge variant="outline" className="text-[10px]">
+                      <Badge variant="outline" className="text-xs">
                         {lot.side}
                       </Badge>
-                      <Badge variant="secondary" className="text-[10px]">
+                      <Badge variant="secondary" className="text-xs">
                         {lot.origin}
                       </Badge>
                       <Badge
                         variant="outline"
-                        className={`text-[10px] ${lot.status === "open" ? "border-pos text-pos" : ""}`}
+                        className={`text-xs ${lot.status === "open" ? "border-pos text-pos" : ""}`}
                       >
                         {lot.status}
                       </Badge>
@@ -579,7 +579,7 @@ export function LotInspectorDialog({
                             {c.closeKind === "sell" && (
                               <button
                                 type="button"
-                                className="text-[11px] text-primary underline-offset-2 hover:underline"
+                                className="text-xs text-primary underline-offset-2 hover:underline"
                                 onClick={() => startEdit(c.closeTxId)}
                               >
                                 Edit allocation

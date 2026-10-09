@@ -15,17 +15,18 @@ afterEach(cleanup);
 const cls = (el: HTMLElement) => el.className.split(/\s+/);
 
 describe("PageHeader: mobile title", () => {
-  it("renders an h1 with the native 28/800 title below md", () => {
+  it("renders an h1 with the native 30/700 title (text-3xl) below md", () => {
     render(<PageHeader title="Accounts" />);
     const h1 = screen.getByRole("heading", { level: 1, name: "Accounts" });
-    expect(cls(h1)).toContain("text-[28px]/9");
-    expect(cls(h1)).toContain("font-extrabold");
+    expect(cls(h1)).toContain("text-3xl/9");
+    expect(cls(h1)).toContain("font-bold");
   });
 
-  it("hides the subtitle below md and keeps its original classes at md+", () => {
+  it("shows the subtitle on phones in the bar (muted, one line) and keeps its original classes at md+", () => {
     render(<PageHeader title="Budgets" subtitle="Set limits" subtitleClassName="text-sm text-muted-foreground mt-0.5" />);
     const sub = screen.getByText("Set limits");
-    expect(cls(sub)).toEqual(expect.arrayContaining(["hidden", "md:block", "text-sm", "text-muted-foreground", "mt-0.5"]));
+    expect(cls(sub)).toEqual(expect.arrayContaining(["block", "max-md:text-xs", "max-md:truncate", "text-sm", "text-muted-foreground", "mt-0.5"]));
+    expect(cls(sub)).not.toContain("hidden");
   });
 });
 
@@ -61,9 +62,19 @@ describe("PageHeader: desktop classes unchanged (md: variants)", () => {
     expect(c.some((t) => t.startsWith("md:font-"))).toBe(true);
   });
 
-  it("emits just the h1 when there is nothing else (no extra wrapper)", () => {
+  it("title only: one glass sticky phone bar (grid), empty left spacer, title in the middle column", () => {
     const { container } = render(<PageHeader title="Solo" />);
-    expect(container.firstElementChild?.tagName).toBe("H1");
+    const wrap = container.firstElementChild as HTMLElement;
+    expect(wrap.tagName).toBe("DIV");
+    expect(wrap.getAttribute("data-slot")).toBe("page-header");
+    expect(wrap.querySelector('[data-slot="page-header-actions"]')).toBeNull();
+    const spacer = wrap.querySelector('[data-slot="page-header-spacer"]');
+    expect(spacer?.textContent).toBe("");
+    expect(cls(wrap)).toEqual(expect.arrayContaining(["glass-bar", "sticky", "max-md:-mx-4"]));
+    const block = wrap.querySelector('[data-slot="page-header-title-block"]') as HTMLElement;
+    expect(cls(block)).toEqual(expect.arrayContaining(["max-md:col-start-2", "max-md:min-w-0", "max-md:pointer-events-none"]));
+    expect(cls(block)).not.toContain("max-md:absolute");
+    expect(block.firstElementChild?.tagName).toBe("H1");
   });
 
   it("applies the original wrapper + actions classes verbatim", () => {

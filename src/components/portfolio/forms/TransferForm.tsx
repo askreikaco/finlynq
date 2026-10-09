@@ -14,18 +14,9 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -42,9 +33,13 @@ import { useSeedAccountFromParam } from "@/lib/hooks/useSeedAccountFromParam";
 import { AmountInput } from "@/components/amount-input";
 import { getDisplayLocale } from "@/lib/locale";
 
+import { OpFooter, OpGroup, OpNote, OpPage, OpRow, OP_INPUT, OP_SELECT, safeReturnHref } from "./op-page";
+
 export default function TransferForm() {
   const router = useRouter();
   const { editId, isEdit } = useEditId();
+  const searchParams = useSearchParams();
+  const returnHref = safeReturnHref(searchParams.get("returnTo"));
 
   const { accounts, holdings, loading, loadError, editData } =
     usePortfolioFormData({ editId, opType: "transfer" });
@@ -197,7 +192,7 @@ export default function TransferForm() {
         }
         return;
       }
-      router.push("/transactions");
+      router.push(returnHref);
     } catch (err: unknown) {
       setSubmitError(err instanceof Error ? err.message : "Save failed");
     } finally {
@@ -207,254 +202,187 @@ export default function TransferForm() {
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="py-8 text-sm text-muted-foreground">
-          Loading…
-        </CardContent>
-      </Card>
+      <OpPage title={isEdit ? "Edit In-kind transfer" : "In-kind transfer"}>
+        <OpGroup>
+          <OpNote>Loading…</OpNote>
+        </OpGroup>
+      </OpPage>
     );
   }
   if (loadError) {
     return (
-      <Card>
-        <CardContent className="py-8 text-sm text-destructive">
-          {loadError}
-        </CardContent>
-      </Card>
+      <OpPage title={isEdit ? "Edit In-kind transfer" : "In-kind transfer"}>
+        <OpGroup>
+          <OpNote tone="destructive">{loadError}</OpNote>
+        </OpGroup>
+      </OpPage>
     );
   }
   if (investmentAccounts.length < 2) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Need two investment accounts</CardTitle>
-          <CardDescription>
+      <OpPage title="In-kind transfer">
+        <OpGroup>
+          <OpNote>
             In-kind transfers require two investment accounts. You currently have{" "}
             {investmentAccounts.length}.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Link href="/accounts" className="text-sm text-primary underline">
+          </OpNote>
+          <Link href="/accounts" className="block px-4 py-3 text-sm text-primary">
             Go to Accounts →
           </Link>
-        </CardContent>
-      </Card>
+        </OpGroup>
+      </OpPage>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
-          {isEdit ? "Edit In-kind transfer" : "In-kind transfer"}
-        </CardTitle>
-        <CardDescription>
-          Move shares of a single holding between two investment accounts. No
-          cash leg — qty leaves the source and arrives in the destination at the
-          same lot cost basis.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>Source account</Label>
-              <Select
-                items={sourceAccountLabelById}
-                value={sourceAccountId}
-                onValueChange={(v) => {
-                  setSourceAccountId(v ?? "");
-                  setHoldingId("");
-                  if (v === destAccountId) setDestAccountId("");
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Pick source" />
-                </SelectTrigger>
-                <SelectContent alignItemWithTrigger={false} side="bottom">
-                  {investmentAccounts.map((a) => (
-                    <SelectItem key={a.id} value={String(a.id)}>
-                      {a.name ?? `#${a.id}`} ({a.currency})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.sourceAccountId && (
-                <p className="text-xs text-destructive">
-                  {errors.sourceAccountId}
-                </p>
-              )}
-            </div>
-            <div className="space-y-1.5">
-              <Label>Destination account</Label>
-              <Select
-                items={destAccountLabelById}
-                value={destAccountId}
-                onValueChange={(v) => setDestAccountId(v ?? "")}
-                disabled={!sourceAccountId}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Pick destination" />
-                </SelectTrigger>
-                <SelectContent alignItemWithTrigger={false} side="bottom">
-                  {destAccountOptions.map((a) => (
-                    <SelectItem key={a.id} value={String(a.id)}>
-                      {a.name ?? `#${a.id}`} ({a.currency})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.destAccountId && (
-                <p className="text-xs text-destructive">
-                  {errors.destAccountId}
-                </p>
-              )}
-              <p className="text-xs text-muted-foreground">
-                Make sure the destination account is already paired with the
-                holding you pick below.
-              </p>
-            </div>
-          </div>
+    <OpPage
+      title={isEdit ? "Edit In-kind transfer" : "In-kind transfer"}
+      saveLabel={isEdit ? "Save" : "Record"}
+      saving={submitting}
+      saveDisabled={submitting || !!loadError}
+      onSubmit={handleSubmit}
+    >
+      <OpGroup label="Accounts">
+        <OpRow label="From" error={errors.sourceAccountId}>
+          <Select
+            items={sourceAccountLabelById}
+            value={sourceAccountId}
+            onValueChange={(v) => {
+              setSourceAccountId(v ?? "");
+              setHoldingId("");
+              if (v === destAccountId) setDestAccountId("");
+            }}
+          >
+            <SelectTrigger className={OP_SELECT}>
+              <SelectValue placeholder="Pick source" />
+            </SelectTrigger>
+            <SelectContent alignItemWithTrigger={false} side="bottom">
+              {investmentAccounts.map((a) => (
+                <SelectItem key={a.id} value={String(a.id)}>
+                  {a.name ?? `#${a.id}`} ({a.currency})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </OpRow>
+        <OpRow label="To" error={errors.destAccountId}>
+          <Select
+            items={destAccountLabelById}
+            value={destAccountId}
+            onValueChange={(v) => setDestAccountId(v ?? "")}
+            disabled={!sourceAccountId}
+          >
+            <SelectTrigger className={OP_SELECT}>
+              <SelectValue placeholder="Pick destination" />
+            </SelectTrigger>
+            <SelectContent alignItemWithTrigger={false} side="bottom">
+              {destAccountOptions.map((a) => (
+                <SelectItem key={a.id} value={String(a.id)}>
+                  {a.name ?? `#${a.id}`} ({a.currency})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </OpRow>
+      </OpGroup>
+      <OpFooter>
+        Make sure the destination account is already paired with the holding you pick below.
+      </OpFooter>
 
-          <div className="space-y-1.5">
-            <Label>Holding (from source account)</Label>
-            <Select
-              items={holdingLabelById}
-              value={holdingId}
-              onValueChange={(v) => setHoldingId(v ?? "")}
-              disabled={!sourceAccount}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue
-                  placeholder={
-                    sourceAccount
-                      ? sourceHoldings.length === 0
-                        ? "No non-cash holdings in source"
-                        : "Pick a holding"
-                      : "Pick source account first"
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent alignItemWithTrigger={false} side="bottom">
-                {sourceHoldings.map((h) => (
-                  <SelectItem key={h.id} value={String(h.id)}>
-                    {h.symbol ? `${h.symbol} — ` : ""}
-                    {h.name ?? `#${h.id}`} ({h.currency})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.holdingId && (
-              <p className="text-xs text-destructive">{errors.holdingId}</p>
-            )}
-            {selectedHolding && (
-              <p className="text-xs text-muted-foreground">
-                Source has {Number(selectedHolding.currentShares ?? 0).toLocaleString(getDisplayLocale())} shares available.
-              </p>
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>Quantity</Label>
-              <AmountInput
-                step="any"
-                inputMode="decimal"
-                value={qty}
-                onValueChange={(nv) => setQty(nv)}
-                placeholder="50"
+      <OpGroup label="Shares">
+        <OpRow label="Holding" error={errors.holdingId}>
+          <Select
+            items={holdingLabelById}
+            value={holdingId}
+            onValueChange={(v) => setHoldingId(v ?? "")}
+            disabled={!sourceAccount}
+          >
+            <SelectTrigger className={OP_SELECT}>
+              <SelectValue
+                placeholder={
+                  sourceAccount
+                    ? sourceHoldings.length === 0
+                      ? "No non-cash holdings in source"
+                      : "Pick a holding"
+                    : "Pick source account first"
+                }
               />
-              {errors.qty && (
-                <p className="text-xs text-destructive">{errors.qty}</p>
-              )}
-            </div>
-            <div className="space-y-1.5">
-              <Label>Date</Label>
-              <Input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-              />
-              {errors.date && (
-                <p className="text-xs text-destructive">{errors.date}</p>
-              )}
-            </div>
-          </div>
+            </SelectTrigger>
+            <SelectContent alignItemWithTrigger={false} side="bottom">
+              {sourceHoldings.map((h) => (
+                <SelectItem key={h.id} value={String(h.id)}>
+                  {h.symbol ? `${h.symbol} — ` : ""}
+                  {h.name ?? `#${h.id}`} ({h.currency})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </OpRow>
+        <OpRow label="Quantity" error={errors.qty}>
+          <AmountInput
+            step="any"
+            inputMode="decimal"
+            value={qty}
+            onValueChange={(nv) => setQty(nv)}
+            placeholder="50"
+            className={OP_INPUT}
+          />
+        </OpRow>
+        <OpRow label="Date" error={errors.date}>
+          <Input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className={OP_INPUT}
+          />
+        </OpRow>
+      </OpGroup>
+      {selectedHolding && (
+        <OpFooter>
+          Source has {Number(selectedHolding.currentShares ?? 0).toLocaleString(getDisplayLocale())}{" "}
+          shares available.
+        </OpFooter>
+      )}
 
-          <div className="space-y-1.5">
-            <Label>
-              Payee{" "}
-              <span className="text-muted-foreground text-xs">(optional)</span>
-            </Label>
-            <Input
-              value={payee}
-              onChange={(e) => setPayee(e.target.value)}
-              placeholder="e.g. ACATS transfer"
-            />
-          </div>
+      <OpGroup label="Details">
+        <OpRow label="Payee">
+          <Input
+            value={payee}
+            onChange={(e) => setPayee(e.target.value)}
+            placeholder="e.g. ACATS transfer"
+            className={OP_INPUT}
+          />
+        </OpRow>
+        <OpRow label="Note">
+          <Input
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Optional"
+            className={OP_INPUT}
+          />
+        </OpRow>
+      </OpGroup>
 
-          <div className="space-y-1.5">
-            <Label>
-              Note{" "}
-              <span className="text-muted-foreground text-xs">(optional)</span>
-            </Label>
-            <Input
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder=""
-            />
-          </div>
+      {submitError && (
+        <OpGroup>
+          <OpNote tone="destructive">{submitError}</OpNote>
+        </OpGroup>
+      )}
 
-          {submitError && (
-            <p className="text-sm text-destructive">{submitError}</p>
-          )}
-
-          {blockingClosureTxIds.length > 0 && (
-            <div className="rounded-md border border-warning/30 bg-warning/10 p-3 text-xs">
-              <p className="font-medium text-warning mb-1.5">
-                Delete these dependent transactions first:
-              </p>
-              <ul className="space-y-1">
-                {blockingClosureTxIds.map((id) => (
-                  <li key={id}>
-                    <Link
-                      href={buildTxDrillUrl({ id: String(id) })}
-                      className="text-warning underline hover:no-underline"
-                    >
-                      Transaction #{id}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          <div className="flex gap-2 pt-1">
-            <Button
-              type="button"
-              variant="outline"
-              className="flex-1"
-              onClick={() => router.push("/portfolio/new")}
-              disabled={submitting}
+      {blockingClosureTxIds.length > 0 && (
+        <OpGroup label="Blocked by">
+          <OpNote tone="warning">Delete these dependent transactions first:</OpNote>
+          {blockingClosureTxIds.map((id) => (
+            <Link
+              key={id}
+              href={buildTxDrillUrl({ id: String(id) })}
+              className="block px-4 py-3 text-sm text-warning underline hover:no-underline"
             >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              className="flex-1"
-              disabled={submitting || !!loadError}
-            >
-              {submitting
-                ? isEdit
-                  ? "Saving…"
-                  : "Recording…"
-                : isEdit
-                  ? "Save edit"
-                  : "Record transfer"}
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+              Transaction #{id}
+            </Link>
+          ))}
+        </OpGroup>
+      )}
+    </OpPage>
   );
 }

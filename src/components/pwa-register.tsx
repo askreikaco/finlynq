@@ -10,6 +10,8 @@ import { useEffect } from "react";
  */
 export function PwaRegister() {
   useEffect(() => {
+    // Service worker is only built in production (next.config.ts withSerwist). Skip in dev to avoid registration errors.
+    if (process.env.NODE_ENV !== "production") return;
     if (typeof window === "undefined" || !("serviceWorker" in navigator)) {
       return;
     }

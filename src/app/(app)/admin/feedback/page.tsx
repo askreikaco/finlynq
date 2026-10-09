@@ -23,7 +23,7 @@ import { MessageCircle, Paperclip, X } from "lucide-react";
 import { FeedbackAttachmentView } from "@/components/feedback/attachment-view";
 import { validateFeedbackAttachment } from "@/lib/feedback/attachment";
 import type { FeedbackMessage, FeedbackThread } from "@shared/types";
-import { PageHeader } from "@/components/mobile";
+import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
 
 function fmtBytes(n: number): string {
   if (n < 1024) return `${n} B`;
@@ -91,7 +91,7 @@ function Bubble({
       >
         {body}
       </div>
-      <span className="mt-1 text-[10px] text-muted-foreground">
+      <span className="mt-1 text-xs text-muted-foreground">
         {label} · {fmt(at)}
       </span>
     </div>
@@ -384,12 +384,14 @@ export default function AdminFeedbackPage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <div className="mb-6 flex items-center gap-2">
-        <MessageCircle className="h-5 w-5 text-primary" />
-        <PageHeader title="User feedback" titleClassName="text-2xl font-bold tracking-tight" />
-      </div>
+      <PageHeader
+        lead={<MessageCircle className={`h-5 w-5 text-primary ${HEADER_DESKTOP_ONLY}`} />}
+        leadClassName="flex items-center gap-2"
+        title="User feedback"
+        titleClassName="text-2xl font-bold tracking-tight"
+      />
 
-      <div className="mb-4 flex flex-wrap gap-2">
+      <div className="mt-6 mb-4 flex flex-wrap gap-2">
         {FILTERS.map((f) => (
           <button
             key={f}

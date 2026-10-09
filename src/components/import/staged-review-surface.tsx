@@ -1154,7 +1154,7 @@ export function StagedReviewSurface({
 
   // Two-pane reconciliation view — batch open.
   return (
-    <div className="space-y-4 flex flex-col md:h-[calc(100dvh-8rem)]">
+    <div className="flex flex-col gap-4 md:h-[calc(100dvh-8rem)]">
       <ReconcileHeader
         detail={detail}
         accountId={accountId}
@@ -1298,7 +1298,7 @@ export function StagedReviewSurface({
             <div className="flex flex-wrap items-center justify-between gap-2 px-1 pb-2">
               <MatchStatusLegend />
               <div className="flex items-center gap-2">
-                <span className="text-[11px] text-muted-foreground">
+                <span className="text-xs text-muted-foreground">
                   {unmatchedCounts.onlyFile} new · {unmatchedCounts.onlyLedger} only in ledger
                 </span>
                 <Button

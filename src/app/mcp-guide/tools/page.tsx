@@ -326,18 +326,18 @@ function ToolRow({
           {tool.name}
         </code>
         <span
-          className={`text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded ring-1 ${categoryBadge.badgeClass}`}
+          className={`text-xs font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded ring-1 ${categoryBadge.badgeClass}`}
         >
           {categoryBadge.label}
         </span>
-        <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground border border-border rounded px-1.5 py-0.5">
+        <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground border border-border rounded px-1.5 py-0.5">
           {TRANSPORT_LABEL[tool.transport]}
         </span>
-        <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground border border-border rounded px-1.5 py-0.5">
+        <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground border border-border rounded px-1.5 py-0.5">
           scope: {tool.requiresWriteScope ? "mcp:write" : "mcp:read"}
         </span>
         {tool.deprecated ? (
-          <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-warning/15 text-warning ring-1 ring-warning/30">
+          <span className="text-xs font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-warning/15 text-warning ring-1 ring-warning/30">
             Deprecated
           </span>
         ) : null}

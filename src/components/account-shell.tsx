@@ -71,7 +71,7 @@ export function AccountShell({
                 role="tab"
                 aria-selected={isActive}
                 className={cn(
-                  "pb-3 text-sm font-medium transition-colors border-b-2 -mb-[2px]",
+                  "pb-3 text-sm font-medium transition-colors border-b-2 -mb-[2px] max-md:flex max-md:min-h-11 max-md:min-w-11 max-md:items-end max-md:justify-center",
                   isActive
                     ? "text-foreground border-b-primary"
                     : "text-muted-foreground border-b-transparent hover:text-foreground"

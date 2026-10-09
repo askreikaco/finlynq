@@ -84,7 +84,7 @@ export default function ReleasesIndexPage() {
               <p className="mt-2 text-xs font-mono uppercase tracking-wider text-muted-foreground">
                 {fmtDate(release.date)}
               </p>
-              <p className="mt-4 text-[15px] leading-relaxed text-foreground/90">
+              <p className="mt-4 text-sm leading-relaxed text-foreground/90">
                 {release.tagline}
               </p>
               <p className="mt-4">

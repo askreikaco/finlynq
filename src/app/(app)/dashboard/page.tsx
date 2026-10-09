@@ -533,7 +533,7 @@ export default function DashboardPage() {
       {/* ============================================
           HEADER — Greeting + Customize + Profile hint
           ============================================ */}
-      <motion.div variants={itemVariants}>
+      <motion.div variants={itemVariants} className="contents">
         <PageHeader
           className="flex flex-wrap items-center justify-between gap-3"
           title={greeting}

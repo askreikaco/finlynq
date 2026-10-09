@@ -21,7 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { DataTable, type DataTableColumn, type SortDir } from "@/components/ui/data-table";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Database, RefreshCw, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
-import { PageHeader } from "@/components/mobile";
+import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
 
 type Tab = "price" | "fx";
 
@@ -88,17 +88,17 @@ function ago(iso: string): string {
 function Freshness({ row, today }: { row: Row; today: string }) {
   if (row.date !== today) {
     return (
-      <Badge variant="outline" className="text-[10px] bg-muted text-muted-foreground">
+      <Badge variant="outline" className="text-xs bg-muted text-muted-foreground">
         Cached
       </Badge>
     );
   }
   return row.stale ? (
-    <Badge variant="outline" className="text-[10px] bg-warning/15 text-warning border-warning/30">
+    <Badge variant="outline" className="text-xs bg-warning/15 text-warning border-warning/30">
       Stale
     </Badge>
   ) : (
-    <Badge variant="outline" className="text-[10px] bg-pos/15 text-pos border-pos/30">
+    <Badge variant="outline" className="text-xs bg-pos/15 text-pos border-pos/30">
       Fresh
     </Badge>
   );
@@ -286,24 +286,25 @@ export default function AdminPriceCachePage() {
 
   return (
     <div className="max-w-7xl space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <Database className="h-5 w-5 text-primary" />
-            <PageHeader title="Rate Cache" titleClassName="text-2xl font-bold tracking-tight" />
-          </div>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Read-only view of the server-side <code className="text-xs">price_cache</code> and{" "}
-            <code className="text-xs">fx_rates</code> tables. Today-dated rows past the 30-min TTL show as{" "}
-            <span className="text-warning">Stale</span> (re-fetched on next read); historical rows are{" "}
-            <span className="text-muted-foreground">Cached</span> (immutable).
-          </p>
-        </div>
-        <Button variant="outline" size="sm" onClick={load} disabled={loading}>
-          <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? "animate-spin" : ""}`} />
-          Refresh
-        </Button>
-      </div>
+      <PageHeader
+        className="flex items-start justify-between gap-4"
+        lead={<Database className={`h-5 w-5 text-primary ${HEADER_DESKTOP_ONLY}`} />}
+        leadClassName="flex items-center gap-2"
+        title="Rate Cache"
+        titleClassName="text-2xl font-bold tracking-tight"
+        actions={
+          <Button variant="outline" size="sm" onClick={load} disabled={loading}>
+            <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        }
+      />
+      <p className="text-sm text-muted-foreground mt-0.5">
+        Read-only view of the server-side <code className="text-xs">price_cache</code> and{" "}
+        <code className="text-xs">fx_rates</code> tables. Today-dated rows past the 30-min TTL show as{" "}
+        <span className="text-warning">Stale</span> (re-fetched on next read); historical rows are{" "}
+        <span className="text-muted-foreground">Cached</span> (immutable).
+      </p>
 
       {/* Tabs */}
       <div className="flex items-center gap-1.5">
@@ -509,7 +510,7 @@ export default function AdminPriceCachePage() {
 function Stat({ label, value, warn }: { label: string; value: string; warn?: boolean }) {
   return (
     <div className="flex flex-col">
-      <span className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</span>
+      <span className="text-xs uppercase tracking-wider text-muted-foreground">{label}</span>
       <span className={`text-sm font-semibold tabular-nums ${warn ? "text-warning" : ""}`}>{value}</span>
     </div>
   );

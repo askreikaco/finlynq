@@ -8,7 +8,7 @@
  *
  * - md+ : vertical left nav (~220px) + content slot.
  * - <md, nav v2 on (hubBackHref set): iOS multi-level menu. /settings is the hub list;
- *   detail pages get one glass header row (round back + title island), no pill strip.
+ *   detail pages get one glass top bar (round back + centred title), no pill strip.
  * - <md, nav v2 off: horizontal scrollable pill row above the content (unchanged).
  *
  * Active state mirrors the global app sidebar idiom (`pf-app/src/components/nav.tsx`):
@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 import { getEntriesBySurface, ALIASES } from "@/lib/nav-config";
 import { BackButton } from "@/components/mobile/back-button";
+import { PHONE_BAR, PHONE_BAR_CENTER, PHONE_BAR_TITLE } from "@/components/mobile/page-header";
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
 
@@ -145,7 +146,7 @@ export function SettingsShell({ children, hubBackHref }: { children: React.React
           className="hidden md:block w-56 shrink-0"
         >
           <div className="sticky top-[calc(1.5rem+var(--sat))]">
-            <p className="px-3 mb-2 text-[10px] font-semibold tracking-widest uppercase text-muted-foreground">
+            <p className="px-3 mb-2 text-xs font-semibold tracking-widest uppercase text-muted-foreground">
               Settings
             </p>
             <nav className="space-y-0.5">
@@ -157,7 +158,7 @@ export function SettingsShell({ children, hubBackHref }: { children: React.React
                     href={item.href}
                     aria-current={isActive ? "page" : undefined}
                     className={cn(
-                      "group/link relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-200",
+                      "group/link relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200",
                       isActive
                         ? "bg-white/[0.08] text-foreground"
                         : "text-muted-foreground hover:bg-white/[0.05] hover:text-foreground"
@@ -182,30 +183,33 @@ export function SettingsShell({ children, hubBackHref }: { children: React.React
       )}
 
       {/* Content slot — `min-w-0` lets the flex item shrink below intrinsic
-          content width; `overflow-x-auto` makes wide tables (issue #88)
-          scroll inside the slot instead of pushing the page wider. */}
+          content width. `overflow-x-clip` (not overflow-x-auto, which forces overflow-y to auto and makes this
+          box the scroller, so sticky PageHeaders inside would never pin) keeps wide content inside the slot;
+          wide tables scroll in their own ui/table container (issue #88). */}
       <div
         className={cn(
           "flex-1 min-w-0",
-          // Detail pages: the glass title island above is the visible title on phones; the page h1 stays for a11y.
-          showDetailHeader && "max-md:[&_[data-slot=page-header-title]]:sr-only"
+          // Detail pages: the glass back row above is the sticky header on phones. The page's own PageHeader
+          // row is then not a second sticky bar: its h1 is sr-only (a11y) and the row collapses to static, 0 height,
+          // no border. Specificity of these arbitrary variants (0,2,x) beats PHONE_HEADER_STICKY's single class.
+          showDetailHeader &&
+            "max-md:[&_[data-slot=page-header-title]]:sr-only max-md:[&_[data-slot=page-header-subtitle]]:hidden max-md:[&_[data-slot=page-header]]:static max-md:[&_[data-slot=page-header]]:min-h-0 max-md:[&_[data-slot=page-header]]:border-0"
         )}
         data-slot="settings-content"
       >
         {/* Not inside the overflow container below: sticky needs a non-overflow ancestor. */}
         {showDetailHeader && (
-          // Phones: [round glass back | glass title island of the active section]. md+: back button only.
-          <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 max-md:sticky max-md:top-0 max-md:z-10 max-md:bg-background max-md:pt-[var(--sat)]">
+          // Phones: the shared glass top bar (round back | centred active section title). md+: back button only,
+          // static (scrolls away): the page's own PageHeader is the sticky bar on md+, two sticky rows would overlap.
+          <div className={cn(PHONE_BAR, "md:static md:bg-transparent")}>
             <BackButton href={hubBackHref!} label="Back to Settings" className="justify-self-start" />
-            <span
-              aria-hidden
-              className="glass-capsule hidden max-md:block max-md:h-11 max-md:min-w-0 max-md:max-w-[min(60vw,20rem)] max-md:justify-self-center max-md:truncate max-md:rounded-full max-md:px-4 max-md:text-center max-md:text-[15px]/11 max-md:font-semibold"
-            >
+            <span aria-hidden className={cn("hidden", PHONE_BAR_CENTER, PHONE_BAR_TITLE)}>
               {activeLabel}
             </span>
           </div>
         )}
-        <div className="overflow-x-auto">{children}</div>
+        {/* No scroll container here at any breakpoint: the sticky PageHeader inside children pins to the page scroller. */}
+        <div className="overflow-x-clip">{children}</div>
       </div>
     </div>
   );

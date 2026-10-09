@@ -31,8 +31,9 @@ describe("safe-area offsets", () => {
     expect(search).toContain("pb-[var(--sab)]");
     expect(search).not.toContain("safe-area-inset-bottom");
   });
-  it("new transaction header reserves top safe area", () => {
-    expect(newTx).toContain("pt-[var(--sat)]");
+  it("new transaction reserves the top safe area once (fixed root offset, no header pt-[var(--sat)] duplicate)", () => {
+    expect(newTx).toContain("max-md:top-[var(--sat)]");
+    expect(newTx).not.toContain("pt-[var(--sat)]");
   });
   it("bottom-fixed toasts and bars clear the floating tab bar (--mobile-bar-clearance)", () => {
     for (const src of [banner, toast, bulk]) {

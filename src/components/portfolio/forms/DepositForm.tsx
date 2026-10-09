@@ -9,18 +9,9 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -34,9 +25,14 @@ import { usePortfolioFormData } from "@/lib/hooks/usePortfolioFormData";
 import { useSeedAccountFromParam } from "@/lib/hooks/useSeedAccountFromParam";
 import { AmountInput } from "@/components/amount-input";
 
+import { OpGroup, OpNote, OpPage, OpRow, OP_INPUT, OP_SELECT, safeReturnHref } from "./op-page";
+import { NEW_OP_HREF } from "./op-catalog";
+
 export default function DepositForm() {
   const router = useRouter();
   const { editId, isEdit } = useEditId();
+  const searchParams = useSearchParams();
+  const returnHref = safeReturnHref(searchParams.get("returnTo"));
 
   const { accounts, holdings, loading, loadError, editData } =
     usePortfolioFormData({ editId, opType: "deposit" });
@@ -215,7 +211,7 @@ export default function DepositForm() {
         setSubmitError(data.error ?? `Save failed (${res.status})`);
         return;
       }
-      router.push("/transactions");
+      router.push(returnHref);
     } catch (err: unknown) {
       setSubmitError(err instanceof Error ? err.message : "Save failed");
     } finally {
@@ -225,222 +221,171 @@ export default function DepositForm() {
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="py-8 text-sm text-muted-foreground">
-          Loading…
-        </CardContent>
-      </Card>
+      <OpPage title={isEdit ? "Edit Deposit" : "Brokerage deposit"}>
+        <OpGroup>
+          <OpNote>Loading…</OpNote>
+        </OpGroup>
+      </OpPage>
     );
   }
   if (loadError) {
     return (
-      <Card>
-        <CardContent className="py-8 text-sm text-destructive">{loadError}</CardContent>
-      </Card>
+      <OpPage title={isEdit ? "Edit Deposit" : "Brokerage deposit"}>
+        <OpGroup>
+          <OpNote tone="destructive">{loadError}</OpNote>
+        </OpGroup>
+      </OpPage>
     );
   }
   if (investmentAccounts.length === 0 || nonInvestmentAccounts.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Need both account types</CardTitle>
-          <CardDescription>
-            Deposits move cash from a non-investment account into a brokerage
-            cash sleeve. You need at least one of each.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Link href="/accounts" className="text-sm text-primary underline">
+      <OpPage title="Brokerage deposit">
+        <OpGroup>
+          <OpNote>
+            Deposits move cash from a non-investment account into a brokerage cash sleeve. You
+            need at least one of each.
+          </OpNote>
+          <Link href="/accounts" className="block px-4 py-3 text-sm text-primary">
             Go to Accounts →
           </Link>
-        </CardContent>
-      </Card>
+        </OpGroup>
+      </OpPage>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{isEdit ? "Edit Deposit" : "Brokerage deposit"}</CardTitle>
-        <CardDescription>
-          Cash moves from a non-investment account (e.g. chequing) into a
-          brokerage&apos;s cash sleeve. The currency on both sides must match;
-          FX-convert separately if needed.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label>From account (non-investment)</Label>
+    <OpPage
+      title={isEdit ? "Edit Deposit" : "Brokerage deposit"}
+      saveLabel={isEdit ? "Save" : "Record"}
+      saving={submitting}
+      saveDisabled={submitting || currencyMismatch}
+      onSubmit={handleSubmit}
+    >
+      <OpGroup label="Accounts">
+        <OpRow label="From" error={errors.sourceAccountId}>
+          <Select
+            items={sourceAccountLabelById}
+            value={sourceAccountId}
+            onValueChange={(v) => setSourceAccountId(v ?? "")}
+          >
+            <SelectTrigger className={OP_SELECT}>
+              <SelectValue placeholder="Pick a source account" />
+            </SelectTrigger>
+            <SelectContent alignItemWithTrigger={false} side="bottom">
+              {nonInvestmentAccounts.map((a) => (
+                <SelectItem key={a.id} value={String(a.id)}>
+                  {a.name ?? `#${a.id}`} ({a.currency})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </OpRow>
+        <OpRow label="To" error={errors.destAccountId}>
+          <Select
+            items={destAccountLabelById}
+            value={destAccountId}
+            onValueChange={(v) => setDestAccountId(v ?? "")}
+          >
+            <SelectTrigger className={OP_SELECT}>
+              <SelectValue placeholder="Pick an investment account" />
+            </SelectTrigger>
+            <SelectContent alignItemWithTrigger={false} side="bottom">
+              {investmentAccounts.map((a) => (
+                <SelectItem key={a.id} value={String(a.id)}>
+                  {a.name ?? `#${a.id}`} ({a.currency})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </OpRow>
+        {eligibleSleeves.length > 1 && (
+          <OpRow label="Cash sleeve">
             <Select
-              items={sourceAccountLabelById}
-              value={sourceAccountId}
-              onValueChange={(v) => setSourceAccountId(v ?? "")}
+              items={sleeveLabelById}
+              value={destCashSleeveHoldingId}
+              onValueChange={(v) => setDestCashSleeveHoldingId(v ?? "")}
             >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Pick a source account" />
+              <SelectTrigger className={OP_SELECT}>
+                <SelectValue />
               </SelectTrigger>
               <SelectContent alignItemWithTrigger={false} side="bottom">
-                {nonInvestmentAccounts.map((a) => (
-                  <SelectItem key={a.id} value={String(a.id)}>
-                    {a.name ?? `#${a.id}`} ({a.currency})
+                {eligibleSleeves.map((s) => (
+                  <SelectItem key={s.id} value={String(s.id)}>
+                    {s.name ?? `Cash ${s.currency}`}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            {errors.sourceAccountId && (
-              <p className="text-xs text-destructive">{errors.sourceAccountId}</p>
-            )}
-          </div>
+          </OpRow>
+        )}
+      </OpGroup>
 
-          <div className="space-y-1.5">
-            <Label>To brokerage</Label>
-            <Select
-              items={destAccountLabelById}
-              value={destAccountId}
-              onValueChange={(v) => setDestAccountId(v ?? "")}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Pick an investment account" />
-              </SelectTrigger>
-              <SelectContent alignItemWithTrigger={false} side="bottom">
-                {investmentAccounts.map((a) => (
-                  <SelectItem key={a.id} value={String(a.id)}>
-                    {a.name ?? `#${a.id}`} ({a.currency})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.destAccountId && (
-              <p className="text-xs text-destructive">{errors.destAccountId}</p>
-            )}
-          </div>
+      {sourceAcct && destAcct && currencyMismatch && (
+        <OpGroup>
+          <OpNote tone="warning">
+            No {sourceAcct.currency} cash sleeve in this brokerage. Either create a{" "}
+            {sourceAcct.currency} sleeve on the brokerage via its Cash sleeves panel, or{" "}
+            <Link href={`${NEW_OP_HREF}/fx-conversion`} className="underline">
+              FX-convert
+            </Link>{" "}
+            to the destination currency first.
+          </OpNote>
+        </OpGroup>
+      )}
 
-          {sourceAcct && destAcct && currencyMismatch && (
-            <div className="rounded-md border border-warning/30 bg-warning/10 p-3 text-xs">
-              <p className="font-medium text-warning mb-1">
-                No {sourceAcct.currency} cash sleeve in this brokerage
-              </p>
-              <p className="text-warning/80">
-                Either create a {sourceAcct.currency} sleeve on the brokerage
-                via its Cash sleeves panel, or{" "}
-                <Link
-                  href="/portfolio/new?op=fx-conversion"
-                  className="underline font-medium hover:no-underline"
-                >
-                  FX-convert
-                </Link>{" "}
-                to the destination currency first.
-              </p>
-            </div>
-          )}
+      <OpGroup label="Amount">
+        <OpRow label={sourceAcct ? `Amount (${sourceAcct.currency})` : "Amount"} error={errors.amount}>
+          <AmountInput
+            step="any"
+            inputMode="decimal"
+            value={amount}
+            onValueChange={(nv) => setAmount(nv)}
+            placeholder="100.00"
+            className={OP_INPUT}
+          />
+        </OpRow>
+        <OpRow label="Date" error={errors.date}>
+          <Input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className={OP_INPUT}
+          />
+        </OpRow>
+      </OpGroup>
 
-          {eligibleSleeves.length > 1 && (
-            <div className="space-y-1.5">
-              <Label>Cash sleeve</Label>
-              <Select
-                items={sleeveLabelById}
-                value={destCashSleeveHoldingId}
-                onValueChange={(v) => setDestCashSleeveHoldingId(v ?? "")}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent alignItemWithTrigger={false} side="bottom">
-                  {eligibleSleeves.map((s) => (
-                    <SelectItem key={s.id} value={String(s.id)}>
-                      {s.name ?? `Cash ${s.currency}`}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+      <OpGroup label="Details">
+        <OpRow label="Payee">
+          <Input
+            value={payee}
+            onChange={(e) => setPayee(e.target.value)}
+            placeholder="Optional"
+            className={OP_INPUT}
+          />
+        </OpRow>
+        <OpRow label="Note">
+          <Input
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Optional"
+            className={OP_INPUT}
+          />
+        </OpRow>
+        <OpRow label="Tags">
+          <Input
+            value={tags}
+            onChange={(e) => setTags(e.target.value)}
+            placeholder="tag1, tag2 (optional)"
+            className={OP_INPUT}
+          />
+        </OpRow>
+      </OpGroup>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>
-                Amount{" "}
-                {sourceAcct && (
-                  <span className="text-muted-foreground text-xs">
-                    ({sourceAcct.currency})
-                  </span>
-                )}
-              </Label>
-              <AmountInput
-                step="any"
-                inputMode="decimal"
-                value={amount}
-                onValueChange={(nv) => setAmount(nv)}
-                placeholder="100.00"
-              />
-              {errors.amount && (
-                <p className="text-xs text-destructive">{errors.amount}</p>
-              )}
-            </div>
-            <div className="space-y-1.5">
-              <Label>Date</Label>
-              <Input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-              />
-              {errors.date && (
-                <p className="text-xs text-destructive">{errors.date}</p>
-              )}
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>
-              Payee{" "}
-              <span className="text-muted-foreground text-xs">(optional)</span>
-            </Label>
-            <Input value={payee} onChange={(e) => setPayee(e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>
-              Note{" "}
-              <span className="text-muted-foreground text-xs">(optional)</span>
-            </Label>
-            <Input value={note} onChange={(e) => setNote(e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>
-              Tags{" "}
-              <span className="text-muted-foreground text-xs">(optional)</span>
-            </Label>
-            <Input
-              value={tags}
-              onChange={(e) => setTags(e.target.value)}
-              placeholder="tag1, tag2"
-            />
-          </div>
-
-          {submitError && (
-            <p className="text-sm text-destructive">{submitError}</p>
-          )}
-
-          <div className="flex gap-2 pt-1">
-            <Button
-              type="button"
-              variant="outline"
-              className="flex-1"
-              onClick={() => router.push("/portfolio/new")}
-              disabled={submitting}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              className="flex-1"
-              disabled={submitting || currencyMismatch}
-            >
-              {submitting ? "Saving…" : isEdit ? "Save edit" : "Record deposit"}
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+      {submitError && (
+        <OpGroup>
+          <OpNote tone="destructive">{submitError}</OpNote>
+        </OpGroup>
+      )}
+    </OpPage>
   );
 }

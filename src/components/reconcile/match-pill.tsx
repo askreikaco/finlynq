@@ -58,7 +58,7 @@ export function MatchPill({
   return (
     <Badge
       variant="outline"
-      className={`text-[10px] ${VARIANT_CLASS[variant]}`}
+      className={`text-xs ${VARIANT_CLASS[variant]}`}
       title={title}
     >
       {VARIANT_LABEL[variant]}

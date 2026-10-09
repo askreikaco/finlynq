@@ -19,7 +19,7 @@ export function StackedChartLegend({ legend }: { legend: StackLegendEntry[] }) {
       {legend.map((entry) => (
         <div
           key={entry.key}
-          className="flex items-center gap-1.5 text-[11px] text-muted-foreground"
+          className="flex items-center gap-1.5 text-xs text-muted-foreground"
         >
           <span
             className="h-2.5 w-2.5 rounded-[3px] shrink-0"

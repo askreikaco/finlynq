@@ -60,7 +60,7 @@ export function LensChip({
         )}
         {cfg.label}
         {isLensActive && (
-          <span className="text-[9px] uppercase tracking-wider opacity-70">
+          <span className="text-xs uppercase tracking-wider opacity-70">
             lens
           </span>
         )}
@@ -74,7 +74,7 @@ export function LensChip({
           />
           <div className="absolute left-0 top-full mt-2 z-30 w-[min(340px,calc(100vw-2rem))] rounded-lg border bg-popover shadow-xl p-1">
             <div className="px-2 py-2 border-b mb-1">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">
                 View lens
               </p>
               <p className="text-xs text-muted-foreground mt-0.5">
@@ -115,7 +115,7 @@ export function LensChip({
                     {disabled && (
                       <Badge
                         variant="outline"
-                        className="ml-auto text-[10px] font-mono"
+                        className="ml-auto text-xs font-mono"
                       >
                         n/a
                       </Badge>
@@ -123,7 +123,7 @@ export function LensChip({
                     {!disabled && isPolicy && (
                       <Badge
                         variant="outline"
-                        className="ml-auto text-[10px] font-mono"
+                        className="ml-auto text-xs font-mono"
                       >
                         policy
                       </Badge>
@@ -131,7 +131,7 @@ export function LensChip({
                     {!disabled && isLens && !isPolicy && (
                       <Badge
                         variant="outline"
-                        className="ml-auto text-[10px] font-mono"
+                        className="ml-auto text-xs font-mono"
                       >
                         current lens
                       </Badge>

@@ -235,7 +235,7 @@ export function RulesSection() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-medium text-sm truncate">{rule.name}</span>
-                    {rule.priority > 0 && <Badge variant="secondary" className="text-[10px]">P{rule.priority}</Badge>}
+                    {rule.priority > 0 && <Badge variant="secondary" className="text-xs">P{rule.priority}</Badge>}
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     <strong>When:</strong> {summarizeConditions(rule.conditions ?? { all: [] }, rule.actionFKNames)}

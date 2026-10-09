@@ -12,6 +12,7 @@ import { VersionGate } from "@/components/version-gate";
 import { DataProvider } from "@/lib/data";
 import { WebVitals } from "@/components/web-vitals";
 import { PageFab, PageFabProvider } from "@/components/mobile/page-fab";
+import { KeyboardInsetObserver } from "@/components/mobile/keyboard-inset-observer";
 import { isInstanceAdminEnabled } from "@/lib/admin/instance-flag";
 import { isCategoriesMergedEnabled } from "@/lib/categories/flag";
 
@@ -22,6 +23,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <>
     <VersionGate />
     <WebVitals />
+    <KeyboardInsetObserver />
     <UnlockGate>
       <DataProvider>
       <CurrencyProvider>
@@ -36,7 +38,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <ReportingRecomputeIndicator />
           <div className="flex flex-1">
             <Nav instanceAdminEnabled={instanceAdminEnabled} categoriesMerged={categoriesMerged} />
-            <main className="flex-1 overflow-x-hidden overflow-y-auto max-md:overflow-y-visible max-md:overflow-x-clip min-w-0 pb-[calc(var(--mobile-bar-clearance)+80px)] md:pb-0 bg-dot-pattern ambient-glow">
+            {/* overflow-x-clip, not overflow-x-hidden: hidden forces overflow-y to auto, which makes <main> a scroll container.
+                Its height is content height, so it never scrolls, and the sticky PageHeader inside would never pin to the window. */}
+            <main className="flex-1 overflow-x-clip min-w-0 pb-[calc(var(--mobile-bar-clearance)+80px)] md:pb-0 bg-dot-pattern ambient-glow">
               {/* FINLYNQ-52: no width cap on the (app) shell — content fills
                   the viewport to the right of the sidebar. Per-page wrappers
                   may still impose their own readability cap (e.g. settings,

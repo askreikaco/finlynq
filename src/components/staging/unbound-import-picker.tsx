@@ -242,7 +242,7 @@ export function UnboundImportPicker({
           </div>
         )}
 
-        <Badge variant="outline" className="text-[10px] font-normal">
+        <Badge variant="outline" className="text-xs font-normal">
           Tip: if the auto-detected amounts or dates look wrong above, Discard this batch
           and re-send after saving a CSV template that matches your bank&apos;s format.
         </Badge>

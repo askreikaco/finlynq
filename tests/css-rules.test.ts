@@ -7,13 +7,13 @@ describe("CSS rules guard", () => {
     const content = fs.readFileSync(globalsPath, "utf-8");
 
     // Check for the .hero-number.tabular-nums rule
-    const hasHeroNumberTabularNumsRule = /\.hero-number\.tabular-nums\s*\{[\s\S]*?font-family:\s*var\(--font-sans\)[\s\S]*?\}/.test(
+    const hasHeroNumberTabularNumsRule = /\.hero-number\.tabular-nums\s*\{[\s\S]*?font-family:\s*var\(--font-ui\)[\s\S]*?\}/.test(
       content
     );
 
     expect(
       hasHeroNumberTabularNumsRule,
-      "Missing .hero-number.tabular-nums rule with font-family: var(--font-sans)"
+      "Missing .hero-number.tabular-nums rule with font-family: var(--font-ui)"
     ).toBe(true);
   });
 

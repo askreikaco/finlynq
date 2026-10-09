@@ -400,7 +400,7 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
 
                 <ol className="space-y-5">
                   <li className="flex gap-3">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[11px] font-bold text-primary mt-0.5">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary mt-0.5">
                       1
                     </span>
                     <div>
@@ -413,7 +413,7 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
                   </li>
 
                   <li className="flex gap-3">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[11px] font-bold text-primary mt-0.5">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary mt-0.5">
                       2
                     </span>
                     <div>
@@ -432,7 +432,7 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
                   </li>
 
                   <li className="flex gap-3">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[11px] font-bold text-primary mt-0.5">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary mt-0.5">
                       3
                     </span>
                     <div className="flex-1 min-w-0">
@@ -458,7 +458,7 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
                   </li>
 
                   <li className="flex gap-3">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[11px] font-bold text-primary mt-0.5">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary mt-0.5">
                       4
                     </span>
                     <div>
@@ -471,7 +471,7 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
                   </li>
 
                   <li className="flex gap-3">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-pos/20 text-[11px] font-bold text-pos mt-0.5">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-pos/20 text-xs font-bold text-pos mt-0.5">
                       ✓
                     </span>
                     <div>
@@ -531,7 +531,7 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
 
                 <ol className="space-y-5">
                   <li className="flex gap-3">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[11px] font-bold text-primary mt-0.5">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary mt-0.5">
                       1
                     </span>
                     <div>
@@ -544,7 +544,7 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
                   </li>
 
                   <li className="flex gap-3">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[11px] font-bold text-primary mt-0.5">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary mt-0.5">
                       2
                     </span>
                     <div className="flex-1 min-w-0">
@@ -575,7 +575,7 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
                   </li>
 
                   <li className="flex gap-3">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[11px] font-bold text-primary mt-0.5">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary mt-0.5">
                       3
                     </span>
                     <div>
@@ -591,7 +591,7 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
                   </li>
 
                   <li className="flex gap-3">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-pos/20 text-[11px] font-bold text-pos mt-0.5">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-pos/20 text-xs font-bold text-pos mt-0.5">
                       ✓
                     </span>
                     <div>
@@ -635,7 +635,7 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
 
                 <ol className="space-y-5">
                   <li className="flex gap-3">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[11px] font-bold text-primary mt-0.5">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary mt-0.5">
                       1
                     </span>
                     <div>
@@ -649,7 +649,7 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
                   </li>
 
                   <li className="flex gap-3">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[11px] font-bold text-primary mt-0.5">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary mt-0.5">
                       2
                     </span>
                     <div>
@@ -661,7 +661,7 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
                   </li>
 
                   <li className="flex gap-3">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[11px] font-bold text-primary mt-0.5">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary mt-0.5">
                       3
                     </span>
                     <div className="flex-1 min-w-0">
@@ -687,7 +687,7 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
                   </li>
 
                   <li className="flex gap-3">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[11px] font-bold text-primary mt-0.5">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary mt-0.5">
                       4
                     </span>
                     <div>
@@ -717,7 +717,7 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
                   Cursor supports MCP through its settings. Add Finlynq as an MCP server.
                 </p>
                 <li className="flex gap-3">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[11px] font-bold text-primary mt-0.5">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary mt-0.5">
                     1
                   </span>
                   <div>
@@ -728,7 +728,7 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
                   </div>
                 </li>
                 <li className="flex gap-3">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[11px] font-bold text-primary mt-0.5">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary mt-0.5">
                     2
                   </span>
                   <div className="flex-1 min-w-0">
@@ -745,7 +745,7 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
                   </div>
                 </li>
                 <li className="flex gap-3">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[11px] font-bold text-primary mt-0.5">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary mt-0.5">
                     3
                   </span>
                   <div>
@@ -765,7 +765,7 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
                   models.
                 </p>
                 <li className="flex gap-3">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[11px] font-bold text-primary mt-0.5">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary mt-0.5">
                     1
                   </span>
                   <div>
@@ -776,7 +776,7 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
                   </div>
                 </li>
                 <li className="flex gap-3">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[11px] font-bold text-primary mt-0.5">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary mt-0.5">
                     2
                   </span>
                   <div>
@@ -787,7 +787,7 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
                   </div>
                 </li>
                 <li className="flex gap-3">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[11px] font-bold text-primary mt-0.5">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary mt-0.5">
                     3
                   </span>
                   <div className="flex-1 min-w-0">
@@ -810,7 +810,7 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
                   querying your finances from the AI coding assistant.
                 </p>
                 <li className="flex gap-3">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[11px] font-bold text-primary mt-0.5">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary mt-0.5">
                     1
                   </span>
                   <div>
@@ -823,7 +823,7 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
                   </div>
                 </li>
                 <li className="flex gap-3">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[11px] font-bold text-primary mt-0.5">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary mt-0.5">
                     2
                   </span>
                   <div className="flex-1 min-w-0">
@@ -845,7 +845,7 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
                   </div>
                 </li>
                 <li className="flex gap-3">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[11px] font-bold text-primary mt-0.5">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary mt-0.5">
                     3
                   </span>
                   <div>
@@ -932,7 +932,7 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
                 onClick={() => navigator.clipboard.writeText(item.prompt)}
                 title="Click to copy"
               >
-                <span className="mt-0.5 text-[11px] font-semibold px-1.5 py-0.5 rounded bg-primary/10 text-primary shrink-0">
+                <span className="mt-0.5 text-xs font-semibold px-1.5 py-0.5 rounded bg-primary/10 text-primary shrink-0">
                   {item.category}
                 </span>
                 <p className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
@@ -965,7 +965,7 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
                 <p className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
                   {ex.prompt}
                 </p>
-                <p className="mt-auto pt-1 text-[11px] font-mono text-muted-foreground/70">{ex.flow}</p>
+                <p className="mt-auto pt-1 text-xs font-mono text-muted-foreground/70">{ex.flow}</p>
               </button>
             ))}
           </div>
@@ -1009,7 +1009,7 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
                     {group.tools.map((t) => (
                       <code
                         key={t}
-                        className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground"
+                        className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono text-muted-foreground"
                       >
                         {t}
                       </code>

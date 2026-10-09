@@ -34,7 +34,7 @@ import {
   History,
   Gauge,
 } from "lucide-react";
-import { PageHeader } from "@/components/mobile";
+import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
 
 interface SysSample {
   at: number;
@@ -224,7 +224,7 @@ function History24Chart({ points }: { points: Hist24[] }) {
         <polyline points={maxPts} fill="none" stroke="#f59e0b" strokeWidth={1} strokeOpacity={0.7} />
         <polyline points={avgPts} fill="none" stroke="#ef4444" strokeWidth={1.5} />
       </svg>
-      <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
+      <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
         <span>{hourLabel(points[0].at)}</span>
         <span className="flex items-center gap-3">
           <span className="text-destructive">● avg</span>
@@ -318,7 +318,7 @@ export default function AdminSystemPage() {
         accessor: (r) => r.state ?? "",
         filter: "select",
         render: (r) => (
-          <Badge variant="outline" className="text-[10px]">
+          <Badge variant="outline" className="text-xs">
             {r.state ?? "—"}
           </Badge>
         ),
@@ -408,40 +408,47 @@ export default function AdminSystemPage() {
 
   return (
     <div className="max-w-7xl space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <Server className="h-5 w-5 text-primary" />
-            <PageHeader title="System" titleClassName="text-2xl font-bold tracking-tight" />
+      <PageHeader
+        className="flex flex-wrap items-center justify-between gap-3"
+        lead={<Server className={`h-5 w-5 text-primary ${HEADER_DESKTOP_ONLY}`} />}
+        leadClassName="flex items-center gap-2"
+        title={
+          <>
+            System
             {data?.env && (
               <Badge variant="outline" className="ml-1 uppercase">
                 {data.env}
               </Badge>
             )}
-          </div>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            Live CPU / memory / disk, active database queries, and snapshot-rebuild activity. CPU /
-            memory / disk are <span className="font-medium text-foreground">the whole VPS</span> (prod
-            and dev share this box); database queries, snapshots and rebuilds are{" "}
-            <span className="font-medium text-foreground">this environment only</span>.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <input
-              type="checkbox"
-              checked={auto}
-              onChange={(e) => setAuto(e.target.checked)}
-              className="h-3.5 w-3.5 accent-primary"
-            />
-            Auto-refresh
-          </label>
-          <Button variant="outline" size="sm" onClick={load} disabled={loading}>
-            <RefreshCw className={`mr-1.5 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
-        </div>
-      </div>
+          </>
+        }
+        titleClassName="text-2xl font-bold tracking-tight"
+        overflow={[{ label: auto ? "Auto-refresh: on" : "Auto-refresh: off", onSelect: () => setAuto(!auto) }]}
+        actionsClassName="flex flex-wrap items-center gap-2"
+        actions={
+          <>
+            <label className={`${HEADER_DESKTOP_ONLY} flex items-center gap-1.5 text-xs text-muted-foreground`}>
+              <input
+                type="checkbox"
+                checked={auto}
+                onChange={(e) => setAuto(e.target.checked)}
+                className="h-3.5 w-3.5 accent-primary"
+              />
+              Auto-refresh
+            </label>
+            <Button variant="outline" size="sm" onClick={load} disabled={loading}>
+              <RefreshCw className={`mr-1.5 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+              Refresh
+            </Button>
+          </>
+        }
+      />
+      <p className="mt-0.5 text-sm text-muted-foreground">
+        Live CPU / memory / disk, active database queries, and snapshot-rebuild activity. CPU /
+        memory / disk are <span className="font-medium text-foreground">the whole VPS</span> (prod
+        and dev share this box); database queries, snapshots and rebuilds are{" "}
+        <span className="font-medium text-foreground">this environment only</span>.
+      </p>
 
       {error && (
         <Card className="border-destructive/30 bg-destructive/10">
@@ -456,7 +463,7 @@ export default function AdminSystemPage() {
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base">
                 <Cpu className="h-4 w-4 text-primary" /> System
-                <Badge variant="outline" className="text-[10px] font-normal">
+                <Badge variant="outline" className="text-xs font-normal">
                   whole VPS
                 </Badge>
                 <span className="ml-1 text-xs font-normal text-muted-foreground">
@@ -468,7 +475,7 @@ export default function AdminSystemPage() {
             <CardContent className="space-y-5">
               <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
                 <div>
-                  <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground">
                     Load avg (1 / 5 / 15m)
                   </div>
                   <div className="mt-0.5 font-mono text-lg tabular-nums">
@@ -477,7 +484,7 @@ export default function AdminSystemPage() {
                     </span>{" "}
                     / {sys.loadavg[1].toFixed(2)} / {sys.loadavg[2].toFixed(2)}
                   </div>
-                  <div className="text-[11px] text-muted-foreground">
+                  <div className="text-xs text-muted-foreground">
                     {((sys.loadavg[0] / sys.cores) * 100).toFixed(0)}% of {sys.cores} cores
                   </div>
                   <div className="mt-2">
@@ -486,7 +493,7 @@ export default function AdminSystemPage() {
                 </div>
 
                 <div>
-                  <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground">
                     System CPU
                   </div>
                   <div className={`mt-0.5 text-2xl font-bold tabular-nums ${pctColor(sys.cpuPct)}`}>
@@ -498,13 +505,13 @@ export default function AdminSystemPage() {
                 </div>
 
                 <div>
-                  <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground">
                     App process CPU
                   </div>
                   <div className="mt-0.5 text-2xl font-bold tabular-nums">
                     {sys.procCpuPct.toFixed(0)}%
                   </div>
-                  <div className="text-[11px] text-muted-foreground">
+                  <div className="text-xs text-muted-foreground">
                     RSS {(sys.rssMb / 1024).toFixed(2)} GB · % of one core
                   </div>
                   <div className="mt-2">
@@ -530,7 +537,7 @@ export default function AdminSystemPage() {
 
               {/* Durable 24h CPU history (survives restarts) */}
               <div>
-                <div className="mb-1 flex items-center gap-2 text-[11px] uppercase tracking-wider text-muted-foreground">
+                <div className="mb-1 flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
                   <History className="h-3.5 w-3.5" /> System CPU · last 24h (whole VPS)
                 </div>
                 <History24Chart points={data?.history24h ?? []} />
@@ -543,7 +550,7 @@ export default function AdminSystemPage() {
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-base">
                 <Gauge className="h-4 w-4 text-primary" /> Top operations · last 24h
-                <Badge variant="outline" className="text-[10px] font-normal">
+                <Badge variant="outline" className="text-xs font-normal">
                   this env
                 </Badge>
                 <span className="ml-1 text-xs font-normal text-muted-foreground">
@@ -572,7 +579,7 @@ export default function AdminSystemPage() {
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-base">
                 <Database className="h-4 w-4 text-primary" /> Active database queries
-                <Badge variant="outline" className="text-[10px] font-normal">
+                <Badge variant="outline" className="text-xs font-normal">
                   this env
                 </Badge>
                 <span className="ml-1 text-xs font-normal text-muted-foreground">
@@ -602,7 +609,7 @@ export default function AdminSystemPage() {
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-base">
                 <History className="h-4 w-4 text-primary" /> Snapshot rebuild activity
-                <Badge variant="outline" className="text-[10px] font-normal">
+                <Badge variant="outline" className="text-xs font-normal">
                   this env
                 </Badge>
                 <span className="ml-1 text-xs font-normal text-muted-foreground">
@@ -615,7 +622,7 @@ export default function AdminSystemPage() {
             <CardContent className="space-y-4 text-sm">
               {/* In-flight / recent rebuilds */}
               <div>
-                <div className="mb-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
+                <div className="mb-1.5 text-xs uppercase tracking-wider text-muted-foreground">
                   Rebuilds (this server process)
                 </div>
                 {data && data.rebuilds.length === 0 && data.cashRebuildsInFlight.length === 0 ? (
@@ -667,7 +674,7 @@ export default function AdminSystemPage() {
               {/* Stale dirty markers */}
               {data && data.snapshots.dirtyMarkers.length > 0 && (
                 <div>
-                  <div className="mb-1.5 flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
+                  <div className="mb-1.5 flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted-foreground">
                     <AlertTriangle className="h-3.5 w-3.5" /> Dirty markers (trigger a rebuild on next
                     chart load)
                   </div>
@@ -689,7 +696,7 @@ export default function AdminSystemPage() {
               {/* Heaviest users */}
               {data && data.snapshots.topUsers.length > 0 && (
                 <div>
-                  <div className="mb-1.5 flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
+                  <div className="mb-1.5 flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted-foreground">
                     <Clock className="h-3.5 w-3.5" /> Heaviest users by snapshot rows (cost of a
                     rebuild)
                   </div>
@@ -713,7 +720,7 @@ export default function AdminSystemPage() {
                 <span className="font-medium">Outbound market-data API</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                <span className="text-xs uppercase tracking-wider text-muted-foreground">
                   Buffered
                 </span>
                 <span className="font-semibold tabular-nums">
@@ -721,7 +728,7 @@ export default function AdminSystemPage() {
                 </span>
               </div>
               <div className="flex flex-col">
-                <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                <span className="text-xs uppercase tracking-wider text-muted-foreground">
                   Errors / timeouts
                 </span>
                 <span

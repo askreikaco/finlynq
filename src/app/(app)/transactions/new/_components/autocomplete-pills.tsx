@@ -70,7 +70,7 @@ export function AutocompletePills({
 
   return (
     <div className="flex items-center gap-1.5 overflow-x-auto py-1 scrollbar-none animate-in fade-in duration-200">
-      <div className="flex items-center text-[10px] text-muted-foreground font-medium mr-0.5 shrink-0">
+      <div className="flex items-center text-xs text-muted-foreground font-medium mr-0.5 shrink-0">
         <Sparkles className="w-3 h-3 text-primary mr-1" />
         Suggestions:
       </div>

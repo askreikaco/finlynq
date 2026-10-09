@@ -177,7 +177,7 @@ export default function ResetPasswordPage() {
           </span>
         </div>
 
-        <h1 className="mb-6 text-3xl font-bold tracking-tight text-foreground max-md:mb-3 max-md:text-[28px] max-md:font-extrabold">Reset password</h1>
+        <h1 className="mb-6 text-3xl font-bold tracking-tight text-foreground max-md:mb-3 max-md:text-3xl max-md:font-bold">Reset password</h1>
 
         <Suspense fallback={null}>
           <ResetPasswordForm />

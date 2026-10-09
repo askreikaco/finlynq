@@ -76,20 +76,20 @@ interface Props {
 function StatusBadge({ status, match }: { status: ReconcileStatus; match?: ReconcileMatch }) {
   if (status === "new") {
     return (
-      <Badge className="bg-pos text-white dark:text-primary-foreground text-[10px]">
+      <Badge className="bg-pos text-white dark:text-primary-foreground text-xs">
         <Sparkles className="h-3 w-3 mr-1" /> New
       </Badge>
     );
   }
   if (status === "existing") {
     return (
-      <Badge variant="secondary" className="text-[10px] bg-muted text-foreground">
+      <Badge variant="secondary" className="text-xs bg-muted text-foreground">
         <CheckCircle2 className="h-3 w-3 mr-1" /> Existing
       </Badge>
     );
   }
   return (
-    <Badge variant="secondary" className="text-[10px] bg-warning/10 text-warning">
+    <Badge variant="secondary" className="text-xs bg-warning/10 text-warning">
       <AlertTriangle className="h-3 w-3 mr-1" />
       Probable duplicate
       {match && match.daysOff > 0 ? ` · ${match.daysOff}d off` : ""}
@@ -181,7 +181,7 @@ export function ReconcilePreviewTable({
                   <div className="flex flex-col gap-1">
                     <StatusBadge status={row.status} match={row.match} />
                     {isProbable && (
-                      <label className="flex items-center gap-1 text-[11px] text-warning">
+                      <label className="flex items-center gap-1 text-xs text-warning">
                         <input
                           type="checkbox"
                           className="h-3 w-3 rounded border-warning/30"
@@ -194,7 +194,7 @@ export function ReconcilePreviewTable({
                       </label>
                     )}
                     {row.match && (
-                      <span className="text-[10px] text-muted-foreground">
+                      <span className="text-xs text-muted-foreground">
                         Matches #{row.match.transactionId} · {row.match.date}
                       </span>
                     )}
@@ -204,7 +204,7 @@ export function ReconcilePreviewTable({
                 <TableCell className="text-xs align-top pt-3 max-w-[18rem]">
                   <div className="truncate">{row.payee || "—"}</div>
                   {row.fitId && (
-                    <div className="text-[10px] text-muted-foreground truncate">
+                    <div className="text-xs text-muted-foreground truncate">
                       fit:{row.fitId}
                     </div>
                   )}

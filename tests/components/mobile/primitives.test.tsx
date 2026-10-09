@@ -46,13 +46,13 @@ describe("Amount", () => {
     expect(screen.getByText("+$12.00")).toBeTruthy();
   });
 
-  it("sizes: hero 32/800, lg 20, md 15", () => {
+  it("sizes: hero text-3xl/700, lg 20, md text-sm", () => {
     const { rerender } = render(<Amount value={1} currency="USD" size="hero" />);
-    expect(cls(screen.getByText("$1.00"))).toEqual(expect.arrayContaining(["text-[32px]", "font-extrabold"]));
+    expect(cls(screen.getByText("$1.00"))).toEqual(expect.arrayContaining(["text-3xl", "font-bold"]));
     rerender(<Amount value={1} currency="USD" size="lg" />);
     expect(cls(screen.getByText("$1.00"))).toContain("text-xl");
     rerender(<Amount value={1} currency="USD" size="md" />);
-    expect(cls(screen.getByText("$1.00"))).toContain("text-[15px]");
+    expect(cls(screen.getByText("$1.00"))).toContain("text-sm");
   });
 
   it.each([[54_300_000, "54.3M"], [2_500_000_000, "2.5B"], [572_345, "572K"], [1500, "1.5K"], [850, "850"], [-1_200_000, "-1.2M"]])(
@@ -105,10 +105,10 @@ describe("ListRow", () => {
 });
 
 describe("SectionCard / SectionLabel / StatTile", () => {
-  it("SectionLabel is 12/700 uppercase tracking .5 muted", () => {
+  it("SectionLabel is text-xs/700 uppercase tracking-normal muted", () => {
     render(<SectionLabel>Cash</SectionLabel>);
     expect(cls(screen.getByRole("heading", { name: "Cash" }))).toEqual(
-      expect.arrayContaining(["text-xs", "font-bold", "uppercase", "tracking-[0.5px]", "text-muted-foreground"]),
+      expect.arrayContaining(["text-xs", "font-bold", "uppercase", "tracking-normal", "text-muted-foreground"]),
     );
   });
 

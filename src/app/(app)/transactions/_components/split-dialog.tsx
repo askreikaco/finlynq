@@ -180,7 +180,7 @@ export function SplitDialog({
           </div>
 
           {/* Column headers */}
-          <div className="grid grid-cols-[1fr_1fr_80px_1fr_1fr_32px] gap-1.5 text-[10px] text-muted-foreground font-medium uppercase tracking-wide px-0.5">
+          <div className="grid grid-cols-[1fr_1fr_96px_1fr_1fr_32px] gap-1.5 text-xs text-muted-foreground font-medium uppercase tracking-wide px-0.5">
             <span>Category</span>
             <span>Account</span>
             <span>Amount</span>
@@ -192,7 +192,7 @@ export function SplitDialog({
           {/* Split rows */}
           <div className="space-y-1.5">
             {rows.map((row, i) => (
-              <div key={i} className="grid grid-cols-[1fr_1fr_80px_1fr_1fr_32px] gap-1.5 items-center">
+              <div key={i} className="grid grid-cols-[1fr_1fr_96px_1fr_1fr_32px] gap-1.5 items-center">
                 <Combobox
                   value={row.categoryId}
                   onValueChange={(v) => updateRow(i, "categoryId", v)}
@@ -273,11 +273,11 @@ export function SplitDialog({
             <div className="flex items-center gap-2">
               <span className="font-mono">{formatCurrency(allocated, currency)}</span>
               {isBalanced ? (
-                <Badge variant="outline" className="text-[10px] border-pos/30 text-pos bg-pos/10">
+                <Badge variant="outline" className="text-xs border-pos/30 text-pos bg-pos/10">
                   Balanced
                 </Badge>
               ) : (
-                <Badge variant="outline" className="text-[10px] border-destructive/30 text-destructive bg-destructive/10">
+                <Badge variant="outline" className="text-xs border-destructive/30 text-destructive bg-destructive/10">
                   {remaining > 0 ? `${formatCurrency(remaining, currency)} left` : `${formatCurrency(Math.abs(remaining), currency)} over`}
                 </Badge>
               )}

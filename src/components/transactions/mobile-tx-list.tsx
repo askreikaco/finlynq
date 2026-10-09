@@ -54,7 +54,7 @@ export function MobileTxList({
     <div className="divide-y divide-border">
       {Object.entries(grouped).map(([dateLabel, txns]) => (
         <div key={dateLabel}>
-          <SectionLabel className="sticky top-[var(--sat,0)] z-10 bg-background/80 backdrop-blur-sm py-2">
+          <SectionLabel className="sticky top-[calc(var(--sat,0px)+var(--phone-header-h))] z-10 bg-background/80 backdrop-blur-sm py-2">
             {dateLabel}
           </SectionLabel>
           <div>
@@ -163,7 +163,7 @@ function TransactionRow({
       onClick={() => onEdit(t)}
       className={cn(
         "flex w-full min-h-[56px] items-center gap-3 px-4 py-3",
-        "outline-none transition-colors hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50",
+        "outline-none transition-colors hover:bg-muted/50 active:bg-muted/60 focus-visible:ring-3 focus-visible:ring-ring/50",
         "border-b border-border last:border-b-0 text-left",
       )}
       aria-label={`Edit ${payee}`}

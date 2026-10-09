@@ -38,7 +38,7 @@ export function SpendingCategoryChart({ data, currency }: { data: SpendingItem[]
           <CardTitle className="text-sm font-semibold">Spending by Category</CardTitle>
           {/* /api/dashboard defaults to a trailing 12-month window (plus the current
               month), not the current month alone. */}
-          <p className="text-[11px] text-muted-foreground">Last 12 months breakdown</p>
+          <p className="text-xs text-muted-foreground">Last 12 months breakdown</p>
         </CardHeader>
         <CardContent className="px-5 pb-5">
           <div className="flex items-center gap-5">
@@ -67,7 +67,7 @@ export function SpendingCategoryChart({ data, currency }: { data: SpendingItem[]
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-[10px] text-muted-foreground">Total</span>
+                <span className="text-xs text-muted-foreground">Total</span>
                 <span className="text-sm font-bold tabular-nums">{formatCurrency(total, resolvedCurrency)}</span>
               </div>
             </div>
@@ -86,8 +86,8 @@ export function SpendingCategoryChart({ data, currency }: { data: SpendingItem[]
                           if (el) el.style.background = CHART_COLORS[i];
                         }}
                       />
-                      <span className="truncate text-[11px] text-muted-foreground flex-1">{cat.name}</span>
-                      <span className="text-[11px] font-semibold tabular-nums">{pct}%</span>
+                      <span className="truncate text-xs text-muted-foreground flex-1">{cat.name}</span>
+                      <span className="text-xs font-semibold tabular-nums">{pct}%</span>
                     </div>
                     {/* Mini bar — width + color set via ref-callback (CSP, FINLYNQ-83) */}
                     <div className="ml-4 h-1 rounded-full bg-muted/40 overflow-hidden">

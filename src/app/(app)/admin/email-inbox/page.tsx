@@ -25,7 +25,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Mailbox, RefreshCw, Lock, Users } from "lucide-react";
-import { PageHeader } from "@/components/mobile";
+import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
 
 interface ByUser {
   userId: string;
@@ -141,24 +141,25 @@ export default function AdminEmailInboxPage() {
 
   return (
     <div className="max-w-7xl space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <Mailbox className="h-5 w-5 text-primary" />
-            <PageHeader title="Email Oversight" titleClassName="text-2xl font-bold tracking-tight" />
-          </div>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Cross-user view of inbound email-import rows. Metadata is always
-            shown; from/subject preview is available only for service-tier rows
-            (before the owner&apos;s next login). User-tier content is encrypted
-            with the owner&apos;s key and cannot be read here.
-          </p>
-        </div>
-        <Button variant="outline" size="sm" onClick={load} disabled={loading}>
-          <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? "animate-spin" : ""}`} />
-          Refresh
-        </Button>
-      </div>
+      <PageHeader
+        className="flex items-start justify-between gap-4"
+        lead={<Mailbox className={`h-5 w-5 text-primary ${HEADER_DESKTOP_ONLY}`} />}
+        leadClassName="flex items-center gap-2"
+        title="Email Oversight"
+        titleClassName="text-2xl font-bold tracking-tight"
+        actions={
+          <Button variant="outline" size="sm" onClick={load} disabled={loading}>
+            <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        }
+      />
+      <p className="text-sm text-muted-foreground mt-0.5">
+        Cross-user view of inbound email-import rows. Metadata is always
+        shown; from/subject preview is available only for service-tier rows
+        (before the owner&apos;s next login). User-tier content is encrypted
+        with the owner&apos;s key and cannot be read here.
+      </p>
 
       {error && (
         <Card className="border-destructive/30 bg-destructive/10">
@@ -340,7 +341,7 @@ export default function AdminEmailInboxPage() {
                     <TableCell>
                       <Badge
                         variant="outline"
-                        className={`text-[10px] ${actionColor[r.action] ?? "bg-muted text-muted-foreground"}`}
+                        className={`text-xs ${actionColor[r.action] ?? "bg-muted text-muted-foreground"}`}
                       >
                         {r.action.replace(/_/g, " ")}
                       </Badge>
@@ -350,7 +351,7 @@ export default function AdminEmailInboxPage() {
                       {r.parseConfidence ?? <span className="text-muted-foreground">—</span>}
                     </TableCell>
                     <TableCell className="text-xs">
-                      <Badge variant="outline" className="text-[10px]">
+                      <Badge variant="outline" className="text-xs">
                         {r.encryptionTier ?? "service"}
                       </Badge>
                     </TableCell>

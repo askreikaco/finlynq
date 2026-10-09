@@ -46,7 +46,7 @@ export function SettingsHub() {
     <div className="max-w-2xl space-y-6">
       <PageHeader
         title="Settings"
-        titleClassName="text-2xl font-bold tracking-tight max-md:text-[34px]/[41px] max-md:font-bold"
+        titleClassName="text-2xl font-bold tracking-tight max-md:text-4xl/[41px] max-md:font-bold"
       />
       {groups.map((group) => (
         <section key={group.title} data-slot="settings-hub-group" className="space-y-2">
@@ -69,7 +69,7 @@ export function SettingsHub() {
                   >
                     <Icon className="size-[18px]" aria-hidden />
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-[17px] text-foreground">{entry.label}</span>
+                  <span className="min-w-0 flex-1 truncate text-base text-foreground">{entry.label}</span>
                   <ChevronRight data-slot="settings-hub-chevron" aria-hidden className="size-5 shrink-0 text-muted-foreground" />
                 </Link>
               );

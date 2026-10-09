@@ -13,7 +13,6 @@ vi.mock("@/components/currency-provider", () => ({ useDisplayCurrency: () => ({ 
 vi.mock("@/components/dropdown-order-provider", () => ({ useDropdownOrder: () => <T,>(items: T[]) => items }));
 vi.mock("@/components/onboarding-tips", () => ({ OnboardingTips: () => React.createElement("div", { "data-testid": "tips" }) }));
 vi.mock("@/app/(app)/accounts/_components/account-dialog", () => ({ AccountDialog: () => null }));
-vi.mock("@/app/(app)/accounts/_components/manage-groups-dialog", () => ({ ManageGroupsDialog: () => null }));
 
 import AccountsPage from "@/app/(app)/accounts/page";
 

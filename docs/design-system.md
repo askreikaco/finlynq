@@ -13,8 +13,8 @@ Defined in `src/app/globals.css` (@theme directive, lines 7–51). These are rea
 - `--color-sidebar*`: sidebar-specific color overrides
 
 ### Fonts
-- `--font-sans`: Geist Sans (overridden per `[data-font]` in layout)
-- `--font-mono`: Geist Mono
+- `--font-sans`: system UI stack (`--font-stack-sans`, globals.css); runtime UI font via `--font-ui` set by `[data-font]`
+- `--font-mono`: system mono stack (`--font-stack-mono`); no web fonts
 
 ### Sizing
 - `--radius-sm/md/lg/xl/2xl/3xl/4xl`: 0.3–1.3rem (60% to 260% of base 0.5rem)

@@ -21,7 +21,6 @@ import {
  */
 
 export const FAB_HANDLER_KEYS = [
-  "accounts.create",
   "accounts.detail.add",
   "admin.announcements.new",
   "budgets.create",
@@ -73,7 +72,8 @@ export const FAB_ROUTES: Record<string, FabEntry> = {
   "/account": FALLBACK,
   "/account/info": FALLBACK,
   "/account/security": FALLBACK,
-  "/accounts": { kind: "handler", label: "Add account", icon: Plus, handlerKey: "accounts.create" },
+  "/accounts": { kind: "route", label: "Add account", icon: Plus, href: "/accounts/new" },
+  "/accounts/new": { kind: "hidden", reason: "is the create flow" },
   "/accounts/[id]": {
     kind: "handler",
     label: "New transaction",
@@ -81,6 +81,7 @@ export const FAB_ROUTES: Record<string, FabEntry> = {
     handlerKey: "accounts.detail.add",
     fallbackHref: "/transactions/new",
   },
+  "/accounts/groups": { kind: "hidden", reason: "manage list; no create action" },
   "/admin": FALLBACK,
   "/admin/announcements": {
     kind: "handler",
@@ -133,14 +134,22 @@ export const FAB_ROUTES: Record<string, FabEntry> = {
     kind: "route",
     label: "Record dividend",
     icon: Coins,
-    href: "/portfolio/new?op=income-expense",
+    href: "/portfolio/new/income-expense",
   },
   "/portfolio/new": { kind: "hidden", reason: "is the create flow" },
+  "/portfolio/new/buy": { kind: "hidden", reason: "is the create flow" },
+  "/portfolio/new/deposit": { kind: "hidden", reason: "is the create flow" },
+  "/portfolio/new/fx-conversion": { kind: "hidden", reason: "is the create flow" },
+  "/portfolio/new/in-kind-transfer": { kind: "hidden", reason: "is the create flow" },
+  "/portfolio/new/income-expense": { kind: "hidden", reason: "is the create flow" },
+  "/portfolio/new/sell": { kind: "hidden", reason: "is the create flow" },
+  "/portfolio/new/swap": { kind: "hidden", reason: "is the create flow" },
+  "/portfolio/new/withdrawal": { kind: "hidden", reason: "is the create flow" },
   "/portfolio/realized-gains": {
     kind: "route",
     label: "Record sale",
     icon: TrendingDown,
-    href: "/portfolio/new?op=sell",
+    href: "/portfolio/new/sell",
   },
   "/reports": FALLBACK,
   "/scenarios": FALLBACK,

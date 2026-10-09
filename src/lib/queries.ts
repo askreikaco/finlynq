@@ -1,9 +1,17 @@
 import { db, schema, getDialect } from "@/db";
 import { eq, and, gte, lte, desc, sql, asc, inArray, isNotNull } from "drizzle-orm";
-import type { SQL, AnyColumn } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
 import { requireHoldingForInvestmentAccount } from "@/lib/investment-account";
 import type { TransactionSource } from "@/lib/tx-source";
 import type { SortableColumnId } from "@/lib/transactions/columns";
+import {
+  encodeCursor,
+  isKeysetSortId,
+  InvalidCursorError,
+  type TxCursor,
+  type TxKeysetCursor,
+  type TxSortDirection,
+} from "@/lib/transactions/cursor";
 import { computeReportingFields } from "@/lib/fx/reporting-amount";
 import { getDisplayCurrency } from "@/lib/fx-service";
 
@@ -200,9 +208,16 @@ export type TxSortFilter = {
   sortDirection?: "asc" | "desc";
   limit?: number;
   offset?: number;
+  // P2: decoded opaque cursor (see src/lib/transactions/cursor.ts). Only
+  // read by getTransactionsPage; getTransactions ignores it.
+  cursor?: TxCursor;
+  // Id pushdown. Empty array = match nothing (same as portfolioHoldingIds).
+  ids?: number[];
+  // Kind substring/pattern, ILIKE.
+  kindLike?: string;
 };
 
-function buildTxFilterConditions(userId: string, filters?: TxSortFilter) {
+export function buildTxFilterConditions(userId: string, filters?: TxSortFilter) {
   const conditions = [eq(transactions.userId, userId)];
   // FINLYNQ-177 — single-tx id pushdown. Combined with the user_id predicate
   // above, so another user's id (or a nonexistent one) yields zero rows.
@@ -273,42 +288,25 @@ function buildTxFilterConditions(userId: string, filters?: TxSortFilter) {
       sql`(${transactions.payee} LIKE ${'%' + filters.search + '%'} OR ${transactions.note} LIKE ${'%' + filters.search + '%'} OR ${transactions.tags} LIKE ${'%' + filters.search + '%'})`
     );
   }
+  if (filters?.ids) {
+    // One array param (ANY), never one param per id. sql.param keeps the
+    // JS array as a single bound value.
+    if (filters.ids.length === 0) {
+      conditions.push(sql`1 = 0`);
+    } else {
+      conditions.push(sql`${transactions.id} = ANY(${sql.param(filters.ids)}::int[])`);
+    }
+  }
+  if (filters?.kindLike) {
+    conditions.push(sql`${transactions.kind} ILIKE ${filters.kindLike}`);
+  }
   return conditions;
 }
 
-/** Map sortable column id → Drizzle column expression. Hard-coded so user
- * input never touches an `ORDER BY` clause directly. Returned as the
- * generic AnyColumn shape Drizzle's `asc`/`desc` accept. */
-function txSortExpr(id: SortableColumnId): AnyColumn {
-  switch (id) {
-    case "date":
-      return transactions.date;
-    case "amount":
-      return transactions.amount;
-    case "quantity":
-      return transactions.quantity;
-    case "createdAt":
-      return transactions.createdAt;
-    case "updatedAt":
-      return transactions.updatedAt;
-    case "source":
-      return transactions.source;
-    case "accountType":
-      return accounts.type;
-  }
-}
-
-export async function getTransactions(userId: string, filters?: TxSortFilter) {
-  const conditions = buildTxFilterConditions(userId, filters);
-
-  // Default = `date DESC`. Add `transactions.id DESC` as a stable tiebreaker
-  // so paginated results don't shuffle when many rows share the same value
-  // (especially common when sorting by `source` or `accountType`).
-  const direction = filters?.sortDirection === "asc" ? asc : desc;
-  const sortCol = filters?.sortColumnId ? txSortExpr(filters.sortColumnId) : transactions.date;
-  const orderClauses = [direction(sortCol), desc(transactions.id)];
-
-  const query = db
+/** Row select shared by getTransactions and getTransactionsPage. Joins and
+ * select list are unchanged from the pre-P2 getTransactions. */
+function txRowsQuery(conditions: SQL[], orderClauses: SQL[]) {
+  return db
     .select({
       id: transactions.id,
       date: transactions.date,
@@ -369,11 +367,122 @@ export async function getTransactions(userId: string, filters?: TxSortFilter) {
     .leftJoin(portfolioHoldings, eq(transactions.portfolioHoldingId, portfolioHoldings.id))
     .leftJoin(securities, eq(portfolioHoldings.securityId, securities.id))
     .where(and(...conditions))
-    .orderBy(...orderClauses)
-    .limit(filters?.limit ?? 100)
-    .offset(filters?.offset ?? 0);
+    .orderBy(...orderClauses);
+}
 
-  return query.all();
+/** Pure. ORDER BY for a sort + direction. Tiebreak is always `id DESC`.
+ * NULLS follow the client (null smallest): ASC NULLS FIRST, DESC NULLS LAST
+ * (owner D9). Text sorts use COLLATE "C" (owner). date/amount are NOT NULL. */
+export function buildTxOrderBy(sortId: SortableColumnId | undefined, direction: TxSortDirection): SQL[] {
+  const isAsc = direction === "asc";
+  const kw = isAsc ? "ASC" : "DESC";
+  const nulls = isAsc ? "NULLS FIRST" : "NULLS LAST";
+  let primary: SQL;
+  switch (sortId ?? "date") {
+    case "date":
+      primary = (isAsc ? asc : desc)(transactions.date);
+      break;
+    case "amount":
+      primary = (isAsc ? asc : desc)(transactions.amount);
+      break;
+    case "quantity":
+      primary = sql`${transactions.quantity} ${sql.raw(kw)} ${sql.raw(nulls)}`;
+      break;
+    case "createdAt":
+      primary = (isAsc ? asc : desc)(transactions.createdAt);
+      break;
+    case "updatedAt":
+      primary = (isAsc ? asc : desc)(transactions.updatedAt);
+      break;
+    case "source":
+      primary = sql`${transactions.source} COLLATE "C" ${sql.raw(kw)}`;
+      break;
+    case "accountType":
+      primary = sql`${accounts.type} COLLATE "C" ${sql.raw(kw)} ${sql.raw(nulls)}`;
+      break;
+  }
+  return [primary, desc(transactions.id)];
+}
+
+/** Pure. Keyset predicate for date/amount. OR form plus a redundant range
+ * bound so Postgres can range-scan (user_id, date). Do NOT use a row
+ * comparison: wrong for ASC with an id DESC tiebreak. */
+export function buildTxKeysetCondition(
+  sortId: "date" | "amount",
+  direction: TxSortDirection,
+  cursor: TxKeysetCursor,
+): SQL {
+  if (cursor.s !== sortId || cursor.d !== direction) throw new InvalidCursorError("Cursor does not match sort");
+  const col = sortId === "date" ? transactions.date : transactions.amount;
+  const k = cursor.k;
+  const id = cursor.id;
+  if (direction === "desc") {
+    return sql`(${col} <= ${k} AND (${col} < ${k} OR (${col} = ${k} AND ${transactions.id} < ${id})))`;
+  }
+  return sql`(${col} >= ${k} AND (${col} > ${k} OR (${col} = ${k} AND ${transactions.id} < ${id})))`;
+}
+
+export async function getTransactions(userId: string, filters?: TxSortFilter) {
+  const conditions = buildTxFilterConditions(userId, filters);
+  const direction: TxSortDirection = filters?.sortDirection === "asc" ? "asc" : "desc";
+  return txRowsQuery(conditions, buildTxOrderBy(filters?.sortColumnId, direction))
+    .limit(filters?.limit ?? 100)
+    .offset(filters?.offset ?? 0)
+    .all();
+}
+
+export type TxPageRow = Awaited<ReturnType<typeof getTransactions>>[number];
+
+/** Cursor page. Fetches limit+1 to compute hasMore. Keyset for date/amount,
+ * offset carried in the cursor for other sorts. Throws InvalidCursorError
+ * if the cursor's sort/direction do not match the request. */
+export async function getTransactionsPage(
+  userId: string,
+  filters: TxSortFilter | undefined,
+  limit: number,
+): Promise<{ rows: TxPageRow[]; nextCursor: string | null; hasMore: boolean }> {
+  if (!Number.isSafeInteger(limit) || limit < 1) throw new RangeError("limit must be a positive integer");
+  const sortId: SortableColumnId = filters?.sortColumnId ?? "date";
+  const direction: TxSortDirection = filters?.sortDirection === "asc" ? "asc" : "desc";
+  const conditions = buildTxFilterConditions(userId, filters);
+  const cursor = filters?.cursor;
+  let offset = filters?.offset ?? 0;
+  if (cursor) {
+    if (cursor.s !== sortId || cursor.d !== direction) throw new InvalidCursorError("Cursor does not match sort");
+    if (isKeysetSortId(sortId)) {
+      if (!("k" in cursor)) throw new InvalidCursorError();
+      conditions.push(buildTxKeysetCondition(sortId, direction, cursor));
+      offset = 0;
+    } else {
+      if (!("o" in cursor)) throw new InvalidCursorError();
+      offset = cursor.o;
+    }
+  }
+  const fetched = await txRowsQuery(conditions, buildTxOrderBy(sortId, direction))
+    .limit(limit + 1)
+    .offset(offset)
+    .all();
+  const hasMore = fetched.length > limit;
+  const rows = hasMore ? fetched.slice(0, limit) : fetched;
+  let nextCursor: string | null = null;
+  if (hasMore) {
+    const last = rows[rows.length - 1];
+    nextCursor = isKeysetSortId(sortId)
+      ? encodeCursor({
+          v: 1,
+          s: sortId,
+          d: direction,
+          k: sortId === "date" ? last.date : last.amount,
+          id: last.id,
+        })
+      : encodeCursor({
+          v: 1,
+          s: sortId as Exclude<SortableColumnId, "date" | "amount">,
+          d: direction,
+          o: offset + rows.length,
+        });
+  }
+  return { rows, nextCursor, hasMore };
 }
 
 export async function getTransactionCount(userId: string, filters?: TxSortFilter): Promise<number> {

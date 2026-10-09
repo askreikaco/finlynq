@@ -394,7 +394,7 @@ export function TwoFactor() {
                   {secretCopied ? STRINGS.copiedButton : STRINGS.copyButton}
                 </Button>
               </div>
-              <p id="secret-help" className="text-[11px] text-muted-foreground mt-1">{STRINGS.secretHelp}</p>
+              <p id="secret-help" className="text-xs text-muted-foreground mt-1">{STRINGS.secretHelp}</p>
             </div>
 
             <form onSubmit={(e) => { e.preventDefault(); handleEnableMfa(); }} className="space-y-3 max-w-sm">

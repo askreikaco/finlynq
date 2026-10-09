@@ -85,8 +85,9 @@ const API_GROUPS: ApiGroup[] = [
           { name: "accountId", type: "number", required: false, description: "Filter by account ID" },
           { name: "categoryId", type: "number", required: false, description: "Filter by category ID" },
           { name: "search", type: "string", required: false, description: "Search payee, note, tags" },
-          { name: "limit", type: "number", required: false, description: "Max results (default 100)" },
-          { name: "offset", type: "number", required: false, description: "Pagination offset" },
+          { name: "limit", type: "number", required: false, description: "Max results. Offset mode default 100; cursor mode default 50, clamped to 1..200" },
+          { name: "offset", type: "number", required: false, description: "Pagination offset (offset mode only; ignored when cursor is sent)" },
+          { name: "cursor", type: "string", required: false, description: "Cursor mode. Send an empty value for the first page, then nextCursor from each response. Response: { data, nextCursor, hasMore, total }; total is on the first page only. Omit for offset mode: { data, total } on every call. Invalid cursor: 400" },
         ],
         example: `[{ "id": 1, "date": "2025-03-01", "accountName": "Chequing", "categoryName": "Groceries", "amount": -85.50, "payee": "Metro" }]`,
       },
@@ -563,9 +564,9 @@ function ApiDocsPageContent() {
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-4xl px-6 py-12">
         {/* Header */}
-        <div className="mb-8">
+        <div className="contents">
           <PageHeader title="API Docs" titleClassName="text-2xl font-bold tracking-tight" />
-          <p className="mt-2 text-muted-foreground">
+          <p className="mb-8 mt-2 text-muted-foreground">
             PF exposes both a REST API (Next.js routes) and an MCP server for AI assistant integration.
             All data is local — no external services required.
           </p>

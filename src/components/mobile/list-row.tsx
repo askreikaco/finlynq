@@ -59,7 +59,7 @@ export function ListRow({
     <>
       {tile}
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[15px] font-semibold text-foreground">{title}</span>
+        <span className="block truncate text-sm font-semibold text-foreground">{title}</span>
         {subtitle ? <span className="block truncate text-xs text-muted-foreground">{subtitle}</span> : null}
       </span>
       {value !== undefined || secondary !== undefined ? (
@@ -82,7 +82,7 @@ export function ListRow({
 
   const cls = cn(
     "flex min-h-[56px] w-full items-center gap-3 px-1 py-2 text-left",
-    interactive && "outline-none transition-colors hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 rounded-lg",
+    interactive && "outline-none transition-colors hover:bg-muted/50 active:bg-muted/60 focus-visible:ring-3 focus-visible:ring-ring/50 rounded-lg",
     className,
   );
   if (href) return <Link data-slot="list-row" href={href} className={cls} {...rest}>{body}</Link>;

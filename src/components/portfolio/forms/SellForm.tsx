@@ -12,18 +12,9 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -44,9 +35,13 @@ import { useSeedAccountFromParam } from "@/lib/hooks/useSeedAccountFromParam";
 import { AmountInput } from "@/components/amount-input";
 import { getDisplayLocale } from "@/lib/locale";
 
+import { OpFooter, OpGroup, OpNote, OpPage, OpRow, OP_INPUT, OP_SELECT, safeReturnHref } from "./op-page";
+
 export default function SellForm() {
   const router = useRouter();
   const { editId, isEdit } = useEditId();
+  const searchParams = useSearchParams();
+  const returnHref = safeReturnHref(searchParams.get("returnTo"));
 
   const { accounts, holdings, loading, loadError, editData } =
     usePortfolioFormData({ editId, opType: "sell" });
@@ -258,7 +253,7 @@ export default function SellForm() {
         }
         return;
       }
-      router.push("/transactions");
+      router.push(returnHref);
     } catch (err: unknown) {
       setSubmitError(err instanceof Error ? err.message : "Save failed");
     } finally {
@@ -268,38 +263,35 @@ export default function SellForm() {
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="py-8 text-sm text-muted-foreground">
-          Loading…
-        </CardContent>
-      </Card>
+      <OpPage title={isEdit ? "Edit Sell" : "Sell"}>
+        <OpGroup>
+          <OpNote>Loading…</OpNote>
+        </OpGroup>
+      </OpPage>
     );
   }
   if (loadError) {
     return (
-      <Card>
-        <CardContent className="py-8 text-sm text-destructive">
-          {loadError}
-        </CardContent>
-      </Card>
+      <OpPage title={isEdit ? "Edit Sell" : "Sell"}>
+        <OpGroup>
+          <OpNote tone="destructive">{loadError}</OpNote>
+        </OpGroup>
+      </OpPage>
     );
   }
   if (investmentAccounts.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>No investment accounts</CardTitle>
-          <CardDescription>
-            Sell operations require an investment account. Mark one of your
-            accounts as an investment account first.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Link href="/accounts" className="text-sm text-primary underline">
+      <OpPage title="Sell">
+        <OpGroup>
+          <OpNote>
+            No investment accounts. Sell operations require an investment account. Mark one of
+            your accounts as an investment account first.
+          </OpNote>
+          <Link href="/accounts" className="block px-4 py-3 text-sm text-primary">
             Go to Accounts →
           </Link>
-        </CardContent>
-      </Card>
+        </OpGroup>
+      </OpPage>
     );
   }
 
@@ -312,19 +304,15 @@ export default function SellForm() {
 
   return (
     <>
-    <Card>
-      <CardHeader>
-        <CardTitle>{isEdit ? "Edit Sell" : "Sell"}</CardTitle>
-        <CardDescription>
-          Realize gains on a holding. Proceeds land in the matching{" "}
-          {selectedHolding?.currency ?? "<currency>"} cash sleeve. FIFO by default
-          — toggle the lot picker to choose specific lots.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label>Account</Label>
+      <OpPage
+        title={isEdit ? "Edit Sell" : "Sell"}
+        saveLabel={isEdit ? "Save" : "Record"}
+        saving={submitting}
+        saveDisabled={submitting || cashSleeveMissing || !!loadError}
+        onSubmit={handleSubmit}
+      >
+        <OpGroup label="Trade">
+          <OpRow label="Account" error={errors.accountId}>
             <Select
               items={accountLabelById}
               value={accountId}
@@ -335,7 +323,7 @@ export default function SellForm() {
                 setLotSelection([]);
               }}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className={OP_SELECT}>
                 <SelectValue placeholder="Pick an investment account" />
               </SelectTrigger>
               <SelectContent alignItemWithTrigger={false} side="bottom">
@@ -346,13 +334,9 @@ export default function SellForm() {
                 ))}
               </SelectContent>
             </Select>
-            {errors.accountId && (
-              <p className="text-xs text-destructive">{errors.accountId}</p>
-            )}
-          </div>
+          </OpRow>
 
-          <div className="space-y-1.5">
-            <Label>Holding</Label>
+          <OpRow label="Holding" error={errors.holdingId}>
             <Select
               items={holdingLabelById}
               value={holdingId}
@@ -362,7 +346,7 @@ export default function SellForm() {
               }}
               disabled={!selectedAccount}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className={OP_SELECT}>
                 <SelectValue
                   placeholder={
                     selectedAccount
@@ -382,211 +366,155 @@ export default function SellForm() {
                 ))}
               </SelectContent>
             </Select>
-            {errors.holdingId && (
-              <p className="text-xs text-destructive">{errors.holdingId}</p>
-            )}
-            {selectedHolding && (
-              <p className="text-xs text-muted-foreground">
-                Currently holding {Number(selectedHolding.currentShares ?? 0).toLocaleString(getDisplayLocale())} shares.
-              </p>
-            )}
-          </div>
+          </OpRow>
 
+          {selectedHolding && (
+            <OpNote>
+              Currently holding{" "}
+              {Number(selectedHolding.currentShares ?? 0).toLocaleString(getDisplayLocale())} shares.
+            </OpNote>
+          )}
           {cashSleeveMissing && (
-            <div className="rounded-md border border-destructive/50 bg-destructive/5 px-3 py-2 text-xs text-destructive">
-              No {selectedHolding?.currency} cash sleeve exists in this account.
-              Create one in the{" "}
-              <Link
-                href={`/accounts/${selectedAccount?.id ?? ""}`}
-                className="underline"
-              >
+            <OpNote tone="destructive">
+              No {selectedHolding?.currency} cash sleeve exists in this account. Create one in the{" "}
+              <Link href={`/accounts/${selectedAccount?.id ?? ""}`} className="underline">
                 account page
               </Link>{" "}
               first.
-            </div>
+            </OpNote>
           )}
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>
-                Quantity to sell
-                {useLotPicker && (
-                  <span className="text-muted-foreground text-xs ml-1.5">
-                    (sum of selected lots)
-                  </span>
-                )}
-              </Label>
-              <AmountInput
-                step="any"
-                inputMode="decimal"
-                value={useLotPicker ? String(lotSelectionTotal || "") : qty}
-                onValueChange={(nv) => setQty(nv)}
-                placeholder="100"
-                readOnly={useLotPicker}
-                className={useLotPicker ? "bg-muted/40" : undefined}
-              />
-              {errors.qty && (
-                <p className="text-xs text-destructive">{errors.qty}</p>
-              )}
-            </div>
-            <div className="space-y-1.5">
-              <Label>
-                Total proceeds{" "}
-                {selectedHolding ? (
-                  <span className="text-muted-foreground text-xs">
-                    ({selectedHolding.currency})
-                  </span>
-                ) : null}
-              </Label>
-              <AmountInput
-                step="any"
-                inputMode="decimal"
-                value={totalProceeds}
-                onValueChange={(nv) => setTotalProceeds(nv)}
-                placeholder="1100.00"
-              />
-              {errors.totalProceeds && (
-                <p className="text-xs text-destructive">{errors.totalProceeds}</p>
-              )}
-            </div>
-          </div>
+          <OpRow
+            label={useLotPicker ? "Qty (lots)" : "Quantity"}
+            error={errors.qty}
+          >
+            <AmountInput
+              step="any"
+              inputMode="decimal"
+              value={useLotPicker ? String(lotSelectionTotal || "") : qty}
+              onValueChange={(nv) => setQty(nv)}
+              placeholder="100"
+              readOnly={useLotPicker}
+              className={OP_INPUT}
+            />
+          </OpRow>
 
-          <div className="space-y-1.5">
-            <Label>Date</Label>
+          <OpRow
+            label={
+              <>
+                Proceeds
+                {selectedHolding ? ` (${selectedHolding.currency})` : ""}
+              </>
+            }
+            error={errors.totalProceeds}
+          >
+            <AmountInput
+              step="any"
+              inputMode="decimal"
+              value={totalProceeds}
+              onValueChange={(nv) => setTotalProceeds(nv)}
+              placeholder="1100.00"
+              className={OP_INPUT}
+            />
+          </OpRow>
+
+          <OpRow label="Date" error={errors.date}>
             <Input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
+              className={OP_INPUT}
             />
-            {errors.date && (
-              <p className="text-xs text-destructive">{errors.date}</p>
-            )}
-          </div>
+          </OpRow>
+        </OpGroup>
 
-          {showPreview && selectedHolding && (
-            <div className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-              Will credit the {selectedHolding.currency} cash sleeve by{" "}
-              <span className="font-mono text-foreground">
-                {formatCurrency(proceedsNum, selectedHolding.currency)}
-              </span>
-              .
-            </div>
-          )}
+        {showPreview && selectedHolding && (
+          <OpFooter>
+            Will credit the {selectedHolding.currency} cash sleeve by{" "}
+            <span className="font-mono text-foreground">
+              {formatCurrency(proceedsNum, selectedHolding.currency)}
+            </span>
+            .
+          </OpFooter>
+        )}
 
-          {selectedHolding && (
-            <div className="space-y-2 rounded-md border border-border/60 px-3 py-2">
-              <label className="flex items-center gap-2 text-xs">
-                <input
-                  type="checkbox"
-                  checked={useLotPicker}
-                  onChange={(e) => {
-                    setUseLotPicker(e.target.checked);
-                    if (!e.target.checked) setLotSelection([]);
-                  }}
-                  className="h-3.5 w-3.5"
-                />
-                <span>Choose specific lots (advanced)</span>
-              </label>
-              {useLotPicker && (
+        {selectedHolding && (
+          <OpGroup label="Lots">
+            <label className="flex min-h-11 items-center gap-3 px-4 text-sm">
+              <input
+                type="checkbox"
+                checked={useLotPicker}
+                onChange={(e) => {
+                  setUseLotPicker(e.target.checked);
+                  if (!e.target.checked) setLotSelection([]);
+                }}
+                className="size-5"
+              />
+              <span>Choose specific lots (advanced). FIFO by default.</span>
+            </label>
+            {useLotPicker && (
+              <div className="px-0 py-0">
                 <LotPicker
                   holdingId={selectedHolding.id}
                   currency={selectedHolding.currency}
                   selection={lotSelection}
                   onChange={setLotSelection}
                 />
-              )}
-            </div>
-          )}
+              </div>
+            )}
+          </OpGroup>
+        )}
 
-          <div className="space-y-1.5">
-            <Label>
-              Payee{" "}
-              <span className="text-muted-foreground text-xs">(optional)</span>
-            </Label>
+        <OpGroup label="Details">
+          <OpRow label="Payee">
             <Input
               value={payee}
               onChange={(e) => setPayee(e.target.value)}
-              placeholder="Broker name"
+              placeholder="Broker name (optional)"
+              className={OP_INPUT}
             />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>
-              Note{" "}
-              <span className="text-muted-foreground text-xs">(optional)</span>
-            </Label>
+          </OpRow>
+          <OpRow label="Note">
             <Input
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder=""
+              placeholder="Optional"
+              className={OP_INPUT}
             />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>
-              Tags{" "}
-              <span className="text-muted-foreground text-xs">(optional)</span>
-            </Label>
+          </OpRow>
+          <OpRow label="Tags">
             <Input
               value={tags}
               onChange={(e) => setTags(e.target.value)}
-              placeholder="tag1, tag2"
+              placeholder="tag1, tag2 (optional)"
+              className={OP_INPUT}
             />
-          </div>
+          </OpRow>
+        </OpGroup>
 
-          {submitError && (
-            <p className="text-sm text-destructive">{submitError}</p>
-          )}
+        {submitError && (
+          <OpGroup>
+            <OpNote tone="destructive">{submitError}</OpNote>
+          </OpGroup>
+        )}
 
-          {blockingClosureTxIds.length > 0 && (
-            <div className="rounded-md border border-warning/30 bg-warning/10 p-3 text-xs">
-              <p className="font-medium text-warning mb-1.5">
-                Delete these dependent transactions first:
-              </p>
-              <ul className="space-y-1">
-                {blockingClosureTxIds.map((id) => (
-                  <li key={id}>
-                    <Link
-                      href={buildTxDrillUrl({ id: String(id) })}
-                      className="text-warning underline hover:no-underline"
-                    >
-                      Transaction #{id}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+        {blockingClosureTxIds.length > 0 && (
+          <OpGroup label="Blocked by">
+            <OpNote tone="warning">Delete these dependent transactions first:</OpNote>
+            {blockingClosureTxIds.map((id) => (
+              <Link
+                key={id}
+                href={buildTxDrillUrl({ id: String(id) })}
+                className="block px-4 py-3 text-sm text-warning underline hover:no-underline"
+              >
+                Transaction #{id}
+              </Link>
+            ))}
+          </OpGroup>
+        )}
+      </OpPage>
 
-          <div className="flex gap-2 pt-1">
-            <Button
-              type="button"
-              variant="outline"
-              className="flex-1"
-              onClick={() => router.push("/portfolio/new")}
-              disabled={submitting}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              className="flex-1"
-              disabled={submitting || cashSleeveMissing || !!loadError}
-            >
-              {submitting
-                ? isEdit
-                  ? "Saving…"
-                  : "Recording…"
-                : isEdit
-                  ? "Save edit"
-                  : "Record sell"}
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
-
-      {/* Oversell confirmation (FINLYNQ-162) — warn-but-allow opening a short. */}
+      {/* Oversell confirmation (FINLYNQ-162): a confirm step inside the form, not an operation dialog. */}
       <ConfirmDialog
         open={oversellConfirmOpen}
         onOpenChange={setOversellConfirmOpen}

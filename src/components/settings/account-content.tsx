@@ -314,7 +314,7 @@ export function AccountContent({
               <div>
                 <label className="text-xs font-medium text-muted-foreground">New password</label>
                 <Input type="password" autoComplete="new-password" value={newPw} onChange={(e) => setNewPw(e.target.value)} />
-                <p className="text-[11px] text-muted-foreground mt-1">At least 12 characters.</p>
+                <p className="text-xs text-muted-foreground mt-1">At least 12 characters.</p>
               </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground">Confirm new password</label>

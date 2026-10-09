@@ -787,7 +787,7 @@ export default function InvestmentsSettingsPage() {
 
   return (
     <div className="max-w-5xl space-y-6">
-      <div className="flex items-start justify-between gap-3">
+      <div className="contents">
         <PageHeader
             title="Investments"
             titleClassName="text-2xl font-bold tracking-tight"
@@ -855,7 +855,7 @@ export default function InvestmentsSettingsPage() {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="h-6 shrink-0 border-warning/30 px-2 text-[11px] text-warning hover:bg-warning/10"
+                              className="h-6 shrink-0 border-warning/30 px-2 text-xs text-warning hover:bg-warning/10"
                               onClick={() => setTickerTarget({ security: s, toSymbol: a.suggestedSymbol! })}
                             >
                               Change to {a.suggestedSymbol}
@@ -867,7 +867,7 @@ export default function InvestmentsSettingsPage() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="h-6 shrink-0 border-warning/30 px-2 text-[11px] text-warning hover:bg-warning/10"
+                                className="h-6 shrink-0 border-warning/30 px-2 text-xs text-warning hover:bg-warning/10"
                                 onClick={() => openRename(s)}
                               >
                                 Fix symbol
@@ -876,7 +876,7 @@ export default function InvestmentsSettingsPage() {
                                 variant="outline"
                                 size="sm"
                                 disabled={manualBusyId === s.id}
-                                className="h-6 shrink-0 border-warning/30 px-2 text-[11px] text-warning hover:bg-warning/10"
+                                className="h-6 shrink-0 border-warning/30 px-2 text-xs text-warning hover:bg-warning/10"
                                 onClick={() => switchToManualPricing(s)}
                               >
                                 {manualBusyId === s.id && (
@@ -890,7 +890,7 @@ export default function InvestmentsSettingsPage() {
                       );
                     })}
                   </ul>
-                  <p className="text-[11px] text-warning/80">
+                  <p className="text-xs text-warning/80">
                     Until this is resolved these holdings have no market price, so they don&apos;t
                     contribute to your portfolio value.
                   </p>
@@ -940,7 +940,7 @@ export default function InvestmentsSettingsPage() {
                         <TableCell className="text-sm font-mono font-medium">
                           {r.symbol}
                           {r.s.isCash && (
-                            <Badge variant="outline" className="ml-1.5 text-[10px]">
+                            <Badge variant="outline" className="ml-1.5 text-xs">
                               cash
                             </Badge>
                           )}
@@ -957,12 +957,12 @@ export default function InvestmentsSettingsPage() {
                           {r.description || <span className="text-muted-foreground">--</span>}
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className="text-[10px]">
+                          <Badge variant="outline" className="text-xs">
                             {r.type}
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className="font-mono text-[10px]">
+                          <Badge variant="outline" className="font-mono text-xs">
                             {r.currency}
                           </Badge>
                         </TableCell>
@@ -971,22 +971,22 @@ export default function InvestmentsSettingsPage() {
                             <div className="flex flex-col gap-0.5">
                               <Badge
                                 variant="secondary"
-                                className="w-fit text-[10px] border-warning/30 bg-warning/10 text-warning"
+                                className="w-fit text-xs border-warning/30 bg-warning/10 text-warning"
                               >
                                 Manual
                               </Badge>
                               {r.s.latestPrice ? (
-                                <span className="text-[11px] text-muted-foreground tabular-nums">
+                                <span className="text-xs text-muted-foreground tabular-nums">
                                   {formatCurrency(r.s.latestPrice.price, r.s.currency)} · {r.s.latestPrice.date}
                                 </span>
                               ) : (
-                                <span className="text-[11px] text-warning">
+                                <span className="text-xs text-warning">
                                   No price yet
                                 </span>
                               )}
                             </div>
                           ) : (
-                            <Badge variant="outline" className="text-[10px]">
+                            <Badge variant="outline" className="text-xs">
                               Auto
                             </Badge>
                           )}
@@ -1021,7 +1021,7 @@ export default function InvestmentsSettingsPage() {
             </div>
           )}
           {allSecurities.length > 0 && (
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               {rows.length} of {allSecurities.length} securities
               {hasActiveFilter ? " (filtered)" : ""}.
             </p>
@@ -1061,7 +1061,7 @@ export default function InvestmentsSettingsPage() {
                           <span className="truncate text-xs text-muted-foreground">{descriptionOf(s)}</span>
                         )}
                       </div>
-                      <Badge variant="outline" className="text-[10px] shrink-0">
+                      <Badge variant="outline" className="text-xs shrink-0">
                         {s.accounts.length} {s.accounts.length === 1 ? "account" : "accounts"}
                       </Badge>
                     </button>
@@ -1078,7 +1078,7 @@ export default function InvestmentsSettingsPage() {
                               <span className="text-sm">
                                 {a.accountName ?? "(account)"}
                                 {a.isCash && (
-                                  <span className="ml-1.5 text-[10px] text-muted-foreground">cash sleeve</span>
+                                  <span className="ml-1.5 text-xs text-muted-foreground">cash sleeve</span>
                                 )}
                               </span>
                               <Button aria-label="Unlink (transaction-free positions only)"
@@ -1134,11 +1134,11 @@ export default function InvestmentsSettingsPage() {
                           <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                         )}
                         <span className="text-sm font-medium truncate">{account.name}</span>
-                        <Badge variant="outline" className="font-mono text-[10px] shrink-0">
+                        <Badge variant="outline" className="font-mono text-xs shrink-0">
                           {account.currency}
                         </Badge>
                       </div>
-                      <Badge variant="outline" className="text-[10px] shrink-0">
+                      <Badge variant="outline" className="text-xs shrink-0">
                         {items.length} {items.length === 1 ? "security" : "securities"}
                       </Badge>
                     </button>
@@ -1155,7 +1155,7 @@ export default function InvestmentsSettingsPage() {
                               <span className="text-sm font-mono">
                                 {symbolLabel(security)}
                                 {isCash && (
-                                  <span className="ml-1.5 font-sans text-[10px] text-muted-foreground">
+                                  <span className="ml-1.5 font-sans text-xs text-muted-foreground">
                                     cash sleeve
                                   </span>
                                 )}
@@ -1219,7 +1219,7 @@ export default function InvestmentsSettingsPage() {
                 )}
               </div>
               {addErrors.symbol && <p className="text-xs text-destructive mt-1">{addErrors.symbol}</p>}
-              <p className="text-[11px] text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 We’ll try to fill the name + currency from the ticker; edit them if needed.
               </p>
             </div>
@@ -1285,7 +1285,7 @@ export default function InvestmentsSettingsPage() {
               </div>
               <p
                 className={cn(
-                  "text-[11px] mt-1",
+                  "text-xs mt-1",
                   addPriceSource === "manual"
                     ? "text-warning"
                     : "text-muted-foreground",
@@ -1419,7 +1419,7 @@ export default function InvestmentsSettingsPage() {
                 {renameErrors.symbol ? (
                   <p className="text-xs text-destructive mt-1">{renameErrors.symbol}</p>
                 ) : (
-                  <p className="text-[11px] text-muted-foreground mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     {advisoryFor(renameSecurity)
                       ? "This ticker can't be priced. Correct it here, or switch Pricing to Manual below."
                       : "Changing this re-points the holding and its history to the new ticker."}
@@ -1456,7 +1456,7 @@ export default function InvestmentsSettingsPage() {
                     <SelectItem value="etf">ETF</SelectItem>
                   </SelectContent>
                 </Select>
-                <p className="text-[11px] text-muted-foreground mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Overrides the automatic classification (from Yahoo) for the badge.
                 </p>
               </div>
@@ -1484,7 +1484,7 @@ export default function InvestmentsSettingsPage() {
                     </button>
                   ))}
                 </div>
-                <p className="text-[11px] text-muted-foreground mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   {editPriceSource === "manual"
                     ? "Not fetched from the market — set prices under “Prices”."
                     : "Prices are fetched automatically from Yahoo/CoinGecko."}

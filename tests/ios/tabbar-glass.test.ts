@@ -51,8 +51,8 @@ describe("floating capsule geometry (nav.tsx)", () => {
 });
 
 describe("glass material (globals.css)", () => {
-  it("light fill is oklch(1 0 0 / 55%)", () => {
-    expect(ruleBody(css, ".mobile-glass-bar")).toMatch(/background:\s*oklch\(1 0 0 \/ 55%\)/);
+  it("light fill is oklch(1 0 0 / 80%): raised from 55% so content behind the labels does not read through", () => {
+    expect(ruleBody(css, ".mobile-glass-bar")).toMatch(/background:\s*oklch\(1 0 0 \/ 80%\)/);
   });
 
   it("blur uses both -webkit- and standard backdrop-filter with blur(28px) saturate(1.8)", () => {
@@ -71,9 +71,9 @@ describe("glass material (globals.css)", () => {
     expect(body).toContain("0 8px 32px oklch(0 0 0 / 35%)");
   });
 
-  it("dark mode: fill oklch(1 0 0 / 8%) and rim oklch(1 0 0 / 14%)", () => {
+  it("dark mode: fill oklch(0.16 0.008 245 / 78%) and rim oklch(1 0 0 / 14%)", () => {
     const body = ruleBody(css, ".dark .mobile-glass-bar");
-    expect(body).toMatch(/background:\s*oklch\(1 0 0 \/ 8%\)/);
+    expect(body).toMatch(/background:\s*oklch\(0\.16 0\.008 245 \/ 78%\)/);
     expect(body).toMatch(/border-color:\s*oklch\(1 0 0 \/ 14%\)/);
   });
 
@@ -109,9 +109,9 @@ describe("fallbacks and motion", () => {
 });
 
 describe("tabs and active state (nav.tsx)", () => {
-  it("active tab gets the glass pill and text-sidebar-primary; inactive uses text-sidebar-foreground/60", () => {
-    expect(nav).toContain('"mobile-glass-pill text-sidebar-primary"');
-    expect(nav).toContain('"text-sidebar-foreground/60"');
+  it("active tab gets the glass pill and text-tab-active; inactive uses text-tab-inactive (tokens, contrast-checked)", () => {
+    expect(nav).toContain('"mobile-glass-pill text-tab-active"');
+    expect(nav).toContain('"text-tab-inactive"');
     expect(nav).not.toContain("text-sidebar-foreground/50\"");
   });
 

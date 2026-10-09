@@ -137,7 +137,7 @@ export function HoldingsTable({
                   onClick={() => setFilter(t)}
                 >
                   {t === "all" ? "All" : ASSET_TYPE_CONFIG[t]?.label ?? t}
-                  <Badge variant="secondary" className={`ml-1 text-[10px] h-4 px-1 bg-transparent ${filter === t ? "text-primary-foreground" : ""}`}>
+                  <Badge variant="secondary" className={`ml-1 text-xs h-5 px-1 bg-transparent ${filter === t ? "text-primary-foreground" : ""}`}>
                     {t === "all" ? summary.totalHoldings : byType[t]?.count ?? 0}
                   </Badge>
                 </Button>
@@ -275,7 +275,7 @@ export function HoldingsTable({
                             meaningful description (cash/metals/custom). */}
                         <div className="flex items-center gap-1.5 flex-wrap">
                           {r.image && <img src={r.image} alt="" className="h-5 w-5 rounded-full flex-shrink-0" />}
-                          {r.symbol && <Badge variant="secondary" className="font-mono text-[10px] h-4 px-1">{r.symbol}</Badge>}
+                          {r.symbol && <Badge variant="secondary" className="font-mono text-xs h-5 px-1">{r.symbol}</Badge>}
                           {description ? (
                             <span className="font-medium text-sm">{description}</span>
                           ) : (
@@ -283,7 +283,7 @@ export function HoldingsTable({
                           )}
                           <Badge
                             variant="outline"
-                            className="text-[10px] h-4 px-1"
+                            className="text-xs h-5 px-1"
                             ref={(el) => {
                               if (el && typeConf?.color) {
                                 el.style.borderColor = typeConf.color;
@@ -296,7 +296,7 @@ export function HoldingsTable({
                           {r.totalQty < 0 && (
                             <Badge
                               variant="outline"
-                              className="text-[10px] h-4 px-1 border-destructive text-destructive"
+                              className="text-xs h-5 px-1 border-destructive text-destructive"
                               title="Net-short position — sales exceeded buys. Lots are tracked via holding_lots.side='short'; close by buying to cover."
                             >
                               Short
@@ -359,7 +359,7 @@ export function HoldingsTable({
                         ) : <span className="text-muted-foreground text-xs">--</span>}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Badge variant="outline" className="text-[10px]">
+                        <Badge variant="outline" className="text-xs">
                           {r.accountCount}
                         </Badge>
                       </TableCell>
@@ -398,7 +398,7 @@ export function HoldingsTable({
                               <p className={`font-medium font-mono ${totalReturn >= 0 ? "text-pos" : "text-destructive"}`}>
                                 {totalReturn !== 0 ? `${totalReturn >= 0 ? "+" : ""}${formatCurrencyAdaptive(totalReturn, ccy)}` : "--"}
                                 {r.totalReturnPct != null && (
-                                  <span className="ml-1 text-[10px]">({r.totalReturnPct >= 0 ? "+" : ""}{formatPercent(r.totalReturnPct, 1)})</span>
+                                  <span className="ml-1 text-xs">({r.totalReturnPct >= 0 ? "+" : ""}{formatPercent(r.totalReturnPct, 1)})</span>
                                 )}
                               </p>
                             </div>
@@ -411,16 +411,19 @@ export function HoldingsTable({
                               doubles as the only edit affordance, since
                               the account-name cell opens the editor. */}
                           {memberHoldings.length > 0 && (
-                            <div className="mt-3 rounded-md border border-border overflow-hidden">
+                            // w-0 min-w-full: the per-account table must not widen the parent table (the
+                            // expanded cell spans the whole table); it scrolls inside its own box instead,
+                            // so the Lots / View txns actions stay inside the card at 1280.
+                            <div className="mt-3 w-0 min-w-full overflow-x-auto overscroll-x-contain rounded-md border border-border">
                               <Table>
                                 <TableHeader className="bg-muted/40">
                                   <TableRow className="hover:bg-transparent border-border">
-                                    <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground">Account</TableHead>
-                                    <TableHead className="text-right text-[10px] uppercase tracking-wider text-muted-foreground">Qty</TableHead>
-                                    <TableHead className="text-right text-[10px] uppercase tracking-wider text-muted-foreground">Avg Cost</TableHead>
-                                    <TableHead className="text-right text-[10px] uppercase tracking-wider text-muted-foreground">Mkt Value</TableHead>
-                                    <TableHead className="text-right text-[10px] uppercase tracking-wider text-muted-foreground">Unrealized G/L</TableHead>
-                                    <TableHead className="text-right text-[10px] uppercase tracking-wider text-muted-foreground">Realized G/L</TableHead>
+                                    <TableHead className="text-xs uppercase tracking-wider text-muted-foreground">Account</TableHead>
+                                    <TableHead className="text-right text-xs uppercase tracking-wider text-muted-foreground">Qty</TableHead>
+                                    <TableHead className="text-right text-xs uppercase tracking-wider text-muted-foreground">Avg Cost</TableHead>
+                                    <TableHead className="text-right text-xs uppercase tracking-wider text-muted-foreground">Mkt Value</TableHead>
+                                    <TableHead className="text-right text-xs uppercase tracking-wider text-muted-foreground">Unrealized G/L</TableHead>
+                                    <TableHead className="text-right text-xs uppercase tracking-wider text-muted-foreground">Realized G/L</TableHead>
                                     <TableHead className="text-right" />
                                   </TableRow>
                                 </TableHeader>
@@ -464,7 +467,7 @@ export function HoldingsTable({
                                             ? h.quantity.toLocaleString(getDisplayLocale(), { minimumFractionDigits: 0, maximumFractionDigits: magnitudeDecimals(h.quantity) })
                                             : <span className="text-muted-foreground">--</span>}
                                           {hasMetrics && h.quantity != null && h.quantity < 0 && (
-                                            <span className="ml-1 text-[9px] uppercase tracking-wider text-destructive" title="Short position">short</span>
+                                            <span className="ml-1 text-xs uppercase tracking-wider text-destructive" title="Short position">short</span>
                                           )}
                                         </TableCell>
                                         <TableCell className="text-right font-mono text-xs">
@@ -504,7 +507,7 @@ export function HoldingsTable({
                                                   accountName: h.accountName,
                                                 });
                                               }}
-                                              className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground hover:underline"
+                                              className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-muted-foreground hover:text-foreground hover:underline"
                                               title="Inspect lots: see how this holding's lots are consumed"
                                             >
                                               <Layers className="h-3 w-3" /> Lots
@@ -512,7 +515,7 @@ export function HoldingsTable({
                                             <Link
                                               href={buildTxDrillUrl({ portfolioHolding: h.name, accountId: h.accountId ? String(h.accountId) : undefined })}
                                               onClick={(e) => e.stopPropagation()}
-                                              className="text-[11px] text-primary hover:underline"
+                                              className="text-xs text-primary hover:underline"
                                               title="View transactions for this holding in this account"
                                             >
                                               View txns →

@@ -2,7 +2,8 @@
 
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { mutate as globalMutate } from "swr";
+import { useSWRConfig } from "swr";
+import { revalidateTransactionLists } from "@/lib/transactions/revalidate";
 import Link from "next/link";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { Card, CardContent } from "@/components/ui/card";
@@ -115,6 +116,7 @@ const INVESTMENT_OPS: { op: string; label: string }[] = [
 ];
 
 export default function AccountDetailPage() {
+  const { mutate: swrMutate, cache } = useSWRConfig();
   const { id } = useParams();
   const router = useRouter();
   const { displayCurrency } = useDisplayCurrency();
@@ -472,7 +474,7 @@ export default function AccountDetailPage() {
 
   if (!account && loadFailed) return (
     <div className="space-y-6">
-      <Link href="/accounts" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+      <Link href="/accounts" className="inline-flex max-md:min-h-11 items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
         <ArrowLeft className="h-4 w-4" /> Back to Accounts
       </Link>
       <ErrorState
@@ -499,7 +501,7 @@ export default function AccountDetailPage() {
   // op launched from THIS account. The accountField tells Deposit/Withdrawal
   // which of their two account sides this account fills.
   function opHref(op: string): string {
-    const params = new URLSearchParams({ op, account: String(account!.id) });
+    const params = new URLSearchParams({ account: String(account!.id) });
     if (isInvestment) {
       // Investment account: it is the brokerage side. For Deposit that's the
       // DEST; for everything else (incl. Withdrawal source) it's the default.
@@ -509,7 +511,8 @@ export default function AccountDetailPage() {
       // Withdrawal dest needs the override.
       if (op === "withdrawal") params.set("accountField", "dest");
     }
-    return `/portfolio/new?${params.toString()}`;
+    const slug = op === "transfer" ? "in-kind-transfer" : op;
+    return `/portfolio/new/${slug}?${params.toString()}`;
   }
 
   // Normal accounts can only deposit to / withdraw from a brokerage.
@@ -527,36 +530,38 @@ export default function AccountDetailPage() {
 
   return (
     <div className="space-y-6">
-      <Link href="/accounts" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+      <Link href="/accounts" className="inline-flex max-md:min-h-11 items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
         <ArrowLeft className="h-4 w-4" /> Back to Accounts
       </Link>
 
+      {/* actionsClassName has no w-full: on phones the actions sit in PageHeader's glass capsule, and a
+          100%-width capsule ran off the right edge. */}
       <PageHeader
         className="flex flex-wrap items-center justify-between gap-3"
         title={account.name}
         titleClassName="text-2xl font-bold tracking-tight"
-        actionsClassName="flex flex-wrap items-center gap-1.5 w-full sm:w-auto"
+        actionsClassName="flex min-w-0 flex-wrap items-center gap-1.5 sm:w-auto"
         lead={
           <div className={`h-10 w-10 shrink-0 rounded-xl flex items-center justify-center text-sm font-bold ${account.type === "A" ? "bg-pos/10 text-pos" : "bg-destructive/10 text-destructive"}`}>
             {(account.name ?? "?").charAt(0)}
           </div>
         }
         belowTitle={
-            <div className="flex flex-wrap gap-2 mt-0.5">
-              <Badge variant="outline" className="text-[10px]">{account.currency}</Badge>
-              <Badge variant={account.type === "A" ? "default" : "destructive"} className="text-[10px]">
+            <div className="flex max-w-full flex-wrap justify-center gap-2 mt-0.5 md:justify-start">
+              <Badge variant="outline" className="text-xs">{account.currency}</Badge>
+              <Badge variant={account.type === "A" ? "default" : "destructive"} className="text-xs">
                 {account.type === "A" ? "Asset" : "Liability"}
               </Badge>
               {isInvestment && (
-                <Badge variant="secondary" className="text-[10px]">Investment</Badge>
+                <Badge variant="secondary" className="text-xs">Investment</Badge>
               )}
               {account.archived === true && (
-                <Badge variant="secondary" className="text-[10px]">Archived</Badge>
+                <Badge variant="secondary" className="text-xs">Archived</Badge>
               )}
               {account.invisible === true && (
                 <Badge
                   variant="secondary"
-                  className="text-[10px]"
+                  className="text-xs"
                   title="Hidden from net worth, totals, reports and metrics"
                 >
                   Invisible
@@ -760,6 +765,7 @@ export default function AccountDetailPage() {
             <Button
               size="sm"
               variant="ghost"
+              className="max-md:w-11 max-md:px-0"
               onClick={() => openEdit("details")}
               title="Edit account"
               aria-label="Edit account"
@@ -786,12 +792,12 @@ export default function AccountDetailPage() {
               <p className="text-xs font-medium text-muted-foreground">Type</p>
               <div className="flex gap-1">
                 {account.type === "A" ? (
-                  <Badge variant="default" className="text-[10px]">Asset</Badge>
+                  <Badge variant="default" className="text-xs">Asset</Badge>
                 ) : (
-                  <Badge variant="destructive" className="text-[10px]">Liability</Badge>
+                  <Badge variant="destructive" className="text-xs">Liability</Badge>
                 )}
                 {isInvestment && (
-                  <Badge variant="secondary" className="text-[10px]">Investment</Badge>
+                  <Badge variant="secondary" className="text-xs">Investment</Badge>
                 )}
               </div>
             </div>
@@ -836,7 +842,7 @@ export default function AccountDetailPage() {
             {account.archived === true && (
               <div className="flex items-center justify-between py-3">
                 <p className="text-xs font-medium text-muted-foreground">Status</p>
-                <Badge variant="secondary" className="text-[10px]">Archived</Badge>
+                <Badge variant="secondary" className="text-xs">Archived</Badge>
               </div>
             )}
           </div>
@@ -897,9 +903,7 @@ export default function AccountDetailPage() {
           // Refresh the header tiles (balance + count) and revalidate the
           // embedded workspace's SWR list so the new row shows immediately.
           refreshBalanceAndTxns();
-          void globalMutate(
-            (key) => typeof key === "string" && key.startsWith("/api/transactions"),
-          );
+          void revalidateTransactionLists(swrMutate, cache);
         }}
       />
 
@@ -1064,11 +1068,10 @@ export default function AccountDetailPage() {
       </Sheet>
 
       {/* Edit account dialog — the shared <AccountDialog> (FINLYNQ-206
-          follow-up). Identical form to the Create dialog; only the title and
-          footer buttons differ. Reconciliation / Import / Cash sleeves are
-          edit-only extra tabs (they act on this account's id). */}
+          follow-up). Its form is the same <AccountForm> the New account page
+          uses. Reconciliation / Import / Cash sleeves are edit-only extra tabs
+          (they act on this account's id). */}
       <AccountDialog
-        mode="edit"
         open={editOpen}
         onOpenChange={setEditOpen}
         account={account}
@@ -1088,7 +1091,7 @@ export default function AccountDetailPage() {
                 </div>
                 <p className="text-xs text-muted-foreground">
                   How uploads to this account flow through the pipeline. The{" "}
-                  <code className="px-1 mx-0.5 rounded bg-muted text-[10px]">/inbox</code>{" "}
+                  <code className="px-1 mx-0.5 rounded bg-muted text-xs">/inbox</code>{" "}
                   chip is a per-render lens; this picker is the persisted policy.
                 </p>
                 <ModePicker
@@ -1169,7 +1172,7 @@ export default function AccountDetailPage() {
                       {sleeves.map((s) => (
                         <TableRow key={s.id} className="hover:bg-muted/30">
                           <TableCell>
-                            <Badge variant="outline" className="text-[10px] font-mono">
+                            <Badge variant="outline" className="text-xs font-mono">
                               {s.currency}
                             </Badge>
                           </TableCell>

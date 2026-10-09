@@ -5,7 +5,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as React from "react";
 import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), back: vi.fn() }) }));
-vi.mock("swr", () => ({ mutate: vi.fn() }));
+vi.mock("swr", () => ({ mutate: vi.fn(), useSWRConfig: () => ({ mutate: vi.fn(), cache: new Map() }) }));
 const st: { accounts: any[] } = { accounts: [] };
 const ACC = [
   { id: 1, name: "Checking", currency: "USD", archived: false },
@@ -22,11 +22,11 @@ import Page from "@/app/(app)/transactions/new/page";
 const KEY = "finlynq:tx-prefill";
 const mk = (o: any = {}) => ({ v: 1, amount: "150000", accountId: "2", categoryId: "20", payee: "ACME", note: "N1", tags: "", isBusiness: false, txType: "Income", ts: Date.now(), ...o });
 let fetchMock: any;
-beforeEach(() => { sessionStorage.clear(); window.history.replaceState({}, "", "/transactions/new"); st.accounts = ACC;
+beforeEach(() => { sessionStorage.clear(); localStorage.clear(); window.history.replaceState({}, "", "/transactions/new"); st.accounts = ACC;
   fetchMock = vi.fn(async () => ({ ok: true, json: async () => ({ id: 99 }) })); vi.stubGlobal("fetch", fetchMock); });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 async function save(type: string) {
-  fireEvent.click(screen.getByRole("button", { name: `Save ${type}` }));
+  fireEvent.click(screen.getByRole("button", { name: "Save" }));
   await waitFor(() => expect(fetchMock).toHaveBeenCalled());
   // First POST to /api/transactions (the page also GETs active currencies on mount).
   const post = fetchMock.mock.calls.find((c: unknown[]) => c[0] === "/api/transactions" && (c[1] as RequestInit | undefined)?.method === "POST");
@@ -107,7 +107,7 @@ describe("account selection", () => {
     sessionStorage.setItem(KEY, JSON.stringify(mk({ accountId: "99" })));
     window.history.replaceState({}, "", "/transactions/new?prefill=1");
     render(<Page />);
-    fireEvent.click(screen.getByRole("button", { name: "Save Income" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await new Promise(r => setTimeout(r, 50));
     console.log("R9 fetch calls:", fetchMock.mock.calls.length, fetchMock.mock.calls[0] && fetchMock.mock.calls[0][1]?.body);
   });

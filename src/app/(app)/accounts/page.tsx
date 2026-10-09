@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
@@ -13,15 +13,12 @@ import { OnboardingTips } from "@/components/onboarding-tips";
 import { EmptyState } from "@/components/empty-state";
 import { ErrorState } from "@/components/error-state";
 import {
-  ACCOUNT_GROUP_DEFAULTS,
   orderGroups,
   parseGroupOrder,
   type AccountGroupOrder,
   type AccountGroupType,
 } from "@/lib/accounts/groups";
 import { excludeInvisible } from "@/lib/account-visibility";
-import { ManageGroupsDialog } from "./_components/manage-groups-dialog";
-import { AccountDialog } from "./_components/account-dialog";
 import {
   TrendingUp,
   TrendingDown,
@@ -33,7 +30,6 @@ import {
   FolderCog,
 } from "lucide-react";
 import { PageHeader, HEADER_DESKTOP_ONLY, NetWorthHero, SectionLabel, AccountRow, CompactOnly, FromMd } from "@/components/mobile";
-import { usePageFab } from "@/components/mobile/page-fab";
 
 type AccountBalance = {
   accountId: number;
@@ -49,35 +45,6 @@ type AccountBalance = {
   invisible?: boolean;
   alias?: string | null;
 };
-
-const ACCOUNT_TYPES = [
-  { value: "A", label: "Asset" },
-  { value: "L", label: "Liability" },
-];
-// value→label map for base-ui Select trigger (FINLYNQ-197).
-const ACCOUNT_TYPE_LABELS: Record<string, string> = Object.fromEntries(
-  ACCOUNT_TYPES.map((t) => [t.value, t.label]),
-);
-
-// FINLYNQ-179: the default group suggestions now live in the shared
-// src/lib/accounts/groups.ts (single source of truth, also used by the
-// settings route + management dialog). The group field is free-text — these
-// are seed suggestions, NOT an allow-list.
-const ACCOUNT_GROUPS: Record<string, string[]> = ACCOUNT_GROUP_DEFAULTS;
-
-function aliasWarning(list: AccountBalance[], alias: string, excludeId: number | null): string {
-  const a = alias.trim().toLowerCase();
-  if (!a) return "";
-  const clash = list.find((acc) => {
-    if (acc.accountId === excludeId) return false;
-    const otherAlias = (acc.alias ?? "").trim().toLowerCase();
-    const otherName = acc.accountName.trim().toLowerCase();
-    return otherAlias === a || otherName === a;
-  });
-  return clash
-    ? `Another account ("${clash.accountName}") already uses this name or alias — matches may be ambiguous.`
-    : "";
-}
 
 function SummarySkeleton() {
   return (
@@ -134,11 +101,6 @@ export default function AccountsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
-  // Create account dialog — the form + save flow live in the shared
-  // <AccountDialog> (FINLYNQ-206 follow-up); this page only owns open state.
-  // Editing an account lives on its detail page (/accounts/[id]).
-  const [dialogOpen, setDialogOpen] = useState(false);
-
   // Show-archived toggle (persists archived accounts in the list with a badge)
   const [showArchived, setShowArchived] = useState(false);
   // FINLYNQ-148: the Settings → Dropdown Ordering "account" list is the user's
@@ -151,10 +113,8 @@ export default function AccountsPage() {
 
   // FINLYNQ-179: user-customizable account groups. The saved per-type display
   // order is a settings key/value (no migration); the management surface
-  // (rename / reorder / merge-into-Other) lives behind the "Manage groups"
-  // button.
+  // (rename / reorder / merge-into-Other) is the /accounts/groups page.
   const [groupOrder, setGroupOrder] = useState<AccountGroupOrder>({ A: [], L: [] });
-  const [manageGroupsOpen, setManageGroupsOpen] = useState(false);
 
   function loadGroupOrder() {
     fetch("/api/settings/account-group-order")
@@ -201,15 +161,6 @@ export default function AccountsPage() {
   const activeAssets = counted.filter((a) => a.accountType === "A");
   const activeLiabilities = counted.filter((a) => a.accountType === "L");
 
-  // FINLYNQ-179: the set of group names currently in use, for combobox
-  // suggestions (any type) and the management dialog (scoped per type).
-  const existingGroups = Array.from(
-    new Set(accounts.map((a) => (a.accountGroup || "").trim()).filter(Boolean)),
-  );
-  const groupsByType: Record<AccountGroupType, string[]> = {
-    A: Array.from(new Set(assets.map((a) => a.accountGroup || "Other"))),
-    L: Array.from(new Set(liabilities.map((a) => a.accountGroup || "Other"))),
-  };
 
   const groups = (list: AccountBalance[]) => {
     const map = new Map<string, AccountBalance[]>();
@@ -250,7 +201,7 @@ export default function AccountsPage() {
       <span className="flex min-w-0 items-center gap-2">
         <span className="min-w-0 truncate" data-testid="group-name">{group}</span>
         <span
-          className="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-muted px-1.5 text-[11px] font-medium text-muted-foreground"
+          className="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-muted px-1.5 text-xs font-medium text-muted-foreground"
           aria-label={`${accts.length} accounts`}
           data-testid="group-count"
         >
@@ -301,12 +252,12 @@ export default function AccountsPage() {
                         {a.accountName}
                         {a.alias && <span className="ml-1.5 text-xs text-muted-foreground font-normal">({a.alias})</span>}
                       </p>
-                      <Badge variant="outline" className="text-[10px] shrink-0">{a.currency}</Badge>
-                      {a.archived && <Badge variant="secondary" className="text-[10px] shrink-0">Archived</Badge>}
+                      <Badge variant="outline" className="text-xs shrink-0">{a.currency}</Badge>
+                      {a.archived && <Badge variant="secondary" className="text-xs shrink-0">Archived</Badge>}
                       {a.invisible && (
                         <Badge
                           variant="secondary"
-                          className="text-[10px] shrink-0"
+                          className="text-xs shrink-0"
                           title="Hidden from net worth, totals, reports and metrics"
                         >
                           Invisible
@@ -325,7 +276,7 @@ export default function AccountsPage() {
                     </span>
                     {a.convertedBalance != null &&
                       a.currency.toUpperCase() !== displayCurrency.toUpperCase() && (
-                        <span className="font-mono text-[11px] text-muted-foreground block">
+                        <span className="font-mono text-xs text-muted-foreground block">
                           {formatCurrency(a.convertedBalance, displayCurrency)}
                         </span>
                       )}
@@ -384,28 +335,15 @@ export default function AccountsPage() {
   const totalAssetsConverted = activeAssets.reduce((s, a) => s + (a.convertedBalance ?? a.balance), 0);
   const totalLiabilitiesConverted = activeLiabilities.reduce((s, a) => s + (a.convertedBalance ?? a.balance), 0);
 
-  const createAccountDialog = (
-    <>
-      <Button
-        size="sm"
-        className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-sm"
-        onClick={() => setDialogOpen(true)}
-      >
-        <Plus className="h-4 w-4 mr-1.5" /> <FromMd as="span">Create Account</FromMd><CompactOnly as="span">Add</CompactOnly>
-      </Button>
-      <AccountDialog
-        mode="create"
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        defaultCurrency={displayCurrency}
-        existingGroups={existingGroups}
-        aliasWarning={(alias, excludeId) => aliasWarning(accounts, alias, excludeId)}
-        onCreated={() => loadAccounts()}
-      />
-    </>
+  // Create account is its own page (/accounts/new), not a dialog.
+  const createAccountLink = (
+    <Link
+      href="/accounts/new"
+      className={buttonVariants({ size: "sm", className: "bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-sm" })}
+    >
+      <Plus className="h-4 w-4 mr-1.5" /> <FromMd as="span">Create Account</FromMd><CompactOnly as="span">Add</CompactOnly>
+    </Link>
   );
-
-  usePageFab("accounts.create", () => setDialogOpen(true));
 
   if (loading) return <SummarySkeleton />;
 
@@ -420,7 +358,7 @@ export default function AccountsPage() {
           className="flex flex-wrap items-center justify-between gap-3"
           title="Accounts"
           subtitle="Overview of your assets, liabilities, and net worth"
-          actions={createAccountDialog}
+          actions={createAccountLink}
           actionsClassName="contents"
         />
         <OnboardingTips page="accounts" />
@@ -441,7 +379,7 @@ export default function AccountsPage() {
         title="Accounts"
         subtitle="Overview of your assets, liabilities, and net worth"
         overflow={[
-          { label: "Manage groups", icon: FolderCog, onSelect: () => setManageGroupsOpen(true) },
+          { label: "Manage groups", icon: FolderCog, href: "/accounts/groups" },
           { label: showArchived ? "Hide archived" : "Show archived", icon: Archive, onSelect: () => setShowArchived((v) => !v) },
         ]}
         actions={
@@ -450,7 +388,7 @@ export default function AccountsPage() {
               variant="outline"
               size="sm"
               className={HEADER_DESKTOP_ONLY}
-              onClick={() => setManageGroupsOpen(true)}
+              render={<Link href="/accounts/groups" />}
               title="Rename, reorder, or merge account groups"
             >
               <FolderCog className="h-4 w-4 mr-1.5" />
@@ -466,7 +404,7 @@ export default function AccountsPage() {
               <Archive className="h-4 w-4 mr-1.5" />
               {showArchived ? "Hide archived" : "Show archived"}
             </Button>
-            {createAccountDialog}
+            {createAccountLink}
           </>
         }
       />
@@ -508,16 +446,6 @@ export default function AccountsPage() {
         {renderSection("Liabilities", liabilities, "text-destructive", ArrowDownRight, "bg-destructive/10 text-destructive")}
       </FromMd>
 
-      {/* FINLYNQ-179 — rename / reorder / merge-into-Other account groups */}
-      <ManageGroupsDialog
-        open={manageGroupsOpen}
-        onOpenChange={setManageGroupsOpen}
-        groupsByType={groupsByType}
-        onChanged={() => {
-          loadAccounts();
-          loadGroupOrder();
-        }}
-      />
     </div>
   );
 }

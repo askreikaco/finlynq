@@ -12,7 +12,7 @@ vi.mock("next/link", () => ({
   default: ({ children, href }: { children: React.ReactNode; href: string }) =>
     React.createElement("a", { href }, children),
 }));
-vi.mock("swr", () => ({ mutate: vi.fn() }));
+vi.mock("swr", () => ({ mutate: vi.fn(), useSWRConfig: () => ({ mutate: vi.fn(), cache: new Map() }) }));
 vi.mock("@/lib/data/use-api", () => ({
   useApi: (url: string) => {
     if (url === "/api/accounts")
@@ -62,6 +62,7 @@ function respond(url: string) {
 
 beforeEach(() => {
   sessionStorage.clear();
+  localStorage.clear(); // last-used account and recent picks persist per browser
   window.history.replaceState({}, "", "/transactions/new");
   calls = [];
   fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
@@ -87,6 +88,7 @@ const bodyOf = (c: { init?: RequestInit }) => JSON.parse(String(c.init?.body));
 
 // The option list fills once /api/settings/active-currencies resolves, so wait for it.
 async function pickCurrency(code: string) {
+  // Currency is the chip in the amount row.
   fireEvent.click(screen.getByLabelText("Currency"));
   const opt = await screen.findByRole("option", { name: code });
   fireEvent.pointerDown(opt, { button: 0, ctrlKey: false, pointerType: "mouse" });
@@ -97,7 +99,7 @@ async function pickCurrency(code: string) {
 }
 
 async function saveExpense() {
-  fireEvent.click(screen.getByRole("button", { name: "Save Expense" }));
+  fireEvent.click(screen.getByRole("button", { name: "Save" }));
   await waitFor(() => expect(postsTo("/api/transactions").length).toBe(1));
 }
 
@@ -149,7 +151,7 @@ describe("new transaction page parity with the dialog", () => {
   it("?kind=transfer opens the Transfer tab (no currency select, destination field shown)", () => {
     window.history.replaceState({}, "", "/transactions/new?kind=transfer");
     render(<Page />);
-    expect(screen.getByText("New Transfer")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "New Transfer" })).toBeTruthy();
     expect(screen.getByText("To Account")).toBeTruthy();
     expect(screen.queryByLabelText("Currency")).toBeNull();
   });
@@ -157,10 +159,10 @@ describe("new transaction page parity with the dialog", () => {
   it("?kind accepts only transfer|expense|income; anything else keeps the Expense default", () => {
     window.history.replaceState({}, "", "/transactions/new?kind=income");
     const { unmount } = render(<Page />);
-    expect(screen.getByText("New Income")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "New Income" })).toBeTruthy();
     unmount();
     window.history.replaceState({}, "", "/transactions/new?kind=bogus");
     render(<Page />);
-    expect(screen.getByText("New Expense")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "New Expense" })).toBeTruthy();
   });
 });

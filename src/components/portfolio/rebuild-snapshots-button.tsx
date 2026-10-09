@@ -226,7 +226,7 @@ export function RebuildSnapshotsButton({
                 ? "Rebuilding cash balances…"
                 : "Rebuilding balance history…"}
             </span>
-            <span className="text-[11px] tabular-nums text-primary/80">
+            <span className="text-xs tabular-nums text-primary/80">
               {indeterminate
                 ? "starting…"
                 : `Processing day ${progress.done} of ${progress.total}`}
@@ -247,7 +247,7 @@ export function RebuildSnapshotsButton({
               style={indeterminate ? undefined : { width: `${pct}%` }}
             />
           </div>
-          <p className="mt-1.5 text-[11px] text-muted-foreground">
+          <p className="mt-1.5 text-xs text-muted-foreground">
             This can take up to a minute. You can leave this page; it keeps running.
           </p>
         </div>

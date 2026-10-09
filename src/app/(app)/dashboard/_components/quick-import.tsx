@@ -61,7 +61,7 @@ export function QuickImport() {
           </div>
           <div>
             <p className="text-sm font-semibold">Quick Import</p>
-            <p className="text-[11px] text-muted-foreground">Drop a CSV or OFX file to import</p>
+            <p className="text-xs text-muted-foreground">Drop a CSV or OFX file to import</p>
           </div>
         </div>
 
@@ -89,7 +89,7 @@ export function QuickImport() {
                   <p className="text-xs text-muted-foreground">
                     <span className="text-primary font-medium">Click to browse</span> or drag & drop
                   </p>
-                  <p className="text-[10px] text-muted-foreground/60">CSV, OFX, QFX</p>
+                  <p className="text-xs text-muted-foreground/60">CSV, OFX, QFX</p>
                 </motion.div>
               )}
             </AnimatePresence>

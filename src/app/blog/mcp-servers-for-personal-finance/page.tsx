@@ -141,7 +141,7 @@ export default function McpServersForPersonalFinancePage() {
           </p>
         </header>
 
-        <article className="prose prose-invert max-w-none space-y-6 text-[15px] leading-relaxed">
+        <article className="prose prose-invert max-w-none space-y-6 text-sm leading-relaxed">
           <p className="text-base">
             If you have ever wanted to ask Claude {`"`}how much did I spend on
             groceries last month{`"`} and get an answer from your actual data,

@@ -44,7 +44,7 @@ function InsightCard({
             </div>
             <div>
               <CardTitle className="text-sm font-semibold">{title}</CardTitle>
-              <p className="text-[11px] text-muted-foreground">{subtitle}</p>
+              <p className="text-xs text-muted-foreground">{subtitle}</p>
             </div>
           </div>
         </CardHeader>
@@ -105,14 +105,14 @@ export function InsightsSection({ currency }: { currency?: string }) {
                 className="flex items-center justify-between p-2.5 rounded-xl bg-warning/10 border border-warning/30"
               >
                 <div className="min-w-0">
-                  <p className="text-[13px] font-medium">{a.category}</p>
-                  <p className="text-[11px] text-muted-foreground">{a.percentAbove}% above avg</p>
+                  <p className="text-sm font-medium">{a.category}</p>
+                  <p className="text-xs text-muted-foreground">{a.percentAbove}% above avg</p>
                 </div>
                 <div className="text-right shrink-0 ml-2">
-                  <p className="text-[13px] font-mono font-semibold text-warning tabular-nums">
+                  <p className="text-sm font-mono font-semibold text-warning tabular-nums">
                     {formatCurrency(a.currentMonth, resolvedCurrency)}
                   </p>
-                  <p className="text-[10px] text-muted-foreground tabular-nums">
+                  <p className="text-xs text-muted-foreground tabular-nums">
                     avg {formatCurrency(a.average, resolvedCurrency)}
                   </p>
                 </div>
@@ -134,10 +134,10 @@ export function InsightsSection({ currency }: { currency?: string }) {
             {recurring.recurring.slice(0, 8).map((r, i) => (
               <div key={i} className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
                 <div className="min-w-0">
-                  <p className="text-[13px] font-medium">{r.payee}</p>
-                  <p className="text-[11px] text-muted-foreground">{r.frequency} &middot; next: {r.nextDate}</p>
+                  <p className="text-sm font-medium">{r.payee}</p>
+                  <p className="text-xs text-muted-foreground">{r.frequency} &middot; next: {r.nextDate}</p>
                 </div>
-                <p className={`text-[13px] font-mono font-semibold tabular-nums shrink-0 ml-2 ${r.avgAmount < 0 ? "text-destructive" : "text-pos"}`}>
+                <p className={`text-sm font-mono font-semibold tabular-nums shrink-0 ml-2 ${r.avgAmount < 0 ? "text-destructive" : "text-pos"}`}>
                   {formatCurrency(r.avgAmount, r.currency || resolvedCurrency)}
                 </p>
               </div>
@@ -158,10 +158,10 @@ export function InsightsSection({ currency }: { currency?: string }) {
             {insights.topMerchants.slice(0, 8).map((m, i) => (
               <div key={i} className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
                 <div className="min-w-0">
-                  <p className="text-[13px] font-medium">{m.payee}</p>
-                  <p className="text-[11px] text-muted-foreground">{m.count} transactions</p>
+                  <p className="text-sm font-medium">{m.payee}</p>
+                  <p className="text-xs text-muted-foreground">{m.count} transactions</p>
                 </div>
-                <p className="text-[13px] font-mono font-semibold text-destructive tabular-nums shrink-0 ml-2">
+                <p className="text-sm font-mono font-semibold text-destructive tabular-nums shrink-0 ml-2">
                   {formatCurrency(m.totalSpent, resolvedCurrency)}
                 </p>
               </div>
@@ -181,8 +181,8 @@ export function InsightsSection({ currency }: { currency?: string }) {
           <div className="divide-y divide-border/40">
             {insights.trends.slice(0, 8).map((t, i) => (
               <div key={i} className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
-                <p className="text-[13px]">{t.category}</p>
-                <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full ${
+                <p className="text-sm">{t.category}</p>
+                <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full ${
                   t.trend === "rising"
                     ? "bg-destructive/10 text-destructive"
                     : t.trend === "declining"

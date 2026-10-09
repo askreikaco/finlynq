@@ -108,7 +108,7 @@ function HistoryTooltip({
   const breakdown = accountScoped ? undefined : payload[0].payload?.breakdown;
   return (
     <div className="rounded-xl border border-border/50 bg-card/95 backdrop-blur-sm px-3.5 py-2.5 shadow-lg max-w-[260px]">
-      <p className="text-[11px] font-medium text-muted-foreground mb-1">
+      <p className="text-xs font-medium text-muted-foreground mb-1">
         {label ? fmtFullDate(label) : ""}
       </p>
       <p className="text-sm font-semibold tabular-nums">
@@ -316,7 +316,7 @@ export function NetWorthHistoryChart({
         <div className="flex items-center justify-between gap-3">
           <div>
             <CardTitle className="text-sm font-semibold">{title}</CardTitle>
-            <p className="text-[11px] text-muted-foreground">{currency}</p>
+            <p className="text-xs text-muted-foreground">{currency}</p>
           </div>
           <div className="flex items-center gap-1">
             {stackable && (
@@ -455,7 +455,7 @@ export function NetWorthHistoryChart({
             )}
             {showStacked && <StackedChartLegend legend={legend} />}
             {!data.hasInvestmentData && accountId == null && (
-              <p className="text-[11px] text-muted-foreground mt-2">
+              <p className="text-xs text-muted-foreground mt-2">
                 Cash &amp; liabilities only — no investment snapshots found.
               </p>
             )}

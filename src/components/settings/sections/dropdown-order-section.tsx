@@ -331,13 +331,13 @@ export function DropdownOrderSection() {
                   className="flex items-center gap-2 border rounded-md px-2 py-1.5 bg-muted/20 hover:bg-muted/40 transition-colors"
                 >
                   <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab shrink-0" />
-                  <Badge variant="outline" className="font-mono text-[10px] shrink-0">
+                  <Badge variant="outline" className="font-mono text-xs shrink-0">
                     {idx + 1}
                   </Badge>
                   <div className="min-w-0 flex-1">
                     <div className="text-sm font-medium truncate">{item.label}</div>
                     {item.subLabel && (
-                      <div className="text-[11px] text-muted-foreground truncate">{item.subLabel}</div>
+                      <div className="text-xs text-muted-foreground truncate">{item.subLabel}</div>
                     )}
                   </div>
                   <div className="flex gap-0.5 shrink-0">
@@ -381,10 +381,10 @@ export function DropdownOrderSection() {
                   <div className="min-w-0 flex-1">
                     <div className="text-sm font-medium truncate">{item.label}</div>
                     {item.subLabel && (
-                      <div className="text-[11px] text-muted-foreground truncate">{item.subLabel}</div>
+                      <div className="text-xs text-muted-foreground truncate">{item.subLabel}</div>
                     )}
                   </div>
-                  <span className="text-[11px] text-muted-foreground shrink-0">Pin</span>
+                  <span className="text-xs text-muted-foreground shrink-0">Pin</span>
                 </button>
               ))}
             </div>

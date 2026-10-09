@@ -243,17 +243,15 @@ export default function AdminIntegrationsPage() {
   };
 
   const Heading = (
-    <div className="mb-6">
-      <PageHeader title={<><Plug className="w-8 h-8" />
-        Integrations</>} titleClassName="text-2xl font-bold tracking-tight flex items-center gap-2" />
-    </div>
+    <PageHeader title={<><Plug className="w-8 h-8" />
+      Integrations</>} titleClassName="text-2xl font-bold tracking-tight flex items-center gap-2" />
   );
 
   if (loading) {
     return (
       <div className="p-6">
         {Heading}
-        <Card>
+        <Card className="mt-6">
           <CardContent className="pt-6">Loading...</CardContent>
         </Card>
       </div>
@@ -276,7 +274,7 @@ export default function AdminIntegrationsPage() {
     <div className="p-6 max-w-4xl">
       {Heading}
 
-      <div className="mb-8">
+      <div className="mt-6 mb-8">
         <h2 className="text-2xl font-semibold mb-4">Email</h2>
 
         {error && (

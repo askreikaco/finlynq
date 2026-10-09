@@ -69,7 +69,7 @@ export default function HowFinlynqEncryptsYourMoneyPage() {
           </p>
         </header>
 
-        <article className="prose prose-invert max-w-none space-y-6 text-[15px] leading-relaxed">
+        <article className="prose prose-invert max-w-none space-y-6 text-sm leading-relaxed">
           <p className="text-base">
             If your AI assistant can read your money, who else can? I had to
             answer that for myself before I felt okay handing a language model

@@ -73,7 +73,7 @@ export function StackedAreaTooltip({
       }`}
     >
       {heading && (
-        <p className="text-[11px] font-medium text-muted-foreground mb-1">{heading}</p>
+        <p className="text-xs font-medium text-muted-foreground mb-1">{heading}</p>
       )}
       {showTotal && (
         <p className="text-sm font-semibold tabular-nums">

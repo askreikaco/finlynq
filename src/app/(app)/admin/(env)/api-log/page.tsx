@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Activity, RefreshCw, Trash2 } from "lucide-react";
-import { PageHeader } from "@/components/mobile";
+import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
 
 interface OutboundCall {
   id: number;
@@ -154,7 +154,7 @@ export default function AdminApiLogPage() {
         accessor: (r) => r.provider,
         filter: "select",
         render: (r) => (
-          <Badge variant="outline" className="text-[10px]">
+          <Badge variant="outline" className="text-xs">
             {r.provider}
           </Badge>
         ),
@@ -185,45 +185,56 @@ export default function AdminApiLogPage() {
 
   return (
     <div className="max-w-7xl space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <Activity className="h-5 w-5 text-primary" />
-            <PageHeader title="API Log" titleClassName="text-2xl font-bold tracking-tight" />
-          </div>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            Every outbound market-data call (Yahoo / CoinGecko) made by the server, newest first.
-            In-memory (last {data?.meta.cap ?? 1000}, cleared on restart). To diagnose an operation:{" "}
-            <span className="text-foreground">Clear</span>, reproduce it (e.g. rebuild balances),
-            then <span className="text-foreground">Refresh</span>.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <input
-              type="checkbox"
-              checked={auto}
-              onChange={(e) => setAuto(e.target.checked)}
-              className="h-3.5 w-3.5 accent-primary"
-            />
-            Auto-refresh
-          </label>
-          <Button variant="outline" size="sm" onClick={load} disabled={loading}>
-            <RefreshCw className={`mr-1.5 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
-            onClick={() => setClearOpen(true)}
-            disabled={calls.length === 0 || clearing}
-          >
-            <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-            Clear
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        className="flex flex-wrap items-center justify-between gap-3"
+        lead={<Activity className={`h-5 w-5 text-primary ${HEADER_DESKTOP_ONLY}`} />}
+        leadClassName="flex items-center gap-2"
+        title="API Log"
+        titleClassName="text-2xl font-bold tracking-tight"
+        overflow={[
+          { label: auto ? "Auto-refresh: on" : "Auto-refresh: off", onSelect: () => setAuto(!auto) },
+          {
+            label: "Clear",
+            icon: Trash2,
+            destructive: true,
+            onSelect: () => setClearOpen(true),
+            disabled: calls.length === 0 || clearing,
+          },
+        ]}
+        actions={
+          <>
+            <label className={`${HEADER_DESKTOP_ONLY} flex items-center gap-1.5 text-xs text-muted-foreground`}>
+              <input
+                type="checkbox"
+                checked={auto}
+                onChange={(e) => setAuto(e.target.checked)}
+                className="h-3.5 w-3.5 accent-primary"
+              />
+              Auto-refresh
+            </label>
+            <Button variant="outline" size="sm" onClick={load} disabled={loading}>
+              <RefreshCw className={`mr-1.5 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+              Refresh
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className={`${HEADER_DESKTOP_ONLY} border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive`}
+              onClick={() => setClearOpen(true)}
+              disabled={calls.length === 0 || clearing}
+            >
+              <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+              Clear
+            </Button>
+          </>
+        }
+      />
+      <p className="mt-0.5 text-sm text-muted-foreground">
+        Every outbound market-data call (Yahoo / CoinGecko) made by the server, newest first.
+        In-memory (last {data?.meta.cap ?? 1000}, cleared on restart). To diagnose an operation:{" "}
+        <span className="text-foreground">Clear</span>, reproduce it (e.g. rebuild balances),
+        then <span className="text-foreground">Refresh</span>.
+      </p>
 
       {error && (
         <Card className="border-destructive/30 bg-destructive/10">
@@ -236,20 +247,20 @@ export default function AdminApiLogPage() {
         <Card>
           <CardContent className="flex flex-wrap items-center gap-x-6 gap-y-2 py-4 text-sm">
             <div className="flex flex-col">
-              <span className="text-[11px] uppercase tracking-wider text-muted-foreground">Buffered</span>
+              <span className="text-xs uppercase tracking-wider text-muted-foreground">Buffered</span>
               <span className="font-semibold tabular-nums">
                 {data.meta.count.toLocaleString()} / {data.meta.cap.toLocaleString()}
               </span>
             </div>
             <div className="flex flex-col">
-              <span className="text-[11px] uppercase tracking-wider text-muted-foreground">Errors</span>
+              <span className="text-xs uppercase tracking-wider text-muted-foreground">Errors</span>
               <span className={`font-semibold tabular-nums ${summary.errors > 0 ? "text-destructive" : ""}`}>
                 {summary.errors.toLocaleString()}
               </span>
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
               {summary.byProvider.map(([prov, n]) => (
-                <Badge key={prov} variant="outline" className="text-[11px]">
+                <Badge key={prov} variant="outline" className="text-xs">
                   {prov}: {n.toLocaleString()}
                 </Badge>
               ))}

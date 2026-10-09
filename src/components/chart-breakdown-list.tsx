@@ -61,7 +61,7 @@ export function TooltipBreakdownList({
   return (
     <div className="mt-2 border-t border-border/40 pt-2">
       {heading && (
-        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1">
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-1">
           {heading}
         </p>
       )}

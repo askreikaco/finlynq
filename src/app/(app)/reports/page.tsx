@@ -831,13 +831,13 @@ export default function ReportsPage() {
                               <TableCell className="font-medium">
                                 {a.accountName}
                                 {a.costBasisMissing && (
-                                  <span className="ml-2 text-[10px] text-warning" title="Cost basis defaulted to market value (no buy transactions)">
+                                  <span className="ml-2 text-xs text-warning" title="Cost basis defaulted to market value (no buy transactions)">
                                     no cost basis
                                   </span>
                                 )}
                               </TableCell>
                               <TableCell>
-                                <Badge variant="outline" className="text-[10px]">{a.accountCurrency}</Badge>
+                                <Badge variant="outline" className="text-xs">{a.accountCurrency}</Badge>
                               </TableCell>
                               <TableCell className="text-right font-mono text-xs">
                                 {formatCurrency(a.costBasis, displayCurrency)}
@@ -922,7 +922,7 @@ export default function ReportsPage() {
                         <TableCell className="text-muted-foreground text-xs">{r.accountGroup}</TableCell>
                         <TableCell className="text-sm">{r.accountName}</TableCell>
                         <TableCell>
-                          <Badge variant="outline" className="text-[10px]">
+                          <Badge variant="outline" className="text-xs">
                             {r.currency}
                           </Badge>
                         </TableCell>
@@ -951,7 +951,7 @@ export default function ReportsPage() {
                         <TableCell className="text-muted-foreground text-xs">{r.accountGroup}</TableCell>
                         <TableCell className="text-sm">{r.accountName}</TableCell>
                         <TableCell>
-                          <Badge variant="outline" className="text-[10px]">
+                          <Badge variant="outline" className="text-xs">
                             {r.currency}
                           </Badge>
                         </TableCell>

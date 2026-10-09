@@ -13,7 +13,6 @@ import { FAB_ROUTES } from "@/components/mobile/fab-registry";
 const APP = "src/app/(app)";
 
 const PAGES = [
-  { file: `${APP}/accounts/page.tsx`, component: "AccountsPage", route: "/accounts", key: "accounts.create" },
   { file: `${APP}/accounts/[id]/page.tsx`, component: "AccountDetailPage", route: "/accounts/[id]", key: "accounts.detail.add" },
   { file: `${APP}/budgets/page.tsx`, component: "BudgetsPage", route: "/budgets", key: "budgets.create" },
   { file: `${APP}/goals/page.tsx`, component: "GoalsPage", route: "/goals", key: "goals.create" },

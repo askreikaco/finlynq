@@ -159,7 +159,7 @@ function InlinePieChart({ data, currency = "CAD" }: { data: Record<string, unkno
           paddingAngle={2}
           label={({ name, percent }) => `${name} ${Math.round((percent ?? 0) * 100)}%`}
           labelLine={false}
-          className="text-[10px]"
+          className="text-xs"
         >
           {data.map((_, i) => (
             <Cell key={i} fill={CHART_COLORS.categories[i % CHART_COLORS.categories.length]} />
@@ -380,7 +380,7 @@ function ChatPageContent() {
   // ─── Render ─────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col max-md:h-[calc(100dvh-var(--mobile-bar-clearance)-3.75rem)] max-md:-mb-20 md:h-[calc(100dvh-4rem)]">
+    <div data-chat-shell className="flex flex-col max-md:h-[calc(100dvh-var(--mobile-bar-clearance)-3.75rem)] max-md:-mb-20 md:h-[calc(100dvh-4rem)]">
       {/* Header */}
       <div className="flex items-center justify-between px-4 md:px-6 py-3 border-b border-border bg-background/80 backdrop-blur-sm shrink-0">
         <div className="flex items-center gap-3">
@@ -389,7 +389,7 @@ function ChatPageContent() {
           </div>
           <div>
             <h1 className="text-base font-semibold text-foreground">AI Chat</h1>
-            <p className="text-[11px] text-muted-foreground leading-none">Ask about your finances</p>
+            <p className="text-xs text-muted-foreground leading-none">Ask about your finances</p>
           </div>
         </div>
         {messages.length > 0 && (
@@ -495,7 +495,7 @@ function ChatPageContent() {
               <button
                 key={s}
                 onClick={() => sendMessage(s)}
-                className="px-2.5 py-1 text-[11px] font-medium rounded-full border border-border bg-card text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors whitespace-nowrap shrink-0"
+                className="px-2.5 py-1 text-xs font-medium rounded-full border border-border bg-card text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors whitespace-nowrap shrink-0"
               >
                 {s}
               </button>

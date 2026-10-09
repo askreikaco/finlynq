@@ -13,18 +13,9 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -40,9 +31,13 @@ import { useAccountHoldingSelection } from "@/lib/hooks/useAccountHoldingSelecti
 import { useSeedAccountFromParam } from "@/lib/hooks/useSeedAccountFromParam";
 import { AmountInput } from "@/components/amount-input";
 
+import { OpFooter, OpGroup, OpNote, OpPage, OpRow, OP_INPUT, OP_SELECT, safeReturnHref } from "./op-page";
+
 export default function FxConversionForm() {
   const router = useRouter();
   const { editId, isEdit } = useEditId();
+  const searchParams = useSearchParams();
+  const returnHref = safeReturnHref(searchParams.get("returnTo"));
 
   const { accounts, holdings, loading, loadError, editData } =
     usePortfolioFormData({ editId, opType: "fx-conversion" });
@@ -224,7 +219,7 @@ export default function FxConversionForm() {
         }
         return;
       }
-      router.push("/transactions");
+      router.push(returnHref);
     } catch (err: unknown) {
       setSubmitError(err instanceof Error ? err.message : "Save failed");
     } finally {
@@ -234,328 +229,231 @@ export default function FxConversionForm() {
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="py-8 text-sm text-muted-foreground">
-          Loading…
-        </CardContent>
-      </Card>
+      <OpPage title={isEdit ? "Edit FX conversion" : "FX conversion"}>
+        <OpGroup>
+          <OpNote>Loading…</OpNote>
+        </OpGroup>
+      </OpPage>
     );
   }
   if (loadError) {
     return (
-      <Card>
-        <CardContent className="py-8 text-sm text-destructive">
-          {loadError}
-        </CardContent>
-      </Card>
+      <OpPage title={isEdit ? "Edit FX conversion" : "FX conversion"}>
+        <OpGroup>
+          <OpNote tone="destructive">{loadError}</OpNote>
+        </OpGroup>
+      </OpPage>
     );
   }
   if (investmentAccounts.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>No investment accounts</CardTitle>
-          <CardDescription>
-            FX conversions require an investment account with multi-currency
-            cash sleeves.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Link href="/accounts" className="text-sm text-primary underline">
+      <OpPage title="FX conversion">
+        <OpGroup>
+          <OpNote>
+            FX conversions require an investment account with multi-currency cash sleeves.
+          </OpNote>
+          <Link href="/accounts" className="block px-4 py-3 text-sm text-primary">
             Go to Accounts →
           </Link>
-        </CardContent>
-      </Card>
+        </OpGroup>
+      </OpPage>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{isEdit ? "Edit FX conversion" : "FX conversion"}</CardTitle>
-        <CardDescription>
-          Move cash between two currency sleeves in the same account. Inferred
-          rate = to / from. Optional fee deducts from a chosen sleeve.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label>Account</Label>
-            <Select
-              items={accountLabelById}
-              value={accountId}
-              onValueChange={(v) => {
-                setAccountId(v ?? "");
-                setFromCurrency("");
-                setToCurrency("");
-                setFeeOnSleeveCurrency("");
-              }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Pick an investment account" />
-              </SelectTrigger>
-              <SelectContent alignItemWithTrigger={false} side="bottom">
-                {investmentAccounts.map((a) => (
-                  <SelectItem key={a.id} value={String(a.id)}>
-                    {a.name ?? `#${a.id}`} ({a.currency})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.accountId && (
-              <p className="text-xs text-destructive">{errors.accountId}</p>
-            )}
-          </div>
+    <OpPage
+      title={isEdit ? "Edit FX conversion" : "FX conversion"}
+      saveLabel={isEdit ? "Save" : "Record"}
+      saving={submitting}
+      saveDisabled={submitting || !!loadError}
+      onSubmit={handleSubmit}
+    >
+      <OpGroup label="Account">
+        <OpRow label="Account" error={errors.accountId}>
+          <Select
+            items={accountLabelById}
+            value={accountId}
+            onValueChange={(v) => {
+              setAccountId(v ?? "");
+              setFromCurrency("");
+              setToCurrency("");
+              setFeeOnSleeveCurrency("");
+            }}
+          >
+            <SelectTrigger className={OP_SELECT}>
+              <SelectValue placeholder="Pick an investment account" />
+            </SelectTrigger>
+            <SelectContent alignItemWithTrigger={false} side="bottom">
+              {investmentAccounts.map((a) => (
+                <SelectItem key={a.id} value={String(a.id)}>
+                  {a.name ?? `#${a.id}`} ({a.currency})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </OpRow>
+        {selectedAccount && sleeveCurrencies.length < 2 && (
+          <OpNote tone="warning">
+            This account has fewer than 2 cash sleeves. Add another currency sleeve in the{" "}
+            <Link href={`/accounts/${selectedAccount.id}`} className="underline">
+              account page
+            </Link>{" "}
+            before converting.
+          </OpNote>
+        )}
+      </OpGroup>
 
-          {selectedAccount && sleeveCurrencies.length < 2 && (
-            <div className="rounded-md border border-warning/50 bg-warning/5 px-3 py-2 text-xs text-warning">
-              This account has fewer than 2 cash sleeves. Add another currency
-              sleeve in the{" "}
-              <Link
-                href={`/accounts/${selectedAccount.id}`}
-                className="underline"
-              >
-                account page
-              </Link>{" "}
-              before converting.
-            </div>
-          )}
+      <OpGroup label="Convert">
+        <OpRow label="From" error={errors.fromCurrency}>
+          <Select
+            value={fromCurrency}
+            onValueChange={(v) => {
+              setFromCurrency(v ?? "");
+              if (v && v === toCurrency) setToCurrency("");
+            }}
+            disabled={!selectedAccount || sleeveCurrencies.length === 0}
+          >
+            <SelectTrigger className={OP_SELECT}>
+              <SelectValue placeholder="Pick currency" />
+            </SelectTrigger>
+            <SelectContent alignItemWithTrigger={false} side="bottom">
+              {sleeveCurrencies.map((c) => (
+                <SelectItem key={c} value={c}>
+                  {c}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </OpRow>
+        <OpRow label={fromCurrency ? `Amount (${fromCurrency})` : "Amount"} error={errors.fromAmount}>
+          <AmountInput
+            step="any"
+            inputMode="decimal"
+            value={fromAmount}
+            onValueChange={(nv) => setFromAmount(nv)}
+            placeholder="100.00"
+            className={OP_INPUT}
+          />
+        </OpRow>
+        <OpRow label="To" error={errors.toCurrency}>
+          <Select
+            value={toCurrency}
+            onValueChange={(v) => setToCurrency(v ?? "")}
+            disabled={!fromCurrency || toCurrencyOptions.length === 0}
+          >
+            <SelectTrigger className={OP_SELECT}>
+              <SelectValue placeholder="Pick currency" />
+            </SelectTrigger>
+            <SelectContent alignItemWithTrigger={false} side="bottom">
+              {toCurrencyOptions.map((c) => (
+                <SelectItem key={c} value={c}>
+                  {c}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </OpRow>
+        <OpRow label={toCurrency ? `Amount (${toCurrency})` : "Amount"} error={errors.toAmount}>
+          <AmountInput
+            step="any"
+            inputMode="decimal"
+            value={toAmount}
+            onValueChange={(nv) => setToAmount(nv)}
+            placeholder="73.50"
+            className={OP_INPUT}
+          />
+        </OpRow>
+      </OpGroup>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>From currency</Label>
-              <Select
-                value={fromCurrency}
-                onValueChange={(v) => {
-                  setFromCurrency(v ?? "");
-                  if (v && v === toCurrency) setToCurrency("");
-                }}
-                disabled={!selectedAccount || sleeveCurrencies.length === 0}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Pick" />
-                </SelectTrigger>
-                <SelectContent alignItemWithTrigger={false} side="bottom">
-                  {sleeveCurrencies.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.fromCurrency && (
-                <p className="text-xs text-destructive">{errors.fromCurrency}</p>
-              )}
-            </div>
-            <div className="space-y-1.5">
-              <Label>
-                From amount{" "}
-                {fromCurrency ? (
-                  <span className="text-muted-foreground text-xs">
-                    ({fromCurrency})
-                  </span>
-                ) : null}
-              </Label>
-              <AmountInput
-                step="any"
-                inputMode="decimal"
-                value={fromAmount}
-                onValueChange={(nv) => setFromAmount(nv)}
-                placeholder="100.00"
+      {inferredRate !== null && fromCurrency && toCurrency && (
+        <OpFooter>
+          Inferred rate:{" "}
+          <span className="font-mono text-foreground">
+            1 {fromCurrency} = {inferredRate.toFixed(6)} {toCurrency}
+          </span>
+        </OpFooter>
+      )}
+
+      <OpGroup label="Fee">
+        <OpRow label="Amount" error={errors.feeAmount}>
+          <AmountInput
+            step="any"
+            inputMode="decimal"
+            value={feeAmount}
+            onValueChange={(nv) => setFeeAmount(nv)}
+            placeholder="0.00 (optional)"
+            className={OP_INPUT}
+          />
+        </OpRow>
+        <OpRow label="Charged to">
+          <Select
+            value={feeOnSleeveCurrency}
+            onValueChange={(v) => setFeeOnSleeveCurrency(v ?? "")}
+            disabled={!feeAmount.trim() || sleeveCurrencies.length === 0}
+          >
+            <SelectTrigger className={OP_SELECT}>
+              <SelectValue
+                placeholder={feeAmount.trim() ? "Default = from currency" : "Enter fee first"}
               />
-              {errors.fromAmount && (
-                <p className="text-xs text-destructive">{errors.fromAmount}</p>
-              )}
-            </div>
-          </div>
+            </SelectTrigger>
+            <SelectContent alignItemWithTrigger={false} side="bottom">
+              {sleeveCurrencies.map((c) => (
+                <SelectItem key={c} value={c}>
+                  {c}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </OpRow>
+      </OpGroup>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>To currency</Label>
-              <Select
-                value={toCurrency}
-                onValueChange={(v) => setToCurrency(v ?? "")}
-                disabled={!fromCurrency || toCurrencyOptions.length === 0}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Pick" />
-                </SelectTrigger>
-                <SelectContent alignItemWithTrigger={false} side="bottom">
-                  {toCurrencyOptions.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.toCurrency && (
-                <p className="text-xs text-destructive">{errors.toCurrency}</p>
-              )}
-            </div>
-            <div className="space-y-1.5">
-              <Label>
-                To amount{" "}
-                {toCurrency ? (
-                  <span className="text-muted-foreground text-xs">
-                    ({toCurrency})
-                  </span>
-                ) : null}
-              </Label>
-              <AmountInput
-                step="any"
-                inputMode="decimal"
-                value={toAmount}
-                onValueChange={(nv) => setToAmount(nv)}
-                placeholder="73.50"
-              />
-              {errors.toAmount && (
-                <p className="text-xs text-destructive">{errors.toAmount}</p>
-              )}
-            </div>
-          </div>
+      <OpGroup label="Details">
+        <OpRow label="Date" error={errors.date}>
+          <Input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className={OP_INPUT}
+          />
+        </OpRow>
+        <OpRow label="Payee">
+          <Input
+            value={payee}
+            onChange={(e) => setPayee(e.target.value)}
+            placeholder="e.g. Norbert's Gambit (optional)"
+            className={OP_INPUT}
+          />
+        </OpRow>
+        <OpRow label="Note">
+          <Input
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Optional"
+            className={OP_INPUT}
+          />
+        </OpRow>
+      </OpGroup>
 
-          {inferredRate !== null && fromCurrency && toCurrency && (
-            <div className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-              Inferred rate:{" "}
-              <span className="font-mono text-foreground">
-                1 {fromCurrency} = {inferredRate.toFixed(6)} {toCurrency}
-              </span>
-            </div>
-          )}
+      {submitError && (
+        <OpGroup>
+          <OpNote tone="destructive">{submitError}</OpNote>
+        </OpGroup>
+      )}
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>
-                Fee amount{" "}
-                <span className="text-muted-foreground text-xs">
-                  (optional)
-                </span>
-              </Label>
-              <AmountInput
-                step="any"
-                inputMode="decimal"
-                value={feeAmount}
-                onValueChange={(nv) => setFeeAmount(nv)}
-                placeholder="0.00"
-              />
-              {errors.feeAmount && (
-                <p className="text-xs text-destructive">{errors.feeAmount}</p>
-              )}
-            </div>
-            <div className="space-y-1.5">
-              <Label>Fee charged to sleeve</Label>
-              <Select
-                value={feeOnSleeveCurrency}
-                onValueChange={(v) => setFeeOnSleeveCurrency(v ?? "")}
-                disabled={!feeAmount.trim() || sleeveCurrencies.length === 0}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue
-                    placeholder={
-                      feeAmount.trim()
-                        ? "Default = from currency"
-                        : "Enter fee first"
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent alignItemWithTrigger={false} side="bottom">
-                  {sleeveCurrencies.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>Date</Label>
-            <Input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-            />
-            {errors.date && (
-              <p className="text-xs text-destructive">{errors.date}</p>
-            )}
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>
-              Payee{" "}
-              <span className="text-muted-foreground text-xs">(optional)</span>
-            </Label>
-            <Input
-              value={payee}
-              onChange={(e) => setPayee(e.target.value)}
-              placeholder="e.g. Norbert's Gambit"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>
-              Note{" "}
-              <span className="text-muted-foreground text-xs">(optional)</span>
-            </Label>
-            <Input
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder=""
-            />
-          </div>
-
-          {submitError && (
-            <p className="text-sm text-destructive">{submitError}</p>
-          )}
-
-          {blockingClosureTxIds.length > 0 && (
-            <div className="rounded-md border border-warning/30 bg-warning/10 p-3 text-xs">
-              <p className="font-medium text-warning mb-1.5">
-                Delete these dependent transactions first:
-              </p>
-              <ul className="space-y-1">
-                {blockingClosureTxIds.map((id) => (
-                  <li key={id}>
-                    <Link
-                      href={buildTxDrillUrl({ id: String(id) })}
-                      className="text-warning underline hover:no-underline"
-                    >
-                      Transaction #{id}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          <div className="flex gap-2 pt-1">
-            <Button
-              type="button"
-              variant="outline"
-              className="flex-1"
-              onClick={() => router.push("/portfolio/new")}
-              disabled={submitting}
+      {blockingClosureTxIds.length > 0 && (
+        <OpGroup label="Blocked by">
+          <OpNote tone="warning">Delete these dependent transactions first:</OpNote>
+          {blockingClosureTxIds.map((id) => (
+            <Link
+              key={id}
+              href={buildTxDrillUrl({ id: String(id) })}
+              className="block px-4 py-3 text-sm text-warning underline hover:no-underline"
             >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              className="flex-1"
-              disabled={submitting || !!loadError}
-            >
-              {submitting
-                ? isEdit
-                  ? "Saving…"
-                  : "Recording…"
-                : isEdit
-                  ? "Save edit"
-                  : "Record conversion"}
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+              Transaction #{id}
+            </Link>
+          ))}
+        </OpGroup>
+      )}
+    </OpPage>
   );
 }

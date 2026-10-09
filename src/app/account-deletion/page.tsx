@@ -33,7 +33,7 @@ export default function AccountDeletionPage() {
           <p className="mt-3 text-sm text-muted-foreground">Last updated: 2026-05-30</p>
         </header>
 
-        <section className="prose prose-invert max-w-none space-y-8 text-[15px] leading-relaxed">
+        <section className="prose prose-invert max-w-none space-y-8 text-sm leading-relaxed">
           <p className="text-base">
             This page explains how to delete your <strong>Finlynq</strong> account
             (the Finlynq personal-finance app, developer Finlynq) and all of the

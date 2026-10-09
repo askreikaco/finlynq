@@ -170,8 +170,8 @@ export function EmailRulesManager() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <span className="font-medium truncate">{r.name}</span>
-                      <Badge variant="outline" className="text-[10px]">{r.mode}</Badge>
-                      {!r.isActive && <Badge variant="outline" className="text-[10px]">off</Badge>}
+                      <Badge variant="outline" className="text-xs">{r.mode}</Badge>
+                      {!r.isActive && <Badge variant="outline" className="text-xs">off</Badge>}
                     </div>
                     <div className="text-xs text-muted-foreground truncate">
                       {summarizeConditions(r.conditions)} → {acctLabel(r.accountId)}

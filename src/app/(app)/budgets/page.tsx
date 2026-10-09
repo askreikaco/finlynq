@@ -673,7 +673,7 @@ export default function BudgetsPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{formatCurrency(totalBudget, displayCurrency)}</p>
+            <p className="min-w-0 break-words text-xl font-bold tabular-nums md:text-2xl">{formatCurrency(totalBudget, displayCurrency)}</p>
             {totalRollover > 0 && (
               <p className="text-xs text-warning mt-1 flex items-center gap-1">
                 <ArrowDownRight className="h-3 w-3" />
@@ -692,7 +692,7 @@ export default function BudgetsPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <p className={`text-2xl font-bold ${totalSpent > totalBudget ? "text-destructive" : "text-pos"}`}>
+            <p className={`min-w-0 break-words text-xl font-bold tabular-nums md:text-2xl ${totalSpent > totalBudget ? "text-destructive" : "text-pos"}`}>
               {formatCurrency(totalSpent, displayCurrency)}
             </p>
           </CardContent>
@@ -707,7 +707,7 @@ export default function BudgetsPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <p className={`text-2xl font-bold ${totalRemaining >= 0 ? "text-pos" : "text-destructive"}`}>
+            <p className={`min-w-0 break-words text-xl font-bold tabular-nums md:text-2xl ${totalRemaining >= 0 ? "text-pos" : "text-destructive"}`}>
               {formatCurrency(totalRemaining, displayCurrency)}
             </p>
           </CardContent>
@@ -725,7 +725,7 @@ export default function BudgetsPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <p className={`text-2xl font-bold ${availableToBudget >= 0 ? "text-pos" : "text-destructive"}`}>
+              <p className={`min-w-0 break-words text-xl font-bold tabular-nums md:text-2xl ${availableToBudget >= 0 ? "text-pos" : "text-destructive"}`}>
                 {formatCurrency(availableToBudget, displayCurrency)}
               </p>
               {availableToBudget < 0 && (
@@ -747,7 +747,7 @@ export default function BudgetsPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">{ageOfMoney.ageInDays} days</p>
+              <p className="min-w-0 break-words text-xl font-bold tabular-nums md:text-2xl">{ageOfMoney.ageInDays} days</p>
               {ageOfMoney.trend !== 0 && (
                 <p className={`text-xs mt-1 ${ageOfMoney.trend > 0 ? "text-pos" : "text-destructive"}`}>
                   {ageOfMoney.trend > 0 ? "+" : ""}{ageOfMoney.trend}d vs previous period
@@ -795,7 +795,7 @@ export default function BudgetsPage() {
         </Card>
       ) : (
         Array.from(groupMap.entries()).map(([group, items]) => (
-          <Card key={group}>
+          <Card key={group} className="gap-1">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm text-muted-foreground">{group}</CardTitle>
             </CardHeader>

@@ -38,7 +38,7 @@ export default function SelfHostedPage() {
 
         {/* Logo */}
         <div className="mb-6 flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary">
-          <span className="text-2xl font-extrabold tracking-wide text-primary-foreground">
+          <span className="text-2xl font-bold tracking-wide text-primary-foreground">
             FL
           </span>
         </div>

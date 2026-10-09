@@ -111,7 +111,7 @@ export function OfxConfirmDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl max-h-[88vh] overflow-hidden flex flex-col">
+      <DialogContent className="sm:max-w-4xl max-h-[88dvh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Confirm import — {format.toUpperCase()} statement</DialogTitle>
           <DialogDescription>
@@ -161,7 +161,7 @@ export function OfxConfirmDialog({
                 </label>
               ))}
             </div>
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               The other field becomes the transaction Note. Some banks put the
               real merchant in Memo and a generic label in Name — flip this if the
               Payee column below looks generic.
@@ -176,7 +176,7 @@ export function OfxConfirmDialog({
                 (first {Math.min(previewRows.length, 50)} of {rowCount})
               </span>
             </div>
-            <div className="rounded-lg border overflow-auto max-h-[42vh]">
+            <div className="rounded-lg border overflow-auto max-h-[42dvh]">
               <table className="w-full text-xs">
                 <thead className="bg-muted/50 sticky top-0">
                   <tr>
@@ -207,7 +207,7 @@ export function OfxConfirmDialog({
               </table>
             </div>
             {rowCount > 50 && (
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Showing the first 50 rows — all {rowCount} will be imported.
               </p>
             )}
@@ -227,7 +227,7 @@ export function OfxConfirmDialog({
                 />
                 <span>
                   <span className="font-medium">Ask me to confirm first</span>
-                  <span className="block text-[11px] text-muted-foreground">
+                  <span className="block text-xs text-muted-foreground">
                     Show this preview each time (recommended).
                   </span>
                 </span>
@@ -242,7 +242,7 @@ export function OfxConfirmDialog({
                 />
                 <span>
                   <span className="font-medium">Apply automatically</span>
-                  <span className="block text-[11px] text-muted-foreground">
+                  <span className="block text-xs text-muted-foreground">
                     Import silently using this Payee source — don&apos;t ask again.
                     Reset anytime on the account&apos;s page → Import preferences.
                   </span>

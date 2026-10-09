@@ -13,18 +13,9 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -39,6 +30,8 @@ import { useAccountHoldingSelection } from "@/lib/hooks/useAccountHoldingSelecti
 import { useSeedAccountFromParam } from "@/lib/hooks/useSeedAccountFromParam";
 import { AmountInput } from "@/components/amount-input";
 
+import { OpFooter, OpGroup, OpNote, OpPage, OpRow, OP_INPUT, OP_SELECT, safeReturnHref } from "./op-page";
+
 export default function SwapForm() {
   return <SwapCreateForm />;
 }
@@ -46,6 +39,8 @@ export default function SwapForm() {
 function SwapCreateForm() {
   const router = useRouter();
   const { editId, isEdit } = useEditId();
+  const searchParams = useSearchParams();
+  const returnHref = safeReturnHref(searchParams.get("returnTo"));
 
   const { accounts, holdings, loading, loadError, editData } =
     usePortfolioFormData({
@@ -214,7 +209,7 @@ function SwapCreateForm() {
         }
         return;
       }
-      router.push("/transactions");
+      router.push(returnHref);
     } catch (err: unknown) {
       setSubmitError(err instanceof Error ? err.message : "Save failed");
     } finally {
@@ -224,37 +219,32 @@ function SwapCreateForm() {
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="py-8 text-sm text-muted-foreground">
-          Loading…
-        </CardContent>
-      </Card>
+      <OpPage title={isEdit ? "Edit Swap" : "Swap"}>
+        <OpGroup>
+          <OpNote>Loading…</OpNote>
+        </OpGroup>
+      </OpPage>
     );
   }
   if (loadError) {
     return (
-      <Card>
-        <CardContent className="py-8 text-sm text-destructive">
-          {loadError}
-        </CardContent>
-      </Card>
+      <OpPage title={isEdit ? "Edit Swap" : "Swap"}>
+        <OpGroup>
+          <OpNote tone="destructive">{loadError}</OpNote>
+        </OpGroup>
+      </OpPage>
     );
   }
   if (investmentAccounts.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>No investment accounts</CardTitle>
-          <CardDescription>
-            Swaps require an investment account.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Link href="/accounts" className="text-sm text-primary underline">
+      <OpPage title="Swap">
+        <OpGroup>
+          <OpNote>No investment accounts. Swaps require an investment account.</OpNote>
+          <Link href="/accounts" className="block px-4 py-3 text-sm text-primary">
             Go to Accounts →
           </Link>
-        </CardContent>
-      </Card>
+        </OpGroup>
+      </OpPage>
     );
   }
 
@@ -264,253 +254,162 @@ function SwapCreateForm() {
     sourceHolding.currency !== destHolding.currency;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{isEdit ? "Edit Swap" : "Swap"}</CardTitle>
-        <CardDescription>
-          Sell one holding and buy another in the same account on the same date.
-          Both legs use the same cash sleeve.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label>Account</Label>
-            <Select
-              items={accountLabelById}
-              value={accountId}
-              onValueChange={(v) => {
-                setAccountId(v ?? "");
-                setSourceHoldingId("");
-                setDestHoldingId("");
-              }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Pick an investment account" />
-              </SelectTrigger>
-              <SelectContent alignItemWithTrigger={false} side="bottom">
-                {investmentAccounts.map((a) => (
-                  <SelectItem key={a.id} value={String(a.id)}>
-                    {a.name ?? `#${a.id}`} ({a.currency})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.accountId && (
-              <p className="text-xs text-destructive">{errors.accountId}</p>
-            )}
-          </div>
+    <OpPage
+      title={isEdit ? "Edit Swap" : "Swap"}
+      saveLabel={isEdit ? "Save" : "Record"}
+      saving={submitting}
+      onSubmit={handleSubmit}
+    >
+      <OpGroup label="Account">
+        <OpRow label="Account" error={errors.accountId}>
+          <Select
+            items={accountLabelById}
+            value={accountId}
+            onValueChange={(v) => {
+              setAccountId(v ?? "");
+              setSourceHoldingId("");
+              setDestHoldingId("");
+            }}
+          >
+            <SelectTrigger className={OP_SELECT}>
+              <SelectValue placeholder="Pick an investment account" />
+            </SelectTrigger>
+            <SelectContent alignItemWithTrigger={false} side="bottom">
+              {investmentAccounts.map((a) => (
+                <SelectItem key={a.id} value={String(a.id)}>
+                  {a.name ?? `#${a.id}`} ({a.currency})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </OpRow>
+      </OpGroup>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>Source holding (sell)</Label>
-              <Select
-                items={sourceHoldingLabelById}
-                value={sourceHoldingId}
-                onValueChange={(v) => {
-                  setSourceHoldingId(v ?? "");
-                  if (v === destHoldingId) setDestHoldingId("");
-                }}
-                disabled={!selectedAccount}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Pick a holding" />
-                </SelectTrigger>
-                <SelectContent alignItemWithTrigger={false} side="bottom">
-                  {accountHoldings.map((h) => (
-                    <SelectItem key={h.id} value={String(h.id)}>
-                      {h.symbol ? `${h.symbol} — ` : ""}
-                      {h.name ?? `#${h.id}`} ({h.currency})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.sourceHoldingId && (
-                <p className="text-xs text-destructive">
-                  {errors.sourceHoldingId}
-                </p>
-              )}
-            </div>
-            <div className="space-y-1.5">
-              <Label>Destination holding (buy)</Label>
-              <Select
-                items={destHoldingLabelById}
-                value={destHoldingId}
-                onValueChange={(v) => setDestHoldingId(v ?? "")}
-                disabled={!selectedAccount || !sourceHoldingId}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Pick a holding" />
-                </SelectTrigger>
-                <SelectContent alignItemWithTrigger={false} side="bottom">
-                  {destHoldings.map((h) => (
-                    <SelectItem key={h.id} value={String(h.id)}>
-                      {h.symbol ? `${h.symbol} — ` : ""}
-                      {h.name ?? `#${h.id}`} ({h.currency})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.destHoldingId && (
-                <p className="text-xs text-destructive">
-                  {errors.destHoldingId}
-                </p>
-              )}
-            </div>
-          </div>
+      <OpGroup label="Swap">
+        <OpRow label="Sell" error={errors.sourceHoldingId}>
+          <Select
+            items={sourceHoldingLabelById}
+            value={sourceHoldingId}
+            onValueChange={(v) => {
+              setSourceHoldingId(v ?? "");
+              if (v === destHoldingId) setDestHoldingId("");
+            }}
+            disabled={!selectedAccount}
+          >
+            <SelectTrigger className={OP_SELECT}>
+              <SelectValue placeholder="Pick a holding" />
+            </SelectTrigger>
+            <SelectContent alignItemWithTrigger={false} side="bottom">
+              {accountHoldings.map((h) => (
+                <SelectItem key={h.id} value={String(h.id)}>
+                  {h.symbol ? `${h.symbol} — ` : ""}
+                  {h.name ?? `#${h.id}`} ({h.currency})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </OpRow>
+        <OpRow label="Sell qty" error={errors.sourceQty}>
+          <AmountInput
+            step="any"
+            inputMode="decimal"
+            value={sourceQty}
+            onValueChange={(nv) => setSourceQty(nv)}
+            placeholder="50"
+            className={OP_INPUT}
+          />
+        </OpRow>
+        <OpRow label="Proceeds" error={errors.sourceProceeds}>
+          <AmountInput
+            step="any"
+            inputMode="decimal"
+            value={sourceProceeds}
+            onValueChange={(nv) => setSourceProceeds(nv)}
+            placeholder={sourceHolding ? `1500.00 ${sourceHolding.currency}` : "1500.00"}
+            className={OP_INPUT}
+          />
+        </OpRow>
+        <OpRow label="Buy" error={errors.destHoldingId}>
+          <Select
+            items={destHoldingLabelById}
+            value={destHoldingId}
+            onValueChange={(v) => setDestHoldingId(v ?? "")}
+            disabled={!selectedAccount || !sourceHoldingId}
+          >
+            <SelectTrigger className={OP_SELECT}>
+              <SelectValue placeholder="Pick a holding" />
+            </SelectTrigger>
+            <SelectContent alignItemWithTrigger={false} side="bottom">
+              {destHoldings.map((h) => (
+                <SelectItem key={h.id} value={String(h.id)}>
+                  {h.symbol ? `${h.symbol} — ` : ""}
+                  {h.name ?? `#${h.id}`} ({h.currency})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </OpRow>
+        <OpRow label="Buy qty" error={errors.destQty}>
+          <AmountInput
+            step="any"
+            inputMode="decimal"
+            value={destQty}
+            onValueChange={(nv) => setDestQty(nv)}
+            placeholder="10"
+            className={OP_INPUT}
+          />
+        </OpRow>
+        <OpRow label="Cost" error={errors.destCost}>
+          <AmountInput
+            step="any"
+            inputMode="decimal"
+            value={destCost}
+            onValueChange={(nv) => setDestCost(nv)}
+            placeholder={destHolding ? `1500.00 ${destHolding.currency}` : "1500.00"}
+            className={OP_INPUT}
+          />
+        </OpRow>
+        <OpRow label="Date" error={errors.date}>
+          <Input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className={OP_INPUT}
+          />
+        </OpRow>
+      </OpGroup>
 
-          {currencyMismatch && (
-            <div className="rounded-md border border-warning/50 bg-warning/5 px-3 py-2 text-xs text-warning">
-              Source ({sourceHolding?.currency}) and destination (
-              {destHolding?.currency}) currencies differ. The server will reject
-              this — FX-convert first, then swap inside the new currency.
-            </div>
-          )}
+      {currencyMismatch && (
+        <OpFooter>
+          Source ({sourceHolding?.currency}) and destination ({destHolding?.currency}) currencies
+          differ. The server will reject this. FX-convert first, then swap inside the new currency.
+        </OpFooter>
+      )}
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>
-                Source qty{" "}
-                {sourceHolding ? (
-                  <span className="text-muted-foreground text-xs">
-                    ({sourceHolding.symbol ?? sourceHolding.name ?? ""})
-                  </span>
-                ) : null}
-              </Label>
-              <AmountInput
-                step="any"
-                inputMode="decimal"
-                value={sourceQty}
-                onValueChange={(nv) => setSourceQty(nv)}
-                placeholder="50"
-              />
-              {errors.sourceQty && (
-                <p className="text-xs text-destructive">{errors.sourceQty}</p>
-              )}
-            </div>
-            <div className="space-y-1.5">
-              <Label>
-                Source proceeds{" "}
-                {sourceHolding ? (
-                  <span className="text-muted-foreground text-xs">
-                    ({sourceHolding.currency})
-                  </span>
-                ) : null}
-              </Label>
-              <AmountInput
-                step="any"
-                inputMode="decimal"
-                value={sourceProceeds}
-                onValueChange={(nv) => setSourceProceeds(nv)}
-                placeholder="1500.00"
-              />
-              {errors.sourceProceeds && (
-                <p className="text-xs text-destructive">
-                  {errors.sourceProceeds}
-                </p>
-              )}
-            </div>
-          </div>
+      <OpGroup label="Details">
+        <OpRow label="Payee">
+          <Input
+            value={payee}
+            onChange={(e) => setPayee(e.target.value)}
+            placeholder="Broker name (optional)"
+            className={OP_INPUT}
+          />
+        </OpRow>
+        <OpRow label="Note">
+          <Input
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Optional"
+            className={OP_INPUT}
+          />
+        </OpRow>
+      </OpGroup>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>
-                Destination qty{" "}
-                {destHolding ? (
-                  <span className="text-muted-foreground text-xs">
-                    ({destHolding.symbol ?? destHolding.name ?? ""})
-                  </span>
-                ) : null}
-              </Label>
-              <AmountInput
-                step="any"
-                inputMode="decimal"
-                value={destQty}
-                onValueChange={(nv) => setDestQty(nv)}
-                placeholder="10"
-              />
-              {errors.destQty && (
-                <p className="text-xs text-destructive">{errors.destQty}</p>
-              )}
-            </div>
-            <div className="space-y-1.5">
-              <Label>
-                Destination cost{" "}
-                {destHolding ? (
-                  <span className="text-muted-foreground text-xs">
-                    ({destHolding.currency})
-                  </span>
-                ) : null}
-              </Label>
-              <AmountInput
-                step="any"
-                inputMode="decimal"
-                value={destCost}
-                onValueChange={(nv) => setDestCost(nv)}
-                placeholder="1500.00"
-              />
-              {errors.destCost && (
-                <p className="text-xs text-destructive">{errors.destCost}</p>
-              )}
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>Date</Label>
-            <Input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-            />
-            {errors.date && (
-              <p className="text-xs text-destructive">{errors.date}</p>
-            )}
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>
-              Payee{" "}
-              <span className="text-muted-foreground text-xs">(optional)</span>
-            </Label>
-            <Input
-              value={payee}
-              onChange={(e) => setPayee(e.target.value)}
-              placeholder="Broker name"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>
-              Note{" "}
-              <span className="text-muted-foreground text-xs">(optional)</span>
-            </Label>
-            <Input
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder=""
-            />
-          </div>
-
-          {submitError && (
-            <p className="text-sm text-destructive">{submitError}</p>
-          )}
-
-          <div className="flex gap-2 pt-1">
-            <Button
-              type="button"
-              variant="outline"
-              className="flex-1"
-              onClick={() => router.push("/portfolio/new")}
-              disabled={submitting}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" className="flex-1" disabled={submitting}>
-              {submitting ? "Saving…" : isEdit ? "Save edit" : "Record swap"}
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+      {submitError && (
+        <OpGroup>
+          <OpNote tone="destructive">{submitError}</OpNote>
+        </OpGroup>
+      )}
+    </OpPage>
   );
 }

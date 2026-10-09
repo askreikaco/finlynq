@@ -247,7 +247,7 @@ export function BankPane({
                       />
                       {r.suggestedInvestmentOp && (
                         <span
-                          className="rounded bg-chart-5/10 text-chart-5 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+                          className="rounded bg-chart-5/10 text-chart-5 px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wide"
                           title={`A rule will record this as a ${r.suggestedInvestmentOp} when you create it`}
                         >
                           → {r.suggestedInvestmentOp}

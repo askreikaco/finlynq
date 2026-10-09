@@ -80,7 +80,7 @@ export function ActionCenter() {
             </div>
             <div className="flex-1">
               <CardTitle className="text-sm font-semibold">Action Center</CardTitle>
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 {visible.length === 0 ? "All clear" : `${visible.length} item${visible.length !== 1 ? "s" : ""} need attention`}
               </p>
             </div>
@@ -93,7 +93,7 @@ export function ActionCenter() {
               <CheckCircle2 className="h-4.5 w-4.5 text-pos shrink-0" />
               <div>
                 <p className="text-sm font-medium text-pos">All good!</p>
-                <p className="text-[11px] text-muted-foreground">No items need your attention right now.</p>
+                <p className="text-xs text-muted-foreground">No items need your attention right now.</p>
               </div>
             </div>
           ) : (
@@ -117,9 +117,9 @@ export function ActionCenter() {
                       {/* Content */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <p className="text-[13px] font-medium truncate">{item.title}</p>
+                          <p className="text-sm font-medium truncate">{item.title}</p>
                           {item.amount !== undefined && (
-                            <span className="text-[11px] font-mono font-semibold text-muted-foreground tabular-nums">
+                            <span className="text-xs font-mono font-semibold text-muted-foreground tabular-nums">
                               {/* The server converts every figure and stamps the
                                   currency on the item. Omitting it falls through
                                   to formatCurrency's own USD default (FINLYNQ-183),
@@ -132,14 +132,14 @@ export function ActionCenter() {
                             </span>
                           )}
                         </div>
-                        <p className="text-[11px] text-muted-foreground truncate">{item.description}</p>
+                        <p className="text-xs text-muted-foreground truncate">{item.description}</p>
                       </div>
 
                       {/* Actions */}
                       <div className="flex items-center gap-1 shrink-0">
                         <Link
                           href={item.actionUrl}
-                          className="text-[11px] font-medium text-primary hover:text-primary/80 transition-colors px-2 py-1 rounded-md hover:bg-primary/5"
+                          className="text-xs font-medium text-primary hover:text-primary/80 transition-colors px-2 py-1 rounded-md hover:bg-primary/5"
                         >
                           View
                         </Link>
@@ -163,7 +163,7 @@ export function ActionCenter() {
           {hasMore && !showAll && (
             <button
               onClick={() => setShowAll(true)}
-              className="mt-2 w-full flex items-center justify-center gap-1.5 py-2 text-[11px] font-medium text-primary hover:text-primary/80 hover:bg-primary/5 rounded-lg transition-colors"
+              className="mt-2 w-full flex items-center justify-center gap-1.5 py-2 text-xs font-medium text-primary hover:text-primary/80 hover:bg-primary/5 rounded-lg transition-colors"
             >
               View all {visible.length} alerts
               <ChevronRight className="h-3 w-3" />

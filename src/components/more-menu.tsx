@@ -24,7 +24,7 @@ import { AccountSwitcher } from "@/components/account-switcher";
 import { hardReload, clearPerUserStorage } from "@/lib/client/hard-reload";
 import { setPasskeyAutoSkip } from "@/lib/client/passkey-auto";
 import { getEntriesBySurface, navLabel } from "@/lib/nav-config";
-import { CompactOnly } from "@/components/mobile";
+import { CompactOnly, PageHeader } from "@/components/mobile";
 
 export type MoreRow = { href: string; label: string; icon: LucideIcon; id: string };
 export type MoreGroup = { id: string; header?: string; rows: MoreRow[] };
@@ -191,7 +191,7 @@ export function AppearanceRow() {
             aria-checked={current === c.value}
             onClick={() => setTheme(c.value)}
             className={cn(
-              "min-h-9 rounded-md px-2.5 text-xs font-medium transition-colors",
+              "min-h-9 max-md:min-h-11 rounded-md px-2.5 text-xs font-medium transition-colors active:bg-muted",
               current === c.value ? "bg-background text-foreground shadow-sm" : "text-muted-foreground",
             )}
           >
@@ -283,8 +283,10 @@ export const MoreMenu = memo(function MoreMenu({ instanceAdminEnabled = false, c
   const groups = buildMoreGroups(flags);
 
   return (
-    <CompactOnly className="mx-auto max-w-xl space-y-6" data-testid="more-menu">
-      <h1 className="text-4xl font-bold tracking-tight">More</h1>
+    // Same centred glass top bar as every other phone page (PageHeader). Bottom padding clears the floating tab bar
+    // so the last section label and row are never under it.
+    <CompactOnly className="mx-auto max-w-xl space-y-6 pb-[var(--mobile-bar-clearance)]" data-testid="more-menu">
+      <PageHeader title="More" />
 
       <section data-testid="more-account" className="space-y-2">
         <h2 className="px-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground">Account</h2>
@@ -310,7 +312,7 @@ export const MoreMenu = memo(function MoreMenu({ instanceAdminEnabled = false, c
                   </span>
                   <span className="flex-1 truncate">{r.label}</span>
                   {showUnreadBadge && (
-                    <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold leading-none text-primary-foreground">
+                    <span className="rounded-full bg-primary px-1.5 py-0.5 text-xs font-semibold leading-none text-primary-foreground">
                       {unread}
                     </span>
                   )}

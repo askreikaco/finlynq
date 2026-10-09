@@ -118,7 +118,7 @@ export function InvestmentStatementPreview({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
+      <DialogContent className="sm:max-w-3xl max-h-[80dvh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Landmark className="h-5 w-5 text-primary" />
@@ -200,13 +200,13 @@ export function InvestmentStatementPreview({
                 </span>
                 <Badge
                   variant="outline"
-                  className="shrink-0 text-[10px] px-1.5 max-w-[12ch] truncate"
+                  className="shrink-0 text-xs px-1.5 max-w-[12ch] truncate"
                 >
                   {row.portfolioHolding ?? "—"}
                 </Badge>
                 <span className="flex-1 truncate">{row.payee}</span>
                 {row.quantity != null && row.quantity !== 0 && (
-                  <span className="font-mono text-[10px] text-muted-foreground shrink-0">
+                  <span className="font-mono text-xs text-muted-foreground shrink-0">
                     qty {row.quantity}
                   </span>
                 )}

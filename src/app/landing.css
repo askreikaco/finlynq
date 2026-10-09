@@ -1,6 +1,6 @@
 /* Finlynq — Premium Fintech Dark landing page
    Scoped under `.fl-landing` to avoid polluting the authenticated app.
-   Typography: Geist (UI) + Geist Mono (numerics) + Instrument Serif (display accents). */
+   Typography: system UI stack + system mono (numerics) + system serif (display accents). */
 
 html:has(.fl-landing),
 html:has(.fl-landing) body {
@@ -33,9 +33,9 @@ html:has(.fl-landing) body {
   --fl-neg:     #e5624b;
 
   /* type */
-  --fl-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --fl-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, monospace;
-  --fl-serif: var(--font-instrument-serif), "Times New Roman", serif;
+  --fl-sans: var(--font-stack-sans);
+  --fl-mono: var(--font-stack-mono);
+  --fl-serif: var(--font-stack-serif);
 
   /* scale */
   --fl-container: 1280px;
