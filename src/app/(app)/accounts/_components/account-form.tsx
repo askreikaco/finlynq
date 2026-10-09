@@ -535,10 +535,10 @@ export function AccountForm({
       {saveError && <p className="text-sm text-destructive">{saveError}</p>}
 
       <div className={cn("flex gap-2", v === "stack" ? "pt-1" : "pt-2")}>
-        <Button type="button" variant="outline" className="flex-1 max-md:min-h-11" onClick={onCancel}>
+        <Button type="button" variant="outline" className="flex-1 pointer-coarse:min-h-11" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit" className="flex-1 max-md:min-h-11" disabled={saving || busy}>
+        <Button type="submit" className="flex-1 pointer-coarse:min-h-11" disabled={saving || busy}>
           {saving ? (isEdit ? "Saving…" : "Creating…") : isEdit ? "Save Changes" : "Create Account"}
         </Button>
       </div>

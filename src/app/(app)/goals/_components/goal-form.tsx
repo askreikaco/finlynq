@@ -281,10 +281,10 @@ export function GoalForm({
       </div>
       {errors.form && <p className="text-sm text-destructive">{errors.form}</p>}
       <div className="flex gap-2">
-        <Button type="button" variant="outline" className="flex-1 max-md:min-h-11" onClick={onCancel} disabled={submitting}>
+        <Button type="button" variant="outline" className="flex-1 pointer-coarse:min-h-11" onClick={onCancel} disabled={submitting}>
           Cancel
         </Button>
-        <Button type="submit" className="flex-1 max-md:min-h-11" disabled={!isFormValid || submitting}>
+        <Button type="submit" className="flex-1 pointer-coarse:min-h-11" disabled={!isFormValid || submitting}>
           {submitting ? "Saving…" : mode === "edit" ? "Save Changes" : "Create Goal"}
         </Button>
       </div>

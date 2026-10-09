@@ -706,9 +706,9 @@ export function TransactionsWorkspace({
           </div>
           <div className="flex flex-wrap gap-2 items-center">
             <SlidersHorizontal className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            <Input type="date" className="w-full regular:w-36 h-8 text-xs min-w-0" value={filters.startDate} onChange={(e) => { setFilters({ ...filters, startDate: e.target.value }); setPage(0); }} />
+            <Input type="date" className="w-full regular:w-36 h-8 regular:pointer-fine:text-xs min-w-0" value={filters.startDate} onChange={(e) => { setFilters({ ...filters, startDate: e.target.value }); setPage(0); }} />
             <span className="text-xs text-muted-foreground">to</span>
-            <Input type="date" className="w-full regular:w-36 h-8 text-xs min-w-0" value={filters.endDate} onChange={(e) => { setFilters({ ...filters, endDate: e.target.value }); setPage(0); }} />
+            <Input type="date" className="w-full regular:w-36 h-8 regular:pointer-fine:text-xs min-w-0" value={filters.endDate} onChange={(e) => { setFilters({ ...filters, endDate: e.target.value }); setPage(0); }} />
             {/* Account picker is hidden on the account-scoped embed — the view
                 is already locked to a single account (keep the other filters). */}
             {!locked && (
@@ -1057,7 +1057,7 @@ export function TransactionsWorkspace({
             <Button
               variant="outline"
               size="sm"
-              className="min-h-11 regular:min-h-8 text-xs"
+              className="min-h-11 regular:pointer-fine:min-h-8 text-xs"
               onClick={() => { void loadTxns(); }}
             >
               Retry

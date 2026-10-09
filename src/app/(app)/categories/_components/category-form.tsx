@@ -138,7 +138,7 @@ export function CategoryForm({
           <Input
             aria-label="Category name"
             aria-invalid={!!nameError || undefined}
-            className="h-11 text-base regular:text-sm"
+            className="h-11 text-base regular:pointer-fine:text-sm"
             value={name}
             onChange={(e) => {
               setName(e.target.value);
