@@ -265,7 +265,7 @@ describe("non-admin pages", () => {
     const header = read("src/app/(app)/import/pending/_components/reconcile-header.tsx");
     expect(header).toMatch(/return \(\s*<>\s*<button[\s\S]*?<PageHeader\b/);
     const surface = read("src/components/import/staged-review-surface.tsx");
-    expect(surface).toMatch(/<div className="flex flex-col gap-4 md:h-\[calc\(100dvh-8rem\)\]">\s*<ReconcileHeader/);
+    expect(surface).toMatch(/<div className="flex flex-col gap-4 regular:h-\[calc\(100dvh-8rem\)\]">\s*<ReconcileHeader/);
   });
 
   it("no header-only wrapper: no page or component in (app) holds a PageHeader in a justify-between row or a bare div", () => {
