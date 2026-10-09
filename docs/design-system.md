@@ -79,6 +79,7 @@ Raw Tailwind palette classes (emerald, rose, amber, sky, indigo, violet, zinc, .
 Tints: bg-<token>/10, borders /30; no dark: variants needed (tokens switch with the theme). Skeletons: animate-shimmer only (animate-pulse is for activity dots). Charts keep chart-1..5.
 
 ## Visual harness (manual, not CI)
+Status: dry-run (`playwright test --list`, 54 tests) and tsc/eslint verified; on 5a23a283 the first 8 of 9 cells at 390 dark passed, cell 9 (transactions-new) failed on the tab-bar rule (fixed, not re-run); full run and goal2 mode not yet proven.
 Playwright + structural checks for the size-class work. Not in CI, not in vitest. Chromium only.
 Spec: `e2e/visual/size-classes.spec.ts`; config: `playwright.visual.config.ts`; diff: `scripts/visual-diff.mjs`.
 - Matrix: 390x844 (isMobile, hasTouch, DPR 2), 768x1024, 1280x800 x dark/light x 9 pages (`dashboard transactions accounts account-detail portfolio budgets settings more transactions-new`). 54 tests.
