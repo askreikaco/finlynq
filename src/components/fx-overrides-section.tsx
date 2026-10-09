@@ -133,7 +133,7 @@ export function FxOverridesSection() {
     <Card>
       <CardHeader>
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-chart-5/10 text-chart-5">
             <RefreshCw className="h-5 w-5" />
           </div>
           <div>
@@ -166,7 +166,7 @@ export function FxOverridesSection() {
                   </span>
                   {o.note ? <span className="text-xs text-muted-foreground italic truncate">{o.note}</span> : null}
                 </div>
-                <Button size="sm" variant="ghost" onClick={() => handleDelete(o.id)} className="h-7 w-7 p-0">
+                <Button aria-label="Delete override" size="sm" variant="ghost" onClick={() => handleDelete(o.id)} className="h-7 w-7 p-0">
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>
               </div>

@@ -48,7 +48,7 @@ export function AnnouncementBanner() {
     <div className="fixed left-4 right-4 max-w-sm bottom-20 md:bottom-4 md:right-auto z-50 rounded-xl border border-border/50 bg-card p-4 shadow-lg">
       <div className="flex items-start gap-3">
         {warning ? (
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
         ) : (
           <Megaphone className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
         )}
