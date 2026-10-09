@@ -87,6 +87,8 @@ const bodyOf = (c: { init?: RequestInit }) => JSON.parse(String(c.init?.body));
 
 // The option list fills once /api/settings/active-currencies resolves, so wait for it.
 async function pickCurrency(code: string) {
+  // Currency lives in the Advanced Options row (collapsed by default).
+  if (!screen.queryByLabelText("Currency")) fireEvent.click(screen.getByRole("button", { name: /Advanced Options/i }));
   fireEvent.click(screen.getByLabelText("Currency"));
   const opt = await screen.findByRole("option", { name: code });
   fireEvent.pointerDown(opt, { button: 0, ctrlKey: false, pointerType: "mouse" });
@@ -105,6 +107,7 @@ describe("new transaction page parity with the dialog", () => {
   it("currency select defaults to the account currency and posts the chosen enteredCurrency", async () => {
     seedPrefill();
     render(<Page />);
+    fireEvent.click(screen.getByRole("button", { name: /Advanced Options/i }));
     expect(screen.getByLabelText("Currency").textContent).toContain("USD");
     await pickCurrency("EUR");
     await waitFor(() => expect(screen.getByLabelText("Currency").textContent).toContain("EUR"));

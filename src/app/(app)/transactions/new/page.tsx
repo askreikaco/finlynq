@@ -25,7 +25,8 @@ import { formatCurrency, fxPreviewText } from "@/lib/currency";
 import Link from "next/link";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { Button } from "@/components/ui/button";
-import { Numpad } from "./_components/numpad";
+import { Numpad, NUMPAD_HEIGHT_PX } from "./_components/numpad";
+import { FieldTile } from "./_components/field-tile";
 import { CategorySelector, type Category } from "./_components/category-selector";
 import { AccountSelector, type Account } from "./_components/account-selector";
 import {
@@ -103,6 +104,8 @@ export default function MobileTransactionPage() {
 
   // Advanced Options State
   const [showAdvanced, setShowAdvanced] = useState(false);
+  // Notes & tags row: collapsed by default; opens when a prefill carries a note or tags.
+  const [notesOpen, setNotesOpen] = useState(false);
   const [isBusiness, setIsBusiness] = useState(false);
   const [splitEnabled, setSplitEnabled] = useState(false);
   const [splitRows, setSplitRows] = useState<SplitRow[]>([
@@ -130,6 +133,7 @@ export default function MobileTransactionPage() {
       setPayee(prefill.payee);
       setNote(prefill.note);
       setTags(prefill.tags);
+      if (prefill.note || prefill.tags) setNotesOpen(true);
       setIsBusiness(prefill.isBusiness);
       setTxType(prefill.txType);
       prefillAppliedRef.current = true;
@@ -480,10 +484,69 @@ export default function MobileTransactionPage() {
     }
   };
 
+  // Layout budget (phone 390x844, sat = top safe area, sab = bottom safe area,
+  // --mobile-bar-clearance = 96px + sab; tab bar = max(12px,sab) + 64px tall).
+  // Mobile root is fixed: top = sat, bottom = clearance, so its height is
+  // 844 - sat - 96 - sab. With sat = sab = 0 (test viewport) that is 748px.
+  // The fixed root bypasses the (app) shell's main padding (clearance + 80px)
+  // and the py-3 wrapper, so the document never scrolls.
+  //   header        h-11                 44
+  //   segmented     pt-2 + h-9 + pb-2    52
+  //   amount        py-1 + 16 + 2 + 40   66  (+16 when the FX line shows)
+  //   field grid    2 x 52 + gap 8      112  (scroll region, flex-1 min-h-0)
+  //   notes row     h-10 + gap 8         48
+  //   advanced row  h-10 + gap 8         48
+  //   footer        pt-2 + h-12 + pb-3   68  (Save, hidden while numpad is open)
+  // Closed sum: 44+52+66+112+48+48+68 = 438 <= 748, so nothing scrolls.
+  // Numpad (321px tall, bottom = clearance - 16) ends 4px above the tab bar
+  // top at sab = 0 and clears it by more at larger sab. Its top is 305px above
+  // the root bottom, so the field region reserves NUMPAD_HEIGHT_PX of bottom
+  // padding while open and the focused field stays above the keys.
+  const tileValue = (cls: string, text: string) => (
+    <span className={`truncate text-sm font-semibold leading-5 ${cls}`}>{text}</span>
+  );
+  const dateTile = (
+    <FieldTile
+      icon={<Calendar className="h-3.5 w-3.5 text-primary" />}
+      label="Date & Time"
+      onClick={() => {
+        setShowDatePicker(true);
+        setShowNumpad(false);
+        setFocusedField(null);
+      }}
+    >
+      {tileValue("text-foreground", formatDateTimeDisplay(date, time))}
+    </FieldTile>
+  );
+  const accountTile = (
+    <FieldTile
+      icon={<Wallet className="h-3.5 w-3.5 text-warning" />}
+      label={txType === "Transfer" ? "From Account" : "Account"}
+      onClick={() => {
+        setShowAccSelector(true);
+        setShowNumpad(false);
+        setFocusedField(null);
+      }}
+    >
+      {loadingAccounts
+        ? tileValue("text-muted-foreground", "Loading accounts...")
+        : tileValue(
+            selectedAcc ? "text-foreground" : "text-muted-foreground",
+            selectedAcc?.name || "Select Account",
+          )}
+    </FieldTile>
+  );
+
   return (
-    <div className="flex flex-col min-h-screen bg-background text-foreground">
-      {/* Top Nav Bar */}
-      <header className="flex items-center justify-between px-4 py-3.5 pt-[var(--sat)] border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-20">
+    <div
+      className={
+        "flex flex-col bg-background text-foreground " +
+        "max-md:fixed max-md:inset-x-0 max-md:top-[var(--sat)] max-md:bottom-[var(--mobile-bar-clearance)] " +
+        "md:relative md:mx-auto md:h-[min(46rem,calc(100dvh-8rem))] md:w-full md:max-w-md md:rounded-2xl md:border md:border-border/80"
+      }
+    >
+      {/* Header (44px). The top safe area is reserved once, by the fixed root's top offset. */}
+      <header className="flex h-11 shrink-0 items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur-md">
         <button
           type="button"
           onClick={() => router.back()}
@@ -498,9 +561,9 @@ export default function MobileTransactionPage() {
         </div>
       </header>
 
-      {/* Segmented Control */}
-      <div className="px-4 pt-3 pb-1">
-        <div className="flex bg-card/90 border border-border/80 rounded-xl p-1">
+      {/* Segmented control (36px track) */}
+      <div className="shrink-0 px-4 pb-2 pt-2">
+        <div className="flex h-9 rounded-xl border border-border/80 bg-card/90 p-1">
           {(["Expense", "Income", "Transfer"] as TxType[]).map((type) => (
             <button
               key={type}
@@ -509,7 +572,7 @@ export default function MobileTransactionPage() {
                 setTxType(type);
                 setErrorMessage(null);
               }}
-              className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+              className={`flex-1 rounded-lg text-xs font-semibold transition-all ${
                 txType === type
                   ? "bg-muted text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
@@ -521,252 +584,139 @@ export default function MobileTransactionPage() {
         </div>
       </div>
 
-      {/* Notice & Error Banners */}
-      <div className="px-4 pt-2 space-y-2">
-        {prefillNotice && (
-          <div className="flex items-start gap-2.5 p-3 rounded-xl bg-warning/10 border border-warning/30 text-warning text-xs animate-in fade-in">
-            <Info className="w-4 h-4 shrink-0 mt-0.5 text-warning" />
-            <span className="flex-1 leading-relaxed">{prefillNotice}</span>
-          </div>
-        )}
-        {errorMessage && (
-          <div className="flex items-start gap-2.5 p-3 rounded-xl bg-neg/10 border border-neg/30 text-neg text-xs animate-in fade-in">
-            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-neg" />
-            <span className="flex-1 leading-relaxed">{errorMessage}</span>
-          </div>
-        )}
-        {urlInvestmentAccount && (
-          <div className="flex items-start gap-2.5 p-3 rounded-xl bg-warning/10 border border-warning/30 text-warning text-xs animate-in fade-in">
-            <Info className="w-4 h-4 shrink-0 mt-0.5 text-warning" />
-            <span className="flex-1 leading-relaxed">
-              Investment accounts use Buy/Sell.{" "}
-              <Link href={`/portfolio/new?account=${urlInvestmentAccount.id}`} className="underline font-medium hover:no-underline">
-                Open Buy/Sell
-              </Link>
-            </span>
-          </div>
-        )}
-        {successNotice && (
-          <div className="flex items-start gap-2.5 p-3 rounded-xl bg-pos/10 border border-pos/30 text-pos text-xs animate-in fade-in">
-            <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-pos" />
-            <span className="flex-1 leading-relaxed">{successNotice}</span>
-          </div>
-        )}
+      {/* Amount hero (about 64px) */}
+      <div className="flex shrink-0 flex-col items-center justify-center px-4 py-1">
+        <span className="mb-0.5 text-xs font-medium uppercase leading-4 tracking-wider text-muted-foreground">
+          Amount
+        </span>
+        <button
+          type="button"
+          className="flex w-full items-center justify-center text-4xl font-bold leading-10 tracking-tight active:scale-[0.98] transition-transform"
+          onClick={() => {
+            setShowNumpad(true);
+            setFocusedField(null);
+          }}
+        >
+          <span className="text-muted-foreground mr-2 text-3xl">$</span>
+          <span className={amount ? "text-foreground" : "text-muted-foreground"}>
+            {amount || "0.00"}
+          </span>
+        </button>
+        <FxPreviewLine preview={fxPreview} className="text-xs text-muted-foreground text-center" />
       </div>
 
-      {/* Main Form Content */}
-      <main className="flex-1 flex flex-col gap-4 px-4 py-2 overflow-y-auto pb-44">
-        {/* Amount Hero */}
-        <div className="flex flex-col items-center justify-center py-5">
-          <span className="text-muted-foreground text-xs font-medium uppercase tracking-wider mb-1">
-            Amount
-          </span>
-          <button
-            type="button"
-            className="text-5xl font-bold tracking-tight flex items-center justify-center w-full active:scale-[0.98] transition-transform"
-            onClick={() => {
-              setShowNumpad(true);
-              setFocusedField(null);
-            }}
-          >
-            <span className="text-muted-foreground mr-2 text-4xl">$</span>
-            <span className={amount ? "text-foreground" : "text-muted-foreground"}>
-              {amount || "0.00"}
-            </span>
-          </button>
-          <FxPreviewLine preview={fxPreview} className="text-xs text-muted-foreground text-center" />
-        </div>
-
-        {/* Core Form Fields */}
-        <div className="space-y-3">
-          {/* Combined Date & Time Picker Row */}
-          <button
-            type="button"
-            onClick={() => {
-              setShowDatePicker(true);
-              setShowNumpad(false);
-              setFocusedField(null);
-            }}
-            className="w-full flex items-center justify-between bg-card/90 border border-border/80 p-3.5 rounded-2xl active:bg-muted transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center text-muted-foreground shrink-0">
-                <Calendar className="w-4 h-4 text-primary" />
+      {/* Scroll region: the only part that scrolls. Reserves the numpad height while it is open. */}
+      <main
+        className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain px-4 pb-2"
+        style={showNumpad ? { paddingBottom: `${NUMPAD_HEIGHT_PX}px` } : undefined}
+      >
+        {/* Notice & error banners */}
+        {(prefillNotice || errorMessage || urlInvestmentAccount || successNotice) && (
+          <div className="shrink-0 space-y-2">
+            {prefillNotice && (
+              <div className="flex items-start gap-2.5 p-3 rounded-xl bg-warning/10 border border-warning/30 text-warning text-xs animate-in fade-in">
+                <Info className="w-4 h-4 shrink-0 mt-0.5 text-warning" />
+                <span className="flex-1 leading-relaxed">{prefillNotice}</span>
               </div>
-              <div className="flex flex-col text-left">
-                <span className="text-xs text-muted-foreground font-medium">Date & Time</span>
-                <span className="text-foreground text-sm font-semibold">
-                  {formatDateTimeDisplay(date, time)}
+            )}
+            {errorMessage && (
+              <div className="flex items-start gap-2.5 p-3 rounded-xl bg-neg/10 border border-neg/30 text-neg text-xs animate-in fade-in">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-neg" />
+                <span className="flex-1 leading-relaxed">{errorMessage}</span>
+              </div>
+            )}
+            {urlInvestmentAccount && (
+              <div className="flex items-start gap-2.5 p-3 rounded-xl bg-warning/10 border border-warning/30 text-warning text-xs animate-in fade-in">
+                <Info className="w-4 h-4 shrink-0 mt-0.5 text-warning" />
+                <span className="flex-1 leading-relaxed">
+                  Investment accounts use Buy/Sell.{" "}
+                  <Link href={`/portfolio/new?account=${urlInvestmentAccount.id}`} className="underline font-medium hover:no-underline">
+                    Open Buy/Sell
+                  </Link>
                 </span>
               </div>
-            </div>
-            <ChevronDown className="w-4 h-4 text-muted-foreground" />
-          </button>
-
-          {/* Category Selector (Expense & Income) */}
-          {txType !== "Transfer" && (
-            <button
-              type="button"
-              onClick={() => {
-                setActiveSplitIndex(null);
-                setShowCatSelector(true);
-                setShowNumpad(false);
-                setFocusedField(null);
-              }}
-              className="w-full flex items-center justify-between bg-card/90 border border-border/80 p-3.5 rounded-2xl active:bg-muted transition-colors"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center text-muted-foreground shrink-0">
-                  <Tags className="w-4 h-4 text-pos" />
-                </div>
-                <div className="flex flex-col text-left min-w-0">
-                  <span className="text-xs text-muted-foreground font-medium">Category</span>
-                  <span
-                    className={`text-sm font-semibold truncate ${
-                      selectedCat ? "text-foreground" : "text-muted-foreground"
-                    }`}
-                  >
-                    {loadingCategories
-                      ? "Loading categories..."
-                      : selectedCat?.name || "Select Category"}
-                  </span>
-                </div>
+            )}
+            {successNotice && (
+              <div className="flex items-start gap-2.5 p-3 rounded-xl bg-pos/10 border border-pos/30 text-pos text-xs animate-in fade-in">
+                <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-pos" />
+                <span className="flex-1 leading-relaxed">{successNotice}</span>
               </div>
-              <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
-            </button>
-          )}
+            )}
+          </div>
+        )}
 
-          {/* Account Selector (Source / Main) */}
-          <button
-            type="button"
-            onClick={() => {
-              setShowAccSelector(true);
-              setShowNumpad(false);
-              setFocusedField(null);
-            }}
-            className="w-full flex items-center justify-between bg-card/90 border border-border/80 p-3.5 rounded-2xl active:bg-muted transition-colors"
-          >
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center text-muted-foreground shrink-0">
-                <Wallet className="w-4 h-4 text-warning" />
-              </div>
-              <div className="flex flex-col text-left min-w-0">
-                <span className="text-xs text-muted-foreground font-medium">
-                  {txType === "Transfer" ? "From Account" : "Account"}
-                </span>
-                <span
-                  className={`text-sm font-semibold truncate ${
-                    selectedAcc ? "text-foreground" : "text-muted-foreground"
-                  }`}
-                >
-                  {loadingAccounts
-                    ? "Loading accounts..."
-                    : selectedAcc?.name || "Select Account"}
-                </span>
-              </div>
-            </div>
-            <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
-          </button>
-
-          {/* Currency (Expense & Income); defaults to the account's currency */}
-          {txType !== "Transfer" && (
-            <div className="w-full flex items-center justify-between bg-card/90 border border-border/80 p-3.5 rounded-2xl">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center text-muted-foreground shrink-0">
-                  <Coins className="w-4 h-4 text-muted-foreground" />
-                </div>
-                <span className="text-xs text-muted-foreground font-medium">Currency</span>
-              </div>
-              <Select value={currency} onValueChange={(v) => setCurrencyChoice(v ?? "")}>
-                <SelectTrigger aria-label="Currency" size="sm" className="w-28">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {currencyOptions.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {/* Destination Account (Transfer Mode Only) */}
-          {txType === "Transfer" && (
-            <button
-              type="button"
-              onClick={() => {
-                setShowToAccSelector(true);
-                setShowNumpad(false);
-                setFocusedField(null);
-              }}
-              className="w-full flex items-center justify-between bg-card/90 border border-border/80 p-3.5 rounded-2xl active:bg-muted transition-colors"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center text-muted-foreground shrink-0">
-                  <ArrowRightLeft className="w-4 h-4 text-info" />
-                </div>
-                <div className="flex flex-col text-left min-w-0">
-                  <span className="text-xs text-muted-foreground font-medium">To Account</span>
-                  <span
-                    className={`text-sm font-semibold truncate ${
-                      selectedToAcc ? "text-foreground" : "text-muted-foreground"
-                    }`}
-                  >
-                    {loadingAccounts
-                      ? "Loading accounts..."
-                      : selectedToAcc?.name || "Select Destination Account"}
-                  </span>
-                </div>
-              </div>
-              <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
-            </button>
-          )}
-
-          {/* Cross-currency transfer: what the destination account actually receives */}
-          {transferCrossCcy && (
-            <div className="space-y-1.5 bg-card/90 border border-border/80 p-3.5 rounded-2xl">
-              <label htmlFor="transfer-received" className="text-xs text-muted-foreground font-medium">
-                Amount received ({selectedToAcc?.currency})
-              </label>
-              <input
-                id="transfer-received"
-                type="number"
-                inputMode="decimal"
-                step="0.01"
-                min="0"
-                value={receivedAmount}
-                onChange={(e) => {
-                  setReceivedTouched(true);
-                  setReceivedAmount(e.target.value);
+        {/* Field tiles, two columns. Expense/Income: Date & Time | Category, Account | Payee.
+            Transfer: From | To, Date & Time | (received amount when cross-currency). */}
+        <div className="grid shrink-0 grid-cols-2 gap-2">
+          {txType === "Transfer" ? (
+            <>
+              {accountTile}
+              <FieldTile
+                icon={<ArrowRightLeft className="h-3.5 w-3.5 text-info" />}
+                label="To Account"
+                onClick={() => {
+                  setShowToAccSelector(true);
+                  setShowNumpad(false);
+                  setFocusedField(null);
                 }}
-                placeholder={
-                  transferFxPreview.state === "ok"
-                    ? fxPreviewText(transferFxPreview.converted, selectedToAcc?.currency ?? displayCurrency)
-                    : "0.00"
-                }
-                className="bg-transparent border-none outline-none text-foreground text-sm font-medium w-full placeholder:text-muted-foreground"
-              />
-              <FxPreviewLine preview={transferFxPreview} className="text-xs text-muted-foreground" />
-            </div>
-          )}
-
-          {/* Payee Input (Expense & Income) with Auto-suggest */}
-          {txType !== "Transfer" && (
-            <div className="space-y-1.5">
-              <AutocompletePills
-                type="payee"
-                currentValue={payee}
-                onSelect={(val) => setPayee(val)}
-                visible={focusedField === "payee"}
-              />
-              <div className="flex items-center bg-card/90 border border-border/80 p-3.5 rounded-2xl focus-within:border-ring transition-colors">
-                <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center text-muted-foreground mr-3 shrink-0">
-                  <User className="w-4 h-4 text-chart-5" />
-                </div>
+              >
+                {loadingAccounts
+                  ? tileValue("text-muted-foreground", "Loading accounts...")
+                  : tileValue(
+                      selectedToAcc ? "text-foreground" : "text-muted-foreground",
+                      selectedToAcc?.name || "Select Destination Account",
+                    )}
+              </FieldTile>
+              {dateTile}
+              {transferCrossCcy && (
+                <FieldTile icon={<Coins className="h-3.5 w-3.5 text-muted-foreground" />} label={`Received (${selectedToAcc?.currency})`}>
+                  <input
+                    id="transfer-received"
+                    type="number"
+                    inputMode="decimal"
+                    step="0.01"
+                    min="0"
+                    aria-label={`Amount received (${selectedToAcc?.currency})`}
+                    value={receivedAmount}
+                    onChange={(e) => {
+                      setReceivedTouched(true);
+                      setReceivedAmount(e.target.value);
+                    }}
+                    placeholder={
+                      transferFxPreview.state === "ok"
+                        ? fxPreviewText(transferFxPreview.converted, selectedToAcc?.currency ?? displayCurrency)
+                        : "0.00"
+                    }
+                    className="bg-transparent border-none outline-none text-foreground text-sm font-semibold leading-5 w-full min-w-0 placeholder:text-muted-foreground"
+                  />
+                </FieldTile>
+              )}
+            </>
+          ) : (
+            <>
+              {dateTile}
+              <FieldTile
+                icon={<Tags className="h-3.5 w-3.5 text-pos" />}
+                label="Category"
+                onClick={() => {
+                  setActiveSplitIndex(null);
+                  setShowCatSelector(true);
+                  setShowNumpad(false);
+                  setFocusedField(null);
+                }}
+              >
+                {loadingCategories
+                  ? tileValue("text-muted-foreground", "Loading categories...")
+                  : tileValue(
+                      selectedCat ? "text-foreground" : "text-muted-foreground",
+                      selectedCat?.name || "Select Category",
+                    )}
+              </FieldTile>
+              {accountTile}
+              <FieldTile icon={<User className="h-3.5 w-3.5 text-chart-5" />} label="Payee">
                 <input
                   type="text"
+                  aria-label="Payee"
                   placeholder="Payee / Merchant"
                   value={payee}
                   onChange={(e) => setPayee(e.target.value)}
@@ -774,132 +724,183 @@ export default function MobileTransactionPage() {
                     setShowNumpad(false);
                     setFocusedField("payee");
                   }}
-                  className="bg-transparent border-none outline-none text-foreground text-sm font-medium w-full placeholder:text-muted-foreground"
+                  className="bg-transparent border-none outline-none text-foreground text-sm font-semibold leading-5 w-full min-w-0 placeholder:text-muted-foreground placeholder:font-medium"
                 />
+              </FieldTile>
+            </>
+          )}
+        </div>
+
+        {/* Autocomplete and FX lines sit below the grid, full width */}
+        {txType !== "Transfer" && (
+          <AutocompletePills
+            type="payee"
+            currentValue={payee}
+            onSelect={(val) => setPayee(val)}
+            visible={focusedField === "payee"}
+          />
+        )}
+        {transferCrossCcy && (
+          <FxPreviewLine preview={transferFxPreview} className="text-xs text-muted-foreground" />
+        )}
+
+        {/* Notes & tags: one collapsed row (40px); expands to Note and Tags */}
+        <div className="shrink-0 overflow-hidden rounded-2xl border border-border/80 bg-card/60">
+          <button
+            type="button"
+            aria-expanded={notesOpen}
+            onClick={() => setNotesOpen((v) => !v)}
+            className="flex h-10 w-full items-center justify-between px-3 text-left text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <span className="flex items-center gap-2">
+              <AlignLeft className="h-3.5 w-3.5" />
+              <span>Notes & tags</span>
+              {(note || tags) && <span className="w-2 h-2 rounded-full bg-primary" />}
+            </span>
+            {notesOpen ? (
+              <ChevronUp className="w-4 h-4 text-muted-foreground" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+            )}
+          </button>
+
+          {notesOpen && (
+            <div className="space-y-2 border-t border-border/80 p-3 animate-in fade-in duration-200">
+              <div className="space-y-1.5">
+                <AutocompletePills
+                  type="note"
+                  currentValue={note}
+                  onSelect={(val) => setNote(val)}
+                  visible={focusedField === "note"}
+                />
+                <div className="flex h-11 items-center gap-3 rounded-xl border border-border/80 bg-card/90 px-3 focus-within:border-ring transition-colors">
+                  <AlignLeft className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <input
+                    type="text"
+                    placeholder="Note / Description"
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    onFocus={() => {
+                      setShowNumpad(false);
+                      setFocusedField("note");
+                    }}
+                    className="bg-transparent border-none outline-none text-foreground text-sm font-medium w-full min-w-0 placeholder:text-muted-foreground"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <AutocompletePills
+                  type="tag"
+                  currentValue={tags}
+                  onSelect={(val) => setTags(val)}
+                  visible={focusedField === "tags"}
+                />
+                <div className="flex h-11 items-center gap-3 rounded-xl border border-border/80 bg-card/90 px-3 focus-within:border-ring transition-colors">
+                  <Tags className="w-4 h-4 text-chart-5 shrink-0" />
+                  <input
+                    type="text"
+                    placeholder="Tags (comma-separated)"
+                    value={tags}
+                    onChange={(e) => setTags(e.target.value)}
+                    onFocus={() => {
+                      setShowNumpad(false);
+                      setFocusedField("tags");
+                    }}
+                    className="bg-transparent border-none outline-none text-foreground text-sm font-medium w-full min-w-0 placeholder:text-muted-foreground"
+                  />
+                </div>
               </div>
             </div>
           )}
+        </div>
 
-          {/* Note Input with Auto-suggest */}
-          <div className="space-y-1.5">
-            <AutocompletePills
-              type="note"
-              currentValue={note}
-              onSelect={(val) => setNote(val)}
-              visible={focusedField === "note"}
-            />
-            <div className="flex items-center bg-card/90 border border-border/80 p-3.5 rounded-2xl focus-within:border-ring transition-colors">
-              <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center text-muted-foreground mr-3 shrink-0">
-                <AlignLeft className="w-4 h-4 text-muted-foreground" />
-              </div>
-              <input
-                type="text"
-                placeholder="Note / Description"
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                onFocus={() => {
-                  setShowNumpad(false);
-                  setFocusedField("note");
-                }}
-                className="bg-transparent border-none outline-none text-foreground text-sm font-medium w-full placeholder:text-muted-foreground"
-              />
-            </div>
-          </div>
-
-          {/* Tags Input with Auto-suggest */}
-          <div className="space-y-1.5">
-            <AutocompletePills
-              type="tag"
-              currentValue={tags}
-              onSelect={(val) => setTags(val)}
-              visible={focusedField === "tags"}
-            />
-            <div className="flex items-center bg-card/90 border border-border/80 p-3.5 rounded-2xl focus-within:border-ring transition-colors">
-              <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center text-muted-foreground mr-3 shrink-0">
-                <Tags className="w-4 h-4 text-chart-5" />
-              </div>
-              <input
-                type="text"
-                placeholder="Tags (comma-separated)"
-                value={tags}
-                onChange={(e) => setTags(e.target.value)}
-                onFocus={() => {
-                  setShowNumpad(false);
-                  setFocusedField("tags");
-                }}
-                className="bg-transparent border-none outline-none text-foreground text-sm font-medium w-full placeholder:text-muted-foreground"
-              />
-            </div>
-          </div>
-
-          {/* Collapsible Advanced Options Accordion */}
-          <div className="border border-border/80 bg-card/60 rounded-2xl overflow-hidden transition-all">
-            <button
-              type="button"
-              onClick={() => setShowAdvanced(!showAdvanced)}
-              className="w-full flex items-center justify-between p-3.5 text-left text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <Briefcase className="w-4 h-4 text-muted-foreground" />
-                <span>Advanced Options</span>
-                {(splitEnabled || isBusiness) && (
-                  <span className="w-2 h-2 rounded-full bg-primary" />
-                )}
-              </div>
-              {showAdvanced ? (
-                <ChevronUp className="w-4 h-4 text-muted-foreground" />
-              ) : (
-                <ChevronDown className="w-4 h-4 text-muted-foreground" />
-              )}
-            </button>
-
-            {showAdvanced && (
-              <div className="p-4 pt-1 space-y-4 border-t border-border/80 animate-in fade-in duration-200">
-                {/* Split Transaction Option (only for Expense/Income) */}
-                {txType !== "Transfer" && (
-                  <SplitSection
-                    enabled={splitEnabled}
-                    onToggle={setSplitEnabled}
-                    rows={splitRows}
-                    onChangeRows={setSplitRows}
-                    categories={filteredCategories}
-                    totalAmount={parsedAmount}
-                    currency={selectedAcc?.currency || displayCurrency}
-                    onOpenCategorySelector={(idx) => {
-                      setActiveSplitIndex(idx);
-                      setShowCatSelector(true);
-                    }}
-                  />
-                )}
-
-                {/* Business Expense Flag */}
-                <div className="flex items-center justify-between pt-1">
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium text-foreground">
-                      Business Transaction
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      Tag for business accounting and tax reporting
-                    </span>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={isBusiness}
-                      onChange={(e) => setIsBusiness(e.target.checked)}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                  </label>
-                </div>
-              </div>
+        {/* Advanced options: one collapsed row (40px). Currency, split and business live inside. */}
+        <div className="shrink-0 overflow-hidden rounded-2xl border border-border/80 bg-card/60">
+          <button
+            type="button"
+            onClick={() => setShowAdvanced(!showAdvanced)}
+            className="flex h-10 w-full items-center justify-between px-3 text-left text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <span className="flex items-center gap-2">
+              <Briefcase className="w-3.5 h-3.5 text-muted-foreground" />
+              <span>Advanced Options</span>
+              {(splitEnabled || isBusiness) && <span className="w-2 h-2 rounded-full bg-primary" />}
+            </span>
+            {showAdvanced ? (
+              <ChevronUp className="w-4 h-4 text-muted-foreground" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-muted-foreground" />
             )}
-          </div>
+          </button>
+
+          {showAdvanced && (
+            <div className="p-3 space-y-4 border-t border-border/80 animate-in fade-in duration-200">
+              {/* Currency (Expense & Income); defaults to the account's currency */}
+              {txType !== "Transfer" && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Coins className="w-4 h-4 text-muted-foreground shrink-0" />
+                    <span className="text-sm font-medium text-foreground">Currency</span>
+                  </div>
+                  <Select value={currency} onValueChange={(v) => setCurrencyChoice(v ?? "")}>
+                    <SelectTrigger aria-label="Currency" size="sm" className="w-28">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {currencyOptions.map((c) => (
+                        <SelectItem key={c} value={c}>
+                          {c}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Split Transaction Option (only for Expense/Income) */}
+              {txType !== "Transfer" && (
+                <SplitSection
+                  enabled={splitEnabled}
+                  onToggle={setSplitEnabled}
+                  rows={splitRows}
+                  onChangeRows={setSplitRows}
+                  categories={filteredCategories}
+                  totalAmount={parsedAmount}
+                  currency={selectedAcc?.currency || displayCurrency}
+                  onOpenCategorySelector={(idx) => {
+                    setActiveSplitIndex(idx);
+                    setShowCatSelector(true);
+                  }}
+                />
+              )}
+
+              {/* Business Expense Flag */}
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium text-foreground">
+                    Business Transaction
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    Tag for business accounting and tax reporting
+                  </span>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isBusiness}
+                    onChange={(e) => setIsBusiness(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-muted peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                </label>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Rule suggestion (Expense/Income, payee + category set) */}
         {ruleEligible && (
-          <label className="flex items-start gap-3 p-3.5 rounded-2xl border border-info/30 bg-info/10 cursor-pointer">
+          <label className="shrink-0 flex items-start gap-3 p-3 rounded-2xl border border-info/30 bg-info/10 cursor-pointer">
             <input
               type="checkbox"
               checked={alsoCreateRule}
@@ -914,34 +915,34 @@ export default function MobileTransactionPage() {
             </span>
           </label>
         )}
-
-        {/* Save Action Button */}
-        {!showNumpad && (
-          <div className="pt-2">
-            <Button
-              type="button"
-              disabled={saving || done}
-              onClick={handleSave}
-              className="w-full h-12 text-base font-semibold bg-primary hover:bg-primary/90 active:bg-primary/80 text-primary-foreground rounded-2xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Saving...
-                </>
-              ) : done ? (
-                "Saved"
-              ) : (
-                `Save ${txType}`
-              )}
-            </Button>
-          </div>
-        )}
       </main>
 
-      {/* Numpad Anchored Bottom */}
+      {/* Save (48px), pinned below the scroll region. Hidden while the numpad is open. */}
+      {!showNumpad && (
+        <div className="shrink-0 px-4 pb-3 pt-2">
+          <Button
+            type="button"
+            disabled={saving || done}
+            onClick={handleSave}
+            className="w-full h-12 text-base font-semibold bg-primary hover:bg-primary/90 active:bg-primary/80 text-primary-foreground rounded-2xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Saving...
+              </>
+            ) : done ? (
+              "Saved"
+            ) : (
+              `Save ${txType}`
+            )}
+          </Button>
+        </div>
+      )}
+
+      {/* Numpad: docks above the floating tab bar (bottom = clearance - 16px) */}
       {showNumpad && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-background animate-in slide-in-from-bottom duration-200 max-md:pb-[calc(var(--mobile-bar-clearance)-1rem)]">
+        <div className="fixed inset-x-0 z-40 bg-background animate-in slide-in-from-bottom duration-200 max-md:bottom-[calc(var(--mobile-bar-clearance)-1rem)] md:bottom-4 md:left-1/2 md:right-auto md:w-[min(28rem,100vw)] md:-translate-x-1/2">
           <Numpad
             value={amount}
             onChange={setAmount}

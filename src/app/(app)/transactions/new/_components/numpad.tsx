@@ -3,6 +3,10 @@
 import React from "react";
 import { Delete } from "lucide-react";
 
+// Total rendered height (keys 44px, 8px gaps, p-2, 1px top border): 6 rows, 5 gaps.
+// The page reserves this much bottom padding in the field region while the numpad is open.
+export const NUMPAD_HEIGHT_PX = 321;
+
 interface NumpadProps {
   value: string;
   onChange: (val: string) => void;
@@ -67,12 +71,12 @@ export function Numpad({ value, onChange, onConfirm }: NumpadProps) {
   };
 
   const btnClass =
-    "flex items-center justify-center text-2xl font-medium bg-muted/80 text-foreground rounded-xl active:bg-muted transition-colors h-14";
+    "flex items-center justify-center text-2xl font-medium bg-muted/80 text-foreground rounded-xl active:bg-muted transition-colors h-11";
   const opClass =
-    "flex items-center justify-center text-2xl font-medium bg-primary/20 text-primary rounded-xl active:bg-primary/40 transition-colors h-14";
+    "flex items-center justify-center text-2xl font-medium bg-primary/20 text-primary rounded-xl active:bg-primary/40 transition-colors h-11";
 
   return (
-    <div className="w-full bg-background p-2 pb-8 grid grid-cols-4 gap-2 border-t border-border">
+    <div className="w-full bg-background p-2 grid grid-cols-4 gap-2 border-t border-border">
       <button type="button" onClick={() => handlePress("C")} className={btnClass}>C</button>
       <button type="button" onClick={() => handlePress("/")} className={opClass}>/</button>
       <button type="button" onClick={() => handlePress("*")} className={opClass}>*</button>
@@ -103,7 +107,7 @@ export function Numpad({ value, onChange, onConfirm }: NumpadProps) {
       <button
         type="button"
         onClick={() => handlePress("OK")}
-        className="col-span-4 bg-primary text-primary-foreground font-semibold rounded-xl h-14 text-xl active:bg-primary/90 transition-colors mt-2"
+        className="col-span-4 bg-primary text-primary-foreground font-semibold rounded-xl h-11 text-xl active:bg-primary/90 transition-colors"
       >
         OK
       </button>

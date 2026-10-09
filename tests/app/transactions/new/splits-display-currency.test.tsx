@@ -71,7 +71,6 @@ vi.mock(
       );
     },
   }),
-  { esmock: true }
 );
 
 import Page from "@/app/(app)/transactions/new/page";
