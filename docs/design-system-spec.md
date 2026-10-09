@@ -119,7 +119,8 @@ Excluded from the adaptive guard scan (see 3e).
 
 ### 3a. Touch targets
 - Target size is 44px. `min-h-11` is used for it (25 lines in `src/app` + `src/components`, grep run 2026-10-09). Tailwind v4 spacing 11 = 2.75rem = 44px. UNVERIFIED against built CSS.
-- `ui/button.tsx` sizes: default `h-8 max-md:h-11` (`:26`), xs `h-6` (`:27`), sm `h-7 max-md:h-11` (`:28`), lg `h-9 max-md:h-11` (`:29`), icon `size-8 max-md:size-11` (`:30`), icon-xs `size-6` (`:31`, hit area via `max-md:before:-inset-2.5` `:31`), icon-sm `size-7 max-md:size-11` (`:34`), icon-lg `size-9 max-md:size-11` (`:35`).
+- Touch sizes are pointer-based (G2-14e), not viewport: `ui/button.tsx` default/sm/lg `h-8 pointer-coarse:h-11`, icon sizes `size-8 pointer-coarse:size-11`, xs/icon-xs keep the 44px hit area via `pointer-coarse:before:-inset-2.5`. Compact density: `dense:pointer-fine:h-7`. `pointer-coarse` is 44px on every coarse device (iPad included). Input/Select/Combobox use the same pattern (`pointer-coarse:h-11`, text `text-base regular:pointer-fine:text-sm`).
+- Caller overrides on primitives must use the base's modifier (`regular:pointer-fine:*`, `pointer-coarse:*`). A plain `md:`/`max-md:` override does not merge with the base. Guard: `tests/components/ui-caller-overrides.test.ts` (G2-15).
 - `PillButton` is h-9 visually; 44px hit area comes from `after:-inset-y-1` (`mobile/pill-button.tsx:7`). This differs from the `min-h-11` approach elsewhere (see 4).
 
 ### 3b. Form controls
@@ -141,13 +142,14 @@ Excluded from the adaptive guard scan (see 3e).
 - Overflow trigger: `regular:hidden`.
 
 ### 3e. Adaptive guard (ratchet)
-- Test: `tests/design-system-guard.test.ts`. Banned regex `:6`: `/md:hidden|hidden\s+md:|isMobile|window\.innerWidth/gi`.
-- Scan roots: `src/app` and `src/components` (`:20-37`). Excluded: `src/components/ui/size-class.ts` and anything under `src/components/mobile/` (`:45-49`).
-- Baseline: `tests/fixtures/adaptive-baseline.json` (13 files).
-- Tests: no new files (`:76-82`), no count increase (`:84-99`), baseline must drop when usage drops (`:101-116`), no stale entries (`:118-128`), no zero entries (`:130-136`), scan non-empty (`:138-142`).
-- Replica run (not vitest): 13 baseline entries match 13 scanned files, 43 total matches, no new/increased/stale entries (2026-10-09 scan, script in scratchpad).
-- Note: `max-md:hidden` contains the substring `md:hidden`, so it is counted (see 4 and section 5).
-- New code must not use `md:hidden`, `hidden md:`, `isMobile`, `window.innerWidth`.
+- Test: `tests/design-system-guard.test.ts`. Banned regex (`tests/helpers/adaptive-scan.ts` `BANNED_PATTERN`): `md:hidden|hidden md:|hidden max-md:|isMobile|window.innerWidth|matchMedia|useMediaQuery`.
+- Scan roots: `src/app` and `src/components`. Excluded: `src/components/ui/size-class.ts`, `src/components/mobile/`.
+- Baseline `tests/fixtures/adaptive-baseline.json` (13 files, banned patterns). Rules: no new files, no count increase, must lower when usage drops, no stale or zero entries.
+- Breakpoint ratchet `tests/fixtures/breakpoint-baseline.json` (G2-15: 1 file, 2 tokens; the only hits are `sm:`/`lg:` object keys in `ui/button.tsx`). Token regex `BREAKPOINT_PATTERN`: `sm|md|lg|xl|2xl` with optional `max-`, not preceded by word char, `@`, `.` or `-`. Container tokens (`@md:`) and `CLAUDE.md:` are not counted.
+- Caller overrides on primitives: `tests/components/ui-caller-overrides.test.ts` (G2-15). AST scan of className on Input/Select/SelectTrigger/Combobox/GroupCombobox/Button/TabsList/TabsTrigger. No viewport variant without a pointer modifier, except the 5-entry `EXCEPTIONS` list (width/display only). No viewport size/text override without a pointer modifier.
+- Size-class wrapper ratchet: `tests/fixtures/size-class-wrapper-baseline.json`.
+- New code must not use `md:hidden`, `hidden md:`, `isMobile`, `window.innerWidth`. Use `regular:`, `wide:`, `max-regular:`.
+- `max-md:hidden` contains `md:hidden` and is counted (see 4 and section 5).
 
 ### 3f. Size classes (G2-01)
 - Variants `regular:` (`@media (width >= 40rem)`) and `wide:` (`@media (width > 64rem)`) in `globals.css`. Thresholds mirror `sizeClassFor()` (`ui/size-class.ts`: compact <640, regular 640-1024, wide >1024).
