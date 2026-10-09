@@ -67,8 +67,6 @@ export const FAB_ROUTES: Record<string, FabEntry> = {
   "/accounts": { kind: "route", label: "Add account", icon: Plus, href: "/accounts/new" },
   "/accounts/new": { kind: "hidden", reason: "is the create flow" },
   "/accounts/[id]/edit": { kind: "hidden", reason: "is the edit flow" },
-  "/categories/[id]/edit": { kind: "hidden", reason: "is the edit flow" },
-  "/categories/new": { kind: "hidden", reason: "is the create flow" },
   "/accounts/[id]": {
     kind: "handler",
     label: "New transaction",
