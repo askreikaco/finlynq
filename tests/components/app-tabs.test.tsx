@@ -204,7 +204,7 @@ describe("unread dot on More (both layouts)", () => {
 
 describe("unread badges come from the shared store (nav-unread)", () => {
   it("AppTabs asks the store once per render: one announcements request and one feedback request", async () => {
-    const fn = vi.fn(async () => ({ ok: true, status: 200, json: async () => [] }));
+    const fn = vi.fn(async (_url: string) => ({ ok: true, status: 200, json: async () => [] }));
     vi.stubGlobal("fetch", fn);
     render(<AppTabs />);
     await waitFor(() => expect(fn).toHaveBeenCalled());
