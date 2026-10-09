@@ -82,6 +82,12 @@ describe("aead", () => {
     await expect(open(await newKey(7), new Uint8Array(MIN_SEALED_BYTES - 1))).rejects.toBeInstanceOf(AuthError);
   });
 
+  it("inputs of 28 and 27 bytes reject with AuthError", async () => {
+    const key = await newKey();
+    await expect(open(key, new Uint8Array(28))).rejects.toBeInstanceOf(AuthError);
+    await expect(open(key, new Uint8Array(27))).rejects.toBeInstanceOf(AuthError);
+  });
+
   it("AuthError carries no detail", async () => {
     const key = await newKey();
     const sealed = await seal(key, enc.encode("secret"), enc.encode("aad"));

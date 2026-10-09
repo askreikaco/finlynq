@@ -44,7 +44,7 @@ export function deriveRootKey(
   associatedData?: Uint8Array,
 ): Uint8Array {
   if (passphrase.length === 0) throw new Error("passphrase must not be empty");
-  if (salt.length < 8) throw new Error("salt must be at least 8 bytes");
+  if (salt.length < 16) throw new Error("salt must be at least 16 bytes");
   return argon2id(enc.encode(passphrase), salt, {
     m: params.m,
     t: params.t,

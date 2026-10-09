@@ -36,6 +36,12 @@ describe("kdf: Argon2id root", () => {
     expect(Object.isFrozen(ARGON2_SET_A)).toBe(true);
   });
 
+  it("deriveRootKey with no params uses the D2 default set A", () => {
+    const def = deriveRootKey("pw", SALT_A);
+    const direct = argon2id(enc.encode("pw"), SALT_A, { m: 19456, t: 2, p: 1, dkLen: 32 });
+    expect(Buffer.from(def).toString("hex")).toBe(Buffer.from(direct).toString("hex"));
+  }, 60_000);
+
   it("is deterministic for a fixed salt and matches a direct noble call", () => {
     const a = deriveRootKey("correct horse", SALT_A, TINY);
     const b = deriveRootKey("correct horse", SALT_A, TINY);
@@ -60,6 +66,8 @@ describe("kdf: Argon2id root", () => {
   it("rejects empty passphrase and short salt", () => {
     expect(() => deriveRootKey("", SALT_A, TINY)).toThrow();
     expect(() => deriveRootKey("pw", new Uint8Array(4), TINY)).toThrow();
+    expect(() => deriveRootKey("pw", new Uint8Array(15), TINY)).toThrow();
+    expect(() => deriveRootKey("pw", new Uint8Array(16), TINY)).not.toThrow();
   });
 });
 
@@ -109,6 +117,13 @@ describe("kdf: HKDF subkeys", () => {
 });
 
 describe("DevPassphraseKeyProvider", () => {
+  it("derives different keys per logId", async () => {
+    const p1 = new DevPassphraseKeyProvider({ passphrase: "pw", salt: SALT_A, params: TINY });
+    const a = await p1.getKeys("L1");
+    const b = await p1.getKeys("L2");
+    await expect(open(b.oplogKey, await seal(a.oplogKey, PT))).rejects.toBeInstanceOf(AuthError);
+  });
+
   it("generates a random 16-byte salt and reproduces keys from the persisted salt", async () => {
     const p1 = new DevPassphraseKeyProvider({ passphrase: "pw", params: TINY });
     const p2 = new DevPassphraseKeyProvider({ passphrase: "pw", params: TINY });
