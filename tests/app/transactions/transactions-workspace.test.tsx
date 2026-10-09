@@ -71,4 +71,21 @@ describe("workspace", () => {
     expect(within(dlg).queryByRole("button", { name: "Duplicate transaction" })).toBeNull();
     expect(push).not.toHaveBeenCalled(); expect(sessionStorage.getItem(KEY)).toBeNull();
   });
+  it("loadError: shows shared ErrorState with retry and calls loadTxns once", () => {
+    const saved = { ...H.RES };
+    const loadTxns = vi.fn();
+    try {
+      Object.assign(H.RES, { loadError: true, txns: [], total: 0, loadTxns });
+      render(<TransactionsWorkspace />);
+      expect(screen.getByRole("alert")).toBeTruthy();
+      expect(screen.getByText("Try again")).toBeTruthy();
+      const btn = screen.getByText("Try again").closest("button")!;
+      expect(btn.className).toContain("min-h-11");
+      fireEvent.click(btn);
+      expect(loadTxns).toHaveBeenCalledTimes(1);
+    } finally {
+      for (const k of Object.keys(H.RES)) delete (H.RES as any)[k];
+      Object.assign(H.RES, saved);
+    }
+  });
 });

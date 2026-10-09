@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
+import { ErrorState } from "@/components/error-state";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { OnboardingTips } from "@/components/onboarding-tips";
 import { Badge } from "@/components/ui/badge";
@@ -178,7 +179,7 @@ export function TransactionsWorkspace({
   const { colFilters, setColFilters, findColFilter, setColFilter } = useTxFilterPrefs(() => setPage(0));
 
   // Main list (txns / total / loading) + loadTxns + infinite scroll loadNextPage
-  const { txns, total, loading, limit, loadTxns, loadNextPage, resetPage, hasMore } = useTransactions(
+  const { txns, total, loading, limit, loadTxns, loadNextPage, resetPage, hasMore, loadError } = useTransactions(
     filters,
     sortPref,
     colFilters,
@@ -686,6 +687,8 @@ export function TransactionsWorkspace({
   // admin users table could reuse it instead of forking a third copy.
 
   // Split allocated total for inline split editor
+  if (loadError) return <ErrorState title="Couldn't load transactions" message="We couldn't load your transactions. Please try again." onRetry={() => { void loadTxns(); }} />;
+
   return (
     /* FINLYNQ-52 (was issue #59 workaround): the (app)-shell width clamp
        was removed in src/app/(app)/layout.tsx, so this page no longer
