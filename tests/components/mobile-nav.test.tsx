@@ -247,7 +247,7 @@ describe("mobile bar matches the native tab bar (mobile/src/navigation/TabNaviga
 
   it("app shell bottom padding uses the shared --mobile-bar-clearance var", () => {
     const layout = readFileSync(join(__dirname, "../../src/app/(app)/layout.tsx"), "utf8");
-    expect(layout).toContain('"pb-[var(--mobile-bar-clearance)] md:pb-0"');
+    expect(layout).toContain("pb-[calc(var(--mobile-bar-clearance)+80px)] md:pb-0");
     const css = readFileSync(join(__dirname, "../../src/app/globals.css"), "utf8");
     expect(css).toMatch(/--mobile-bar-clearance:\s*calc\(96px\s*\+\s*var\(--sab\)\)/);
   });

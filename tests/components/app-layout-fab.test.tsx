@@ -4,13 +4,14 @@
 import "@testing-library/jest-dom";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
-import * as flagModule from "@/lib/quick-add/flag";
 
 afterEach(cleanup);
 
-vi.mock("@/lib/quick-add/flag", () => ({
-  isQuickAddEnabled: vi.fn(),
-  QUICK_ADD_FAB_PATHS: ["/dashboard", "/transactions"],
+vi.mock("@/components/mobile/page-fab", () => ({
+  PageFab: vi.fn(() => <div data-testid="page-fab" />),
+  PageFabProvider: vi.fn(({ children }: { children: React.ReactNode }) => (
+    <div data-testid="page-fab-provider">{children}</div>
+  )),
 }));
 
 vi.mock("@/components/nav", () => ({
@@ -72,54 +73,47 @@ vi.mock("next/navigation", () => ({
 // Import after mocking
 import AppLayout from "@/app/(app)/layout";
 import * as indicatorModule from "@/components/reporting-recompute-indicator";
+import * as pageFabModule from "@/components/mobile/page-fab";
 
-describe("AppLayout with QuickAddFAB", () => {
+describe("AppLayout mounts the per-page FAB", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   afterEach(() => {
+    vi.unstubAllEnvs();
     vi.restoreAllMocks();
   });
 
-  it("should render QuickAddFAB when flag is enabled", () => {
-    vi.mocked(flagModule.isQuickAddEnabled).mockReturnValue(true);
-
+  it("renders PageFab inside PageFabProvider", () => {
     render(<AppLayout><div>Test Content</div></AppLayout>);
 
-    // FAB is rendered with correct href when flag is on
-    const fab = screen.getByLabelText("Add transaction");
-    expect(fab).toBeInTheDocument();
-    expect(fab).toHaveAttribute("href", "/transactions/new");
+    const provider = screen.getByTestId("page-fab-provider");
+    expect(provider).toBeInTheDocument();
+    expect(provider.querySelector("[data-testid='page-fab']")).not.toBeNull();
+    expect(pageFabModule.PageFab).toHaveBeenCalled();
   });
 
-  it("should not render QuickAddFAB when flag is disabled", () => {
-    vi.mocked(flagModule.isQuickAddEnabled).mockReturnValue(false);
-
+  it("renders PageFab regardless of FINLYNQ_QUICK_ADD (flag no longer gates it)", () => {
+    vi.stubEnv("FINLYNQ_QUICK_ADD", "0");
     render(<AppLayout><div>Test Content</div></AppLayout>);
+    expect(screen.getByTestId("page-fab")).toBeInTheDocument();
 
-    // FAB is not in the document when flag is off
-    const fab = screen.queryByLabelText("Add transaction");
-    expect(fab).not.toBeInTheDocument();
+    cleanup();
+    vi.stubEnv("FINLYNQ_QUICK_ADD", "1");
+    render(<AppLayout><div>Test Content</div></AppLayout>);
+    expect(screen.getByTestId("page-fab")).toBeInTheDocument();
   });
 
-  it("should pass avoidFab=true to ReportingRecomputeIndicator when flag is enabled", () => {
-    vi.mocked(flagModule.isQuickAddEnabled).mockReturnValue(true);
-
+  it("no longer passes avoidFab to ReportingRecomputeIndicator", () => {
     render(<AppLayout><div>Test Content</div></AppLayout>);
 
-    // ReportingRecomputeIndicator should be called with avoidFab=true
     const callArgs = vi.mocked(indicatorModule.ReportingRecomputeIndicator).mock.calls[0];
-    expect(callArgs[0]).toEqual(expect.objectContaining({ avoidFab: true }));
+    expect(callArgs[0]).not.toHaveProperty("avoidFab");
   });
 
-  it("should pass avoidFab=false to ReportingRecomputeIndicator when flag is disabled", () => {
-    vi.mocked(flagModule.isQuickAddEnabled).mockReturnValue(false);
-
+  it("does not render the legacy quick-add button", () => {
     render(<AppLayout><div>Test Content</div></AppLayout>);
-
-    // ReportingRecomputeIndicator should be called with avoidFab=false
-    const callArgs = vi.mocked(indicatorModule.ReportingRecomputeIndicator).mock.calls[0];
-    expect(callArgs[0]).toEqual(expect.objectContaining({ avoidFab: false }));
+    expect(screen.queryByLabelText("Add transaction")).not.toBeInTheDocument();
   });
 });

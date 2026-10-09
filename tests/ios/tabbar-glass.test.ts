@@ -132,16 +132,14 @@ describe("clearance above the bar", () => {
     expect(css).toMatch(/:root\s*\{[^}]*--mobile-bar-clearance:\s*calc\(96px \+ var\(--sab\)\)/);
   });
 
-  it("app shell content padding uses the clearance var (with FAB +64px)", () => {
-    expect(layout).toContain('"pb-[calc(var(--mobile-bar-clearance)+64px)] md:pb-24"');
-    expect(layout).toContain('"pb-[var(--mobile-bar-clearance)] md:pb-0"');
+  it("app shell content padding uses the clearance var (with PageFab +80px)", () => {
+    expect(layout).toContain("pb-[calc(var(--mobile-bar-clearance)+80px)] md:pb-0");
     expect(layout).not.toContain("132px");
     expect(layout).not.toContain("60px+var(--sab)");
   });
 
   it("floating UI above the bar uses the clearance var, not the old fixed heights", () => {
     for (const p of [
-      "src/components/quick-add-fab.tsx",
       "src/components/announcement-banner.tsx",
       "src/components/inbox/lens-toast.tsx",
       "src/components/reconcile/bulk-link-action-bar.tsx",
