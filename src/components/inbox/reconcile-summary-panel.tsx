@@ -124,7 +124,7 @@ export function ReconcileSummaryPanel({
         accessor: (r) => r.pendingCount,
         render: (r) =>
           r.pendingCount > 0 ? (
-            <span className="font-medium text-amber-700 dark:text-amber-400">
+            <span className="font-medium text-warning">
               {r.pendingCount}
             </span>
           ) : (
@@ -196,7 +196,7 @@ export function ReconcileSummaryPanel({
       {open && (
         <div className="border-t px-4 pb-4">
           {error && (
-            <p className="py-3 text-sm text-rose-700 dark:text-rose-400">
+            <p className="py-3 text-sm text-destructive">
               {error}
             </p>
           )}

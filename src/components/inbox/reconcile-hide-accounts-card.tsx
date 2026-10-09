@@ -101,7 +101,7 @@ export function ReconcileHideAccountsCard() {
     <Card>
       <CardHeader>
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-warning/10 text-warning">
             <EyeOff className="h-5 w-5" />
           </div>
           <div>
@@ -120,7 +120,7 @@ export function ReconcileHideAccountsCard() {
       </CardHeader>
       <CardContent>
         {error && (
-          <p className="mb-3 text-sm text-rose-700 dark:text-rose-400">{error}</p>
+          <p className="mb-3 text-sm text-destructive">{error}</p>
         )}
         {loading ? (
           <p className="text-sm text-muted-foreground">Loading accounts…</p>
@@ -148,7 +148,7 @@ export function ReconcileHideAccountsCard() {
                       </span>
                     )}
                     {isHidden && (
-                      <span className="ml-1.5 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                      <span className="ml-1.5 rounded bg-warning/10 px-1.5 py-0.5 text-[10px] text-warning">
                         hidden
                       </span>
                     )}

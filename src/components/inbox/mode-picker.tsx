@@ -124,7 +124,7 @@ export function ModePicker({
       </div>
 
       {error && (
-        <p className="text-xs text-rose-600 dark:text-rose-400">{error}</p>
+        <p className="text-xs text-destructive">{error}</p>
       )}
 
       <div className="flex items-center gap-2">
@@ -136,7 +136,7 @@ export function ModePicker({
           {saving ? "Saving…" : "Save mode"}
         </Button>
         {!dirty && savedMode === selected && !saving && (
-          <span className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+          <span className="inline-flex items-center gap-1 text-xs text-pos">
             <Check className="h-3.5 w-3.5" />
             Saved
           </span>

@@ -117,7 +117,7 @@ function SuggestionLine({ s }: { s: RowCardSuggestionAny | null }) {
   if (s.kind === "match") {
     return (
       <span className="inline-flex items-center gap-1.5 text-xs">
-        <Link2 className="h-3.5 w-3.5 text-sky-500" />
+        <Link2 className="h-3.5 w-3.5 text-info" />
         <span className="text-muted-foreground">
           match tx #{s.transactionId}
           {s.txPayee ? ` · ${s.txPayee}` : ""}
@@ -133,7 +133,7 @@ function SuggestionLine({ s }: { s: RowCardSuggestionAny | null }) {
   if (s.kind === "transfer") {
     return (
       <span className="inline-flex items-center gap-1.5 text-xs">
-        <ArrowLeftRight className="h-3.5 w-3.5 text-violet-500" />
+        <ArrowLeftRight className="h-3.5 w-3.5 text-chart-5" />
         <span className="text-muted-foreground">transfer to</span>
         <Badge variant="secondary" className="font-mono text-[10px]">
           {s.destAccountName}
@@ -144,7 +144,7 @@ function SuggestionLine({ s }: { s: RowCardSuggestionAny | null }) {
   if (s.kind === "investment_op") {
     return (
       <span className="inline-flex items-center gap-1.5 text-xs">
-        <Sparkles className="h-3.5 w-3.5 text-emerald-500" />
+        <Sparkles className="h-3.5 w-3.5 text-pos" />
         <span className="text-muted-foreground">record</span>
         <Badge variant="secondary" className="font-mono text-[10px] uppercase">
           {s.op}
@@ -155,7 +155,7 @@ function SuggestionLine({ s }: { s: RowCardSuggestionAny | null }) {
   // kind === "create"
   return (
     <span className="inline-flex items-center gap-1.5 text-xs">
-      <Sparkles className="h-3.5 w-3.5 text-emerald-500" />
+      <Sparkles className="h-3.5 w-3.5 text-pos" />
       <span className="text-muted-foreground">create as</span>
       <Badge variant="secondary" className="font-mono text-[10px]">
         {s.categoryName}
@@ -179,7 +179,7 @@ export function RowCard({
   return (
     <div
       className={`rounded-lg border bg-card hover:shadow-sm transition-shadow ${
-        isDup ? "border-amber-300 dark:border-amber-700" : ""
+        isDup ? "border-warning/30" : ""
       }`}
     >
       <div className="flex items-center gap-3 px-4 py-3">
@@ -193,7 +193,7 @@ export function RowCard({
             </span>
             <span
               className={`ml-auto text-sm font-mono ${
-                bank.amount < 0 ? "text-rose-500" : "text-emerald-500"
+                bank.amount < 0 ? "text-destructive" : "text-pos"
               }`}
             >
               {formatCurrency(bank.amount, bank.currency || "CAD")}
@@ -201,7 +201,7 @@ export function RowCard({
           </div>
           <div className="mt-1.5">
             {isDup ? (
-              <span className="inline-flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400">
+              <span className="inline-flex items-center gap-1.5 text-xs text-warning">
                 <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
                 <span>
                   Possible duplicate of an existing transaction
@@ -282,7 +282,7 @@ export function RowCard({
           <Button
             size="sm"
             variant="ghost"
-            className="h-7 w-7 p-0 text-muted-foreground hover:text-rose-500"
+            className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
             onClick={onDelete}
             disabled={busy}
             aria-label="Delete row"
