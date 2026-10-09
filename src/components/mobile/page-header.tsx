@@ -26,12 +26,25 @@ export interface OverflowAction {
 export const HEADER_DESKTOP_ONLY = "max-md:hidden";
 
 /**
- * Phone header row for pages with a back control (iOS 26 style): [round glass back | glass
- * title island, centred | actions]. Sticky, grid with equal side columns so the island stays
- * centred in the viewport. md+ keeps the page's original classes (nothing here applies there).
+ * Phone sticky header, shared by every PageHeader row and the settings back row (max-md only).
+ * Top offset is the safe-area inset alone: body already pads its in-flow top by --sat, but a
+ * sticky box pins to the scrollport edge (y=0) and ignores that padding, so top:0 would slide
+ * under the notch/status bar on iOS standalone. Stuck box = [sat, sat+56px]; content scrolls
+ * under it. Row height = --phone-header-h (3.5rem). Opaque bg, no backdrop blur. z-30 sits above
+ * the section labels (z-10). Hairline border-b keeps the bar separate from content.
+ * No pt-[var(--sat)]: the row is in flow below body's pad, so adding it again would double the inset.
  */
+export const PHONE_HEADER_STICKY =
+  "max-md:sticky max-md:top-[var(--sat,0px)] max-md:z-30 max-md:min-h-[var(--phone-header-h)] max-md:border-b max-md:border-border max-md:bg-background";
+
+/** Phone header row for pages with a back control (iOS 26 style): [round glass back | glass
+ * title island, centred | actions]. Grid with equal side columns so the island stays
+ * centred in the viewport. md+ keeps the page's original classes (nothing here applies there). */
 export const PHONE_HEADER_ROW =
-  "max-md:grid max-md:grid-cols-[minmax(0,1fr)_minmax(0,auto)_minmax(0,1fr)] max-md:items-center max-md:gap-2 max-md:sticky max-md:top-0 max-md:z-10 max-md:bg-background max-md:pt-[var(--sat)]";
+  `max-md:grid max-md:grid-cols-[minmax(0,1fr)_minmax(0,auto)_minmax(0,1fr)] max-md:items-center max-md:gap-2 ${PHONE_HEADER_STICKY}`;
+
+/** Plain (no back) header wrapper on phones: sticky bar, h1 vertically centred. */
+export const PHONE_HEADER_PLAIN = cn(PHONE_HEADER_STICKY, "max-md:flex max-md:flex-col max-md:justify-center");
 
 /** The h1 as the glass title island on phones (large title hidden; the h1 stays in the DOM). */
 export const PHONE_TITLE_ISLAND =
@@ -113,8 +126,14 @@ export function PageHeader({
       {title}
     </h1>
   );
-  // Title only: emit just the h1 so the page's DOM stays exactly as it was.
-  if (!subtitle && !belowTitle && !lead && !hasRight && !className && !backHref) return h1;
+  // Title only: sticky wrapper around just the h1 (no other nodes).
+  if (!subtitle && !belowTitle && !lead && !hasRight && !backHref) {
+    return (
+      <div data-slot="page-header" className={cn(className, PHONE_HEADER_PLAIN)}>
+        {h1}
+      </div>
+    );
+  }
   const titleBlock = (
     <div className={cn(!lead && "max-md:min-w-0", !lead && hasRight && "max-md:flex-1", backHref && "max-md:contents")} data-slot="page-header-title-block">
       {h1}
@@ -156,12 +175,16 @@ export function PageHeader({
     );
   }
   if (!hasRight) {
-    return className ? <div className={className}>{headingWithBack}</div> : headingWithBack;
+    return (
+      <div data-slot="page-header" className={cn(className, PHONE_HEADER_PLAIN)}>
+        {headingWithBack}
+      </div>
+    );
   }
   return (
     <div
       data-slot="page-header"
-      className={cn(className, "max-md:flex max-md:flex-row max-md:flex-nowrap max-md:items-center max-md:justify-between max-md:gap-3")}
+      className={cn(className, PHONE_HEADER_STICKY, "max-md:flex max-md:flex-row max-md:flex-nowrap max-md:items-center max-md:justify-between max-md:gap-3")}
     >
       {headingWithBack}
       <div data-slot="page-header-actions" className={cn(actionsClassName, "max-md:w-auto max-md:shrink-0 max-md:flex-nowrap max-md:gap-2")}>

@@ -61,9 +61,14 @@ describe("PageHeader: desktop classes unchanged (md: variants)", () => {
     expect(c.some((t) => t.startsWith("md:font-"))).toBe(true);
   });
 
-  it("emits just the h1 when there is nothing else (no extra wrapper)", () => {
+  it("title only: one sticky phone wrapper around just the h1", () => {
     const { container } = render(<PageHeader title="Solo" />);
-    expect(container.firstElementChild?.tagName).toBe("H1");
+    const wrap = container.firstElementChild as HTMLElement;
+    expect(wrap.tagName).toBe("DIV");
+    expect(wrap.getAttribute("data-slot")).toBe("page-header");
+    expect(wrap.children.length).toBe(1);
+    expect(wrap.firstElementChild?.tagName).toBe("H1");
+    expect(cls(wrap)).toEqual(expect.arrayContaining(["max-md:sticky", "max-md:bg-background"]));
   });
 
   it("applies the original wrapper + actions classes verbatim", () => {

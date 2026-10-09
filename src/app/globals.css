@@ -634,6 +634,9 @@ html {
    or the utilities below instead of raw env(...). */
 :root {
   --sat: env(safe-area-inset-top, 0px);
+  /* Phone page-header row height (PageHeader + settings back row, 56px). Sticky elements that sit
+     under the header offset by sat + this. Measured: row = min-h 3.5rem, content 44px + centred. */
+  --phone-header-h: 3.5rem;
   --sab: env(safe-area-inset-bottom, 0px);
   --sal: env(safe-area-inset-left, 0px);
   --sar: env(safe-area-inset-right, 0px);

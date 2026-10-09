@@ -198,7 +198,7 @@ export function OverviewTab({ reloadKey = 0 }: { reloadKey?: number }) {
   return (
     <div className="space-y-6" aria-busy={loading}>
       {/* Sticky filter toolbar */}
-      <div className="sticky top-[var(--sat)] z-10 bg-background/95 backdrop-blur -mx-1 px-1 py-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+      <div className="sticky max-md:top-[calc(var(--sat)+var(--phone-header-h))] md:top-[var(--sat)] z-10 bg-background/95 backdrop-blur -mx-1 px-1 py-3 flex flex-wrap items-center gap-x-3 gap-y-2">
         {/* Time range first (key filter), then icon-only people chips */}
         <div role="radiogroup" aria-label={FAMILY_STRINGS.overview_range_label} className="flex gap-0 bg-muted p-1 rounded-lg w-fit">
           {PERIODS.map((p) => (

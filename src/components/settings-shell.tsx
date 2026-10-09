@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 import { getEntriesBySurface, ALIASES } from "@/lib/nav-config";
 import { BackButton } from "@/components/mobile/back-button";
+import { PHONE_HEADER_STICKY } from "@/components/mobile/page-header";
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
 
@@ -187,15 +188,18 @@ export function SettingsShell({ children, hubBackHref }: { children: React.React
       <div
         className={cn(
           "flex-1 min-w-0",
-          // Detail pages: the glass title island above is the visible title on phones; the page h1 stays for a11y.
-          showDetailHeader && "max-md:[&_[data-slot=page-header-title]]:sr-only"
+          // Detail pages: the glass back row above is the sticky header on phones. The page's own PageHeader
+          // row is then not a second sticky bar: its h1 is sr-only (a11y) and the row collapses to static, 0 height,
+          // no border. Specificity of these arbitrary variants (0,2,x) beats PHONE_HEADER_STICKY's single class.
+          showDetailHeader &&
+            "max-md:[&_[data-slot=page-header-title]]:sr-only max-md:[&_[data-slot=page-header]]:static max-md:[&_[data-slot=page-header]]:min-h-0 max-md:[&_[data-slot=page-header]]:border-0"
         )}
         data-slot="settings-content"
       >
         {/* Not inside the overflow container below: sticky needs a non-overflow ancestor. */}
         {showDetailHeader && (
           // Phones: [round glass back | glass title island of the active section]. md+: back button only.
-          <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 max-md:sticky max-md:top-0 max-md:z-10 max-md:bg-background max-md:pt-[var(--sat)]">
+          <div className={cn("grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2", PHONE_HEADER_STICKY)}>
             <BackButton href={hubBackHref!} label="Back to Settings" className="justify-self-start" />
             <span
               aria-hidden
@@ -205,7 +209,9 @@ export function SettingsShell({ children, hubBackHref }: { children: React.React
             </span>
           </div>
         )}
-        <div className="overflow-x-auto">{children}</div>
+        {/* Phones: no scroll container here (sticky page header inside children needs the page as its scroller;
+            wide tables scroll in their own ui/table container). md+ keeps overflow-x-auto. */}
+        <div className="max-md:overflow-x-clip md:overflow-x-auto">{children}</div>
       </div>
     </div>
   );
