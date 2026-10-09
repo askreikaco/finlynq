@@ -29,7 +29,7 @@ const read = (rel: string) => readFileSync(join(ROOT, rel), "utf-8");
 
 /** Settings routes with no link from the hub or a hub page. Each one is listed here on purpose. */
 const KNOWN_UNLINKED: Record<string, string> = {
-  "/settings/account": "legacy copy of /account/security (same AccountContent); no code links to it (G2-06 report)",
+  "/settings/account": "legacy redirect to /account/security (G2-15); no hub link, external links (OAuth callback, MCP guide) still resolve",
 };
 /** Routes reached from a hub page through a control that is not a registry alias. */
 const LISTED_ACCESS: Record<string, string> = {

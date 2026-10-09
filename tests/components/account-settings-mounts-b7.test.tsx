@@ -19,7 +19,10 @@ vi.mock("next/link", () => ({
 vi.mock("@/components/logo-mark", () => ({ LogoMark: () => null }));
 vi.mock("qrcode", () => ({ default: { toDataURL: vi.fn(async () => "data:image/png;base64,AAA") } }));
 
-import AccountSettingsPage from "@/app/(app)/settings/account/page";
+import { AccountContent } from "@/components/settings/account-content";
+// /settings/account now redirects (G2-15). This test needs the full card set (incl. Change email),
+// which is what the old settings page rendered: AccountContent with no hideEmail.
+const AccountSettingsPage = () => <AccountContent />;
 import userEvent from "@testing-library/user-event";
 import ResetPasswordPage from "@/app/auth/reset-password/page";
 

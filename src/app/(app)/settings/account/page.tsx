@@ -1,12 +1,19 @@
-"use client";
+import { redirect } from "next/navigation";
 
 /**
- * /settings/account — Account page rendered in settings.
- * This renders the account content with the settings nav.
+ * /settings/account: legacy duplicate of /account/security (G2-15).
+ * Redirects, keeping the query string: the OAuth callback and the MCP guide still link here.
  */
-
-import { AccountContent } from "@/components/settings/account-content";
-
-export default function AccountSettingsPage() {
-  return <AccountContent />;
+export default async function AccountSettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(await searchParams)) {
+    if (Array.isArray(value)) value.forEach((v) => params.append(key, v));
+    else if (value !== undefined) params.set(key, value);
+  }
+  const qs = params.toString();
+  redirect(qs ? `/account/security?${qs}` : "/account/security");
 }
