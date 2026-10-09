@@ -411,7 +411,10 @@ export function HoldingsTable({
                               doubles as the only edit affordance, since
                               the account-name cell opens the editor. */}
                           {memberHoldings.length > 0 && (
-                            <div className="mt-3 rounded-md border border-border overflow-hidden">
+                            // w-0 min-w-full: the per-account table must not widen the parent table (the
+                            // expanded cell spans the whole table); it scrolls inside its own box instead,
+                            // so the Lots / View txns actions stay inside the card at 1280.
+                            <div className="mt-3 w-0 min-w-full overflow-x-auto overscroll-x-contain rounded-md border border-border">
                               <Table>
                                 <TableHeader className="bg-muted/40">
                                   <TableRow className="hover:bg-transparent border-border">
@@ -504,7 +507,7 @@ export function HoldingsTable({
                                                   accountName: h.accountName,
                                                 });
                                               }}
-                                              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
+                                              className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-muted-foreground hover:text-foreground hover:underline"
                                               title="Inspect lots: see how this holding's lots are consumed"
                                             >
                                               <Layers className="h-3 w-3" /> Lots

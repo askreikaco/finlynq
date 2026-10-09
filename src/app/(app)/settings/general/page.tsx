@@ -99,7 +99,10 @@ export default function GeneralSettingsPage() {
 
   return (
     <div className="max-w-2xl space-y-6">
+      {/* Phones: the settings detail back row is the sticky bar; a `lead` node (here a hidden empty span)
+          stops PageHeader rendering its 44px left spacer, which made an empty band above the first card. */}
       <PageHeader
+          lead={<span aria-hidden className="hidden" />}
           title="General"
           titleClassName="text-2xl font-bold tracking-tight"
           subtitle="Display preferences and currencies"
@@ -120,8 +123,8 @@ export default function GeneralSettingsPage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between md:gap-4">
+            <div className="min-w-0 md:flex-1">
               <Label>Display Currency</Label>
               <p className="text-xs text-muted-foreground">
                 Totals and aggregations across the app are converted to this currency.
@@ -133,7 +136,7 @@ export default function GeneralSettingsPage() {
                 for. Without that, the PUT route's own rejection message ("Add a
                 custom rate via Settings → Custom exchange rates first") was a
                 dead end — after adding the rate, no picker listed the currency. */}
-            <div className="w-56">
+            <div className="w-full md:w-56 md:shrink-0">
               <Combobox
                 value={displayCurrency}
                 onValueChange={handleCurrencySelect}
@@ -145,15 +148,15 @@ export default function GeneralSettingsPage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">
               <Label>UI Font</Label>
               <p className="text-xs text-muted-foreground">
                 Applies to this browser only. Numeric figures use tabular numerals.
               </p>
             </div>
             <Select value={font} onValueChange={(v) => setFont(v as FontKey)}>
-              <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-44 shrink-0 md:w-48"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {FONT_OPTIONS.map((o) => (
                   <SelectItem key={o.key} value={o.key}>
@@ -164,8 +167,8 @@ export default function GeneralSettingsPage() {
             </Select>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between md:gap-3">
+            <div className="min-w-0 md:flex-1">
               <Label id="appearance-label">Appearance</Label>
               <p className="text-xs text-muted-foreground">
                 System, light, or dark.
@@ -174,7 +177,7 @@ export default function GeneralSettingsPage() {
             <div
               role="radiogroup"
               aria-labelledby="appearance-label"
-              className="inline-flex rounded-lg border p-0.5"
+              className="inline-flex max-w-full self-start rounded-lg border p-0.5 md:self-auto"
             >
               {([
                 { value: "system", label: "System", icon: Monitor },
@@ -203,8 +206,8 @@ export default function GeneralSettingsPage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">
               <Label htmlFor="animation-toggle">Enable Chart &amp; Counter Animations</Label>
               <p className="text-xs text-muted-foreground">
                 Smooth transitions for numbers and charts. Off by default for faster rendering.

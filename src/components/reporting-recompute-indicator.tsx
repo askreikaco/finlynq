@@ -78,9 +78,9 @@ export function ReportingRecomputeIndicator() {
 
   if (!view) return null;
 
-  // Phones: 80px above the bar clearance clears the PageFab (12 gap + 56 FAB + 12).
-  // Desktop: the PageFab is hidden at md and up, so sit at the default md:bottom-4.
-  const bottomClasses = "max-md:bottom-[calc(var(--mobile-bar-clearance)+80px)] md:bottom-4";
+  // Phones: sit just above the tab bar (--mobile-bar-clearance is the space the bar and its inset
+  // reserve), so the toast never covers content rows. Desktop: no tab bar, default md:bottom-4.
+  const bottomClasses = "max-md:bottom-[calc(var(--mobile-bar-clearance)+0.5rem)] md:bottom-4";
 
   return (
     <div className={`fixed ${bottomClasses} right-4 z-50 flex items-center gap-2 rounded-full bg-background px-3.5 py-2 text-xs text-muted-foreground shadow-lg ring-1 ring-foreground/10`}>

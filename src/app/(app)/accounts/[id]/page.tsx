@@ -534,18 +534,20 @@ export default function AccountDetailPage() {
         <ArrowLeft className="h-4 w-4" /> Back to Accounts
       </Link>
 
+      {/* actionsClassName has no w-full: on phones the actions sit in PageHeader's glass capsule, and a
+          100%-width capsule ran off the right edge. */}
       <PageHeader
         className="flex flex-wrap items-center justify-between gap-3"
         title={account.name}
         titleClassName="text-2xl font-bold tracking-tight"
-        actionsClassName="flex flex-wrap items-center gap-1.5 w-full sm:w-auto"
+        actionsClassName="flex min-w-0 flex-wrap items-center gap-1.5 sm:w-auto"
         lead={
           <div className={`h-10 w-10 shrink-0 rounded-xl flex items-center justify-center text-sm font-bold ${account.type === "A" ? "bg-pos/10 text-pos" : "bg-destructive/10 text-destructive"}`}>
             {(account.name ?? "?").charAt(0)}
           </div>
         }
         belowTitle={
-            <div className="flex flex-wrap gap-2 mt-0.5">
+            <div className="flex max-w-full flex-wrap justify-center gap-2 mt-0.5 md:justify-start">
               <Badge variant="outline" className="text-xs">{account.currency}</Badge>
               <Badge variant={account.type === "A" ? "default" : "destructive"} className="text-xs">
                 {account.type === "A" ? "Asset" : "Liability"}

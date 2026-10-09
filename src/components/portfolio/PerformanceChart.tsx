@@ -81,6 +81,9 @@ interface ApiResponse {
 
 const PERIODS: Period[] = ["1m", "3m", "6m", "ytd", "1y", "all"];
 
+/** Chip size: 44px tall below md (iOS target), the default sm height at md+; never wraps inside the row. */
+const CHIP_CLASS = "shrink-0 whitespace-nowrap max-md:min-h-11";
+
 export interface PerformanceChartProps {
   /** Restrict the chart to one account; null/undefined = whole portfolio aggregate. */
   accountId?: number | null;
@@ -174,14 +177,21 @@ export function PerformanceChart({ accountId }: PerformanceChartProps) {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 flex-col gap-2 md:flex-row md:items-center md:justify-between md:gap-3">
           <CardTitle>Performance</CardTitle>
-          <div className="flex flex-wrap items-center gap-1">
+          {/* One chip row. Phones: horizontal scroll inside the card (overscroll-x-contain keeps the
+              page from scrolling sideways); md+: wraps like before. Chips are 44px tall on phones. */}
+          <div
+            role="group"
+            aria-label="Performance controls"
+            className="flex min-w-0 max-w-full items-center gap-1 overflow-x-auto overscroll-x-contain pb-1 [scrollbar-width:none] md:flex-wrap md:overflow-visible md:pb-0"
+          >
             <Button
               size="sm"
               variant={groupMode === "holding" ? "default" : "outline"}
               onClick={() => setGroupMode((m) => (m === "holding" ? "off" : "holding"))}
               title="Stack per-holding market value (dollar axis)"
+              className={CHIP_CLASS}
             >
               By holding (value)
             </Button>
@@ -191,6 +201,7 @@ export function PerformanceChart({ accountId }: PerformanceChartProps) {
                 variant={groupMode === "account" ? "default" : "outline"}
                 onClick={() => setGroupMode((m) => (m === "account" ? "off" : "account"))}
                 title="Stack per-account market value (dollar axis)"
+                className={CHIP_CLASS}
               >
                 By account
               </Button>
@@ -201,6 +212,7 @@ export function PerformanceChart({ accountId }: PerformanceChartProps) {
                 size="sm"
                 variant={period === p ? "default" : "outline"}
                 onClick={() => setPeriod(p)}
+                className={CHIP_CLASS}
               >
                 {p.toUpperCase()}
               </Button>
