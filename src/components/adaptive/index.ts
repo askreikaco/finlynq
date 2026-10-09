@@ -12,3 +12,5 @@ export { DensityProvider, useDensity, DENSITY_STORAGE_KEY } from "./density-prov
 export type { Density } from "./density-provider";
 export { useBackTarget, resolveBackTarget } from "./use-back-target";
 export type { BackTarget } from "./use-back-target";
+export { Disclosure } from "./disclosure";
+export type { DisclosureProps } from "./disclosure";
