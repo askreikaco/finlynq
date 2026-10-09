@@ -357,14 +357,14 @@ export function LotAllocationMatrix({
         </div>
       </div>
 
-      <div className={`shrink-0 rounded-md px-3 py-1.5 text-xs ${plan.ok ? "bg-emerald-50/60 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300" : "bg-rose-50/60 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300"}`}>
+      <div className={`shrink-0 rounded-md px-3 py-1.5 text-xs ${plan.ok ? "bg-pos/10 text-pos" : "bg-destructive/10 text-destructive"}`}>
         {plan.ok
           ? `Balanced — ${qf(plan.totals.openShares)} sh still open. Net ${plan.totals.realizedGain >= 0 ? "gain " : "loss "}${formatCurrency(plan.totals.realizedGain, cur)} (LT ${formatCurrency(plan.totals.longTerm, cur)} · ST ${formatCurrency(plan.totals.shortTerm, cur)}).`
           : plan.errors[0]}
       </div>
 
       <div className="shrink-0 text-[11px] text-muted-foreground">
-        Each <span className="font-medium text-foreground">row is a buy lot</span> (a purchase) · each <span className="font-medium text-foreground">column is a sell</span>. A cell = shares of that lot the sale closes; the <span className="text-rose-600 dark:text-rose-400">Open short</span> row holds any remainder.
+        Each <span className="font-medium text-foreground">row is a buy lot</span> (a purchase) · each <span className="font-medium text-foreground">column is a sell</span>. A cell = shares of that lot the sale closes; the <span className="text-destructive">Open short</span> row holds any remainder.
       </div>
 
       {/* Scrollable grid — sticky header row + sticky lot column + sticky total column */}
@@ -408,13 +408,13 @@ export function LotAllocationMatrix({
                           <AmountInput  min={0} step="any" value={alloc[k] ?? ""} placeholder="0"
                             onValueChange={(nv) => setCell(s.closeTxId, lot.id, nv)} className={inputCls} />
                           {g && num(k) > EPS && (
-                            <span className={`text-[9px] leading-none tabular-nums ${g.gain >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                            <span className={`text-[9px] leading-none tabular-nums ${g.gain >= 0 ? "text-pos" : "text-destructive"}`}>
                               {g.gain >= 0 ? "+" : ""}{formatCurrency(g.gain, s.currency)} {g.term === "long" ? "LT" : "ST"}
                             </span>
                           )}
                         </div>
                       ) : (
-                        <span className="text-[9px] text-amber-600 dark:text-amber-400" title={`Lot opened ${lot.openDate}, after this sale on ${s.closeDate}.`}>⚠ later</span>
+                        <span className="text-[9px] text-warning" title={`Lot opened ${lot.openDate}, after this sale on ${s.closeDate}.`}>⚠ later</span>
                       )}
                     </td>
                   );
@@ -424,7 +424,7 @@ export function LotAllocationMatrix({
                   const avail = availableByLot.get(lot.id) ?? 0;
                   const over = used > avail + EPS;
                   return (
-                    <td className={`${tdBase} sticky right-0 z-10 bg-background border-l border-border tabular-nums ${over ? "text-rose-600 dark:text-rose-400 font-medium" : used > EPS ? "text-foreground" : "text-muted-foreground"}`}
+                    <td className={`${tdBase} sticky right-0 z-10 bg-background border-l border-border tabular-nums ${over ? "text-destructive font-medium" : used > EPS ? "text-foreground" : "text-muted-foreground"}`}
                       title={over ? `Over-allocated: ${qf(used)} sh assigned but the lot only has ${qf(avail)} sh.` : undefined}>
                       {qf(used)} / {qf(avail)}
                     </td>
@@ -435,7 +435,7 @@ export function LotAllocationMatrix({
             {shortRowActive && (
               <tr className="border-b border-border/60">
                 <td className={`${tdBase} text-left sticky left-0 z-10 bg-background`}>
-                  <div className="font-medium text-rose-600 dark:text-rose-400">Open short</div>
+                  <div className="font-medium text-destructive">Open short</div>
                   <div className="text-muted-foreground">remainder not closed against a long lot</div>
                 </td>
                 {visibleSells.map((s) => {
@@ -447,7 +447,7 @@ export function LotAllocationMatrix({
                     </td>
                   );
                 })}
-                <td className={`${tdBase} sticky right-0 z-10 bg-background border-l border-border tabular-nums text-rose-600 dark:text-rose-400`}>
+                <td className={`${tdBase} sticky right-0 z-10 bg-background border-l border-border tabular-nums text-destructive`}>
                   {qf(shortAllocated)}
                 </td>
               </tr>
@@ -461,7 +461,7 @@ export function LotAllocationMatrix({
                 for (const lot of longLots) sum += num(`${s.closeTxId}_${lot.id}`);
                 const bal = Math.abs(sum - s.qty) <= EPS;
                 return (
-                  <td key={s.closeTxId} className={`${tdBase} sticky bottom-0 z-[1] bg-muted tabular-nums ${bal ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                  <td key={s.closeTxId} className={`${tdBase} sticky bottom-0 z-[1] bg-muted tabular-nums ${bal ? "text-pos" : "text-destructive"}`}>
                     {qf(sum)} / {qf(s.qty)}
                   </td>
                 );
@@ -471,7 +471,7 @@ export function LotAllocationMatrix({
                 for (const lot of longLots) { used += lotAllocated.get(lot.id) ?? 0; avail += availableByLot.get(lot.id) ?? 0; }
                 const over = used > avail + EPS;
                 return (
-                  <td className={`${tdBase} sticky right-0 bottom-0 z-20 bg-muted border-l border-border tabular-nums ${over ? "text-rose-600 dark:text-rose-400" : "text-foreground"}`}>
+                  <td className={`${tdBase} sticky right-0 bottom-0 z-20 bg-muted border-l border-border tabular-nums ${over ? "text-destructive" : "text-foreground"}`}>
                     {qf(used)} / {qf(avail)}
                   </td>
                 );
@@ -481,7 +481,7 @@ export function LotAllocationMatrix({
         </table>
       </div>
 
-      {err && <p className="shrink-0 text-xs text-rose-600 dark:text-rose-400">{err}</p>}
+      {err && <p className="shrink-0 text-xs text-destructive">{err}</p>}
 
       <div className="shrink-0 flex items-center justify-between gap-2">
         <button type="button" onClick={() => fill("clear")} className="text-[11px] text-muted-foreground hover:underline">Clear all</button>
