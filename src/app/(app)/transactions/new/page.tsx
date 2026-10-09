@@ -34,6 +34,7 @@ import { FormRow } from "./_components/form-row";
 import { AmountRow } from "./_components/amount-row";
 import { TypeSegmented } from "./_components/type-segmented";
 import { ListCard } from "./_components/list-card";
+import { SaveToast } from "./_components/save-toast";
 import { readAndClearPrefill } from "@/lib/transactions/prefill";
 import {
   getLastAccount,
@@ -197,6 +198,20 @@ export default function MobileTransactionPage() {
   // Set once a save has booked: the button stays locked so a second click cannot book it again.
   const [done, setDone] = useState(false);
   const doneRef = useRef(false);
+  // Continue success toast. The id remounts the toast, so a second Continue restarts its 3s timer.
+  const [saveToast, setSaveToast] = useState<{ id: number; text: string } | null>(null);
+  const toastSeqRef = useRef(0);
+  // Suggested category (Payee blur): the id it filled, and whether the user picked a category by hand.
+  const [suggestedCategoryId, setSuggestedCategoryId] = useState<string | null>(null);
+  const categoryTouchedRef = useRef(false);
+  const suggestSeqRef = useRef(0);
+  // Latest form values, read when the suggestion reply arrives (it is ignored if they moved on).
+  const latestRef = useRef({
+    payee: "",
+    categoryId: "",
+    txType: "Expense" as TxType,
+    categories: [] as Category[],
+  });
 
   // Filter Categories by TxType
   const filteredCategories = useMemo(() => {
@@ -214,6 +229,10 @@ export default function MobileTransactionPage() {
     }
     return rawCategories;
   }, [rawCategories, txType]);
+
+  useEffect(() => {
+    latestRef.current = { payee, categoryId, txType, categories: filteredCategories };
+  }, [payee, categoryId, txType, filteredCategories]);
 
   // Non-archived Accounts
   // Investment accounts are excluded: they are booked through Buy/Sell, not here.
@@ -325,6 +344,8 @@ export default function MobileTransactionPage() {
       }
       setActiveSplitIndex(null);
     } else {
+      categoryTouchedRef.current = true;
+      setSuggestedCategoryId(null);
       setCategoryId(selectedId);
       setInvalid((prev) => (prev?.field === "category" ? null : prev));
       pushRecent("category", txCode, selectedId);
@@ -348,6 +369,55 @@ export default function MobileTransactionPage() {
     setReceivedAmount("");
     setReceivedTouched(false);
     setFocusedField(null);
+    categoryTouchedRef.current = false;
+    setSuggestedCategoryId(null);
+    // Focus returns to the amount: on touch devices its focus handler opens the numpad.
+    document.querySelector<HTMLInputElement>('input[aria-label="Amount"]')?.focus();
+  };
+
+  // Confirmation after Continue books an entry, e.g. "Expense saved · 70,000 ₫ · Eating Out".
+  const showSaveToast = (text: string) => {
+    toastSeqRef.current += 1;
+    setSaveToast({ id: toastSeqRef.current, text });
+  };
+  const savedToastText = () =>
+    [
+      `${txType} saved`,
+      formatCurrency(parsedAmount, currency),
+      txType !== "Transfer" && !splitEnabled ? selectedCat?.name : undefined,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+
+  // Payee blur with an empty category and a payee of 2+ characters: fill the category the history
+  // suggests. Never overwrites a category the user picked; ignored if the payee or category moved on.
+  const suggestCategoryForPayee = async (rawPayee: string) => {
+    const name = rawPayee.trim();
+    if (txType === "Transfer" || name.length < 2 || categoryId || categoryTouchedRef.current) return;
+    const seq = ++suggestSeqRef.current;
+    try {
+      const res = await fetch("/api/transactions/suggest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ payee: name }),
+      });
+      if (!res.ok) return;
+      const data = (await res.json().catch(() => null)) as
+        | { suggestion?: { id?: string | number } | null }
+        | null;
+      const suggestedId = data?.suggestion?.id;
+      if (suggestedId == null || seq !== suggestSeqRef.current) return;
+      const latest = latestRef.current;
+      if (latest.txType === "Transfer" || latest.payee.trim() !== name) return;
+      if (latest.categoryId || categoryTouchedRef.current) return;
+      const match = latest.categories.find((c) => String(c.id) === String(suggestedId));
+      if (!match) return;
+      setCategoryId(String(match.id));
+      setSuggestedCategoryId(String(match.id));
+      setInvalid((prev) => (prev?.field === "category" ? null : prev));
+    } catch {
+      // The suggestion is optional: a failed request leaves the category empty.
+    }
   };
 
   // Submit Handler (Save books and locks; Continue books and resets, see resetAfterContinue)
@@ -418,7 +488,7 @@ export default function MobileTransactionPage() {
 
         setLastAccount(accountId);
         if (continueMode) {
-          setSuccessNotice("Transfer recorded successfully!");
+          showSaveToast(savedToastText());
           void revalidateTransactionLists(swrMutate, cache);
           mutate("/api/accounts");
           resetAfterContinue();
@@ -543,6 +613,7 @@ export default function MobileTransactionPage() {
           // Saved already: show why. Save leaves (a second Save would book the transaction twice);
           // Continue keeps the page open with the fields cleared.
           if (continueMode) {
+            showSaveToast(savedToastText());
             resetAfterContinue();
           } else {
             doneRef.current = true;
@@ -557,7 +628,7 @@ export default function MobileTransactionPage() {
       }
 
       if (continueMode) {
-        setSuccessNotice(`${txType} saved successfully!`);
+        showSaveToast(savedToastText());
         void revalidateTransactionLists(swrMutate, cache);
         mutate("/api/accounts");
         resetAfterContinue();
@@ -729,7 +800,16 @@ export default function MobileTransactionPage() {
               variant="button"
               testId="txnew-row-category"
               label="Category"
-              value={selectedCat?.name}
+              value={
+                selectedCat ? (
+                  <>
+                    {selectedCat.name}
+                    {suggestedCategoryId !== null && categoryId === suggestedCategoryId && (
+                      <span className="ml-1.5 text-xs text-muted-foreground">· Suggested</span>
+                    )}
+                  </>
+                ) : undefined
+              }
               placeholder={loadingCategories ? "Loading categories..." : "Select Category"}
               invalid={invalidField === "category"}
               onClick={() => {
@@ -793,6 +873,7 @@ export default function MobileTransactionPage() {
               label="Payee"
               inputValue={payee}
               onInputChange={setPayee}
+              onInputBlur={() => void suggestCategoryForPayee(payee)}
               placeholder="Payee / Merchant"
               enterKeyHint="next"
               autoComplete="off"
@@ -991,6 +1072,10 @@ export default function MobileTransactionPage() {
         >
           <Numpad value={amount} onChange={setAmount} onConfirm={closePad} />
         </div>
+      )}
+
+      {saveToast && (
+        <SaveToast key={saveToast.id} text={saveToast.text} onDismiss={() => setSaveToast(null)} />
       )}
 
       {/* Bottom Sheets */}

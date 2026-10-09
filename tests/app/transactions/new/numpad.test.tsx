@@ -20,10 +20,10 @@ const shown = () => screen.getByTestId("value").textContent;
 const key = (name: string) => screen.getByRole("button", { name });
 const tap = (name: string) => fireEvent.click(key(name));
 
-let onConfirm: ReturnType<typeof vi.fn>;
+let onConfirm: () => void;
 
 beforeEach(() => {
-  onConfirm = vi.fn();
+  onConfirm = vi.fn<() => void>();
 });
 
 afterEach(() => {

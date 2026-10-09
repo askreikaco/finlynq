@@ -73,6 +73,7 @@ export function AmountRow({
             invalid && "text-neg",
           )}
         />
+        {invalid && !value && <span className="shrink-0 text-base text-neg">Required</span>}
       </div>
       {fxLine && <div className="text-xs text-muted-foreground">{fxLine}</div>}
     </div>
