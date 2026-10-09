@@ -46,12 +46,12 @@ const KIND_LABEL: Record<string, string> = {
 function kindClass(kind: string): string {
   switch (kind) {
     case "slow_query":
-      return "bg-amber-500/15 text-amber-700 dark:text-amber-400";
+      return "bg-warning/15 text-warning";
     case "db_error":
     case "api_error":
-      return "bg-rose-500/15 text-rose-700 dark:text-rose-400";
+      return "bg-destructive/15 text-destructive";
     case "outbound_error":
-      return "bg-orange-500/15 text-orange-700 dark:text-orange-400";
+      return "bg-warning/15 text-warning";
     default:
       return "";
   }
@@ -166,7 +166,7 @@ export default function AdminDiagnosticsPage() {
           r.durationMs == null ? (
             <span className="text-muted-foreground">—</span>
           ) : (
-            <span className={r.durationMs >= 2000 ? "font-semibold text-amber-600" : ""}>
+            <span className={r.durationMs >= 2000 ? "font-semibold text-warning" : ""}>
               {r.durationMs.toLocaleString()}
             </span>
           ),
@@ -243,7 +243,7 @@ export default function AdminDiagnosticsPage() {
           <Button
             variant="outline"
             size="sm"
-            className="border-rose-300 text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:border-rose-900/60 dark:hover:bg-rose-950/30"
+            className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
             onClick={() => setClearOpen(true)}
             disabled={rows.length === 0 || clearing}
           >
@@ -254,8 +254,8 @@ export default function AdminDiagnosticsPage() {
       </div>
 
       {error && (
-        <Card className="border-rose-200 bg-rose-50/30">
-          <CardContent className="py-3 text-sm text-rose-700">{error}</CardContent>
+        <Card className="border-destructive/30 bg-destructive/10">
+          <CardContent className="py-3 text-sm text-destructive">{error}</CardContent>
         </Card>
       )}
 
@@ -311,7 +311,7 @@ export default function AdminDiagnosticsPage() {
             rows={rows}
             rowKey={(r) => r.id}
             rowClassName={(r) =>
-              r.kind === "db_error" || r.kind === "api_error" ? "bg-rose-500/5" : undefined
+              r.kind === "db_error" || r.kind === "api_error" ? "bg-destructive/5" : undefined
             }
             emptyState={
               <p className="py-10 text-center text-sm text-muted-foreground">

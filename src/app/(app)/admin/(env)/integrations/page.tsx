@@ -41,9 +41,9 @@ const providerLabel = (p: string) =>
   ({ resend: "Resend", brevo: "Brevo", smtp: "SMTP" })[p as "resend"] ?? "None";
 const providerColor = (p: string) =>
   ({
-    resend: "bg-blue-500/15 text-blue-600",
-    brevo: "bg-green-500/15 text-green-600",
-    smtp: "bg-purple-500/15 text-purple-600",
+    resend: "bg-info/15 text-info",
+    brevo: "bg-pos/15 text-pos",
+    smtp: "bg-chart-5/15 text-chart-5",
   })[p as "resend"] ?? "bg-muted text-muted-foreground";
 const sourceLabel = (s: Source) => (s === "db" ? "database" : "environment");
 
@@ -264,7 +264,7 @@ export default function AdminIntegrationsPage() {
     <div
       role={n.ok ? "status" : "alert"}
       className={`p-3 rounded-lg text-sm flex items-start gap-2 ${
-        n.ok ? "bg-green-500/15 text-green-600" : "bg-destructive/15 text-destructive"
+        n.ok ? "bg-pos/15 text-pos" : "bg-destructive/15 text-destructive"
       }`}
     >
       {n.ok ? <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" /> : <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />}
@@ -316,7 +316,7 @@ export default function AdminIntegrationsPage() {
                     {(["resend", "brevo", "smtp"] as const).map((p) => (
                       <div key={p} className="flex items-center gap-2 p-2 bg-muted/50 rounded">
                         {status.configured[p] ? (
-                          <CheckCircle2 className="w-4 h-4 text-green-600" aria-label={`${providerLabel(p)} configured`} />
+                          <CheckCircle2 className="w-4 h-4 text-pos" aria-label={`${providerLabel(p)} configured`} />
                         ) : (
                           <div className="w-4 h-4 rounded-full border border-muted-foreground" aria-label={`${providerLabel(p)} not configured`} />
                         )}
@@ -486,7 +486,7 @@ export default function AdminIntegrationsPage() {
                       <div
                         role={result.ok ? "status" : "alert"}
                         className={`p-3 rounded-lg text-sm ${
-                          result.ok ? "bg-green-500/15 text-green-600" : "bg-destructive/15 text-destructive"
+                          result.ok ? "bg-pos/15 text-pos" : "bg-destructive/15 text-destructive"
                         }`}
                       >
                         {result.message}

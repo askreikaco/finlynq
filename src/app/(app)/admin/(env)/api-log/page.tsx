@@ -52,12 +52,12 @@ function ago(iso: string): string {
 function StatusCell({ call }: { call: OutboundCall }) {
   if (call.status === 0) {
     return (
-      <span className="text-rose-600" title={call.error ?? "network error / timeout"}>
+      <span className="text-destructive" title={call.error ?? "network error / timeout"}>
         ERR
       </span>
     );
   }
-  const cls = call.ok ? "text-emerald-600" : "text-amber-600";
+  const cls = call.ok ? "text-pos" : "text-warning";
   return <span className={cls}>{call.status}</span>;
 }
 
@@ -215,7 +215,7 @@ export default function AdminApiLogPage() {
           <Button
             variant="outline"
             size="sm"
-            className="border-rose-300 text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:border-rose-900/60 dark:hover:bg-rose-950/30"
+            className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
             onClick={() => setClearOpen(true)}
             disabled={calls.length === 0 || clearing}
           >
@@ -226,8 +226,8 @@ export default function AdminApiLogPage() {
       </div>
 
       {error && (
-        <Card className="border-rose-200 bg-rose-50/30">
-          <CardContent className="py-3 text-sm text-rose-700">{error}</CardContent>
+        <Card className="border-destructive/30 bg-destructive/10">
+          <CardContent className="py-3 text-sm text-destructive">{error}</CardContent>
         </Card>
       )}
 
@@ -243,7 +243,7 @@ export default function AdminApiLogPage() {
             </div>
             <div className="flex flex-col">
               <span className="text-[11px] uppercase tracking-wider text-muted-foreground">Errors</span>
-              <span className={`font-semibold tabular-nums ${summary.errors > 0 ? "text-rose-600" : ""}`}>
+              <span className={`font-semibold tabular-nums ${summary.errors > 0 ? "text-destructive" : ""}`}>
                 {summary.errors.toLocaleString()}
               </span>
             </div>
@@ -265,7 +265,7 @@ export default function AdminApiLogPage() {
             columns={columns}
             rows={calls}
             rowKey={(r) => r.id}
-            rowClassName={(r) => (!r.ok ? "bg-rose-500/5" : undefined)}
+            rowClassName={(r) => (!r.ok ? "bg-destructive/5" : undefined)}
             emptyState={
               <p className="py-10 text-center text-sm text-muted-foreground">
                 {loading ? "Loading…" : "No outbound calls recorded yet. Reproduce an operation, then Refresh."}
