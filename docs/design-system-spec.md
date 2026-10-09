@@ -192,6 +192,7 @@ Each item was re-checked at the base sha. Counts come from grep runs on `src/app
 - Vitest run of `tests/design-system-guard.test.ts`: NOT run. The worktree has no `node_modules` and `npm install`/`npm ci` is out of scope for this task. The replica scan in 3e is the substitute.
 - Whether `--font-geist-sans`, `--font-inter`, `--font-ibm-plex-sans`, `--font-atkinson` are defined (only referenced at `globals.css:11`, `:163`, `:166`, `:169`, `:172`).
 - Rendered appearance of any token (no screenshots taken).
+- TODO PWA icons: `src/app/manifest.ts` `any` and `maskable` entries both point to the same unpadded `public/icons/icon-192.png` and `icon-512.png`. A padded maskable asset (logo inside central 80% safe zone) is needed; until then Android masks may crop the logo. Do not point maskable at a non-existent file.
 
 ## 6. W6 update (2026-10-09, tip 9b731f5)
 - Section 4 item 1 (ErrorState rose): fixed in W5-9. Item 8 (stacked admin env headers): fixed in W6-02 (layout header removed; child pages own the title).

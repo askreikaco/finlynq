@@ -163,7 +163,7 @@ function TransactionRow({
       onClick={() => onEdit(t)}
       className={cn(
         "flex w-full min-h-[56px] items-center gap-3 px-4 py-3",
-        "outline-none transition-colors hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50",
+        "outline-none transition-colors hover:bg-muted/50 active:bg-muted/60 focus-visible:ring-3 focus-visible:ring-ring/50",
         "border-b border-border last:border-b-0 text-left",
       )}
       aria-label={`Edit ${payee}`}

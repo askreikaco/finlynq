@@ -380,6 +380,17 @@ html {
 @media (prefers-reduced-motion: reduce) {
   .mobile-glass-bar, .mobile-glass-bar * { transition: none !important; animation: none !important; }
 }
+/* G3B reduced motion (global). Near-zero durations; spinners keep animating (functional loading feedback); shimmer skeleton held as static background. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+  [class*="animate-spin"] { animation-duration: 1s !important; animation-iteration-count: infinite !important; }
+  .animate-shimmer, .dark .animate-shimmer { animation: none !important; }
+}
 
 /* ═══════════════════════════════════════════════
    TEXT EFFECTS
