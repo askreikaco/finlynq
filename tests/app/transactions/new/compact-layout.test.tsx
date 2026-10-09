@@ -90,13 +90,14 @@ describe("compact new-transaction layout", () => {
     expect(screen.getByPlaceholderText("Tags (comma-separated)")).toBeTruthy();
   });
 
-  it("numpad wrapper docks above the tab bar using the clearance var", () => {
+  it("numpad wrapper docks at the safe-area bottom (tab bar hidden on this route)", () => {
     seedPrefill({ amount: "" });
     render(<Page />);
     fireEvent.click(screen.getByText("0.00").closest("button") as HTMLElement);
     const wrapper = screen.getByRole("button", { name: "OK" }).closest(".fixed") as HTMLElement;
     expect(wrapper).toBeTruthy();
-    expect(wrapper.className).toContain("max-md:bottom-[calc(var(--mobile-bar-clearance)-1rem)]");
+    expect(wrapper.className).toContain("max-md:bottom-[var(--sab,0px)]");
+    expect(wrapper.className).not.toContain("--mobile-bar-clearance");
   });
 
   it("the new-transaction header does not repeat the top safe-area inset (body already pads --sat)", () => {

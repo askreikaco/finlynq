@@ -422,6 +422,9 @@ export const Nav = memo(function Nav({ instanceAdminEnabled = false, categoriesM
 // Mobile bottom bar
 export const MobileBottomBar = memo(function MobileBottomBar({ pathname }: { pathname: string }) {
   const moreActive = !mobileBarItems.some(i => pathname === i.href || pathname.startsWith(i.href + "/"));
+  // Full-screen entry flow: the bar is hidden so the numpad and Save/Continue are never overlapped.
+  const hidden = pathname === "/transactions/new" || pathname.startsWith("/transactions/new/");
+  if (hidden) return null;
   return (
     <nav aria-label="Mobile navigation" className="md:hidden fixed z-50 mobile-glass-bar bottom-[max(12px,var(--sab))] left-[calc(16px+var(--sal))] right-[calc(16px+var(--sar))] h-16 rounded-[28px]">
       <div className="flex h-full items-stretch justify-around p-1.5" data-testid="mobile-bar-row">

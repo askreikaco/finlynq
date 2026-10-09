@@ -486,8 +486,9 @@ export default function MobileTransactionPage() {
 
   // Layout budget (phone 390x844, sat = top safe area, sab = bottom safe area,
   // --mobile-bar-clearance = 96px + sab; tab bar = max(12px,sab) + 64px tall).
-  // Mobile root is fixed: top = sat, bottom = clearance, so its height is
-  // 844 - sat - 96 - sab. With sat = sab = 0 (test viewport) that is 748px.
+  // Mobile root is fixed: top = sat, bottom = sab (the tab bar is hidden on this
+  // route), so its height is 844 - sat - sab. With sat = sab = 0 (test viewport)
+  // that is 844px.
   // The fixed root bypasses the (app) shell's main padding (clearance + 80px)
   // and the py-3 wrapper, so the document never scrolls.
   //   header        h-11                 44
@@ -497,9 +498,9 @@ export default function MobileTransactionPage() {
   //   notes row     h-10 + gap 8         48
   //   advanced row  h-10 + gap 8         48
   //   footer        pt-2 + h-12 + pb-3   68  (Save, hidden while numpad is open)
-  // Closed sum: 44+52+66+112+48+48+68 = 438 <= 748, so nothing scrolls.
-  // Numpad (321px tall, bottom = clearance - 16) ends 4px above the tab bar
-  // top at sab = 0 and clears it by more at larger sab. Its top is 305px above
+  // Closed sum: 44+52+66+112+48+48+68 = 438 <= 844, so nothing scrolls.
+  // Numpad (321px tall, bottom = sab) sits at the safe-area bottom; the tab bar
+  // is hidden on this route. Its top is 321px above
   // the root bottom, so the field region reserves NUMPAD_HEIGHT_PX of bottom
   // padding while open and the focused field stays above the keys.
   const tileValue = (cls: string, text: string) => (
@@ -541,7 +542,7 @@ export default function MobileTransactionPage() {
     <div
       className={
         "flex flex-col bg-background text-foreground " +
-        "max-md:fixed max-md:inset-x-0 max-md:top-[var(--sat)] max-md:bottom-[var(--mobile-bar-clearance)] " +
+        "max-md:fixed max-md:inset-x-0 max-md:top-[var(--sat)] max-md:bottom-[var(--sab,0px)] " +
         "md:relative md:mx-auto md:h-[min(46rem,calc(100dvh-8rem))] md:w-full md:max-w-md md:rounded-2xl md:border md:border-border/80"
       }
     >
@@ -940,9 +941,9 @@ export default function MobileTransactionPage() {
         </div>
       )}
 
-      {/* Numpad: docks above the floating tab bar (bottom = clearance - 16px) */}
+      {/* Numpad: docks at the safe-area bottom (the tab bar is hidden on this route) */}
       {showNumpad && (
-        <div className="fixed inset-x-0 z-40 bg-background animate-in slide-in-from-bottom duration-200 max-md:bottom-[calc(var(--mobile-bar-clearance)-1rem)] md:bottom-4 md:left-1/2 md:right-auto md:w-[min(28rem,100vw)] md:-translate-x-1/2">
+        <div className="fixed inset-x-0 z-40 bg-background animate-in slide-in-from-bottom duration-200 max-md:bottom-[var(--sab,0px)] md:bottom-4 md:left-1/2 md:right-auto md:w-[min(28rem,100vw)] md:-translate-x-1/2">
           <Numpad
             value={amount}
             onChange={setAmount}
