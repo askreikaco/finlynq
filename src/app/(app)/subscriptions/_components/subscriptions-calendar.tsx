@@ -21,12 +21,12 @@ const pad = (n: number) => String(n).padStart(2, "0");
 /** Chip / dot styling per event kind. Legend reads the same map. */
 function eventTone(ev: Pick<ScheduleEvent, "type" | "source">) {
   if (ev.type === "income") {
-    return { dot: "bg-emerald-500", chip: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300", text: "text-emerald-600" };
+    return { dot: "bg-pos", chip: "bg-pos/10 text-pos", text: "text-pos" };
   }
   if (ev.source === "subscription") {
-    return { dot: "bg-primary", chip: "bg-primary/15 text-foreground", text: "text-rose-600" };
+    return { dot: "bg-primary", chip: "bg-primary/15 text-foreground", text: "text-destructive" };
   }
-  return { dot: "bg-rose-500", chip: "bg-rose-500/10 text-rose-700 dark:text-rose-300", text: "text-rose-600" };
+  return { dot: "bg-destructive", chip: "bg-destructive/10 text-destructive", text: "text-destructive" };
 }
 
 /**
@@ -184,8 +184,8 @@ export function SubscriptionsCalendar({
 
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5"><span className="flex h-2 w-2 shrink-0 rounded-full bg-primary" /> Subscription</span>
-            <span className="flex items-center gap-1.5"><span className="flex h-2 w-2 shrink-0 rounded-full bg-rose-500" /> Detected bill</span>
-            <span className="flex items-center gap-1.5"><span className="flex h-2 w-2 shrink-0 rounded-full bg-emerald-500" /> Expected income</span>
+            <span className="flex items-center gap-1.5"><span className="flex h-2 w-2 shrink-0 rounded-full bg-destructive" /> Detected bill</span>
+            <span className="flex items-center gap-1.5"><span className="flex h-2 w-2 shrink-0 rounded-full bg-pos" /> Expected income</span>
           </div>
         </CardContent>
       </Card>
@@ -246,12 +246,12 @@ export function SubscriptionsCalendar({
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <MonthStat label="Expected bills" value={formatCurrency(totalBills, displayCurrency)} tone="text-rose-600" icon={<TrendingDown className="h-4 w-4 text-rose-600" />} />
-        <MonthStat label="Expected income" value={formatCurrency(totalIncome, displayCurrency)} tone="text-emerald-600" icon={<TrendingUp className="h-4 w-4 text-emerald-600" />} />
+        <MonthStat label="Expected bills" value={formatCurrency(totalBills, displayCurrency)} tone="text-destructive" icon={<TrendingDown className="h-4 w-4 text-destructive" />} />
+        <MonthStat label="Expected income" value={formatCurrency(totalIncome, displayCurrency)} tone="text-pos" icon={<TrendingUp className="h-4 w-4 text-pos" />} />
         <MonthStat
           label="Net for the month"
           value={`${net >= 0 ? "+" : ""}${formatCurrency(net, displayCurrency)}`}
-          tone={net >= 0 ? "text-emerald-600" : "text-rose-600"}
+          tone={net >= 0 ? "text-pos" : "text-destructive"}
           icon={<Scale className="h-4 w-4 text-muted-foreground" />}
         />
       </div>

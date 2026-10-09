@@ -86,7 +86,7 @@ function TaxPageContent() {
                 <p className="text-xs font-medium text-muted-foreground">TFSA Room</p>
                 <p className="text-2xl font-bold tracking-tight mt-1">{formatCurrency(data.tfsa.remaining, displayCurrency)}</p>
               </div>
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-pos/10 text-pos">
                 <PiggyBank className="h-5 w-5" />
               </div>
             </div>
@@ -105,9 +105,9 @@ function TaxPageContent() {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-xs font-medium text-muted-foreground">RESP Grant</p>
-                <p className="text-2xl font-bold tracking-tight text-emerald-600 mt-1">{formatCurrency(data.resp.grantExample, displayCurrency)}/yr</p>
+                <p className="text-2xl font-bold tracking-tight text-pos mt-1">{formatCurrency(data.resp.grantExample, displayCurrency)}/yr</p>
               </div>
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-600 dark:bg-violet-950/60 dark:text-violet-400">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-chart-5/10 text-chart-5">
                 <GraduationCap className="h-5 w-5" />
               </div>
             </div>
@@ -121,7 +121,7 @@ function TaxPageContent() {
                 <p className="text-xs font-medium text-muted-foreground">Marginal Rate @ $100K</p>
                 <p className="text-2xl font-bold tracking-tight mt-1">{data.marginalRates.at100k.combined}%</p>
               </div>
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-warning/10 text-warning">
                 <Percent className="h-5 w-5" />
               </div>
             </div>
@@ -159,7 +159,7 @@ function TaxPageContent() {
             <div className="space-y-3 p-4 bg-muted/50 rounded-xl border border-dashed">
               <div className="flex justify-between items-center">
                 <span className="font-medium text-sm">RRSP Tax Refund:</span>
-                <span className="font-bold text-emerald-600 text-lg">{formatCurrency(comparison.rrspBenefit, displayCurrency)}</span>
+                <span className="font-bold text-pos text-lg">{formatCurrency(comparison.rrspBenefit, displayCurrency)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="font-medium text-sm">TFSA Benefit:</span>
@@ -167,7 +167,7 @@ function TaxPageContent() {
               </div>
               <Separator />
               <div className="flex items-start gap-2">
-                <Lightbulb className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                <Lightbulb className="h-4 w-4 text-warning mt-0.5 shrink-0" />
                 <p className="font-medium text-sm">{comparison.recommendation}</p>
               </div>
             </div>
@@ -179,7 +179,7 @@ function TaxPageContent() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
               <Percent className="h-5 w-5" />
             </div>
             <div>
@@ -217,7 +217,7 @@ function TaxPageContent() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-100 text-cyan-600 dark:bg-cyan-950/60 dark:text-cyan-400">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-info/10 text-info">
                 <Lightbulb className="h-5 w-5" />
               </div>
               <div>
