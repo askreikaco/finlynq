@@ -600,7 +600,7 @@ export function InboxToApproveTab({
   return (
     <div className="space-y-3">
       {error && (
-        <div className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800 whitespace-pre-line">
+        <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive whitespace-pre-line">
           {error}
         </div>
       )}

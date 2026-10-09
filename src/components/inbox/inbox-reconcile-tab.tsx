@@ -993,13 +993,13 @@ export function InboxReconcileTab({
       </div>
 
       {ruleNotice && (
-        <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+        <div className="rounded-md border border-pos/30 bg-pos/10 p-3 text-sm text-pos">
           {ruleNotice}
         </div>
       )}
 
       {error && (
-        <div className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
+        <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
         </div>
       )}
