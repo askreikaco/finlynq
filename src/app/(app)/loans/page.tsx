@@ -75,39 +75,39 @@ type WhatIf = { extraPayment: number; monthsSaved: number; interestSaved: number
 type Account = { id: number; name: string; currency?: string | null };
 
 const LOAN_TYPE_COLORS: Record<string, string> = {
-  mortgage: "border-l-indigo-500",
-  lease: "border-l-amber-500",
-  loan: "border-l-cyan-500",
-  student_loan: "border-l-violet-500",
-  credit_card: "border-l-rose-500",
+  mortgage: "border-l-primary",
+  lease: "border-l-warning",
+  loan: "border-l-info",
+  student_loan: "border-l-chart-5",
+  credit_card: "border-l-destructive",
 };
 
 const LOAN_TYPE_BADGE_COLORS: Record<string, string> = {
-  mortgage: "bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300",
-  lease: "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300",
-  loan: "bg-cyan-100 text-cyan-700 dark:bg-cyan-950/50 dark:text-cyan-300",
-  student_loan: "bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300",
-  credit_card: "bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300",
+  mortgage: "bg-primary/10 text-primary",
+  lease: "bg-warning/10 text-warning",
+  loan: "bg-info/10 text-info",
+  student_loan: "bg-chart-5/10 text-chart-5",
+  credit_card: "bg-destructive/10 text-destructive",
 };
 
 function LoansSkeleton() {
   return (
     <div className="space-y-6">
       <div>
-        <div className="h-8 w-48 bg-muted animate-pulse rounded-lg" />
-        <div className="h-4 w-72 bg-muted animate-pulse rounded-lg mt-2" />
+        <div className="h-8 w-48 animate-shimmer rounded-lg" />
+        <div className="h-4 w-72 animate-shimmer rounded-lg mt-2" />
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {Array.from({ length: 3 }).map((_, i) => (
           <Card key={i}>
             <CardHeader className="pb-2">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-muted animate-pulse" />
-                <div className="h-4 w-24 bg-muted animate-pulse rounded" />
+                <div className="h-10 w-10 rounded-xl animate-shimmer" />
+                <div className="h-4 w-24 animate-shimmer rounded" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="h-7 w-32 bg-muted animate-pulse rounded mt-1" />
+              <div className="h-7 w-32 animate-shimmer rounded mt-1" />
             </CardContent>
           </Card>
         ))}
@@ -117,12 +117,12 @@ function LoansSkeleton() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="h-6 w-36 bg-muted animate-pulse rounded" />
-                <div className="h-5 w-16 bg-muted animate-pulse rounded-full" />
+                <div className="h-6 w-36 animate-shimmer rounded" />
+                <div className="h-5 w-16 animate-shimmer rounded-full" />
               </div>
               <div className="flex gap-2">
-                <div className="h-8 w-24 bg-muted animate-pulse rounded" />
-                <div className="h-8 w-8 bg-muted animate-pulse rounded" />
+                <div className="h-8 w-24 animate-shimmer rounded" />
+                <div className="h-8 w-8 animate-shimmer rounded" />
               </div>
             </div>
           </CardHeader>
@@ -130,17 +130,17 @@ function LoansSkeleton() {
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
               {Array.from({ length: 5 }).map((_, j) => (
                 <div key={j}>
-                  <div className="h-3 w-16 bg-muted animate-pulse rounded mb-1" />
-                  <div className="h-5 w-24 bg-muted animate-pulse rounded" />
+                  <div className="h-3 w-16 animate-shimmer rounded mb-1" />
+                  <div className="h-5 w-24 animate-shimmer rounded" />
                 </div>
               ))}
             </div>
             <div className="space-y-1">
               <div className="flex justify-between">
-                <div className="h-3 w-32 bg-muted animate-pulse rounded" />
-                <div className="h-3 w-8 bg-muted animate-pulse rounded" />
+                <div className="h-3 w-32 animate-shimmer rounded" />
+                <div className="h-3 w-8 animate-shimmer rounded" />
               </div>
-              <div className="h-2.5 w-full bg-muted animate-pulse rounded-full" />
+              <div className="h-2.5 w-full animate-shimmer rounded-full" />
             </div>
           </CardContent>
         </Card>
@@ -352,7 +352,7 @@ function LoansPageContent() {
 
   const renderLoan = (loan: Loan) => {
         const paidPct = loan.principal > 0 ? ((loan.principal - loan.remainingBalance) / loan.principal) * 100 : 0;
-        const borderClass = LOAN_TYPE_COLORS[loan.type] || "border-l-gray-400";
+        const borderClass = LOAN_TYPE_COLORS[loan.type] || "border-l-border";
         const badgeClass = LOAN_TYPE_BADGE_COLORS[loan.type] || "";
         return (
           <Card key={loan.id} className={`border-l-4 ${borderClass}`}>
@@ -375,8 +375,8 @@ function LoansPageContent() {
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
                 <div>
-                  <p className="text-xs text-muted-foreground">Remaining{loan.balanceSource === "account" && <span className="ml-1 text-emerald-600" title={`Live balance from ${loan.accountName ?? "linked account"}`}>· from account</span>}</p>
-                  <p className="font-mono font-bold text-rose-600">{formatCurrency(loan.remainingBalance, loan.currency)}</p>
+                  <p className="text-xs text-muted-foreground">Remaining{loan.balanceSource === "account" && <span className="ml-1 text-pos" title={`Live balance from ${loan.accountName ?? "linked account"}`}>· from account</span>}</p>
+                  <p className="font-mono font-bold text-destructive">{formatCurrency(loan.remainingBalance, loan.currency)}</p>
                   {loan.currency !== displayCurrency && loan.remainingBalanceDisplay != null && (
                     <p className="text-xs text-muted-foreground font-mono">≈ {formatCurrency(loan.remainingBalanceDisplay, displayCurrency)}</p>
                   )}
@@ -396,8 +396,8 @@ function LoansPageContent() {
                 <div className="flex justify-between text-xs"><span>Principal paid: {formatCurrency(loan.principalPaid, loan.currency)}</span><span>{Math.round(paidPct)}%</span></div>
                 <CspSafeBar
                   percent={paidPct}
-                  className="bg-rose-200"
-                  fillClassName="bg-emerald-500"
+                  className="bg-destructive/10"
+                  fillClassName="bg-pos"
                   ariaLabel={`Loan ${loan.name} paid`}
                 />
               </div>
@@ -526,7 +526,7 @@ function LoansPageContent() {
                 />
               </div>
               {editingLoan && form.currency !== editingLoan.currency && (
-                <p className="text-xs text-amber-600 dark:text-amber-500">
+                <p className="text-xs text-warning">
                   Changing the currency re-labels the amounts above as {form.currency}. It does not convert them.
                 </p>
               )}
@@ -545,22 +545,22 @@ function LoansPageContent() {
         <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 dark:bg-rose-950/40">
-                <Landmark className="h-5 w-5 text-rose-600 dark:text-rose-400" />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destructive/10">
+                <Landmark className="h-5 w-5 text-destructive" />
               </div>
               <CardTitle className="text-sm text-muted-foreground">Total Debt</CardTitle>
             </div>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-rose-600">{formatCurrency(totalDebt, displayCurrency)}</p>
+            <p className="text-2xl font-bold text-destructive">{formatCurrency(totalDebt, displayCurrency)}</p>
             {hasForeignLoan && <p className="text-xs text-muted-foreground mt-1">converted at today&apos;s rates</p>}
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-950/40">
-                <Calendar className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-warning/10">
+                <Calendar className="h-5 w-5 text-warning" />
               </div>
               <CardTitle className="text-sm text-muted-foreground">Monthly Payments</CardTitle>
             </div>
@@ -573,8 +573,8 @@ function LoansPageContent() {
         <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 dark:bg-indigo-950/40">
-                <FileText className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                <FileText className="h-5 w-5 text-primary" />
               </div>
               <CardTitle className="text-sm text-muted-foreground">Active Loans</CardTitle>
             </div>
@@ -640,7 +640,7 @@ function LoansPageContent() {
                     <TableHeader><TableRow><TableHead>#</TableHead><TableHead>Date</TableHead><TableHead>Payment</TableHead><TableHead>Principal</TableHead><TableHead>Interest</TableHead><TableHead>Balance</TableHead></TableRow></TableHeader>
                     <TableBody>
                       {amort.schedule.map((r) => (
-                        <TableRow key={r.period}><TableCell>{r.period}</TableCell><TableCell>{r.date}</TableCell><TableCell>{formatCurrency(r.payment, selectedLoan.currency)}</TableCell><TableCell className="text-emerald-600">{formatCurrency(r.principal, selectedLoan.currency)}</TableCell><TableCell className="text-rose-600">{formatCurrency(r.interest, selectedLoan.currency)}</TableCell><TableCell className="font-mono">{formatCurrency(r.balance, selectedLoan.currency)}</TableCell></TableRow>
+                        <TableRow key={r.period}><TableCell>{r.period}</TableCell><TableCell>{r.date}</TableCell><TableCell>{formatCurrency(r.payment, selectedLoan.currency)}</TableCell><TableCell className="text-pos">{formatCurrency(r.principal, selectedLoan.currency)}</TableCell><TableCell className="text-destructive">{formatCurrency(r.interest, selectedLoan.currency)}</TableCell><TableCell className="font-mono">{formatCurrency(r.balance, selectedLoan.currency)}</TableCell></TableRow>
                       ))}
                     </TableBody>
                   </Table>
@@ -653,7 +653,7 @@ function LoansPageContent() {
                     <TableHeader><TableRow><TableHead>Month</TableHead><TableHead>Interest Accrued</TableHead></TableRow></TableHeader>
                     <TableBody>
                       {(amort.monthlyAccrual ?? []).map((m) => (
-                        <TableRow key={m.month}><TableCell className="font-mono">{m.month}</TableCell><TableCell className="text-rose-600 font-mono">{formatCurrency(m.interest, selectedLoan.currency)}</TableCell></TableRow>
+                        <TableRow key={m.month}><TableCell className="font-mono">{m.month}</TableCell><TableCell className="text-destructive font-mono">{formatCurrency(m.interest, selectedLoan.currency)}</TableCell></TableRow>
                       ))}
                     </TableBody>
                   </Table>
@@ -665,7 +665,7 @@ function LoansPageContent() {
                   <TableHeader><TableRow><TableHead>Extra/Month</TableHead><TableHead>Months Saved</TableHead><TableHead>Interest Saved</TableHead><TableHead>New Payoff</TableHead></TableRow></TableHeader>
                   <TableBody>
                     {whatIf.map((w) => (
-                      <TableRow key={w.extraPayment}><TableCell className="font-mono">{formatCurrency(w.extraPayment, selectedLoan.currency)}</TableCell><TableCell className="text-emerald-600 font-bold">{w.monthsSaved} months</TableCell><TableCell className="text-emerald-600 font-bold">{formatCurrency(w.interestSaved, selectedLoan.currency)}</TableCell><TableCell>{w.newPayoffDate}</TableCell></TableRow>
+                      <TableRow key={w.extraPayment}><TableCell className="font-mono">{formatCurrency(w.extraPayment, selectedLoan.currency)}</TableCell><TableCell className="text-pos font-bold">{w.monthsSaved} months</TableCell><TableCell className="text-pos font-bold">{formatCurrency(w.interestSaved, selectedLoan.currency)}</TableCell><TableCell>{w.newPayoffDate}</TableCell></TableRow>
                     ))}
                   </TableBody>
                 </Table>

@@ -94,7 +94,7 @@ function HomePurchaseTab() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Home className="h-5 w-5 text-indigo-500" /> Purchase Details
+            <Home className="h-5 w-5 text-primary" /> Purchase Details
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -116,10 +116,10 @@ function HomePurchaseTab() {
         {result && (
           <>
             <div className="grid grid-cols-2 gap-3">
-              <ResultCard label="Monthly Mortgage" value={formatCurrency(result.monthlyPayment, displayCurrency)} color="text-indigo-600" />
-              <ResultCard label="Total Monthly Cost" value={formatCurrency(result.monthlyCashFlow, displayCurrency)} color="text-rose-600" />
+              <ResultCard label="Monthly Mortgage" value={formatCurrency(result.monthlyPayment, displayCurrency)} color="text-primary" />
+              <ResultCard label="Total Monthly Cost" value={formatCurrency(result.monthlyCashFlow, displayCurrency)} color="text-destructive" />
               <ResultCard label="Down Payment" value={formatCurrency(result.downPayment, displayCurrency)} />
-              <ResultCard label="Total Interest" value={formatCurrency(result.totalInterest, displayCurrency)} color="text-amber-600" />
+              <ResultCard label="Total Interest" value={formatCurrency(result.totalInterest, displayCurrency)} color="text-warning" />
             </div>
             <Card>
               <CardHeader><CardTitle className="text-sm">Mortgage Balance Over Time</CardTitle></CardHeader>
@@ -180,7 +180,7 @@ function ExtraSavingsTab() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <PiggyBank className="h-5 w-5 text-emerald-500" /> Savings Details
+            <PiggyBank className="h-5 w-5 text-pos" /> Savings Details
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -197,9 +197,9 @@ function ExtraSavingsTab() {
         {result && (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <ResultCard label="Future Value" value={formatCurrency(result.futureValue, displayCurrency)} color="text-emerald-600" />
+              <ResultCard label="Future Value" value={formatCurrency(result.futureValue, displayCurrency)} color="text-pos" />
               <ResultCard label="Total Contributed" value={formatCurrency(result.totalContributions, displayCurrency)} />
-              <ResultCard label="Investment Growth" value={formatCurrency(result.totalGrowth, displayCurrency)} color="text-indigo-600" />
+              <ResultCard label="Investment Growth" value={formatCurrency(result.totalGrowth, displayCurrency)} color="text-primary" />
             </div>
             <Card>
               <CardHeader><CardTitle className="text-sm">Growth Over Time</CardTitle></CardHeader>
@@ -290,14 +290,14 @@ function DebtPayoffTab() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <CreditCard className="h-5 w-5 text-rose-500" /> Your Debts
+            <CreditCard className="h-5 w-5 text-destructive" /> Your Debts
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {loansLoading ? (
             <div className="space-y-2">
               {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="h-10 bg-muted animate-pulse rounded" />
+                <div key={i} className="h-10 animate-shimmer rounded" />
               ))}
             </div>
           ) : loans.length === 0 ? (
@@ -342,14 +342,14 @@ function DebtPayoffTab() {
         {result && (
           <>
             <div className="grid grid-cols-2 gap-4">
-              <Card className="border-l-4 border-l-indigo-500">
+              <Card className="border-l-4 border-l-primary">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
-                    Avalanche <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">Highest Rate First</Badge>
+                    Avalanche <Badge variant="secondary" className="bg-primary/10 text-primary">Highest Rate First</Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  <div><p className="text-xs text-muted-foreground">Total Interest</p><p className="font-mono font-bold text-rose-600">{formatCurrency(result.avalanche.totalInterest, displayCurrency)}</p></div>
+                  <div><p className="text-xs text-muted-foreground">Total Interest</p><p className="font-mono font-bold text-destructive">{formatCurrency(result.avalanche.totalInterest, displayCurrency)}</p></div>
                   <div><p className="text-xs text-muted-foreground">Months to Debt-Free</p><p className="font-mono font-bold">{result.avalanche.totalMonths}</p></div>
                   <div className="pt-2 border-t">
                     <p className="text-xs text-muted-foreground mb-1">Payoff Order</p>
@@ -359,14 +359,14 @@ function DebtPayoffTab() {
                   </div>
                 </CardContent>
               </Card>
-              <Card className="border-l-4 border-l-amber-500">
+              <Card className="border-l-4 border-l-warning">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
-                    Snowball <Badge variant="secondary" className="bg-amber-100 text-amber-700">Lowest Balance First</Badge>
+                    Snowball <Badge variant="secondary" className="bg-warning/10 text-warning">Lowest Balance First</Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  <div><p className="text-xs text-muted-foreground">Total Interest</p><p className="font-mono font-bold text-rose-600">{formatCurrency(result.snowball.totalInterest, displayCurrency)}</p></div>
+                  <div><p className="text-xs text-muted-foreground">Total Interest</p><p className="font-mono font-bold text-destructive">{formatCurrency(result.snowball.totalInterest, displayCurrency)}</p></div>
                   <div><p className="text-xs text-muted-foreground">Months to Debt-Free</p><p className="font-mono font-bold">{result.snowball.totalMonths}</p></div>
                   <div className="pt-2 border-t">
                     <p className="text-xs text-muted-foreground mb-1">Payoff Order</p>
@@ -379,9 +379,9 @@ function DebtPayoffTab() {
             </div>
 
             {result.avalanche.totalInterest !== result.snowball.totalInterest && (
-              <Card className="bg-emerald-50 border-emerald-200">
+              <Card className="bg-pos/10 border-pos/30">
                 <CardContent className="py-3">
-                  <p className="text-sm text-emerald-700">
+                  <p className="text-sm text-pos">
                     {result.avalanche.totalInterest < result.snowball.totalInterest
                       ? `Avalanche saves you ${formatCurrency(result.snowball.totalInterest - result.avalanche.totalInterest, displayCurrency)} in interest and ${result.snowball.totalMonths - result.avalanche.totalMonths} months.`
                       : `Snowball saves you ${formatCurrency(result.avalanche.totalInterest - result.snowball.totalInterest, displayCurrency)} in interest.`}
@@ -444,7 +444,7 @@ function IncomeChangeTab() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-cyan-500" /> Income Details
+            <TrendingUp className="h-5 w-5 text-info" /> Income Details
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -461,7 +461,7 @@ function IncomeChangeTab() {
         {result && (
           <>
             <div className="grid grid-cols-2 gap-4">
-              <Card className="border-t-4 border-t-gray-300">
+              <Card className="border-t-4 border-t-border">
                 <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Current</CardTitle></CardHeader>
                 <CardContent className="space-y-2">
                   <div><p className="text-xs text-muted-foreground">Annual Income</p><p className="font-mono font-bold">{formatCurrency(result.current.annualIncome, displayCurrency)}</p></div>
@@ -470,8 +470,8 @@ function IncomeChangeTab() {
                   <div><p className="text-xs text-muted-foreground">Savings Rate</p><p className="font-mono">{result.current.savingsRate}%</p></div>
                 </CardContent>
               </Card>
-              <Card className="border-t-4 border-t-emerald-500">
-                <CardHeader className="pb-2"><CardTitle className="text-sm text-emerald-600">New</CardTitle></CardHeader>
+              <Card className="border-t-4 border-t-pos">
+                <CardHeader className="pb-2"><CardTitle className="text-sm text-pos">New</CardTitle></CardHeader>
                 <CardContent className="space-y-2">
                   <div><p className="text-xs text-muted-foreground">Annual Income</p><p className="font-mono font-bold">{formatCurrency(result.new.annualIncome, displayCurrency)}</p></div>
                   <div><p className="text-xs text-muted-foreground">Monthly Take-Home</p><p className="font-mono">{formatCurrency(result.new.monthlyNet, displayCurrency)}</p></div>
@@ -481,25 +481,25 @@ function IncomeChangeTab() {
               </Card>
             </div>
 
-            <Card className="bg-cyan-50 border-cyan-200">
+            <Card className="bg-info/10 border-info/30">
               <CardHeader className="pb-2"><CardTitle className="text-sm">Impact Summary</CardTitle></CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-xs text-muted-foreground">Extra Monthly Take-Home</p>
-                    <p className="font-mono font-bold text-emerald-600">+{formatCurrency(result.difference.monthlyNet, displayCurrency)}</p>
+                    <p className="font-mono font-bold text-pos">+{formatCurrency(result.difference.monthlyNet, displayCurrency)}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Extra Monthly Savings</p>
-                    <p className="font-mono font-bold text-emerald-600">+{formatCurrency(result.difference.monthlySavings, displayCurrency)}</p>
+                    <p className="font-mono font-bold text-pos">+{formatCurrency(result.difference.monthlySavings, displayCurrency)}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Additional Annual Tax</p>
-                    <p className="font-mono font-bold text-amber-600">+{formatCurrency(result.difference.annualTax, displayCurrency)}</p>
+                    <p className="font-mono font-bold text-warning">+{formatCurrency(result.difference.annualTax, displayCurrency)}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Annual Income Increase</p>
-                    <p className="font-mono font-bold text-indigo-600">+{formatCurrency(result.difference.annualIncome, displayCurrency)}</p>
+                    <p className="font-mono font-bold text-primary">+{formatCurrency(result.difference.annualIncome, displayCurrency)}</p>
                   </div>
                 </div>
               </CardContent>
