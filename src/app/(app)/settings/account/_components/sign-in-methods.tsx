@@ -175,7 +175,7 @@ export function SignInMethods() {
     <Card>
       <CardHeader>
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-info/10 text-info">
             <ShieldCheck className="h-5 w-5" />
           </div>
           <div>
@@ -187,7 +187,7 @@ export function SignInMethods() {
       <CardContent className="space-y-6">
         {/* Success/Error messages */}
         {success && (
-          <p className="text-sm text-emerald-600 flex items-center gap-2" role="status">
+          <p className="text-sm text-pos flex items-center gap-2" role="status">
             <Check className="h-4 w-4" />
             {success}
           </p>
