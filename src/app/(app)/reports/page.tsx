@@ -23,6 +23,7 @@ import { getPresetRange } from "@/lib/reports/preset-range";
 import { AccountFilter } from "./_components/account-filter";
 import { serializeAccountIds } from "@/lib/reports/account-filter";
 import { PageSkeleton } from "@/components/page-skeleton";
+import { ErrorState } from "@/components/error-state";
 import { SankeyChart } from "@/components/sankey-chart";
 import {
   Download,
@@ -165,6 +166,8 @@ export default function ReportsPage() {
   // First-paint gate: the page is full of charts that render blank axes against
   // null data. Show a skeleton until the primary (trends) fetch resolves once.
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [yoyYear1, setYoyYear1] = useState(currentYear - 1);
   const [yoyYear2, setYoyYear2] = useState(currentYear);
 
@@ -197,12 +200,21 @@ export default function ReportsPage() {
     let cancelled = false;
     const biz = isBusiness ? "&business=true" : "";
     fetch(`/api/reports/trends?startDate=${startDate}&endDate=${endDate}&period=${period}&groupBy=${groupBy}${biz}${acctParam}&currency=${encodeURIComponent(displayCurrency)}`)
-      .then((r) => (r.ok ? r.json() : null))
+      .then((r) => {
+        if (!r.ok) throw new Error(`trends ${r.status}`);
+        return r.json();
+      })
       .then((d) => {
-        if (!cancelled) setTrendsData(d && typeof d === "object" ? (d as TrendsData) : null);
+        if (!cancelled) {
+          setTrendsData(d && typeof d === "object" ? (d as TrendsData) : null);
+          setLoadError(false);
+        }
       })
       .catch(() => {
-        if (!cancelled) setTrendsData(null);
+        if (!cancelled) {
+          setTrendsData(null);
+          setLoadError(true);
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -210,7 +222,7 @@ export default function ReportsPage() {
     return () => {
       cancelled = true;
     };
-  }, [startDate, endDate, period, groupBy, isBusiness, displayCurrency, acctParam]);
+  }, [startDate, endDate, period, groupBy, isBusiness, displayCurrency, acctParam, reloadKey]);
 
   // Fetch balance sheet
   useEffect(() => {
@@ -339,6 +351,20 @@ export default function ReportsPage() {
   // axes against null data.
   if (loading && !trendsData) {
     return <PageSkeleton variant="cards" rows={6} />;
+  }
+
+  if (loadError && !trendsData) {
+    return (
+      <ErrorState
+        title="Couldn't load reports"
+        message="We couldn't load your reports. Please try again."
+        onRetry={() => {
+          setLoadError(false);
+          setLoading(true);
+          setReloadKey((k) => k + 1);
+        }}
+      />
+    );
   }
 
   return (
