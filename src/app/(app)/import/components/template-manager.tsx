@@ -63,17 +63,17 @@ export function TemplateManager({ templates, accounts, onDeleted, onUpdated }: T
                     {t.isDefault && <> · <Badge variant="secondary" className="text-[10px] px-1 py-0">default</Badge></>}
                   </p>
                 </div>
-                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditing(t)}>
+                <Button aria-label="Edit template" size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditing(t)}>
                   <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                 </Button>
-                <Button
+                <Button aria-label="Delete template"
                   size="icon"
                   variant="ghost"
                   className="h-7 w-7"
                   onClick={() => deleteTemplate(t.id)}
                   disabled={deleting === t.id}
                 >
-                  <Trash2 className="h-3.5 w-3.5 text-rose-500" />
+                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
                 </Button>
               </div>
             ))}
