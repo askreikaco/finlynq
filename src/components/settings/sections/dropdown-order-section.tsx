@@ -259,14 +259,14 @@ export function DropdownOrderSection() {
       </div>
 
       {toast && (
-        <Card className={toast.type === "success" ? "border-emerald-200 bg-emerald-50/30" : "border-rose-200 bg-rose-50/30"}>
+        <Card className={toast.type === "success" ? "border-pos/30 bg-pos/10" : "border-destructive/30 bg-destructive/10"}>
           <CardContent className="py-3 text-sm">{toast.msg}</CardContent>
         </Card>
       )}
 
       {error && (
-        <Card className="border-rose-200 bg-rose-50/30">
-          <CardContent className="py-3 text-sm text-rose-700">{error}</CardContent>
+        <Card className="border-destructive/30 bg-destructive/10">
+          <CardContent className="py-3 text-sm text-destructive">{error}</CardContent>
         </Card>
       )}
 
@@ -341,13 +341,13 @@ export function DropdownOrderSection() {
                     )}
                   </div>
                   <div className="flex gap-0.5 shrink-0">
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => move(idx, -1)} disabled={idx === 0} title="Move up">
+                    <Button aria-label="Move up" variant="ghost" size="icon" className="h-7 w-7" onClick={() => move(idx, -1)} disabled={idx === 0} title="Move up">
                       <ArrowUp className="h-3.5 w-3.5" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => move(idx, 1)} disabled={idx === pinnedItems.length - 1} title="Move down">
+                    <Button aria-label="Move down" variant="ghost" size="icon" className="h-7 w-7" onClick={() => move(idx, 1)} disabled={idx === pinnedItems.length - 1} title="Move down">
                       <ArrowDown className="h-3.5 w-3.5" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => unpin(item.key)} title="Unpin">
+                    <Button aria-label="Unpin" variant="ghost" size="icon" className="h-7 w-7" onClick={() => unpin(item.key)} title="Unpin">
                       <X className="h-3.5 w-3.5" />
                     </Button>
                   </div>
