@@ -21,7 +21,8 @@ import {
 } from "lucide-react";
 import { useApi } from "@/lib/data/use-api";
 import { mutate } from "swr";
-import { formatCurrency } from "@/lib/currency";
+import { formatCurrency, fxPreviewText } from "@/lib/currency";
+import Link from "next/link";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { Button } from "@/components/ui/button";
 import { Numpad } from "./_components/numpad";
@@ -57,6 +58,10 @@ export default function MobileTransactionPage() {
   const prefillAppliedRef = useRef(false);
   // ?account=<id> (set by the account page's New transaction button) preselects the source account.
   const preselectAccountRef = useRef<string | null>(null);
+  // ?account=<id> as read from the URL (state, so the investment notice can render).
+  const [urlAccountId] = useState<string | null>(() =>
+    typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("account")
+  );
 
   // Mode
   const [txType, setTxType] = useState<TxType>("Expense");
@@ -82,6 +87,9 @@ export default function MobileTransactionPage() {
   const [currencyChoice, setCurrencyChoice] = useState("");
   // "Also create a rule for next time" (Expense/Income with payee + category).
   const [alsoCreateRule, setAlsoCreateRule] = useState(false);
+  // Cross-currency transfer: amount the destination account receives (user-overridable).
+  const [receivedAmount, setReceivedAmount] = useState("");
+  const [receivedTouched, setReceivedTouched] = useState(false);
 
   // Date & Time State
   const [date, setDate] = useState(() => {
@@ -150,6 +158,9 @@ export default function MobileTransactionPage() {
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
+  // Set once a save has booked: the button stays locked so a second click cannot book it again.
+  const [done, setDone] = useState(false);
+  const doneRef = useRef(false);
 
   // Filter Categories by TxType
   const filteredCategories = useMemo(() => {
@@ -169,19 +180,32 @@ export default function MobileTransactionPage() {
   }, [rawCategories, txType]);
 
   // Non-archived Accounts
+  // Investment accounts are excluded: they are booked through Buy/Sell, not here.
   const activeAccounts = useMemo(() => {
-    return rawAccounts.filter((a) => !a.archived);
+    return rawAccounts.filter((a) => !a.archived && a.isInvestment !== true);
   }, [rawAccounts]);
+
+  // ?account=<id> pointing at an investment account: shown as a notice, never selected.
+  const urlInvestmentAccount = useMemo(
+    () =>
+      urlAccountId
+        ? rawAccounts.find((a) => String(a.id) === urlAccountId && a.isInvestment === true)
+        : undefined,
+    [rawAccounts, urlAccountId]
+  );
 
   // Auto-select initial account if available
   // Skip if prefill was applied (to avoid clobbering prefilled accountId)
   useEffect(() => {
     if (!accountId && activeAccounts.length > 0 && !prefillAppliedRef.current) {
       const pre = preselectAccountRef.current;
+      // ?account=<investment id>: leave the picker empty (the notice explains). Read the ref,
+      // not the state, because this runs before the mount effect's state update lands.
+      if (pre && rawAccounts.some((a) => String(a.id) === pre && a.isInvestment === true)) return;
       const match = pre ? activeAccounts.find((a) => String(a.id) === pre) : undefined;
       setAccountId(String((match ?? activeAccounts[0]).id));
     }
-  }, [activeAccounts, accountId]);
+  }, [activeAccounts, accountId, rawAccounts]);
 
   // Reset category when switching between Expense and Income if invalid
   useEffect(() => {
@@ -219,6 +243,26 @@ export default function MobileTransactionPage() {
     amount: parsedAmount,
     date,
   });
+  // Cross-currency transfer: FX preview of the destination amount (same hook as the dialog).
+  const transferCrossCcy =
+    txType === "Transfer" &&
+    !!selectedAcc &&
+    !!selectedToAcc &&
+    selectedAcc.currency !== selectedToAcc.currency;
+  const transferFxPreview = useFxPreview({
+    enabled: transferCrossCcy,
+    from: selectedAcc?.currency ?? "",
+    to: selectedToAcc?.currency,
+    amount: parsedAmount,
+    date,
+  });
+  // Pre-fill the received amount from the market rate until the user types their own (as the dialog does).
+  useEffect(() => {
+    if (transferFxPreview.state === "ok" && !receivedTouched) {
+      setReceivedAmount(fxPreviewText(transferFxPreview.converted, selectedToAcc?.currency ?? displayCurrency));
+    }
+  }, [transferFxPreview, receivedTouched, selectedToAcc, displayCurrency]);
+
   // Rule suggestion needs a payee + category on a plain (non-split) Expense/Income.
   const ruleEligible =
     txType !== "Transfer" && !splitEnabled && payee.trim().length > 0 && !!categoryId;
@@ -242,6 +286,7 @@ export default function MobileTransactionPage() {
 
   // Submit Handler
   const handleSave = async () => {
+    if (saving || doneRef.current) return;
     setErrorMessage(null);
     setSuccessNotice(null);
 
@@ -267,6 +312,12 @@ export default function MobileTransactionPage() {
           throw new Error("Destination account must be different from source account");
         }
 
+        let receivedNum: number | undefined;
+        if (transferCrossCcy && receivedAmount) {
+          const parsedReceived = parseFloat(receivedAmount);
+          if (Number.isFinite(parsedReceived) && parsedReceived >= 0) receivedNum = parsedReceived;
+        }
+
         const transferPayload = {
           fromAccountId: Number(accountId),
           toAccountId: Number(toAccountId),
@@ -274,6 +325,7 @@ export default function MobileTransactionPage() {
           date,
           note: note.trim() || undefined,
           tags: tags.trim() || undefined,
+          ...(receivedNum != null ? { receivedAmount: receivedNum } : {}),
         };
 
         const res = await fetch("/api/transactions/transfer", {
@@ -284,11 +336,16 @@ export default function MobileTransactionPage() {
 
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
+          if (errData?.code === "fx-currency-needs-override") {
+            throw new Error(`No FX rate for ${errData.currency ?? selectedToAcc?.currency ?? "destination currency"}.`);
+          }
           throw new Error(errData?.error || `Transfer failed (${res.status})`);
         }
 
+        doneRef.current = true;
+        setDone(true);
         setSuccessNotice("Transfer recorded successfully!");
-        mutate("/api/transactions");
+        mutate((k) => typeof k === "string" && k.startsWith("/api/transactions"));
         mutate("/api/accounts");
         setTimeout(() => router.push("/transactions"), 600);
         return;
@@ -341,6 +398,9 @@ export default function MobileTransactionPage() {
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
+        if (errData?.code === "fx-currency-needs-override") {
+          throw new Error(`No FX rate for ${errData.currency ?? currency}.`);
+        }
         throw new Error(errData?.error || `Failed to create transaction (${res.status})`);
       }
 
@@ -396,7 +456,9 @@ export default function MobileTransactionPage() {
         }
         if (ruleFailure) {
           // Saved already: show why and leave (a second Save would book the transaction twice).
-          mutate("/api/transactions");
+          doneRef.current = true;
+          setDone(true);
+          mutate((k) => typeof k === "string" && k.startsWith("/api/transactions"));
           mutate("/api/accounts");
           setErrorMessage(ruleFailure);
           setTimeout(() => router.push("/transactions"), 2500);
@@ -404,13 +466,16 @@ export default function MobileTransactionPage() {
         }
       }
 
+      doneRef.current = true;
+      setDone(true);
       setSuccessNotice(`${txType} saved successfully!`);
-      mutate("/api/transactions");
+      mutate((k) => typeof k === "string" && k.startsWith("/api/transactions"));
       mutate("/api/accounts");
       setTimeout(() => router.push("/transactions"), 600);
     } catch (err: unknown) {
       setErrorMessage(err instanceof Error ? err.message : "An unexpected error occurred");
     } finally {
+      // Booked saves stay locked through `done`; the in-flight flag always clears.
       setSaving(false);
     }
   };
@@ -468,6 +533,17 @@ export default function MobileTransactionPage() {
           <div className="flex items-start gap-2.5 p-3 rounded-xl bg-neg/10 border border-neg/30 text-neg text-xs animate-in fade-in">
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-neg" />
             <span className="flex-1 leading-relaxed">{errorMessage}</span>
+          </div>
+        )}
+        {urlInvestmentAccount && (
+          <div className="flex items-start gap-2.5 p-3 rounded-xl bg-warning/10 border border-warning/30 text-warning text-xs animate-in fade-in">
+            <Info className="w-4 h-4 shrink-0 mt-0.5 text-warning" />
+            <span className="flex-1 leading-relaxed">
+              Investment accounts use Buy/Sell.{" "}
+              <Link href={`/portfolio/new?account=${urlInvestmentAccount.id}`} className="underline font-medium hover:no-underline">
+                Open Buy/Sell
+              </Link>
+            </span>
           </div>
         )}
         {successNotice && (
@@ -648,6 +724,34 @@ export default function MobileTransactionPage() {
             </button>
           )}
 
+          {/* Cross-currency transfer: what the destination account actually receives */}
+          {transferCrossCcy && (
+            <div className="space-y-1.5 bg-card/90 border border-border/80 p-3.5 rounded-2xl">
+              <label htmlFor="transfer-received" className="text-xs text-muted-foreground font-medium">
+                Amount received ({selectedToAcc?.currency})
+              </label>
+              <input
+                id="transfer-received"
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                min="0"
+                value={receivedAmount}
+                onChange={(e) => {
+                  setReceivedTouched(true);
+                  setReceivedAmount(e.target.value);
+                }}
+                placeholder={
+                  transferFxPreview.state === "ok"
+                    ? fxPreviewText(transferFxPreview.converted, selectedToAcc?.currency ?? displayCurrency)
+                    : "0.00"
+                }
+                className="bg-transparent border-none outline-none text-foreground text-sm font-medium w-full placeholder:text-muted-foreground"
+              />
+              <FxPreviewLine preview={transferFxPreview} className="text-xs text-muted-foreground" />
+            </div>
+          )}
+
           {/* Payee Input (Expense & Income) with Auto-suggest */}
           {txType !== "Transfer" && (
             <div className="space-y-1.5">
@@ -816,7 +920,7 @@ export default function MobileTransactionPage() {
           <div className="pt-2">
             <Button
               type="button"
-              disabled={saving}
+              disabled={saving || done}
               onClick={handleSave}
               className="w-full h-12 text-base font-semibold bg-primary hover:bg-primary/90 active:bg-primary/80 text-primary-foreground rounded-2xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
             >
@@ -825,6 +929,8 @@ export default function MobileTransactionPage() {
                   <Loader2 className="w-5 h-5 animate-spin" />
                   Saving...
                 </>
+              ) : done ? (
+                "Saved"
               ) : (
                 `Save ${txType}`
               )}
@@ -835,7 +941,7 @@ export default function MobileTransactionPage() {
 
       {/* Numpad Anchored Bottom */}
       {showNumpad && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-background animate-in slide-in-from-bottom duration-200">
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-background animate-in slide-in-from-bottom duration-200 max-md:pb-[calc(var(--mobile-bar-clearance)-1rem)]">
           <Numpad
             value={amount}
             onChange={setAmount}
