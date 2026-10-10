@@ -8,15 +8,15 @@ import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
 import { AmountInput } from "@/components/amount-input";
 import { PageHeader } from "@/components/mobile";
 import { todayISO, addDays } from "@/lib/utils/date";
-import { safeReturnTo } from "@/lib/accounts/groups-return-to";
+import { useReturnTo } from "@/lib/forms/use-return-to";
 import type { Account, Category } from "@/app/(app)/transactions/_types";
 
 export default function TransactionSearchPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   // Only same-app paths: never navigate to an absolute/protocol-relative URL, and reject tab/CR/LF
-  // (browsers strip them, so "/%09/host" would become "//host"). Shared validator: safeReturnTo.
-  const returnTo = safeReturnTo(searchParams.get("returnTo"), "/transactions");
+  // (browsers strip them, so "/%09/host" would become "//host"). Shared validator: safeReturnTo (via useReturnTo).
+  const returnTo = useReturnTo("/transactions");
   const isAccountPage = returnTo.includes("/accounts/");
 
   // State for all filter fields
