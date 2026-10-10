@@ -1,0 +1,61 @@
+{
+  "family": "investments",
+  "unmigrated": [
+    "src/app/(app)/settings/investments/accounts/[id]/link/page.tsx",
+    "src/app/(app)/settings/investments/cash-sleeves/new/page.tsx",
+    "src/app/(app)/settings/investments/page.tsx",
+    "src/app/(app)/settings/investments/securities/[id]/edit/page.tsx",
+    "src/app/(app)/settings/investments/securities/[id]/link/page.tsx",
+    "src/app/(app)/settings/investments/securities/[id]/prices/page.tsx",
+    "src/app/(app)/settings/investments/securities/new/page.tsx"
+  ],
+  "chrome": {
+    "src/app/(app)/settings/investments/_components/add-security-form.tsx": {
+      "min-h": 1
+    },
+    "src/app/(app)/settings/investments/_components/form-rows.tsx": {
+      "shrink": 1,
+      "min-h": 1,
+      "sab-pad": 1
+    },
+    "src/app/(app)/settings/investments/_components/manage-prices-dialog.tsx": {
+      "min-h": 1,
+      "sab-pad": 1
+    },
+    "src/app/(app)/settings/investments/accounts/[id]/link/page.tsx": {
+      "max-w-xl": 1,
+      "suspense-null": 1,
+      "return-to": 1
+    },
+    "src/app/(app)/settings/investments/cash-sleeves/new/page.tsx": {
+      "max-w-xl": 1,
+      "suspense-null": 1,
+      "return-to": 1
+    },
+    "src/app/(app)/settings/investments/page.tsx": {
+      "title-prop": 2,
+      "subtitle-prop": 1,
+      "suspense-null": 1
+    },
+    "src/app/(app)/settings/investments/securities/[id]/edit/page.tsx": {
+      "max-w-xl": 1,
+      "suspense-null": 1,
+      "return-to": 1
+    },
+    "src/app/(app)/settings/investments/securities/[id]/link/page.tsx": {
+      "max-w-xl": 1,
+      "suspense-null": 1,
+      "return-to": 1
+    },
+    "src/app/(app)/settings/investments/securities/[id]/prices/page.tsx": {
+      "max-w-xl": 1,
+      "suspense-null": 1,
+      "return-to": 1
+    },
+    "src/app/(app)/settings/investments/securities/new/page.tsx": {
+      "max-w-xl": 1,
+      "suspense-null": 1,
+      "return-to": 1
+    }
+  }
+}

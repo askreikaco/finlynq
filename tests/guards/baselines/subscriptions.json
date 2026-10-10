@@ -1,0 +1,32 @@
+{
+  "family": "subscriptions",
+  "unmigrated": [
+    "src/app/(app)/subscriptions/[id]/edit/page.tsx",
+    "src/app/(app)/subscriptions/new/page.tsx",
+    "src/app/(app)/subscriptions/page.tsx"
+  ],
+  "chrome": {
+    "src/app/(app)/subscriptions/[id]/edit/page.tsx": {
+      "max-w-xl": 1,
+      "sab-pad": 1,
+      "suspense-null": 1,
+      "return-to": 1
+    },
+    "src/app/(app)/subscriptions/_components/subscription-form.tsx": {
+      "shrink": 1,
+      "min-h": 1,
+      "rounded-2xl": 1
+    },
+    "src/app/(app)/subscriptions/new/page.tsx": {
+      "max-w-xl": 1,
+      "sab-pad": 1,
+      "suspense-null": 1,
+      "return-to": 1
+    },
+    "src/app/(app)/subscriptions/page.tsx": {
+      "rounded-2xl": 1,
+      "title-prop": 2,
+      "subtitle-prop": 1
+    }
+  }
+}

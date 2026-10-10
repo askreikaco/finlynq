@@ -1,0 +1,41 @@
+{
+  "family": "reports",
+  "unmigrated": [
+    "src/app/(app)/dashboard/page.tsx",
+    "src/app/(app)/fire/page.tsx",
+    "src/app/(app)/reports/page.tsx",
+    "src/app/(app)/scenarios/page.tsx",
+    "src/app/(app)/tax/page.tsx",
+    "src/app/(app)/transactions/audit/page.tsx"
+  ],
+  "chrome": {
+    "src/app/(app)/dashboard/_components/chart-tooltip.tsx": {
+      "backdrop-blur": 2
+    },
+    "src/app/(app)/dashboard/page.tsx": {
+      "min-h": 1,
+      "rounded-2xl": 5,
+      "title-prop": 2,
+      "subtitle-prop": 1
+    },
+    "src/app/(app)/fire/page.tsx": {
+      "title-prop": 1
+    },
+    "src/app/(app)/reports/page.tsx": {
+      "rounded-2xl": 1,
+      "title-prop": 2,
+      "subtitle-prop": 1
+    },
+    "src/app/(app)/scenarios/page.tsx": {
+      "title-prop": 2,
+      "subtitle-prop": 1
+    },
+    "src/app/(app)/tax/page.tsx": {
+      "title-prop": 2,
+      "subtitle-prop": 1
+    },
+    "src/app/(app)/transactions/audit/page.tsx": {
+      "title-prop": 1
+    }
+  }
+}
