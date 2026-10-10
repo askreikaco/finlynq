@@ -1,0 +1,12 @@
+{
+  "family": "aliases",
+  "unmigrated": [
+    "src/app/(app)/connect/page.tsx",
+    "src/app/(app)/settings/bank-feeds/page.tsx",
+    "src/app/(app)/settings/data/page.tsx",
+    "src/app/(app)/settings/display/page.tsx",
+    "src/app/(app)/settings/dropdown-order/page.tsx",
+    "src/app/(app)/settings/import/page.tsx"
+  ],
+  "chrome": {}
+}

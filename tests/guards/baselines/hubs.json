@@ -1,0 +1,11 @@
+{
+  "family": "hubs",
+  "unmigrated": [
+    "src/app/(app)/account/info/page.tsx",
+    "src/app/(app)/account/page.tsx",
+    "src/app/(app)/account/security/page.tsx",
+    "src/app/(app)/more/page.tsx",
+    "src/app/(app)/settings/page.tsx"
+  ],
+  "chrome": {}
+}

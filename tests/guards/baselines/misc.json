@@ -1,0 +1,26 @@
+{
+  "family": "misc",
+  "unmigrated": [
+    "src/app/(app)/api-docs/page.tsx",
+    "src/app/(app)/chat/page.tsx",
+    "src/app/(app)/dev/gallery/page.tsx",
+    "src/app/(app)/feedback/page.tsx",
+    "src/app/(app)/whats-new/page.tsx"
+  ],
+  "chrome": {
+    "src/app/(app)/api-docs/page.tsx": {
+      "title-prop": 1
+    },
+    "src/app/(app)/chat/page.tsx": {
+      "rounded-2xl": 3,
+      "backdrop-blur": 1
+    },
+    "src/app/(app)/feedback/page.tsx": {
+      "title-prop": 2,
+      "subtitle-prop": 1
+    },
+    "src/app/(app)/whats-new/page.tsx": {
+      "title-prop": 1
+    }
+  }
+}

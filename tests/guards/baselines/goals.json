@@ -1,0 +1,28 @@
+{
+  "family": "goals",
+  "unmigrated": [
+    "src/app/(app)/goals/[id]/edit/page.tsx",
+    "src/app/(app)/goals/new/page.tsx",
+    "src/app/(app)/goals/page.tsx"
+  ],
+  "chrome": {
+    "src/app/(app)/goals/[id]/edit/page.tsx": {
+      "max-w-xl": 1,
+      "sab-pad": 1,
+      "suspense-null": 1,
+      "return-to": 1
+    },
+    "src/app/(app)/goals/_components/goal-form.tsx": {
+      "min-h": 2
+    },
+    "src/app/(app)/goals/new/page.tsx": {
+      "max-w-xl": 1,
+      "sab-pad": 1,
+      "suspense-null": 1,
+      "return-to": 1
+    },
+    "src/app/(app)/goals/page.tsx": {
+      "rounded-2xl": 1
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "family": "rules",
+  "unmigrated": [
+    "src/app/(app)/settings/rules/[id]/edit/page.tsx",
+    "src/app/(app)/settings/rules/new/page.tsx",
+    "src/app/(app)/settings/rules/page.tsx"
+  ],
+  "chrome": {
+    "src/app/(app)/settings/rules/[id]/edit/page.tsx": {
+      "suspense-null": 1
+    },
+    "src/app/(app)/settings/rules/_components/rule-form-screen.tsx": {
+      "sab-pad": 1,
+      "return-to": 1
+    },
+    "src/app/(app)/settings/rules/new/page.tsx": {
+      "suspense-null": 1
+    }
+  }
+}

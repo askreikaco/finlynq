@@ -1,0 +1,27 @@
+{
+  "family": "loans",
+  "unmigrated": [
+    "src/app/(app)/loans/[id]/edit/page.tsx",
+    "src/app/(app)/loans/new/page.tsx",
+    "src/app/(app)/loans/page.tsx"
+  ],
+  "chrome": {
+    "src/app/(app)/loans/[id]/edit/page.tsx": {
+      "max-w-xl": 1,
+      "sab-pad": 1,
+      "suspense-null": 1,
+      "return-to": 1
+    },
+    "src/app/(app)/loans/_components/loan-form.tsx": {
+      "shrink": 1,
+      "min-h": 1,
+      "rounded-2xl": 1
+    },
+    "src/app/(app)/loans/new/page.tsx": {
+      "max-w-xl": 1,
+      "sab-pad": 1,
+      "suspense-null": 1,
+      "return-to": 1
+    }
+  }
+}
