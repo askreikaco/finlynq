@@ -74,7 +74,7 @@ afterEach(() => {
 describe("ListPage variants: defaults unchanged", () => {
   it("root class is space-y-6 and header classes are today's literals", () => {
     api.data = GOALS;
-    const { container } = render(<ListPage<Goal> {...baseProps()} />);
+    const { container } = render(<ListPage<Goal, Goal[], { tag: string }> {...baseProps()} />);
     expect(screen.getByTestId("goals-root").className).toBe("space-y-6");
     const headerRow = container.querySelector("h1")?.closest("div[class*='justify-between']");
     expect(headerRow?.className).toContain("flex flex-wrap items-center justify-between gap-3");
@@ -88,7 +88,7 @@ describe("ListPage variants: title and subtitle as ReactNode", () => {
   it("renders a ReactNode title and subtitle", () => {
     api.data = GOALS;
     const { container } = render(
-      <ListPage<Goal>
+      <ListPage<Goal, Goal[], { tag: string }>
         {...baseProps()}
         title={<span data-testid="fire-title">Fire</span>}
         subtitle={<em>Live</em>}
@@ -100,7 +100,7 @@ describe("ListPage variants: title and subtitle as ReactNode", () => {
 
   it("error default copy falls back to 'this list' for a non-string title", () => {
     api.error = new Error("boom");
-    render(<ListPage<Goal> {...baseProps()} title={<span>Fire</span>} />);
+    render(<ListPage<Goal, Goal[], { tag: string }> {...baseProps()} title={<span>Fire</span>} />);
     expect(screen.getByRole("alert").textContent).toContain("Couldn't load this list");
   });
 });
@@ -171,7 +171,7 @@ describe("ListPage variants: useLoad", () => {
 describe("ListPage variants: loading and skeleton", () => {
   it("loadingNode replaces the skeleton", () => {
     const { container } = render(
-      <ListPage<Goal> {...baseProps()} loadingNode={<p>custom-loader</p>} />,
+      <ListPage<Goal, Goal[], { tag: string }> {...baseProps()} loadingNode={<p>custom-loader</p>} />,
     );
     expect(screen.getByText("custom-loader")).toBeTruthy();
     expect(container.querySelector(".animate-shimmer")).toBeNull();
@@ -179,14 +179,14 @@ describe("ListPage variants: loading and skeleton", () => {
 
   it("skeletonRows sets the list skeleton row count", () => {
     const { container } = render(
-      <ListPage<Goal> {...baseProps()} skeleton="list" skeletonRows={5} />,
+      <ListPage<Goal, Goal[], { tag: string }> {...baseProps()} skeleton="list" skeletonRows={5} />,
     );
     expect(container.querySelectorAll(".h-16").length).toBe(5);
   });
 
   it("states.loading.chrome false renders the skeleton bare (no root)", () => {
     const { container } = render(
-      <ListPage<Goal> {...baseProps()} states={{ loading: { chrome: false } }} />,
+      <ListPage<Goal, Goal[], { tag: string }> {...baseProps()} states={{ loading: { chrome: false } }} />,
     );
     expect(screen.queryByTestId("goals-root")).toBeNull();
     expect(container.querySelector("h1")).toBeNull();
@@ -195,7 +195,7 @@ describe("ListPage variants: loading and skeleton", () => {
 
   it("states.error.chrome false renders the error bare (no root, alert kept)", () => {
     api.error = new Error("boom");
-    render(<ListPage<Goal> {...baseProps()} states={{ error: { chrome: false } }} />);
+    render(<ListPage<Goal, Goal[], { tag: string }> {...baseProps()} states={{ error: { chrome: false } }} />);
     expect(screen.queryByTestId("goals-root")).toBeNull();
     expect(screen.getByRole("alert")).toBeTruthy();
   });
@@ -205,7 +205,7 @@ describe("ListPage variants: summary, empty, body slots", () => {
   it("summarySlot replaces the MetricGrid", () => {
     api.data = GOALS;
     render(
-      <ListPage<Goal>
+      <ListPage<Goal, Goal[], { tag: string }>
         {...baseProps()}
         summary={[{ label: "Static", value: 7 }]}
         summarySlot={(records) => <p>{`slot-${records.length}`}</p>}
@@ -219,7 +219,7 @@ describe("ListPage variants: summary, empty, body slots", () => {
     api.data = [];
     const seen = vi.fn();
     render(
-      <ListPage<Goal>
+      <ListPage<Goal, Goal[], { tag: string }>
         {...baseProps()}
         emptySlot={(ctx) => {
           seen(ctx.records.length, typeof ctx.openDelete, typeof ctx.reload);
@@ -235,7 +235,7 @@ describe("ListPage variants: summary, empty, body slots", () => {
   it("body replaces ViewModeToggle and DataView", () => {
     api.data = GOALS;
     const { container } = render(
-      <ListPage<Goal> {...baseProps()} body={({ records }) => <p>{`grouped-${records.length}`}</p>} />,
+      <ListPage<Goal, Goal[], { tag: string }> {...baseProps()} body={({ records }) => <p>{`grouped-${records.length}`}</p>} />,
     );
     expect(screen.getByText("grouped-2")).toBeTruthy();
     expect(screen.queryByTestId("view-toggle")).toBeNull();
@@ -247,7 +247,7 @@ describe("ListPage variants: summary, empty, body slots", () => {
 describe("ListPage variants: toolbarPlacement", () => {
   it("row (default) keeps the toolbar left and the toggle right in one justify-between row", () => {
     api.data = GOALS;
-    render(<ListPage<Goal> {...baseProps()} toolbar={<span>filter-x</span>} />);
+    render(<ListPage<Goal, Goal[], { tag: string }> {...baseProps()} toolbar={<span>filter-x</span>} />);
     const toggle = screen.getByTestId("view-toggle");
     const row = toggle.parentElement;
     expect(row?.className).toContain("justify-between");
@@ -256,7 +256,7 @@ describe("ListPage variants: toolbarPlacement", () => {
 
   it("end right-aligns the toolbar and toggle", () => {
     api.data = GOALS;
-    render(<ListPage<Goal> {...baseProps()} toolbar={<span>filter-y</span>} toolbarPlacement="end" />);
+    render(<ListPage<Goal, Goal[], { tag: string }> {...baseProps()} toolbar={<span>filter-y</span>} toolbarPlacement="end" />);
     const row = screen.getByTestId("view-toggle").parentElement;
     expect(row?.className).toContain("justify-end");
     expect(row?.textContent).toContain("filter-y");
@@ -264,7 +264,7 @@ describe("ListPage variants: toolbarPlacement", () => {
 
   it("none renders no toolbar and no toggle", () => {
     api.data = GOALS;
-    render(<ListPage<Goal> {...baseProps()} toolbar={<span>filter-z</span>} toolbarPlacement="none" />);
+    render(<ListPage<Goal, Goal[], { tag: string }> {...baseProps()} toolbar={<span>filter-z</span>} toolbarPlacement="none" />);
     expect(screen.queryByTestId("view-toggle")).toBeNull();
     expect(screen.queryByText("filter-z")).toBeNull();
     expect(screen.getByText("cards-content")).toBeTruthy();
@@ -275,20 +275,20 @@ describe("ListPage variants: header, stack", () => {
   it("header.actions replaces the Add button; null hides it", () => {
     api.data = GOALS;
     const { unmount } = render(
-      <ListPage<Goal> {...baseProps()} header={{ actions: <button>custom-action</button> }} />,
+      <ListPage<Goal, Goal[], { tag: string }> {...baseProps()} header={{ actions: <button>custom-action</button> }} />,
     );
     expect(screen.getByRole("button", { name: "custom-action" })).toBeTruthy();
     expect(screen.queryByRole("link", { name: "Add Goal" })).toBeNull();
     unmount();
 
-    render(<ListPage<Goal> {...baseProps()} header={{ actions: null }} />);
+    render(<ListPage<Goal, Goal[], { tag: string }> {...baseProps()} header={{ actions: null }} />);
     expect(screen.queryByRole("link", { name: "Add Goal" })).toBeNull();
   });
 
   it("header.className and actionsClassName override the defaults", () => {
     api.data = GOALS;
     const { container } = render(
-      <ListPage<Goal> {...baseProps()} header={{ className: "my-header", actionsClassName: "my-actions" }} />,
+      <ListPage<Goal, Goal[], { tag: string }> {...baseProps()} header={{ className: "my-header", actionsClassName: "my-actions" }} />,
     );
     expect(container.querySelector(".my-header")).toBeTruthy();
     expect(container.querySelector(".my-actions")).toBeTruthy();
@@ -296,10 +296,10 @@ describe("ListPage variants: header, stack", () => {
 
   it("stack 5 and 4 set the root gap class", () => {
     api.data = GOALS;
-    const { unmount } = render(<ListPage<Goal> {...baseProps()} stack="5" />);
+    const { unmount } = render(<ListPage<Goal, Goal[], { tag: string }> {...baseProps()} stack="5" />);
     expect(screen.getByTestId("goals-root").className).toBe("space-y-5");
     unmount();
-    render(<ListPage<Goal> {...baseProps()} stack="4" />);
+    render(<ListPage<Goal, Goal[], { tag: string }> {...baseProps()} stack="4" />);
     expect(screen.getByTestId("goals-root").className).toBe("space-y-4");
   });
 });
@@ -320,7 +320,7 @@ describe("ListPage variants: deleteFlow options", () => {
   it("keepOpenOnError false closes the confirm on failure", async () => {
     api.data = GOALS;
     fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ error: "Locked" }), { status: 423 }));
-    render(<ListPage<Goal> {...withDelete({ keepOpenOnError: false })} />);
+    render(<ListPage<Goal, Goal[], { tag: string }> {...withDelete({ keepOpenOnError: false })} />);
     fireEvent.click(screen.getByRole("button", { name: "delete-first" }));
     fireEvent.click(screen.getByRole("button", { name: "Delete goal" }));
     await waitFor(() => expect(screen.queryByText("Remove Emergency fund?")).toBeNull());
@@ -330,7 +330,7 @@ describe("ListPage variants: deleteFlow options", () => {
   it("ignoreStatus true treats a 423 response as success and reloads", async () => {
     api.data = GOALS;
     fetchMock.mockResolvedValueOnce(new Response(null, { status: 423 }));
-    render(<ListPage<Goal> {...withDelete({ ignoreStatus: true })} />);
+    render(<ListPage<Goal, Goal[], { tag: string }> {...withDelete({ ignoreStatus: true })} />);
     fireEvent.click(screen.getByRole("button", { name: "delete-first" }));
     fireEvent.click(screen.getByRole("button", { name: "Delete goal" }));
     await waitFor(() => expect(api.mutate).toHaveBeenCalledTimes(1));
@@ -339,7 +339,7 @@ describe("ListPage variants: deleteFlow options", () => {
   it("errorMessage shows fixed copy on failure", async () => {
     api.data = GOALS;
     fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ error: "Locked" }), { status: 423 }));
-    render(<ListPage<Goal> {...withDelete({ errorMessage: "Fixed copy" })} />);
+    render(<ListPage<Goal, Goal[], { tag: string }> {...withDelete({ errorMessage: "Fixed copy" })} />);
     fireEvent.click(screen.getByRole("button", { name: "delete-first" }));
     fireEvent.click(screen.getByRole("button", { name: "Delete goal" }));
     await waitFor(() => expect(screen.getByRole("alert").textContent).toBe("Fixed copy"));
@@ -348,7 +348,7 @@ describe("ListPage variants: deleteFlow options", () => {
   it("errorStyle inline drops the mt-2 spacing on the alert", async () => {
     api.data = GOALS;
     fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ error: "Locked" }), { status: 423 }));
-    render(<ListPage<Goal> {...withDelete({ errorStyle: "inline" })} />);
+    render(<ListPage<Goal, Goal[], { tag: string }> {...withDelete({ errorStyle: "inline" })} />);
     fireEvent.click(screen.getByRole("button", { name: "delete-first" }));
     fireEvent.click(screen.getByRole("button", { name: "Delete goal" }));
     await waitFor(() => expect(screen.getByRole("alert").className).not.toContain("mt-2"));
@@ -357,7 +357,7 @@ describe("ListPage variants: deleteFlow options", () => {
   it("default error style keeps mt-2", async () => {
     api.data = GOALS;
     fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ error: "Locked" }), { status: 423 }));
-    render(<ListPage<Goal> {...withDelete({})} />);
+    render(<ListPage<Goal, Goal[], { tag: string }> {...withDelete({})} />);
     fireEvent.click(screen.getByRole("button", { name: "delete-first" }));
     fireEvent.click(screen.getByRole("button", { name: "Delete goal" }));
     await waitFor(() => expect(screen.getByRole("alert").className).toContain("mt-2"));
