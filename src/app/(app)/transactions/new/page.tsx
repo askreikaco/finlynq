@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import {
   ChevronDown,
   AlertCircle,
-  ArrowDownToLine,
   ArrowUpDown,
   Briefcase,
   CalendarDays,
@@ -37,10 +36,6 @@ import { CategorySelector, type Category } from "./_components/category-selector
 import { AccountSelector, type Account } from "./_components/account-selector";
 import { EMPTY_GROUP_ORDER, type AccountGroupOrder } from "@/lib/accounts/groups";
 import { CurrencySelector } from "./_components/currency-selector";
-import {
-  DateTimePickerSheet,
-  formatDateTimeDisplay,
-} from "./_components/date-time-picker";
 import { AutocompletePills } from "./_components/autocomplete-pills";
 import { SplitSection } from "./_components/split-section";
 import { FormRow } from "./_components/form-row";
@@ -125,10 +120,6 @@ export default function MobileTransactionPage() {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   });
-  const [time, setTime] = useState(() => {
-    const d = new Date();
-    return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-  });
 
   // More details (Tags, Business, Split): collapsed by default; a prefill with tags opens it.
   const [showMore, setShowMore] = useState(false);
@@ -188,7 +179,6 @@ export default function MobileTransactionPage() {
   const [showCatSelector, setShowCatSelector] = useState(false);
   const [showAccSelector, setShowAccSelector] = useState(false);
   const [showToAccSelector, setShowToAccSelector] = useState(false);
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const [showCurrencySelector, setShowCurrencySelector] = useState(false);
   const [focusedField, setFocusedField] = useState<"payee" | "note" | "tags" | null>(null);
   // Row to mark invalid after a failed Save/Continue (the first failing check).
@@ -386,6 +376,7 @@ export default function MobileTransactionPage() {
     parentAmount: parsedAmount,
     currency,
     parentCategoryId: categoryId,
+    variant: "entry",
   });
   const splitActive = splitCheck.n >= 2;
   const splitBlocked = splitActive && !splitCheck.canSave;
@@ -870,17 +861,20 @@ export default function MobileTransactionPage() {
         {/* Field list. Expense/Income: Date, Amount, Category, Account, Payee, Note.
             Transfer: Date, Amount, From Account, To Account, Received (cross-currency only), Note. */}
         <ListCard className="shrink-0" data-testid="txnew-list">
-          <FormRow
-            variant="button"
-            testId="txnew-row-date"
-            label="Date"
-            icon={CalendarDays}
-            value={formatDateTimeDisplay(date)}
-            onClick={() => {
-              closePad();
-              setShowDatePicker(true);
-            }}
-          />
+          {/* The OS date picker: a native date input (iOS/Android sheets, desktop calendar popup). */}
+          <FormRow variant="custom" testId="txnew-row-date" label="Date" icon={CalendarDays} htmlFor="txnew-date">
+            <input
+              id="txnew-date"
+              type="date"
+              value={date}
+              max="9999-12-31"
+              onFocus={closePad}
+              onChange={(e) => {
+                if (e.target.value) setDate(e.target.value);
+              }}
+              className="block min-h-row w-full min-w-0 bg-transparent text-left text-base text-foreground outline-none"
+            />
+          </FormRow>
           <AmountRow
             testId="txnew-row-amount"
             value={amount}
@@ -923,8 +917,9 @@ export default function MobileTransactionPage() {
               }}
             />
           )}
-          {/* From and To share a relative wrapper so the Transfer swap button sits on their divider. */}
-          <div className="relative">
+          {/* From and To share a relative wrapper so the Transfer swap button sits on their divider;
+              the wrapper repeats the group's hairline (divide-y) because the two rows are no longer its direct children. */}
+          <div className="relative divide-y divide-border">
             <FormRow
               variant="button"
               testId="txnew-row-account"
@@ -945,7 +940,7 @@ export default function MobileTransactionPage() {
                   variant="button"
                   testId="txnew-row-to-account"
                   label="To"
-                  icon={ArrowDownToLine}
+                  icon={Wallet}
                   value={selectedToAcc?.name}
                   placeholder={loadingAccounts ? "Loading accounts..." : "Select Destination Account"}
                   invalid={invalidField === "toAccount"}
@@ -1129,8 +1124,6 @@ export default function MobileTransactionPage() {
                 parentAmount={parsedAmount}
                 currency={currency}
                 parentCategoryId={categoryId}
-                parentPayee={payee.trim()}
-                categories={filteredCategories}
                 onOpenCategory={(rowId) => {
                   setActiveSplitRowId(rowId);
                   setShowCatSelector(true);
@@ -1271,17 +1264,6 @@ export default function MobileTransactionPage() {
         }}
       />
 
-      <DateTimePickerSheet
-        open={showDatePicker}
-        onOpenChange={setShowDatePicker}
-        date={date}
-        time={time}
-        showTime={false}
-        onConfirm={(d, t) => {
-          setDate(d);
-          setTime(t);
-        }}
-      />
     </div>
   );
 }

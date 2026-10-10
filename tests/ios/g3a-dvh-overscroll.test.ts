@@ -21,7 +21,6 @@ const DIALOG_FILES = [
   "src/app/(app)/import/components/ofx-confirm-dialog.tsx",
   "src/app/(app)/import/components/pdf-preview.tsx",
   "src/app/(app)/import/components/save-template-dialog.tsx",
-  "src/app/(app)/transactions/new/_components/date-time-picker.tsx",
   "src/components/portfolio/lot-inspector-dialog.tsx",
   "src/components/rules/rule-editor-dialog.tsx",
 ];
