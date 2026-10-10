@@ -241,7 +241,7 @@ describe("4. tab bar glass tint and token colours (contrast measured in the test
   it("light tint is translucent but raised: oklch(1 0 0 / 80%) with blur kept", () => {
     const b = resolvedDecls(css, ".mobile-glass-bar", "light");
     expect(b).toMatch(/background:\s*oklch\(1 0 0 \/ 80%\);/);
-    expect(b).toMatch(/backdrop-filter:\s*blur\(28px\) saturate\(1\.8\)/);
+    expect(b).toMatch(/backdrop-filter:\s*blur\(32px\) saturate\(1\.8\)/);
   });
 
   it("dark tint is translucent but raised: oklch(0.16 0.008 245 / 78%)", () => {

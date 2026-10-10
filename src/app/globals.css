@@ -212,26 +212,34 @@ html {
   /* motion (spec values come with the retune) */
   --press-scale: 1;
   --press-dur: 0ms;
-  /* material, light: one set per surface */
+  /* material, light. ONE liquid-glass recipe for every glass surface (bar, capsule, tab bar): the shared blur,
+     saturation and edge light below, so a header, its capsule and the tab bar always look like one material.
+     Per-surface sets then only choose their tint and border. */
+  --glass-blur: 32px;
+  --glass-sat: 1.8;
+  --glass-edge-top: oklch(1 0 0 / 70%);
+  --glass-edge-bottom: oklch(1 0 0 / 30%);
+  --glass-glow: oklch(1 0 0 / 24%);
+  --glass-edge: inset 0 1px 0 var(--glass-edge-top), inset 0 -1px 0 var(--glass-edge-bottom), 0 0 14px var(--glass-glow);
   --glass-card-bg: oklch(1 0 0 / 60%);
   --glass-card-blur: 20px;
   --glass-card-sat: 1.6;
   --glass-card-border: oklch(0 0 0 / 6%);
   --glass-card-shadow: none;
-  --glass-bar-bg: oklch(1 0 0 / 60%);
-  --glass-bar-blur: 28px;
-  --glass-bar-sat: 1.8;
+  --glass-bar-bg: oklch(1 0 0 / 38%);
+  --glass-bar-blur: var(--glass-blur);
+  --glass-bar-sat: var(--glass-sat);
   --glass-bar-border: oklch(0 0 0 / 8%);
-  --glass-capsule-bg: oklch(1 0 0 / 55%);
-  --glass-capsule-blur: 24px;
-  --glass-capsule-sat: 1.8;
+  --glass-capsule-bg: oklch(1 0 0 / 36%);
+  --glass-capsule-blur: var(--glass-blur);
+  --glass-capsule-sat: var(--glass-sat);
   --glass-capsule-border: oklch(0 0 0 / 8%);
-  --glass-capsule-shadow: inset 0 1px 0 oklch(1 0 0 / 60%), 0 2px 8px oklch(0 0 0 / 10%);
+  --glass-capsule-shadow: var(--glass-edge), 0 2px 8px oklch(0 0 0 / 10%);
   --glass-tabbar-bg: oklch(1 0 0 / 80%);
-  --glass-tabbar-blur: 28px;
-  --glass-tabbar-sat: 1.8;
+  --glass-tabbar-blur: var(--glass-blur);
+  --glass-tabbar-sat: var(--glass-sat);
   --glass-tabbar-border: oklch(0 0 0 / 8%);
-  --glass-tabbar-shadow: inset 0 1px 0 oklch(1 0 0 / 18%), 0 8px 32px oklch(0 0 0 / 35%);
+  --glass-tabbar-shadow: var(--glass-edge), 0 8px 32px oklch(0 0 0 / 35%);
   --glass-menu-bg: oklch(0.2 0.008 250 / 78%);
   --glass-menu-blur: 24px;
   --glass-menu-sat: 1.8;
@@ -250,11 +258,14 @@ html {
   --glass-card-sat: 1.5;
   --glass-card-border: oklch(1 0 0 / 6%);
   --glass-card-shadow: 0 1px 2px oklch(0 0 0 / 30%);
-  --glass-bar-bg: oklch(0.14 0.01 245 / 55%);
+  --glass-edge-top: oklch(1 0 0 / 28%);
+  --glass-edge-bottom: oklch(1 0 0 / 12%);
+  --glass-glow: oklch(1 0 0 / 9%);
+  --glass-bar-bg: oklch(0.14 0.01 245 / 36%);
   --glass-bar-border: oklch(1 0 0 / 10%);
-  --glass-capsule-bg: oklch(1 0 0 / 8%);
+  --glass-capsule-bg: oklch(1 0 0 / 7%);
   --glass-capsule-border: oklch(1 0 0 / 14%);
-  --glass-capsule-shadow: inset 0 1px 0 oklch(1 0 0 / 14%), 0 2px 8px oklch(0 0 0 / 35%);
+  --glass-capsule-shadow: var(--glass-edge), 0 2px 8px oklch(0 0 0 / 35%);
   --glass-tabbar-bg: oklch(0.16 0.008 245 / 78%);
   --glass-tabbar-border: oklch(1 0 0 / 14%);
 }
@@ -476,6 +487,7 @@ html {
     -webkit-backdrop-filter: blur(var(--glass-bar-blur)) saturate(var(--glass-bar-sat));
     backdrop-filter: blur(var(--glass-bar-blur)) saturate(var(--glass-bar-sat));
     border-bottom: 1px solid var(--glass-bar-border);
+    box-shadow: var(--glass-edge);
     /* Own compositor layer: a sticky backdrop-filter bar over scrolling content repaints every frame
        on iOS otherwise (laggy scroll). No visual change. */
     transform: translateZ(0);
