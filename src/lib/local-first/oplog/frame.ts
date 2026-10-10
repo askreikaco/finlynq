@@ -26,7 +26,7 @@ import { canonicalJson } from "./canon";
 import { pack, unpack, type Hlc } from "../clock/hlc";
 import { open, seal, NONCE_BYTES, TAG_BYTES, AuthError } from "../crypto/aead";
 import type { LogKeys } from "../crypto/kdf";
-import { TruncatedFrameError, UnsupportedVersionError } from "./errors";
+import { MalformedFrameError, TruncatedFrameError, UnsupportedVersionError } from "./errors";
 import type { Op, OpBody } from "./types";
 
 /** Advisory bound for documentation only. Not enforced. See header comment. */
@@ -146,4 +146,57 @@ export async function decodeFrame(bytes: Uint8Array, keys: LogKeys, logId: strin
     kind: payload.kind,
     fields: payload.fields,
   };
+}
+
+/** Largest seq the server can store (Postgres integer column). */
+export const MAX_SEQ_STORED = 0x7fffffff;
+const ULID_RE = /^[0-9A-HJKMNP-TV-Z]{26}$/;
+const utf8Strict = new TextDecoder("utf-8", { fatal: true });
+
+export interface FrameHeader {
+  ver: number;
+  deviceId: string;
+  opId: string;
+  seq: number;
+  hlc: Hlc;
+}
+
+/**
+ * Plaintext header only. Never touches the key or the AEAD. Used by the server
+ * to index a frame it cannot decrypt. Enforces the exact length prefix (one
+ * frame per input), the header bounds, opId as ULID text, and seq <= MAX_SEQ_STORED.
+ * It does NOT prove the frame is authentic. Only decodeFrame does that.
+ */
+export function parseFrameHeader(bytes: Uint8Array): FrameHeader {
+  if (bytes.length < LEN_BYTES) throw new TruncatedFrameError();
+  const len = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(0);
+  if (bytes.length < LEN_BYTES + len) throw new TruncatedFrameError();
+  if (bytes.length > LEN_BYTES + len) throw new MalformedFrameError("trailing bytes after declared length");
+  const body = bytes.subarray(LEN_BYTES, LEN_BYTES + len);
+
+  if (body.length < 2) throw new TruncatedFrameError();
+  if (body[0] !== FRAME_VERSION) throw new UnsupportedVersionError(body[0]);
+
+  const devLen = body[1];
+  if (devLen < 1 || devLen > DEV_MAX) throw new MalformedFrameError(`deviceId length ${devLen}`);
+  const headerEnd = 2 + devLen + OPID_BYTES + SEQ_BYTES + HLC_BYTES;
+  if (body.length < headerEnd + NONCE_BYTES + TAG_BYTES) throw new TruncatedFrameError();
+
+  let deviceId: string;
+  try {
+    deviceId = utf8Strict.decode(body.subarray(2, 2 + devLen));
+  } catch {
+    throw new MalformedFrameError("deviceId is not UTF-8");
+  }
+  const opIdBytes = body.subarray(2 + devLen, 2 + devLen + OPID_BYTES);
+  let opId = "";
+  for (const b of opIdBytes) opId += String.fromCharCode(b);
+  if (!ULID_RE.test(opId)) throw new MalformedFrameError("opId is not a ULID");
+
+  const seqOff = 2 + devLen + OPID_BYTES;
+  const seq = new DataView(body.buffer, body.byteOffset, body.byteLength).getUint32(seqOff);
+  if (seq > MAX_SEQ_STORED) throw new MalformedFrameError("seq out of stored range");
+  const hlc = unpack(body.subarray(seqOff + SEQ_BYTES, headerEnd));
+
+  return { ver: body[0], deviceId, opId, seq, hlc };
 }
