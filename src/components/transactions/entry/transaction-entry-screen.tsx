@@ -8,6 +8,7 @@ import {
   ArrowUpDown,
   Briefcase,
   CalendarDays,
+  Check,
   Calculator,
   CheckCircle2,
   Copy,
@@ -69,7 +70,7 @@ import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
 import { useFxPreview } from "@/lib/hooks/use-fx-preview";
 import { FxPreviewLine } from "@/components/transactions/fx-preview-line";
 import { buildPayeeCategoryRule } from "@/lib/rules/build-payee-category-rule";
-import { PageHeader, HEADER_CELL } from "@/components/mobile";
+import { PageHeader, HEADER_SAVE } from "@/components/mobile";
 import type { OverflowAction } from "@/components/mobile/page-header";
 
 export type { EntryMode } from "@/lib/transactions/entry-mode";
@@ -958,11 +959,23 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
           : { onBack: goBack, backLabel: "Back to transactions" })}
         overflow={editOverflow}
         actions={
-          saving ? (
-            <span role="status" aria-label="Saving" className={`${HEADER_CELL} flex size-11 items-center justify-center`}>
-              <Loader2 className="h-4 w-4 animate-spin text-primary" aria-hidden="true" />
-            </span>
-          ) : undefined
+          // The page Save: a round yellow check beside the capsule (iOS Notes "Done"); a labelled primary from
+          // regular up. Same handler and guards as the Save button under the fields.
+          <Button
+            type="button"
+            data-testid="txnew-header-save"
+            aria-label={saving ? "Saving transaction" : done ? "Transaction saved" : "Save transaction"}
+            disabled={saving || done || splitBlocked}
+            onClick={() => void handleSave()}
+            className={HEADER_SAVE}
+          >
+            {saving ? (
+              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+            ) : (
+              <Check className="size-4" aria-hidden="true" />
+            )}
+            <span>{saving ? "Saving…" : done ? "Saved" : "Save"}</span>
+          </Button>
         }
       />
 
