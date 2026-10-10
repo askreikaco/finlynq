@@ -15,6 +15,7 @@ const H = vi.hoisted(() => ({ push: vi.fn(), search: "" }));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: H.push, replace: vi.fn(), back: vi.fn() }),
   useSearchParams: () => new URLSearchParams(H.search),
+  useParams: () => ({}),
   usePathname: () => "/accounts/new",
 }));
 vi.mock("@/components/currency-provider", () => ({ useDisplayCurrency: () => ({ displayCurrency: "VND" }) }));
