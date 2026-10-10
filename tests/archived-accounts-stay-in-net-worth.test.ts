@@ -132,9 +132,7 @@ describe("archived accounts reach the surfaces that show money", () => {
     // The counterpart: including them in the lookups must not offer an
     // archived account as a destination for a NEW transaction. Edit mode
     // keeps them (`!!editId ||`) so an existing row still shows its account.
-    const dialog = read("src/components/transactions/transaction-dialog.tsx");
-    const pickers = dialog.match(/\.filter\(\(a\) => !!editId \|\|[^)]*\)\)/g) ?? [];
-    expect(pickers.length).toBeGreaterThan(0);
-    for (const p of pickers) expect(p).toContain("a.archived !== true");
+    const picker = read("src/app/(app)/transactions/new/_components/account-selector.tsx");
+    expect(picker).toContain("!acc.archived");
   });
 });

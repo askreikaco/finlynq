@@ -22,7 +22,9 @@ import {
 import { useApi } from "@/lib/data/use-api";
 import { mutate, useSWRConfig } from "swr";
 import { revalidateTransactionLists } from "@/lib/transactions/revalidate";
-import { formatCurrency, fxPreviewText } from "@/lib/currency";
+import { currencyDecimals, formatCurrency, fxPreviewText } from "@/lib/currency";
+import { parseCount, toAccountCurrencySplits } from "@/lib/transactions/split-math";
+import { validateSplits, type SplitRowModel } from "@/components/transactions/split-rows";
 import Link from "next/link";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
@@ -30,7 +32,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { AutoTextarea } from "@/components/ui/auto-textarea";
 import { cn } from "@/lib/utils";
-import { Numpad } from "./_components/numpad";
+import { NumpadDock } from "./_components/numpad-dock";
 import { CategorySelector, type Category } from "./_components/category-selector";
 import { AccountSelector, type Account } from "./_components/account-selector";
 import { CurrencySelector } from "./_components/currency-selector";
@@ -39,7 +41,7 @@ import {
   formatDateTimeDisplay,
 } from "./_components/date-time-picker";
 import { AutocompletePills } from "./_components/autocomplete-pills";
-import { SplitSection, type SplitRow } from "./_components/split-section";
+import { SplitSection } from "./_components/split-section";
 import { FormRow } from "./_components/form-row";
 import { AmountRow } from "./_components/amount-row";
 import { TypeSegmented } from "./_components/type-segmented";
@@ -64,6 +66,8 @@ type TxType = "Expense" | "Income" | "Transfer";
 type SaveMode = "save" | "continue";
 type InvalidField = "amount" | "account" | "category" | "toAccount";
 const RECENT_TX_CODE: Record<TxType, RecentTxType> = { Expense: "E", Income: "I", Transfer: "T" };
+// Numpad target id for the main Amount. Split rows use their row id (never this value).
+const MAIN_PAD = "main";
 
 export default function MobileTransactionPage() {
   const { mutate: swrMutate, cache } = useSWRConfig();
@@ -121,11 +125,17 @@ export default function MobileTransactionPage() {
   // More details (Tags, Business, Split): collapsed by default; a prefill with tags opens it.
   const [showMore, setShowMore] = useState(false);
   const [isBusiness, setIsBusiness] = useState(false);
-  const [splitEnabled, setSplitEnabled] = useState(false);
-  const [splitRows, setSplitRows] = useState<SplitRow[]>([
-    { id: "1", categoryId: "", amount: "", note: "" },
-    { id: "2", categoryId: "", amount: "", note: "" },
-  ]);
+  // Splits: count text ("" = none; N >= 2 = N rows, see split-math). Rows keep the hidden tail beyond N.
+  const [splitCount, setSplitCount] = useState("");
+  const [splitRows, setSplitRows] = useState<SplitRowModel[]>([]);
+  // Split rows whose amount was typed, committed from the numpad, or left (blur). An untouched empty
+  // row shows no "Enter an amount"; Save/Continue press reveals all rows (splitSaveAttempted).
+  const [touchedSplitRowIds, setTouchedSplitRowIds] = useState<ReadonlySet<string>>(() => new Set());
+  const [splitSaveAttempted, setSplitSaveAttempted] = useState(false);
+  const markSplitRowTouched = (rowId: string) =>
+    setTouchedSplitRowIds((prev) => (prev.has(rowId) ? prev : new Set(prev).add(rowId)));
+  // Split row whose category the CategorySelector is editing (null = the main Category row).
+  const [activeSplitRowId, setActiveSplitRowId] = useState<string | null>(null);
 
   // Read prefill from sessionStorage once on mount ([] deps)
   // Uses ref to prevent double-read in StrictMode
@@ -164,23 +174,47 @@ export default function MobileTransactionPage() {
   }, []);
 
   // UI / Modal States
-  const [showNumpad, setShowNumpad] = useState(false);
+  // One shared numpad follows the focused amount: MAIN_PAD or a split row id. null = closed.
+  const [padTarget, setPadTarget] = useState<string | null>(null);
+  const showNumpad = padTarget !== null;
   const [showCatSelector, setShowCatSelector] = useState(false);
   const [showAccSelector, setShowAccSelector] = useState(false);
   const [showToAccSelector, setShowToAccSelector] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showCurrencySelector, setShowCurrencySelector] = useState(false);
-  const [activeSplitIndex, setActiveSplitIndex] = useState<number | null>(null);
   const [focusedField, setFocusedField] = useState<"payee" | "note" | "tags" | null>(null);
   // Row to mark invalid after a failed Save/Continue (the first failing check).
   const [invalid, setInvalid] = useState<{ field: InvalidField } | null>(null);
 
-  // Numpad opens only when the amount is focused; it closes on Done, Escape or any other field.
+  // Numpad opens only when an amount is focused; it closes on Done, Escape or any other field.
   const openPad = () => {
-    setShowNumpad(true);
+    setPadTarget(MAIN_PAD);
     setFocusedField(null);
   };
-  const closePad = () => setShowNumpad(false);
+  const openSplitPad = (rowId: string) => {
+    setPadTarget(rowId);
+    setFocusedField(null);
+  };
+  const closePad = () => setPadTarget(null);
+  // Numpad commit: the main amount, or the split row it was opened for (by id, never by index).
+  const handleDockChange = (id: string, value: string) => {
+    if (id === MAIN_PAD) {
+      setAmount(value);
+      setInvalid((prev) => (prev?.field === "amount" ? null : prev));
+      return;
+    }
+    markSplitRowTouched(id);
+    setSplitRows((prev) => prev.map((row) => (row.id === id ? { ...row, amount: value } : row)));
+  };
+  // SplitRows reports a count change and the row fill in one call. An amount edit marks that row
+  // touched; growing N clears the former remainder row, which is not an edit.
+  const handleSplitRowsChange = (next: SplitRowModel[]) => {
+    const prevN = parseCount(splitCount).n;
+    next.forEach((row, i) => {
+      if (i < prevN - 1 && row.amount !== (splitRows[i]?.amount ?? "")) markSplitRowTouched(row.id);
+    });
+    setSplitRows(next);
+  };
   // Transfer swap: exchange From/To. The entered currency follows the From account (as on selection),
   // a typed "receives" amount is cleared so the FX preview refills it for the new pair.
   const swapTransferAccounts = () => {
@@ -201,6 +235,18 @@ export default function MobileTransactionPage() {
   const recentCategoryIds = getRecent("category", txCode);
   const recentAccountIds = getRecent("account", txCode);
   const recentToAccountIds = getRecent("account", "T");
+
+  // A split amount opened the numpad: scroll it above the dock (the scroll region reserves the dock height).
+  useEffect(() => {
+    if (padTarget === null || padTarget === MAIN_PAD) return;
+    const index = splitRows.findIndex((r) => r.id === padTarget);
+    if (index < 0) return;
+    document
+      .querySelector<HTMLElement>(`[data-testid="split-amount-${index + 1}"]`)
+      ?.scrollIntoView?.({ block: "nearest" });
+    // Scroll once per opened row; typing must not re-scroll.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [padTarget]);
 
   // After a failed Save/Continue: focus the first invalid row. Amount also opens the numpad.
   useEffect(() => {
@@ -323,6 +369,19 @@ export default function MobileTransactionPage() {
   // Entered currency: explicit choice, else the account's currency, else the display currency.
   const currency = currencyChoice || selectedAcc?.currency || displayCurrency;
   const currencyOptions = useActiveCurrencies(currency);
+
+  // Splits (Expense/Income only). One validation feeds the Save gate, the save payload and the messages.
+  // Splits use the ENTERED currency (the amount the user typed); the save converts them to the account currency.
+  const splitCheck = validateSplits({
+    count: txType === "Transfer" ? "" : splitCount,
+    rows: splitRows,
+    parentAmount: parsedAmount,
+    currency,
+    parentCategoryId: categoryId,
+  });
+  const splitActive = splitCheck.n >= 2;
+  const splitBlocked = splitActive && !splitCheck.canSave;
+  const splitEditingRow = activeSplitRowId === null ? null : splitRows.find((r) => r.id === activeSplitRowId) ?? null;
   const fxPreview = useFxPreview({
     enabled: txType !== "Transfer",
     from: currency,
@@ -352,20 +411,15 @@ export default function MobileTransactionPage() {
 
   // Rule suggestion needs a payee + category on a plain (non-split) Expense/Income.
   const ruleEligible =
-    txType !== "Transfer" && !splitEnabled && payee.trim().length > 0 && !!categoryId;
+    txType !== "Transfer" && !splitActive && payee.trim().length > 0 && !!categoryId;
 
   // Handle Category Selection for either main category or split row
   const handleCategorySelect = (selectedId: string) => {
-    if (activeSplitIndex !== null) {
-      const updated = [...splitRows];
-      if (updated[activeSplitIndex]) {
-        updated[activeSplitIndex] = {
-          ...updated[activeSplitIndex],
-          categoryId: selectedId,
-        };
-        setSplitRows(updated);
-      }
-      setActiveSplitIndex(null);
+    if (activeSplitRowId !== null) {
+      setSplitRows((prev) =>
+        prev.map((row) => (row.id === activeSplitRowId ? { ...row, categoryId: selectedId } : row)),
+      );
+      setActiveSplitRowId(null);
     } else {
       categoryTouchedRef.current = true;
       setSuggestedCategoryId(null);
@@ -382,11 +436,11 @@ export default function MobileTransactionPage() {
     setNote("");
     setTags("");
     setCategoryId("");
-    setSplitEnabled(false);
-    setSplitRows([
-      { id: "1", categoryId: "", amount: "", note: "" },
-      { id: "2", categoryId: "", amount: "", note: "" },
-    ]);
+    setSplitCount("");
+    setSplitRows([]);
+    setTouchedSplitRowIds(new Set());
+    setSplitSaveAttempted(false);
+    setActiveSplitRowId(null);
     setAlsoCreateRule(false);
     setIsBusiness(false);
     setReceivedAmount("");
@@ -407,7 +461,7 @@ export default function MobileTransactionPage() {
     [
       `${txType} saved`,
       formatCurrency(parsedAmount, currency),
-      txType !== "Transfer" && !splitEnabled ? selectedCat?.name : undefined,
+      txType !== "Transfer" && !splitActive ? selectedCat?.name : undefined,
     ]
       .filter(Boolean)
       .join(" · ");
@@ -447,6 +501,7 @@ export default function MobileTransactionPage() {
   const handleSave = async (mode: SaveMode = "save") => {
     const continueMode = mode === "continue";
     if (saving || doneRef.current) return;
+    setSplitSaveAttempted(true);
     setErrorMessage(null);
     setSuccessNotice(null);
     setInvalid(null);
@@ -455,7 +510,7 @@ export default function MobileTransactionPage() {
     if (parsedAmount <= 0) {
       setErrorMessage("Please enter a valid amount greater than 0");
       setInvalid({ field: "amount" });
-      setShowNumpad(true);
+      setPadTarget(MAIN_PAD);
       return;
     }
 
@@ -527,33 +582,21 @@ export default function MobileTransactionPage() {
       }
 
       // Regular Transaction Mode (Expense / Income)
-      if (!splitEnabled && !categoryId) {
+      if (!splitActive && !categoryId) {
         setInvalid({ field: "category" });
         throw new Error("Please select a category");
       }
 
-      if (splitEnabled) {
+      if (splitActive) {
         setShowMore(true);
-        const validSplits = splitRows.filter((r) => parseFloat(r.amount) > 0);
-        if (validSplits.length < 2) {
-          throw new Error("Split transactions require at least 2 split rows with amounts");
-        }
-        const hasUncategorized = validSplits.some((r) => !r.categoryId);
-        if (hasUncategorized) {
-          throw new Error("All split rows must have a category assigned");
-        }
-        const splitSum = validSplits.reduce((acc, r) => acc + (parseFloat(r.amount) || 0), 0);
-        const effectiveAccountCurrency = selectedAcc?.currency || displayCurrency;
-        if (Math.abs(splitSum - parsedAmount) > 0.05) {
-          throw new Error(`Split sum ${formatCurrency(splitSum, effectiveAccountCurrency)} must equal total amount ${formatCurrency(parsedAmount, effectiveAccountCurrency)}`);
-        }
+        // Save is disabled while splits are invalid; this guards the same rule for any other path.
+        if (!splitCheck.canSave) throw new Error(splitCheck.firstError ?? "Check the split amounts");
       }
 
       // Sign: Expense is negative, Income is positive
       const signedAmount = txType === "Expense" ? -Math.abs(parsedAmount) : Math.abs(parsedAmount);
-      const effectiveCategoryId = splitEnabled
-        ? Number(splitRows[0]?.categoryId) || Number(categoryId)
-        : Number(categoryId);
+      // Row 1 inherits the main category when it has none of its own (validateSplits resolves it).
+      const effectiveCategoryId = splitActive ? Number(splitCheck.resolved[0].id) : Number(categoryId);
 
       const txPayload = {
         date,
@@ -585,35 +628,47 @@ export default function MobileTransactionPage() {
       setLastAccount(accountId);
       const transactionId = createdTx?.id;
 
-      // If splits enabled, post splits
-      if (splitEnabled && transactionId) {
-        const sign = txType === "Expense" ? -1 : 1;
-        const splitsPayload = {
-          transactionId: Number(transactionId),
-          splits: splitRows
-            .filter((r) => parseFloat(r.amount) > 0)
-            .map((r) => ({
-              categoryId: r.categoryId ? Number(r.categoryId) : null,
-              amount: sign * Math.abs(parseFloat(r.amount) || 0),
-              note: r.note.trim() || undefined,
-            })),
-        };
-
-        const splitRes = await fetch("/api/transactions/splits", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(splitsPayload),
-        });
-
-        if (!splitRes.ok) {
-          const splitErr = await splitRes.json().catch(() => ({}));
-          console.warn("Splits write failed:", splitErr);
+      // Splits post after the parent. Their amounts are entered-currency; the API stores account-currency
+      // amounts, so convert with the created row's own ratio (its legs sum to the stored total).
+      let splitFailure: string | null = null;
+      if (splitActive && transactionId) {
+        try {
+          const sign = txType === "Expense" ? -1 : 1;
+          const accountCcy: string = createdTx.currency || selectedAcc?.currency || displayCurrency;
+          const legs =
+            currency === accountCcy
+              ? splitCheck.amounts
+              : toAccountCurrencySplits(splitCheck.amounts, {
+                  amount: Math.abs(Number(createdTx.amount)),
+                  enteredAmount: Math.abs(Number(createdTx.enteredAmount)),
+                  currency: accountCcy,
+                });
+          const splitRes = await fetch("/api/transactions/splits", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              transactionId: Number(transactionId),
+              splits: splitCheck.visible.map((row, i) => ({
+                categoryId: Number(splitCheck.resolved[i].id),
+                amount: sign * Math.abs(legs[i]),
+                note: row.note.trim() || undefined,
+              })),
+            }),
+          });
+          if (!splitRes.ok) {
+            const splitErr = await splitRes.json().catch(() => ({}));
+            throw new Error(splitErr?.error || `Splits failed (${splitRes.status})`);
+          }
+        } catch (splitErr: unknown) {
+          splitFailure = `Transaction saved, but the splits were not: ${
+            splitErr instanceof Error ? splitErr.message : "unknown error"
+          }`;
         }
       }
 
       // Rule step runs after the transaction is saved; a failure never undoes it.
+      let ruleFailure: string | null = null;
       if (alsoCreateRule && ruleEligible) {
-        let ruleFailure: string | null = null;
         try {
           const ruleRes = await fetch("/api/rules", {
             method: "POST",
@@ -632,22 +687,24 @@ export default function MobileTransactionPage() {
               ? `Transaction saved, but the rule could not be created: ${ruleErr.message}`
               : "Transaction saved, but the rule could not be created.";
         }
-        if (ruleFailure) {
-          // Saved already: show why. Save leaves (a second Save would book the transaction twice);
-          // Continue keeps the page open with the fields cleared.
-          if (continueMode) {
-            showSaveToast(savedToastText());
-            resetAfterContinue();
-          } else {
-            doneRef.current = true;
-            setDone(true);
-          }
-          void revalidateTransactionLists(swrMutate, cache);
-          mutate("/api/accounts");
-          setErrorMessage(ruleFailure);
-          if (!continueMode) setTimeout(() => router.push("/transactions"), 2500);
-          return;
+      }
+
+      // The transaction is saved already: a failed split or rule write is shown, never undone. Save
+      // leaves (a second Save would book the transaction twice); Continue keeps the page open, cleared.
+      const followUpError = splitFailure ?? ruleFailure;
+      if (followUpError) {
+        if (continueMode) {
+          showSaveToast(savedToastText());
+          resetAfterContinue();
+        } else {
+          doneRef.current = true;
+          setDone(true);
         }
+        void revalidateTransactionLists(swrMutate, cache);
+        mutate("/api/accounts");
+        setErrorMessage(followUpError);
+        if (!continueMode) setTimeout(() => router.push("/transactions"), 2500);
+        return;
       }
 
       if (continueMode) {
@@ -695,7 +752,7 @@ export default function MobileTransactionPage() {
   const moreSummary = [
     tags.trim() ? "Tags" : null,
     isBusiness ? "Business" : null,
-    splitEnabled ? "Split" : null,
+    splitActive ? "Split" : null,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -834,7 +891,7 @@ export default function MobileTransactionPage() {
               invalid={invalidField === "category"}
               onClick={() => {
                 closePad();
-                setActiveSplitIndex(null);
+                setActiveSplitRowId(null);
                 setShowCatSelector(true);
               }}
             />
@@ -1038,18 +1095,24 @@ export default function MobileTransactionPage() {
             />
             {txType !== "Transfer" && (
               <SplitSection
-                enabled={splitEnabled}
-                onToggle={setSplitEnabled}
+                count={splitCount}
+                onCountChange={setSplitCount}
                 rows={splitRows}
-                onChangeRows={setSplitRows}
+                onRowsChange={handleSplitRowsChange}
+                parentAmount={parsedAmount}
+                currency={currency}
+                parentCategoryId={categoryId}
+                parentPayee={payee.trim()}
                 categories={filteredCategories}
-                totalAmount={parsedAmount}
-                currency={selectedAcc?.currency || displayCurrency}
-                onOpenCategorySelector={(idx) => {
-                  closePad();
-                  setActiveSplitIndex(idx);
+                onOpenCategory={(rowId) => {
+                  setActiveSplitRowId(rowId);
                   setShowCatSelector(true);
                 }}
+                padTargetRowId={padTarget === MAIN_PAD ? null : padTarget}
+                onOpenPad={openSplitPad}
+                onClosePad={closePad}
+                onRowBlur={markSplitRowTouched}
+                showEmptyErrors={(rowId) => splitSaveAttempted || touchedSplitRowIds.has(rowId)}
               />
             )}
           </div>
@@ -1088,7 +1151,7 @@ export default function MobileTransactionPage() {
           <Button
             type="button"
             data-testid="txnew-save"
-            disabled={saving || done}
+            disabled={saving || done || splitBlocked}
             onClick={() => void handleSave("save")}
             className="h-12 rounded-2xl text-base font-semibold bg-primary hover:bg-primary/90 active:bg-primary/80 text-primary-foreground shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
           >
@@ -1107,7 +1170,7 @@ export default function MobileTransactionPage() {
             type="button"
             variant="outline"
             data-testid="txnew-continue"
-            disabled={saving || done}
+            disabled={saving || done || splitBlocked}
             onClick={() => void handleSave("continue")}
             className="h-12 rounded-2xl px-5 text-base font-semibold"
           >
@@ -1118,14 +1181,15 @@ export default function MobileTransactionPage() {
 
       {/* Numpad dock: pinned to the safe-area bottom (the tab bar is hidden here). Touch only:
           pointer-coarse, never a JS device check, so a desktop never shows it. */}
-      {showNumpad && (
-        <div
-          data-testid="numpad-dock"
-          className="fixed inset-x-0 bottom-[var(--sab,0px)] regular:left-[calc(5rem+var(--sal))] z-[60] hidden bg-background pointer-coarse:block animate-in slide-in-from-bottom duration-200"
-        >
-          <Numpad value={amount} onChange={setAmount} onConfirm={closePad} />
-        </div>
-      )}
+      <NumpadDock
+        activeId={padTarget}
+        activeValue={
+          padTarget === MAIN_PAD ? amount : (splitRows.find((r) => r.id === padTarget)?.amount ?? "")
+        }
+        onChange={handleDockChange}
+        onDone={closePad}
+        decimals={currencyDecimals(currency)}
+      />
 
       {saveToast && (
         <SaveToast key={saveToast.id} text={saveToast.text} onDismiss={() => setSaveToast(null)} />
@@ -1144,12 +1208,8 @@ export default function MobileTransactionPage() {
         open={showCatSelector}
         onOpenChange={setShowCatSelector}
         categories={filteredCategories}
-        selectedCategoryId={
-          activeSplitIndex !== null
-            ? splitRows[activeSplitIndex]?.categoryId
-            : categoryId
-        }
-        recentIds={activeSplitIndex === null ? recentCategoryIds : undefined}
+        selectedCategoryId={splitEditingRow ? splitEditingRow.categoryId : categoryId}
+        recentIds={activeSplitRowId === null ? recentCategoryIds : undefined}
         onSelect={handleCategorySelect}
       />
 
