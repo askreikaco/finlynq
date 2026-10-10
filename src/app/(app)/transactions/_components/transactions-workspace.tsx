@@ -588,7 +588,7 @@ export function TransactionsWorkspace({
                 onClick={() => router.push("/transactions/new")}
                 aria-label="Add Transaction"
               >
-                <Plus className="h-4 w-4 mr-2" /> <span className="hidden regular:inline">Add Transaction</span><span className="regular:hidden">Add</span>
+                <Plus className="h-4 w-4 mr-1" /> <span className="hidden regular:inline">Add Transaction</span><span className="regular:hidden">Add</span>
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger

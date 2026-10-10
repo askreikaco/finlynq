@@ -36,9 +36,9 @@ describe("glass-bar material (globals.css, phones only)", () => {
 
   it("has a translucent tint and backdrop blur with saturate, with the -webkit- prefix", () => {
     const body = resolvedDecls(css, ".glass-bar", "light");
-    expect(body).toMatch(/background:\s*oklch\(1 0 0 \/ 60%\)/);
-    expect(body).toMatch(/-webkit-backdrop-filter:\s*blur\(28px\) saturate\(1\.8\)/);
-    expect(body).toMatch(/\n\s+backdrop-filter:\s*blur\(28px\) saturate\(1\.8\)/);
+    expect(body).toMatch(/background:\s*oklch\(1 0 0 \/ 38%\)/);
+    expect(body).toMatch(/-webkit-backdrop-filter:\s*blur\(32px\) saturate\(1\.8\)/);
+    expect(body).toMatch(/\n\s+backdrop-filter:\s*blur\(32px\) saturate\(1\.8\)/);
   });
 
   it("has a 1px hairline bottom rim (black 8% light, white 10% dark)", () => {
@@ -134,5 +134,19 @@ describe("PageHeader phone bar (render)", () => {
     const bar = container.querySelector('[data-slot="page-header"]');
     expect(cls(bar)).toEqual(expect.arrayContaining(["glass-bar", "sticky", "top-[var(--sat,0px)]", "z-30"]));
     expect(pageHeaderSrc).toContain("PHONE_BAR_TITLE");
+  });
+});
+
+describe("one liquid-glass recipe (globals.css)", () => {
+  it("bar, capsule and tab bar all take their blur and saturation from the shared --glass-blur / --glass-sat", () => {
+    for (const name of ["bar", "capsule", "tabbar"]) {
+      expect(css).toMatch(new RegExp(`--glass-${name}-blur:\\s*var\\(--glass-blur\\)`));
+      expect(css).toMatch(new RegExp(`--glass-${name}-sat:\\s*var\\(--glass-sat\\)`));
+    }
+  });
+  it("the header bar and its capsule carry the shared top/bottom edge light and glow", () => {
+    expect(css).toMatch(/--glass-edge:\s*inset 0 1px 0 var\(--glass-edge-top\), inset 0 -1px 0 var\(--glass-edge-bottom\), 0 0 14px var\(--glass-glow\)/);
+    expect(resolvedDecls(css, ".glass-bar", "light")).toContain("inset 0 1px 0 oklch(1 0 0 / 70%)");
+    expect(resolvedDecls(css, ".glass-capsule", "light")).toContain("inset 0 -1px 0 oklch(1 0 0 / 30%)");
   });
 });

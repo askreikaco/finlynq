@@ -109,21 +109,11 @@ describe("new transaction row layout", () => {
     expect(screen.getByPlaceholderText("Comma-separated")).toBeTruthy();
   });
 
-  it("Continue posts once, clears amount and payee, and keeps date and account", async () => {
+  it("Cancel leaves without booking anything", async () => {
     seedPrefill();
     render(<Page />);
-    const dateBefore = screen.getByTestId("txnew-row-date").textContent;
-    expect(screen.getByTestId("txnew-row-account").textContent).toContain("Savings");
-    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
-    await waitFor(() => expect(postsTo("/api/transactions").length).toBe(1));
-    await waitFor(() =>
-      expect((screen.getByLabelText("Amount") as HTMLInputElement).value).toBe(""),
-    );
-    expect((screen.getByLabelText("Payee") as HTMLInputElement).value).toBe("");
-    expect(screen.getByTestId("txnew-row-date").textContent).toBe(dateBefore);
-    expect(screen.getByTestId("txnew-row-account").textContent).toContain("Savings");
-    expect((screen.getByRole("button", { name: "Save" }) as HTMLButtonElement).disabled).toBe(false);
-    expect(H.push).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(postsTo("/api/transactions").length).toBe(0);
   });
 
   it("empty amount: Save marks the amount row invalid, shows the error and opens the numpad", async () => {

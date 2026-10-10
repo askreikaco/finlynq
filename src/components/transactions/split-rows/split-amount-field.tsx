@@ -17,6 +17,10 @@ export interface SplitAmountFieldProps {
   testId: string;
   /** Parent's displayed currency code, shown read-only in the label column. */
   currency: string;
+  /** False hides the currency chip (entry variant: the parent chip is the only one). Defaults to true. */
+  showCurrency?: boolean;
+  /** Extra classes on the row container (e.g. padding when the caller already pads the card). */
+  className?: string;
   /** Typed text (editable) or computed text (remainder). */
   value: string;
   /** Remainder row: no typing, no pad, "auto" badge. */
@@ -43,6 +47,8 @@ export function SplitAmountField({
   ariaLabel,
   testId,
   currency,
+  showCurrency = true,
+  className,
   value,
   readOnly = false,
   invalid = false,
@@ -70,17 +76,20 @@ export function SplitAmountField({
         "flex items-center gap-3 px-4",
         TW.rowTall,
         active && "rounded-lg ring-1 ring-inset ring-ring",
+        className,
       )}
     >
-      <span
-        data-slot="split-currency"
-        className={cn(
-          "flex shrink-0 items-center justify-center rounded-lg border border-input px-2.5 py-2 text-sm font-medium whitespace-nowrap text-foreground",
-          TW.rowLabelNarrow,
-        )}
-      >
-        {currency}
-      </span>
+      {showCurrency && (
+        <span
+          data-slot="split-currency"
+          className={cn(
+            "flex shrink-0 items-center justify-center rounded-lg border border-input px-2.5 py-2 text-sm font-medium whitespace-nowrap text-foreground",
+            TW.rowLabelNarrow,
+          )}
+        >
+          {currency}
+        </span>
+      )}
       <input
         id={id}
         type="text"

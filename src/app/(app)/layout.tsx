@@ -2,6 +2,7 @@ import { AppTabs } from "@/components/nav";
 import { UnlockGate } from "@/components/unlock-gate";
 import { AnnouncementBanner } from "@/components/announcement-banner";
 import { PromptGate } from "@/components/prompt-gate";
+import { NavHistoryTracker } from "@/components/nav-history-tracker";
 import { CurrencyProvider } from "@/components/currency-provider";
 import { DropdownOrderProvider } from "@/components/dropdown-order-provider";
 import { LanguageProvider } from "@/components/language-provider";
@@ -42,6 +43,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             {/* data-[bar-hidden]: routes without the tab bar (AppMainBarFlag) keep only the safe-area bottom below 640px. */}
             <main className="flex-1 overflow-x-clip min-w-0 pb-[calc(var(--mobile-bar-clearance)+80px)] regular:pb-0 data-[bar-hidden]:max-regular:pb-[var(--sab,0px)] regular:pl-[calc(5rem+var(--sal))] bg-dot-pattern ambient-glow" data-app-main="">
               <AppMainBarFlag />
+              <NavHistoryTracker />
               {/* FINLYNQ-52: no width cap on the (app) shell — content fills
                   the viewport to the right of the sidebar. Per-page wrappers
                   may still impose their own readability cap (e.g. settings,

@@ -7,12 +7,6 @@ import { useState } from "react";
 
 import { SplitSection, type SplitSectionProps } from "@/app/(app)/transactions/new/_components/split-section";
 import type { SplitRowModel } from "@/lib/transactions/split-math";
-import type { Category } from "@/app/(app)/transactions/new/_components/category-selector";
-
-const categories: Category[] = [
-  { id: "1", name: "Food", type: "expense" },
-  { id: "2", name: "Transport", type: "expense" },
-];
 
 interface HarnessProps {
   initialCount?: string;
@@ -49,8 +43,6 @@ function Harness({
         parentAmount={parentAmount}
         currency={currency}
         parentCategoryId={parentCategoryId}
-        parentPayee="Coffee shop"
-        categories={categories}
         onOpenCategory={onOpenCategory}
         padTargetRowId={pad}
         onOpenPad={(id) => {
@@ -93,7 +85,8 @@ describe("SplitSection count field", () => {
     typeCount("3");
     expect(screen.getByTestId("state-count").textContent).toBe("3");
     expect(stateRows()).toHaveLength(3);
-    expect(screen.getByTestId("split-row-3").textContent).toContain("Split 3 · Remaining");
+    expect(screen.getByTestId("split-row-3").textContent).toContain("#3");
+    expect(screen.getByTestId("split-row-3").textContent).not.toContain("Remaining");
     expect(amountInput(3).readOnly).toBe(true);
     expect(amountInput(1).readOnly).toBe(false);
   });
@@ -126,7 +119,7 @@ describe("SplitSection count field", () => {
     expect(screen.queryByTestId("split-row-3")).toBeNull();
     typeCount("3");
     expect(amountInput(2).value).toBe("");
-    expect(screen.getByTestId("split-row-3").textContent).toContain("Remaining");
+    expect(screen.getByTestId("split-row-3").textContent).toContain("#3");
     expect(stateRows()[2].amount).toBe("10");
   });
 });
@@ -138,7 +131,9 @@ describe("SplitSection remainder and status", () => {
     expect(amountInput(2).value).toBe("70.00");
     typeAmount(1, "45.5");
     expect(amountInput(2).value).toBe("54.50");
-    expect(screen.getByTestId("txnew-split-status").textContent).toContain("Allocated");
+    // Entry variant: no "Allocated x of y" status line, only error lines.
+    expect(screen.queryByTestId("txnew-split-status")).toBeNull();
+    expect(screen.queryByText(/Allocated/)).toBeNull();
   });
 
   it("uses 0 decimals for VND", () => {
@@ -201,34 +196,57 @@ describe("SplitSection validation messages", () => {
   });
 });
 
-describe("SplitSection categories and context", () => {
-  it("labels the inherited category chip 'same as above' and calls onOpenCategory with the row id", () => {
-    const opened: string[] = [];
-    render(
-      <Harness
-        initialCount="2"
-        parentCategoryId="2"
-        initialRows={[
-          { id: "r0", categoryId: "", amount: "", note: "" },
-          { id: "r1", categoryId: "", amount: "", note: "" },
-        ]}
-        onOpenCategory={(id) => opened.push(id)}
-      />,
-    );
-    expect(screen.getByTestId("split-category-1").textContent).toBe("Transport · same as above");
-    fireEvent.click(screen.getByTestId("split-category-2"));
-    expect(opened).toEqual(["r1"]);
+describe("SplitSection entry variant chrome", () => {
+  it("has no category chip, account chip, currency chip, payee context line or allocated line", () => {
+    const { container } = render(<Harness initialCount="2" />);
+    expect(screen.queryByTestId("split-category-1")).toBeNull();
+    expect(screen.queryByTestId("split-category-2")).toBeNull();
+    expect(screen.queryByTestId("txnew-split-context")).toBeNull();
+    expect(screen.queryByText(/Payee/)).toBeNull();
+    expect(screen.queryByText(/Total/)).toBeNull();
+    expect(container.querySelector('[data-slot="split-currency"]')).toBeNull();
+    expect(screen.queryByText("USD")).toBeNull();
   });
 
-  it("shows the parent payee and total as a read-only context line once N >= 2", () => {
-    render(<Harness initialCount="2" parentAmount={100} />);
-    expect(screen.getByTestId("txnew-split-context").textContent).toContain("Coffee shop");
-    expect(screen.getByTestId("txnew-split-context").textContent).toContain("100.00");
-  });
-
-  it("has no payee or per-split category field", () => {
+  it("labels each split '#n' with a note field and no per-row header", () => {
     render(<Harness initialCount="2" />);
-    expect(screen.queryByPlaceholderText("Payee")).toBeNull();
-    expect(screen.queryByText("Select Category")).toBeNull();
+    expect(screen.getByText("#1")).toBeTruthy();
+    expect(screen.getByText("#2")).toBeTruthy();
+    expect(screen.queryByText("Split 1")).toBeNull();
+    expect(screen.getAllByPlaceholderText("Note (optional)")).toHaveLength(2);
+  });
+
+  it("shows the Splits stepper with 44px buttons", () => {
+    render(<Harness />);
+    expect(screen.getByRole("button", { name: "Decrease splits" }).className).toContain("size-11");
+    expect(screen.getByRole("button", { name: "Increase splits" }).className).toContain("size-11");
+  });
+
+  it("the stepper's + and - change the count; typing still works", () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByRole("button", { name: "Increase splits" }));
+    expect(countInput().value).toBe("2");
+    fireEvent.click(screen.getByRole("button", { name: "Increase splits" }));
+    expect(countInput().value).toBe("3");
+    fireEvent.click(screen.getByRole("button", { name: "Decrease splits" }));
+    expect(countInput().value).toBe("2");
+    fireEvent.click(screen.getByRole("button", { name: "Decrease splits" }));
+    expect(countInput().value).toBe("");
+    typeCount("5");
+    expect(countInput().value).toBe("5");
+    expect(screen.getByTestId("split-row-5")).toBeTruthy();
+  });
+
+  it("reports 'Choose a category first' as one status error and blocks the rows' category errors", () => {
+    render(<Harness initialCount="2" parentCategoryId="" />);
+    expect(screen.getByTestId("split-status-error").textContent).toBe("Choose a category first");
+    expect(screen.queryByText("Choose category")).toBeNull();
+    expect(screen.queryByText(/Choose a category for split/)).toBeNull();
+  });
+
+  it("inherits the parent category: no error when a category is set", () => {
+    render(<Harness initialCount="2" parentCategoryId="2" />);
+    typeAmount(1, "30");
+    expect(screen.queryByTestId("split-status-error")).toBeNull();
   });
 });
