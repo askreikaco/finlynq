@@ -137,7 +137,7 @@ describe("split amounts use the shared numpad", () => {
     expect(dock()).not.toBeNull();
   });
 
-  it("Done evaluates a pending expression (=) first, then a second Done closes the dock", async () => {
+  it("Equals evaluates a pending expression and keeps the dock open; OK then evaluates and closes", async () => {
     render(<Page />);
     await waitFor(() => expect(screen.getByText("Checking CAD")).toBeTruthy());
     await openSplitTwo();
@@ -146,11 +146,24 @@ describe("split amounts use the shared numpad", () => {
     fireEvent.click(keypad().getByText("1"));
     fireEvent.click(keypad().getByLabelText("Plus"));
     fireEvent.click(keypad().getByText("2"));
-    fireEvent.click(keypad().getByLabelText("Done"));
+    fireEvent.click(keypad().getByLabelText("Equals"));
     expect(splitAmount(1).value).toBe("3");
     expect(dock()).not.toBeNull();
     fireEvent.click(keypad().getByLabelText("Done"));
     expect(dock()).toBeNull();
+  });
+
+  it("split rows never show the currency chips; the main amount does", async () => {
+    render(<Page />);
+    await waitFor(() => expect(screen.getByText("Checking CAD")).toBeTruthy());
+    await openSplitTwo();
+
+    fireEvent.focus(splitAmount(1));
+    expect(keypad().queryByRole("group", { name: "Currency" })).toBeNull();
+    expect(within(dock()!).queryByRole("group", { name: "Currency" })).toBeNull();
+
+    fireEvent.focus(mainAmount());
+    expect(within(dock()!).getByRole("group", { name: "Currency" })).toBeTruthy();
   });
 
   it("the main Amount still opens the same dock and writes the main amount", async () => {
@@ -236,3 +249,41 @@ describe("split save uses the entered currency and surfaces failures", () => {
     warn.mockRestore();
   });
 });
+
+describe("main amount currency chips", () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+    localStorage.clear();
+    sessionStorage.setItem(KEY, JSON.stringify(mk()));
+    window.history.replaceState({}, "", "/transactions/new?prefill=1");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (String(url).includes("active-currencies")) {
+          return { ok: true, json: async () => ({ active: ["CAD", "USD"] }) };
+        }
+        return { ok: true, json: async () => ({ id: 99 }) };
+      }),
+    );
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  it("tapping a chip switches the entered currency through the same handler and keeps the pad open", async () => {
+    render(<Page />);
+    await waitFor(() => expect(screen.getByText("Checking CAD")).toBeTruthy());
+    fireEvent.focus(mainAmount());
+
+    const chipGroup = within(dock()!).getByRole("group", { name: "Currency" });
+    expect(within(chipGroup).getByRole("button", { name: "CAD" }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(within(chipGroup).getByRole("button", { name: "USD" }));
+
+    expect(screen.getByRole("button", { name: "Currency" }).textContent).toContain("USD");
+    expect(dock()).not.toBeNull();
+    expect(within(dock()!).getByRole("button", { name: "USD" }).getAttribute("aria-pressed")).toBe("true");
+  });
+});
+
