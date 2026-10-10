@@ -14,8 +14,10 @@
  * Active section label mirrors the registry (ALIASES map legacy paths to their settings entry).
  */
 
+import * as React from "react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { SettingsBackContext } from "@/components/settings-back-context";
 import { getEntriesBySurface, ALIASES } from "@/lib/nav-config";
 import { BackButton } from "@/components/mobile/back-button";
 import {
@@ -114,14 +116,20 @@ export function SettingsShell({ children }: { children: React.ReactNode }) {
   const isHub = pathname === SETTINGS_HUB_HREF;
   const activeLabel = NAV_ITEMS.find((item) => item.href === active)?.label ?? "Settings";
   const showDetailBar = !isHub && !SELF_BACK_PATHS.some((p) => pathname.startsWith(p));
+  // A page that passes its own backHref (PageHeader reports it) keeps its back; the bar back is hidden.
+  const [pageHasBack, setPageHasBack] = React.useState(false);
+  const backState = React.useMemo(() => ({ detail: showDetailBar, setOwnBack: setPageHasBack }), [showDetailBar]);
 
   return (
+    <SettingsBackContext.Provider value={backState}>
     <div className="flex min-w-0 flex-col gap-6">
       {/* Not inside the overflow container below: sticky needs a non-overflow ancestor. */}
       {showDetailBar && (
         <div data-slot="settings-detail-bar" className={PHONE_BAR}>
           <div className="flex items-center gap-3 max-regular:contents">
-            <BackButton href={SETTINGS_HUB_HREF} label="Back to Settings" className="justify-self-start" />
+            {!pageHasBack && (
+              <BackButton href={SETTINGS_HUB_HREF} label="Back to Settings" className="justify-self-start" />
+            )}
             <div className={PHONE_BAR_CENTER}>
               <span aria-hidden className={cn(HEADER_TITLE_CLASS, PHONE_BAR_TITLE)}>
                 {activeLabel}
@@ -139,5 +147,6 @@ export function SettingsShell({ children }: { children: React.ReactNode }) {
         <div className="overflow-x-clip">{children}</div>
       </div>
     </div>
+    </SettingsBackContext.Provider>
   );
 }

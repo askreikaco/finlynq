@@ -73,9 +73,12 @@ describe("page-level targets", () => {
   it("transactions 'Search and filter' link has min-h-11", () => {
     expect(workspace).toMatch(/"flex min-h-11 flex-1 items-center gap-2 px-3 py-2\.5 bg-muted rounded-lg/);
   });
-  it("accounts/[id] 'Back to Accounts' links are 44px tall on coarse pointers (both render paths)", () => {
+  it("accounts/[id] 'Back to Accounts' link (not-found path only) is 44px tall on coarse pointers", () => {
+    // The main render path uses PageHeader's automatic back (one back control), so only the not-found branch keeps the link.
     const n = accountPage.split('className="inline-flex pointer-coarse:min-h-11 items-center gap-1.5').length - 1;
-    expect(n).toBe(2);
+    expect(n).toBe(1);
+    expect(accountPage.split("Back to Accounts").length - 1).toBe(1);
+    expect(accountPage.indexOf("Back to Accounts")).toBeLessThan(accountPage.indexOf("<PageHeader"));
     expect(accountPage).not.toContain("max-md:min-h-11");
   });
   it("accounts/[id] Information edit icon button is 44px wide on coarse pointers", () => {

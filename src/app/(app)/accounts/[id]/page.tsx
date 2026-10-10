@@ -387,10 +387,7 @@ export default function AccountDetailPage() {
 
   return (
     <div className="space-y-6">
-      <Link href="/accounts" className="inline-flex pointer-coarse:min-h-11 items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-        <ArrowLeft className="h-4 w-4" /> Back to Accounts
-      </Link>
-
+      {/* The back control is PageHeader's automatic back (level 2 under /accounts). */}
       {/* actionsClassName has no w-full: on phones the actions sit in PageHeader's glass capsule, and a
           100%-width capsule ran off the right edge. */}
       <PageHeader

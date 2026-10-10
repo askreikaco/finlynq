@@ -88,6 +88,15 @@ afterEach(() => {
 });
 
 describe("Account Detail Page", () => {
+  it("has exactly one back control: PageHeader's automatic back to /accounts", async () => {
+    const { container } = render(<AccountDetailPage />);
+    await waitFor(() => expect(screen.getByText(formatCurrency(50000000, "VND"))).toBeTruthy());
+    expect(screen.queryByText("Back to Accounts")).toBeNull();
+    const backs = container.querySelectorAll('[data-slot="back-button"]');
+    expect(backs).toHaveLength(1);
+    expect(backs[0].getAttribute("href")).toBe("/accounts");
+  });
+
   it("shows balance prominently under the header", async () => {
     render(<AccountDetailPage />);
     await waitFor(() => {
