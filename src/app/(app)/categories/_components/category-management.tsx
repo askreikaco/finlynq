@@ -110,7 +110,7 @@ export function CategoryManagement({ returnTo }: { returnTo: string }) {
                     {group && <h4 className="text-xs text-muted-foreground/80 px-3 mb-1">{group}</h4>}
                     <div className="space-y-1">
                       {cats.map((cat) => (
-                        <div key={cat.id} className="flex items-center justify-between rounded-lg px-3 py-2 min-h-11 regular:min-h-0 hover:bg-muted/50 transition-colors group">
+                        <div key={cat.id} className="flex items-center justify-between rounded-lg px-3 py-2 min-h-row regular:min-h-0 hover:bg-muted/50 transition-colors group">
                           <span className="text-sm">{cat.name}</span>
                           <div className="flex gap-1 regular:opacity-0 regular:group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                             <Link
