@@ -23,6 +23,7 @@ import {
   HEADER_DESKTOP_ONLY,
 } from "@/components/mobile/page-header";
 import { Button } from "@/components/ui/button";
+import { resolvedDecls } from "../helpers/css-tokens";
 
 const h = React.createElement;
 const read = (p: string) => readFileSync(resolve(__dirname, "../../", p), "utf-8");
@@ -238,13 +239,13 @@ describe("3. one tab-label size token, iOS tab bar geometry", () => {
 
 describe("4. tab bar glass tint and token colours (contrast measured in the test)", () => {
   it("light tint is translucent but raised: oklch(1 0 0 / 80%) with blur kept", () => {
-    const b = body(css, ".mobile-glass-bar");
+    const b = resolvedDecls(css, ".mobile-glass-bar", "light");
     expect(b).toMatch(/background:\s*oklch\(1 0 0 \/ 80%\);/);
     expect(b).toMatch(/backdrop-filter:\s*blur\(28px\) saturate\(1\.8\)/);
   });
 
   it("dark tint is translucent but raised: oklch(0.16 0.008 245 / 78%)", () => {
-    expect(body(css, ".dark .mobile-glass-bar")).toMatch(/background:\s*oklch\(0\.16 0\.008 245 \/ 78%\);/);
+    expect(resolvedDecls(css, ".mobile-glass-bar", "dark")).toMatch(/background:\s*oklch\(0\.16 0\.008 245 \/ 78%\);/);
   });
 
   it("the opaque fallbacks for the tab bar survive (@supports not blur, reduced transparency)", () => {

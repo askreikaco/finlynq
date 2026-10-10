@@ -3,6 +3,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
 import { join } from "path";
+import { resolvedDecls } from "../helpers/css-tokens";
 
 const read = (p: string) => readFileSync(join(__dirname, "../../", p), "utf8");
 const nav = read("src/components/nav.tsx");
@@ -53,29 +54,29 @@ describe("floating capsule geometry (nav.tsx)", () => {
 
 describe("glass material (globals.css)", () => {
   it("light fill is oklch(1 0 0 / 80%): raised from 55% so content behind the labels does not read through", () => {
-    expect(ruleBody(css, ".mobile-glass-bar")).toMatch(/background:\s*oklch\(1 0 0 \/ 80%\)/);
+    expect(resolvedDecls(css, ".mobile-glass-bar", "light")).toMatch(/background:\s*oklch\(1 0 0 \/ 80%\)/);
   });
 
   it("blur uses both -webkit- and standard backdrop-filter with blur(28px) saturate(1.8)", () => {
-    const body = ruleBody(css, ".mobile-glass-bar");
+    const body = resolvedDecls(css, ".mobile-glass-bar", "light");
     expect(body).toMatch(/-webkit-backdrop-filter:\s*blur\(28px\) saturate\(1\.8\)/);
     expect(body).toMatch(/(?<!-webkit-)backdrop-filter:\s*blur\(28px\) saturate\(1\.8\)/);
   });
 
   it("light rim is 1px oklch(0 0 0 / 8%)", () => {
-    expect(ruleBody(css, ".mobile-glass-bar")).toMatch(/border:\s*1px solid oklch\(0 0 0 \/ 8%\)/);
+    expect(resolvedDecls(css, ".mobile-glass-bar", "light")).toMatch(/border:\s*1px solid oklch\(0 0 0 \/ 8%\)/);
   });
 
   it("has the inset top highlight and soft drop shadow", () => {
-    const body = ruleBody(css, ".mobile-glass-bar");
+    const body = resolvedDecls(css, ".mobile-glass-bar", "light");
     expect(body).toContain("inset 0 1px 0 oklch(1 0 0 / 18%)");
     expect(body).toContain("0 8px 32px oklch(0 0 0 / 35%)");
   });
 
   it("dark mode: fill oklch(0.16 0.008 245 / 78%) and rim oklch(1 0 0 / 14%)", () => {
-    const body = ruleBody(css, ".dark .mobile-glass-bar");
+    const body = resolvedDecls(css, ".mobile-glass-bar", "dark");
     expect(body).toMatch(/background:\s*oklch\(0\.16 0\.008 245 \/ 78%\)/);
-    expect(body).toMatch(/border-color:\s*oklch\(1 0 0 \/ 14%\)/);
+    expect(body).toMatch(/border:\s*1px solid oklch\(1 0 0 \/ 14%\)/);
   });
 
   it("active pill: dark oklch(1 0 0 / 12%), light oklch(0 0 0 / 7%)", () => {

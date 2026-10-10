@@ -10,6 +10,7 @@ import * as React from "react";
 const h = React.createElement;
 import { readFileSync } from "fs";
 import { resolve } from "path";
+import { resolvedDecls } from "../helpers/css-tokens";
 import { render, cleanup, screen } from "@testing-library/react";
 import { PageHeader } from "@/components/mobile/page-header";
 import { Button } from "@/components/ui/button";
@@ -19,13 +20,6 @@ const pageHeaderSrc = readFileSync(resolve(__dirname, "../../src/components/mobi
 const cls = (el: Element | null | undefined) => (el?.getAttribute("class") ?? "").split(/\s+/);
 
 afterEach(() => cleanup());
-
-/** Body of the first `.glass-bar {` rule (base, not .dark) inside the phone block. */
-function rule(selector: string): string {
-  const i = css.indexOf(`\n  ${selector} {`);
-  expect(i, `${selector} rule`).toBeGreaterThan(-1);
-  return css.slice(i, css.indexOf("}", i));
-}
 
 /** Text of the block that starts at `marker` and runs to the next `}` closing that block at 2-space depth. */
 function block(marker: string): string {
@@ -41,15 +35,15 @@ describe("glass-bar material (globals.css, phones only)", () => {
   });
 
   it("has a translucent tint and backdrop blur with saturate, with the -webkit- prefix", () => {
-    const body = rule(".glass-bar");
+    const body = resolvedDecls(css, ".glass-bar", "light");
     expect(body).toMatch(/background:\s*oklch\(1 0 0 \/ 60%\)/);
     expect(body).toMatch(/-webkit-backdrop-filter:\s*blur\(28px\) saturate\(1\.8\)/);
     expect(body).toMatch(/\n\s+backdrop-filter:\s*blur\(28px\) saturate\(1\.8\)/);
   });
 
   it("has a 1px hairline bottom rim (black 8% light, white 10% dark)", () => {
-    expect(rule(".glass-bar")).toMatch(/border-bottom:\s*1px solid oklch\(0 0 0 \/ 8%\)/);
-    expect(rule(".dark .glass-bar")).toMatch(/border-bottom-color:\s*oklch\(1 0 0 \/ 10%\)/);
+    expect(resolvedDecls(css, ".glass-bar", "light")).toMatch(/border-bottom:\s*1px solid oklch\(0 0 0 \/ 8%\)/);
+    expect(resolvedDecls(css, ".glass-bar", "dark")).toMatch(/border-bottom:\s*1px solid oklch\(1 0 0 \/ 10%\)/);
   });
 
   it("dark fallbacks exist in the @supports-not block (light and dark)", () => {

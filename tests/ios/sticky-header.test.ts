@@ -5,6 +5,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
 import { join } from "path";
+import { rootValue, resolvedToken } from "../helpers/css-tokens";
 
 const read = (p: string) => readFileSync(join(__dirname, "../../", p), "utf8");
 const pageHeader = read("src/components/mobile/page-header.tsx");
@@ -67,11 +68,10 @@ describe("phone top bar: sticky on every PageHeader row (below regular)", () => 
 
 describe("--phone-header-h", () => {
   it("is defined on :root as 3.75rem (one bar height on every page)", () => {
-    // the :root block that also holds the safe-area vars (--sat) carries the header height
-    const blocks = [...css.matchAll(/:root\s*\{[\s\S]*?\n\}/g)].map((m) => m[0]);
-    const withSat = blocks.filter((b) => b.includes("--sat:"));
-    expect(withSat.length).toBe(1);
-    expect(withSat[0]).toMatch(/--phone-header-h:\s*3\.75rem;/);
+    // declared in a top-level :root block (token), resolved the same in light and dark
+    expect(rootValue(css, "--phone-header-h")).toBe("3.75rem");
+    expect(resolvedToken(css, "--phone-header-h", "light")).toBe("3.75rem");
+    expect(resolvedToken(css, "--phone-header-h", "dark")).toBe("3.75rem");
   });
 });
 
