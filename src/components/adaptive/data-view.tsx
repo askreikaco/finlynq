@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useViewMode, type ViewKey } from "./view-mode";
+import { useViewModeState, type ViewKey } from "./view-mode";
 
 /** A view's content, or a function that builds it. The function runs only when that view is shown. */
 export type DataViewContent = React.ReactNode | (() => React.ReactNode);
@@ -17,9 +17,12 @@ export interface DataViewProps {
  * Mounts ONLY the selected view (Cards or List) and wraps it in <div data-view="cards|list">.
  * The unselected view is not rendered at all, so it costs no DOM and no data work.
  * Pass a function to defer building a view until it is selected.
+ * Until the stored choice is loaded (`pending`) it renders an empty placeholder, so neither view
+ * mounts with the default and then swaps.
  */
 export function DataView({ viewKey, cards, list, className }: DataViewProps) {
-  const [mode] = useViewMode(viewKey);
+  const { mode, pending } = useViewModeState(viewKey);
+  if (pending) return <div data-view-pending="" aria-busy="true" className={className} />;
   const content = mode === "list" ? list : cards;
   return (
     <div data-view={mode} className={className}>

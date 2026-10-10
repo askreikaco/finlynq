@@ -73,33 +73,70 @@ export function dropLegacyUnscopedKeys(): void {
   }
 }
 
+/** How long a resolved session answer is reused before the next /api/auth/session request. */
+export const SESSION_CACHE_TTL_MS = 60_000;
+
+let sessionCache: { at: number; promise: Promise<string | null> } | null = null;
+let sessionResolved: { at: number; userId: string | null } | null = null;
+
+/** Drop the cached session answer (tests; call after an account change without a reload). */
+export function resetSessionUserIdCache(): void {
+  sessionCache = null;
+  sessionResolved = null;
+}
+
+/** The resolved user id if it is still fresh, else undefined (no request made). */
+function peekSessionUserId(): { userId: string | null } | undefined {
+  if (!sessionResolved || Date.now() - sessionResolved.at >= SESSION_CACHE_TTL_MS) return undefined;
+  return { userId: sessionResolved.userId };
+}
+
+/**
+ * Session user id, shared by every caller for SESSION_CACHE_TTL_MS: one /api/auth/session request
+ * per page, not one per hook instance. A network failure is not cached (the next caller asks again).
+ */
+export function loadSessionUserId(): Promise<string | null> {
+  const now = Date.now();
+  if (sessionCache && now - sessionCache.at < SESSION_CACHE_TTL_MS) return sessionCache.promise;
+  const promise = (async (): Promise<string | null> => {
+    try {
+      const res = await fetch("/api/auth/session", { cache: "no-store" });
+      let userId: string | null = null;
+      if (res.ok) {
+        const data = await res.json();
+        userId = typeof data?.userId === "string" && data.userId ? data.userId : null;
+      }
+      sessionResolved = { at: Date.now(), userId };
+      return userId;
+    } catch {
+      // Offline or failed request: not cached, so the next caller retries.
+      sessionCache = null;
+      return null;
+    }
+  })();
+  sessionCache = { at: now, promise };
+  return promise;
+}
+
 /**
  * Active user id from /api/auth/session. `ready` flips true once the answer is
  * in (userId stays null if signed out / request failed). Callers must not read
  * per-user storage until `ready && userId`. Also drops legacy bare keys.
+ * Shares one request across instances (see loadSessionUserId).
  */
 export function useSessionUserId(): { userId: string | null; ready: boolean } {
-  const [state, setState] = useState<{ userId: string | null; ready: boolean }>({
-    userId: null,
-    ready: false,
+  const [state, setState] = useState<{ userId: string | null; ready: boolean }>(() => {
+    const known = peekSessionUserId();
+    return known ? { userId: known.userId, ready: true } : { userId: null, ready: false };
   });
   useEffect(() => {
+    if (peekSessionUserId()) return;
     let cancelled = false;
-    (async () => {
-      let userId: string | null = null;
-      try {
-        const res = await fetch("/api/auth/session", { cache: "no-store" });
-        if (res.ok) {
-          const data = await res.json();
-          userId = typeof data?.userId === "string" && data.userId ? data.userId : null;
-        }
-      } catch {
-        // signed-out / offline: userId stays null
-      }
+    void loadSessionUserId().then((userId) => {
       if (cancelled) return;
       dropLegacyUnscopedKeys();
       setState({ userId, ready: true });
-    })();
+    });
     return () => {
       cancelled = true;
     };

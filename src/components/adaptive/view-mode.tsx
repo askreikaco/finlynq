@@ -9,8 +9,10 @@
  *   changes another. Without a userId nothing is read or written (in-memory only).
  * - SSR and the first client render use the default for "compact" (the context default);
  *   the stored choice is applied after mount, so hydration never mismatches.
+ * - DataView mounts neither view until the stored choice is loaded (`pending`), so the default
+ *   view never flashes and is never mounted and unmounted.
  * - All hooks share one in-memory store, so ViewModeToggle and DataView on the same page
- *   always agree.
+ *   always agree. The session user id is one shared request (user-storage.ts).
  */
 
 import * as React from "react";
@@ -57,13 +59,16 @@ export function isViewMode(value: unknown): value is ViewMode {
 }
 
 type Prefs = Record<string, ViewMode>;
+/** Store snapshot. loadedFor: the user these prefs belong to (undefined = nothing loaded yet). */
+type Store = { loadedFor: string | null | undefined; prefs: Prefs };
 
 const EMPTY_PREFS: Prefs = {};
+const INITIAL_STORE: Store = { loadedFor: undefined, prefs: EMPTY_PREFS };
 const listeners = new Set<() => void>();
-/** In-memory prefs for the user in `loadedFor`. Replaced (never mutated) on every change. */
-let prefs: Prefs = EMPTY_PREFS;
-/** userId whose stored prefs are loaded. undefined = not loaded yet. */
-let loadedFor: string | null | undefined;
+/** Replaced (never mutated) on every change, so useSyncExternalStore sees each update. */
+let store: Store = INITIAL_STORE;
+/** Choices made before the session resolved. Applied to the first user that loads (see flushQueued). */
+let queued: Array<{ key: string; mode: ViewMode }> = [];
 
 function subscribe(listener: () => void): () => void {
   listeners.add(listener);
@@ -72,16 +77,16 @@ function subscribe(listener: () => void): () => void {
   };
 }
 
-function getPrefs(): Prefs {
-  return prefs;
+function getStore(): Store {
+  return store;
 }
 
-function getServerPrefs(): Prefs {
-  return EMPTY_PREFS;
+function getServerStore(): Store {
+  return INITIAL_STORE;
 }
 
-function emit(next: Prefs): void {
-  prefs = next;
+function emit(next: Store): void {
+  store = next;
   for (const listener of listeners) listener();
 }
 
@@ -105,21 +110,72 @@ function readStoredPrefs(userId: string): Prefs {
   return parseViewModePrefs(readUserItem(VIEW_MODE_STORAGE_KEY, userId));
 }
 
+/** Make the store hold this user's prefs. Synchronous: the storage read needs no request. */
 function loadPrefsFor(userId: string | null): void {
-  if (loadedFor === userId) return;
-  loadedFor = userId;
-  emit(userId ? readStoredPrefs(userId) : EMPTY_PREFS);
+  if (store.loadedFor === userId) return;
+  emit({ loadedFor: userId, prefs: userId ? readStoredPrefs(userId) : EMPTY_PREFS });
+}
+
+/** Apply choices queued before the session resolved, once the user is known. */
+function flushQueued(userId: string | null): void {
+  if (queued.length === 0) return;
+  loadPrefsFor(userId);
+  const items = queued;
+  queued = [];
+  let next = userId ? readStoredPrefs(userId) : store.prefs;
+  for (const { key, mode } of items) next = { ...next, [key]: mode };
+  if (userId) writeUserItem(VIEW_MODE_STORAGE_KEY, userId, JSON.stringify(next));
+  emit({ loadedFor: userId, prefs: next });
 }
 
 function storeMode(userId: string | null, key: string, mode: ViewMode): void {
+  loadPrefsFor(userId);
   if (!userId) {
     // No user: in-memory only, nothing written to storage.
-    emit({ ...prefs, [key]: mode });
+    emit({ loadedFor: null, prefs: { ...store.prefs, [key]: mode } });
     return;
   }
   const next = { ...readStoredPrefs(userId), [key]: mode };
   writeUserItem(VIEW_MODE_STORAGE_KEY, userId, JSON.stringify(next));
-  emit(next);
+  emit({ loadedFor: userId, prefs: next });
+}
+
+/**
+ * Mode for one view at the current size class, plus `pending`: true until the session has resolved
+ * and this user's stored prefs are loaded. A signed-out (null) user is never pending once the
+ * session has resolved. DataView waits for `pending` before mounting either view.
+ * setMode persists per user; a call before the session resolves is queued and applied on load.
+ */
+export function useViewModeState(viewKey: ViewKey): { mode: ViewMode; setMode: (mode: ViewMode) => void; pending: boolean } {
+  const sizeClass = useAppSizeClass();
+  const { userId, ready } = useSessionUserId();
+  const snap = React.useSyncExternalStore(subscribe, getStore, getServerStore);
+
+  React.useEffect(() => {
+    if (!ready) return;
+    loadPrefsFor(userId);
+    flushQueued(userId);
+  }, [ready, userId]);
+
+  const loaded = ready && (userId === null || snap.loadedFor === userId);
+  // Only prefs that belong to this user; a store still holding another user's prefs shows none.
+  const current = ready && snap.loadedFor === userId ? snap.prefs : EMPTY_PREFS;
+  const key = viewModeKey(viewKey, sizeClass);
+  const mode = current[key] ?? defaultViewMode(viewKey, sizeClass);
+
+  const setMode = React.useCallback(
+    (next: ViewMode) => {
+      if (!isViewMode(next)) return;
+      if (!ready) {
+        queued = [...queued, { key, mode: next }];
+        return;
+      }
+      storeMode(userId, key, next);
+    },
+    [ready, userId, key],
+  );
+
+  return { mode, setMode, pending: !loaded };
 }
 
 /**
@@ -127,25 +183,7 @@ function storeMode(userId: string | null, key: string, mode: ViewMode): void {
  * setMode persists per user (see module header). Invalid values are ignored.
  */
 export function useViewMode(viewKey: ViewKey): [ViewMode, (mode: ViewMode) => void] {
-  const sizeClass = useAppSizeClass();
-  const { userId, ready } = useSessionUserId();
-  const stored = React.useSyncExternalStore(subscribe, getPrefs, getServerPrefs);
-
-  React.useEffect(() => {
-    if (ready) loadPrefsFor(userId);
-  }, [ready, userId]);
-
-  const key = viewModeKey(viewKey, sizeClass);
-  const mode = stored[key] ?? defaultViewMode(viewKey, sizeClass);
-
-  const setMode = React.useCallback(
-    (next: ViewMode) => {
-      if (!isViewMode(next)) return;
-      storeMode(userId, key, next);
-    },
-    [userId, key],
-  );
-
+  const { mode, setMode } = useViewModeState(viewKey);
   return [mode, setMode];
 }
 
