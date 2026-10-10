@@ -29,3 +29,11 @@ export class AppendOnlyViolation extends Error {
     this.name = "AppendOnlyViolation";
   }
 }
+
+/** Frame is structurally invalid (bad header field, trailing bytes, bad id). Checked before any decryption. */
+export class MalformedFrameError extends Error {
+  constructor(reason: string) {
+    super(`malformed frame: ${reason}`);
+    this.name = "MalformedFrameError";
+  }
+}

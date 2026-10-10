@@ -26,6 +26,7 @@ import {
   bigint,
   real,
   smallint,
+  customType,
 } from "drizzle-orm/pg-core";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
@@ -1148,6 +1149,23 @@ export const userSecurityEvents = pgTable("user_security_events", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
   index("idx_user_security_events_user_id_created").on(t.userId, t.createdAt.desc()),
+]);
+
+/** Local-first L1: encrypted op-log frames. Server never decrypts `frame`. See scripts/migrations/20261011_lf_op_frame.sql. */
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({ dataType: () => "bytea" });
+export const lfOpFrame = pgTable("lf_op_frame", {
+  id: bigint("id", { mode: "number" }).primaryKey().generatedByDefaultAsIdentity(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  deviceId: text("device_id").notNull(),
+  opId: text("op_id").notNull(),
+  seq: integer("seq").notNull(),
+  frame: bytea("frame").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  uniqueIndex("lf_op_frame_user_op_uniq").on(t.userId, t.opId),
+  index("lf_op_frame_user_id_idx").on(t.userId, t.id),
 ]);
 
 export const contributionRoom = pgTable("contribution_room", {

@@ -34,6 +34,7 @@ const DOCUMENTED_EXCLUSIONS: Record<string, string> = {
   user_passkeys: "passkey credentials (covered by users table updates)",
   user_recovery_codes: "backup codes (covered by users table updates)",
   user_security_events: "security audit log (write-only, not versioned)",
+  lf_op_frame: "local-first encrypted op-log (ciphertext, append-only); read only by lf routes, not ETag-versioned",
 
   // Support & audit tables (written alongside user data, not by ETag routes)
   feedback: "system feedback form; not user data",

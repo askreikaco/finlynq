@@ -1465,6 +1465,8 @@ async function deleteAllUserDataTx(tx: TxClient, userId: string) {
   // so a wipe left the keys behind. Belongs in the shared body like everything
   // else — see the header note about the two paths never drifting.
   await tx.delete(s.mcpIdempotencyKeys).where(eq(s.mcpIdempotencyKeys.userId, userId));
+  // Local-first L1 op-log frames (ciphertext). Users-FK cascade alone does not cover the wipe path.
+  await tx.delete(s.lfOpFrame).where(eq(s.lfOpFrame.userId, userId));
 
   // Family Wealth (P1). Explicit deletes: a wipe KEEPS the users row, so FK
   // cascades off users never fire. One statement for owner OR viewer rows;
