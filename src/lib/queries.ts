@@ -360,6 +360,13 @@ function txRowsQuery(conditions: SQL[], orderClauses: SQL[]) {
       //   - show "cascade delete will also remove sibling X" in the confirm
       kind: transactions.kind,
       tradeLinkId: transactions.tradeLinkId,
+      // Repeat + Installment: series membership for the entry screen's read-only pill
+      // and the Delete "this / this and following" choice.
+      installmentGroupId: transactions.installmentGroupId,
+      installmentSeq: transactions.installmentSeq,
+      subscriptionId: transactions.subscriptionId,
+      // Total payments of the row's installment plan (0 when not an installment); drives "Installment 2/6".
+      installmentCount: sql<number>`CASE WHEN ${transactions.installmentGroupId} IS NULL THEN 0 ELSE (SELECT CAST(COUNT(*) AS INTEGER) FROM transactions AS inst WHERE inst.installment_group_id = ${transactions.installmentGroupId} AND inst.user_id = ${transactions.userId}) END`,
     })
     .from(transactions)
     .leftJoin(accounts, eq(transactions.accountId, accounts.id))
