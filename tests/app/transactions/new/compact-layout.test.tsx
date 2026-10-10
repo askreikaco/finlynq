@@ -99,7 +99,9 @@ describe("compact new-transaction layout", () => {
     expect(toggle.getAttribute("aria-expanded")).toBe("true");
     expect(toggle.getAttribute("aria-controls")).toBe("txnew-more-panel");
     expect(screen.getByPlaceholderText("Comma-separated")).toBeTruthy();
-    expect(screen.getByRole("switch", { name: /Split this transaction/ })).toBeTruthy();
+    // Split is a count field now (was the "Split this transaction" switch; S-4).
+    expect(screen.getByTestId("split-count")).toBeTruthy();
+    expect(screen.queryByRole("switch", { name: /Split this transaction/ })).toBeNull();
     expect(screen.getByRole("switch", { name: /Business/ })).toBeTruthy();
   });
 
