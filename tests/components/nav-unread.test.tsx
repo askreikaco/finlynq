@@ -126,8 +126,8 @@ describe("out-of-order responses", () => {
 
     // The older request finally resolves with stale counts: must not overwrite.
     await act(async () => {
-      resolvers[ANN]([{ id: 1, read: false }, { id: 2, read: false }, { id: 3, read: false }]);
-      resolvers[FB]([{ unread: true }]);
+      resolvers[ANN]({ ok: true, json: async () => [{ id: 1, read: false }, { id: 2, read: false }, { id: 3, read: false }] });
+      resolvers[FB]({ ok: true, json: async () => [{ unread: true }] });
       await new Promise((r) => setTimeout(r, 0));
     });
     expect(result.current.announcementsUnread).toBe(0);
