@@ -51,12 +51,12 @@ export const PHONE_BAR_STICKY =
  * full-bleed (-mx-4 cancels the app shell's px-4), a three-column grid, min-h --phone-header-h (3.75rem).
  * Columns: [left slot | title | right capsule]. The side tracks are min 2.75rem (one 44pt target) and
  * size to their content, so the title column is exactly the space between the MEASURED slots: a title or
- * subtitle can never run under the capsule. Equal min sides keep the title centred when one side is empty.
+ * subtitle can never run under the capsule. The title block is left-aligned in its column, next to the back button.
  * items-center puts a 44px control centred in the 60px bar (no ring on the hairline).
  * No pt-[var(--sat)]: body already pads its in-flow top by --sat.
  */
 export const PHONE_BAR =
-  "glass-bar sticky top-[var(--sat,0px)] z-30 regular:top-0 regular:bg-background/90 regular:backdrop-blur-sm max-regular:-mx-4 max-regular:grid max-regular:min-h-[var(--phone-header-h)] max-regular:grid-cols-[minmax(2.75rem,auto)_minmax(0,1fr)_minmax(2.75rem,auto)] max-regular:items-center max-regular:px-4";
+  "glass-bar sticky top-[var(--sat,0px)] z-30 regular:top-0 regular:bg-background/90 regular:backdrop-blur-sm max-regular:-mx-4 max-regular:grid max-regular:min-h-[var(--phone-header-h)] max-regular:grid-cols-[auto_minmax(0,1fr)_auto] max-regular:items-center max-regular:px-4";
 
 /** Left slot placeholder (no back target): keeps the title column aligned. */
 export const PHONE_BAR_SIDE = "hidden max-regular:flex max-regular:size-11 max-regular:shrink-0 max-regular:col-start-1 max-regular:row-start-1";
@@ -64,7 +64,7 @@ export const PHONE_BAR_SIDE = "hidden max-regular:flex max-regular:size-11 max-r
 /** Title block: the middle grid column (between the measured slots). min-w-0 lets the title truncate.
  * pointer-events-none: taps reach the buttons. */
 export const PHONE_BAR_CENTER =
-  "max-regular:col-start-2 max-regular:row-start-1 max-regular:flex max-regular:min-w-0 max-regular:flex-col max-regular:items-center max-regular:justify-center max-regular:text-center max-regular:pointer-events-none";
+  "max-regular:col-start-2 max-regular:row-start-1 max-regular:flex max-regular:min-w-0 max-regular:flex-col max-regular:items-start max-regular:justify-center max-regular:text-left max-regular:pointer-events-none";
 
 /** Class added to the primary action: below regular it is an icon-only 44px neutral cell in the capsule (globals.css). */
 export const PHONE_PRIMARY_CLASS = "phone-icon-action";
@@ -81,12 +81,12 @@ export const HEADER_TITLE_CLASS = "text-3xl/9 font-extrabold tracking-tight";
 
 /** Title below regular: system scale (iOS headline is 17pt semibold; text-base is the nearest step), one line. */
 export const PHONE_BAR_TITLE =
-  "max-regular:max-w-full max-regular:text-base max-regular:font-semibold max-regular:tracking-normal max-regular:truncate max-regular:text-center";
+  "max-regular:max-w-full max-regular:text-base max-regular:font-semibold max-regular:tracking-normal max-regular:truncate max-regular:text-left";
 
 /** Subtitle, every size: muted, one line. Shown from regular up as a line under the title; below regular it
- * is a truncated caption (text-xs, the system caption step) centred under the title. */
+ * is a truncated caption (text-xs, the system caption step) left-aligned under the title. */
 export const HEADER_SUBTITLE_CLASS = "block text-sm text-muted-foreground mt-1";
-export const PHONE_BAR_SUBTITLE = "max-regular:mt-0 max-regular:w-full max-regular:truncate max-regular:text-center max-regular:text-xs";
+export const PHONE_BAR_SUBTITLE = "max-regular:mt-0 max-regular:w-full max-regular:truncate max-regular:text-left max-regular:text-xs";
 
 /**
  * Icon cells in the capsule: at most this many phone-visible non-primary actions (icon buttons, HeaderStatus).
@@ -205,7 +205,7 @@ function textOf(node: React.ReactNode): string {
 
 /**
  * Page header, one component for every size. The phone design is the base: below regular (640px) it is one
- * glass top bar (PHONE_BAR): [left 44px circle back | lead | spacer] [title centred, subtitle under it]
+ * glass top bar (PHONE_BAR): [left 44px circle back | lead | spacer] [title left-aligned, subtitle under it]
  * [ONE glass capsule holding the primary action and the ⋯ overflow menu]. From regular up the same bar is
  * opaque, the title and subtitle use the system style, the primary action shows its label, and secondary
  * actions (HEADER_SECONDARY) appear inline. `className` and `actionsClassName` are the page's own layout
@@ -302,7 +302,7 @@ export function PageHeader({
         </div>
       ) : (
         <>
-          <span aria-hidden data-slot="page-header-spacer" className={PHONE_BAR_SIDE} />
+          <span aria-hidden data-slot="page-header-spacer" className="hidden" />
           {titleBlock}
         </>
       )}

@@ -469,6 +469,10 @@ html {
     -webkit-backdrop-filter: blur(var(--glass-bar-blur)) saturate(var(--glass-bar-sat));
     backdrop-filter: blur(var(--glass-bar-blur)) saturate(var(--glass-bar-sat));
     border-bottom: 1px solid var(--glass-bar-border);
+    /* Own compositor layer: a sticky backdrop-filter bar over scrolling content repaints every frame
+       on iOS otherwise (laggy scroll). No visual change. */
+    transform: translateZ(0);
+    will-change: transform;
   }
   /* Opaque fallbacks, light and dark, after the base rules so they win at equal specificity. */
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {

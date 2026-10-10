@@ -70,7 +70,7 @@ describe("Settings detail pages (level 3): the page's PageHeader is the one top 
     expect(container.querySelector('[data-slot="settings-detail-bar"]')).toBeNull();
   });
 
-  it("puts a round glass back button to the hub and the centred page title in the page's glass bar", () => {
+  it("puts a round glass back button to the hub and the left-aligned page title in the page's glass bar", () => {
     mockPath = "/settings/investments";
     const { container } = render(
       <SettingsShell>
@@ -88,8 +88,8 @@ describe("Settings detail pages (level 3): the page's PageHeader is the one top 
 
     const title = screen.getByRole("heading", { level: 1, name: "Investments" });
     expect(bar?.contains(title)).toBe(true);
-    expect(cls(title)).toEqual(expect.arrayContaining(["text-3xl/9", "font-extrabold", "max-regular:text-base", "max-regular:text-center"]));
-    expect(cls(bar?.querySelector('[data-slot="page-header-title-block"]'))).toContain("max-regular:items-center");
+    expect(cls(title)).toEqual(expect.arrayContaining(["text-3xl/9", "font-extrabold", "max-regular:text-base", "max-regular:text-left"]));
+    expect(cls(bar?.querySelector('[data-slot="page-header-title-block"]'))).toContain("max-regular:items-start");
   });
 
   it("the page header is never hidden at any size (no viewport-only display classes)", () => {
@@ -136,7 +136,7 @@ describe("Settings detail pages (level 3): the page's PageHeader is the one top 
 });
 
 describe("PageHeader with backHref: phone glass header row", () => {
-  it("renders a round glass back button and a centred title in the glass bar, with the h1 still present", () => {
+  it("renders a round glass back button and a left-aligned title in the glass bar, with the h1 still present", () => {
     const { container } = render(<PageHeader title="Currency Review" backHref="/transactions" backLabel="Back to Transactions" />);
 
     const back = screen.getByRole("link", { name: "Back to Transactions" });
