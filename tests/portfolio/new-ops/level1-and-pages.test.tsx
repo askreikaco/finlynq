@@ -38,14 +38,8 @@ vi.mock("@/lib/hooks/usePortfolioFormData", () => ({
 }));
 
 import PortfolioNewPage from "@/app/(app)/portfolio/new/page";
-import BuyPage from "@/app/(app)/portfolio/new/buy/page";
-import SellPage from "@/app/(app)/portfolio/new/sell/page";
-import SwapPage from "@/app/(app)/portfolio/new/swap/page";
-import TransferPage from "@/app/(app)/portfolio/new/in-kind-transfer/page";
-import IncomePage from "@/app/(app)/portfolio/new/income-expense/page";
-import FxPage from "@/app/(app)/portfolio/new/fx-conversion/page";
-import DepositPage from "@/app/(app)/portfolio/new/deposit/page";
-import WithdrawalPage from "@/app/(app)/portfolio/new/withdrawal/page";
+import * as OpRouteModule from "@/app/(app)/portfolio/new/[op]/page";
+import { OpRoute } from "@/components/portfolio/forms/op-route";
 
 beforeEach(() => {
   push.mockClear();
@@ -112,19 +106,33 @@ describe("level 1: /portfolio/new operation list", () => {
 });
 
 describe("level 2: each operation page renders its form", () => {
-  const cases: [string, () => React.ReactElement, string][] = [
-    ["buy", () => <BuyPage />, "Buy"],
-    ["sell", () => <SellPage />, "Sell"],
-    ["swap", () => <SwapPage />, "Swap"],
-    ["in-kind-transfer", () => <TransferPage />, "In-kind transfer"],
-    ["income-expense", () => <IncomePage />, "Income / expense"],
-    ["fx-conversion", () => <FxPage />, "FX conversion"],
-    ["deposit", () => <DepositPage />, "Brokerage deposit"],
-    ["withdrawal", () => <WithdrawalPage />, "Brokerage withdrawal"],
+  const cases: [string, string][] = [
+    ["buy", "Buy"],
+    ["sell", "Sell"],
+    ["swap", "Swap"],
+    ["in-kind-transfer", "In-kind transfer"],
+    ["income-expense", "Income / expense"],
+    ["fx-conversion", "FX conversion"],
+    ["deposit", "Brokerage deposit"],
+    ["withdrawal", "Brokerage withdrawal"],
   ];
 
-  it.each(cases)("%s page has a glass bar with a Save button and no card chrome", (_slug, el, title) => {
-    const { container } = render(el());
+  it("[op] route has one static param per operation slug and rejects other slugs", () => {
+    expect(OpRouteModule.dynamicParams).toBe(false);
+    expect(OpRouteModule.generateStaticParams().map((p) => p.op)).toEqual([
+      "buy",
+      "sell",
+      "swap",
+      "in-kind-transfer",
+      "deposit",
+      "withdrawal",
+      "income-expense",
+      "fx-conversion",
+    ]);
+  });
+
+  it.each(cases)("%s page has a glass bar with a Save button and no card chrome", (slug, title) => {
+    const { container } = render(<OpRoute slug={slug} />);
     expect(container.querySelector("[data-slot='page-header']")).not.toBeNull();
     expect(container.querySelector("[data-slot='back-button']")?.getAttribute("href")).toBe("/portfolio/new");
     expect(container.querySelector("[data-slot='card']")).toBeNull();
@@ -134,7 +142,7 @@ describe("level 2: each operation page renders its form", () => {
 
   it("Sell validates before any request when the holding is missing", async () => {
     search = "account=1";
-    render(<SellPage />);
+    render(<OpRoute slug="sell" />);
     // Account 1 is seeded from ?account=; pick nothing else: the form then reports the
     // missing holding instead of posting, which proves validation runs before any request.
     fireEvent.click(screen.getByRole("button", { name: "Record" }));
@@ -145,13 +153,13 @@ describe("level 2: each operation page renders its form", () => {
 });
 
 describe("static: operation page sources", () => {
-  const dir = path.join(process.cwd(), "src/app/(app)/portfolio/new");
-  const slugs = ["buy", "sell", "swap", "in-kind-transfer", "income-expense", "fx-conversion", "deposit", "withdrawal"];
-
-  it.each(slugs)("%s/page.tsx wraps its form in Suspense and has no inline size classes", (slug) => {
-    const src = fs.readFileSync(path.join(dir, slug, "page.tsx"), "utf8");
-    expect(src).toContain("<Suspense");
-    expect(src).not.toMatch(/text-\[\d+px\]/);
+  it("[op]/page.tsx renders OpRoute, and OpRoute wraps the form in Suspense with no inline size classes", () => {
+    const page = fs.readFileSync(path.join(process.cwd(), "src/app/(app)/portfolio/new/[op]/page.tsx"), "utf8");
+    expect(page).toContain("<OpRoute");
+    expect(page).not.toMatch(/text-\[\d+px\]/);
+    const route = fs.readFileSync(path.join(process.cwd(), "src/components/portfolio/forms/op-route.tsx"), "utf8");
+    expect(route).toContain("<Suspense");
+    expect(route).not.toMatch(/text-\[\d+px\]/);
   });
 
   it("no operation form imports the Card primitives or keeps a Cancel button", () => {

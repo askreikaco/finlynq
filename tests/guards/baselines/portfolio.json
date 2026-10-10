@@ -2,17 +2,10 @@
   "family": "portfolio",
   "unmigrated": [
     "src/app/(app)/portfolio/dividends/page.tsx",
-    "src/app/(app)/portfolio/new/buy/page.tsx",
-    "src/app/(app)/portfolio/new/deposit/page.tsx",
-    "src/app/(app)/portfolio/new/fx-conversion/page.tsx",
-    "src/app/(app)/portfolio/new/in-kind-transfer/page.tsx",
-    "src/app/(app)/portfolio/new/income-expense/page.tsx",
     "src/app/(app)/portfolio/new/page.tsx",
-    "src/app/(app)/portfolio/new/sell/page.tsx",
-    "src/app/(app)/portfolio/new/swap/page.tsx",
-    "src/app/(app)/portfolio/new/withdrawal/page.tsx",
     "src/app/(app)/portfolio/page.tsx",
-    "src/app/(app)/portfolio/realized-gains/page.tsx"
+    "src/app/(app)/portfolio/realized-gains/page.tsx",
+    "src/app/(app)/portfolio/new/[op]/page.tsx"
   ],
   "chrome": {
     "src/app/(app)/portfolio/_components/portfolio-ui.tsx": {
@@ -23,32 +16,8 @@
       "title-prop": 2,
       "subtitle-prop": 1
     },
-    "src/app/(app)/portfolio/new/buy/page.tsx": {
-      "suspense-null": 1
-    },
-    "src/app/(app)/portfolio/new/deposit/page.tsx": {
-      "suspense-null": 1
-    },
-    "src/app/(app)/portfolio/new/fx-conversion/page.tsx": {
-      "suspense-null": 1
-    },
-    "src/app/(app)/portfolio/new/in-kind-transfer/page.tsx": {
-      "suspense-null": 1
-    },
-    "src/app/(app)/portfolio/new/income-expense/page.tsx": {
-      "suspense-null": 1
-    },
     "src/app/(app)/portfolio/new/page.tsx": {
       "rounded-2xl": 1,
-      "suspense-null": 1
-    },
-    "src/app/(app)/portfolio/new/sell/page.tsx": {
-      "suspense-null": 1
-    },
-    "src/app/(app)/portfolio/new/swap/page.tsx": {
-      "suspense-null": 1
-    },
-    "src/app/(app)/portfolio/new/withdrawal/page.tsx": {
       "suspense-null": 1
     },
     "src/app/(app)/portfolio/page.tsx": {
