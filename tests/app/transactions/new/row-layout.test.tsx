@@ -81,7 +81,7 @@ afterEach(() => {
 
 const postsTo = (url: string) => calls.filter((c) => c.url === url && c.init?.method === "POST");
 const rowIds = () =>
-  Array.from(screen.getByTestId("txnew-list").children).map((el) => el.getAttribute("data-testid"));
+  Array.from(screen.getByTestId("txnew-list").querySelectorAll("[data-testid^='txnew-row-']")).map((el) => el.getAttribute("data-testid"));
 
 describe("new transaction row layout", () => {
   it("rows are in order: Date, Amount, Category, Account, Payee, Note", () => {

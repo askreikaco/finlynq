@@ -1,8 +1,9 @@
 "use client";
 
 import React from "react";
-import { Plus, Trash2, CheckCircle2, AlertCircle } from "lucide-react";
+import { Plus, Trash2, CheckCircle2, AlertCircle, Split } from "lucide-react";
 import { AmountInput } from "@/components/amount-input";
+import { Switch } from "@/components/ui/switch";
 import { formatCurrency, currencyDecimals } from "@/lib/currency";
 import { type Category } from "./category-selector";
 
@@ -65,16 +66,20 @@ export function SplitSection({
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <label className="text-sm font-medium text-foreground flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={enabled}
-            onChange={(e) => onToggle(e.target.checked)}
-            className="w-4 h-4 rounded bg-card border-border text-primary focus:ring-ring accent-primary cursor-pointer"
-          />
+      <div className="flex min-h-row items-center justify-between gap-3">
+        <label
+          htmlFor="txnew-split-toggle"
+          className="flex min-w-0 flex-1 items-center gap-2 text-sm font-medium text-foreground cursor-pointer"
+        >
+          <Split aria-hidden="true" className="size-[18px] shrink-0 text-muted-foreground" />
           <span>Split this transaction</span>
         </label>
+        <Switch
+          id="txnew-split-toggle"
+          checked={enabled}
+          onCheckedChange={(checked) => onToggle(checked)}
+          className="shrink-0"
+        />
         {enabled && (
           <div className="flex items-center text-xs">
             {isBalanced ? (

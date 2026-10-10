@@ -88,13 +88,9 @@ const bodyOf = (c: { init?: RequestInit }) => JSON.parse(String(c.init?.body));
 
 // The option list fills once /api/settings/active-currencies resolves, so wait for it.
 async function pickCurrency(code: string) {
-  // Currency is the chip in the amount row.
+  // Currency is the chip in the amount row; it opens the currency bottom sheet.
   fireEvent.click(screen.getByLabelText("Currency"));
-  const opt = await screen.findByRole("option", { name: code });
-  fireEvent.pointerDown(opt, { button: 0, ctrlKey: false, pointerType: "mouse" });
-  fireEvent.mouseDown(opt, { button: 0 });
-  fireEvent.pointerUp(opt, { button: 0, pointerType: "mouse" });
-  fireEvent.mouseUp(opt, { button: 0 });
+  const opt = await screen.findByRole("button", { name: new RegExp(`^${code}`) });
   fireEvent.click(opt);
 }
 
@@ -129,7 +125,7 @@ describe("new transaction page parity with the dialog", () => {
   it("rule checkbox adds a payee rule after the transaction when checked", async () => {
     seedPrefill();
     render(<Page />);
-    fireEvent.click(screen.getByLabelText(/Also create a rule for next time/));
+    fireEvent.click(screen.getByRole("switch", { name: /Also create a rule for next time/ }));
     await saveExpense();
     await waitFor(() => expect(postsTo("/api/rules").length).toBe(1));
     const rule = bodyOf(postsTo("/api/rules")[0]);
@@ -143,17 +139,17 @@ describe("new transaction page parity with the dialog", () => {
   it("no rule request when the checkbox is left unticked", async () => {
     seedPrefill();
     render(<Page />);
-    expect(screen.getByLabelText(/Also create a rule for next time/)).toBeTruthy();
+    expect(screen.getByRole("switch", { name: /Also create a rule for next time/ })).toBeTruthy();
     await saveExpense();
     expect(postsTo("/api/rules").length).toBe(0);
   });
 
-  it("?kind=transfer opens the Transfer tab (no currency select, destination field shown)", () => {
+  it("?kind=transfer opens the Transfer tab (currency chip shown but disabled, destination field shown)", () => {
     window.history.replaceState({}, "", "/transactions/new?kind=transfer");
     render(<Page />);
     expect(screen.getByRole("heading", { name: "New Transfer" })).toBeTruthy();
-    expect(screen.getByText("To Account")).toBeTruthy();
-    expect(screen.queryByLabelText("Currency")).toBeNull();
+    expect(screen.getByText("To")).toBeTruthy();
+    expect((screen.getByLabelText("Currency") as HTMLButtonElement).disabled).toBe(true);
   });
 
   it("?kind accepts only transfer|expense|income; anything else keeps the Expense default", () => {
