@@ -25,6 +25,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Download, SlidersHorizontal, Coins } from "lucide-react";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import {
+  HEADER_CELL,
   HEADER_DESKTOP_ONLY,
   Amount,
   CompactOnly,
@@ -273,16 +274,15 @@ export default function DividendsPage() {
       header={{
         actions: (
           <>
-            <CompactOnly as="span">
-              <Button
-                variant="outline"
-                size="icon"
-                aria-label="Filters"
-                onClick={() => setFiltersOpen(true)}
-              >
-                <SlidersHorizontal className="size-4" />
-              </Button>
-            </CompactOnly>
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label="Filters"
+              className={`${HEADER_CELL} regular:hidden`}
+              onClick={() => setFiltersOpen(true)}
+            >
+              <SlidersHorizontal className="size-4" />
+            </Button>
             <a
               href={csvHref}
               className={`${buttonVariants({ variant: "outline", size: "sm" })} ${HEADER_DESKTOP_ONLY}`}

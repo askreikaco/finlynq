@@ -46,7 +46,7 @@ import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
 import { useFxPreview } from "@/lib/hooks/use-fx-preview";
 import { FxPreviewLine } from "@/components/transactions/fx-preview-line";
 import { buildPayeeCategoryRule } from "@/lib/rules/build-payee-category-rule";
-import { PageHeader } from "@/components/mobile";
+import { PageHeader, HEADER_CELL } from "@/components/mobile";
 
 type TxType = "Expense" | "Income" | "Transfer";
 // "save" books and locks the form; "continue" books and clears the entry fields for the next one.
@@ -703,7 +703,7 @@ export default function MobileTransactionPage() {
         backLabel="Back to transactions"
         actions={
           saving ? (
-            <span role="status" aria-label="Saving" className="flex size-11 items-center justify-center">
+            <span role="status" aria-label="Saving" className={`${HEADER_CELL} flex size-11 items-center justify-center`}>
               <Loader2 className="h-4 w-4 animate-spin text-primary" aria-hidden="true" />
             </span>
           ) : undefined

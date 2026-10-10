@@ -26,6 +26,7 @@ import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { exportCsv, type CsvColumn } from "@/lib/csv-export";
 import {
+  HEADER_CELL,
   HEADER_DESKTOP_ONLY,
   Amount,
   CompactOnly,
@@ -459,16 +460,15 @@ export default function RealizedGainsPage() {
       header={{
         actions: (
           <>
-            <CompactOnly as="span">
-              <Button
-                variant="outline"
-                size="icon"
-                aria-label="Filters"
-                onClick={() => setFiltersOpen(true)}
-              >
-                <SlidersHorizontal className="size-4" />
-              </Button>
-            </CompactOnly>
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label="Filters"
+              className={`${HEADER_CELL} regular:hidden`}
+              onClick={() => setFiltersOpen(true)}
+            >
+              <SlidersHorizontal className="size-4" />
+            </Button>
             <Button
               variant="outline"
               size="sm"

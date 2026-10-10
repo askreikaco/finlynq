@@ -165,9 +165,9 @@ describe("PageHeader with backHref: phone glass header row", () => {
         }
       />
     );
-    // a lone primary stands alone beside the capsule slot: no glass capsule around it
-    expect(container.querySelector('[data-slot="header-capsule"]')).toBeNull();
-    expect(container.querySelector('[data-slot="header-primary"]')).not.toBeNull();
+    // a lone primary is the single neutral cell of the capsule (no accent circle beside it)
+    expect(container.querySelector('[data-slot="header-capsule"]')?.querySelector('[aria-label="Add"]')).not.toBeNull();
+    expect(container.querySelector('[data-slot="header-primary"]')).toBeNull();
     expect(screen.getByRole("button", { name: "Add" })).toBeTruthy();
   });
 

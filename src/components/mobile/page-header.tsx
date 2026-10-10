@@ -66,8 +66,14 @@ export const PHONE_BAR_SIDE = "hidden max-regular:flex max-regular:size-11 max-r
 export const PHONE_BAR_CENTER =
   "max-regular:col-start-2 max-regular:row-start-1 max-regular:flex max-regular:min-w-0 max-regular:flex-col max-regular:items-center max-regular:justify-center max-regular:text-center max-regular:pointer-events-none";
 
-/** Class added to the primary action below regular: an icon-only 44px filled circle (see globals.css). */
+/** Class added to the primary action: below regular it is an icon-only 44px neutral cell in the capsule (globals.css). */
 export const PHONE_PRIMARY_CLASS = "phone-icon-action";
+
+/**
+ * Marks a non-primary header control (avatar link, status toggle, icon link) so it is never chosen as the primary
+ * action. It stays a plain neutral capsule cell below regular (no accent fill).
+ */
+export const HEADER_CELL = "header-cell";
 
 /** Title at regular and up: one system style at every size (owner D4, 28/800). text-3xl is the nearest
  * system step to 28px, so no arbitrary size. */
@@ -91,24 +97,22 @@ export const PHONE_BAR_SUBTITLE = "max-regular:mt-0 max-regular:w-full max-regul
 export const HEADER_MAX_PHONE_ACTIONS = 3;
 
 /**
- * Right group below regular (grid column 3): the capsule (data-slot="header-capsule") and the primary
- * (data-slot="header-primary") as two siblings, 10px apart. Width = capsule + gap + primary, so the title column
- * (minmax(2.75rem,auto) 1fr minmax(2.75rem,auto)) keeps reserving the measured space. From regular the group is
- * the plain actions row (actionsClassName).
+ * Right group below regular (grid column 3): ONE capsule (data-slot="header-capsule") holding every phone action
+ * as a neutral 44px cell: icon cells, then the primary (last icon cell), then the overflow trigger. No accent-filled
+ * control sits outside it. From regular the group is the plain actions row (actionsClassName).
  */
 export const PHONE_BAR_RIGHT =
-  "max-regular:col-start-3 max-regular:row-start-1 max-regular:flex max-regular:min-w-0 max-regular:shrink-0 max-regular:flex-nowrap max-regular:items-center max-regular:justify-self-end max-regular:gap-2.5";
+  "max-regular:col-start-3 max-regular:row-start-1 max-regular:flex max-regular:min-w-0 max-regular:shrink-0 max-regular:flex-nowrap max-regular:items-center max-regular:justify-self-end";
 
 /**
- * The capsule: ONE glass pill (44px high, no padding, no gaps) holding only icon cells and the overflow trigger.
- * Each cell is a 44px slot; a single cell makes a 44px circle. Max 4 cells = 11rem; no horizontal scroll.
+ * The capsule: ONE glass pill (44px high, no padding, no gaps) holding only icon cells, the primary (as the last
+ * icon cell) and the overflow trigger. Each cell is a 44px slot; a single cell makes a 44px circle. Max 4 cells
+ * = 11rem; no horizontal scroll.
  * Icon buttons and text buttons never share a capsule (HIG), so text is never a cell.
  */
 export const PHONE_CAPSULE =
   "glass-capsule flex items-center gap-2 max-regular:h-11 max-regular:max-w-[11rem] max-regular:min-w-0 max-regular:shrink-0 max-regular:flex-nowrap max-regular:gap-0 max-regular:rounded-full max-regular:p-0";
 
-/** The primary action's own slot: a separate control to the right of the capsule (never inside it). */
-export const PHONE_PRIMARY_SLOT = "flex shrink-0 items-center";
 
 /**
  * A status indicator in the header (e.g. a saving spinner). It is one 44px capsule slot like an icon button, has
@@ -145,21 +149,22 @@ function isPhoneInvisible(c: React.ReactElement): boolean {
   return c.type === Dialog || c.type === DropdownMenu || c.type === FromMd;
 }
 
-/** The primary action is the last child that is not a secondary action (HEADER_SECONDARY). Returns the children
- * with that one gaining an aria-label (its visible text, if none was set) and the icon-only class below regular. */
+/** The primary action is the last child that is not a secondary action (HEADER_SECONDARY) and not a header cell
+ * (HEADER_CELL, an opt-out marker). Returns the children with that one gaining an aria-label (its visible text, if
+ * none was set) and the icon-only class (PHONE_PRIMARY_CLASS). */
 export function withPhonePrimary(actions: React.ReactNode): React.ReactNode[] {
   const items = flattenActions(actions);
   let idx = -1;
   items.forEach((c, i) => {
     if (!React.isValidElement(c) || isPhoneInvisible(c) || c.type === HeaderStatus) return;
     const cn0 = String((c.props as { className?: string }).className ?? "");
-    if (!cn0.includes(HEADER_SECONDARY)) idx = i;
+    if (!cn0.includes(HEADER_SECONDARY) && !cn0.includes(HEADER_CELL)) idx = i;
   });
   if (idx < 0) return items;
   return items.map((c, i) => {
     if (i !== idx || !React.isValidElement(c)) return c;
     const p = c.props as { className?: string; "aria-label"?: string; children?: React.ReactNode };
-    const label = p["aria-label"] ?? textOf(p.children);
+    const label = (p["aria-label"] ?? textOf(p.children)).trim();
     return React.cloneElement(c as React.ReactElement<{ className?: string; "aria-label"?: string }>, {
       "aria-label": label || undefined,
       className: cn(p.className, PHONE_PRIMARY_CLASS),
@@ -173,8 +178,8 @@ function isSecondaryNode(c: React.ReactNode): boolean {
 }
 
 /**
- * Splits the actions into the capsule cells (everything except the primary, in order) and the primary, which
- * PageHeader renders as its own control beside the capsule.
+ * Splits the actions into the capsule cells (everything except the primary, in order) and the primary. PageHeader
+ * renders the primary inside the capsule, after the cells and before the overflow trigger.
  */
 export function splitPhoneActions(actions: React.ReactNode): { cells: React.ReactNode[]; primary: React.ReactNode | null } {
   const cells: React.ReactNode[] = [];
@@ -282,7 +287,7 @@ export function PageHeader({
   );
   const hasLeft = !!effectiveBackHref || !!onBack || !!lead;
   const { cells, primary } = splitPhoneActions(actions);
-  const hasCells = (overflow?.length ?? 0) > 0 || cells.some((c) => !isSecondaryNode(c));
+  const hasCells = (overflow?.length ?? 0) > 0 || !!primary || cells.some((c) => !isSecondaryNode(c));
   return (
     <div data-slot="page-header" className={cn(className, PHONE_BAR)}>
       {hasLeft ? (
@@ -305,14 +310,14 @@ export function PageHeader({
         <div data-slot="page-header-actions" className={cn(actionsClassName, PHONE_BAR_RIGHT)}>
           {hasCells ? (
             <div data-slot="header-capsule" className={PHONE_CAPSULE}>
-              {overflow && overflow.length > 0 ? <OverflowMenu items={overflow} /> : null}
               {cells}
+              {primary}
+              {overflow && overflow.length > 0 ? <OverflowMenu items={overflow} /> : null}
             </div>
           ) : (
             // Only secondary actions (hidden below regular): no capsule, so no empty glass pill on phones.
             cells
           )}
-          {primary ? <div data-slot="header-primary" className={PHONE_PRIMARY_SLOT}>{primary}</div> : null}
         </div>
       ) : null}
     </div>
