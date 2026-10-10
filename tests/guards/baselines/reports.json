@@ -4,9 +4,7 @@
     "src/app/(app)/dashboard/page.tsx",
     "src/app/(app)/fire/page.tsx",
     "src/app/(app)/reports/page.tsx",
-    "src/app/(app)/scenarios/page.tsx",
-    "src/app/(app)/tax/page.tsx",
-    "src/app/(app)/transactions/audit/page.tsx"
+    "src/app/(app)/scenarios/page.tsx"
   ],
   "chrome": {
     "src/app/(app)/dashboard/_components/chart-tooltip.tsx": {
@@ -29,13 +27,6 @@
     "src/app/(app)/scenarios/page.tsx": {
       "title-prop": 2,
       "subtitle-prop": 1
-    },
-    "src/app/(app)/tax/page.tsx": {
-      "title-prop": 2,
-      "subtitle-prop": 1
-    },
-    "src/app/(app)/transactions/audit/page.tsx": {
-      "title-prop": 1
     }
   }
 }
