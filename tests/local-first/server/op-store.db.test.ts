@@ -54,7 +54,7 @@ beforeAll(async () => {
   setDialect("postgres");
   keys = await deriveKeysFromPassphrase("lf1 op-store db", SALT, LOG_ID, TINY);
   for (const id of [U1, U2]) {
-    await db.insert(schema.users).values({ id, passwordHash: "x", createdAt: new Date(), updatedAt: new Date() }).onConflictDoNothing();
+    await db.insert(schema.users).values({ id, passwordHash: "x", createdAt: new Date(), updatedAt: new Date() } as unknown as typeof schema.users.$inferInsert).onConflictDoNothing();
   }
 });
 
