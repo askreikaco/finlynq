@@ -24,6 +24,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -276,9 +277,9 @@ export function RuleEditorForm({
             <Input type="number" value={priority} onChange={(e) => setPriority(parseInt(e.target.value) || 0)} />
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <input type="checkbox" id="rule-active" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
-          <Label htmlFor="rule-active">Active</Label>
+        <div className="flex min-h-row items-center justify-between gap-3">
+          <Label htmlFor="rule-active" className="flex-1 cursor-pointer">Active</Label>
+          <Switch id="rule-active" checked={isActive} onCheckedChange={(v) => setIsActive(v)} className="shrink-0" />
         </div>
 
         {/* Conditions */}
@@ -792,14 +793,13 @@ function InvestmentOpFields({
       {usesPosition && (
         <div className="flex flex-wrap items-center gap-2">
           <Label className="w-28 text-xs text-muted-foreground">Holding</Label>
-          <label className="flex items-center gap-1 text-xs">
-            <input
-              type="checkbox"
+          <label className="flex items-center gap-2 text-xs">
+            <Switch
               checked={action.useRowTicker ?? false}
-              onChange={(e) =>
+              onCheckedChange={(v) =>
                 onChange({
-                  useRowTicker: e.target.checked,
-                  ...(e.target.checked ? { holdingId: undefined } : {}),
+                  useRowTicker: v,
+                  ...(v ? { holdingId: undefined } : {}),
                 } as Partial<Action>)
               }
             />

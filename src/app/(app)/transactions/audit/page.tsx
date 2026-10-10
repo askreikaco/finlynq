@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { formatCurrency } from "@/lib/currency";
 import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
 import { AlertTriangle, RefreshCw, Check, X } from "lucide-react";
@@ -125,10 +126,9 @@ export default function CurrencyAuditPage() {
         ],
         actions: (
           <label className={`${HEADER_DESKTOP_ONLY} flex items-center gap-2 text-xs text-muted-foreground`}>
-            <input
-              type="checkbox"
+            <Switch
               checked={includeResolved}
-              onChange={(e) => setIncludeResolved(e.target.checked)}
+              onCheckedChange={(v) => setIncludeResolved(v)}
             />
             Show resolved
           </label>
