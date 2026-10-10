@@ -662,7 +662,7 @@ describe("SplitRows entry variant (New Expense)", () => {
       <SplitRows
         count="2"
         onCountChange={() => {}}
-        rows={[{ id: "a", categoryId: "", amount: "30", note: "", accountId: 5 }, row("b")]}
+        rows={[{ id: "a", categoryId: "", amount: "30", note: "", accountId: "5" }, row("b")]}
         onRowsChange={() => {}}
         parentAmount={100}
         currency="USD"
