@@ -9,6 +9,7 @@ import { AccountAlert } from "@/components/account-switcher";
 import { initialsOf, useAccountActions, MAX_ACCOUNTS, CAP_MESSAGE, type Account } from "@/lib/client/use-account-actions";
 import { cn } from "@/lib/utils";
 import { usePageFab } from "@/components/mobile/page-fab";
+import { PageHeader } from "@/components/mobile";
 
 /** /manage-accounts: per-device show/hide, remove, add, sign out of all. */
 export function ManageAccounts() {
@@ -21,7 +22,7 @@ export function ManageAccounts() {
 
   return (
     <div className="mx-auto max-w-xl space-y-4" data-testid="manage-accounts">
-      <h1 className="text-3xl font-bold tracking-tight">Manage accounts</h1>
+      <PageHeader title="Manage accounts" />
       <p className="text-sm text-muted-foreground">
         Accounts signed in on this device. Hidden accounts stay signed in but are left out of the account menu.
       </p>

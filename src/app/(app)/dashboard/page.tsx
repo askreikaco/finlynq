@@ -560,10 +560,10 @@ export default function DashboardPage() {
       <motion.div variants={itemVariants} className="contents">
         <PageHeader
           className="flex flex-wrap items-center justify-between gap-3"
-          title={greeting}
+          title="Dashboard"
           titleClassName="text-2xl font-bold tracking-tight"
           subtitleClassName="text-sm text-muted-foreground mt-0.5"
-          subtitle="Here's your financial overview"
+          subtitle={`${greeting}. Here's your financial overview`}
           overflow={[{ label: "Customize", icon: SlidersHorizontal, onSelect: () => setCustomizeOpen(true) }]}
           actions={
         <>

@@ -12,6 +12,7 @@ import userEvent from "@testing-library/user-event";
 const hardReload = vi.fn();
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }),
+  usePathname: () => "/manage-accounts",
 }));
 vi.mock("@/lib/client/hard-reload", async (orig) => {
   const real = await orig<typeof import("@/lib/client/hard-reload")>();

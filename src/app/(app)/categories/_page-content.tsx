@@ -27,6 +27,7 @@ import { shiftMonth } from "@/lib/reports/category-detail";
 import type { CategoryOverview } from "@/lib/reports/category-overview";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { CategoryManagement } from "./_components/category-management";
+import { PageHeader } from "@/components/mobile";
 
 type OverviewResponse = CategoryOverview & { type: "E" | "I"; displayCurrency: string };
 
@@ -64,12 +65,10 @@ export default function CategoriesPageContent({ isMerged }: CategoriesPageProps)
   // Merged UI: show tabs
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Categories</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          View spending patterns and manage your categories.
-        </p>
-      </div>
+      <PageHeader
+        title="Categories"
+        subtitle="View spending patterns and manage your categories."
+      />
 
       <Suspense fallback={<PageSkeleton variant="list" rows={6} />}>
         <MergedHubTabs />
@@ -169,13 +168,11 @@ function CategoriesOverview({ embedded = false }: CategoriesOverviewProps) {
   return (
     <div className="space-y-6">
       {!embedded && (
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold">Spending by category</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Where your money goes, and how each category compares with a usual month.
-            </p>
-          </div>
+        <>
+          <PageHeader
+            title="Spending by category"
+            subtitle="Where your money goes, and how each category compares with a usual month."
+          />
           <div className="flex flex-wrap items-center gap-2">
             <Tabs value={type} onValueChange={(v) => go({ type: v === "I" ? "I" : "E" })}>
               <TabsList>
@@ -199,7 +196,7 @@ function CategoriesOverview({ embedded = false }: CategoriesOverviewProps) {
               </Button>
             </div>
           </div>
-        </div>
+        </>
       )}
 
       {embedded && (
