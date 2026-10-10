@@ -7,7 +7,7 @@ import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import {
   NumpadDock,
   type NumpadDockProps,
-} from "@/app/(app)/transactions/new/_components/numpad-dock";
+} from "@/components/transactions/entry/numpad-dock";
 
 const tap = (name: string) => fireEvent.click(screen.getByRole("button", { name }));
 

@@ -31,7 +31,7 @@ const css = read("src/app/globals.css");
 const nav = read("src/components/nav.tsx");
 const navBar = nav.slice(nav.indexOf("export const AppTabs"));
 const moreMenu = read("src/components/more-menu.tsx");
-const newTx = read("src/app/(app)/transactions/new/page.tsx");
+const newTx = read("src/components/transactions/entry/transaction-entry-screen.tsx");
 const pageHeaderSrc = read("src/components/mobile/page-header.tsx");
 const cls = (el: Element | null | undefined) => (el?.getAttribute("class") ?? "").split(/\s+/);
 

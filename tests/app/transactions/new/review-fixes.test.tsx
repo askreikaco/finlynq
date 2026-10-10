@@ -245,3 +245,18 @@ describe("new transaction page review fixes", () => {
     expect(predicate("/api/accounts")).toBe(false);
   });
 });
+
+describe("header Save (the round yellow check)", () => {
+  it("is in the header, books once, and shares the bottom Save's lock", async () => {
+    seedPrefill();
+    render(<Page />);
+    const headerSave = screen.getByTestId("txnew-header-save") as HTMLButtonElement;
+    expect(headerSave.getAttribute("aria-label")).toBe("Save transaction");
+    expect(document.querySelector('[data-slot="page-header"]')!.contains(headerSave)).toBe(true);
+    fireEvent.click(headerSave);
+    fireEvent.click(headerSave);
+    await waitFor(() => expect(screen.getByText("Expense saved successfully!")).toBeTruthy());
+    expect(postsTo("/api/transactions").length).toBe(1);
+    expect(headerSave.disabled).toBe(true);
+  });
+});

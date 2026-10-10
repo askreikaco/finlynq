@@ -3,9 +3,9 @@
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
-import { CategorySelector, type Category } from "@/app/(app)/transactions/new/_components/category-selector";
-import { AccountSelector, type Account } from "@/app/(app)/transactions/new/_components/account-selector";
-import { GroupedPickerPanel } from "@/app/(app)/transactions/new/_components/grouped-picker";
+import { CategorySelector, type Category } from "@/components/transactions/entry/category-selector";
+import { AccountSelector, type Account } from "@/components/transactions/entry/account-selector";
+import { GroupedPickerPanel } from "@/components/transactions/entry/grouped-picker";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 
 vi.mock("next/navigation", () => ({

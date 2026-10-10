@@ -5,8 +5,8 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { CategorySelector, type Category } from "@/app/(app)/transactions/new/_components/category-selector";
-import { AccountSelector, type Account } from "@/app/(app)/transactions/new/_components/account-selector";
+import { CategorySelector, type Category } from "@/components/transactions/entry/category-selector";
+import { AccountSelector, type Account } from "@/components/transactions/entry/account-selector";
 
 afterEach(() => cleanup());
 
@@ -292,7 +292,7 @@ describe("CategorySelector accordion", () => {
   });
 
   it("static: the selector source has no tile grid and no viewport-detection hooks", () => {
-    const dir = join(process.cwd(), "src/app/(app)/transactions/new/_components");
+    const dir = join(process.cwd(), "src/components/transactions/entry");
     const src = ["category-selector.tsx", "grouped-picker.tsx"]
       .map((f) => readFileSync(join(dir, f), "utf8"))
       .join("\n");

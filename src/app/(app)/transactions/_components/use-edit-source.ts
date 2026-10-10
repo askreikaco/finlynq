@@ -18,6 +18,7 @@ import type {
   DialogTransaction,
   TransactionDialogInitialState,
 } from "@/components/transactions/transaction-dialog";
+import type { EditSplit } from "@/lib/transactions/entry-mode";
 import {
   isCleanTransferPair,
   portfolioEditHref,
@@ -40,6 +41,8 @@ export type EditSource =
       accounts: DialogAccount[];
       categories: DialogCategory[];
       holdings: DialogHolding[];
+      /** Stored splits of the transaction (null = could not be loaded; always [] for a transfer). */
+      splits: EditSplit[] | null;
     };
 
 export type EditTarget =
@@ -63,6 +66,21 @@ async function loadLookups() {
     categories: Array.isArray(categories) ? categories : [],
     holdings: Array.isArray(holdings) ? holdings : [],
   };
+}
+
+/** Stored split rows of a transaction, or null when they cannot be read (the caller then keeps the old edit form). */
+async function loadSplits(transactionId: number): Promise<EditSplit[] | null> {
+  try {
+    const rows = await getJson<unknown>(`/api/transactions/splits?transactionId=${transactionId}`);
+    if (!Array.isArray(rows)) return null;
+    return rows.map((r: { categoryId?: number | null; amount: number; note?: string | null }) => ({
+      categoryId: r.categoryId ? Number(r.categoryId) : null,
+      amount: Number(r.amount),
+      note: r.note ?? null,
+    }));
+  } catch {
+    return null;
+  }
 }
 
 export function useEditSource(target: EditTarget): EditSource {
@@ -106,11 +124,12 @@ export function useEditSource(target: EditTarget): EditSource {
               return;
             }
           }
-          const lookups = await loadLookups();
+          const [lookups, splits] = await Promise.all([loadLookups(), loadSplits(tx.id)]);
           if (cancelled) return;
           setSource({
             status: "ready",
             ...lookups,
+            splits,
             initialState: { kind: "transaction-edit", tx, linkedSiblings: siblings },
           });
           return;
@@ -145,6 +164,7 @@ export function useEditSource(target: EditTarget): EditSource {
         setSource({
           status: "ready",
           ...lookups,
+          splits: [],
           initialState: { kind: "transfer-edit", debit, credit, linkId },
         });
       } catch (err) {

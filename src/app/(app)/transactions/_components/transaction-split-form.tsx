@@ -20,9 +20,9 @@ import { currencyDecimals, formatCurrency } from "@/lib/currency";
 import { revalidateTransactionLists } from "@/lib/transactions/revalidate";
 import { parseCount, rowsFromSavedSplits, type SplitAdjustment, type SplitRowModel } from "@/lib/transactions/split-math";
 import { FormRow } from "@/components/forms";
-import { ListCard } from "@/app/(app)/transactions/new/_components/list-card";
-import { CategorySelector } from "@/app/(app)/transactions/new/_components/category-selector";
-import { NumpadDock } from "@/app/(app)/transactions/new/_components/numpad-dock";
+import { ListCard } from "@/components/transactions/entry/list-card";
+import { CategorySelector } from "@/components/transactions/entry/category-selector";
+import { NumpadDock } from "@/components/transactions/entry/numpad-dock";
 import { SplitRows, validateSplits } from "@/components/transactions/split-rows";
 
 export interface SplitCategory {

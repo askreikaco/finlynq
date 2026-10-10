@@ -12,7 +12,7 @@ const pageHeader = read("src/components/mobile/page-header.tsx");
 const settingsShell = read("src/components/settings-shell.tsx");
 const general = read("src/app/(app)/settings/general/page.tsx");
 const sectionPage = read("src/components/templates/section-page.tsx");
-const newTx = read("src/app/(app)/transactions/new/page.tsx");
+const newTx = read("src/components/transactions/entry/transaction-entry-screen.tsx");
 const appLayout = read("src/app/(app)/layout.tsx");
 const dashboard = read("src/app/(app)/dashboard/page.tsx");
 const investments = read("src/app/(app)/settings/investments/page.tsx");
@@ -67,7 +67,7 @@ describe("bars that must use the sticky bar", () => {
   });
 
   it("new-transaction header is the global PageHeader (no own sticky bar)", () => {
-    expect(newTx).toMatch(/<PageHeader[\s\S]{0,200}title=\{`New \$\{txType\}`\}/);
+    expect(newTx).toMatch(/<PageHeader[\s\S]{0,200}title=\{[^\n]*`New \$\{txType\}`/);
     expect(newTx).not.toMatch(/PHONE_BAR_STICKY/);
   });
 

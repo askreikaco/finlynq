@@ -4,7 +4,7 @@ import * as fs from "fs";
 describe("W5-15 /transactions/new page uses semantic tokens", () => {
   it("has no raw zinc/indigo palette, text-white or bg-black classes", () => {
     const src = fs.readFileSync(
-      "src/app/(app)/transactions/new/page.tsx",
+      "src/components/transactions/entry/transaction-entry-screen.tsx",
       "utf-8"
     );
     const matches = src.match(/\b(zinc|indigo)-\d|text-white|bg-black/g) ?? [];
