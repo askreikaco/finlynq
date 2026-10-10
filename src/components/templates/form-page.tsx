@@ -28,6 +28,10 @@
  * - `useLoad`: the page's own load hook (returns a LoadState). Takes precedence over `load`.
  * - `states`: per-state chrome (false = the state node renders bare), copy and retry.
  * - `header`, `width`, `padBottom`, `bodyClassName`, `saveDisabled`, `delete.*` extras.
+ * - `rootTestId`: testid of the root (default `${id}-root`). `id` still derives the form id.
+ * - `subtitle`: a node, or a function of the loaded record.
+ * - `states.{loading,error,notFound}`: `wrapperClassName` wraps the state body; `node` (a node or
+ *   a function of `{ retry, message }`) replaces the built-in body. Header chrome rules are unchanged.
  */
 
 import * as React from "react";
@@ -107,19 +111,33 @@ export type FormPageForm = "owned" | "external";
 export type FormPageWidth = "form" | "section" | "report";
 export type FormPagePad = "default" | "max" | "none";
 
+/** Passed to a state's `node` function. `retry` is the action the built-in retry control would take. */
+export interface FormPageStateContext {
+  retry: () => void;
+  /** The load hook's `message` when it returns one (undefined otherwise). */
+  message?: string;
+}
+
+export interface FormPageStateKnobs {
+  /** Wraps the state body in a `<div className>`. */
+  wrapperClassName?: string;
+  /** Replaces the built-in state body. A function receives the state context. */
+  node?: React.ReactNode | ((ctx: FormPageStateContext) => React.ReactNode);
+}
+
 export interface FormPageStates {
   loading?: {
     chrome?: boolean;
     variant?: "list" | "cards" | "table";
     rows?: number;
-  };
+  } & FormPageStateKnobs;
   error?: {
     chrome?: boolean;
     title?: string;
     message?: string;
     /** "reload" (default) re-runs the load; "refresh" calls router.refresh(). */
     retry?: "reload" | "refresh";
-  };
+  } & FormPageStateKnobs;
   notFound?: {
     chrome?: boolean;
     /** "note" (default, FormNote), "text" (muted paragraph), "error" (ErrorState). */
@@ -129,7 +147,7 @@ export interface FormPageStates {
     linkLabel?: string;
     /** "returnTo" (kind "error" only): the retry button goes to returnTo. */
     retry?: "returnTo";
-  };
+  } & FormPageStateKnobs;
 }
 
 export interface FormPageHeaderOptions<R> {
@@ -147,8 +165,11 @@ export interface FormPageHeaderOptions<R> {
 
 export interface FormPageProps<T, R, V, X = unknown> {
   id: string;
+  /** Testid of the root element. Default `${id}-root`. */
+  rootTestId?: string;
   title: React.ReactNode;
-  subtitle?: React.ReactNode;
+  /** A node, or a function of the loaded record (undefined until loaded). */
+  subtitle?: React.ReactNode | ((record: R | undefined) => React.ReactNode);
   /** Back, Cancel and the post-save target when no valid ?returnTo= is given. */
   fallbackReturn: string | ((params: Record<string, string | undefined>) => string);
   /** "bar": Save in the header. "bottom": Cancel and Save in a footer. */
@@ -192,8 +213,28 @@ const WIDTH_CLASS: Record<FormPageWidth, string> = {
 
 const noop = () => undefined;
 
+/** Reads the optional `message` a load hook may return (LoadState has no such field, so this is structural). */
+function readHookMessage(slot: unknown): string | undefined {
+  const m = (slot as unknown as Record<string, unknown> | null | undefined)?.message;
+  return typeof m === "string" ? m : undefined;
+}
+
+/** A state's body: its `node` override (node or function of ctx) or the built-in, then the optional wrapper. */
+function wrapState(
+  cfg: FormPageStateKnobs | undefined,
+  builtIn: React.ReactNode,
+  ctx: FormPageStateContext,
+): React.ReactNode {
+  let body: React.ReactNode;
+  if (!cfg || cfg.node === undefined) body = builtIn;
+  else if (typeof cfg.node === "function") body = cfg.node(ctx);
+  else body = cfg.node;
+  return cfg?.wrapperClassName ? <div className={cfg.wrapperClassName}>{body}</div> : body;
+}
+
 function FormPageBody<T, R, V, X>({
   id,
+  rootTestId,
   title,
   subtitle,
   fallbackReturn,
@@ -374,10 +415,11 @@ function FormPageBody<T, R, V, X>({
       (actionsOpt as React.ReactNode)
     );
 
+  const subtitleNode = typeof subtitle === "function" ? subtitle(record) : subtitle;
   const headerNode = (
     <PageHeader
       title={title}
-      subtitle={subtitle}
+      subtitle={subtitleNode}
       backHref={dirtyGuard ? undefined : (header?.backHref ?? returnTo)}
       onBack={dirtyGuard ? () => leave(returnTo) : undefined}
       backLabel={header?.backLabel ?? "Back"}
@@ -389,21 +431,31 @@ function FormPageBody<T, R, V, X>({
   );
 
   // States. A state with chrome:false renders bare (no root, no header).
+  // Each state body goes through wrapState (wrapperClassName, node override); chrome is unchanged.
+  const hookMessage = useLoad ? readHookMessage(slot) : undefined;
   let piece: { node: React.ReactNode; chrome: boolean } | null = null;
   if (loading) {
+    const cfg = states?.loading;
     piece = {
-      node: <PageSkeleton variant={states?.loading?.variant ?? "list"} rows={states?.loading?.rows ?? 3} />,
-      chrome: states?.loading?.chrome !== false,
+      node: wrapState(
+        cfg,
+        <PageSkeleton variant={cfg?.variant ?? "list"} rows={cfg?.rows ?? 3} />,
+        { retry: () => void retry(), message: hookMessage },
+      ),
+      chrome: cfg?.chrome !== false,
     };
   } else if (failed) {
     const cfg = states?.error;
+    const onRetry = cfg?.retry === "refresh" ? () => router.refresh() : () => void retry();
     piece = {
-      node: (
+      node: wrapState(
+        cfg,
         <ErrorState
           title={cfg?.title ?? "Couldn't load this page"}
           message={cfg?.message ?? "We couldn't load this record. Please try again."}
-          onRetry={cfg?.retry === "refresh" ? () => router.refresh() : () => void retry()}
-        />
+          onRetry={onRetry}
+        />,
+        { retry: onRetry, message: hookMessage },
       ),
       chrome: cfg?.chrome !== false,
     };
@@ -412,8 +464,10 @@ function FormPageBody<T, R, V, X>({
     const message = cfg?.message ?? load?.notFound?.message ?? "This record doesn't exist or was deleted.";
     const linkLabel = cfg?.linkLabel ?? load?.notFound?.linkLabel ?? "Back";
     const kind = cfg?.kind ?? "note";
+    const onRetry = cfg?.retry === "returnTo" ? () => router.push(returnTo) : () => void retry();
     piece = {
-      node:
+      node: wrapState(
+        cfg,
         kind === "error" ? (
           <ErrorState
             title={cfg?.title ?? "Not found"}
@@ -435,6 +489,8 @@ function FormPageBody<T, R, V, X>({
             </Link>
           </FormNote>
         ),
+        { retry: onRetry, message: hookMessage },
+      ),
       chrome: cfg?.chrome !== false,
     };
   }
@@ -511,7 +567,7 @@ function FormPageBody<T, R, V, X>({
 
   return (
     <div
-      data-testid={`${id}-root`}
+      data-testid={rootTestId ?? `${id}-root`}
       className={cn("mx-auto w-full", WIDTH_CLASS[width], !external && padValue)}
     >
       {headerNode}
