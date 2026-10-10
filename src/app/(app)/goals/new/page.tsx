@@ -41,14 +41,14 @@ function NewGoalPage() {
   }, []);
 
   return (
-    <div data-testid="goal-new-root" className="mx-auto w-full max-w-xl">
+    <div data-testid="goal-new-root" className="mx-auto w-full max-w-form">
       <PageHeader
         title="New financial goal"
         backHref={returnTo}
         backLabel="Back"
         className="flex items-center justify-between"
       />
-      <div className="mt-3 pb-[calc(var(--sab,0px)+1.5rem)]">
+      <div className="mt-3 pb-[var(--form-bottom-pad)]">
         <GoalForm
           mode="add"
           initial={seed}

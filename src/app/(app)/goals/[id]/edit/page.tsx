@@ -71,7 +71,7 @@ function EditGoalPage() {
   if (loadError) return <ErrorState title="Couldn't load goal" message="We couldn't load this goal. Please try again." onRetry={() => { setLoading(true); load(); }} />;
 
   return (
-    <div data-testid="goal-edit-root" className="mx-auto w-full max-w-xl">
+    <div data-testid="goal-edit-root" className="mx-auto w-full max-w-form">
       <PageHeader
         title="Edit goal"
         backHref={returnTo}
@@ -91,7 +91,7 @@ function EditGoalPage() {
         }
       />
       {goal && form ? (
-        <div className="mt-3 pb-[calc(var(--sab,0px)+1.5rem)]">
+        <div className="mt-3 pb-[var(--form-bottom-pad)]">
           <GoalForm
             mode="edit"
             goalId={goal.id}
