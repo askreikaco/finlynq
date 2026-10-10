@@ -164,9 +164,9 @@ describe("PageHeader with backHref: phone glass header row", () => {
         }
       />
     );
-    const actions = container.querySelector('[data-slot="page-header-actions"]');
-    expect(actions).not.toBeNull();
-    expect(cls(actions)).toEqual(expect.arrayContaining(["glass-capsule", "max-regular:h-11", "max-regular:rounded-full"]));
+    // a lone primary stands alone beside the capsule slot: no glass capsule around it
+    expect(container.querySelector('[data-slot="header-capsule"]')).toBeNull();
+    expect(container.querySelector('[data-slot="header-primary"]')).not.toBeNull();
     expect(screen.getByRole("button", { name: "Add" })).toBeTruthy();
   });
 

@@ -16,6 +16,7 @@ import {
   PHONE_BAR,
   PHONE_BAR_STICKY,
   PHONE_BAR_RIGHT,
+  PHONE_CAPSULE,
   PHONE_BAR_TITLE,
   PHONE_BAR_SUBTITLE,
   HEADER_TITLE_CLASS,
@@ -32,7 +33,7 @@ describe("PageHeader v2: classes below and at regular", () => {
     expect(PHONE_BAR).toContain("max-regular:min-h-[var(--phone-header-h)]");
     expect(PHONE_BAR).toContain("max-regular:px-4");
     expect(PHONE_BAR).not.toMatch(/max-md:/);
-    expect(PHONE_BAR_RIGHT).toContain("max-regular:max-w-[9.5rem]");
+    expect(PHONE_CAPSULE).toContain("max-regular:max-w-[11rem]");
     expect(PHONE_BAR_TITLE).toContain("max-regular:text-base");
     expect(PHONE_BAR_SUBTITLE).toContain("max-regular:text-xs");
   });

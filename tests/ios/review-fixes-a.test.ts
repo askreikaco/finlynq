@@ -13,7 +13,7 @@ const nav = read("src/components/nav.tsx");
 const chat = read("src/app/(app)/chat/page.tsx");
 const pageFab = read("src/components/mobile/page-fab.tsx");
 
-const GLASS_SEL = '[data-slot="page-header-actions"] > :is(button, a):not([data-variant="default"])';
+const GLASS_SEL = '[data-slot="header-capsule"] > :is(button, a):not([data-variant="default"])';
 
 // Text of the phone-only glass block (from its opening @media to the tab bar section).
 function phoneGlassBlock(): string {
@@ -39,7 +39,7 @@ describe("M1: header glass excludes primary-filled buttons", () => {
     const block = phoneGlassBlock();
     expect(block).toContain(`${GLASS_SEL} {\n    background: transparent;`);
     // Sizing/shape rule stays unscoped so primary CTAs become round 44px too.
-    const sizing = bodyOf(block, '  [data-slot="page-header-actions"] > :is(button, a)');
+    const sizing = bodyOf(block, '  [data-slot="header-capsule"] > :is(button, a)');
     expect(sizing).toContain("border-radius: 9999px");
     expect(sizing).toContain("height: 2.75rem");
     expect(sizing).not.toContain("background");
@@ -50,7 +50,7 @@ describe("M1: header glass excludes primary-filled buttons", () => {
     // Every background declaration on header actions must be behind the exclusion.
     const lines = block.split("\n");
     lines.forEach((line, idx) => {
-      if (!line.includes('[data-slot="page-header-actions"]')) return;
+      if (!line.includes('[data-slot="header-capsule"]')) return;
       if (line.includes(":is(button, a)") && !line.includes(":not([data-variant")) {
         // only the sizing rule may be unscoped
         const body = lines.slice(idx, idx + 4).join("\n");

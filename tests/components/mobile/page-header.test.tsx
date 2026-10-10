@@ -61,7 +61,7 @@ describe("PageHeader: layout at regular and up", () => {
     const wrap = container.firstElementChild as HTMLElement;
     expect(wrap.tagName).toBe("DIV");
     expect(wrap.getAttribute("data-slot")).toBe("page-header");
-    expect(wrap.querySelector('[data-slot="page-header-actions"]')).toBeNull();
+    expect(wrap.querySelector('[data-slot="header-capsule"]')).toBeNull();
     const spacer = wrap.querySelector('[data-slot="page-header-spacer"]');
     expect(spacer?.textContent).toBe("");
     // sticky is not gated by a size variant (D5)

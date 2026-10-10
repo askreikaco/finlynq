@@ -104,22 +104,26 @@ describe("PageHeader phone bar (render)", () => {
     expect(cls(back)).toEqual(expect.arrayContaining(["glass-capsule", "max-regular:size-11", "max-regular:rounded-full"]));
   });
 
-  it("right capsule exists only when the page has actions", () => {
+  it("right capsule exists only when the page has icon cells; a lone action stands alone beside it", () => {
     const { container, rerender } = render(h(PageHeader, { title: "Plain" }));
     expect(container.querySelector('[data-slot="page-header-actions"]')).toBeNull();
-    rerender(h(PageHeader, { title: "Acts", actions: h("button", { type: "button", "aria-label": "Add" }, "+") }));
-    const capsule = container.querySelector('[data-slot="page-header-actions"]');
+    rerender(h(PageHeader, { title: "Acts", actions: [h("button", { key: "r", type: "button", "aria-label": "Refresh" }, "R"), h("button", { key: "a", type: "button", "aria-label": "Add" }, "+")] }));
+    const capsule = container.querySelector('[data-slot="header-capsule"]');
     expect(capsule).not.toBeNull();
-    expect(cls(capsule)).toEqual(expect.arrayContaining(["glass-capsule", "max-regular:rounded-full", "max-regular:h-11", "max-regular:col-start-3"]));
+    expect(cls(capsule)).toEqual(expect.arrayContaining(["glass-capsule", "max-regular:rounded-full", "max-regular:h-11"]));
+    expect(capsule?.querySelector('[aria-label="Refresh"]')).not.toBeNull();
+    expect(capsule?.querySelector('[aria-label="Add"]')).toBeNull();
+    expect(container.querySelector('[data-slot="header-primary"] [aria-label="Add"]')).not.toBeNull();
   });
 
-  it("the primary (default-variant) action keeps its own fill and sits inside the capsule, not see-through glass", () => {
+  it("the primary sits beside the capsule, never inside it, and keeps its own fill", () => {
     const { container } = render(h(PageHeader, { title: "Tx", actions: h(Button, { "aria-label": "Add transaction" }, "Add") }));
     const primary = screen.getByRole("button", { name: "Add transaction" });
     expect(primary.getAttribute("data-variant")).toBe("default");
-    expect(primary.parentElement).toBe(container.querySelector('[data-slot="page-header-actions"]'));
+    expect(primary.parentElement).toBe(container.querySelector('[data-slot="header-primary"]'));
+    expect(container.querySelector('[data-slot="header-capsule"]')).toBeNull();
     // the see-through reset is scoped to non-default buttons only
-    expect(css).toContain('[data-slot="page-header-actions"] > :is(button, a):not([data-variant="default"]) {\n    background: transparent;');
+    expect(css).toContain('[data-slot="header-capsule"] > :is(button, a):not([data-variant="default"]) {\n    background: transparent;');
   });
 
   it("no capsule or glass around the title (title block and h1 carry no glass classes)", () => {

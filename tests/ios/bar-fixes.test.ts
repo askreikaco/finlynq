@@ -15,6 +15,8 @@ import {
   PHONE_BAR,
   PHONE_BAR_CENTER,
   PHONE_BAR_RIGHT,
+  PHONE_CAPSULE,
+  HEADER_MAX_PHONE_ACTIONS,
   PHONE_BAR_TITLE,
   PHONE_BAR_SUBTITLE,
   PHONE_PRIMARY_CLASS,
@@ -110,7 +112,7 @@ describe("1. phone primary action is an icon-only 44pt filled circle (below regu
 
   it("the phone rule sits inside the phone media block only (below regular), with size, icon-only text and token fill", () => {
     const phone = phoneBlock();
-    const rule = body(phone, '[data-slot="page-header-actions"] > :is(button, a).phone-icon-action');
+    const rule = body(phone, '[data-slot="header-primary"] > :is(button, a).phone-icon-action');
     expect(rule).toMatch(/width:\s*2\.75rem;/);
     expect(rule).toMatch(/min-width:\s*2\.75rem;/);
     expect(rule).toMatch(/height:\s*2\.75rem;/);
@@ -150,13 +152,18 @@ describe("2. title block insets equal the measured left slot and right capsule",
     expect(PHONE_BAR_CENTER).not.toMatch(/inset-x-\[/);
   });
 
-  it("the capsule is the third column, capped at 9.5rem and scrolling inside the cap (never past the edge)", () => {
+  it("the capsule is the third column, one 44px slot per item, capped at 11rem and never scrolling", () => {
     expect(PHONE_BAR_RIGHT).toContain("max-regular:col-start-3");
     expect(PHONE_BAR_RIGHT).toContain("max-regular:justify-self-end");
-    expect(PHONE_BAR_RIGHT).toContain("max-regular:max-w-[9.5rem]");
-    expect(PHONE_BAR_RIGHT).toContain("max-regular:overflow-x-auto");
-    // Arithmetic: three 44px circles = 132px; the cap is 9.5rem = 152px at 16px root.
-    expect(3 * 44).toBeLessThanOrEqual(9.5 * 16);
+    expect(PHONE_BAR_RIGHT).toContain("max-regular:gap-2.5"); // 10px between capsule and primary
+    expect(PHONE_CAPSULE).toContain("max-regular:max-w-[11rem]");
+    expect(PHONE_CAPSULE).toContain("max-regular:gap-0");
+    expect(PHONE_CAPSULE).not.toContain("overflow-x-auto");
+    expect(PHONE_BAR_RIGHT).not.toContain("overflow-x-auto");
+    expect(PHONE_BAR_RIGHT).not.toContain("9.5rem");
+    // Arithmetic: 4 slots (3 actions + overflow trigger) x 44px = 176px = 11rem at a 16px root.
+    expect(HEADER_MAX_PHONE_ACTIONS + 1).toBe(4);
+    expect((HEADER_MAX_PHONE_ACTIONS + 1) * 44).toBeLessThanOrEqual(11 * 16);
   });
 
   it("the title and subtitle truncate with ellipsis (one line each)", () => {
@@ -176,8 +183,9 @@ describe("2. title block insets equal the measured left slot and right capsule",
     );
     const block = container.querySelector('[data-slot="page-header-title-block"]');
     expect(cls(block)).toContain("max-regular:col-start-2");
-    const capsule = container.querySelector('[data-slot="page-header-actions"]');
-    expect(cls(capsule)).toEqual(expect.arrayContaining(["max-regular:col-start-3", "max-regular:max-w-[9.5rem]"]));
+    const capsule = container.querySelector('[data-slot="header-capsule"]');
+    expect(cls(capsule)).toEqual(expect.arrayContaining(["glass-capsule", "max-regular:max-w-[11rem]"]));
+    expect(cls(capsule?.parentElement ?? null)).toContain("max-regular:col-start-3");
     expect(cls(screen.getByText("Every account you track, in one list"))).toContain("max-regular:truncate");
   });
 
