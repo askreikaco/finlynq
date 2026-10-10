@@ -35,6 +35,8 @@ const CSS_FOR: Record<keyof typeof TOKENS, string> = {
   formW: "--container-form",
   sectionW: "--container-section",
   reportW: "--container-report",
+  docW: "--container-doc",
+  consoleW: "--container-console",
 };
 
 describe("design tokens: TS mirror matches globals.css", () => {

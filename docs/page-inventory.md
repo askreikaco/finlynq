@@ -6,8 +6,8 @@ Base `99e332df` (branch `wave4/w4-4-5-docs`). Generated 2026-10-09 (UTC+7 VN). S
 
 | check | value |
 |---|---|
-| `find "src/app/(app)" -name page.tsx \| sort \| wc -l` | 93 |
-| table rows below (route rows) | 93 |
+| `find "src/app/(app)" -name page.tsx \| sort \| wc -l` | 92 |
+| table rows below (route rows) | 92 |
 | pages with own `<PageHeader` in page.tsx | 66 |
 | pages with PageHeader only via an imported module or alias | 12 |
 | pages with header from a layout only | 3 |
@@ -90,7 +90,6 @@ Pages with PageSkeleton: `/budgets`, `/categories/[id]`, `/categories`, `/goals`
 | `/reports` | `src/app/(app)/reports/page.tsx` | app | yes (page.tsx:347) | yes (page.tsx:341) | no | - |
 | `/scenarios` | `src/app/(app)/scenarios/page.tsx` | app | yes (page.tsx:523) | no | no | - |
 | `/settings/about` | `src/app/(app)/settings/about/page.tsx` | app > settings/layout.tsx (SettingsShell) | yes (page.tsx:13) | no | no | - |
-| `/settings/account` | `src/app/(app)/settings/account/page.tsx` | app > settings/layout.tsx (SettingsShell) | no (layout only: account-shell.tsx:51) | no | no | AccountShell header (account-shell.tsx:51) |
 | `/settings/backfill/[runId]` | `src/app/(app)/settings/backfill/[runId]/page.tsx` | app > settings/layout.tsx (SettingsShell) | yes (page.tsx:303) | no | no | - |
 | `/settings/backfill` | `src/app/(app)/settings/backfill/page.tsx` | app > settings/layout.tsx (SettingsShell) | yes (page.tsx:115) | no | no | - |
 | `/settings/bank-feeds` | `src/app/(app)/settings/bank-feeds/page.tsx` | app > settings/layout.tsx (SettingsShell) | via import (settings/integrations/page.tsx:76) | no | no | re-exports `/settings/integrations/page` (page source) |
@@ -268,7 +267,6 @@ Count: 59 of 69. No `<ErrorState` in the page file or in its import closure to d
 - `/reports`  `src/app/(app)/reports/page.tsx`
 - `/scenarios`  `src/app/(app)/scenarios/page.tsx`
 - `/settings/about`  `src/app/(app)/settings/about/page.tsx`
-- `/settings/account`  `src/app/(app)/settings/account/page.tsx`
 - `/settings/backfill/[runId]`  `src/app/(app)/settings/backfill/[runId]/page.tsx`
 - `/settings/backfill`  `src/app/(app)/settings/backfill/page.tsx`
 - `/settings/bank-feeds`  `src/app/(app)/settings/bank-feeds/page.tsx`

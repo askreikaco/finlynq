@@ -27,7 +27,7 @@ import {
   ImportStatementsItem,
 } from "@/components/settings/sections/import-section";
 import { isMcpConnected } from "@/lib/mcp/connected";
-import { PageHeader } from "@/components/mobile";
+import { SectionPage } from "@/components/templates";
 
 interface ConnectedAppsData {
   apps: { id: number }[];
@@ -72,13 +72,14 @@ export default function IntegrationsSettingsPage() {
   }, []);
 
   return (
-    <div className="max-w-2xl space-y-6">
-      <PageHeader
-          title="Integrations"
-          titleClassName="text-2xl font-bold tracking-tight"
-          subtitle="External tools and bank connections"
-          subtitleClassName="text-sm text-muted-foreground mt-0.5"
-        />
+    <SectionPage
+      id="settings-integrations"
+      title="Integrations"
+      subtitle="External tools and bank connections"
+      padBottom="none"
+      minW0={false}
+      suspense={false}
+    >
 
       {loaded && !isConnected && (
         <Card className="border-warning/30 bg-warning/10">
@@ -144,6 +145,6 @@ export default function IntegrationsSettingsPage() {
           </Link>
         </div>
       )}
-    </div>
+    </SectionPage>
   );
 }

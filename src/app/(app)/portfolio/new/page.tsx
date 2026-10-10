@@ -11,7 +11,8 @@ import { Suspense, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronRight } from "lucide-react";
-import { PageHeader, SectionLabel } from "@/components/mobile";
+import { SectionLabel } from "@/components/mobile";
+import { SectionPage } from "@/components/templates/section-page";
 import {
   OP_GROUPS,
   OPS,
@@ -36,12 +37,18 @@ function PortfolioNewInner() {
   if (redirectKey) return null;
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 regular:p-6">
-      <PageHeader
-        title="New operation"
-        backHref="/portfolio"
-        backLabel="Portfolio"
-      />
+    <SectionPage
+      id="portfolio-new"
+      title="New operation"
+      backFallback="/portfolio"
+      backLabel="Portfolio"
+      width="section"
+      center
+      minW0={false}
+      padBottom="none"
+      stack="6"
+      className="regular:p-6"
+    >
 
       {OP_GROUPS.map((group) => {
         const ops = OPS.filter((o) => o.group === group.key);
@@ -74,7 +81,7 @@ function PortfolioNewInner() {
           </section>
         );
       })}
-    </div>
+    </SectionPage>
   );
 }
 

@@ -25,7 +25,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Download, SlidersHorizontal, Coins } from "lucide-react";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import {
-  PageHeader,
   HEADER_DESKTOP_ONLY,
   Amount,
   CompactOnly,
@@ -37,6 +36,7 @@ import {
   type DetailItem,
   type MetricItem,
 } from "@/components/mobile";
+import { SectionPage } from "@/components/templates/section-page";
 import { ErrorState } from "@/components/error-state";
 import { EmptyState } from "@/components/empty-state";
 import { PageSkeleton } from "@/components/page-skeleton";
@@ -259,15 +259,19 @@ export default function DividendsPage() {
   );
 
   return (
-    <div className="space-y-4 regular:space-y-6">
-      <PageHeader
-        backHref="/portfolio"
-        backLabel="Back to portfolio"
-        title="Dividend income"
-        subtitle={periodLabel}
-        titleClassName="text-2xl font-bold tracking-tight"
-        subtitleClassName="text-sm text-muted-foreground mt-0.5"
-        actions={
+    <SectionPage
+      id="dividends"
+      title="Dividend income"
+      subtitle={periodLabel}
+      backFallback="/portfolio"
+      backLabel="Back to portfolio"
+      width="none"
+      minW0={false}
+      padBottom="none"
+      stack="4"
+      className="regular:space-y-6"
+      header={{
+        actions: (
           <>
             <CompactOnly as="span">
               <Button
@@ -286,9 +290,10 @@ export default function DividendsPage() {
               <Download className="mr-2 h-4 w-4" /> CSV
             </a>
           </>
-        }
-        overflow={[{ label: "Export CSV", icon: Download, onSelect: () => window.location.assign(csvHref) }]}
-      />
+        ),
+        overflow: [{ label: "Export CSV", icon: Download, onSelect: () => window.location.assign(csvHref) }],
+      }}
+    >
 
       {/* md+ filter toolbar (below md the same fields live in ReportFilterSheet). */}
       <FromMd className="flex flex-wrap gap-x-8 gap-y-4 rounded-xl border border-border/50 bg-card p-4">
@@ -399,7 +404,7 @@ export default function DividendsPage() {
           items={groupDetailItems(openGroup, reporting, reportingCcy, currencyColumns)}
         />
       )}
-    </div>
+    </SectionPage>
   );
 }
 

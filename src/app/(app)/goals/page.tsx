@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,12 +9,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { Plus, Trash2, Target, CheckCircle2, TrendingUp, Calendar, Pencil } from "lucide-react";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { ErrorState } from "@/components/error-state";
-import { PageSkeleton } from "@/components/page-skeleton";
-import { PageHeader, PHONE_PRIMARY_CLASS } from "@/components/mobile";
+import { PHONE_PRIMARY_CLASS } from "@/components/mobile";
 import { DataView, ViewModeToggle } from "@/components/adaptive";
+import { ListPage, type ListPageContext } from "@/components/templates";
 import type { Goal } from "./_components/goal-form";
+import { useGoalsLoad } from "./_components/use-goals-load";
 
 const goalTypeConfig: Record<string, { label: string; badgeClass: string; borderClass: string }> = {
   savings: { label: "Savings", badgeClass: "bg-pos/10 text-pos border-pos/30", borderClass: "border-l-pos" },
@@ -44,81 +42,92 @@ const EMPTY_STATE_CHIPS = [
   { label: "Build investments", type: "investment" },
 ];
 
-export default function GoalsPage() {
-  const { displayCurrency } = useDisplayCurrency();
-  const [goals, setGoals] = useState<Goal[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(false);
-  const [deleteId, setDeleteId] = useState<number | null>(null);
-  const [deleting, setDeleting] = useState(false);
+type GoalCtx = ListPageContext<Goal>;
 
-  const load = useCallback(() => {
-    setLoadError(false);
-    fetch("/api/goals")
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("Failed to load goals"))))
-      .then((data) => setGoals(Array.isArray(data) ? data : []))
-      .catch(() => setLoadError(true))
-      .finally(() => setLoading(false));
-  }, []);
-  useEffect(() => {
-    load();
-  }, [load]);
+async function toggleStatus(goal: Goal, reload: () => void) {
+  await fetch("/api/goals", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: goal.id, status: goal.status === "active" ? "completed" : "active" }) });
+  reload();
+}
 
-  async function toggleStatus(goal: Goal) {
-    await fetch("/api/goals", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: goal.id, status: goal.status === "active" ? "completed" : "active" }) });
-    load();
-  }
+/** Empty state: no goals at all (both views show it). */
+const emptyGoals = (
+  <Card className="border-dashed">
+    <CardContent className="py-16 flex flex-col items-center text-center">
+      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary/10 mb-4">
+        <Target className="h-8 w-8 text-primary" />
+      </div>
+      <h3 className="text-lg font-semibold mb-2">Set your first financial goal</h3>
+      <p className="text-sm text-muted-foreground max-w-sm mb-6">
+        Goals help you stay focused and measure real progress. Start with an emergency fund, debt payoff target, or a savings milestone.
+      </p>
+      <div className="flex flex-wrap gap-2 justify-center">
+        {EMPTY_STATE_CHIPS.map(({ label, type }) => (
+          <Link
+            key={label}
+            href={`/goals/new?name=${encodeURIComponent(label)}&type=${type}`}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-border/60 bg-muted/40 hover:bg-muted transition-colors"
+          >
+            <Plus className="h-3 w-3" />{label}
+          </Link>
+        ))}
+      </div>
+    </CardContent>
+  </Card>
+);
 
-  async function handleDelete() {
-    if (deleteId == null) return;
-    setDeleting(true);
-    try {
-      await fetch(`/api/goals?id=${deleteId}`, { method: "DELETE" });
-      setDeleteId(null);
-      load();
-    } finally {
-      setDeleting(false);
-    }
-  }
-
-  const deletingGoal = goals.find((g) => g.id === deleteId) ?? null;
-
+/** Summary tiles: totals over the active goals, in the display currency. */
+function goalSummary(goals: Goal[], displayCurrency: string) {
   const active = goals.filter((g) => g.status === "active");
   const completed = goals.filter((g) => g.status === "completed");
   const totalTarget = active.reduce((s, g) => s + (g.targetAmountDisplay ?? g.targetAmount), 0);
   const totalCurrent = active.reduce((s, g) => s + (g.currentAmountDisplay ?? g.currentAmount), 0);
   const hasForeignGoal = active.some((g) => g.currency && g.currency !== displayCurrency);
-
-  if (loading) return <PageSkeleton variant="cards" rows={3} />;
-  if (loadError) return <ErrorState title="Couldn't load goals" message="We couldn't load your goals. Please try again." onRetry={() => { setLoading(true); load(); }} />;
-
-  const emptyGoals = (
-    <Card className="border-dashed">
-      <CardContent className="py-16 flex flex-col items-center text-center">
-        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary/10 mb-4">
-          <Target className="h-8 w-8 text-primary" />
-        </div>
-        <h3 className="text-lg font-semibold mb-2">Set your first financial goal</h3>
-        <p className="text-sm text-muted-foreground max-w-sm mb-6">
-          Goals help you stay focused and measure real progress. Start with an emergency fund, debt payoff target, or a savings milestone.
-        </p>
-        <div className="flex flex-wrap gap-2 justify-center">
-          {EMPTY_STATE_CHIPS.map(({ label, type }) => (
-            <Link
-              key={label}
-              href={`/goals/new?name=${encodeURIComponent(label)}&type=${type}`}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-border/60 bg-muted/40 hover:bg-muted transition-colors"
-            >
-              <Plus className="h-3 w-3" />{label}
-            </Link>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+  return (
+    <div className="grid grid-cols-1 regular:grid-cols-3 gap-4">
+      <Card>
+        <CardContent className="flex items-center gap-4 pt-6">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+            <Target className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Total Target</p>
+            <p className="text-2xl font-bold">{formatCurrency(totalTarget, displayCurrency)}</p>
+            {hasForeignGoal && <p className="text-xs text-muted-foreground mt-1">converted at today&apos;s rates</p>}
+          </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardContent className="flex items-center gap-4 pt-6">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-pos/10">
+            <TrendingUp className="h-5 w-5 text-pos" />
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Current Progress</p>
+            <p className="text-2xl font-bold text-pos">{formatCurrency(totalCurrent, displayCurrency)}</p>
+            {hasForeignGoal && <p className="text-xs text-muted-foreground mt-1">converted at today&apos;s rates</p>}
+          </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardContent className="flex items-center gap-4 pt-6">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-chart-5/10">
+            <CheckCircle2 className="h-5 w-5 text-chart-5" />
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Completed</p>
+            <p className="text-2xl font-bold">{completed.length} <span className="text-base font-normal text-muted-foreground">/ {goals.length}</span></p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
+}
 
-  // Cards view: the goal cards (the phone layout).
-  const goalCards = (
+// Cards view: the goal cards (the phone layout).
+function goalCards({ records: goals, reload, openDelete }: GoalCtx, displayCurrency: string) {
+  const active = goals.filter((g) => g.status === "active");
+  const completed = goals.filter((g) => g.status === "completed");
+  return (
     <div className="space-y-6">
       {/* Empty state — no goals at all */}
       {goals.length === 0 && emptyGoals}
@@ -167,10 +176,10 @@ export default function GoalsPage() {
                   <Button variant="ghost" size="icon" className="h-8 w-8" render={<Link href={`/goals/${g.id}/edit`} />} title="Edit" aria-label={`Edit goal ${g.name}`}>
                     <Pencil className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleStatus(g)} title="Mark complete" aria-label={`Mark goal ${g.name} complete`}>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleStatus(g, reload)} title="Mark complete" aria-label={`Mark goal ${g.name} complete`}>
                     <CheckCircle2 className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeleteId(g.id)} title="Delete" aria-label={`Delete goal ${g.name}`}>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => openDelete(g)} title="Delete" aria-label={`Delete goal ${g.name}`}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -216,10 +225,10 @@ export default function GoalsPage() {
                   <Button variant="ghost" size="icon" className="h-7 w-7" render={<Link href={`/goals/${g.id}/edit`} />} title="Edit" aria-label={`Edit goal ${g.name}`}>
                     <Pencil className="h-3 w-3" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => toggleStatus(g)} title="Reactivate" aria-label={`Reactivate goal ${g.name}`}>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => toggleStatus(g, reload)} title="Reactivate" aria-label={`Reactivate goal ${g.name}`}>
                     <Target className="h-3 w-3" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteId(g.id)} title="Delete" aria-label={`Delete goal ${g.name}`}>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => openDelete(g)} title="Delete" aria-label={`Delete goal ${g.name}`}>
                     <Trash2 className="h-3 w-3" />
                   </Button>
                 </div>
@@ -230,9 +239,13 @@ export default function GoalsPage() {
       )}
     </div>
   );
+}
 
-  // List view: one table of every goal (active first, then completed). Row opens the edit page.
-  const goalList = goals.length === 0 ? emptyGoals : (
+// List view: one table of every goal (active first, then completed). Row opens the edit page.
+function goalList({ records: goals, reload, openDelete }: GoalCtx, displayCurrency: string) {
+  const active = goals.filter((g) => g.status === "active");
+  const completed = goals.filter((g) => g.status === "completed");
+  return goals.length === 0 ? emptyGoals : (
     <Table containerClassName="rounded-xl border bg-card">
       <TableHeader>
         <TableRow>
@@ -273,7 +286,7 @@ export default function GoalsPage() {
                     variant="ghost"
                     size="icon"
                     className="h-7 w-7"
-                    onClick={() => toggleStatus(g)}
+                    onClick={() => toggleStatus(g, reload)}
                     title={done ? "Reactivate" : "Mark complete"}
                     aria-label={done ? `Reactivate goal ${g.name}` : `Mark goal ${g.name} complete`}
                   >
@@ -283,7 +296,7 @@ export default function GoalsPage() {
                     variant="ghost"
                     size="icon"
                     className="h-7 w-7 text-destructive"
-                    onClick={() => setDeleteId(g.id)}
+                    onClick={() => openDelete(g)}
                     title="Delete"
                     aria-label={`Delete goal ${g.name}`}
                   >
@@ -297,79 +310,61 @@ export default function GoalsPage() {
       </TableBody>
     </Table>
   );
+}
 
+/**
+ * The toggle and the views, as today's markup. Used as `body` (goals exist) and `emptySlot`
+ * (no goals, the toggle stays visible above the empty state). The list template's own toolbar is off.
+ */
+function goalViews(ctx: GoalCtx, displayCurrency: string) {
   return (
-    <div className="space-y-6">
-      <PageHeader
-        className="flex flex-wrap items-center justify-between gap-3"
-        title="Goals"
-        subtitle="Track your savings targets and measure progress over time"
-        actionsClassName="contents"
-        actions={
-        <Button className={PHONE_PRIMARY_CLASS} aria-label="Add Goal" render={<Link href="/goals/new" />}>
-          <Plus className="h-4 w-4 mr-1" /> Add Goal
-        </Button>
-        }
-      />
-
-      {/* Summary cards — only show when there are goals */}
-      {goals.length > 0 && (
-        <div className="grid grid-cols-1 regular:grid-cols-3 gap-4">
-          <Card>
-            <CardContent className="flex items-center gap-4 pt-6">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                <Target className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Target</p>
-                <p className="text-2xl font-bold">{formatCurrency(totalTarget, displayCurrency)}</p>
-                {hasForeignGoal && <p className="text-xs text-muted-foreground mt-1">converted at today&apos;s rates</p>}
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="flex items-center gap-4 pt-6">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-pos/10">
-                <TrendingUp className="h-5 w-5 text-pos" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Current Progress</p>
-                <p className="text-2xl font-bold text-pos">{formatCurrency(totalCurrent, displayCurrency)}</p>
-                {hasForeignGoal && <p className="text-xs text-muted-foreground mt-1">converted at today&apos;s rates</p>}
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="flex items-center gap-4 pt-6">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-chart-5/10">
-                <CheckCircle2 className="h-5 w-5 text-chart-5" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Completed</p>
-                <p className="text-2xl font-bold">{completed.length} <span className="text-base font-normal text-muted-foreground">/ {goals.length}</span></p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Toolbar: Cards / List view switch */}
+    <>
       <div className="flex justify-end">
         <ViewModeToggle viewKey="goals" />
       </div>
-
       {/* Goals: Cards (default on phones) or List (table rows). Only the selected view is mounted. */}
-      <DataView viewKey="goals" cards={() => goalCards} list={() => goalList} />
+      <DataView viewKey="goals" cards={() => goalCards(ctx, displayCurrency)} list={() => goalList(ctx, displayCurrency)} />
+    </>
+  );
+}
 
-      <ConfirmDialog
-        open={deleteId !== null}
-        onOpenChange={(open) => { if (!open) setDeleteId(null); }}
-        title="Delete goal"
-        description={<>Are you sure you want to delete <strong>{deletingGoal?.name ?? "this goal"}</strong>? This cannot be undone.</>}
-        confirmLabel="Delete goal"
-        busy={deleting}
-        onConfirm={handleDelete}
-      />
-    </div>
+export default function GoalsPage() {
+  const { displayCurrency } = useDisplayCurrency();
+  return (
+    <ListPage<Goal>
+      id="goals"
+      title="Goals"
+      subtitle="Track your savings targets and measure progress over time"
+      viewKey="goals"
+      useLoad={useGoalsLoad}
+      empty={{
+        title: "Set your first financial goal",
+        body: "Goals help you stay focused and measure real progress. Start with an emergency fund, debt payoff target, or a savings milestone.",
+      }}
+      cards={(ctx) => goalCards(ctx, displayCurrency)}
+      list={(ctx) => goalList(ctx, displayCurrency)}
+      summarySlot={(goals) => goalSummary(goals, displayCurrency)}
+      toolbarPlacement="none"
+      body={(ctx) => goalViews(ctx, displayCurrency)}
+      emptySlot={(ctx) => goalViews(ctx, displayCurrency)}
+      states={{ loading: { chrome: false }, error: { chrome: false } }}
+      error={{ title: "Couldn't load goals", message: "We couldn't load your goals. Please try again." }}
+      header={{
+        actions: (
+          <Button className={PHONE_PRIMARY_CLASS} aria-label="Add Goal" render={<Link href="/goals/new" />}>
+            <Plus className="h-4 w-4 mr-1" /> Add Goal
+          </Button>
+        ),
+      }}
+      deleteFlow={{
+        label: "Delete goal",
+        confirmTitle: "Delete goal",
+        describe: (goal) => (
+          <>Are you sure you want to delete <strong>{goal.name ?? "this goal"}</strong>? This cannot be undone.</>
+        ),
+        request: (goal) => fetch(`/api/goals?id=${goal.id}`, { method: "DELETE" }),
+        ignoreStatus: true,
+      }}
+    />
   );
 }

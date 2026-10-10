@@ -160,9 +160,13 @@ describe("Settings hub at every size (G2-06)", () => {
     expect(read("src/components/settings/sections/data-section.tsx")).toContain('"/settings/backfill"');
   });
 
-  it("the known unlinked route still exists (so the exception list does not hide a deleted page)", () => {
+  it("the known unlinked route still exists (so the exception list does not hide a deleted page)", async () => {
+    // A route is "still there" as a page, or as a nav-config redirect once its page was removed (G2-15).
+    const { REDIRECTS } = await import("@/lib/nav-config");
     for (const route of Object.keys(KNOWN_UNLINKED)) {
-      expect(existsSync(join(SRC, "app", "(app)", route, "page.tsx")), route).toBe(true);
+      const isPage = existsSync(join(SRC, "app", "(app)", route, "page.tsx"));
+      const isRedirect = REDIRECTS.some((r) => r.source === route);
+      expect(isPage || isRedirect, route).toBe(true);
     }
   });
 

@@ -249,9 +249,6 @@ const SNAPSHOT = {
     "/settings/about": {
       "kind": "fallback"
     },
-    "/settings/account": {
-      "kind": "fallback"
-    },
     "/settings/backfill": {
       "kind": "fallback"
     },
@@ -567,7 +564,7 @@ const SNAPSHOT = {
     "/scenarios": "/scenarios",
     "/settings": "/settings",
     "/settings/about": "/settings/about",
-    "/settings/account": "/settings/account",
+    "/settings/account": null,
     "/settings/backfill": "/settings/backfill",
     "/settings/backfill/7": "/settings/backfill/[runId]",
     "/settings/bank-feeds": "/settings/bank-feeds",

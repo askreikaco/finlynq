@@ -9,7 +9,6 @@
     "src/app/(app)/admin/announcements/page.tsx",
     "src/app/(app)/admin/email-inbox/page.tsx",
     "src/app/(app)/admin/feedback/page.tsx",
-    "src/app/(app)/admin/inbox/page.tsx",
     "src/app/(app)/admin/instance/page.tsx",
     "src/app/(app)/admin/page.tsx"
   ],

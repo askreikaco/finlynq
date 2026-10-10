@@ -1,52 +1,19 @@
 {
   "family": "settings",
   "unmigrated": [
-    "src/app/(app)/settings/about/page.tsx",
-    "src/app/(app)/settings/account/page.tsx",
     "src/app/(app)/settings/backfill/[runId]/page.tsx",
-    "src/app/(app)/settings/backfill/page.tsx",
-    "src/app/(app)/settings/categorization/page.tsx",
-    "src/app/(app)/settings/developer/page.tsx",
-    "src/app/(app)/settings/general/page.tsx",
-    "src/app/(app)/settings/import/reconcile-visibility/page.tsx",
-    "src/app/(app)/settings/integrations/page.tsx",
-    "src/app/(app)/settings/reconciliation/page.tsx"
+    "src/app/(app)/settings/import/reconcile-visibility/page.tsx"
   ],
   "chrome": {
-    "src/app/(app)/settings/about/page.tsx": {
-      "title-prop": 1
-    },
     "src/app/(app)/settings/backfill/[runId]/page.tsx": {
-      "title-prop": 2,
-      "subtitle-prop": 1
-    },
-    "src/app/(app)/settings/backfill/page.tsx": {
-      "title-prop": 2,
-      "subtitle-prop": 1
-    },
-    "src/app/(app)/settings/categorization/page.tsx": {
-      "title-prop": 2,
-      "subtitle-prop": 1
-    },
-    "src/app/(app)/settings/developer/page.tsx": {
-      "title-prop": 2,
-      "subtitle-prop": 1
-    },
-    "src/app/(app)/settings/general/page.tsx": {
-      "min-h": 1,
       "title-prop": 2,
       "subtitle-prop": 1
     },
     "src/app/(app)/settings/import/reconcile-visibility/page.tsx": {
       "title-prop": 1
     },
-    "src/app/(app)/settings/integrations/page.tsx": {
-      "title-prop": 2,
-      "subtitle-prop": 1
-    },
-    "src/app/(app)/settings/reconciliation/page.tsx": {
-      "title-prop": 2,
-      "subtitle-prop": 1
+    "src/app/(app)/settings/general/page.tsx": {
+      "min-h": 1
     }
   }
 }

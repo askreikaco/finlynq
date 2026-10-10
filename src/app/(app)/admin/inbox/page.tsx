@@ -30,7 +30,7 @@ import {
   X,
   Mail,
 } from "lucide-react";
-import { PageHeader } from "@/components/mobile";
+import { SectionPage } from "@/components/templates/section-page";
 
 interface InboxRow {
   id: string;
@@ -245,18 +245,25 @@ export default function AdminInboxPage() {
   }, [selectedId, load]);
 
   return (
-    <div className="max-w-7xl space-y-4">
-      <PageHeader
-        className="flex items-start justify-between gap-4"
-        title="Admin Inbox"
-        subtitle={<>Non-import email routed to this app. Mailbox is kept indefinitely; trash auto-deletes after 24 hours.</>}
-        actions={
+    <SectionPage
+      id="admin-inbox"
+      title="Admin Inbox"
+      subtitle={<>Non-import email routed to this app. Mailbox is kept indefinitely; trash auto-deletes after 24 hours.</>}
+      width="console"
+      stack="4"
+      padBottom="none"
+      minW0={false}
+      suspense={false}
+      header={{
+        className: "flex items-start justify-between gap-4",
+        actions: (
           <Button variant="outline" size="sm" onClick={load} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? "animate-spin" : ""}`} />
             Refresh
           </Button>
-        }
-      />
+        ),
+      }}
+    >
 
       {error && (
         <Card className="border-destructive/30 bg-destructive/10">
@@ -423,6 +430,6 @@ export default function AdminInboxPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </SectionPage>
   );
 }

@@ -31,7 +31,7 @@ import {
   ImportSettingsCard,
   ImportTemplatesItem,
 } from "@/components/settings/sections/import-section";
-import { PageHeader } from "@/components/mobile";
+import { SectionPage } from "@/components/templates";
 
 interface Thresholds {
   dateToleranceDays: number;
@@ -132,23 +132,24 @@ export default function ReconciliationSettingsPage() {
   }, []);
 
   return (
-    <div className="max-w-2xl space-y-6">
-      <PageHeader
-          title="Reconciliation"
-          titleClassName="text-2xl font-bold tracking-tight"
-          subtitle={<>Tune how the{" "}
-          <Link
-            href="/reconcile"
-            className="underline underline-offset-2 inline-flex items-center gap-1"
-          >
-            <Link2Icon className="h-3 w-3" />
-            /reconcile
-            <ExternalLink className="h-3 w-3" />
-          </Link>{" "}
-          page surfaces fuzzy matches between bank-ledger rows and
-          transactions.</>}
-          subtitleClassName="text-sm text-muted-foreground mt-0.5"
-        />
+    <SectionPage
+      id="settings-reconciliation"
+      title="Reconciliation"
+      subtitle={<>Tune how the{" "}
+      <Link
+        href="/reconcile"
+        className="underline underline-offset-2 inline-flex items-center gap-1"
+      >
+        <Link2Icon className="h-3 w-3" />
+        /reconcile
+        <ExternalLink className="h-3 w-3" />
+      </Link>{" "}
+      page surfaces fuzzy matches between bank-ledger rows and
+      transactions.</>}
+      padBottom="none"
+      minW0={false}
+      suspense={false}
+    >
 
       <Card>
         <CardHeader>
@@ -256,7 +257,7 @@ export default function ReconciliationSettingsPage() {
       <Accordion value={tab} onValueChange={setTab}>
         <ImportTemplatesItem />
       </Accordion>
-    </div>
+    </SectionPage>
   );
 }
 

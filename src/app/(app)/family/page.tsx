@@ -8,7 +8,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { FAMILY_STRINGS } from "@/lib/family/strings";
 import { OverviewTab } from "./_components/overview-tab";
 import { InviteLinkHandler } from "./_components/invite-link-handler";
-import { PageHeader } from "@/components/mobile";
+import { SectionPage } from "@/components/templates/section-page";
 import { FAMILY_SHARE_PATH, legacySharingRedirect } from "./_components/share-path";
 
 export default function FamilyPage() {
@@ -24,14 +24,17 @@ export default function FamilyPage() {
   }, [initialSearch, router]);
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        className="flex items-start justify-between gap-3"
-        title={FAMILY_STRINGS.page_title}
-        titleClassName="text-2xl font-bold tracking-tight"
-        subtitle={FAMILY_STRINGS.page_description}
-        subtitleClassName="text-sm text-muted-foreground mt-0.5"
-        actions={
+    <SectionPage
+      id="family"
+      title={FAMILY_STRINGS.page_title}
+      subtitle={FAMILY_STRINGS.page_description}
+      width="none"
+      padBottom="none"
+      minW0={false}
+      suspense={false}
+      header={{
+        className: "flex items-start justify-between gap-3",
+        actions: (
           <Link
             href={FAMILY_SHARE_PATH}
             aria-label={FAMILY_STRINGS.share_action}
@@ -40,12 +43,12 @@ export default function FamilyPage() {
           >
             <Share2 className="h-4 w-4" aria-hidden="true" />
           </Link>
-        }
-      />
-
+        ),
+      }}
+    >
       <InviteLinkHandler onDone={() => setReloadKey((k) => k + 1)} />
 
       <OverviewTab reloadKey={reloadKey} />
-    </div>
+    </SectionPage>
   );
 }

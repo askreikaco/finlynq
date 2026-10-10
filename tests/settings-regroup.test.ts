@@ -1,6 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { sectionFromPath, sectionFromUrl, type OpenSectionConfig } from "@/components/settings/use-open-section";
 import { movedImportHref } from "@/components/settings/moved-import";
+import { REDIRECTS } from "@/lib/nav-config";
+import { existsSync } from "fs";
+import { join } from "path";
 
 const RECON: OpenSectionConfig = {
   byPath: [
@@ -137,10 +140,8 @@ describe("Settings Reorganization - Code Structure", () => {
       expect(typeof mod.default).toBe("function");
     });
 
-    it("/settings/account route exists and exports default", async () => {
-      const mod = await import("@/app/(app)/settings/account/page");
-      expect(mod.default).toBeDefined();
-      expect(typeof mod.default).toBe("function");
+    it("/settings/account page is removed (the redirect lives in nav-config)", () => {
+      expect(existsSync(join(__dirname, "../src/app/(app)/settings/account/page.tsx"))).toBe(false);
     });
   });
 
@@ -157,11 +158,8 @@ describe("Settings Reorganization - Code Structure", () => {
       expect(src).toContain("AccountContent");
     });
 
-    it("/settings/account redirects to /account/security (G2-15, no duplicate content)", async () => {
-      const mod = await import("@/app/(app)/settings/account/page");
-      const src = mod.default.toString();
-      expect(src).toContain("/account/security");
-      expect(src).not.toContain("AccountContent");
+    it("/settings/account redirects to /account/security (G2-15, no duplicate content)", () => {
+      expect(REDIRECTS).toContainEqual({ source: "/settings/account", destination: "/account/security", permanent: false });
     });
   });
 
