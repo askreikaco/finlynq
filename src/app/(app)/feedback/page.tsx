@@ -348,7 +348,7 @@ export default function FeedbackPage() {
   usePageFab("feedback.send", () => setSendOpen(true));
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="mx-auto max-w-section">
       <PageHeader
         className="flex items-start justify-between gap-3"
         title="Feedback"
