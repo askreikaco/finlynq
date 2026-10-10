@@ -16,9 +16,26 @@
  * repeated stepping: a bill anchored on the 31st lands on Feb 28 and then back
  * on Mar 31, instead of drifting to the 28th forever (or, with `setMonth`,
  * overflowing Jan 31 → Mar 3).
+ *
+ * Persisted series keep their ANCHOR in `subscriptions.anchor_date` (the date the
+ * series started on, e.g. Jan 31). `next_date` is whichever occurrence is due
+ * next; advancing it must go through {@link occurrenceFromNext}, which indexes
+ * from the anchor — NOT `occurrenceAt(next_date, f, 1)`, which would carry the
+ * clamped Feb 28 forward as Mar 28, Apr 28 ... A NULL / stale anchor (the user
+ * edited next_date to a date that is not on the series) falls back to next_date.
+ *
+ * Non-uniform cadences (`weekdays`, `weekend`) have no fixed step in days, so
+ * "index k" means the k-th matching day counted from the anchor: index 0 is the
+ * anchor itself when it is a matching day, otherwise the first matching day after
+ * it. Internally a matching day maps to an ordinal (whole weeks since the epoch
+ * Monday x matching days per week + position in the week), so index <-> date is
+ * O(1) both ways, for negative indexes too. `daily` is just a 1-day step.
  */
 
 export const SUBSCRIPTION_FREQUENCIES = [
+  "daily",
+  "weekdays",
+  "weekend",
   "weekly",
   "biweekly",
   "every4weeks",
@@ -33,6 +50,9 @@ export const SUBSCRIPTION_FREQUENCIES = [
 export type SubscriptionFrequency = (typeof SUBSCRIPTION_FREQUENCIES)[number];
 
 export const FREQUENCY_LABELS: Record<SubscriptionFrequency, string> = {
+  daily: "Every day",
+  weekdays: "Weekdays",
+  weekend: "Weekend",
   weekly: "Weekly",
   biweekly: "Every 2 weeks",
   every4weeks: "Every 4 weeks",
@@ -46,6 +66,9 @@ export const FREQUENCY_LABELS: Record<SubscriptionFrequency, string> = {
 
 /** Compact per-period suffix for amounts, e.g. `$9.99 / mo`. */
 export const FREQUENCY_SUFFIX: Record<SubscriptionFrequency, string> = {
+  daily: "day",
+  weekdays: "weekday",
+  weekend: "weekend day",
   weekly: "wk",
   biweekly: "2 wks",
   every4weeks: "4 wks",
@@ -57,7 +80,12 @@ export const FREQUENCY_SUFFIX: Record<SubscriptionFrequency, string> = {
   annual: "yr",
 };
 
+// daily/weekdays/weekend are approximations (365 days, 52 x 5, 52 x 2) so the
+// monthly/annual equivalents stay simple and stable year to year.
 const PERIODS_PER_YEAR: Record<SubscriptionFrequency, number> = {
+  daily: 365,
+  weekdays: 260,
+  weekend: 104,
   weekly: 52,
   biweekly: 26,
   every4weeks: 13,
@@ -71,7 +99,15 @@ const PERIODS_PER_YEAR: Record<SubscriptionFrequency, number> = {
 
 // `eom` pins every occurrence to the month's LAST day regardless of the anchor's
 // day (anchor Jan 15 -> Jan 31, Feb 28/29, Mar 31 ...).
-const STEP: Record<SubscriptionFrequency, { unit: "day" | "month"; n: number; eom?: boolean }> = {
+// `dow` cadences list the matching weekdays as offsets from Monday (Mon = 0).
+type Step =
+  | { unit: "day" | "month"; n: number; eom?: boolean; offsets?: undefined }
+  | { unit: "dow"; offsets: readonly number[] };
+
+const STEP: Record<SubscriptionFrequency, Step> = {
+  daily: { unit: "day", n: 1 },
+  weekdays: { unit: "dow", offsets: [0, 1, 2, 3, 4] },
+  weekend: { unit: "dow", offsets: [5, 6] },
   weekly: { unit: "day", n: 7 },
   biweekly: { unit: "day", n: 14 },
   every4weeks: { unit: "day", n: 28 },
@@ -87,6 +123,19 @@ const STEP: Record<SubscriptionFrequency, { unit: "day" | "month"; n: number; eo
 // "yearly", and free-text rows exist from before the column was constrained by
 // the UI. Normalizing on read keeps every one of them on the right cadence.
 const ALIASES: Record<string, SubscriptionFrequency> = {
+  daily: "daily",
+  day: "daily",
+  everyday: "daily",
+  "every day": "daily",
+  weekdays: "weekdays",
+  weekday: "weekdays",
+  "week days": "weekdays",
+  "every weekday": "weekdays",
+  "mon-fri": "weekdays",
+  weekend: "weekend",
+  weekends: "weekend",
+  "every weekend": "weekend",
+  "sat-sun": "weekend",
   weekly: "weekly",
   week: "weekly",
   biweekly: "biweekly",
@@ -200,6 +249,22 @@ export function daysBetween(from: string, to: string): number {
   return Math.round((Date.UTC(b.y, b.m0, b.d) - Date.UTC(a.y, a.m0, a.d)) / DAY_MS);
 }
 
+// Day-of-week cadences (weekdays / weekend). `day` = whole days since the epoch
+// (1970-01-01, a Thursday); Monday of week w is day w*7-3.
+const weekdayOffset = (day: number) => (((day + 3) % 7) + 7) % 7; // Mon = 0 ... Sun = 6
+
+/** Ordinal of the first matching day on/after `day` (consecutive matching days differ by 1). */
+function dowOrdinal(day: number, offsets: readonly number[]): number {
+  let d = day;
+  while (!offsets.includes(weekdayOffset(d))) d++;
+  return Math.floor((d + 3) / 7) * offsets.length + offsets.indexOf(weekdayOffset(d));
+}
+
+function dowDayFromOrdinal(n: number, offsets: readonly number[]): number {
+  const c = offsets.length;
+  return Math.floor(n / c) * 7 - 3 + offsets[((n % c) + c) % c];
+}
+
 /**
  * The k-th occurrence relative to `anchor` (k = 0 is the anchor itself; k may
  * be negative). Month cadences clamp to the month's last day and re-expand.
@@ -210,6 +275,10 @@ export function occurrenceAt(anchor: string, frequency: string | null | undefine
   const p = parseIso(anchor);
   if (!p) return anchor;
   const step = STEP[frequencyOrMonthly(frequency)];
+  if (step.unit === "dow") {
+    const n = dowOrdinal(Math.floor(Date.UTC(p.y, p.m0, p.d) / DAY_MS), step.offsets) + k;
+    return isoFromUtcMs(dowDayFromOrdinal(n, step.offsets) * DAY_MS);
+  }
   if (step.unit === "day") {
     return isoFromUtcMs(Date.UTC(p.y, p.m0, p.d) + k * step.n * DAY_MS);
   }
@@ -226,6 +295,10 @@ function firstIndexOnOrAfter(anchor: string, frequency: SubscriptionFrequency, d
   const a = parseIso(anchor)!;
   const t = parseIso(date)!;
   const step = STEP[frequency];
+  if (step.unit === "dow") {
+    const day = (x: { y: number; m0: number; d: number }) => Math.floor(Date.UTC(x.y, x.m0, x.d) / DAY_MS);
+    return dowOrdinal(day(t), step.offsets) - dowOrdinal(day(a), step.offsets);
+  }
   if (step.unit === "day") {
     const diff = (Date.UTC(t.y, t.m0, t.d) - Date.UTC(a.y, a.m0, a.d)) / DAY_MS;
     return Math.ceil(diff / step.n);
@@ -246,18 +319,89 @@ export function nextOnOrAfter(anchor: string, frequency: string | null | undefin
 }
 
 /**
+ * Where a persisted series stands: `anchor` to index from and `base`, the index
+ * that `nextDate` sits at (so "k occurrences after next_date" = index base + k).
+ *
+ *  - stored anchor on the series AND next_date is one of its occurrences -> that
+ *    anchor, base = next_date's index (Jan 31 anchor, Feb 28 next -> base 1);
+ *  - otherwise (anchor NULL / malformed, or next_date was edited off the series)
+ *    next_date becomes the anchor. If next_date is itself not a matching day (a
+ *    Saturday on `weekdays`, or Jan 15 on `monthly_eom`) base is one BELOW the
+ *    index of the first matching day after it, so k = 1 is that day and k = 0 is
+ *    still next_date.
+ */
+function resolveSeries(
+  anchorDate: string | null | undefined,
+  nextDate: string,
+  f: SubscriptionFrequency,
+): { anchor: string; base: number } {
+  if (anchorDate && parseIso(anchorDate)) {
+    const j = firstIndexOnOrAfter(anchorDate, f, nextDate);
+    if (occurrenceAt(anchorDate, f, j) === nextDate) return { anchor: anchorDate, base: j };
+  }
+  const j = firstIndexOnOrAfter(nextDate, f, nextDate);
+  return { anchor: nextDate, base: occurrenceAt(nextDate, f, j) === nextDate ? j : j - 1 };
+}
+
+/** The anchor to project from: `anchorDate` when next_date is on its series, else `nextDate`. */
+export function effectiveAnchor(
+  anchorDate: string | null | undefined,
+  nextDate: string,
+  frequency: string | null | undefined,
+): string {
+  if (!parseIso(nextDate)) return nextDate;
+  return resolveSeries(anchorDate, nextDate, frequencyOrMonthly(frequency)).anchor;
+}
+
+/**
+ * The occurrence `k` (>= 0) steps after `nextDate`, indexed from the anchor
+ * (k = 0 is `nextDate`; k = 1 on a Jan 31 monthly series at Feb 28 is Mar 31).
+ * Falls back to `nextDate` as the anchor when `anchorDate` is null or stale.
+ */
+export function occurrenceFromNext(
+  anchorDate: string | null | undefined,
+  nextDate: string,
+  frequency: string | null | undefined,
+  k: number,
+): string {
+  if (!parseIso(nextDate) || k <= 0) return nextDate;
+  const f = frequencyOrMonthly(frequency);
+  const { anchor, base } = resolveSeries(anchorDate, nextDate, f);
+  return occurrenceAt(anchor, f, base + k);
+}
+
+/**
+ * Number of occurrences between `nextDate` and the first occurrence on/after
+ * `date` (so `occurrenceFromNext(.., result)` is that occurrence). 0 when
+ * `date` is not after `nextDate`.
+ */
+export function stepsToOnOrAfter(
+  anchorDate: string | null | undefined,
+  nextDate: string,
+  frequency: string | null | undefined,
+  date: string,
+): number {
+  if (!parseIso(nextDate) || !parseIso(date) || date <= nextDate) return 0;
+  const f = frequencyOrMonthly(frequency);
+  const { anchor, base } = resolveSeries(anchorDate, nextDate, f);
+  return Math.max(0, firstIndexOnOrAfter(anchor, f, date) - base);
+}
+
+/**
  * A stored next-payment date that has already passed is rolled forward to the
  * next occurrence on/after `today`; a current or future date is returned as is.
- * `null` for a missing or malformed date.
+ * `null` for a missing or malformed date. Pass the stored `anchorDate` so a
+ * month-end series rolls to Mar 31, not Mar 28.
  */
 export function rollForwardNextDate(
   nextDate: string | null | undefined,
   frequency: string | null | undefined,
   today: string,
+  anchorDate?: string | null,
 ): string | null {
   if (!nextDate || !parseIso(nextDate)) return null;
   if (nextDate >= today) return nextDate;
-  return nextOnOrAfter(nextDate, frequency, today);
+  return occurrenceFromNext(anchorDate, nextDate, frequency, stepsToOnOrAfter(anchorDate, nextDate, frequency, today));
 }
 
 /**
