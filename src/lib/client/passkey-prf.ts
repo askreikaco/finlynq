@@ -36,6 +36,23 @@ export function bytesToB64url(buf: ArrayBuffer | ArrayBufferView): string {
   return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
+/** WebAuthn ceremonies currently running in this page (any caller). */
+let webauthnPending = 0;
+
+/** True while a passkey prompt (sign-in, registration or PRF) is open; auto-start paths must wait. */
+export function isWebAuthnPending(): boolean {
+  return webauthnPending > 0;
+}
+
+async function trackWebAuthn<T>(run: () => Promise<T>): Promise<T> {
+  webauthnPending++;
+  try {
+    return await run();
+  } finally {
+    webauthnPending--;
+  }
+}
+
 export interface PrfAssertion {
   /** Assertion JSON for the server (clientExtensionResults emptied). */
   response: AuthenticationResponseJSON;
@@ -73,7 +90,7 @@ export async function getAssertionWithPrf(
         },
       }
     : options) as PublicKeyCredentialRequestOptionsJSON;
-  const raw = await startAuthentication({ optionsJSON });
+  const raw = await trackWebAuthn(() => startAuthentication({ optionsJSON }));
   const results = (raw.clientExtensionResults as { prf?: { results?: { first?: ArrayBuffer | ArrayBufferView } } } | undefined)?.prf
     ?.results?.first;
   let prfOutput: string | null = null;
@@ -94,9 +111,11 @@ export async function getAssertionWithPrf(
 export async function registerPasskey(
   options: PublicKeyCredentialCreationOptionsJSON
 ): Promise<{ response: RegistrationResponseJSON; prfEnabled: boolean | undefined }> {
-  const raw = await startRegistration({
-    optionsJSON: { ...options, extensions: { ...(options.extensions ?? {}), prf: {} } } as PublicKeyCredentialCreationOptionsJSON,
-  });
+  const raw = await trackWebAuthn(() =>
+    startRegistration({
+      optionsJSON: { ...options, extensions: { ...(options.extensions ?? {}), prf: {} } } as PublicKeyCredentialCreationOptionsJSON,
+    })
+  );
   const enabled = (raw.clientExtensionResults as { prf?: { enabled?: boolean } } | undefined)?.prf?.enabled;
   return { response: raw, prfEnabled: enabled };
 }

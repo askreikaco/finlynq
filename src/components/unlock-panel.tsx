@@ -1,91 +1,243 @@
 "use client";
 
-import { useState } from "react";
-import { passkeyLogin } from "@/lib/client/passkey-prf";
+import { useEffect, useState, type FormEvent } from "react";
+import { isWebAuthnPending, passkeyLogin } from "@/lib/client/passkey-prf";
 import { hardReload } from "@/lib/client/hard-reload";
 
 /**
  * Shown by UnlockGate when the session has no DEK (an API answered 423 or
- * /api/auth/session reported encryptionLocked). Two ways back in:
- *  - passkey: the same PRF sign-in as /cloud (one prompt when this browser
- *    remembers the credential); mints a fresh unlocked session, then a full
- *    reload. Nothing is kept client-side beyond the call.
- *  - password: the existing path, /cloud sign-in returning to this page.
- * trustDevice follows whether THIS browser already holds a trusted-device
- * entry for the user, so unlocking never silently trusts a shared computer
- * (and never revokes an already trusted one).
+ * /api/auth/session reported encryptionLocked). No banner, no Dismiss button.
+ *
+ *  1. Auto passkey: if this user has a PRF-capable passkey, the passkey prompt
+ *     starts ONCE per page load (gate-owned `autoTried` ref). Nothing shows
+ *     while it runs.
+ *  2. Password card: shown when there is no passkey, or the auto attempt was
+ *     cancelled/failed/unsupported. One password field + Unlock. A "Use passkey"
+ *     text button appears under it only when the user has a PRF passkey (manual
+ *     path; iOS Safari needs a user gesture for WebAuthn).
+ *  3. Escape hides the card. It returns on the next locked action (423). Auto
+ *     never re-runs on a page load.
+ *
+ * Passkey success and password success both call hardReload() (full reload, so
+ * every cache refetches). Password uses POST /api/auth/login (server rate limits
+ * unchanged). MFA accounts are sent to /cloud to finish sign-in.
+ * trustDevice follows whether THIS browser already holds a trusted-device entry,
+ * so unlocking never silently trusts a shared computer (and never revokes one).
  */
-export function UnlockPanel({ onDismiss }: { onDismiss: () => void }) {
+
+export type AutoAttempt = "idle" | "running" | "done";
+/** Page-load-scoped record of the automatic attempt (state lives in UnlockGate). */
+export type AutoPasskeyGate = { state: () => AutoAttempt; set: (next: AutoAttempt) => void };
+
+type Props = {
+  identifier: string | null;
+  /** Owned by UnlockGate: one auto passkey attempt per page load. */
+  autoGate: AutoPasskeyGate;
+  onDismiss: () => void;
+};
+
+async function resolveTrust(): Promise<boolean> {
+  try {
+    const d = await fetch("/api/auth/device-current");
+    const j = await d.json().catch(() => ({}));
+    return Boolean(j?.id);
+  } catch {
+    return false;
+  }
+}
+
+/** True only when the signed-in user has at least one passkey that can unlock on its own (PRF). */
+async function userHasPrfPasskey(): Promise<boolean> {
+  try {
+    const r = await fetch("/api/settings/passkeys");
+    if (!r.ok) return false;
+    const j = await r.json().catch(() => ({}));
+    return Array.isArray(j?.passkeys) && j.passkeys.some((p: { prfSupported?: unknown }) => p?.prfSupported === true);
+  } catch {
+    return false;
+  }
+}
+
+function redirectToSignIn() {
+  const here = `${window.location.pathname}${window.location.search}`;
+  hardReload(`/cloud?redirect=${encodeURIComponent(here)}`);
+}
+
+export function UnlockPanel({ identifier, autoGate, onDismiss }: Props) {
   // Rendered only after the gate's client-side session check, so no SSR mismatch.
   const [supported] = useState(() => typeof window !== "undefined" && typeof window.PublicKeyCredential !== "undefined");
+  const [phase, setPhase] = useState<"checking" | "password">("checking");
+  const [hasPasskey, setHasPasskey] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [password, setPassword] = useState("");
 
-  const unlockWithPasskey = async () => {
+  // Auto passkey, at most once per page load (autoGate lives in UnlockGate).
+  // No cancel flag: a started attempt always finishes and settles the UI. A second
+  // run (StrictMode) sees "running" and leaves the phase to the first run.
+  useEffect(() => {
+    (async () => {
+      const has = supported ? await userHasPrfPasskey() : false;
+      setHasPasskey(has);
+      if (!has || isWebAuthnPending()) {
+        setPhase("password");
+        return;
+      }
+      if (autoGate.state() === "running") return;
+      if (autoGate.state() === "done") {
+        setPhase("password");
+        return;
+      }
+      autoGate.set("running");
+      setBusy(true);
+      try {
+        const r = await passkeyLogin({ trustDevice: await resolveTrust() });
+        if (r.ok) {
+          hardReload();
+          return;
+        }
+        // Cancel is silent; failure and prf_unavailable fall through to the password card.
+        if (r.code === "prf_unavailable") setError("This passkey can't unlock on its own. Enter your password.");
+        else if (r.code === "failed") setError("Passkey unlock failed. Enter your password.");
+      } catch {
+        setError("Passkey unlock failed. Enter your password.");
+      } finally {
+        autoGate.set("done");
+        setBusy(false);
+        setPhase("password");
+      }
+    })();
+    // Runs once per mount; autoGate guards re-runs across mounts.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Escape hides the card (see header comment for when it returns).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onDismiss();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onDismiss]);
+
+  const usePasskey = async () => {
     setError("");
     setBusy(true);
     try {
-      let trust = false;
-      try {
-        const d = await fetch("/api/auth/device-current");
-        const j = await d.json().catch(() => ({}));
-        trust = Boolean(j?.id);
-      } catch {
-        trust = false;
-      }
-      const r = await passkeyLogin({ trustDevice: trust });
+      const r = await passkeyLogin({ trustDevice: await resolveTrust() });
       if (r.ok) {
         hardReload();
         return;
       }
-      if (r.code === "prf_unavailable") {
-        setError("This passkey can't unlock your data on its own. Use your password instead.");
-      } else if (r.code === "failed") {
-        setError("Passkey unlock failed. Try again or use your password.");
-      }
+      if (r.code === "prf_unavailable") setError("This passkey can't unlock on its own. Enter your password.");
+      else if (r.code === "failed") setError("Passkey unlock failed. Try again or enter your password.");
+    } catch {
+      setError("Passkey unlock failed. Try again or enter your password.");
     } finally {
       setBusy(false);
     }
   };
 
-  const unlockWithPassword = () => {
-    const here = `${window.location.pathname}${window.location.search}`;
-    hardReload(`/cloud?redirect=${encodeURIComponent(here)}`);
+  const submitPassword = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (busy || password === "") return;
+    if (!identifier) {
+      redirectToSignIn();
+      return;
+    }
+    setError("");
+    setBusy(true);
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier, password, trustDevice: await resolveTrust() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.mfaRequired) {
+        redirectToSignIn();
+        return;
+      }
+      if (res.ok) {
+        hardReload();
+        return;
+      }
+      if (res.status === 429) setError(typeof data?.error === "string" ? data.error : "Too many attempts. Try again later.");
+      else if (res.status === 401) setError("Password is incorrect.");
+      else setError("Could not unlock. Try again.");
+      setPassword("");
+    } catch {
+      setError("Something went wrong. Try again.");
+    } finally {
+      setBusy(false);
+    }
   };
+
+  if (phase === "checking") return null;
 
   return (
     <div
-      role="alertdialog"
+      role="dialog"
       aria-label="Unlock your data"
-      className="fixed inset-x-0 top-0 regular:left-[calc(5rem+var(--sal))] z-50 flex flex-wrap items-center justify-center gap-3 border-b border-warning/40 bg-warning/10 px-[max(1rem,var(--sal))] pb-3 pt-[calc(0.75rem+var(--sat))] text-sm text-warning"
+      className="fixed inset-x-0 bottom-[max(var(--kb-inset,0px),var(--mobile-bar-clearance))] z-50 px-[max(1rem,var(--sal))] regular:left-[calc(5rem+var(--sal))] regular:right-auto regular:bottom-6 regular:w-[24rem] regular:px-0"
     >
-      <span>Your data is locked. Unlock it to make changes.</span>
-      {supported && (
-        <button
-          type="button"
-          onClick={unlockWithPasskey}
-          disabled={busy}
-          className="rounded-md bg-warning px-3 py-1 font-medium text-white disabled:opacity-50"
-        >
-          Unlock with passkey
-        </button>
-      )}
-      <button
-        type="button"
-        onClick={unlockWithPassword}
-        disabled={busy}
-        className="rounded-md border border-warning px-3 py-1 font-medium disabled:opacity-50"
+      <form
+        onSubmit={submitPassword}
+        className="mx-auto flex w-full max-w-sm flex-col gap-3 rounded-xl border border-border bg-background p-4 text-foreground shadow-lg regular:mx-0"
       >
-        Unlock with password
-      </button>
-      <button type="button" onClick={onDismiss} className="underline-offset-2 hover:underline">
-        Dismiss
-      </button>
-      {error && (
-        <p role="alert" className="w-full text-center text-destructive">
-          {error}
-        </p>
-      )}
+        {identifier && (
+          <input
+            type="text"
+            name="username"
+            autoComplete="username"
+            value={identifier}
+            readOnly
+            tabIndex={-1}
+            aria-hidden="true"
+            className="sr-only"
+          />
+        )}
+        <label htmlFor="unlock-password" className="text-sm font-medium">
+          Password
+        </label>
+        <input
+          id="unlock-password"
+          name="password"
+          type="password"
+          autoComplete="current-password"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          disabled={busy}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? "unlock-error" : undefined}
+          className="h-11 w-full rounded-lg border border-input bg-background px-3 text-base text-foreground outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50"
+        />
+        {error && (
+          <p id="unlock-error" role="alert" className="text-sm text-destructive">
+            {error}
+          </p>
+        )}
+        <button
+          type="submit"
+          disabled={busy || password === ""}
+          className="h-11 w-full rounded-lg bg-primary font-medium text-primary-foreground disabled:opacity-50"
+        >
+          Unlock
+        </button>
+        {hasPasskey && supported && (
+          <button
+            type="button"
+            onClick={usePasskey}
+            disabled={busy}
+            className="min-h-11 self-center px-2 text-sm font-medium text-primary underline-offset-2 hover:underline disabled:opacity-50"
+          >
+            Use passkey
+          </button>
+        )}
+      </form>
     </div>
   );
 }

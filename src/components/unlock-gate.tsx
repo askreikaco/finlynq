@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { UnlockPanel } from "@/components/unlock-panel";
+import { UnlockPanel, type AutoAttempt, type AutoPasskeyGate } from "@/components/unlock-panel";
 import { INVITE_RETURN_PATH, stashInviteFromLocation } from "@/lib/family/invite-stash";
 import { getSessionInfo, setSessionInfo } from "@/lib/data/session-info";
 import { wipeAll } from "@/lib/data/persist";
@@ -22,6 +22,19 @@ export function UnlockGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [state, setState] = useState<AuthState>("loading");
   const [locked, setLocked] = useState(false);
+  // Sign-in name for the password card (username or email; never logged).
+  const [identifier, setIdentifier] = useState<string | null>(null);
+  // One automatic passkey attempt per page load (see UnlockPanel).
+  const autoAttempt = useRef<AutoAttempt>("idle");
+  const autoGate = useMemo<AutoPasskeyGate>(
+    () => ({
+      state: () => autoAttempt.current,
+      set: (next) => {
+        autoAttempt.current = next;
+      },
+    }),
+    [],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -31,6 +44,7 @@ export function UnlockGate({ children }: { children: React.ReactNode }) {
         const data = await res.json();
         if (cancelled) return;
         if (data.authenticated && data.userId) {
+          setIdentifier(data.username ?? data.email ?? null);
           setSessionInfo({ userId: String(data.userId), locked: data.encryptionLocked === true });
         } else {
           // signed out: no account's on-device data cache may outlive the session
@@ -88,7 +102,9 @@ export function UnlockGate({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      {locked && <UnlockPanel onDismiss={() => setLocked(false)} />}
+      {locked && (
+        <UnlockPanel identifier={identifier} autoGate={autoGate} onDismiss={() => setLocked(false)} />
+      )}
       {children}
     </>
   );

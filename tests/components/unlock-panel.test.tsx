@@ -1,6 +1,6 @@
 /**
  * @vitest-environment jsdom
- * 423 (DEK locked) in the app shell offers passkey unlock next to the password path.
+ * Manual unlock path of the locked-DEK card (see unlock-auto.test.tsx for the automatic attempt).
  */
 import "@testing-library/jest-dom";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
@@ -9,17 +9,20 @@ import userEvent from "@testing-library/user-event";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: vi.fn(), push: vi.fn() }) }));
 const passkeyLogin = vi.fn();
-vi.mock("@/lib/client/passkey-prf", () => ({ passkeyLogin: (...a: unknown[]) => passkeyLogin(...a) }));
+vi.mock("@/lib/client/passkey-prf", () => ({
+  passkeyLogin: (...a: unknown[]) => passkeyLogin(...a),
+  isWebAuthnPending: () => false,
+}));
 const hardReload = vi.fn();
 vi.mock("@/lib/client/hard-reload", () => ({ hardReload: (...a: unknown[]) => hardReload(...a) }));
 
 import { UnlockGate } from "@/components/unlock-gate";
 
 let locked = false;
-let deviceId: string | null = null;
+let prf = false;
 beforeEach(() => {
   locked = false;
-  deviceId = null;
+  prf = false;
   passkeyLogin.mockReset();
   hardReload.mockReset();
   (window as unknown as { PublicKeyCredential?: unknown }).PublicKeyCredential = function () {};
@@ -27,8 +30,10 @@ beforeEach(() => {
     "fetch",
     vi.fn(async (url: string) => {
       if (url === "/api/auth/session")
-        return new Response(JSON.stringify({ authenticated: true, encryptionLocked: locked }), { status: 200 });
-      if (url === "/api/auth/device-current") return new Response(JSON.stringify({ id: deviceId }), { status: 200 });
+        return new Response(JSON.stringify({ authenticated: true, userId: "u1", username: "reika", encryptionLocked: locked }), { status: 200 });
+      if (url === "/api/auth/device-current") return new Response(JSON.stringify({ id: null }), { status: 200 });
+      if (url === "/api/settings/passkeys")
+        return new Response(JSON.stringify({ passkeys: prf ? [{ id: "p1", prfSupported: true }] : [] }), { status: 200 });
       if (url === "/api/transactions") return new Response(JSON.stringify({ error: "session_locked" }), { status: 423 });
       return new Response("{}", { status: 200 });
     }),
@@ -39,61 +44,48 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("unlock panel", () => {
+describe("unlock panel (manual path)", () => {
   it("not shown while unlocked", async () => {
     render(<UnlockGate><div>app</div></UnlockGate>);
     await screen.findByText("app");
-    expect(screen.queryByText("Unlock with passkey")).toBeNull();
+    expect(screen.queryByLabelText("Password")).toBeNull();
   });
 
-  it("an API 423 opens the panel with passkey + password options", async () => {
+  it("an API 423 opens the password card; no passkey means no 'Use passkey' link", async () => {
     render(<UnlockGate><div>app</div></UnlockGate>);
     await screen.findByText("app");
     await fetch("/api/transactions");
-    expect(await screen.findByText("Unlock with passkey")).toBeInTheDocument();
-    expect(screen.getByText("Unlock with password")).toBeInTheDocument();
+    expect(await screen.findByLabelText("Password")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Use passkey" })).toBeNull();
+    expect(passkeyLogin).not.toHaveBeenCalled();
   });
 
-  it("session reporting encryptionLocked opens it on load", async () => {
+  it("'Use passkey' reloads on success", async () => {
     locked = true;
+    prf = true;
+    passkeyLogin.mockResolvedValueOnce({ ok: false, code: "failed", status: 400 }).mockResolvedValueOnce({ ok: true, json: {} });
     render(<UnlockGate><div>app</div></UnlockGate>);
-    expect(await screen.findByText("Unlock with passkey")).toBeInTheDocument();
-  });
-
-  it("passkey unlock reloads on success; untrusted browser -> trustDevice false", async () => {
-    locked = true;
-    passkeyLogin.mockResolvedValue({ ok: true, json: {} });
-    render(<UnlockGate><div>app</div></UnlockGate>);
-    await userEvent.click(await screen.findByText("Unlock with passkey"));
+    await userEvent.click(await screen.findByRole("button", { name: "Use passkey" }));
     await waitFor(() => expect(hardReload).toHaveBeenCalled());
-    expect(passkeyLogin).toHaveBeenCalledWith({ trustDevice: false });
   });
 
-  it("trusted browser keeps trustDevice true", async () => {
+  it("prf_unavailable shows an inline message and does not reload", async () => {
     locked = true;
-    deviceId = "dev-1";
-    passkeyLogin.mockResolvedValue({ ok: true, json: {} });
-    render(<UnlockGate><div>app</div></UnlockGate>);
-    await userEvent.click(await screen.findByText("Unlock with passkey"));
-    await waitFor(() => expect(passkeyLogin).toHaveBeenCalledWith({ trustDevice: true }));
-  });
-
-  it("prf_unavailable shows a message and does not reload; password path goes to /cloud with return", async () => {
-    locked = true;
+    prf = true;
     passkeyLogin.mockResolvedValue({ ok: false, code: "prf_unavailable", status: 400 });
     render(<UnlockGate><div>app</div></UnlockGate>);
-    await userEvent.click(await screen.findByText("Unlock with passkey"));
-    expect(await screen.findByRole("alert")).toHaveTextContent("can't unlock your data");
+    await userEvent.click(await screen.findByRole("button", { name: "Use passkey" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("can't unlock on its own");
     expect(hardReload).not.toHaveBeenCalled();
-    await userEvent.click(screen.getByText("Unlock with password"));
-    expect(hardReload.mock.calls[0][0]).toMatch(/^\/cloud\?redirect=/);
   });
 
-  it("hides the passkey button without WebAuthn", async () => {
+  it("hides the passkey link without WebAuthn", async () => {
     delete (window as unknown as { PublicKeyCredential?: unknown }).PublicKeyCredential;
     locked = true;
+    prf = true;
     render(<UnlockGate><div>app</div></UnlockGate>);
-    await screen.findByText("Unlock with password");
-    expect(screen.queryByText("Unlock with passkey")).toBeNull();
+    await screen.findByLabelText("Password");
+    expect(screen.queryByRole("button", { name: "Use passkey" })).toBeNull();
+    expect(passkeyLogin).not.toHaveBeenCalled();
   });
 });

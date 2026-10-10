@@ -114,6 +114,7 @@ Excluded from the adaptive guard scan (see 3e).
 | EmptyState | `src/components/empty-state.tsx:19` | Icon, title, description, optional action |
 | PageSkeleton | `src/components/page-skeleton.tsx:10` (`variant` type `:6-7`) | Shimmer skeleton, variants table / cards / list |
 | PageFab | `src/components/mobile/page-fab.tsx` | Per-page FAB (mobile only, `md:hidden`); mounted once in `(app)/layout.tsx`; action from `fab-registry.ts` `FAB_ROUTES` |
+| UnlockPanel (locked DEK) | `src/components/unlock-panel.tsx` | No banner. Auto passkey once per page load (`UnlockGate` ref), then a compact password card (`fixed`, bottom clears `--mobile-bar-clearance` / `--kb-inset`, `regular:` offset past rail). Escape hides; it returns on the next 423. "Use passkey" link only with a PRF passkey. Tests: `tests/components/unlock-auto.test.tsx` |
 
 ## 3. Rules
 
