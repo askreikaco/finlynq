@@ -10,6 +10,7 @@ import { initialsOf, useAccountActions, MAX_ACCOUNTS, CAP_MESSAGE, type Account 
 import { cn } from "@/lib/utils";
 import { usePageFab } from "@/components/mobile/page-fab";
 import { PageHeader } from "@/components/mobile";
+import { TW } from "@/lib/design/tokens";
 
 /** /manage-accounts: per-device show/hide, remove, add, sign out of all. */
 export function ManageAccounts() {
@@ -21,7 +22,7 @@ export function ManageAccounts() {
   const [confirmAll, setConfirmAll] = useState(false);
 
   return (
-    <div className="mx-auto max-w-xl space-y-4" data-testid="manage-accounts">
+    <div className={cn("mx-auto space-y-4", TW.form)} data-testid="manage-accounts">
       <PageHeader title="Manage accounts" />
       <p className="text-sm text-muted-foreground">
         Accounts signed in on this device. Hidden accounts stay signed in but are left out of the account menu.
@@ -31,7 +32,7 @@ export function ManageAccounts() {
         const shown = acc.active || !a.hidden.includes(acc.userId);
         return (
           <div key={acc.userId} data-testid="manage-account-card" className="rounded-2xl border border-border bg-card p-3">
-            <div className="flex min-h-11 items-center gap-3">
+            <div className={cn("flex items-center gap-3", TW.row)}>
               <span
                 aria-hidden="true"
                 className={cn(
@@ -55,13 +56,13 @@ export function ManageAccounts() {
                 aria-label={`Show ${acc.email} in account menu`}
               />
             </div>
-            <div className="mt-1 flex min-h-11 items-center">
+            <div className={cn("mt-1 flex items-center", TW.row)}>
               <button
                 type="button"
                 disabled={a.busy !== null || (!acc.active && acc.status === "locked")}
                 onClick={() => setRemoving(acc)}
                 aria-label={`Remove ${acc.email} from this device`}
-                className="min-h-11 px-1 text-sm text-destructive underline-offset-2 hover:underline disabled:opacity-50"
+                className={cn("px-1 text-sm text-destructive underline-offset-2 hover:underline disabled:opacity-50", TW.row)}
               >
                 Remove from this device
               </button>
@@ -72,7 +73,7 @@ export function ManageAccounts() {
 
       <Button
         variant="outline"
-        className="min-h-11 w-full"
+        className={cn("w-full", TW.row)}
         disabled={a.busy !== null || a.atCap}
         title={a.atCap ? CAP_MESSAGE : undefined}
         onClick={a.handleAdd}
@@ -84,7 +85,7 @@ export function ManageAccounts() {
 
       <Button
         variant="destructive"
-        className="min-h-11 w-full"
+        className={cn("w-full", TW.row)}
         disabled={a.busy !== null}
         onClick={() => setConfirmAll(true)}
       >
