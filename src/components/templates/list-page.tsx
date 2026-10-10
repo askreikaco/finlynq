@@ -14,7 +14,7 @@
  *     add={{ label: "Add Goal", href: "/goals/new" }}
  *     viewKey="goals"
  *     load={{ key: "/api/goals" }}
- *     summary={(goals) => [{ label: "Total Target", value: 1, currency: "USD" }]}
+ *     summary={(goals) => [{ label: "Total Target", value: 1 }]}
  *     empty={{ title: "Set your first goal", body: "Goals help you ..." }}
  *     cards={({ records, openDelete }) => <GoalCards ... />}
  *     list={({ records, openDelete }) => <GoalTable ... />}
