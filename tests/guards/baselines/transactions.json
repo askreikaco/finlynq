@@ -10,24 +10,11 @@
   ],
   "chrome": {
     "src/app/(app)/transactions/[id]/edit/page.tsx": {
-      "max-w-xl": 2,
       "suspense-null": 1,
       "return-to": 1
     },
     "src/app/(app)/transactions/[id]/split/page.tsx": {
-      "max-w-xl": 2,
-      "suspense-null": 1,
-      "return-to": 1
-    },
-    "src/app/(app)/transactions/_components/transaction-edit-form.tsx": {
-      "max-w-xl": 1,
-      "sab-pad": 1
-    },
-    "src/app/(app)/transactions/_components/transaction-split-form.tsx": {
-      "shrink": 1,
-      "min-h": 4,
-      "max-w-xl": 1,
-      "sab-pad": 1
+      "suspense-null": 1
     },
     "src/app/(app)/transactions/_components/transactions-workspace.tsx": {
       "min-h": 3,
@@ -49,7 +36,6 @@
       "return-to": 1
     },
     "src/app/(app)/transactions/transfer/[linkId]/edit/page.tsx": {
-      "max-w-xl": 3,
       "suspense-null": 1,
       "return-to": 1
     }
