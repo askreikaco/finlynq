@@ -26,12 +26,13 @@
 import * as React from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { Trash2 } from "lucide-react";
+import { Check, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/error-state";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { PageHeader, HEADER_SECONDARY, type OverflowAction } from "@/components/mobile";
+import { PHONE_PRIMARY_CLASS } from "@/components/mobile/page-header";
 import { FormFooter, FormNote } from "@/components/forms";
 import { useDeleteFlow } from "@/lib/forms/use-delete-flow";
 import { useRecord } from "@/lib/forms/use-record";
@@ -197,7 +198,8 @@ function FormPageBody<T, R, V>({
   };
 
   const saveButton = (
-    <Button type="submit" form={formId} disabled={submitState.saving}>
+    <Button type="submit" form={formId} disabled={submitState.saving} className={savePlacement === "bar" ? PHONE_PRIMARY_CLASS : undefined}>
+      {savePlacement === "bar" ? <Check className="h-4 w-4 mr-1" aria-hidden /> : null}
       {saveLabel}
     </Button>
   );
