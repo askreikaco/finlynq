@@ -742,6 +742,16 @@ html[data-keyboard-open] [data-testid="page-fab"] { display: none; }
   --sar: env(safe-area-inset-right, 0px);
   /* Bottom clearance for content and floating UI above the mobile tab bar (~64px bar + 12px gap + sab). */
   --mobile-bar-clearance: calc(96px + var(--sab));
+  /* Height of the top bar that sticky elements sit under (section labels). Phone: the 60px bar. */
+  --header-h: var(--phone-header-h);
+}
+
+/* Regular+: PageHeader is content-sized (title text-3xl/9 = 36px, plus one subtitle line 4px + 20px = 60px
+   at most). Sticky offsets use that maximum so a label is never hidden under the bar. */
+@media (width >= 40rem) {
+  :root {
+    --header-h: 3.75rem;
+  }
 }
 
 /* Body already carries the top padding, so full-height roots subtract it to

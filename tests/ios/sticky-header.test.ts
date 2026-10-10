@@ -77,8 +77,13 @@ describe("--phone-header-h", () => {
 
 describe("elements under the header offset by sat + header height", () => {
   it("transactions section labels stick under the page header", () => {
-    expect(txList).toContain("sticky top-[calc(var(--sat,0px)+var(--phone-header-h))]");
+    expect(txList).toContain("sticky top-[calc(var(--sat,0px)+var(--header-h))]");
     expect(txList).not.toContain("sticky top-[var(--sat,0)]");
+  });
+
+  it("--header-h is the phone bar on phones and the regular bar maximum from 640px", () => {
+    expect(css).toMatch(/--header-h:\s*var\(--phone-header-h\);/);
+    expect(css).toMatch(/@media \(width >= 40rem\)\s*\{\s*:root\s*\{\s*--header-h:\s*3\.75rem;/);
   });
 
   it("family overview filter toolbar offsets on phones, desktop keeps --sat", () => {
