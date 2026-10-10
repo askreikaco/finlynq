@@ -8,7 +8,6 @@ import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/re
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
   useRouter: () => ({ push: vi.fn(), back: vi.fn() }), usePathname: () => "/transactions/new",
-  useSearchParams: () => new URLSearchParams(),
 }));
 vi.mock("swr", () => ({ mutate: vi.fn(), useSWRConfig: () => ({ mutate: vi.fn(), cache: new Map() }) }));
 

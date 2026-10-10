@@ -120,11 +120,16 @@ export function TransactionSplitForm({
   const [hasSplits] = useState(hasSplitsInitially);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  // Rows whose amount was typed, committed from the numpad, or left (blur); Save press reveals all.
+  const [touchedRowIds, setTouchedRowIds] = useState<ReadonlySet<string>>(() => new Set());
+  const [saveAttempted, setSaveAttempted] = useState(false);
+  const markRowTouched = (rowId: string) =>
+    setTouchedRowIds((prev) => (prev.has(rowId) ? prev : new Set(prev).add(rowId)));
 
   const currency = total.currency;
   const parentAbs = Math.abs(total.amount);
   const parentCategoryId = total.categoryId ? String(total.categoryId) : "";
-  const verdict = validateSplits({ count, rows, parentAmount: parentAbs, currency, parentCategoryId });
+  const verdict = validateSplits({ count, rows, parentAmount: total.amount, currency, parentCategoryId });
 
   const categoryById = useMemo(() => new Map(categories.map((c) => [String(c.id), c])), [categories]);
   const parentCategoryName = categoryById.get(parentCategoryId)?.name ?? "—";
@@ -140,7 +145,18 @@ export function TransactionSplitForm({
     setRows((prev) => prev.map((r) => (r.id === rowId ? { ...r, ...patch } : r)));
   }
 
+  // SplitRows reports the count change and row fill in one call. An amount edit marks that visible
+  // editable row touched; growing N clears the former remainder row, which is not an edit.
+  function handleRowsChange(next: SplitRowModel[]) {
+    const prevN = parseCount(count).n;
+    next.forEach((row, i) => {
+      if (i < prevN - 1 && row.amount !== (rows[i]?.amount ?? "")) markRowTouched(row.id);
+    });
+    setRows(next);
+  }
+
   async function handleSave() {
+    setSaveAttempted(true);
     setError("");
     if (!verdict.canSave) {
       setError(verdict.firstError ?? "Splits can't be saved yet.");
@@ -242,8 +258,8 @@ export function TransactionSplitForm({
           count={count}
           onCountChange={setCount}
           rows={rows}
-          onRowsChange={setRows}
-          parentAmount={parentAbs}
+          onRowsChange={handleRowsChange}
+          parentAmount={total.amount}
           currency={currency}
           parentCategoryId={parentCategoryId}
           parentPayee={total.payee ?? undefined}
@@ -253,6 +269,8 @@ export function TransactionSplitForm({
           padTargetRowId={padRowId}
           onOpenPad={(rowId) => setPadRowId(rowId)}
           onClosePad={() => setPadRowId(null)}
+          onRowBlur={markRowTouched}
+          showEmptyErrors={(rowId) => saveAttempted || touchedRowIds.has(rowId)}
         />
 
         {verdict.n < 2 && parseCount(count).hint === null && (
@@ -277,7 +295,10 @@ export function TransactionSplitForm({
       <NumpadDock
         activeId={padRowId}
         activeValue={padRow?.amount ?? ""}
-        onChange={(id, value) => updateRow(id, { amount: value })}
+        onChange={(id, value) => {
+          markRowTouched(id);
+          updateRow(id, { amount: value });
+        }}
         onDone={() => setPadRowId(null)}
         decimals={currencyDecimals(currency)}
       />

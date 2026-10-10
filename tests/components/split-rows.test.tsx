@@ -30,6 +30,7 @@ interface HarnessProps {
   onOpenPad?: (rowId: string) => void;
   onClosePad?: () => void;
   onOpenCategory?: (rowId: string) => void;
+  onRowBlur?: (rowId: string) => void;
 }
 
 /** Controlled host: state lives here, SplitRows only renders and reports changes. */
@@ -42,6 +43,7 @@ function Harness({
   onOpenPad = () => {},
   onClosePad = () => {},
   onOpenCategory = () => {},
+  onRowBlur,
 }: HarnessProps) {
   const [count, setCount] = useState(initialCount);
   const [rows, setRows] = useState<SplitRowModel[]>(initialRows);
@@ -68,6 +70,7 @@ function Harness({
           setPad(null);
           onClosePad();
         }}
+        onRowBlur={onRowBlur}
         idPrefix="t"
       />
       <output data-testid="state-rows">{JSON.stringify(rows)}</output>
@@ -266,6 +269,62 @@ describe("SplitRows errors", () => {
     unmount();
   });
 
+  it("shows the first hidden save error in the status line when its row hides it", () => {
+    render(
+      <SplitRows
+        count="3"
+        onCountChange={() => {}}
+        rows={[row("a"), row("b", "10"), row("c")]}
+        onRowsChange={() => {}}
+        parentAmount={100}
+        currency="USD"
+        parentCategoryId="1"
+        categories={categories}
+        onOpenCategory={() => {}}
+        padTargetRowId={null}
+        onOpenPad={() => {}}
+        onClosePad={() => {}}
+        idPrefix="t"
+        showEmptyErrors={() => false}
+      />,
+    );
+    expect(screen.queryByTestId("split-error-1")).toBeNull();
+    expect(screen.getByTestId("split-status-error").textContent).toBe("Enter an amount for split 1");
+  });
+
+  it("reveals the empty-amount message per row when showEmptyErrors is a function", () => {
+    render(
+      <SplitRows
+        count="3"
+        onCountChange={() => {}}
+        rows={[row("a"), row("b"), row("c")]}
+        onRowsChange={() => {}}
+        parentAmount={100}
+        currency="USD"
+        parentCategoryId="1"
+        categories={categories}
+        onOpenCategory={() => {}}
+        padTargetRowId={null}
+        onOpenPad={() => {}}
+        onClosePad={() => {}}
+        idPrefix="t"
+        showEmptyErrors={(rowId) => rowId === "b"}
+      />,
+    );
+    expect(screen.queryByTestId("split-error-1")).toBeNull();
+    expect(screen.getByTestId("split-error-2").textContent).toBe("Enter an amount");
+    expect(screen.getByTestId("split-status-error").textContent).toBe("Enter an amount for split 1");
+  });
+
+  it("reports a blur on an editable amount with its row id", () => {
+    const onRowBlur = vi.fn();
+    render(<Harness initialCount="3" onRowBlur={onRowBlur} />);
+    fireEvent.blur(amountInput(2));
+    expect(onRowBlur).toHaveBeenCalledWith("t-row-1");
+    fireEvent.blur(amountInput(3));
+    expect(onRowBlur).toHaveBeenCalledTimes(1);
+  });
+
   it("shows no error for a valid split", () => {
     render(<Harness initialCount="2" />);
     typeAmount(1, "30");
@@ -308,6 +367,21 @@ describe("SplitRows category chip", () => {
   });
 });
 
+describe("SplitRows negative parent total", () => {
+  it("shows the magnitude in the total and allocation text, with a positive remainder and no error", () => {
+    render(<Harness initialCount="2" parentAmount={-100} />);
+    expect(screen.getByText(`Payee Coffee shop · Total ${formatCurrency(100, "USD")}`)).toBeTruthy();
+    expect(
+      screen.getByText(`Allocated ${formatCurrency(0, "USD")} of ${formatCurrency(100, "USD")}`),
+    ).toBeTruthy();
+    expect(amountInput(2).value).toBe("100.00");
+    expect(amountInput(2).getAttribute("aria-invalid")).toBeNull();
+    typeAmount(1, "30");
+    expect(amountInput(2).value).toBe("70.00");
+    expect(screen.queryByTestId("split-status-error")).toBeNull();
+  });
+});
+
 describe("SplitRows numpad hooks", () => {
   it("calls onOpenPad with the row id on an editable amount focus", () => {
     const onOpenPad = vi.fn();
@@ -339,6 +413,31 @@ describe("SplitRows buttons", () => {
 
 describe("validateSplits", () => {
   const base = { currency: "USD", parentCategoryId: "1" };
+
+  it("uses the magnitude of a negative (expense) parent total", () => {
+    const result = validateSplits({
+      ...base,
+      count: "2",
+      rows: [row("a", "30"), row("b")],
+      parentAmount: -100,
+    });
+    expect(result.canSave).toBe(true);
+    expect(result.firstError).toBeUndefined();
+    expect(result.remainder?.flag).toBe("ok");
+    expect(result.remainder?.amount).toBe(70);
+    expect(result.amounts).toEqual([30, 70]);
+  });
+
+  it("still blocks a zero parent total with a negative sign", () => {
+    const result = validateSplits({
+      ...base,
+      count: "2",
+      rows: [row("a", "")],
+      parentAmount: -0,
+    });
+    expect(result.canSave).toBe(false);
+    expect(result.formError).toBeUndefined();
+  });
 
   it("is not saveable without a split (N 0 or 1)", () => {
     for (const count of ["", "1"]) {

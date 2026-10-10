@@ -128,8 +128,12 @@ export default function MobileTransactionPage() {
   // Splits: count text ("" = none; N >= 2 = N rows, see split-math). Rows keep the hidden tail beyond N.
   const [splitCount, setSplitCount] = useState("");
   const [splitRows, setSplitRows] = useState<SplitRowModel[]>([]);
-  // An editable split amount was typed or committed from the numpad: only then do empty-amount messages show.
-  const [splitTouched, setSplitTouched] = useState(false);
+  // Split rows whose amount was typed, committed from the numpad, or left (blur). An untouched empty
+  // row shows no "Enter an amount"; Save/Continue press reveals all rows (splitSaveAttempted).
+  const [touchedSplitRowIds, setTouchedSplitRowIds] = useState<ReadonlySet<string>>(() => new Set());
+  const [splitSaveAttempted, setSplitSaveAttempted] = useState(false);
+  const markSplitRowTouched = (rowId: string) =>
+    setTouchedSplitRowIds((prev) => (prev.has(rowId) ? prev : new Set(prev).add(rowId)));
   // Split row whose category the CategorySelector is editing (null = the main Category row).
   const [activeSplitRowId, setActiveSplitRowId] = useState<string | null>(null);
 
@@ -199,16 +203,16 @@ export default function MobileTransactionPage() {
       setInvalid((prev) => (prev?.field === "amount" ? null : prev));
       return;
     }
-    setSplitTouched(true);
+    markSplitRowTouched(id);
     setSplitRows((prev) => prev.map((row) => (row.id === id ? { ...row, amount: value } : row)));
   };
-  // SplitRows reports a count change and the row fill in one call. An amount edit counts as
+  // SplitRows reports a count change and the row fill in one call. An amount edit marks that row
   // touched; growing N clears the former remainder row, which is not an edit.
   const handleSplitRowsChange = (next: SplitRowModel[]) => {
     const prevN = parseCount(splitCount).n;
-    if (next.some((row, i) => i < prevN - 1 && row.amount !== (splitRows[i]?.amount ?? ""))) {
-      setSplitTouched(true);
-    }
+    next.forEach((row, i) => {
+      if (i < prevN - 1 && row.amount !== (splitRows[i]?.amount ?? "")) markSplitRowTouched(row.id);
+    });
     setSplitRows(next);
   };
   // Transfer swap: exchange From/To. The entered currency follows the From account (as on selection),
@@ -434,7 +438,8 @@ export default function MobileTransactionPage() {
     setCategoryId("");
     setSplitCount("");
     setSplitRows([]);
-    setSplitTouched(false);
+    setTouchedSplitRowIds(new Set());
+    setSplitSaveAttempted(false);
     setActiveSplitRowId(null);
     setAlsoCreateRule(false);
     setIsBusiness(false);
@@ -496,6 +501,7 @@ export default function MobileTransactionPage() {
   const handleSave = async (mode: SaveMode = "save") => {
     const continueMode = mode === "continue";
     if (saving || doneRef.current) return;
+    setSplitSaveAttempted(true);
     setErrorMessage(null);
     setSuccessNotice(null);
     setInvalid(null);
@@ -1105,7 +1111,8 @@ export default function MobileTransactionPage() {
                 padTargetRowId={padTarget === MAIN_PAD ? null : padTarget}
                 onOpenPad={openSplitPad}
                 onClosePad={closePad}
-                showEmptyErrors={splitTouched}
+                onRowBlur={markSplitRowTouched}
+                showEmptyErrors={(rowId) => splitSaveAttempted || touchedSplitRowIds.has(rowId)}
               />
             )}
           </div>

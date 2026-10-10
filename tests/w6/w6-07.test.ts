@@ -15,8 +15,11 @@ const ARIA: [string, string, number][] = [
   ["src/app/(app)/transactions/_components/transaction-table.tsx", "aria-label=\"Split\"", 1],
   ["src/app/(app)/transactions/_components/transaction-table.tsx", "aria-label=\"Delete\"", 1],
   ["src/app/(app)/transactions/_components/transactions-workspace.tsx", "aria-label=\"Clear selection\"", 1],
-  ["src/app/(app)/transactions/_components/transaction-split-form.tsx", "aria-label=\"Remove split row\"", 1],
 ];
+// Split form (S-INT): rows are driven by the Splits count, so there is no per-row Remove control.
+// The count field is the accessible control and keeps the tall (touch-sized) row.
+const SPLIT_FORM = "src/app/(app)/transactions/_components/transaction-split-form.tsx";
+const SPLIT_COUNT = "src/components/transactions/split-rows/split-count-row.tsx";
 const SKELETON: [string, string, number][] = [
   ["src/app/(app)/transactions/page.tsx", "bg-muted animate-pulse", 7],
   ["src/app/(app)/transactions/_components/transaction-table.tsx", "bg-muted animate-pulse", 7],
@@ -33,6 +36,17 @@ describe("W6-07 design-system sweep", () => {
       expect(readFileSync(f, "utf8").split(attr).length - 1).toBe(n);
     });
   }
+  it("split form has no per-row Remove control", () => {
+    expect(readFileSync(SPLIT_FORM, "utf8").split("aria-label=\"Remove split row\"").length - 1).toBe(0);
+  });
+  it("split form mounts SplitRows, whose count field is the named split-count control", () => {
+    const form = readFileSync(SPLIT_FORM, "utf8");
+    expect(form.includes("<SplitRows")).toBe(true);
+    const count = readFileSync(SPLIT_COUNT, "utf8");
+    expect(count.includes("data-testid=\"split-count\"")).toBe(true);
+    expect(count.split("aria-label=\"Number of splits\"").length - 1).toBe(1);
+    expect(count.includes("height=\"tall\"")).toBe(true);
+  });
   for (const [f, old] of SKELETON) {
     it(`${f} skeletons use animate-shimmer, not ${old}`, () => {
       const src = readFileSync(f, "utf8");

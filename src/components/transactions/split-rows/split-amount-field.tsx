@@ -28,6 +28,8 @@ export interface SplitAmountFieldProps {
   onChange?: (value: string) => void;
   /** Focus opens the shared numpad for this row. Not called for the read-only remainder. */
   onOpenPad?: () => void;
+  /** Focus left the field (after any pending expression is settled). Not called for the remainder. */
+  onBlur?: () => void;
 }
 
 /**
@@ -47,6 +49,7 @@ export function SplitAmountField({
   active = false,
   onChange,
   onOpenPad,
+  onBlur,
 }: SplitAmountFieldProps) {
   const decimals = currencyDecimals(currency);
   const placeholder = decimals > 0 ? "0.00" : "0";
@@ -92,7 +95,10 @@ export function SplitAmountField({
         value={value}
         onChange={(e) => onChange?.(e.target.value)}
         onFocus={readOnly ? undefined : onOpenPad}
-        onBlur={settleExpression}
+        onBlur={() => {
+          settleExpression();
+          onBlur?.();
+        }}
         className={cn(
           "min-w-0 flex-1 bg-transparent text-lg font-semibold tabular-nums text-foreground outline-none",
           "placeholder:text-muted-foreground",

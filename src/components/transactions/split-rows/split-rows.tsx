@@ -63,8 +63,14 @@ export interface SplitRowsProps {
   showCount?: boolean;
   /** Prefix for DOM ids and generated row ids, e.g. "txnew-split" or "tx-split". */
   idPrefix: string;
-  /** False hides "Enter an amount" rows (fresh rows stay quiet). Defaults to true. Save is still blocked. */
-  showEmptyErrors?: boolean;
+  /**
+   * "Enter an amount" shows only when this is true for the row. A boolean applies to every row;
+   * a function is evaluated per row id (the parent tracks touched rows). Defaults to true.
+   * Save is still blocked, and the status line names the first hidden error.
+   */
+  showEmptyErrors?: boolean | ((rowId: string) => boolean);
+  /** An editable amount lost focus: the parent marks that row touched. */
+  onRowBlur?: (rowId: string) => void;
 }
 
 export interface ValidateSplitsArgs {
@@ -129,8 +135,10 @@ export function validateSplits(args: ValidateSplitsArgs): SplitValidation {
 
   const visible = visibleRows(fillRows(rows, n, "split-missing"), n);
   const resolved = resolveCategories(visible, parentCategoryId);
-  const remainder = computeRemainder(visible, parentAmount, currency);
-  const parentValid = toMinor(parentAmount, currency) > 0;
+  // Sign-agnostic: expenses carry a negative total, the split uses its magnitude.
+  const parentAbs = Math.abs(parentAmount);
+  const remainder = computeRemainder(visible, parentAbs, currency);
+  const parentValid = toMinor(parentAbs, currency) > 0;
 
   const rowErrors: Record<string, string> = {};
   const amounts: number[] = [];
@@ -208,6 +216,7 @@ export function SplitRows({
   showCount = true,
   idPrefix,
   showEmptyErrors = true,
+  onRowBlur,
 }: SplitRowsProps) {
   const effectiveCount = showCount ? count : "";
   const parsed = parseCount(effectiveCount);
@@ -223,7 +232,8 @@ export function SplitRows({
 
   if (!showCount) return null;
 
-  const parentValid = toMinor(parentAmount, currency) > 0;
+  const parentAbs = Math.abs(parentAmount);
+  const parentValid = toMinor(parentAbs, currency) > 0;
   const remainderFlag = parentValid && result.remainder ? result.remainder.flag : "ok";
   const allocatedMinor = result.visible
     .slice(0, -1)
@@ -245,6 +255,18 @@ export function SplitRows({
     onRowsChange(view.map((row) => (row.id === rowId ? { ...row, ...patch } : row)));
   };
 
+  const emptyErrorShown = (rowId: string) =>
+    typeof showEmptyErrors === "function" ? showEmptyErrors(rowId) : showEmptyErrors;
+  // The row's message, unless it is an "Enter an amount" the parent has not revealed yet.
+  const visibleRowError = (rowId: string) => {
+    const message = result.rowErrors[rowId];
+    return message === "Enter an amount" && !emptyErrorShown(rowId) ? undefined : message;
+  };
+  // Status line: the formError, or the first save-time error when its row hides it.
+  const firstErrorHidden =
+    result.firstErrorRowId !== undefined && visibleRowError(result.firstErrorRowId) === undefined;
+  const statusError = result.formError ?? (firstErrorHidden ? result.firstError : undefined);
+
   const categoryName = (id: string) => categories.find((c) => String(c.id) === id)?.name;
   const accountName = (id: string) => accounts?.find((a) => String(a.id) === id)?.name ?? id;
 
@@ -260,7 +282,7 @@ export function SplitRows({
 
       {n >= 2 && (
         <p data-testid={`${idPrefix}-context`} className="px-1 text-xs text-muted-foreground">
-          {`Payee ${parentPayee || "—"} · Total ${formatCurrency(Math.abs(parentAmount), currency)}`}
+          {`Payee ${parentPayee || "—"} · Total ${formatCurrency(parentAbs, currency)}`}
         </p>
       )}
 
@@ -276,8 +298,7 @@ export function SplitRows({
             ? `${name} · same as above`
             : name;
         const noteId = `${idPrefix}-note-${num}`;
-        const emptyHidden = !showEmptyErrors && result.rowErrors[row.id] === "Enter an amount";
-        const rowError = emptyHidden ? undefined : result.rowErrors[row.id];
+        const rowError = visibleRowError(row.id);
 
         return (
           <section
@@ -300,6 +321,7 @@ export function SplitRows({
               active={!isLast && padTargetRowId === row.id}
               onChange={isLast ? undefined : (value) => updateRow(row.id, { amount: value })}
               onOpenPad={isLast ? undefined : () => onOpenPad(row.id)}
+              onBlur={isLast ? undefined : () => onRowBlur?.(row.id)}
             />
 
             <div className={cn("flex items-center gap-3 px-4", TW.rowTall)}>
@@ -359,11 +381,11 @@ export function SplitRows({
       {n >= 2 && (
         <div data-testid={`${idPrefix}-status`} className="flex items-center justify-between gap-3 px-1 text-sm">
           <span className="text-muted-foreground">
-            {`Allocated ${formatCurrency(fromMinor(allocatedMinor, currency), currency)} of ${formatCurrency(Math.abs(parentAmount), currency)}`}
+            {`Allocated ${formatCurrency(fromMinor(allocatedMinor, currency), currency)} of ${formatCurrency(parentAbs, currency)}`}
           </span>
-          {result.formError && (
+          {statusError && (
             <span data-testid="split-status-error" className="font-medium text-neg">
-              {result.formError}
+              {statusError}
             </span>
           )}
         </div>

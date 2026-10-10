@@ -45,7 +45,7 @@ describe("ensureRows", () => {
 
   it("grows from empty to n rows with fresh ids", () => {
     seq = 0;
-    const rows = ensureRows([], 3, newId);
+    const rows = ensureRows<SplitRowModel>([], 3, newId);
     expect(rows).toHaveLength(3);
     expect(rows.map((r) => r.id)).toEqual(["new-1", "new-2", "new-3"]);
     expect(rows.every((r) => r.categoryId === "" && r.amount === "" && r.note === "")).toBe(true);
