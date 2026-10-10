@@ -100,6 +100,8 @@ export async function GET(request: NextRequest) {
       status: schema.subscriptions.status,
       cancelReminderDate: schema.subscriptions.cancelReminderDate,
       notes: schema.subscriptions.notes,
+      endDate: schema.subscriptions.endDate,
+      remainingCount: schema.subscriptions.remainingCount,
     })
     .from(schema.subscriptions)
     .leftJoin(schema.categories, eq(schema.subscriptions.categoryId, schema.categories.id))

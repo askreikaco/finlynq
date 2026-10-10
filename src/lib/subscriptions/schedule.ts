@@ -21,7 +21,10 @@
 export const SUBSCRIPTION_FREQUENCIES = [
   "weekly",
   "biweekly",
+  "every4weeks",
   "monthly",
+  "monthly_eom",
+  "bimonthly",
   "quarterly",
   "semiannual",
   "annual",
@@ -32,7 +35,10 @@ export type SubscriptionFrequency = (typeof SUBSCRIPTION_FREQUENCIES)[number];
 export const FREQUENCY_LABELS: Record<SubscriptionFrequency, string> = {
   weekly: "Weekly",
   biweekly: "Every 2 weeks",
+  every4weeks: "Every 4 weeks",
   monthly: "Monthly",
+  monthly_eom: "Last day of month",
+  bimonthly: "Every 2 months",
   quarterly: "Quarterly",
   semiannual: "Semi-annual",
   annual: "Annual",
@@ -42,7 +48,10 @@ export const FREQUENCY_LABELS: Record<SubscriptionFrequency, string> = {
 export const FREQUENCY_SUFFIX: Record<SubscriptionFrequency, string> = {
   weekly: "wk",
   biweekly: "2 wks",
+  every4weeks: "4 wks",
   monthly: "mo",
+  monthly_eom: "mo",
+  bimonthly: "2 mo",
   quarterly: "qtr",
   semiannual: "6 mo",
   annual: "yr",
@@ -51,16 +60,24 @@ export const FREQUENCY_SUFFIX: Record<SubscriptionFrequency, string> = {
 const PERIODS_PER_YEAR: Record<SubscriptionFrequency, number> = {
   weekly: 52,
   biweekly: 26,
+  every4weeks: 13,
   monthly: 12,
+  monthly_eom: 12,
+  bimonthly: 6,
   quarterly: 4,
   semiannual: 2,
   annual: 1,
 };
 
-const STEP: Record<SubscriptionFrequency, { unit: "day" | "month"; n: number }> = {
+// `eom` pins every occurrence to the month's LAST day regardless of the anchor's
+// day (anchor Jan 15 -> Jan 31, Feb 28/29, Mar 31 ...).
+const STEP: Record<SubscriptionFrequency, { unit: "day" | "month"; n: number; eom?: boolean }> = {
   weekly: { unit: "day", n: 7 },
   biweekly: { unit: "day", n: 14 },
+  every4weeks: { unit: "day", n: 28 },
   monthly: { unit: "month", n: 1 },
+  monthly_eom: { unit: "month", n: 1, eom: true },
+  bimonthly: { unit: "month", n: 2 },
   quarterly: { unit: "month", n: 3 },
   semiannual: { unit: "month", n: 6 },
   annual: { unit: "month", n: 12 },
@@ -77,8 +94,21 @@ const ALIASES: Record<string, SubscriptionFrequency> = {
   bi_weekly: "biweekly",
   fortnightly: "biweekly",
   "every 2 weeks": "biweekly",
+  every4weeks: "every4weeks",
+  "every-4-weeks": "every4weeks",
+  every_4_weeks: "every4weeks",
+  "every 4 weeks": "every4weeks",
   monthly: "monthly",
   month: "monthly",
+  monthly_eom: "monthly_eom",
+  "monthly-eom": "monthly_eom",
+  eom: "monthly_eom",
+  "end of month": "monthly_eom",
+  "last day of month": "monthly_eom",
+  bimonthly: "bimonthly",
+  "bi-monthly": "bimonthly",
+  bi_monthly: "bimonthly",
+  "every 2 months": "bimonthly",
   quarterly: "quarterly",
   quarter: "quarterly",
   semiannual: "semiannual",
@@ -173,6 +203,8 @@ export function daysBetween(from: string, to: string): number {
 /**
  * The k-th occurrence relative to `anchor` (k = 0 is the anchor itself; k may
  * be negative). Month cadences clamp to the month's last day and re-expand.
+ * `monthly_eom` is always the last day of the month (k = 0 is the end of the
+ * anchor's month, which equals the anchor only when it already is a month-end).
  */
 export function occurrenceAt(anchor: string, frequency: string | null | undefined, k: number): string {
   const p = parseIso(anchor);
@@ -184,7 +216,8 @@ export function occurrenceAt(anchor: string, frequency: string | null | undefine
   const total = p.m0 + k * step.n;
   const y = p.y + Math.floor(total / 12);
   const m0 = ((total % 12) + 12) % 12;
-  const d = Math.min(p.d, daysInMonth(y, m0));
+  const dim = daysInMonth(y, m0);
+  const d = step.eom ? dim : Math.min(p.d, dim);
   return isoFromUtcMs(Date.UTC(y, m0, d));
 }
 
@@ -228,9 +261,32 @@ export function rollForwardNextDate(
 }
 
 /**
+ * Optional end conditions for a schedule. `endDate` is the last date (inclusive)
+ * an occurrence may fall on. `remainingCount` is how many occurrences are still
+ * to come COUNTING FROM THE ANCHOR (the anchor — a subscription's `next_date` —
+ * is the first of them), so only indexes `0 .. remainingCount-1` exist.
+ * Missing / null / non-positive-or-invalid values mean "no limit" except
+ * `remainingCount <= 0`, which means "nothing left".
+ */
+export interface ScheduleEnd {
+  endDate?: string | null;
+  remainingCount?: number | null;
+}
+
+/** True when occurrence index `k` (dated `date`) is still inside `ending`. */
+export function isWithinEnd(k: number, date: string, ending?: ScheduleEnd | null): boolean {
+  if (!ending) return true;
+  if (ending.endDate && parseIso(ending.endDate) && date > ending.endDate) return false;
+  if (ending.remainingCount != null && Number.isFinite(ending.remainingCount) && k >= ending.remainingCount) return false;
+  return true;
+}
+
+/**
  * Every occurrence in `[start, end]` (inclusive) for a schedule anchored at
  * `anchor`, projected both backwards and forwards. Capped by `limit` so a
- * malformed range can't spin.
+ * malformed range can't spin. With `ending`, stops after the end date /
+ * remaining count (see {@link ScheduleEnd}); a `remainingCount` also removes
+ * the backward projection (indexes below 0 are before the series began).
  */
 export function occurrencesBetween(
   anchor: string,
@@ -238,14 +294,29 @@ export function occurrencesBetween(
   start: string,
   end: string,
   limit = 400,
+  ending?: ScheduleEnd | null,
 ): string[] {
   if (!parseIso(anchor) || !parseIso(start) || !parseIso(end) || start > end) return [];
   const f = frequencyOrMonthly(frequency);
   const out: string[] = [];
-  for (let k = firstIndexOnOrAfter(anchor, f, start); out.length < limit; k++) {
+  const hasCount = ending?.remainingCount != null && Number.isFinite(ending.remainingCount);
+  let k = firstIndexOnOrAfter(anchor, f, start);
+  if (hasCount && k < 0) k = 0;
+  for (; out.length < limit; k++) {
     const d = occurrenceAt(anchor, f, k);
     if (d > end) break;
+    if (!isWithinEnd(k, d, ending)) break;
     out.push(d);
   }
   return out;
+}
+
+/**
+ * First occurrence STRICTLY after `date` (the "next date" of a repeat that has
+ * just booked `date`). `monthly_eom` lands on the month's last day, so booking
+ * Jan 15 repeats on Jan 31 and booking Jan 31 repeats on Feb 28/29.
+ */
+export function firstOccurrenceAfter(date: string, frequency: string | null | undefined): string | null {
+  if (!parseIso(date)) return null;
+  return nextOnOrAfter(date, frequency, addDays(date, 1));
 }

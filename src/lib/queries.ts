@@ -360,6 +360,13 @@ function txRowsQuery(conditions: SQL[], orderClauses: SQL[]) {
       //   - show "cascade delete will also remove sibling X" in the confirm
       kind: transactions.kind,
       tradeLinkId: transactions.tradeLinkId,
+      // Repeat + Installment: series membership for the entry screen's read-only pill
+      // and the Delete "this / this and following" choice.
+      installmentGroupId: transactions.installmentGroupId,
+      installmentSeq: transactions.installmentSeq,
+      subscriptionId: transactions.subscriptionId,
+      // Total payments of the row's installment plan (0 when not an installment); drives "Installment 2/6".
+      installmentCount: sql<number>`CASE WHEN ${transactions.installmentGroupId} IS NULL THEN 0 ELSE (SELECT CAST(COUNT(*) AS INTEGER) FROM transactions AS inst WHERE inst.installment_group_id = ${transactions.installmentGroupId} AND inst.user_id = ${transactions.userId}) END`,
     })
     .from(transactions)
     .leftJoin(accounts, eq(transactions.accountId, accounts.id))
@@ -546,6 +553,13 @@ export async function createTransaction(userId: string, data: {
   // `kind='opening_balance'`. Validated by the transactions_kind_check DB
   // constraint. Defaults to NULL when omitted.
   kind?: string | null;
+  // Repeat + Installment phase 1 (20261012_txn_series). Server-minted only:
+  // `installmentGroupId` is a uuid shared by one instalment plan (never taken
+  // from a client), `installmentSeq` its 1..N position, `subscriptionId` the
+  // schedule a "Repeat" booking belongs to.
+  installmentGroupId?: string | null;
+  installmentSeq?: number | null;
+  subscriptionId?: number | null;
   // Audit-source attribution (issue #28). Defaults to 'manual' when the
   // caller doesn't pass one — the UI POST handler relies on the default,
   // every other writer (import/MCP/connector/sample-data/restore) sets

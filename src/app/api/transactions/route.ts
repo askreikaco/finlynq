@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getTransactions, getTransactionCount, getTransactionsPage, createTransaction, updateTransaction, getAccountById, type TxSortFilter } from "@/lib/queries";
+import { getTransactions, getTransactionCount, getTransactionsPage, createTransaction, updateTransaction, type TxSortFilter } from "@/lib/queries";
 import { decodeCursor, InvalidCursorError, type TxCursor } from "@/lib/transactions/cursor";
 import { resolveTextFilterIds, resolveAccountTextIds, resolveHoldingTextIds } from "@/lib/transactions/text-filter";
 import { requireAuth } from "@/lib/auth/require-auth";
@@ -8,9 +8,7 @@ import { encryptTxWrite, decryptTxRows, redactTxCiphertext, nameLookup, decryptN
 import { decryptField } from "@/lib/crypto/envelope";
 import { invalidateUser as invalidateUserTxCache } from "@/lib/mcp/user-tx-cache";
 import { buildHoldingResolver } from "@/lib/external-import/portfolio-holding-resolver";
-import { convertToAccountCurrency } from "@/lib/currency-conversion";
-import { todayISO } from "@/lib/utils/date";
-import { isPgErrorCode } from "@/lib/db-utils";
+import { isPgErrorCode, pgErrorConstraint } from "@/lib/db-utils";
 import { InvestmentHoldingRequiredError } from "@/lib/investment-account";
 import { validateSignVsCategoryById } from "@/lib/transactions/sign-category-invariant";
 import {
@@ -22,9 +20,11 @@ import {
 import { canEditPortfolioRow } from "@/lib/portfolio/operations";
 import type { TxRowForLots } from "@/lib/portfolio/lots/types";
 import { db, schema } from "@/db";
-import { and, eq, or } from "drizzle-orm";
+import { and, eq, gte, or } from "drizzle-orm";
 import { markSnapshotsDirty } from "@/lib/portfolio/snapshots/dirty";
 import { markCashSnapshotsDirty } from "@/lib/portfolio/snapshots/cash-dirty";
+import { resolveTxAmounts } from "@/lib/transactions/resolve-amounts";
+import { createOrLinkRepeatSubscription, planRepeat, repeatSchema, RepeatError } from "@/lib/transactions/repeat-subscription";
 import { z } from "zod";
 import { validateBody, safeErrorMessage, logApiError } from "@/lib/validate";
 import { isSortableColumnId } from "@/lib/transactions/columns";
@@ -56,6 +56,10 @@ const postSchema = z.object({
   isBusiness: z.number().optional(),
   splitPerson: z.string().optional(),
   splitRatio: z.number().optional(),
+  // Repeat + Installment phase 1 — create/link a Subscription schedule next
+  // to the booked row (same DB transaction). Unknown keys are stripped, so a
+  // client cannot set installment_group_id / subscription_id directly.
+  repeat: repeatSchema.optional(),
 }).refine(
   (data) => data.amount != null || data.enteredAmount != null,
   { message: "Either amount or enteredAmount is required" }
@@ -498,164 +502,6 @@ export async function GET(request: NextRequest) {
   return response;
 }
 
-/**
- * Resolve the entered/account-currency trilogy on a write payload.
- *
- * Branches:
- *  - enteredAmount + enteredCurrency provided → triangulate to account's
- *    currency, lock the rate. Refuses to write on source='fallback' so we
- *    don't silently store rate=1 for unsupported currencies.
- *  - enteredAmount alone (no enteredCurrency) → assume entered currency
- *    matches the account currency.
- *  - amount + currency provided (legacy callers) → mirror them as the
- *    entered side too with rate=1.
- *  - Neither → caller bug; rejected by Zod refine().
- */
-async function resolveTxAmounts(
-  data: {
-    accountId?: number;
-    currency?: string;
-    amount?: number;
-    enteredAmount?: number;
-    enteredCurrency?: string;
-    date?: string;
-  },
-  userId: string,
-  isUpdate: boolean,
-  currentTx?: {
-    enteredCurrency?: string | null;
-    enteredAmount?: number | null;
-  }
-): Promise<{
-  ok: true;
-  fields: {
-    amount?: number;
-    currency?: string;
-    enteredAmount?: number;
-    enteredCurrency?: string;
-    enteredFxRate?: number;
-  };
-} | { ok: false; response: NextResponse }> {
-  // For UPDATEs: only resolve if the user touched amount/entered fields.
-  // Allow updates to date/payee/note/etc. without re-running FX.
-  const touchedAmounts =
-    data.amount !== undefined ||
-    data.enteredAmount !== undefined ||
-    data.enteredCurrency !== undefined ||
-    data.currency !== undefined;
-  if (isUpdate && !touchedAmounts) {
-    return { ok: true, fields: {} };
-  }
-
-  // Need an account to know the settlement currency. For updates without
-  // accountId in the payload, look up the existing tx's account.
-  const accountId = data.accountId;
-  if (accountId == null) {
-    return {
-      ok: false,
-      response: NextResponse.json(
-        { error: "accountId is required when amount or currency is being changed" },
-        { status: 400 }
-      ),
-    };
-  }
-  const account = await getAccountById(accountId, userId);
-  if (!account) {
-    return {
-      ok: false,
-      response: NextResponse.json(
-        { error: `Account ${accountId} not found` },
-        { status: 404 }
-      ),
-    };
-  }
-  const accountCurrency = account.currency.toUpperCase();
-  const date = data.date ?? todayISO();
-
-  // Path 1: caller gave us entered fields — triangulate.
-  if (data.enteredAmount != null) {
-    const enteredCurrency = (data.enteredCurrency ?? accountCurrency).toUpperCase();
-    const conversion = await convertToAccountCurrency({
-      enteredAmount: data.enteredAmount,
-      enteredCurrency,
-      accountCurrency,
-      date,
-      userId,
-    });
-    if (conversion.source === "fallback") {
-      return {
-        ok: false,
-        response: NextResponse.json(
-          {
-            error: `No FX rate available for ${enteredCurrency}. Add a custom rate via Settings → Custom exchange rates first.`,
-            code: "fx-currency-needs-override",
-            currency: enteredCurrency,
-          },
-          { status: 409 }
-        ),
-      };
-    }
-    return {
-      ok: true,
-      fields: {
-        amount: conversion.amount,
-        currency: accountCurrency,
-        enteredAmount: data.enteredAmount,
-        enteredCurrency,
-        enteredFxRate: conversion.enteredFxRate,
-      },
-    };
-  }
-
-  // Path 2: legacy caller — only `amount` (+ maybe `currency`). Treat the
-  // recorded amount as both entered and account, with rate=1. If the caller
-  // passed a currency that doesn't match the account, that's a cross-
-  // currency entry without conversion (same as today's broken behavior); we
-  // preserve it for back-compat but it will get flagged by tx_currency_audit.
-  //
-  // UPDATE (amount-only): when updating an existing cross-currency transaction
-  // with only amount (no enteredAmount), keep the existing entered_amount and
-  // recompute entered_fx_rate to stay consistent. Same-currency transactions
-  // get entered_amount = amount, entered_fx_rate = 1.
-  if (data.amount != null) {
-    const currency = (data.currency ?? accountCurrency).toUpperCase();
-
-    // For amount-only UPDATEs with cross-currency transactions: preserve entered_amount
-    if (isUpdate && currentTx?.enteredCurrency && currentTx.enteredAmount != null) {
-      const existingEnteredCurrency = currentTx.enteredCurrency.toUpperCase();
-      const existingEnteredAmount = currentTx.enteredAmount;
-
-      if (existingEnteredCurrency !== accountCurrency && existingEnteredAmount !== 0) {
-        // Cross-currency case: keep entered_amount, recompute entered_fx_rate
-        return {
-          ok: true,
-          fields: {
-            amount: data.amount,
-            currency,
-            enteredAmount: existingEnteredAmount,
-            enteredCurrency: existingEnteredCurrency,
-            enteredFxRate: data.amount / existingEnteredAmount,
-          },
-        };
-      }
-    }
-
-    // Same-currency case (or not an update): entered = amount with rate 1
-    return {
-      ok: true,
-      fields: {
-        amount: data.amount,
-        currency,
-        enteredAmount: data.amount,
-        enteredCurrency: currency,
-        enteredFxRate: 1,
-      },
-    };
-  }
-
-  return { ok: true, fields: {} };
-}
-
 export async function POST(request: NextRequest) {
   const auth = await requireEncryption(request);
   if (!auth.ok) return auth.response;
@@ -663,11 +509,34 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const parsed = validateBody(body, postSchema);
     if (parsed.error) return parsed.error;
-    const data = { ...parsed.data };
+    const { repeat, ...rest } = parsed.data;
+    const data = { ...rest };
+    if (
+      repeat &&
+      (data.portfolioHolding || data.portfolioHoldingId != null || (data.quantity != null && data.quantity !== 0))
+    ) {
+      return NextResponse.json(
+        { error: "Repeat is not supported for portfolio holding rows", code: "repeat_not_supported" },
+        { status: 400 },
+      );
+    }
 
     const resolved = await resolveTxAmounts(data, auth.userId, false);
     if (!resolved.ok) return resolved.response;
     Object.assign(data, resolved.fields);
+
+    // Validate the repeat (payee present, end vs first repeat date) before any
+    // write; the subscription itself is created inside the DB transaction below.
+    if (repeat) {
+      planRepeat(repeat, {
+        date: data.date,
+        payee: data.payee,
+        amount: Number(data.amount),
+        currency: String(data.currency),
+        accountId: data.accountId,
+        categoryId: data.categoryId,
+      });
+    }
 
     // Cross-tenant FK guard (H-1) — verify the caller owns every FK id
     // supplied in the body BEFORE the resolver auto-creates anything or the
@@ -709,13 +578,30 @@ export async function POST(request: NextRequest) {
             Number(data.amount),
           )
         : null;
+    const plainPayee = data.payee;
     const encrypted = encryptTxWrite(auth.dek, data);
     const { withDbTransaction } = await import("@/db");
     const { incrementDataVersion } = await import("@/lib/data-version");
-    const tx = await withDbTransaction(async () => {
-      const inserted = await createTransaction(auth.userId, { ...encrypted, source: "manual" }, auth.dek);
+    const { tx, repeatSub } = await withDbTransaction(async () => {
+      // Repeat: the subscription and the booked row commit or roll back together.
+      let sub: { id: number; created: boolean } | null = null;
+      if (repeat) {
+        sub = await createOrLinkRepeatSubscription(auth.userId, auth.dek, repeat, {
+          date: data.date,
+          payee: plainPayee,
+          amount: Number(data.amount),
+          currency: String(data.currency),
+          accountId: data.accountId,
+          categoryId: data.categoryId,
+        });
+      }
+      const inserted = await createTransaction(
+        auth.userId,
+        { ...encrypted, source: "manual", ...(sub ? { subscriptionId: sub.id } : {}) },
+        auth.dek,
+      );
       await incrementDataVersion(auth.userId);
-      return inserted;
+      return { tx: inserted, repeatSub: sub };
     });
     invalidateUserTxCache(auth.userId);
     // Portfolio lot tracking — open/close a lot when the row touches a
@@ -735,10 +621,23 @@ export async function POST(request: NextRequest) {
       await markCashSnapshotsDirty(auth.userId, tx.accountId, tx.date);
     }
     return NextResponse.json(
-      signWarn ? { ...tx, warning: signWarn.message } : tx,
+      {
+        ...tx,
+        ...(signWarn ? { warning: signWarn.message } : {}),
+        ...(repeatSub ? { subscription: repeatSub } : {}),
+      },
       { status: 201 },
     );
   } catch (error: unknown) {
+    if (error instanceof RepeatError) {
+      return NextResponse.json({ error: error.message, code: error.code }, { status: error.status });
+    }
+    if (isPgErrorCode(error, "23505") && pgErrorConstraint(error) === "subscriptions_user_name_lookup_uniq") {
+      return NextResponse.json(
+        { error: "A subscription with this payee name already exists.", code: "repeat_subscription_name_conflict" },
+        { status: 409 },
+      );
+    }
     if (error instanceof InvestmentHoldingRequiredError) {
       return NextResponse.json(
         { error: error.message, code: error.code, accountId: error.accountId },
@@ -992,6 +891,12 @@ export async function DELETE(request: NextRequest) {
   // FINLYNQ-176 — `?confirmReallocation=1` opts into warn-and-reallocate
   // instead of the hard `portfolio_edit_blocked` 409.
   const confirmReallocation = params.get("confirmReallocation") === "1";
+  // Repeat + Installment: `scope=following` deletes this instalment AND every
+  // later one (higher installment_seq) of the same group. Default `this`.
+  const scope = params.get("scope") ?? "this";
+  if (scope !== "this" && scope !== "following") {
+    return NextResponse.json({ error: 'scope must be "this" or "following"', code: "invalid_scope" }, { status: 400 });
+  }
 
   // Thin wrapper (2026-07-30): expansion, edit-guard, lot reversal, the
   // single-statement delete, the dirty markers and the tx-cache invalidation
@@ -1000,14 +905,49 @@ export async function DELETE(request: NextRequest) {
   try {
     const { withDbTransaction } = await import("@/db");
     const { incrementDataVersion } = await import("@/lib/data-version");
+    let notInstallment = false;
     const outcome = await withDbTransaction(async () => {
-      const o = await deleteTransactionsCascade(userId, [id], {
+      let ids = [id];
+      if (scope === "following") {
+        const seed = await db
+          .select({
+            groupId: schema.transactions.installmentGroupId,
+            seq: schema.transactions.installmentSeq,
+          })
+          .from(schema.transactions)
+          .where(and(eq(schema.transactions.id, id), eq(schema.transactions.userId, userId)))
+          .get();
+        // Not owned / missing: fall through to the cascade's own not_found (404).
+        if (seed) {
+          if (!seed.groupId || seed.seq == null) {
+            notInstallment = true;
+            return null;
+          }
+          const later = await db
+            .select({ id: schema.transactions.id })
+            .from(schema.transactions)
+            .where(and(
+              eq(schema.transactions.userId, userId),
+              eq(schema.transactions.installmentGroupId, seed.groupId),
+              gte(schema.transactions.installmentSeq, seed.seq),
+            ))
+            .all();
+          ids = Array.from(new Set([id, ...later.map((r) => r.id)]));
+        }
+      }
+      const o = await deleteTransactionsCascade(userId, ids, {
         confirmReallocation,
         requireAllSeeds: true,
       });
       if (o.ok) await incrementDataVersion(userId);
       return o;
     });
+    if (notInstallment || !outcome) {
+      return NextResponse.json(
+        { error: "scope=following only applies to installment transactions", code: "not_installment" },
+        { status: 400 },
+      );
+    }
     if (!outcome.ok) {
       if (outcome.reason === "not_found") {
         return NextResponse.json({ error: "Transaction not found" }, { status: 404 });

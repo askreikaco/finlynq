@@ -68,6 +68,11 @@ export interface DialogTransaction {
   createdAt?: string | null;
   updatedAt?: string | null;
   source?: TransactionSource | null;
+  /** Repeat + Installment membership (GET /api/transactions): plan id / position / total, or the repeat subscription. */
+  installmentGroupId?: string | null;
+  installmentSeq?: number | null;
+  installmentCount?: number | null;
+  subscriptionId?: number | null;
 }
 
 export interface DialogLinkedSibling {

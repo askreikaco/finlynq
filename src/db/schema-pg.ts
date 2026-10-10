@@ -218,10 +218,23 @@ export const transactions = pgTable("transactions", {
     () => bankTransactions.id,
     { onDelete: "set null" },
   ),
+  // Repeat + Installment phase 1 (20261012_txn_series.sql). installment_group_id
+  // is a server-generated uuid shared by all rows of one instalment plan (NEVER
+  // accepted from a client; not link_id, which is for transfer pairs);
+  // installment_seq is the 1..N position. subscription_id links a "Repeat"
+  // booking to its schedule; ON DELETE SET NULL keeps history when the
+  // subscription is removed.
+  installmentGroupId: text("installment_group_id"),
+  installmentSeq: smallint("installment_seq"),
+  subscriptionId: integer("subscription_id").references(() => subscriptions.id, { onDelete: "set null" }),
 }, (t) => [
   index("idx_transactions_bank_tx").on(t.bankTransactionId)
     .where(sql`(bank_transaction_id IS NOT NULL)`),
   index("idx_transactions_link_id").on(t.linkId).where(sql`(link_id IS NOT NULL)`),
+  index("idx_transactions_installment_group").on(t.installmentGroupId)
+    .where(sql`(installment_group_id IS NOT NULL)`),
+  index("idx_transactions_subscription_id").on(t.subscriptionId)
+    .where(sql`(subscription_id IS NOT NULL)`),
   index("idx_transactions_trade_link_id").on(t.userId, t.tradeLinkId)
     .where(sql`(trade_link_id IS NOT NULL)`),
   index("idx_transactions_user_date").on(t.userId, t.date),
@@ -891,6 +904,11 @@ export const subscriptions = pgTable("subscriptions", {
   // Stream D (2026-04-24) — dual-write.
   nameCt: text("name_ct"),
   nameLookup: text("name_lookup"),
+  // Repeat + Installment phase 1 (20261012_txn_series.sql) — end conditions.
+  // end_date: last date a repeat may fall on. remaining_count: occurrences
+  // still to come, COUNTING next_date. Both NULL = forever.
+  endDate: text("end_date"),
+  remainingCount: integer("remaining_count"),
 }, (t) => [
   index("idx_subscriptions_user_id").on(t.userId),
   uniqueIndex("subscriptions_user_name_lookup_uniq").on(t.userId, t.nameLookup),
@@ -1164,7 +1182,7 @@ export const lfOpFrame = pgTable("lf_op_frame", {
   frame: bytea("frame").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
-  uniqueIndex("lf_op_frame_user_op_uniq").on(t.userId, t.opId),
+  unique("lf_op_frame_user_op_uniq").on(t.userId, t.opId),
   index("lf_op_frame_user_id_idx").on(t.userId, t.id),
 ]);
 

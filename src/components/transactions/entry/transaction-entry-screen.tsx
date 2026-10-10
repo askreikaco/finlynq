@@ -58,7 +58,14 @@ import { parseSaveError } from "@/lib/save-error";
 import type { LotReallocationPreview } from "@/lib/portfolio/lots/types";
 import { LotReallocationNotice } from "@/components/portfolio/lot-reallocation-notice";
 import { EditMetaLine } from "./edit-meta-line";
-import { EditDeleteDialog } from "./edit-delete-dialog";
+import { EditDeleteDialog, type DeleteScope } from "./edit-delete-dialog";
+import {
+  REPEAT_SPLIT_DISABLED_TITLE,
+  RepeatPill,
+  RepeatSheet,
+  SeriesBadge,
+} from "./repeat-sheet";
+import { buildRepeatBody, seriesErrorMessage, type Series } from "@/lib/transactions/series";
 import {
   getLastAccount,
   getRecent,
@@ -76,7 +83,7 @@ import type { OverflowAction } from "@/components/mobile/page-header";
 export type { EntryMode } from "@/lib/transactions/entry-mode";
 
 type TxType = "Expense" | "Income" | "Transfer";
-type InvalidField = "amount" | "account" | "category" | "toAccount";
+type InvalidField = "amount" | "account" | "category" | "toAccount" | "payee";
 const RECENT_TX_CODE: Record<TxType, RecentTxType> = { Expense: "E", Income: "I", Transfer: "T" };
 // Numpad target id for the main Amount. Split rows use their row id (never this value).
 const MAIN_PAD = "main";
@@ -95,6 +102,10 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
   const isEditTransfer = editMode?.kind === "edit-transfer";
   // The row the muted meta line (created / updated / source) describes.
   const editRow = editMode ? (editMode.kind === "edit" ? editMode.tx : editMode.debit) : null;
+  // Edit: the loaded row's series membership (read-only pill, Delete scope). Transfers never carry one.
+  const editTx = editMode?.kind === "edit" ? editMode.tx : null;
+  const isInstallmentRow = !!editTx?.installmentGroupId;
+  const isRepeatRow = !isInstallmentRow && editTx?.subscriptionId != null;
   // Edit: start values from the loaded row, read once (a later re-render must not wipe the user's edits).
   const [seed] = useState(() => (editMode ? buildEntrySeed(editMode) : null));
   const returnTo = editMode?.returnTo ?? "/transactions";
@@ -144,6 +155,10 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
   const [receivedAmount, setReceivedAmount] = useState(seed?.receivedAmount ?? "");
   // Edit: the booked received amount is the canonical rate, so the FX preview must not overwrite it.
   const [receivedTouched, setReceivedTouched] = useState(isEditTransfer);
+
+  // Repeat / Installment (create mode, Expense/Income only). null = a single transaction.
+  const [series, setSeries] = useState<Series | null>(null);
+  const [showRepeatSheet, setShowRepeatSheet] = useState(false);
 
   // Date & Time State
   const [date, setDate] = useState(() => {
@@ -304,6 +319,7 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
       account: '[data-testid="txnew-row-account"]',
       category: '[data-testid="txnew-row-category"]',
       toAccount: '[data-testid="txnew-row-to-account"]',
+      payee: "#txnew-payee",
     };
     document.querySelector<HTMLElement>(selectors[invalid.field])?.focus();
   }, [invalid]);
@@ -646,6 +662,12 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
         setShowMore(true);
         // Save is disabled while splits are invalid; this guards the same rule for any other path.
         if (!splitCheck.canSave) throw new Error(splitCheck.firstError ?? "Check the split amounts");
+        if (series && !editMode) throw new Error("Repeat and installments cannot be combined with splits. Remove the splits or choose Never.");
+      }
+      // A repeat is a subscription named after the payee, so the payee is required.
+      if (series?.kind === "repeat" && !editMode && !payee.trim()) {
+        setInvalid({ field: "payee" });
+        return;
       }
 
       // Sign: Expense is negative, Income is positive
@@ -749,19 +771,36 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
         isBusiness: isBusiness ? 1 : 0,
       };
 
-      const res = await fetch("/api/transactions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(txPayload),
-      });
+      const seriesActive = !editMode ? series : null;
+      const res = await fetch(
+        seriesActive?.kind === "installment" ? "/api/transactions/installments" : "/api/transactions",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(
+            seriesActive?.kind === "installment"
+              ? { ...txPayload, count: seriesActive.count, mode: seriesActive.mode }
+              : seriesActive?.kind === "repeat"
+                ? { ...txPayload, repeat: buildRepeatBody(seriesActive) }
+                : txPayload,
+          ),
+        },
+      );
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
+        if (seriesActive) {
+          throw new Error(
+            seriesErrorMessage(res.status, errData, `Failed to create transaction (${res.status})`, currency),
+          );
+        }
         if (errData?.code === "fx-currency-needs-override") {
           throw new Error(`No FX rate for ${errData.currency ?? currency}.`);
         }
         throw new Error(errData?.error || `Failed to create transaction (${res.status})`);
       }
+      // A repeat may have created a subscription: refresh its lists too.
+      if (seriesActive) void mutate((k) => typeof k === "string" && k.startsWith("/api/subscriptions"));
 
       const createdTx = await res.json().catch(() => ({}));
       setLastAccount(accountId);
@@ -843,7 +882,11 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
 
       doneRef.current = true;
       setDone(true);
-      setSuccessNotice(`${txType} saved successfully!`);
+      setSuccessNotice(
+        seriesActive?.kind === "installment"
+          ? `${seriesActive.count} installments saved successfully!`
+          : `${txType} saved successfully!`,
+      );
       void revalidateTransactionLists(swrMutate, cache);
       mutate("/api/accounts");
       setTimeout(() => router.push("/transactions"), 600);
@@ -856,7 +899,7 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
   };
 
   // Edit: Duplicate seeds the new-entry screen from the loaded row; Delete asks first.
-  async function deleteEntry() {
+  async function deleteEntry(scope: DeleteScope = "this") {
     if (!editMode) return;
     setDeleting(true);
     setDeleteError(null);
@@ -864,7 +907,7 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
       const res = await fetch(
         editMode.kind === "edit-transfer"
           ? `/api/transactions/transfer?linkId=${encodeURIComponent(editMode.linkId)}`
-          : `/api/transactions?id=${editMode.tx.id}`,
+          : `/api/transactions?id=${editMode.tx.id}${isInstallmentRow ? `&scope=${scope}` : ""}`,
         { method: "DELETE" },
       );
       if (!res.ok) {
@@ -996,6 +1039,7 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
           }
           onChange={(next) => {
             setTxType(next);
+            if (next === "Transfer") setSeries(null);
             setErrorMessage(null);
             setInvalid(null);
             closePad();
@@ -1043,7 +1087,33 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
             Transfer: Date, Amount, From Account, To Account, Received (cross-currency only), Note. */}
         <ListCard className="shrink-0" data-testid="txnew-list">
           {/* The OS date picker: a native date input (iOS/Android sheets, desktop calendar popup). */}
-          <FormRow variant="custom" testId="txnew-row-date" label="Date" icon={CalendarDays} htmlFor="txnew-date">
+          <FormRow
+            variant="custom"
+            testId="txnew-row-date"
+            label="Date"
+            icon={CalendarDays}
+            htmlFor="txnew-date"
+            right={
+              !editMode && txType !== "Transfer" ? (
+                <RepeatPill
+                  series={series}
+                  disabled={splitActive}
+                  disabledTitle={REPEAT_SPLIT_DISABLED_TITLE}
+                  onClick={() => {
+                    closePad();
+                    setShowRepeatSheet(true);
+                  }}
+                />
+              ) : isInstallmentRow || isRepeatRow ? (
+                <SeriesBadge
+                  hasInstallment={isInstallmentRow}
+                  hasSubscription={isRepeatRow}
+                  installmentSeq={editTx?.installmentSeq}
+                  installmentCount={editTx?.installmentCount}
+                />
+              ) : undefined
+            }
+          >
             <input
               id="txnew-date"
               type="date"
@@ -1175,7 +1245,12 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
               label="Payee"
               icon={Store}
               inputValue={payee}
-              onInputChange={setPayee}
+              onInputChange={(v) => {
+                setPayee(v);
+                setInvalid((prev) => (prev?.field === "payee" ? null : prev));
+              }}
+              invalid={invalidField === "payee"}
+              error={invalidField === "payee" ? "Repeat needs a payee" : undefined}
               onInputBlur={() => void suggestCategoryForPayee(payee)}
               placeholder="Payee / Merchant"
               enterKeyHint="next"
@@ -1339,6 +1414,12 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
           </div>
         )}
 
+        {isInstallmentRow && (
+          <p data-testid="txnew-series-hint" className="shrink-0 px-1 text-xs text-muted-foreground">
+            Edits apply to this payment only
+          </p>
+        )}
+
         {editRow && <EditMetaLine tx={editRow} />}
 
         {errorMessage && (
@@ -1423,13 +1504,26 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
             if (!open) setDeleteError(null);
           }}
           isTransfer={isEditTransfer}
+          isInstallment={isInstallmentRow}
           deleting={deleting}
           error={deleteError}
-          onConfirm={() => void deleteEntry()}
+          onConfirm={(scope) => void deleteEntry(scope)}
         />
       )}
 
       {/* Bottom Sheets */}
+      {!editMode && (
+        <RepeatSheet
+          open={showRepeatSheet}
+          onOpenChange={setShowRepeatSheet}
+          value={series}
+          onApply={setSeries}
+          startDate={date}
+          amount={parsedAmount}
+          currency={currency}
+        />
+      )}
+
       <CurrencySelector
         open={showCurrencySelector}
         onOpenChange={setShowCurrencySelector}
