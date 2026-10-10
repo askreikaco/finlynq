@@ -14,6 +14,7 @@ const H = vi.hoisted(() => ({
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), back: vi.fn() }), usePathname: () => "/transactions/new",
+  useSearchParams: () => new URLSearchParams(),
 }));
 vi.mock("next/link", () => ({
   default: ({ children, href }: { children: React.ReactNode; href: string }) =>

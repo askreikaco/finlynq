@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useId, useEffect, useMemo, useRef, useState } from "react";
-import { Check, ChevronDown, Search } from "lucide-react";
+import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
+import { Check, ChevronDown, Search, Settings } from "lucide-react";
 import { SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { filterRecent } from "@/lib/transactions/recent-picks";
@@ -17,7 +19,7 @@ export const PICKER_RECENT_LIMIT = 5;
 
 /** Bottom sheet on mobile (keyboard-aware); floating panel from sm up. */
 export const PICKER_SHEET_CLASS =
-  "flex flex-col p-0 pt-0 rounded-t-3xl bg-background border-t border-border text-foreground data-[side=bottom]:h-auto data-[side=bottom]:max-h-[min(70dvh,calc(100dvh-var(--kb-inset,0px)))] regular:inset-x-auto! regular:left-1/2! regular:bottom-6! regular:h-auto! regular:max-h-[70dvh]! regular:w-[28rem]! regular:max-w-[calc(100vw-2rem)]! regular:-translate-x-1/2! regular:rounded-2xl! regular:border!";
+  "flex flex-col p-0 pt-0 pb-[var(--sab)] regular:pb-0 rounded-t-3xl bg-background border-t border-border text-foreground data-[side=bottom]:h-auto data-[side=bottom]:max-h-[min(70dvh,calc(100dvh-var(--kb-inset,0px)))] regular:inset-x-auto! regular:left-1/2! regular:bottom-6! regular:h-auto! regular:max-h-[70dvh]! regular:w-[28rem]! regular:max-w-[calc(100vw-2rem)]! regular:-translate-x-1/2! regular:rounded-2xl! regular:border!";
 
 export interface PickerEntry {
   id: string;
@@ -41,6 +43,10 @@ export interface GroupedPickerPanelProps {
   /** Recently picked ids, most recent first. */
   recentIds?: string[];
   onPick: (id: string) => void;
+  /** Page that edits this list. Renders a round settings button in the header when set. */
+  settingsHref?: string;
+  /** Accessible name and tooltip of the settings button. */
+  settingsLabel?: string;
 }
 
 /**
@@ -55,8 +61,21 @@ export function GroupedPickerPanel({
   selectedId,
   recentIds,
   onPick,
+  settingsHref,
+  settingsLabel = "Settings",
 }: GroupedPickerPanelProps) {
   const [search, setSearch] = useState("");
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  // Settings link carries the current page back as returnTo (destinations validate it).
+  const currentPath = pathname
+    ? `${pathname}${searchParams && searchParams.toString() ? `?${searchParams.toString()}` : ""}`
+    : null;
+  const settingsLink = settingsHref
+    ? currentPath
+      ? `${settingsHref}?returnTo=${encodeURIComponent(currentPath)}`
+      : settingsHref
+    : null;
   const term = search.trim().toLowerCase();
 
   const selectedGroup = useMemo(
@@ -111,7 +130,22 @@ export function GroupedPickerPanel({
   return (
     <>
       <SheetHeader className="shrink-0 border-b border-border px-5 py-4">
-        <SheetTitle className="text-lg font-semibold text-foreground">{title}</SheetTitle>
+        {settingsLink ? (
+          <div className="flex items-center justify-between gap-3 pr-11">
+            <SheetTitle className="text-lg font-semibold text-foreground">{title}</SheetTitle>
+            <Link
+              href={settingsLink}
+              aria-label={settingsLabel}
+              title={settingsLabel}
+              data-slot="picker-settings"
+              className="inline-flex size-11 shrink-0 items-center justify-center rounded-full glass-capsule text-foreground transition-colors hover:bg-accent"
+            >
+              <Settings className="size-[18px]" aria-hidden />
+            </Link>
+          </div>
+        ) : (
+          <SheetTitle className="text-lg font-semibold text-foreground">{title}</SheetTitle>
+        )}
         <div className="relative mt-3">
           <Search
             aria-hidden="true"
