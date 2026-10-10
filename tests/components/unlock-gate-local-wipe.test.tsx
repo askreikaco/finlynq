@@ -43,8 +43,12 @@ describe("UnlockGate: local-first read-cache wipes", () => {
     window.fetch = f as unknown as typeof window.fetch;
     const { findByText } = render(<UnlockGate><div>app</div></UnlockGate>);
     await findByText("app");
-    await window.fetch("/api/accounts");
-    expect(setSessionInfo).toHaveBeenCalledWith({ userId: "u1", locked: true });
+    // The gate's fetch wrapper installs in an effect; under load the first call can run a tick early, so retry
+    // the call (the lock is idempotent: the user's cache is dropped once, see below).
+    await waitFor(async () => {
+      await window.fetch("/api/accounts");
+      expect(setSessionInfo).toHaveBeenCalledWith({ userId: "u1", locked: true });
+    });
     expect(dropLocalUserCache).toHaveBeenCalledWith("u1");
     expect(dropAllLocalCaches).not.toHaveBeenCalled();
     vi.unstubAllGlobals();

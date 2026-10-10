@@ -69,6 +69,8 @@ interface Session {
   /** Every row upserted this session, by table and id. Only kept when persist is set; it is the save source. */
   rows: RowBuckets | null;
   saveTimer: ReturnType<typeof setTimeout> | null;
+  /** The save in flight, if any. dispose waits for it so no IndexedDB connection outlives the session. */
+  saving: Promise<void> | null;
   disposed: boolean;
 }
 
@@ -97,6 +99,7 @@ function getSession(deps: ReadCacheDeps): Promise<Session> {
       seeded: false,
       rows: deps.persist ? emptyBuckets() : null,
       saveTimer: null,
+      saving: null,
       disposed: false,
     }));
     current = created;
@@ -166,7 +169,10 @@ function scheduleSave(p: SnapshotPersistDeps, s: Session): void {
   if (s.saveTimer !== null) clearTimeout(s.saveTimer);
   s.saveTimer = setTimeout(() => {
     s.saveTimer = null;
-    void saveNow(p, s);
+    const running: Promise<void> = saveNow(p, s).finally(() => {
+      if (s.saving === running) s.saving = null;
+    });
+    s.saving = running;
   }, p.debounceMs ?? SNAPSHOT_SAVE_DEBOUNCE_MS);
 }
 
@@ -222,6 +228,8 @@ export async function disposeReadCache(): Promise<void> {
   s.rows = null;
   if (s.saveTimer !== null) clearTimeout(s.saveTimer);
   s.saveTimer = null;
+  // A save already writing finishes (and re-wipes if the lock landed meanwhile) before the session is gone.
+  await s.saving?.catch(() => undefined);
   try {
     await s.store.close();
   } catch {

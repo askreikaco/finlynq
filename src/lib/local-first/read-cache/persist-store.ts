@@ -87,7 +87,7 @@ async function readBlobs(db: IDBDatabase, snapshotId: string): Promise<Uint8Arra
   return values.map((v, i) => {
     // ArrayBuffer.isView, not instanceof: bytes from IndexedDB or TextEncoder can come from another realm (jsdom).
     if (keys[i] !== blobKey(snapshotId, i) || !ArrayBuffer.isView(v)) throw new Error("snapshot blob missing or out of place");
-    return v;
+    return new Uint8Array(v.buffer, v.byteOffset, v.byteLength);
   });
 }
 

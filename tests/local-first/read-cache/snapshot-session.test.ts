@@ -142,9 +142,10 @@ describe("save after a successful hydrate", () => {
 
   it("locked or opted out when the debounce fires: nothing is saved", async () => {
     const api = fakeApi();
-    await hydrateReadCache(deps(persist("u-locked", { debounceMs: 20 }), api.fetchImpl));
+    // A debounce far longer than the hydrate's own awaits (slow CI), so `allowed` flips well before it fires.
+    await hydrateReadCache(deps(persist("u-locked", { debounceMs: 300 }), api.fetchImpl));
     allowed = false;
-    await new Promise((r) => setTimeout(r, 120));
+    await new Promise((r) => setTimeout(r, 450));
     expect(saveMock).not.toHaveBeenCalled();
     expect(await hasDb("u-locked")).toBe(false);
   });
