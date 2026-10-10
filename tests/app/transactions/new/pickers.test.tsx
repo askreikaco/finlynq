@@ -412,3 +412,87 @@ describe("AccountSelector accordion", () => {
     expect(screen.getByPlaceholderText("Search account...").className).toContain("text-base");
   });
 });
+
+describe("AccountSelector saved group order", () => {
+  function sectionNames(): string[] {
+    return Array.from(sheetContent().querySelectorAll('button[aria-expanded]')).map((b) => b.textContent ?? "");
+  }
+
+  it("orders group sections by the saved order (asset list, then liability list)", () => {
+    render(
+      <AccountSelector
+        open
+        onOpenChange={() => {}}
+        accounts={accounts}
+        onSelect={() => {}}
+        groupOrder={{ A: ["Checking", "Cash"], L: ["Credit Card"] }}
+      />,
+    );
+    expect(sectionNames()).toEqual(["Checking1", "Cash1", "Credit Card1", "Other1"]);
+  });
+
+  it("matches saved names case-insensitively", () => {
+    render(
+      <AccountSelector
+        open
+        onOpenChange={() => {}}
+        accounts={accounts}
+        onSelect={() => {}}
+        groupOrder={{ A: ["checking"], L: [] }}
+      />,
+    );
+    expect(sectionNames()).toEqual(["Checking1", "Cash1", "Credit Card1", "Other1"]);
+  });
+
+  it("groups missing from the saved order fall back to alphabetical after saved ones", () => {
+    render(
+      <AccountSelector
+        open
+        onOpenChange={() => {}}
+        accounts={accounts}
+        onSelect={() => {}}
+        groupOrder={{ A: ["Checking"], L: [] }}
+      />,
+    );
+    expect(sectionNames()).toEqual(["Checking1", "Cash1", "Credit Card1", "Other1"]);
+  });
+
+  it("Other stays last even when saved first", () => {
+    render(
+      <AccountSelector
+        open
+        onOpenChange={() => {}}
+        accounts={accounts}
+        onSelect={() => {}}
+        groupOrder={{ A: ["Other", "Checking"], L: [] }}
+      />,
+    );
+    expect(sectionNames()).toEqual(["Checking1", "Cash1", "Credit Card1", "Other1"]);
+  });
+
+  it("an empty saved order is the alphabetical default", () => {
+    render(
+      <AccountSelector
+        open
+        onOpenChange={() => {}}
+        accounts={accounts}
+        onSelect={() => {}}
+        groupOrder={{ A: [], L: [] }}
+      />,
+    );
+    expect(sectionNames()).toEqual(["Cash1", "Checking1", "Credit Card1", "Other1"]);
+  });
+
+  it("a saved order that puts Credit Card first moves its section to the top", () => {
+    render(
+      <AccountSelector
+        open
+        onOpenChange={() => {}}
+        accounts={accounts}
+        onSelect={() => {}}
+        groupOrder={{ A: [], L: ["Credit Card"] }}
+      />,
+    );
+    expect(sectionNames()).toEqual(["Credit Card1", "Cash1", "Checking1", "Other1"]);
+  });
+});
