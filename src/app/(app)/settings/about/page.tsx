@@ -5,12 +5,17 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Shield, Database } from "lucide-react";
-import { PageHeader } from "@/components/mobile";
+import { SectionPage } from "@/components/templates";
 
 export default function AboutSettingsPage() {
   return (
-    <div className="max-w-2xl space-y-6">
-      <PageHeader title="About" titleClassName="text-2xl font-bold tracking-tight" />
+    <SectionPage
+      id="settings-about"
+      title="About"
+      padBottom="none"
+      minW0={false}
+      suspense={false}
+    >
 
       <Card>
         <CardHeader>
@@ -43,6 +48,6 @@ export default function AboutSettingsPage() {
           </p>
         </CardContent>
       </Card>
-    </div>
+    </SectionPage>
   );
 }

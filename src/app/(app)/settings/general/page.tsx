@@ -32,7 +32,7 @@ import { FxOverridesSection } from "@/components/fx-overrides-section";
 import { LanguageCard } from "@/components/settings/language-card";
 import { ActiveCurrenciesSection } from "@/components/active-currencies-section";
 import { DisplaySection } from "@/components/settings/sections/display-section";
-import { PageHeader } from "@/components/mobile";
+import { SectionPage } from "@/components/templates";
 import { Switch } from "@/components/ui/switch";
 import { useAnimationPreference } from "@/hooks/use-animations";
 
@@ -98,13 +98,14 @@ export default function GeneralSettingsPage() {
   }
 
   return (
-    <div className="max-w-2xl space-y-6">
-      <PageHeader
-          title="General"
-          titleClassName="text-2xl font-bold tracking-tight"
-          subtitle="Display preferences and currencies"
-          subtitleClassName="text-sm text-muted-foreground mt-0.5"
-        />
+    <SectionPage
+      id="settings-general"
+      title="General"
+      subtitle="Display preferences and currencies"
+      padBottom="none"
+      minW0={false}
+      suspense={false}
+    >
 
       {/* Display Preferences */}
       <Card>
@@ -273,6 +274,6 @@ export default function GeneralSettingsPage() {
       <FxOverridesSection />
 
       <DisplaySection />
-    </div>
+    </SectionPage>
   );
 }

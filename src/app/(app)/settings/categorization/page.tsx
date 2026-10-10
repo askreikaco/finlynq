@@ -10,20 +10,20 @@
  * dedicated `/settings/rules` sub-page.
  */
 
-import { PageHeader } from "@/components/mobile";
+import { SectionPage } from "@/components/templates";
 import { CategoryManagement } from "@/app/(app)/categories/_components/category-management";
-import { TW } from "@/lib/design/tokens";
 
 export default function CategorizationSettingsPage() {
   return (
-    <div className={`${TW.section} space-y-6`}>
-      <PageHeader
-          title="Categories"
-          titleClassName="text-2xl font-bold tracking-tight"
-          subtitle={<>Manage transaction categories. Auto-categorization rules live in <a href="/settings/rules" className="underline hover:text-foreground">Rules</a>.</>}
-          subtitleClassName="text-sm text-muted-foreground mt-0.5"
-        />
+    <SectionPage
+      id="settings-categorization"
+      title="Categories"
+      subtitle={<>Manage transaction categories. Auto-categorization rules live in <a href="/settings/rules" className="underline hover:text-foreground">Rules</a>.</>}
+      padBottom="none"
+      minW0={false}
+      suspense={false}
+    >
       <CategoryManagement returnTo="/settings/categorization" />
-    </div>
+    </SectionPage>
   );
 }

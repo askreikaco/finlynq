@@ -16,7 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, ArrowRight, Loader2 } from "lucide-react";
-import { PageHeader } from "@/components/mobile";
+import { SectionPage } from "@/components/templates";
 
 type Mode = "refuse_orphans" | "synthesize_orphans";
 type ScopeChoice = "all" | "accounts" | "date_range";
@@ -111,14 +111,18 @@ export default function BackfillWizardPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto p-6 space-y-6">
-      <PageHeader
-          title="Backfill transactions"
-          titleClassName="text-2xl font-bold tracking-tight"
-          subtitle={<>One-time fix for imported transactions so realized gains and lot tracking work correctly.
-          Won&apos;t change your account balances.</>}
-          subtitleClassName="text-sm text-muted-foreground mt-0.5"
-        />
+    <SectionPage
+      id="settings-backfill"
+      width="report"
+      center
+      className="p-6"
+      title="Backfill transactions"
+      subtitle={<>One-time fix for imported transactions so realized gains and lot tracking work correctly.
+      Won&apos;t change your account balances.</>}
+      padBottom="none"
+      minW0={false}
+      suspense={false}
+    >
 
       <CashSleeveSymbolFix />
 
@@ -198,7 +202,7 @@ export default function BackfillWizardPage() {
           {submitting ? (<><Loader2 className="size-4 animate-spin mr-2" /> Computing proposals…</>) : (<>Compute proposals <ArrowRight className="size-4 ml-2" /></>)}
         </Button>
       </div>
-    </div>
+    </SectionPage>
   );
 }
 

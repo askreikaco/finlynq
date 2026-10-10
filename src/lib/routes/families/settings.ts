@@ -10,12 +10,6 @@ export const ROUTES: RouteDef[] = [
     fab: { kind: "fallback" },
   },
   {
-    pattern: "/settings/account",
-    family: "settings",
-    kind: "section",
-    fab: { kind: "fallback" },
-  },
-  {
     pattern: "/settings/backfill",
     family: "settings",
     kind: "section",

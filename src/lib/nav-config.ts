@@ -660,6 +660,8 @@ export const REDIRECTS: RedirectEntry[] = [
   { source: "/admin/env", destination: "/admin/system", permanent: false },
   { source: "/settings/holding-accounts", destination: "/settings/investments", permanent: false },
   { source: "/settings/securities", destination: "/settings/investments", permanent: false },
+  // /settings/account: legacy duplicate of /account/security (G2-15); query string kept by the redirect.
+  { source: "/settings/account", destination: "/account/security", permanent: false },
 ];
 
 /**
