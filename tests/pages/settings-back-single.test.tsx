@@ -8,6 +8,7 @@ import { render, cleanup } from "@testing-library/react";
 let mockPath = "/settings/about";
 vi.mock("next/navigation", () => ({
   usePathname: () => mockPath,
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 import { SettingsShell } from "@/components/settings-shell";
