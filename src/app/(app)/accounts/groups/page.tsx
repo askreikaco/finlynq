@@ -13,7 +13,8 @@ import { PageHeader } from "@/components/mobile";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { ErrorState } from "@/components/error-state";
 import { type AccountGroupType } from "@/lib/accounts/groups";
-import { safeReturnTo } from "@/lib/accounts/groups-return-to";
+import { safeReturnTo } from "@/lib/nav/return-to";
+import { TW } from "@/lib/design/tokens";
 import { ManageGroupsPanel } from "../_components/manage-groups-panel";
 
 type BalanceRow = { accountType: string; accountGroup: string | null };
@@ -52,7 +53,7 @@ function AccountGroupsContent() {
   const groupsByType = useMemo(() => groupsOf(balances ?? []), [balances]);
 
   return (
-    <div className="mx-auto w-full max-w-xl space-y-4 pb-[max(1.5rem,var(--sab,0px))]">
+    <div className={`mx-auto w-full ${TW.form} space-y-4 pb-[max(1.5rem,var(--sab,0px))]`}>
       <PageHeader
         className="flex items-center justify-between"
         title="Account groups"

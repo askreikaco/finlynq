@@ -172,7 +172,7 @@ export function ManageGroupsPanel({
 
     if (isEditing) {
       return (
-        <li key={g} className="flex min-h-11 items-center gap-2 px-4 py-1.5">
+        <li key={g} className="flex min-h-row items-center gap-2 px-4 py-1.5">
           <Input
             value={editValue}
             aria-label={`New name for ${g}`}
@@ -216,7 +216,7 @@ export function ManageGroupsPanel({
     }
 
     return (
-      <li key={g} className="flex min-h-11 items-center gap-2 pl-4 pr-1">
+      <li key={g} className="flex min-h-row items-center gap-2 pl-4 pr-1">
         <span className="min-w-0 flex-1 truncate py-2.5 text-base regular:text-sm">{g}</span>
         {!isOther && (
           <DropdownMenu>

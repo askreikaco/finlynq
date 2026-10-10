@@ -4,7 +4,8 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/mobile";
 import { useDisplayCurrency } from "@/components/currency-provider";
-import { safeReturnTo } from "@/lib/accounts/groups-return-to";
+import { safeReturnTo } from "@/lib/nav/return-to";
+import { TW } from "@/lib/design/tokens";
 import { AccountForm } from "../_components/account-form";
 
 type AccountRow = { id: number; name: string | null; alias: string | null; group: string | null };
@@ -28,9 +29,9 @@ function NewAccountPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   // Back / Cancel go to returnTo (same-app path only), else the accounts list.
-  const returnTo = safeReturnTo(searchParams.get("returnTo"));
-  // Only a present, valid returnTo overrides the post-create destination (fallback "" = none).
   const rawReturnTo = searchParams.get("returnTo");
+  const returnTo = safeReturnTo(rawReturnTo);
+  // Only a present, valid returnTo overrides the post-create destination (fallback "" = none).
   const createdReturnTo = rawReturnTo ? safeReturnTo(rawReturnTo, "") : "";
   const { displayCurrency } = useDisplayCurrency();
 
@@ -55,14 +56,14 @@ function NewAccountPage() {
   );
 
   return (
-    <div data-testid="account-new-root" className="mx-auto w-full max-w-xl">
+    <div data-testid="account-new-root" className={`mx-auto w-full ${TW.form}`}>
       <PageHeader
         title="New account"
         backHref={returnTo}
         backLabel="Back"
         className="flex items-center justify-between"
       />
-      <div className="mt-3 pb-[calc(var(--sab,0px)+1.5rem)]">
+      <div className={`mt-3 ${TW.formPad}`}>
         <AccountForm
           mode="create"
           variant="rows"
