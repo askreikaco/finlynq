@@ -546,6 +546,13 @@ export async function createTransaction(userId: string, data: {
   // `kind='opening_balance'`. Validated by the transactions_kind_check DB
   // constraint. Defaults to NULL when omitted.
   kind?: string | null;
+  // Repeat + Installment phase 1 (20261012_txn_series). Server-minted only:
+  // `installmentGroupId` is a uuid shared by one instalment plan (never taken
+  // from a client), `installmentSeq` its 1..N position, `subscriptionId` the
+  // schedule a "Repeat" booking belongs to.
+  installmentGroupId?: string | null;
+  installmentSeq?: number | null;
+  subscriptionId?: number | null;
   // Audit-source attribution (issue #28). Defaults to 'manual' when the
   // caller doesn't pass one — the UI POST handler relies on the default,
   // every other writer (import/MCP/connector/sample-data/restore) sets
