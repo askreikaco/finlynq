@@ -518,13 +518,38 @@ export async function GET(request: NextRequest) {
   return response;
 }
 
+const IDEMPOTENCY_UNIQUE_INDEX = "uniq_transactions_idempotency_key";
+
+/** Optional `Idempotency-Key` header (local-first outbox opId); blank/oversized = treated as absent. */
+function readIdempotencyKey(request: NextRequest): string | null {
+  const v = request.headers.get("idempotency-key")?.trim();
+  return v && v.length <= 200 ? v : null;
+}
+
+async function findByIdempotencyKey(userId: string, key: string) {
+  return (
+    (await db
+      .select()
+      .from(schema.transactions)
+      .where(and(eq(schema.transactions.userId, userId), eq(schema.transactions.idempotencyKey, key)))
+      .get()) ?? null
+  );
+}
+
 export async function POST(request: NextRequest) {
   const auth = await requireEncryption(request);
   if (!auth.ok) return auth.response;
+  const idemKey = readIdempotencyKey(request);
   try {
     const body = await request.json();
     const parsed = validateBody(body, postSchema);
     if (parsed.error) return parsed.error;
+    // Replay of a create whose response was lost: same (user, key) -> the
+    // existing row, same 201 shape, no second insert and no side effects.
+    if (idemKey) {
+      const existing = await findByIdempotencyKey(auth.userId, idemKey);
+      if (existing) return NextResponse.json({ ...existing }, { status: 201 });
+    }
     const { repeat, subscriptionId: postSubId, occurrenceDate, ...rest } = parsed.data;
     const data = { ...rest };
     if ((postSubId == null) !== (occurrenceDate == null)) {
@@ -644,6 +669,7 @@ export async function POST(request: NextRequest) {
           source: "manual",
           ...(sub ? { subscriptionId: sub.id } : {}),
           ...(due ? { subscriptionId: due.id, occurrenceDate } : {}),
+          ...(idemKey ? { idempotencyKey: idemKey } : {}),
         },
         auth.dek,
       );
@@ -681,6 +707,11 @@ export async function POST(request: NextRequest) {
   } catch (error: unknown) {
     if (error instanceof RepeatError) {
       return NextResponse.json({ error: error.message, code: error.code }, { status: error.status });
+    }
+    // Concurrent replay lost the insert race: the winner's row is the answer.
+    if (idemKey && isPgErrorCode(error, "23505") && pgErrorConstraint(error) === IDEMPOTENCY_UNIQUE_INDEX) {
+      const existing = await findByIdempotencyKey(auth.userId, idemKey);
+      if (existing) return NextResponse.json({ ...existing }, { status: 201 });
     }
     const occErr = mapPostError(error);
     if (occErr) {
