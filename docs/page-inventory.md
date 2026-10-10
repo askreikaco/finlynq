@@ -4,6 +4,8 @@ Base `99e332df` (branch `wave4/w4-4-5-docs`). Generated 2026-10-09 (UTC+7 VN). S
 
 ## Counts
 
+Note (2026-10-10): the header/skeleton/error counts below predate releases 2 and 3. About 34 pages now render PageHeader, loading and error states through `src/components/templates/*` (FormPage, ListPage, HubPage, ReportPage, SectionPage), so a plain grep for `<PageHeader` in page.tsx undercounts them (40 literal hits). The route count (92) is current.
+
 | check | value |
 |---|---|
 | `find "src/app/(app)" -name page.tsx \| sort \| wc -l` | 92 |
