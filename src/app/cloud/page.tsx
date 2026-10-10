@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, useRef, Suspense } from "react";
 import { AnalyticsConsent } from "@/components/analytics-consent";
 import { LogoMark } from "@/components/logo-mark";
+import { Switch } from "@/components/ui/switch";
 import { hardReload } from "@/lib/client/hard-reload";
 import {
   setPasskeyHint,
@@ -675,14 +676,9 @@ function CloudAuthPageInner() {
             >
               {loading ? "Verifying..." : "Verify"}
             </button>
-            <label className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-              <input
-                type="checkbox"
-                checked={sharedComputer}
-                onChange={(e) => setSharedComputer(e.target.checked)}
-                className="h-4 w-4 rounded border-border bg-background accent-primary"
-              />
+            <label className="flex min-h-row items-center justify-center gap-3 text-xs text-muted-foreground">
               This is a shared computer
+              <Switch checked={sharedComputer} onCheckedChange={setSharedComputer} />
             </label>
             <div className="flex flex-col items-center gap-2 text-sm">
               {passkeySupported && (
@@ -733,14 +729,9 @@ function CloudAuthPageInner() {
               </button>
             )}
 
-            <label className="mb-4 flex items-center gap-2 text-xs text-muted-foreground">
-              <input
-                type="checkbox"
-                checked={sharedComputer}
-                onChange={(e) => setSharedComputer(e.target.checked)}
-                className="h-4 w-4 rounded border-border bg-background accent-primary"
-              />
+            <label className="mb-4 flex min-h-row items-center justify-between gap-3 text-xs text-muted-foreground">
               This is a shared computer
+              <Switch checked={sharedComputer} onCheckedChange={setSharedComputer} />
             </label>
 
             {error && (
@@ -845,14 +836,9 @@ function CloudAuthPageInner() {
                     Forgot password?
                   </Link>
                 </div>
-                <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <input
-                    type="checkbox"
-                    checked={sharedComputer}
-                    onChange={(e) => setSharedComputer(e.target.checked)}
-                    className="h-4 w-4 rounded border-border bg-background accent-primary"
-                  />
+                <label className="flex min-h-row items-center justify-between gap-3 text-xs text-muted-foreground">
                   This is a shared computer
+                  <Switch checked={sharedComputer} onCheckedChange={setSharedComputer} />
                 </label>
                 {error && (
                   <p className="text-sm text-destructive" role="alert" aria-live="assertive">{error}</p>

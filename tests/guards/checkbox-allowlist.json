@@ -1,0 +1,41 @@
+{
+  "src/components/ui/column-filter.tsx": {
+    "reason": "Multi-select enum filter list (Match any of): several rows of values chosen at once. Selection-type, keep Checkbox."
+  },
+  "src/app/(app)/transactions/_components/transaction-table.tsx": {
+    "reason": "Row select column plus select-all in the transactions list (bulk selection).",
+    "optional": true
+  },
+  "src/app/(app)/settings/backfill/[runId]/page.tsx": {
+    "reason": "Per-row approve include/exclude in the backfill review list.",
+    "optional": true
+  },
+  "src/app/(app)/settings/backfill/page.tsx": {
+    "reason": "Multi-select list of investment accounts (choose several at once).",
+    "optional": true
+  },
+  "src/app/(app)/family/_components/section-checklist.tsx": {
+    "reason": "Multi-select section list with tri-state select-all.",
+    "optional": true
+  },
+  "src/app/(app)/import/components/import-preview-dialog.tsx": {
+    "reason": "Per-row include/exclude of duplicate and probable rows in the import preview.",
+    "optional": true
+  },
+  "src/components/import/reconcile/file-pane.tsx": {
+    "reason": "Row select plus tri-state select-all in the reconcile file pane.",
+    "optional": true
+  },
+  "src/components/reconcile/bank-pane.tsx": {
+    "reason": "Row select plus tri-state select-all in the reconcile bank pane.",
+    "optional": true
+  },
+  "src/components/reconcile/transactions-pane.tsx": {
+    "reason": "Row select plus tri-state select-all in the reconcile transactions pane.",
+    "optional": true
+  },
+  "src/components/reconcile/preview-table.tsx": {
+    "reason": "Per-row force-commit include for probable matches in the reconcile preview.",
+    "optional": true
+  }
+}

@@ -10,6 +10,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Megaphone, Pencil, Trash2, Plus } from "lucide-react";
@@ -246,21 +247,13 @@ export default function AdminAnnouncementsPage() {
           </div>
 
           <div className="flex flex-wrap gap-4">
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={form.pinned}
-                onChange={(e) => setForm((f) => ({ ...f, pinned: e.target.checked }))}
-              />
+            <label className="flex min-h-row items-center justify-between gap-3 text-sm">
               Pinned (shows as banner)
+              <Switch checked={form.pinned} onCheckedChange={(v) => setForm((f) => ({ ...f, pinned: v }))} />
             </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={form.published}
-                onChange={(e) => setForm((f) => ({ ...f, published: e.target.checked }))}
-              />
+            <label className="flex min-h-row items-center justify-between gap-3 text-sm">
               Published
+              <Switch checked={form.published} onCheckedChange={(v) => setForm((f) => ({ ...f, published: v }))} />
             </label>
           </div>
 
