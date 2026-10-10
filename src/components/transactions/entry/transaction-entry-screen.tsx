@@ -59,6 +59,7 @@ import type { LotReallocationPreview } from "@/lib/portfolio/lots/types";
 import { LotReallocationNotice } from "@/components/portfolio/lot-reallocation-notice";
 import { EditMetaLine } from "./edit-meta-line";
 import { EditDeleteDialog, type DeleteScope } from "./edit-delete-dialog";
+import { EditSaveDialog, type SaveScope } from "./edit-save-dialog";
 import {
   REPEAT_SPLIT_DISABLED_TITLE,
   RepeatPill,
@@ -319,6 +320,9 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
   // Edit: Delete asks first; the lot-reallocation prompt of a lot-locked save (FINLYNQ-176).
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  // Installment row: Save asks the scope first (this payment / this and following).
+  const [saveScopeOpen, setSaveScopeOpen] = useState(false);
+  const savedScopeRef = useRef<SaveScope | undefined>(undefined);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [reallocPreview, setReallocPreview] = useState<LotReallocationPreview | null>(null);
   const [reallocPending, setReallocPending] = useState(false);
@@ -477,6 +481,20 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
 
   // Entered currency: explicit choice, else the account's currency, else the display currency.
   const currency = currencyChoice || selectedAcc?.currency || displayCurrency;
+  // Installment row: what differs from the loaded row. Date is reported (it never propagates) but is not "relevant".
+  const installmentChange = (() => {
+    if (!isInstallmentRow || !seed) return { relevant: false, amount: false, date: false };
+    const amountDiff = txType !== seed.txType || parsedAmount !== (parseFloat(seed.amount) || 0) || currency !== seed.currencyChoice;
+    const relevant =
+      amountDiff ||
+      categoryId !== seed.categoryId ||
+      accountId !== seed.accountId ||
+      payee !== seed.payee ||
+      note !== seed.note ||
+      tags !== seed.tags ||
+      isBusiness !== seed.isBusiness;
+    return { relevant, amount: amountDiff, date: date !== seed.date };
+  })();
   const currencyOptions = useActiveCurrencies(currency);
   // Currency chips sit in the keypad only for the main amount (split rows inherit the currency).
   // Same handler as the currency sheet, so conversion and FX preview follow a chip tap too.
@@ -591,7 +609,9 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
   };
 
   // Submit Handler: Save books the entry and locks the form.
-  const handleSave = async (confirmReallocation = false) => {
+  const handleSave = async (confirmReallocation = false, scope?: SaveScope) => {
+    if (scope) savedScopeRef.current = scope;
+    else if (!confirmReallocation) savedScopeRef.current = undefined;
     if (saving || doneRef.current) return;
     setSplitSaveAttempted(true);
     if (!confirmReallocation) setReallocPreview(null);
@@ -724,6 +744,11 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
       const effectiveCategoryId = splitActive ? Number(splitCheck.resolved[0].id) : Number(categoryId);
 
       if (editMode?.kind === "edit") {
+        // Installment row with a shared-field change: ask which payments get it before writing anything.
+        if (isInstallmentRow && !scope && !confirmReallocation && installmentChange.relevant) {
+          setSaveScopeOpen(true);
+          return;
+        }
         // Same PUT (+ splits POST) the old edit form sent.
         const putRes = await fetch("/api/transactions", {
           method: "PUT",
@@ -741,6 +766,7 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
               tags,
               isBusiness,
               confirmReallocation,
+              scope: isInstallmentRow ? (scope ?? savedScopeRef.current) : undefined,
             }),
           ),
         });
@@ -1482,7 +1508,7 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
 
         {isInstallmentRow && (
           <p data-testid="txnew-series-hint" className="shrink-0 px-1 text-xs text-muted-foreground">
-            Edits apply to this payment only
+            Edits can apply to this payment or the following ones
           </p>
         )}
 
@@ -1574,6 +1600,20 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
           deleting={deleting}
           error={deleteError}
           onConfirm={(scope) => void deleteEntry(scope)}
+        />
+      )}
+
+      {editMode && isInstallmentRow && (
+        <EditSaveDialog
+          open={saveScopeOpen}
+          onOpenChange={setSaveScopeOpen}
+          dateChanged={installmentChange.date}
+          amountChanged={installmentChange.amount}
+          saving={saving}
+          onConfirm={(scope) => {
+            setSaveScopeOpen(false);
+            void handleSave(false, scope);
+          }}
         />
       )}
 

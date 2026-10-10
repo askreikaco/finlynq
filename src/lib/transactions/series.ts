@@ -31,11 +31,19 @@ export type Series =
   | { kind: "repeat"; frequency: SubscriptionFrequency; end: RepeatEnd }
   | { kind: "installment"; count: number; mode: InstallmentMode };
 
-/** Repeat list order and labels (the sheet groups them: weeks, months, year). */
+/** Repeat list order and labels (the sheet groups them: days, weeks, months, year). */
 export const REPEAT_GROUPS: ReadonlyArray<{
   title: string;
   options: ReadonlyArray<{ frequency: SubscriptionFrequency; label: string }>;
 }> = [
+  {
+    title: "Daily",
+    options: [
+      { frequency: "daily", label: "Every day" },
+      { frequency: "weekdays", label: "Weekdays" },
+      { frequency: "weekend", label: "Weekend" },
+    ],
+  },
   {
     title: "Weekly",
     options: [

@@ -22,6 +22,9 @@ vi.mock("@/components/sparkline", () => ({ Sparkline: () => null }));
 // Each card becomes a marker so DOM order == render order.
 const marker = vi.hoisted(() => (id: string) => function MockCard() { return <div data-testid={`card-${id}`} />; });
 vi.mock("@/components/onboarding-tips", () => ({ OnboardingTips: marker("onboarding-tips") }));
+vi.mock("@/components/subscriptions/due-card", () => ({
+  DueCard: ({ returnTo }: { returnTo?: string }) => <div data-testid="card-due-subscriptions" data-return={returnTo} />,
+}));
 vi.mock("@/app/(app)/dashboard/_components/health-score-card", () => ({ HealthScoreCard: marker("health-score") }));
 vi.mock("@/app/(app)/dashboard/_components/key-metrics", () => ({ KeyMetrics: marker("key-metrics") }));
 vi.mock("@/components/net-worth-history-chart", () => ({ NetWorthHistoryChart: marker("net-worth-history") }));
@@ -116,6 +119,34 @@ describe("Dashboard card layout", () => {
     expect(screen.getByTestId("stat-Monthly Income").closest("div.grid")!.className).toBe("grid grid-cols-1 regular:grid-cols-3 gap-4");
   });
 
+  it("the Due card sits right after the tips, before the hero, and posts return to /dashboard", async () => {
+    await dashboard();
+    const ids = renderedIds();
+    expect(ids.slice(0, 3)).toEqual(["onboarding-tips", "due-subscriptions", "net-worth"]);
+    expect(screen.getByTestId("card-due-subscriptions").getAttribute("data-return")).toBe("/dashboard");
+    // a plain main card: not inside the More insights disclosure, not in the hero grid
+    const toggle = screen.getByRole("button", { name: "More insights" });
+    const region = document.getElementById(toggle.getAttribute("aria-controls")!) as HTMLElement;
+    expect(region.contains(screen.getByTestId("card-due-subscriptions"))).toBe(false);
+    expect(screen.getByTestId("card-due-subscriptions").closest("div.grid")).toBeNull();
+  });
+
+  it("a layout saved before the Due card existed shows it after the tips; the user's order and hidden cards are kept", async () => {
+    const legacy = DEFAULT_CARD_ORDER.filter((i) => i !== "due-subscriptions");
+    saved = { order: legacy, hidden: ["key-metrics"] };
+    await dashboard();
+    const ids = renderedIds();
+    expect(ids.indexOf("due-subscriptions")).toBe(ids.indexOf("onboarding-tips") + 1);
+    expect(ids).not.toContain("key-metrics");
+  });
+
+  it("the Due card can be hidden", async () => {
+    saved = { order: [...DEFAULT_CARD_ORDER], hidden: ["due-subscriptions"] };
+    await dashboard();
+    expect(screen.queryByTestId("card-due-subscriptions")).toBeNull();
+    expect(screen.getByTestId("card-health-score")).toBeTruthy();
+  });
+
   it("a hidden card is not rendered", async () => {
     saved = { order: [...DEFAULT_CARD_ORDER], hidden: ["key-metrics", "weekly-recap", "net-worth"] };
     await dashboard().catch(() => {});
@@ -187,6 +218,11 @@ describe("Customize flow", () => {
     fireEvent.click(screen.getByRole("button", { name: "More actions" }));
     const menu = await screen.findByRole("menu");
     expect(within(menu).getByText("Customize")).toBeTruthy();
+  });
+
+  it("the Customize sheet lists Due subscriptions as a switchable card", async () => {
+    const dlg = await open();
+    expect(within(dlg).getByRole("switch", { name: "Due subscriptions" })).toBeTruthy();
   });
 
   it("hide + reorder in the sheet, Save PUTs the layout and the dashboard re-renders immediately", async () => {

@@ -141,6 +141,8 @@ export function buildTransactionPutBody(a: {
   tags: string;
   isBusiness: boolean;
   confirmReallocation?: boolean;
+  /** Installment rows only: which payments the edit applies to (omitted = the server default, this row). */
+  scope?: "this" | "following";
 }): Record<string, unknown> {
   return {
     id: a.id,
@@ -155,6 +157,7 @@ export function buildTransactionPutBody(a: {
     isBusiness: a.isBusiness ? 1 : 0,
     // FINLYNQ-176: on the confirm pass, opt into reallocating dependents.
     ...(a.confirmReallocation ? { confirmReallocation: true } : {}),
+    ...(a.scope ? { scope: a.scope } : {}),
   };
 }
 

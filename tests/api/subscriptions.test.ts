@@ -185,6 +185,69 @@ describe("API /api/subscriptions", () => {
     });
   });
 
+  describe("anchor_date", () => {
+    it("POST stores the first next_date as the anchor (null when none)", async () => {
+      mockDbChain.get!.mockReturnValueOnce({ id: 5 });
+      await POST(createMockRequest("http://localhost:3000/api/subscriptions", {
+        method: "POST",
+        body: { name: "Rent", amount: 900, frequency: "monthly", nextDate: "2026-01-31" },
+      }));
+      expect(mockDbChain.values).toHaveBeenCalledWith(expect.objectContaining({ nextDate: "2026-01-31", anchorDate: "2026-01-31" }));
+      mockDbChain.get!.mockReturnValueOnce({ id: 6 });
+      await POST(createMockRequest("http://localhost:3000/api/subscriptions", {
+        method: "POST",
+        body: { name: "Gym2", amount: 5, nextDate: null },
+      }));
+      expect(mockDbChain.values).toHaveBeenLastCalledWith(expect.objectContaining({ nextDate: null, anchorDate: null }));
+    });
+
+    it("POST accepts the new daily / weekdays / weekend cadences", async () => {
+      for (const f of ["daily", "weekdays", "weekend"]) {
+        mockDbChain.get!.mockReturnValueOnce({ id: 9 });
+        const res = await POST(createMockRequest("http://localhost:3000/api/subscriptions", {
+          method: "POST",
+          body: { name: `X ${f}`, amount: 1, frequency: f, nextDate: "2026-10-12" },
+        }));
+        expect(res.status).toBe(201);
+        expect(mockDbChain.values).toHaveBeenLastCalledWith(expect.objectContaining({ frequency: f }));
+      }
+    });
+
+    it("PUT re-sending the UNCHANGED next_date keeps the anchor", async () => {
+      mockDbChain.get!
+        .mockReturnValueOnce({ nextDate: "2026-02-28", frequency: "monthly" }) // current row
+        .mockReturnValueOnce({ id: 1 });
+      const res = await PUT(createMockRequest("http://localhost:3000/api/subscriptions", {
+        method: "PUT",
+        body: { id: 1, amount: 12, nextDate: "2026-02-28", frequency: "monthly" },
+      }));
+      expect(res.status).toBe(200);
+      const setArg = mockDbChain.set!.mock.calls[0][0] as Record<string, unknown>;
+      expect(setArg).not.toHaveProperty("anchorDate");
+    });
+
+    it("PUT with a changed next_date or cadence starts a new series", async () => {
+      mockDbChain.get!
+        .mockReturnValueOnce({ nextDate: "2026-02-28", frequency: "monthly" })
+        .mockReturnValueOnce({ id: 1 });
+      await PUT(createMockRequest("http://localhost:3000/api/subscriptions", {
+        method: "PUT",
+        body: { id: 1, nextDate: "2026-03-05" },
+      }));
+      expect(mockDbChain.set!.mock.calls[0][0]).toMatchObject({ nextDate: "2026-03-05", anchorDate: "2026-03-05" });
+
+      mockDbChain.set!.mockClear();
+      mockDbChain.get!
+        .mockReturnValueOnce({ nextDate: "2026-02-28", frequency: "monthly" })
+        .mockReturnValueOnce({ id: 1 });
+      await PUT(createMockRequest("http://localhost:3000/api/subscriptions", {
+        method: "PUT",
+        body: { id: 1, frequency: "weekdays" },
+      }));
+      expect(mockDbChain.set!.mock.calls[0][0]).toMatchObject({ frequency: "weekdays", anchorDate: "2026-02-28" });
+    });
+  });
+
   describe("PUT", () => {
     it("updates subscription", async () => {
       mockDbChain.get!.mockReturnValueOnce({ id: 1, name: "Updated" });

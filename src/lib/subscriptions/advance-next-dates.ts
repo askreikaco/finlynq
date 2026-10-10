@@ -16,6 +16,9 @@
  * weekly recap, MCP list) and is idempotent: the UPDATE is conditional on the
  * date it read, so two concurrent callers can't double-advance a row.
  *
+ * Roll-forward indexes from the row's `anchor_date` (NULL -> next_date), so a
+ * month-end bill that was stuck on Feb 28 lands on Mar 31, not Mar 28.
+ *
  * Takes an `{execute}` Executor so the app's Drizzle proxy and the MCP
  * `DbLike` share one implementation.
  */
@@ -47,10 +50,11 @@ export async function advanceStaleSubscriptionDates(
     frequency: string | null;
     end_date: string | null;
     remaining_count: number | null;
+    anchor_date: string | null;
     postable: boolean | number | string;
   }>(
     await db.execute(sql`
-      SELECT s.id, s.next_date, s.frequency, s.end_date, s.remaining_count,
+      SELECT s.id, s.next_date, s.frequency, s.end_date, s.remaining_count, s.anchor_date,
              EXISTS (SELECT 1 FROM transactions t WHERE t.subscription_id = s.id AND t.user_id = s.user_id) AS postable
       FROM subscriptions s
       WHERE s.user_id = ${userId}
@@ -71,6 +75,7 @@ export async function advanceStaleSubscriptionDates(
       frequency: r.frequency,
       endDate: r.end_date,
       remainingCount: r.remaining_count,
+      anchorDate: r.anchor_date,
     };
     const postable = r.postable === true || r.postable === 1 || r.postable === "t" || r.postable === "true";
     let result;

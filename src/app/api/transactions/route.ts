@@ -39,6 +39,7 @@ import { deleteTransactionsCascade } from "@/lib/transactions/delete-cascade";
 import { isTransactionSource, type TransactionSource } from "@/lib/tx-source";
 import { verifyOwnership, OwnershipError } from "@/lib/verify-ownership";
 import { securitiesReadEnabledForUser } from "@/lib/securities/flag";
+import { installmentSuffix, stripInstallmentSuffix, withInstallmentSuffix } from "@/lib/transactions/installment-edit";
 
 const postSchema = z.object({
   date: z.string(),
@@ -99,6 +100,9 @@ const putSchema = z.object({
   // allowed) reallocates the dependent closures instead of returning 409.
   // Stripped from `data` before the row is updated.
   confirmReallocation: z.boolean().optional(),
+  // Repeat + Installment phase 2b — "this" (default) updates only `id`; "following" also applies the
+  // shared fields to every later payment (installment_seq >= this row's) of the same installment group.
+  scope: z.enum(["this", "following"], { message: 'scope must be "this" or "following"' }).optional(),
 });
 
 export async function GET(request: NextRequest) {
@@ -716,6 +720,145 @@ export async function POST(request: NextRequest) {
   }
 }
 
+interface FollowSeed {
+  groupId: string;
+  seq: number;
+  accountId: number;
+  currency: string;
+  amount: number;
+  enteredCurrency: string | null;
+  enteredAmount: number | null;
+}
+
+/**
+ * PUT scope=following: the update payload of every LATER payment (installment_seq > the edited row's) of
+ * the same group and user. Shared fields (category, account, payee, tags, isBusiness, note) are copied;
+ * the date is never propagated. The note keeps each row's own " n/N" suffix. When the per-payment amount
+ * (or its currency) changed it is applied to every later row, converted at that row's own date with the
+ * same helper as the single-row PUT; the last row gets no special remainder, so totals are NOT rebalanced.
+ * An account change without an amount change re-converts each row's own entered amount.
+ */
+async function planFollowingUpdates(
+  userId: string,
+  dek: Buffer,
+  id: number,
+  seed: FollowSeed,
+  data: {
+    accountId?: number;
+    categoryId?: number;
+    currency?: string;
+    amount?: number;
+    enteredAmount?: number;
+    enteredCurrency?: string;
+    payee?: string;
+    note?: string;
+    tags?: string;
+    isBusiness?: number;
+  },
+): Promise<
+  | {
+      ok: true;
+      updates: Array<{ id: number; data: Parameters<typeof updateTransaction>[2] }>;
+      dirty: Array<{ accountId: number; date: string }>;
+      warning?: string;
+    }
+  | { ok: false; response: NextResponse }
+> {
+  const rows = (
+    await db
+      .select({
+        id: schema.transactions.id,
+        seq: schema.transactions.installmentSeq,
+        date: schema.transactions.date,
+        accountId: schema.transactions.accountId,
+        note: schema.transactions.note,
+        currency: schema.transactions.currency,
+        amount: schema.transactions.amount,
+        enteredCurrency: schema.transactions.enteredCurrency,
+        enteredAmount: schema.transactions.enteredAmount,
+      })
+      .from(schema.transactions)
+      .where(and(
+        eq(schema.transactions.userId, userId),
+        eq(schema.transactions.installmentGroupId, seed.groupId),
+        gte(schema.transactions.installmentSeq, seed.seq),
+      ))
+      .all()
+  )
+    .filter((r) => r.id !== id)
+    .sort((a, b) => (a.seq ?? 0) - (b.seq ?? 0));
+
+  const enteredCcy = data.enteredCurrency?.toUpperCase();
+  const amountChanged =
+    (data.enteredAmount !== undefined &&
+      (data.enteredAmount !== (seed.enteredAmount ?? seed.amount) ||
+        (enteredCcy !== undefined && enteredCcy !== (seed.enteredCurrency ?? seed.currency).toUpperCase()))) ||
+    (data.enteredAmount === undefined && data.amount !== undefined && data.amount !== seed.amount);
+  const accountChanged = data.accountId !== undefined && data.accountId !== seed.accountId;
+  const targetAccountId = data.accountId ?? seed.accountId;
+
+  const baseNote = data.note !== undefined ? stripInstallmentSuffix(data.note) : null;
+  const editedSuffix = installmentSuffix(data.note);
+  const total = editedSuffix ? editedSuffix.split("/")[1] : null;
+
+  const updates: Array<{ id: number; data: Parameters<typeof updateTransaction>[2] }> = [];
+  const dirty: Array<{ accountId: number; date: string }> = [];
+  for (const r of rows) {
+    const shared: Record<string, unknown> = {};
+    if (data.categoryId !== undefined) shared.categoryId = data.categoryId;
+    if (data.accountId !== undefined) shared.accountId = data.accountId;
+    if (data.isBusiness !== undefined) shared.isBusiness = data.isBusiness;
+    const text: { payee?: string; note?: string; tags?: string } = {};
+    if (data.payee !== undefined) text.payee = data.payee;
+    if (data.tags !== undefined) text.tags = data.tags;
+    if (baseNote !== null) {
+      let own: string | null = null;
+      try {
+        own = installmentSuffix(decryptField(dek, r.note));
+      } catch {
+        /* undecryptable note: fall through to the derived suffix */
+      }
+      text.note = withInstallmentSuffix(baseNote, own ?? (total && r.seq != null ? `${r.seq}/${total}` : null));
+    }
+
+    let amountFields: Record<string, unknown> = {};
+    if (amountChanged || accountChanged) {
+      const resolved = await resolveTxAmounts(
+        amountChanged
+          ? {
+              accountId: targetAccountId,
+              date: r.date,
+              amount: data.amount,
+              currency: data.currency,
+              enteredAmount: data.enteredAmount,
+              enteredCurrency: data.enteredCurrency,
+            }
+          : {
+              accountId: targetAccountId,
+              date: r.date,
+              enteredAmount: r.enteredAmount ?? r.amount,
+              enteredCurrency: r.enteredCurrency ?? r.currency,
+            },
+        userId,
+        true,
+      );
+      if (!resolved.ok) return { ok: false, response: resolved.response };
+      amountFields = resolved.fields;
+    }
+    updates.push({ id: r.id, data: { ...shared, ...amountFields, ...encryptTxWrite(dek, text) } as Parameters<typeof updateTransaction>[2] });
+    if (r.accountId != null) dirty.push({ accountId: r.accountId, date: r.date });
+    if (accountChanged || r.accountId == null) dirty.push({ accountId: targetAccountId, date: r.date });
+  }
+  return {
+    ok: true,
+    updates,
+    dirty,
+    ...(amountChanged && rows.length > 0
+      ? { warning: "The amount was applied to every following payment. The plan's total was not rebalanced." }
+      : {}),
+  };
+}
+
 export async function PUT(request: NextRequest) {
   const auth = await requireEncryption(request);
   if (!auth.ok) return auth.response;
@@ -723,7 +866,34 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const parsed = validateBody(body, putSchema);
     if (parsed.error) return parsed.error;
-    const { id, confirmReallocation, ...data } = parsed.data;
+    const { id, confirmReallocation, scope = "this", ...data } = parsed.data;
+
+    // Phase 2b — scope=following: the edited row must belong to an installment group (else 400); the later
+    // rows are looked up once here and updated in the SAME database transaction as the edited row.
+    let followSeed: FollowSeed | null = null;
+    if (scope === "following") {
+      const seed = await db
+        .select({
+          groupId: schema.transactions.installmentGroupId,
+          seq: schema.transactions.installmentSeq,
+          accountId: schema.transactions.accountId,
+          currency: schema.transactions.currency,
+          amount: schema.transactions.amount,
+          enteredCurrency: schema.transactions.enteredCurrency,
+          enteredAmount: schema.transactions.enteredAmount,
+        })
+        .from(schema.transactions)
+        .where(and(eq(schema.transactions.id, id), eq(schema.transactions.userId, auth.userId)))
+        .get();
+      if (!seed) return NextResponse.json({ error: "Transaction not found" }, { status: 404 });
+      if (!seed.groupId || seed.seq == null) {
+        return NextResponse.json(
+          { error: "scope=following only applies to installment transactions", code: "not_installment" },
+          { status: 400 },
+        );
+      }
+      followSeed = seed as FollowSeed;
+    }
 
     // Portfolio edit-guard (Phase 2 of the operations refactor). When a
     // buy/transfer-in tx's opened lot has been sold or transferred out, the
@@ -863,11 +1033,22 @@ export async function PUT(request: NextRequest) {
     } catch {
       /* best-effort — never block the edit */
     }
+    // scope=following: build every later row's update BEFORE the transaction (FX lookups may hit the
+    // network; nothing does I/O while a transaction holds a pooled client).
+    let follow: Awaited<ReturnType<typeof planFollowingUpdates>> | null = null;
+    if (followSeed) {
+      const planned = await planFollowingUpdates(auth.userId, auth.dek, id, followSeed, data);
+      if (!planned.ok) return planned.response;
+      follow = planned;
+    }
     const encrypted = encryptTxWrite(auth.dek, data);
     const { withDbTransaction } = await import("@/db");
     const { incrementDataVersion } = await import("@/lib/data-version");
     const tx = await withDbTransaction(async () => {
       const updated = await updateTransaction(id, auth.userId, encrypted, auth.dek);
+      for (const u of follow?.updates ?? []) {
+        await updateTransaction(u.id, auth.userId, u.data, auth.dek);
+      }
       await incrementDataVersion(auth.userId);
       return updated;
     });
@@ -908,6 +1089,17 @@ export async function PUT(request: NextRequest) {
     }
     if (preEditCash) {
       await markCashSnapshotsDirty(auth.userId, preEditCash.accountId, preEditCash.date);
+    }
+    if (follow) {
+      // Later rows moved too: dirty their old and new (account, date) cash positions.
+      for (const d of follow.dirty) await markCashSnapshotsDirty(auth.userId, d.accountId, d.date);
+      const warning = [signWarn?.message, follow.warning].filter(Boolean).join(" ");
+      return NextResponse.json({
+        ...tx,
+        scope: "following",
+        updatedIds: [id, ...follow.updates.map((u) => u.id)],
+        ...(warning ? { warning } : {}),
+      });
     }
     return NextResponse.json(
       signWarn ? { ...tx, warning: signWarn.message } : tx,

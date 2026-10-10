@@ -45,15 +45,16 @@ import { resolveReportingCurrency } from "../reporting-currency";
 import { getRate } from "../../src/lib/fx-service";
 import { tagAmount } from "../currency-tagging";
 import { registerManageTool } from "./_consolidate";
-import { monthlyEquivalent, normalizeFrequency } from "../../src/lib/subscriptions/schedule";
+import { monthlyEquivalent, normalizeFrequency, SUBSCRIPTION_FREQUENCIES } from "../../src/lib/subscriptions/schedule";
 import { advanceStaleSubscriptionDatesSafe } from "../../src/lib/subscriptions/advance-next-dates";
 
 type ToolResult = { content: Array<{ type: "text"; text: string }> };
 
-// Billing cadences. "biweekly" + "semiannual" added with the merged
-// Subscriptions page (2026-10); "yearly" stays accepted for older callers and is
-// stored as its canonical "annual" (lib/subscriptions/schedule.ts).
-const cadenceEnum = z.enum(["weekly", "biweekly", "monthly", "quarterly", "semiannual", "annual", "yearly"]);
+// Billing cadences: every SUBSCRIPTION_FREQUENCIES value (daily, weekdays,
+// weekend, weekly, biweekly, every4weeks, monthly, monthly_eom, bimonthly,
+// quarterly, semiannual, annual); "yearly" stays accepted for older callers and
+// is stored as its canonical "annual" (lib/subscriptions/schedule.ts).
+const cadenceEnum = z.enum([...SUBSCRIPTION_FREQUENCIES, "yearly"]);
 type SubscriptionCadence = z.infer<typeof cadenceEnum>;
 
 export function registerSubscriptionsTools(server: McpServer, ctx: PgToolContext) {
@@ -179,8 +180,8 @@ export function registerSubscriptionsTools(server: McpServer, ctx: PgToolContext
       const n = dek ? encryptName(dek, name) : { ct: null, lookup: null };
       // Stream D Phase 4 — plaintext name dropped.
       const result = await q(db, sql`
-        INSERT INTO subscriptions (user_id, amount, currency, frequency, category_id, account_id, next_date, status, notes, name_ct, name_lookup)
-        VALUES (${userId}, ${amount}, ${resolvedCurrency}, ${normalizeFrequency(cadence) ?? "monthly"}, ${categoryId}, ${accountId}, ${next_billing_date}, 'active', ${notes != null ? encNote(notes) : null}, ${n.ct}, ${n.lookup})
+        INSERT INTO subscriptions (user_id, amount, currency, frequency, category_id, account_id, next_date, anchor_date, status, notes, name_ct, name_lookup)
+        VALUES (${userId}, ${amount}, ${resolvedCurrency}, ${normalizeFrequency(cadence) ?? "monthly"}, ${categoryId}, ${accountId}, ${next_billing_date}, ${next_billing_date}, 'active', ${notes != null ? encNote(notes) : null}, ${n.ct}, ${n.lookup})
         RETURNING id
       `);
       return text({ success: true, data: { id: Number(result[0]?.id), message: `Subscription "${name}" created — ${resolvedCurrency} ${amount} ${cadence}, next ${next_billing_date}` } });
@@ -256,7 +257,17 @@ export function registerSubscriptionsTools(server: McpServer, ctx: PgToolContext
         updates.push(sql`name_ct = ${n.ct}`, sql`name_lookup = ${n.lookup}`);
       }
       if (amount !== undefined) updates.push(sql`amount = ${amount}`);
-      if (cadence !== undefined) updates.push(sql`frequency = ${normalizeFrequency(cadence) ?? "monthly"}`);
+      // anchor_date (20261014) follows a deliberate next_date / cadence change; the
+      // SET expressions read the OLD row values, so the comparisons are pre-update.
+      const newFrequency = cadence !== undefined ? (normalizeFrequency(cadence) ?? "monthly") : undefined;
+      if (next_billing_date !== undefined) {
+        updates.push(
+          sql`anchor_date = CASE WHEN next_date IS DISTINCT FROM ${next_billing_date}${newFrequency !== undefined ? sql` OR frequency IS DISTINCT FROM ${newFrequency}` : sql``} THEN ${next_billing_date} ELSE anchor_date END`,
+        );
+      } else if (newFrequency !== undefined) {
+        updates.push(sql`anchor_date = CASE WHEN frequency IS DISTINCT FROM ${newFrequency} THEN next_date ELSE anchor_date END`);
+      }
+      if (newFrequency !== undefined) updates.push(sql`frequency = ${newFrequency}`);
       if (next_billing_date !== undefined) updates.push(sql`next_date = ${next_billing_date}`);
       if (currency !== undefined) updates.push(sql`currency = ${currency}`);
       if (categoryIdUpdate !== undefined) updates.push(sql`category_id = ${categoryIdUpdate}`);
@@ -570,8 +581,8 @@ export function registerSubscriptionsTools(server: McpServer, ctx: PgToolContext
         const next = c.next_billing_date ?? addInterval(today, c.cadence);
         const enc = encryptName(dek, c.payee);
         await db.execute(sql`
-          INSERT INTO subscriptions (user_id, amount, currency, frequency, category_id, account_id, next_date, status, notes, name_ct, name_lookup)
-          VALUES (${userId}, ${c.amount}, ${bulkCurrency}, ${c.cadence}, ${c.category_id ?? null}, NULL, ${next}, 'active', 'Auto-detected by MCP', ${enc.ct}, ${enc.lookup})
+          INSERT INTO subscriptions (user_id, amount, currency, frequency, category_id, account_id, next_date, anchor_date, status, notes, name_ct, name_lookup)
+          VALUES (${userId}, ${c.amount}, ${bulkCurrency}, ${c.cadence}, ${c.category_id ?? null}, NULL, ${next}, ${next}, 'active', 'Auto-detected by MCP', ${enc.ct}, ${enc.lookup})
         `);
         created++;
       }

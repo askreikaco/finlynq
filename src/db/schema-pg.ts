@@ -916,6 +916,10 @@ export const subscriptions = pgTable("subscriptions", {
   // still to come, COUNTING next_date. Both NULL = forever.
   endDate: text("end_date"),
   remainingCount: integer("remaining_count"),
+  // Repeat + Installment phase 2b (20261014_subscription_anchor_date.sql) — the
+  // date the series started on. Advancing indexes from it so a month-end bill
+  // goes Jan 31 -> Feb 28 -> Mar 31. NULL = fall back to next_date.
+  anchorDate: text("anchor_date"),
 }, (t) => [
   index("idx_subscriptions_user_id").on(t.userId),
   uniqueIndex("subscriptions_user_name_lookup_uniq").on(t.userId, t.nameLookup),

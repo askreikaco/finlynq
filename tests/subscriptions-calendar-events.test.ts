@@ -108,3 +108,26 @@ describe("schedule events (calendar view)", () => {
     expect(effectiveNextDate(sub({ nextDate: "2026-02-14", status: "paused" }), "2026-10-01")).toBe("2026-02-14");
   });
 });
+
+describe("anchor + new cadences in the calendar", () => {
+  it("projects a month-end bill from its anchor (Mar 31, Apr 30), not next_date (Mar 28)", () => {
+    const ev = buildScheduleEvents([sub({ nextDate: "2026-02-28", anchorDate: "2026-01-31" })], [], "2026-02-01", "2026-05-31");
+    expect(ev.map((e) => e.date)).toEqual(["2026-02-28", "2026-03-31", "2026-04-30", "2026-05-31"]);
+    const old = buildScheduleEvents([sub({ nextDate: "2026-02-28" })], [], "2026-02-01", "2026-05-31");
+    expect(old.map((e) => e.date)).toEqual(["2026-02-28", "2026-03-28", "2026-04-28", "2026-05-28"]);
+  });
+  it("effectiveNextDate rolls with the anchor", () => {
+    expect(effectiveNextDate(sub({ nextDate: "2026-02-28", anchorDate: "2026-01-31" }), "2026-03-10")).toBe("2026-03-31");
+  });
+  it("weekdays / weekend subscriptions only land on their days", () => {
+    const wd = buildScheduleEvents([sub({ frequency: "weekdays", nextDate: "2026-10-09" })], [], "2026-10-09", "2026-10-13");
+    expect(wd.map((e) => e.date)).toEqual(["2026-10-09", "2026-10-12", "2026-10-13"]);
+    const we = buildScheduleEvents([sub({ frequency: "weekend", nextDate: "2026-10-10" })], [], "2026-10-10", "2026-10-18");
+    expect(we.map((e) => e.date)).toEqual(["2026-10-10", "2026-10-11", "2026-10-17", "2026-10-18"]);
+  });
+  it("subscriptionTotals counts daily occurrences in the due-soon window", () => {
+    const t = subscriptionTotals([sub({ frequency: "daily", nextDate: "2026-10-10", displayAmount: 2 })], "2026-10-10", "2026-10-16");
+    expect(t.dueSoonCount).toBe(7);
+    expect(t.dueSoonAmount).toBe(14);
+  });
+});
