@@ -130,7 +130,8 @@ describe("server oracle vs LocalStore vs reference (synthetic P1 fixture)", { ti
   });
 
   it("(i) the server oracle holds the fixture rows and the generated DDL", async () => {
-    expect(oracle.statementCount).toBe(310);
+    // 310 + 4 for lf_op_frame (create, FK, unique, index) added by local-first L1.
+    expect(oracle.statementCount).toBe(314);
     const r = await oracle.client.query<{ a: number; c: number; t: number }>(
       "SELECT (SELECT count(*) FROM accounts)::int AS a, (SELECT count(*) FROM categories)::int AS c, (SELECT count(*) FROM transactions)::int AS t",
     );
