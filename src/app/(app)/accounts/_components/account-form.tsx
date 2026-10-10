@@ -16,6 +16,7 @@ import {
   type OpeningBalance,
 } from "@/lib/accounts/opening-balance-client";
 import { cn } from "@/lib/utils";
+import { TW } from "@/lib/design/tokens";
 import { GroupField } from "./group-field";
 import { AmountInput } from "@/components/amount-input";
 
@@ -108,8 +109,8 @@ export interface AccountFormProps {
   onComplete?: () => void;
 }
 
-const ROW = "flex min-h-12 items-center gap-3 px-4 py-2";
-const ROW_LABEL = "w-24 shrink-0 text-sm text-muted-foreground";
+const ROW = `flex ${TW.rowTall} items-center gap-3 px-4 py-2`;
+const ROW_LABEL = `${TW.rowLabelNarrow} shrink-0 text-sm text-muted-foreground`;
 const ROW_CONTROL = "border-0 bg-transparent px-0 shadow-none focus-visible:border-transparent focus-visible:ring-0 dark:bg-transparent";
 const OB_HELP =
   "A single starting-balance entry for this account. Set the date to when the account opened so " +
@@ -173,7 +174,7 @@ function CheckField({
   hint: string;
 }) {
   const box = (
-    <div className={cn("flex items-center gap-2", variant === "rows" && "min-h-11")}>
+    <div className={cn("flex items-center gap-2", variant === "rows" && TW.row)}>
       <input
         type="checkbox"
         id={id}
@@ -368,7 +369,7 @@ export function AccountForm({
     <form onSubmit={handleSave} className="space-y-4">
       <div
         className={cn(
-          v === "rows" && "divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card",
+          v === "rows" && `divide-y divide-border overflow-hidden ${TW.group} border border-border bg-card`,
           v === "stack" && "space-y-4",
         )}
       >
@@ -535,10 +536,10 @@ export function AccountForm({
       {saveError && <p className="text-sm text-destructive">{saveError}</p>}
 
       <div className={cn("flex gap-2", v === "stack" ? "pt-1" : "pt-2")}>
-        <Button type="button" variant="outline" className="flex-1 pointer-coarse:min-h-11" onClick={onCancel}>
+        <Button type="button" variant="outline" className="flex-1 pointer-coarse:min-h-row" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit" className="flex-1 pointer-coarse:min-h-11" disabled={saving || busy}>
+        <Button type="submit" className="flex-1 pointer-coarse:min-h-row" disabled={saving || busy}>
           {saving ? (isEdit ? "Saving…" : "Creating…") : isEdit ? "Save Changes" : "Create Account"}
         </Button>
       </div>

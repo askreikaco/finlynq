@@ -9,32 +9,18 @@
   ],
   "chrome": {
     "src/app/(app)/accounts/[id]/edit/page.tsx": {
-      "rounded-2xl": 1,
-      "max-w-xl": 3,
-      "sab-pad": 1,
       "suspense-null": 1,
       "return-to": 1
     },
     "src/app/(app)/accounts/[id]/page.tsx": {
       "title-prop": 1
     },
-    "src/app/(app)/accounts/_components/account-form.tsx": {
-      "shrink": 1,
-      "min-h": 4,
-      "rounded-2xl": 1
-    },
-    "src/app/(app)/accounts/_components/manage-groups-panel.tsx": {
-      "min-h": 2
-    },
     "src/app/(app)/accounts/groups/page.tsx": {
-      "max-w-xl": 1,
       "suspense-null": 1
     },
     "src/app/(app)/accounts/new/page.tsx": {
-      "max-w-xl": 1,
-      "sab-pad": 1,
       "suspense-null": 1,
-      "return-to": 2
+      "return-to": 1
     }
   }
 }
