@@ -923,8 +923,9 @@ export default function MobileTransactionPage() {
               }}
             />
           )}
-          {/* From and To share a relative wrapper so the Transfer swap button sits on their divider. */}
-          <div className="relative">
+          {/* From and To share a relative wrapper so the Transfer swap button sits on their divider;
+              the wrapper repeats the group's hairline (divide-y) because the two rows are no longer its direct children. */}
+          <div className="relative divide-y divide-border">
             <FormRow
               variant="button"
               testId="txnew-row-account"
