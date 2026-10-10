@@ -145,12 +145,12 @@ describe("new transaction page parity with the dialog", () => {
     expect(postsTo("/api/rules").length).toBe(0);
   });
 
-  it("?kind=transfer opens the Transfer tab (currency chip shown but disabled, destination field shown)", () => {
+  it("?kind=transfer opens the Transfer tab (currency chip enabled, destination field shown)", () => {
     window.history.replaceState({}, "", "/transactions/new?kind=transfer");
     render(<Page />);
     expect(screen.getByRole("heading", { name: "New Transfer" })).toBeTruthy();
     expect(screen.getByText("To")).toBeTruthy();
-    expect((screen.getByLabelText("Currency") as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByLabelText("Currency") as HTMLButtonElement).disabled).toBe(false);
   });
 
   it("?kind accepts only transfer|expense|income; anything else keeps the Expense default", () => {

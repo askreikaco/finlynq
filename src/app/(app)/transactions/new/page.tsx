@@ -35,6 +35,7 @@ import { cn } from "@/lib/utils";
 import { NumpadDock } from "./_components/numpad-dock";
 import { CategorySelector, type Category } from "./_components/category-selector";
 import { AccountSelector, type Account } from "./_components/account-selector";
+import { EMPTY_GROUP_ORDER, type AccountGroupOrder } from "@/lib/accounts/groups";
 import { CurrencySelector } from "./_components/currency-selector";
 import {
   DateTimePickerSheet,
@@ -92,6 +93,13 @@ export default function MobileTransactionPage() {
     useApi<Category[]>("/api/categories");
   const { data: rawAccounts = [], isLoading: loadingAccounts } =
     useApi<Account[]>("/api/accounts");
+  // The user's saved account-group display order (Accounts → Groups). Soft: a failed read
+  // falls back to alphabetical group sections in the account pickers.
+  const { data: groupOrderRes } = useApi<{ order: AccountGroupOrder }>(
+    "/api/settings/account-group-order",
+    { soft: { order: EMPTY_GROUP_ORDER } },
+  );
+  const groupOrder = groupOrderRes?.order ?? EMPTY_GROUP_ORDER;
 
   // Prefill notice (malformed/expired sessionStorage entry)
   const [prefillNotice, setPrefillNotice] = useState<string | null>(null);
@@ -395,11 +403,24 @@ export default function MobileTransactionPage() {
     !!selectedAcc &&
     !!selectedToAcc &&
     selectedAcc.currency !== selectedToAcc.currency;
+  // Transfer typed in a currency other than the From account: the amount is converted to the
+  // From currency first (the save does the same), and the To preview runs on that converted amount.
+  const transferEnteredCcy = txType === "Transfer" && !!selectedAcc && currency !== selectedAcc.currency;
+  const transferEntryFx = useFxPreview({
+    enabled: transferEnteredCcy,
+    from: currency,
+    to: selectedAcc?.currency,
+    amount: parsedAmount,
+    date,
+  });
+  const transferSourceAmount = transferEnteredCcy
+    ? transferEntryFx.state === "ok" ? transferEntryFx.converted : Number.NaN
+    : parsedAmount;
   const transferFxPreview = useFxPreview({
     enabled: transferCrossCcy,
     from: selectedAcc?.currency ?? "",
     to: selectedToAcc?.currency,
-    amount: parsedAmount,
+    amount: transferSourceAmount,
     date,
   });
   // Pre-fill the received amount from the market rate until the user types their own (as the dialog does).
@@ -544,6 +565,7 @@ export default function MobileTransactionPage() {
           fromAccountId: Number(accountId),
           toAccountId: Number(toAccountId),
           enteredAmount: Math.abs(parsedAmount),
+          enteredCurrency: currency,
           date,
           note: note.trim() || undefined,
           tags: tags.trim() || undefined,
@@ -758,9 +780,11 @@ export default function MobileTransactionPage() {
     .join(" · ");
   const fxAmountLine =
     txType === "Transfer"
-      ? transferCrossCcy && transferFxPreview.state !== "idle"
-        ? <FxPreviewLine preview={transferFxPreview} className="text-xs text-muted-foreground" />
-        : undefined
+      ? transferEnteredCcy && transferEntryFx.state !== "idle"
+        ? <FxPreviewLine preview={transferEntryFx} className="text-xs text-muted-foreground" />
+        : transferCrossCcy && transferFxPreview.state !== "idle"
+          ? <FxPreviewLine preview={transferFxPreview} className="text-xs text-muted-foreground" />
+          : undefined
       : fxPreview.state !== "idle"
         ? <FxPreviewLine preview={fxPreview} className="text-xs text-muted-foreground" />
         : undefined;
@@ -867,7 +891,6 @@ export default function MobileTransactionPage() {
               setShowCurrencySelector(true);
             }}
             showCurrency
-            currencyDisabled={txType === "Transfer"}
             fxLine={fxAmountLine}
             invalid={invalidField === "amount"}
           />
@@ -1217,6 +1240,7 @@ export default function MobileTransactionPage() {
         open={showAccSelector}
         onOpenChange={setShowAccSelector}
         accounts={activeAccounts}
+        groupOrder={groupOrder}
         selectedAccountId={accountId}
         title={txType === "Transfer" ? "Select Source Account" : "Select Account"}
         recentIds={recentAccountIds}
@@ -1232,6 +1256,7 @@ export default function MobileTransactionPage() {
         open={showToAccSelector}
         onOpenChange={setShowToAccSelector}
         accounts={activeAccounts.filter((a) => String(a.id) !== accountId)}
+        groupOrder={groupOrder}
         selectedAccountId={toAccountId}
         title="Select Destination Account"
         recentIds={recentToAccountIds}

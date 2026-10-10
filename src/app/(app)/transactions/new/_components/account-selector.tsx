@@ -7,7 +7,13 @@ import {
   PICKER_SHEET_CLASS,
   type PickerEntry,
 } from "./grouped-picker";
-import { OTHER_GROUP, normalizeGroupName, orderGroups } from "@/lib/accounts/groups";
+import {
+  EMPTY_GROUP_ORDER,
+  OTHER_GROUP,
+  normalizeGroupName,
+  orderGroups,
+  type AccountGroupOrder,
+} from "@/lib/accounts/groups";
 
 export interface Account {
   id: string | number;
@@ -29,6 +35,8 @@ interface AccountSelectorProps {
   title?: string;
   /** Recently picked account IDs, most recent first. Shown as a "Recent" section when they match. */
   recentIds?: string[];
+  /** The user's saved account-group order (Settings / Accounts → Groups). Omit for alphabetical. */
+  groupOrder?: AccountGroupOrder;
 }
 
 export function AccountSelector({
@@ -39,6 +47,7 @@ export function AccountSelector({
   selectedAccountId,
   title = "Select Account",
   recentIds,
+  groupOrder = EMPTY_GROUP_ORDER,
 }: AccountSelectorProps) {
   const entries = useMemo<PickerEntry[]>(() => {
     const rows: PickerEntry[] = accounts
@@ -54,14 +63,15 @@ export function AccountSelector({
           searchText: [acc.name, group, acc.currency ?? "", acc.type ?? ""],
         };
       });
-    // Sections alphabetical with "Other" last. The Accounts page also honours a saved
-    // per-user group order, which needs its own fetch; not done here (the picker takes
-    // accounts as props). Keys are lowercased so case variants share one section.
-    const order = orderGroups(rows.map((r) => r.group), []);
+    // Sections follow the user's saved group order (per type, merged: asset list then
+    // liability list). Groups absent from the saved order fall back to alphabetical.
+    // "Other" always sinks last. Keys are lowercased so case variants share one section.
+    const saved = [...groupOrder.A, ...groupOrder.L];
+    const order = orderGroups(rows.map((r) => r.group), saved);
     const rank = new Map(order.map((g, i) => [g.toLowerCase(), i] as const));
     const rankOf = (g: string) => rank.get(g.toLowerCase()) ?? order.length;
     return rows.sort((a, b) => rankOf(a.group) - rankOf(b.group));
-  }, [accounts]);
+  }, [accounts, groupOrder]);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>

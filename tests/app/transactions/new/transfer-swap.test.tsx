@@ -66,13 +66,13 @@ function openTransfer(prefill: Record<string, unknown> = { txType: "Transfer" })
 }
 
 describe("Transfer tab: From/To labels, currency trigger, swap", () => {
-  it("labels the rows From and To and shows the currency trigger (disabled on Transfer)", async () => {
+  it("labels the rows From and To and shows an enabled currency trigger on Transfer", async () => {
     openTransfer();
     await waitFor(() => expect(screen.getByTestId("txnew-row-to-account")).toBeTruthy());
     expect(screen.getByTestId("txnew-row-account").textContent).toMatch(/^From/);
     expect(screen.getByTestId("txnew-row-to-account").textContent).toMatch(/^To/);
     const trigger = screen.getByRole("button", { name: "Currency" }) as HTMLButtonElement;
-    expect(trigger.disabled).toBe(true);
+    expect(trigger.disabled).toBe(false);
   });
 
   it("swap button is disabled when both sides are empty", async () => {
