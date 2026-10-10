@@ -8,7 +8,7 @@ import { readFileSync } from "fs";
 import path from "path";
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn(), back: vi.fn() }),
+  useRouter: () => ({ push: vi.fn(), back: vi.fn() }), usePathname: () => "/transactions/new",
 }));
 vi.mock("next/link", () => ({
   default: ({ children, href }: { children: React.ReactNode; href: string }) =>
@@ -116,11 +116,11 @@ describe("compact new-transaction layout", () => {
   it("the new-transaction header does not repeat the top safe-area inset (body already pads --sat)", () => {
     seedPrefill();
     render(<Page />);
-    const header = document.querySelector("header") as HTMLElement;
+    const header = document.querySelector('[data-slot="page-header"]') as HTMLElement;
     expect(header.className).not.toContain("pt-[var(--sat)]");
     const src = readFileSync(SRC, "utf8");
     expect(src).not.toContain("pt-[var(--sat)]");
-    expect(src).toContain("max-md:top-[var(--sat)]");
+    expect(src).toContain("max-regular:top-[var(--sat)]");
     const css = readFileSync(path.join(process.cwd(), "src/app/globals.css"), "utf8");
     expect(css).toMatch(/body\s*\{[^}]*padding-top:\s*var\(--sat\)/);
   });

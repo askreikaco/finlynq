@@ -13,7 +13,7 @@ export function PageSkeleton({ rows = 5, variant = "table" }: PageSkeletonProps)
       <div className="space-y-5">
         <div className="h-7 w-48 animate-shimmer rounded-lg" />
         <div className="h-4 w-64 animate-shimmer rounded-md" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+        <div className="grid grid-cols-1 regular:grid-cols-2 wide:grid-cols-3 gap-4 mt-4">
           {Array.from({ length: rows }).map((_, i) => (
             <div key={i} className="h-36 animate-shimmer rounded-2xl" />
           ))}

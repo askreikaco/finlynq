@@ -1,4 +1,4 @@
-export { PageHeader, OverflowMenu, HEADER_DESKTOP_ONLY, PHONE_PRIMARY_CLASS, desktopClasses, type OverflowAction } from "./page-header";
+export { PageHeader, OverflowMenu, HeaderStatus, HEADER_DESKTOP_ONLY, HEADER_SECONDARY, HEADER_MAX_PHONE_ACTIONS, PHONE_PRIMARY_CLASS, type OverflowAction } from "./page-header";
 export { BackButton } from "./back-button";
 export { SectionCard } from "./section-card";
 export { SectionLabel } from "./section-label";

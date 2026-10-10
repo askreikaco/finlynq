@@ -10,7 +10,8 @@ import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { useSessionUserId, readUserItem, writeUserItem, removeUserItem } from "@/lib/client/user-storage";
 import { CHART_COLORS } from "@/lib/chart-colors";
-import { Send, Trash2, MessageSquare, Bot, User, Sparkles } from "lucide-react";
+import { Send, Trash2, Bot, User, Sparkles } from "lucide-react";
+import { PageHeader } from "@/components/mobile";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BarChart,
@@ -380,36 +381,31 @@ function ChatPageContent() {
   // ─── Render ─────────────────────────────────────────────────────
 
   return (
-    <div data-chat-shell className="flex flex-col max-md:h-[calc(100dvh-var(--mobile-bar-clearance)-3.75rem)] max-md:-mb-20 md:h-[calc(100dvh-4rem)]">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 md:px-6 py-3 border-b border-border bg-background/80 backdrop-blur-sm shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary shadow-md shadow-primary/20">
-            <MessageSquare className="h-4 w-4 text-primary-foreground" />
-          </div>
-          <div>
-            <h1 className="text-base font-semibold text-foreground">AI Chat</h1>
-            <p className="text-xs text-muted-foreground leading-none">Ask about your finances</p>
-          </div>
-        </div>
-        {messages.length > 0 && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={clearHistory}
-            className="text-muted-foreground hover:text-destructive text-xs gap-1.5"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-            Clear
-          </Button>
-        )}
-      </div>
+    <div data-chat-shell className="flex flex-col max-regular:h-[calc(100dvh-var(--mobile-bar-clearance)-3.75rem)] max-regular:-mb-20 regular:h-[calc(100dvh-4rem)]">
+      <PageHeader
+        className="shrink-0"
+        title="AI Chat"
+        subtitle="Ask about your finances"
+        actions={
+          messages.length > 0 ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearHistory}
+              className="text-muted-foreground hover:text-destructive text-xs gap-1.5"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Clear
+            </Button>
+          ) : undefined
+        }
+      />
 
       {/* Messages area */}
       {messages.length === 0 && !loading ? (
         emptyState
       ) : (
-        <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 space-y-4">
+        <div className="flex-1 overflow-y-auto px-4 regular:px-6 py-4 space-y-4">
           <AnimatePresence initial={false}>
             {messages.map((msg) => (
               <motion.div
@@ -426,7 +422,7 @@ function ChatPageContent() {
                 )}
 
                 <div
-                  className={`max-w-[85%] md:max-w-[70%] space-y-3 ${
+                  className={`max-w-[85%] regular:max-w-[70%] space-y-3 ${
                     msg.role === "user" ? "order-first" : ""
                   }`}
                 >
@@ -487,7 +483,7 @@ function ChatPageContent() {
       )}
 
       {/* Input area */}
-      <div className="shrink-0 border-t border-border bg-background/80 backdrop-blur-sm px-4 md:px-6 py-3 pb-[calc(0.75rem+var(--sab))] md:pb-3">
+      <div className="shrink-0 border-t border-border bg-background/80 backdrop-blur-sm px-4 regular:px-6 py-3 pb-[calc(0.75rem+var(--sab))] regular:pb-3">
         {/* Quick suggestions when there are messages */}
         {messages.length > 0 && !loading && (
           <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-none mb-1">

@@ -197,7 +197,7 @@ function ThreadDialog({
 
   return (
     <Dialog open={feedbackId != null} onOpenChange={(v) => { if (!v) onClose(); }}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="regular:max-w-lg">
         <DialogHeader>
           <DialogTitle className="capitalize">
             {thread ? `${thread.type} feedback` : "Feedback"}
@@ -348,7 +348,7 @@ export default function FeedbackPage() {
   usePageFab("feedback.send", () => setSendOpen(true));
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="mx-auto max-w-section">
       <PageHeader
         className="flex items-start justify-between gap-3"
         title="Feedback"
@@ -357,7 +357,7 @@ export default function FeedbackPage() {
         subtitleClassName="text-sm text-muted-foreground mt-0.5"
         actions={
           <Button onClick={() => setSendOpen(true)}>
-            <Send className="hidden size-4 max-md:block" aria-hidden />
+            <Send className="hidden size-4 max-regular:block" aria-hidden />
             Send feedback
           </Button>
         }

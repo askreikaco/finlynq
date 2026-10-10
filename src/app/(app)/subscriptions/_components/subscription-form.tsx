@@ -11,6 +11,7 @@ import { useDisplayCurrency } from "@/components/currency-provider";
 import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
 import { AmountInput } from "@/components/amount-input";
 import { parseSaveError } from "@/lib/save-error";
+import { TW } from "@/lib/design/tokens";
 import { FREQUENCY_LABELS, SUBSCRIPTION_FREQUENCIES, frequencyOrMonthly } from "@/lib/subscriptions/schedule";
 import type { Subscription } from "./types";
 
@@ -67,8 +68,8 @@ export interface SubscriptionFormProps {
   onSaved: () => void;
 }
 
-const ROW = "flex min-h-12 items-center gap-3 px-4 py-2";
-const ROW_LABEL = "w-28 shrink-0 text-sm text-muted-foreground";
+const ROW = `flex ${TW.rowTall} items-center gap-3 px-4 py-2`;
+const ROW_LABEL = `${TW.rowLabel} shrink-0 text-sm text-muted-foreground`;
 const ROW_CONTROL = "border-0 bg-transparent px-0 shadow-none focus-visible:border-transparent focus-visible:ring-0 dark:bg-transparent";
 
 function Row({ label, htmlFor, children }: { label: string; htmlFor?: string; children: React.ReactNode }) {

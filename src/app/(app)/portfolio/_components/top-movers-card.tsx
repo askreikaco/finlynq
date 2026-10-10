@@ -39,7 +39,7 @@ export function TopMoversCard({
                   {m.image && <img src={m.image} alt="" className="h-5 w-5 rounded-full" />}
                   <span className="text-sm font-medium">{m.symbol ?? m.name}</span>
                   {m.name !== (m.symbol ?? m.name) && (
-                    <span className="text-xs text-muted-foreground hidden sm:inline">{m.name}</span>
+                    <span className="text-xs text-muted-foreground hidden regular:inline">{m.name}</span>
                   )}
                 </div>
                 <DayChange pct={m.changePct} amount={m.dayChangeDisplay} currency={currency} />

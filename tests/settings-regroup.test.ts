@@ -157,10 +157,11 @@ describe("Settings Reorganization - Code Structure", () => {
       expect(src).toContain("AccountContent");
     });
 
-    it("/settings/account imports and uses AccountContent", async () => {
+    it("/settings/account redirects to /account/security (G2-15, no duplicate content)", async () => {
       const mod = await import("@/app/(app)/settings/account/page");
       const src = mod.default.toString();
-      expect(src).toContain("AccountContent");
+      expect(src).toContain("/account/security");
+      expect(src).not.toContain("AccountContent");
     });
   });
 

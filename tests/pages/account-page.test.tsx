@@ -1,9 +1,11 @@
 /**
- * Tests for /account index page (src/app/(app)/account/page.tsx)
+ * Tests for /account index page (src/app/(app)/account/page.tsx). The hub renders at every size; the
+ * FINLYNQ_NAV_V2 flag is retired, so the page no longer redirects and reads no env var.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { readFileSync } from "fs";
+import { resolve } from "path";
 
-// Mock next/navigation redirect to throw
 const mockRedirect = vi.fn((path: string) => {
   throw new Error(`REDIRECT_TO_${path}`);
 });
@@ -15,73 +17,25 @@ vi.mock("next/navigation", () => ({
 describe("AccountPage (/account)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    delete process.env.FINLYNQ_NAV_V2;
   });
 
-  it("redirects to /account/info when FINLYNQ_NAV_V2 is unset", async () => {
-    delete process.env.FINLYNQ_NAV_V2;
-    vi.resetModules();
+  it.each([undefined, "0", "false", "1", "true", "yes"])(
+    "renders AccountHub with no redirect (FINLYNQ_NAV_V2=%s has no effect)",
+    async (value) => {
+      if (value === undefined) delete process.env.FINLYNQ_NAV_V2;
+      else process.env.FINLYNQ_NAV_V2 = value;
+      vi.resetModules();
 
-    const { default: AccountPage } = await import("@/app/(app)/account/page");
+      const { default: AccountPage } = await import("@/app/(app)/account/page");
+      const result = AccountPage();
 
-    try {
-      AccountPage();
-      expect.fail("Expected redirect to be called");
-    } catch {
-      expect(mockRedirect).toHaveBeenCalledWith("/account/info");
-    }
-  });
+      expect(mockRedirect).not.toHaveBeenCalled();
+      expect(result.type.name).toBe("AccountHub");
+    },
+  );
 
-  it("redirects to /account/info when FINLYNQ_NAV_V2='0'", async () => {
-    process.env.FINLYNQ_NAV_V2 = "0";
-    vi.resetModules();
-
-    const { default: AccountPage } = await import("@/app/(app)/account/page");
-
-    try {
-      AccountPage();
-      expect.fail("Expected redirect to be called");
-    } catch {
-      expect(mockRedirect).toHaveBeenCalledWith("/account/info");
-    }
-  });
-
-  it("renders AccountHub when FINLYNQ_NAV_V2='1'", async () => {
-    process.env.FINLYNQ_NAV_V2 = "1";
-    vi.resetModules();
-
-    const { default: AccountPage } = await import("@/app/(app)/account/page");
-    const result = AccountPage();
-
-    expect(mockRedirect).not.toHaveBeenCalled();
-    expect(result).toBeDefined();
-    expect(result.type).toBeDefined();
-    expect(result.type.name).toBe("AccountHub");
-  });
-
-  it("renders AccountHub when FINLYNQ_NAV_V2='true'", async () => {
-    process.env.FINLYNQ_NAV_V2 = "true";
-    vi.resetModules();
-
-    const { default: AccountPage } = await import("@/app/(app)/account/page");
-    const result = AccountPage();
-
-    expect(mockRedirect).not.toHaveBeenCalled();
-    expect(result).toBeDefined();
-    expect(result.type).toBeDefined();
-    expect(result.type.name).toBe("AccountHub");
-  });
-
-  it("renders AccountHub when FINLYNQ_NAV_V2='yes'", async () => {
-    process.env.FINLYNQ_NAV_V2 = "yes";
-    vi.resetModules();
-
-    const { default: AccountPage } = await import("@/app/(app)/account/page");
-    const result = AccountPage();
-
-    expect(mockRedirect).not.toHaveBeenCalled();
-    expect(result).toBeDefined();
-    expect(result.type).toBeDefined();
-    expect(result.type.name).toBe("AccountHub");
+  it("has no flag or redirect branch in the source", () => {
+    const src = readFileSync(resolve(__dirname, "../../src/app/(app)/account/page.tsx"), "utf-8");
+    expect(src).not.toMatch(/redirect\(|isNavV2Enabled|FINLYNQ_NAV_V2/);
   });
 });

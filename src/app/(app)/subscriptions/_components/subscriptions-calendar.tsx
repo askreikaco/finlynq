@@ -130,7 +130,7 @@ export function SubscriptionsCalendar({
 
           <div className="grid grid-cols-7 gap-1">
             {Array.from({ length: firstWeekday }, (_, i) => (
-              <div key={`pad-${i}`} className="min-h-[56px] sm:min-h-[88px]" />
+              <div key={`pad-${i}`} className="min-h-[56px] regular:min-h-[88px]" />
             ))}
             {Array.from({ length: daysInMonth }, (_, i) => {
               const day = i + 1;
@@ -144,12 +144,12 @@ export function SubscriptionsCalendar({
                   onClick={() => setSelectedDay(isSelected ? null : day)}
                   aria-label={`${monthLabel} ${day}${dayEvents.length ? `, ${dayEvents.length} payment${dayEvents.length === 1 ? "" : "s"}` : ""}`}
                   aria-pressed={isSelected}
-                  className={`min-h-[56px] sm:min-h-[88px] min-w-0 p-1 sm:p-1.5 rounded-lg text-left align-top transition-colors border flex flex-col ${
+                  className={`min-h-[56px] regular:min-h-[88px] min-w-0 p-1 regular:p-1.5 rounded-lg text-left align-top transition-colors border flex flex-col ${
                     isSelected ? "border-primary bg-primary/5" : "border-border/60 hover:bg-muted/50"
                   }`}
                 >
                   <span
-                    className={`text-xs sm:text-sm font-medium inline-flex h-6 w-6 items-center justify-center rounded-full ${
+                    className={`text-xs regular:text-sm font-medium inline-flex h-6 w-6 items-center justify-center rounded-full ${
                       isToday ? "bg-primary text-primary-foreground" : ""
                     }`}
                   >
@@ -157,13 +157,13 @@ export function SubscriptionsCalendar({
                   </span>
                   {/* Phone width: dots. Wider: named chips. */}
                   {dayEvents.length > 0 && (
-                    <div className="flex flex-wrap gap-0.5 mt-1 sm:hidden">
+                    <div className="flex flex-wrap gap-0.5 mt-1 regular:hidden">
                       {dayEvents.slice(0, 3).map((ev, idx) => (
                         <span key={idx} className={`h-1.5 w-1.5 rounded-full ${eventTone(ev).dot}`} />
                       ))}
                     </div>
                   )}
-                  <div className="hidden sm:flex flex-col gap-0.5 mt-1 w-full min-w-0">
+                  <div className="hidden regular:flex flex-col gap-0.5 mt-1 w-full min-w-0">
                     {dayEvents.slice(0, 2).map((ev, idx) => (
                       <span
                         key={idx}
@@ -245,7 +245,7 @@ export function SubscriptionsCalendar({
         </Card>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 regular:grid-cols-3 gap-3">
         <MonthStat label="Expected bills" value={formatCurrency(totalBills, displayCurrency)} tone="text-destructive" icon={<TrendingDown className="h-4 w-4 text-destructive" />} />
         <MonthStat label="Expected income" value={formatCurrency(totalIncome, displayCurrency)} tone="text-pos" icon={<TrendingUp className="h-4 w-4 text-pos" />} />
         <MonthStat

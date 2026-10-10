@@ -2,6 +2,7 @@
  * @vitest-environment jsdom
  */
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
+import { HEADER_SECONDARY } from "@/components/mobile";
 import * as React from "react";
 import { render, screen, cleanup, fireEvent, waitFor, within } from "@testing-library/react";
 import { DASHBOARD_CARDS, DEFAULT_CARD_ORDER } from "@/lib/dashboard-layout";
@@ -95,20 +96,23 @@ describe("Dashboard card layout", () => {
     expect(renderedIds()).toEqual([...DEFAULT_CARD_ORDER]);
   });
 
-  it("default markup keeps the original responsive grids (desktop unchanged)", async () => {
+  it("default markup keeps the card rows (one tree; desktop grid shape unchanged)", async () => {
     await dashboard();
     const grid = (id: string) => screen.getByTestId(`card-${id}`).closest("div.grid") as HTMLElement;
-    expect(grid("health-score").className).toBe("grid grid-cols-1 lg:grid-cols-3 gap-4");
+    expect(grid("health-score").className).toBe("grid grid-cols-1 wide:grid-cols-3 gap-4");
     expect(screen.getByText("Total Net Worth").closest("div.grid")).toBe(grid("health-score"));
-    expect(screen.getByText("Total Net Worth").closest("div.lg\\:col-span-2")).not.toBeNull();
-    expect(grid("action-center").className).toBe("grid grid-cols-1 lg:grid-cols-3 gap-5");
-    expect(grid("weekly-recap")).toBe(grid("action-center"));
-    expect(grid("quick-import")).toBe(grid("action-center"));
-    expect(grid("income-expense-chart").className).toContain("grid grid-cols-1 lg:grid-cols-2 gap-5");
+    expect(screen.getByText("Total Net Worth").closest("div.wide\\:col-span-2")).not.toBeNull();
+    expect(grid("action-center").className).toBe("grid grid-cols-1 wide:grid-cols-3 gap-5");
+    // the secondary cards sit in the More insights disclosure, which shares the action-center row
+    const toggle = screen.getByRole("button", { name: "More insights" });
+    expect(toggle.closest("div.grid")).toBe(grid("action-center"));
+    expect(grid("weekly-recap").className).toBe("grid grid-cols-1 wide:grid-cols-2 gap-5");
+    expect(grid("weekly-recap").closest('[role="region"]')).toBe(document.getElementById(toggle.getAttribute("aria-controls")!));
+    expect(grid("income-expense-chart").className).toContain("grid grid-cols-1 wide:grid-cols-2 gap-5");
     expect(grid("spending-category-chart")).toBe(grid("income-expense-chart"));
-    expect(grid("available-to-spend").className).toContain("grid grid-cols-1 lg:grid-cols-3 gap-5");
-    // stat tiles grid
-    expect(screen.getByTestId("stat-Monthly Income").closest("div.grid")!.className).toBe("grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4");
+    expect(grid("available-to-spend").className).toContain("grid grid-cols-1 wide:grid-cols-3 gap-5");
+    // stat tiles grid: three tiles (the Net Worth tile is the hero above)
+    expect(screen.getByTestId("stat-Monthly Income").closest("div.grid")!.className).toBe("grid grid-cols-1 regular:grid-cols-3 gap-4");
   });
 
   it("a hidden card is not rendered", async () => {
@@ -143,26 +147,28 @@ describe("Dashboard card layout", () => {
     expect(screen.getByText("Total Net Worth").closest("div.lg\\:col-span-2")).toBeNull();
   });
 
-  it("below md: duplicate Net Worth tile dropped, secondary cards collapsed behind More insights", async () => {
+  it("one tree at every size: the Net Worth figure shows once, secondary cards sit once inside More insights", async () => {
     await dashboard();
-    const nwTile = screen.getByTestId("stat-Net Worth").parentElement!;
-    expect(nwTile.className).toBe("hidden md:contents");
+    // the hero is the single Net Worth block; the duplicate stat tile is gone at every size
+    expect(screen.queryByTestId("stat-Net Worth")).toBeNull();
+    expect(screen.getAllByText("Total Net Worth")).toHaveLength(1);
     expect(screen.getByTestId("stat-Monthly Income").parentElement!.className).not.toContain("hidden");
 
-    // extra cards sit in a [data-card-id] wrapper; LazyView adds its own div between it and the card
-    const wrapper = (id: string) => screen.getByTestId(`card-${id}`).closest("[data-card-id]") as HTMLElement;
-    expect(wrapper("weekly-recap").className).toBe("hidden md:contents");
-    expect(wrapper("insights").className).toBe("hidden md:contents");
-    // the whole chart grid vanishes below md (no empty gap) while md+ keeps it
-    expect(screen.getByTestId("card-income-expense-chart").closest("div.grid")!.className).toContain("max-md:hidden");
-    // core cards are never collapsed
-    expect(screen.getByTestId("card-action-center").closest("[data-card-id]")).toBeNull();
-
+    // core cards are never inside the disclosure
     const toggle = screen.getByRole("button", { name: "More insights" });
-    expect(toggle.className).toContain("md:hidden");
+    const region = document.getElementById(toggle.getAttribute("aria-controls")!) as HTMLElement;
+    expect(region.getAttribute("role")).toBe("region");
+    expect(region.contains(screen.getByTestId("card-action-center"))).toBe(false);
+    // secondary cards are mounted once, inside the region
+    for (const id of ["weekly-recap", "quick-import", "income-expense-chart", "insights"]) {
+      expect(region.contains(screen.getByTestId(`card-${id}`))).toBe(true);
+    }
+
+    // collapsed by default (no size provider = compact), and the toggle opens it
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(region.hidden).toBe(true);
     fireEvent.click(toggle);
-    expect(wrapper("weekly-recap").className).toBe("contents");
-    expect(screen.getByTestId("card-income-expense-chart").closest("div.grid")!.className).not.toContain("max-md:hidden");
+    expect(region.hidden).toBe(false);
     expect(screen.getByRole("button", { name: "Fewer insights" }).getAttribute("aria-expanded")).toBe("true");
   });
 });
@@ -176,7 +182,7 @@ describe("Customize flow", () => {
 
   it("header has a Customize action (desktop button + mobile overflow entry)", async () => {
     await dashboard();
-    expect(screen.getByRole("button", { name: /Customize/ }).className).toContain("max-md:hidden");
+    expect(screen.getByRole("button", { name: /Customize/ }).className).toContain(HEADER_SECONDARY);
     fireEvent.click(screen.getByRole("button", { name: "More actions" }));
     const menu = await screen.findByRole("menu");
     expect(within(menu).getByText("Customize")).toBeTruthy();

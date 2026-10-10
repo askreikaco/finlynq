@@ -77,3 +77,25 @@ Raw Tailwind palette classes (emerald, rose, amber, sky, indigo, violet, zinc, .
 | extra category hue | text-chart-5, bg-chart-5/10 |
 | neutrals | foreground, muted-foreground, muted, card, background, border |
 Tints: bg-<token>/10, borders /30; no dark: variants needed (tokens switch with the theme). Skeletons: animate-shimmer only (animate-pulse is for activity dots). Charts keep chart-1..5.
+
+## Visual harness (manual, not CI)
+Status: dry-run (`playwright test --list`, 54 tests) and tsc/eslint verified; on 5a23a283 the first 8 of 9 cells at 390 dark passed, cell 9 (transactions-new) failed on the tab-bar rule (fixed, not re-run); full run and goal2 mode not yet proven.
+Playwright + structural checks for the size-class work. Not in CI, not in vitest. Chromium only.
+Spec: `e2e/visual/size-classes.spec.ts`; config: `playwright.visual.config.ts`; diff: `scripts/visual-diff.mjs`.
+- Matrix: 390x844 (isMobile, hasTouch, DPR 2), 768x1024, 1280x800 x dark/light x 9 pages (`dashboard transactions accounts account-detail portfolio budgets settings more transactions-new`). 54 tests.
+- Needs a running app and a throwaway `*_test` database it can seed (registers one user, 130 transactions by default).
+- Run (dry run, no env): `npx playwright test -c playwright.visual.config.ts --list`
+- Run:
+  ```
+  FINLYNQ_VISUAL_BASE_URL=http://localhost:3960 \
+  FINLYNQ_VISUAL_DATABASE_URL=postgresql://postgres:<pw>@127.0.0.1:55460/<name>_test \
+  FINLYNQ_VISUAL_OUT=/path/outside/repo/shots-<tag> \
+  FINLYNQ_VISUAL_TARGET=current \
+  FINLYNQ_VISUAL_CHROMIUM=/opt/pw-browsers/chromium-1194/chrome-linux/chrome \
+  npx playwright test -c playwright.visual.config.ts
+  ```
+- Env: `FINLYNQ_VISUAL_BASE_URL` (required), `FINLYNQ_VISUAL_DATABASE_URL` (required, must end `_test`; used only to mark the seeded user verified), `FINLYNQ_VISUAL_OUT` (default `test-results/visual`), `FINLYNQ_VISUAL_TARGET` (`current` default | `goal2`), `FINLYNQ_VISUAL_ROWS` (default 130), `FINLYNQ_VISUAL_CHROMIUM` (optional executable path).
+- Output: `<viewport>-<theme>-<page>.png` plus `manifest.json`. Names: `390x844-dark-dashboard.png`.
+- `current` checks: no horizontal overflow; page header sticky and pinned after 600px scroll; tab bar visible at 390 (not on full-screen entry routes, e.g. transactions-new); page FAB fixed in viewport; body font starts with a system stack; no fonts.googleapis/gstatic requests; html theme class matches.
+- `goal2` adds: rail `[data-testid="app-rail"]` visible and bottom bar `nav[aria-label="Mobile navigation"]` hidden at 768/1280, the reverse at 390; exactly one of `[data-view=cards]`/`[data-view=list]` where a ViewModeToggle (`[data-testid="view-mode-toggle"]` or `[aria-label="View"]`) is mounted.
+- Pixel baseline: `node scripts/visual-diff.mjs <baselineDir> <candidateDir> [--max-ratio=0] [--channel-tol=0]`. Prints changed-pixel ratio per file; exit 1 on any change, missing file or size mismatch. Use `FINLYNQ_VISUAL_OUT` outside the repo for shots; `test-results/` is gitignored.

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import { ThemeProvider } from "@/components/theme-provider";
 import { PwaRegister } from "@/components/pwa-register";
+import { DensityProvider } from "@/components/adaptive/density-provider";
 import { JsonLd, organizationSchema } from "@/components/seo/json-ld";
 import { SITE_URL } from "@/lib/seo/site";
 import "./globals.css";
@@ -10,6 +11,10 @@ import "./globals.css";
  *  Mirrors next-themes FOUC pattern — nonce carried by the <script> tag.
  *  storageKey must match FONT_STORAGE_KEY in font-provider.tsx. */
 const FONT_FOUC_SCRIPT = `(function(){try{var k=localStorage.getItem("pf-font");var v=["rounded","serif","mono"];if(k&&v.indexOf(k)!==-1){document.documentElement.setAttribute("data-font",k)}}catch(e){}})();`;
+
+/** G2-08: device-level density (pf-density). Sets data-density=compact before paint; the
+ *  DensityProvider syncs state after mount. storageKey must match DENSITY_STORAGE_KEY. */
+const DENSITY_FOUC_SCRIPT = `(function(){try{var k=localStorage.getItem("pf-density");if(k==="compact"){document.documentElement.setAttribute("data-density",k)}}catch(e){}})();`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -90,6 +95,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           nonce={typeof window === "undefined" ? nonce : ""}
           dangerouslySetInnerHTML={{ __html: FONT_FOUC_SCRIPT }}
         />
+        <script
+          suppressHydrationWarning
+          nonce={typeof window === "undefined" ? nonce : ""}
+          dangerouslySetInnerHTML={{ __html: DENSITY_FOUC_SCRIPT }}
+        />
       </head>
       <body className="antialiased noise-bg">
         <PwaRegister />
@@ -102,7 +112,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           disableTransitionOnChange
           nonce={nonce}
         >
-          {children}
+          <DensityProvider>{children}</DensityProvider>
         </ThemeProvider>
       </body>
     </html>

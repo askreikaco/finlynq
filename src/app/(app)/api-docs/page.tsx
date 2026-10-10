@@ -449,7 +449,7 @@ function RouteCard({ route }: { route: ApiRoute }) {
       >
         <MethodBadge method={route.method} />
         <code className="flex-1 text-sm font-medium text-foreground">{route.path}</code>
-        <span className="hidden text-xs text-muted-foreground sm:inline">{route.description}</span>
+        <span className="hidden text-xs text-muted-foreground regular:inline">{route.description}</span>
         <svg className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>

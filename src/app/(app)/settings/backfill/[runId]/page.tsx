@@ -311,7 +311,7 @@ export default function BackfillReviewPage({ params }: { params: Promise<{ runId
               <RefreshCw className="size-4 mr-2" /> New run
             </Button>
             <Button onClick={applyAll} disabled={applying || approvedCount === 0}>
-              {!applying && <CheckCircle2 className="hidden size-4 max-md:block" aria-hidden />}
+              {!applying && <CheckCircle2 className="hidden size-4 max-regular:block" aria-hidden />}
               {applying ? (<><Loader2 className="size-4 animate-spin mr-2" /> Applying…</>) : `Apply ${approvedCount} approved`}
             </Button>
           </>
@@ -335,9 +335,9 @@ export default function BackfillReviewPage({ params }: { params: Promise<{ runId
       )}
 
       {!loading && proposals.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <div className="grid grid-cols-1 wide:grid-cols-12 gap-4">
           {/* LEFT: proposal list */}
-          <div className="col-span-full lg:col-span-5 space-y-2">
+          <div className="col-span-full wide:col-span-5 space-y-2">
             <div className="flex items-center justify-between gap-2 text-xs px-1">
               <span className="text-muted-foreground">{sortedProposals.length} proposal(s)</span>
               <div className="flex items-center gap-1">
@@ -372,7 +372,7 @@ export default function BackfillReviewPage({ params }: { params: Promise<{ runId
           </div>
 
           {/* RIGHT: detail */}
-          <div className="col-span-full lg:col-span-7">
+          <div className="col-span-full wide:col-span-7">
             {selected ? (
               <ProposalDetail
                 runId={runId}
@@ -1917,7 +1917,7 @@ function CoverageDashboard({ coverage, proposals }: { coverage: Coverage; propos
         <CardTitle className="text-base">Canonicalization coverage</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 text-sm">
+        <div className="grid grid-cols-2 regular:grid-cols-3 wide:grid-cols-5 gap-4 text-sm">
           <Metric label="Investment accounts" value={String(coverage.accountCount)} />
           <Metric label="Total transactions" value={String(coverage.totalTxs)} />
           <Metric

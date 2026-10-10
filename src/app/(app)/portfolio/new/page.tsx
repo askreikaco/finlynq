@@ -36,7 +36,7 @@ function PortfolioNewInner() {
   if (redirectKey) return null;
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 md:p-6">
+    <div className="mx-auto max-w-2xl space-y-6 regular:p-6">
       <PageHeader
         title="New operation"
         backHref="/portfolio"

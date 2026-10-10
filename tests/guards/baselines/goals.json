@@ -1,0 +1,21 @@
+{
+  "family": "goals",
+  "unmigrated": [
+    "src/app/(app)/goals/[id]/edit/page.tsx",
+    "src/app/(app)/goals/new/page.tsx",
+    "src/app/(app)/goals/page.tsx"
+  ],
+  "chrome": {
+    "src/app/(app)/goals/[id]/edit/page.tsx": {
+      "return-to": 1,
+      "suspense-null": 1
+    },
+    "src/app/(app)/goals/new/page.tsx": {
+      "return-to": 1,
+      "suspense-null": 1
+    },
+    "src/app/(app)/goals/page.tsx": {
+      "rounded-2xl": 1
+    }
+  }
+}

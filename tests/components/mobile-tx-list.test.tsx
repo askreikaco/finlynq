@@ -6,7 +6,9 @@
 import "@testing-library/jest-dom";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import React from "react";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, within, fireEvent } from "@testing-library/react";
+import * as fs from "fs";
+import * as path from "path";
 import userEvent from "@testing-library/user-event";
 import { MobileTxList } from "@/components/transactions/mobile-tx-list";
 import type { Transaction } from "@/app/(app)/transactions/_types";
@@ -254,6 +256,17 @@ describe("MobileTxList", () => {
       );
       const btn = screen.getByRole("button", { name: "Loading..." });
       expect(btn).toBeDisabled();
+    });
+  });
+
+  describe("Cards view (phone rows)", () => {
+    it("a row tap edits that transaction; the list carries no breakpoint tokens", () => {
+      const onEditSpy = vi.fn();
+      render(<MobileTxList transactions={[mockTx({ id: 7, payee: "Lidl" })]} onEdit={onEditSpy} />);
+      fireEvent.click(screen.getByRole("button", { name: /^Edit Lidl$/ }));
+      expect(onEditSpy).toHaveBeenCalledWith(expect.objectContaining({ id: 7 }));
+      const src = fs.readFileSync(path.resolve(__dirname, "../../src/components/transactions/mobile-tx-list.tsx"), "utf-8");
+      expect(src.match(/(?<![\w-])(max-)?(sm|md|lg|xl|2xl):/g) ?? []).toEqual([]);
     });
   });
 });

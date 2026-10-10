@@ -412,7 +412,7 @@ export function GenericCsvConnectorTab() {
                   Tell Finlynq which column holds each field. Required fields are
                   marked with <span className="text-destructive">*</span>.
                 </p>
-                <div className="grid gap-2 sm:grid-cols-2">
+                <div className="grid gap-2 regular:grid-cols-2">
                   {FIELDS.map((f) => (
                     <div key={f.key} className="flex items-center gap-2">
                       <label className="w-40 shrink-0 text-xs text-muted-foreground">

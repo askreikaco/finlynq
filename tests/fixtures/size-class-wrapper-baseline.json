@@ -1,0 +1,6 @@
+{
+  "src/app/(app)/accounts/[id]/page.tsx": 2,
+  "src/app/(app)/accounts/page.tsx": 2,
+  "src/app/(app)/portfolio/dividends/page.tsx": 4,
+  "src/app/(app)/portfolio/realized-gains/page.tsx": 4
+}

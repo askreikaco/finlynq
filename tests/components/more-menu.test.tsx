@@ -5,6 +5,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import React from "react";
 import { render as rtlRender, screen, cleanup, within, waitFor, fireEvent } from "@testing-library/react";
 import { SWRConfig } from "swr";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 const render = (ui: React.ReactElement) =>
   rtlRender(<SWRConfig value={{ provider: () => new Map() }}>{ui}</SWRConfig>);
@@ -89,8 +91,8 @@ describe("More screen", () => {
       ["Import", "/import"],
     ]);
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/announcements"));
-    expect(rows("tools").map((r) => r[0])).toEqual(["What's new", "Settings"]);
-    expect(within(group("tools")).getByTestId("more-signout").textContent).toBe("Sign out");
+    expect(rows("tools").map((r) => r[0])).toEqual(["What's new", "Feedback", "Settings"]);
+    expect(screen.getByTestId("more-signout").textContent).toBe("Log out");
     expect(rows("explore").map((r) => r[1])).toEqual(["/subscriptions", "/loans"]);
   });
 
@@ -98,7 +100,7 @@ describe("More screen", () => {
     announcements = [];
     render(<MoreMenu />);
     await waitFor(() => expect(screen.queryByText("What's new")).toBeNull());
-    expect(rows("tools").map((r) => r[0])).toEqual(["Settings"]);
+    expect(rows("tools").map((r) => r[0])).toEqual(["Feedback", "Settings"]);
   });
 
   it("shows the Admin group only for admins", async () => {
@@ -127,7 +129,7 @@ describe("More screen", () => {
     expect(rows("admin").map((r) => r[1])).toEqual(expectedHrefs);
   });
 
-  it("Sign out posts logout, clears the user's storage and hard-reloads", async () => {
+  it("Log out posts logout, clears the user's storage and hard-reloads", async () => {
     render(<MoreMenu />);
     fireEvent.click(screen.getByTestId("more-signout"));
     await waitFor(() => expect(hardReload).toHaveBeenCalledWith("/"));
@@ -136,9 +138,31 @@ describe("More screen", () => {
     expect(sessionStorage.getItem("pf-passkey-auto-skip")).toBe("1");
   });
 
-  it("does not offer Send feedback", () => {
+  it("offers Feedback as a row in Tools, linking to /feedback", () => {
     render(<MoreMenu />);
-    expect(screen.queryByText(/feedback/i)).toBeNull();
+    expect(rows("tools")).toContainEqual(["Feedback", "/feedback"]);
+  });
+
+  it("shows the Feedback badge only when there are unread feedback replies", async () => {
+    announcements = [{ id: 1, read: true }];
+    fetchMock.mockImplementation(async (url: string) => {
+      const j = (body: unknown) => ({ ok: true, status: 200, json: async () => body });
+      if (url === "/api/feedback") return j([{ id: 9, unread: true }, { id: 10, unread: false }]);
+      if (url === "/api/announcements") return j(announcements);
+      if (url === "/api/auth/session") return j(session);
+      if (url === "/api/settings/dev-mode") return j({ devMode: dev });
+      return j({});
+    });
+    render(<MoreMenu />);
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/feedback"));
+    const feedbackRow = await waitFor(() => {
+      const r = screen.getAllByTestId("more-row").find((x) => x.getAttribute("href") === "/feedback");
+      expect(r?.textContent).toContain("1");
+      return r!;
+    });
+    expect(feedbackRow.querySelector("[class*='bg-primary']")).not.toBeNull();
+    const whatsnewRow = screen.getAllByTestId("more-row").find((r) => r.textContent?.includes("What's new"));
+    expect(whatsnewRow?.querySelector("[class*='bg-primary']")).toBeNull();
   });
 
   it("shows badge with unread announcement count on whats-new row", async () => {
@@ -183,38 +207,42 @@ describe("More Account section", () => {
   });
 });
 
-describe("More Appearance row", () => {
-  it("sits in the Tools group (not Account), shows the current choice and drives setTheme", () => {
+describe("More Appearance card", () => {
+  it("is its own Appearance section (not Account, not Tools) and shows the current choice", () => {
     mockTheme = "dark";
     render(<MoreMenu />);
-    const row = screen.getByTestId("more-appearance");
-    expect(group("tools").contains(row)).toBe(true);
-    expect(screen.getByTestId("more-account").contains(row)).toBe(false);
-    const radios = within(row).getAllByRole("radio");
-    expect(radios.map((r) => r.textContent)).toEqual(["System", "Light", "Dark"]);
-    expect(radios.map((r) => r.getAttribute("aria-checked"))).toEqual(["false", "false", "true"]);
-    fireEvent.click(within(row).getByRole("radio", { name: "Light" }));
+    const card = screen.getByTestId("more-appearance");
+    expect(group("appearance").contains(card)).toBe(true);
+    expect(group("tools").contains(card)).toBe(false);
+    expect(screen.getByTestId("more-account").contains(card)).toBe(false);
+    expect(within(group("appearance")).getByRole("heading", { level: 2 }).textContent).toBe("Appearance");
+    const radios = within(card).getAllByRole("radio");
+    expect(radios.map((r) => r.textContent)).toEqual(["Light", "Dark", "System"]);
+    expect(radios.map((r) => r.getAttribute("aria-checked"))).toEqual(["false", "true", "false"]);
+  });
+
+  it("drives the same setTheme call for every choice", () => {
+    mockTheme = "dark";
+    render(<MoreMenu />);
+    const card = screen.getByTestId("more-appearance");
+    fireEvent.click(within(card).getByRole("radio", { name: "Light" }));
     expect(setTheme).toHaveBeenCalledWith("light");
-    fireEvent.click(within(row).getByRole("radio", { name: "System" }));
+    fireEvent.click(within(card).getByRole("radio", { name: "System" }));
     expect(setTheme).toHaveBeenCalledWith("system");
+    fireEvent.click(within(card).getByRole("radio", { name: "Dark" }));
+    expect(setTheme).toHaveBeenCalledWith("dark");
   });
 });
 
 describe("More keeps everything the old sheet offered reachable", () => {
-  it("every non-bar nav item (all flags on) has a row, except owner-removed /feedback", () => {
+  it("every non-bar nav item (all flags on) has a More row", () => {
     const all = buildMoreGroups({ isAdmin: true, devMode: true, familyEnabled: true, hasAnnouncements: true, instanceAdminEnabled: true, categoriesMerged: false });
     const hrefs = new Set(all.flatMap((g) => g.rows.map((r) => r.href)));
     const bar = new Set(mobileBarItems.map((i) => i.href));
     const missing = allFlatItems
       .map((i) => i.href)
-      .filter((h) => !bar.has(h) && h !== "/feedback" && !hrefs.has(h));
+      .filter((h) => !bar.has(h) && !hrefs.has(h));
     expect(missing).toEqual([]);
-  });
-
-  it("redirects to /dashboard on desktop widths", () => {
-    vi.stubGlobal("matchMedia", () => ({ matches: true }));
-    render(<MoreMenu />);
-    expect(replace).toHaveBeenCalledWith("/dashboard");
   });
 });
 
@@ -283,5 +311,62 @@ describe("More with categories merged hub", () => {
     expect(categoryRow?.label).toBe("Spending by category");
     expect(settingsCatRow).toBeTruthy();
     expect(settingsCatRow?.label).toBe("Categories");
+  });
+});
+
+describe("More renders at every size (no redirect, no breakpoint wrapper)", () => {
+  it.each([
+    ["compact (matchMedia says the viewport is >= 768px)", true],
+    ["compact (matchMedia says the viewport is < 768px)", false],
+  ])("does not redirect or call replace at %s", (_label, wide) => {
+    const mm = vi.fn(() => ({ matches: wide }));
+    vi.stubGlobal("matchMedia", mm);
+    render(<MoreMenu />);
+    expect(replace).not.toHaveBeenCalled();
+    expect(mm).not.toHaveBeenCalled();
+    expect(screen.getByTestId("more-menu")).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("More");
+  });
+
+  it("renders with no matchMedia at all", () => {
+    vi.stubGlobal("matchMedia", undefined);
+    render(<MoreMenu />);
+    expect(screen.getByTestId("more-menu")).toBeTruthy();
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it("the root is a plain centred column; groups sit in two columns from wide up (no CompactOnly)", () => {
+    render(<MoreMenu />);
+    const root = screen.getByTestId("more-menu");
+    expect(root.className).toContain("max-w-xl");
+    expect(root.className).toContain("wide:max-w-3xl");
+    expect(root.className).not.toMatch(/(^|\s)(max-)?md:/);
+    const grid = root.querySelector(".wide\\:grid-cols-2");
+    expect(grid).not.toBeNull();
+    expect(grid!.querySelector('[data-testid="more-group-main"]')).not.toBeNull();
+  });
+
+  it("the source has no matchMedia, no router redirect and no breakpoint classes", () => {
+    const src = readFileSync(join(__dirname, "../../src/components/more-menu.tsx"), "utf8");
+    expect(src).not.toContain("matchMedia");
+    expect(src).not.toContain("router.replace");
+    expect(src).not.toContain("CompactOnly");
+    expect(src).not.toMatch(/(^|[\s"'`])(max-)?md:/);
+  });
+});
+
+describe("More and AppTabs share one unread fetch", () => {
+  it("mounting the tab bar and the More screen together requests announcements once", async () => {
+    const { AppTabs } = await import("@/components/nav");
+    render(
+      <>
+        <AppTabs />
+        <MoreMenu />
+      </>,
+    );
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/announcements"));
+    const calls = fetchMock.mock.calls.filter((c) => c[0] === "/api/announcements");
+    expect(calls).toHaveLength(1);
+    expect(fetchMock.mock.calls.filter((c) => c[0] === "/api/feedback")).toHaveLength(1);
   });
 });

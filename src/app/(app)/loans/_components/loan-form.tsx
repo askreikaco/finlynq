@@ -11,6 +11,8 @@ import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { parseSaveError } from "@/lib/save-error";
 import { AmountInput } from "@/components/amount-input";
+import { FormGroup } from "@/components/forms";
+import { TW } from "@/lib/design/tokens";
 import { LOAN_TYPE_OPTIONS, type Loan, type LoanAccount } from "./loan-types";
 
 const FREQUENCY_OPTIONS = [
@@ -22,8 +24,8 @@ const FREQUENCY_OPTIONS = [
   { value: "annual", label: "Annual" },
 ] as const;
 
-const ROW = "flex min-h-12 items-center gap-3 px-4 py-2";
-const ROW_LABEL = "w-28 shrink-0 text-sm text-muted-foreground";
+const ROW = `flex ${TW.rowTall} items-center gap-3 px-4 py-2`;
+const ROW_LABEL = `${TW.rowLabel} shrink-0 text-sm text-muted-foreground`;
 const ROW_CONTROL = "border-0 bg-transparent px-0 shadow-none focus-visible:border-transparent focus-visible:ring-0 dark:bg-transparent";
 
 function Row({ label, htmlFor, error, children }: { label: ReactNode; htmlFor?: string; error?: string; children: ReactNode }) {
@@ -184,7 +186,7 @@ export function LoanForm({ mode, loan, defaultCurrency, accounts, onCancel, onSa
   return (
     <>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
+        <FormGroup>
           <Row label="Name" htmlFor="loan-name" error={errors.name}>
             <Input id="loan-name" className={ROW_CONTROL} value={form.name} onChange={(e) => { setForm({ ...form, name: e.target.value }); setErrors({ ...errors, name: "" }); }} />
           </Row>
@@ -257,7 +259,7 @@ export function LoanForm({ mode, loan, defaultCurrency, accounts, onCancel, onSa
               className="w-full"
             />
           </Row>
-        </div>
+        </FormGroup>
         {isEdit && loan && form.currency !== loan.currency && (
           <p className="text-xs text-warning">
             Changing the currency re-labels the amounts above as {form.currency}. It does not convert them.

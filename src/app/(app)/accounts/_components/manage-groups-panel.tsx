@@ -172,7 +172,7 @@ export function ManageGroupsPanel({
 
     if (isEditing) {
       return (
-        <li key={g} className="flex min-h-11 items-center gap-2 px-4 py-1.5">
+        <li key={g} className="flex min-h-row items-center gap-2 px-4 py-1.5">
           <Input
             value={editValue}
             aria-label={`New name for ${g}`}
@@ -192,7 +192,7 @@ export function ManageGroupsPanel({
             type="button"
             size="icon"
             variant="ghost"
-            className="size-11 md:size-8"
+            className="size-11 regular:pointer-fine:size-8"
             disabled={busy}
             title="Save"
             aria-label="Save group name"
@@ -204,7 +204,7 @@ export function ManageGroupsPanel({
             type="button"
             size="icon"
             variant="ghost"
-            className="size-11 md:size-8"
+            className="size-11 regular:pointer-fine:size-8"
             title="Cancel"
             aria-label="Cancel rename"
             onClick={() => setEditing(null)}
@@ -216,8 +216,8 @@ export function ManageGroupsPanel({
     }
 
     return (
-      <li key={g} className="flex min-h-11 items-center gap-2 pl-4 pr-1">
-        <span className="min-w-0 flex-1 truncate py-2.5 text-base md:text-sm">{g}</span>
+      <li key={g} className="flex min-h-row items-center gap-2 pl-4 pr-1">
+        <span className="min-w-0 flex-1 truncate py-2.5 text-base regular:text-sm">{g}</span>
         {!isOther && (
           <DropdownMenu>
             <DropdownMenuTrigger
@@ -226,7 +226,7 @@ export function ManageGroupsPanel({
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="size-11 text-muted-foreground md:size-8"
+                  className="size-11 text-muted-foreground regular:pointer-fine:size-8"
                   disabled={busy}
                   aria-label={`Actions for ${g}`}
                   title="Group actions"

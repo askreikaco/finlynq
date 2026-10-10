@@ -7,6 +7,7 @@
  * validation and API payload; this file only renders.
  */
 
+import { safeReturnTo } from "@/lib/accounts/groups-return-to";
 import * as React from "react";
 import { PageHeader, SectionLabel } from "@/components/mobile";
 import { Check } from "lucide-react";
@@ -22,17 +23,14 @@ export const DEFAULT_OP_RETURN = "/portfolio";
  * Anything else falls back to /portfolio.
  */
 export function safeReturnHref(raw: string | null | undefined): string {
-  if (!raw) return DEFAULT_OP_RETURN;
-  if (!raw.startsWith("/") || raw.startsWith("//") || raw.includes("\\")) return DEFAULT_OP_RETURN;
-  if (/[\u0000-\u001f\u007f]/.test(raw)) return DEFAULT_OP_RETURN;
-  return raw;
+  return safeReturnTo(raw, DEFAULT_OP_RETURN);
 }
 
 /** Control and input classes: 44px rows, 16px text on phones, no box (the row is the field). */
 export const OP_INPUT =
   "border-0 bg-transparent px-0 shadow-none focus-visible:ring-0 dark:bg-transparent dark:disabled:bg-transparent";
 export const OP_SELECT =
-  "w-full border-0 bg-transparent px-0 text-base shadow-none focus-visible:ring-0 dark:bg-transparent md:text-sm";
+  "w-full border-0 bg-transparent px-0 text-base shadow-none focus-visible:ring-0 dark:bg-transparent regular:pointer-fine:text-sm";
 
 export function OpPage({
   title,
@@ -64,10 +62,10 @@ export function OpPage({
             <Button
               type="submit"
               variant="ghost"
-              className="h-11 px-3 text-sm font-semibold text-primary md:h-8"
+              className="h-11 px-3 text-sm font-semibold text-primary regular:pointer-fine:h-8"
               disabled={saving || saveDisabled}
             >
-              <Check className="hidden size-4 max-md:block" aria-hidden />
+              <Check className="hidden size-4 max-regular:block" aria-hidden />
               {saving ? "Saving…" : saveLabel}
             </Button>
           ) : null

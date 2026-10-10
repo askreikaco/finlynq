@@ -53,7 +53,7 @@ export function EtfXrayCard({
   return (
     <Card>
       <CardHeader className="pb-2">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex flex-col regular:flex-row regular:items-center justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
               <Search className="h-4 w-4 text-primary" />
@@ -169,7 +169,7 @@ export function EtfXrayCard({
               const totalPages = Math.ceil(etfXray.aggregatedStocks.length / STOCKS_PER_PAGE);
               const totalWeight = etfXray.aggregatedStocks.reduce((s, x) => s + x.effectiveWeight, 0);
               return (
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                <div className="flex flex-col regular:flex-row items-start regular:items-center justify-between gap-2">
                   <p className="text-xs text-muted-foreground">
                     {etfXray.aggregatedStocks.length} stocks · Total weight: {formatPercent(totalWeight, 1)}
                   </p>
@@ -219,7 +219,7 @@ export function EtfXrayCard({
         {etfXrayTab === "regions" && (
           <div className="space-y-4">
             {regionData.length > 0 ? (
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+              <div className="flex flex-col regular:flex-row items-start regular:items-center gap-6">
                 <div className="w-48 h-48 shrink-0">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -267,7 +267,7 @@ export function EtfXrayCard({
         {etfXrayTab === "sectors" && (
           <div className="space-y-4">
             {sectorData.length > 0 ? (
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+              <div className="flex flex-col regular:flex-row items-start regular:items-center gap-6">
                 <div className="w-48 h-48 shrink-0">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>

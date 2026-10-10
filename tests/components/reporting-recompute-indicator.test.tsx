@@ -39,7 +39,7 @@ describe("ReportingRecomputeIndicator", () => {
   });
 
   it.each(["/budgets", "/dashboard", "/transactions"])(
-    "sits just above the tab bar on phones and at md:bottom-4 on %s",
+    "sits just above the tab bar on phones and at regular:bottom-4 on %s",
     async (path) => {
       vi.mocked(usePathname).mockReturnValue(path);
 
@@ -49,11 +49,11 @@ describe("ReportingRecomputeIndicator", () => {
         const indicator = container.querySelector("div.fixed");
         expect(indicator).toBeTruthy();
         expect(indicator?.className).toContain(
-          "max-md:bottom-[calc(var(--mobile-bar-clearance)+0.5rem)]",
+          "max-regular:bottom-[calc(var(--mobile-bar-clearance)+0.5rem)]",
         );
         expect(indicator?.className).not.toContain("+80px");
-        expect(indicator?.className).toContain("md:bottom-4");
-        expect(indicator?.className).not.toContain("md:bottom-24");
+        expect(indicator?.className).toContain("regular:bottom-4");
+        expect(indicator?.className).not.toContain("regular:bottom-24");
         expect(indicator?.className).not.toContain("+64px");
       });
     },

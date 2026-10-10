@@ -8,6 +8,8 @@ import { PageSkeleton } from "@/components/page-skeleton";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { getCurrentMonth, getMonthLabel } from "@/lib/currency";
 import { safeReturnTo } from "@/lib/accounts/groups-return-to";
+import { TW } from "@/lib/design/tokens";
+import { cn } from "@/lib/utils";
 import { SaveTemplateForm } from "../../_components/save-template-form";
 import { parseMonthParam, type Budget } from "../../_components/budget-types";
 
@@ -32,7 +34,7 @@ function NewTemplatePage() {
   }, [month, displayCurrency]);
 
   return (
-    <div data-testid="template-new-root" className="mx-auto w-full max-w-xl">
+    <div data-testid="template-new-root" className={cn("mx-auto w-full", TW.form)}>
       <PageHeader
         title="Save as template"
         subtitle={getMonthLabel(month)}
@@ -40,7 +42,7 @@ function NewTemplatePage() {
         backLabel="Back"
         className="flex items-center justify-between"
       />
-      <div className="mt-3 pb-[calc(var(--sab,0px)+1.5rem)]">
+      <div className={cn("mt-3", TW.formPad)}>
         {loading ? (
           <PageSkeleton variant="list" rows={3} />
         ) : budgets.length === 0 ? (

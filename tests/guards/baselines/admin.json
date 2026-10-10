@@ -1,0 +1,21 @@
+{
+  "family": "admin",
+  "unmigrated": [
+    "src/app/(app)/admin/(env)/api-log/page.tsx",
+    "src/app/(app)/admin/(env)/diagnostics/page.tsx",
+    "src/app/(app)/admin/(env)/integrations/page.tsx",
+    "src/app/(app)/admin/(env)/price-cache/page.tsx",
+    "src/app/(app)/admin/(env)/system/page.tsx",
+    "src/app/(app)/admin/announcements/page.tsx",
+    "src/app/(app)/admin/email-inbox/page.tsx",
+    "src/app/(app)/admin/feedback/page.tsx",
+    "src/app/(app)/admin/inbox/page.tsx",
+    "src/app/(app)/admin/instance/page.tsx",
+    "src/app/(app)/admin/page.tsx"
+  ],
+  "chrome": {
+    "src/app/(app)/admin/page.tsx": {
+      "rounded-2xl": 2
+    }
+  }
+}

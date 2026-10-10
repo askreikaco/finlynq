@@ -6,6 +6,8 @@ import { PageHeader } from "@/components/mobile";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { getCurrentMonth, getMonthLabel } from "@/lib/currency";
 import { safeReturnTo } from "@/lib/accounts/groups-return-to";
+import { TW } from "@/lib/design/tokens";
+import { cn } from "@/lib/utils";
 import { SetBudgetForm } from "../_components/set-budget-form";
 import { parseMonthParam } from "../_components/budget-types";
 
@@ -18,14 +20,14 @@ function NewBudgetPage() {
   const { displayCurrency } = useDisplayCurrency();
 
   return (
-    <div data-testid="budget-new-root" className="mx-auto w-full max-w-xl">
+    <div data-testid="budget-new-root" className={cn("mx-auto w-full", TW.form)}>
       <PageHeader
         title={`Set budget for ${getMonthLabel(month)}`}
         backHref={returnTo}
         backLabel="Back"
         className="flex items-center justify-between"
       />
-      <div className="mt-3 pb-[calc(var(--sab,0px)+1.5rem)]">
+      <div className={cn("mt-3", TW.formPad)}>
         <SetBudgetForm
           month={month}
           displayCurrency={displayCurrency}

@@ -1,0 +1,40 @@
+{
+  "family": "transactions",
+  "unmigrated": [
+    "src/app/(app)/transactions/[id]/edit/page.tsx",
+    "src/app/(app)/transactions/[id]/split/page.tsx",
+    "src/app/(app)/transactions/new/page.tsx",
+    "src/app/(app)/transactions/page.tsx",
+    "src/app/(app)/transactions/search/page.tsx",
+    "src/app/(app)/transactions/transfer/[linkId]/edit/page.tsx"
+  ],
+  "chrome": {
+    "src/app/(app)/transactions/[id]/edit/page.tsx": {
+      "suspense-null": 1,
+      "return-to": 1
+    },
+    "src/app/(app)/transactions/[id]/split/page.tsx": {
+      "suspense-null": 1
+    },
+    "src/app/(app)/transactions/_components/transactions-workspace.tsx": {
+      "min-h": 3,
+      "title-prop": 2,
+      "subtitle-prop": 1
+    },
+    "src/app/(app)/transactions/new/_components/form-row.tsx": {
+      "min-h": 1
+    },
+    "src/app/(app)/transactions/new/_components/grouped-picker.tsx": {
+      "min-h": 2,
+      "rounded-2xl": 1
+    },
+    "src/app/(app)/transactions/new/page.tsx": {
+      "min-h": 2,
+      "rounded-2xl": 5
+    },
+    "src/app/(app)/transactions/transfer/[linkId]/edit/page.tsx": {
+      "suspense-null": 1,
+      "return-to": 1
+    }
+  }
+}

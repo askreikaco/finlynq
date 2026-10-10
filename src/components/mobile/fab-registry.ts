@@ -1,17 +1,5 @@
-import {
-  Coins,
-  MessageSquarePlus,
-  Megaphone,
-  Plus,
-  Receipt,
-  RefreshCw,
-  Tag,
-  TrendingDown,
-  Upload,
-  UserPlus,
-  Zap,
-  type LucideIcon,
-} from "lucide-react";
+import { Plus, type LucideIcon } from "lucide-react";
+import { ALL_ROUTES, matchRoute } from "@/lib/routes";
 
 /**
  * Per-page mobile FAB registry. Pure data + pure functions (no "use client").
@@ -58,180 +46,20 @@ export const DEFAULT_FAB: FabDefault = {
   href: "/transactions/new",
 };
 
-const FALLBACK: FabEntry = { kind: "fallback" };
-
-export const FAB_ROUTES: Record<string, FabEntry> = {
-  "/account": FALLBACK,
-  "/account/info": FALLBACK,
-  "/account/security": FALLBACK,
-  "/accounts": { kind: "route", label: "Add account", icon: Plus, href: "/accounts/new" },
-  "/accounts/new": { kind: "hidden", reason: "is the create flow" },
-  "/accounts/[id]/edit": { kind: "hidden", reason: "is the edit flow" },
-  "/accounts/[id]": {
-    kind: "handler",
-    label: "New transaction",
-    icon: Receipt,
-    handlerKey: "accounts.detail.add",
-    fallbackHref: "/transactions/new",
-  },
-  "/accounts/groups": { kind: "hidden", reason: "manage list; no create action" },
-  "/admin": FALLBACK,
-  "/admin/announcements": {
-    kind: "handler",
-    label: "New announcement",
-    icon: Megaphone,
-    handlerKey: "admin.announcements.new",
-  },
-  "/admin/api-log": FALLBACK,
-  "/admin/diagnostics": FALLBACK,
-  "/admin/email-inbox": FALLBACK,
-  "/admin/env": { kind: "redirect" },
-  "/admin/feedback": FALLBACK,
-  "/admin/inbox": FALLBACK,
-  "/admin/instance": FALLBACK,
-  "/admin/integrations": FALLBACK,
-  "/admin/price-cache": FALLBACK,
-  "/admin/system": FALLBACK,
-  "/api-docs": FALLBACK,
-  "/budgets": { kind: "route", label: "Add budget", icon: Plus, href: "/budgets/new" },
-  "/budgets/move-money": { kind: "hidden", reason: "is the create flow" },
-  "/budgets/new": { kind: "hidden", reason: "is the create flow" },
-  "/budgets/templates/apply": { kind: "hidden", reason: "is the create flow" },
-  "/budgets/templates/new": { kind: "hidden", reason: "is the create flow" },
-  "/categories": { kind: "route", label: "Add category", icon: Tag, href: "/categories/new" },
-  "/categories/new": { kind: "hidden", reason: "is the create flow" },
-  "/categories/[id]": FALLBACK,
-  "/categories/[id]/edit": { kind: "hidden", reason: "is the rename flow" },
-  "/chat": { kind: "hidden", reason: "full-height composer" },
-  "/connect": FALLBACK,
-  "/dashboard": { kind: "route", label: "New transaction", icon: Plus, href: "/transactions/new" },
-  "/dev/gallery": FALLBACK,
-  "/family": { kind: "route", label: "Invite", icon: UserPlus, href: "/family/share" },
-  "/family/accept": { kind: "hidden", reason: "one-shot invite-accept flow" },
-  "/family/share": { kind: "handler", label: "Invite", icon: UserPlus, handlerKey: "family.invite" },
-  "/feedback": { kind: "handler", label: "Send feedback", icon: MessageSquarePlus, handlerKey: "feedback.send" },
-  "/fire": FALLBACK,
-  "/goals": { kind: "route", label: "Add goal", icon: Plus, href: "/goals/new" },
-  "/goals/[id]/edit": { kind: "hidden", reason: "is the edit flow" },
-  "/goals/new": { kind: "hidden", reason: "is the create flow" },
-  "/import": { kind: "handler", label: "Upload statement", icon: Upload, handlerKey: "import.upload" },
-  "/import/pending": { kind: "route", label: "Upload statement", icon: Upload, href: "/import" },
-  "/loans": { kind: "route", label: "Add loan", icon: Plus, href: "/loans/new" },
-  "/loans/new": { kind: "hidden", reason: "is the create flow" },
-  "/loans/[id]/edit": { kind: "hidden", reason: "is the edit flow" },
-  "/manage-accounts": {
-    kind: "handler",
-    label: "Add another account",
-    icon: UserPlus,
-    handlerKey: "manage-accounts.add",
-  },
-  "/more": FALLBACK,
-  "/portfolio": { kind: "route", label: "Add holding", icon: Plus, href: "/settings/investments" },
-  "/portfolio/dividends": {
-    kind: "route",
-    label: "Record dividend",
-    icon: Coins,
-    href: "/portfolio/new/income-expense",
-  },
-  "/portfolio/new": { kind: "hidden", reason: "is the create flow" },
-  "/portfolio/new/buy": { kind: "hidden", reason: "is the create flow" },
-  "/portfolio/new/deposit": { kind: "hidden", reason: "is the create flow" },
-  "/portfolio/new/fx-conversion": { kind: "hidden", reason: "is the create flow" },
-  "/portfolio/new/in-kind-transfer": { kind: "hidden", reason: "is the create flow" },
-  "/portfolio/new/income-expense": { kind: "hidden", reason: "is the create flow" },
-  "/portfolio/new/sell": { kind: "hidden", reason: "is the create flow" },
-  "/portfolio/new/swap": { kind: "hidden", reason: "is the create flow" },
-  "/portfolio/new/withdrawal": { kind: "hidden", reason: "is the create flow" },
-  "/portfolio/realized-gains": {
-    kind: "route",
-    label: "Record sale",
-    icon: TrendingDown,
-    href: "/portfolio/new/sell",
-  },
-  "/reports": FALLBACK,
-  "/scenarios": FALLBACK,
-  "/settings": FALLBACK,
-  "/settings/about": FALLBACK,
-  "/settings/account": FALLBACK,
-  "/settings/backfill": FALLBACK,
-  "/settings/backfill/[runId]": { kind: "route", label: "New run", icon: RefreshCw, href: "/settings/backfill" },
-  "/settings/bank-feeds": FALLBACK,
-  "/settings/categorization": { kind: "route", label: "Add category", icon: Tag, href: "/categories/new" },
-  "/settings/data": FALLBACK,
-  "/settings/developer": FALLBACK,
-  "/settings/display": FALLBACK,
-  "/settings/dropdown-order": FALLBACK,
-  "/settings/general": FALLBACK,
-  "/settings/holding-accounts": { kind: "redirect" },
-  "/settings/import": FALLBACK,
-  "/settings/import/reconcile-visibility": FALLBACK,
-  "/settings/integrations": FALLBACK,
-  "/settings/investments": {
-    kind: "route",
-    label: "Add security",
-    icon: Plus,
-    href: "/settings/investments/securities/new",
-  },
-  "/settings/investments/accounts/[id]/link": { kind: "hidden", reason: "is the create flow" },
-  "/settings/investments/cash-sleeves/new": { kind: "hidden", reason: "is the create flow" },
-  "/settings/investments/securities/new": { kind: "hidden", reason: "is the create flow" },
-  "/settings/investments/securities/[id]/edit": { kind: "hidden", reason: "is the edit flow" },
-  "/settings/investments/securities/[id]/link": { kind: "hidden", reason: "is the create flow" },
-  "/settings/investments/securities/[id]/prices": { kind: "hidden", reason: "is the edit flow" },
-  "/settings/reconciliation": FALLBACK,
-  "/settings/rules": { kind: "route", label: "Add rule", icon: Zap, href: "/settings/rules/new" },
-  "/settings/rules/new": { kind: "hidden", reason: "is the create flow" },
-  "/settings/rules/[id]/edit": { kind: "hidden", reason: "is the edit flow" },
-  "/settings/securities": { kind: "redirect" },
-  "/subscriptions": { kind: "route", label: "Add subscription", icon: Plus, href: "/subscriptions/new" },
-  "/subscriptions/new": { kind: "hidden", reason: "is the create flow" },
-  "/subscriptions/[id]/edit": { kind: "hidden", reason: "is the edit flow" },
-  "/tax": FALLBACK,
-  "/transactions": { kind: "route", label: "Add transaction", icon: Plus, href: "/transactions/new" },
-  "/transactions/audit": FALLBACK,
-  "/transactions/new": { kind: "hidden", reason: "is the create flow" },
-  "/transactions/[id]/edit": { kind: "hidden", reason: "is the edit flow" },
-  "/transactions/transfer/[linkId]/edit": { kind: "hidden", reason: "is the edit flow" },
-  "/transactions/[id]/split": { kind: "hidden", reason: "is the split flow" },
-  "/transactions/search": { kind: "hidden", reason: "sticky bottom Reset/Search bar" },
-  "/whats-new": FALLBACK,
-};
+/** Derived from the route-family registry (src/lib/routes/families/*.ts). */
+export const FAB_ROUTES: Record<string, FabEntry> = Object.fromEntries(
+  ALL_ROUTES.map((r) => [r.pattern, r.fab]),
+);
 
 export interface FabMatch {
   pattern: string;
   entry: FabEntry;
 }
 
-const DYNAMIC_PATTERNS = Object.keys(FAB_ROUTES).filter((k) => k.includes("["));
-
-function hasRoute(pattern: string): boolean {
-  return Object.prototype.hasOwnProperty.call(FAB_ROUTES, pattern);
-}
-
-function normalizePath(pathname: string): string {
-  const trimmed = pathname.replace(/\/+$/, "");
-  return trimmed === "" ? "/" : trimmed;
-}
-
-function segmentMatches(patternSeg: string, seg: string): boolean {
-  if (/^\[[^\]]+\]$/.test(patternSeg)) return seg.length > 0;
-  return patternSeg === seg;
-}
-
 /** Exact match first, then dynamic `[x]` patterns. Trailing slash is ignored. */
 export function matchFabRoute(pathname: string): FabMatch | null {
-  const path = normalizePath(pathname);
-  if (hasRoute(path)) return { pattern: path, entry: FAB_ROUTES[path] };
-
-  const segs = path.split("/");
-  for (const pattern of DYNAMIC_PATTERNS) {
-    const patternSegs = pattern.split("/");
-    if (patternSegs.length !== segs.length) continue;
-    if (patternSegs.every((p, i) => segmentMatches(p, segs[i]))) {
-      return { pattern, entry: FAB_ROUTES[pattern] };
-    }
-  }
-  return null;
+  const route = matchRoute(pathname);
+  return route ? { pattern: route.pattern, entry: route.fab } : null;
 }
 
 export type FabResolved =

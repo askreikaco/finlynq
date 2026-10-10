@@ -422,7 +422,6 @@ export default function AdminSystemPage() {
             )}
           </>
         }
-        titleClassName="text-2xl font-bold tracking-tight"
         overflow={[{ label: auto ? "Auto-refresh: on" : "Auto-refresh: off", onSelect: () => setAuto(!auto) }]}
         actionsClassName="flex flex-wrap items-center gap-2"
         actions={
@@ -473,7 +472,7 @@ export default function AdminSystemPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-5">
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid gap-5 regular:grid-cols-2 wide:grid-cols-4">
                 <div>
                   <div className="text-xs uppercase tracking-wider text-muted-foreground">
                     Load avg (1 / 5 / 15m)

@@ -114,7 +114,7 @@ export function SplitSection({
                     <button
                       type="button"
                       onClick={() => handleRemoveRow(idx)}
-                      className="text-muted-foreground hover:text-destructive p-1 max-md:p-3 max-md:-m-3 rounded-md transition-colors"
+                      className="text-muted-foreground hover:text-destructive p-1 max-regular:p-3 max-regular:-m-3 rounded-md transition-colors"
                       title="Remove split"
                       aria-label="Remove split"
                     >

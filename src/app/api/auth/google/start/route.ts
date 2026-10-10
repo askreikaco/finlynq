@@ -9,6 +9,7 @@
  * Prefetch guard: skips if no Auth header (prevents noisy prefetch requests).
  */
 
+import { safeReturnTo } from "@/lib/accounts/groups-return-to";
 import { NextRequest, NextResponse } from "next/server";
 import {
   isGoogleConfigured,
@@ -28,10 +29,7 @@ import { isPrefetchRequest } from "@/lib/auth/google-prefetch";
  */
 function isSafeNext(next: string | null | undefined): next is string {
   if (!next) return false;
-  if (!next.startsWith("/")) return false;
-  if (next.startsWith("//")) return false;
-  if (next.includes("\\")) return false;
-  return true;
+  return safeReturnTo(next, "") === next;
 }
 
 export async function GET(req: NextRequest) {

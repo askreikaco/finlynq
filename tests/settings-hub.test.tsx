@@ -2,6 +2,8 @@
  * @vitest-environment jsdom
  */
 import { describe, it, expect, beforeEach, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { render, screen } from "@testing-library/react";
 import { SettingsHub } from "@/components/settings-hub";
 import { SettingsShell } from "@/components/settings-shell";
@@ -193,24 +195,32 @@ describe("SettingsHub", () => {
     expect(title.tagName).toBe("H1");
   });
 
-  it("hub page has no pill bar or left nav (hidden by SettingsShell when pathname is /settings)", () => {
-    // Render the hub inside the real SettingsShell with pathname="/settings" (isHub=true)
+  it("hub is the level-1 page at every size: no detail bar, pill strip or side nav around it", () => {
     render(
       <SettingsShell>
         <SettingsHub />
       </SettingsShell>
     );
 
-    // Verify the hub content is present with the section card
     const sectionCard = document.querySelector('[data-slot="settings-hub-group"]');
     expect(sectionCard).not.toBeNull();
+    expect(document.querySelector('[data-slot="settings-detail-bar"]')).toBeNull();
+    expect(document.querySelector('nav[aria-label="Settings sections"]')).toBeNull();
+    expect(document.querySelector('aside[aria-label="Settings sections"]')).toBeNull();
+  });
 
-    // Verify that the mobile pill nav is NOT rendered when isHub=true
-    const mobilePillNav = document.querySelector('nav[aria-label="Settings sections"]');
-    expect(mobilePillNav).toBeNull();
-
-    // Verify that the desktop left nav (aside) is NOT rendered when isHub=true
-    const desktopAside = document.querySelector('aside[aria-label="Settings sections"]');
-    expect(desktopAside).toBeNull();
+  it("hub is a centred column (max-w-form = 36rem, wide:max-w-report = 48rem) with two group columns from wide", () => {
+    const { container } = render(<SettingsHub />);
+    const root = container.firstElementChild as HTMLElement;
+    expect(root.className).toEqual(expect.stringContaining("max-w-form"));
+    expect(root.className).toEqual(expect.stringContaining("wide:max-w-report"));
+    // the tokens resolve to the same widths the old max-w-xl (36rem) / max-w-3xl (48rem) classes gave
+    const globals = readFileSync(join(__dirname, "../src/app/globals.css"), "utf8");
+    // --container-* live in @theme (not :root), so read them directly
+    const tokenValue = (name: string) => globals.match(new RegExp(name + ":\\s*([^;]+);"))?.[1]?.trim();
+    expect(tokenValue("--container-form")).toBe("36rem");
+    expect(tokenValue("--container-report")).toBe("48rem");
+    const grid = container.querySelector('[data-slot="settings-hub-group"]')?.parentElement as HTMLElement;
+    expect(grid.className).toEqual(expect.stringContaining("wide:grid-cols-2"));
   });
 });

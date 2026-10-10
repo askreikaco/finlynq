@@ -21,9 +21,10 @@ vi.mock("@/lib/admin/instance-flag", () => ({
 }));
 
 vi.mock("@/components/nav", () => ({
-  Nav: ({ categoriesMerged }: { categoriesMerged?: boolean }) => (
-    <div data-testid="nav" data-categories-merged={categoriesMerged}>Nav</div>
+  AppTabs: (props: Record<string, unknown>) => (
+    <div data-testid="nav" data-props={JSON.stringify(props ?? {})}>Nav</div>
   ),
+  isTabBarHidden: () => false,
 }));
 
 vi.mock("@/components/unlock-gate", () => ({
@@ -88,6 +89,8 @@ import { screen } from "@testing-library/react";
 import AppLayout from "@/app/(app)/layout";
 
 describe("AppLayout with categoriesMerged wiring", () => {
+  // The tab bar and rail have no categories tab, so the categories flag never reaches them.
+  // The label switch is on More (more/page.tsx passes the flag there).
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -96,21 +99,12 @@ describe("AppLayout with categoriesMerged wiring", () => {
     vi.restoreAllMocks();
   });
 
-  it("should pass categoriesMerged={true} to Nav when flag is enabled", () => {
-    vi.mocked(categoriesFlagModule.isCategoriesMergedEnabled).mockReturnValue(true);
+  it.each([true, false])("renders AppTabs with no props when categoriesMerged is %s", (merged) => {
+    vi.mocked(categoriesFlagModule.isCategoriesMergedEnabled).mockReturnValue(merged);
 
     render(<AppLayout><div>Test Content</div></AppLayout>);
 
     const nav = screen.getByTestId("nav");
-    expect(nav).toHaveAttribute("data-categories-merged", "true");
-  });
-
-  it("should pass categoriesMerged={false} to Nav when flag is disabled", () => {
-    vi.mocked(categoriesFlagModule.isCategoriesMergedEnabled).mockReturnValue(false);
-
-    render(<AppLayout><div>Test Content</div></AppLayout>);
-
-    const nav = screen.getByTestId("nav");
-    expect(nav).toHaveAttribute("data-categories-merged", "false");
+    expect(nav).toHaveAttribute("data-props", "{}");
   });
 });

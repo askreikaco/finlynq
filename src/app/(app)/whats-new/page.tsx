@@ -53,7 +53,7 @@ export default function WhatsNewPage() {
   }, [reloadKey]);
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="mx-auto max-w-section">
       <div className="contents">
         <PageHeader title="What's new" titleClassName="text-2xl font-bold tracking-tight" />
         <p className="mb-6 mt-1 text-sm text-muted-foreground">

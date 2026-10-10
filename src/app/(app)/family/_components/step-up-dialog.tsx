@@ -43,7 +43,7 @@ export function StepUpDialog({ isOpen, busy, error, onCancel, onSubmit }: StepUp
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && cancel()}>
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent className="regular:max-w-sm">
         <DialogHeader>
           <DialogTitle>{FAMILY_STRINGS.step_up_title}</DialogTitle>
           <DialogDescription>{FAMILY_STRINGS.step_up_message}</DialogDescription>

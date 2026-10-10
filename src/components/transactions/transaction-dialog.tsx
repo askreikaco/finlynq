@@ -176,7 +176,7 @@ export function TransactionDialog(props: TransactionDialogProps) {
         if (!o) f.resetOnClose();
       }}
     >
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="regular:max-w-lg">
         <DialogHeader>
           <DialogTitle>
             {dialogMode === "transfer"

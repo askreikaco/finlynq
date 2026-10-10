@@ -6,8 +6,8 @@ Base `99e332df` (branch `wave4/w4-4-5-docs`). Generated 2026-10-09 (UTC+7 VN). S
 
 | check | value |
 |---|---|
-| `find "src/app/(app)" -name page.tsx \| sort \| wc -l` | 100 |
-| table rows below (route rows) | 100 |
+| `find "src/app/(app)" -name page.tsx \| sort \| wc -l` | 93 |
+| table rows below (route rows) | 93 |
 | pages with own `<PageHeader` in page.tsx | 66 |
 | pages with PageHeader only via an imported module or alias | 12 |
 | pages with header from a layout only | 3 |
@@ -40,14 +40,13 @@ Pages with PageSkeleton: `/budgets`, `/categories/[id]`, `/categories`, `/goals`
 | `/accounts` | `src/app/(app)/accounts/page.tsx` | app | yes (page.tsx:377) | no | yes (page.tsx:351) | - |
 | `/accounts/new` | `src/app/(app)/accounts/new/page.tsx` | app | yes (page.tsx:56) | no | no | - |
 | `/accounts/[id]/edit` | `src/app/(app)/accounts/[id]/edit/page.tsx` | app | yes (page.tsx) | no | no | edit form: _components/account-form.tsx |
-| `/admin/(env)/api-log` | `src/app/(app)/admin/(env)/api-log/page.tsx` | app > admin/(env)/layout.tsx (EnvLayout) | yes (page.tsx:192); + layout PageHeader (admin/(env)/layout.tsx:53) | no | no | stacked under layout PageHeader (admin/(env)/layout.tsx:53) |
-| `/admin/(env)/diagnostics` | `src/app/(app)/admin/(env)/diagnostics/page.tsx` | app > admin/(env)/layout.tsx (EnvLayout) | yes (page.tsx:215); + layout PageHeader (admin/(env)/layout.tsx:53) | no | no | stacked under layout PageHeader (admin/(env)/layout.tsx:53) |
-| `/admin/(env)/integrations` | `src/app/(app)/admin/(env)/integrations/page.tsx` | app > admin/(env)/layout.tsx (EnvLayout) | yes (page.tsx:247); + layout PageHeader (admin/(env)/layout.tsx:53) | no | no | stacked under layout PageHeader (admin/(env)/layout.tsx:53) |
-| `/admin/(env)/price-cache` | `src/app/(app)/admin/(env)/price-cache/page.tsx` | app > admin/(env)/layout.tsx (EnvLayout) | yes (page.tsx:293); + layout PageHeader (admin/(env)/layout.tsx:53) | no | no | stacked under layout PageHeader (admin/(env)/layout.tsx:53) |
-| `/admin/(env)/system` | `src/app/(app)/admin/(env)/system/page.tsx` | app > admin/(env)/layout.tsx (EnvLayout) | yes (page.tsx:415); + layout PageHeader (admin/(env)/layout.tsx:53) | no | no | stacked under layout PageHeader (admin/(env)/layout.tsx:53) |
+| `/admin/api-log` | `src/app/(app)/admin/(env)/api-log/page.tsx` | app > admin/(env)/layout.tsx (EnvLayout) | yes (page.tsx:192); + layout PageHeader (admin/(env)/layout.tsx:53) | no | no | stacked under layout PageHeader (admin/(env)/layout.tsx:53) |
+| `/admin/diagnostics` | `src/app/(app)/admin/(env)/diagnostics/page.tsx` | app > admin/(env)/layout.tsx (EnvLayout) | yes (page.tsx:215); + layout PageHeader (admin/(env)/layout.tsx:53) | no | no | stacked under layout PageHeader (admin/(env)/layout.tsx:53) |
+| `/admin/integrations` | `src/app/(app)/admin/(env)/integrations/page.tsx` | app > admin/(env)/layout.tsx (EnvLayout) | yes (page.tsx:247); + layout PageHeader (admin/(env)/layout.tsx:53) | no | no | stacked under layout PageHeader (admin/(env)/layout.tsx:53) |
+| `/admin/price-cache` | `src/app/(app)/admin/(env)/price-cache/page.tsx` | app > admin/(env)/layout.tsx (EnvLayout) | yes (page.tsx:293); + layout PageHeader (admin/(env)/layout.tsx:53) | no | no | stacked under layout PageHeader (admin/(env)/layout.tsx:53) |
+| `/admin/system` | `src/app/(app)/admin/(env)/system/page.tsx` | app > admin/(env)/layout.tsx (EnvLayout) | yes (page.tsx:415); + layout PageHeader (admin/(env)/layout.tsx:53) | no | no | stacked under layout PageHeader (admin/(env)/layout.tsx:53) |
 | `/admin/announcements` | `src/app/(app)/admin/announcements/page.tsx` | app | yes (page.tsx:153) | no | no | - |
 | `/admin/email-inbox` | `src/app/(app)/admin/email-inbox/page.tsx` | app | yes (page.tsx:148) | no | no | - |
-| `/admin/env` | `src/app/(app)/admin/env/page.tsx` | app | no (layout only: admin/(env)/layout.tsx:53) | no | no | - |
 | `/admin/feedback` | `src/app/(app)/admin/feedback/page.tsx` | app | yes (page.tsx:389) | no | no | - |
 | `/admin/inbox` | `src/app/(app)/admin/inbox/page.tsx` | app | yes (page.tsx:250) | no | no | - |
 | `/admin/instance` | `src/app/(app)/admin/instance/page.tsx` | app | yes (page.tsx:131) | no | no | - |
@@ -85,14 +84,7 @@ Pages with PageSkeleton: `/budgets`, `/categories/[id]`, `/categories`, `/goals`
 | `/more` | `src/app/(app)/more/page.tsx` | app | no | no | no | UNVERIFIED: no header in depth-3 imports |
 | `/portfolio/dividends` | `src/app/(app)/portfolio/dividends/page.tsx` | app | yes (page.tsx:141) | no | no | - |
 | `/portfolio/new` | `src/app/(app)/portfolio/new/page.tsx` | app | yes (page.tsx:40) | no | no | - |
-| `/portfolio/new/buy` | `src/app/(app)/portfolio/new/buy/page.tsx` | app | no | no | no | - |
-| `/portfolio/new/sell` | `src/app/(app)/portfolio/new/sell/page.tsx` | app | no | no | no | - |
-| `/portfolio/new/swap` | `src/app/(app)/portfolio/new/swap/page.tsx` | app | no | no | no | - |
-| `/portfolio/new/in-kind-transfer` | `src/app/(app)/portfolio/new/in-kind-transfer/page.tsx` | app | no | no | no | - |
-| `/portfolio/new/income-expense` | `src/app/(app)/portfolio/new/income-expense/page.tsx` | app | no | no | no | - |
-| `/portfolio/new/fx-conversion` | `src/app/(app)/portfolio/new/fx-conversion/page.tsx` | app | no | no | no | - |
-| `/portfolio/new/deposit` | `src/app/(app)/portfolio/new/deposit/page.tsx` | app | no | no | no | - |
-| `/portfolio/new/withdrawal` | `src/app/(app)/portfolio/new/withdrawal/page.tsx` | app | no | no | no | - |
+| `/portfolio/new/[op]` | `src/app/(app)/portfolio/new/[op]/page.tsx` | app | via import (components/portfolio/forms/op-page.tsx:56) | no | no | one static page per OPS slug (dynamicParams=false); form via op-route.tsx -> op-page.tsx |
 | `/portfolio` | `src/app/(app)/portfolio/page.tsx` | app | yes (page.tsx:230) | no | no | - |
 | `/portfolio/realized-gains` | `src/app/(app)/portfolio/realized-gains/page.tsx` | app | yes (page.tsx:322) | no | no | - |
 | `/reports` | `src/app/(app)/reports/page.tsx` | app | yes (page.tsx:347) | yes (page.tsx:341) | no | - |
@@ -108,7 +100,6 @@ Pages with PageSkeleton: `/budgets`, `/categories/[id]`, `/categories`, `/goals`
 | `/settings/display` | `src/app/(app)/settings/display/page.tsx` | app > settings/layout.tsx (SettingsShell) | via import (settings/general/page.tsx:102) | no | no | re-exports `/settings/general/page` (page source) |
 | `/settings/dropdown-order` | `src/app/(app)/settings/dropdown-order/page.tsx` | app > settings/layout.tsx (SettingsShell) | via import (settings/general/page.tsx:102) | no | no | re-exports `/settings/general/page` (page source) |
 | `/settings/general` | `src/app/(app)/settings/general/page.tsx` | app > settings/layout.tsx (SettingsShell) | yes (page.tsx:102) | no | no | - |
-| `/settings/holding-accounts` | `src/app/(app)/settings/holding-accounts/page.tsx` | app > settings/layout.tsx (SettingsShell) | no | no | no | UNVERIFIED: 1-file closure, no header |
 | `/settings/import` | `src/app/(app)/settings/import/page.tsx` | app > settings/layout.tsx (SettingsShell) | via import (settings/reconciliation/page.tsx:136) | no | no | re-exports `/settings/reconciliation/page` (page source) |
 | `/settings/import/reconcile-visibility` | `src/app/(app)/settings/import/reconcile-visibility/page.tsx` | app > settings/layout.tsx (SettingsShell) | yes (page.tsx:20); backHref + backLabel | no | no | in SELF_BACK_PATHS (src/components/settings-shell.tsx:79) |
 | `/settings/integrations` | `src/app/(app)/settings/integrations/page.tsx` | app > settings/layout.tsx (SettingsShell) | yes (page.tsx:76) | no | no | - |
@@ -122,7 +113,6 @@ Pages with PageSkeleton: `/budgets`, `/categories/[id]`, `/categories`, `/goals`
 | `/settings` | `src/app/(app)/settings/page.tsx` | app > settings/layout.tsx (SettingsShell) | via import (components/settings-hub.tsx:42) | no | no | - |
 | `/settings/reconciliation` | `src/app/(app)/settings/reconciliation/page.tsx` | app > settings/layout.tsx (SettingsShell) | yes (page.tsx:136) | no | no | - |
 | `/settings/rules` | `src/app/(app)/settings/rules/page.tsx` | app > settings/layout.tsx (SettingsShell) | via import (settings/reconciliation/page.tsx:136) | no | no | re-exports `/settings/reconciliation/page` (page source) |
-| `/settings/securities` | `src/app/(app)/settings/securities/page.tsx` | app > settings/layout.tsx (SettingsShell) | no | no | no | UNVERIFIED: 1-file closure, no header |
 | `/subscriptions` | `src/app/(app)/subscriptions/page.tsx` | app | yes | yes | yes | - |
 | `/subscriptions/new` | `src/app/(app)/subscriptions/new/page.tsx` | app | yes | no | no | form: _components/subscription-form.tsx |
 | `/subscriptions/[id]/edit` | `src/app/(app)/subscriptions/[id]/edit/page.tsx` | app | yes | yes | yes | form: _components/subscription-form.tsx; delete in overflow |
@@ -246,14 +236,13 @@ Count: 59 of 69. No `<ErrorState` in the page file or in its import closure to d
 - `/account/info`  `src/app/(app)/account/info/page.tsx`
 - `/account`  `src/app/(app)/account/page.tsx`
 - `/account/security`  `src/app/(app)/account/security/page.tsx`
-- `/admin/(env)/api-log`  `src/app/(app)/admin/(env)/api-log/page.tsx`
-- `/admin/(env)/diagnostics`  `src/app/(app)/admin/(env)/diagnostics/page.tsx`
-- `/admin/(env)/integrations`  `src/app/(app)/admin/(env)/integrations/page.tsx`
-- `/admin/(env)/price-cache`  `src/app/(app)/admin/(env)/price-cache/page.tsx`
-- `/admin/(env)/system`  `src/app/(app)/admin/(env)/system/page.tsx`
+- `/admin/api-log`  `src/app/(app)/admin/(env)/api-log/page.tsx`
+- `/admin/diagnostics`  `src/app/(app)/admin/(env)/diagnostics/page.tsx`
+- `/admin/integrations`  `src/app/(app)/admin/(env)/integrations/page.tsx`
+- `/admin/price-cache`  `src/app/(app)/admin/(env)/price-cache/page.tsx`
+- `/admin/system`  `src/app/(app)/admin/(env)/system/page.tsx`
 - `/admin/announcements`  `src/app/(app)/admin/announcements/page.tsx`
 - `/admin/email-inbox`  `src/app/(app)/admin/email-inbox/page.tsx`
-- `/admin/env`  `src/app/(app)/admin/env/page.tsx`
 - `/admin/feedback`  `src/app/(app)/admin/feedback/page.tsx`
 - `/admin/inbox`  `src/app/(app)/admin/inbox/page.tsx`
 - `/admin/instance`  `src/app/(app)/admin/instance/page.tsx`
@@ -273,14 +262,7 @@ Count: 59 of 69. No `<ErrorState` in the page file or in its import closure to d
 - `/more`  `src/app/(app)/more/page.tsx`
 - `/portfolio/dividends`  `src/app/(app)/portfolio/dividends/page.tsx`
 - `/portfolio/new`  `src/app/(app)/portfolio/new/page.tsx`
-- `/portfolio/new/buy`  `src/app/(app)/portfolio/new/buy/page.tsx`
-- `/portfolio/new/sell`  `src/app/(app)/portfolio/new/sell/page.tsx`
-- `/portfolio/new/swap`  `src/app/(app)/portfolio/new/swap/page.tsx`
-- `/portfolio/new/in-kind-transfer`  `src/app/(app)/portfolio/new/in-kind-transfer/page.tsx`
-- `/portfolio/new/income-expense`  `src/app/(app)/portfolio/new/income-expense/page.tsx`
-- `/portfolio/new/fx-conversion`  `src/app/(app)/portfolio/new/fx-conversion/page.tsx`
-- `/portfolio/new/deposit`  `src/app/(app)/portfolio/new/deposit/page.tsx`
-- `/portfolio/new/withdrawal`  `src/app/(app)/portfolio/new/withdrawal/page.tsx`
+- `/portfolio/new/[op]`  `src/app/(app)/portfolio/new/[op]/page.tsx`
 - `/portfolio`  `src/app/(app)/portfolio/page.tsx`
 - `/portfolio/realized-gains`  `src/app/(app)/portfolio/realized-gains/page.tsx`
 - `/reports`  `src/app/(app)/reports/page.tsx`
@@ -296,14 +278,12 @@ Count: 59 of 69. No `<ErrorState` in the page file or in its import closure to d
 - `/settings/display`  `src/app/(app)/settings/display/page.tsx`
 - `/settings/dropdown-order`  `src/app/(app)/settings/dropdown-order/page.tsx`
 - `/settings/general`  `src/app/(app)/settings/general/page.tsx`
-- `/settings/holding-accounts`  `src/app/(app)/settings/holding-accounts/page.tsx`
 - `/settings/import`  `src/app/(app)/settings/import/page.tsx`
 - `/settings/import/reconcile-visibility`  `src/app/(app)/settings/import/reconcile-visibility/page.tsx`
 - `/settings/integrations`  `src/app/(app)/settings/integrations/page.tsx`
 - `/settings`  `src/app/(app)/settings/page.tsx`
 - `/settings/reconciliation`  `src/app/(app)/settings/reconciliation/page.tsx`
 - `/settings/rules`  `src/app/(app)/settings/rules/page.tsx`
-- `/settings/securities`  `src/app/(app)/settings/securities/page.tsx`
 - `/tax`  `src/app/(app)/tax/page.tsx`
 - `/transactions/audit`  `src/app/(app)/transactions/audit/page.tsx`
 - `/transactions/new`  `src/app/(app)/transactions/new/page.tsx`

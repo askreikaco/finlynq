@@ -53,7 +53,7 @@ export function SectionChecklist({ legend, selected, onChange, locked, disabled 
           {FAMILY_STRINGS.invite_dialog_all_sections}
         </Label>
       </div>
-      <div className="space-y-2 pl-4 sm:pl-6 border-l-2 border-muted">
+      <div className="space-y-2 pl-4 regular:pl-6 border-l-2 border-muted">
         {FAMILY_OVERVIEW_SECTIONS.map((s) => (
           <div key={s} className="flex items-start gap-2">
             <Checkbox

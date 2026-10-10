@@ -64,7 +64,7 @@ export function BulkLinkActionBar({
     : "text-warning";
 
   return (
-    <div className="fixed bottom-[calc(var(--mobile-bar-clearance)-8px)] md:bottom-4 left-1/2 -translate-x-1/2 z-40 w-fit max-w-[calc(100%-2rem)]">
+    <div className="fixed bottom-[calc(var(--mobile-bar-clearance)-8px)] regular:bottom-4 left-1/2 regular:left-[calc(50%+2.5rem)] -translate-x-1/2 z-40 w-fit max-w-[calc(100%-2rem)] regular:max-w-[calc(100%-6rem)]">
       <div className="flex items-center gap-3 rounded-full border bg-card px-4 py-2 shadow-lg">
         <span className="text-sm whitespace-nowrap">
           <strong>{txCount}</strong> tx

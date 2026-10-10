@@ -10,6 +10,7 @@ const ROOT = join(__dirname, "../..");
 const read = (p: string) => readFileSync(join(ROOT, p), "utf8");
 const pageHeader = read("src/components/mobile/page-header.tsx");
 const settingsShell = read("src/components/settings-shell.tsx");
+const general = read("src/app/(app)/settings/general/page.tsx");
 const newTx = read("src/app/(app)/transactions/new/page.tsx");
 const appLayout = read("src/app/(app)/layout.tsx");
 const dashboard = read("src/app/(app)/dashboard/page.tsx");
@@ -41,10 +42,10 @@ describe("PHONE_BAR is sticky at every breakpoint", () => {
     expect(tokens.filter((t) => /^(max-|md:|sm:|lg:)sticky$/.test(t))).toEqual([]);
   });
 
-  it("pins at the safe-area inset below md and at 0 on md+", () => {
+  it("pins at the safe-area inset below regular and at 0 from regular (640px)", () => {
     expect(tokens).toContain("top-[var(--sat,0px)]");
-    expect(tokens).toContain("md:top-0");
-    expect(tokens).not.toContain("max-md:top-0");
+    expect(tokens).toContain("regular:top-0");
+    expect(tokens).not.toContain("max-regular:top-0");
   });
 
   it("keeps the glass material and the sticky core shared with the new-transaction header", () => {
@@ -56,12 +57,14 @@ describe("PHONE_BAR is sticky at every breakpoint", () => {
 });
 
 describe("bars that must use the sticky bar", () => {
-  it("settings detail row (back row) is built from PHONE_BAR", () => {
-    expect(settingsShell).toMatch(/cn\(PHONE_BAR,/);
+  it("settings sub-pages: the page PageHeader is the top bar (the shell builds none from PHONE_BAR)", () => {
+    expect(settingsShell).not.toMatch(/PHONE_BAR|settings-detail-bar/);
+    expect(general).toMatch(/<PageHeader\b/);
   });
 
-  it("new-transaction header is built from PHONE_BAR_STICKY", () => {
-    expect(newTx).toMatch(/data-testid="txnew-topbar"[\s\S]{0,200}PHONE_BAR_STICKY/);
+  it("new-transaction header is the global PageHeader (no own sticky bar)", () => {
+    expect(newTx).toMatch(/<PageHeader[\s\S]{0,200}title=\{`New \$\{txType\}`\}/);
+    expect(newTx).not.toMatch(/PHONE_BAR_STICKY/);
   });
 
   it("no page or shell defines its own glass bar literal (only page-header and the two users above)", () => {
@@ -107,11 +110,14 @@ describe("no ancestor breaks sticky (scroll container and containing block)", ()
   });
 
   it("settings investments header wrapper is display:contents (parent spans the page)", () => {
-    expect(investments).toMatch(/<div className="contents">\s*<PageHeader/);
+    expect(investments).toMatch(/<div className="contents">\{header\}<\/div>/);
+    expect(investments).toMatch(/const header = \(\s*<PageHeader/);
+    // one header element, used by the loading, error and ready states (the top bar is there in every state)
+    expect(investments.match(/\{header\}/g)?.length).toBe(3);
   });
 
-  it("family filter toolbar is static on md+ so it cannot overlap the sticky PageHeader", () => {
-    expect(overview).toContain("md:static");
+  it("family filter toolbar is static from regular (640px) so it cannot overlap the sticky PageHeader", () => {
+    expect(overview).toContain("regular:static");
     expect(overview).not.toContain("md:top-[var(--sat)]");
   });
 
@@ -263,9 +269,10 @@ describe("non-admin pages", () => {
 
   it("import/pending reconcile-header is a fragment rendered directly in the tall staged-review root", () => {
     const header = read("src/app/(app)/import/pending/_components/reconcile-header.tsx");
-    expect(header).toMatch(/return \(\s*<>\s*<button[\s\S]*?<PageHeader\b/);
+    expect(header).toMatch(/return \(\s*<>\s*<PageHeader\b/);
+    expect(header).toMatch(/if \(embedded\) \{[\s\S]*?<h2 /);
     const surface = read("src/components/import/staged-review-surface.tsx");
-    expect(surface).toMatch(/<div className="flex flex-col gap-4 md:h-\[calc\(100dvh-8rem\)\]">\s*<ReconcileHeader/);
+    expect(surface).toMatch(/<div className="flex flex-col gap-4 regular:h-\[calc\(100dvh-8rem\)\]">\s*<ReconcileHeader/);
   });
 
   it("no header-only wrapper: no page or component in (app) holds a PageHeader in a justify-between row or a bare div", () => {

@@ -3,9 +3,9 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import React from "react";
-import { render, screen, waitFor, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, within } from "@testing-library/react";
 import { Home } from "lucide-react";
-import { pickActiveHref, navGroups, adminLinks, allFlatItems, Nav, MobileBottomBar } from "@/components/nav";
+import { pickActiveHref, navGroups, adminLinks, allFlatItems, AppTabs } from "@/components/nav";
 
 let mockPath = "/dashboard";
 vi.mock("next/navigation", () => ({
@@ -124,97 +124,7 @@ function mockFetch({ admin = false, announcements = [], feedback = [] } = {}) {
   return fn;
 }
 
-describe("Nav rendering with longest-match sidebar highlighting", () => {
-  beforeEach(() => {
-    mockPath = "/admin/instance";
-    localStorage.clear();
-  });
-
-  afterEach(() => {
-    cleanup();
-    vi.unstubAllGlobals();
-  });
-
-  it("at /admin/instance with instanceAdminEnabled=true: exactly one aria-current=page among admin links", async () => {
-    mockFetch({ admin: true });
-    localStorage.setItem("nav.adminOpen", "true");
-    render(<Nav instanceAdminEnabled={true} />);
-
-    const instanceLink = await waitFor(() => screen.getByRole("link", { name: /Instance config/i }));
-    expect(instanceLink).toBeTruthy();
-    expect(instanceLink.getAttribute("aria-current")).toBe("page");
-
-    // Verify only one admin link is current (check only admin-related links, not the mobile More button)
-    const adminInboxLink = screen.queryByRole("link", { name: /Admin Inbox/i });
-    const emailLink = screen.queryByRole("link", { name: /Email Oversight/i });
-    const envLink = screen.queryByRole("link", { name: /Environment/i });
-    const announcementsLink = screen.queryByRole("link", { name: /Announcements/i });
-    const feedbackLink = screen.queryByRole("link", { name: /^User feedback/i });
-
-    const adminLinks = [instanceLink, adminInboxLink, emailLink, envLink, announcementsLink, feedbackLink].filter(Boolean);
-    const currentAdminLinks = adminLinks.filter(l => l?.getAttribute("aria-current") === "page");
-    expect(currentAdminLinks).toHaveLength(1);
-    expect(currentAdminLinks[0]).toBe(instanceLink);
-  });
-
-  it("sidebar: exactly ONE link marked aria-current at /admin/instance", async () => {
-    mockFetch({ admin: true });
-    localStorage.setItem("nav.adminOpen", "true");
-    const { container } = render(<Nav instanceAdminEnabled={true} />);
-
-    await waitFor(() => screen.getByRole("link", { name: /Instance config/i }));
-
-    // Find the sidebar nav element (aria-label="Main navigation")
-    const sidebar = container.querySelector('nav[aria-label="Main navigation"]');
-    expect(sidebar).toBeTruthy();
-
-    // All links with aria-current="page" within the sidebar
-    const sidebarCurrentLinks = sidebar ? Array.from(sidebar.querySelectorAll('a[aria-current="page"]')) : [];
-    expect(sidebarCurrentLinks).toHaveLength(1);
-    expect((sidebarCurrentLinks[0] as HTMLAnchorElement).href).toContain("/admin/instance");
-  });
-
-  it("sidebar: exactly ONE link marked aria-current at /admin/system (Environment via activePrefixes)", async () => {
-    mockPath = "/admin/system";
-    mockFetch({ admin: true });
-    localStorage.setItem("nav.adminOpen", "true");
-    const { container } = render(<Nav />);
-
-    await waitFor(() => screen.getByRole("link", { name: /Environment/i }));
-
-    const sidebar = container.querySelector('nav[aria-label="Main navigation"]');
-    expect(sidebar).toBeTruthy();
-
-    const sidebarCurrentLinks = sidebar ? Array.from(sidebar.querySelectorAll('a[aria-current="page"]')) : [];
-    expect(sidebarCurrentLinks).toHaveLength(1);
-    // Environment link should be current, not /admin
-    const envLink = sidebar?.querySelector('a[href="/admin/env"]');
-    expect(envLink?.getAttribute("aria-current")).toBe("page");
-  });
-
-  it("sidebar: exactly ONE link marked aria-current at /admin", async () => {
-    mockPath = "/admin";
-    mockFetch({ admin: true });
-    localStorage.setItem("nav.adminOpen", "true");
-    const { container } = render(<Nav />);
-
-    await waitFor(() => {
-      const adminLink = screen.queryByRole("link", { name: /Admin Inbox/i });
-      expect(adminLink).toBeTruthy();
-    });
-
-    const sidebar = container.querySelector('nav[aria-label="Main navigation"]');
-    expect(sidebar).toBeTruthy();
-
-    const sidebarCurrentLinks = sidebar ? Array.from(sidebar.querySelectorAll('a[aria-current="page"]')) : [];
-    expect(sidebarCurrentLinks).toHaveLength(1);
-    // /admin link should be current
-    const adminLink = sidebar?.querySelector('a[href="/admin"]');
-    expect(adminLink?.getAttribute("aria-current")).toBe("page");
-  });
-});
-
-describe("MobileBottomBar with more-active sidebar logic", () => {
+describe("AppTabs active tab: longest-match rule, both layouts", () => {
   beforeEach(() => {
     localStorage.clear();
   });
@@ -224,87 +134,34 @@ describe("MobileBottomBar with more-active sidebar logic", () => {
     vi.unstubAllGlobals();
   });
 
-  it("at /settings: More aria-current=page, no tab current", () => {
-    mockPath = "/settings";
-    const { container } = render(<MobileBottomBar pathname={mockPath} />);
-    const moreLink = container.querySelector('a[href="/more"]');
+  const currentIn = (name: string) =>
+    within(screen.getByRole("navigation", { name }))
+      .queryAllByRole("link")
+      .filter((l) => l.getAttribute("aria-current") === "page")
+      .map((l) => l.getAttribute("href"));
 
-    const currentLinks = Array.from(container.querySelectorAll('a[aria-current="page"]'));
-    expect(currentLinks).toHaveLength(1);
-    expect(currentLinks[0]).toBe(moreLink);
+  it.each([
+    ["/admin/instance", "/more"],
+    ["/admin/system", "/more"],
+    ["/admin", "/more"],
+    ["/settings/general", "/more"],
+    ["/account/info", "/more"],
+    ["/budgets", "/more"],
+    ["/dashboard", "/dashboard"],
+    ["/accounts/3", "/accounts"],
+    ["/transactions", "/transactions"],
+    ["/portfolio/dividends", "/portfolio"],
+  ])("at %s: exactly one current tab, %s, in the bar and in the rail", (path, expected) => {
+    mockPath = path;
+    render(<AppTabs />);
+    expect(currentIn("Mobile navigation")).toEqual([expected]);
+    expect(currentIn("Main navigation")).toEqual([expected]);
   });
 
-  it("at /account: More aria-current=page, no tab current", () => {
-    mockPath = "/account";
-    const { container } = render(<MobileBottomBar pathname={mockPath} />);
-    const moreLink = container.querySelector('a[href="/more"]');
-
-    const currentLinks = Array.from(container.querySelectorAll('a[aria-current="page"]'));
-    expect(currentLinks).toHaveLength(1);
-    expect(currentLinks[0]).toBe(moreLink);
-  });
-
-  it("at /account/info: More aria-current=page, no tab current", () => {
-    mockPath = "/account/info";
-    const { container } = render(<MobileBottomBar pathname={mockPath} />);
-    const moreLink = container.querySelector('a[href="/more"]');
-
-    const currentLinks = Array.from(container.querySelectorAll('a[aria-current="page"]'));
-    expect(currentLinks).toHaveLength(1);
-    expect(currentLinks[0]).toBe(moreLink);
-  });
-
-  it("at /budgets: More aria-current=page, no tab current", () => {
-    mockPath = "/budgets";
-    const { container } = render(<MobileBottomBar pathname={mockPath} />);
-    const moreLink = container.querySelector('a[href="/more"]');
-
-    const currentLinks = Array.from(container.querySelectorAll('a[aria-current="page"]'));
-    expect(currentLinks).toHaveLength(1);
-    expect(currentLinks[0]).toBe(moreLink);
-  });
-
-  it("at /dashboard: Home aria-current=page, More not current", () => {
-    mockPath = "/dashboard";
-    const { container } = render(<MobileBottomBar pathname={mockPath} />);
-    const homeLink = container.querySelector('a[href="/dashboard"]');
-    const moreLink = container.querySelector('a[href="/more"]');
-
-    const currentLinks = Array.from(container.querySelectorAll('a[aria-current="page"]'));
-    expect(currentLinks).toHaveLength(1);
-    expect(currentLinks[0]).toBe(homeLink);
-    expect(moreLink?.getAttribute("aria-current")).toBeNull();
-  });
-
-  it("at /accounts/3: Accounts aria-current=page, More not current", () => {
-    mockPath = "/accounts/3";
-    const { container } = render(<MobileBottomBar pathname={mockPath} />);
-    const accountsLink = container.querySelector('a[href="/accounts"]');
-    const moreLink = container.querySelector('a[href="/more"]');
-
-    const currentLinks = Array.from(container.querySelectorAll('a[aria-current="page"]'));
-    expect(currentLinks).toHaveLength(1);
-    expect(currentLinks[0]).toBe(accountsLink);
-    expect(moreLink?.getAttribute("aria-current")).toBeNull();
-  });
-
-  it("at /transactions/new (full-screen entry): bar is hidden by design", () => {
+  it("at /transactions/new (full-screen entry): bar is hidden by design, rail marks Transactions", () => {
     mockPath = "/transactions/new";
-    const { container } = render(<MobileBottomBar pathname={mockPath} />);
-    expect(container.querySelector('nav[aria-label="Mobile navigation"]')).toBeNull();
-    expect(container.querySelector('a[href="/more"]')).toBeNull();
-    expect(container.querySelectorAll('a[aria-current="page"]')).toHaveLength(0);
-  });
-
-  it("at /transactions (non-full-screen): Transactions aria-current=page, More not current", () => {
-    mockPath = "/transactions";
-    const { container } = render(<MobileBottomBar pathname={mockPath} />);
-    const transactionsLink = container.querySelector('a[href="/transactions"]');
-    const moreLink = container.querySelector('a[href="/more"]');
-
-    const currentLinks = Array.from(container.querySelectorAll('a[aria-current="page"]'));
-    expect(currentLinks).toHaveLength(1);
-    expect(currentLinks[0]).toBe(transactionsLink);
-    expect(moreLink?.getAttribute("aria-current")).toBeNull();
+    render(<AppTabs />);
+    expect(screen.queryByRole("navigation", { name: "Mobile navigation" })).toBeNull();
+    expect(currentIn("Main navigation")).toEqual(["/transactions"]);
   });
 });

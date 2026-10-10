@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/mobile";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { safeReturnTo } from "@/lib/accounts/groups-return-to";
+import { TW } from "@/lib/design/tokens";
 import { LoanForm } from "../_components/loan-form";
 import type { LoanAccount } from "../_components/loan-types";
 
@@ -28,9 +29,9 @@ function NewLoanPage() {
   }, []);
 
   return (
-    <div data-testid="loan-new-root" className="mx-auto w-full max-w-xl">
+    <div data-testid="loan-new-root" className={`mx-auto w-full ${TW.form}`}>
       <PageHeader title="New loan" backHref={returnTo} backLabel="Back" className="flex items-center justify-between" />
-      <div className="mt-3 pb-[calc(var(--sab,0px)+1.5rem)]">
+      <div className={`mt-3 ${TW.formPad}`}>
         <LoanForm
           mode="create"
           defaultCurrency={displayCurrency}

@@ -2,6 +2,7 @@
  * @vitest-environment jsdom
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { resetSessionUserIdCache } from "@/lib/client/user-storage";
 import React from "react";
 import { render, fireEvent, waitFor, cleanup } from "@testing-library/react";
 
@@ -26,8 +27,12 @@ const KEY = "pf-dismissed-tips:user-1"; // per-user key (multi-account): `${base
 let sessionUserId: string | null = "user-1";
 let sessionFetch: ReturnType<typeof vi.fn>;
 
+// Every test starts with no cached session answer (the cache lives for the module).
+beforeEach(() => resetSessionUserIdCache());
+
 describe("OnboardingTips", () => {
   beforeEach(() => {
+  resetSessionUserIdCache();
     cleanup();
     // Clear localStorage before each test
     localStorage.clear();
@@ -151,22 +156,40 @@ describe("OnboardingTips", () => {
   });
 });
 
-describe("OnboardingTips on mobile (compact one-liner)", () => {
-  it("renders a Tips (n) toggle, collapsed tip list below md, expands on tap, dismiss stays per-user", async () => {
+describe("OnboardingTips: one tree, tips collapsed below regular", () => {
+  it("the tips sit in a Disclosure: collapsed by default, the header toggles them, dismiss stays per-user", async () => {
     cleanup();
     localStorage.clear();
     sessionFetch = vi.fn(async () => ({ ok: true, json: async () => ({ authenticated: true, userId: "user-1" }) }));
     vi.stubGlobal("fetch", sessionFetch);
     const { findByTestId, getByRole } = render(<OnboardingTips page="dashboard" />);
     const root = await findByTestId("onboarding-tips-compact");
-    expect(root.className).toContain("max-md:py-1");
+    // base classes are the phone layout; regular: carries the desktop padding
+    expect(root.className).toContain("px-3 py-1");
+    expect(root.className).toContain("regular:p-4");
     const toggle = getByRole("button", { name: /Tips \(2\)/ });
-    expect(toggle.className).toContain("max-md:min-h-11");
+    expect(toggle.className).toContain("min-h-11");
     expect(toggle.getAttribute("aria-expanded")).toBe("false");
-    expect(root.innerHTML).toContain("max-md:hidden");
+    const region = document.getElementById(toggle.getAttribute("aria-controls")!) as HTMLElement;
+    expect(region.getAttribute("role")).toBe("region");
+    expect(region.hidden).toBe(true);
+    // still mounted while collapsed (one tree: the list is never re-rendered per size)
+    expect(region.textContent).toContain("This is your financial overview");
     fireEvent.click(toggle);
     expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(region.hidden).toBe(false);
     fireEvent.click(getByRole("button", { name: "Dismiss all" }));
     await waitFor(() => expect(JSON.parse(localStorage.getItem(KEY)!)).toHaveLength(2));
+  });
+
+  it("markup has no viewport tokens (max-md:, md:, lg:, ...): only base and regular: classes", async () => {
+    cleanup();
+    localStorage.clear();
+    sessionFetch = vi.fn(async () => ({ ok: true, json: async () => ({ authenticated: true, userId: "user-1" }) }));
+    vi.stubGlobal("fetch", sessionFetch);
+    const { findByTestId } = render(<OnboardingTips page="dashboard" />);
+    const root = await findByTestId("onboarding-tips-compact");
+    expect(root.innerHTML).not.toMatch(/[\s"'](max-)?(sm|md|lg|xl|2xl):/);
+    expect(root.innerHTML).not.toContain("md:hidden");
   });
 });

@@ -178,7 +178,7 @@ describe("PageFab: styling", () => {
   it("has the mobile-only, token and reduced-motion classes", () => {
     renderAt("/dashboard");
     const tokens = (screen.getByTestId("page-fab").getAttribute("class") ?? "").split(/\s+/);
-    expect(tokens).toEqual(expect.arrayContaining(["md:hidden", "size-14", "rounded-full", "motion-safe:active:scale-95"]));
+    expect(tokens).toEqual(expect.arrayContaining(["regular:hidden", "size-14", "rounded-full", "motion-safe:active:scale-95"]));
     expect(tokens).not.toContain("active:scale-95");
   });
 

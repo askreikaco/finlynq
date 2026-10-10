@@ -188,9 +188,13 @@ describe("routes and structure", () => {
   });
 
   it("nav has the Environment link covering /admin/integrations", () => {
+    // G2-15: the Environment entry moved to the shared nav registry (nav-config.ts); nav.tsx maps it
+    // via entry.activePrefixes. The old literal `href: "/admin/env", label: "Environment"` in nav.tsx is gone.
+    const cfg = readFileSync(path.join(ROOT, "src/lib/nav-config.ts"), "utf8");
+    expect(cfg).toMatch(/path: "\/admin\/env",\s*parent: "\/more",\s*label: "Environment"/);
+    const env = cfg.slice(cfg.indexOf('id: "admin-env"'), cfg.indexOf('id: "admin-announcements"'));
+    expect(env).toMatch(/activePrefixes: \[[^\]]*"\/admin\/integrations"/);
     const src = readFileSync(path.join(ROOT, "src/components/nav.tsx"), "utf8");
-    expect(src).toMatch(/href: "\/admin\/env", label: "Environment"/);
-    expect(src).toMatch(/\/admin\/integrations/);
     expect(src).toMatch(/activePrefixes/);
     expect(src).not.toMatch(/href: "\/admin\/email"/);
     expect(navGroups).toBeTruthy();

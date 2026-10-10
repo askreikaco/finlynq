@@ -1,6 +1,5 @@
 /**
- * Settings hub page — iOS grouped list showing all settings sections.
- * Rendered when FINLYNQ_NAV_V2 is enabled; otherwise the shell navigation is used.
+ * Settings hub page (level 1, every size): grouped inset lists of all settings sections.
  */
 
 import { getEntriesBySurface } from "@/lib/nav-config";
@@ -21,9 +20,8 @@ const GROUPS: Array<{ title: string; paths: string[] }> = [
 ];
 
 /**
- * Settings hub (iOS multi-level menu, level 1). Large "Settings" title, grouped inset lists:
- * icon tile, label, chevron-right. Tapping a row pushes the detail page.
- * Rendered when FINLYNQ_NAV_V2 is enabled; otherwise the shell navigation is used.
+ * Grouped inset lists: icon tile, label, chevron-right. Tapping a row opens the detail page. A centred
+ * column (max-w-xl); from wide, two columns when there are groups.
  */
 export function SettingsHub() {
   const entries = getEntriesBySurface("settings");
@@ -43,40 +41,39 @@ export function SettingsHub() {
   }
 
   return (
-    <div className="max-w-2xl space-y-6">
-      <PageHeader
-        title="Settings"
-        titleClassName="text-2xl font-bold tracking-tight max-md:text-4xl/[41px] max-md:font-bold"
-      />
-      {groups.map((group) => (
-        <section key={group.title} data-slot="settings-hub-group" className="space-y-2">
-          <h2 className="px-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            {group.title}
-          </h2>
-          <div className="divide-y divide-border/50 overflow-hidden rounded-2xl bg-card">
-            {group.entries.map((entry) => {
-              const Icon = entry.icon;
-              return (
-                <Link
-                  key={entry.path}
-                  href={entry.path}
-                  data-slot="settings-hub-row"
-                  className="flex min-h-14 items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-                >
-                  <span
-                    data-slot="settings-hub-icon"
-                    className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"
+    <div className="mx-auto w-full max-w-form space-y-6 wide:max-w-report">
+      <PageHeader title="Settings" />
+      <div className="grid gap-6 wide:grid-cols-2">
+        {groups.map((group) => (
+          <section key={group.title} data-slot="settings-hub-group" className="space-y-2">
+            <h2 className="px-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {group.title}
+            </h2>
+            <div className="divide-y divide-border/50 overflow-hidden rounded-2xl bg-card">
+              {group.entries.map((entry) => {
+                const Icon = entry.icon;
+                return (
+                  <Link
+                    key={entry.path}
+                    href={entry.path}
+                    data-slot="settings-hub-row"
+                    className="flex min-h-14 items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                   >
-                    <Icon className="size-[18px]" aria-hidden />
-                  </span>
-                  <span className="min-w-0 flex-1 truncate text-base text-foreground">{entry.label}</span>
-                  <ChevronRight data-slot="settings-hub-chevron" aria-hidden className="size-5 shrink-0 text-muted-foreground" />
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-      ))}
+                    <span
+                      data-slot="settings-hub-icon"
+                      className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"
+                    >
+                      <Icon className="size-[18px]" aria-hidden />
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-base text-foreground">{entry.label}</span>
+                    <ChevronRight data-slot="settings-hub-chevron" aria-hidden className="size-5 shrink-0 text-muted-foreground" />
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        ))}
+      </div>
     </div>
   );
 }

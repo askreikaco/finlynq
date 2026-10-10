@@ -18,7 +18,7 @@ describe("W5-17 new-transaction components B use semantic tokens", () => {
   it("split-section remove button uses semantic classes and has an aria-label", () => {
     const src = readFileSync(path.join(DIR, "split-section.tsx"), "utf8");
     expect(src).toContain(
-      'className="text-muted-foreground hover:text-destructive p-1 max-md:p-3 max-md:-m-3 rounded-md transition-colors"',
+      'className="text-muted-foreground hover:text-destructive p-1 max-regular:p-3 max-regular:-m-3 rounded-md transition-colors"',
     );
     expect(src).toContain('aria-label="Remove split"');
   });

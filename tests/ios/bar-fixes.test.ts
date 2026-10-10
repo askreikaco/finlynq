@@ -15,18 +15,21 @@ import {
   PHONE_BAR,
   PHONE_BAR_CENTER,
   PHONE_BAR_RIGHT,
+  PHONE_CAPSULE,
+  HEADER_MAX_PHONE_ACTIONS,
   PHONE_BAR_TITLE,
   PHONE_BAR_SUBTITLE,
   PHONE_PRIMARY_CLASS,
   HEADER_DESKTOP_ONLY,
 } from "@/components/mobile/page-header";
 import { Button } from "@/components/ui/button";
+import { resolvedDecls } from "../helpers/css-tokens";
 
 const h = React.createElement;
 const read = (p: string) => readFileSync(resolve(__dirname, "../../", p), "utf-8");
 const css = read("src/app/globals.css");
 const nav = read("src/components/nav.tsx");
-const navBar = nav.slice(nav.indexOf("export const MobileBottomBar"));
+const navBar = nav.slice(nav.indexOf("export const AppTabs"));
 const moreMenu = read("src/components/more-menu.tsx");
 const newTx = read("src/app/(app)/transactions/new/page.tsx");
 const pageHeaderSrc = read("src/components/mobile/page-header.tsx");
@@ -34,11 +37,11 @@ const cls = (el: Element | null | undefined) => (el?.getAttribute("class") ?? ""
 
 afterEach(() => cleanup());
 
-/** Body of the phone block: every rule inside @media (width < 48rem). */
+/** Body of the phone block: every rule inside @media (width < 40rem). */
 function phoneBlock(): string {
   const marker = css.indexOf("iOS 26-style liquid glass, phones only");
   expect(marker).toBeGreaterThan(-1);
-  const i = css.indexOf("@media (width < 48rem) {", marker);
+  const i = css.indexOf("@media (width < 40rem) {", marker);
   expect(i).toBeGreaterThan(-1);
   return css.slice(i, css.indexOf("\n}\n", i));
 }
@@ -80,7 +83,7 @@ function contrast(x: RGB, y: RGB): number {
   return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
 }
 
-describe("1. phone primary action is an icon-only 44pt filled circle (below md)", () => {
+describe("1. phone primary action is an icon-only 44pt filled circle (below regular)", () => {
   it("PageHeader marks the visible primary with phone-icon-action and keeps its text as aria-label", () => {
     render(h(PageHeader, { title: "Transactions", actions: h(Button, null, "Add") }));
     const primary = screen.getByRole("button", { name: "Add" });
@@ -94,7 +97,7 @@ describe("1. phone primary action is an icon-only 44pt filled circle (below md)"
     expect(screen.getByRole("button", { name: "Add transaction" }).getAttribute("aria-label")).toBe("Add transaction");
   });
 
-  it("secondary actions hidden below md are skipped: the last VISIBLE action is the primary", () => {
+  it("secondary actions hidden below regular are skipped: the last VISIBLE action is the primary", () => {
     render(
       h(PageHeader, {
         title: "Budgets",
@@ -108,9 +111,9 @@ describe("1. phone primary action is an icon-only 44pt filled circle (below md)"
     expect(cls(screen.getByRole("button", { name: "Export" }))).not.toContain(PHONE_PRIMARY_CLASS);
   });
 
-  it("the phone rule sits inside the phone media block only, with size, icon-only text and token fill", () => {
+  it("the phone rule sits inside the phone media block only (below regular), with size, icon-only text and token fill", () => {
     const phone = phoneBlock();
-    const rule = body(phone, '[data-slot="page-header-actions"] > :is(button, a).phone-icon-action');
+    const rule = body(phone, '[data-slot="header-primary"] > :is(button, a).phone-icon-action');
     expect(rule).toMatch(/width:\s*2\.75rem;/);
     expect(rule).toMatch(/min-width:\s*2\.75rem;/);
     expect(rule).toMatch(/height:\s*2\.75rem;/);
@@ -129,7 +132,7 @@ describe("1. phone primary action is an icon-only 44pt filled circle (below md)"
   });
 
   it("the tab-bar and bar pieces the render relies on are in the source (no text-[Npx] in the bar code)", () => {
-    expect(PHONE_BAR).toContain("max-md:grid");
+    expect(PHONE_BAR).toContain("max-regular:grid");
     expect(pageHeaderSrc).not.toMatch(/text-\[\d/);
     expect(navBar).not.toMatch(/text-\[\d/);
   });
@@ -137,32 +140,37 @@ describe("1. phone primary action is an icon-only 44pt filled circle (below md)"
 
 describe("2. title block insets equal the measured left slot and right capsule", () => {
   it("the bar is a three-column grid: side tracks min 2.75rem (44pt) and auto, title in the 1fr middle", () => {
-    expect(PHONE_BAR).toContain("max-md:grid-cols-[minmax(2.75rem,auto)_minmax(0,1fr)_minmax(2.75rem,auto)]");
-    expect(PHONE_BAR).toContain("max-md:items-center");
-    expect(PHONE_BAR).toContain("max-md:min-h-[var(--phone-header-h)]");
+    expect(PHONE_BAR).toContain("max-regular:grid-cols-[minmax(2.75rem,auto)_minmax(0,1fr)_minmax(2.75rem,auto)]");
+    expect(PHONE_BAR).toContain("max-regular:items-center");
+    expect(PHONE_BAR).toContain("max-regular:min-h-[var(--phone-header-h)]");
   });
 
   it("the title block is the middle column, min-w-0, not an absolute overlay", () => {
-    expect(PHONE_BAR_CENTER).toContain("max-md:col-start-2");
-    expect(PHONE_BAR_CENTER).toContain("max-md:min-w-0");
-    expect(PHONE_BAR_CENTER).toContain("max-md:pointer-events-none");
-    expect(PHONE_BAR_CENTER).not.toContain("max-md:absolute");
+    expect(PHONE_BAR_CENTER).toContain("max-regular:col-start-2");
+    expect(PHONE_BAR_CENTER).toContain("max-regular:min-w-0");
+    expect(PHONE_BAR_CENTER).toContain("max-regular:pointer-events-none");
+    expect(PHONE_BAR_CENTER).not.toContain("max-regular:absolute");
     expect(PHONE_BAR_CENTER).not.toMatch(/inset-x-\[/);
   });
 
-  it("the capsule is the third column, capped at 9.5rem and scrolling inside the cap (never past the edge)", () => {
-    expect(PHONE_BAR_RIGHT).toContain("max-md:col-start-3");
-    expect(PHONE_BAR_RIGHT).toContain("max-md:justify-self-end");
-    expect(PHONE_BAR_RIGHT).toContain("max-md:max-w-[9.5rem]");
-    expect(PHONE_BAR_RIGHT).toContain("max-md:overflow-x-auto");
-    // Arithmetic: three 44px circles = 132px; the cap is 9.5rem = 152px at 16px root.
-    expect(3 * 44).toBeLessThanOrEqual(9.5 * 16);
+  it("the capsule is the third column, one 44px slot per item, capped at 11rem and never scrolling", () => {
+    expect(PHONE_BAR_RIGHT).toContain("max-regular:col-start-3");
+    expect(PHONE_BAR_RIGHT).toContain("max-regular:justify-self-end");
+    expect(PHONE_BAR_RIGHT).toContain("max-regular:gap-2.5"); // 10px between capsule and primary
+    expect(PHONE_CAPSULE).toContain("max-regular:max-w-[11rem]");
+    expect(PHONE_CAPSULE).toContain("max-regular:gap-0");
+    expect(PHONE_CAPSULE).not.toContain("overflow-x-auto");
+    expect(PHONE_BAR_RIGHT).not.toContain("overflow-x-auto");
+    expect(PHONE_BAR_RIGHT).not.toContain("9.5rem");
+    // Arithmetic: 4 slots (3 actions + overflow trigger) x 44px = 176px = 11rem at a 16px root.
+    expect(HEADER_MAX_PHONE_ACTIONS + 1).toBe(4);
+    expect((HEADER_MAX_PHONE_ACTIONS + 1) * 44).toBeLessThanOrEqual(11 * 16);
   });
 
   it("the title and subtitle truncate with ellipsis (one line each)", () => {
-    expect(PHONE_BAR_TITLE).toContain("max-md:truncate");
-    expect(PHONE_BAR_SUBTITLE).toContain("max-md:truncate");
-    expect(PHONE_BAR_SUBTITLE).toContain("max-md:text-xs");
+    expect(PHONE_BAR_TITLE).toContain("max-regular:truncate");
+    expect(PHONE_BAR_SUBTITLE).toContain("max-regular:truncate");
+    expect(PHONE_BAR_SUBTITLE).toContain("max-regular:text-xs");
   });
 
   it("render: title block in the middle column, capsule in the third, subtitle visible", () => {
@@ -175,10 +183,11 @@ describe("2. title block insets equal the measured left slot and right capsule",
       }),
     );
     const block = container.querySelector('[data-slot="page-header-title-block"]');
-    expect(cls(block)).toContain("max-md:col-start-2");
-    const capsule = container.querySelector('[data-slot="page-header-actions"]');
-    expect(cls(capsule)).toEqual(expect.arrayContaining(["max-md:col-start-3", "max-md:max-w-[9.5rem]"]));
-    expect(cls(screen.getByText("Every account you track, in one list"))).toContain("max-md:truncate");
+    expect(cls(block)).toContain("max-regular:col-start-2");
+    const capsule = container.querySelector('[data-slot="header-capsule"]');
+    expect(cls(capsule)).toEqual(expect.arrayContaining(["glass-capsule", "max-regular:max-w-[11rem]"]));
+    expect(cls(capsule?.parentElement ?? null)).toContain("max-regular:col-start-3");
+    expect(cls(screen.getByText("Every account you track, in one list"))).toContain("max-regular:truncate");
   });
 
   it("the bar keeps the sticky glass material and the fixed min height (one row, 60px)", () => {
@@ -203,11 +212,11 @@ describe("3. one tab-label size token, iOS tab bar geometry", () => {
   it("icons are 24px (size-6) and the tap target is 44pt+ (min-h-11)", () => {
     expect(navBar.match(/size-6/g)?.length).toBe(2);
     expect(navBar).not.toContain("size-[22px]");
-    expect(navBar.match(/min-h-11/g)?.length).toBe(2);
+    expect(navBar.match(/min-h-11/g)?.length).toBe(1); // one shared bar tab literal
   });
 
   it("tab padding is tight (px-0) so the label box is the whole per-tab width", () => {
-    expect(navBar.match(/rounded-full px-0 whitespace-nowrap/g)?.length).toBe(2);
+    expect(navBar.match(/rounded-full px-0 whitespace-nowrap/g)?.length).toBe(1); // one shared bar tab literal
     expect(navBar).not.toMatch(/px-0\.5/);
   });
 
@@ -230,13 +239,13 @@ describe("3. one tab-label size token, iOS tab bar geometry", () => {
 
 describe("4. tab bar glass tint and token colours (contrast measured in the test)", () => {
   it("light tint is translucent but raised: oklch(1 0 0 / 80%) with blur kept", () => {
-    const b = body(css, ".mobile-glass-bar");
+    const b = resolvedDecls(css, ".mobile-glass-bar", "light");
     expect(b).toMatch(/background:\s*oklch\(1 0 0 \/ 80%\);/);
     expect(b).toMatch(/backdrop-filter:\s*blur\(28px\) saturate\(1\.8\)/);
   });
 
   it("dark tint is translucent but raised: oklch(0.16 0.008 245 / 78%)", () => {
-    expect(body(css, ".dark .mobile-glass-bar")).toMatch(/background:\s*oklch\(0\.16 0\.008 245 \/ 78%\);/);
+    expect(resolvedDecls(css, ".mobile-glass-bar", "dark")).toMatch(/background:\s*oklch\(0\.16 0\.008 245 \/ 78%\);/);
   });
 
   it("the opaque fallbacks for the tab bar survive (@supports not blur, reduced transparency)", () => {
@@ -298,13 +307,13 @@ describe("5. More page: PageHeader title and bottom clearance", () => {
 describe("6. back circle is centred in the 60px bar (shared bar and new-transaction header)", () => {
   it("the shared bar is 3.75rem (60px) with items-center, so a 44px circle leaves 8px clear above and below", () => {
     // Arithmetic: (60 - 44) / 2 = 8px.
-    expect(PHONE_BAR).toContain("max-md:min-h-[var(--phone-header-h)]");
-    expect(PHONE_BAR).toContain("max-md:items-center");
+    expect(PHONE_BAR).toContain("max-regular:min-h-[var(--phone-header-h)]");
+    expect(PHONE_BAR).toContain("max-regular:items-center");
     expect((60 - 44) / 2).toBe(8);
   });
 
-  it("the new-transaction header is the bar height, not 44px (the old h-11 made the ring touch the hairline)", () => {
-    expect(newTx).toContain('"grid h-[var(--phone-header-h)] shrink-0 grid-cols-[2.75rem_1fr_2.75rem] items-center px-4"');
+  it("the new-transaction header is the global PageHeader bar (the bar height, 3.75rem min, not a 44px row)", () => {
+    expect(newTx).toMatch(/<PageHeader\s+className="shrink-0"/);
     expect(newTx).not.toMatch(/grid h-11 shrink-0 grid-cols-\[2\.75rem/);
   });
 });

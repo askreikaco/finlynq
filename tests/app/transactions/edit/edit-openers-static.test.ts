@@ -5,6 +5,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
+import { isFullScreenRoute, matchRoute } from "@/lib/routes";
 
 const root = join(__dirname, "../../../..");
 const read = (p: string) => readFileSync(join(root, p), "utf8");
@@ -53,8 +54,13 @@ describe("edit openers navigate instead of opening a dialog", () => {
     }
   });
 
-  it("the edit routes hide the mobile tab bar", () => {
-    expect(read("src/components/nav.tsx")).toMatch(/\\\/transactions\\\/\\d\+\\\/\(edit\|split\)/);
+  it("the edit routes hide the mobile tab bar (registry fullScreen)", () => {
+    expect(isFullScreenRoute("/transactions/1/edit")).toBe(true);
+    expect(isFullScreenRoute("/transactions/1/split")).toBe(true);
+    expect(isFullScreenRoute("/transactions/transfer/7/edit")).toBe(true);
+    expect(matchRoute("/transactions/1/edit")?.pattern).toBe("/transactions/[id]/edit");
+    expect(matchRoute("/transactions/1/split")?.pattern).toBe("/transactions/[id]/split");
+    expect(matchRoute("/transactions/transfer/7/edit")?.pattern).toBe("/transactions/transfer/[linkId]/edit");
   });
 
   it("the transfer edit route exists", () => {

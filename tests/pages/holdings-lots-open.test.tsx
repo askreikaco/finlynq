@@ -32,6 +32,10 @@ vi.mock("@/app/(app)/portfolio/_hooks/use-portfolio", () => ({
 }));
 
 import PortfolioPage from "@/app/(app)/portfolio/page";
+vi.mock("@/lib/client/user-storage", async (orig) => ({
+  ...(await orig<typeof import("@/lib/client/user-storage")>()),
+  useSessionUserId: () => ({ userId: "page-test-user", ready: true }),
+}));
 
 const row = (o: Record<string, unknown>) => ({
   key: "eq:AAPL", symbol: "AAPL", name: "AAPL", description: "Apple Inc.", assetType: "stock", totalQty: 10.5,
@@ -75,7 +79,9 @@ afterEach(cleanup);
 describe("holdings table: Lots action", () => {
   it("clicking Lots on a per-account row opens the lot inspector for that holding and account", () => {
     render(<PortfolioPage />);
-    // Expand the desktop row for AAPL (rows toggle on click).
+    // The table lives in the List view (Cards is the default at compact). Switch to it.
+    fireEvent.click(screen.getByRole("radio", { name: "List" }));
+    // Expand the table row for AAPL (rows toggle on click).
     const table = document.querySelector("table") as HTMLElement;
     const aaplRow = within(table).getAllByRole("row").find((r) => r.textContent?.includes("AAPL") && !r.textContent.includes("Account")) as HTMLElement;
     fireEvent.click(aaplRow);

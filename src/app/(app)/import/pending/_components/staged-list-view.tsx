@@ -12,7 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  ArrowLeft, Inbox, Mail, Upload, Clock, RefreshCw, Hourglass, CheckCircle2, Landmark,
+  Inbox, Mail, Upload, Clock, RefreshCw, Hourglass, CheckCircle2, Landmark,
 } from "lucide-react";
 import { RecentUploadsPanel } from "@/components/reconcile/recent-uploads-panel";
 import { daysUntil, type StagedRow } from "../_types";
@@ -66,17 +66,6 @@ export function StagedListView({
 
   return (
     <div className={embedded ? "space-y-3" : "flex flex-col gap-6"}>
-      {!embedded && (
-        <div className="flex items-center gap-3">
-          <Link
-            href="/import"
-            className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Import
-          </Link>
-        </div>
-      )}
 
       {embedded ? (
         <div className="rounded-md border border-warning/30 bg-warning/5 px-3 py-2.5 text-xs flex items-center justify-between gap-2">
@@ -101,6 +90,8 @@ export function StagedListView({
       ) : (
         <PageHeader
           className="flex items-start justify-between gap-4"
+          backHref="/import"
+          backLabel="Back to Import"
           title="Pending Imports"
           titleClassName="text-2xl font-bold tracking-tight"
           subtitle={<>Transactions from email forwards or file uploads (CSV / OFX /

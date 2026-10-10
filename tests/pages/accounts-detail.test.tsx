@@ -14,6 +14,7 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: H.push, replace: H.replace }),
   useParams: () => ({ id: "1" }),
   useSearchParams: () => new URLSearchParams(),
+  usePathname: () => "/accounts/1",
 }));
 
 const H = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn() }));
@@ -87,6 +88,15 @@ afterEach(() => {
 });
 
 describe("Account Detail Page", () => {
+  it("has exactly one back control: PageHeader's automatic back to /accounts", async () => {
+    const { container } = render(<AccountDetailPage />);
+    await waitFor(() => expect(screen.getByText(formatCurrency(50000000, "VND"))).toBeTruthy());
+    expect(screen.queryByText("Back to Accounts")).toBeNull();
+    const backs = container.querySelectorAll('[data-slot="back-button"]');
+    expect(backs).toHaveLength(1);
+    expect(backs[0].getAttribute("href")).toBe("/accounts");
+  });
+
   it("shows balance prominently under the header", async () => {
     render(<AccountDetailPage />);
     await waitFor(() => {
@@ -112,8 +122,8 @@ describe("Account Detail Page", () => {
       expect(screen.getByText("In")).toBeTruthy();
       expect(screen.getByText("Out")).toBeTruthy();
       expect(screen.getByText("Transfer")).toBeTruthy();
-      // More appears twice: mobile and desktop
-      expect(screen.getAllByText("More").length).toBeGreaterThanOrEqual(2);
+      // One More control at every size (owner D8): it opens the Actions sheet, no second dropdown.
+      expect(screen.getAllByText("More")).toHaveLength(1);
     });
   });
 
@@ -209,10 +219,7 @@ describe("Account Detail Page", () => {
     });
   });
 
-  it("shows mobile More sheet on small screens", async () => {
-    // Mock window width for mobile
-    Object.defineProperty(window, "innerWidth", { value: 375, configurable: true });
-
+  it("More opens the Actions bottom sheet (one menu, no size check)", async () => {
     render(<AccountDetailPage />);
     await waitFor(() => {
       const moreButton = screen.getAllByText("More")[0];

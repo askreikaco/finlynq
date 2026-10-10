@@ -2,14 +2,12 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { formatCurrency } from "@/lib/currency";
 import {
-  ArrowLeft,
   Wallet,
   Pencil,
   Trash2,
@@ -339,9 +337,7 @@ export default function AccountDetailPage() {
 
   if (!account && loadFailed) return (
     <div className="space-y-6">
-      <Link href="/accounts" className="inline-flex max-md:min-h-11 items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-        <ArrowLeft className="h-4 w-4" /> Back to Accounts
-      </Link>
+      <PageHeader title="Account" backHref="/accounts" backLabel="Back to Accounts" />
       <ErrorState
         title="Account not found"
         message="This account doesn't exist, or it isn't one of yours."
@@ -351,9 +347,8 @@ export default function AccountDetailPage() {
 
   if (!account) return (
     <div className="space-y-6">
-      <div className="h-4 w-32 animate-shimmer rounded" />
-      <div className="h-8 w-64 animate-shimmer rounded-lg" />
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <PageHeader title="Account" backHref="/accounts" backLabel="Back to accounts" />
+      <div className="grid grid-cols-1 regular:grid-cols-3 gap-4">
         {[1, 2, 3].map((i) => <div key={i} className="h-24 animate-shimmer rounded-xl" />)}
       </div>
     </div>
@@ -387,24 +382,21 @@ export default function AccountDetailPage() {
 
   return (
     <div className="space-y-6">
-      <Link href="/accounts" className="inline-flex max-md:min-h-11 items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-        <ArrowLeft className="h-4 w-4" /> Back to Accounts
-      </Link>
-
+      {/* The back control is PageHeader's automatic back (level 2 under /accounts). */}
       {/* actionsClassName has no w-full: on phones the actions sit in PageHeader's glass capsule, and a
           100%-width capsule ran off the right edge. */}
       <PageHeader
         className="flex flex-wrap items-center justify-between gap-3"
         title={account.name}
         titleClassName="text-2xl font-bold tracking-tight"
-        actionsClassName="flex min-w-0 flex-wrap items-center gap-1.5 sm:w-auto"
+        actionsClassName="flex min-w-0 flex-wrap items-center gap-1.5 regular:w-auto"
         lead={
           <div className={`${HEADER_DESKTOP_ONLY} h-10 w-10 shrink-0 rounded-xl flex items-center justify-center text-sm font-bold ${account.type === "A" ? "bg-pos/10 text-pos" : "bg-destructive/10 text-destructive"}`}>
             {(account.name ?? "?").charAt(0)}
           </div>
         }
         belowTitle={
-            <div className="flex max-w-full flex-wrap justify-center gap-2 mt-0.5 md:justify-start">
+            <div className="flex max-w-full flex-wrap justify-center gap-2 mt-0.5 regular:justify-start">
               <Badge variant="outline" className="text-xs">{account.currency}</Badge>
               <Badge variant={account.type === "A" ? "default" : "destructive"} className="text-xs">
                 {account.type === "A" ? "Asset" : "Liability"}
@@ -534,67 +526,17 @@ export default function AccountDetailPage() {
               <span className="text-xs font-medium text-center">Transfer</span>
             </button>
 
-            {/* More */}
-            <CompactOnly>
-              <button
-                onClick={() => setActionsSheetOpen(true)}
-                className="flex flex-col items-center justify-center gap-2 flex-1 p-3 rounded-lg hover:bg-muted transition-colors"
-                title="More actions"
-              >
-                <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
-                  <MoreHorizontal className="h-5 w-5 text-muted-foreground" />
-                </div>
-                <span className="text-xs font-medium text-center">More</span>
-              </button>
-            </CompactOnly>
-
-            {/* Desktop More dropdown */}
-            <div className="hidden md:block flex-1">
-              <DropdownMenu>
-                <DropdownMenuTrigger render={
-                  <button className="flex flex-col items-center justify-center gap-2 w-full p-3 rounded-lg hover:bg-muted transition-colors">
-                    <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
-                      <MoreHorizontal className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                    <span className="text-xs font-medium text-center">More</span>
-                  </button>
-                } />
-                <DropdownMenuContent align="end" className="min-w-48">
-                  <DropdownMenuGroup>
-                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                    <DropdownMenuItem onClick={() => openEdit("details")}>
-                      <Pencil className="h-4 w-4 mr-2" /> Edit account
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push(`/import?accountId=${account.id}`)}>
-                      <Receipt className="h-4 w-4 mr-2" /> Import statement
-                    </DropdownMenuItem>
-                    {account.mode && (
-                      <DropdownMenuItem onClick={() => openEdit("reconciliation")}>
-                        <Inbox className="h-4 w-4 mr-2" /> Import mode
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem onClick={() => router.push(`/reports?accountId=${account.id}`)}>
-                      <TrendingUp className="h-4 w-4 mr-2" /> View in Reports
-                    </DropdownMenuItem>
-                    {account.archived ? (
-                      <DropdownMenuItem onClick={() => void toggleArchived()}>
-                        <Wallet className="h-4 w-4 mr-2" /> Unarchive
-                      </DropdownMenuItem>
-                    ) : (
-                      <DropdownMenuItem onClick={() => void toggleArchived()}>
-                        <Wallet className="h-4 w-4 mr-2" /> Archive
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem
-                      onClick={() => { setAccountActionError(null); setDeleteAccountOpen(true); }}
-                      className="text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" /> Delete account
-                    </DropdownMenuItem>
-                  </DropdownMenuGroup>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+            {/* More: one control at every size, opens the Actions bottom sheet (owner D8). */}
+            <button
+              onClick={() => setActionsSheetOpen(true)}
+              className="flex flex-col items-center justify-center gap-2 flex-1 p-3 rounded-lg hover:bg-muted transition-colors"
+              title="More actions"
+            >
+              <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                <MoreHorizontal className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <span className="text-xs font-medium text-center">More</span>
+            </button>
           </div>
         </CardContent>
       </Card>
@@ -622,7 +564,7 @@ export default function AccountDetailPage() {
             <Button
               size="sm"
               variant="ghost"
-              className="max-md:w-11 max-md:px-0"
+              className="pointer-coarse:w-11 pointer-coarse:px-0"
               onClick={() => openEdit("details")}
               title="Edit account"
               aria-label="Edit account"
@@ -783,7 +725,7 @@ export default function AccountDetailPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Mobile actions sheet */}
+      {/* Actions sheet: opened by More at every size (owner D8). */}
       <Sheet open={actionsSheetOpen} onOpenChange={setActionsSheetOpen}>
         <SheetContent side="bottom" className="px-0">
           <SheetHeader className="px-4 mb-4">

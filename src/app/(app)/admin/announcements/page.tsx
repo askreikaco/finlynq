@@ -160,7 +160,6 @@ export default function AdminAnnouncementsPage() {
         lead={<Megaphone className={`h-5 w-5 text-primary ${HEADER_DESKTOP_ONLY}`} />}
         leadClassName="flex items-center gap-2"
         title="Announcements"
-        titleClassName="text-2xl font-bold tracking-tight"
       />
 
       {error && <p className="mt-6 mb-4 text-sm text-destructive">{error}</p>}
@@ -203,7 +202,7 @@ export default function AdminAnnouncementsPage() {
             />
           </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 regular:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="a-category">Category</Label>
               <select

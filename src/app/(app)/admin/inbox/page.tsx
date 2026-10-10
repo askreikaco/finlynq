@@ -249,9 +249,7 @@ export default function AdminInboxPage() {
       <PageHeader
         className="flex items-start justify-between gap-4"
         title="Admin Inbox"
-        titleClassName="text-2xl font-bold tracking-tight"
         subtitle={<>Non-import email routed to this app. Mailbox is kept indefinitely; trash auto-deletes after 24 hours.</>}
-        subtitleClassName="text-sm text-muted-foreground mt-0.5"
         actions={
           <Button variant="outline" size="sm" onClick={load} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? "animate-spin" : ""}`} />
@@ -266,7 +264,7 @@ export default function AdminInboxPage() {
         </Card>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-[340px_minmax(0,1fr)] items-start">
+      <div className="grid gap-4 wide:grid-cols-[340px_minmax(0,1fr)] items-start">
         {/* ─── Left: list ─── */}
         <Card className="overflow-hidden">
           <Tabs value={category} onValueChange={(v) => setCategory(v as "mailbox" | "trash")}>

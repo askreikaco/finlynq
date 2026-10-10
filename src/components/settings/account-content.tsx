@@ -271,9 +271,7 @@ export function AccountContent({
     <div className="max-w-2xl space-y-6">
       {!hideHeader && <PageHeader
           title="Account"
-          titleClassName="text-2xl font-bold tracking-tight"
           subtitle={<>Login, API key, privacy, and backup / restore</>}
-          subtitleClassName="text-sm text-muted-foreground mt-0.5"
         />}
 
       {/* Security Section */}
@@ -522,7 +520,7 @@ export function AccountContent({
             {restoreStep >= 1 && restorePreview && (
               <div className="mt-4 rounded-xl border border-border bg-muted/30 p-4 space-y-3">
                 <p className="text-sm font-medium text-foreground">Backup contents:</p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 regular:grid-cols-3 gap-2">
                   {Object.entries(restorePreview)
                     .filter(([, v]) => v > 0)
                     .map(([key, count]) => (

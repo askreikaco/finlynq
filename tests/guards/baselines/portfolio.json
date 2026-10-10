@@ -1,0 +1,34 @@
+{
+  "family": "portfolio",
+  "unmigrated": [
+    "src/app/(app)/portfolio/dividends/page.tsx",
+    "src/app/(app)/portfolio/new/page.tsx",
+    "src/app/(app)/portfolio/page.tsx",
+    "src/app/(app)/portfolio/realized-gains/page.tsx",
+    "src/app/(app)/portfolio/new/[op]/page.tsx"
+  ],
+  "chrome": {
+    "src/app/(app)/portfolio/_components/portfolio-ui.tsx": {
+      "min-h": 2,
+      "backdrop-blur": 2
+    },
+    "src/app/(app)/portfolio/dividends/page.tsx": {
+      "title-prop": 2,
+      "subtitle-prop": 1
+    },
+    "src/app/(app)/portfolio/new/page.tsx": {
+      "rounded-2xl": 1,
+      "suspense-null": 1
+    },
+    "src/app/(app)/portfolio/page.tsx": {
+      "min-h": 1,
+      "rounded-2xl": 1,
+      "title-prop": 2,
+      "subtitle-prop": 1
+    },
+    "src/app/(app)/portfolio/realized-gains/page.tsx": {
+      "title-prop": 2,
+      "subtitle-prop": 1
+    }
+  }
+}

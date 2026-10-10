@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import * as fs from "fs";
+import { HEADER_TITLE_CLASS } from "@/components/mobile/page-header";
 
 // W5-5: admin page headers normalised to the shared header target.
 const FILES = [
@@ -9,7 +10,7 @@ const FILES = [
   "src/app/(app)/admin/(env)/integrations/page.tsx",
 ];
 
-const TITLE_TARGET_RE = /^text-2xl font-bold tracking-tight( truncate| flex items-center gap-2)?$/;
+// Title class is owned by the shared PageHeader (HEADER_TITLE_CLASS); pages no longer pass one.
 const SUBTITLE_TARGET = "text-sm text-muted-foreground mt-0.5";
 const OLD_STRINGS = [
   "text-2xl font-semibold tracking-tight",
@@ -30,13 +31,13 @@ describe("W5-5 admin page headers", () => {
     describe(file, () => {
       const content = fs.readFileSync(file, "utf-8");
 
-      it("has at least one titleClassName", () => {
-        expect(extract(content, "titleClassName").length).toBeGreaterThan(0);
+      it("renders the shared PageHeader", () => {
+        expect(content).toMatch(/<PageHeader\b/);
       });
 
-      it("every titleClassName matches the header target", () => {
+      it("every titleClassName override equals the shared header target", () => {
         for (const value of extract(content, "titleClassName")) {
-          expect(value, `titleClassName="${value}"`).toMatch(TITLE_TARGET_RE);
+          expect(value, `titleClassName="${value}"`).toBe(HEADER_TITLE_CLASS);
         }
       });
 

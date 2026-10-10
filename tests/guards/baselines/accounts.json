@@ -1,0 +1,26 @@
+{
+  "family": "accounts",
+  "unmigrated": [
+    "src/app/(app)/accounts/[id]/edit/page.tsx",
+    "src/app/(app)/accounts/[id]/page.tsx",
+    "src/app/(app)/accounts/groups/page.tsx",
+    "src/app/(app)/accounts/new/page.tsx",
+    "src/app/(app)/accounts/page.tsx"
+  ],
+  "chrome": {
+    "src/app/(app)/accounts/[id]/edit/page.tsx": {
+      "suspense-null": 1,
+      "return-to": 1
+    },
+    "src/app/(app)/accounts/[id]/page.tsx": {
+      "title-prop": 1
+    },
+    "src/app/(app)/accounts/groups/page.tsx": {
+      "suspense-null": 1
+    },
+    "src/app/(app)/accounts/new/page.tsx": {
+      "suspense-null": 1,
+      "return-to": 1
+    }
+  }
+}

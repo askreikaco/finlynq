@@ -32,7 +32,7 @@ describe("safe-area offsets", () => {
     expect(search).not.toContain("safe-area-inset-bottom");
   });
   it("new transaction reserves the top safe area once (fixed root offset, no header pt-[var(--sat)] duplicate)", () => {
-    expect(newTx).toContain("max-md:top-[var(--sat)]");
+    expect(newTx).toContain("max-regular:top-[var(--sat)]");
     expect(newTx).not.toContain("pt-[var(--sat)]");
   });
   it("bottom-fixed toasts and bars clear the floating tab bar (--mobile-bar-clearance)", () => {
@@ -42,7 +42,7 @@ describe("safe-area offsets", () => {
     }
   });
   it("account switcher (fixed) clears the home indicator", () => {
-    expect(switcher).toContain("fixed bottom-[calc(var(--mobile-bar-clearance)-8px)] md:bottom-4 left-4");
+    expect(switcher).toContain("fixed bottom-[calc(var(--mobile-bar-clearance)-8px)] regular:bottom-4 left-4");
     expect(switcher).not.toContain("fixed bottom-4 ");
   });
 });

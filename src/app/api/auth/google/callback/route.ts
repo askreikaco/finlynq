@@ -13,6 +13,7 @@
  * - Error → /cloud?error=google_<code>
  */
 
+import { safeReturnTo } from "@/lib/accounts/groups-return-to";
 import { NextRequest, NextResponse } from "next/server";
 import {
   isGoogleConfigured,
@@ -32,10 +33,7 @@ import { clientIp } from "@/lib/client-ip";
  */
 function isSafeNext(next: string | null | undefined): next is string {
   if (!next) return false;
-  if (!next.startsWith("/")) return false;
-  if (next.startsWith("//")) return false;
-  if (next.includes("\\")) return false;
-  return true;
+  return safeReturnTo(next, "") === next;
 }
 
 function redirectToCloud(query: Record<string, string>, response?: NextResponse): NextResponse {

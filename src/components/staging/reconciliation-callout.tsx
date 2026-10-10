@@ -134,7 +134,7 @@ export function ReconciliationCallout(props: ReconciliationCalloutProps) {
       <CardContent className="py-4 px-5">
         <div className="flex items-start justify-between gap-4">
           <div
-            className={`grid grid-cols-1 ${hasPending ? "sm:grid-cols-3" : "sm:grid-cols-2"} gap-4 flex-1`}
+            className={`grid grid-cols-1 ${hasPending ? "regular:grid-cols-3" : "regular:grid-cols-2"} gap-4 flex-1`}
           >
             <div>
               <p className="text-xs uppercase tracking-wide text-muted-foreground">

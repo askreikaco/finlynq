@@ -63,7 +63,7 @@ function AccordionItem({
       <AccordionPrimitive.Header className="m-0 text-base font-normal">
         <AccordionPrimitive.Trigger
           data-slot="accordion-trigger"
-          className="group flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-xl px-4 py-2 text-left outline-none transition-colors hover:bg-muted/40 focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="group flex min-h-row w-full cursor-pointer items-center gap-3 rounded-xl px-4 py-2 text-left outline-none transition-colors hover:bg-muted/40 focus-visible:ring-3 focus-visible:ring-ring/50"
         >
           {icon ? (
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">

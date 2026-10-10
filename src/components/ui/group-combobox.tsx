@@ -101,7 +101,7 @@ export function GroupCombobox({
         onChange={(e) => { onChange(e.target.value); setOpen(true); setActive(0) }}
         onFocus={() => setOpen(true)}
         onKeyDown={onKeyDown}
-        className="h-11 md:h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 text-base md:text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive dark:bg-input/30"
+        className="h-8 pointer-coarse:h-11 dense:pointer-fine:h-7 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 text-base regular:pointer-fine:text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive dark:bg-input/30"
       />
       {open && (
         <ul
@@ -121,7 +121,7 @@ export function GroupCombobox({
               onClick={() => pick(row)}
               onMouseEnter={() => setActive(i)}
               className={cn(
-                "flex min-h-11 md:min-h-8 cursor-default items-center rounded-md px-2 text-sm select-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground",
+                "flex min-h-8 pointer-coarse:min-h-11 cursor-default items-center rounded-md px-2 text-sm select-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground",
                 row.kind === "none" && "text-muted-foreground",
               )}
             >

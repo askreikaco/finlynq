@@ -3,7 +3,6 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ChevronLeft,
   ChevronDown,
   AlertCircle,
   CheckCircle2,
@@ -47,7 +46,7 @@ import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
 import { useFxPreview } from "@/lib/hooks/use-fx-preview";
 import { FxPreviewLine } from "@/components/transactions/fx-preview-line";
 import { buildPayeeCategoryRule } from "@/lib/rules/build-payee-category-rule";
-import { PHONE_BAR_STICKY } from "@/components/mobile/page-header";
+import { PageHeader } from "@/components/mobile";
 
 type TxType = "Expense" | "Income" | "Transfer";
 // "save" books and locks the form; "continue" books and clears the entry fields for the next one.
@@ -692,33 +691,24 @@ export default function MobileTransactionPage() {
       data-testid="txnew-root"
       className={cn(
         "flex flex-col bg-background text-foreground",
-        "max-md:fixed max-md:inset-x-0 max-md:top-[var(--sat)] max-md:bottom-[var(--sab,0px)]",
-        "md:relative md:mx-auto md:h-[min(46rem,calc(100dvh-8rem))] md:w-full md:max-w-md md:rounded-2xl md:border md:border-border/80",
+        "max-regular:fixed max-regular:inset-x-0 max-regular:top-[var(--sat)] max-regular:bottom-[var(--sab,0px)]",
+        "regular:relative regular:mx-auto regular:h-[min(46rem,calc(100dvh-8rem))] regular:w-full regular:max-w-md regular:rounded-2xl regular:border regular:border-border/80",
       )}
     >
-      {/* Top bar (--phone-header-h, 60px): PHONE_BAR_STICKY, the same glass bar height as the other pages.
-          The 44px back circle is centred in it, clear of the bottom hairline. The top safe area is reserved once,
-          by the fixed root's top offset. */}
-      <header
-        data-testid="txnew-topbar"
-        className={cn(PHONE_BAR_STICKY, "grid h-[var(--phone-header-h)] shrink-0 grid-cols-[2.75rem_1fr_2.75rem] items-center px-4")}
-      >
-        <button
-          type="button"
-          aria-label="Back to transactions"
-          onClick={goBack}
-          className="glass-capsule inline-flex size-11 items-center justify-center justify-self-start rounded-full text-primary transition-opacity active:opacity-70"
-        >
-          <ChevronLeft className="h-5 w-5" aria-hidden="true" />
-        </button>
-        <h1 className="truncate text-center text-base font-semibold text-foreground">
-          <span className="sr-only">New</span>{" "}
-          {txType}
-        </h1>
-        <div className="flex h-11 w-11 items-center justify-end justify-self-end">
-          {saving && <Loader2 className="h-4 w-4 animate-spin text-primary" aria-hidden="true" />}
-        </div>
-      </header>
+      {/* Global page bar (PageHeader): back = history back, else /transactions. The spinner shows while saving. */}
+      <PageHeader
+        className="shrink-0"
+        title={`New ${txType}`}
+        onBack={goBack}
+        backLabel="Back to transactions"
+        actions={
+          saving ? (
+            <span role="status" aria-label="Saving" className="flex size-11 items-center justify-center">
+              <Loader2 className="h-4 w-4 animate-spin text-primary" aria-hidden="true" />
+            </span>
+          ) : undefined
+        }
+      />
 
       {/* Type control (44px), 8px below the top bar. */}
       <div data-testid="txnew-type" className="mt-2 shrink-0 px-4">
@@ -1070,7 +1060,7 @@ export default function MobileTransactionPage() {
       {showNumpad && (
         <div
           data-testid="numpad-dock"
-          className="fixed inset-x-0 bottom-[var(--sab,0px)] z-[60] hidden bg-background pointer-coarse:block animate-in slide-in-from-bottom duration-200"
+          className="fixed inset-x-0 bottom-[var(--sab,0px)] regular:left-[calc(5rem+var(--sal))] z-[60] hidden bg-background pointer-coarse:block animate-in slide-in-from-bottom duration-200"
         >
           <Numpad value={amount} onChange={setAmount} onConfirm={closePad} />
         </div>

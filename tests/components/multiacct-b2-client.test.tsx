@@ -6,6 +6,7 @@
  */
 import "@testing-library/jest-dom";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { resetSessionUserIdCache } from "@/lib/client/user-storage";
 import React from "react";
 import { render, screen, waitFor, fireEvent, cleanup, renderHook } from "@testing-library/react";
 
@@ -49,6 +50,7 @@ let fetchLog: string[];
 let gate: Promise<void> | null;
 
 beforeEach(() => {
+  resetSessionUserIdCache();
   cleanup();
   localStorage.clear();
   hardReload.mockClear();

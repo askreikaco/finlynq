@@ -139,7 +139,7 @@ export function ManagePricesPanel({
       </div>
 
       {/* Add a mark */}
-      <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 items-end gap-3 regular:grid-cols-2">
         <DatePicker value={date} onChange={setDate} max={todayISO()} label="Effective date" />
         <div className="space-y-1">
           <Label>Price ({currency})</Label>

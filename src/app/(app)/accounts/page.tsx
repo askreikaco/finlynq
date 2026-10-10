@@ -30,6 +30,7 @@ import {
   FolderCog,
 } from "lucide-react";
 import { PageHeader, HEADER_DESKTOP_ONLY, NetWorthHero, SectionLabel, AccountRow, CompactOnly, FromMd } from "@/components/mobile";
+import { DataView, ViewModeToggle } from "@/components/adaptive";
 
 type AccountBalance = {
   accountId: number;
@@ -53,7 +54,7 @@ function SummarySkeleton() {
         <div className="h-8 w-40 animate-shimmer rounded-lg" />
         <div className="h-4 w-64 animate-shimmer rounded-lg mt-2" />
       </div>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 wide:grid-cols-4 gap-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <Card key={i}>
             <CardHeader className="pb-2">
@@ -68,7 +69,7 @@ function SummarySkeleton() {
           </Card>
         ))}
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 wide:grid-cols-2 gap-8">
         {Array.from({ length: 2 }).map((_, i) => (
           <div key={i} className="space-y-4">
             <div className="h-6 w-28 animate-shimmer rounded" />
@@ -412,12 +413,12 @@ export default function AccountsPage() {
 
       <OnboardingTips page="accounts" />
 
-      {/* Below md the Net Worth hero (assets/liabilities tiles) replaces these two stat cards. */}
-      <CompactOnly>
+      {/* Summary tiles: the Net Worth hero on phones, the two stat cards from the regular size class up. */}
+      <div className="regular:hidden">
         <NetWorthHero totalAssets={totalAssetsConverted} totalLiabilities={totalLiabilitiesConverted} currency={displayCurrency} />
-      </CompactOnly>
+      </div>
 
-      <FromMd className="grid grid-cols-2 gap-3">
+      <div className="hidden regular:grid grid-cols-2 gap-3">
         {[
           { label: "Total Assets", value: totalAssetsConverted, Icon: TrendingUp, color: "emerald" },
           { label: "Total Liabilities", value: totalLiabilitiesConverted, Icon: TrendingDown, color: "rose" },
@@ -434,19 +435,28 @@ export default function AccountsPage() {
             </CardContent>
           </Card>
         ))}
-      </FromMd>
+      </div>
 
-      {/* Below md: groups as native SectionCards of AccountRows (tap → /accounts/[id]). */}
-      <CompactOnly data-slot="accounts-mobile-list" className="space-y-4">
-        {renderMobileSection("Assets", assets, "asset")}
-        {renderMobileSection("Liabilities", liabilities, "liability")}
-      </CompactOnly>
+      {/* One toolbar, one DataView. Cards = AccountRow sections (phone layout); List = the grid layout. */}
+      <div className="flex justify-end">
+        <ViewModeToggle viewKey="accounts" />
+      </div>
 
-      <FromMd className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {renderSection("Assets", assets, "text-pos", ArrowUpRight, "bg-primary/10 text-primary")}
-        {renderSection("Liabilities", liabilities, "text-destructive", ArrowDownRight, "bg-destructive/10 text-destructive")}
-      </FromMd>
-
+      <DataView
+        viewKey="accounts"
+        cards={
+          <div data-slot="accounts-mobile-list" className="space-y-4">
+            {renderMobileSection("Assets", assets, "asset")}
+            {renderMobileSection("Liabilities", liabilities, "liability")}
+          </div>
+        }
+        list={
+          <div className="grid grid-cols-1 wide:grid-cols-2 gap-4">
+            {renderSection("Assets", assets, "text-pos", ArrowUpRight, "bg-primary/10 text-primary")}
+            {renderSection("Liabilities", liabilities, "text-destructive", ArrowDownRight, "bg-destructive/10 text-destructive")}
+          </div>
+        }
+      />
     </div>
   );
 }

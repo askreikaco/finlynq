@@ -74,6 +74,9 @@ describe("ListRow", () => {
     const link = screen.getByRole("link");
     expect(link.getAttribute("href")).toBe("/accounts/1");
     expect(cls(link)).toContain("min-h-[56px]");
+    // Compact density: 44px (dense:min-h-11 = 2.75rem), never below the 44px touch target.
+    expect(cls(link)).toContain("dense:min-h-11");
+    expect(cls(link).filter((c) => c.startsWith("dense:min-h-"))).toEqual(["dense:min-h-11"]);
     expect(screen.getByText("TCB")).toBeTruthy();
     expect(screen.getByText("VND")).toBeTruthy();
     const sec = screen.getByText("+2.5%");

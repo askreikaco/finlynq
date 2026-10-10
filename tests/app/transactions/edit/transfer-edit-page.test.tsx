@@ -9,6 +9,8 @@ const H = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn(), search: "", linkI
 const ROUTER = { push: H.push, replace: H.replace, back: vi.fn() };
 vi.mock("next/navigation", () => ({
   useRouter: () => ROUTER,
+  // PageHeader resolves its auto back target from the nav registry (useBackTarget -> usePathname).
+  usePathname: () => "/transactions",
   useSearchParams: () => new URLSearchParams(H.search),
   useParams: () => ({ linkId: H.linkId }),
 }));
@@ -19,6 +21,10 @@ vi.mock("@/components/dropdown-order-provider", () => ({ useDropdownOrder: () =>
 vi.mock("@/lib/hooks/useActiveCurrencies", () => ({ useActiveCurrencies: () => ["USD"] }));
 
 import EditTransferRoute from "@/app/(app)/transactions/transfer/[linkId]/edit/page";
+vi.mock("@/lib/client/user-storage", async (orig) => ({
+  ...(await orig<typeof import("@/lib/client/user-storage")>()),
+  useSessionUserId: () => ({ userId: "page-test-user", ready: true }),
+}));
 
 const legs = {
   1: { id: 1, date: "2026-02-01", accountId: 1, accountName: "Chequing", categoryId: 3, currency: "USD", amount: -100, enteredAmount: -100, enteredCurrency: "USD", quantity: null, portfolioHolding: null, note: "rent", payee: "", tags: "", isBusiness: 0, linkId: "L-1" },

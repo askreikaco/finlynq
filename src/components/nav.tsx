@@ -2,18 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useEffect, memo } from "react";
+import { memo } from "react";
 import { cn } from "@/lib/utils";
-import {
-  ChevronLeft,
-  ChevronDown,
-  ChevronRight,
-  MoreHorizontal,
-  Shield,
-} from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { AccountSwitcher } from "@/components/account-switcher";
-import { getEntriesBySurface, getMobileBarItemsSorted, navLabel } from "@/lib/nav-config";
+import { getEntriesBySurface, getMobileBarItemsSorted } from "@/lib/nav-config";
+import { isFullScreenRoute } from "@/lib/routes";
+import { useNavUnread } from "@/components/nav-unread";
 
 type NavItem = { href: string; label: string; icon: LucideIcon; color: string; mode?: "prod" | "dev"; activePrefixes?: string[]; flag?: "family" | "announcements" | "feedback" | "instance" };
 
@@ -142,349 +137,97 @@ export function pickActiveHref(
   return activeItem;
 }
 
-export const Nav = memo(function Nav({ instanceAdminEnabled = false, categoriesMerged = false }: { instanceAdminEnabled?: boolean; categoriesMerged?: boolean }) {
+// Full-screen entry and edit flows hide the compact tab bar. The flag lives on each route in
+// src/lib/routes/families/*.ts (fullScreen). The rail is never hidden: it sits left of the content.
+/** True when the compact bottom bar is hidden on this route. The rail is never hidden. */
+export function isTabBarHidden(pathname: string): boolean {
+  return isFullScreenRoute(pathname);
+}
+
+const isTabActive = (pathname: string, href: string) => pathname === href || pathname.startsWith(href + "/");
+
+// One tab list for both layouts: the registry tabs (mobileBar surface, tab.order), then More.
+const TAB_LINKS: { href: string; label: string; icon: LucideIcon; color?: string; ariaLabel?: string }[] = [
+  ...mobileBarItems.map((i) => ({ href: i.href, label: i.label, icon: i.icon, color: i.color })),
+  { href: "/more", label: "More", icon: MoreHorizontal, ariaLabel: "More" },
+];
+
+/**
+ * App navigation: one tab list, two layouts. Below 640px (`regular:` is a viewport query) the
+ * floating glass bottom bar. From 640px up a fixed left rail with the same tabs in the same order.
+ * No groups, collapse toggle, admin group or account switcher: admin and settings live under More.
+ */
+export const AppTabs = memo(function AppTabs() {
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState(false);
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
-  const [adminPref, setAdminPref] = useState<boolean | null>(null);
-  const [devMode, setDevMode] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [familyEnabled, setFamilyEnabled] = useState(true); // FAMILY_WEALTH_ENABLED (default on)
-  const [unread, setUnread] = useState(0);
-  const [hasAnnouncements, setHasAnnouncements] = useState(true); // default to true to avoid hiding on initial load
-  const [feedbackUnread, setFeedbackUnread] = useState(0);
-
-
-  useEffect(() => {
-    const saved = localStorage.getItem("pf-sidebar-collapsed");
-    if (saved === "true") setCollapsed(true);
-    const groups: Record<string, boolean> = {};
-    navGroups.forEach((g) => { if (g.label) groups[g.label] = true; });
-    setOpenGroups(groups);
-
-    // Initialize admin group open state from localStorage
-    try {
-      const savedAdminOpen = localStorage.getItem("nav.adminOpen");
-      if (savedAdminOpen === "true") setAdminPref(true);
-      else if (savedAdminOpen === "false") setAdminPref(false);
-      // else: null (no explicit choice)
-    } catch (_e) {
-      // localStorage not available, adminOpen stays null
-    }
-
-    fetch("/api/auth/session")
-      .then((r) => r.json())
-      .then((data) => {
-        setIsAdmin(data.isAdmin === true);
-        if (data.familyWealthEnabled === false) setFamilyEnabled(false);
-      })
-      .catch(() => {});
-    fetch("/api/settings/dev-mode")
-      .then((r) => r.json())
-      .then((data) => { if (data.devMode) setDevMode(true); })
-      .catch(() => {});
-  }, []);
-
-  // Admin group is open when the user explicitly opened it (adminPref === true),
-  // or while on an /admin page (adminPref === null, derived state).
-  // Collapsing works, and returns to the saved pref once the user leaves /admin.
-  const adminOpen = adminPref ?? (isAdmin && pathname.startsWith("/admin"));
-
-  // Unread announcement count for the "What's New" badge. Refetched on every
-  // navigation so the badge clears after the user visits /whats-new (which
-  // marks items read server-side). Also tracks whether any announcements exist.
-  useEffect(() => {
-    fetch("/api/announcements")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((list) => {
-        if (Array.isArray(list)) {
-          setHasAnnouncements(list.length > 0);
-          setUnread(list.filter((a: { read?: boolean }) => !a.read).length);
-        }
-      })
-      .catch(() => {});
-  }, [pathname]);
-
-  // Unread feedback-reply count for the "Your feedback" badge. Same
-  // refetch-on-navigation pattern as the announcements badge above — clears
-  // after the user opens a thread (which marks it read server-side).
-  useEffect(() => {
-    fetch("/api/feedback")
-      .then((r) => (r.ok ? r.json() : []))
-      .then((list) => {
-        if (Array.isArray(list)) {
-          setFeedbackUnread(list.filter((t: { unread?: boolean }) => t.unread).length);
-        }
-      })
-      .catch(() => {});
-  }, [pathname]);
-
-  // Unread count to badge a given nav link (0 = no badge).
-  const unreadFor = (item: NavItem) =>
-    item.flag === "announcements" ? unread : item.flag === "feedback" ? feedbackUnread : 0;
-
-  const toggleCollapsed = () => {
-    const next = !collapsed;
-    setCollapsed(next);
-    localStorage.setItem("pf-sidebar-collapsed", String(next));
-  };
-
-  const toggleGroup = (label: string) => {
-    setOpenGroups((prev) => ({ ...prev, [label]: !prev[label] }));
-  };
-
-  const toggleAdminGroup = () => {
-    const next = !adminOpen;
-    setAdminPref(next);
-    try {
-      localStorage.setItem("nav.adminOpen", String(next));
-    } catch (_e) {
-      // localStorage not available, just update state
-    }
-  };
-
-  const renderLink = (item: NavItem, showLabel: boolean) => {
-    // Use pickActiveHref to determine if this item should be active
-    // It's active only if it owns the longest match across all items
-    const activeItem = pickActiveHref(pathname);
-    const isActive = activeItem === item;
-    const badge = unreadFor(item);
-    const displayLabel = navLabel(item.href, item.label, { categoriesMerged });
-    return (
-      <Link
-        key={item.href}
-        href={item.href}
-        title={!showLabel ? displayLabel : undefined}
-        aria-current={isActive ? "page" : undefined}
-        className={cn(
-          "group/link relative flex items-center gap-3 rounded-lg text-sm font-medium transition-all duration-200",
-          showLabel ? "px-3 py-2" : "size-9 mx-auto p-0 justify-center",
-          isActive
-            ? "bg-white/[0.08] text-sidebar-accent-foreground"
-            : "text-sidebar-foreground/50 hover:bg-white/[0.05] hover:text-sidebar-foreground"
-        )}
-      >
-        {isActive && (
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 rounded-full bg-sidebar-primary shadow-[0_0_8px_2px] shadow-sidebar-primary/30" />
-        )}
-        <item.icon className={cn(
-          "h-[18px] w-[18px] shrink-0 transition-all duration-200",
-          isActive ? item.color : "text-sidebar-foreground/40 group-hover/link:text-sidebar-foreground/70 group-hover/link:scale-110"
-        )} />
-        {/* Collapsed-sidebar unread dot (What's New + Your feedback) */}
-        {!showLabel && badge > 0 && (
-          <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary" />
-        )}
-        {showLabel && <span className="truncate">{displayLabel}</span>}
-        {showLabel && badge > 0 ? (
-          <span className="ml-auto rounded-full bg-primary px-1.5 py-0.5 text-xs font-semibold leading-none text-primary-foreground">
-            {badge}
-          </span>
-        ) : (
-          showLabel && isActive && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-sidebar-primary animate-pulse" />
-        )}
-      </Link>
-    );
-  };
-
-  const sidebar = (
-    <nav
-      aria-label="Main navigation"
-      className={cn(
-        "hidden md:flex flex-col bg-sidebar h-[calc(100vh-var(--sat))] sticky top-safe border-r border-sidebar-border/50 transition-[width] duration-200 ease-in-out overflow-hidden",
-        collapsed ? "w-14" : "w-60"
-      )}
-    >
-      {/* Nav groups (no logo block — owner 2026-10-01) */}
-      <div className="flex-1 px-2 pt-3 space-y-1 overflow-y-auto">
-        {navGroups.map((group) => {
-          const visibleItems = group.items.filter((item) => {
-            // Filter by feature flags
-            if (item.flag === "announcements" && !hasAnnouncements) return false;
-            if (item.flag === "family" && !familyEnabled) return false;
-            if (item.flag === "instance" && !instanceAdminEnabled) return false;
-            return devMode || item.mode !== "dev";
-          });
-          if (visibleItems.length === 0) return null;
-          return (
-          <div key={group.label || "top"}>
-            {group.label && !collapsed && (
-              <button
-                onClick={() => toggleGroup(group.label)}
-                className="flex items-center w-full px-3 mb-1 mt-5 text-xs font-semibold uppercase tracking-widest text-muted-foreground hover:text-sidebar-foreground/50 transition-colors"
-              >
-                <ChevronDown
-                  className={cn(
-                    "h-3 w-3 mr-1 transition-transform duration-200",
-                    !openGroups[group.label] && "-rotate-90"
-                  )}
-                />
-                {group.label}
-              </button>
-            )}
-            {collapsed && group.label && (
-              <div className="mx-auto my-2 w-6 border-t border-sidebar-border" />
-            )}
-            {(collapsed || !group.label || openGroups[group.label]) &&
-              visibleItems.map((item) => renderLink(item, !collapsed))}
-          </div>
-          );
-        })}
-      </div>
-
-      {/* Bottom section */}
-      <div className="flex-col flex border-t border-sidebar-border/50">
-        {/* Scrollable tools + admin group area */}
-        <div className="flex-1 min-h-0 overflow-y-auto px-2 pt-2 pb-2 space-y-0.5">
-          {/* Regular tool links */}
-          {toolLinks.filter((item) => devMode || item.mode !== "dev").map((item) => renderLink(item, !collapsed))}
-
-          {/* Admin group (collapsible) */}
-          {isAdmin && (
-            <div>
-              {!collapsed && (
-                <button
-                  onClick={toggleAdminGroup}
-                  aria-expanded={adminOpen}
-                  aria-controls="nav-admin-links"
-                  className="flex items-center w-full px-3 mb-1 mt-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground hover:text-sidebar-foreground/50 transition-colors"
-                >
-                  <ChevronDown
-                    className={cn(
-                      "h-3 w-3 mr-1 transition-transform duration-200",
-                      !adminOpen && "-rotate-90"
-                    )}
-                  />
-                  Admin
-                </button>
-              )}
-              {collapsed && (
-                <Link
-                  href="/admin"
-                  title="Admin"
-                  aria-label="Admin"
-                  className={cn(
-                    "group/link relative flex items-center gap-3 rounded-lg text-sm font-medium transition-all duration-200 size-9 mx-auto p-0 justify-center",
-                    pathname.startsWith("/admin")
-                      ? "bg-white/[0.08] text-sidebar-accent-foreground"
-                      : "text-sidebar-foreground/50 hover:bg-white/[0.05] hover:text-sidebar-foreground"
-                  )}
-                >
-                  {pathname.startsWith("/admin") && (
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 rounded-full bg-sidebar-primary shadow-[0_0_8px_2px] shadow-sidebar-primary/30" />
-                  )}
-                  <Shield className={cn(
-                    "h-[18px] w-[18px] shrink-0 transition-all duration-200",
-                    pathname.startsWith("/admin") ? "text-primary" : "text-sidebar-foreground/40 group-hover/link:text-sidebar-foreground/70"
-                  )} />
-                </Link>
-              )}
-              {adminOpen && !collapsed && (
-                <div id="nav-admin-links" className="space-y-0.5 max-h-[40vh] overflow-y-auto">
-                  {adminLinks.filter((item) => {
-                    if (item.flag === "announcements" && !hasAnnouncements) return false;
-                    if (item.flag === "family" && !familyEnabled) return false;
-                    if (item.flag === "instance" && !instanceAdminEnabled) return false;
-                    return devMode || item.mode !== "dev";
-                  }).map((item) => renderLink(item, !collapsed))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Fixed bottom block: Account switcher, collapse button (theme: Settings → General) */}
-        <div className="shrink-0 px-2 pb-3 pt-2 border-t border-sidebar-border/50 space-y-0.5">
-          <AccountSwitcher compact={collapsed} />
-          <div className={cn("flex items-center mt-2", collapsed ? "justify-center" : "justify-end px-1")}>
-            <button
-              onClick={toggleCollapsed}
-              className="p-1.5 rounded-lg text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-all duration-200 hover:scale-110"
-              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-              title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            >
-              {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-            </button>
-          </div>
-        </div>
-      </div>
-    </nav>
-  );
+  const nav = useNavUnread();
+  const moreUnread = nav.announcementsUnread + nav.feedbackUnread;
+  const barHidden = isTabBarHidden(pathname);
+  const moreActive = !mobileBarItems.some((i) => isTabActive(pathname, i.href));
+  const tabActive = (href: string) => (href === "/more" ? moreActive : isTabActive(pathname, href));
+  // One unread dot, on the More tab only, in both layouts.
+  const moreDot = (href: string) =>
+    href === "/more" && moreUnread > 0 ? (
+      <span data-testid="more-unread-dot" aria-hidden="true" className="absolute -right-1 -top-1 size-2 rounded-full bg-primary" />
+    ) : null;
+  // Text alternative for that dot (the dot itself is aria-hidden): same rule in both layouts.
+  const moreSrText = (href: string) =>
+    href === "/more" && moreUnread > 0 ? <span className="sr-only">, has unread items</span> : null;
 
   return (
     <>
-      {sidebar}
-      <MobileBottomBar pathname={pathname} />
-    </>
-  );
-});
-
-// Full-screen entry flows: the mobile tab bar is hidden so the form and its Save/Continue are never overlapped.
-const FULL_SCREEN_ENTRY_ROUTES = [
-  "/transactions/new",
-  "/accounts/new",
-  "/settings/rules/new",
-  "/categories/new",
-  "/settings/investments/securities",
-  "/settings/investments/accounts",
-  "/settings/investments/cash-sleeves",
-  "/loans/new",
-  "/subscriptions/new",
-  "/budgets/new",
-  "/budgets/templates/new",
-  "/budgets/move-money",
-  "/goals/new",
-] as const;
-// Edit forms for a single loan / subscription / account / goal / category / rule (/loans/<id>/edit,
-// /subscriptions/<id>/edit, /accounts/<id>/edit, /goals/<id>/edit) and rule / category rename pages.
-const FULL_SCREEN_EDIT_ROUTE = /^\/(loans|subscriptions|accounts|goals|categories|settings\/rules)\/[^/]+\/edit$/;
-// Full-page transaction edit flows (PKG1): /transactions/<id>/edit and /split, /transactions/transfer/<linkId>/edit.
-const FULL_SCREEN_ENTRY_PATTERNS = [/^\/transactions\/\d+\/(edit|split)$/, /^\/transactions\/transfer\/[^/]+\/edit$/];
-
-// Mobile bottom bar
-export const MobileBottomBar = memo(function MobileBottomBar({ pathname }: { pathname: string }) {
-  const moreActive = !mobileBarItems.some(i => pathname === i.href || pathname.startsWith(i.href + "/"));
-  // Full-screen entry flows: the bar is hidden so the numpad and Save/Continue are never overlapped.
-  // Portfolio operation forms (/portfolio/new/<op>) follow the same rule; the /portfolio/new list keeps the bar.
-  const hidden =
-    FULL_SCREEN_ENTRY_ROUTES.some((r) => pathname === r || pathname.startsWith(r + "/")) ||
-    FULL_SCREEN_EDIT_ROUTE.test(pathname) ||
-    FULL_SCREEN_ENTRY_PATTERNS.some((re) => re.test(pathname)) ||
-    pathname.startsWith("/portfolio/new/");
-  if (hidden) return null;
-  return (
-    <nav aria-label="Mobile navigation" className="md:hidden fixed z-50 mobile-glass-bar bottom-[max(12px,var(--sab))] left-[calc(16px+var(--sal))] right-[calc(16px+var(--sar))] h-16 rounded-[28px]">
-      <div className="flex h-full items-stretch justify-around p-1.5" data-testid="mobile-bar-row">
-        {mobileBarItems.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+      {!barHidden && (
+        <nav aria-label="Mobile navigation" className="regular:hidden fixed z-50 mobile-glass-bar bottom-[max(12px,var(--sab))] left-[calc(16px+var(--sal))] right-[calc(16px+var(--sar))] h-16 rounded-[28px]">
+          <div className="flex h-full items-stretch justify-around p-1.5" data-testid="mobile-bar-row">
+            {TAB_LINKS.map((item) => {
+              const isActive = tabActive(item.href);
+              return (
+                <Link
+                  key={item.href}
+                  aria-label={item.href === "/more" && moreUnread > 0 ? "More, has unread items" : item.ariaLabel}
+                  aria-current={isActive ? "page" : undefined}
+                  href={item.href}
+                  className={cn(
+                    "flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full px-0 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
+                    isActive ? "mobile-glass-pill text-tab-active" : "text-tab-inactive"
+                  )}
+                >
+                  <span className="relative inline-flex">
+                    <item.icon className={cn("size-6", isActive && item.color)} />
+                    {moreDot(item.href)}
+                  </span>
+                  <span className="mobile-tab-label block max-w-full truncate">{item.label}</span>{moreSrText(item.href)}
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
+      )}
+      <nav
+        aria-label="Main navigation"
+        data-testid="app-rail"
+        className="hidden regular:flex fixed inset-y-0 left-0 z-50 w-[calc(5rem+var(--sal))] flex-col gap-1 overflow-y-auto overscroll-contain border-r border-sidebar-border/50 bg-sidebar/90 pl-[var(--sal)] pr-2 pt-[calc(var(--sat)+0.75rem)] pb-[calc(var(--sab)+0.75rem)] backdrop-blur-xl"
+      >
+        {TAB_LINKS.map((item) => {
+          const isActive = tabActive(item.href);
           return (
             <Link
               key={item.href}
               aria-current={isActive ? "page" : undefined}
               href={item.href}
               className={cn(
-                "flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full px-0 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
+                "flex min-h-14 w-full min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-1 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
                 isActive ? "mobile-glass-pill text-tab-active" : "text-tab-inactive"
               )}
             >
-              <item.icon className={cn("size-6", isActive && item.color)} />
-              <span className="mobile-tab-label block max-w-full truncate">{item.label}</span>
+              <span className="relative inline-flex">
+                <item.icon className={cn("size-6", isActive && item.color)} />
+                {moreDot(item.href)}
+              </span>
+              <span className="mobile-tab-label block max-w-full truncate">{item.label}</span>{moreSrText(item.href)}
             </Link>
           );
         })}
-        <Link
-          href="/more"
-          aria-label="More"
-          aria-current={moreActive ? "page" : undefined}
-          className={cn(
-            "flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full px-0 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
-            moreActive ? "mobile-glass-pill text-tab-active" : "text-tab-inactive"
-          )}
-        >
-          <MoreHorizontal className="size-6" />
-          <span className="mobile-tab-label block max-w-full truncate">More</span>
-        </Link>
-      </div>
-    </nav>
+      </nav>
+    </>
   );
 });

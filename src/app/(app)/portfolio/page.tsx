@@ -2,12 +2,10 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
-  TrendingUp, BarChart3, Coins, Briefcase, Plus,
+  TrendingUp, Plus, Coins,
 } from "lucide-react";
-import { formatCurrency } from "@/lib/currency";
 import { useDevMode } from "@/hooks/use-dev-mode";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import {
@@ -17,7 +15,6 @@ import {
 import { PerformanceChart } from "@/components/portfolio/PerformanceChart";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { MetricCard } from "@/components/metric-card";
 import { LazyView } from "@/components/ui/lazy-view";
 
 
@@ -27,7 +24,7 @@ import {
   type EnrichedHolding, type EtfXrayTab, type FilterType,
 } from "./_types";
 import { usePortfolioOverview, useBenchmarks } from "./_hooks/use-portfolio";
-import { PortfolioSkeleton } from "./_components/portfolio-ui";
+import { PortfolioSkeleton, HoldingTypeChips } from "./_components/portfolio-ui";
 import { ErrorState } from "@/components/error-state";
 import { TopMoversCard } from "./_components/top-movers-card";
 import { HoldingsTable } from "./_components/holdings-table";
@@ -35,9 +32,9 @@ import { EtfXrayCard } from "./_components/etf-xray-card";
 import { AllocationCharts } from "./_components/allocation-charts";
 import { BenchmarkChart } from "./_components/benchmark-chart";
 import { HoldingsByAccount } from "./_components/holdings-by-account";
-import { formatPercent } from "@/lib/locale";
 import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
-import { PortfolioMobileHero, MobileHoldingsList } from "./_components/mobile-portfolio";
+import { PortfolioSummary, HoldingCards } from "./_components/mobile-portfolio";
+import { DataView, ViewModeToggle } from "@/components/adaptive";
 
 // ── Main Page ───────────────────────────────────────────────────────
 export default function PortfolioPage() {
@@ -236,8 +233,8 @@ export default function PortfolioPage() {
         subtitle={`${summary.totalHoldings} holdings across ${summary.totalAccounts} accounts`}
         actionsClassName="flex flex-wrap items-center gap-2"
         overflow={[
-          { label: "Realized gains", href: "/portfolio/realized-gains" },
-          { label: "Dividends", href: "/portfolio/dividends" },
+          { label: "Realized gains", icon: TrendingUp, href: "/portfolio/realized-gains" },
+          { label: "Dividends", icon: Coins, href: "/portfolio/dividends" },
         ]}
         actions={
         <>
@@ -261,7 +258,7 @@ export default function PortfolioPage() {
             className={buttonVariants({ size: "sm" })}
             aria-label="Add holding"
           >
-            <Plus className="h-4 w-4 mr-1.5" /> <span className="max-md:hidden">Add holding</span><span className="md:hidden">Add</span>
+            <Plus className="h-4 w-4 mr-1.5" /> <span className="hidden regular:inline">Add holding</span><span className="regular:hidden">Add</span>
           </Link>
         </>
         }
@@ -269,9 +266,9 @@ export default function PortfolioPage() {
 
       {/* Phase 3 performance chart — TWRR/MWRR + daily value series.
           Empty-state copy in the component explains how to populate
-          /portfolio_snapshots via the nightly cron + admin backfill. */}
-      {/* Below md the empty chart (no open positions) is hidden. */}
-      <div className={cn(!hasPositions && "max-md:hidden")}>
+          /portfolio_snapshots via the nightly cron + admin backfill.
+          Below regular the empty chart (no open positions) is hidden. */}
+      <div className={cn(!hasPositions && "hidden regular:block")}>
         <PerformanceChart accountId={null} />
       </div>
 
@@ -298,107 +295,12 @@ export default function PortfolioPage() {
         </div>
       )}
 
-      {/* ── Mobile hero + metric grid (replaces the cards below md) ── */}
-      <PortfolioMobileHero summary={summary} currency={displayCurrency} />
-
-      {/* ── Hero Summary Cards ────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 max-md:hidden">
-        <MetricCard
-          icon={Briefcase}
-          tone="indigo"
-          label="Total Holdings"
-          value={String(summary.totalHoldings)}
-          sub={`${summary.totalAccounts} accounts`}
-        />
-        <MetricCard
-          icon={TrendingUp}
-          tone={summary.dayChangePct >= 0 ? "emerald" : "rose"}
-          label="Day Change"
-          value={summary.dayChangePct == null ? "--" : `${summary.dayChangePct >= 0 ? "+" : "−"}${formatPercent(Math.abs(summary.dayChangePct), 2)}`}
-          valueClassName={summary.dayChangePct >= 0 ? "text-pos" : "text-destructive"}
-          sub={
-            <span className={`font-mono ${summary.dayChangeDisplay >= 0 ? "text-pos" : "text-destructive"}`}>
-              {summary.dayChangeDisplay >= 0 ? "+" : ""}
-              {formatCurrency(summary.dayChangeDisplay, displayCurrency)}
-            </span>
-          }
-        />
-        <MetricCard
-          icon={BarChart3}
-          tone="cyan"
-          label="ETFs / Stocks"
-          value={String(byType.etf.count + byType.stock.count)}
-          sub={`${byType.etf.count} ETFs, ${byType.stock.count} stocks`}
-        />
-        <MetricCard
-          icon={Coins}
-          tone="amber"
-          label="Crypto"
-          value={String(byType.crypto.count)}
-          sub={`${byType.cash.count} cash positions`}
-        />
-      </div>
-
-      {/* ── Investment P&L Summary ────────────────────────────── */}
-      {summary.hasQuantityData && summary.totalCostBasisDisplay > 0 && (
-        <div className="space-y-3 max-md:hidden">
-          <h3 className="text-lg font-medium tracking-tight px-1">Investment Returns</h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            <MetricCard
-              label="Market Value"
-              icon={Briefcase}
-              tone="indigo"
-              value={summary.totalValueDisplay}
-              currency={displayCurrency}
-            />
-            <MetricCard
-              label="Cost Basis"
-              icon={Coins}
-              tone="muted"
-              value={summary.totalCostBasisDisplay}
-              currency={displayCurrency}
-            />
-            <MetricCard
-              label="Unrealized G/L"
-              icon={TrendingUp}
-              tone={summary.totalUnrealizedGainDisplay >= 0 ? "emerald" : "rose"}
-              value={summary.totalUnrealizedGainDisplay}
-              currency={displayCurrency}
-              valueClassName={summary.totalUnrealizedGainDisplay >= 0 ? "text-pos" : "text-destructive"}
-              badgePct={summary.totalUnrealizedGainPct}
-            />
-            <MetricCard
-              label="Realized G/L"
-              icon={TrendingUp}
-              tone={summary.totalRealizedGainDisplay >= 0 ? "emerald" : "rose"}
-              value={summary.totalRealizedGainDisplay}
-              currency={displayCurrency}
-              valueClassName={summary.totalRealizedGainDisplay >= 0 ? "text-pos" : "text-destructive"}
-            />
-            <MetricCard
-              label="Dividends"
-              icon={Plus}
-              tone="emerald"
-              value={summary.totalDividendsDisplay}
-              currency={displayCurrency}
-              valueClassName="text-pos"
-            />
-            <MetricCard
-              label="Total Return"
-              icon={TrendingUp}
-              tone={summary.totalReturnDisplay >= 0 ? "emerald" : "rose"}
-              value={summary.totalReturnDisplay}
-              currency={displayCurrency}
-              valueClassName={summary.totalReturnDisplay >= 0 ? "text-pos" : "text-destructive"}
-              badgePct={summary.totalReturnPct}
-            />
-          </div>
-        </div>
-      )}
+      {/* ── Summary: hero and metric grid, one tree at every size ── */}
+      <PortfolioSummary summary={summary} currency={displayCurrency} />
 
       {/* ── Top Movers ────────────────────────────────────────── */}
       {(topGainers.length > 0 || topLosers.length > 0) && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 regular:grid-cols-2 gap-4">
           {topGainers.length > 0 && (
             <TopMoversCard kind="gainers" movers={topGainers} currency={displayCurrency} />
           )}
@@ -408,35 +310,52 @@ export default function PortfolioPage() {
         </div>
       )}
 
-      {/* ── Holdings: rows below md, table at md+ ──────────────── */}
-      <MobileHoldingsList
-        holdings={filteredHoldings}
-        members={holdingsByCanonicalKey}
-        currency={displayCurrency}
-        filter={filter}
-        setFilter={setFilter}
-        counts={{ all: summary.totalHoldings, ...Object.fromEntries(Object.entries(byType).map(([k, v]) => [k, v.count])) }}
-      />
-      <div className="max-md:hidden">
-      <HoldingsTable
-        data={data}
-        displayCurrency={displayCurrency}
-        filteredHoldings={filteredHoldings}
-        holdingsByCanonicalKey={holdingsByCanonicalKey}
-        filter={filter}
-        setFilter={setFilter}
-        hideEmpty={hideEmpty}
-        setHideEmpty={setHideEmpty}
-        showNative={showNative}
-        setShowNative={setShowNative}
-        sortField={sortField}
-        sortDir={sortDir}
-        handleSort={handleSort}
-        expandedRows={expandedRows}
-        toggleRow={toggleRow}
-        setEditingHolding={setEditingHolding}
-      />
+      {/* ── Holdings: one toolbar, one DataView (Cards | List) ──────
+          Cards (default at compact and regular): the holding rows.
+          List (default at wide): the All Holdings table and the per-account panel. */}
+      <div data-slot="portfolio-toolbar" className="flex flex-col gap-3 regular:flex-row regular:items-center regular:justify-between">
+        <HoldingTypeChips
+          filter={filter}
+          setFilter={setFilter}
+          counts={{ all: summary.totalHoldings, ...Object.fromEntries(Object.entries(byType).map(([k, v]) => [k, v.count])) }}
+        />
+        <ViewModeToggle viewKey="portfolio" className="self-start regular:self-auto shrink-0" />
       </div>
+      <DataView
+        viewKey="portfolio"
+        className="space-y-6"
+        cards={() => (
+          <HoldingCards holdings={filteredHoldings} members={holdingsByCanonicalKey} currency={displayCurrency} />
+        )}
+        list={() => (
+          <>
+            <HoldingsTable
+              data={data}
+              displayCurrency={displayCurrency}
+              filteredHoldings={filteredHoldings}
+              holdingsByCanonicalKey={holdingsByCanonicalKey}
+              filter={filter}
+              hideEmpty={hideEmpty}
+              setHideEmpty={setHideEmpty}
+              showNative={showNative}
+              setShowNative={setShowNative}
+              sortField={sortField}
+              sortDir={sortDir}
+              handleSort={handleSort}
+              expandedRows={expandedRows}
+              toggleRow={toggleRow}
+              setEditingHolding={setEditingHolding}
+            />
+            {/* Holdings by Account (collapsible). Issue #25: per-account breakdown stays here. */}
+            <HoldingsByAccount
+              accountGroups={accountGroups}
+              expandedAccounts={expandedAccounts}
+              toggleAccount={toggleAccount}
+              displayCurrency={displayCurrency}
+            />
+          </>
+        )}
+      />
 
       {/* ── ETF X-Ray (Combined) — dev only ──────────────────── */}
       {devMode && hasEtfData && (
@@ -474,22 +393,6 @@ export default function PortfolioPage() {
         </LazyView>
       )}
 
-      {/* ── Holdings by Account (Collapsible) ───────────────────
-          Issue #25 (decision 2026-05-01): the standalone "By Holding"
-          panel was folded into the "All Holdings" table above — each
-          top-level row there is the canonical-holding rollup, and the
-          expand region surfaces the per-account breakdown + drill-down.
-          This Holdings-by-Account panel stays as-is per the same decision
-          ("the per-account button row is unchanged"). */}
-      <div className="max-md:hidden">
-      <HoldingsByAccount
-        accountGroups={accountGroups}
-        expandedAccounts={expandedAccounts}
-        toggleAccount={toggleAccount}
-        displayCurrency={displayCurrency}
-      />
-      </div>
-
       {/* Edit / create holding dialog — wraps the shared
           <HoldingEditForm> from src/components/holdings/holding-edit-form.tsx.
           Issue #100: the inline HoldingEditDialog that previously lived
@@ -502,7 +405,7 @@ export default function PortfolioPage() {
           if (!open) setEditingHolding(null);
         }}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="regular:max-w-md">
           <DialogHeader>
             <DialogTitle>Edit Holding</DialogTitle>
           </DialogHeader>

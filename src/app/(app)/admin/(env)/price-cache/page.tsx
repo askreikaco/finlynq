@@ -291,7 +291,6 @@ export default function AdminPriceCachePage() {
         lead={<Database className={`h-5 w-5 text-primary ${HEADER_DESKTOP_ONLY}`} />}
         leadClassName="flex items-center gap-2"
         title="Rate Cache"
-        titleClassName="text-2xl font-bold tracking-tight"
         actions={
           <Button variant="outline" size="sm" onClick={load} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? "animate-spin" : ""}`} />
@@ -324,7 +323,7 @@ export default function AdminPriceCachePage() {
       {/* Summary */}
       {data && (
         <Card>
-          <CardContent className="grid grid-cols-2 gap-x-6 gap-y-2 py-4 sm:grid-cols-3 lg:grid-cols-6">
+          <CardContent className="grid grid-cols-2 gap-x-6 gap-y-2 py-4 regular:grid-cols-3 wide:grid-cols-6">
             <Stat label="Total rows" value={data.summary.totalRows.toLocaleString()} />
             <Stat label={tab === "fx" ? "Currencies" : "Symbols"} value={data.summary.distinctKeys.toLocaleString()} />
             <Stat label="First date" value={data.summary.firstDate ?? "—"} />

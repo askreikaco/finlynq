@@ -21,7 +21,7 @@ vi.mock("next/link", () => ({
     React.createElement("a", { href, ...r }, children),
 }));
 
-import { Nav } from "@/components/nav";
+import { AppTabs } from "@/components/nav";
 import { MoreMenu } from "@/components/more-menu";
 
 let session: Record<string, unknown>;
@@ -49,47 +49,20 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("Nav with categoriesMerged", () => {
-  it("shows 'Categories' for /categories link when categoriesMerged is true", async () => {
-    const { container } = render(<Nav categoriesMerged={true} />);
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/auth/session"));
-
-    // Find the link with href="/categories"
-    const categoriesLink = container.querySelector('a[href="/categories"]');
-    expect(categoriesLink).toBeTruthy();
-    expect(categoriesLink?.textContent).toContain("Categories");
+describe("AppTabs has no categories tab (the label switch lives in More)", () => {
+  it("renders no /categories link in either layout, so no label can differ there", async () => {
+    const { container } = render(<AppTabs />);
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/announcements"));
+    expect(container.querySelector('a[href="/categories"]')).toBeNull();
+    expect(container.textContent).not.toContain("Spending by category");
+    expect(container.textContent).not.toContain("Categories");
   });
 
-  it("shows 'Spending by category' for /categories link when categoriesMerged is false", async () => {
-    const { container } = render(<Nav categoriesMerged={false} />);
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/auth/session"));
-
-    // Find the link with href="/categories"
-    const categoriesLink = container.querySelector('a[href="/categories"]');
-    expect(categoriesLink).toBeTruthy();
-    expect(categoriesLink?.textContent).toContain("Spending by category");
-  });
-
-  it("shows 'Spending by category' for /categories link when categoriesMerged is omitted", async () => {
-    const { container } = render(<Nav />);
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/auth/session"));
-
-    // Find the link with href="/categories"
-    const categoriesLink = container.querySelector('a[href="/categories"]');
-    expect(categoriesLink).toBeTruthy();
-    expect(categoriesLink?.textContent).toContain("Spending by category");
-  });
-
-  it("shows unchanged labels for other links when categoriesMerged is true", async () => {
-    const { container } = render(<Nav categoriesMerged={true} />);
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/auth/session"));
-
-    // Check that other links are unchanged
-    const dashboardLink = container.querySelector('a[href="/dashboard"]');
-    expect(dashboardLink?.textContent).toContain("Home");
-
-    const budgetsLink = container.querySelector('a[href="/budgets"]');
-    expect(budgetsLink?.textContent).toContain("Budgets");
+  it("the bar and the rail list the same five labels", async () => {
+    const { container } = render(<AppTabs />);
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/announcements"));
+    const labels = [...container.querySelectorAll("a")].map((a) => a.textContent);
+    expect(labels).toEqual(["Home", "Accounts", "Portfolio", "Transactions", "More", "Home", "Accounts", "Portfolio", "Transactions", "More"]);
   });
 });
 

@@ -13,7 +13,7 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
 }));
 
-import { Nav, mobileBarItems } from "@/components/nav";
+import { AppTabs, mobileBarItems } from "@/components/nav";
 
 beforeEach(() => {
   mockPath = "/dashboard";
@@ -31,7 +31,7 @@ const bar = () => screen.getByRole("navigation", { name: "Mobile navigation" });
 
 describe("mobile bottom bar", () => {
   it("shows Home, Accounts, Portfolio, Transactions, More in order with hrefs", () => {
-    render(<Nav />);
+    render(<AppTabs />);
     const links = within(bar()).getAllByRole("link");
     expect(links.map((l) => [l.textContent, l.getAttribute("href")])).toEqual([
       ["Home", "/dashboard"],
@@ -95,7 +95,7 @@ describe("mobile bottom bar", () => {
     ["/settings", "More"],
   ])("marks the right tab active on %s", (path, label) => {
     mockPath = path;
-    render(<Nav />);
+    render(<AppTabs />);
     const active = within(bar())
       .getAllByRole("link")
       .filter((l) => l.getAttribute("aria-current") === "page");
@@ -104,7 +104,7 @@ describe("mobile bottom bar", () => {
 
   it("does not treat /accountsfoo as Accounts; More is current instead", () => {
     mockPath = "/accountsfoo";
-    render(<Nav />);
+    render(<AppTabs />);
     const links = within(bar()).getAllByRole("link");
     const current = links.filter((l) => l.getAttribute("aria-current") === "page");
     expect(current.map((l) => l.textContent)).toEqual(["More"]);
@@ -112,12 +112,12 @@ describe("mobile bottom bar", () => {
   });
 
   it("fits 5 tabs: equal-width flex items; the link stays a flex item and its label span truncates", () => {
-    render(<Nav />);
+    render(<AppTabs />);
     for (const l of within(bar()).getAllByRole("link")) {
       expect(l.className).toContain("flex-1");
       expect(l.className).toContain("min-w-0");
       expect(l.className).not.toContain("truncate");
-      const label = l.querySelector("span")!;
+      const label = l.querySelector("span.mobile-tab-label")!;
       expect(label.className).toContain("truncate");
       expect(label.className).toContain("max-w-full");
       // The label size is the single --tab-label-size token (globals.css .mobile-tab-label), not a text-xs step.
@@ -129,7 +129,7 @@ describe("mobile bottom bar", () => {
 
 describe("mobile bottom bar glass (S8)", () => {
   it("bar is a floating glass capsule: mobile-glass-bar, fixed, 16px side insets, safe-area bottom, rounded-[28px], h-16", () => {
-    render(<Nav />);
+    render(<AppTabs />);
     const nav = bar();
     const c = nav.className;
     expect(c).toContain("mobile-glass-bar");
@@ -146,7 +146,7 @@ describe("mobile bottom bar glass (S8)", () => {
   });
 
   it("bar row fills the capsule (h-full) with 6px inner padding", () => {
-    render(<Nav />);
+    render(<AppTabs />);
     const row = within(bar()).getByTestId("mobile-bar-row");
     expect(row.className).toContain("h-full");
     expect(row.className).toContain("p-1.5");
@@ -154,7 +154,7 @@ describe("mobile bottom bar glass (S8)", () => {
 
   it("active link has text-tab-active (token) with aria-current='page'", () => {
     mockPath = "/dashboard";
-    render(<Nav />);
+    render(<AppTabs />);
     const links = within(bar()).getAllByRole("link");
     const homeLink = links[0];
     expect(homeLink.getAttribute("aria-current")).toBe("page");
@@ -163,7 +163,7 @@ describe("mobile bottom bar glass (S8)", () => {
 
   it("inactive links lack text-sidebar-primary class", () => {
     mockPath = "/dashboard";
-    render(<Nav />);
+    render(<AppTabs />);
     const links = within(bar()).getAllByRole("link");
     const accountsLink = links[1];
     expect(accountsLink.className).not.toContain("text-tab-active");
@@ -183,18 +183,21 @@ describe("mobile bottom bar glass (S8)", () => {
 
 describe("safe-area classes", () => {
   it("mobile bar offsets from the bottom and sides via the shared safe-area vars", () => {
-    render(<Nav />);
+    render(<AppTabs />);
     const c = bar().className;
     expect(c).toContain("bottom-[max(12px,var(--sab))]");
     expect(c).toContain("left-[calc(16px+var(--sal))]");
     expect(c).toContain("right-[calc(16px+var(--sar))]");
   });
 
-  it("desktop sidebar sticks below the top inset", () => {
-    render(<Nav />);
-    const side = screen.getByRole("navigation", { name: "Main navigation" });
-    expect(side.className).toContain("top-safe");
-    expect(side.className).toContain("var(--sat)");
+  it("desktop rail is fixed, sits below the top inset and clears the bottom inset", () => {
+    render(<AppTabs />);
+    const rail = screen.getByRole("navigation", { name: "Main navigation" });
+    expect(rail.className).toContain("fixed");
+    expect(rail.className).toContain("pt-[calc(var(--sat)+0.75rem)]");
+    expect(rail.className).toContain("pb-[calc(var(--sab)+0.75rem)]");
+    expect(rail.className).not.toContain("top-safe");
+    expect(rail.className).not.toContain("sticky");
   });
 });
 
@@ -225,16 +228,21 @@ describe("safe-area shell wiring (source)", () => {
     expect(read("src/components/ui/sheet.tsx")).toContain("pt-[var(--sat)]");
     expect(read("src/components/ui/dialog.tsx")).toContain("var(--sat)");
     expect(read("src/components/inbox/upload-drawer.tsx")).toContain("pt-safe");
-    expect(read("src/components/settings-shell.tsx")).toContain("sticky top-[calc(1.5rem+var(--sat))]");
-    // Fixed top banner (unlock on 423) clears the iOS status bar.
-    expect(read("src/components/unlock-panel.tsx")).toContain("pt-[calc(0.75rem+var(--sat))]");
+    // Settings sub-pages: the page's PageHeader is the top bar (shared PHONE_BAR); the shell draws none.
+    expect(read("src/components/mobile/page-header.tsx")).toContain("cn(className, PHONE_BAR)");
+    expect(read("src/components/settings-shell.tsx")).not.toContain("PHONE_BAR");
+    expect(read("src/components/settings-shell.tsx")).not.toContain("top-[calc(1.5rem+var(--sat))]");
+    // Unlock card (423) is a bottom card: clears the tab bar and the on-screen keyboard, side-safe.
+    expect(read("src/components/unlock-panel.tsx")).toContain("var(--mobile-bar-clearance)");
+    expect(read("src/components/unlock-panel.tsx")).toContain("var(--kb-inset,0px)");
+    expect(read("src/components/unlock-panel.tsx")).toContain("px-[max(1rem,var(--sal))]");
   });
 });
 
 describe("mobile bar matches the native tab bar (mobile/src/navigation/TabNavigator.tsx)", () => {
   // native: height 60 + inset.bottom, paddingTop 6, icon 22, label 11/600
   it("bar is a 64px capsule (h-16); the bottom inset is applied through the bottom offset (max(12px,--sab))", () => {
-    render(<Nav />);
+    render(<AppTabs />);
     const row = within(bar()).getByTestId("mobile-bar-row");
     expect(bar().className).toContain("h-16");
     expect(row.className).toContain("p-1.5");
@@ -242,9 +250,9 @@ describe("mobile bar matches the native tab bar (mobile/src/navigation/TabNaviga
   });
 
   it("icons are 24px (size-6) and labels use the mobile-tab-label token (iOS 10pt) on every tab", () => {
-    render(<Nav />);
+    render(<AppTabs />);
     for (const l of within(bar()).getAllByRole("link")) {
-      expect(l.querySelector("span")!.className).toContain("mobile-tab-label");
+      expect(l.querySelector("span.mobile-tab-label")!.className).toContain("mobile-tab-label");
       const svg = l.querySelector("svg")!;
       expect(svg.getAttribute("class")).toContain("size-6");
       expect(svg.getAttribute("class")).not.toContain("size-[22px]");
@@ -253,7 +261,7 @@ describe("mobile bar matches the native tab bar (mobile/src/navigation/TabNaviga
 
   it("app shell bottom padding uses the shared --mobile-bar-clearance var", () => {
     const layout = readFileSync(join(__dirname, "../../src/app/(app)/layout.tsx"), "utf8");
-    expect(layout).toContain("pb-[calc(var(--mobile-bar-clearance)+80px)] md:pb-0");
+    expect(layout).toContain("pb-[calc(var(--mobile-bar-clearance)+80px)] regular:pb-0");
     const css = readFileSync(join(__dirname, "../../src/app/globals.css"), "utf8");
     expect(css).toMatch(/--mobile-bar-clearance:\s*calc\(96px\s*\+\s*var\(--sab\)\)/);
   });

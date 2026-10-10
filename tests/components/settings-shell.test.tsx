@@ -1,8 +1,10 @@
 /**
  * @vitest-environment jsdom
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import React from "react";
+import { readFileSync } from "fs";
+import { resolve } from "path";
 import { render, screen, cleanup } from "@testing-library/react";
 
 let mockPath = "/settings/general";
@@ -11,255 +13,101 @@ vi.mock("next/navigation", () => ({
 }));
 
 import { SettingsShell } from "@/components/settings-shell";
-
-beforeEach(() => {
-  mockPath = "/settings/general";
-});
+import { SettingsHub } from "@/components/settings-hub";
+import { PageHeader, PHONE_BAR_TITLE } from "@/components/mobile/page-header";
 
 afterEach(() => {
   cleanup();
-  vi.unstubAllGlobals();
 });
 
-describe("Settings Shell", () => {
-  it("renders settings nav items in correct order with correct labels", () => {
-    render(
+const topBars = (c: HTMLElement) => c.querySelectorAll('[data-slot="page-header"]');
+const backs = (c: HTMLElement) => c.querySelectorAll('[data-slot="back-button"]');
+const shellSrc = readFileSync(resolve(__dirname, "../../src/components/settings-shell.tsx"), "utf-8");
+
+describe("Settings shell: no top bar of its own (the page's PageHeader is the one top bar)", () => {
+  it("a sub-page without a PageHeader gets no bar and no back from the shell", () => {
+    mockPath = "/settings/general";
+    const { container } = render(
       <SettingsShell>
         <div>Test content</div>
-      </SettingsShell>
+      </SettingsShell>,
     );
-
-    const links = screen.getAllByRole("link");
-    const expectedHrefs = [
-      "/settings/general",
-      "/settings/categorization",
-      "/settings/reconciliation",
-      "/settings/investments",
-      "/settings/integrations",
-      "/settings/developer",
-      "/settings/about",
-    ];
-
-    // Filter to only settings links
-    const settingsLinks = links.filter((l) => {
-      const href = l.getAttribute("href");
-      return href?.startsWith("/settings/");
-    });
-
-    // Take only the first 7 (one instance of each settings link)
-    const actualHrefs = settingsLinks.slice(0, 7).map((l) => l.getAttribute("href"));
-    expect(actualHrefs).toEqual(expectedHrefs);
+    expect(topBars(container)).toHaveLength(0);
+    expect(backs(container)).toHaveLength(0);
+    expect(container.querySelector('[data-slot="settings-detail-bar"]')).toBeNull();
+    expect(screen.getByText("Test content")).toBeTruthy();
   });
 
-  it("renders correct icon classes for each settings entry", () => {
+  it("a sub-page with a PageHeader has exactly one top bar and exactly one back control", () => {
+    mockPath = "/settings/general";
+    const { container } = render(
+      <SettingsShell>
+        <PageHeader title="General" />
+      </SettingsShell>,
+    );
+    expect(topBars(container)).toHaveLength(1);
+    expect(backs(container)).toHaveLength(1);
+    expect(backs(container)[0].getAttribute("href")).toBe("/settings");
+    expect(topBars(container)[0].contains(backs(container)[0])).toBe(true);
+  });
+
+  it("the page title is the visible centred title of its PageHeader (no sr-only copy, no alias label)", () => {
+    mockPath = "/settings/investments/securities/new";
     render(
       <SettingsShell>
-        <div>Test content</div>
-      </SettingsShell>
+        <PageHeader title="Add security" backHref="/settings/investments?tab=securities" />
+      </SettingsShell>,
     );
-
-    const links = screen.getAllByRole("link");
-    const expectedIcons = [
-      { label: "General", icon: "lucide-settings-2" },
-      { label: "Categories", icon: "lucide-tag" },
-      { label: "Reconciliation", icon: "lucide-link-2" },
-      { label: "Investments", icon: "lucide-briefcase" },
-      { label: "Integrations", icon: "lucide-server" },
-      { label: "Developer", icon: "lucide-wrench" },
-      { label: "About", icon: "lucide-info" },
-    ];
-
-    for (const expected of expectedIcons) {
-      const link = links.find((l) => l.textContent?.includes(expected.label));
-      expect(link).toBeTruthy();
-      const svg = link?.querySelector("svg");
-      expect(svg?.className.baseVal).toContain(expected.icon);
+    const h1 = screen.getByRole("heading", { level: 1, name: "Add security" });
+    expect(h1.className).not.toContain("sr-only");
+    expect(h1.textContent).toBe("Add security");
+    for (const token of PHONE_BAR_TITLE.split(/\s+/)) {
+      expect(h1.className.split(/\s+/)).toContain(token);
     }
+    expect(screen.queryByText("Investments", { selector: "span[aria-hidden]" })).toBeNull();
   });
 
-  it("highlights active link with aria-current=page on General", () => {
-    mockPath = "/settings/general";
-    render(
-      <SettingsShell>
-        <div>Test content</div>
-      </SettingsShell>
-    );
-
-    const links = screen.getAllByRole("link");
-    const generalLink = links.find((l) => l.textContent?.includes("General"));
-    expect(generalLink?.getAttribute("aria-current")).toBe("page");
-  });
-
-  it("highlights active link with aria-current=page on Investments", () => {
-    mockPath = "/settings/investments";
-    render(
-      <SettingsShell>
-        <div>Test content</div>
-      </SettingsShell>
-    );
-
-    const links = screen.getAllByRole("link");
-    const investmentsLink = links.find((l) => l.textContent?.includes("Investments"));
-    expect(investmentsLink?.getAttribute("aria-current")).toBe("page");
-  });
-
-  it("uses alias to highlight Reconciliation when on /settings/rules", () => {
-    mockPath = "/settings/rules";
-    render(
-      <SettingsShell>
-        <div>Test content</div>
-      </SettingsShell>
-    );
-
-    const links = screen.getAllByRole("link");
-    const reconciliationLink = links.find((l) => l.textContent?.includes("Reconciliation"));
-    expect(reconciliationLink?.getAttribute("aria-current")).toBe("page");
-  });
-
-  it("uses alias to highlight Integrations when on /connect", () => {
-    mockPath = "/connect";
-    render(
-      <SettingsShell>
-        <div>Test content</div>
-      </SettingsShell>
-    );
-
-    const links = screen.getAllByRole("link");
-    const integrationsLink = links.find((l) => l.textContent?.includes("Integrations"));
-    expect(integrationsLink?.getAttribute("aria-current")).toBe("page");
-  });
-
-  it("hides nav (mobile pill bar and desktop nav) when on hub page /settings", () => {
+  it("the hub /settings renders its PageHeader as the one top bar, backing to /more (level 2)", () => {
     mockPath = "/settings";
-    render(
+    const { container } = render(
       <SettingsShell>
-        <div>Test content</div>
-      </SettingsShell>
+        <SettingsHub />
+      </SettingsShell>,
     );
-
-    // When on /settings (hub page), nav items should not be rendered
-    const links = screen.queryAllByRole("link");
-    // All links should be filtered out (no settings nav links shown)
-    const settingsLinks = links.filter((l) => {
-      const href = l.getAttribute("href");
-      return href?.startsWith("/settings/");
-    });
-    expect(settingsLinks.length).toBe(0);
-  });
-
-  it("renders nav items (mobile pill bar and desktop nav) when on a settings sub-page", () => {
-    mockPath = "/settings/general";
-    render(
-      <SettingsShell>
-        <div>Test content</div>
-      </SettingsShell>
-    );
-
-    // When on a sub-page like /settings/general, nav items should be rendered
-    const links = screen.getAllByRole("link");
-    const settingsLinks = links.filter((l) => {
-      const href = l.getAttribute("href");
-      return href?.startsWith("/settings/");
-    });
-    // Should have at least 7 settings links (once per nav item)
-    expect(settingsLinks.length).toBeGreaterThanOrEqual(7);
+    expect(topBars(container)).toHaveLength(1);
+    const h1 = screen.getByRole("heading", { level: 1, name: "Settings" });
+    expect(topBars(container)[0].contains(h1)).toBe(true);
+    expect(backs(container)).toHaveLength(1);
+    expect(backs(container)[0].getAttribute("href")).toBe("/more");
+    expect(container.querySelector('[data-slot="settings-detail-bar"]')).toBeNull();
   });
 
   it("renders children", () => {
     render(
       <SettingsShell>
         <div>Test content goes here</div>
-      </SettingsShell>
+      </SettingsShell>,
     );
-
     expect(screen.getByText("Test content goes here")).toBeTruthy();
   });
 
-  it("renders back button when hubBackHref is set and not on hub page", () => {
-    mockPath = "/settings/general";
-    render(
-      <SettingsShell hubBackHref="/settings">
-        <div>Test content</div>
-      </SettingsShell>
-    );
-
-    const backButton = screen.getByRole("link", { name: "Back to Settings" });
-    expect(backButton).toBeDefined();
-    expect(backButton?.getAttribute("data-slot")).toBe("back-button");
-    expect(backButton?.getAttribute("href")).toBe("/settings");
-  });
-
-  it("does not render back button when hubBackHref is not set", () => {
-    mockPath = "/settings/general";
-    render(
+  it("keeps the content slot out of any scroll container, so the page's sticky header pins to the window", () => {
+    const { container } = render(
       <SettingsShell>
         <div>Test content</div>
-      </SettingsShell>
+      </SettingsShell>,
     );
-
-    const backButtons = screen.queryAllByRole("link");
-    const hasBackButton = backButtons.some((link) => link.getAttribute("data-slot") === "back-button");
-    expect(hasBackButton).toBe(false);
+    const slot = container.querySelector('[data-slot="settings-content"]') as HTMLElement;
+    expect(slot.className).not.toMatch(/overflow-x-(auto|scroll)/);
+    expect(slot.querySelector(".overflow-x-clip")?.textContent).toBe("Test content");
   });
 
-  it("does not render back button when on hub page even if hubBackHref is set", () => {
-    mockPath = "/settings";
-    render(
-      <SettingsShell hubBackHref="/settings">
-        <div>Test content</div>
-      </SettingsShell>
-    );
-
-    const backButtons = screen.queryAllByRole("link");
-    const hasBackButton = backButtons.some((link) => link.getAttribute("data-slot") === "back-button");
-    expect(hasBackButton).toBe(false);
-  });
-
-  it("renders back button inside content slot (not as sibling of aside at md+)", () => {
-    mockPath = "/settings/general";
-    const { container } = render(
-      <SettingsShell hubBackHref="/settings">
-        <div>Test content</div>
-      </SettingsShell>
-    );
-
-    // Find the back button
-    const backButton = screen.getByRole("link", { name: "Back to Settings" });
-
-    // Find the aside element (desktop nav)
-    const aside = container.querySelector("aside");
-
-    // Find the content slot (the settings-content data slot)
-    const contentSlot = container.querySelector('[data-slot="settings-content"]');
-
-    // Verify back button is inside content slot, not a sibling of aside
-    expect(contentSlot?.contains(backButton)).toBe(true);
-    expect(aside?.contains(backButton)).toBe(false);
-  });
-
-  it("does not render hub back button when on /settings/import/reconcile-visibility (page with self back button)", () => {
-    mockPath = "/settings/import/reconcile-visibility";
-    render(
-      <SettingsShell hubBackHref="/settings">
-        <div>Test content</div>
-      </SettingsShell>
-    );
-
-    const backButtons = screen.queryAllByRole("link");
-    const hasHubBackButton = backButtons.some((link) => link.getAttribute("data-slot") === "back-button");
-    expect(hasHubBackButton).toBe(false);
-  });
-
-  it("still renders back button on /settings/general with hubBackHref set", () => {
-    mockPath = "/settings/general";
-    render(
-      <SettingsShell hubBackHref="/settings">
-        <div>Test content</div>
-      </SettingsShell>
-    );
-
-    const backButton = screen.getByRole("link", { name: "Back to Settings" });
-    expect(backButton).toBeDefined();
-    expect(backButton?.getAttribute("data-slot")).toBe("back-button");
+  it("source: no hand-built bar, no PHONE_BAR primitives, no back context, no sr-only title hack, no viewport split", () => {
+    expect(shellSrc).not.toMatch(/PHONE_BAR|HEADER_TITLE_CLASS|BackButton|settings-detail-bar/);
+    expect(shellSrc).not.toMatch(/SettingsBackContext|settings-back-context|SUB_PAGE_HEADER_OVERRIDES|sr-only/);
+    expect(shellSrc).not.toMatch(/usePathname|NAV_ITEMS|ROUTE_GROUP|SELF_BACK_PATHS/);
+    expect(shellSrc).not.toMatch(/max-md:|(^|[\s"'`])md:|(^|[\s"'`])lg:|hidden md:/);
+    expect(shellSrc).not.toMatch(/<aside|CompactOnly|FromMd|hubBackHref|FINLYNQ_NAV_V2/);
+    expect(shellSrc).not.toMatch(/PHONE_BAR_SIDE|pills/i);
   });
 });

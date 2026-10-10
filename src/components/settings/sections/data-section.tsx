@@ -359,7 +359,7 @@ export function DataSection() {
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Import type buttons */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 regular:grid-cols-3 gap-3">
             {([
               { key: "accounts" as const, label: "Accounts", icon: Wallet, color: "text-chart-5", hint: "Columns: name, type, group, currency, note" },
               { key: "categories" as const, label: "Categories", icon: Tag, color: "text-pos", hint: "Columns: name, type, group, note" },

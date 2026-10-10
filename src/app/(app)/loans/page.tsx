@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,9 +17,12 @@ import { ErrorState } from "@/components/error-state";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CspSafeBar } from "@/components/csp-safe-bar";
 import { PageHeader } from "@/components/mobile";
+import { DataView, ViewModeToggle } from "@/components/adaptive";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
 import { isLoanCompleted } from "@/lib/loan-status";
+import { localDateISO } from "@/lib/utils/date";
 import type { Loan } from "./_components/loan-types";
+import { loanNextDue } from "./_components/loan-next-due";
 
 type AmortRow = { period: number; date: string; payment: number; principal: number; interest: number; balance: number };
 type AccrualRow = { month: string; interest: number };
@@ -67,7 +71,7 @@ function LoansSkeleton() {
         <div className="h-8 w-48 animate-shimmer rounded-lg" />
         <div className="h-4 w-72 animate-shimmer rounded-lg mt-2" />
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 regular:grid-cols-3 gap-4">
         {Array.from({ length: 3 }).map((_, i) => (
           <Card key={i}>
             <CardHeader className="pb-2">
@@ -97,7 +101,7 @@ function LoansSkeleton() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+            <div className="grid grid-cols-2 regular:grid-cols-5 gap-4 mb-4">
               {Array.from({ length: 5 }).map((_, j) => (
                 <div key={j}>
                   <div className="h-3 w-16 animate-shimmer rounded mb-1" />
@@ -203,7 +207,7 @@ function LoansPageContent() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+              <div className="grid grid-cols-2 regular:grid-cols-5 gap-4 mb-4">
                 <div>
                   <p className="text-xs text-muted-foreground">Remaining{loan.balanceSource === "account" && <span className="ml-1 text-pos" title={`Live balance from ${loan.accountName ?? "linked account"}`}>· from account</span>}</p>
                   <p className="font-mono font-bold text-destructive">{formatCurrency(loan.remainingBalance, loan.currency)}</p>
@@ -236,6 +240,56 @@ function LoansPageContent() {
         );
   };
 
+  // List view: one table of every loan (active first, then paid off). Row opens the edit page.
+  const today = localDateISO();
+  const loanList = loans.length === 0 ? null : (
+    <Table containerClassName="rounded-xl border bg-card">
+      <TableHeader>
+        <TableRow>
+          <TableHead>Loan</TableHead>
+          <TableHead className="text-right">Principal</TableHead>
+          <TableHead className="text-right">Rate</TableHead>
+          <TableHead className="text-right">Payment</TableHead>
+          <TableHead title="Estimated from the start date and payment frequency" aria-label="Next due (estimated)">Next due (est.)</TableHead>
+          <TableHead><span className="sr-only">Actions</span></TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {[...activeLoans, ...completedLoans].map((loan) => {
+          const paidOff = isLoanCompleted(loan);
+          const nextDue = loanNextDue(loan, paidOff, today);
+          return (
+            <TableRow key={loan.id} className="relative">
+              <TableCell className="font-medium">
+                <div className="flex items-center gap-2">
+                  <Link href={`/loans/${loan.id}/edit`} className="after:absolute after:inset-0 hover:underline">
+                    {loan.name}
+                  </Link>
+                  {paidOff && <Badge variant="secondary">Paid off</Badge>}
+                </div>
+              </TableCell>
+              <TableCell className="text-right font-mono tabular-nums">{formatCurrency(loan.principal, loan.currency)}</TableCell>
+              <TableCell className="text-right font-mono tabular-nums">{loan.annualRate}%</TableCell>
+              <TableCell className="text-right font-mono tabular-nums">
+                {formatCurrency(loan.paymentPerPeriod ?? loan.monthlyPayment, loan.currency)}
+                <span className="ml-1 text-xs text-muted-foreground">{FREQUENCY_LABELS[loan.paymentFrequency] ?? ""}</span>
+              </TableCell>
+              <TableCell className="tabular-nums">{nextDue ?? "—"}</TableCell>
+              <TableCell className="text-right">
+                <div className="relative z-10 flex items-center justify-end gap-1">
+                  <Button variant="outline" size="sm" onClick={() => viewAmortization(loan)}>View Schedule</Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" aria-label={`Delete loan ${loan.name}`} onClick={() => setDeleteId(loan.id)}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          );
+        })}
+      </TableBody>
+    </Table>
+  );
+
   if (loading) return <LoansSkeleton />;
   if (loadError) return <ErrorState title="Couldn't load loans" message="We couldn't load your loans. Please try again." onRetry={() => { setLoading(true); load(); }} />;
 
@@ -254,7 +308,7 @@ function LoansPageContent() {
         }
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 regular:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center gap-3">
@@ -306,22 +360,35 @@ function LoansPageContent() {
         />
       )}
 
-      {/* Loan cards */}
-      {activeLoans.map(renderLoan)}
+      {/* Toolbar: Cards / List view switch */}
+      <div className="flex justify-end">
+        <ViewModeToggle viewKey="loans" />
+      </div>
 
-      {/* Paid-off loans: collapsed by default */}
-      {completedLoans.length > 0 && (
-        <Accordion defaultValue={null}>
-          <AccordionItem
-            value="completed"
-            icon={<CheckCircle2 className="h-4 w-4" />}
-            title={`Completed (${completedLoans.length})`}
-            description="Paid-off loans"
-          >
-            <div className="space-y-6">{completedLoans.map(renderLoan)}</div>
-          </AccordionItem>
-        </Accordion>
-      )}
+      {/* Loans: Cards (default on phones) or List (table rows). Only the selected view is mounted. */}
+      <DataView
+        viewKey="loans"
+        cards={() => (
+          <div className="space-y-6">
+            {activeLoans.map(renderLoan)}
+
+            {/* Paid-off loans: collapsed by default */}
+            {completedLoans.length > 0 && (
+              <Accordion defaultValue={null}>
+                <AccordionItem
+                  value="completed"
+                  icon={<CheckCircle2 className="h-4 w-4" />}
+                  title={`Completed (${completedLoans.length})`}
+                  description="Paid-off loans"
+                >
+                  <div className="space-y-6">{completedLoans.map(renderLoan)}</div>
+                </AccordionItem>
+              </Accordion>
+            )}
+          </div>
+        )}
+        list={() => loanList}
+      />
 
       {/* Amortization detail modal */}
       {selectedLoan && amort && (

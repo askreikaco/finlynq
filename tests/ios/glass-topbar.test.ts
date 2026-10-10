@@ -10,6 +10,7 @@ import * as React from "react";
 const h = React.createElement;
 import { readFileSync } from "fs";
 import { resolve } from "path";
+import { resolvedDecls } from "../helpers/css-tokens";
 import { render, cleanup, screen } from "@testing-library/react";
 import { PageHeader } from "@/components/mobile/page-header";
 import { Button } from "@/components/ui/button";
@@ -20,13 +21,6 @@ const cls = (el: Element | null | undefined) => (el?.getAttribute("class") ?? ""
 
 afterEach(() => cleanup());
 
-/** Body of the first `.glass-bar {` rule (base, not .dark) inside the phone block. */
-function rule(selector: string): string {
-  const i = css.indexOf(`\n  ${selector} {`);
-  expect(i, `${selector} rule`).toBeGreaterThan(-1);
-  return css.slice(i, css.indexOf("}", i));
-}
-
 /** Text of the block that starts at `marker` and runs to the next `}` closing that block at 2-space depth. */
 function block(marker: string): string {
   const i = css.indexOf(marker);
@@ -36,20 +30,20 @@ function block(marker: string): string {
 }
 
 describe("glass-bar material (globals.css, phones only)", () => {
-  it("is scoped to max-width 48rem (below md) like the other glass", () => {
-    expect(css.indexOf(".glass-bar {")).toBeGreaterThan(css.indexOf("@media (width < 48rem) {"));
+  it("is scoped to max-width 40rem (below regular) like the other glass", () => {
+    expect(css.indexOf(".glass-bar {")).toBeGreaterThan(css.indexOf("@media (width < 40rem) {"));
   });
 
   it("has a translucent tint and backdrop blur with saturate, with the -webkit- prefix", () => {
-    const body = rule(".glass-bar");
+    const body = resolvedDecls(css, ".glass-bar", "light");
     expect(body).toMatch(/background:\s*oklch\(1 0 0 \/ 60%\)/);
     expect(body).toMatch(/-webkit-backdrop-filter:\s*blur\(28px\) saturate\(1\.8\)/);
     expect(body).toMatch(/\n\s+backdrop-filter:\s*blur\(28px\) saturate\(1\.8\)/);
   });
 
   it("has a 1px hairline bottom rim (black 8% light, white 10% dark)", () => {
-    expect(rule(".glass-bar")).toMatch(/border-bottom:\s*1px solid oklch\(0 0 0 \/ 8%\)/);
-    expect(rule(".dark .glass-bar")).toMatch(/border-bottom-color:\s*oklch\(1 0 0 \/ 10%\)/);
+    expect(resolvedDecls(css, ".glass-bar", "light")).toMatch(/border-bottom:\s*1px solid oklch\(0 0 0 \/ 8%\)/);
+    expect(resolvedDecls(css, ".glass-bar", "dark")).toMatch(/border-bottom:\s*1px solid oklch\(1 0 0 \/ 10%\)/);
   });
 
   it("dark fallbacks exist in the @supports-not block (light and dark)", () => {
@@ -78,15 +72,15 @@ describe("PageHeader phone bar (render)", () => {
     const { container } = render(h(PageHeader, { title: "Accounts" }));
     const h1 = screen.getByRole("heading", { level: 1, name: "Accounts" });
     const block = h1.parentElement as HTMLElement;
-    expect(cls(block)).toEqual(expect.arrayContaining(["max-md:col-start-2", "max-md:row-start-1", "max-md:min-w-0", "max-md:text-center", "max-md:pointer-events-none"]));
-    expect(cls(block)).not.toContain("max-md:absolute");
+    expect(cls(block)).toEqual(expect.arrayContaining(["max-regular:col-start-2", "max-regular:row-start-1", "max-regular:min-w-0", "max-regular:text-center", "max-regular:pointer-events-none"]));
+    expect(cls(block)).not.toContain("max-regular:absolute");
     expect(container.querySelector('[data-slot="page-header"]')).not.toBeNull();
   });
 
   it("shows the subtitle on phones as a muted second line", () => {
     render(h(PageHeader, { title: "Budgets", subtitle: "Set limits" }));
     const sub = screen.getByText("Set limits");
-    expect(cls(sub)).toEqual(expect.arrayContaining(["block", "max-md:text-xs", "max-md:truncate"]));
+    expect(cls(sub)).toEqual(expect.arrayContaining(["block", "max-regular:text-xs", "max-regular:truncate"]));
     expect(cls(sub)).not.toContain("hidden");
   });
 
@@ -94,32 +88,36 @@ describe("PageHeader phone bar (render)", () => {
     const { container } = render(h(PageHeader, { title: "Dashboard" }));
     const spacer = container.querySelector('[data-slot="page-header-spacer"]');
     expect(spacer).not.toBeNull();
-    expect(cls(spacer)).toEqual(expect.arrayContaining(["max-md:size-11", "hidden", "max-md:flex"]));
+    expect(cls(spacer)).toEqual(expect.arrayContaining(["max-regular:size-11", "hidden", "max-regular:flex"]));
     expect(container.querySelector('[data-slot="back-button"]')).toBeNull();
   });
 
   it("left slot is a round 44px glass back button when backHref is set", () => {
     render(h(PageHeader, { title: "Currency Review", backHref: "/transactions", backLabel: "Back to Transactions" }));
     const back = screen.getByRole("link", { name: "Back to Transactions" });
-    expect(cls(back)).toEqual(expect.arrayContaining(["glass-capsule", "max-md:size-11", "max-md:rounded-full"]));
+    expect(cls(back)).toEqual(expect.arrayContaining(["glass-capsule", "max-regular:size-11", "max-regular:rounded-full"]));
   });
 
-  it("right capsule exists only when the page has actions", () => {
+  it("right capsule exists only when the page has icon cells; a lone action stands alone beside it", () => {
     const { container, rerender } = render(h(PageHeader, { title: "Plain" }));
     expect(container.querySelector('[data-slot="page-header-actions"]')).toBeNull();
-    rerender(h(PageHeader, { title: "Acts", actions: h("button", { type: "button", "aria-label": "Add" }, "+") }));
-    const capsule = container.querySelector('[data-slot="page-header-actions"]');
+    rerender(h(PageHeader, { title: "Acts", actions: [h("button", { key: "r", type: "button", "aria-label": "Refresh" }, "R"), h("button", { key: "a", type: "button", "aria-label": "Add" }, "+")] }));
+    const capsule = container.querySelector('[data-slot="header-capsule"]');
     expect(capsule).not.toBeNull();
-    expect(cls(capsule)).toEqual(expect.arrayContaining(["glass-capsule", "max-md:rounded-full", "max-md:h-11", "max-md:col-start-3"]));
+    expect(cls(capsule)).toEqual(expect.arrayContaining(["glass-capsule", "max-regular:rounded-full", "max-regular:h-11"]));
+    expect(capsule?.querySelector('[aria-label="Refresh"]')).not.toBeNull();
+    expect(capsule?.querySelector('[aria-label="Add"]')).toBeNull();
+    expect(container.querySelector('[data-slot="header-primary"] [aria-label="Add"]')).not.toBeNull();
   });
 
-  it("the primary (default-variant) action keeps its own fill and sits inside the capsule, not see-through glass", () => {
+  it("the primary sits beside the capsule, never inside it, and keeps its own fill", () => {
     const { container } = render(h(PageHeader, { title: "Tx", actions: h(Button, { "aria-label": "Add transaction" }, "Add") }));
     const primary = screen.getByRole("button", { name: "Add transaction" });
     expect(primary.getAttribute("data-variant")).toBe("default");
-    expect(primary.parentElement).toBe(container.querySelector('[data-slot="page-header-actions"]'));
+    expect(primary.parentElement).toBe(container.querySelector('[data-slot="header-primary"]'));
+    expect(container.querySelector('[data-slot="header-capsule"]')).toBeNull();
     // the see-through reset is scoped to non-default buttons only
-    expect(css).toContain('[data-slot="page-header-actions"] > :is(button, a):not([data-variant="default"]) {\n    background: transparent;');
+    expect(css).toContain('[data-slot="header-capsule"] > :is(button, a):not([data-variant="default"]) {\n    background: transparent;');
   });
 
   it("no capsule or glass around the title (title block and h1 carry no glass classes)", () => {
@@ -130,7 +128,7 @@ describe("PageHeader phone bar (render)", () => {
     expect(cls(h1.parentElement)).not.toContain("glass-capsule");
   });
 
-  it("the bar itself carries the glass-bar material and max-md sticky at the safe-area inset", () => {
+  it("the bar itself carries the glass-bar material and sticky at the safe-area inset (every size)", () => {
     const { container } = render(h(PageHeader, { title: "Bar" }));
     const bar = container.querySelector('[data-slot="page-header"]');
     expect(cls(bar)).toEqual(expect.arrayContaining(["glass-bar", "sticky", "top-[var(--sat,0px)]", "z-30"]));

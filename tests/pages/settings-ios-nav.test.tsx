@@ -5,6 +5,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as React from "react";
 import { readFileSync } from "fs";
 import { resolve } from "path";
+import { resolvedDecls } from "../helpers/css-tokens";
 import { render, screen, cleanup } from "@testing-library/react";
 import { Plus } from "lucide-react";
 
@@ -46,72 +47,90 @@ describe("Settings iOS multi-level menu: hub (level 1)", () => {
     });
   });
 
-  it("uses the shared bar title on phones (system text-base semibold; md+ keeps text-2xl)", () => {
+  it("uses the shared bar title: text-base semibold below regular, text-3xl/9 extrabold from regular", () => {
     render(<SettingsHub />);
     const h1 = screen.getByRole("heading", { level: 1, name: "Settings" });
-    expect(cls(h1)).toContain("max-md:text-base");
-    expect(cls(h1)).toContain("max-md:font-semibold");
-    expect(cls(h1)).toContain("md:text-2xl");
+    expect(cls(h1)).toContain("max-regular:text-base");
+    expect(cls(h1)).toContain("max-regular:font-semibold");
+    expect(cls(h1)).toEqual(expect.arrayContaining(["text-3xl/9", "font-extrabold"]));
   });
 });
 
-describe("Settings iOS multi-level menu: detail pages (level 2)", () => {
-  it("renders no pill strip on phones when nav v2 is on, but keeps the desktop aside", () => {
-    mockPath = "/settings/general";
-    const { container } = render(
-      <SettingsShell hubBackHref="/settings">
-        <div>Detail</div>
-      </SettingsShell>
-    );
-
-    expect(pillNav(container)).toBeNull();
-    const aside = container.querySelector('aside[aria-label="Settings sections"]');
-    expect(aside).not.toBeNull();
-    expect(cls(aside)).toContain("md:block");
-  });
-
-  it("keeps the pill strip when nav v2 is off (no hub to switch sections)", () => {
+describe("Settings detail pages (level 3): the page's PageHeader is the one top bar at every size", () => {
+  it("renders no pill strip and no side nav at any size (the hub is the only section switcher)", () => {
     mockPath = "/settings/general";
     const { container } = render(
       <SettingsShell>
-        <div>Detail</div>
+        <PageHeader title="General" />
       </SettingsShell>
     );
-    expect(pillNav(container)).not.toBeNull();
+    expect(pillNav(container)).toBeNull();
+    expect(container.querySelector("aside")).toBeNull();
+    expect(container.querySelector('[data-slot="settings-detail-bar"]')).toBeNull();
   });
 
-  it("puts a round 44px glass back button and the centred active section title in the shared glass bar", () => {
+  it("puts a round glass back button to the hub and the centred page title in the page's glass bar", () => {
     mockPath = "/settings/investments";
     const { container } = render(
-      <SettingsShell hubBackHref="/settings">
-        <div>Detail</div>
+      <SettingsShell>
+        <PageHeader title="Investments" subtitle="Your securities" />
       </SettingsShell>
     );
+    const bar = container.querySelector('[data-slot="page-header"]');
+    expect(container.querySelectorAll('[data-slot="page-header"]')).toHaveLength(1);
 
-    const back = screen.getByRole("link", { name: "Back to Settings" });
+    const back = screen.getByRole("link", { name: "Back" });
     expect(back.getAttribute("href")).toBe("/settings");
-    expect(cls(back)).toEqual(expect.arrayContaining(["glass-capsule", "max-md:size-11", "max-md:rounded-full"]));
+    expect(cls(back)).toEqual(expect.arrayContaining(["glass-capsule", "max-regular:size-11", "max-regular:rounded-full"]));
+    expect(bar?.contains(back)).toBe(true);
+    expect(cls(bar)).toEqual(expect.arrayContaining(["glass-bar", "sticky", "max-regular:-mx-4", "regular:bg-background/90"]));
 
-    const title = container.querySelector('[data-slot="page-header-title-block"], span[aria-hidden].max-md\\:col-start-2');
-    expect(title?.textContent).toBe("Investments");
-
-    const row = back.parentElement;
-    expect(row?.contains(title as Node)).toBe(true);
-    expect(cls(row)).toEqual(expect.arrayContaining(["glass-bar", "sticky", "max-md:-mx-4"]));
-    expect(cls(title)).toEqual(expect.arrayContaining(["max-md:col-start-2", "max-md:text-base", "max-md:font-semibold"]));
-    expect(cls(title)).not.toContain("max-md:absolute");
+    const title = screen.getByRole("heading", { level: 1, name: "Investments" });
+    expect(bar?.contains(title)).toBe(true);
+    expect(cls(title)).toEqual(expect.arrayContaining(["text-3xl/9", "font-extrabold", "max-regular:text-base", "max-regular:text-center"]));
+    expect(cls(bar?.querySelector('[data-slot="page-header-title-block"]'))).toContain("max-regular:items-center");
   });
 
-  it("hides the page's own large h1 on phones but keeps it in the DOM", () => {
+  it("the page header is never hidden at any size (no viewport-only display classes)", () => {
     mockPath = "/settings/general";
     const { container } = render(
-      <SettingsShell hubBackHref="/settings">
-        <PageHeader title="General" titleClassName="text-2xl font-bold tracking-tight" />
+      <SettingsShell>
+        <PageHeader title="General" />
       </SettingsShell>
     );
-    const h1 = screen.getByRole("heading", { level: 1, name: "General" });
-    expect(h1).not.toBeNull();
-    expect(cls(container.querySelector('[data-slot="settings-content"]'))).toContain("max-md:[&_[data-slot=page-header-title]]:sr-only");
+    const bar = container.querySelector('[data-slot="page-header"]');
+    const title = screen.getByRole("heading", { level: 1, name: "General" });
+    for (const el of [bar, title]) {
+      expect(cls(el)).not.toContain("hidden");
+      expect(cls(el).some((c) => /^max-md:|^md:/.test(c))).toBe(false);
+    }
+  });
+
+  it("the page's PageHeader stays sticky: the shell adds no static override or sr-only title", () => {
+    mockPath = "/settings/general";
+    const { container } = render(
+      <SettingsShell>
+        <PageHeader title="General" subtitle="Preferences" />
+      </SettingsShell>
+    );
+    const bar = container.querySelector('[data-slot="page-header"]');
+    expect(cls(bar)).toEqual(expect.arrayContaining(["sticky", "glass-bar"]));
+    expect(cls(bar)).not.toContain("static");
+    const content = container.querySelector('[data-slot="settings-content"]');
+    expect(content?.className).not.toContain("[&_[data-slot=page-header]]:static");
+    expect(content?.className).not.toContain("sr-only");
+    expect(screen.getByRole("heading", { level: 1, name: "General" }).className).not.toContain("sr-only");
+  });
+
+  it("the reconcile-visibility page keeps its own explicit back button and no second one", () => {
+    mockPath = "/settings/import/reconcile-visibility";
+    const { container } = render(
+      <SettingsShell>
+        <PageHeader title="Reconcile dropdown visibility" backHref="/settings/import" backLabel="Back to Import settings" />
+      </SettingsShell>
+    );
+    expect(container.querySelectorAll('[data-slot="back-button"]')).toHaveLength(1);
+    expect(screen.getByRole("link", { name: "Back to Import settings" }).getAttribute("href")).toBe("/settings/import");
   });
 });
 
@@ -120,10 +139,10 @@ describe("PageHeader with backHref: phone glass header row", () => {
     const { container } = render(<PageHeader title="Currency Review" backHref="/transactions" backLabel="Back to Transactions" />);
 
     const back = screen.getByRole("link", { name: "Back to Transactions" });
-    expect(cls(back)).toEqual(expect.arrayContaining(["glass-capsule", "max-md:size-11", "max-md:rounded-full"]));
+    expect(cls(back)).toEqual(expect.arrayContaining(["glass-capsule", "max-regular:size-11", "max-regular:rounded-full"]));
 
     const h1 = screen.getByRole("heading", { level: 1, name: "Currency Review" });
-    expect(cls(h1)).toEqual(expect.arrayContaining(["max-md:truncate", "max-md:text-base", "max-md:font-semibold"]));
+    expect(cls(h1)).toEqual(expect.arrayContaining(["max-regular:truncate", "max-regular:text-base", "max-regular:font-semibold"]));
     expect(cls(h1)).not.toContain("glass-capsule");
 
     const row = container.querySelector('[data-slot="page-header"]');
@@ -146,9 +165,9 @@ describe("PageHeader with backHref: phone glass header row", () => {
         }
       />
     );
-    const actions = container.querySelector('[data-slot="page-header-actions"]');
-    expect(actions).not.toBeNull();
-    expect(cls(actions)).toEqual(expect.arrayContaining(["glass-capsule", "max-md:h-11", "max-md:rounded-full"]));
+    // a lone primary stands alone beside the capsule slot: no glass capsule around it
+    expect(container.querySelector('[data-slot="header-capsule"]')).toBeNull();
+    expect(container.querySelector('[data-slot="header-primary"]')).not.toBeNull();
     expect(screen.getByRole("button", { name: "Add" })).toBeTruthy();
   });
 
@@ -164,13 +183,14 @@ describe("PageHeader with backHref: phone glass header row", () => {
     );
     const triggers = screen.getAllByRole("button", { name: "More actions" });
     expect(triggers.length).toBe(1);
-    expect(cls(triggers[0])).toContain("max-md:size-11");
+    expect(cls(triggers[0])).toContain("pointer-coarse:size-11");
   });
 
   it("ships the glass-capsule and glass-bar material phone-only in globals.css", () => {
     const css = readFileSync(resolve(__dirname, "../../src/app/globals.css"), "utf-8");
-    expect(css).toMatch(/@media \(width < 48rem\) \{\s*\.glass-capsule \{/);
-    expect(css).toMatch(/\.glass-bar \{[^}]*blur\(28px\) saturate\(1\.8\)/);
+    expect(css).toMatch(/@media \(width < 40rem\) \{\s*\.glass-capsule \{/);
+    // Literal blur/saturate moved into --glass-bar-* tokens; assert the resolved .glass-bar rule.
+    expect(resolvedDecls(css, ".glass-bar", "light")).toMatch(/blur\(28px\) saturate\(1\.8\)/);
     expect(css).toContain("prefers-reduced-transparency");
   });
 });

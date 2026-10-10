@@ -17,6 +17,7 @@
  * and whose data is disposable fixture data.
  */
 
+import { safeReturnTo } from "@/lib/accounts/groups-return-to";
 import { NextRequest, NextResponse } from "next/server";
 import { getDialect } from "@/db";
 import { verifyPassword, createSessionToken } from "@/lib/auth";
@@ -56,10 +57,7 @@ export interface ZeroClickAccount {
  */
 function isSafeNext(next: string | null | undefined): next is string {
   if (!next) return false;
-  if (!next.startsWith("/")) return false;
-  if (next.startsWith("//")) return false;
-  if (next.includes("\\")) return false;
-  return true;
+  return safeReturnTo(next, "") === next;
 }
 
 export async function zeroClickLogin(

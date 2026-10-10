@@ -16,7 +16,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
-import { CompactOnly } from "@/components/mobile";
 import { getEntriesBySurface } from "@/lib/nav-config";
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
@@ -52,9 +51,9 @@ export default function EnvLayout({ children }: { children: React.ReactNode }) {
       {/* Scrollable horizontal tab row (responsive) */}
       <nav
         aria-label="Environment sections"
-        className="-mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8"
+        className="-mx-4 px-4 regular:-mx-6 regular:px-6 wide:-mx-8 wide:px-8"
       >
-        <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0">
+        <div className="flex gap-2 overflow-x-auto pb-2 regular:pb-0">
           {NAV_ITEMS.map((item) => {
             const isActive = item.href === active;
             return (
@@ -63,14 +62,14 @@ export default function EnvLayout({ children }: { children: React.ReactNode }) {
                 href={item.href}
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
-                  "group/tab relative flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 shrink-0 md:shrink",
+                  "group/tab relative flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 shrink-0 regular:shrink",
                   isActive
                     ? "bg-white/[0.08] text-foreground"
                     : "text-muted-foreground hover:bg-white/[0.05] hover:text-foreground"
                 )}
               >
                 {isActive && (
-                  <CompactOnly className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 rounded-full bg-primary shadow-[0_0_8px_2px] shadow-primary/30" />
+                  <div className="regular:hidden absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 rounded-full bg-primary shadow-[0_0_8px_2px] shadow-primary/30" />
                 )}
                 <item.icon className={cn(
                   "h-4 w-4 transition-colors",

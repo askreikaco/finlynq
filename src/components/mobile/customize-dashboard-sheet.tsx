@@ -128,10 +128,10 @@ export function CustomizeDashboardSheet({
           </p>
         ) : null}
         <div className="flex flex-col gap-2 border-t p-4 sm:flex-row-reverse">
-          <Button className="min-h-11 flex-1" disabled={busy} onClick={() => run(() => onSave(normalizeLayout({ order, hidden: [...hidden] })))}>
+          <Button className="min-h-row flex-1" disabled={busy} onClick={() => run(() => onSave(normalizeLayout({ order, hidden: [...hidden] })))}>
             {busy ? "Saving..." : "Save"}
           </Button>
-          <Button variant="outline" className="min-h-11 flex-1" disabled={busy} onClick={() => run(onReset)}>
+          <Button variant="outline" className="min-h-row flex-1" disabled={busy} onClick={() => run(onReset)}>
             Reset to default
           </Button>
         </div>

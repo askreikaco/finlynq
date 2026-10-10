@@ -8,7 +8,7 @@
  *
  *   1. Pure: the client-side total helpers skip invisible rows.
  *   2. Schema/migration: column declared in schema-pg, additive idempotent
- *      migration that sorts after every existing one.
+ *      migration that sorts after its predecessor.
  *   3. Static source gates on the money paths — the same approach as
  *      archived-accounts-stay-in-net-worth.test.ts, catching a regression
  *      where one surface stops filtering (or the snapshot BUILDER starts
@@ -79,12 +79,17 @@ describe("schema + migration", () => {
     expect(block).toContain('invisible: boolean("invisible").notNull().default(false)');
   });
 
-  it("migration is additive, idempotent, has no BEGIN/COMMIT, and sorts last", () => {
+  it("migration is additive, idempotent, has no BEGIN/COMMIT, and sorts after its predecessor", () => {
     const dir = join(ROOT, "scripts/migrations");
     const files = readdirSync(dir).filter((f) => f.endsWith(".sql")).sort();
     const name = "20261007_reika_account_invisible.sql";
+    // Migrations apply in filename order; this one must follow the migration
+    // that was latest when it was added. Later migrations (20261008+) are fine.
+    const predecessor = "20261006_reika_family_scope_guard_reconsent.sql";
     expect(files).toContain(name);
-    expect(files[files.length - 1]).toBe(name);
+    expect(files).toContain(predecessor);
+    expect(new Set(files).size).toBe(files.length);
+    expect(files.indexOf(name)).toBeGreaterThan(files.indexOf(predecessor));
     const code = read(`scripts/migrations/${name}`).replace(/--.*$/gm, "");
     expect(code).toMatch(/ALTER TABLE accounts\s+ADD COLUMN IF NOT EXISTS invisible BOOLEAN NOT NULL DEFAULT false/i);
     expect(code).not.toMatch(/\b(DROP|DELETE|TRUNCATE|BEGIN|COMMIT)\b/i);

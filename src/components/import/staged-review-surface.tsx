@@ -1154,8 +1154,9 @@ export function StagedReviewSurface({
 
   // Two-pane reconciliation view — batch open.
   return (
-    <div className="flex flex-col gap-4 md:h-[calc(100dvh-8rem)]">
+    <div className="flex flex-col gap-4 regular:h-[calc(100dvh-8rem)]">
       <ReconcileHeader
+        embedded={embedded}
         detail={detail}
         accountId={accountId}
         acting={acting}

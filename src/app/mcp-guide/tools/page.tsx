@@ -126,7 +126,7 @@ export default function ToolCatalogPage() {
             </Link>{" "}
             / tools
           </div>
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
+          <h1 className="text-3xl regular:text-4xl font-bold tracking-tight text-foreground">
             Finlynq MCP tool catalog
           </h1>
           <p className="mt-3 text-base text-muted-foreground max-w-2xl leading-relaxed">
@@ -139,7 +139,7 @@ export default function ToolCatalogPage() {
           </p>
 
           {/* Headline stats */}
-          <dl className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <dl className="mt-6 grid grid-cols-2 regular:grid-cols-4 gap-3">
             <Stat label="HTTP tools" value={TOOL_COUNT_HTTP.toString()} />
             <Stat label="Stdio tools" value={TOOL_COUNT_STDIO.toString()} />
             <Stat label="Read-only" value={readScopeCount.toString()} />
@@ -171,7 +171,7 @@ export default function ToolCatalogPage() {
         </header>
 
         {/* OAuth scope note */}
-        <section className="mb-10 rounded-xl border border-primary/20 bg-primary/5 p-4 sm:p-5">
+        <section className="mb-10 rounded-xl border border-primary/20 bg-primary/5 p-4 regular:p-5">
           <div className="flex items-start gap-3">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
               <Lock className="h-4 w-4 text-primary" />
@@ -320,7 +320,7 @@ function ToolRow({
   categoryBadge: CategoryMeta;
 }) {
   return (
-    <li id={`tool-${tool.name}`} className="px-4 py-4 sm:px-5 sm:py-5">
+    <li id={`tool-${tool.name}`} className="px-4 py-4 regular:px-5 regular:py-5">
       <div className="flex flex-wrap items-center gap-2 mb-1.5">
         <code className="font-mono text-sm font-semibold text-foreground bg-muted/60 px-2 py-0.5 rounded">
           {tool.name}

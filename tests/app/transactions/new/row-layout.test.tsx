@@ -9,6 +9,7 @@ const H = vi.hoisted(() => ({ push: vi.fn(), back: vi.fn() }));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: H.push, back: H.back }),
+  usePathname: () => "/transactions/new",
 }));
 vi.mock("next/link", () => ({
   default: ({ children, href }: { children: React.ReactNode; href: string }) =>

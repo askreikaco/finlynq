@@ -84,7 +84,7 @@ Barrel: `src/components/mobile/index.ts:1-14`.
 
 | File | Export (file:line) | Purpose |
 |---|---|---|
-| `mobile/page-header.tsx` | `:55` PageHeader, `:159` OverflowMenu, `:26` HEADER_DESKTOP_ONLY, `:33` desktopClasses | Page title + back + primary action; secondary actions in "..." menu below md (`:45-54`) |
+| `mobile/page-header.tsx` | PageHeader, OverflowMenu, HEADER_SECONDARY (alias HEADER_DESKTOP_ONLY) | One header for all sizes (see 3d); secondary actions in "..." menu below regular |
 | `mobile/back-button.tsx` | `:8` BackButton | 44px back link (`min-h-11 min-w-11`, `:23`) |
 | `mobile/pill-button.tsx` | `:12` PillButton | Header pill; visual h-9 with 44px hit area via `after:-inset-y-1` (`:6-7`) |
 | `mobile/list-row.tsx` | `:41` ListRow, `:13` ListRowProps | Native list row, min-h 56px (`:37-39` doc) |
@@ -114,12 +114,14 @@ Excluded from the adaptive guard scan (see 3e).
 | EmptyState | `src/components/empty-state.tsx:19` | Icon, title, description, optional action |
 | PageSkeleton | `src/components/page-skeleton.tsx:10` (`variant` type `:6-7`) | Shimmer skeleton, variants table / cards / list |
 | PageFab | `src/components/mobile/page-fab.tsx` | Per-page FAB (mobile only, `md:hidden`); mounted once in `(app)/layout.tsx`; action from `fab-registry.ts` `FAB_ROUTES` |
+| UnlockPanel (locked DEK) | `src/components/unlock-panel.tsx` | No banner. Auto passkey once per page load (`UnlockGate` ref), then a compact password card (`fixed`, bottom clears `--mobile-bar-clearance` / `--kb-inset`, `regular:` offset past rail). Escape hides; it returns on the next 423. "Use passkey" link only with a PRF passkey. Tests: `tests/components/unlock-auto.test.tsx` |
 
 ## 3. Rules
 
 ### 3a. Touch targets
 - Target size is 44px. `min-h-11` is used for it (25 lines in `src/app` + `src/components`, grep run 2026-10-09). Tailwind v4 spacing 11 = 2.75rem = 44px. UNVERIFIED against built CSS.
-- `ui/button.tsx` sizes: default `h-8 max-md:h-11` (`:26`), xs `h-6` (`:27`), sm `h-7 max-md:h-11` (`:28`), lg `h-9 max-md:h-11` (`:29`), icon `size-8 max-md:size-11` (`:30`), icon-xs `size-6` (`:31`, hit area via `max-md:before:-inset-2.5` `:31`), icon-sm `size-7 max-md:size-11` (`:34`), icon-lg `size-9 max-md:size-11` (`:35`).
+- Touch sizes are pointer-based (G2-14e), not viewport: `ui/button.tsx` default/sm/lg `h-8 pointer-coarse:h-11`, icon sizes `size-8 pointer-coarse:size-11`, xs/icon-xs keep the 44px hit area via `pointer-coarse:before:-inset-2.5`. Compact density: `dense:pointer-fine:h-7`. `pointer-coarse` is 44px on every coarse device (iPad included). Input/Select/Combobox use the same pattern (`pointer-coarse:h-11`, text `text-base regular:pointer-fine:text-sm`).
+- Caller overrides on primitives must use the base's modifier (`regular:pointer-fine:*`, `pointer-coarse:*`). A plain `md:`/`max-md:` override does not merge with the base. Guard: `tests/components/ui-caller-overrides.test.ts` (G2-15).
 - `PillButton` is h-9 visually; 44px hit area comes from `after:-inset-y-1` (`mobile/pill-button.tsx:7`). This differs from the `min-h-11` approach elsewhere (see 4).
 
 ### 3b. Form controls
@@ -129,22 +131,42 @@ Excluded from the adaptive guard scan (see 3e).
 - `tabular-nums lining-nums` on `.tabular-nums, td, th, [data-value]` (`globals.css:145-149`), on `.hero-number` (`:308-313`).
 - Numbers render system mono on md+; UI font below md.
 
-### 3d. Titles and subtitles (PageHeader)
-- Default title classes `text-2xl font-bold` (`mobile/page-header.tsx:61`); default subtitle `text-sm text-muted-foreground mt-1` (`:62`).
-- Title base classes on the h1: `text-[28px]/9 font-extrabold tracking-tight max-md:flex ...` (`:95`). Below md the title is 28px/800 (`:31` doc, `:46` doc).
-- Subtitle hidden below md: `hidden md:block` (`:118`).
-- Secondary header actions carry `HEADER_DESKTOP_ONLY` (`max-md:hidden`, `:26`) and a matching `overflow` entry (`:52-53` doc). Overflow menu renders with `OverflowMenu` (`:151`, `:159`).
-- Back link: `backHref` renders BackButton (`:104-113`, `:133-135`). `backLabel` defaults to "Back" (`back-button.tsx:10`).
-- `desktopClasses(original)` re-emits original desktop classes with `md:` prefixes (`:33-43`).
+### 3d. Titles, subtitles, actions (PageHeader, G2-07)
+- One component, phone design as base. Below regular (640px) = `max-regular:` classes; regular+ = base/`regular:` classes. `mobile/page-header.tsx` has no `md:` tokens.
+- Title: below regular `text-base font-semibold` (`PHONE_BAR_TITLE`); regular+ `text-3xl/9 font-extrabold` (`HEADER_TITLE_CLASS`). 28/800 has no system size, so text-3xl is used (owner D4).
+- Subtitle: visible at every size. Below regular a truncated `text-xs` line; regular+ `text-sm` (`HEADER_SUBTITLE_CLASS`).
+- `titleClassName` / `subtitleClassName`: `@deprecated` no-ops, still accepted and ignored. `desktopClasses()` removed.
+- Secondary actions: `HEADER_SECONDARY` = `max-regular:hidden`; below regular they go to the `overflow` menu. `HEADER_DESKTOP_ONLY` is an alias of the same value.
+- Primary action: icon-only 44px circle below regular (`phone-icon-action`, globals.css `width < 40rem`); label visible from regular.
+- Right group (phone): capsule + 10px gap + primary. Capsule (`data-slot=header-capsule`, `glass-capsule`) = icon cells + overflow trigger only, each a 44px cell, max 3 icon cells + overflow (11rem). Status (`HeaderStatus`, e.g. saving spinner) is a cell. Primary (`data-slot=header-primary`, `phone-icon-action`) is a separate 44px filled control; alone it has no capsule. Text buttons never share the capsule. Extra secondary actions go to the overflow menu (audit: tests/ios/header-actions.test.ts).
+- Bar: sticky at every size (D5). Glass only below regular; opaque `regular:bg-background/90` from regular. `className` / `actionsClassName` stay caller-owned at every size.
+- Back link: `backHref` renders BackButton at every size. `backLabel` defaults to "Back" (`back-button.tsx`).
+- Overflow trigger: `regular:hidden`.
 
 ### 3e. Adaptive guard (ratchet)
-- Test: `tests/design-system-guard.test.ts`. Banned regex `:6`: `/md:hidden|hidden\s+md:|isMobile|window\.innerWidth/gi`.
-- Scan roots: `src/app` and `src/components` (`:20-37`). Excluded: `src/components/ui/size-class.ts` and anything under `src/components/mobile/` (`:45-49`).
-- Baseline: `tests/fixtures/adaptive-baseline.json` (13 files).
-- Tests: no new files (`:76-82`), no count increase (`:84-99`), baseline must drop when usage drops (`:101-116`), no stale entries (`:118-128`), no zero entries (`:130-136`), scan non-empty (`:138-142`).
-- Replica run (not vitest): 13 baseline entries match 13 scanned files, 43 total matches, no new/increased/stale entries (2026-10-09 scan, script in scratchpad).
-- Note: `max-md:hidden` contains the substring `md:hidden`, so it is counted (see 4 and section 5).
-- New code must not use `md:hidden`, `hidden md:`, `isMobile`, `window.innerWidth`.
+- Test: `tests/design-system-guard.test.ts`. Banned regex (`tests/helpers/adaptive-scan.ts` `BANNED_PATTERN`): `md:hidden|hidden md:|hidden max-md:|isMobile|window.innerWidth|matchMedia|useMediaQuery`.
+- Scan roots: `src/app` and `src/components`. Excluded: `src/components/ui/size-class.ts`, `src/components/mobile/`.
+- Baseline `tests/fixtures/adaptive-baseline.json` (13 files, banned patterns). Rules: no new files, no count increase, must lower when usage drops, no stale or zero entries.
+- Breakpoint ratchet `tests/fixtures/breakpoint-baseline.json` (G2-15: 1 file, 2 tokens; the only hits are `sm:`/`lg:` object keys in `ui/button.tsx`). Token regex `BREAKPOINT_PATTERN`: `sm|md|lg|xl|2xl` with optional `max-`, not preceded by word char, `@`, `.` or `-`. Container tokens (`@md:`) and `CLAUDE.md:` are not counted.
+- Caller overrides on primitives: `tests/components/ui-caller-overrides.test.ts` (G2-15). AST scan of className on Input/Select/SelectTrigger/Combobox/GroupCombobox/Button/TabsList/TabsTrigger. No viewport variant without a pointer modifier, except the 5-entry `EXCEPTIONS` list (width/display only). No viewport size/text override without a pointer modifier.
+- Size-class wrapper ratchet: `tests/fixtures/size-class-wrapper-baseline.json`.
+- New code must not use `md:hidden`, `hidden md:`, `isMobile`, `window.innerWidth`. Use `regular:`, `wide:`, `max-regular:`.
+- `max-md:hidden` contains `md:hidden` and is counted (see 4 and section 5).
+
+### 3f. Size classes (G2-01)
+- Variants `regular:` (`@media (width >= 40rem)`) and `wide:` (`@media (width > 64rem)`) in `globals.css`. Thresholds mirror `sizeClassFor()` (`ui/size-class.ts`: compact <640, regular 640-1024, wide >1024).
+- Viewport based by design: `container-type` applies layout containment, so a size container on `<main>` or the shell would become the containing block for `position:fixed` descendants (tab bar, page FAB, banners, toasts). Do not add `@container/app` or `container-type` to the shell or main.
+- JS-only cases: `AppSizeClassProvider` / `useAppSizeClass()` (`components/adaptive/size-class-context.tsx`) measure `documentElement.clientWidth` (viewport, layout effect + ResizeObserver on `<html>`), same thresholds as CSS.
+- Known gap: `clientWidth` excludes a classic (non-overlay) scrollbar while `@media` includes it, so on desktops with classic scrollbars JS and CSS can differ by the scrollbar width near 640 and 1024px.
+- Pinned by `tests/components/adaptive/size-class-css.test.ts`.
+
+### 3g. App tabs (G2-04)
+- `AppTabs` (`components/nav.tsx`): one tab list (registry mobileBar tabs + More), two layouts.
+- Below 640px: floating glass bar, `regular:hidden`. From 640px: fixed left rail `hidden regular:flex`, width `5rem + --sal`, icon over label (`mobile-tab-label`), active = `mobile-glass-pill`.
+- Bar hidden on full-screen entry routes (`isTabBarHidden`); the rail is never hidden.
+- No groups, collapse toggle, admin group or account switcher. Admin entries are reached from More (`surfaces` include `more`).
+- One unread dot on More (announcements + feedback unread), both layouts.
+- Shell (`(app)/layout.tsx` main): `regular:pb-0 regular:pl-[calc(5rem+var(--sal))]`.
 
 ## 4. Inconsistencies
 

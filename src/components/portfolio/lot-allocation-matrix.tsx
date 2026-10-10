@@ -280,10 +280,10 @@ export function LotAllocationMatrix({
   const cur = sells[0].currency;
   const thBase = "px-2 py-1.5 text-right font-medium align-bottom whitespace-nowrap";
   const tdBase = "px-2 py-1 text-right align-top whitespace-nowrap";
-  // md:text-xs is REQUIRED: the base Input carries `md:text-sm`, a md:
-  // responsive variant that beats a plain `text-xs` at ≥768px — so the
-  // override must also be md:-prefixed for tailwind-merge to drop md:text-sm.
-  const inputCls = "h-7 w-16 px-1 text-right text-xs md:text-xs tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
+  // regular:pointer-fine:text-xs is REQUIRED: the base Input carries `regular:pointer-fine:text-sm`.
+  // tailwind-merge only drops a base class with the SAME modifier, so the override must use it too.
+  // Touch (pointer-coarse) keeps the base 16px text. Plain text-xs would shrink phones to 12px.
+  const inputCls = "h-7 w-16 px-1 text-right regular:pointer-fine:text-xs tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
 
   return (
     <div className="flex flex-1 min-h-0 flex-col gap-2.5">

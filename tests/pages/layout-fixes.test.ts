@@ -39,15 +39,16 @@ describe("no fixed-px text on touched pages (system font sizes only)", () => {
 });
 
 describe("settings/general at 390", () => {
-  it("PageHeader gets a lead so the 44px phone spacer band is not rendered", () => {
+  it("PageHeader is the bare global header (no lead hack): the back control comes from the registry", () => {
     const src = read(SETTINGS_GENERAL);
-    expect(src).toContain('lead={<span aria-hidden className="hidden" />}');
+    expect(src).toContain("<PageHeader");
+    expect(src).not.toContain('lead={<span aria-hidden className="hidden" />}');
   });
 
-  it("Display Currency row is a column below md and a row from md (control full width below md)", () => {
+  it("Display Currency row is a column below regular and a row from regular (control full width below regular)", () => {
     const src = read(SETTINGS_GENERAL);
-    expect(src).toContain('<div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between md:gap-4">');
-    expect(src).toContain('<div className="w-full md:w-56 md:shrink-0">');
+    expect(src).toContain('<div className="flex flex-col gap-2 regular:flex-row regular:items-center regular:justify-between regular:gap-4">');
+    expect(src).toContain('<div className="w-full regular:w-56 regular:shrink-0">');
     expect(src).not.toContain('<div className="w-56">');
   });
 
@@ -55,25 +56,32 @@ describe("settings/general at 390", () => {
     const src = read(SETTINGS_GENERAL);
     expect(src).toContain('<div className="flex items-center justify-between gap-3">\n            <div className="min-w-0 flex-1">\n              <Label>UI Font</Label>');
     expect(src).toContain('<div className="flex items-center justify-between gap-3">\n            <div className="min-w-0 flex-1">\n              <Label htmlFor="animation-toggle">');
-    expect(src).toContain('<SelectTrigger className="w-44 shrink-0 md:w-48">');
+    expect(src).toContain('<SelectTrigger className="w-44 shrink-0 regular:w-48">');
   });
 
-  it("Appearance row stacks below md; segmented control is not forced to full width", () => {
+  it("Appearance row stacks below regular; segmented control is not forced to full width", () => {
     const src = read(SETTINGS_GENERAL);
-    expect(src).toContain('<div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between md:gap-3">');
-    expect(src).toContain('self-start rounded-lg border p-0.5 md:self-auto');
+    expect(src).toContain('<div className="flex flex-col gap-2 regular:flex-row regular:items-center regular:justify-between regular:gap-3">');
+    expect(src).toContain('self-start rounded-lg border p-0.5 regular:self-auto');
   });
 
-  it("PageHeader keeps desktop placement (lead is display:none, so no gap is added at md+)", () => {
-    expect(read(SETTINGS_GENERAL)).toContain('<span aria-hidden className="hidden" />');
+  it("general page has no hidden lead node (the settings shell bar that needed it is gone)", () => {
+    expect(read(SETTINGS_GENERAL)).not.toContain('<span aria-hidden className="hidden" />');
   });
 });
 
 describe("budgets at 390", () => {
-  it("summary values are text-xl with tabular figures and step up to text-2xl only at md+", () => {
+  it("summary values are text-xl nowrap with tabular figures and step up to text-2xl only at wide (regular stays text-xl: the 4-up tiles are too narrow)", () => {
     const src = read(BUDGETS);
     expect(src).not.toMatch(/(?<![:\w-])text-2xl font-bold/);
-    expect(src.match(/min-w-0 break-words text-xl font-bold tabular-nums md:text-2xl/g)?.length).toBe(5);
+    expect(src).not.toMatch(/break-words text-xl font-bold tabular-nums/);
+    expect(src.match(/min-w-0 whitespace-nowrap text-xl font-bold tabular-nums wide:text-2xl/g)?.length).toBe(5);
+  });
+
+  it("four-up summary tiles are two columns at regular and four at wide (a 4-up 768 tile is ~117px of text)", () => {
+    const src = read(BUDGETS);
+    expect(src).toContain('"regular:grid-cols-2 wide:grid-cols-4" : "regular:grid-cols-3"');
+    expect(src).not.toContain('"regular:grid-cols-4"');
   });
 
   it("essentials (group) cards use gap-1 so the header is not 16px + padding away from the first row", () => {
@@ -90,19 +98,19 @@ describe("budgets at 390", () => {
 });
 
 describe("portfolio performance controls at 390", () => {
-  it("controls are ONE horizontally scrollable row (overflow-x-auto, overscroll-x-contain), no wrap below md", () => {
+  it("controls are ONE horizontally scrollable row (overflow-x-auto, overscroll-x-contain), no wrap below regular", () => {
     const src = read(PERF_CHART);
     const at = src.indexOf('aria-label="Performance controls"');
     const cls = src.slice(src.indexOf('className="', at) + 11, src.indexOf('"', src.indexOf('className="', at) + 11));
     const row = cls.split(/\s+/);
     expect(row).toEqual(expect.arrayContaining(["overflow-x-auto", "overscroll-x-contain", "flex", "items-center"]));
     expect(row).not.toContain("flex-wrap");
-    expect(row).toContain("md:flex-wrap");
+    expect(row).toContain("regular:flex-wrap");
   });
 
-  it("every chip (holding, account, periods) uses the shared CHIP_CLASS: no wrap, 44px tall below md", () => {
+  it("every chip (holding, account, periods) uses the shared CHIP_CLASS: no wrap, 44px tall on coarse pointers", () => {
     const src = read(PERF_CHART);
-    expect(src).toContain('const CHIP_CLASS = "shrink-0 whitespace-nowrap max-md:min-h-11";');
+    expect(src).toContain('const CHIP_CLASS = "shrink-0 whitespace-nowrap pointer-coarse:min-h-11";');
     expect(src.match(/className=\{CHIP_CLASS\}/g)?.length).toBe(3);
   });
 });
@@ -122,7 +130,7 @@ describe("accounts/[id] at 390", () => {
   });
 
   it("bottom clearance comes from the (app) layout <main> (clearance + 80px below md), which every page inherits", () => {
-    expect(read(APP_LAYOUT)).toContain("pb-[calc(var(--mobile-bar-clearance)+80px)] md:pb-0");
+    expect(read(APP_LAYOUT)).toContain("pb-[calc(var(--mobile-bar-clearance)+80px)] regular:pb-0");
   });
 });
 
@@ -152,7 +160,7 @@ describe("holdings table at 1280", () => {
 describe("reporting toast on phones", () => {
   it("sits above the tab bar via the clearance var, not over content rows", () => {
     const src = read("src/components/reporting-recompute-indicator.tsx");
-    expect(src).toContain("max-md:bottom-[calc(var(--mobile-bar-clearance)+0.5rem)]");
-    expect(src).not.toContain("max-md:bottom-[calc(var(--mobile-bar-clearance)+80px)]");
+    expect(src).toContain("max-regular:bottom-[calc(var(--mobile-bar-clearance)+0.5rem)]");
+    expect(src).not.toContain("max-regular:bottom-[calc(var(--mobile-bar-clearance)+80px)]");
   });
 });

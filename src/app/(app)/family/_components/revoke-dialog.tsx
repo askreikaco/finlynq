@@ -41,7 +41,7 @@ export function RevokeDialog({ shareId, role, onClose, onSuccess }: RevokeDialog
   const isOwner = role === "owner";
   return (
     <Dialog open onOpenChange={(open) => !open && !busy && onClose()}>
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent className="regular:max-w-sm">
         <DialogHeader>
           <DialogTitle>{isOwner ? FAMILY_STRINGS.revoke_dialog_title : FAMILY_STRINGS.leave_dialog_title}</DialogTitle>
           <DialogDescription>

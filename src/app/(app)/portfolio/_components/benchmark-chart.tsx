@@ -134,7 +134,7 @@ export function BenchmarkChart({
                 ))}
               </LineChart>
             </ResponsiveContainer>
-            <div className="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="mt-4 grid grid-cols-2 wide:grid-cols-4 gap-3">
               {benchmarks.map(b => (
                 <div key={b.symbol} className="flex items-center gap-2 p-2 rounded-lg bg-muted/30">
                   <ColorDot color={b.color} className="h-2.5 w-2.5" />

@@ -97,7 +97,7 @@ export function InviteLinkHandler({ onDone, requireToken = false }: { onDone?: (
           {!result && (
             <>
               <p className="text-sm">{FAMILY_STRINGS.accept_card_message}</p>
-              <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="flex flex-col gap-2 regular:flex-row">
                 <Button onClick={() => act("accept")} disabled={busy !== null} className="gap-2">
                   {busy === "accept" && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
                   {FAMILY_STRINGS.accept_button}

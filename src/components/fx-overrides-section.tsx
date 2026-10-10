@@ -176,7 +176,7 @@ export function FxOverridesSection() {
 
         {adding ? (
           <div className="rounded-md border border-border/50 p-3 space-y-3">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 regular:grid-cols-2 gap-3">
               <div>
                 <Label className="text-xs">Currency</Label>
                 {customCode ? (

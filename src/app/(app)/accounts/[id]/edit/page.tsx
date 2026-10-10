@@ -12,8 +12,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ModePicker } from "@/components/inbox/mode-picker";
 import { ImportPrefsPicker } from "@/components/inbox/import-prefs-picker";
 import { isMode, type Mode } from "@/components/inbox/modes";
-import { safeReturnTo } from "@/lib/accounts/groups-return-to";
+import { safeReturnTo } from "@/lib/nav/return-to";
+import { TW } from "@/lib/design/tokens";
 import { AccountForm, type AccountFormAccount } from "../../_components/account-form";
+
+/** Root class of every state (loading, not found, loaded): the form width token. */
+const ROOT_CLASS = `mx-auto w-full ${TW.form}`;
 
 /** The account as /api/accounts returns it (the reconciliation / import tabs need the extra prefs). */
 type EditAccount = AccountFormAccount & {
@@ -225,16 +229,16 @@ function EditAccountPage() {
 
   if (!loaded) {
     return (
-      <div data-testid="account-edit-root" className="mx-auto w-full max-w-xl">
+      <div data-testid="account-edit-root" className={ROOT_CLASS}>
         {header}
-        <div className="mt-3 h-40 animate-shimmer rounded-2xl" />
+        <div className={`mt-3 h-40 animate-shimmer ${TW.group}`} />
       </div>
     );
   }
 
   if (!account) {
     return (
-      <div data-testid="account-edit-root" className="mx-auto w-full max-w-xl">
+      <div data-testid="account-edit-root" className={ROOT_CLASS}>
         {header}
         <p className="mt-3 text-sm text-muted-foreground">Account not found.</p>
       </div>
@@ -242,9 +246,9 @@ function EditAccountPage() {
   }
 
   return (
-    <div data-testid="account-edit-root" className="mx-auto w-full max-w-xl">
+    <div data-testid="account-edit-root" className={ROOT_CLASS}>
       {header}
-      <div className="mt-3 pb-[calc(var(--sab,0px)+1.5rem)]">
+      <div className={`mt-3 ${TW.formPad}`}>
         <Tabs value={tab} onValueChange={(v) => setTab(parseTab(v))}>
           <TabsList className="w-full">
             <TabsTrigger value="details">Details</TabsTrigger>

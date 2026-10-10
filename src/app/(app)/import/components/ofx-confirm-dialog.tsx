@@ -111,7 +111,7 @@ export function OfxConfirmDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl max-h-[88dvh] overflow-hidden flex flex-col">
+      <DialogContent className="regular:max-w-4xl max-h-[88dvh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Confirm import — {format.toUpperCase()} statement</DialogTitle>
           <DialogDescription>

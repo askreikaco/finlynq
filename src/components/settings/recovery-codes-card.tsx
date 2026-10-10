@@ -200,7 +200,7 @@ export function RecoveryCodesCard() {
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
               {STRINGS.codesWarning}
             </p>
-            <ul className="grid grid-cols-1 gap-2 rounded-lg border border-border bg-muted/30 p-3 font-mono text-sm sm:grid-cols-2" data-testid="recovery-codes-list">
+            <ul className="grid grid-cols-1 gap-2 rounded-lg border border-border bg-muted/30 p-3 font-mono text-sm regular:grid-cols-2" data-testid="recovery-codes-list">
               {codes.map((c) => (
                 <li key={c}>{c}</li>
               ))}

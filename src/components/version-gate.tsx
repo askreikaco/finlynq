@@ -67,7 +67,7 @@ export function VersionGate() {
       aria-live="assertive"
       aria-label="New version available"
       data-testid="version-gate"
-      className="fixed inset-x-0 bottom-0 z-[70] border-t bg-background px-[max(1rem,var(--sal))] pt-3 pb-[calc(0.75rem+var(--sab))] shadow-[0_-8px_24px_rgba(0,0,0,0.25)]"
+      className="fixed inset-x-0 bottom-0 regular:left-[calc(5rem+var(--sal))] z-[70] border-t bg-background px-[max(1rem,var(--sal))] pt-3 pb-[calc(0.75rem+var(--sab))] shadow-[0_-8px_24px_rgba(0,0,0,0.25)]"
     >
       <div className="mx-auto flex max-w-xl items-center gap-3">
         <div className="min-w-0 flex-1">

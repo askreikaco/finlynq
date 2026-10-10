@@ -1,30 +1,24 @@
 "use client";
 
 /**
- * Mobile "More" screen (/more) — mirrors the native app's More tab: large
- * title + grouped rounded cards of rows (icon tile, label, chevron).
- * Mobile only: >= md the sidebar already lists everything, so we redirect.
- * Replaces the old bottom-sheet drawer; every entry it offered stays here.
+ * "More" screen (/more) at every size, iOS grouped-list style: PageHeader, an Account card, then
+ * inset groups (src/components/mobile/inset-group.tsx). Narrow: one column. Wide (> 64rem): the
+ * groups sit in two columns. Every entry is registry-driven (surface "more"); the rail and bottom
+ * bar link here.
  */
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useMemo, memo } from "react";
 import useSWR from "swr";
 import { softJsonFetcher, swrAggressiveOptions } from "@/lib/swr";
-import {
-  LogOut,
-  ChevronRight,
-  Palette,
-  type LucideIcon,
-} from "lucide-react";
+import { LogOut, type LucideIcon } from "lucide-react";
 import { useTheme } from "next-themes";
-import { cn } from "@/lib/utils";
 import { AccountSwitcher } from "@/components/account-switcher";
 import { hardReload, clearPerUserStorage } from "@/lib/client/hard-reload";
 import { setPasskeyAutoSkip } from "@/lib/client/passkey-auto";
 import { getEntriesBySurface, navLabel } from "@/lib/nav-config";
-import { CompactOnly, PageHeader } from "@/components/mobile";
+import { useNavUnread } from "@/components/nav-unread";
+import { PageHeader } from "@/components/mobile";
+import { InsetGroup, InsetRow, InsetSectionHeader, ThemePicker, type ThemeChoice } from "@/components/mobile/inset-group";
 
 export type MoreRow = { href: string; label: string; icon: LucideIcon; id: string };
 export type MoreGroup = { id: string; header?: string; rows: MoreRow[] };
@@ -48,7 +42,7 @@ export function buildMoreGroups(f: MoreFlags): MoreGroup[] {
   // Build groups in the original order expected by the tests
   // main: core tracking + analysis + reconcile + import
   // explore: wealth + planning items
-  // tools: what's new + settings (sign out added by component)
+  // tools: what's new + feedback + settings (sign out added by component)
   // admin: admin items (for admins only)
 
   const main: MoreRow[] = [];
@@ -97,13 +91,18 @@ export function buildMoreGroups(f: MoreFlags): MoreGroup[] {
     }
   }
 
-  // Tools group: What's new (conditional) + Settings
+  // Tools group: What's new (conditional) + Feedback + Settings
   if (f.hasAnnouncements) {
     const entry = entryMap.get("/whats-new");
     if (entry) {
       const displayLabel = navLabel(entry.path, entry.label, { categoriesMerged: f.categoriesMerged });
       tools.push(row(entry.path, displayLabel, entry.icon));
     }
+  }
+
+  const feedbackEntry = entryMap.get("/feedback");
+  if (feedbackEntry) {
+    tools.push(row(feedbackEntry.path, feedbackEntry.label, feedbackEntry.icon));
   }
 
   const settingsEntry = entryMap.get("/settings");
@@ -149,70 +148,14 @@ export function buildMoreGroups(f: MoreFlags): MoreGroup[] {
   return groups;
 }
 
-const tile = "flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted/60";
-const rowCls =
-  "flex w-full items-center gap-3 px-3 py-3 text-left text-base font-medium text-foreground transition-colors hover:bg-muted/40 active:bg-muted/60";
-
-function Card({ children, testId }: { children: React.ReactNode; testId?: string }) {
-  return (
-    <div
-      data-testid={testId}
-      className="overflow-hidden rounded-2xl border border-border bg-card divide-y divide-border"
-    >
-      {children}
-    </div>
-  );
-}
-
-const THEME_CHOICES = [
-  { value: "system", label: "System" },
-  { value: "light", label: "Light" },
-  { value: "dark", label: "Dark" },
-] as const;
-
-/** 44px row: icon tile, label, System/Light/Dark segmented control (next-themes). */
-export function AppearanceRow() {
+export const MoreMenu = memo(function MoreMenu({ instanceAdminEnabled = false, categoriesMerged = false }: { instanceAdminEnabled?: boolean; categoriesMerged?: boolean }) {
+  const busy = useRef(false);
+  const nav = useNavUnread();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
-  const current = mounted ? (theme ?? "system") : "system";
-  return (
-    <div className="flex min-h-11 w-full items-center gap-3 px-3 py-2" data-testid="more-appearance">
-      <span className={tile}>
-        <Palette className="h-[18px] w-[18px]" aria-hidden="true" />
-      </span>
-      <span className="flex-1 truncate text-base font-medium">Appearance</span>
-      <div role="radiogroup" aria-label="Appearance" className="flex shrink-0 rounded-lg bg-muted/60 p-0.5">
-        {THEME_CHOICES.map((c) => (
-          <button
-            key={c.value}
-            type="button"
-            role="radio"
-            aria-checked={current === c.value}
-            onClick={() => setTheme(c.value)}
-            className={cn(
-              "min-h-9 max-md:min-h-11 rounded-md px-2.5 text-xs font-medium transition-colors active:bg-muted",
-              current === c.value ? "bg-background text-foreground shadow-sm" : "text-muted-foreground",
-            )}
-          >
-            {c.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-export const MoreMenu = memo(function MoreMenu({ instanceAdminEnabled = false, categoriesMerged = false }: { instanceAdminEnabled?: boolean; categoriesMerged?: boolean }) {
-  const router = useRouter();
-  const busy = useRef(false);
-
-  // Desktop has the sidebar: bounce /more -> /dashboard.
-  useEffect(() => {
-    if (typeof window.matchMedia === "function" && window.matchMedia("(min-width: 768px)").matches) {
-      router.replace("/dashboard");
-    }
-  }, [router]);
+  // Before mount the server render has no theme yet, so show "system" (as the old control did).
+  const current: ThemeChoice = mounted ? ((theme as ThemeChoice | undefined) ?? "system") : "system";
 
   const { data: sessionData } = useSWR<{ isAdmin?: boolean; familyWealthEnabled?: boolean }>(
     "/api/auth/session",
@@ -224,21 +167,17 @@ export const MoreMenu = memo(function MoreMenu({ instanceAdminEnabled = false, c
     softJsonFetcher({}),
     swrAggressiveOptions,
   );
-  const { data: announcementsData } = useSWR<Array<{ id: number; read?: boolean }> | null>(
-    "/api/announcements",
-    softJsonFetcher(null),
-    swrAggressiveOptions,
-  );
 
   const isAdmin = sessionData?.isAdmin === true;
   const familyEnabled = sessionData?.familyWealthEnabled !== false;
   const devMode = Boolean(devModeData?.devMode);
-  const announcementsList = Array.isArray(announcementsData) ? announcementsData : [];
-  const hasAnnouncements =
-    announcementsData === undefined || announcementsData === null
-      ? true
-      : announcementsList.length > 0;
-  const unread = announcementsList.filter((a) => !a.read).length;
+  // Null while loading or on error: What's new stays visible, as before.
+  const hasAnnouncements = nav.announcements === null ? true : nav.announcements.length > 0;
+  // Unread badge per row, for the rows that had one in the old sidebar.
+  const badges: Record<string, number> = {
+    "/whats-new": nav.announcementsUnread,
+    "/feedback": nav.feedbackUnread,
+  };
 
   const flags: MoreFlags = useMemo(
     () => ({
@@ -283,55 +222,50 @@ export const MoreMenu = memo(function MoreMenu({ instanceAdminEnabled = false, c
   const groups = buildMoreGroups(flags);
 
   return (
-    // Same centred glass top bar as every other phone page (PageHeader). Bottom padding clears the floating tab bar
-    // so the last section label and row are never under it.
-    <CompactOnly className="mx-auto max-w-xl space-y-6 pb-[var(--mobile-bar-clearance)]" data-testid="more-menu">
+    // Bottom padding clears the floating tab bar (compact only; the rail takes its place from regular up).
+    <div className="mx-auto max-w-xl space-y-6 pb-[var(--mobile-bar-clearance)] regular:pb-8 wide:max-w-3xl" data-testid="more-menu">
       <PageHeader title="More" />
 
       <section data-testid="more-account" className="space-y-2">
-        <h2 className="px-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground">Account</h2>
-        <Card>
+        <InsetSectionHeader>Account</InsetSectionHeader>
+        {/* Current account (taps to /account), other accounts, Add account, Manage accounts. */}
+        <InsetGroup inset="avatar" data-testid="more-account-card">
           <AccountSwitcher variant="list" />
-        </Card>
+        </InsetGroup>
       </section>
 
-      {groups.map((g) => (
-        <section key={g.id} data-testid={`more-group-${g.id}`} className="space-y-2">
-          {g.header && (
-            <h2 className="px-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-              {g.header}
-            </h2>
-          )}
-          <Card>
-            {g.rows.map((r) => {
-              const showUnreadBadge = r.href === "/whats-new" && unread > 0;
-              return (
-                <Link key={r.id} href={r.href} className={rowCls} data-testid="more-row">
-                  <span className={tile}>
-                    <r.icon className="h-[18px] w-[18px]" aria-hidden="true" />
-                  </span>
-                  <span className="flex-1 truncate">{r.label}</span>
-                  {showUnreadBadge && (
-                    <span className="rounded-full bg-primary px-1.5 py-0.5 text-xs font-semibold leading-none text-primary-foreground">
-                      {unread}
-                    </span>
-                  )}
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                </Link>
-              );
-            })}
-            {g.id === "tools" && <AppearanceRow />}
-            {g.id === "tools" && (
-              <button type="button" onClick={signOut} className={cn(rowCls, "text-destructive")} data-testid="more-signout">
-                <span className={tile}>
-                  <LogOut className="h-[18px] w-[18px]" aria-hidden="true" />
-                </span>
-                <span className="flex-1">Sign out</span>
-              </button>
-            )}
-          </Card>
+      <div className="space-y-6 wide:grid wide:grid-cols-2 wide:items-start wide:gap-6 wide:space-y-0">
+        {groups.map((g) => (
+          <section key={g.id} data-testid={`more-group-${g.id}`} className="space-y-2">
+            {g.header && <InsetSectionHeader>{g.header}</InsetSectionHeader>}
+            <InsetGroup>
+              {g.rows.map((r) => (
+                <InsetRow
+                  key={r.id}
+                  href={r.href}
+                  label={r.label}
+                  icon={r.icon}
+                  badge={badges[r.href] ?? 0}
+                  data-testid="more-row"
+                />
+              ))}
+            </InsetGroup>
+          </section>
+        ))}
+
+        <section data-testid="more-group-appearance" className="space-y-2">
+          <InsetSectionHeader>Appearance</InsetSectionHeader>
+          <InsetGroup data-testid="more-appearance">
+            <ThemePicker value={current} onChange={(v) => setTheme(v)} />
+          </InsetGroup>
         </section>
-      ))}
-    </CompactOnly>
+      </div>
+
+      <section data-testid="more-group-session" className="space-y-2">
+        <InsetGroup>
+          <InsetRow destructive icon={LogOut} label="Log out" onClick={signOut} data-testid="more-signout" />
+        </InsetGroup>
+      </section>
+    </div>
   );
 });

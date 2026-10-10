@@ -2,11 +2,13 @@
  * Static audit of every <PageHeader> call site (TypeScript AST, no rendering).
  *
  * Phone bar rules (src/components/mobile/page-header.tsx):
+ *  - at most HEADER_MAX_PHONE_ACTIONS (3) capsule cells besides the primary; the overflow trigger is the 4th cell.
+ *    The primary is its own control beside the capsule (header-primary).
  *  - the LAST phone-visible action is the primary; it collapses to an icon-only 44pt circle.
- *    Any other phone-visible action must be icon-only (no text), or the 9.5rem capsule overflows.
+ *    Any other phone-visible action must be icon-only (no text), or the 11rem capsule overflows.
  *  - no phone-visible `lead`: a lead must carry HEADER_DESKTOP_ONLY (or be a hidden spacer).
  *
- * Hidden on phones: className containing max-md:hidden or HEADER_DESKTOP_ONLY, className="hidden",
+ * Hidden on phones: className containing max-regular:hidden, HEADER_SECONDARY or HEADER_DESKTOP_ONLY (alias), className="hidden",
  * or a FromMd element. Non-visual roots (Dialog, DropdownMenu) render no element of their own:
  * their *Trigger children (rendered via `render={...}` or the trigger itself) are the actions.
  */
@@ -79,7 +81,7 @@ function openOf(node: ts.JsxElement | ts.JsxSelfClosingElement): ts.JsxOpeningLi
 function hiddenOnPhone(el: ts.JsxOpeningLikeElement): boolean {
   if (el.tagName.getText() === "FromMd") return true;
   const cls = getAttr(el, "className")?.initializer?.getText() ?? "";
-  return /max-md:hidden|HEADER_DESKTOP_ONLY/.test(cls) || /^(\{\s*)?["']hidden["'](\s*\})?$/.test(cls);
+  return /max-regular:hidden|max-md:hidden|HEADER_SECONDARY|HEADER_DESKTOP_ONLY/.test(cls) || /^(\{\s*)?["']hidden["'](\s*\})?$/.test(cls);
 }
 
 function outermostJsx(node: ts.Node, out: ts.Node[] = []): ts.Node[] {
@@ -216,6 +218,27 @@ describe("PageHeader call sites (phone bar)", () => {
         violations.push(`${rel(s)}: ${texty.length} phone-visible text actions (only the last may be text)`);
       } else if (texty.length === 1 && texty[0] !== visible[visible.length - 1]) {
         violations.push(`${rel(s)}: phone-visible text action is not the last visible action (would be a wide secondary)`);
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+
+  it("at most HEADER_MAX_PHONE_ACTIONS icon cells per header besides the primary (the capsule holds 4 x 44px with the overflow trigger)", () => {
+    const pageHeaderSrc = readFileSync(join(SRC, "components/mobile/page-header.tsx"), "utf-8");
+    const max = Number(/HEADER_MAX_PHONE_ACTIONS = (\d+);/.exec(pageHeaderSrc)?.[1]);
+    expect(max).toBe(3);
+    const violations: string[] = [];
+    for (const s of sites) {
+      const actionsAttr = getAttr(s.el, "actions");
+      const expr = actionsAttr?.initializer && ts.isJsxExpression(actionsAttr.initializer)
+        ? actionsAttr.initializer.expression
+        : undefined;
+      const visible = collectActs(expr, s.decls).filter((a) => !a.hidden);
+      // the primary is a separate control beside the capsule; every other visible action is a capsule cell
+      const primaryCount = visible.some((a) => a.open.tagName.getText() !== "HeaderStatus") ? 1 : 0;
+      const cells = visible.length - primaryCount;
+      if (cells > max) {
+        violations.push(`${rel(s)}: ${cells} capsule cells (max ${max}; move the rest to overflow)`);
       }
     }
     expect(violations).toEqual([]);

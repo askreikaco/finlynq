@@ -213,7 +213,7 @@ export default function DividendsPage() {
                 setTo("");
               }
             }}
-            className="h-11 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30 md:h-8 md:text-sm"
+            className="h-11 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30 regular:pointer-fine:h-8 regular:pointer-fine:text-sm"
           >
             <option value="">All years</option>
             {TAX_YEARS.map((y) => (
@@ -259,7 +259,7 @@ export default function DividendsPage() {
   );
 
   return (
-    <div className="space-y-4 md:space-y-6">
+    <div className="space-y-4 regular:space-y-6">
       <PageHeader
         backHref="/portfolio"
         backLabel="Back to portfolio"

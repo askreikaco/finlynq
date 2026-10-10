@@ -110,7 +110,7 @@ export function PromptGate() {
         if (current.deferrable) handleDefer();
       }}
     >
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="regular:max-w-lg">
         <DialogHeader>
           <DialogTitle>{current.title}</DialogTitle>
         </DialogHeader>

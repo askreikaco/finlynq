@@ -73,7 +73,6 @@ export function HoldingsTable({
   filteredHoldings,
   holdingsByCanonicalKey,
   filter,
-  setFilter,
   hideEmpty,
   setHideEmpty,
   showNative,
@@ -90,7 +89,6 @@ export function HoldingsTable({
   filteredHoldings: ByHoldingRow[];
   holdingsByCanonicalKey: Map<string, EnrichedHolding[]>;
   filter: FilterType;
-  setFilter: (f: FilterType) => void;
   hideEmpty: boolean;
   setHideEmpty: (v: boolean) => void;
   // When true, each row renders in its holding's own (native) currency instead
@@ -105,8 +103,6 @@ export function HoldingsTable({
   toggleRow: (key: string) => void;
   setEditingHolding: (h: EnrichedHolding) => void;
 }) {
-  const { summary, byType } = data;
-
   // FINLYNQ-176 — read-only lot inspector (opened per-account-holding row).
   const [inspect, setInspect] = useState<{
     holdingId: number;
@@ -119,30 +115,14 @@ export function HoldingsTable({
     <>
     <Card>
       <CardHeader className="pb-2">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex flex-col gap-3 regular:flex-row regular:items-center regular:justify-between">
           <div>
             <CardTitle className="text-base">All Holdings</CardTitle>
             <p className="text-xs text-muted-foreground mt-0.5">
               Live prices from Yahoo Finance &amp; CoinGecko
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="flex gap-1 flex-wrap">
-              {(["all", "etf", "stock", "crypto", "metal", "cash"] as const).map(t => (
-                <Button
-                  key={t}
-                  variant={filter === t ? "default" : "outline"}
-                  size="sm"
-                  className="text-xs h-7 px-2.5"
-                  onClick={() => setFilter(t)}
-                >
-                  {t === "all" ? "All" : ASSET_TYPE_CONFIG[t]?.label ?? t}
-                  <Badge variant="secondary" className={`ml-1 text-xs h-5 px-1 bg-transparent ${filter === t ? "text-primary-foreground" : ""}`}>
-                    {t === "all" ? summary.totalHoldings : byType[t]?.count ?? 0}
-                  </Badge>
-                </Button>
-              ))}
-            </div>
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               variant={hideEmpty ? "default" : "outline"}
               size="sm"
@@ -370,7 +350,7 @@ export function HoldingsTable({
                         <TableCell colSpan={12} className="py-3">
                           {/* Aggregate-level info grid (shared across the
                               accounts inside this canonical position). */}
-                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 text-xs">
+                          <div className="grid grid-cols-2 regular:grid-cols-3 wide:grid-cols-6 gap-3 text-xs">
                             <div>
                               <p className="text-muted-foreground">First Purchase</p>
                               <p className="font-medium">{earliestPurchase ?? "--"}</p>

@@ -143,7 +143,7 @@ export function SaveTemplateDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[90dvh] flex flex-col overflow-hidden">
+      <DialogContent className="regular:max-w-2xl max-h-[90dvh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>Save as Template</DialogTitle>
           <DialogDescription>
@@ -152,7 +152,7 @@ export function SaveTemplateDialog({
         </DialogHeader>
 
         <div className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1">
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 regular:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="tpl-name">Template Name</Label>
               <Input
@@ -181,10 +181,10 @@ export function SaveTemplateDialog({
           <div className="space-y-2">
             <Label className="text-sm font-medium">Column Mapping</Label>
             <p className="text-xs text-muted-foreground">Map CSV columns to transaction fields.</p>
-            <div className="grid gap-2 sm:grid-cols-2 rounded-lg border p-2">
+            <div className="grid gap-2 regular:grid-cols-2 rounded-lg border p-2">
               {MAPPING_FIELDS.map((field) => (
                 <div key={field} className="flex items-center gap-2 px-2 py-1.5">
-                  <span className="w-28 text-xs text-muted-foreground shrink-0">
+                  <span className="w-row-label text-xs text-muted-foreground shrink-0">
                     {FIELD_LABELS[field]}
                   </span>
                   <Select
@@ -214,7 +214,7 @@ export function SaveTemplateDialog({
               <p className="text-xs text-muted-foreground">
                 Apply these parser knobs whenever this template is used. Leave at defaults for canonical exports.
               </p>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3 regular:grid-cols-2">
                 <div className="space-y-1">
                   <Label htmlFor="save-tpl-skip-h" className="text-xs">Skip N header rows</Label>
                   <Input

@@ -70,11 +70,11 @@ describe("analytics consent banner: safe area and phone tab-bar clearance", () =
   const s = read("src/components/analytics-consent.tsx");
 
   it("clears the phone tab bar via mobile-bar-clearance", () => {
-    expect(s).toContain("max-md:bottom-[calc(var(--mobile-bar-clearance)-1rem)]");
+    expect(s).toContain("max-regular:bottom-[calc(var(--mobile-bar-clearance)-1rem)]");
   });
 
   it("keeps the desktop bottom-0 and z-[9999]", () => {
-    expect(s).toContain("bottom-0 max-md:bottom-");
+    expect(s).toContain("bottom-0 max-regular:bottom-");
     expect(s).toContain("z-[9999]");
   });
 
@@ -87,4 +87,4 @@ describe("analytics consent banner: safe area and phone tab-bar clearance", () =
 
 // Mutation checks (run by hand, see report): each restored line must turn one of these red.
 // 1) lot-inspector h-[95dvh] -> h-[95vh]   2) dialog.tsx overscroll-contain removed
-// 3) consent max-md:bottom-[calc(...)] removed
+// 3) consent max-regular:bottom-[calc(...)] removed

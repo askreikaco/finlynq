@@ -249,11 +249,11 @@ describe("BackButton adoption: Category page", () => {
 });
 
 describe("BackButton adoption: AccountShell", () => {
-  it("renders back button href=/account with aria-label='Back to Account' on sub-pages when navV2 is on", async () => {
+  it("renders back button href=/account with aria-label='Back to Account' on sub-pages", async () => {
     const { AccountShell } = await import("@/components/account-shell");
 
     render(
-      <AccountShell navV2={true}>
+      <AccountShell>
         <div>Account sub-page content</div>
       </AccountShell>
     );

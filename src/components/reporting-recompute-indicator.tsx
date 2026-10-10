@@ -79,8 +79,8 @@ export function ReportingRecomputeIndicator() {
   if (!view) return null;
 
   // Phones: sit just above the tab bar (--mobile-bar-clearance is the space the bar and its inset
-  // reserve), so the toast never covers content rows. Desktop: no tab bar, default md:bottom-4.
-  const bottomClasses = "max-md:bottom-[calc(var(--mobile-bar-clearance)+0.5rem)] md:bottom-4";
+  // reserve), so the toast never covers content rows. Desktop: no tab bar, default regular:bottom-4.
+  const bottomClasses = "max-regular:bottom-[calc(var(--mobile-bar-clearance)+0.5rem)] regular:bottom-4";
 
   return (
     <div className={`fixed ${bottomClasses} right-4 z-50 flex items-center gap-2 rounded-full bg-background px-3.5 py-2 text-xs text-muted-foreground shadow-lg ring-1 ring-foreground/10`}>

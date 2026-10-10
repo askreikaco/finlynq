@@ -13,11 +13,11 @@ const nav = read("src/components/nav.tsx");
 const chat = read("src/app/(app)/chat/page.tsx");
 const pageFab = read("src/components/mobile/page-fab.tsx");
 
-const GLASS_SEL = '[data-slot="page-header-actions"] > :is(button, a):not([data-variant="default"])';
+const GLASS_SEL = '[data-slot="header-capsule"] > :is(button, a):not([data-variant="default"])';
 
 // Text of the phone-only glass block (from its opening @media to the tab bar section).
 function phoneGlassBlock(): string {
-  const start = css.indexOf("@media (width < 48rem) {\n  .glass-capsule {");
+  const start = css.indexOf("@media (width < 40rem) {\n  .glass-capsule {");
   const end = css.indexOf("/* Mobile bottom tab bar", start);
   expect(start).toBeGreaterThan(-1);
   return css.slice(start, end);
@@ -39,7 +39,7 @@ describe("M1: header glass excludes primary-filled buttons", () => {
     const block = phoneGlassBlock();
     expect(block).toContain(`${GLASS_SEL} {\n    background: transparent;`);
     // Sizing/shape rule stays unscoped so primary CTAs become round 44px too.
-    const sizing = bodyOf(block, '  [data-slot="page-header-actions"] > :is(button, a)');
+    const sizing = bodyOf(block, '  [data-slot="header-capsule"] > :is(button, a)');
     expect(sizing).toContain("border-radius: 9999px");
     expect(sizing).toContain("height: 2.75rem");
     expect(sizing).not.toContain("background");
@@ -50,7 +50,7 @@ describe("M1: header glass excludes primary-filled buttons", () => {
     // Every background declaration on header actions must be behind the exclusion.
     const lines = block.split("\n");
     lines.forEach((line, idx) => {
-      if (!line.includes('[data-slot="page-header-actions"]')) return;
+      if (!line.includes('[data-slot="header-capsule"]')) return;
       if (line.includes(":is(button, a)") && !line.includes(":not([data-variant")) {
         // only the sizing rule may be unscoped
         const body = lines.slice(idx, idx + 4).join("\n");
@@ -97,9 +97,9 @@ describe("S1: phone main does not become a scroll container", () => {
 });
 
 describe("m10: mobile bottom bar links have a focus ring", () => {
-  it("both MobileBottomBar link classes include focus-visible ring on sidebar-ring", () => {
+  it("the bar tab class (shared by all five tabs) includes focus-visible ring on sidebar-ring", () => {
     const links = nav.split("\n").filter((l) => l.includes("rounded-full px-0 whitespace-nowrap"));
-    expect(links.length).toBe(2);
+    expect(links.length).toBe(1);
     for (const l of links) {
       expect(l).toContain("focus-visible:ring-2");
       expect(l).toContain("focus-visible:ring-sidebar-ring");
@@ -114,9 +114,9 @@ describe("m10: mobile bottom bar links have a focus ring", () => {
 
 describe("m3: chat height uses the mobile bar clearance on phones", () => {
   it("phone height uses --mobile-bar-clearance, desktop height unchanged", () => {
-    expect(chat).toContain("max-md:h-[calc(100dvh-var(--mobile-bar-clearance)-3.75rem)]");
-    expect(chat).toContain("md:h-[calc(100dvh-4rem)]");
-    expect(chat).toContain("max-md:-mb-20");
+    expect(chat).toContain("max-regular:h-[calc(100dvh-var(--mobile-bar-clearance)-3.75rem)]");
+    expect(chat).toContain("regular:h-[calc(100dvh-4rem)]");
+    expect(chat).toContain("max-regular:-mb-20");
     expect(chat).not.toContain("h-[calc(100dvh-8.5rem)]");
   });
 });

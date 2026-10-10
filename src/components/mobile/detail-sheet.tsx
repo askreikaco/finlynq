@@ -36,7 +36,7 @@ export function DetailSheet({
         </SheetHeader>
         <dl data-slot="detail-list" className="divide-y divide-border/50 px-4">
           {items.map((it, i) => (
-            <div key={i} className="flex min-h-11 items-center justify-between gap-4 py-2">
+            <div key={i} className="flex min-h-row items-center justify-between gap-4 py-2">
               <dt className="text-sm text-muted-foreground">{it.label}</dt>
               <dd className="min-w-0 text-right text-sm font-medium text-foreground break-words">{it.value}</dd>
             </div>

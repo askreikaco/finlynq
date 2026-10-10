@@ -1,5 +1,5 @@
 // @vitest-environment node
-// G3 touch targets (round 2): >=44pt hit areas below md via max-md: variants, pressed states on
+// G3 touch targets (round 2): >=44pt hit areas on coarse pointers via pointer-coarse: variants, pressed states on
 // switch / checkbox / tabs. Static source assertions only (no dev server, no Playwright).
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
@@ -14,6 +14,7 @@ const comboSrc = read("src/components/ui/combobox.tsx");
 const workspace = read("src/app/(app)/transactions/_components/transactions-workspace.tsx");
 const accountPage = read("src/app/(app)/accounts/[id]/page.tsx");
 const moreMenu = read("src/components/more-menu.tsx");
+const insetGroup = read("src/components/mobile/inset-group.tsx");
 const portfolio = read("src/app/(app)/portfolio/page.tsx");
 const family = read("src/app/(app)/family/_components/overview-tab.tsx");
 const shell = read("src/components/account-shell.tsx");
@@ -21,10 +22,11 @@ const consent = read("src/components/analytics-consent.tsx");
 
 const BANNED = /md:hidden|hidden\s+md:|isMobile|window\.innerWidth/;
 
-describe("switch hit area (44pt tall below md, desktop track unchanged)", () => {
-  it("hit-slop is 12px top and bottom below md (22px padding box + 24px = 46px)", () => {
-    expect(switchSrc).toContain("max-md:before:-inset-y-3");
-    expect(switchSrc).toContain("max-md:before:-inset-x-2");
+describe("switch hit area (44pt tall on coarse pointers, desktop track unchanged)", () => {
+  it("hit-slop is 12px top and bottom on coarse pointers (22px padding box + 24px = 46px)", () => {
+    expect(switchSrc).toContain("pointer-coarse:before:-inset-y-3");
+    expect(switchSrc).toContain("pointer-coarse:before:-inset-x-2");
+    expect(switchSrc).not.toMatch(/max-md:/);
   });
   it("visual track stays h-6 w-10", () => {
     expect(switchSrc).toContain("h-6 w-10");
@@ -36,12 +38,13 @@ describe("switch hit area (44pt tall below md, desktop track unchanged)", () => 
 });
 
 describe("tabs trigger hit area and pressed state", () => {
-  it("trigger hit-slop below md reaches the 44px list height (clipped by the list)", () => {
-    expect(tabsSrc).toContain("max-md:before:-inset-y-1.5");
-    expect(tabsSrc).toContain("max-md:before:absolute");
+  it("trigger hit-slop on coarse pointers reaches the 44px list height (clipped by the list)", () => {
+    expect(tabsSrc).toContain("pointer-coarse:before:-inset-y-1.5");
+    expect(tabsSrc).toContain("pointer-coarse:before:absolute");
+    expect(tabsSrc).not.toMatch(/max-md:/);
   });
-  it("list keeps h-11 below md", () => {
-    expect(tabsSrc).toContain("max-md:group-data-horizontal/tabs:h-11");
+  it("list is h-11 on coarse pointers at every width", () => {
+    expect(tabsSrc).toContain("pointer-coarse:group-data-horizontal/tabs:h-11");
   });
   it("pressed state on triggers (text and default-variant background)", () => {
     expect(tabsSrc).toContain("active:text-foreground");
@@ -55,10 +58,11 @@ describe("checkbox pressed state", () => {
   });
 });
 
-describe("combobox trigger reaches 44px below md (matches select.tsx)", () => {
-  it("default and sm sizes are h-11 below md", () => {
-    expect(comboSrc).toContain("max-md:data-[size=default]:h-11");
-    expect(comboSrc).toContain("max-md:data-[size=sm]:h-11");
+describe("combobox trigger reaches 44px on coarse pointers (matches select.tsx)", () => {
+  it("default and sm sizes are h-11 on coarse pointers", () => {
+    expect(comboSrc).toContain("pointer-coarse:data-[size=default]:h-11");
+    expect(comboSrc).toContain("pointer-coarse:data-[size=sm]:h-11");
+    expect(comboSrc).not.toMatch(/max-md:/);
   });
   it("desktop heights unchanged", () => {
     expect(comboSrc).toContain("data-[size=default]:h-8");
@@ -68,27 +72,34 @@ describe("combobox trigger reaches 44px below md (matches select.tsx)", () => {
 
 describe("page-level targets", () => {
   it("transactions 'Search and filter' link has min-h-11", () => {
-    expect(workspace).toMatch(/className="flex min-h-11 flex-1 items-center gap-2 px-3 py-2\.5 bg-muted rounded-lg/);
+    expect(workspace).toMatch(/"flex min-h-11 flex-1 items-center gap-2 px-3 py-2\.5 bg-muted rounded-lg/);
   });
-  it("accounts/[id] 'Back to Accounts' links are 44px tall below md (both render paths)", () => {
-    const n = accountPage.split('className="inline-flex max-md:min-h-11 items-center gap-1.5').length - 1;
-    expect(n).toBe(2);
+  it("accounts/[id] not-found path uses the global PageHeader back (one back control, 44px via BackButton)", () => {
+    // The not-found and loading branches carry PageHeader with backHref=/accounts; the main render uses the automatic back.
+    expect(accountPage.split('backLabel="Back to Accounts"').length - 1).toBe(1);
+    expect(accountPage).toContain('backHref="/accounts"');
+    expect(accountPage).not.toContain('pointer-coarse:min-h-11 items-center gap-1.5');
+    expect(accountPage).not.toContain("max-md:min-h-11");
   });
-  it("accounts/[id] Information edit icon button is 44px wide below md", () => {
-    expect(accountPage).toMatch(/variant="ghost"\s*\n\s*className="max-md:w-11 max-md:px-0"\s*\n\s*onClick=\{\(\) => openEdit\("details"\)\}\s*\n\s*title="Edit account"/);
+  it("accounts/[id] Information edit icon button is 44px wide on coarse pointers", () => {
+    expect(accountPage).toMatch(/variant="ghost"\s*\n\s*className="pointer-coarse:w-11 pointer-coarse:px-0"\s*\n\s*onClick=\{\(\) => openEdit\("details"\)\}\s*\n\s*title="Edit account"/);
+    expect(accountPage).not.toContain("max-md:w-11");
   });
-  it("more-menu theme segment: min-h-9 at md+, min-h-11 below, with pressed bg", () => {
-    expect(moreMenu).toContain("min-h-9 max-md:min-h-11 rounded-md px-2.5");
-    expect(moreMenu).toContain("active:bg-muted");
+  it("more theme picker (ThemePicker in mobile/inset-group): each thumbnail is a 44px touch target with a pressed state", () => {
+    expect(moreMenu).toContain("<ThemePicker");
+    expect(insetGroup).toContain("role=\"radiogroup\"");
+    expect(insetGroup).toContain("min-h-11");
+    expect(insetGroup).toContain("active:opacity-80");
   });
   it("portfolio 'Add Account' link has min-h-11", () => {
     expect(portfolio).toContain("inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-4 py-2");
   });
-  it("family overview Refresh button is 44x44 below md, 36x36 at md+", () => {
-    expect(family).toContain("w-9 h-9 max-md:w-11 max-md:h-11");
+  it("family overview Refresh button is 44x44 on coarse pointers, 36x36 otherwise", () => {
+    expect(family).toContain("w-9 h-9 pointer-coarse:w-11 pointer-coarse:h-11");
   });
-  it("account shell Info/Security tabs are 44px tall and wide below md", () => {
-    expect(shell).toContain("max-md:flex max-md:min-h-11 max-md:min-w-11 max-md:items-end");
+  it("account shell Info/Security tabs are 44px tall and wide on coarse pointers", () => {
+    expect(shell).toContain("pointer-coarse:flex pointer-coarse:min-h-11 pointer-coarse:min-w-11 pointer-coarse:items-end");
+    expect(shell).not.toContain("max-md:min-h-11");
   });
   it("consent banner z-[9999] is still pinned (tests/ios/g3a-dvh-overscroll.test.ts)", () => {
     expect(consent).toContain("z-[9999]");

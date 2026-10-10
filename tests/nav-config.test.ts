@@ -326,8 +326,6 @@ describe("nav-config", () => {
         { path: "/settings/dropdown-order", kind: "render-parent", target: "/settings/general" },
         { path: "/settings/data", kind: "render-parent", target: "/settings/developer" },
         { path: "/settings/bank-feeds", kind: "render-parent", target: "/settings/integrations" },
-        { path: "/settings/securities", kind: "render-parent", target: "/settings/investments" },
-        { path: "/settings/holding-accounts", kind: "render-parent", target: "/settings/investments" },
         { path: "/settings/rules", kind: "render-parent", target: "/settings/reconciliation" },
         { path: "/settings/import", kind: "render-parent", target: "/settings/reconciliation" },
         { path: "/connect", kind: "render-parent", target: "/settings/integrations" },
@@ -509,6 +507,8 @@ describe("nav-config", () => {
       for (const entry of NAV_REGISTRY) {
         // Skip entries with query params
         if (entry.path.includes("?")) continue;
+        // Path is served by a next.config redirect (C-36), not a page file
+        if (REDIRECTS.some((r) => r.source === entry.path)) continue;
 
         const basePath = entry.path.split("?")[0];
         const exists = pageFiles.has(basePath);
@@ -621,7 +621,7 @@ describe("nav-config", () => {
   });
 
   describe("Redirects table", () => {
-    it("should have complete REDIRECTS array with all 7 entries in exact form", () => {
+    it("should have complete REDIRECTS array with all 10 entries in exact form", () => {
       const expectedRedirects = [
         { source: "/mcp", destination: "/api/mcp", permanent: true },
         { source: "/mcp/:path*", destination: "/api/mcp/:path*", permanent: true },
@@ -630,6 +630,9 @@ describe("nav-config", () => {
         { source: "/import/reconcile", destination: "/import?tab=reconcile", permanent: false },
         { source: "/import/classic", destination: "/import", permanent: false },
         { source: "/calendar", destination: "/subscriptions?view=calendar", permanent: false },
+        { source: "/admin/env", destination: "/admin/system", permanent: false },
+        { source: "/settings/holding-accounts", destination: "/settings/investments", permanent: false },
+        { source: "/settings/securities", destination: "/settings/investments", permanent: false },
       ];
       expect(REDIRECTS).toEqual(expectedRedirects);
     });
@@ -646,7 +649,7 @@ describe("nav-config", () => {
       const cfg = (await import("../../next.config")).default;
       const result = await cfg.redirects!();
 
-      // Expected 7 entries (full table)
+      // Expected 10 entries (full table)
       const expectedRedirects = [
         { source: "/mcp", destination: "/api/mcp", permanent: true },
         { source: "/mcp/:path*", destination: "/api/mcp/:path*", permanent: true },
@@ -655,6 +658,9 @@ describe("nav-config", () => {
         { source: "/import/reconcile", destination: "/import?tab=reconcile", permanent: false },
         { source: "/import/classic", destination: "/import", permanent: false },
         { source: "/calendar", destination: "/subscriptions?view=calendar", permanent: false },
+        { source: "/admin/env", destination: "/admin/system", permanent: false },
+        { source: "/settings/holding-accounts", destination: "/settings/investments", permanent: false },
+        { source: "/settings/securities", destination: "/settings/investments", permanent: false },
       ];
 
       expect(result).toEqual(expectedRedirects);
@@ -721,5 +727,66 @@ describe("nav-config", () => {
       expect(navLabel("/transactions", "Transactions", { categoriesMerged: false })).toBe("Transactions");
       expect(navLabel("/budgets", "Budgets")).toBe("Budgets");
     });
+  });
+});
+
+describe("parent map (back targets)", () => {
+  const TABS = ["/dashboard", "/accounts", "/portfolio", "/transactions"];
+  const MORE_CHILDREN = [
+    "/whats-new", "/chat", "/budgets", "/goals", "/subscriptions", "/loans", "/family", "/reports",
+    "/categories", "/tax", "/scenarios", "/fire", "/import", "/api-docs", "/feedback", "/settings",
+    "/admin", "/admin/inbox", "/admin/email-inbox", "/admin/env", "/admin/announcements",
+    "/admin/feedback", "/admin/instance", "/dev/gallery", "/manage-accounts", "/account",
+  ];
+
+  it("tabs are level 1 (no parent) and the More page is a registry parent with no parent of its own", () => {
+    for (const p of [...TABS, "/more"]) {
+      expect(getNavEntry(p)?.parent, p).toBeUndefined();
+    }
+  });
+
+  it("every More entry (plus manage-accounts and account) has parent /more", () => {
+    for (const p of MORE_CHILDREN) {
+      expect(getNavEntry(p)?.parent, p).toBe("/more");
+    }
+  });
+
+  it("settings subpages parent /settings; account subpages parent /account; admin env subpages parent /admin/env", () => {
+    for (const e of getEntriesByGroup("Settings").filter((x) => x.path !== "/settings")) {
+      expect(e.parent, e.path).toBe("/settings");
+    }
+    expect(getNavEntry("/account/info")?.parent).toBe("/account");
+    expect(getNavEntry("/account/security")?.parent).toBe("/account");
+    for (const p of ["/admin/system", "/admin/diagnostics", "/admin/api-log", "/admin/price-cache", "/admin/integrations"]) {
+      expect(getNavEntry(p)?.parent, p).toBe("/admin/env");
+    }
+  });
+
+  it("portfolio create flow parents /portfolio", () => {
+    expect(getNavEntry("/portfolio/new")?.parent).toBe("/portfolio");
+  });
+
+  it("/feedback is on the more surface (reachable again after the sidebar was replaced) and keeps its flag", () => {
+    const entry = getNavEntry("/feedback");
+    expect(entry?.surfaces).toContain("more");
+    expect(entry?.flag).toBe("feedback");
+    expect(getEntriesBySurface("more").map((e) => e.path)).toContain("/feedback");
+  });
+
+  it("every parent names a registry entry, and no chain loops", () => {
+    for (const e of NAV_REGISTRY) {
+      if (!e.parent) continue;
+      expect(getNavEntry(e.parent), `${e.path} -> ${e.parent}`).toBeDefined();
+      const seen = new Set<string>([e.path]);
+      let cur: string | undefined = e.parent;
+      let steps = 0;
+      while (cur) {
+        expect(seen.has(cur), `cycle at ${cur}`).toBe(false);
+        seen.add(cur);
+        cur = getNavEntry(cur)?.parent;
+        steps += 1;
+        expect(steps).toBeLessThan(10);
+      }
+    }
   });
 });
