@@ -310,7 +310,7 @@ function MiniScreen({ tone }: { tone: "light" | "dark" }) {
 
 function ThemeThumb({ value }: { value: ThemeChoice }) {
   return (
-    <span aria-hidden="true" className="relative block aspect-[4/5] w-full overflow-hidden rounded-2xl ring-1 ring-foreground/10">
+    <span aria-hidden="true" className="relative block aspect-[4/5] w-full overflow-hidden rounded-group ring-1 ring-foreground/10">
       {value === "system" ? (
         <>
           <span className="absolute inset-0 [clip-path:inset(0_50%_0_0)]">
@@ -375,11 +375,11 @@ export function ThemePicker({ value, onChange, label = "Appearance" }: ThemePick
             onClick={() => onChange(o.value)}
             onKeyDown={onKeyDown(i)}
             data-testid={`theme-${o.value}`}
-            className="group flex min-h-11 flex-col items-center gap-2 rounded-2xl outline-none transition-opacity active:opacity-80 focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="group flex min-h-11 flex-col items-center gap-2 rounded-group outline-none transition-opacity active:opacity-80 focus-visible:ring-3 focus-visible:ring-ring/50"
           >
             <span
               className={cn(
-                "block w-full rounded-2xl p-0.5 ring-2 ring-offset-2 ring-offset-card transition-colors",
+                "block w-full rounded-group p-0.5 ring-2 ring-offset-2 ring-offset-card transition-colors",
                 checked ? "ring-primary" : "ring-transparent",
               )}
             >
