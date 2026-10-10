@@ -1156,6 +1156,7 @@ export function StagedReviewSurface({
   return (
     <div className="flex flex-col gap-4 regular:h-[calc(100dvh-8rem)]">
       <ReconcileHeader
+        embedded={embedded}
         detail={detail}
         accountId={accountId}
         acting={acting}
