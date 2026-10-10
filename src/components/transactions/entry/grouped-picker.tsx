@@ -1,17 +1,17 @@
 "use client";
 
-import React, { useId, useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Check, ChevronDown, Search, Settings } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, Search, Settings } from "lucide-react";
 import { SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { filterRecent } from "@/lib/transactions/recent-picks";
 
 /**
- * Compact grouped picker shared by the New Transaction category and account sheets.
- * iOS-style: one inset card per section, 44pt rows, hairline separators, and one
- * collapsed disclosure row per group. Selection is by id; no selection state here.
+ * Tile-grid picker shared by the New Transaction category and account sheets.
+ * Every choice is a big tappable tile in a three-column grid. Selection is by id;
+ * no selection state here.
  */
 
 /** Recent rows shown above the groups. */
@@ -21,14 +21,24 @@ export const PICKER_RECENT_LIMIT = 5;
 export const PICKER_SHEET_CLASS =
   "flex flex-col p-0 pt-0 pb-[var(--sab)] regular:pb-0 rounded-t-3xl bg-background border-t border-border text-foreground data-[side=bottom]:h-auto data-[side=bottom]:max-h-[min(70dvh,calc(100dvh-var(--kb-inset,0px)))] regular:inset-x-auto! regular:left-1/2! regular:bottom-6! regular:h-auto! regular:max-h-[70dvh]! regular:w-[28rem]! regular:max-w-[calc(100vw-2rem)]! regular:-translate-x-1/2! regular:rounded-2xl! regular:border!";
 
+/** Three-column tile grid shared by every picker body. */
+const TILE_GRID = "grid grid-cols-3 gap-2";
+
+/**
+ * "sections": one labelled tile grid per group (accounts).
+ * "expand": top-level grid of group tiles, one open at a time; the open group's
+ * children unfold as a full-width band under that group's row (categories).
+ */
+export type PickerLayout = "sections" | "expand";
+
 export interface PickerEntry {
   id: string;
   name: string;
-  /** Group title; rows are listed under it. */
+  /** Group title; tiles are listed under it. */
   group: string;
-  /** Secondary text on group rows. */
+  /** Secondary text on group tiles (sections layout). */
   groupDetail?: string;
-  /** Secondary text on flat rows (search results and Recent). */
+  /** Secondary text on flat tiles (search results and Recent). */
   flatDetail?: string;
   /** Strings a search term is matched against (case-insensitive substring). */
   searchText: string[];
@@ -42,11 +52,21 @@ export interface GroupedPickerPanelProps {
   selectedId?: string;
   /** Recently picked ids, most recent first. */
   recentIds?: string[];
+  /** How the groups are laid out in the body. */
+  layout: PickerLayout;
   onPick: (id: string) => void;
   /** Page that edits this list. Renders a round settings button in the header when set. */
   settingsHref?: string;
   /** Accessible name and tooltip of the settings button. */
   settingsLabel?: string;
+}
+
+/** A group with exactly one entry named like the group renders as a plain tile. */
+function isPlainGroup(name: string, rows: PickerEntry[]): boolean {
+  return (
+    rows.length === 1 &&
+    rows[0].name.trim().toLowerCase() === name.trim().toLowerCase()
+  );
 }
 
 /**
@@ -60,11 +80,13 @@ export function GroupedPickerPanel({
   entries,
   selectedId,
   recentIds,
+  layout,
   onPick,
   settingsHref,
   settingsLabel = "Settings",
 }: GroupedPickerPanelProps) {
   const [search, setSearch] = useState("");
+  const idBase = useId();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   // Settings link carries the current page back as returnTo (destinations validate it).
@@ -83,10 +105,8 @@ export function GroupedPickerPanel({
     [entries, selectedId],
   );
 
-  // The group holding the current selection starts open; the rest start collapsed.
-  const [openGroups, setOpenGroups] = useState<ReadonlySet<string>>(
-    () => new Set(selectedGroup === null ? [] : [selectedGroup]),
-  );
+  // Expand layout: one open group at a time. The group holding the selection starts open.
+  const [openGroup, setOpenGroup] = useState<string | null>(() => selectedGroup);
 
   const groups = useMemo(() => {
     const map = new Map<string, PickerEntry[]>();
@@ -116,12 +136,72 @@ export function GroupedPickerPanel({
   }, [entries, recentIds]);
 
   const toggleGroup = (name: string) =>
-    setOpenGroups((prev) => {
-      const next = new Set(prev);
-      if (next.has(name)) next.delete(name);
-      else next.add(name);
-      return next;
+    setOpenGroup((prev) => (prev === name ? null : name));
+
+  /** Expand layout body: group tiles, with the open group's band after its row's last tile. */
+  const expandGrid = () => {
+    const openIndex = groups.findIndex(
+      ([name, rows]) => name === openGroup && !isPlainGroup(name, rows),
+    );
+    // Three columns: the open group's row ends at the next multiple of 3 (or the last group).
+    const bandAfter =
+      openIndex < 0
+        ? -1
+        : Math.min(groups.length - 1, Math.ceil((openIndex + 1) / 3) * 3 - 1);
+    const cells: React.ReactNode[] = [];
+    groups.forEach(([name, rows], i) => {
+      if (isPlainGroup(name, rows)) {
+        const e = rows[0];
+        cells.push(
+          <PickerTile
+            key={name}
+            label={e.name}
+            selected={e.id === selectedId}
+            onSelect={() => onPick(e.id)}
+          />,
+        );
+      } else {
+        const open = i === openIndex;
+        const tileId = `${idBase}-group-${i}`;
+        const bandId = `${idBase}-band-${i}`;
+        cells.push(
+          <PickerGroupTile
+            key={name}
+            id={tileId}
+            title={name}
+            open={open}
+            controls={open ? bandId : undefined}
+            onToggle={() => toggleGroup(name)}
+          />,
+        );
+      }
+      if (i === bandAfter) {
+        cells.push(
+          <div
+            key={`band-${openIndex}`}
+            id={`${idBase}-band-${openIndex}`}
+            role="region"
+            aria-labelledby={`${idBase}-group-${openIndex}`}
+            className={cn(
+              TILE_GRID,
+              "col-span-full rounded-xl bg-muted/40 p-2 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-200",
+            )}
+          >
+            {groups[openIndex][1].map((e) => (
+              <PickerTile
+                key={e.id}
+                label={e.name}
+                selected={e.id === selectedId}
+                revealOnMount={e.id === selectedId}
+                onSelect={() => onPick(e.id)}
+              />
+            ))}
+          </div>,
+        );
+      }
     });
+    return <div className={TILE_GRID}>{cells}</div>;
+  };
 
   const empty = (
     <div className="py-12 text-center text-sm text-muted-foreground">{emptyText}</div>
@@ -167,9 +247,9 @@ export function GroupedPickerPanel({
           hits.length === 0 ? (
             empty
           ) : (
-            <PickerCard>
+            <div className={TILE_GRID}>
               {hits.map((e) => (
-                <PickerRow
+                <PickerTile
                   key={e.id}
                   label={e.name}
                   detail={e.flatDetail}
@@ -177,15 +257,15 @@ export function GroupedPickerPanel({
                   onSelect={() => onPick(e.id)}
                 />
               ))}
-            </PickerCard>
+            </div>
           )
         ) : (
           <>
             {recent.length > 0 && (
               <PickerSection title="Recent">
-                <PickerCard>
+                <div className={TILE_GRID}>
                   {recent.map((e) => (
-                    <PickerRow
+                    <PickerTile
                       key={`recent-${e.id}`}
                       label={e.name}
                       detail={e.flatDetail}
@@ -193,34 +273,30 @@ export function GroupedPickerPanel({
                       onSelect={() => onPick(e.id)}
                     />
                   ))}
-                </PickerCard>
+                </div>
               </PickerSection>
             )}
             {groups.length === 0 ? (
               empty
+            ) : layout === "expand" ? (
+              expandGrid()
             ) : (
-              <PickerCard>
-                {groups.map(([name, rows]) => (
-                  <PickerGroup
-                    key={name}
-                    title={name}
-                    count={rows.length}
-                    open={openGroups.has(name)}
-                    onToggle={() => toggleGroup(name)}
-                    revealOnMount={name === selectedGroup}
-                  >
+              groups.map(([name, rows]) => (
+                <PickerSection key={name} title={name}>
+                  <div className={TILE_GRID}>
                     {rows.map((e) => (
-                      <PickerRow
+                      <PickerTile
                         key={e.id}
                         label={e.name}
                         detail={e.groupDetail}
                         selected={e.id === selectedId}
+                        revealOnMount={e.id === selectedId}
                         onSelect={() => onPick(e.id)}
                       />
                     ))}
-                  </PickerGroup>
-                ))}
-              </PickerCard>
+                  </div>
+                </PickerSection>
+              ))
             )}
           </>
         )}
@@ -238,7 +314,7 @@ export function PickerCard({ className, children }: { className?: string; childr
   );
 }
 
-/** Small uppercase section label above a card. */
+/** Small uppercase section label above a grid. */
 export function PickerSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="space-y-2">
@@ -279,62 +355,81 @@ export function PickerRow({
 }
 
 /**
- * Accordion row for one group: name, count badge, chevron. Panel content mounts only
- * while open. `revealOnMount` scrolls the row into view when it first mounts (the
- * sheet mounts on open, so this runs once per open).
+ * Big tappable tile: centered name (two lines max), optional muted second line.
+ * Selected = accent border, accent text, faint accent fill, aria-current="true".
+ * `revealOnMount` scrolls the tile into view when it first mounts (jsdom has no
+ * scrollIntoView, so the call is optional).
  */
-export function PickerGroup({
-  title,
-  count,
-  open,
-  onToggle,
+export function PickerTile({
+  label,
+  detail,
+  selected,
   revealOnMount = false,
-  children,
+  onSelect,
 }: {
-  title: string;
-  count: number;
-  open: boolean;
-  onToggle: () => void;
+  label: string;
+  detail?: string;
+  selected: boolean;
   revealOnMount?: boolean;
-  children: React.ReactNode;
+  onSelect: () => void;
 }) {
-  const id = useId();
-  const headerRef = useRef<HTMLButtonElement>(null);
+  const ref = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    // Optional call: jsdom has no scrollIntoView.
-    if (revealOnMount) headerRef.current?.scrollIntoView?.({ block: "center" });
+    if (revealOnMount) ref.current?.scrollIntoView?.({ block: "center" });
   }, [revealOnMount]);
 
   return (
-    <div>
-      <button
-        ref={headerRef}
-        id={`${id}-header`}
-        type="button"
-        aria-expanded={open}
-        aria-controls={`${id}-panel`}
-        onClick={onToggle}
-        className="group flex min-h-11 w-full items-center gap-2 px-4 py-2 text-left outline-none transition-colors hover:bg-muted/50 focus-visible:bg-muted active:bg-muted"
-      >
-        <span className="min-w-0 flex-1 truncate text-base font-medium text-foreground">{title}</span>
-        <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs font-medium tabular-nums text-muted-foreground">
-          {count}
-        </span>
-        <ChevronDown
-          aria-hidden="true"
-          className="h-4 w-4 shrink-0 text-muted-foreground motion-safe:transition-transform motion-safe:duration-200 group-aria-expanded:rotate-180"
-        />
-      </button>
-      <div
-        id={`${id}-panel`}
-        role="region"
-        aria-labelledby={`${id}-header`}
-        hidden={!open}
-        className={open ? "divide-y divide-border border-t border-border motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-200" : undefined}
-      >
-        {open ? children : null}
-      </div>
-    </div>
+    <button
+      ref={ref}
+      type="button"
+      onClick={onSelect}
+      aria-current={selected ? "true" : undefined}
+      className={cn(
+        "flex min-h-14 w-full min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl border bg-card px-2 py-2 text-center text-base text-foreground outline-none transition-colors hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring active:bg-muted",
+        selected ? "border-primary bg-primary/10 text-primary" : "border-border",
+      )}
+    >
+      <span className="line-clamp-2 w-full break-words font-medium leading-snug">{label}</span>
+      {detail ? (
+        <span className="w-full truncate text-xs text-muted-foreground">{detail}</span>
+      ) : null}
+    </button>
+  );
+}
+
+/**
+ * Expand-layout group tile: name plus a chevron (down when closed, up when open).
+ * Controls the full-width band of its children (`controls` is set only while open).
+ */
+export function PickerGroupTile({
+  id,
+  title,
+  open,
+  controls,
+  onToggle,
+}: {
+  id: string;
+  title: string;
+  open: boolean;
+  controls?: string;
+  onToggle: () => void;
+}) {
+  const Chevron = open ? ChevronUp : ChevronDown;
+  return (
+    <button
+      id={id}
+      type="button"
+      aria-expanded={open}
+      aria-controls={controls}
+      onClick={onToggle}
+      className={cn(
+        "flex min-h-14 w-full min-w-0 items-center justify-center gap-1 rounded-xl border border-border bg-card px-2 py-2 text-center text-base font-medium text-foreground outline-none transition-colors hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring active:bg-muted",
+        open && "bg-muted",
+      )}
+    >
+      <span className="line-clamp-2 min-w-0 break-words leading-snug">{title}</span>
+      <Chevron aria-hidden="true" className="h-4 w-4 shrink-0 text-muted-foreground" />
+    </button>
   );
 }

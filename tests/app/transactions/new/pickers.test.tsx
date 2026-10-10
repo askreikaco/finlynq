@@ -30,12 +30,12 @@ function sheetContent(): HTMLElement {
   return el as HTMLElement;
 }
 
-/** Group accordion header: accessible name is "<group><count>" (inline spans, so spacing varies). */
-function header(name: string, count: number): HTMLElement {
-  return screen.getByRole("button", { name: new RegExp(`^${name}\\s*${count}$`) });
+/** Category group tile: accessible name is exactly the group name. */
+function groupTile(name: string): HTMLElement {
+  return screen.getByRole("button", { name });
 }
 
-/** Row whose accessible name starts with the label (rows may add a secondary line). */
+/** Tile whose accessible name starts with the label (tiles add a secondary line). */
 function row(label: string): HTMLElement {
   return screen.getByRole("button", { name: new RegExp(`^${label}`) });
 }
@@ -44,13 +44,18 @@ function rowOrNull(label: string): HTMLElement | null {
   return screen.queryByRole("button", { name: new RegExp(`^${label}`) });
 }
 
+/** Section labels (uppercase h3s) in render order. */
+function sectionLabels(): string[] {
+  return screen.queryAllByRole("heading", { level: 3 }).map((h) => h.textContent ?? "");
+}
+
 function recentRows(): string[] {
   const section = screen.getByRole("heading", { name: "Recent" }).parentElement!;
   return Array.from(section.querySelectorAll("button")).map((b) => b.textContent ?? "");
 }
 
-describe("CategorySelector accordion", () => {
-  it("renders Recent first, as rows, in recent order", () => {
+describe("CategorySelector tile grid", () => {
+  it("renders Recent first, as tiles, in recent order", () => {
     render(
       <CategorySelector
         open
@@ -63,9 +68,10 @@ describe("CategorySelector accordion", () => {
     const headings = screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent);
     expect(headings[0]).toBe("Recent");
     expect(recentRows()).toEqual(["SalaryIncome", "Dining OutFood"]);
+    expect(screen.getByRole("heading", { name: "Recent" }).parentElement!.querySelector(".grid-cols-3")).not.toBeNull();
   });
 
-  it("caps Recent at five rows", () => {
+  it("caps Recent at five tiles", () => {
     const many: Category[] = Array.from({ length: 7 }, (_, i) => ({
       id: String(i + 1),
       name: `Cat ${i + 1}`,
@@ -103,12 +109,12 @@ describe("CategorySelector accordion", () => {
     expect(screen.queryByText("Recent")).toBeNull();
   });
 
-  it("starts every group collapsed when nothing is selected", () => {
+  it("starts every group closed when nothing is selected", () => {
     render(
       <CategorySelector open onOpenChange={() => {}} categories={categories} onSelect={() => {}} />,
     );
-    expect(header("Food", 2).getAttribute("aria-expanded")).toBe("false");
-    expect(header("Income", 1).getAttribute("aria-expanded")).toBe("false");
+    expect(groupTile("Food").getAttribute("aria-expanded")).toBe("false");
+    expect(groupTile("Income").getAttribute("aria-expanded")).toBe("false");
     expect(rowOrNull("Groceries")).toBeNull();
     expect(rowOrNull("Salary")).toBeNull();
   });
@@ -123,36 +129,38 @@ describe("CategorySelector accordion", () => {
         selectedCategoryId="2"
       />,
     );
-    expect(header("Food", 2).getAttribute("aria-expanded")).toBe("true");
-    expect(header("Income", 1).getAttribute("aria-expanded")).toBe("false");
+    expect(groupTile("Food").getAttribute("aria-expanded")).toBe("true");
+    expect(groupTile("Income").getAttribute("aria-expanded")).toBe("false");
     expect(row("Dining Out")).toBeTruthy();
     expect(row("Groceries")).toBeTruthy();
     expect(rowOrNull("Salary")).toBeNull();
   });
 
-  it("header toggles aria-expanded and rows, and several groups can be open", () => {
+  it("only one group is open at a time (accordion)", () => {
     render(
       <CategorySelector open onOpenChange={() => {}} categories={categories} onSelect={() => {}} />,
     );
-    fireEvent.click(header("Income", 1));
-    expect(header("Income", 1).getAttribute("aria-expanded")).toBe("true");
+    fireEvent.click(groupTile("Income"));
+    expect(groupTile("Income").getAttribute("aria-expanded")).toBe("true");
     expect(row("Salary")).toBeTruthy();
 
-    fireEvent.click(header("Food", 2));
-    expect(header("Food", 2).getAttribute("aria-expanded")).toBe("true");
-    expect(header("Income", 1).getAttribute("aria-expanded")).toBe("true");
+    fireEvent.click(groupTile("Food"));
+    expect(groupTile("Food").getAttribute("aria-expanded")).toBe("true");
+    expect(groupTile("Income").getAttribute("aria-expanded")).toBe("false");
+    expect(rowOrNull("Salary")).toBeNull();
+    expect(document.querySelectorAll('[role="region"]')).toHaveLength(1);
 
-    fireEvent.click(header("Food", 2));
-    expect(header("Food", 2).getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(groupTile("Food"));
+    expect(groupTile("Food").getAttribute("aria-expanded")).toBe("false");
     expect(rowOrNull("Groceries")).toBeNull();
-    expect(row("Salary")).toBeTruthy();
+    expect(document.querySelectorAll('[role="region"]')).toHaveLength(0);
   });
 
-  it("aria-controls points at a region labelled by its header", () => {
+  it("aria-controls points at the band region, which is labelled by its group tile", () => {
     render(
       <CategorySelector open onOpenChange={() => {}} categories={categories} onSelect={() => {}} />,
     );
-    const btn = header("Income", 1);
+    const btn = groupTile("Income");
     fireEvent.click(btn);
     const region = document.getElementById(btn.getAttribute("aria-controls")!);
     expect(region).not.toBeNull();
@@ -160,7 +168,7 @@ describe("CategorySelector accordion", () => {
     expect(region!.getAttribute("aria-labelledby")).toBe(btn.id);
   });
 
-  it("selecting a row fires onSelect with the id and closes the sheet", () => {
+  it("selecting a leaf tile fires onSelect with the id and closes the sheet", () => {
     const onSelect = vi.fn();
     const onOpenChange = vi.fn();
     render(
@@ -171,13 +179,13 @@ describe("CategorySelector accordion", () => {
         onSelect={onSelect}
       />,
     );
-    fireEvent.click(header("Income", 1));
+    fireEvent.click(groupTile("Income"));
     fireEvent.click(row("Salary"));
     expect(onSelect).toHaveBeenCalledWith("3");
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it("selecting a Recent row fires onSelect with the id", () => {
+  it("selecting a Recent tile fires onSelect with the id", () => {
     const onSelect = vi.fn();
     render(
       <CategorySelector
@@ -192,7 +200,7 @@ describe("CategorySelector accordion", () => {
     expect(onSelect).toHaveBeenCalledWith("3");
   });
 
-  it("marks the selected row with aria-current and a checkmark", () => {
+  it("marks the selected tile with aria-current and the accent classes", () => {
     render(
       <CategorySelector
         open
@@ -204,12 +212,23 @@ describe("CategorySelector accordion", () => {
     );
     const selected = row("Dining Out");
     expect(selected.getAttribute("aria-current")).toBe("true");
-    expect(selected.querySelector("svg")).not.toBeNull();
+    expect(selected.className).toContain("border-primary");
+    expect(selected.className).toContain("text-primary");
+    expect(selected.className).toContain("bg-primary/10");
     expect(row("Groceries").getAttribute("aria-current")).toBeNull();
-    expect(row("Groceries").querySelector("svg")).toBeNull();
+    expect(row("Groceries").className).not.toContain("border-primary");
   });
 
-  it("search flattens matches with the group as secondary text and hides groups and Recent", () => {
+  it("group tiles are a 3-column grid of at least 56px tiles, with no 2-column grid", () => {
+    render(
+      <CategorySelector open onOpenChange={() => {}} categories={categories} onSelect={() => {}} />,
+    );
+    expect(groupTile("Food").parentElement!.className).toContain("grid-cols-3");
+    expect(groupTile("Food").className).toContain("min-h-14");
+    expect(sheetContent().querySelector(".grid-cols-2")).toBeNull();
+  });
+
+  it("search shows a flat tile grid with the group as secondary text, hiding groups and Recent", () => {
     render(
       <CategorySelector
         open
@@ -221,12 +240,14 @@ describe("CategorySelector accordion", () => {
     );
     fireEvent.change(screen.getByPlaceholderText("Search category..."), { target: { value: "groc" } });
     expect(row("Groceries").textContent).toContain("Food");
+    expect(row("Groceries").parentElement!.className).toContain("grid-cols-3");
     expect(rowOrNull("Salary")).toBeNull();
     expect(screen.queryByText("Recent")).toBeNull();
-    expect(screen.queryByRole("button", { name: /^Food\s*\d+$/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Food" })).toBeNull();
+    expect(document.querySelector('[role="region"]')).toBeNull();
   });
 
-  it("search also matches the group name and expands nothing it does not need to", () => {
+  it("search also matches the group name and shows only the matching leaves", () => {
     render(
       <CategorySelector open onOpenChange={() => {}} categories={categories} onSelect={() => {}} />,
     );
@@ -243,20 +264,28 @@ describe("CategorySelector accordion", () => {
     expect(screen.getByText("No categories found")).toBeTruthy();
   });
 
-  it("is a single-column list: no tile grid, rows are at least 44px", () => {
+  it("a group with one category of the same name is a plain selectable tile: no chevron, no band", () => {
+    const onSelect = vi.fn();
+    const onOpenChange = vi.fn();
+    const plain: Category[] = [
+      { id: "5", name: "Transport", group: "Transport" },
+      { id: "6", name: "Food", group: "Food" },
+    ];
     render(
       <CategorySelector
         open
-        onOpenChange={() => {}}
-        categories={categories}
-        onSelect={() => {}}
-        selectedCategoryId="1"
+        onOpenChange={onOpenChange}
+        categories={plain}
+        onSelect={onSelect}
       />,
     );
-    expect(sheetContent().querySelector(".grid-cols-2")).toBeNull();
-    expect(sheetContent().querySelector(".grid")).toBeNull();
-    expect(header("Food", 2).className).toContain("min-h-11");
-    expect(row("Groceries").className).toContain("min-h-11");
+    const tile = screen.getByRole("button", { name: "Transport" });
+    expect(tile.hasAttribute("aria-expanded")).toBe(false);
+    expect(tile.querySelector("svg")).toBeNull();
+    fireEvent.click(tile);
+    expect(onSelect).toHaveBeenCalledWith("5");
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+    expect(document.querySelector('[role="region"]')).toBeNull();
   });
 
   it("sheet keeps pt-0 and is capped at 70dvh, keyboard-aware", () => {
@@ -279,7 +308,7 @@ describe("CategorySelector accordion", () => {
     const { rerender } = render(
       <CategorySelector open onOpenChange={() => {}} categories={categories} onSelect={() => {}} />,
     );
-    fireEvent.click(header("Income", 1));
+    fireEvent.click(groupTile("Income"));
     expect(row("Salary")).toBeTruthy();
     rerender(
       <CategorySelector open={false} onOpenChange={() => {}} categories={categories} onSelect={() => {}} />,
@@ -287,22 +316,98 @@ describe("CategorySelector accordion", () => {
     rerender(
       <CategorySelector open onOpenChange={() => {}} categories={categories} onSelect={() => {}} />,
     );
-    expect(header("Income", 1).getAttribute("aria-expanded")).toBe("false");
+    expect(groupTile("Income").getAttribute("aria-expanded")).toBe("false");
     expect(rowOrNull("Salary")).toBeNull();
   });
 
-  it("static: the selector source has no tile grid and no viewport-detection hooks", () => {
+  it("static: the picker source has the tile grid and no viewport-detection hooks", () => {
     const dir = join(process.cwd(), "src/components/transactions/entry");
     const src = ["category-selector.tsx", "grouped-picker.tsx"]
       .map((f) => readFileSync(join(dir, f), "utf8"))
       .join("\n");
-    expect(src).not.toMatch(/grid-cols-\d/);
+    expect(src).toContain("grid grid-cols-3 gap-2");
+    expect(src).not.toMatch(/grid-cols-2/);
     expect(src).not.toMatch(/isMobile|window\.innerWidth|md:hidden|hidden\s+md:/);
     expect(src).toMatch(/motion-safe:/);
+    expect(readFileSync(join(dir, "category-selector.tsx"), "utf8")).toContain('layout="expand"');
+    expect(readFileSync(join(dir, "account-selector.tsx"), "utf8")).toContain('layout="sections"');
   });
 });
 
-describe("AccountSelector accordion", () => {
+/** n groups, two leaves each: "G0" holds "G0 a" and "G0 b", and so on. */
+function groupedCategories(n: number): Category[] {
+  return Array.from({ length: n }, (_, i) => [
+    { id: `g${i}a`, name: `G${i} a`, group: `G${i}` },
+    { id: `g${i}b`, name: `G${i} b`, group: `G${i}` },
+  ]).flat();
+}
+
+/** Name of the group tile the open band sits directly after; null when no band is open. */
+function bandFollows(): string | null {
+  const region = document.querySelector('[role="region"]');
+  if (!region) return null;
+  // The band is a direct child of the same 3-column grid as the group tiles.
+  expect(region.parentElement!.className).toContain("grid-cols-3");
+  expect(region.className).toContain("col-span-full");
+  return region.previousElementSibling?.textContent ?? null;
+}
+
+describe("CategorySelector band placement", () => {
+  it.each([
+    [0, "G2"],
+    [1, "G2"],
+    [2, "G2"],
+    [3, "G5"],
+    [4, "G5"],
+    [5, "G5"],
+  ])("with 6 groups, opening G%i places the band after the row ending at %s", (open, after) => {
+    render(
+      <CategorySelector
+        open
+        onOpenChange={() => {}}
+        categories={groupedCategories(6)}
+        onSelect={() => {}}
+      />,
+    );
+    fireEvent.click(groupTile(`G${open}`));
+    expect(bandFollows()).toBe(after);
+    expect(row(`G${open} a`)).toBeTruthy();
+    expect(row(`G${open} b`)).toBeTruthy();
+  });
+
+  it.each([
+    [3, "G4"],
+    [4, "G4"],
+  ])("last partial row: with 5 groups, opening G%i places the band after G4", (open, after) => {
+    render(
+      <CategorySelector
+        open
+        onOpenChange={() => {}}
+        categories={groupedCategories(5)}
+        onSelect={() => {}}
+      />,
+    );
+    fireEvent.click(groupTile(`G${open}`));
+    expect(bandFollows()).toBe(after);
+  });
+
+  it("selected group starts open with its band in place", () => {
+    render(
+      <CategorySelector
+        open
+        onOpenChange={() => {}}
+        categories={groupedCategories(6)}
+        onSelect={() => {}}
+        selectedCategoryId="g4b"
+      />,
+    );
+    expect(groupTile("G4").getAttribute("aria-expanded")).toBe("true");
+    expect(bandFollows()).toBe("G5");
+    expect(row("G4 b").getAttribute("aria-current")).toBe("true");
+  });
+});
+
+describe("AccountSelector tile grid", () => {
   it("renders Recent first when recentIds match the list", () => {
     render(
       <AccountSelector
@@ -330,32 +435,39 @@ describe("AccountSelector accordion", () => {
     expect(screen.queryByText("Recent")).toBeNull();
   });
 
-  it("groups by account group name (not type), alphabetical with Other last, collapsed, archived hidden", () => {
+  it("groups by account group name (not type) in labelled sections, Other last, archived hidden", () => {
     render(
       <AccountSelector open onOpenChange={() => {}} accounts={accounts} onSelect={() => {}} />,
     );
-    const sheet = sheetContent();
-    const headers = Array.from(sheet.querySelectorAll('button[aria-expanded]')).map((b) => b.textContent);
-    expect(headers).toEqual(["Cash1", "Checking1", "Credit Card1", "Other1"]);
-    expect(header("Cash", 1).getAttribute("aria-expanded")).toBe("false");
-    expect(header("Checking", 1).getAttribute("aria-expanded")).toBe("false");
-    expect(header("Credit Card", 1).getAttribute("aria-expanded")).toBe("false");
-    expect(header("Other", 1).getAttribute("aria-expanded")).toBe("false");
-    expect(rowOrNull("TCB")).toBeNull();
+    expect(sectionLabels()).toEqual(["Cash", "Checking", "Credit Card", "Other"]);
+    // Every section is its own 3-column grid.
+    expect(sheetContent().querySelectorAll(".grid-cols-3")).toHaveLength(4);
+    expect(row("Cash VND")).toBeTruthy();
+    expect(row("TCB")).toBeTruthy();
+    expect(row("Visa")).toBeTruthy();
     expect(screen.queryByText("Old Card")).toBeNull();
+    expect(sheetContent().querySelector('[aria-expanded]')).toBeNull();
+  });
+
+  it("tiles show the currency as a muted second line", () => {
+    render(
+      <AccountSelector open onOpenChange={() => {}} accounts={accounts} onSelect={() => {}} />,
+    );
+    const tcb = row("TCB");
+    expect(tcb.querySelector("span:last-child")!.textContent).toBe("VND");
+    expect(tcb.querySelector("span:last-child")!.className).toContain("text-muted-foreground");
+    expect(row("Visa").querySelector("span:last-child")!.textContent).toBe("USD");
   });
 
   it("accounts with no group sit under Other", () => {
     render(
       <AccountSelector open onOpenChange={() => {}} accounts={accounts} onSelect={() => {}} />,
     );
-    fireEvent.click(header("Other", 1));
     expect(row("Loose")).toBeTruthy();
-    expect(screen.queryByRole("button", { name: /^A\s*\d+$/ })).toBeNull();
-    expect(screen.queryByRole("button", { name: /^L\s*\d+$/ })).toBeNull();
+    expect(screen.getAllByRole("heading", { level: 3 }).at(-1)!.textContent).toBe("Other");
   });
 
-  it("auto-expands the group holding the selected account", () => {
+  it("marks the selected tile with aria-current and the accent classes", () => {
     render(
       <AccountSelector
         open
@@ -365,31 +477,33 @@ describe("AccountSelector accordion", () => {
         selectedAccountId="11"
       />,
     );
-    expect(header("Checking", 1).getAttribute("aria-expanded")).toBe("true");
     expect(row("TCB").getAttribute("aria-current")).toBe("true");
-    expect(header("Cash", 1).getAttribute("aria-expanded")).toBe("false");
+    expect(row("TCB").className).toContain("border-primary");
+    expect(row("TCB").className).toContain("text-primary");
+    expect(row("TCB").className).toContain("bg-primary/10");
+    expect(row("Cash VND").getAttribute("aria-current")).toBeNull();
   });
 
-  it("selecting a row fires onSelect with the id", () => {
+  it("selecting a tile fires onSelect with the id and closes the sheet", () => {
     const onSelect = vi.fn();
     const onOpenChange = vi.fn();
     render(
       <AccountSelector open onOpenChange={onOpenChange} accounts={accounts} onSelect={onSelect} />,
     );
-    fireEvent.click(header("Checking", 1));
     fireEvent.click(row("TCB"));
     expect(onSelect).toHaveBeenCalledWith("11");
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it("search flattens matches with group and currency as secondary text", () => {
+  it("search shows a flat tile grid with group and currency as secondary text", () => {
     render(
       <AccountSelector open onOpenChange={() => {}} accounts={accounts} onSelect={() => {}} />,
     );
     fireEvent.change(screen.getByPlaceholderText("Search account..."), { target: { value: "vnd" } });
     expect(row("Cash VND").textContent).toContain("Cash · VND");
     expect(row("TCB").textContent).toContain("Checking · VND");
-    expect(screen.queryByRole("button", { name: /^Checking\s*\d+$/ })).toBeNull();
+    expect(row("TCB").parentElement!.className).toContain("grid-cols-3");
+    expect(screen.queryAllByRole("heading", { level: 3 })).toHaveLength(0);
   });
 
   it("search matches the group name", () => {
@@ -402,22 +516,18 @@ describe("AccountSelector accordion", () => {
     expect(rowOrNull("Loose")).toBeNull();
   });
 
-  it("sheet keeps pt-0 and is capped at 70dvh; search is text-base", () => {
+  it("sheet keeps pt-0 and is capped at 70dvh; search is text-base; no 2-column grid", () => {
     render(
       <AccountSelector open onOpenChange={() => {}} accounts={accounts} onSelect={() => {}} />,
     );
     expect(sheetContent().className).toContain("pt-0");
     expect(sheetContent().className).toContain("max-h-[min(70dvh,calc(100dvh-var(--kb-inset,0px)))]");
-    expect(sheetContent().querySelector(".grid-cols-1, .grid-cols-2")).toBeNull();
+    expect(sheetContent().querySelector(".grid-cols-2")).toBeNull();
     expect(screen.getByPlaceholderText("Search account...").className).toContain("text-base");
   });
 });
 
 describe("AccountSelector saved group order", () => {
-  function sectionNames(): string[] {
-    return Array.from(sheetContent().querySelectorAll('button[aria-expanded]')).map((b) => b.textContent ?? "");
-  }
-
   it("orders group sections by the saved order (asset list, then liability list)", () => {
     render(
       <AccountSelector
@@ -428,7 +538,7 @@ describe("AccountSelector saved group order", () => {
         groupOrder={{ A: ["Checking", "Cash"], L: ["Credit Card"] }}
       />,
     );
-    expect(sectionNames()).toEqual(["Checking1", "Cash1", "Credit Card1", "Other1"]);
+    expect(sectionLabels()).toEqual(["Checking", "Cash", "Credit Card", "Other"]);
   });
 
   it("matches saved names case-insensitively", () => {
@@ -441,7 +551,7 @@ describe("AccountSelector saved group order", () => {
         groupOrder={{ A: ["checking"], L: [] }}
       />,
     );
-    expect(sectionNames()).toEqual(["Checking1", "Cash1", "Credit Card1", "Other1"]);
+    expect(sectionLabels()).toEqual(["Checking", "Cash", "Credit Card", "Other"]);
   });
 
   it("groups missing from the saved order fall back to alphabetical after saved ones", () => {
@@ -454,7 +564,7 @@ describe("AccountSelector saved group order", () => {
         groupOrder={{ A: ["Checking"], L: [] }}
       />,
     );
-    expect(sectionNames()).toEqual(["Checking1", "Cash1", "Credit Card1", "Other1"]);
+    expect(sectionLabels()).toEqual(["Checking", "Cash", "Credit Card", "Other"]);
   });
 
   it("Other stays last even when saved first", () => {
@@ -467,7 +577,7 @@ describe("AccountSelector saved group order", () => {
         groupOrder={{ A: ["Other", "Checking"], L: [] }}
       />,
     );
-    expect(sectionNames()).toEqual(["Checking1", "Cash1", "Credit Card1", "Other1"]);
+    expect(sectionLabels()).toEqual(["Checking", "Cash", "Credit Card", "Other"]);
   });
 
   it("an empty saved order is the alphabetical default", () => {
@@ -480,7 +590,7 @@ describe("AccountSelector saved group order", () => {
         groupOrder={{ A: [], L: [] }}
       />,
     );
-    expect(sectionNames()).toEqual(["Cash1", "Checking1", "Credit Card1", "Other1"]);
+    expect(sectionLabels()).toEqual(["Cash", "Checking", "Credit Card", "Other"]);
   });
 
   it("a saved order that puts Credit Card first moves its section to the top", () => {
@@ -493,6 +603,6 @@ describe("AccountSelector saved group order", () => {
         groupOrder={{ A: [], L: ["Credit Card"] }}
       />,
     );
-    expect(sectionNames()).toEqual(["Credit Card1", "Cash1", "Checking1", "Other1"]);
+    expect(sectionLabels()).toEqual(["Credit Card", "Cash", "Checking", "Other"]);
   });
 });

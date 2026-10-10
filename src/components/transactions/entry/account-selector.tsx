@@ -83,6 +83,7 @@ export function AccountSelector({
           entries={entries}
           selectedId={selectedAccountId}
           recentIds={recentIds}
+          layout="sections"
           settingsHref="/accounts"
           settingsLabel="Manage accounts"
           onPick={(id) => {
