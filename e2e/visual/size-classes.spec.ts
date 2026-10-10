@@ -297,13 +297,15 @@ test.beforeAll(async () => {
     must(await api("post", "/api/rules", { name: "Visual rule", conditions: { all: [{ field: "payee", op: "contains", value: "Grab" }] }, actions: [{ kind: "set_category", categoryId: trans }], isActive: true }), "rule");
     const def = await api("post", "/api/securities/define", { symbol: "VNM", name: "Vinamilk", currency: "VND", priceSource: "manual" });
     must(def, "security");
-    const securityId = (await def.json()).securityId as number;
+    const defJson = await def.json();
+    const securityId = ((defJson.data ?? defJson).securityId) as number;
     must(await api("post", "/api/securities/prices", { securityId, date: today, price: 62_000 }), "security price");
     must(await api("post", "/api/portfolio/holdings/cash-sleeve", { accountId: brk, currency: "USD" }), "cash sleeve");
     must(await api("post", "/api/transactions/transfer", { fromAccountId: cash, toAccountId: momo, enteredAmount: 500_000, date: today }), "transfer");
     const split = await api("post", "/api/transactions", { date: today, accountId: cash, categoryId: groc, amount: -1_234_567, currency: "VND", payee: "Split demo" });
     must(split, "split parent");
-    const splitTxId = (await split.json()).id as number;
+    const splitJson = await split.json();
+    const splitTxId = ((splitJson.data ?? splitJson).id) as number;
     must(await api("post", "/api/transactions/splits", { transactionId: splitTxId, splits: [{ categoryId: groc, amount: -400_000 }, { categoryId: eat, amount: -834_567 }] }), "split");
   }
 
