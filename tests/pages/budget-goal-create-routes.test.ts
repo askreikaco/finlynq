@@ -45,8 +45,10 @@ describe("goals list: openers navigate, no create/edit dialog", () => {
     expect(GOALS).toContain("href={`/goals/${g.id}/edit`}");
   });
 
-  it("keeps the delete confirmation as a dialog", () => {
-    expect(GOALS).toContain("<ConfirmDialog");
+  it("keeps the delete confirmation as a dialog (ListPage deleteFlow renders the ConfirmDialog)", () => {
+    expect(GOALS).toContain('from "@/components/templates"');
+    expect(GOALS).toContain("<ListPage");
+    expect(GOALS).toMatch(/deleteFlow=\{\{/);
   });
 });
 
@@ -67,7 +69,8 @@ describe("route pages render the shared form components", () => {
     });
   }
 
-  it("every form-page back/return target is validated with safeReturnTo", () => {
+  it("every form-page back/return target is validated with safeReturnTo (in FormPage's useReturnTo)", () => {
+    expect(read("src/lib/forms/use-return-to.ts")).toMatch(/safeReturnTo\(searchParams\.get\("returnTo"\)/);
     for (const f of [
       `${APP}/budgets/new/page.tsx`,
       `${APP}/budgets/templates/new/page.tsx`,
@@ -76,13 +79,15 @@ describe("route pages render the shared form components", () => {
       `${APP}/goals/new/page.tsx`,
       `${APP}/goals/[id]/edit/page.tsx`,
     ]) {
-      expect(read(f), f).toMatch(/safeReturnTo\(searchParams\.get\("returnTo"\)/);
+      expect(read(f), f).toMatch(/from "@\/components\/templates"/);
+      expect(read(f), f).toMatch(/<FormPage\b/);
     }
   });
 
-  it("the goal edit page keeps Delete in the overflow menu and behind a confirm dialog", () => {
+  it("the goal edit page keeps Delete in the overflow menu and behind a confirm dialog (FormPage delete config)", () => {
     const src = read(`${APP}/goals/[id]/edit/page.tsx`);
-    expect(src).toMatch(/label: "Delete goal"[^}]*destructive: true/);
-    expect(src).toContain("<ConfirmDialog");
+    expect(src).toMatch(/delete=\{\{\s*label: "Delete goal"/);
+    expect(read("src/components/templates/form-page.tsx")).toMatch(/destructive: true/);
+    expect(read("src/components/templates/form-page.tsx")).toContain("<ConfirmDialog");
   });
 });
