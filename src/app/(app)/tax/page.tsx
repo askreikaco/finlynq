@@ -15,7 +15,7 @@ import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { Calculator, PiggyBank, GraduationCap, Percent, ArrowRight, Lightbulb } from "lucide-react";
 import { AmountInput } from "@/components/amount-input";
-import { PageHeader } from "@/components/mobile";
+import { SectionPage } from "@/components/templates/section-page";
 import { ErrorState } from "@/components/error-state";
 import { PageSkeleton } from "@/components/page-skeleton";
 
@@ -69,13 +69,15 @@ function TaxPageContent() {
   const tfsaPct = data.tfsa.totalRoom > 0 ? (data.tfsa.used / data.tfsa.totalRoom) * 100 : 0;
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-          title="Tax"
-          titleClassName="text-2xl font-bold tracking-tight"
-          subtitle="Maximize your tax-advantaged accounts and minimize your tax bill"
-          subtitleClassName="text-sm text-muted-foreground mt-0.5"
-        />
+    <SectionPage
+      id="tax"
+      title="Tax"
+      subtitle="Maximize your tax-advantaged accounts and minimize your tax bill"
+      width="none"
+      minW0={false}
+      padBottom="none"
+      stack="6"
+    >
 
       {/* Contribution Room */}
       <div className="grid grid-cols-1 regular:grid-cols-3 gap-4">
@@ -247,7 +249,7 @@ function TaxPageContent() {
           </CardContent>
         </Card>
       )}
-    </div>
+    </SectionPage>
   );
 }
 

@@ -27,15 +27,15 @@ function tablesInsideFromMd(src: string): boolean {
 }
 
 describe("portfolio report pages: PageHeader page below and above md", () => {
-  it.each(PAGES)("%s uses the shared PageHeader with a back link to /portfolio", (f) => {
+  it.each(PAGES)("%s uses the shared PageHeader (via SectionPage) with a back link to /portfolio", (f) => {
     const src = read(f);
-    expect(src).toMatch(/<PageHeader\b/);
-    expect(src).toMatch(/backHref="\/portfolio"/);
-    expect(src).toMatch(/from "@\/components\/mobile"/);
+    expect(src).toMatch(/<SectionPage\b/);
+    expect(src).toMatch(/backFallback="\/portfolio"/);
+    expect(src).toMatch(/from "@\/components\/templates\/section-page"/);
   });
 
   it.each(PAGES)("%s renders the page root as a tall space-y container (sticky header parent)", (f) => {
-    expect(read(f)).toMatch(/<div className="space-y-4 regular:space-y-6">\s*<PageHeader/);
+    expect(read(f)).toMatch(/<SectionPage\b[\s\S]*?\bstack="4"[\s\S]*?className="regular:space-y-6"/);
   });
 
   it.each(PAGES)("%s has no Dialog/Sheet import (the report is a page, not a popup)", (f) => {

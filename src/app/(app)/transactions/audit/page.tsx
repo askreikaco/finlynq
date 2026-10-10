@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/currency";
 import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
 import { AlertTriangle, RefreshCw, Check, X } from "lucide-react";
-import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
+import { HEADER_DESKTOP_ONLY } from "@/components/mobile";
+import { SectionPage } from "@/components/templates/section-page";
 
 type AuditRow = {
   id: number;
@@ -105,20 +106,24 @@ export default function CurrencyAuditPage() {
   const unresolved = items.filter((r) => r.resolvedAt == null);
 
   return (
-    <div className="space-y-5 max-w-4xl">
-      <PageHeader
-        className="flex flex-wrap items-center justify-between gap-3"
-        title="Currency Review"
-        titleClassName="text-2xl font-bold tracking-tight"
-        backHref="/transactions"
-        backLabel="Back to Transactions"
-        overflow={[
+    <SectionPage
+      id="transactions-audit"
+      title="Currency Review"
+      backFallback="/transactions"
+      backLabel="Back to Transactions"
+      width="doc"
+      stack="5"
+      minW0={false}
+      padBottom="none"
+      header={{
+        className: "flex flex-wrap items-center justify-between gap-3",
+        overflow: [
           {
             label: includeResolved ? "Hide resolved" : "Show resolved",
             onSelect: () => setIncludeResolved((v) => !v),
           },
-        ]}
-        actions={
+        ],
+        actions: (
           <label className={`${HEADER_DESKTOP_ONLY} flex items-center gap-2 text-xs text-muted-foreground`}>
             <input
               type="checkbox"
@@ -127,8 +132,9 @@ export default function CurrencyAuditPage() {
             />
             Show resolved
           </label>
-        }
-      />
+        ),
+      }}
+    >
       <p className="text-sm text-muted-foreground mt-1">
         Transactions with a currency that doesn&apos;t match their account&apos;s currency.
         These were flagged when we added the entered/account/reporting model — they need
@@ -226,6 +232,6 @@ export default function CurrencyAuditPage() {
           </Card>
         );
       })}
-    </div>
+    </SectionPage>
   );
 }
