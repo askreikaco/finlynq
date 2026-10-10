@@ -128,7 +128,7 @@ export default function InstanceAdminPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title="Instance config" titleClassName="text-2xl font-bold tracking-tight" />
+      <PageHeader title="Instance config" />
 
       {isLoading && (
         <div className="text-center py-8 text-muted-foreground">Loading configuration...</div>

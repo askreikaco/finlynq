@@ -190,7 +190,6 @@ export default function AdminApiLogPage() {
         lead={<Activity className={`h-5 w-5 text-primary ${HEADER_DESKTOP_ONLY}`} />}
         leadClassName="flex items-center gap-2"
         title="API Log"
-        titleClassName="text-2xl font-bold tracking-tight"
         overflow={[
           { label: auto ? "Auto-refresh: on" : "Auto-refresh: off", onSelect: () => setAuto(!auto) },
           {

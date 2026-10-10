@@ -160,7 +160,6 @@ export default function AdminAnnouncementsPage() {
         lead={<Megaphone className={`h-5 w-5 text-primary ${HEADER_DESKTOP_ONLY}`} />}
         leadClassName="flex items-center gap-2"
         title="Announcements"
-        titleClassName="text-2xl font-bold tracking-tight"
       />
 
       {error && <p className="mt-6 mb-4 text-sm text-destructive">{error}</p>}

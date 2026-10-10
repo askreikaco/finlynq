@@ -146,7 +146,6 @@ export default function AdminEmailInboxPage() {
         lead={<Mailbox className={`h-5 w-5 text-primary ${HEADER_DESKTOP_ONLY}`} />}
         leadClassName="flex items-center gap-2"
         title="Email Oversight"
-        titleClassName="text-2xl font-bold tracking-tight"
         actions={
           <Button variant="outline" size="sm" onClick={load} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? "animate-spin" : ""}`} />

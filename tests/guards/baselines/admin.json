@@ -14,40 +14,8 @@
     "src/app/(app)/admin/page.tsx"
   ],
   "chrome": {
-    "src/app/(app)/admin/(env)/api-log/page.tsx": {
-      "title-prop": 1
-    },
-    "src/app/(app)/admin/(env)/diagnostics/page.tsx": {
-      "title-prop": 1
-    },
-    "src/app/(app)/admin/(env)/integrations/page.tsx": {
-      "title-prop": 1
-    },
-    "src/app/(app)/admin/(env)/price-cache/page.tsx": {
-      "title-prop": 1
-    },
-    "src/app/(app)/admin/(env)/system/page.tsx": {
-      "title-prop": 1
-    },
-    "src/app/(app)/admin/announcements/page.tsx": {
-      "title-prop": 1
-    },
-    "src/app/(app)/admin/email-inbox/page.tsx": {
-      "title-prop": 1
-    },
-    "src/app/(app)/admin/feedback/page.tsx": {
-      "title-prop": 1
-    },
-    "src/app/(app)/admin/inbox/page.tsx": {
-      "title-prop": 2,
-      "subtitle-prop": 1
-    },
-    "src/app/(app)/admin/instance/page.tsx": {
-      "title-prop": 1
-    },
     "src/app/(app)/admin/page.tsx": {
-      "rounded-2xl": 2,
-      "title-prop": 1
+      "rounded-2xl": 2
     }
   }
 }
