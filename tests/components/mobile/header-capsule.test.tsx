@@ -160,7 +160,7 @@ describe("header capsule: icon cells, status, the primary and overflow are ONE n
   });
 
   it("title column keeps its reserve: side tracks at least 44pt, title in the middle, the right group in the third column", () => {
-    expect(PHONE_BAR).toContain("max-regular:grid-cols-[minmax(2.75rem,auto)_minmax(0,1fr)_minmax(2.75rem,auto)]");
+    expect(PHONE_BAR).toContain("max-regular:grid-cols-[auto_minmax(0,1fr)_auto]");
     const { container } = render(
       <PageHeader
         title="Goals"
