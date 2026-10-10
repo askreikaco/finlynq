@@ -13,8 +13,6 @@
       "return-to": 1
     },
     "src/app/(app)/subscriptions/_components/subscription-form.tsx": {
-      "shrink": 1,
-      "min-h": 1,
       "rounded-2xl": 1
     },
     "src/app/(app)/subscriptions/new/page.tsx": {
