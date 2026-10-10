@@ -12,12 +12,16 @@
 import { isLocalReadCacheEnabled } from "@/lib/local-first/read-cache/optin";
 import { wipeAll, wipeUser } from "@/lib/local-first/read-cache/persist-store";
 import { disposeReadCache } from "@/lib/local-first/read-cache/session";
+import { isLocalWriteKeySet } from "@/lib/local-first/write-path/flag";
+import { wipeAllOutboxes, wipeOutboxUser } from "@/lib/local-first/write-path/outbox-store";
 
 /** Deletes one user's on-device snapshot and device key (lock, untrusted device, logout, session end). */
 export async function dropLocalUserCache(userId: string): Promise<void> {
   try {
     await disposeReadCache();
-    if (!isLocalReadCacheEnabled()) return;
+    // Offline write queue (L3): only touched when its own opt-in key is set, so flag-off does no IndexedDB work.
+    if (isLocalWriteKeySet()) await wipeOutboxUser(userId);
+    if (!isLocalReadCacheEnabled() && !isLocalWriteKeySet()) return;
     await wipeUser(userId);
   } catch (err) {
     console.warn("[local-first] read-cache wipe failed", err);
@@ -28,7 +32,8 @@ export async function dropLocalUserCache(userId: string): Promise<void> {
 export async function dropAllLocalCaches(): Promise<void> {
   try {
     await disposeReadCache();
-    if (!isLocalReadCacheEnabled()) return;
+    if (isLocalWriteKeySet()) await wipeAllOutboxes();
+    if (!isLocalReadCacheEnabled() && !isLocalWriteKeySet()) return;
     await wipeAll();
   } catch (err) {
     console.warn("[local-first] read-cache wipe failed", err);
