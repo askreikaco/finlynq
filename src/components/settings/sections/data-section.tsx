@@ -15,6 +15,8 @@ import { Badge } from "@/components/ui/badge";
 import { Upload, FileText, Wallet, Tag, Briefcase, ArrowLeftRight, Database, Download, AlertTriangle, Trash2, History } from "lucide-react";
 import { RebuildSnapshotsButton } from "@/components/portfolio/rebuild-snapshots-button";
 import { getPasskeyStepUp } from "@/lib/client/passkey-stepup";
+import { getSessionInfo } from "@/lib/data/session-info";
+import { dropAllLocalCaches, dropAllLocalCachesWithin, dropLocalUserCache } from "@/lib/data/local-read-cache-wipe";
 
 type ImportRow = Record<string, string>;
 type ImportSection = "accounts" | "categories" | "portfolio";
@@ -109,7 +111,8 @@ export function DataSection() {
         }
       }
       if (res.ok) {
-        // Account + session are gone — leave the app for the public home.
+        // Account + session are gone — leave the app for the public home (bounded wait so the wipe can finish).
+        await dropAllLocalCachesWithin(400);
         window.location.href = "/";
         return;
       }
@@ -329,6 +332,10 @@ export function DataSection() {
       try {
         const res = await fetch("/api/data", { method: "DELETE" });
         if (res.ok) {
+          // Server data is gone: drop this user's opt-in on-device copy too.
+          const uid = getSessionInfo()?.userId;
+          if (uid) void dropLocalUserCache(uid);
+          else void dropAllLocalCaches();
           setClearStatus("All data cleared successfully");
           setClearStep(0);
           setClearConfirm("");
