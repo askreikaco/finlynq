@@ -22,13 +22,12 @@ async function mountPwaRegister() {
 
 describe("PwaRegister controllerchange reload", () => {
   const reload = vi.fn();
-  const originalEnv = process.env.NODE_ENV;
 
   beforeEach(() => {
     vi.resetModules();
     sessionStorage.clear();
     reload.mockReset();
-    process.env.NODE_ENV = "production";
+    vi.stubEnv("NODE_ENV", "production");
     Object.defineProperty(window, "location", {
       configurable: true,
       value: { ...window.location, reload },
@@ -38,7 +37,7 @@ describe("PwaRegister controllerchange reload", () => {
 
   afterEach(() => {
     cleanup();
-    process.env.NODE_ENV = originalEnv;
+    vi.unstubAllEnvs();
     delete (navigator as unknown as Record<string, unknown>).serviceWorker;
   });
 
