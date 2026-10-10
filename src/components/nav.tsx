@@ -230,6 +230,7 @@ export const AppTabs = memo(function AppTabs() {
       )}
       <nav
         aria-label="Main navigation"
+        data-testid="app-rail"
         className="hidden regular:flex fixed inset-y-0 left-0 z-50 w-[calc(5rem+var(--sal))] flex-col gap-1 overflow-y-auto overscroll-contain border-r border-sidebar-border/50 bg-sidebar/90 pl-[var(--sal)] pr-2 pt-[calc(var(--sat)+0.75rem)] pb-[calc(var(--sab)+0.75rem)] backdrop-blur-xl"
       >
         {TAB_LINKS.map((item) => {

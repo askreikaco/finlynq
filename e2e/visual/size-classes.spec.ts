@@ -84,10 +84,12 @@ test.beforeAll(async () => {
   db = new pg.Client({ connectionString: DB_URL });
   await db.connect();
 
-  const tag = "vis" + randomBytes(4).toString("hex");
+  // Unique per worker incarnation: randomBytes is pinned by fixed-clock.cjs, so a random-bytes tag would repeat
+  // after a worker restart and collide (409) with the user the earlier cell left behind. Math.random is not pinned.
+  const tag = "vis" + Math.random().toString(36).slice(2, 10) + process.pid.toString(36);
   user = { ctx: await request.newContext({ baseURL: BASE }), h: { origin: BASE, "x-forwarded-for": nextIp() }, id: "" };
   const reg = await api("post", "/api/auth/register", { username: tag, email: `${tag}@visual.test`, password: PW, displayName: tag });
-  if (reg.status() !== 201) throw new Error(`register failed: ${reg.status()}`);
+  if (reg.status() !== 201) throw new Error(`register failed: ${reg.status()} (tag ${tag})`);
   user.id = String((await reg.json()).userId);
   await db.query("update users set email_verified = 1 where id = $1", [user.id]);
   const login = await api("post", "/api/auth/login", { identifier: tag, password: PW, trustDevice: false });
@@ -216,6 +218,8 @@ for (const vp of VIEWPORTS) {
           const shot = path.join(OUT, `${vp.name}-${theme}-${pg_.name}.png`);
           await page.screenshot({ path: shot, fullPage: false });
 
+          // Bounded probe: a missing rail/bar/toggle costs at most 15 s, then the cell records it as a failed assertion.
+          await Promise.all([RAIL_SEL, BOTTOM_SEL, TOGGLE_SEL].map((s) => page.waitForSelector(s, { state: "attached", timeout: 15_000 }).catch(() => null)));
           const top: Measure = await page.evaluate(measure, { rail: RAIL_SEL, bottom: BOTTOM_SEL, fab: FAB_SEL, toggle: TOGGLE_SEL, view: VIEW_SEL });
           let scrolled: Measure | null = null;
           if (top.scrollRange >= 1) {

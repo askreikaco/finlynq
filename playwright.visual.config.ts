@@ -13,6 +13,8 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   retries: 0,
+  // Every cell runs even after earlier failures: one bad cell must not hide the other 53.
+  maxFailures: 0,
   timeout: 600_000,
   reporter: "list",
   use: {

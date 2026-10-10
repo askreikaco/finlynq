@@ -68,6 +68,11 @@ describe("visibility by viewport (regular: is a viewport query, 40rem)", () => {
     expect(bar().className).not.toMatch(/(^|\s)(max-)?md:/);
   });
 
+  it("rail carries data-testid app-rail (visual harness contract)", () => {
+    render(<AppTabs />);
+    expect(rail().getAttribute("data-testid")).toBe("app-rail");
+  });
+
   it("rail is hidden below regular and flex from regular up (hidden regular:flex)", () => {
     render(<AppTabs />);
     const cls = rail().className.split(/\s+/);
