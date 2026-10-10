@@ -86,6 +86,18 @@ describe("/transactions/[id]/edit page", () => {
     expect(document.getElementById("transaction-edit-form")).toBeTruthy();
   });
 
+  it("Note is a two-row textarea that grows with its content (edit form)", async () => {
+    H.search = "";
+    stubFetch();
+    await mountReady();
+    const label = screen.getAllByText("Note").find((el) => el.tagName === "LABEL" || el.tagName === "DIV" || el.tagName === "SPAN")!;
+    const area = label.parentElement!.querySelector("textarea") as HTMLTextAreaElement;
+    expect(area).toBeTruthy();
+    expect(area.getAttribute("rows")).toBe("2");
+    expect(area.className).toContain("resize-none");
+    expect(area.className).toContain("max-h-48");
+  });
+
   it("validation: an empty amount is refused with the dialog's message and sends no request", async () => {
     const fn = stubFetch();
     await mountReady();

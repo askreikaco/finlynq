@@ -95,8 +95,7 @@ describe("AmountRow", () => {
     onChange: () => {},
     onOpenPad: () => {},
     currency: "VND",
-    currencyOptions: ["VND", "USD"],
-    onCurrencyChange: () => {},
+    onOpenCurrency: () => {},
   };
 
   it("amount input is inputMode none, named Amount, and opens the pad on focus", () => {
@@ -116,11 +115,35 @@ describe("AmountRow", () => {
     expect(onChange).toHaveBeenCalledWith("12.5");
   });
 
-  it("shows the Currency select trigger only when showCurrency is set", () => {
-    const { rerender } = render(<AmountRow {...base} showCurrency />);
-    expect(screen.getByRole("combobox", { name: "Currency" })).toBeTruthy();
+  it("shows the Currency trigger only when showCurrency is set, and opens the currency sheet on click", () => {
+    const onOpenCurrency = vi.fn();
+    const { rerender } = render(<AmountRow {...base} showCurrency onOpenCurrency={onOpenCurrency} />);
+    const trigger = screen.getByRole("button", { name: "Currency" });
+    expect(trigger.textContent).toContain("VND");
+    fireEvent.click(trigger);
+    expect(onOpenCurrency).toHaveBeenCalledTimes(1);
     rerender(<AmountRow {...base} showCurrency={false} />);
-    expect(screen.queryByRole("combobox", { name: "Currency" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Currency" })).toBeNull();
+  });
+
+  it("currency trigger sits in the same w-24 label column as FormRow labels, so the amount starts at the value column", () => {
+    const { container } = render(
+      <>
+        <AmountRow {...base} showCurrency />
+        <ListCard>
+          <FormRow variant="input" label="Note" inputValue="" onInputChange={() => {}} />
+        </ListCard>
+      </>,
+    );
+    const cell = container.querySelector('[data-slot="amount-label-cell"]') as HTMLElement;
+    expectClass(cell, "w-24", "shrink-0");
+    const noteLabel = screen.getByText("Note");
+    expectClass(noteLabel, "w-24", "shrink-0");
+    // Same row padding and gap as the FormRow row, so the value column x matches.
+    expect(cell.parentElement!.classList.contains("gap-3")).toBe(true);
+    expect(cell.parentElement!.parentElement!.classList.contains("px-4")).toBe(true);
+    expect(noteLabel.parentElement!.classList.contains("gap-3")).toBe(true);
+    expect(noteLabel.parentElement!.classList.contains("px-4")).toBe(true);
   });
 
   it("renders the fxLine slot", () => {

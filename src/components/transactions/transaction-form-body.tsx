@@ -11,6 +11,11 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AutoTextarea } from "@/components/ui/auto-textarea";
+
+/** Note field look (Input-like box), two-row minimum, grows to max-h-48 then scrolls. */
+const NOTE_TEXTAREA_CLASS =
+  "min-h-[calc(var(--spacing-row-tall)*2)] max-h-48 rounded-lg border border-input bg-transparent px-2.5 py-1.5 transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
@@ -195,7 +200,11 @@ export function TransactionFormBody({
             </div>
             <div className="space-y-1.5">
               <Label>Note</Label>
-              <Input value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
+              <AutoTextarea
+                value={form.note}
+                onChange={(e) => setForm({ ...form, note: e.target.value })}
+                className={NOTE_TEXTAREA_CLASS}
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Tags (comma-separated)</Label>
@@ -987,10 +996,11 @@ export function TransactionFormBody({
 
             <div className="space-y-1.5">
               <Label>Note (applied to both legs)</Label>
-              <Input
+              <AutoTextarea
                 value={transferForm.note}
                 onChange={(e) => setTransferForm({ ...transferForm, note: e.target.value })}
                 placeholder="e.g. rent buffer"
+                className={NOTE_TEXTAREA_CLASS}
               />
             </div>
             <div className="space-y-1.5">
