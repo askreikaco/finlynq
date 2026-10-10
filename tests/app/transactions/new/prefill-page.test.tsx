@@ -6,7 +6,7 @@ import * as React from "react";
 import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn(), back: vi.fn() }),
+  useRouter: () => ({ push: vi.fn(), back: vi.fn() }), usePathname: () => "/transactions/new",
 }));
 vi.mock("swr", () => ({ mutate: vi.fn(), useSWRConfig: () => ({ mutate: vi.fn(), cache: new Map() }) }));
 vi.mock("@/lib/data/use-api", () => ({

@@ -6,7 +6,7 @@ import * as React from "react";
 import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn(), back: vi.fn() }),
+  useRouter: () => ({ push: vi.fn(), back: vi.fn() }), usePathname: () => "/transactions/new",
 }));
 vi.mock("next/link", () => ({
   default: ({ children, href }: { children: React.ReactNode; href: string }) =>

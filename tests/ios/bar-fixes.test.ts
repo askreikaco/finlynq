@@ -311,8 +311,8 @@ describe("6. back circle is centred in the 60px bar (shared bar and new-transact
     expect((60 - 44) / 2).toBe(8);
   });
 
-  it("the new-transaction header is the bar height, not 44px (the old h-11 made the ring touch the hairline)", () => {
-    expect(newTx).toContain('"grid h-[var(--phone-header-h)] shrink-0 grid-cols-[2.75rem_1fr_2.75rem] items-center px-4"');
+  it("the new-transaction header is the global PageHeader bar (the bar height, 3.75rem min, not a 44px row)", () => {
+    expect(newTx).toMatch(/<PageHeader\s+className="shrink-0"/);
     expect(newTx).not.toMatch(/grid h-11 shrink-0 grid-cols-\[2\.75rem/);
   });
 });

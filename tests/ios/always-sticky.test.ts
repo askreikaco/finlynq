@@ -62,8 +62,9 @@ describe("bars that must use the sticky bar", () => {
     expect(general).toMatch(/<PageHeader\b/);
   });
 
-  it("new-transaction header is built from PHONE_BAR_STICKY", () => {
-    expect(newTx).toMatch(/data-testid="txnew-topbar"[\s\S]{0,200}PHONE_BAR_STICKY/);
+  it("new-transaction header is the global PageHeader (no own sticky bar)", () => {
+    expect(newTx).toMatch(/<PageHeader[\s\S]{0,200}title=\{`New \$\{txType\}`\}/);
+    expect(newTx).not.toMatch(/PHONE_BAR_STICKY/);
   });
 
   it("no page or shell defines its own glass bar literal (only page-header and the two users above)", () => {
@@ -268,7 +269,8 @@ describe("non-admin pages", () => {
 
   it("import/pending reconcile-header is a fragment rendered directly in the tall staged-review root", () => {
     const header = read("src/app/(app)/import/pending/_components/reconcile-header.tsx");
-    expect(header).toMatch(/return \(\s*<>\s*<button[\s\S]*?<PageHeader\b/);
+    expect(header).toMatch(/return \(\s*<>\s*<PageHeader\b/);
+    expect(header).toMatch(/if \(embedded\) \{[\s\S]*?<h2 /);
     const surface = read("src/components/import/staged-review-surface.tsx");
     expect(surface).toMatch(/<div className="flex flex-col gap-4 regular:h-\[calc\(100dvh-8rem\)\]">\s*<ReconcileHeader/);
   });

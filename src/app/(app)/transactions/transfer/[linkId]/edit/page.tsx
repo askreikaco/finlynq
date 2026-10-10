@@ -8,6 +8,7 @@ import Link from "next/link";
 import { safeReturnTo } from "@/lib/accounts/groups-return-to";
 import { useEditSource } from "../../../_components/use-edit-source";
 import { TransactionEditForm } from "../../../_components/transaction-edit-form";
+import { PageHeader } from "@/components/mobile";
 
 const TX_RETURN_FALLBACK = "/transactions";
 
@@ -20,18 +21,25 @@ function EditTransferInner() {
 
   if (!linkId) {
     return (
-      <div className="mx-auto w-full max-w-xl space-y-3 px-4 py-6">
+      <div className="mx-auto w-full max-w-xl space-y-3">
+        <PageHeader title="Edit transfer" backHref={returnTo} backLabel="Back" />
         <p className="text-sm text-foreground">That transfer link is not valid.</p>
         <Link href={returnTo} className="text-sm text-primary underline">Back to transactions</Link>
       </div>
     );
   }
   if (source.status === "loading") {
-    return <div data-testid="tx-edit-loading" className="px-4 py-6 text-sm text-muted-foreground">Loading…</div>;
+    return (
+      <div className="mx-auto w-full max-w-xl">
+        <PageHeader title="Edit transfer" backHref={returnTo} backLabel="Back" />
+        <div data-testid="tx-edit-loading" className="mt-3 text-sm text-muted-foreground">Loading…</div>
+      </div>
+    );
   }
   if (source.status === "missing") {
     return (
-      <div className="mx-auto w-full max-w-xl space-y-3 px-4 py-6">
+      <div className="mx-auto w-full max-w-xl space-y-3">
+        <PageHeader title="Edit transfer" backHref={returnTo} backLabel="Back" />
         <p className="text-sm text-foreground">{source.message}</p>
         <Link href={returnTo} className="text-sm text-primary underline">Back to transactions</Link>
       </div>

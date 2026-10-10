@@ -2,14 +2,12 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { formatCurrency } from "@/lib/currency";
 import {
-  ArrowLeft,
   Wallet,
   Pencil,
   Trash2,
@@ -339,9 +337,7 @@ export default function AccountDetailPage() {
 
   if (!account && loadFailed) return (
     <div className="space-y-6">
-      <Link href="/accounts" className="inline-flex pointer-coarse:min-h-11 items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-        <ArrowLeft className="h-4 w-4" /> Back to Accounts
-      </Link>
+      <PageHeader title="Account" backHref="/accounts" backLabel="Back to Accounts" />
       <ErrorState
         title="Account not found"
         message="This account doesn't exist, or it isn't one of yours."
@@ -351,8 +347,7 @@ export default function AccountDetailPage() {
 
   if (!account) return (
     <div className="space-y-6">
-      <div className="h-4 w-32 animate-shimmer rounded" />
-      <div className="h-8 w-64 animate-shimmer rounded-lg" />
+      <PageHeader title="Account" backHref="/accounts" backLabel="Back to accounts" />
       <div className="grid grid-cols-1 regular:grid-cols-3 gap-4">
         {[1, 2, 3].map((i) => <div key={i} className="h-24 animate-shimmer rounded-xl" />)}
       </div>

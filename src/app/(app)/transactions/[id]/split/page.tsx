@@ -5,6 +5,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { PageHeader } from "@/components/mobile";
 import { safeReturnTo } from "@/lib/accounts/groups-return-to";
 import {
   TransactionSplitForm,
@@ -80,11 +81,17 @@ function SplitInner() {
   }, [id]);
 
   if (state.status === "loading") {
-    return <div data-testid="tx-split-loading" className="px-4 py-6 text-sm text-muted-foreground">Loading…</div>;
+    return (
+      <div className="mx-auto w-full max-w-xl">
+        <PageHeader title="Split transaction" backHref={returnTo} backLabel="Back" />
+        <div data-testid="tx-split-loading" className="mt-3 text-sm text-muted-foreground">Loading…</div>
+      </div>
+    );
   }
   if (state.status === "missing") {
     return (
-      <div className="mx-auto w-full max-w-xl space-y-3 px-4 py-6">
+      <div className="mx-auto w-full max-w-xl space-y-3">
+        <PageHeader title="Split transaction" backHref={returnTo} backLabel="Back" />
         <p className="text-sm text-foreground">{state.message}</p>
         <Link href={returnTo} className="text-sm text-primary underline">Back to transactions</Link>
       </div>
