@@ -4,7 +4,7 @@
  * Manual only: not in CI, not in vitest. Run with the commands in docs/design-system.md ("Visual harness").
  *
  * Matrix: 3 viewports (390x844 phone with isMobile+hasTouch, 768x1024, 1280x800) x 2 themes
- * (dark, light) x 9 pages. Each cell is one test: it writes a full-viewport PNG named
+ * (dark, light) x the PAGES list. Each cell is one test: it writes a full-viewport PNG named
  * `<viewport>-<theme>-<page>.png` into FINLYNQ_VISUAL_OUT, then runs soft assertions.
  *
  * FINLYNQ_VISUAL_TARGET selects the assertion set:
@@ -50,6 +50,8 @@ const VIEWPORTS = [
   { name: "1280x800", w: 1280, h: 800, mobile: false, dpr: 1 },
 ] as const;
 const THEMES = ["dark", "light"] as const;
+// fullScreen mirrors FULL_SCREEN_ENTRY_ROUTES / FULL_SCREEN_EDIT_ROUTE / FULL_SCREEN_ENTRY_PATTERNS in
+// src/components/nav.tsx: the bottom bar is hidden on these routes at 390.
 type PageDef = { name: string; path: (ids: Seeded) => string; fullScreen?: boolean };
 const PAGES: PageDef[] = [
   { name: "dashboard", path: () => "/dashboard" },
@@ -61,9 +63,34 @@ const PAGES: PageDef[] = [
   { name: "settings", path: () => "/settings" },
   { name: "more", path: () => "/more" },
   { name: "transactions-new", path: () => "/transactions/new", fullScreen: true },
+  { name: "goals", path: () => "/goals" },
+  { name: "goals-new", path: () => "/goals/new", fullScreen: true },
+  { name: "goal-edit", path: (s) => `/goals/${s.goalId}/edit`, fullScreen: true },
+  { name: "loans", path: () => "/loans" },
+  { name: "loans-new", path: () => "/loans/new", fullScreen: true },
+  { name: "subscriptions", path: () => "/subscriptions" },
+  { name: "subscriptions-new", path: () => "/subscriptions/new", fullScreen: true },
+  { name: "budgets-new", path: () => "/budgets/new", fullScreen: true },
+  { name: "categories", path: () => "/categories" },
+  { name: "category-new", path: () => "/categories/new", fullScreen: true },
+  { name: "rules-new", path: () => "/settings/rules/new", fullScreen: true },
+  { name: "investments", path: () => "/settings/investments" },
+  { name: "security-new", path: () => "/settings/investments/securities/new", fullScreen: true },
+  { name: "portfolio-new", path: () => "/portfolio/new" },
+  { name: "portfolio-buy", path: () => "/portfolio/new/buy", fullScreen: true },
+  { name: "tx-edit", path: (s) => `/transactions/${s.txId}/edit`, fullScreen: true },
+  { name: "settings-general", path: () => "/settings/general" },
+  { name: "reports", path: () => "/reports" },
+  { name: "tax", path: () => "/tax" },
+  { name: "realized-gains", path: () => "/portfolio/realized-gains" },
 ];
 
-type Seeded = { accountId: number; storage: Awaited<ReturnType<APIRequestContext["storageState"]>> };
+type Seeded = {
+  accountId: number;
+  goalId: number;
+  txId: number;
+  storage: Awaited<ReturnType<APIRequestContext["storageState"]>>;
+};
 let seeded: Seeded;
 let db: pg.Client;
 let user: { ctx: APIRequestContext; h: Record<string, string>; id: string };
@@ -112,6 +139,7 @@ test.beforeAll(async () => {
   const sal = await cat("Salary", "I", "Income");
   const payees = ["COM TAM", "Highlands Coffee Vincom", "Co.opmart Supermarket", "Grab ride", "Electric EVN", "Circle K", "Bun cha Hanoi", "Winmart"];
   const accts = [cash, tcb, momo, card];
+  let txId = 0;
   for (let n = 0; n < ROWS; n++) {
     const date = new Date(Date.now() - (n % 90) * 864e5 - n * 3e5).toISOString().slice(0, 10);
     const pick = n % 7 === 0
@@ -119,7 +147,11 @@ test.beforeAll(async () => {
       : { c: [eat, groc, trans, util][n % 4], amt: -(40_000 + ((n * 9173) % 900_000)), p: payees[n % payees.length], a: accts[n % accts.length] };
     const r = await api("post", "/api/transactions", { date, accountId: pick.a, categoryId: pick.c, amount: pick.amt, currency: "VND", payee: pick.p });
     if (!r.ok()) throw new Error(`transaction ${n}: ${r.status()}`);
+    if (n === 0) txId = (await r.json()).id as number; // plain (non-transfer) row for /transactions/<id>/edit
   }
+  const goal = await api("post", "/api/goals", { name: "Emergency fund", type: "savings", targetAmount: 50_000_000, currency: "VND" });
+  if (goal.status() !== 201) throw new Error(`goal: ${goal.status()}`);
+  const goalId = (await goal.json()).id as number;
   const brk = (await (await api("post", "/api/accounts", { name: "TCBS Stocks", type: "A", group: "Investments", currency: "VND", isInvestment: true })).json()).id as number;
   for (const sym of ["PVS", "VCB", "FPT"]) {
     await api("post", "/api/portfolio", { name: sym, symbol: `${sym}.VN`, accountId: brk, currency: "VND" });
@@ -130,8 +162,8 @@ test.beforeAll(async () => {
   await api("post", "/api/onboarding/complete");
   await api("put", "/api/settings/display-currency", { displayCurrency: "VND" });
 
-  seeded = { accountId: tcb, storage: await user.ctx.storageState() };
-  manifest.push({ seeded: { transactions: ROWS, accounts: 6 } });
+  seeded = { accountId: tcb, goalId, txId, storage: await user.ctx.storageState() };
+  manifest.push({ seeded: { transactions: ROWS, accounts: 6, goals: 1 } });
 });
 
 test.afterAll(async () => {
