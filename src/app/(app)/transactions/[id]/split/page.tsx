@@ -3,10 +3,11 @@
 /** /transactions/[id]/split — Split transaction as a full page (PKG1 tx-edit). */
 
 import { Suspense, useEffect, useState } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import { PageHeader } from "@/components/mobile";
-import { safeReturnTo } from "@/lib/accounts/groups-return-to";
+import { useReturnTo } from "@/lib/forms/use-return-to";
+import { TW } from "@/lib/design/tokens";
 import {
   TransactionSplitForm,
   rowsFromSplits,
@@ -32,8 +33,7 @@ async function getJson<T>(url: string): Promise<T> {
 
 function SplitInner() {
   const params = useParams<{ id: string }>();
-  const searchParams = useSearchParams();
-  const returnTo = safeReturnTo(searchParams.get("returnTo"), "/transactions");
+  const returnTo = useReturnTo("/transactions");
   const id = Number(params.id);
   const [state, setState] = useState<{ status: "loading" } | { status: "missing"; message: string } | { status: "ready"; data: Loaded }>({ status: "loading" });
 
@@ -82,7 +82,7 @@ function SplitInner() {
 
   if (state.status === "loading") {
     return (
-      <div className="mx-auto w-full max-w-xl">
+      <div className={`mx-auto w-full ${TW.form}`}>
         <PageHeader title="Split transaction" backHref={returnTo} backLabel="Back" />
         <div data-testid="tx-split-loading" className="mt-3 text-sm text-muted-foreground">Loading…</div>
       </div>
@@ -90,7 +90,7 @@ function SplitInner() {
   }
   if (state.status === "missing") {
     return (
-      <div className="mx-auto w-full max-w-xl space-y-3">
+      <div className={`mx-auto w-full ${TW.form} space-y-3`}>
         <PageHeader title="Split transaction" backHref={returnTo} backLabel="Back" />
         <p className="text-sm text-foreground">{state.message}</p>
         <Link href={returnTo} className="text-sm text-primary underline">Back to transactions</Link>

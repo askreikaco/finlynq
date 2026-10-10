@@ -17,6 +17,7 @@ import { PageHeader } from "@/components/mobile";
 import type { OverflowAction } from "@/components/mobile/page-header";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { TW } from "@/lib/design/tokens";
 import { useTransactionForm } from "@/components/transactions/use-transaction-form";
 import { TransactionFormBody } from "@/components/transactions/transaction-form-body";
 import type {
@@ -118,7 +119,7 @@ export function TransactionEditForm({
       ];
 
   return (
-    <div data-testid="tx-edit-root" className="mx-auto w-full max-w-xl">
+    <div data-testid="tx-edit-root" className={`mx-auto w-full ${TW.form}`}>
       <PageHeader
         title={isTransfer ? "Edit transfer" : "Edit transaction"}
         backHref={returnTo}
@@ -137,7 +138,7 @@ export function TransactionEditForm({
           </Button>
         }
       />
-      <div className="mt-3 px-4 pb-[calc(var(--sab,0px)+1.5rem)]">
+      <div className={`mt-3 px-4 ${TW.formPad}`}>
         <TransactionFormBody
           f={f}
           variant="page"

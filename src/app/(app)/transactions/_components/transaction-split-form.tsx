@@ -15,6 +15,7 @@ import { Check, Plus, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/mobile";
 import { Button } from "@/components/ui/button";
 import { AmountInput } from "@/components/amount-input";
+import { TW } from "@/lib/design/tokens";
 import { formatCurrency } from "@/lib/currency";
 import { revalidateTransactionLists } from "@/lib/transactions/revalidate";
 import { FormRow } from "@/app/(app)/transactions/new/_components/form-row";
@@ -181,7 +182,7 @@ export function TransactionSplitForm({
   const categoryPickerEntries = categories.map((c) => ({ ...c, id: c.id }));
 
   return (
-    <div data-testid="tx-split-root" className="mx-auto w-full max-w-xl">
+    <div data-testid="tx-split-root" className={`mx-auto w-full ${TW.form}`}>
       <PageHeader
         title="Split transaction"
         backHref={returnTo}
@@ -200,9 +201,9 @@ export function TransactionSplitForm({
         }
       />
 
-      <div className="mt-3 space-y-3 px-4 pb-[calc(var(--sab,0px)+1.5rem)]">
+      <div className={`mt-3 space-y-3 px-4 ${TW.formPad}`}>
         <ListCard>
-          <div className="flex min-h-12 items-center justify-between gap-3 px-4 text-sm">
+          <div className={`flex ${TW.rowTall} items-center justify-between gap-3 px-4 text-sm`}>
             <span className="text-muted-foreground">Total amount</span>
             <span className="font-mono font-semibold text-foreground">{formatCurrency(Math.abs(total.amount), currency)}</span>
           </div>
@@ -229,8 +230,8 @@ export function TransactionSplitForm({
                 placeholder="Select Account"
                 onClick={() => setPicker({ kind: "account", index: i })}
               />
-              <div className="flex min-h-12 items-center gap-3 px-4">
-                <label htmlFor={`split-${i}-amount`} className="w-24 shrink-0 text-sm text-muted-foreground">
+              <div className={`flex ${TW.rowTall} items-center gap-3 px-4`}>
+                <label htmlFor={`split-${i}-amount`} className={`${TW.rowLabelNarrow} shrink-0 text-sm text-muted-foreground`}>
                   Amount
                 </label>
                 <AmountInput
@@ -263,13 +264,13 @@ export function TransactionSplitForm({
                 placeholder="Comma-separated"
                 autoComplete="off"
               />
-              <div className="flex min-h-12 items-center justify-end px-4">
+              <div className={`flex ${TW.rowTall} items-center justify-end px-4`}>
                 <button
                   type="button"
                   aria-label="Remove split row"
                   disabled={rows.length <= 1}
                   onClick={() => setRows((prev) => prev.filter((_, j) => j !== i))}
-                  className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-destructive disabled:opacity-40"
+                  className={`inline-flex ${TW.row} items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-destructive disabled:opacity-40`}
                 >
                   <Trash2 className="size-4" aria-hidden="true" /> Remove
                 </button>
