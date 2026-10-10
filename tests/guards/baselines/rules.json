@@ -1,8 +1,6 @@
 {
   "family": "rules",
   "unmigrated": [
-    "src/app/(app)/settings/rules/[id]/edit/page.tsx",
-    "src/app/(app)/settings/rules/new/page.tsx",
     "src/app/(app)/settings/rules/page.tsx"
   ],
   "chrome": {
