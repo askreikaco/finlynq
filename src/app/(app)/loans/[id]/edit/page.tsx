@@ -8,6 +8,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/error-state";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { safeReturnTo } from "@/lib/accounts/groups-return-to";
+import { TW } from "@/lib/design/tokens";
 import { LoanForm } from "../../_components/loan-form";
 import type { Loan, LoanAccount } from "../../_components/loan-types";
 
@@ -77,7 +78,7 @@ function EditLoanPage() {
   }
 
   return (
-    <div data-testid="loan-edit-root" className="mx-auto w-full max-w-xl">
+    <div data-testid="loan-edit-root" className={`mx-auto w-full ${TW.form}`}>
       <PageHeader
         title="Edit loan"
         backHref={returnTo}
@@ -85,7 +86,7 @@ function EditLoanPage() {
         className="flex items-center justify-between"
         overflow={[{ label: "Delete loan", icon: Trash2, destructive: true, onSelect: () => setConfirmDelete(true) }]}
       />
-      <div className="mt-3 pb-[calc(var(--sab,0px)+1.5rem)] space-y-3">
+      <div className={`mt-3 ${TW.formPad} space-y-3`}>
         {deleteError && <p role="alert" className="text-sm text-destructive">{deleteError}</p>}
         <LoanForm
           key={loan.id}
