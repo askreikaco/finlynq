@@ -9,6 +9,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { safeReturnTo } from "@/lib/accounts/groups-return-to";
+import type { LoadState } from "@/lib/forms/load-state";
 import { resolveTickerAdvisory } from "@/lib/securities/ticker-advisories";
 
 export type SecurityAccount = {
@@ -135,4 +136,21 @@ export function useInvestmentData() {
   }, [load]);
 
   return { securities, accounts, loading, error, reload: load };
+}
+
+/** A load state that also carries the failure copy the error notice shows. */
+export type LoadWithMessage<R, X = unknown> = LoadState<R, X> & { message?: string };
+
+/** FormPage load hook for the security routes (edit, prices): the catalog row whose id is the route id. */
+export function useSecurityLoad(route: { params: Record<string, string | undefined> }): LoadWithMessage<Security> {
+  const { securities, loading, error, reload } = useInvestmentData();
+  if (!securities) {
+    return loading
+      ? { status: "loading", retry: reload }
+      : { status: "error", retry: reload, message: error ?? "Couldn't load this security." };
+  }
+  const security = securities.find((s) => s.id === Number(route.params.id));
+  return security
+    ? { status: "ready", record: security, retry: reload }
+    : { status: "notFound", retry: reload };
 }
