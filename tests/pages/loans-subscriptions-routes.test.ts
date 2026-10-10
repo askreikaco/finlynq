@@ -72,13 +72,20 @@ describe("shared forms and new routes exist", () => {
     expect(f).toContain('method: isEdit ? "PUT" : "POST"');
   });
   it.each([
-    "src/app/(app)/loans/new/page.tsx",
     "src/app/(app)/loans/[id]/edit/page.tsx",
     "src/app/(app)/subscriptions/new/page.tsx",
     "src/app/(app)/subscriptions/[id]/edit/page.tsx",
   ])("%s exists and validates returnTo", (rel) => {
     expect(existsSync(path.join(ROOT, rel))).toBe(true);
     expect(read(rel)).toContain("safeReturnTo(");
+  });
+  it("loans/new exists and validates returnTo through FormPage (useReturnTo, same rules)", () => {
+    const rel = "src/app/(app)/loans/new/page.tsx";
+    expect(existsSync(path.join(ROOT, rel))).toBe(true);
+    const s = read(rel);
+    expect(s).toContain('from "@/components/templates"');
+    expect(s).toContain('const LOANS_FALLBACK = "/loans"');
+    expect(s).toMatch(/fallbackReturn=\{LOANS_FALLBACK\}/);
   });
   it("the delete confirm lives on the edit pages, behind the overflow", () => {
     for (const rel of ["src/app/(app)/loans/[id]/edit/page.tsx", "src/app/(app)/subscriptions/[id]/edit/page.tsx"]) {

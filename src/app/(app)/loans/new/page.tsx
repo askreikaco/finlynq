@@ -1,46 +1,38 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { PageHeader } from "@/components/mobile";
+import { Suspense } from "react";
+import { FormPage } from "@/components/templates";
 import { useDisplayCurrency } from "@/components/currency-provider";
-import { safeReturnTo } from "@/lib/accounts/groups-return-to";
-import { TW } from "@/lib/design/tokens";
 import { LoanForm } from "../_components/loan-form";
 import type { LoanAccount } from "../_components/loan-types";
+import { useLoanNewLoad } from "../_components/use-loan-new-load";
 
 const LOANS_FALLBACK = "/loans";
+const NO_ACCOUNTS: LoanAccount[] = [];
 
 function NewLoanPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  // Back / Cancel / success all go to returnTo (same-app path only), else the loans list.
-  const returnTo = safeReturnTo(searchParams.get("returnTo"), LOANS_FALLBACK);
   const { displayCurrency } = useDisplayCurrency();
-  const [accounts, setAccounts] = useState<LoanAccount[]>([]);
 
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/accounts")
-      .then((r) => (r.ok ? r.json() : []))
-      .then((data) => { if (!cancelled && Array.isArray(data)) setAccounts(data); })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, []);
-
+  // Back / Cancel / success all go to returnTo (same-app path only), else the loans list.
   return (
-    <div data-testid="loan-new-root" className={`mx-auto w-full ${TW.form}`}>
-      <PageHeader title="New loan" backHref={returnTo} backLabel="Back" className="flex items-center justify-between" />
-      <div className={`mt-3 ${TW.formPad}`}>
+    <FormPage
+      id="loan-new"
+      title="New loan"
+      fallbackReturn={LOANS_FALLBACK}
+      form="external"
+      useLoad={useLoanNewLoad}
+      header={{ actions: null }}
+    >
+      {(ctx) => (
         <LoanForm
           mode="create"
           defaultCurrency={displayCurrency}
-          accounts={accounts}
-          onCancel={() => router.push(returnTo)}
-          onSaved={() => router.push(returnTo)}
+          accounts={ctx.extra ?? NO_ACCOUNTS}
+          onCancel={() => ctx.router.push(ctx.returnTo)}
+          onSaved={() => ctx.router.push(ctx.returnTo)}
         />
-      </div>
-    </div>
+      )}
+    </FormPage>
   );
 }
 
