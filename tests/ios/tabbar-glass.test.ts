@@ -57,19 +57,20 @@ describe("glass material (globals.css)", () => {
     expect(resolvedDecls(css, ".mobile-glass-bar", "light")).toMatch(/background:\s*oklch\(1 0 0 \/ 80%\)/);
   });
 
-  it("blur uses both -webkit- and standard backdrop-filter with blur(28px) saturate(1.8)", () => {
+  it("blur uses both -webkit- and standard backdrop-filter with blur(32px) saturate(1.8)", () => {
     const body = resolvedDecls(css, ".mobile-glass-bar", "light");
-    expect(body).toMatch(/-webkit-backdrop-filter:\s*blur\(28px\) saturate\(1\.8\)/);
-    expect(body).toMatch(/(?<!-webkit-)backdrop-filter:\s*blur\(28px\) saturate\(1\.8\)/);
+    expect(body).toMatch(/-webkit-backdrop-filter:\s*blur\(32px\) saturate\(1\.8\)/);
+    expect(body).toMatch(/(?<!-webkit-)backdrop-filter:\s*blur\(32px\) saturate\(1\.8\)/);
   });
 
   it("light rim is 1px oklch(0 0 0 / 8%)", () => {
     expect(resolvedDecls(css, ".mobile-glass-bar", "light")).toMatch(/border:\s*1px solid oklch\(0 0 0 \/ 8%\)/);
   });
 
-  it("has the inset top highlight and soft drop shadow", () => {
+  it("has the shared liquid edge light (top and bottom) and a soft drop shadow", () => {
     const body = resolvedDecls(css, ".mobile-glass-bar", "light");
-    expect(body).toContain("inset 0 1px 0 oklch(1 0 0 / 18%)");
+    expect(body).toContain("inset 0 1px 0 oklch(1 0 0 / 70%)");
+    expect(body).toContain("inset 0 -1px 0 oklch(1 0 0 / 30%)");
     expect(body).toContain("0 8px 32px oklch(0 0 0 / 35%)");
   });
 
