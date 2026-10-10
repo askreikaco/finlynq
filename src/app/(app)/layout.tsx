@@ -50,7 +50,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   80px = 12 gap + 56 FAB + 12 breathing, so the last row clears it.
                   No bottom padding from 640px (regular:pb-0), where the bar and FAB are hidden.
                   From 640px the left padding clears the fixed tab rail (AppTabs). */}
-              <div className="relative z-10 min-w-0 px-4 py-3 regular:px-6 regular:py-8 wide:px-8">
+              <div className="relative z-10 min-w-0 px-4 pt-0 pb-3 regular:px-6 regular:py-8 wide:px-8">
                 {children}
               </div>
             </main>
