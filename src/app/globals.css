@@ -177,7 +177,7 @@ html {
   --spacing-row-tall: 3rem;          /* min-h-row-tall; today min-h-12 */
   --spacing-row-label: 7rem;         /* w-row-label; today w-28 */
   --spacing-row-label-narrow: 6rem;  /* w-row-label-narrow; today w-24 */
-  --radius-group: 1rem;              /* rounded-group; today rounded-2xl */
+  --radius-group: 0.9rem;            /* rounded-group = today rounded-2xl (calc(var(--radius)*1.8) = 14.4px) */
   --container-form: 36rem;           /* max-w-form; today max-w-xl */
   --container-section: 42rem;        /* max-w-section; today max-w-2xl */
   --container-report: 48rem;         /* max-w-report; today max-w-3xl */

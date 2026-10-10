@@ -14,7 +14,7 @@ export const TOKENS = {
   rowTall: 48,
   rowLabelW: 112,
   rowLabelNarrowW: 96,
-  groupRadius: 16,
+  groupRadius: 14.4,
   formW: 576,
   sectionW: 672,
   reportW: 768,
