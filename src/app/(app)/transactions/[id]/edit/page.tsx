@@ -10,6 +10,9 @@ import { TW } from "@/lib/design/tokens";
 import { useEditSource } from "../../_components/use-edit-source";
 import { TransactionEditForm } from "../../_components/transaction-edit-form";
 import { PageHeader } from "@/components/mobile";
+import { TransactionEntryScreen } from "@/components/transactions/entry/transaction-entry-screen";
+import { canEditInEntryScreen } from "@/lib/transactions/edit-flow";
+import { toEntryMode } from "@/lib/transactions/entry-mode";
 
 const TX_RETURN_FALLBACK = "/transactions";
 
@@ -33,6 +36,10 @@ function EditTransactionInner() {
   }
   if (source.status === "missing") {
     return <Missing message={source.message} returnTo={returnTo} />;
+  }
+  // The same entry screen as New, prefilled. Rows it cannot represent faithfully keep the old edit form.
+  if (canEditInEntryScreen(source.initialState, source)) {
+    return <TransactionEntryScreen mode={toEntryMode(source.initialState, source.splits ?? [], returnTo)} />;
   }
   return (
     <TransactionEditForm

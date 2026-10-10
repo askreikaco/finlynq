@@ -10,12 +10,14 @@ import {
   CalendarDays,
   Calculator,
   CheckCircle2,
+  Copy,
   Hash,
   Info,
   Loader2,
   StickyNote,
   Store,
   Tag,
+  Trash2,
   Wallet,
 } from "lucide-react";
 import { useApi } from "@/lib/data/use-api";
@@ -42,7 +44,20 @@ import { FormRow } from "./form-row";
 import { AmountRow } from "./amount-row";
 import { TypeSegmented } from "./type-segmented";
 import { ListCard } from "./list-card";
-import { readAndClearPrefill } from "@/lib/transactions/prefill";
+import { buildPrefill, canDuplicate, readAndClearPrefill, writePrefill } from "@/lib/transactions/prefill";
+import {
+  buildEntrySeed,
+  buildSplitsBody,
+  buildTransactionPutBody,
+  buildTransferPutBody,
+  isEditMode,
+  type EntryMode,
+} from "@/lib/transactions/entry-mode";
+import { parseSaveError } from "@/lib/save-error";
+import type { LotReallocationPreview } from "@/lib/portfolio/lots/types";
+import { LotReallocationNotice } from "@/components/portfolio/lot-reallocation-notice";
+import { EditMetaLine } from "./edit-meta-line";
+import { EditDeleteDialog } from "./edit-delete-dialog";
 import {
   getLastAccount,
   getRecent,
@@ -55,8 +70,9 @@ import { useFxPreview } from "@/lib/hooks/use-fx-preview";
 import { FxPreviewLine } from "@/components/transactions/fx-preview-line";
 import { buildPayeeCategoryRule } from "@/lib/rules/build-payee-category-rule";
 import { PageHeader, HEADER_CELL } from "@/components/mobile";
+import type { OverflowAction } from "@/components/mobile/page-header";
 
-export type EntryMode = { kind: "create" };
+export type { EntryMode } from "@/lib/transactions/entry-mode";
 
 type TxType = "Expense" | "Income" | "Transfer";
 type InvalidField = "amount" | "account" | "category" | "toAccount";
@@ -64,11 +80,23 @@ const RECENT_TX_CODE: Record<TxType, RecentTxType> = { Expense: "E", Income: "I"
 // Numpad target id for the main Amount. Split rows use their row id (never this value).
 const MAIN_PAD = "main";
 
-// Create-only for now; Stage B branches on mode.kind.
-export function TransactionEntryScreen({ mode: _mode }: { mode: EntryMode }) {
+/**
+ * The one transaction entry screen. mode.kind picks the chrome and the start values, never the rows:
+ *   create         blank (or a Duplicate prefill), posts a new transaction / transfer
+ *   edit           one plain transaction prefilled; PUT /api/transactions (+ splits), Duplicate and Delete in the header
+ *   edit-transfer  a transfer pair prefilled; PUT /api/transactions/transfer, Delete in the header
+ */
+export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
   const { mutate: swrMutate, cache } = useSWRConfig();
   const router = useRouter();
   const { displayCurrency } = useDisplayCurrency();
+  const editMode = isEditMode(mode) ? mode : null;
+  const isEditTransfer = editMode?.kind === "edit-transfer";
+  // The row the muted meta line (created / updated / source) describes.
+  const editRow = editMode ? (editMode.kind === "edit" ? editMode.tx : editMode.debit) : null;
+  // Edit: start values from the loaded row, read once (a later re-render must not wipe the user's edits).
+  const [seed] = useState(() => (editMode ? buildEntrySeed(editMode) : null));
+  const returnTo = editMode?.returnTo ?? "/transactions";
 
   // Refs to handle StrictMode and prefill application
   const prefillReadRef = useRef(false);
@@ -77,11 +105,11 @@ export function TransactionEntryScreen({ mode: _mode }: { mode: EntryMode }) {
   const preselectAccountRef = useRef<string | null>(null);
   // ?account=<id> as read from the URL (state, so the investment notice can render).
   const [urlAccountId] = useState<string | null>(() =>
-    typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("account")
+    typeof window === "undefined" || editMode ? null : new URLSearchParams(window.location.search).get("account")
   );
 
   // Mode
-  const [txType, setTxType] = useState<TxType>("Expense");
+  const [txType, setTxType] = useState<TxType>(seed?.txType ?? "Expense");
 
   // Live Data
   const { data: rawCategories = [], isLoading: loadingCategories } =
@@ -100,33 +128,35 @@ export function TransactionEntryScreen({ mode: _mode }: { mode: EntryMode }) {
   const [prefillNotice, setPrefillNotice] = useState<string | null>(null);
 
   // Form State
-  const [amount, setAmount] = useState("");
-  const [categoryId, setCategoryId] = useState("");
-  const [accountId, setAccountId] = useState("");
-  const [toAccountId, setToAccountId] = useState(""); // For Transfer
-  const [payee, setPayee] = useState("");
-  const [note, setNote] = useState("");
-  const [tags, setTags] = useState("");
+  const [amount, setAmount] = useState(seed?.amount ?? "");
+  const [categoryId, setCategoryId] = useState(seed?.categoryId ?? "");
+  const [accountId, setAccountId] = useState(seed?.accountId ?? "");
+  const [toAccountId, setToAccountId] = useState(seed?.toAccountId ?? ""); // For Transfer
+  const [payee, setPayee] = useState(seed?.payee ?? "");
+  const [note, setNote] = useState(seed?.note ?? "");
+  const [tags, setTags] = useState(seed?.tags ?? "");
   // Entered currency; blank = follow the selected account's currency (as the dialog does).
-  const [currencyChoice, setCurrencyChoice] = useState("");
+  const [currencyChoice, setCurrencyChoice] = useState(seed?.currencyChoice ?? "");
   // "Also create a rule for next time" (Expense/Income with payee + category).
   const [alsoCreateRule, setAlsoCreateRule] = useState(false);
   // Cross-currency transfer: amount the destination account receives (user-overridable).
-  const [receivedAmount, setReceivedAmount] = useState("");
-  const [receivedTouched, setReceivedTouched] = useState(false);
+  const [receivedAmount, setReceivedAmount] = useState(seed?.receivedAmount ?? "");
+  // Edit: the booked received amount is the canonical rate, so the FX preview must not overwrite it.
+  const [receivedTouched, setReceivedTouched] = useState(isEditTransfer);
 
   // Date & Time State
   const [date, setDate] = useState(() => {
+    if (seed) return seed.date;
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   });
 
   // More details (Tags, Business, Split): collapsed by default; a prefill with tags opens it.
-  const [showMore, setShowMore] = useState(false);
-  const [isBusiness, setIsBusiness] = useState(false);
+  const [showMore, setShowMore] = useState(seed?.showMore ?? false);
+  const [isBusiness, setIsBusiness] = useState(seed?.isBusiness ?? false);
   // Splits: count text ("" = none; N >= 2 = N rows, see split-math). Rows keep the hidden tail beyond N.
-  const [splitCount, setSplitCount] = useState("");
-  const [splitRows, setSplitRows] = useState<SplitRowModel[]>([]);
+  const [splitCount, setSplitCount] = useState(seed?.splitCount ?? "");
+  const [splitRows, setSplitRows] = useState<SplitRowModel[]>(seed?.splitRows ?? []);
   // Split rows whose amount was typed, committed from the numpad, or left (blur). An untouched empty
   // row shows no "Enter an amount"; the Save press reveals all rows (splitSaveAttempted).
   const [touchedSplitRowIds, setTouchedSplitRowIds] = useState<ReadonlySet<string>>(() => new Set());
@@ -139,6 +169,12 @@ export function TransactionEntryScreen({ mode: _mode }: { mode: EntryMode }) {
   // Read prefill from sessionStorage once on mount ([] deps)
   // Uses ref to prevent double-read in StrictMode
   useEffect(() => {
+    // Edit starts from the loaded row: no sessionStorage prefill, no ?account= / ?kind= presets.
+    if (editMode) {
+      prefillReadRef.current = true;
+      prefillAppliedRef.current = true;
+      return;
+    }
     // Only read if ?prefill=1 is in URL or legacy mode (no query param)
     const hasPrefillQuery = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("prefill");
 
@@ -198,6 +234,7 @@ export function TransactionEntryScreen({ mode: _mode }: { mode: EntryMode }) {
   const handleDockChange = (id: string, value: string) => {
     if (id === MAIN_PAD) {
       setAmount(value);
+      if (isEditTransfer) setReceivedTouched(false); // a new sent amount refills the received amount
       setInvalid((prev) => (prev?.field === "amount" ? null : prev));
       return;
     }
@@ -228,6 +265,18 @@ export function TransactionEntryScreen({ mode: _mode }: { mode: EntryMode }) {
     if (window.history.length > 1) router.back();
     else router.push("/transactions");
   };
+  // Edit: Back, Cancel, a finished save and a delete all return to the list the user came from.
+  const goReturn = () => router.push(returnTo);
+  const refreshLists = () => {
+    void revalidateTransactionLists(swrMutate, cache);
+    void mutate("/api/accounts");
+  };
+  // Edit: Delete asks first; the lot-reallocation prompt of a lot-locked save (FINLYNQ-176).
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [reallocPreview, setReallocPreview] = useState<LotReallocationPreview | null>(null);
+  const [reallocPending, setReallocPending] = useState(false);
   // Recently picked IDs for this type (read per render; empty on the server).
   const txCode = RECENT_TX_CODE[txType];
   const recentCategoryIds = getRecent("category", txCode);
@@ -420,7 +469,7 @@ export function TransactionEntryScreen({ mode: _mode }: { mode: EntryMode }) {
 
   // Rule suggestion needs a payee + category on a plain (non-split) Expense/Income.
   const ruleEligible =
-    txType !== "Transfer" && !splitActive && payee.trim().length > 0 && !!categoryId;
+    !editMode && txType !== "Transfer" && !splitActive && payee.trim().length > 0 && !!categoryId;
 
   // Handle Category Selection for either main category or split row
   const handleCategorySelect = (selectedId: string) => {
@@ -470,9 +519,10 @@ export function TransactionEntryScreen({ mode: _mode }: { mode: EntryMode }) {
   };
 
   // Submit Handler: Save books the entry and locks the form.
-  const handleSave = async () => {
+  const handleSave = async (confirmReallocation = false) => {
     if (saving || doneRef.current) return;
     setSplitSaveAttempted(true);
+    if (!confirmReallocation) setReallocPreview(null);
     setErrorMessage(null);
     setSuccessNotice(null);
     setInvalid(null);
@@ -509,6 +559,38 @@ export function TransactionEntryScreen({ mode: _mode }: { mode: EntryMode }) {
         if (transferCrossCcy && receivedAmount) {
           const parsedReceived = parseFloat(receivedAmount);
           if (Number.isFinite(parsedReceived) && parsedReceived >= 0) receivedNum = parsedReceived;
+        }
+
+        if (editMode?.kind === "edit-transfer") {
+          // Same PUT the old transfer edit sent (the amount is in the From account currency).
+          const putRes = await fetch("/api/transactions/transfer", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(
+              buildTransferPutBody({
+                linkId: editMode.linkId,
+                fromAccountId: Number(accountId),
+                toAccountId: Number(toAccountId),
+                enteredAmount: parsedAmount,
+                date,
+                receivedAmount: receivedNum,
+                note,
+                tags,
+              }),
+            ),
+          });
+          if (!putRes.ok) {
+            const errData = await putRes.json().catch(() => ({}));
+            if (errData?.code === "fx-currency-needs-override") {
+              throw new Error(`No FX rate for ${errData.currency ?? selectedToAcc?.currency ?? "destination currency"}.`);
+            }
+            throw new Error(errData?.error ?? `Save failed (${putRes.status})`);
+          }
+          doneRef.current = true;
+          setDone(true);
+          refreshLists();
+          goReturn();
+          return;
         }
 
         const transferPayload = {
@@ -562,6 +644,90 @@ export function TransactionEntryScreen({ mode: _mode }: { mode: EntryMode }) {
       const signedAmount = txType === "Expense" ? -Math.abs(parsedAmount) : Math.abs(parsedAmount);
       // Row 1 inherits the main category when it has none of its own (validateSplits resolves it).
       const effectiveCategoryId = splitActive ? Number(splitCheck.resolved[0].id) : Number(categoryId);
+
+      if (editMode?.kind === "edit") {
+        // Same PUT (+ splits POST) the old edit form sent.
+        const putRes = await fetch("/api/transactions", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(
+            buildTransactionPutBody({
+              id: editMode.tx.id,
+              date,
+              accountId: Number(accountId),
+              categoryId: effectiveCategoryId,
+              enteredCurrency: currency,
+              enteredAmount: signedAmount,
+              payee,
+              note,
+              tags,
+              isBusiness,
+              confirmReallocation,
+            }),
+          ),
+        });
+        if (!putRes.ok) {
+          const errData = await putRes.clone().json().catch(() => ({}));
+          if (errData?.code === "fx-currency-needs-override") {
+            throw new Error(`No FX rate for ${errData.currency ?? currency}.`);
+          }
+          if (errData?.code === "portfolio_edit_blocked") {
+            // The edited row opened a lot that has been sold or transferred out: show the reallocation preview
+            // and let the user confirm saving anyway (dependents are re-matched to other lots).
+            setErrorMessage(
+              "This transaction opened a lot that has since been sold or transferred out. " +
+                "You can still save your edit — the dependent transactions will be re-matched to your other lots.",
+            );
+            setReallocPreview(null);
+            setReallocPending(true);
+            try {
+              const pRes = await fetch("/api/transactions/lot-replan-preview", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ op: "edit", id: editMode.tx.id }),
+              });
+              if (pRes.ok) {
+                const pData = await pRes.json().catch(() => null);
+                if (pData?.preview) setReallocPreview(pData.preview as LotReallocationPreview);
+              }
+            } finally {
+              setReallocPending(false);
+            }
+            return;
+          }
+          throw new Error(await parseSaveError(putRes, `Save failed (${putRes.status})`));
+        }
+        setReallocPreview(null);
+
+        let splitsError: string | null = null;
+        if (splitActive) {
+          const splitRes = await fetch("/api/transactions/splits", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(
+              buildSplitsBody({
+                transactionId: editMode.tx.id,
+                sign: signedAmount < 0 ? -1 : 1,
+                rows: splitCheck.visible.map((row, i) => ({
+                  categoryId: Number(splitCheck.resolved[i].id),
+                  amount: splitCheck.amounts[i],
+                  note: row.note,
+                })),
+              }),
+            ),
+          });
+          if (!splitRes.ok) {
+            splitsError = await parseSaveError(splitRes, `The splits could not be saved (${splitRes.status}).`);
+          }
+        }
+        refreshLists();
+        // The transaction is saved already: a failed splits write is shown and the page stays (a retry re-saves).
+        if (splitsError) throw new Error(`Transaction saved, but the splits were not: ${splitsError}`);
+        doneRef.current = true;
+        setDone(true);
+        goReturn();
+        return;
+      }
 
       const txPayload = {
         date,
@@ -681,6 +847,54 @@ export function TransactionEntryScreen({ mode: _mode }: { mode: EntryMode }) {
     }
   };
 
+  // Edit: Duplicate seeds the new-entry screen from the loaded row; Delete asks first.
+  async function deleteEntry() {
+    if (!editMode) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch(
+        editMode.kind === "edit-transfer"
+          ? `/api/transactions/transfer?linkId=${encodeURIComponent(editMode.linkId)}`
+          : `/api/transactions?id=${editMode.tx.id}`,
+        { method: "DELETE" },
+      );
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setDeleteError(
+          data?.code === "portfolio_edit_blocked"
+            ? (data.error ?? "Delete blocked by portfolio dependencies.")
+            : (data?.error ?? `Delete failed (${res.status})`),
+        );
+        return;
+      }
+      setConfirmOpen(false);
+      refreshLists();
+      goReturn();
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "Could not reach the server.");
+    } finally {
+      setDeleting(false);
+    }
+  }
+  const editOverflow: OverflowAction[] | undefined = !editMode
+    ? undefined
+    : editMode.kind === "edit-transfer"
+      ? [{ label: "Delete transfer", icon: Trash2, destructive: true, onSelect: () => setConfirmOpen(true) }]
+      : [
+          {
+            label: "Duplicate",
+            icon: Copy,
+            disabled: !canDuplicate(editMode.tx, editMode.tx.currency),
+            onSelect: () => {
+              if (!canDuplicate(editMode.tx, editMode.tx.currency)) return;
+              writePrefill(buildPrefill(editMode.tx as unknown as Parameters<typeof buildPrefill>[0]));
+              router.push("/transactions/new?prefill=1");
+            },
+          },
+          { label: "Delete", icon: Trash2, destructive: true, onSelect: () => setConfirmOpen(true) },
+        ];
+
   // Layout budget (phone 390x844; sat/sab = safe-area top/bottom). The page root is fixed from
   // --sat to --sab (the tab bar is hidden on this route), so its height is 844 - sat - sab:
   // 844 with 0/0 insets, 763 with 47/34. Rows are fixed height; only the list region scrolls.
@@ -724,6 +938,7 @@ export function TransactionEntryScreen({ mode: _mode }: { mode: EntryMode }) {
   return (
     <div
       data-testid="txnew-root"
+      data-mode={mode.kind}
       className={cn(
         "flex flex-col bg-background text-foreground",
         "max-regular:fixed max-regular:inset-x-0 max-regular:top-[var(--sat)] max-regular:bottom-[var(--sab,0px)]",
@@ -737,9 +952,11 @@ export function TransactionEntryScreen({ mode: _mode }: { mode: EntryMode }) {
           the root class below keeps the bar's own 16px gutter, the same as every other page. */}
       <PageHeader
         className="shrink-0"
-        title={`New ${txType}`}
-        onBack={goBack}
-        backLabel="Back to transactions"
+        title={editMode ? `Edit ${txType.toLowerCase()}` : `New ${txType}`}
+        {...(editMode
+          ? { backHref: returnTo, backLabel: "Back" }
+          : { onBack: goBack, backLabel: "Back to transactions" })}
+        overflow={editOverflow}
         actions={
           saving ? (
             <span role="status" aria-label="Saving" className={`${HEADER_CELL} flex size-11 items-center justify-center`}>
@@ -753,6 +970,9 @@ export function TransactionEntryScreen({ mode: _mode }: { mode: EntryMode }) {
       <div data-testid="txnew-type" className="mt-2 shrink-0 px-4">
         <TypeSegmented
           value={txType}
+          disabledOptions={
+            editMode?.kind === "edit" ? ["Transfer"] : editMode?.kind === "edit-transfer" ? ["Expense", "Income"] : undefined
+          }
           onChange={(next) => {
             setTxType(next);
             setErrorMessage(null);
@@ -820,10 +1040,12 @@ export function TransactionEntryScreen({ mode: _mode }: { mode: EntryMode }) {
             value={amount}
             onChange={(v) => {
               setAmount(v);
+              if (isEditTransfer) setReceivedTouched(false); // a new sent amount refills the received amount
               setInvalid((prev) => (prev?.field === "amount" ? null : prev));
             }}
             onOpenPad={openPad}
             currency={currency}
+            currencyDisabled={isEditTransfer}
             onOpenCurrency={() => {
               closePad();
               setShowCurrencySelector(true);
@@ -1096,6 +1318,8 @@ export function TransactionEntryScreen({ mode: _mode }: { mode: EntryMode }) {
           </div>
         )}
 
+        {editRow && <EditMetaLine tx={editRow} />}
+
         {errorMessage && (
           <div
             role="alert"
@@ -1103,6 +1327,22 @@ export function TransactionEntryScreen({ mode: _mode }: { mode: EntryMode }) {
           >
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-neg" />
             <span className="flex-1 leading-relaxed">{errorMessage}</span>
+          </div>
+        )}
+
+        {(reallocPreview || reallocPending) && (
+          <div className="shrink-0 space-y-2">
+            <LotReallocationNotice preview={reallocPreview} loading={reallocPending} />
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              className="w-full"
+              disabled={reallocPending || saving}
+              onClick={() => void handleSave(true)}
+            >
+              Reallocate &amp; save
+            </Button>
           </div>
         )}
 
@@ -1131,7 +1371,7 @@ export function TransactionEntryScreen({ mode: _mode }: { mode: EntryMode }) {
             variant="outline"
             data-testid="txnew-cancel"
             disabled={saving}
-            onClick={goBack}
+            onClick={editMode ? goReturn : goBack}
             className="h-12 rounded-2xl px-5 text-base font-semibold"
           >
             Cancel
@@ -1150,6 +1390,20 @@ export function TransactionEntryScreen({ mode: _mode }: { mode: EntryMode }) {
         onDone={closePad}
         decimals={currencyDecimals(currency)}
       />
+
+      {editMode && (
+        <EditDeleteDialog
+          open={confirmOpen}
+          onOpenChange={(open) => {
+            setConfirmOpen(open);
+            if (!open) setDeleteError(null);
+          }}
+          isTransfer={isEditTransfer}
+          deleting={deleting}
+          error={deleteError}
+          onConfirm={() => void deleteEntry()}
+        />
+      )}
 
       {/* Bottom Sheets */}
       <CurrencySelector

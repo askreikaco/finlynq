@@ -67,7 +67,7 @@ describe("bars that must use the sticky bar", () => {
   });
 
   it("new-transaction header is the global PageHeader (no own sticky bar)", () => {
-    expect(newTx).toMatch(/<PageHeader[\s\S]{0,200}title=\{`New \$\{txType\}`\}/);
+    expect(newTx).toMatch(/<PageHeader[\s\S]{0,200}title=\{[^\n]*`New \$\{txType\}`/);
     expect(newTx).not.toMatch(/PHONE_BAR_STICKY/);
   });
 
