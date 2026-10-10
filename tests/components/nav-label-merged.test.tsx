@@ -10,6 +10,7 @@ const render = (ui: React.ReactElement) =>
   rtlRender(<SWRConfig value={{ provider: () => new Map() }}>{ui}</SWRConfig>);
 
 vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
   usePathname: () => "/categories",
   useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
 }));

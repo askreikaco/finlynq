@@ -8,6 +8,7 @@ import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/re
 const H = vi.hoisted(() => ({ push: vi.fn(), back: vi.fn() }));
 
 vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
   useRouter: () => ({ push: H.push, back: H.back }),
   usePathname: () => "/transactions/new",
 }));

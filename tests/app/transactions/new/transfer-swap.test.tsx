@@ -6,6 +6,7 @@ import * as React from "react";
 import { render, screen, cleanup, waitFor, fireEvent } from "@testing-library/react";
 
 vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
   useRouter: () => ({ push: vi.fn(), back: vi.fn() }), usePathname: () => "/transactions/new",
 }));
 vi.mock("next/link", () => ({

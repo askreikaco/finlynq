@@ -29,7 +29,7 @@
       "rounded-2xl": 1
     },
     "src/app/(app)/transactions/new/page.tsx": {
-      "min-h": 2,
+      "min-h": 1,
       "rounded-2xl": 5
     },
     "src/app/(app)/transactions/transfer/[linkId]/edit/page.tsx": {

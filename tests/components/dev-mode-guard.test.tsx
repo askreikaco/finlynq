@@ -9,6 +9,7 @@ import { DevModeGuard } from "@/components/dev-mode-guard";
 // Mock next/navigation at top level
 const mockReplace = vi.fn();
 vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
   useRouter: () => ({
     replace: mockReplace,
   }),

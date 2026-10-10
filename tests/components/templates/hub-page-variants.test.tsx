@@ -8,6 +8,7 @@ import { render, screen, cleanup, within, fireEvent } from "@testing-library/rea
 import { Inbox, Settings } from "lucide-react";
 
 vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
   usePathname: () => "/more",
   useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
 }));

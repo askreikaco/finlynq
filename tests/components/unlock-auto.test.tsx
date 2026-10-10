@@ -10,7 +10,8 @@ import userEvent from "@testing-library/user-event";
 import * as fs from "fs";
 import { resolve } from "path";
 
-vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: vi.fn(), push: vi.fn() }) }));
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(), useRouter: () => ({ replace: vi.fn(), push: vi.fn() }) }));
 const passkeyLogin = vi.fn();
 const pending = { value: false };
 vi.mock("@/lib/client/passkey-prf", () => ({

@@ -6,6 +6,7 @@ import * as React from "react";
 import { render, screen, cleanup, waitFor } from "@testing-library/react";
 
 vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
   useRouter: () => ({ push: vi.fn(), back: vi.fn() }), usePathname: () => "/transactions/new",
 }));
 vi.mock("next/link", () => ({
@@ -87,7 +88,7 @@ describe("New Transaction rows render an icon in their label cell", () => {
     // Amount row: the icon sits in the currency trigger inside the w-24 label cell.
     const amountRow = screen.getByTestId("txnew-row-amount");
     const cell = amountRow.querySelector('[data-slot="amount-label-cell"]') as HTMLElement;
-    expect(cell.classList.contains("w-24")).toBe(true);
+    expect(cell.classList.contains("w-row-label-narrow")).toBe(true);
     expect(cell.querySelector('[data-slot="form-row-icon"]')).not.toBeNull();
   });
 

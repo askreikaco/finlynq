@@ -8,6 +8,7 @@ import { readFileSync } from "fs";
 import path from "path";
 
 vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
   useRouter: () => ({ push: vi.fn(), back: vi.fn() }), usePathname: () => "/transactions/new",
 }));
 vi.mock("next/link", () => ({

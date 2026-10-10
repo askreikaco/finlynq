@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { TW } from "@/lib/design/tokens";
 import { Banknote, ChevronDown } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -25,7 +26,7 @@ interface AmountRowProps {
 }
 
 /**
- * Amount row. The currency trigger sits in a `w-24 shrink-0` cell, the same label
+ * Amount row. The currency trigger sits in a label-width cell (TW.rowLabelNarrow, 6rem), the same label
  * column FormRow uses (narrow), so the amount starts at the shared value column x.
  */
 export function AmountRow({
@@ -45,7 +46,7 @@ export function AmountRow({
     <div data-testid={testId} className={cn("flex min-h-14 flex-col gap-1 px-4 py-2", className)}>
       <div className="flex min-w-0 items-center gap-3">
         {showCurrency && (
-          <div data-slot="amount-label-cell" className="w-24 shrink-0">
+          <div data-slot="amount-label-cell" className={cn(TW.rowLabelNarrow, "shrink-0")}>
             <button
               type="button"
               aria-label="Currency"

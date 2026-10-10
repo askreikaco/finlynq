@@ -9,6 +9,7 @@ import { join } from "node:path";
 
 let mockPath = "/dashboard";
 vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
   usePathname: () => mockPath,
   useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
 }));

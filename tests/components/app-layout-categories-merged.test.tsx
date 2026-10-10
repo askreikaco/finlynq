@@ -81,6 +81,7 @@ vi.mock("@/components/mobile/page-fab", () => ({
 }));
 
 vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
   usePathname: () => "/dashboard",
 }));
 

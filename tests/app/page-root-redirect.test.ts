@@ -39,6 +39,7 @@ vi.mock("next/headers", () => ({
 }));
 
 vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
   redirect: vi.fn((url: string) => {
     throw new Error("REDIRECT:" + url);
   }),

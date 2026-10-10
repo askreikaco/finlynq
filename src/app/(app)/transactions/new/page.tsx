@@ -877,7 +877,7 @@ export default function MobileTransactionPage() {
                   data-testid="txnew-swap-accounts"
                   disabled={!accountId && !toAccountId}
                   onClick={swapTransferAccounts}
-                  className="absolute right-3 top-1/2 z-10 flex size-11 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card/80 text-muted-foreground shadow-sm backdrop-blur-sm transition-colors active:bg-muted disabled:opacity-50"
+                  className="absolute right-3 top-1/2 z-10 flex size-11 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card/80 text-muted-foreground shadow-sm blur-soft transition-colors active:bg-muted disabled:opacity-50"
                 >
                   <ArrowUpDown aria-hidden="true" className="size-[18px]" />
                 </button>

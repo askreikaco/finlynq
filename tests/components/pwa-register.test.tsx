@@ -8,7 +8,10 @@ import { PwaRegister } from "@/components/pwa-register";
 const register = vi.fn().mockResolvedValue({ addEventListener: () => {}, installing: null });
 
 function stubSW() {
-  Object.defineProperty(navigator, "serviceWorker", { value: { register, controller: null }, configurable: true });
+  Object.defineProperty(navigator, "serviceWorker", {
+    value: { register, controller: null, addEventListener: () => {}, removeEventListener: () => {} },
+    configurable: true,
+  });
 }
 
 describe("PwaRegister", () => {

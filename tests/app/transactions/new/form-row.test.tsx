@@ -136,7 +136,7 @@ describe("AmountRow", () => {
       </>,
     );
     const cell = container.querySelector('[data-slot="amount-label-cell"]') as HTMLElement;
-    expectClass(cell, "w-24", "shrink-0");
+    expectClass(cell, "w-row-label-narrow", "shrink-0");
     const noteLabel = screen.getByText("Note");
     expectClass(noteLabel, "w-24", "shrink-0");
     // Same row padding and gap as the FormRow row, so the value column x matches.

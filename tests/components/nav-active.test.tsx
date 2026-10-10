@@ -9,6 +9,7 @@ import { pickActiveHref, navGroups, adminLinks, allFlatItems, AppTabs } from "@/
 
 let mockPath = "/dashboard";
 vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
   usePathname: () => mockPath,
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
 }));

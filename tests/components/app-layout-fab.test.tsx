@@ -68,6 +68,7 @@ vi.mock("@/components/web-vitals", () => ({
 }));
 
 vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
   usePathname: () => "/dashboard",
 }));
 

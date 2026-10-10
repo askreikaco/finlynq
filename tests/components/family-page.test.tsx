@@ -18,6 +18,7 @@ import { FAMILY_OVERVIEW_SECTIONS } from "@/lib/family/sections";
 
 const routerReplace = vi.hoisted(() => vi.fn());
 vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
   useRouter: () => ({ replace: routerReplace, push: vi.fn() }),
   usePathname: () => "/family",
 }));

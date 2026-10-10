@@ -68,7 +68,10 @@ describe("global reduced-motion (globals.css)", () => {
 describe("service worker registration (pwa-register.tsx)", () => {
   it("is gated to production before any registration attempt", () => {
     const gate = pwa.indexOf('process.env.NODE_ENV !== "production"');
-    const register = pwa.indexOf("navigator.serviceWorker.register");
+    // The component binds `const container = navigator.serviceWorker` and registers via `container.register("/sw.js"`.
+    expect(pwa).toMatch(/const container = navigator\.serviceWorker;/);
+    const register = pwa.indexOf('container.register("/sw.js"');
+    expect(register).toBeGreaterThan(-1);
     expect(gate).toBeGreaterThan(-1);
     expect(gate).toBeLessThan(register);
     expect(pwa).toMatch(/process\.env\.NODE_ENV !== "production"\) return;/);
