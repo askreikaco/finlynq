@@ -191,7 +191,14 @@ async function resolveIds(userId: string): Promise<Omit<Seeded, "storage">> {
   const list = async (p: string): Promise<Array<Record<string, unknown>>> => {
     const r = await api("get", p);
     if (!r.ok()) throw new Error(`GET ${p}: ${r.status()}`);
-    return (await r.json()) as Array<Record<string, unknown>>;
+    const j = (await r.json()) as unknown;
+    if (Array.isArray(j)) return j as Array<Record<string, unknown>>;
+    const o = j as Record<string, unknown>;
+    const inner = o.data ?? o;
+    if (Array.isArray(inner)) return inner as Array<Record<string, unknown>>;
+    const firstArray = Object.values(inner as Record<string, unknown>).find((v) => Array.isArray(v));
+    if (!firstArray) throw new Error(`GET ${p}: no array in response`);
+    return firstArray as Array<Record<string, unknown>>;
   };
   const byName = (rows: Array<Record<string, unknown>>, key: string, value: string): number => {
     const hit = rows.find((row) => row[key] === value);
