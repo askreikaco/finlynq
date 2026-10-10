@@ -11,7 +11,7 @@ import { useDisplayCurrency } from "@/components/currency-provider";
 import { useSessionUserId, readUserItem, writeUserItem, removeUserItem } from "@/lib/client/user-storage";
 import { CHART_COLORS } from "@/lib/chart-colors";
 import { Send, Trash2, Bot, User, Sparkles } from "lucide-react";
-import { PageHeader } from "@/components/mobile";
+import { PageHeader, HEADER_CELL } from "@/components/mobile";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BarChart,
@@ -392,10 +392,11 @@ function ChatPageContent() {
               variant="ghost"
               size="sm"
               onClick={clearHistory}
-              className="text-muted-foreground hover:text-destructive text-xs gap-1.5"
+              aria-label="Clear chat"
+              className={`${HEADER_CELL} text-muted-foreground hover:text-destructive text-xs gap-1.5`}
             >
-              <Trash2 className="h-3.5 w-3.5" />
-              Clear
+              <Trash2 className="h-4 w-4 regular:h-3.5 regular:w-3.5" aria-hidden="true" />
+              <span className="max-regular:sr-only">Clear</span>
             </Button>
           ) : undefined
         }
