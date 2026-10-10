@@ -228,7 +228,9 @@ describe("safe-area shell wiring (source)", () => {
     expect(read("src/components/ui/sheet.tsx")).toContain("pt-[var(--sat)]");
     expect(read("src/components/ui/dialog.tsx")).toContain("var(--sat)");
     expect(read("src/components/inbox/upload-drawer.tsx")).toContain("pt-safe");
-    expect(read("src/components/settings-shell.tsx")).toContain('className={PHONE_BAR}');
+    // Settings sub-pages: the page's PageHeader is the top bar (shared PHONE_BAR); the shell draws none.
+    expect(read("src/components/mobile/page-header.tsx")).toContain("cn(className, PHONE_BAR)");
+    expect(read("src/components/settings-shell.tsx")).not.toContain("PHONE_BAR");
     expect(read("src/components/settings-shell.tsx")).not.toContain("top-[calc(1.5rem+var(--sat))]");
     // Unlock card (423) is a bottom card: clears the tab bar and the on-screen keyboard, side-safe.
     expect(read("src/components/unlock-panel.tsx")).toContain("var(--mobile-bar-clearance)");

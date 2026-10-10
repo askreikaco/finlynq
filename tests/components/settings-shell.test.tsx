@@ -1,7 +1,7 @@
 /**
  * @vitest-environment jsdom
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import React from "react";
 import { readFileSync } from "fs";
 import { resolve } from "path";
@@ -13,120 +13,101 @@ vi.mock("next/navigation", () => ({
 }));
 
 import { SettingsShell } from "@/components/settings-shell";
-
-beforeEach(() => {
-  mockPath = "/settings/general";
-});
+import { SettingsHub } from "@/components/settings-hub";
+import { PageHeader, PHONE_BAR_TITLE } from "@/components/mobile/page-header";
 
 afterEach(() => {
   cleanup();
-  vi.unstubAllGlobals();
 });
 
-const detailBar = (c: HTMLElement) => c.querySelector('[data-slot="settings-detail-bar"]');
+const topBars = (c: HTMLElement) => c.querySelectorAll('[data-slot="page-header"]');
+const backs = (c: HTMLElement) => c.querySelectorAll('[data-slot="back-button"]');
+const shellSrc = readFileSync(resolve(__dirname, "../../src/components/settings-shell.tsx"), "utf-8");
 
-describe("Settings Shell (G2-06: hub is the level-2 switcher at every size)", () => {
-  it("renders no settings section links on a sub-page (no aside, no pill row)", () => {
+describe("Settings shell: no top bar of its own (the page's PageHeader is the one top bar)", () => {
+  it("a sub-page without a PageHeader gets no bar and no back from the shell", () => {
     mockPath = "/settings/general";
     const { container } = render(
       <SettingsShell>
         <div>Test content</div>
-      </SettingsShell>
+      </SettingsShell>,
     );
-
-    const settingsLinks = screen
-      .queryAllByRole("link")
-      .filter((l) => (l.getAttribute("href") ?? "").startsWith("/settings/"));
-    expect(settingsLinks.length).toBe(0);
-    expect(container.querySelector("aside")).toBeNull();
-    expect(container.querySelector('nav[aria-label="Settings sections"]')).toBeNull();
+    expect(topBars(container)).toHaveLength(0);
+    expect(backs(container)).toHaveLength(0);
+    expect(container.querySelector('[data-slot="settings-detail-bar"]')).toBeNull();
+    expect(screen.getByText("Test content")).toBeTruthy();
   });
 
-  it("renders no detail bar on the hub page /settings", () => {
+  it("a sub-page with a PageHeader has exactly one top bar and exactly one back control", () => {
+    mockPath = "/settings/general";
+    const { container } = render(
+      <SettingsShell>
+        <PageHeader title="General" />
+      </SettingsShell>,
+    );
+    expect(topBars(container)).toHaveLength(1);
+    expect(backs(container)).toHaveLength(1);
+    expect(backs(container)[0].getAttribute("href")).toBe("/settings");
+    expect(topBars(container)[0].contains(backs(container)[0])).toBe(true);
+  });
+
+  it("the page title is the visible centred title of its PageHeader (no sr-only copy, no alias label)", () => {
+    mockPath = "/settings/investments/securities/new";
+    render(
+      <SettingsShell>
+        <PageHeader title="Add security" backHref="/settings/investments?tab=securities" />
+      </SettingsShell>,
+    );
+    const h1 = screen.getByRole("heading", { level: 1, name: "Add security" });
+    expect(h1.className).not.toContain("sr-only");
+    expect(h1.textContent).toBe("Add security");
+    for (const token of PHONE_BAR_TITLE.split(/\s+/)) {
+      expect(h1.className.split(/\s+/)).toContain(token);
+    }
+    expect(screen.queryByText("Investments", { selector: "span[aria-hidden]" })).toBeNull();
+  });
+
+  it("the hub /settings renders its PageHeader as the one top bar, backing to /more (level 2)", () => {
     mockPath = "/settings";
     const { container } = render(
       <SettingsShell>
-        <div>Hub content</div>
-      </SettingsShell>
+        <SettingsHub />
+      </SettingsShell>,
     );
-
-    expect(detailBar(container)).toBeNull();
-    expect(screen.queryAllByRole("link", { name: "Back to Settings" })).toHaveLength(0);
-    expect(screen.getByText("Hub content")).toBeTruthy();
-  });
-
-  it.each([
-    ["/settings/general", "General"],
-    ["/settings/investments", "Investments"],
-    ["/settings/rules", "Reconciliation"],
-    ["/connect", "Integrations"],
-  ])("labels the detail bar for %s as %s (registry aliases apply)", (path, label) => {
-    mockPath = path;
-    const { container } = render(
-      <SettingsShell>
-        <div>Detail</div>
-      </SettingsShell>
-    );
-
-    const title = detailBar(container)?.querySelector("span[aria-hidden]");
-    expect(title?.textContent).toBe(label);
-  });
-
-  it("renders the back button to the hub on sub-pages", () => {
-    mockPath = "/settings/general";
-    render(
-      <SettingsShell>
-        <div>Test content</div>
-      </SettingsShell>
-    );
-
-    const backButton = screen.getByRole("link", { name: "Back to Settings" });
-    expect(backButton.getAttribute("data-slot")).toBe("back-button");
-    expect(backButton.getAttribute("href")).toBe("/settings");
-  });
-
-  it("does not render the back button on /settings/import/reconcile-visibility (page has its own)", () => {
-    mockPath = "/settings/import/reconcile-visibility";
-    render(
-      <SettingsShell>
-        <div>Test content</div>
-      </SettingsShell>
-    );
-
-    const backButtons = screen.queryAllByRole("link").filter((l) => l.getAttribute("data-slot") === "back-button");
-    expect(backButtons.length).toBe(0);
-  });
-
-  it("keeps the detail bar outside the overflow container, so its sticky position is not clipped", () => {
-    mockPath = "/settings/general";
-    const { container } = render(
-      <SettingsShell>
-        <div>Test content</div>
-      </SettingsShell>
-    );
-
-    const bar = detailBar(container) as HTMLElement;
-    const content = container.querySelector('[data-slot="settings-content"]') as HTMLElement;
-    expect(content.contains(bar)).toBe(false);
-    expect(bar.nextElementSibling).toBe(content);
-    expect(content.querySelector(".overflow-x-clip")?.textContent).toBe("Test content");
-    expect(content.className).not.toMatch(/overflow-x-(auto|scroll)/);
+    expect(topBars(container)).toHaveLength(1);
+    const h1 = screen.getByRole("heading", { level: 1, name: "Settings" });
+    expect(topBars(container)[0].contains(h1)).toBe(true);
+    expect(backs(container)).toHaveLength(1);
+    expect(backs(container)[0].getAttribute("href")).toBe("/more");
+    expect(container.querySelector('[data-slot="settings-detail-bar"]')).toBeNull();
   });
 
   it("renders children", () => {
     render(
       <SettingsShell>
         <div>Test content goes here</div>
-      </SettingsShell>
+      </SettingsShell>,
     );
-
     expect(screen.getByText("Test content goes here")).toBeTruthy();
   });
 
-  it("source has no viewport-split classes and no side nav or flag (ratchet of the G2-06 change)", () => {
-    const src = readFileSync(resolve(__dirname, "../../src/components/settings-shell.tsx"), "utf-8");
-    expect(src).not.toMatch(/max-md:|(^|[\s"'`])md:|(^|[\s"'`])lg:|hidden md:/);
-    expect(src).not.toMatch(/<aside|CompactOnly|FromMd|hubBackHref|FINLYNQ_NAV_V2/);
-    expect(src).not.toMatch(/PHONE_BAR_SIDE|pills/i);
+  it("keeps the content slot out of any scroll container, so the page's sticky header pins to the window", () => {
+    const { container } = render(
+      <SettingsShell>
+        <div>Test content</div>
+      </SettingsShell>,
+    );
+    const slot = container.querySelector('[data-slot="settings-content"]') as HTMLElement;
+    expect(slot.className).not.toMatch(/overflow-x-(auto|scroll)/);
+    expect(slot.querySelector(".overflow-x-clip")?.textContent).toBe("Test content");
+  });
+
+  it("source: no hand-built bar, no PHONE_BAR primitives, no back context, no sr-only title hack, no viewport split", () => {
+    expect(shellSrc).not.toMatch(/PHONE_BAR|HEADER_TITLE_CLASS|BackButton|settings-detail-bar/);
+    expect(shellSrc).not.toMatch(/SettingsBackContext|settings-back-context|SUB_PAGE_HEADER_OVERRIDES|sr-only/);
+    expect(shellSrc).not.toMatch(/usePathname|NAV_ITEMS|ROUTE_GROUP|SELF_BACK_PATHS/);
+    expect(shellSrc).not.toMatch(/max-md:|(^|[\s"'`])md:|(^|[\s"'`])lg:|hidden md:/);
+    expect(shellSrc).not.toMatch(/<aside|CompactOnly|FromMd|hubBackHref|FINLYNQ_NAV_V2/);
+    expect(shellSrc).not.toMatch(/PHONE_BAR_SIDE|pills/i);
   });
 });

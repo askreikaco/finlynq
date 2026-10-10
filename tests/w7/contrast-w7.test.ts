@@ -41,7 +41,9 @@ describe("W7 contrast class strings", () => {
   it("settings has no pill row: the detail bar title is plain foreground text (no pill selected state)", () => {
     const shell = read("src/components/settings-shell.tsx");
     expect(shell).not.toContain("border-primary/40 bg-primary/10 text-primary-text");
-    expect(shell).toContain("HEADER_TITLE_CLASS, PHONE_BAR_TITLE");
+    // The title is the page's PageHeader h1 (plain foreground, shared title classes); the shell draws none.
+    expect(shell).not.toContain("PHONE_BAR_TITLE");
+    expect(read("src/components/mobile/page-header.tsx")).toContain("HEADER_TITLE_CLASS, PHONE_BAR_TITLE");
   });
 
   it("settings theme Light/Dark selected state uses text-primary-text", () => {

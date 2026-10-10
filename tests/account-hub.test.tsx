@@ -42,7 +42,7 @@ describe("AccountHub", () => {
     const actualLabels = accountLinks
       .slice(0, 2)
       .map((l) => {
-        const titleSpan = l.querySelector("span.text-\\[15px\\]");
+        const titleSpan = l.querySelector("span.font-semibold");
         return titleSpan?.textContent?.trim();
       })
       .filter(Boolean);

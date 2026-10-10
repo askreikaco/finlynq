@@ -19,6 +19,7 @@ afterEach(() => {
 
 const backs = (c: HTMLElement) =>
   Array.from(c.querySelectorAll<HTMLAnchorElement>('[data-slot="back-button"]'));
+const topBars = (c: HTMLElement) => Array.from(c.querySelectorAll('[data-slot="page-header"]'));
 
 function Host({ explicit, path }: { explicit: boolean; path: string }) {
   mockPath = path;
@@ -33,30 +34,27 @@ function Host({ explicit, path }: { explicit: boolean; path: string }) {
   );
 }
 
-describe("settings sub-page: exactly one back control", () => {
-  it("without an explicit backHref, the shell bar's back is the only one (to /settings)", () => {
+describe("settings sub-page: exactly one top bar and exactly one back control", () => {
+  it("without an explicit backHref, the page's PageHeader backs to /settings (level 3 from the registry: /settings/about, /settings, /more)", () => {
     const { container } = render(<Host explicit={false} path="/settings/about" />);
+    expect(topBars(container)).toHaveLength(1);
     const b = backs(container);
     expect(b).toHaveLength(1);
-    expect(b[0].getAttribute("aria-label")).toBe("Back to Settings");
     expect(b[0].getAttribute("href")).toBe("/settings");
-    expect(container.querySelector('[data-slot="settings-detail-bar"]')).not.toBeNull();
+    expect(topBars(container)[0].contains(b[0])).toBe(true);
+    expect(container.querySelector('[data-slot="settings-detail-bar"]')).toBeNull();
   });
 
-  it("with an explicit backHref, the page's back is the only one and the shell bar stays for the title", () => {
+  it("with an explicit backHref, the page's back is the only one", () => {
     const { container } = render(<Host explicit={true} path="/settings/investments/securities/new" />);
+    expect(topBars(container)).toHaveLength(1);
     const b = backs(container);
     expect(b).toHaveLength(1);
     expect(b[0].getAttribute("href")).toBe("/settings/investments?tab=securities");
-    expect(container.querySelector('[data-slot="settings-detail-bar"]')).not.toBeNull();
   });
 
-  it("the shell back returns when a page with an explicit backHref unmounts", () => {
-    const { container, rerender } = render(<Host explicit={true} path="/settings/investments/securities/new" />);
-    expect(backs(container)).toHaveLength(1);
-    rerender(<Host explicit={false} path="/settings/investments/securities/new" />);
-    const b = backs(container);
-    expect(b).toHaveLength(1);
-    expect(b[0].getAttribute("aria-label")).toBe("Back to Settings");
+  it("an explicit backHref on a level-2 page does not add a second back from the registry", () => {
+    const { container } = render(<Host explicit={true} path="/settings/investments/securities/new" />);
+    expect(backs(container).filter((a) => a.getAttribute("href") === "/settings")).toHaveLength(0);
   });
 });

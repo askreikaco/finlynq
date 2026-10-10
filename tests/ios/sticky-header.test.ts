@@ -93,17 +93,17 @@ describe("elements under the header offset by sat + header height", () => {
     expect(overview).not.toMatch(/sticky top-\[var\(--sat\)\]/);
   });
 
-  it("settings detail bar uses the shared bar at every size", () => {
-    expect(settingsShell).toContain('data-slot="settings-detail-bar" className={PHONE_BAR}');
+  it("settings shell draws no bar of its own: the page PageHeader (sticky, shared bar) is the one top bar", () => {
+    expect(settingsShell).not.toMatch(/PHONE_BAR|settings-detail-bar/);
     expect(settingsShell).not.toContain("max-md:pt-[var(--sat)]");
+    expect(pageHeader).toContain('export const PHONE_BAR_STICKY =');
+    expect(pageHeader).toContain('data-slot="page-header" className={cn(className, PHONE_BAR)}');
   });
 
-  it("settings detail pages: the page PageHeader row collapses at every size (only the detail bar is sticky)", () => {
-    expect(settingsShell).toContain("[&_[data-slot=page-header]]:static");
-    expect(settingsShell).toContain("[&_[data-slot=page-header]]:min-h-0");
-    expect(settingsShell).toContain("[&_[data-slot=page-header-title]]:sr-only");
-    expect(settingsShell).not.toContain("max-md:[&_[data-slot=page-header]]");
-    // the content wrapper keeps the phone-level overflow rule (no scroll container around the header)
+  it("settings sub-pages: no static override, no sr-only title; the content wrapper keeps the no-scroll rule", () => {
+    expect(settingsShell).not.toContain("[&_[data-slot=page-header]]:static");
+    expect(settingsShell).not.toContain("[&_[data-slot=page-header-title]]:sr-only");
+    expect(settingsShell).not.toContain("sr-only");
     expect(settingsShell).toContain('<div className="overflow-x-clip">{children}</div>');
   });
 

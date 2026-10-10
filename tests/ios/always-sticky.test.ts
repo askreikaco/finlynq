@@ -10,6 +10,7 @@ const ROOT = join(__dirname, "../..");
 const read = (p: string) => readFileSync(join(ROOT, p), "utf8");
 const pageHeader = read("src/components/mobile/page-header.tsx");
 const settingsShell = read("src/components/settings-shell.tsx");
+const general = read("src/app/(app)/settings/general/page.tsx");
 const newTx = read("src/app/(app)/transactions/new/page.tsx");
 const appLayout = read("src/app/(app)/layout.tsx");
 const dashboard = read("src/app/(app)/dashboard/page.tsx");
@@ -56,8 +57,9 @@ describe("PHONE_BAR is sticky at every breakpoint", () => {
 });
 
 describe("bars that must use the sticky bar", () => {
-  it("settings detail row (back row) is built from PHONE_BAR", () => {
-    expect(settingsShell).toMatch(/data-slot="settings-detail-bar" className=\{PHONE_BAR\}/);
+  it("settings sub-pages: the page PageHeader is the top bar (the shell builds none from PHONE_BAR)", () => {
+    expect(settingsShell).not.toMatch(/PHONE_BAR|settings-detail-bar/);
+    expect(general).toMatch(/<PageHeader\b/);
   });
 
   it("new-transaction header is built from PHONE_BAR_STICKY", () => {
@@ -107,7 +109,10 @@ describe("no ancestor breaks sticky (scroll container and containing block)", ()
   });
 
   it("settings investments header wrapper is display:contents (parent spans the page)", () => {
-    expect(investments).toMatch(/<div className="contents">\s*<PageHeader/);
+    expect(investments).toMatch(/<div className="contents">\{header\}<\/div>/);
+    expect(investments).toMatch(/const header = \(\s*<PageHeader/);
+    // one header element, used by the loading, error and ready states (the top bar is there in every state)
+    expect(investments.match(/\{header\}/g)?.length).toBe(3);
   });
 
   it("family filter toolbar is static from regular (640px) so it cannot overlap the sticky PageHeader", () => {

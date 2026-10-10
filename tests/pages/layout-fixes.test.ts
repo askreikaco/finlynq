@@ -39,9 +39,10 @@ describe("no fixed-px text on touched pages (system font sizes only)", () => {
 });
 
 describe("settings/general at 390", () => {
-  it("PageHeader gets a lead so the 44px phone spacer band is not rendered", () => {
+  it("PageHeader is the bare global header (no lead hack): the back control comes from the registry", () => {
     const src = read(SETTINGS_GENERAL);
-    expect(src).toContain('lead={<span aria-hidden className="hidden" />}');
+    expect(src).toContain("<PageHeader");
+    expect(src).not.toContain('lead={<span aria-hidden className="hidden" />}');
   });
 
   it("Display Currency row is a column below regular and a row from regular (control full width below regular)", () => {
@@ -64,8 +65,8 @@ describe("settings/general at 390", () => {
     expect(src).toContain('self-start rounded-lg border p-0.5 regular:self-auto');
   });
 
-  it("PageHeader keeps desktop placement (lead is display:none, so no gap is added at md+)", () => {
-    expect(read(SETTINGS_GENERAL)).toContain('<span aria-hidden className="hidden" />');
+  it("general page has no hidden lead node (the settings shell bar that needed it is gone)", () => {
+    expect(read(SETTINGS_GENERAL)).not.toContain('<span aria-hidden className="hidden" />');
   });
 });
 
