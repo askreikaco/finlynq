@@ -6,7 +6,12 @@ const src = readFileSync(join(__dirname, "..", "src", "app", "sw.ts"), "utf8");
 
 describe("sw.ts per-build page cache versioning", () => {
   it("derives BUILD_ID from the precache manifest", () => {
-    expect(src).toMatch(/const BUILD_ID = fnv1a\(JSON\.stringify\(self\.__SW_MANIFEST \?\? \[\]\)\)/);
+    expect(src).toMatch(/const SW_MANIFEST = self\.__SW_MANIFEST;/);
+    expect(src).toMatch(/const BUILD_ID = fnv1a\(JSON\.stringify\(SW_MANIFEST \?\? \[\]\)\)/);
+  });
+
+  it("references self.__SW_MANIFEST exactly once (the Serwist build plugin rejects more than one)", () => {
+    expect(src.match(/self\.__SW_MANIFEST/g)?.length).toBe(1);
   });
 
   it("versions the HTML and RSC page caches with BUILD_ID", () => {

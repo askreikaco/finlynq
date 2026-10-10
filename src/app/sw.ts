@@ -25,7 +25,9 @@ function fnv1a(input: string): string {
 }
 
 // Changes whenever the precache manifest changes (i.e. every build that ships different content).
-const BUILD_ID = fnv1a(JSON.stringify(self.__SW_MANIFEST ?? []));
+// The Serwist build plugin injects the manifest by replacing the token below, and it must appear ONCE in this file.
+const SW_MANIFEST = self.__SW_MANIFEST;
+const BUILD_ID = fnv1a(JSON.stringify(SW_MANIFEST ?? []));
 
 // Page caches are versioned per build so a new deploy never serves the previous build's HTML/RSC.
 const STALE_PAGE_CACHE_PREFIXES = ["pages-html-cache", "pages-rsc-cache"];
@@ -140,7 +142,7 @@ const runtimeCaching: RuntimeCaching[] = [
 ];
 
 const serwist = new Serwist({
-  precacheEntries: self.__SW_MANIFEST,
+  precacheEntries: SW_MANIFEST,
   skipWaiting: true,
   clientsClaim: true,
   navigationPreload: true,
