@@ -4,7 +4,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as React from "react";
 import { render, screen, fireEvent, cleanup, act } from "@testing-library/react";
-import { Numpad } from "@/app/(app)/transactions/new/_components/numpad";
+import { Numpad } from "@/components/transactions/entry/numpad";
 
 function Harness({ initial = "", onConfirm }: { initial?: string; onConfirm: () => void }) {
   const [value, setValue] = React.useState(initial);

@@ -7,12 +7,12 @@ const PALETTE = /\b(bg|text|border|ring|from|to|via|fill|stroke|outline|divide|r
 const FILES: string[] = [
   "src/app/(app)/transactions/_components/split-badge.tsx",
   "src/app/(app)/transactions/audit/page.tsx",
-  "src/app/(app)/transactions/new/_components/numpad.tsx",
-  "src/app/(app)/transactions/new/_components/split-section.tsx",
-  "src/app/(app)/transactions/new/page.tsx",
+  "src/components/transactions/entry/numpad.tsx",
+  "src/components/transactions/entry/split-section.tsx",
+  "src/components/transactions/entry/transaction-entry-screen.tsx",
 ];
 const ARIA: [string, string, number][] = [
-  ["src/app/(app)/transactions/new/_components/numpad.tsx", "aria-label=\"Delete last digit\"", 1],
+  ["src/components/transactions/entry/numpad.tsx", "aria-label=\"Delete last digit\"", 1],
 ];
 const SKELETON: [string, string, number][] = [
 ];

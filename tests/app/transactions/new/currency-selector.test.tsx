@@ -4,7 +4,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import * as React from "react";
 import { render, screen, cleanup, fireEvent, within } from "@testing-library/react";
-import { CurrencySelector, currencyName } from "@/app/(app)/transactions/new/_components/currency-selector";
+import { CurrencySelector, currencyName } from "@/components/transactions/entry/currency-selector";
 
 afterEach(() => cleanup());
 
