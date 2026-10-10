@@ -3,105 +3,146 @@
  */
 import React from "react";
 import { render, act, cleanup, screen } from "@testing-library/react";
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import {
   AppSizeClassProvider,
   useAppSizeClass,
   APP_MAIN_ATTRIBUTE,
 } from "@/components/adaptive/size-class-context";
-import type { SizeClass } from "@/components/ui/size-class";
 
 let callbacks: ResizeObserverCallback[] = [];
+let observed: Element[] = [];
 let disconnects = 0;
 
 class MockResizeObserver {
   constructor(callback: ResizeObserverCallback) {
     callbacks.push(callback);
   }
-  observe() {}
+  observe(element: Element) {
+    observed.push(element);
+  }
   unobserve() {}
   disconnect() {
     disconnects += 1;
   }
 }
 
-/** Fire every observer callback with the given content width. */
-function resize(element: Element, width: number) {
+/** Viewport width as documentElement.clientWidth reports it (the provider's only source). */
+let viewport = 0;
+function setViewport(width: number) {
+  viewport = width;
+}
+
+/** Fire every observer callback. The entry's contentRect is deliberately wrong: the provider must ignore it. */
+function fireObserver() {
   act(() => {
     for (const callback of callbacks) {
       callback(
         [
           {
-            target: element,
-            contentRect: { width, height: 600 } as DOMRectReadOnly,
+            target: document.documentElement,
+            contentRect: { width: 1, height: 600 } as DOMRectReadOnly,
             borderBoxSize: [] as ResizeObserverSize[],
             contentBoxSize: [] as ResizeObserverSize[],
             devicePixelContentBoxSize: [] as ResizeObserverSize[],
           },
         ] as ResizeObserverEntry[],
-        {} as ResizeObserver
+        {} as ResizeObserver,
       );
     }
   });
 }
 
 function Probe() {
-  const sizeClass: SizeClass = useAppSizeClass();
+  const sizeClass = useAppSizeClass();
   return <div data-testid="size">{sizeClass}</div>;
 }
 
-function mount(element: HTMLElement) {
-  const target = { current: element };
-  return render(
-    <AppSizeClassProvider target={target}>
-      <Probe />
-    </AppSizeClassProvider>
-  );
+function sizeText(): string {
+  return screen.getByTestId("size").textContent ?? "";
 }
 
-describe("AppSizeClassProvider and useAppSizeClass", () => {
-  beforeEach(() => {
-    callbacks = [];
-    disconnects = 0;
-    globalThis.ResizeObserver = MockResizeObserver as unknown as typeof ResizeObserver;
+beforeEach(() => {
+  callbacks = [];
+  observed = [];
+  disconnects = 0;
+  viewport = 0;
+  globalThis.ResizeObserver = MockResizeObserver as unknown as typeof ResizeObserver;
+  Object.defineProperty(document.documentElement, "clientWidth", {
+    configurable: true,
+    get: () => viewport,
   });
+});
 
-  afterEach(() => {
-    cleanup();
-    delete (globalThis as Record<string, unknown>).ResizeObserver;
-    document.body.innerHTML = "";
-  });
+afterEach(() => {
+  cleanup();
+  delete (globalThis as Record<string, unknown>).ResizeObserver;
+  delete (document.documentElement as unknown as Record<string, unknown>).clientWidth;
+});
 
+describe("AppSizeClassProvider and useAppSizeClass (viewport source)", () => {
   it("defaults to 'compact' without a provider", () => {
     render(<Probe />);
-    expect(screen.getByTestId("size").textContent).toBe("compact");
+    expect(sizeText()).toBe("compact");
   });
 
-  it("defaults to 'compact' when the target element has zero width", () => {
-    mount(document.createElement("div"));
-    expect(screen.getByTestId("size").textContent).toBe("compact");
+  it("measures documentElement.clientWidth synchronously on mount, before any observer callback", () => {
+    setViewport(800);
+    render(
+      <AppSizeClassProvider>
+        <Probe />
+      </AppSizeClassProvider>,
+    );
+    expect(sizeText()).toBe("regular");
+    expect(callbacks.length).toBe(1);
+    expect(observed[0]).toBe(document.documentElement);
   });
 
-  it("measures the target synchronously on mount", () => {
-    const element = document.createElement("div");
-    vi.spyOn(element, "getBoundingClientRect").mockReturnValue({ width: 800 } as DOMRect);
-    mount(element);
-    expect(screen.getByTestId("size").textContent).toBe("regular");
+  it("gives the same class from the first measure and the first observer callback (no flip)", () => {
+    setViewport(700);
+    render(
+      <AppSizeClassProvider>
+        <Probe />
+      </AppSizeClassProvider>,
+    );
+    expect(sizeText()).toBe("regular");
+    fireObserver();
+    expect(sizeText()).toBe("regular");
   });
 
-  it("resizes to 'regular' and 'wide' through the observer", () => {
-    const element = document.createElement("div");
-    mount(element);
-    expect(screen.getByTestId("size").textContent).toBe("compact");
+  it("ignores the element's own width: the observer entry and getBoundingClientRect do not matter", () => {
+    setViewport(1040);
+    const main = document.createElement("main");
+    main.setAttribute(APP_MAIN_ATTRIBUTE, "");
+    document.body.appendChild(main);
+    main.getBoundingClientRect = () => ({ width: 300 }) as DOMRect;
+    render(
+      <AppSizeClassProvider>
+        <Probe />
+      </AppSizeClassProvider>,
+    );
+    expect(sizeText()).toBe("wide");
+    fireObserver();
+    expect(sizeText()).toBe("wide");
+    main.remove();
+  });
 
-    resize(element, 800);
-    expect(screen.getByTestId("size").textContent).toBe("regular");
+  it("follows the viewport through the observer: regular, wide, compact", () => {
+    setViewport(800);
+    render(
+      <AppSizeClassProvider>
+        <Probe />
+      </AppSizeClassProvider>,
+    );
+    expect(sizeText()).toBe("regular");
 
-    resize(element, 1500);
-    expect(screen.getByTestId("size").textContent).toBe("wide");
+    setViewport(1500);
+    fireObserver();
+    expect(sizeText()).toBe("wide");
 
-    resize(element, 400);
-    expect(screen.getByTestId("size").textContent).toBe("compact");
+    setViewport(400);
+    fireObserver();
+    expect(sizeText()).toBe("compact");
   });
 
   it.each([
@@ -109,40 +150,36 @@ describe("AppSizeClassProvider and useAppSizeClass", () => {
     [640, "regular"],
     [1024, "regular"],
     [1025, "wide"],
-  ] as const)("boundary: width %i gives '%s'", (width, expected) => {
-    const element = document.createElement("div");
-    mount(element);
-    resize(element, width);
-    expect(screen.getByTestId("size").textContent).toBe(expected);
-  });
-
-  it("finds the element tagged with data-app-main when no target is given", () => {
-    const main = document.createElement("main");
-    main.setAttribute(APP_MAIN_ATTRIBUTE, "");
-    vi.spyOn(main, "getBoundingClientRect").mockReturnValue({ width: 1200 } as DOMRect);
-    document.body.appendChild(main);
-
+  ] as const)("boundary: viewport %i gives '%s' (CSS: regular >= 40rem, wide > 64rem)", (width, expected) => {
+    setViewport(width);
     render(
       <AppSizeClassProvider>
         <Probe />
-      </AppSizeClassProvider>
+      </AppSizeClassProvider>,
     );
-    expect(screen.getByTestId("size").textContent).toBe("wide");
+    expect(sizeText()).toBe(expected);
+  });
+
+  it("renders without ResizeObserver and still measures", () => {
+    delete (globalThis as Record<string, unknown>).ResizeObserver;
+    setViewport(900);
+    render(
+      <AppSizeClassProvider>
+        <Probe />
+      </AppSizeClassProvider>,
+    );
+    expect(sizeText()).toBe("regular");
   });
 
   it("disconnects the observer on unmount", () => {
-    const element = document.createElement("div");
-    const { unmount } = mount(element);
+    const { unmount } = render(
+      <AppSizeClassProvider>
+        <Probe />
+      </AppSizeClassProvider>,
+    );
     expect(callbacks.length).toBe(1);
     expect(disconnects).toBe(0);
-
     unmount();
     expect(disconnects).toBe(1);
-  });
-
-  it("renders without ResizeObserver", () => {
-    delete (globalThis as Record<string, unknown>).ResizeObserver;
-    mount(document.createElement("div"));
-    expect(screen.getByTestId("size").textContent).toBe("compact");
   });
 });

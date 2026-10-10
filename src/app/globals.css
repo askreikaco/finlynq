@@ -8,8 +8,8 @@
    a container query (container-type) applies layout containment, which makes the container the
    containing block for position:fixed descendants (mobile tab bar, page FAB, banners, toasts).
    --container-regular/--container-wide mirror the media thresholds (40rem = 640px, 64rem = 1024px,
-   the sizeClassFor() values in src/components/ui/size-class.ts). Accepted difference: the content
-   column is viewport minus the 80px rail at >= 640px, so a column-based class can differ near the edges. */
+   the sizeClassFor() values in src/components/ui/size-class.ts). AppSizeClassProvider reads the same viewport
+   (documentElement.clientWidth), so JS and CSS agree except by a classic scrollbar's width (spec 3f). */
 @theme {
   --container-regular: 40rem;
   --container-wide: 64rem;
