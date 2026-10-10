@@ -243,6 +243,29 @@ describe("SplitRows errors", () => {
     expect(screen.getByTestId("split-error-1").textContent).toBe("Enter an amount");
   });
 
+  it("hides the empty-amount message when showEmptyErrors is false (other errors still show)", () => {
+    const { unmount } = render(
+      <SplitRows
+        count="2"
+        onCountChange={() => {}}
+        rows={[row("a"), row("b")]}
+        onRowsChange={() => {}}
+        parentAmount={100}
+        currency="USD"
+        parentCategoryId="1"
+        categories={categories}
+        onOpenCategory={() => {}}
+        padTargetRowId={null}
+        onOpenPad={() => {}}
+        onClosePad={() => {}}
+        idPrefix="t"
+        showEmptyErrors={false}
+      />,
+    );
+    expect(screen.queryByTestId("split-error-1")).toBeNull();
+    unmount();
+  });
+
   it("shows no error for a valid split", () => {
     render(<Harness initialCount="2" />);
     typeAmount(1, "30");

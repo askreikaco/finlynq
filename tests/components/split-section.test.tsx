@@ -1,300 +1,234 @@
 /**
  * @vitest-environment jsdom
  */
-import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
+import { describe, it, expect, afterEach } from "vitest";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { useState } from "react";
 
-let locale: "en-CA" | "vi-VN" | "ja-JP" = "en-CA";
-vi.mock("@/components/language-provider", () => ({ useLanguage: () => ({ locale }) }));
-vi.mock("@/components/ui/input", () => ({
-  Input: (p: Record<string, unknown>) => <input {...(p as Record<string, unknown>)} />,
-}));
-
-import { SplitSection, type SplitRow } from "@/app/(app)/transactions/new/_components/split-section";
-import { setActiveDisplayLocale } from "@/lib/locale";
-import { formatCurrency } from "@/lib/currency";
+import { SplitSection, type SplitSectionProps } from "@/app/(app)/transactions/new/_components/split-section";
+import type { SplitRowModel } from "@/lib/transactions/split-math";
 import type { Category } from "@/app/(app)/transactions/new/_components/category-selector";
 
-const mockCategories: Category[] = [
+const categories: Category[] = [
   { id: "1", name: "Food", type: "expense" },
   { id: "2", name: "Transport", type: "expense" },
 ];
 
-interface SplitSectionHarnessProps {
+interface HarnessProps {
+  initialCount?: string;
+  initialRows?: SplitRowModel[];
+  parentAmount?: number;
   currency?: string;
-  initialRows?: SplitRow[];
-  initialEnabled?: boolean;
-  totalAmount?: number;
+  parentCategoryId?: string;
+  showEmptyErrors?: boolean;
+  onOpenCategory?: SplitSectionProps["onOpenCategory"];
+  onOpenPad?: SplitSectionProps["onOpenPad"];
 }
 
-function SplitSectionHarness({
+/** Parent-like harness: owns count, rows and the numpad target, as the page does. */
+function Harness({
+  initialCount = "",
+  initialRows = [],
+  parentAmount = 100,
   currency = "USD",
-  initialRows = [{ id: "1", categoryId: "1", amount: "", note: "" }],
-  initialEnabled = true,
-  totalAmount = 100,
-}: SplitSectionHarnessProps) {
-  const [enabled, setEnabled] = useState(initialEnabled);
-  const [rows, setRows] = useState<SplitRow[]>(initialRows);
-
+  parentCategoryId = "1",
+  showEmptyErrors = true,
+  onOpenCategory = () => {},
+  onOpenPad = () => {},
+}: HarnessProps) {
+  const [count, setCount] = useState(initialCount);
+  const [rows, setRows] = useState<SplitRowModel[]>(initialRows);
+  const [pad, setPad] = useState<string | null>(null);
   return (
     <>
       <SplitSection
-        enabled={enabled}
-        onToggle={setEnabled}
+        count={count}
+        onCountChange={setCount}
         rows={rows}
-        onChangeRows={setRows}
-        categories={mockCategories}
-        totalAmount={totalAmount}
+        onRowsChange={setRows}
+        parentAmount={parentAmount}
         currency={currency}
-        onOpenCategorySelector={() => {}}
+        parentCategoryId={parentCategoryId}
+        parentPayee="Coffee shop"
+        categories={categories}
+        onOpenCategory={onOpenCategory}
+        padTargetRowId={pad}
+        onOpenPad={(id) => {
+          setPad(id);
+          onOpenPad(id);
+        }}
+        onClosePad={() => setPad(null)}
+        showEmptyErrors={showEmptyErrors}
       />
-      <div data-testid="enabled">{String(enabled)}</div>
-      <div data-testid="rows">{JSON.stringify(rows)}</div>
+      <output data-testid="state-count">{count}</output>
+      <output data-testid="state-rows">{JSON.stringify(rows)}</output>
+      <output data-testid="state-pad">{pad ?? ""}</output>
     </>
   );
 }
 
+const countInput = () => screen.getByTestId("split-count") as HTMLInputElement;
+const amountInput = (n: number) => screen.getByTestId(`split-amount-${n}`) as HTMLInputElement;
+const typeCount = (value: string) => fireEvent.change(countInput(), { target: { value } });
+const typeAmount = (n: number, value: string) => fireEvent.change(amountInput(n), { target: { value } });
+const stateRows = (): SplitRowModel[] =>
+  JSON.parse(screen.getByTestId("state-rows").textContent ?? "[]") as SplitRowModel[];
+
 afterEach(() => {
   cleanup();
-  locale = "en-CA";
-  setActiveDisplayLocale("en-CA");
 });
 
-describe("SplitSection with AmountInput", () => {
-  it("renders split section with currency-aware formatting", () => {
-    render(<SplitSectionHarness currency="USD" />);
-
-    // Check that split toggle is rendered
-    const checkbox = screen.getByRole("switch");
-    expect(checkbox).toBeTruthy();
-    expect(checkbox.getAttribute("role")).toBe("switch");
+describe("SplitSection count field", () => {
+  it("shows the Splits count field instead of a switch, with no Add Split Row button", () => {
+    render(<Harness />);
+    expect(countInput().getAttribute("inputmode")).toBe("numeric");
+    expect(screen.getByText("Splits")).toBeTruthy();
+    expect(screen.queryByRole("switch")).toBeNull();
+    expect(screen.queryByText("Add Split Row")).toBeNull();
+    expect(screen.queryByText("Split this transaction")).toBeNull();
   });
 
-  it("vi language: typing decimal comma in amount input parses to canonical dot decimal", async () => {
-    locale = "vi-VN";
-    setActiveDisplayLocale("vi-VN");
-
-    const initialRows: SplitRow[] = [{ id: "1", categoryId: "1", amount: "", note: "" }];
-
-    render(<SplitSectionHarness currency="USD" initialRows={initialRows} />);
-
-    // Get amount input by placeholder
-    const amountInput = screen.getByPlaceholderText("0.00") as HTMLInputElement;
-    expect(amountInput).toBeTruthy();
-
-    // Type Vietnamese decimal separator
-    fireEvent.change(amountInput, { target: { value: "1,5" } });
-
-    await waitFor(() => {
-      // Check that the canonical value in rows is 1.5
-      const rowsOutput = screen.getByTestId("rows").textContent;
-      const parsed = JSON.parse(rowsOutput || "[]");
-      expect(parsed[0].amount).toBe("1.5");
-    });
+  it("creates N rows from the count; the last row is the read-only remainder", () => {
+    render(<Harness />);
+    typeCount("3");
+    expect(screen.getByTestId("state-count").textContent).toBe("3");
+    expect(stateRows()).toHaveLength(3);
+    expect(screen.getByTestId("split-row-3").textContent).toContain("Split 3 · Remaining");
+    expect(amountInput(3).readOnly).toBe(true);
+    expect(amountInput(1).readOnly).toBe(false);
   });
 
-  it("vi language: typing thousand separators parses correctly", async () => {
-    locale = "vi-VN";
-    setActiveDisplayLocale("vi-VN");
-
-    const initialRows: SplitRow[] = [{ id: "1", categoryId: "1", amount: "", note: "" }];
-
-    render(<SplitSectionHarness currency="VND" initialRows={initialRows} />);
-
-    const amountInput = screen.getByPlaceholderText("0") as HTMLInputElement;
-    expect(amountInput).toBeTruthy();
-
-    // Type Vietnamese format
-    fireEvent.change(amountInput, { target: { value: "1.234.567" } });
-
-    await waitFor(() => {
-      const rowsOutput = screen.getByTestId("rows").textContent;
-      const parsed = JSON.parse(rowsOutput || "[]");
-      expect(parsed[0].amount).toBe("1234567");
-    });
+  it("shows the hint for 1 and does not create rows", () => {
+    render(<Harness />);
+    typeCount("1");
+    expect(screen.getByText("Enter 2 or more to split")).toBeTruthy();
+    expect(screen.queryByTestId("split-row-1")).toBeNull();
   });
 
-  it("vi display test: state 1.5 renders as display value 1,5", () => {
-    locale = "vi-VN";
-    setActiveDisplayLocale("vi-VN");
-
-    const initialRows: SplitRow[] = [{ id: "1", categoryId: "1", amount: "1.5", note: "" }];
-
-    render(<SplitSectionHarness currency="USD" initialRows={initialRows} />);
-
-    const amountInput = screen.getByPlaceholderText("0.00") as HTMLInputElement;
-    expect(amountInput).toBeTruthy();
-    expect(amountInput.value).toBe("1,5");
+  it("strips non-digits from the typed count", () => {
+    render(<Harness />);
+    typeCount("2a");
+    expect(countInput().value).toBe("2");
   });
 
-  it("onValueChange callback is wired correctly to update amount", async () => {
-    const initialRows: SplitRow[] = [{ id: "1", categoryId: "1", amount: "50", note: "" }];
-
-    render(<SplitSectionHarness currency="USD" initialRows={initialRows} />);
-
-    // Verify initial rows state
-    let rowsOutput = screen.getByTestId("rows").textContent;
-    let parsed = JSON.parse(rowsOutput || "[]");
-    expect(parsed[0].amount).toBe("50");
-
-    // Find the input with value "50"
-    const amountInput = screen.getByDisplayValue("50") as HTMLInputElement;
-    expect(amountInput).toBeTruthy();
-
-    fireEvent.change(amountInput, { target: { value: "100" } });
-
-    await waitFor(() => {
-      rowsOutput = screen.getByTestId("rows").textContent;
-      parsed = JSON.parse(rowsOutput || "[]");
-      expect(parsed[0].amount).toBe("100");
-    });
+  it("shows the cap hint and clamps to 20 rows", () => {
+    render(<Harness />);
+    typeCount("25");
+    expect(screen.getByText("Up to 20 splits")).toBeTruthy();
+    expect(stateRows()).toHaveLength(20);
   });
 
-  it("USD: Balanced status with dollar symbol", async () => {
+  it("hides rows beyond N on shrink; growing clears the former remainder and restores the hidden tail", () => {
+    render(<Harness initialCount="4" />);
+    typeAmount(2, "30");
+    typeAmount(3, "10");
+    typeCount("2");
+    expect(screen.queryByTestId("split-row-3")).toBeNull();
+    typeCount("3");
+    expect(amountInput(2).value).toBe("");
+    expect(screen.getByTestId("split-row-3").textContent).toContain("Remaining");
+    expect(stateRows()[2].amount).toBe("10");
+  });
+});
+
+describe("SplitSection remainder and status", () => {
+  it("computes the last row live from the other rows", () => {
+    render(<Harness initialCount="2" parentAmount={100} />);
+    typeAmount(1, "30");
+    expect(amountInput(2).value).toBe("70.00");
+    typeAmount(1, "45.5");
+    expect(amountInput(2).value).toBe("54.50");
+    expect(screen.getByTestId("txnew-split-status").textContent).toContain("Allocated");
+  });
+
+  it("uses 0 decimals for VND", () => {
+    render(<Harness initialCount="2" parentAmount={100000} currency="VND" />);
+    typeAmount(1, "30000");
+    expect(amountInput(2).value).toBe("70000");
+    expect(amountInput(1).placeholder).toBe("0");
+  });
+
+  it("shows the over-total error in the status line and tints the remainder", () => {
+    render(<Harness initialCount="2" parentAmount={100} />);
+    typeAmount(1, "120");
+    expect(screen.getByTestId("split-status-error").textContent).toContain("Splits exceed the total by");
+    expect(amountInput(2).value).toBe("-20.00");
+  });
+});
+
+describe("SplitSection amounts and numpad", () => {
+  it("focusing an editable amount reports its row id to the parent", () => {
+    const seen: string[] = [];
     render(
-      <SplitSectionHarness
-        currency="USD"
-        initialRows={[{ id: "1", categoryId: "1", amount: "100", note: "" }]}
-        totalAmount={100}
-      />
+      <Harness
+        initialCount="2"
+        initialRows={[
+          { id: "r0", categoryId: "", amount: "", note: "" },
+          { id: "r1", categoryId: "", amount: "", note: "" },
+        ]}
+        onOpenPad={(id) => seen.push(id)}
+      />,
     );
-
-    await waitFor(() => {
-      const pageText = screen.getByTestId("enabled").parentElement?.textContent || "";
-      expect(pageText).toContain("Balanced");
-      expect(pageText).toContain(formatCurrency(100, "USD"));
-    });
+    fireEvent.focus(amountInput(1));
+    expect(seen).toEqual(["r0"]);
+    expect(screen.getByTestId("state-pad").textContent).toBe("r0");
   });
 
-  it("USD: Over by status displays correctly", () => {
+  it("the remainder never opens the numpad", () => {
+    render(<Harness initialCount="2" />);
+    fireEvent.focus(amountInput(2));
+    expect(screen.getByTestId("state-pad").textContent).toBe("");
+  });
+
+  it("amount inputs never open the OS keyboard", () => {
+    render(<Harness initialCount="2" />);
+    expect(amountInput(1).getAttribute("inputmode")).toBe("none");
+  });
+});
+
+describe("SplitSection validation messages", () => {
+  it("hides the empty-amount message until showEmptyErrors is set", () => {
+    const { rerender } = render(<Harness initialCount="2" showEmptyErrors={false} />);
+    expect(screen.queryByTestId("split-error-1")).toBeNull();
+    rerender(<Harness initialCount="2" showEmptyErrors />);
+    expect(screen.getByTestId("split-error-1").textContent).toBe("Enter an amount");
+  });
+
+  it("shows an amount error for zero or negative values", () => {
+    render(<Harness initialCount="2" />);
+    typeAmount(1, "0");
+    expect(screen.getByTestId("split-error-1").textContent).toBe("Amount must be more than 0");
+  });
+});
+
+describe("SplitSection categories and context", () => {
+  it("labels the inherited category chip 'same as above' and calls onOpenCategory with the row id", () => {
+    const opened: string[] = [];
     render(
-      <SplitSectionHarness
-        currency="USD"
-        initialRows={[{ id: "1", categoryId: "1", amount: "110", note: "" }]}
-        totalAmount={100}
-      />
+      <Harness
+        initialCount="2"
+        parentCategoryId="2"
+        initialRows={[
+          { id: "r0", categoryId: "", amount: "", note: "" },
+          { id: "r1", categoryId: "", amount: "", note: "" },
+        ]}
+        onOpenCategory={(id) => opened.push(id)}
+      />,
     );
-
-    const pageText = screen.getByTestId("enabled").parentElement?.textContent || "";
-    expect(pageText).toContain("Over by");
-    expect(pageText).toContain(formatCurrency(10, "USD"));
+    expect(screen.getByTestId("split-category-1").textContent).toBe("Transport · same as above");
+    fireEvent.click(screen.getByTestId("split-category-2"));
+    expect(opened).toEqual(["r1"]);
   });
 
-  it("VND balance test: amount=50000, totalAmount=100000 displays remaining 50000 in VND", () => {
-    render(
-      <SplitSectionHarness
-        currency="VND"
-        initialRows={[{ id: "1", categoryId: "1", amount: "50000", note: "" }]}
-        totalAmount={100000}
-      />
-    );
-
-    const { container } = render(
-      <SplitSectionHarness
-        currency="VND"
-        initialRows={[{ id: "1", categoryId: "1", amount: "50000", note: "" }]}
-        totalAmount={100000}
-      />
-    );
-
-    const text = container.textContent || "";
-    expect(text).toMatch(/50[.,\s]?000/);
-    expect(text).toContain("remaining");
-    expect(text).not.toContain("$");
+  it("shows the parent payee and total as a read-only context line once N >= 2", () => {
+    render(<Harness initialCount="2" parentAmount={100} />);
+    expect(screen.getByTestId("txnew-split-context").textContent).toContain("Coffee shop");
+    expect(screen.getByTestId("txnew-split-context").textContent).toContain("100.00");
   });
 
-  it("AmountInput handles language-specific separators correctly", () => {
-    locale = "vi-VN";
-    setActiveDisplayLocale("vi-VN");
-
-    const initialRows: SplitRow[] = [{ id: "1", categoryId: "1", amount: "1.5", note: "" }];
-
-    render(<SplitSectionHarness currency="USD" initialRows={initialRows} />);
-
-    const amountInput = screen.getByPlaceholderText("0.00") as HTMLInputElement;
-    expect(amountInput).toBeTruthy();
-    expect(amountInput.value).toBe("1,5");
-  });
-
-  it("split section correctly formats currency decimals - USD has 2 decimals", () => {
-    render(
-      <SplitSectionHarness
-        currency="USD"
-        initialRows={[{ id: "1", categoryId: "1", amount: "50.50", note: "" }]}
-      />
-    );
-
-    const rowsText = screen.getByTestId("rows").textContent;
-    expect(rowsText).toContain("50.50");
-  });
-
-  it("split section correctly formats currency decimals - VND has 0 decimals", () => {
-    render(
-      <SplitSectionHarness
-        currency="VND"
-        initialRows={[{ id: "1", categoryId: "1", amount: "50000", note: "" }]}
-      />
-    );
-
-    const rowsText = screen.getByTestId("rows").textContent;
-    expect(rowsText).toContain("50000");
-  });
-
-  it("placeholder uses correct decimal places for USD", () => {
-    const { container } = render(
-      <SplitSectionHarness currency="USD" initialRows={[{ id: "1", categoryId: "1", amount: "", note: "" }]} />
-    );
-
-    // USD should have ".00" in placeholder
-    const placeholders = Array.from(container.querySelectorAll("input")).map((i) => i.placeholder);
-    expect(placeholders.some((p) => p.includes("0.00"))).toBe(true);
-  });
-
-  it("placeholder uses correct decimal places for VND", () => {
-    const { container } = render(
-      <SplitSectionHarness currency="VND" initialRows={[{ id: "1", categoryId: "1", amount: "", note: "" }]} />
-    );
-
-    // VND should have "0" without decimals in placeholder
-    const placeholders = Array.from(container.querySelectorAll("input")).map((i) => i.placeholder);
-    expect(placeholders.some((p) => p === "0")).toBe(true);
-  });
-
-  it("handleAddRow pre-fills with currency-appropriate decimals for VND", async () => {
-    render(
-      <SplitSectionHarness
-        currency="VND"
-        initialRows={[]}
-        totalAmount={100000}
-      />
-    );
-
-    // Click Add Split Row button
-    const addButton = screen.getByText("Add Split Row");
-    expect(addButton).toBeTruthy();
-    fireEvent.click(addButton);
-
-    await waitFor(() => {
-      const rowsOutput = screen.getByTestId("rows").textContent;
-      const parsed = JSON.parse(rowsOutput || "[]");
-      // VND is 0-decimal, so the pre-filled value should be "100000" not "100000.00"
-      expect(parsed[0].amount).toBe("100000");
-      expect(parsed[0].amount).not.toContain(".");
-    });
-  });
-
-  it("fallback-currency test: uses displayCurrency when no account currency", () => {
-    // This test verifies the component works with display currency fallback
-    render(
-      <SplitSectionHarness
-        currency="EUR"
-        initialRows={[{ id: "1", categoryId: "1", amount: "50", note: "" }]}
-        totalAmount={100}
-      />
-    );
-
-    const rowsText = screen.getByTestId("rows").textContent;
-    expect(rowsText).toContain("50");
+  it("has no payee or per-split category field", () => {
+    render(<Harness initialCount="2" />);
+    expect(screen.queryByPlaceholderText("Payee")).toBeNull();
+    expect(screen.queryByText("Select Category")).toBeNull();
   });
 });

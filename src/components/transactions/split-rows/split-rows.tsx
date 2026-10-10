@@ -63,6 +63,8 @@ export interface SplitRowsProps {
   showCount?: boolean;
   /** Prefix for DOM ids and generated row ids, e.g. "txnew-split" or "tx-split". */
   idPrefix: string;
+  /** False hides "Enter an amount" rows (fresh rows stay quiet). Defaults to true. Save is still blocked. */
+  showEmptyErrors?: boolean;
 }
 
 export interface ValidateSplitsArgs {
@@ -205,6 +207,7 @@ export function SplitRows({
   onClosePad,
   showCount = true,
   idPrefix,
+  showEmptyErrors = true,
 }: SplitRowsProps) {
   const effectiveCount = showCount ? count : "";
   const parsed = parseCount(effectiveCount);
@@ -273,7 +276,8 @@ export function SplitRows({
             ? `${name} · same as above`
             : name;
         const noteId = `${idPrefix}-note-${num}`;
-        const rowError = result.rowErrors[row.id];
+        const emptyHidden = !showEmptyErrors && result.rowErrors[row.id] === "Enter an amount";
+        const rowError = emptyHidden ? undefined : result.rowErrors[row.id];
 
         return (
           <section

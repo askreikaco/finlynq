@@ -7,22 +7,26 @@ import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/re
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), back: vi.fn() }), usePathname: () => "/transactions/new",
+  useSearchParams: () => new URLSearchParams(),
 }));
 vi.mock("swr", () => ({ mutate: vi.fn(), useSWRConfig: () => ({ mutate: vi.fn(), cache: new Map() }) }));
 
 let mockDisplayCurrency = "USD";
 
 interface CapturedSplitSectionProps {
-  enabled: boolean;
-  onToggle: (enabled: boolean) => void;
+  count: string;
+  onCountChange: (next: string) => void;
   rows: Array<{ id: string; categoryId: string; amount: string; note: string }>;
-  onChangeRows: (
-    rows: Array<{ id: string; categoryId: string; amount: string; note: string }>
-  ) => void;
-  categories: Array<{ id: number; name: string; type: string }>;
-  totalAmount: number;
+  onRowsChange: (rows: Array<{ id: string; categoryId: string; amount: string; note: string }>) => void;
+  parentAmount: number;
   currency: string;
-  onOpenCategorySelector: (rowIndex: number) => void;
+  parentCategoryId: string;
+  categories: Array<{ id: number; name: string; type: string }>;
+  onOpenCategory: (rowId: string) => void;
+  padTargetRowId: string | null;
+  onOpenPad: (rowId: string) => void;
+  onClosePad: () => void;
+  showEmptyErrors?: boolean;
 }
 
 let capturedSplitSectionProps: CapturedSplitSectionProps[] = [];
@@ -58,7 +62,7 @@ vi.mock("@/lib/data/use-api", () => ({
   },
 }));
 
-// Capture the props passed to SplitSection
+// Capture the props passed to SplitSection (the new-entry wrapper over SplitRows)
 vi.mock(
   "@/app/(app)/transactions/new/_components/split-section",
   () => ({
@@ -90,7 +94,7 @@ const mk = (o: Record<string, unknown> = {}) => ({
   ...o,
 });
 
-describe("SplitSection display currency", () => {
+describe("SplitSection currency (entered-currency rule)", () => {
   let fetchMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
@@ -98,9 +102,11 @@ describe("SplitSection display currency", () => {
     sessionStorage.clear();
   localStorage.clear(); // last-used account and recent picks persist per browser
     window.history.replaceState({}, "", "/transactions/new");
-    fetchMock = vi.fn(async () => ({
+    fetchMock = vi.fn(async (url: string) => ({
       ok: true,
-      json: async () => ({ id: 99 }),
+      // The currency sheet lists the user's active currencies; everything else is a generic save reply.
+      json: async () =>
+        String(url).includes("active-currencies") ? { active: ["CAD", "USD", "VND"] } : { id: 99 },
     }));
     vi.stubGlobal("fetch", fetchMock);
     mockDisplayCurrency = "USD";
@@ -111,7 +117,7 @@ describe("SplitSection display currency", () => {
     vi.unstubAllGlobals();
   });
 
-  it("page passes display currency (VND) to SplitSection when account has no currency", async () => {
+  it("page passes the display currency (VND) to SplitSection when the account has no currency", async () => {
     mockDisplayCurrency = "VND";
     // Prefill with account id 2 which has empty currency
     sessionStorage.setItem(KEY, JSON.stringify(mk({ accountId: "2" })));
@@ -147,7 +153,7 @@ describe("SplitSection display currency", () => {
     expect(splitProps.currency).toBe("VND");
   });
 
-  it("page passes account currency (CAD) to SplitSection when account has currency", async () => {
+  it("page passes the account currency (CAD) to SplitSection when no currency is entered", async () => {
     mockDisplayCurrency = "VND";
     // Prefill with account id 1 which has CAD currency
     sessionStorage.setItem(KEY, JSON.stringify(mk({ accountId: "1" })));
@@ -181,5 +187,28 @@ describe("SplitSection display currency", () => {
 
     // Verify currency prop receives account currency even when displayCurrency differs
     expect(splitProps.currency).toBe("CAD");
+  });
+
+  it("passes the ENTERED currency (USD), not the account currency (CAD), once the user picks one", async () => {
+    mockDisplayCurrency = "VND";
+    sessionStorage.setItem(KEY, JSON.stringify(mk({ accountId: "1" })));
+    window.history.replaceState({}, "", "/transactions/new?prefill=1");
+    render(<Page />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Checking CAD")).toBeTruthy();
+    });
+
+    // Pick USD in the currency sheet (the entered amount is in USD; the account stays CAD).
+    fireEvent.click(screen.getByRole("button", { name: "Currency" }));
+    fireEvent.click(await screen.findByRole("button", { name: /^USD/ }));
+
+    fireEvent.click(screen.getByRole("button", { name: /More details/i }));
+    await waitFor(() => {
+      expect(screen.getByTestId("split-section-mock")).toBeTruthy();
+    });
+    const splitProps = capturedSplitSectionProps[capturedSplitSectionProps.length - 1];
+    expect(splitProps.currency).toBe("USD");
+    expect(splitProps.parentAmount).toBe(150000);
   });
 });
