@@ -226,6 +226,7 @@ export function PageHeader({
   belowTitle,
   backHref,
   backLabel,
+  onBack,
 }: {
   title: React.ReactNode;
   subtitle?: React.ReactNode;
@@ -253,10 +254,15 @@ export function PageHeader({
   backHref?: string;
   /** Optional back button label (defaults to "Back"). */
   backLabel?: string;
+  /** Back as a button (history back, etc.) when no link fits. Ignored when a back href applies. */
+  onBack?: () => void;
 }) {
   // No backHref: a level 2+ route (per the nav registry) gets a back button to its parent. An explicit backHref wins.
   const autoBack = useBackTarget();
-  const effectiveBackHref = backHref ?? (autoBack && autoBack.level >= 2 ? autoBack.href ?? undefined : undefined);
+  // An onBack button wins over any link (the page's own back, e.g. history back or closing a detail).
+  const effectiveBackHref = onBack
+    ? undefined
+    : backHref ?? (autoBack && autoBack.level >= 2 ? autoBack.href ?? undefined : undefined);
   const hasRight = !!actions || (overflow?.length ?? 0) > 0;
   const h1 = (
     <h1 data-slot="page-header-title" className={cn(HEADER_TITLE_CLASS, PHONE_BAR_TITLE)}>
@@ -274,14 +280,18 @@ export function PageHeader({
       {belowTitle}
     </div>
   );
-  const hasLeft = !!effectiveBackHref || !!lead;
+  const hasLeft = !!effectiveBackHref || !!onBack || !!lead;
   const { cells, primary } = splitPhoneActions(actions);
   const hasCells = (overflow?.length ?? 0) > 0 || cells.some((c) => !isSecondaryNode(c));
   return (
     <div data-slot="page-header" className={cn(className, PHONE_BAR)}>
       {hasLeft ? (
         <div className={cn(leadClassName, "max-regular:contents")}>
-          {effectiveBackHref ? <BackButton href={effectiveBackHref} label={backLabel} className="justify-self-start" /> : null}
+          {effectiveBackHref ? (
+            <BackButton href={effectiveBackHref} label={backLabel} className="justify-self-start" />
+          ) : onBack ? (
+            <BackButton onClick={onBack} label={backLabel} className="justify-self-start" />
+          ) : null}
           {lead}
           {titleBlock}
         </div>
