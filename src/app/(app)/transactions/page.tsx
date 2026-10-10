@@ -2,6 +2,7 @@
 
 import { Suspense } from "react";
 import { TransactionsWorkspace } from "./_components/transactions-workspace";
+import { DueCard } from "@/components/subscriptions/due-card";
 
 // The full transactions surface (filters, per-column customize, header sort,
 // multi-select bulk update/delete, CSV export, pagination, add/edit/split
@@ -33,6 +34,10 @@ function TableSkeleton() {
 export default function TransactionsPage() {
   return (
     <Suspense fallback={<TableSkeleton />}>
+      {/* Subscriptions due today or earlier: one-tap Post now / Skip. Renders nothing when none is due. */}
+      <div className="mb-4 empty:hidden">
+        <DueCard />
+      </div>
       <TransactionsWorkspace />
     </Suspense>
   );

@@ -65,7 +65,7 @@ import {
   RepeatSheet,
   SeriesBadge,
 } from "./repeat-sheet";
-import { buildRepeatBody, seriesErrorMessage, type Series } from "@/lib/transactions/series";
+import { buildRepeatBody, seriesErrorMessage, shortDate, type Series } from "@/lib/transactions/series";
 import {
   getLastAccount,
   getRecent,
@@ -87,6 +87,18 @@ type InvalidField = "amount" | "account" | "category" | "toAccount" | "payee";
 const RECENT_TX_CODE: Record<TxType, RecentTxType> = { Expense: "E", Income: "I", Transfer: "T" };
 // Numpad target id for the main Amount. Split rows use their row id (never this value).
 const MAIN_PAD = "main";
+
+/** The GET /api/subscriptions fields the Post now prefill reads. */
+interface PostSubscription {
+  id: number;
+  name: string | null;
+  amount: number;
+  currency: string | null;
+  categoryId: number | null;
+  accountId: number | null;
+  nextDate: string | null;
+  status: string;
+}
 
 /**
  * The one transaction entry screen. mode.kind picks the chrome and the start values, never the rows:
@@ -119,6 +131,23 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
   const [urlAccountId] = useState<string | null>(() =>
     typeof window === "undefined" || editMode ? null : new URLSearchParams(window.location.search).get("account")
   );
+
+  // Post now (Repeat + Installment phase 2a): /transactions/new?subscription=<id>&occurrence=<date>[&return=/path]
+  // posts one due occurrence of a subscription. Prefilled from the subscription; Save sends subscriptionId +
+  // occurrenceDate and the server advances the schedule. Create mode only; the Repeat pill is hidden.
+  const [postTarget] = useState<{ id: number; occurrence: string; returnTo: string } | null>(() => {
+    if (typeof window === "undefined" || editMode) return null;
+    const q = new URLSearchParams(window.location.search);
+    const id = Number(q.get("subscription"));
+    const occurrence = q.get("occurrence") ?? "";
+    if (!Number.isInteger(id) || id <= 0 || !/^\d{4}-\d{2}-\d{2}$/.test(occurrence)) return null;
+    const ret = q.get("return") ?? "";
+    return { id, occurrence, returnTo: ret.startsWith("/") && !ret.startsWith("//") ? ret : "/transactions" };
+  });
+  const { data: postSubs } = useApi<PostSubscription[]>(postTarget ? "/api/subscriptions" : null, { soft: [] });
+  const postSub = postTarget ? (postSubs ?? []).find((s) => s.id === postTarget.id) ?? null : null;
+  const afterSaveHref = postTarget?.returnTo ?? "/transactions";
+  const postPrefilledRef = useRef(false);
 
   // Mode
   const [txType, setTxType] = useState<TxType>(seed?.txType ?? "Expense");
@@ -410,6 +439,25 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
       }
     }
   }, [txType, filteredCategories, categoryId]);
+
+  // Post now: prefill payee / amount / category / account / currency / type from the subscription once.
+  // Waits for categories + accounts so the type (Income for an income category) and the picker labels resolve.
+  useEffect(() => {
+    if (!postTarget || !postSub || postPrefilledRef.current) return;
+    if (loadingCategories || loadingAccounts) return;
+    postPrefilledRef.current = true;
+    const cat = postSub.categoryId != null ? rawCategories.find((c) => Number(c.id) === postSub.categoryId) : undefined;
+    setTxType(cat && (cat.type === "I" || cat.type?.toLowerCase() === "income") ? "Income" : "Expense");
+    setPayee(postSub.name ?? "");
+    setAmount(String(Math.abs(postSub.amount)));
+    if (postSub.categoryId != null) setCategoryId(String(postSub.categoryId));
+    if (postSub.accountId != null) {
+      setAccountId(String(postSub.accountId));
+      prefillAppliedRef.current = true;
+    }
+    if (postSub.currency) setCurrencyChoice(postSub.currency);
+    setDate(postTarget.occurrence);
+  }, [postTarget, postSub, loadingCategories, loadingAccounts, rawCategories]);
 
   // Selected Records
   const selectedCat = useMemo(
@@ -769,6 +817,8 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
         note: note.trim() || undefined,
         tags: tags.trim() || undefined,
         isBusiness: isBusiness ? 1 : 0,
+        // Post now: the server validates the occurrence is due, inserts and advances the schedule atomically.
+        ...(postTarget ? { subscriptionId: postTarget.id, occurrenceDate: postTarget.occurrence } : {}),
       };
 
       const seriesActive = !editMode ? series : null;
@@ -797,10 +847,18 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
         if (errData?.code === "fx-currency-needs-override") {
           throw new Error(`No FX rate for ${errData.currency ?? currency}.`);
         }
+        if (postTarget) {
+          if (errData?.code === "already_posted") throw new Error("This payment was already posted.");
+          if (errData?.code === "occurrence_not_due") {
+            throw new Error("This payment is no longer due. It may already have been posted or skipped.");
+          }
+          if (errData?.code === "subscription_not_active") throw new Error("This subscription is not active.");
+          if (res.status === 404) throw new Error("This subscription no longer exists.");
+        }
         throw new Error(errData?.error || `Failed to create transaction (${res.status})`);
       }
-      // A repeat may have created a subscription: refresh its lists too.
-      if (seriesActive) void mutate((k) => typeof k === "string" && k.startsWith("/api/subscriptions"));
+      // A repeat (or a posted occurrence) changed a subscription: refresh its lists too.
+      if (seriesActive || postTarget) void mutate((k) => typeof k === "string" && k.startsWith("/api/subscriptions"));
 
       const createdTx = await res.json().catch(() => ({}));
       setLastAccount(accountId);
@@ -876,7 +934,7 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
         void revalidateTransactionLists(swrMutate, cache);
         mutate("/api/accounts");
         setErrorMessage(followUpError);
-        setTimeout(() => router.push("/transactions"), 2500);
+        setTimeout(() => router.push(afterSaveHref), 2500);
         return;
       }
 
@@ -889,7 +947,7 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
       );
       void revalidateTransactionLists(swrMutate, cache);
       mutate("/api/accounts");
-      setTimeout(() => router.push("/transactions"), 600);
+      setTimeout(() => router.push(afterSaveHref), 600);
     } catch (err: unknown) {
       setErrorMessage(err instanceof Error ? err.message : "An unexpected error occurred");
     } finally {
@@ -1035,7 +1093,7 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
         <TypeSegmented
           value={txType}
           disabledOptions={
-            editMode?.kind === "edit" ? ["Transfer"] : editMode?.kind === "edit-transfer" ? ["Expense", "Income"] : undefined
+            editMode?.kind === "edit" || postTarget ? ["Transfer"] : editMode?.kind === "edit-transfer" ? ["Expense", "Income"] : undefined
           }
           onChange={(next) => {
             setTxType(next);
@@ -1083,6 +1141,12 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
           </div>
         )}
 
+        {postTarget && (
+          <p data-testid="txnew-post-line" className="shrink-0 px-1 text-xs text-muted-foreground">
+            Posting {postSub?.name ?? "subscription"} due {shortDate(postTarget.occurrence)}
+          </p>
+        )}
+
         {/* Field list. Expense/Income: Date, Amount, Category, Account, Payee, Note.
             Transfer: Date, Amount, From Account, To Account, Received (cross-currency only), Note. */}
         <ListCard className="shrink-0" data-testid="txnew-list">
@@ -1095,15 +1159,17 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
             htmlFor="txnew-date"
             right={
               !editMode && txType !== "Transfer" ? (
-                <RepeatPill
-                  series={series}
-                  disabled={splitActive}
-                  disabledTitle={REPEAT_SPLIT_DISABLED_TITLE}
-                  onClick={() => {
-                    closePad();
-                    setShowRepeatSheet(true);
-                  }}
-                />
+                postTarget ? undefined : (
+                  <RepeatPill
+                    series={series}
+                    disabled={splitActive}
+                    disabledTitle={REPEAT_SPLIT_DISABLED_TITLE}
+                    onClick={() => {
+                      closePad();
+                      setShowRepeatSheet(true);
+                    }}
+                  />
+                )
               ) : isInstallmentRow || isRepeatRow ? (
                 <SeriesBadge
                   hasInstallment={isInstallmentRow}

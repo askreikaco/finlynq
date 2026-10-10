@@ -258,3 +258,51 @@ describe("G2-13: loanNextDue estimate", () => {
     expect(loanNextDue({ startDate: "2026-01-15", paymentFrequency: "semi_monthly" }, false, "2026-10-09")).toBeNull();
   });
 });
+
+describe("Repeat + Installment phase 2a: Subscriptions page Post now / Skip", () => {
+  const DUE = { ...SUB, id: 9, name: "Gym", nextDate: "2026-10-01", postable: true, dueCount: 2, overdue: ["2026-10-01", "2026-11-01"] };
+
+  it("a due subscription shows a due badge, Post now and Skip; a not-due one shows neither", async () => {
+    DATA.subs = [DUE, SUB];
+    const { container } = render(<SubscriptionsPage />);
+    await loadedView(container);
+    expect(screen.getByTestId("sub-due-badge-9").textContent).toBe("2 due");
+    expect(screen.getByTestId("sub-post-9")).toBeTruthy();
+    expect(screen.getByTestId("sub-skip-9")).toBeTruthy();
+    expect(screen.queryByTestId("sub-post-7")).toBeNull();
+    expect(screen.queryByTestId("sub-skip-7")).toBeNull();
+  });
+
+  it("Post now opens the entry screen for the oldest unposted occurrence and returns here", async () => {
+    DATA.subs = [DUE];
+    const { container } = render(<SubscriptionsPage />);
+    await loadedView(container);
+    fireEvent.click(screen.getByTestId("sub-post-9"));
+    expect(H.push).toHaveBeenCalledWith("/transactions/new?subscription=9&occurrence=2026-10-01&return=%2Fsubscriptions");
+  });
+
+  it("Skip posts the skip action for next_date and reloads the list", async () => {
+    DATA.subs = [DUE];
+    const { container } = render(<SubscriptionsPage />);
+    await loadedView(container);
+    const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
+    const before = fetchMock.mock.calls.filter((c) => c[0] === "/api/subscriptions").length;
+    fireEvent.click(screen.getByTestId("sub-skip-9"));
+    await waitFor(() => {
+      const skip = fetchMock.mock.calls.find((c) => c[1]?.method === "POST");
+      expect(skip).toBeTruthy();
+      expect(JSON.parse(skip![1].body)).toEqual({ action: "skip", id: 9, occurrenceDate: "2026-10-01" });
+    });
+    await waitFor(() =>
+      expect(fetchMock.mock.calls.filter((c) => c[0] === "/api/subscriptions").length).toBeGreaterThan(before + 1),
+    );
+  });
+
+  it("an ended subscription is listed under Ended with a badge", async () => {
+    DATA.subs = [{ ...SUB, id: 11, name: "Old plan", status: "ended", dueCount: 0, overdue: [] }];
+    const { container } = render(<SubscriptionsPage />);
+    await loadedView(container);
+    expect(screen.getByText("Ended (1)")).toBeTruthy();
+    expect(screen.getByText("Ended", { selector: "[data-slot=badge], span, div" })).toBeTruthy();
+  });
+});
