@@ -92,7 +92,7 @@ describe("More screen", () => {
     ]);
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/announcements"));
     expect(rows("tools").map((r) => r[0])).toEqual(["What's new", "Feedback", "Settings"]);
-    expect(within(group("tools")).getByTestId("more-signout").textContent).toBe("Sign out");
+    expect(screen.getByTestId("more-signout").textContent).toBe("Log out");
     expect(rows("explore").map((r) => r[1])).toEqual(["/subscriptions", "/loans"]);
   });
 
@@ -129,7 +129,7 @@ describe("More screen", () => {
     expect(rows("admin").map((r) => r[1])).toEqual(expectedHrefs);
   });
 
-  it("Sign out posts logout, clears the user's storage and hard-reloads", async () => {
+  it("Log out posts logout, clears the user's storage and hard-reloads", async () => {
     render(<MoreMenu />);
     fireEvent.click(screen.getByTestId("more-signout"));
     await waitFor(() => expect(hardReload).toHaveBeenCalledWith("/"));
@@ -207,20 +207,30 @@ describe("More Account section", () => {
   });
 });
 
-describe("More Appearance row", () => {
-  it("sits in the Tools group (not Account), shows the current choice and drives setTheme", () => {
+describe("More Appearance card", () => {
+  it("is its own Appearance section (not Account, not Tools) and shows the current choice", () => {
     mockTheme = "dark";
     render(<MoreMenu />);
-    const row = screen.getByTestId("more-appearance");
-    expect(group("tools").contains(row)).toBe(true);
-    expect(screen.getByTestId("more-account").contains(row)).toBe(false);
-    const radios = within(row).getAllByRole("radio");
-    expect(radios.map((r) => r.textContent)).toEqual(["System", "Light", "Dark"]);
-    expect(radios.map((r) => r.getAttribute("aria-checked"))).toEqual(["false", "false", "true"]);
-    fireEvent.click(within(row).getByRole("radio", { name: "Light" }));
+    const card = screen.getByTestId("more-appearance");
+    expect(group("appearance").contains(card)).toBe(true);
+    expect(group("tools").contains(card)).toBe(false);
+    expect(screen.getByTestId("more-account").contains(card)).toBe(false);
+    expect(within(group("appearance")).getByRole("heading", { level: 2 }).textContent).toBe("Appearance");
+    const radios = within(card).getAllByRole("radio");
+    expect(radios.map((r) => r.textContent)).toEqual(["Light", "Dark", "System"]);
+    expect(radios.map((r) => r.getAttribute("aria-checked"))).toEqual(["false", "true", "false"]);
+  });
+
+  it("drives the same setTheme call for every choice", () => {
+    mockTheme = "dark";
+    render(<MoreMenu />);
+    const card = screen.getByTestId("more-appearance");
+    fireEvent.click(within(card).getByRole("radio", { name: "Light" }));
     expect(setTheme).toHaveBeenCalledWith("light");
-    fireEvent.click(within(row).getByRole("radio", { name: "System" }));
+    fireEvent.click(within(card).getByRole("radio", { name: "System" }));
     expect(setTheme).toHaveBeenCalledWith("system");
+    fireEvent.click(within(card).getByRole("radio", { name: "Dark" }));
+    expect(setTheme).toHaveBeenCalledWith("dark");
   });
 });
 

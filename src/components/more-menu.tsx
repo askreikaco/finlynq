@@ -1,29 +1,24 @@
 "use client";
 
 /**
- * "More" screen (/more) at every size: the glass PageHeader, then grouped rounded cards of rows
- * (icon tile, label, chevron). Narrow: one column. Wide (> 64rem): the groups sit in two columns.
- * Every entry is registry-driven (surface "more"); the rail and bottom bar link here.
+ * "More" screen (/more) at every size, iOS grouped-list style: PageHeader, an Account card, then
+ * inset groups (src/components/mobile/inset-group.tsx). Narrow: one column. Wide (> 64rem): the
+ * groups sit in two columns. Every entry is registry-driven (surface "more"); the rail and bottom
+ * bar link here.
  */
 
-import Link from "next/link";
 import { useEffect, useRef, useState, useMemo, memo } from "react";
 import useSWR from "swr";
 import { softJsonFetcher, swrAggressiveOptions } from "@/lib/swr";
-import {
-  LogOut,
-  ChevronRight,
-  Palette,
-  type LucideIcon,
-} from "lucide-react";
+import { LogOut, type LucideIcon } from "lucide-react";
 import { useTheme } from "next-themes";
-import { cn } from "@/lib/utils";
 import { AccountSwitcher } from "@/components/account-switcher";
 import { hardReload, clearPerUserStorage } from "@/lib/client/hard-reload";
 import { setPasskeyAutoSkip } from "@/lib/client/passkey-auto";
 import { getEntriesBySurface, navLabel } from "@/lib/nav-config";
 import { useNavUnread } from "@/components/nav-unread";
 import { PageHeader } from "@/components/mobile";
+import { InsetGroup, InsetRow, InsetSectionHeader, ThemePicker, type ThemeChoice } from "@/components/mobile/inset-group";
 
 export type MoreRow = { href: string; label: string; icon: LucideIcon; id: string };
 export type MoreGroup = { id: string; header?: string; rows: MoreRow[] };
@@ -153,63 +148,14 @@ export function buildMoreGroups(f: MoreFlags): MoreGroup[] {
   return groups;
 }
 
-const tile = "flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted/60";
-const rowCls =
-  "flex w-full items-center gap-3 px-3 py-3 text-left text-base font-medium text-foreground transition-colors hover:bg-muted/40 active:bg-muted/60";
-
-function Card({ children, testId }: { children: React.ReactNode; testId?: string }) {
-  return (
-    <div
-      data-testid={testId}
-      className="overflow-hidden rounded-2xl border border-border bg-card divide-y divide-border"
-    >
-      {children}
-    </div>
-  );
-}
-
-const THEME_CHOICES = [
-  { value: "system", label: "System" },
-  { value: "light", label: "Light" },
-  { value: "dark", label: "Dark" },
-] as const;
-
-/** 44px row: icon tile, label, System/Light/Dark segmented control (next-themes). */
-export function AppearanceRow() {
-  const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-  const current = mounted ? (theme ?? "system") : "system";
-  return (
-    <div className="flex min-h-11 w-full items-center gap-3 px-3 py-2" data-testid="more-appearance">
-      <span className={tile}>
-        <Palette className="h-[18px] w-[18px]" aria-hidden="true" />
-      </span>
-      <span className="flex-1 truncate text-base font-medium">Appearance</span>
-      <div role="radiogroup" aria-label="Appearance" className="flex shrink-0 rounded-lg bg-muted/60 p-0.5">
-        {THEME_CHOICES.map((c) => (
-          <button
-            key={c.value}
-            type="button"
-            role="radio"
-            aria-checked={current === c.value}
-            onClick={() => setTheme(c.value)}
-            className={cn(
-              "min-h-9 pointer-coarse:min-h-11 rounded-md px-2.5 text-xs font-medium transition-colors active:bg-muted",
-              current === c.value ? "bg-background text-foreground shadow-sm" : "text-muted-foreground",
-            )}
-          >
-            {c.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export const MoreMenu = memo(function MoreMenu({ instanceAdminEnabled = false, categoriesMerged = false }: { instanceAdminEnabled?: boolean; categoriesMerged?: boolean }) {
   const busy = useRef(false);
   const nav = useNavUnread();
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  // Before mount the server render has no theme yet, so show "system" (as the old control did).
+  const current: ThemeChoice = mounted ? ((theme as ThemeChoice | undefined) ?? "system") : "system";
 
   const { data: sessionData } = useSWR<{ isAdmin?: boolean; familyWealthEnabled?: boolean }>(
     "/api/auth/session",
@@ -281,51 +227,45 @@ export const MoreMenu = memo(function MoreMenu({ instanceAdminEnabled = false, c
       <PageHeader title="More" />
 
       <section data-testid="more-account" className="space-y-2">
-        <h2 className="px-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground">Account</h2>
-        <Card>
+        <InsetSectionHeader>Account</InsetSectionHeader>
+        {/* Current account (taps to /account), other accounts, Add account, Manage accounts. */}
+        <InsetGroup inset="avatar" data-testid="more-account-card">
           <AccountSwitcher variant="list" />
-        </Card>
+        </InsetGroup>
       </section>
 
       <div className="space-y-6 wide:grid wide:grid-cols-2 wide:items-start wide:gap-6 wide:space-y-0">
         {groups.map((g) => (
           <section key={g.id} data-testid={`more-group-${g.id}`} className="space-y-2">
-            {g.header && (
-              <h2 className="px-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                {g.header}
-              </h2>
-            )}
-            <Card>
-              {g.rows.map((r) => {
-                const count = badges[r.href] ?? 0;
-                return (
-                  <Link key={r.id} href={r.href} className={rowCls} data-testid="more-row">
-                    <span className={tile}>
-                      <r.icon className="h-[18px] w-[18px]" aria-hidden="true" />
-                    </span>
-                    <span className="flex-1 truncate">{r.label}</span>
-                    {count > 0 && (
-                      <span className="rounded-full bg-primary px-1.5 py-0.5 text-xs font-semibold leading-none text-primary-foreground">
-                        {count}
-                      </span>
-                    )}
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                  </Link>
-                );
-              })}
-              {g.id === "tools" && <AppearanceRow />}
-              {g.id === "tools" && (
-                <button type="button" onClick={signOut} className={cn(rowCls, "text-destructive")} data-testid="more-signout">
-                  <span className={tile}>
-                    <LogOut className="h-[18px] w-[18px]" aria-hidden="true" />
-                  </span>
-                  <span className="flex-1">Sign out</span>
-                </button>
-              )}
-            </Card>
+            {g.header && <InsetSectionHeader>{g.header}</InsetSectionHeader>}
+            <InsetGroup>
+              {g.rows.map((r) => (
+                <InsetRow
+                  key={r.id}
+                  href={r.href}
+                  label={r.label}
+                  icon={r.icon}
+                  badge={badges[r.href] ?? 0}
+                  data-testid="more-row"
+                />
+              ))}
+            </InsetGroup>
           </section>
         ))}
+
+        <section data-testid="more-group-appearance" className="space-y-2">
+          <InsetSectionHeader>Appearance</InsetSectionHeader>
+          <InsetGroup data-testid="more-appearance">
+            <ThemePicker value={current} onChange={(v) => setTheme(v)} />
+          </InsetGroup>
+        </section>
       </div>
+
+      <section data-testid="more-group-session" className="space-y-2">
+        <InsetGroup>
+          <InsetRow destructive icon={LogOut} label="Log out" onClick={signOut} data-testid="more-signout" />
+        </InsetGroup>
+      </section>
     </div>
   );
 });
