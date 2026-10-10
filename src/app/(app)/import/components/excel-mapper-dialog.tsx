@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -148,14 +149,13 @@ export function ExcelMapperDialog({
         )}
 
         {/* Headers toggle */}
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
+        <label className="flex items-center justify-between gap-3 min-h-row text-sm">
+          <span className="flex-1">First row contains headers</span>
+          <Switch
             checked={hasHeaders}
-            onChange={(e) => setHasHeaders(e.target.checked)}
-            className="h-4 w-4 rounded border-border"
+            onCheckedChange={(v) => setHasHeaders(v)}
+            className="shrink-0"
           />
-          First row contains headers
         </label>
 
         {/* Column mapping */}

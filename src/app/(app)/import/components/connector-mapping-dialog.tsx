@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -102,22 +103,22 @@ export function ConnectorMappingDialog({ open, onOpenChange, probe, state, onCon
               <Label htmlFor="accts-auto" className="text-sm">
                 Auto-create missing accounts ({probe.external.accounts.length} total)
               </Label>
-              <input
+              <Switch
                 id="accts-auto"
-                type="checkbox"
                 checked={s.accountAutoCreateByDefault}
-                onChange={(e) => setS({ ...s, accountAutoCreateByDefault: e.target.checked })}
+                onCheckedChange={(v) => setS({ ...s, accountAutoCreateByDefault: v })}
+                className="shrink-0"
               />
             </div>
             <div className="flex items-center justify-between gap-2">
               <Label htmlFor="cats-auto" className="text-sm">
                 Auto-create missing categories ({probe.external.categories.length} total)
               </Label>
-              <input
+              <Switch
                 id="cats-auto"
-                type="checkbox"
                 checked={s.categoryAutoCreateByDefault}
-                onChange={(e) => setS({ ...s, categoryAutoCreateByDefault: e.target.checked })}
+                onCheckedChange={(v) => setS({ ...s, categoryAutoCreateByDefault: v })}
+                className="shrink-0"
               />
             </div>
           </div>

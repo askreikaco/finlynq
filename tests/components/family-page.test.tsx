@@ -533,10 +533,10 @@ describe("Invite dialog", () => {
 
     await user.type(within(dialog).getByLabelText("Email address"), " Family@Example.com ");
     // retired sections are not offered any more
-    for (const gone of [/^Accounts/, /^Goals/, /^Budgets/]) expect(within(dialog).queryByLabelText(gone)).toBeNull();
-    await user.click(within(dialog).getByLabelText(/^Investments/)); // uncheck investments
-    await user.click(within(dialog).getByLabelText(/^Loans/)); // uncheck loans
-    await user.click(within(dialog).getByLabelText("Require them to share back"));
+    for (const gone of [/^Accounts/, /^Goals/, /^Budgets/]) expect(within(dialog).queryByRole("switch", { name: gone })).toBeNull();
+    await user.click(within(dialog).getByRole("switch", { name: /^Investments/ })); // uncheck investments
+    await user.click(within(dialog).getByRole("switch", { name: /^Loans/ })); // uncheck loans
+    await user.click(within(dialog).getByRole("switch", { name: "Require them to share back" }));
     // disclosure follows the selection
     const disclosure = within(dialog).getByRole("region", { name: "Share disclosure" });
     expect(within(disclosure).queryByText("Investments")).toBeNull();
@@ -558,7 +558,7 @@ describe("Invite dialog", () => {
 
   it("without net worth selected the disclosure explains totals are still inferable", async () => {
     const dialog = await openInvite();
-    await user.click(within(dialog).getByLabelText(/^Net Worth/));
+    await user.click(within(dialog).getByRole("switch", { name: /^Net Worth/ }));
     expect(within(dialog).getByText(/Net worth is not selected, but totals can still be worked out/)).toBeTruthy();
     expect(within(dialog).queryByText(/They will see your total net worth/)).toBeNull();
   });
@@ -666,10 +666,10 @@ describe("Revoke, resend, change sections", () => {
     render(<SharingTab />);
     await user.click(await screen.findByRole("button", { name: "Change sections" }));
     const dialog = await screen.findByRole("dialog", { name: "Change shared sections" });
-    expect((within(dialog).getByLabelText(/^Net Worth/) as HTMLInputElement).checked).toBe(true);
-    expect((within(dialog).getByLabelText(/^Investments/) as HTMLInputElement).checked).toBe(false);
+    expect(within(dialog).getByRole("switch", { name: /^Net Worth/ }).getAttribute("aria-checked")).toBe("true");
+    expect(within(dialog).getByRole("switch", { name: /^Investments/ }).getAttribute("aria-checked")).toBe("false");
     expect((within(dialog).getByRole("button", { name: "Save sections" }) as HTMLButtonElement).disabled).toBe(true); // unchanged
-    await user.click(within(dialog).getByLabelText(/^Loans/));
+    await user.click(within(dialog).getByRole("switch", { name: /^Loans/ }));
     await user.click(within(dialog).getByRole("button", { name: "Save sections" }));
     expect(await screen.findByText("Sections updated")).toBeTruthy();
     expect(callsTo("PUT", "/api/family/manage/update-sections")).toHaveLength(1);
@@ -685,7 +685,7 @@ describe("Revoke, resend, change sections", () => {
     render(<SharingTab />);
     await user.click(await screen.findByRole("button", { name: "Change sections" }));
     const dialog = await screen.findByRole("dialog", { name: "Change shared sections" });
-    await user.click(within(dialog).getByLabelText(/^Investments/));
+    await user.click(within(dialog).getByRole("switch", { name: /^Investments/ }));
     await user.click(within(dialog).getByRole("button", { name: "Save sections" }));
     await user.type(await screen.findByLabelText("Password"), "pw-123");
     await user.click(screen.getByRole("button", { name: "Verify" }));
@@ -705,8 +705,8 @@ describe("Revoke, resend, change sections", () => {
     expect(await screen.findByText(/1 of 4/)).toBeTruthy(); // counts only sections the overview shows
     await user.click(screen.getByRole("button", { name: "Change sections" }));
     const dialog = await screen.findByRole("dialog", { name: "Change shared sections" });
-    expect(within(dialog).queryByLabelText(/^Accounts/)).toBeNull();
-    await user.click(within(dialog).getByLabelText(/^Loans/));
+    expect(within(dialog).queryByRole("switch", { name: /^Accounts/ })).toBeNull();
+    await user.click(within(dialog).getByRole("switch", { name: /^Loans/ }));
     await user.click(within(dialog).getByRole("button", { name: "Save sections" }));
     expect(await screen.findByText("Sections updated")).toBeTruthy();
     expect(callsTo("PUT", "/api/family/manage/update-sections")[0].body).toEqual({
@@ -726,7 +726,7 @@ describe("Revoke, resend, change sections", () => {
     render(<SharingTab />);
     await user.click(await screen.findByRole("button", { name: "Change sections" }));
     const dialog = await screen.findByRole("dialog", { name: "Change shared sections" });
-    await user.click(within(dialog).getByLabelText(/^Loans/));
+    await user.click(within(dialog).getByRole("switch", { name: /^Loans/ }));
     await user.click(within(dialog).getByRole("button", { name: "Save sections" }));
     expect(await within(dialog).findByText(/Cannot remove sections required for must-share-back \(Loans\)/)).toBeTruthy();
     expect(callsTo("PUT", "/api/family/manage/update-sections")).toHaveLength(1);
@@ -743,11 +743,11 @@ describe("Revoke, resend, change sections", () => {
     await user.click(await screen.findByRole("button", { name: "Change sections" }));
     const dialog = await screen.findByRole("dialog", { name: "Change shared sections" });
     for (const re of [/^Net Worth/, /^Loans/]) {
-      const box = within(dialog).getByLabelText(re) as HTMLInputElement;
-      expect(box.checked).toBe(true);
-      expect(box.disabled).toBe(true);
+      const box = within(dialog).getByRole("switch", { name: re });
+      expect(box.getAttribute("aria-checked")).toBe("true");
+      expect(box.getAttribute("aria-disabled")).toBe("true");
     }
-    expect((within(dialog).getByLabelText(/^Investments/) as HTMLInputElement).disabled).toBe(false);
+    expect(within(dialog).getByRole("switch", { name: /^Investments/ }).getAttribute("aria-disabled")).not.toBe("true");
   });
 });
 
