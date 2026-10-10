@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -430,15 +431,7 @@ export function ColumnMappingDialog({
                   </Select>
                 </div>
               </div>
-              <label className="flex items-start gap-2.5 rounded-lg border bg-background px-3 py-2.5 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={mapping.flipSign === true}
-                  onChange={(e) =>
-                    setMapping((prev) => ({ ...prev, flipSign: e.target.checked }))
-                  }
-                  className="h-4 w-4 mt-0.5 rounded border-border"
-                />
+              <label className="flex items-center justify-between gap-3 min-h-row rounded-lg border bg-background px-3 py-2.5 cursor-pointer">
                 <span className="flex-1">
                   <span className="block text-sm font-medium">Flip sign of amounts</span>
                   <span className="block text-xs text-muted-foreground">
@@ -447,6 +440,11 @@ export function ColumnMappingDialog({
                     sample below updates to match.
                   </span>
                 </span>
+                <Switch
+                  checked={mapping.flipSign === true}
+                  onCheckedChange={(v) => setMapping((prev) => ({ ...prev, flipSign: v }))}
+                  className="shrink-0"
+                />
               </label>
               {redetecting && (
                 <p className="flex items-center gap-1.5 text-xs text-muted-foreground">

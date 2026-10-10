@@ -2,6 +2,7 @@
 
 import { useId } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { FAMILY_OVERVIEW_SECTIONS, type FamilySection } from "@/lib/family/sections";
 import { FAMILY_STRINGS } from "@/lib/family/strings";
@@ -55,21 +56,21 @@ export function SectionChecklist({ legend, selected, onChange, locked, disabled 
       </div>
       <div className="space-y-2 pl-4 regular:pl-6 border-l-2 border-muted">
         {FAMILY_OVERVIEW_SECTIONS.map((s) => (
-          <div key={s} className="flex items-start gap-2">
-            <Checkbox
-              id={`${uid}-${s}`}
-              checked={selected.has(s) || isLocked(s)}
-              disabled={disabled || isLocked(s)}
-              onCheckedChange={(checked) => toggle(s, checked)}
-              className="mt-0.5"
-            />
-            <Label htmlFor={`${uid}-${s}`} className="font-normal cursor-pointer flex-col items-start gap-0">
+          <div key={s} className="flex items-center justify-between gap-3 min-h-row">
+            <Label htmlFor={`${uid}-${s}`} className="font-normal cursor-pointer flex-1 min-w-0 flex-col items-start gap-0">
               <span className="font-medium">{getSectionLabel(s)}</span>
               <span className="text-xs text-muted-foreground">
                 {getSectionDescription(s)}
                 {isLocked(s) ? ` — ${FAMILY_STRINGS.update_sections_locked}` : ""}
               </span>
             </Label>
+            <Switch
+              id={`${uid}-${s}`}
+              checked={selected.has(s) || isLocked(s)}
+              disabled={disabled || isLocked(s)}
+              onCheckedChange={(v) => toggle(s, v)}
+              className="shrink-0"
+            />
           </div>
         ))}
       </div>
