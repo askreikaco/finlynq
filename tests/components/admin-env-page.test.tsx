@@ -1,21 +1,12 @@
 /**
  * @vitest-environment node
  */
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
+import { REDIRECTS } from "@/lib/nav-config";
 
-const mockRedirect = vi.fn();
-vi.mock("next/navigation", () => ({
-  redirect: mockRedirect,
-}));
-
-describe("Admin Env page", () => {
-  it("calls redirect with /admin/system", async () => {
-    // Import after mock is set up
-    const EnvPage = (await import("@/app/(app)/admin/env/page")).default;
-
-    // Call the component (it's a server component that redirects)
-    EnvPage();
-
-    expect(mockRedirect).toHaveBeenCalledWith("/admin/system");
+// /admin/env is no longer a page file (C-36). Its redirect to /admin/system lives in the REDIRECTS table that next.config consumes.
+describe("Admin Env redirect", () => {
+  it("REDIRECTS sends /admin/env to /admin/system", () => {
+    expect(REDIRECTS).toContainEqual({ source: "/admin/env", destination: "/admin/system", permanent: false });
   });
 });

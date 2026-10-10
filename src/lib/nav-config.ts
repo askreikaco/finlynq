@@ -619,8 +619,6 @@ export const ALIASES: AliasEntry[] = [
   { path: "/settings/dropdown-order", kind: "render-parent", target: "/settings/general" },
   { path: "/settings/data", kind: "render-parent", target: "/settings/developer" },
   { path: "/settings/bank-feeds", kind: "render-parent", target: "/settings/integrations" },
-  { path: "/settings/securities", kind: "render-parent", target: "/settings/investments" },
-  { path: "/settings/holding-accounts", kind: "render-parent", target: "/settings/investments" },
   { path: "/settings/rules", kind: "render-parent", target: "/settings/reconciliation" },
   { path: "/settings/import", kind: "render-parent", target: "/settings/reconciliation" },
   // /connect is the Integrations page with "Connect your AI" panel open
@@ -658,6 +656,10 @@ export const REDIRECTS: RedirectEntry[] = [
   // Subscriptions + Bill Calendar merged into one page (2026-10); the
   // calendar is now a view of /subscriptions.
   { source: "/calendar", destination: "/subscriptions?view=calendar", permanent: false },
+  // Former redirect pages (C-36). permanent:false keeps the 307 that the deleted page redirect() calls sent.
+  { source: "/admin/env", destination: "/admin/system", permanent: false },
+  { source: "/settings/holding-accounts", destination: "/settings/investments", permanent: false },
+  { source: "/settings/securities", destination: "/settings/investments", permanent: false },
 ];
 
 /**
