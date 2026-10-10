@@ -195,6 +195,9 @@ export const AppTabs = memo(function AppTabs() {
     href === "/more" && moreUnread > 0 ? (
       <span data-testid="more-unread-dot" aria-hidden="true" className="absolute -right-1 -top-1 size-2 rounded-full bg-primary" />
     ) : null;
+  // Text alternative for that dot (the dot itself is aria-hidden): same rule in both layouts.
+  const moreSrText = (href: string) =>
+    href === "/more" && moreUnread > 0 ? <span className="sr-only">, has unread items</span> : null;
 
   return (
     <>
@@ -206,7 +209,7 @@ export const AppTabs = memo(function AppTabs() {
               return (
                 <Link
                   key={item.href}
-                  aria-label={item.ariaLabel}
+                  aria-label={item.href === "/more" && moreUnread > 0 ? "More, has unread items" : item.ariaLabel}
                   aria-current={isActive ? "page" : undefined}
                   href={item.href}
                   className={cn(
@@ -218,7 +221,7 @@ export const AppTabs = memo(function AppTabs() {
                     <item.icon className={cn("size-6", isActive && item.color)} />
                     {moreDot(item.href)}
                   </span>
-                  <span className="mobile-tab-label block max-w-full truncate">{item.label}</span>
+                  <span className="mobile-tab-label block max-w-full truncate">{item.label}</span>{moreSrText(item.href)}
                 </Link>
               );
             })}
@@ -245,7 +248,7 @@ export const AppTabs = memo(function AppTabs() {
                 <item.icon className={cn("size-6", isActive && item.color)} />
                 {moreDot(item.href)}
               </span>
-              <span className="mobile-tab-label block max-w-full truncate">{item.label}</span>
+              <span className="mobile-tab-label block max-w-full truncate">{item.label}</span>{moreSrText(item.href)}
             </Link>
           );
         })}

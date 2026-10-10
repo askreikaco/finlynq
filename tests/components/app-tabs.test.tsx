@@ -187,7 +187,8 @@ describe("unread dot on More (both layouts)", () => {
     render(<AppTabs />);
     for (const nav of [bar(), rail()]) {
       await waitFor(() => expect(nav.querySelectorAll('[data-testid="more-unread-dot"]')).toHaveLength(1));
-      const moreLink = within(nav).getByRole("link", { name: "More" });
+      // The dot is aria-hidden: the More link carries the text alternative in both layouts.
+      const moreLink = within(nav).getByRole("link", { name: "More, has unread items" });
       expect(moreLink.querySelector('[data-testid="more-unread-dot"]')).not.toBeNull();
     }
   });
@@ -196,7 +197,7 @@ describe("unread dot on More (both layouts)", () => {
     vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, status: 200, json: async () => [{ unread: true }] })));
     render(<AppTabs />);
     await waitFor(() => expect(bar().querySelectorAll('[data-testid="more-unread-dot"]')).toHaveLength(1));
-    for (const l of within(bar()).getAllByRole("link").filter((a) => a.textContent !== "More")) {
+    for (const l of within(bar()).getAllByRole("link").filter((a) => !a.textContent?.startsWith("More"))) {
       expect(l.querySelector('[data-testid="more-unread-dot"]')).toBeNull();
     }
   });
