@@ -105,16 +105,17 @@ export function TransactionFormBody({
             className="space-y-4"
           >
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
+              <div className="min-w-0 space-y-1.5">
                 <Label>Date</Label>
                 <Input
                   type="date"
+                  className="min-w-0 max-w-full"
                   value={form.date}
                   onChange={(e) => setForm({ ...form, date: e.target.value })}
                   required
                 />
               </div>
-              <div className="space-y-1.5">
+              <div className="min-w-0 space-y-1.5">
                 <Label>Amount</Label>
                 <AmountInput
                   step="0.01"
@@ -563,16 +564,17 @@ export function TransactionFormBody({
         {dialogMode === "transfer" && (
           <form id={formId} onSubmit={handleTransferSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
+              <div className="min-w-0 space-y-1.5">
                 <Label>Date</Label>
                 <Input
                   type="date"
+                  className="min-w-0 max-w-full"
                   value={transferForm.date}
                   onChange={(e) => setTransferForm({ ...transferForm, date: e.target.value })}
                   required
                 />
               </div>
-              <div className="space-y-1.5">
+              <div className="min-w-0 space-y-1.5">
                 <Label>Amount sent</Label>
                 <AmountInput
                   step="0.01"
