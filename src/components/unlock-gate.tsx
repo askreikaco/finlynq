@@ -6,6 +6,7 @@ import { UnlockPanel, type AutoAttempt, type AutoPasskeyGate } from "@/component
 import { INVITE_RETURN_PATH, stashInviteFromLocation } from "@/lib/family/invite-stash";
 import { getSessionInfo, setSessionInfo } from "@/lib/data/session-info";
 import { wipeAll } from "@/lib/data/persist";
+import { dropAllLocalCaches, dropLocalUserCache } from "@/lib/data/local-read-cache-wipe";
 
 type AuthState = "loading" | "unauthenticated" | "authenticated";
 
@@ -50,6 +51,7 @@ export function UnlockGate({ children }: { children: React.ReactNode }) {
           // signed out: no account's on-device data cache may outlive the session
           setSessionInfo(null);
           void wipeAll().catch(() => undefined);
+          void dropAllLocalCaches();
         }
         setState(data.authenticated ? "authenticated" : "unauthenticated");
         if (data.authenticated && data.encryptionLocked === true) setLocked(true);
@@ -73,7 +75,10 @@ export function UnlockGate({ children }: { children: React.ReactNode }) {
           setLocked(true);
           // locked DEK: stop persisting and wipe this user's on-device data cache
           const info = getSessionInfo();
-          if (info && !info.locked) setSessionInfo({ ...info, locked: true });
+          if (info && !info.locked) {
+            setSessionInfo({ ...info, locked: true });
+            void dropLocalUserCache(info.userId);
+          }
         }
       }
       return res;

@@ -11,6 +11,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { LogoMark } from "@/components/logo-mark";
+import { dropAllLocalCaches } from "@/lib/data/local-read-cache-wipe";
 
 const INPUT_CLASS =
   "w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm max-regular:h-11 max-regular:py-0 max-regular:text-base text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary";
@@ -46,6 +47,8 @@ function ResetPasswordForm() {
       if (!res.ok) {
         setError(data.error || "Reset failed. The link may have expired.");
       } else {
+        // The reset wiped the account's data on the server: drop every on-device read-cache copy here.
+        void dropAllLocalCaches();
         setDone(true);
       }
     } catch {

@@ -8,6 +8,7 @@ import { getSessionInfo, onSessionInfo } from "./session-info";
 import { loadPersisted, persistSupported, purgeDisallowed, wipeUser } from "./persist";
 import { createPersistentCache } from "./persistent-cache";
 import { isSafeToPersist } from "./persist-policy";
+import { dropLocalUserCache } from "./local-read-cache-wipe";
 
 const BUILD = process.env.NEXT_PUBLIC_APP_BUILD ?? "dev";
 /** Never hold the first paint longer than this waiting for the on-device copy. */
@@ -41,6 +42,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     if (info.locked) {
       void wipeUser(userId);
+      void dropLocalUserCache(userId);
       setCache(make(new Map()));
     } else {
       const budget = new Promise<Map<string, unknown>>((r) => setTimeout(() => r(new Map()), HYDRATE_BUDGET_MS));
@@ -58,7 +60,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       .then((r) => (r.ok ? r.json() : { id: null }))
       .then((d: { id?: string | null }) => {
         trusted.current = !!d?.id;
-        if (!trusted.current) void wipeUser(userId);
+        if (!trusted.current) {
+          void wipeUser(userId);
+          void dropLocalUserCache(userId);
+        }
       })
       .catch(() => undefined);
 
@@ -66,6 +71,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       if (!next || next.locked) {
         locked.current = true;
         void wipeUser(userId);
+        void dropLocalUserCache(userId);
       }
     });
     return () => {
