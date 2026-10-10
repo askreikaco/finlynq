@@ -62,6 +62,7 @@ export function CategorySelector({
           entries={entries}
           selectedId={selectedCategoryId}
           recentIds={recentIds}
+          layout="expand"
           settingsHref="/categories"
           settingsLabel="Manage categories"
           onPick={(id) => {
