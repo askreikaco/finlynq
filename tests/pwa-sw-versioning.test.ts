@@ -24,6 +24,12 @@ describe("sw.ts per-build page cache versioning", () => {
     expect(src).toContain('cacheName: "static-media-cache"');
   });
 
+  it("reloads open windows once when upgrading from the legacy unversioned page caches", () => {
+    expect(src).toContain('LEGACY_PAGE_CACHES = ["pages-html-cache", "pages-rsc-cache"]');
+    expect(src).toContain("upgradedFromLegacy");
+    expect(src).toContain("w.navigate?.(w.url)");
+  });
+
   it("activate handler deletes stale pages-* caches only", () => {
     expect(src).toMatch(/self\.addEventListener\("activate"/);
     expect(src).toContain('STALE_PAGE_CACHE_PREFIXES = ["pages-html-cache", "pages-rsc-cache"]');
