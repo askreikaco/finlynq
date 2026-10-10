@@ -167,6 +167,87 @@ html {
   --sidebar-ring: oklch(0.75 0.165 70);
 }
 
+/* ═══════════════════════════════════════════════
+   DESIGN TOKENS (spec consolidation 2.1, C-01)
+   Single source. TS mirror: src/lib/design/tokens.ts (parity: tests/design/tokens-parity.test.ts).
+   Values are today's values; the Liquid Glass retune changes values only.
+   ═══════════════════════════════════════════════ */
+@theme {
+  --spacing-row: 2.75rem;            /* min-h-row; today min-h-11 */
+  --spacing-row-tall: 3rem;          /* min-h-row-tall; today min-h-12 */
+  --spacing-row-label: 7rem;         /* w-row-label; today w-28 */
+  --spacing-row-label-narrow: 6rem;  /* w-row-label-narrow; today w-24 */
+  --radius-group: 1rem;              /* rounded-group; today rounded-2xl */
+  --container-form: 36rem;           /* max-w-form; today max-w-xl */
+  --container-section: 42rem;        /* max-w-section; today max-w-2xl */
+  --container-report: 48rem;         /* max-w-report; today max-w-3xl */
+}
+
+:root {
+  /* chrome */
+  --hit-min: 44px;
+  --bar-ctl-h: 44px;
+  /* Phone top bar height (PageHeader + settings back row, 60px): one fixed height on every page. */
+  --phone-header-h: 3.75rem;
+  --tab-bar-h: 4rem;
+  --tab-bar-inset: 16px;
+  --tab-bar-bottom: max(12px, var(--sab));
+  --tab-bar-radius: 28px;
+  /* iOS UITabBar labels are 10pt (HIG); 10px here. */
+  --tab-label-size: 0.625rem;
+  /* Bottom clearance for content and floating UI above the mobile tab bar (~64px bar + 12px gap + sab). */
+  --mobile-bar-clearance: calc(96px + var(--sab));
+  --form-bottom-pad: calc(var(--sab, 0px) + 1.5rem);
+  /* motion (spec values come with the retune) */
+  --press-scale: 1;
+  --press-dur: 0ms;
+  /* material, light: one set per surface */
+  --glass-card-bg: oklch(1 0 0 / 60%);
+  --glass-card-blur: 20px;
+  --glass-card-sat: 1.6;
+  --glass-card-border: oklch(0 0 0 / 6%);
+  --glass-card-shadow: none;
+  --glass-bar-bg: oklch(1 0 0 / 60%);
+  --glass-bar-blur: 28px;
+  --glass-bar-sat: 1.8;
+  --glass-bar-border: oklch(0 0 0 / 8%);
+  --glass-capsule-bg: oklch(1 0 0 / 55%);
+  --glass-capsule-blur: 24px;
+  --glass-capsule-sat: 1.8;
+  --glass-capsule-border: oklch(0 0 0 / 8%);
+  --glass-capsule-shadow: inset 0 1px 0 oklch(1 0 0 / 60%), 0 2px 8px oklch(0 0 0 / 10%);
+  --glass-tabbar-bg: oklch(1 0 0 / 80%);
+  --glass-tabbar-blur: 28px;
+  --glass-tabbar-sat: 1.8;
+  --glass-tabbar-border: oklch(0 0 0 / 8%);
+  --glass-tabbar-shadow: inset 0 1px 0 oklch(1 0 0 / 18%), 0 8px 32px oklch(0 0 0 / 35%);
+  --glass-menu-bg: oklch(0.2 0.008 250 / 78%);
+  --glass-menu-blur: 24px;
+  --glass-menu-sat: 1.8;
+  --glass-menu-shadow: inset 0 0 0 1px oklch(1 0 0 / 6%), inset 0 1px 0 oklch(1 0 0 / 16%), 0 12px 40px oklch(0 0 0 / 35%);
+  --glass-menu-solid: oklch(0.2 0.008 250);
+  --glass-menu-fg: oklch(0.97 0 0);
+  --glass-menu-muted: oklch(0.74 0.01 250);
+  --glass-menu-hairline: oklch(1 0 0 / 12%);
+  --glass-menu-highlight: oklch(1 0 0 / 14%);
+  --glass-menu-destructive: oklch(0.74 0.16 25);
+  --glass-menu-destructive-highlight: oklch(0.6 0.16 25 / 22%);
+}
+.dark {
+  /* material, dark */
+  --glass-card-bg: oklch(0.155 0.007 245 / 60%);
+  --glass-card-sat: 1.5;
+  --glass-card-border: oklch(1 0 0 / 6%);
+  --glass-card-shadow: 0 1px 2px oklch(0 0 0 / 30%);
+  --glass-bar-bg: oklch(0.14 0.01 245 / 55%);
+  --glass-bar-border: oklch(1 0 0 / 10%);
+  --glass-capsule-bg: oklch(1 0 0 / 8%);
+  --glass-capsule-border: oklch(1 0 0 / 14%);
+  --glass-capsule-shadow: inset 0 1px 0 oklch(1 0 0 / 14%), 0 2px 8px oklch(0 0 0 / 35%);
+  --glass-tabbar-bg: oklch(0.16 0.008 245 / 78%);
+  --glass-tabbar-border: oklch(1 0 0 / 14%);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -303,17 +384,11 @@ html {
    ═══════════════════════════════════════════════ */
 
 .glass {
-  background: oklch(1 0 0 / 60%);
-  backdrop-filter: blur(20px) saturate(1.6);
-  -webkit-backdrop-filter: blur(20px) saturate(1.6);
-  border: 1px solid oklch(0 0 0 / 6%);
-}
-.dark .glass {
-  background: oklch(0.155 0.007 245 / 60%);
-  backdrop-filter: blur(20px) saturate(1.5);
-  -webkit-backdrop-filter: blur(20px) saturate(1.5);
-  border: 1px solid oklch(1 0 0 / 6%);
-  box-shadow: 0 1px 2px oklch(0 0 0 / 30%);
+  background: var(--glass-card-bg);
+  backdrop-filter: blur(var(--glass-card-blur)) saturate(var(--glass-card-sat));
+  -webkit-backdrop-filter: blur(var(--glass-card-blur)) saturate(var(--glass-card-sat));
+  border: 1px solid var(--glass-card-border);
+  box-shadow: var(--glass-card-shadow);
 }
 
 /* iOS 26-style liquid glass, phones only (below regular, 40rem = 640px). Three parts: the round back button
@@ -321,16 +396,11 @@ html {
    (.glass-capsule on [data-slot=header-capsule]). The regular+ layout never receives any of it. */
 @media (width < 40rem) {
   .glass-capsule {
-    background: oklch(1 0 0 / 55%);
-    -webkit-backdrop-filter: blur(24px) saturate(1.8);
-    backdrop-filter: blur(24px) saturate(1.8);
-    border: 1px solid oklch(0 0 0 / 8%);
-    box-shadow: inset 0 1px 0 oklch(1 0 0 / 60%), 0 2px 8px oklch(0 0 0 / 10%);
-  }
-  .dark .glass-capsule {
-    background: oklch(1 0 0 / 8%);
-    border-color: oklch(1 0 0 / 14%);
-    box-shadow: inset 0 1px 0 oklch(1 0 0 / 14%), 0 2px 8px oklch(0 0 0 / 35%);
+    background: var(--glass-capsule-bg);
+    -webkit-backdrop-filter: blur(var(--glass-capsule-blur)) saturate(var(--glass-capsule-sat));
+    backdrop-filter: blur(var(--glass-capsule-blur)) saturate(var(--glass-capsule-sat));
+    border: 1px solid var(--glass-capsule-border);
+    box-shadow: var(--glass-capsule-shadow);
   }
   /* Every cell in the capsule is one 44x44 slot (no gaps; the capsule is the only glass): icon buttons,
      the overflow trigger and HeaderStatus. The primary is a separate control (header-primary). Buttons are bare; hover and press
@@ -385,14 +455,10 @@ html {
   }
   /* The top bar: translucent tint, blur, saturate, 1px bottom rim. */
   .glass-bar {
-    background: oklch(1 0 0 / 60%);
-    -webkit-backdrop-filter: blur(28px) saturate(1.8);
-    backdrop-filter: blur(28px) saturate(1.8);
-    border-bottom: 1px solid oklch(0 0 0 / 8%);
-  }
-  .dark .glass-bar {
-    background: oklch(0.14 0.01 245 / 55%);
-    border-bottom-color: oklch(1 0 0 / 10%);
+    background: var(--glass-bar-bg);
+    -webkit-backdrop-filter: blur(var(--glass-bar-blur)) saturate(var(--glass-bar-sat));
+    backdrop-filter: blur(var(--glass-bar-blur)) saturate(var(--glass-bar-sat));
+    border-bottom: 1px solid var(--glass-bar-border);
   }
   /* Opaque fallbacks, light and dark, after the base rules so they win at equal specificity. */
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
@@ -432,17 +498,17 @@ html {
    --glass-pill .14. Radius 28px and shadow are the owner's values. Opaque fallbacks (no backdrop-filter,
    prefers-reduced-transparency) use --menu-solid (spec 6.4 allows .94 alpha; opaque is stricter). */
 .glass-menu {
-  --menu-solid: oklch(0.2 0.008 250);
-  --menu-fg: oklch(0.97 0 0);
-  --menu-muted: oklch(0.74 0.01 250);
-  --menu-hairline: oklch(1 0 0 / 12%);
-  --menu-highlight: oklch(1 0 0 / 14%);
-  --menu-destructive: oklch(0.74 0.16 25);
-  --menu-destructive-highlight: oklch(0.6 0.16 25 / 22%);
-  background: oklch(0.2 0.008 250 / 78%);
-  -webkit-backdrop-filter: blur(24px) saturate(1.8);
-  backdrop-filter: blur(24px) saturate(1.8);
-  box-shadow: inset 0 0 0 1px oklch(1 0 0 / 6%), inset 0 1px 0 oklch(1 0 0 / 16%), 0 12px 40px oklch(0 0 0 / 35%);
+  --menu-solid: var(--glass-menu-solid);
+  --menu-fg: var(--glass-menu-fg);
+  --menu-muted: var(--glass-menu-muted);
+  --menu-hairline: var(--glass-menu-hairline);
+  --menu-highlight: var(--glass-menu-highlight);
+  --menu-destructive: var(--glass-menu-destructive);
+  --menu-destructive-highlight: var(--glass-menu-destructive-highlight);
+  background: var(--glass-menu-bg);
+  -webkit-backdrop-filter: blur(var(--glass-menu-blur)) saturate(var(--glass-menu-sat));
+  backdrop-filter: blur(var(--glass-menu-blur)) saturate(var(--glass-menu-sat));
+  box-shadow: var(--glass-menu-shadow);
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .glass-menu {
@@ -465,7 +531,6 @@ html {
    on the 1x-scale reference). Icons are 24px (size-6), targets min 44px. Colours are tokens, so light
    inactive text is 18:1 on the light glass (was 1.4:1 with sidebar-foreground/60). */
 :root {
-  --tab-label-size: 0.625rem;
   --tab-inactive: oklch(0.42 0.012 250);
   --tab-active: oklch(0.45 0.13 70);
 }
@@ -481,15 +546,11 @@ html {
   letter-spacing: 0;
 }
 .mobile-glass-bar {
-  background: oklch(1 0 0 / 80%);
-  -webkit-backdrop-filter: blur(28px) saturate(1.8);
-  backdrop-filter: blur(28px) saturate(1.8);
-  border: 1px solid oklch(0 0 0 / 8%);
-  box-shadow: inset 0 1px 0 oklch(1 0 0 / 18%), 0 8px 32px oklch(0 0 0 / 35%);
-}
-.dark .mobile-glass-bar {
-  background: oklch(0.16 0.008 245 / 78%);
-  border-color: oklch(1 0 0 / 14%);
+  background: var(--glass-tabbar-bg);
+  -webkit-backdrop-filter: blur(var(--glass-tabbar-blur)) saturate(var(--glass-tabbar-sat));
+  backdrop-filter: blur(var(--glass-tabbar-blur)) saturate(var(--glass-tabbar-sat));
+  border: 1px solid var(--glass-tabbar-border);
+  box-shadow: var(--glass-tabbar-shadow);
 }
 /* Active tab pill, sits behind icon + label. */
 .mobile-glass-pill {
@@ -789,12 +850,9 @@ html[data-keyboard-open] [data-testid="page-fab"] { display: none; }
   --sat: env(safe-area-inset-top, 0px);
   /* Phone top bar height (PageHeader + settings back row, 60px): one fixed height on every page so the
      bar does not jump between pages. Sticky elements under the bar offset by sat + this. */
-  --phone-header-h: 3.75rem;
   --sab: env(safe-area-inset-bottom, 0px);
   --sal: env(safe-area-inset-left, 0px);
   --sar: env(safe-area-inset-right, 0px);
-  /* Bottom clearance for content and floating UI above the mobile tab bar (~64px bar + 12px gap + sab). */
-  --mobile-bar-clearance: calc(96px + var(--sab));
   /* Height of the top bar that sticky elements sit under (section labels). Phone: the 60px bar. */
   --header-h: var(--phone-header-h);
 }
