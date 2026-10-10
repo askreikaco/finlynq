@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { MoreHorizontal } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { getEntriesBySurface, getMobileBarItemsSorted } from "@/lib/nav-config";
+import { isFullScreenRoute } from "@/lib/routes";
 import { useNavUnread } from "@/components/nav-unread";
 
 type NavItem = { href: string; label: string; icon: LucideIcon; color: string; mode?: "prod" | "dev"; activePrefixes?: string[]; flag?: "family" | "announcements" | "feedback" | "instance" };
@@ -136,38 +137,11 @@ export function pickActiveHref(
   return activeItem;
 }
 
-// Full-screen entry flows: the compact tab bar is hidden so the form and its Save/Continue are never overlapped.
-// The rail is never hidden: it sits left of the content, so it cannot overlap a form.
-const FULL_SCREEN_ENTRY_ROUTES = [
-  "/transactions/new",
-  "/accounts/new",
-  "/settings/rules/new",
-  "/categories/new",
-  "/settings/investments/securities",
-  "/settings/investments/accounts",
-  "/settings/investments/cash-sleeves",
-  "/loans/new",
-  "/subscriptions/new",
-  "/budgets/new",
-  "/budgets/templates/new",
-  "/budgets/move-money",
-  "/goals/new",
-] as const;
-// Edit forms for a single loan / subscription / account / goal / category / rule (/loans/<id>/edit,
-// /subscriptions/<id>/edit, /accounts/<id>/edit, /goals/<id>/edit) and rule / category rename pages.
-const FULL_SCREEN_EDIT_ROUTE = /^\/(loans|subscriptions|accounts|goals|categories|settings\/rules)\/[^/]+\/edit$/;
-// Full-page transaction edit flows (PKG1): /transactions/<id>/edit and /split, /transactions/transfer/<linkId>/edit.
-const FULL_SCREEN_ENTRY_PATTERNS = [/^\/transactions\/\d+\/(edit|split)$/, /^\/transactions\/transfer\/[^/]+\/edit$/];
-
+// Full-screen entry and edit flows hide the compact tab bar. The flag lives on each route in
+// src/lib/routes/families/*.ts (fullScreen). The rail is never hidden: it sits left of the content.
 /** True when the compact bottom bar is hidden on this route. The rail is never hidden. */
 export function isTabBarHidden(pathname: string): boolean {
-  return (
-    FULL_SCREEN_ENTRY_ROUTES.some((r) => pathname === r || pathname.startsWith(r + "/")) ||
-    FULL_SCREEN_EDIT_ROUTE.test(pathname) ||
-    FULL_SCREEN_ENTRY_PATTERNS.some((re) => re.test(pathname)) ||
-    // Portfolio operation forms (/portfolio/new/<op>) follow the same rule; the /portfolio/new list keeps the bar.
-    pathname.startsWith("/portfolio/new/")
-  );
+  return isFullScreenRoute(pathname);
 }
 
 const isTabActive = (pathname: string, href: string) => pathname === href || pathname.startsWith(href + "/");
