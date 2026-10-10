@@ -15,7 +15,7 @@ const CENTRED_OFFSET = "regular:left-[calc(50%+2.5rem)]";
 describe("desktop rail: fixed elements clear it at regular+", () => {
   it("rail container scrolls on short heights and keeps every item reachable", () => {
     const nav = read("src/components/nav.tsx");
-    const m = nav.match(/aria-label="Main navigation"\s*\n\s*className="([^"]+)"/);
+    const m = nav.match(/aria-label="Main navigation"\s*\n\s*(?:data-testid="[^"]*"\s*\n\s*)?className="([^"]+)"/);
     expect(m, "rail <nav> className not found").not.toBeNull();
     const cls = m![1];
     expect(cls).toContain("fixed inset-y-0 left-0");
