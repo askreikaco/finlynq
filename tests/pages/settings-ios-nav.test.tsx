@@ -191,7 +191,7 @@ describe("PageHeader with backHref: phone glass header row", () => {
     const css = readFileSync(resolve(__dirname, "../../src/app/globals.css"), "utf-8");
     expect(css).toMatch(/@media \(width < 40rem\) \{\s*\.glass-capsule \{/);
     // Literal blur/saturate moved into --glass-bar-* tokens; assert the resolved .glass-bar rule.
-    expect(resolvedDecls(css, ".glass-bar", "light")).toMatch(/blur\(28px\) saturate\(1\.8\)/);
+    expect(resolvedDecls(css, ".glass-bar", "light")).toMatch(/blur\(32px\) saturate\(1\.8\)/);
     expect(css).toContain("prefers-reduced-transparency");
   });
 });
