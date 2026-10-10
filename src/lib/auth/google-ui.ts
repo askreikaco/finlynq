@@ -1,3 +1,5 @@
+import { safeReturnTo } from "@/lib/accounts/groups-return-to";
+
 /**
  * Google sign-in UI helpers and strings.
  *
@@ -88,11 +90,8 @@ export function safeNext(
   fallback: string = "/dashboard"
 ): string {
   if (!next) return fallback;
-  if (!next.startsWith("/")) return fallback;
-  if (next.startsWith("//")) return fallback;
-  if (next.includes("\\")) return fallback;
-  // Browsers strip tab/CR/LF inside URLs ("/\t/evil.com" -> "//evil.com").
-  if (/[\u0000-\u001f\u007f]/.test(next)) return fallback;
+  // Browsers strip tab/CR/LF inside URLs ("/\t/evil.com" -> "//evil.com"); safeReturnTo rejects them.
+  if (safeReturnTo(next, "") !== next) return fallback;
   return next;
 }
 

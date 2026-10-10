@@ -7,6 +7,7 @@
  * validation and API payload; this file only renders.
  */
 
+import { safeReturnTo } from "@/lib/accounts/groups-return-to";
 import * as React from "react";
 import { PageHeader, SectionLabel } from "@/components/mobile";
 import { Check } from "lucide-react";
@@ -22,10 +23,7 @@ export const DEFAULT_OP_RETURN = "/portfolio";
  * Anything else falls back to /portfolio.
  */
 export function safeReturnHref(raw: string | null | undefined): string {
-  if (!raw) return DEFAULT_OP_RETURN;
-  if (!raw.startsWith("/") || raw.startsWith("//") || raw.includes("\\")) return DEFAULT_OP_RETURN;
-  if (/[\u0000-\u001f\u007f]/.test(raw)) return DEFAULT_OP_RETURN;
-  return raw;
+  return safeReturnTo(raw, DEFAULT_OP_RETURN);
 }
 
 /** Control and input classes: 44px rows, 16px text on phones, no box (the row is the field). */
