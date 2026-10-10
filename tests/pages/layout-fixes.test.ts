@@ -41,8 +41,10 @@ describe("no fixed-px text on touched pages (system font sizes only)", () => {
 describe("settings/general at 390", () => {
   it("PageHeader is the bare global header (no lead hack): the back control comes from the registry", () => {
     const src = read(SETTINGS_GENERAL);
-    expect(src).toContain("<PageHeader");
+    // The page header comes from the SectionPage template (single PageHeader, back from the registry when backFallback is omitted).
+    expect(src).toContain("<SectionPage");
     expect(src).not.toContain('lead={<span aria-hidden className="hidden" />}');
+    expect(read("src/components/templates/section-page.tsx")).not.toMatch(/\blead=/);
   });
 
   it("Display Currency row is a column below regular and a row from regular (control full width below regular)", () => {

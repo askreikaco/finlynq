@@ -20,11 +20,17 @@ const TITLE_EXEMPTIONS: Record<string, string> = {
   "/account": "Redirects to /account/info (or AccountHub); the Account title comes from the AccountShell layout, not this page",
 };
 
-/** Attribute text of the first <PageHeader ...> opening tag. Brace-aware: `lead={<X />}` contains '>'. */
+/**
+ * Attribute text of the first <PageHeader ...> opening tag, or of the first page-template call (SectionPage,
+ * ListPage, ...: the template renders the same PageHeader and passes its `title` through). Brace-aware:
+ * `lead={<X />}` contains '>'.
+ */
 function pageHeaderAttrs(src: string): string | null {
-  const m = src.match(/<PageHeader[\s>]/);
+  const m = src.match(/<(PageHeader|SectionPage|ListPage|FormPage|DetailPage|HubPage|ReportPage)[\s><]/);
   if (!m || m.index === undefined) return null;
-  const from = m.index + "<PageHeader".length;
+  let from = m.index + m[0].length - 1;
+  // Generic type arguments (`<ListPage<Goal>`) sit before the attributes: skip them.
+  if (src[from] === "<") from = src.indexOf(">", from) + 1;
   let depth = 0;
   let i = from;
   for (; i < src.length; i++) {

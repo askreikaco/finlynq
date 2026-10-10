@@ -11,6 +11,7 @@ const read = (p: string) => readFileSync(join(ROOT, p), "utf8");
 const pageHeader = read("src/components/mobile/page-header.tsx");
 const settingsShell = read("src/components/settings-shell.tsx");
 const general = read("src/app/(app)/settings/general/page.tsx");
+const sectionPage = read("src/components/templates/section-page.tsx");
 const newTx = read("src/app/(app)/transactions/new/page.tsx");
 const appLayout = read("src/app/(app)/layout.tsx");
 const dashboard = read("src/app/(app)/dashboard/page.tsx");
@@ -59,7 +60,10 @@ describe("PHONE_BAR is sticky at every breakpoint", () => {
 describe("bars that must use the sticky bar", () => {
   it("settings sub-pages: the page PageHeader is the top bar (the shell builds none from PHONE_BAR)", () => {
     expect(settingsShell).not.toMatch(/PHONE_BAR|settings-detail-bar/);
-    expect(general).toMatch(/<PageHeader\b/);
+    // The page calls the SectionPage template, which renders the single global PageHeader (section-page.tsx).
+    expect(general).toMatch(/<SectionPage\b/);
+    expect(general).toMatch(/from "@\/components\/templates"/);
+    expect(sectionPage.match(/<PageHeader\b/g)?.length).toBe(1);
   });
 
   it("new-transaction header is the global PageHeader (no own sticky bar)", () => {
@@ -261,7 +265,28 @@ describe("non-admin pages", () => {
     "src/app/(app)/import/pending/_components/staged-list-view.tsx",
   ];
 
+  /** Pages that call SectionPage: the header is rendered by the template, as the first child of its root (no wrapper). */
+  const SECTION_PAGE_FILES = new Set([
+    "src/app/(app)/transactions/audit/page.tsx",
+    "src/app/(app)/portfolio/new/page.tsx",
+    "src/app/(app)/portfolio/realized-gains/page.tsx",
+    "src/app/(app)/portfolio/dividends/page.tsx",
+  ]);
+
   it.each(FIXED_PAGES)("%s: PageHeader sits directly in a tall page container", (file) => {
+    if (SECTION_PAGE_FILES.has(file)) {
+      const src = read(file);
+      expect(src).toMatch(/<SectionPage\b/);
+      expect(src).toMatch(/from "@\/components\/templates(\/section-page)?"/);
+      // Template root: the only open div before its PageHeader; its stack class is space-y-<n> (TALL).
+      const idx = sectionPage.indexOf("<PageHeader");
+      expect(idx).toBeGreaterThan(-1);
+      expect(ancestorsAt(sectionPage, idx).length).toBe(1);
+      expect(sectionPage).toMatch(/STACK_CLASS\[stack\]/);
+      expect(sectionPage).toMatch(/"6": "space-y-6"/);
+      expect(sectionPage).not.toMatch(/justify-between/);
+      return;
+    }
     const parent = pageHeaderParent(file);
     expect(parent).toMatch(TALL);
     expect(parent).not.toMatch(/justify-between/);

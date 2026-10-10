@@ -10,6 +10,9 @@ const FILES = [
   "src/app/(app)/subscriptions/page.tsx",
 ];
 
+/** Pages whose header moved onto a page template (titleClassName removed by the migration; see the test below). */
+const TEMPLATE_OWNED = new Set(["src/app/(app)/transactions/audit/page.tsx"]);
+
 const TITLE_TARGET = "text-2xl font-bold tracking-tight";
 const TITLE_ALLOWED = /^text-2xl font-bold tracking-tight( truncate| flex items-center gap-2)?$/;
 const SUBTITLE_TARGET = "text-sm text-muted-foreground mt-0.5";
@@ -33,6 +36,14 @@ describe("W5-21 page headers tail", () => {
 
       it("every titleClassName uses the standard header title class", () => {
         const titles = values(src, TITLE_ATTR);
+        if (TEMPLATE_OWNED.has(file)) {
+          // Moved onto SectionPage: the page passes no titleClassName, and the template forwards none either,
+          // so the title is the global PageHeader's standard class (HEADER_TITLE_CLASS).
+          expect(titles).toEqual([]);
+          expect(src).toMatch(/<SectionPage\b/);
+          expect(read("src/components/templates/section-page.tsx")).not.toMatch(/titleClassName/);
+          return;
+        }
         expect(titles.length).toBeGreaterThan(0);
         for (const t of titles) {
           expect(t).toMatch(TITLE_ALLOWED);

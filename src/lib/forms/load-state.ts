@@ -15,6 +15,8 @@ export interface LoadState<R, X = unknown> {
   status: LoadStatus;
   record?: R;
   extra?: X;
+  /** Optional hook message; FormPage reads it (readHookMessage) and passes it to the state body. */
+  message?: string;
   retry: () => void;
 }
 

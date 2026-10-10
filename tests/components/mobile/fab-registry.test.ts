@@ -98,15 +98,15 @@ describe("resolveFab", () => {
 });
 
 describe("FAB_ROUTES table", () => {
-  it("has one key per registry route, ratcheted at most 93", () => {
+  it("has one key per registry route, ratcheted at most 92", () => {
     expect(Object.keys(FAB_ROUTES)).toHaveLength(ALL_ROUTES.length);
-    expect(ALL_ROUTES.length).toBeLessThanOrEqual(93);
+    expect(ALL_ROUTES.length).toBeLessThanOrEqual(92);
   });
 
-  it("kind counts are 38 fallback, 17 route, 6 handler, 32 hidden, 0 redirect", () => {
+  it("kind counts are 37 fallback, 17 route, 6 handler, 32 hidden, 0 redirect", () => {
     const counts: Record<string, number> = {};
     for (const e of Object.values(FAB_ROUTES)) counts[e.kind] = (counts[e.kind] ?? 0) + 1;
-    expect(counts).toEqual({ fallback: 38, route: 17, handler: 6, hidden: 32 });
+    expect(counts).toEqual({ fallback: 37, route: 17, handler: 6, hidden: 32 });
     expect(counts.redirect).toBeUndefined();
   });
 
