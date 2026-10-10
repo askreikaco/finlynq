@@ -15,7 +15,6 @@ import { Dialog } from "@/components/ui/dialog";
 import { BackButton } from "./back-button";
 import { FromMd } from "./adaptive";
 import { useBackTarget } from "@/components/adaptive/use-back-target";
-import { SettingsBackContext } from "@/components/settings-back-context";
 
 export interface OverflowAction {
   label: string;
@@ -189,17 +188,7 @@ export function PageHeader({
 }) {
   // No backHref: a level 2+ route (per the nav registry) gets a back button to its parent. An explicit backHref wins.
   const autoBack = useBackTarget();
-  // Under the settings shell the shell's detail bar is the one level-2 back: no automatic back here.
-  // A page with an explicit backHref reports it, so the shell hides its own bar back (one back control).
-  const settingsBack = React.useContext(SettingsBackContext);
-  const reportOwnBack = settingsBack?.setOwnBack;
-  React.useEffect(() => {
-    if (!reportOwnBack || !backHref) return;
-    reportOwnBack(true);
-    return () => reportOwnBack(false);
-  }, [reportOwnBack, backHref]);
-  const effectiveBackHref =
-    backHref ?? (!settingsBack?.detail && autoBack && autoBack.level >= 2 ? autoBack.href ?? undefined : undefined);
+  const effectiveBackHref = backHref ?? (autoBack && autoBack.level >= 2 ? autoBack.href ?? undefined : undefined);
   const hasRight = !!actions || (overflow?.length ?? 0) > 0;
   const h1 = (
     <h1 data-slot="page-header-title" className={cn(HEADER_TITLE_CLASS, PHONE_BAR_TITLE)}>

@@ -99,10 +99,7 @@ export default function GeneralSettingsPage() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      {/* Phones: the settings detail back row is the sticky bar; a `lead` node (here a hidden empty span)
-          stops PageHeader rendering its 44px left spacer, which made an empty band above the first card. */}
       <PageHeader
-          lead={<span aria-hidden className="hidden" />}
           title="General"
           titleClassName="text-2xl font-bold tracking-tight"
           subtitle="Display preferences and currencies"

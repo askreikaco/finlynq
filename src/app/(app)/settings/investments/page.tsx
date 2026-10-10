@@ -303,16 +303,27 @@ function InvestmentsSettingsPage() {
   }
 
   // ---- Render ----
+  // The page header is the top bar in every state (loading and error included), so it is built once here.
+  const header = (
+    <PageHeader
+        title="Investments"
+        titleClassName="text-2xl font-bold tracking-tight"
+        subtitle="Your securities, and how they map to your accounts."
+        subtitleClassName="text-sm text-muted-foreground mt-0.5"
+      />
+  );
   if (loading && !securities) {
     return (
-      <div className="max-w-5xl">
+      <div className="max-w-5xl space-y-6">
+        <div className="contents">{header}</div>
         <PageSkeleton variant="cards" rows={4} />
       </div>
     );
   }
   if (error && !securities) {
     return (
-      <div className="max-w-5xl">
+      <div className="max-w-5xl space-y-6">
+        <div className="contents">{header}</div>
         <ErrorState title="Couldn't load investments" message={error} onRetry={load} />
       </div>
     );
@@ -354,14 +365,7 @@ function InvestmentsSettingsPage() {
 
   return (
     <div className="max-w-5xl space-y-6">
-      <div className="contents">
-        <PageHeader
-            title="Investments"
-            titleClassName="text-2xl font-bold tracking-tight"
-            subtitle="Your securities, and how they map to your accounts."
-            subtitleClassName="text-sm text-muted-foreground mt-0.5"
-          />
-      </div>
+      <div className="contents">{header}</div>
 
       {toast && (
         <div
