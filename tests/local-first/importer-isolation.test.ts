@@ -78,7 +78,10 @@ export function scanSource(file: string, src: string): string[] {
 }
 
 describe("importer isolation (static scan of src/lib/local-first)", () => {
-  const files = walk(LOCAL_FIRST);
+  // src/lib/local-first/server/ is the SERVER side of the op log (L1): it must use the app DB. It is
+// scanned by nothing here, and pinned below to exactly the files that are allowed to.
+const SERVER_DIR = join(LOCAL_FIRST, "server");
+const files = walk(LOCAL_FIRST).filter((f) => !f.startsWith(SERVER_DIR + "/"));
 
   it("the scan covers the module tree including the importer", () => {
     expect(files.length).toBeGreaterThan(20);
@@ -129,6 +132,10 @@ describe("importer isolation (static scan of src/lib/local-first)", () => {
       "src/lib/local-first/read-cache/hydrate.ts",
       "src/lib/local-first/read-cache/use-local-balances.ts",
     ]);
+  });
+
+  it("the server-side exemption covers exactly op-store.ts", () => {
+    expect(walk(SERVER_DIR).map((f) => relative(LOCAL_FIRST, f).replace(/\\/g, "/"))).toEqual(["server/op-store.ts"]);
   });
 
   it("comments that name forbidden modules are not counted", () => {
