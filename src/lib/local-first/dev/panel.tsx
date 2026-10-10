@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { LocalFirstClient } from "../worker/client";
 import type { RowCounts } from "../store/types";
 import type { LfRequestType, ParityReport } from "../worker/protocol";
+import { useLocalAccountBalances } from "../read-cache/use-local-balances";
+import { isLocalReadCacheEnabled, setLocalReadCacheEnabled } from "../read-cache/optin";
 
 type Status = { kind: "idle" } | { kind: "busy"; label: string } | { kind: "error"; message: string } | { kind: "done"; message: string };
 
@@ -22,6 +24,19 @@ export function LocalFirstDevPanel() {
   const [counts, setCounts] = useState<RowCounts | null>(null);
   const [parity, setParity] = useState<ParityReport | null>(null);
   const [status, setStatus] = useState<Status>({ kind: "idle" });
+  const readCache = useLocalAccountBalances();
+  const [readOn, setReadOn] = useState(false);
+
+  useEffect(() => {
+    setReadOn(isLocalReadCacheEnabled());
+  }, []);
+
+  async function toggleReadCache() {
+    const next = !readOn;
+    setLocalReadCacheEnabled(next);
+    setReadOn(next);
+    await readCache.refresh();
+  }
 
   useEffect(() => {
     let client: LocalFirstClient;
@@ -117,6 +132,34 @@ export function LocalFirstDevPanel() {
         {status.kind === "done" && status.message}
         {status.kind === "error" && <span className="text-destructive">Error: {status.message}</span>}
       </p>
+
+      <section aria-label="Read cache" className="space-y-2">
+        <h2 className="text-sm font-medium text-foreground">In-memory read cache (opt-in, default off, not persisted)</h2>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={toggleReadCache} disabled={!available}>
+            Read cache: {readOn ? "on" : "off"}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => void readCache.refresh()}
+            disabled={readCache.status !== "ready" && readCache.status !== "error"}
+          >
+            Hydrate / refresh
+          </Button>
+        </div>
+        <p className="text-sm text-muted-foreground" data-testid="read-cache-status">
+          status: {readCache.status}
+          {readCache.error && <span className="text-destructive"> ({readCache.error})</span>}
+        </p>
+        {readCache.lastHydrate && (
+          <p className="text-sm text-muted-foreground" data-testid="read-cache-counts">
+            loaded: {readCache.lastHydrate.loaded.accounts} accounts, {readCache.lastHydrate.loaded.categories} categories,{" "}
+            {readCache.lastHydrate.loaded.transactions} transactions; skipped: {readCache.lastHydrate.skipped.accounts} /{" "}
+            {readCache.lastHydrate.skipped.categories} / {readCache.lastHydrate.skipped.transactions}; pages:{" "}
+            {readCache.lastHydrate.pages}; balances: {readCache.balances.length} accounts
+          </p>
+        )}
+      </section>
 
       {parity && (
         <section aria-label="Parity checks" className="space-y-2">

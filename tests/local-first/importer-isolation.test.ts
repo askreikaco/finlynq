@@ -44,6 +44,15 @@ function stripComments(src: string): string {
 const SPEC_RE = /\b(?:from|import|require)\s*\(?\s*["']([^"']+)["']|\bimport\s*\(\s*["'`]([^"'`]+)["'`]/g;
 // import( whose argument is not a plain literal (variable, concatenation, interpolated template).
 const DYN_NONLITERAL_RE = /\bimport\s*\(\s*(?!["'`][^"'`$]*["'`]\s*\))/;
+/**
+ * The in-memory read cache (L2a) is the only module group that calls the app's own JSON APIs.
+ * Exemptions are per file and pinned by the test "network exemptions match their current call sites".
+ * Any other file in src/lib/local-first/** still fails the network check.
+ */
+const NETWORK_ALLOWED: Record<string, string> = {
+  "src/lib/local-first/read-cache/hydrate.ts": "GET /api/accounts, /api/categories, /api/transactions via injected fetchImpl (L2a)",
+  "src/lib/local-first/read-cache/use-local-balances.ts": "browser fetch passed to hydrate (L2a)",
+};
 const FORBIDDEN_PKG_RE = /^(pg|postgres|axios|undici|node:https?|https?)$|^drizzle-orm\/(node-postgres|postgres-js)/;
 const NETWORK_RE = /\bfetch\s*\(|\b(?:globalThis|window|self)\s*\.\s*fetch\b|\bXMLHttpRequest\b|\bWebSocket\b|\bEventSource\b|\bsendBeacon\b|["'`][^"'`\n]*\/api\/[^"'`\n]*["'`]/;
 
@@ -62,7 +71,8 @@ export function scanSource(file: string, src: string): string[] {
     if (forbiddenAlias || forbiddenRel) violations.push(`${file}: import "${spec}"`);
   }
   if (DYN_NONLITERAL_RE.test(code)) violations.push(`${file}: import() with non-literal argument`);
-  const net = NETWORK_RE.exec(code);
+  const rel = relative(REPO, file).replace(/\\/g, "/");
+  const net = NETWORK_ALLOWED[rel] ? null : NETWORK_RE.exec(code);
   if (net) violations.push(`${file}: network site "${net[0]}"`);
   return violations;
 }
@@ -104,6 +114,21 @@ describe("importer isolation (static scan of src/lib/local-first)", () => {
     for (const [label, src] of planted) {
       expect(scanSource(join(LOCAL_FIRST, "planted.ts"), src).length, `control: ${label}`).toBeGreaterThan(0);
     }
+  });
+
+  it("network exemptions match their current call sites (no stale or wider exemption)", () => {
+    const hydrate = readFileSync(join(LOCAL_FIRST, "read-cache/hydrate.ts"), "utf8");
+    const hydrateCode = stripComments(hydrate);
+    expect(hydrateCode.match(/\/api\//g)?.length ?? 0).toBeGreaterThan(0);
+    expect(hydrateCode).not.toMatch(/\bfetch\s*\(/);
+    expect(hydrateCode).not.toMatch(/\b(?:globalThis|window|self)\s*\.\s*fetch\b/);
+    const hook = stripComments(readFileSync(join(LOCAL_FIRST, "read-cache/use-local-balances.ts"), "utf8"));
+    expect(hook.match(/\bfetch\s*\(/g)?.length ?? 0).toBe(1);
+    expect(hook).not.toMatch(/\/api\//);
+    expect(Object.keys(NETWORK_ALLOWED).sort()).toEqual([
+      "src/lib/local-first/read-cache/hydrate.ts",
+      "src/lib/local-first/read-cache/use-local-balances.ts",
+    ]);
   });
 
   it("comments that name forbidden modules are not counted", () => {
