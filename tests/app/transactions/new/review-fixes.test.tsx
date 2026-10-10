@@ -88,12 +88,6 @@ afterEach(() => {
 const postsTo = (url: string) => calls.filter((c) => c.url === url && c.init?.method === "POST");
 const bodyOf = (c: { init?: RequestInit }) => JSON.parse(String(c.init?.body));
 
-/** Groups start collapsed; expand the open picker sheet's collapsed group rows like a user would. */
-function expandCollapsedGroups() {
-  const headers = document.querySelectorAll('[data-slot="sheet-content"] [aria-expanded="false"]');
-  headers.forEach((h) => fireEvent.click(h));
-}
-
 describe("new transaction page review fixes", () => {
   it("double Save posts once, and stays locked after the save has succeeded", async () => {
     seedPrefill();
@@ -138,7 +132,6 @@ describe("new transaction page review fixes", () => {
     window.history.replaceState({}, "", "/transactions/new?prefill=1&kind=transfer");
     render(<Page />);
     fireEvent.click(screen.getByText("Select Destination Account"));
-    expandCollapsedGroups();
     fireEvent.click(await screen.findByText("Euro Account"));
 
     const received = (await screen.findByLabelText("Received (EUR)")) as HTMLInputElement;
@@ -179,7 +172,6 @@ describe("new transaction page review fixes", () => {
     );
     render(<Page />);
     fireEvent.click(screen.getByText("Select Destination Account"));
-    expandCollapsedGroups();
     fireEvent.click(await screen.findByText("Euro Account"));
 
     fireEvent.click(screen.getByLabelText("Currency"));
@@ -224,7 +216,6 @@ describe("new transaction page review fixes", () => {
     );
     render(<Page />);
     fireEvent.click(screen.getByText("Select Destination Account"));
-    expandCollapsedGroups();
     fireEvent.click(await screen.findByText("Euro Account"));
     fireEvent.click(await screen.findByRole("button", { name: "Save" }));
     expect(await screen.findByText("No FX rate for EUR.")).toBeTruthy();
@@ -243,5 +234,20 @@ describe("new transaction page review fixes", () => {
     expect(predicate("/api/transactions?limit=50")).toBe(true);
     expect(predicate("/api/transactions")).toBe(true);
     expect(predicate("/api/accounts")).toBe(false);
+  });
+});
+
+describe("header Save (the round yellow check)", () => {
+  it("is in the header, books once, and shares the bottom Save's lock", async () => {
+    seedPrefill();
+    render(<Page />);
+    const headerSave = screen.getByTestId("txnew-header-save") as HTMLButtonElement;
+    expect(headerSave.getAttribute("aria-label")).toBe("Save transaction");
+    expect(document.querySelector('[data-slot="page-header"]')!.contains(headerSave)).toBe(true);
+    fireEvent.click(headerSave);
+    fireEvent.click(headerSave);
+    await waitFor(() => expect(screen.getByText("Expense saved successfully!")).toBeTruthy());
+    expect(postsTo("/api/transactions").length).toBe(1);
+    expect(headerSave.disabled).toBe(true);
   });
 });

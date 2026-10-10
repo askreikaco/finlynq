@@ -64,7 +64,7 @@ vi.mock("@/lib/data/use-api", () => ({
 
 // Capture the props passed to SplitSection (the new-entry wrapper over SplitRows)
 vi.mock(
-  "@/app/(app)/transactions/new/_components/split-section",
+  "@/components/transactions/entry/split-section",
   () => ({
     SplitSection: (props: CapturedSplitSectionProps) => {
       capturedSplitSectionProps.push(props);

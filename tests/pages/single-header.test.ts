@@ -34,9 +34,9 @@ const EXPECTED_MULTI: Record<string, { count: number; reason: string }> = {
   "categories/[id]/edit/page.tsx": { count: 2, reason: "CategoryForm: load-error branch and form branch (exclusive)" },
   "import/page.tsx": { count: 5, reason: "no-accounts, pick-account and main branches (exclusive) + 2 route-only headers in staged-review delegates (not rendered when embedded, which /import uses)" },
   "import/pending/page.tsx": { count: 2, reason: "StagedListView (list) or ReconcileHeader (detail), never both" },
-  "transactions/[id]/edit/page.tsx": { count: 3, reason: "loading, Missing and form branches (exclusive)" },
+  "transactions/[id]/edit/page.tsx": { count: 4, reason: "loading, Missing, shared entry screen and legacy form fallback branches (exclusive)" },
   "transactions/[id]/split/page.tsx": { count: 3, reason: "loading, missing and form branches (exclusive)" },
-  "transactions/transfer/[linkId]/edit/page.tsx": { count: 4, reason: "invalid-link, loading, missing branches (exclusive) + TransactionEditForm header (the form branch)" },
+  "transactions/transfer/[linkId]/edit/page.tsx": { count: 5, reason: "invalid-link, loading, missing branches (exclusive) + the shared entry screen header + the TransactionEditForm header (legacy fallback), exclusive" },
 };
 
 /**

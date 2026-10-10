@@ -5,7 +5,7 @@ import { describe, it, expect, afterEach } from "vitest";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { useState } from "react";
 
-import { SplitSection, type SplitSectionProps } from "@/app/(app)/transactions/new/_components/split-section";
+import { SplitSection, type SplitSectionProps } from "@/components/transactions/entry/split-section";
 import type { SplitRowModel } from "@/lib/transactions/split-math";
 
 interface HarnessProps {

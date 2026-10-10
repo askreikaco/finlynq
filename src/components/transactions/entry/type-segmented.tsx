@@ -18,17 +18,25 @@ const SELECTED: Record<SegmentedTxType, string> = {
 export function TypeSegmented({
   value,
   onChange,
+  disabledOptions,
   className,
 }: {
   value: SegmentedTxType;
   onChange: (next: SegmentedTxType) => void;
+  /** Options that cannot be picked (Edit: a transaction cannot become a transfer, nor the reverse). */
+  disabledOptions?: readonly SegmentedTxType[];
   className?: string;
 }) {
   const refs = React.useRef<Array<HTMLButtonElement | null>>([]);
 
+  const isDisabled = (opt: SegmentedTxType) => !!disabledOptions?.includes(opt);
+
   const move = (from: number, delta: number) => {
     const n = TX_TYPE_ORDER.length;
-    const next = (from + delta + n) % n;
+    let next = (from + delta + n) % n;
+    // Skip options that cannot be picked; stop after one lap so an all-disabled group cannot loop.
+    for (let step = 0; step < n && isDisabled(TX_TYPE_ORDER[next]); step++) next = (next + delta + n) % n;
+    if (isDisabled(TX_TYPE_ORDER[next])) return;
     onChange(TX_TYPE_ORDER[next]);
     refs.current[next]?.focus();
   };
@@ -53,6 +61,7 @@ export function TypeSegmented({
             type="button"
             role="radio"
             aria-checked={selected}
+            disabled={isDisabled(opt)}
             tabIndex={selected ? 0 : -1}
             onClick={() => onChange(opt)}
             onKeyDown={(e) => {
@@ -67,6 +76,7 @@ export function TypeSegmented({
             className={cn(
               "h-11 text-sm font-semibold transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
               selected ? SELECTED[opt] : "text-muted-foreground",
+              isDisabled(opt) && "opacity-40",
             )}
           >
             {opt}

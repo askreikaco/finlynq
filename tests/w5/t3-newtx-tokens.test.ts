@@ -3,7 +3,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
 import path from "path";
 
-const DIR = path.join(process.cwd(), "src/app/(app)/transactions/new/_components");
+const DIR = path.join(process.cwd(), "src/components/transactions/entry");
 const FILES = ["split-section.tsx", "numpad.tsx", "autocomplete-pills.tsx"];
 const LEGACY = /\b(zinc|indigo)-\d|text-white|bg-black/g;
 

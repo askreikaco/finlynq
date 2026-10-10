@@ -35,7 +35,7 @@ vi.mock("@/lib/data/use-api", () => ({
 import Page from "@/app/(app)/transactions/new/page";
 
 const KEY = "finlynq:tx-prefill";
-const SRC = path.join(process.cwd(), "src/app/(app)/transactions/new/page.tsx");
+const SRC = path.join(process.cwd(), "src/components/transactions/entry/transaction-entry-screen.tsx");
 
 function seedPrefill(over: Record<string, unknown> = {}) {
   sessionStorage.setItem(

@@ -20,6 +20,13 @@ vi.mock("@/components/currency-provider", () => ({ useDisplayCurrency: () => ({ 
 vi.mock("@/components/dropdown-order-provider", () => ({ useDropdownOrder: () => <T,>(items: T[]) => items }));
 vi.mock("@/lib/hooks/useActiveCurrencies", () => ({ useActiveCurrencies: () => ["USD"] }));
 
+// These tests cover the LEGACY edit form (TransactionEditForm), the fallback for rows the entry screen cannot
+// represent. Forcing the fallback keeps that path exercised; the entry-screen edit has its own tests (entry-*.test.tsx).
+vi.mock("@/lib/transactions/edit-flow", async (orig) => ({
+  ...(await orig<typeof import("@/lib/transactions/edit-flow")>()),
+  canEditInEntryScreen: () => false,
+}));
+
 import EditTransferRoute from "@/app/(app)/transactions/transfer/[linkId]/edit/page";
 vi.mock("@/lib/client/user-storage", async (orig) => ({
   ...(await orig<typeof import("@/lib/client/user-storage")>()),

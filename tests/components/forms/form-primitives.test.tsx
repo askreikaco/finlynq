@@ -6,8 +6,8 @@ import * as React from "react";
 import { render, screen, cleanup } from "@testing-library/react";
 
 import { FormFooter, FormGroup, FormNote } from "@/components/forms";
-import { ListCard } from "@/app/(app)/transactions/new/_components/list-card";
-import { FormRow } from "@/app/(app)/transactions/new/_components/form-row";
+import { ListCard } from "@/components/transactions/entry/list-card";
+import { FormRow } from "@/components/transactions/entry/form-row";
 
 afterEach(() => cleanup());
 

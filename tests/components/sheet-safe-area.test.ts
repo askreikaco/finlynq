@@ -24,7 +24,7 @@ function walkTsx(dir: string, out: string[] = []): string[] {
 
 /** The PICKER_SHEET_CLASS string literal from grouped-picker.tsx. */
 function pickerSheetClass(): string {
-  const src = read("src/app/(app)/transactions/new/_components/grouped-picker.tsx");
+  const src = read("src/components/transactions/entry/grouped-picker.tsx");
   const m = src.match(/export const PICKER_SHEET_CLASS =\s*"([^"]*)"/);
   expect(m, "PICKER_SHEET_CLASS literal not found").not.toBeNull();
   return m![1];

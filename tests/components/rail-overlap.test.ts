@@ -46,7 +46,7 @@ describe("desktop rail: fixed elements clear it at regular+", () => {
   });
 
   it("new-transaction numpad dock (inset-x-0, coarse pointers) is offset past the rail", () => {
-    const src = read("src/app/(app)/transactions/new/_components/numpad-dock.tsx");
+    const src = read("src/components/transactions/entry/numpad-dock.tsx");
     const dock = src.split("\n").find((l) => l.includes("pointer-coarse:block") && l.includes("fixed"));
     expect(dock, "numpad dock class not found").toBeDefined();
     expect(dock!).toContain(RAIL_OFFSET);

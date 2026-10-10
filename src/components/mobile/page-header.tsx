@@ -75,6 +75,28 @@ export const PHONE_PRIMARY_CLASS = "phone-icon-action";
  */
 export const HEADER_CELL = "header-cell";
 
+/**
+ * Marks the page's SAVE action (Add / Edit screens). Below regular it leaves the capsule and is its own round
+ * yellow check button beside it (the iOS Notes "Done" pattern, globals.css .header-save); from regular up it is an
+ * ordinary primary button with its label. The action keeps its own onClick / form / disabled; give it an
+ * aria-label ("Save") and an icon child plus the visible text.
+ */
+export const HEADER_SAVE = "header-save";
+
+/** Pulls the HEADER_SAVE action out of `actions`; the rest goes through splitPhoneActions as before. */
+export function splitHeaderSave(actions: React.ReactNode): { save: React.ReactNode | null; rest: React.ReactNode[] } {
+  let save: React.ReactNode | null = null;
+  const rest: React.ReactNode[] = [];
+  for (const c of flattenActions(actions)) {
+    if (save === null && React.isValidElement(c) && String((c.props as { className?: string }).className ?? "").includes(HEADER_SAVE)) {
+      save = c;
+    } else {
+      rest.push(c);
+    }
+  }
+  return { save, rest };
+}
+
 /** Title at regular and up: one system style at every size (owner D4, 28/800). text-3xl is the nearest
  * system step to 28px, so no arbitrary size. */
 export const HEADER_TITLE_CLASS = "text-3xl/9 font-extrabold tracking-tight";
@@ -268,6 +290,7 @@ export function PageHeader({
   const effectiveBackHref = onBack
     ? undefined
     : backHref ?? (autoBack && autoBack.level >= 2 ? autoBack.href ?? undefined : undefined);
+  const { save, rest: otherActions } = splitHeaderSave(actions);
   const hasRight = !!actions || (overflow?.length ?? 0) > 0;
   const h1 = (
     <h1 data-slot="page-header-title" className={cn(HEADER_TITLE_CLASS, PHONE_BAR_TITLE)}>
@@ -286,7 +309,7 @@ export function PageHeader({
     </div>
   );
   const hasLeft = !!effectiveBackHref || !!onBack || !!lead;
-  const { cells, primary } = splitPhoneActions(actions);
+  const { cells, primary } = splitPhoneActions(otherActions);
   const hasCells = (overflow?.length ?? 0) > 0 || !!primary || cells.some((c) => !isSecondaryNode(c));
   return (
     <div data-slot="page-header" className={cn(className, PHONE_BAR)}>
@@ -307,7 +330,7 @@ export function PageHeader({
         </>
       )}
       {hasRight ? (
-        <div data-slot="page-header-actions" className={cn(actionsClassName, PHONE_BAR_RIGHT)}>
+        <div data-slot="page-header-actions" className={cn(actionsClassName, PHONE_BAR_RIGHT, save && "max-regular:gap-2")}>
           {hasCells ? (
             <div data-slot="header-capsule" className={PHONE_CAPSULE}>
               {cells}
@@ -318,6 +341,7 @@ export function PageHeader({
             // Only secondary actions (hidden below regular): no capsule, so no empty glass pill on phones.
             cells
           )}
+          {save}
         </div>
       ) : null}
     </div>

@@ -88,7 +88,6 @@ describe("Transfer tab: From/To labels, currency trigger, swap", () => {
     expect((swap as HTMLButtonElement).disabled).toBe(false);
     // Pick the To account from the sheet (Checking), then swap: From should become Checking, To Savings.
     fireEvent.click(screen.getByTestId("txnew-row-to-account"));
-    fireEvent.click(await screen.findByRole("button", { name: /^Other/ }));
     fireEvent.click(await screen.findByRole("button", { name: /^Checking/ }));
     await waitFor(() => expect(screen.getByTestId("txnew-row-to-account").textContent).toContain("Checking"));
     expect(screen.getByTestId("txnew-row-account").textContent).toContain("Savings");

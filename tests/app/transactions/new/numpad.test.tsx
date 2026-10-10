@@ -3,8 +3,11 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as React from "react";
+import { readFileSync } from "fs";
+import path from "path";
 import { render, screen, fireEvent, cleanup, act } from "@testing-library/react";
-import { Numpad } from "@/app/(app)/transactions/new/_components/numpad";
+import { Numpad, NUMPAD_HEIGHT_PX } from "@/components/transactions/entry/numpad";
+import { CURRENCY_CHIP_ROW_PX } from "@/components/transactions/entry/numpad-dock";
 
 function Harness({ initial = "", onConfirm }: { initial?: string; onConfirm: () => void }) {
   const [value, setValue] = React.useState(initial);
@@ -32,18 +35,19 @@ afterEach(() => {
 });
 
 describe("Numpad layout and labels", () => {
-  it("renders a 4x4 keypad in the spec order inside an Amount keypad group", () => {
+  it("renders a 4-column, 5-row keypad in the reference order inside an Amount keypad group", () => {
     render(<Harness onConfirm={onConfirm} />);
     const group = screen.getByRole("group", { name: "Amount keypad" });
-    const labels = Array.from(group.querySelectorAll("button")).map(
-      (b) => b.getAttribute("aria-label") ?? b.textContent,
-    );
+    const buttons = Array.from(group.querySelectorAll("button"));
+    const labels = buttons.map((b) => b.getAttribute("aria-label") ?? b.textContent);
     expect(labels).toEqual([
-      "7", "8", "9", "Delete last digit",
-      "4", "5", "6", "Plus",
-      "1", "2", "3", "Minus",
-      "Three zeros", "0", "Decimal point", "Done",
+      "Plus", "Minus", "Multiply", "Divide",
+      "7", "8", "9", "Equals",
+      "4", "5", "6", "Decimal point",
+      "1", "2", "3", "Delete last digit",
+      "Two zeros", "0", "Three zeros", "Done",
     ]);
+    expect(buttons).toHaveLength(20);
   });
 
   it("uses the 4-column grid with the spec gap", () => {
@@ -53,9 +57,34 @@ describe("Numpad layout and labels", () => {
     expect(group.className).toContain("gap-1.5");
   });
 
-  it("shows Done (not =) while the expression has no operator", () => {
+  it("keeps every key 44px high so five rows give the reserved height", () => {
+    render(<Harness onConfirm={onConfirm} />);
+    const group = screen.getByRole("group", { name: "Amount keypad" });
+    for (const b of Array.from(group.querySelectorAll("button"))) {
+      expect(b.className).toContain("h-11");
+    }
+    // 5 rows x 44 + 4 gaps x 6 + pt-1.5 (6) + pb-2 (8) + 1px border
+    expect(NUMPAD_HEIGHT_PX).toBe(5 * 44 + 4 * 6 + 6 + 8 + 1);
+    expect(NUMPAD_HEIGHT_PX).toBe(259);
+  });
+
+  it("the page reserves the keypad height and the chip-row height literally (Tailwind needs literals)", () => {
+    const src = readFileSync(
+      path.join(process.cwd(), "src/components/transactions/entry/transaction-entry-screen.tsx"),
+      "utf8",
+    );
+    expect(src).toContain(`pointer-coarse:pb-[${NUMPAD_HEIGHT_PX}px]`);
+    expect(src).toContain(`pointer-coarse:pb-[${NUMPAD_HEIGHT_PX + CURRENCY_CHIP_ROW_PX}px]`);
+    expect(src).not.toContain("pb-[209px]");
+  });
+
+  it("shows OK (not Done or =) on the confirm key, and = on the equals key", () => {
     render(<Harness initial="700" onConfirm={onConfirm} />);
-    expect(key("Done").textContent).toBe("Done");
+    expect(key("Done").textContent).toBe("OK");
+    expect(key("Equals").textContent).toBe("=");
+    cleanup();
+    render(<Harness initial="7+" onConfirm={onConfirm} />);
+    expect(key("Done").textContent).toBe("OK");
   });
 });
 
@@ -72,11 +101,29 @@ describe("Numpad key sequences", () => {
     expect(shown()).toBe("10000.52");
   });
 
-  it("ignores a leading plus and allows a leading minus", () => {
+  it("the two-zero key adds two zeros", () => {
+    render(<Harness initial="1" onConfirm={onConfirm} />);
+    tap("Two zeros");
+    expect(shown()).toBe("100");
+  });
+
+  it("respects the max input length for multi-character keys", () => {
+    render(<Harness initial={"1".repeat(31)} onConfirm={onConfirm} />);
+    tap("Three zeros");
+    expect(shown()).toBe("1".repeat(31));
+    tap("Two zeros");
+    expect(shown()).toBe("1".repeat(31));
+  });
+
+  it("ignores a leading plus, multiply and divide, and allows a leading minus", () => {
     render(<Harness onConfirm={onConfirm} />);
     tap("Plus");
+    tap("Multiply");
+    tap("Divide");
     expect(shown()).toBe("");
     tap("Minus");
+    expect(shown()).toBe("-");
+    tap("Multiply");
     expect(shown()).toBe("-");
   });
 
@@ -87,6 +134,22 @@ describe("Numpad key sequences", () => {
     expect(shown()).toBe("5+");
     tap("Minus");
     expect(shown()).toBe("5-");
+    tap("Multiply");
+    expect(shown()).toBe("5*");
+    tap("Divide");
+    expect(shown()).toBe("5/");
+  });
+
+  it("stores multiply and divide as * and / in the field value", () => {
+    render(<Harness initial="12" onConfirm={onConfirm} />);
+    tap("Multiply");
+    tap("3");
+    expect(shown()).toBe("12*3");
+    cleanup();
+    render(<Harness initial="100" onConfirm={onConfirm} />);
+    tap("Divide");
+    tap("8");
+    expect(shown()).toBe("100/8");
   });
 
   it("allows a new decimal point after an operator", () => {
@@ -108,54 +171,84 @@ describe("Numpad key sequences", () => {
   });
 });
 
-describe("Numpad Done and = behaviour", () => {
-  it("shows = while the expression has an operator; Done evaluates and stays open", () => {
+describe("Numpad arithmetic, = and OK", () => {
+  it("12 x 3 = 36 with = , and the pad stays open", () => {
     render(<Harness onConfirm={onConfirm} />);
     tap("1");
-    tap("0");
-    tap("0");
-    tap("Plus");
-    tap("5");
-    tap("0");
-    expect(key("Done").textContent).toBe("=");
-    tap("Done");
-    expect(shown()).toBe("150");
-    expect(onConfirm).not.toHaveBeenCalled();
-    expect(key("Done").textContent).toBe("Done");
-  });
-
-  it("a second Done closes the keypad", () => {
-    render(<Harness onConfirm={onConfirm} />);
-    tap("1");
-    tap("Minus");
     tap("2");
-    tap("Done");
-    expect(shown()).toBe("-1");
+    tap("Multiply");
+    tap("3");
+    tap("Equals");
+    expect(shown()).toBe("36");
     expect(onConfirm).not.toHaveBeenCalled();
-    tap("Done");
-    expect(onConfirm).toHaveBeenCalledTimes(1);
   });
 
-  it("Done with a trailing operator evaluates to the left operand", () => {
-    render(<Harness initial="100+" onConfirm={onConfirm} />);
+  it("100 / 8 = 12.5", () => {
+    render(<Harness initial="100" onConfirm={onConfirm} />);
+    tap("Divide");
+    tap("8");
+    tap("Equals");
+    expect(shown()).toBe("12.5");
+  });
+
+  it("2 + 3 x 4 = 14 (multiplication binds first)", () => {
+    render(<Harness onConfirm={onConfirm} />);
+    tap("2");
+    tap("Plus");
+    tap("3");
+    tap("Multiply");
+    tap("4");
+    tap("Equals");
+    expect(shown()).toBe("14");
+  });
+
+  it("division by zero leaves the expression as typed", () => {
+    render(<Harness initial="7" onConfirm={onConfirm} />);
+    tap("Divide");
+    tap("0");
+    tap("Equals");
+    expect(shown()).toBe("7/0");
     tap("Done");
+    expect(shown()).toBe("7/0");
+    expect(onConfirm).not.toHaveBeenCalled();
+  });
+
+  it("= with nothing pending is a no-op", () => {
+    render(<Harness initial="700" onConfirm={onConfirm} />);
+    tap("Equals");
+    expect(shown()).toBe("700");
+    expect(onConfirm).not.toHaveBeenCalled();
+  });
+
+  it("= on a trailing operator evaluates the left operand and keeps the pad open", () => {
+    render(<Harness initial="100+" onConfirm={onConfirm} />);
+    tap("Equals");
     expect(shown()).toBe("100");
     expect(onConfirm).not.toHaveBeenCalled();
   });
 
-  it("Done with no operator closes without changing the value", () => {
-    render(<Harness initial="700" onConfirm={onConfirm} />);
+  it("OK evaluates a pending expression, then closes because nothing is left pending", () => {
+    render(<Harness initial="12" onConfirm={onConfirm} />);
+    tap("Multiply");
+    tap("3");
     tap("Done");
+    expect(shown()).toBe("36");
     expect(onConfirm).toHaveBeenCalledTimes(1);
-    expect(shown()).toBe("700");
   });
 
-  it("keeps a malformed expression as typed (no silent truncation)", () => {
+  it("OK with a malformed pending expression keeps the pad open and the text as typed", () => {
     const onChange = vi.fn();
     render(<Numpad value="7/0" onChange={onChange} onConfirm={onConfirm} />);
     tap("Done");
     expect(onChange).not.toHaveBeenCalled();
     expect(onConfirm).not.toHaveBeenCalled();
+  });
+
+  it("OK with nothing pending closes without changing the value", () => {
+    render(<Harness initial="700" onConfirm={onConfirm} />);
+    tap("Done");
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(shown()).toBe("700");
   });
 
   it("commits a pending expression when the keypad unmounts (closed by another route)", () => {
@@ -217,7 +310,10 @@ describe("Numpad long-press and Escape", () => {
 describe("Numpad icon-only aria-labels", () => {
   it("names every icon-only or symbol key", () => {
     render(<Harness onConfirm={onConfirm} />);
-    for (const name of ["Delete last digit", "Plus", "Minus", "Decimal point", "Three zeros", "Done"]) {
+    for (const name of [
+      "Delete last digit", "Plus", "Minus", "Multiply", "Divide", "Equals",
+      "Decimal point", "Two zeros", "Three zeros", "Done",
+    ]) {
       expect(screen.getByRole("button", { name })).toBeTruthy();
     }
   });

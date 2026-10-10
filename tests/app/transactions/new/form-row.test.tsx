@@ -5,10 +5,10 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import * as React from "react";
 import { render, screen, cleanup, fireEvent, within } from "@testing-library/react";
 
-import { FormRow } from "@/app/(app)/transactions/new/_components/form-row";
-import { AmountRow } from "@/app/(app)/transactions/new/_components/amount-row";
-import { TypeSegmented, TX_TYPE_ORDER } from "@/app/(app)/transactions/new/_components/type-segmented";
-import { ListCard } from "@/app/(app)/transactions/new/_components/list-card";
+import { FormRow } from "@/components/transactions/entry/form-row";
+import { AmountRow } from "@/components/transactions/entry/amount-row";
+import { TypeSegmented, TX_TYPE_ORDER } from "@/components/transactions/entry/type-segmented";
+import { ListCard } from "@/components/transactions/entry/list-card";
 
 afterEach(() => cleanup());
 
