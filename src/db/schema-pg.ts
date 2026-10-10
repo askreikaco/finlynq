@@ -1182,7 +1182,7 @@ export const lfOpFrame = pgTable("lf_op_frame", {
   frame: bytea("frame").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
-  uniqueIndex("lf_op_frame_user_op_uniq").on(t.userId, t.opId),
+  unique("lf_op_frame_user_op_uniq").on(t.userId, t.opId),
   index("lf_op_frame_user_id_idx").on(t.userId, t.id),
 ]);
 
