@@ -18,6 +18,8 @@ export const TOKENS = {
   formW: 576,
   sectionW: 672,
   reportW: 768,
+  docW: 896,
+  consoleW: 1280,
 } as const;
 
 export const TW = {
@@ -29,5 +31,9 @@ export const TW = {
   form: "max-w-form",
   section: "max-w-section",
   report: "max-w-report",
+  doc: "max-w-doc",
+  console: "max-w-console",
   formPad: "pb-[var(--form-bottom-pad)]",
+  formPadMax: "pb-[var(--form-bottom-pad-max)]",
+  blurSoft: "blur-soft",
 } as const;
