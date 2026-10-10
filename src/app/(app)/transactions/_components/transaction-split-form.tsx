@@ -34,6 +34,7 @@ export interface SplitAccount {
   name: string;
   currency: string;
   type?: string | null;
+  group?: string | null;
   archived?: boolean;
   isInvestment?: boolean;
 }

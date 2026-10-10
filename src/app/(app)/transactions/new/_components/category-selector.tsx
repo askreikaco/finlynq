@@ -62,6 +62,8 @@ export function CategorySelector({
           entries={entries}
           selectedId={selectedCategoryId}
           recentIds={recentIds}
+          settingsHref="/categories"
+          settingsLabel="Manage categories"
           onPick={(id) => {
             onSelect(id);
             onOpenChange(false);
