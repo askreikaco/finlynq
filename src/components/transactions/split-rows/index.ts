@@ -1,6 +1,7 @@
 export { SplitRows, validateSplits } from "./split-rows";
 export type {
   SplitAccountOption,
+  SplitRowsVariant,
   SplitCategoryOption,
   SplitRowModel,
   SplitRowsProps,
@@ -9,5 +10,5 @@ export type {
 } from "./split-rows";
 export { SplitAmountField } from "./split-amount-field";
 export type { SplitAmountFieldProps } from "./split-amount-field";
-export { SplitCountRow } from "./split-count-row";
+export { SplitCountRow, stepCount } from "./split-count-row";
 export type { SplitCountRowProps } from "./split-count-row";

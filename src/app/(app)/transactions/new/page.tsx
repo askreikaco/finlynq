@@ -376,6 +376,7 @@ export default function MobileTransactionPage() {
     parentAmount: parsedAmount,
     currency,
     parentCategoryId: categoryId,
+    variant: "entry",
   });
   const splitActive = splitCheck.n >= 2;
   const splitBlocked = splitActive && !splitCheck.canSave;
@@ -1123,8 +1124,6 @@ export default function MobileTransactionPage() {
                 parentAmount={parsedAmount}
                 currency={currency}
                 parentCategoryId={categoryId}
-                parentPayee={payee.trim()}
-                categories={filteredCategories}
                 onOpenCategory={(rowId) => {
                   setActiveSplitRowId(rowId);
                   setShowCatSelector(true);

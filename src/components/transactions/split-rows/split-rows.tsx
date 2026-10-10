@@ -2,6 +2,8 @@
 
 import * as React from "react";
 
+import { StickyNote } from "lucide-react";
+
 import { cn } from "@/lib/utils";
 import { TW } from "@/lib/design/tokens";
 import { formatCurrency } from "@/lib/currency";
@@ -22,6 +24,12 @@ import { SplitAmountField } from "./split-amount-field";
 import { SplitCountRow } from "./split-count-row";
 
 export type { SplitRowModel } from "@/lib/transactions/split-math";
+
+/**
+ * "entry": New Expense. Rows inherit the parent category and currency, have no category or account
+ * chip, and show no context or allocated line. "page": split an existing transaction (per-row chips).
+ */
+export type SplitRowsVariant = "entry" | "page";
 
 export interface SplitCategoryOption {
   id: string | number;
@@ -46,12 +54,13 @@ export interface SplitRowsProps {
   currency: string;
   /** Inheritance source for row 1 ("" = none). */
   parentCategoryId: string;
-  /** Context line only. */
+  /** Context line only ("page" variant). */
   parentPayee?: string;
-  categories: SplitCategoryOption[];
+  /** Per-row category chip labels ("page" variant). */
+  categories?: SplitCategoryOption[];
   /** Split page only: rows with a non-null accountId show a read-only "Account: x" chip. */
   accounts?: SplitAccountOption[];
-  /** Parent owns the CategorySelector; SplitRows only reports which row's chip was tapped. */
+  /** Parent owns the CategorySelector; SplitRows only reports which row's chip was tapped ("page" variant). */
   onOpenCategory: (rowId: string) => void;
   /** Row whose amount the shared numpad is writing to (highlighted). */
   padTargetRowId: string | null;
@@ -71,6 +80,8 @@ export interface SplitRowsProps {
   showEmptyErrors?: boolean | ((rowId: string) => boolean);
   /** An editable amount lost focus: the parent marks that row touched. */
   onRowBlur?: (rowId: string) => void;
+  /** Default "page". New Expense passes "entry". */
+  variant?: SplitRowsVariant;
 }
 
 export interface ValidateSplitsArgs {
@@ -79,6 +90,8 @@ export interface ValidateSplitsArgs {
   parentAmount: number;
   currency: string;
   parentCategoryId: string;
+  /** Default "page". "entry": no per-row category; a missing parent category is one status error. */
+  variant?: SplitRowsVariant;
 }
 
 export interface SplitValidation {
@@ -103,6 +116,8 @@ export interface SplitValidation {
   remainder: Remainder | null;
 }
 
+const CHOOSE_PARENT_CATEGORY = "Choose a category first";
+
 /** Rows filled to N; missing rows get ids `${prefix}-row-${index}` (index-based, so keys stay stable). */
 function fillRows(rows: readonly SplitRowModel[], n: number, prefix: string): SplitRowModel[] {
   const start = rows.length;
@@ -113,13 +128,14 @@ function fillRows(rows: readonly SplitRowModel[], n: number, prefix: string): Sp
 /**
  * Single source of split validation for both screens (new entry and split page).
  * Only the first N rows are checked; hidden rows are never validated or saved.
- * Messages: "Enter an amount", "Amount must be more than 0", "Choose a category" (per row);
+ * Messages: "Enter an amount", "Amount must be more than 0" (per row); "Choose a category" (per row,
+ * "page" only); "Choose a category first" (status, "entry" with no parent category);
  * "Splits exceed the total by {x}" and "Last split is 0 — lower the other splits or use fewer
  * splits" (status line). Parent amount <= 0 blocks save without a split error (the parent
  * shows its own amount error).
  */
 export function validateSplits(args: ValidateSplitsArgs): SplitValidation {
-  const { count, rows, parentAmount, currency, parentCategoryId } = args;
+  const { count, rows, parentAmount, currency, parentCategoryId, variant = "page" } = args;
   const n = parseCount(count).n;
   if (n < 2) {
     return {
@@ -142,7 +158,9 @@ export function validateSplits(args: ValidateSplitsArgs): SplitValidation {
 
   const rowErrors: Record<string, string> = {};
   const amounts: number[] = [];
-  let firstError: string | undefined;
+  // Entry rows inherit the parent category: a missing parent category is one status error, not per row.
+  const categoryMissing = variant === "entry" && parentCategoryId === "";
+  let firstError: string | undefined = categoryMissing ? CHOOSE_PARENT_CATEGORY : undefined;
   let firstErrorRowId: string | undefined;
   const fail = (rowId: string, rowMessage: string, saveMessage: string) => {
     if (!(rowId in rowErrors)) rowErrors[rowId] = rowMessage;
@@ -166,13 +184,15 @@ export function validateSplits(args: ValidateSplitsArgs): SplitValidation {
         amounts.push(fromMinor(minor, currency));
       }
     }
-    if (resolved[i].id === "") {
+    if (variant === "page" && resolved[i].id === "") {
       fail(row.id, "Choose a category", `Choose a category for split ${label}`);
     }
   });
 
   let formError: string | undefined;
-  if (parentValid && remainder.flag === "negative") {
+  if (categoryMissing) {
+    formError = CHOOSE_PARENT_CATEGORY;
+  } else if (parentValid && remainder.flag === "negative") {
     formError = `Splits exceed the total by ${formatCurrency(fromMinor(-remainder.minor, currency), currency)}`;
   } else if (parentValid && remainder.flag === "zero") {
     formError = "Last split is 0 — lower the other splits or use fewer splits";
@@ -197,6 +217,7 @@ export function validateSplits(args: ValidateSplitsArgs): SplitValidation {
  * Controlled split editor: count field, context line, one card per visible row, status line.
  * No Add/Delete buttons: the count creates and hides rows. The last visible row is the
  * computed remainder (read-only). All state lives in the parent; this renders from props.
+ * variant "entry" (New Expense): stepper group card, "#n" rows with no chips, error lines only.
  */
 export function SplitRows({
   count,
@@ -207,7 +228,7 @@ export function SplitRows({
   currency,
   parentCategoryId,
   parentPayee,
-  categories,
+  categories = [],
   accounts,
   onOpenCategory,
   padTargetRowId,
@@ -217,7 +238,9 @@ export function SplitRows({
   idPrefix,
   showEmptyErrors = true,
   onRowBlur,
+  variant = "page",
 }: SplitRowsProps) {
+  const entry = variant === "entry";
   const effectiveCount = showCount ? count : "";
   const parsed = parseCount(effectiveCount);
   const n = parsed.n;
@@ -228,6 +251,7 @@ export function SplitRows({
     parentAmount,
     currency,
     parentCategoryId,
+    variant,
   });
 
   if (!showCount) return null;
@@ -278,9 +302,10 @@ export function SplitRows({
         hint={parsed.hint}
         onChange={handleCountChange}
         onFocus={onClosePad}
+        variant={variant}
       />
 
-      {n >= 2 && (
+      {!entry && n >= 2 && (
         <p data-testid={`${idPrefix}-context`} className="px-1 text-xs text-muted-foreground">
           {`Payee ${parentPayee || "—"} · Total ${formatCurrency(parentAbs, currency)}`}
         </p>
@@ -289,6 +314,68 @@ export function SplitRows({
       {result.visible.map((row, i) => {
         const num = i + 1;
         const isLast = i === n - 1;
+        const rowError = visibleRowError(row.id);
+        const amountValue = isLast ? (parentValid && result.remainder ? result.remainder.text : "—") : row.amount;
+        const amountInvalid = isLast ? remainderFlag !== "ok" : rowError !== undefined;
+        const onAmountChange = isLast ? undefined : (value: string) => updateRow(row.id, { amount: value });
+        const onAmountOpenPad = isLast ? undefined : () => onOpenPad(row.id);
+        const onAmountBlur = isLast ? undefined : () => onRowBlur?.(row.id);
+
+        if (entry) {
+          const noteId = `${idPrefix}-note-${num}`;
+          return (
+            <section
+              key={row.id}
+              data-testid={`split-row-${num}`}
+              className={cn("rounded-group border border-border bg-card", TW.group)}
+            >
+              <div className="flex items-stretch">
+                <div
+                  className={cn("flex shrink-0 items-center pl-4 text-sm text-muted-foreground", TW.rowLabelNarrow)}
+                >
+                  {`#${num}`}
+                </div>
+                <div className="min-w-0 flex-1 divide-y divide-border">
+                  <SplitAmountField
+                    id={`${idPrefix}-amount-${num}`}
+                    ariaLabel={`Split ${num} amount`}
+                    testId={`split-amount-${num}`}
+                    currency={currency}
+                    showCurrency={false}
+                    className="pl-3 pr-4"
+                    value={amountValue}
+                    readOnly={isLast}
+                    invalid={amountInvalid}
+                    active={!isLast && padTargetRowId === row.id}
+                    onChange={onAmountChange}
+                    onOpenPad={onAmountOpenPad}
+                    onBlur={onAmountBlur}
+                  />
+                  <div className={cn("flex items-center gap-3 pl-3 pr-4", TW.rowTall)}>
+                    <StickyNote aria-hidden="true" className="size-[18px] shrink-0 text-muted-foreground" />
+                    <input
+                      id={noteId}
+                      type="text"
+                      data-testid={`split-note-${num}`}
+                      aria-label={`Split ${num} note`}
+                      placeholder="Note (optional)"
+                      value={row.note}
+                      onChange={(e) => updateRow(row.id, { note: e.target.value })}
+                      onFocus={() => onClosePad()}
+                      className="min-w-0 flex-1 bg-transparent text-base text-foreground outline-none placeholder:text-muted-foreground"
+                    />
+                  </div>
+                  {rowError && (
+                    <p data-testid={`split-error-${num}`} className="px-3 py-2 text-xs text-destructive">
+                      {rowError}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </section>
+          );
+        }
+
         const resolvedCategory = result.resolved[i];
         const unresolved = resolvedCategory.id === "";
         const name = unresolved ? undefined : (categoryName(resolvedCategory.id) ?? "Category");
@@ -298,7 +385,6 @@ export function SplitRows({
             ? `${name} · same as above`
             : name;
         const noteId = `${idPrefix}-note-${num}`;
-        const rowError = visibleRowError(row.id);
 
         return (
           <section
@@ -315,13 +401,13 @@ export function SplitRows({
               ariaLabel={`Split ${num} amount`}
               testId={`split-amount-${num}`}
               currency={currency}
-              value={isLast ? (parentValid && result.remainder ? result.remainder.text : "—") : row.amount}
+              value={amountValue}
               readOnly={isLast}
-              invalid={isLast ? remainderFlag !== "ok" : rowError !== undefined}
+              invalid={amountInvalid}
               active={!isLast && padTargetRowId === row.id}
-              onChange={isLast ? undefined : (value) => updateRow(row.id, { amount: value })}
-              onOpenPad={isLast ? undefined : () => onOpenPad(row.id)}
-              onBlur={isLast ? undefined : () => onRowBlur?.(row.id)}
+              onChange={onAmountChange}
+              onOpenPad={onAmountOpenPad}
+              onBlur={onAmountBlur}
             />
 
             <div className={cn("flex items-center gap-3 px-4", TW.rowTall)}>
@@ -378,18 +464,24 @@ export function SplitRows({
         );
       })}
 
-      {n >= 2 && (
-        <div data-testid={`${idPrefix}-status`} className="flex items-center justify-between gap-3 px-1 text-sm">
-          <span className="text-muted-foreground">
-            {`Allocated ${formatCurrency(fromMinor(allocatedMinor, currency), currency)} of ${formatCurrency(parentAbs, currency)}`}
-          </span>
-          {statusError && (
-            <span data-testid="split-status-error" className="font-medium text-neg">
+      {entry
+        ? statusError && (
+            <p data-testid="split-status-error" className="px-1 text-sm font-medium text-neg">
               {statusError}
-            </span>
+            </p>
+          )
+        : n >= 2 && (
+            <div data-testid={`${idPrefix}-status`} className="flex items-center justify-between gap-3 px-1 text-sm">
+              <span className="text-muted-foreground">
+                {`Allocated ${formatCurrency(fromMinor(allocatedMinor, currency), currency)} of ${formatCurrency(parentAbs, currency)}`}
+              </span>
+              {statusError && (
+                <span data-testid="split-status-error" className="font-medium text-neg">
+                  {statusError}
+                </span>
+              )}
+            </div>
           )}
-        </div>
-      )}
     </div>
   );
 }
