@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
 import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
@@ -174,15 +175,9 @@ function CheckField({
   hint: string;
 }) {
   const box = (
-    <div className={cn("flex items-center gap-2", variant === "rows" && TW.row)}>
-      <input
-        type="checkbox"
-        id={id}
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-        className="h-4 w-4 rounded border-input"
-      />
-      <Label htmlFor={id} className={cn("cursor-pointer", variant === "rows" && "flex-1")}>{label}</Label>
+    <div className={cn("flex items-center justify-between gap-3", variant === "rows" && TW.row)}>
+      <Label htmlFor={id} className="flex-1 cursor-pointer">{label}</Label>
+      <Switch id={id} checked={checked} onCheckedChange={(v) => onChange(v)} className="shrink-0" />
     </div>
   );
   if (variant === "stack") {

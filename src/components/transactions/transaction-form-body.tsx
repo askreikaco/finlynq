@@ -17,6 +17,7 @@ import { AutoTextarea } from "@/components/ui/auto-textarea";
 const NOTE_TEXTAREA_CLASS =
   "min-h-[calc(var(--spacing-row-tall)*2)] max-h-48 rounded-lg border border-input bg-transparent px-2.5 py-1.5 transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
 import { Badge } from "@/components/ui/badge";
@@ -446,17 +447,16 @@ export function TransactionFormBody({
                     </div>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="isBusiness"
-                    checked={form.isBusiness}
-                    onChange={(e) => setForm({ ...form, isBusiness: e.target.checked })}
-                    className="h-4 w-4 rounded border-input"
-                  />
-                  <Label htmlFor="isBusiness" className="cursor-pointer">
+                <div className="flex min-h-row items-center justify-between gap-3">
+                  <Label htmlFor="isBusiness" className="flex-1 cursor-pointer">
                     Business expense
                   </Label>
+                  <Switch
+                    id="isBusiness"
+                    checked={form.isBusiness}
+                    onCheckedChange={(v) => setForm({ ...form, isBusiness: v })}
+                    className="shrink-0"
+                  />
                 </div>
               </div>
             )}
@@ -512,17 +512,16 @@ export function TransactionFormBody({
                 The tx saves + reconciles first; the rule is best-effort. */}
             {ruleEligible && (
               <div className="space-y-1.5 rounded-md border border-info/30 bg-info/10 p-3">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="alsoCreateRule"
-                    checked={alsoCreateRule}
-                    onChange={(e) => setAlsoCreateRule(e.target.checked)}
-                    className="h-4 w-4 rounded border-input"
-                  />
-                  <Label htmlFor="alsoCreateRule" className="cursor-pointer">
+                <div className="flex min-h-row items-center justify-between gap-3">
+                  <Label htmlFor="alsoCreateRule" className="flex-1 cursor-pointer">
                     Also create a rule for next time
                   </Label>
+                  <Switch
+                    id="alsoCreateRule"
+                    checked={alsoCreateRule}
+                    onCheckedChange={(v) => setAlsoCreateRule(v)}
+                    className="shrink-0"
+                  />
                 </div>
                 <p className="text-xs text-muted-foreground pl-6">
                   Payee contains{" "}

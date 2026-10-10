@@ -23,6 +23,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/lib/currency";
@@ -348,7 +349,7 @@ export function LotAllocationMatrix({
           </label>
           <span className="text-border">|</span>
           <label className="flex items-center gap-1.5 cursor-pointer select-none">
-            <input type="checkbox" checked={onlyUsedLots} onChange={(e) => setOnlyUsedLots(e.target.checked)} className="h-3.5 w-3.5 accent-primary" />
+            <Switch checked={onlyUsedLots} onCheckedChange={(v) => setOnlyUsedLots(v)} />
             Used lots only
           </label>
           {filtered && (

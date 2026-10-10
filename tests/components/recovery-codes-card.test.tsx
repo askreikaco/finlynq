@@ -134,7 +134,7 @@ describe("RecoveryCodesCard shows the codes once", () => {
     for (const c of CODES) expect(screen.getByText(c)).toBeInTheDocument();
     const done = screen.getByRole("button", { name: /^done$/i });
     expect(done).toBeDisabled();
-    await user.click(screen.getByLabelText(/i saved them/i));
+    await user.click(screen.getByRole("switch", { name: /i saved them/i }));
     expect(done).toBeEnabled();
     status = { unused: 10, total: 10, createdAt: "2026-10-01T00:00:00.000Z" };
     await user.click(done);
