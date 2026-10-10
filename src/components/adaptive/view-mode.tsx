@@ -151,7 +151,9 @@ export function useViewModeState(viewKey: ViewKey): { mode: ViewMode; setMode: (
   const { userId, ready } = useSessionUserId();
   const snap = React.useSyncExternalStore(subscribe, getStore, getServerStore);
 
-  React.useEffect(() => {
+  // Layout effect: the stored prefs land in the same commit, before paint and before any observer
+  // sees the DOM, so DataView never shows its pending placeholder for a frame after the session resolves.
+  React.useLayoutEffect(() => {
     if (!ready) return;
     loadPrefsFor(userId);
     flushQueued(userId);
