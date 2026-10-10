@@ -73,7 +73,7 @@ const URL = "http://localhost:3000/api/subscriptions";
 const row = (over: Row): Row => ({
   id: 1, nameCt: null, amount: 10, currency: "USD", frequency: "monthly", categoryId: null, categoryNameCt: null,
   accountId: null, accountNameCt: null, nextDate: "2026-07-10", status: "active", cancelReminderDate: null,
-  notes: null, endDate: null, remainingCount: null, ...over,
+  notes: null, endDate: null, remainingCount: null, anchorDate: null, ...over,
 });
 
 beforeEach(() => {
@@ -109,6 +109,20 @@ describe("GET /api/subscriptions - postable / overdue / dueCount", () => {
     expect(r.dueCount as number).toBeGreaterThan(60);
   });
 
+  it("lists due occurrences from the anchor: Jan 31 monthly stuck on Feb 28 -> Mar 31, Apr 30, May 31", async () => {
+    h.subsRows = [row({ id: 1, nextDate: "2026-02-28", anchorDate: "2026-01-31" })];
+    const { data } = await parseResponse(await GET(createMockRequest(URL)));
+    expect((data as Row[])[0]).toMatchObject({
+      dueCount: 4, overdue: ["2026-02-28", "2026-03-31", "2026-04-30", "2026-05-31"], anchorDate: "2026-01-31",
+    });
+  });
+
+  it("lists weekday-only occurrences for a weekdays subscription", async () => {
+    h.subsRows = [row({ id: 1, nextDate: "2026-06-11", frequency: "weekdays" })]; // Thu
+    const { data } = await parseResponse(await GET(createMockRequest(URL)));
+    expect((data as Row[])[0]).toMatchObject({ dueCount: 3, overdue: ["2026-06-11", "2026-06-12", "2026-06-15"] });
+  });
+
   it("honours end conditions when counting what is due", async () => {
     h.subsRows = [row({ id: 1, nextDate: "2026-03-10", remainingCount: 2 })];
     const { data } = await parseResponse(await GET(createMockRequest(URL)));
@@ -125,6 +139,37 @@ describe("POST /api/subscriptions { action: 'skip' }", () => {
     expect(status).toBe(200);
     expect(data).toMatchObject({ success: true, subscription: { id: 7, nextDate: "2026-07-10", status: "active" } });
     expect(h.sub).toMatchObject({ nextDate: "2026-07-10" });
+  });
+
+  it("skip indexes from the anchor: Jan 31 -> Feb 28 -> Mar 31 -> Apr 30", async () => {
+    h.sub = { ...h.sub!, nextDate: "2026-01-31", anchorDate: "2026-01-31" };
+    const seen: string[] = [];
+    for (const due of ["2026-01-31", "2026-02-28", "2026-03-31"]) {
+      const { data } = await parseResponse(await skip({ occurrenceDate: due }));
+      seen.push((data as { subscription: { nextDate: string } }).subscription.nextDate);
+    }
+    expect(seen).toEqual(["2026-02-28", "2026-03-31", "2026-04-30"]);
+    expect(h.sub).toMatchObject({ nextDate: "2026-04-30", anchorDate: "2026-01-31" });
+  });
+
+  it("skip with a null anchor falls back to next_date (Feb 28 -> Mar 28)", async () => {
+    h.sub = { ...h.sub!, nextDate: "2026-02-28", anchorDate: null };
+    const { data } = await parseResponse(await skip({ occurrenceDate: "2026-02-28" }));
+    expect((data as { subscription: { nextDate: string } }).subscription.nextDate).toBe("2026-03-28");
+  });
+
+  it("skip leap year: Jan 31 2028 -> Feb 29 -> Mar 31", async () => {
+    h.sub = { ...h.sub!, nextDate: "2028-01-31", anchorDate: "2028-01-31" };
+    let r = await parseResponse(await skip({ occurrenceDate: "2028-01-31" }));
+    expect((r.data as { subscription: { nextDate: string } }).subscription.nextDate).toBe("2028-02-29");
+    r = await parseResponse(await skip({ occurrenceDate: "2028-02-29" }));
+    expect((r.data as { subscription: { nextDate: string } }).subscription.nextDate).toBe("2028-03-31");
+  });
+
+  it("skip on a weekdays sub steps Fri -> Mon", async () => {
+    h.sub = { ...h.sub!, frequency: "weekdays", nextDate: "2026-06-12", anchorDate: "2026-06-12" };
+    const { data } = await parseResponse(await skip({ occurrenceDate: "2026-06-12" }));
+    expect((data as { subscription: { nextDate: string } }).subscription.nextDate).toBe("2026-06-15");
   });
 
   it("marks the subscription ended when the skipped occurrence was the last", async () => {

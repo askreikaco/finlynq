@@ -316,6 +316,21 @@ describe("POST /api/transactions { repeat }", () => {
     expect(h.store.subs[0]).toMatchObject({ frequency: "monthly_eom", nextDate: "2026-01-31", endDate: "2026-12-31", remainingCount: null });
   });
 
+  it("anchors the series on the BOOKED date so a Jan 31 booking continues Feb 28 -> Mar 31", async () => {
+    await postTx(createMockRequest(URL_TX, { method: "POST", body: { ...body, date: "2026-01-31", repeat: { frequency: "monthly" } } }));
+    expect(h.store.subs[0]).toMatchObject({ frequency: "monthly", nextDate: "2026-02-28", anchorDate: "2026-01-31" });
+  });
+
+  it("accepts daily / weekdays / weekend (booked on a Friday: weekdays repeat Monday, weekend Saturday)", async () => {
+    // 2026-10-09 is a Friday.
+    for (const [frequency, next] of [["daily", "2026-10-10"], ["weekdays", "2026-10-12"], ["weekend", "2026-10-10"]] as const) {
+      h.store.subs.length = 0;
+      const res = await postTx(createMockRequest(URL_TX, { method: "POST", body: { ...body, date: "2026-10-09", repeat: { frequency } } }));
+      expect(res.status).toBe(201);
+      expect(h.store.subs[0]).toMatchObject({ frequency, nextDate: next, anchorDate: "2026-10-09" });
+    }
+  });
+
   it("forever (or no end) stores no end fields", async () => {
     await postTx(createMockRequest(URL_TX, { method: "POST", body: { ...body, repeat: { frequency: "every4weeks" } } }));
     expect(h.store.subs[0]).toMatchObject({ frequency: "every4weeks", nextDate: "2026-11-07", endDate: null, remainingCount: null });

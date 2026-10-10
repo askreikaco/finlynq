@@ -97,7 +97,10 @@ export function planRepeat(repeat: RepeatInput, booking: RepeatBooking) {
     // what is still to come, counting next_date.
     remainingCount = end.count - 1;
   }
-  return { payee, nextDate, endDate, remainingCount };
+  // The series anchor is the BOOKED date (occurrence index 0), not next_date
+  // (index 1): booked Jan 31 monthly -> next Feb 28, anchor Jan 31, so the
+  // following one is Mar 31.
+  return { payee, nextDate, anchorDate: booking.date, endDate, remainingCount };
 }
 
 /**
@@ -143,6 +146,7 @@ export async function createOrLinkRepeatSubscription(
       categoryId: booking.categoryId,
       accountId: booking.accountId,
       nextDate: plan.nextDate,
+      anchorDate: plan.anchorDate,
       status: "active",
       endDate: plan.endDate,
       remainingCount: plan.remainingCount,

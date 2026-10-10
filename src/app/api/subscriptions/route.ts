@@ -107,6 +107,7 @@ export async function GET(request: NextRequest) {
       accountId: schema.subscriptions.accountId,
       accountNameCt: schema.accounts.nameCt,
       nextDate: schema.subscriptions.nextDate,
+      anchorDate: schema.subscriptions.anchorDate,
       status: schema.subscriptions.status,
       cancelReminderDate: schema.subscriptions.cancelReminderDate,
       notes: schema.subscriptions.notes,
@@ -158,7 +159,7 @@ export async function GET(request: NextRequest) {
     ...(s.status === "active"
       ? (() => {
           const due = dueOccurrences(
-            { nextDate: s.nextDate, frequency: s.frequency, endDate: s.endDate, remainingCount: s.remainingCount },
+            { nextDate: s.nextDate, anchorDate: s.anchorDate, frequency: s.frequency, endDate: s.endDate, remainingCount: s.remainingCount },
             today,
           );
           return { overdue: due.overdue, dueCount: due.dueCount };
@@ -298,6 +299,8 @@ export async function POST(request: NextRequest) {
         categoryId: d.categoryId ?? null,
         accountId: d.accountId ?? null,
         nextDate: d.nextDate ?? null,
+        // Month-end anchor: the first date the user gave is the series anchor.
+        anchorDate: d.nextDate ?? null,
         status: d.status ?? "active",
         cancelReminderDate: d.cancelReminderDate ?? null,
         notes: encryptOptional(dek, d.notes || null),
@@ -350,6 +353,23 @@ export async function PUT(request: NextRequest) {
       if (v !== undefined) (set as Record<string, unknown>)[k] = v;
     }
     if (currency !== undefined) set.currency = currency.toUpperCase();
+    // Anchor (20261014): a deliberately changed next_date or cadence starts a new
+    // series, so the anchor follows it. The edit form re-sends the UNCHANGED
+    // next_date on every save — that must not clobber a Jan 31 anchor sitting
+    // behind a Feb 28 next_date, so only a real change resets it.
+    if (rest.nextDate !== undefined || rest.frequency !== undefined) {
+      const current = await db
+        .select({ nextDate: schema.subscriptions.nextDate, frequency: schema.subscriptions.frequency })
+        .from(schema.subscriptions)
+        .where(and(eq(schema.subscriptions.id, id), eq(schema.subscriptions.userId, userId)))
+        .get();
+      if (current) {
+        const nextChanged = rest.nextDate !== undefined && rest.nextDate !== current.nextDate;
+        const freqChanged =
+          rest.frequency !== undefined && rest.frequency !== normalizeFrequency(current.frequency);
+        if (nextChanged || freqChanged) set.anchorDate = rest.nextDate !== undefined ? rest.nextDate : current.nextDate;
+      }
+    }
     // Free-text `notes` is user-DEK encrypted at rest (2026-06-01).
     if (notes !== undefined) set.notes = encryptOptional(dek, notes || null);
     // Stream D Phase 4 — plaintext name dropped; rename writes name_ct/lookup.

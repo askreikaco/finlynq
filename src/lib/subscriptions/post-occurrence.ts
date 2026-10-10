@@ -63,6 +63,7 @@ export async function consumeOccurrence(userId: string, sub: SubscriptionRow): P
   const adv = advanceOneOccurrence({
     nextDate: sub.nextDate as string,
     frequency: sub.frequency,
+    anchorDate: sub.anchorDate,
     endDate: sub.endDate,
     remainingCount: sub.remainingCount,
   });

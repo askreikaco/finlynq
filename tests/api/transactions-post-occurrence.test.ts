@@ -201,6 +201,33 @@ describe("POST /api/transactions { subscriptionId, occurrenceDate }", () => {
     expect((data as { subscription: unknown }).subscription).toEqual({ id: 7, nextDate: "2026-04-10", remainingCount: null, status: "active" });
   });
 
+  it("Post now indexes from the anchor: Jan 31 monthly -> Feb 28 -> Mar 31 -> Apr 30", async () => {
+    h.sub = mkSub({ nextDate: "2026-01-31", anchorDate: "2026-01-31" });
+    const seen: unknown[] = [];
+    for (const due of ["2026-01-31", "2026-02-28", "2026-03-31"]) {
+      const { status } = await parseResponse(await post({ occurrenceDate: due }));
+      expect(status).toBe(201);
+      seen.push(h.sub!.nextDate);
+    }
+    expect(seen).toEqual(["2026-02-28", "2026-03-31", "2026-04-30"]);
+    expect(h.sub).toMatchObject({ anchorDate: "2026-01-31" });
+  });
+
+  it("Post now with a null anchor falls back to next_date; biweekly is unaffected either way", async () => {
+    h.sub = mkSub({ nextDate: "2026-02-28", anchorDate: null });
+    await post({ occurrenceDate: "2026-02-28" });
+    expect(h.sub).toMatchObject({ nextDate: "2026-03-28" });
+    h.sub = mkSub({ frequency: "biweekly", nextDate: "2026-02-14", anchorDate: "2026-01-31" });
+    await post({ occurrenceDate: "2026-02-14" });
+    expect(h.sub).toMatchObject({ nextDate: "2026-02-28" });
+  });
+
+  it("Post now on a weekdays subscription steps Fri -> Mon", async () => {
+    h.sub = mkSub({ frequency: "weekdays", nextDate: "2026-10-09", anchorDate: "2026-10-09" });
+    await post({ occurrenceDate: "2026-10-09" });
+    expect(h.sub).toMatchObject({ nextDate: "2026-10-12" });
+  });
+
   it("decrements remaining_count and marks the subscription ended on the last occurrence", async () => {
     h.sub = mkSub({ remainingCount: 2 });
     expect((await post()).status).toBe(201);

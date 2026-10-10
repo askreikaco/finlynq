@@ -803,6 +803,7 @@ async function seedSubscriptions(
       categoryId,
       accountId,
       nextDate,
+      anchorDate: nextDate,
       status: "active",
       notes: encryptOptional(dek, null),
       ...enc,

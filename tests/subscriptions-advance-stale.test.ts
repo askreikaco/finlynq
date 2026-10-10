@@ -3,7 +3,7 @@ import { advanceStaleSubscriptionDates } from "@/lib/subscriptions/advance-next-
 
 type Row = {
   id: number; next_date: string; frequency: string; end_date: string | null;
-  remaining_count: number | null; postable: boolean;
+  remaining_count: number | null; postable: boolean; anchor_date?: string | null;
 };
 
 /** Executor fake: first call = the SELECT (returns rows), later calls = UPDATEs (recorded). */
@@ -59,6 +59,31 @@ describe("advanceStaleSubscriptionDates", () => {
     await advanceStaleSubscriptionDates(db, "u1", TODAY);
     expect(updates[0]).toContain("2026-07-10");
     expect(updates[0]).toContain("5"); // 9 - 4 skipped
+  });
+
+  it("rolls from anchor_date: Feb 28 with a Jan 31 anchor lands on Mar 31", async () => {
+    const { db, updates } = fakeDb([{ ...base, next_date: "2026-02-28", anchor_date: "2026-01-31" }]);
+    await advanceStaleSubscriptionDates(db, "u1", "2026-03-10");
+    expect(updates[0]).toContain("2026-03-31");
+    expect(updates[0]).not.toContain("2026-03-28");
+  });
+
+  it("null anchor_date falls back to next_date (Mar 28)", async () => {
+    const { db, updates } = fakeDb([{ ...base, next_date: "2026-02-28", anchor_date: null }]);
+    await advanceStaleSubscriptionDates(db, "u1", "2026-03-10");
+    expect(updates[0]).toContain("2026-03-28");
+  });
+
+  it("weekdays: a stale Friday rolls to Monday", async () => {
+    const { db, updates } = fakeDb([{ ...base, next_date: "2026-10-09", frequency: "weekdays" }]);
+    await advanceStaleSubscriptionDates(db, "u1", "2026-10-10");
+    expect(updates[0]).toContain("2026-10-12");
+  });
+
+  it("the SELECT reads anchor_date", async () => {
+    const { db, execute } = fakeDb([]);
+    await advanceStaleSubscriptionDates(db, "u1", TODAY);
+    expect(JSON.stringify(execute.mock.calls[0][0])).toContain("s.anchor_date");
   });
 
   it("malformed dates are left alone", async () => {

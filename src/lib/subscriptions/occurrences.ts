@@ -6,20 +6,26 @@
  * or skipping index 0 consumes it: next_date becomes index 1, remaining_count
  * drops by one, and the subscription is `ended` once nothing is left (the next
  * occurrence falls after `end_date`, or the count reaches 0).
+ *
+ * Every step is computed from the series ANCHOR (`anchor_date`) by index, not
+ * from next_date (see occurrenceFromNext): Jan 31 monthly -> Feb 28 -> Mar 31 ->
+ * Apr 30. A null anchor falls back to next_date.
  */
 
 import {
   isValidIsoDate,
   isWithinEnd,
-  nextOnOrAfter,
   normalizeFrequency,
-  occurrenceAt,
+  occurrenceFromNext,
+  stepsToOnOrAfter,
   type ScheduleEnd,
 } from "./schedule";
 
 export interface SubscriptionScheduleState extends ScheduleEnd {
   nextDate: string | null;
   frequency: string | null | undefined;
+  /** subscriptions.anchor_date: the date the series started on; null = use nextDate. */
+  anchorDate?: string | null;
 }
 
 export interface AdvanceResult {
@@ -43,7 +49,7 @@ export function isExhausted(s: SubscriptionScheduleState): boolean {
 /** Consume the occurrence at next_date (post or skip) and compute the new state. */
 export function advanceOneOccurrence(s: SubscriptionScheduleState & { nextDate: string }): AdvanceResult {
   const f = normalizeFrequency(s.frequency) ?? "monthly";
-  const nextDate = occurrenceAt(s.nextDate, f, 1);
+  const nextDate = occurrenceFromNext(s.anchorDate, s.nextDate, f, 1);
   const remainingCount = s.remainingCount != null ? Math.max(0, s.remainingCount - 1) : null;
   // After consuming one, the next occurrence is index 0 of the new state.
   const ended = !isWithinEnd(0, nextDate, { endDate: s.endDate, remainingCount });
@@ -64,12 +70,10 @@ export function rollForwardWithEnd(
   if (!s.nextDate || !isValidIsoDate(s.nextDate)) return null;
   if (isExhausted(s)) return { nextDate: s.nextDate, remainingCount: s.remainingCount ?? null, ended: true };
   if (s.nextDate >= today) return null;
-  const next = nextOnOrAfter(s.nextDate, s.frequency, today);
-  if (!next || next === s.nextDate) return null;
-  // How many occurrences were skipped = index of `next` relative to next_date.
-  let k = 0;
-  const f = normalizeFrequency(s.frequency) ?? "monthly";
-  while (k < MAX_DUE_SCAN && occurrenceAt(s.nextDate, f, k) < next) k++;
+  // How many occurrences were skipped = steps from next_date to the first one on/after today.
+  const k = stepsToOnOrAfter(s.anchorDate, s.nextDate, s.frequency, today);
+  const next = occurrenceFromNext(s.anchorDate, s.nextDate, s.frequency, k);
+  if (k === 0 || next === s.nextDate) return null;
   const remainingCount = s.remainingCount != null ? s.remainingCount - k : null;
   if (!isWithinEnd(0, next, { endDate: s.endDate, remainingCount })) {
     return { nextDate: s.nextDate, remainingCount: Math.max(0, remainingCount ?? 0), ended: true };
@@ -92,7 +96,7 @@ export function dueOccurrences(s: SubscriptionScheduleState, today: string): Due
   const overdue: string[] = [];
   let count = 0;
   for (let k = 0; k < MAX_DUE_SCAN; k++) {
-    const d = occurrenceAt(s.nextDate, f, k);
+    const d = occurrenceFromNext(s.anchorDate, s.nextDate, f, k);
     if (d > today || !isWithinEnd(k, d, s)) break;
     count++;
     if (overdue.length < OVERDUE_RESPONSE_CAP) overdue.push(d);
