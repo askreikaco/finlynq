@@ -138,6 +138,7 @@ Excluded from the adaptive guard scan (see 3e).
 - `titleClassName` / `subtitleClassName`: `@deprecated` no-ops, still accepted and ignored. `desktopClasses()` removed.
 - Secondary actions: `HEADER_SECONDARY` = `max-regular:hidden`; below regular they go to the `overflow` menu. `HEADER_DESKTOP_ONLY` is an alias of the same value.
 - Primary action: icon-only 44px circle below regular (`phone-icon-action`, globals.css `width < 40rem`); label visible from regular.
+- Right group (phone): capsule + 10px gap + primary. Capsule (`data-slot=header-capsule`, `glass-capsule`) = icon cells + overflow trigger only, each a 44px cell, max 3 icon cells + overflow (11rem). Status (`HeaderStatus`, e.g. saving spinner) is a cell. Primary (`data-slot=header-primary`, `phone-icon-action`) is a separate 44px filled control; alone it has no capsule. Text buttons never share the capsule. Extra secondary actions go to the overflow menu (audit: tests/ios/header-actions.test.ts).
 - Bar: sticky at every size (D5). Glass only below regular; opaque `regular:bg-background/90` from regular. `className` / `actionsClassName` stay caller-owned at every size.
 - Back link: `backHref` renders BackButton at every size. `backLabel` defaults to "Back" (`back-button.tsx`).
 - Overflow trigger: `regular:hidden`.

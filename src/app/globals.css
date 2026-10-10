@@ -318,7 +318,7 @@ html {
 
 /* iOS 26-style liquid glass, phones only (below regular, 40rem = 640px). Three parts: the round back button
    (.glass-capsule on BackButton), the page top bar (.glass-bar), and the grouped action capsule
-   (.glass-capsule on [data-slot=page-header-actions]). The regular+ layout never receives any of it. */
+   (.glass-capsule on [data-slot=header-capsule]). The regular+ layout never receives any of it. */
 @media (width < 40rem) {
   .glass-capsule {
     background: oklch(1 0 0 / 55%);
@@ -332,24 +332,43 @@ html {
     border-color: oklch(1 0 0 / 14%);
     box-shadow: inset 0 1px 0 oklch(1 0 0 / 14%), 0 2px 8px oklch(0 0 0 / 35%);
   }
-  /* Action buttons sit as 44px circles on the capsule. Non-primary ones are bare (the capsule is the
-     glass). */
-  [data-slot="page-header-actions"] > :is(button, a) {
+  /* Every cell in the capsule is one 44x44 slot (no gaps; the capsule is the only glass): icon buttons,
+     the overflow trigger and HeaderStatus. The primary is a separate control (header-primary). Buttons are bare; hover and press
+     state is a round tint inside the slot, not a box. */
+  [data-slot="header-capsule"] > :is(button, a) {
+    width: 2.75rem;
     min-width: 2.75rem;
     height: 2.75rem;
+    padding: 0;
+    flex-shrink: 0;
     border-radius: 9999px;
   }
-  [data-slot="page-header-actions"] > :is(button, a):not([data-variant="default"]) {
+  [data-slot="header-capsule"] > :not(:is(button, a)) {
+    width: 2.75rem;
+    min-width: 2.75rem;
+    height: 2.75rem;
+    flex-shrink: 0;
+    border-radius: 9999px;
+  }
+  [data-slot="header-capsule"] > :is(button, a):not([data-variant="default"]) {
     background: transparent;
     border-color: transparent;
     box-shadow: none;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
+  [data-slot="header-capsule"] > :is(button, a):not([data-variant="default"]):hover,
+  [data-slot="header-capsule"] > :is(button, a):not([data-variant="default"]):active {
+    background: oklch(0 0 0 / 7%);
+  }
+  .dark [data-slot="header-capsule"] > :is(button, a):not([data-variant="default"]):hover,
+  .dark [data-slot="header-capsule"] > :is(button, a):not([data-variant="default"]):active {
+    background: oklch(1 0 0 / 12%);
+  }
   /* Primary action (PageHeader adds .phone-icon-action to the last visible action): iOS-style icon-only
      44pt filled circle. Text is hidden with font-size 0; its accessible name is the aria-label PageHeader sets.
      Solid token fill, never glass: --primary-foreground on --primary is 5.14:1 (AA) in light and dark. */
-  [data-slot="page-header-actions"] > :is(button, a).phone-icon-action {
+  [data-slot="header-primary"] > :is(button, a).phone-icon-action {
     width: 2.75rem;
     min-width: 2.75rem;
     height: 2.75rem;
