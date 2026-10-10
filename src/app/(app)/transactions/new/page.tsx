@@ -796,10 +796,14 @@ export default function MobileTransactionPage() {
       className={cn(
         "flex flex-col bg-background text-foreground",
         "max-regular:fixed max-regular:inset-x-0 max-regular:top-[var(--sat)] max-regular:bottom-[var(--sab,0px)]",
+        // No page gutter on this root: stop the bar bleeding (-mx-4) past the screen edge so it keeps its own 16px side padding.
+        "max-regular:[&>[data-slot=page-header]]:mx-0",
         "regular:relative regular:mx-auto regular:h-[min(46rem,calc(100dvh-8rem))] regular:w-full regular:max-w-md regular:rounded-2xl regular:border regular:border-border/80",
       )}
     >
       {/* Global page bar (PageHeader): back = history back, else /transactions. The spinner shows while saving. */}
+      {/* This page is a full-screen fixed root with no page gutter, so the bar must not bleed (-mx-4) past its edges:
+          the root class below keeps the bar's own 16px gutter, the same as every other page. */}
       <PageHeader
         className="shrink-0"
         title={`New ${txType}`}
@@ -1169,7 +1173,7 @@ export default function MobileTransactionPage() {
           </div>
         )}
 
-        {/* Save and Continue (48px), in normal flow after the fields. */}
+        {/* Save and Cancel (48px), in normal flow after the fields. */}
         <div data-testid="txnew-actions" className="mt-1 grid shrink-0 grid-cols-[1fr_auto] gap-3">
           <Button
             type="button"
@@ -1192,12 +1196,12 @@ export default function MobileTransactionPage() {
           <Button
             type="button"
             variant="outline"
-            data-testid="txnew-continue"
-            disabled={saving || done || splitBlocked}
-            onClick={() => void handleSave("continue")}
+            data-testid="txnew-cancel"
+            disabled={saving}
+            onClick={goBack}
             className="h-12 rounded-2xl px-5 text-base font-semibold"
           >
-            Continue
+            Cancel
           </Button>
         </div>
       </main>

@@ -56,7 +56,7 @@ export const PHONE_BAR_STICKY =
  * No pt-[var(--sat)]: body already pads its in-flow top by --sat.
  */
 export const PHONE_BAR =
-  "glass-bar sticky top-[var(--sat,0px)] z-30 regular:top-0 regular:bg-background/90 regular:backdrop-blur-sm max-regular:-mx-4 max-regular:grid max-regular:min-h-[var(--phone-header-h)] max-regular:grid-cols-[auto_minmax(0,1fr)_auto] max-regular:items-center max-regular:px-4";
+  "glass-bar sticky top-[var(--sat,0px)] z-30 regular:top-0 regular:bg-background/90 regular:backdrop-blur-sm max-regular:-mx-4 max-regular:grid max-regular:min-h-[var(--phone-header-h)] max-regular:grid-cols-[auto_minmax(0,1fr)_auto] max-regular:gap-x-2 max-regular:items-center max-regular:px-4";
 
 /** Left slot placeholder (no back target): keeps the title column aligned. */
 export const PHONE_BAR_SIDE = "hidden max-regular:flex max-regular:size-11 max-regular:shrink-0 max-regular:col-start-1 max-regular:row-start-1";

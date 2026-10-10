@@ -463,6 +463,13 @@ html {
     font-size: 0;
     gap: 0;
   }
+  /* Every primary's icon is the same 20px, centred, whatever size or margin the page gave it (a page's own
+     h-4 / mr-1 / mr-2 must not make one page's plus bigger or off-centre than another's). */
+  [data-slot="header-capsule"] > :is(button, a).phone-icon-action svg {
+    width: 1.25rem;
+    height: 1.25rem;
+    margin: 0;
+  }
   /* The top bar: translucent tint, blur, saturate, 1px bottom rim. */
   .glass-bar {
     background: var(--glass-bar-bg);

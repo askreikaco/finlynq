@@ -129,11 +129,11 @@ describe("compact new-transaction layout", () => {
     expect(css).toMatch(/body\s*\{[^}]*padding-top:\s*var\(--sat\)/);
   });
 
-  it("Save and Continue stay rendered while the numpad is open (they are in normal flow)", () => {
+  it("Save and Cancel stay rendered while the numpad is open (they are in normal flow)", () => {
     seedPrefill();
     render(<Page />);
     fireEvent.focus(screen.getByLabelText("Amount"));
     expect(screen.getByRole("button", { name: "Save" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Continue" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeTruthy();
   });
 });
