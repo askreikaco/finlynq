@@ -22,6 +22,8 @@ const EMPTY: NavUnread = { announcements: null, announcementsUnread: 0, feedback
 let state: NavUnread = EMPTY;
 const listeners = new Set<() => void>();
 let loadedFor: string | null = null;
+/** Increments on every load. A response whose token is not the latest is stale and ignored. */
+let requestToken = 0;
 
 function subscribe(listener: () => void): () => void {
   // First consumer after an empty store: forget the last path so it loads again.
@@ -39,19 +41,23 @@ function getSnapshot(): NavUnread {
 function load(pathname: string): void {
   if (loadedFor === pathname) return;
   loadedFor = pathname;
+  const token = ++requestToken;
   const announcements = fetch("/api/announcements")
     .then((r) => (r.ok ? r.json() : null))
     .catch(() => null);
   const feedback = fetch("/api/feedback")
-    .then((r) => (r.ok ? r.json() : []))
-    .catch(() => []);
+    .then((r) => (r.ok ? r.json() : null))
+    .catch(() => null);
   void Promise.all([announcements, feedback]).then(([ann, fb]) => {
+    if (token !== requestToken) return; // a newer load started: this answer is stale
     const list = Array.isArray(ann) ? (ann as NavUnread["announcements"]) : null;
-    const threads = Array.isArray(fb) ? (fb as Array<{ unread?: boolean }>) : [];
+    const threads = Array.isArray(fb) ? (fb as Array<{ unread?: boolean }>) : null;
+    // Both endpoints failed: keep the last good state instead of showing zeros.
+    if (!list && !threads) return;
     state = {
-      announcements: list,
-      announcementsUnread: list ? list.filter((a) => !a.read).length : 0,
-      feedbackUnread: threads.filter((t) => t.unread).length,
+      announcements: list ?? state.announcements,
+      announcementsUnread: list ? list.filter((a) => !a.read).length : state.announcementsUnread,
+      feedbackUnread: threads ? threads.filter((t) => t.unread).length : state.feedbackUnread,
     };
     listeners.forEach((l) => l());
   });
