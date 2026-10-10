@@ -39,7 +39,7 @@ export function AccountAlert({ message, onDismiss }: { message: string | null; o
   return (
     <div
       role="alert"
-      className="fixed bottom-[calc(var(--mobile-bar-clearance)-8px)] regular:bottom-4 left-4 z-[60] flex max-w-[calc(100vw-2rem)] items-start gap-2 rounded-lg border border-destructive/30 bg-popover px-3 py-2 text-sm text-destructive shadow-md"
+      className="fixed bottom-[calc(var(--mobile-bar-clearance)-8px)] regular:bottom-4 left-4 regular:left-[calc(5rem+var(--sal)+1rem)] z-[60] flex max-w-[calc(100vw-2rem)] items-start gap-2 rounded-lg border border-destructive/30 bg-popover px-3 py-2 text-sm text-destructive shadow-md"
     >
       <span className="break-words">{message}</span>
       <button type="button" aria-label="Dismiss" onClick={onDismiss} className="shrink-0 text-xs underline">

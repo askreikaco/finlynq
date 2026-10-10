@@ -1070,7 +1070,7 @@ export default function MobileTransactionPage() {
       {showNumpad && (
         <div
           data-testid="numpad-dock"
-          className="fixed inset-x-0 bottom-[var(--sab,0px)] z-[60] hidden bg-background pointer-coarse:block animate-in slide-in-from-bottom duration-200"
+          className="fixed inset-x-0 bottom-[var(--sab,0px)] regular:left-[calc(5rem+var(--sal))] z-[60] hidden bg-background pointer-coarse:block animate-in slide-in-from-bottom duration-200"
         >
           <Numpad value={amount} onChange={setAmount} onConfirm={closePad} />
         </div>
