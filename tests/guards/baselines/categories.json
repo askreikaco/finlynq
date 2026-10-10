@@ -13,14 +13,6 @@
     "src/app/(app)/categories/[id]/page.tsx": {
       "title-prop": 1
     },
-    "src/app/(app)/categories/_components/category-form.tsx": {
-      "max-w-xl": 2,
-      "sab-pad": 1,
-      "return-to": 1
-    },
-    "src/app/(app)/categories/_components/category-management.tsx": {
-      "min-h": 1
-    },
     "src/app/(app)/categories/new/page.tsx": {
       "suspense-null": 1
     }

@@ -10,14 +10,15 @@
  */
 
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/mobile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { GroupCombobox } from "@/components/ui/group-combobox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertTriangle } from "lucide-react";
-import { safeReturnTo } from "@/lib/accounts/groups-return-to";
+import { useReturnTo } from "@/lib/forms/use-return-to";
+import { TW } from "@/lib/design/tokens";
 
 export const CATEGORY_RETURN_FALLBACK = "/categories?tab=manage";
 
@@ -34,8 +35,7 @@ export function CategoryForm({
   categoryId?: number | null;
 }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const returnTo = safeReturnTo(searchParams.get("returnTo"), CATEGORY_RETURN_FALLBACK);
+  const returnTo = useReturnTo(CATEGORY_RETURN_FALLBACK);
   const isRename = mode === "rename";
 
   const [categories, setCategories] = useState<Category[]>([]);
@@ -116,7 +116,7 @@ export function CategoryForm({
 
   if (!loading && isRename && loadError) {
     return (
-      <div className="mx-auto w-full max-w-xl">
+      <div className={`mx-auto w-full ${TW.form}`}>
         <PageHeader title={title} backHref={returnTo} backLabel="Back" className="flex items-center justify-between" />
         <p className="mt-6 text-sm text-destructive">{loadError}</p>
       </div>
@@ -124,9 +124,9 @@ export function CategoryForm({
   }
 
   return (
-    <div data-testid="category-form-root" className="mx-auto w-full max-w-xl">
+    <div data-testid="category-form-root" className={`mx-auto w-full ${TW.form}`}>
       <PageHeader title={title} backHref={returnTo} backLabel="Back" className="flex items-center justify-between" />
-      <form onSubmit={handleSubmit} noValidate className="mt-3 space-y-4 pb-[calc(var(--sab,0px)+1.5rem)]">
+      <form onSubmit={handleSubmit} noValidate className={`mt-3 space-y-4 ${TW.formPad}`}>
         {formError && (
           <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-lg">
             <AlertTriangle className="h-4 w-4 shrink-0" />

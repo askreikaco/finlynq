@@ -12,10 +12,11 @@
 
 import { PageHeader } from "@/components/mobile";
 import { CategoryManagement } from "@/app/(app)/categories/_components/category-management";
+import { TW } from "@/lib/design/tokens";
 
 export default function CategorizationSettingsPage() {
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className={`${TW.section} space-y-6`}>
       <PageHeader
           title="Categories"
           titleClassName="text-2xl font-bold tracking-tight"
