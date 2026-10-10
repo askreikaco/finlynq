@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
-  TrendingUp, Plus,
+  TrendingUp, Plus, Coins,
 } from "lucide-react";
 import { useDevMode } from "@/hooks/use-dev-mode";
 import { useDisplayCurrency } from "@/components/currency-provider";
@@ -233,8 +233,8 @@ export default function PortfolioPage() {
         subtitle={`${summary.totalHoldings} holdings across ${summary.totalAccounts} accounts`}
         actionsClassName="flex flex-wrap items-center gap-2"
         overflow={[
-          { label: "Realized gains", href: "/portfolio/realized-gains" },
-          { label: "Dividends", href: "/portfolio/dividends" },
+          { label: "Realized gains", icon: TrendingUp, href: "/portfolio/realized-gains" },
+          { label: "Dividends", icon: Coins, href: "/portfolio/dividends" },
         ]}
         actions={
         <>

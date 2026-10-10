@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { OnboardingTips } from "@/components/onboarding-tips";
 import { Badge } from "@/components/ui/badge";
-import { Plus, SlidersHorizontal, ChevronDown, Receipt, Search, X, AlertTriangle, ArrowRightLeft, Columns3, TrendingUp, Download } from "lucide-react";
+import { Plus, SlidersHorizontal, ChevronDown, Receipt, Search, X, AlertTriangle, ArrowRightLeft, Columns3, TrendingUp, Download, ShoppingCart, Banknote, Repeat, Send, HandCoins, CircleDollarSign, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuGroup, DropdownMenuLabel, DropdownMenuCheckboxItem, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { portfolioEditHref, transactionEditHref, transactionSplitHref } from "@/lib/transactions/edit-flow";
 import { MobileTxList } from "@/components/transactions/mobile-tx-list";
@@ -568,14 +568,14 @@ export function TransactionsWorkspace({
             actionsClassName="flex flex-wrap items-center gap-1.5"
             overflow={[
           { label: "Transfer", icon: ArrowRightLeft, onSelect: () => router.push("/transactions/new?kind=transfer") },
-          { label: "Buy", onSelect: () => router.push("/portfolio/new/buy") },
-          { label: "Sell", onSelect: () => router.push("/portfolio/new/sell") },
-          { label: "Swap", onSelect: () => router.push("/portfolio/new/swap") },
-          { label: "In-kind transfer", onSelect: () => router.push("/portfolio/new/in-kind-transfer") },
-          { label: "Income / expense", onSelect: () => router.push("/portfolio/new/income-expense") },
-          { label: "FX conversion", onSelect: () => router.push("/portfolio/new/fx-conversion") },
-          { label: "Brokerage deposit", onSelect: () => router.push("/portfolio/new/deposit") },
-          { label: "Brokerage withdrawal", onSelect: () => router.push("/portfolio/new/withdrawal") },
+          { label: "Buy", icon: ShoppingCart, onSelect: () => router.push("/portfolio/new/buy") },
+          { label: "Sell", icon: Banknote, onSelect: () => router.push("/portfolio/new/sell") },
+          { label: "Swap", icon: Repeat, onSelect: () => router.push("/portfolio/new/swap") },
+          { label: "In-kind transfer", icon: Send, onSelect: () => router.push("/portfolio/new/in-kind-transfer") },
+          { label: "Income / expense", icon: HandCoins, onSelect: () => router.push("/portfolio/new/income-expense") },
+          { label: "FX conversion", icon: CircleDollarSign, onSelect: () => router.push("/portfolio/new/fx-conversion") },
+          { label: "Brokerage deposit", icon: ArrowDownToLine, onSelect: () => router.push("/portfolio/new/deposit") },
+          { label: "Brokerage withdrawal", icon: ArrowUpFromLine, onSelect: () => router.push("/portfolio/new/withdrawal") },
           { label: "Investment Transactions", icon: TrendingUp, onSelect: () => router.push("/portfolio/new") },
             ]}
             actions={
@@ -606,38 +606,38 @@ export function TransactionsWorkspace({
                 <DropdownMenuContent align="end" className="min-w-56">
                   <DropdownMenuGroup>
                     <DropdownMenuLabel>Quick add</DropdownMenuLabel>
-                    <DropdownMenuItem onClick={() => router.push("/transactions/new")}>
-                      <Receipt className="h-4 w-4 mr-2" /> Transaction
+                    <DropdownMenuItem icon={<Receipt />} onClick={() => router.push("/transactions/new")}>
+                      Transaction
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push("/transactions/new?kind=transfer")}>
-                      <ArrowRightLeft className="h-4 w-4 mr-2" /> Transfer
+                    <DropdownMenuItem icon={<ArrowRightLeft />} onClick={() => router.push("/transactions/new?kind=transfer")}>
+                      Transfer
                     </DropdownMenuItem>
                   </DropdownMenuGroup>
                   <DropdownMenuSeparator />
                   <DropdownMenuGroup>
                     <DropdownMenuLabel>Portfolio operations</DropdownMenuLabel>
-                    <DropdownMenuItem onClick={() => router.push("/portfolio/new/buy")}>
+                    <DropdownMenuItem icon={<ShoppingCart />} onClick={() => router.push("/portfolio/new/buy")}>
                       Buy
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push("/portfolio/new/sell")}>
+                    <DropdownMenuItem icon={<Banknote />} onClick={() => router.push("/portfolio/new/sell")}>
                       Sell
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push("/portfolio/new/swap")}>
+                    <DropdownMenuItem icon={<Repeat />} onClick={() => router.push("/portfolio/new/swap")}>
                       Swap
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push("/portfolio/new/in-kind-transfer")}>
+                    <DropdownMenuItem icon={<Send />} onClick={() => router.push("/portfolio/new/in-kind-transfer")}>
                       In-kind transfer
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push("/portfolio/new/income-expense")}>
+                    <DropdownMenuItem icon={<HandCoins />} onClick={() => router.push("/portfolio/new/income-expense")}>
                       Income / expense
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push("/portfolio/new/fx-conversion")}>
+                    <DropdownMenuItem icon={<CircleDollarSign />} onClick={() => router.push("/portfolio/new/fx-conversion")}>
                       FX conversion
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push("/portfolio/new/deposit")}>
+                    <DropdownMenuItem icon={<ArrowDownToLine />} onClick={() => router.push("/portfolio/new/deposit")}>
                       Brokerage deposit
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push("/portfolio/new/withdrawal")}>
+                    <DropdownMenuItem icon={<ArrowUpFromLine />} onClick={() => router.push("/portfolio/new/withdrawal")}>
                       Brokerage withdrawal
                     </DropdownMenuItem>
                   </DropdownMenuGroup>

@@ -19,6 +19,8 @@ import { useBackTarget } from "@/components/adaptive/use-back-target";
 export interface OverflowAction {
   label: string;
   icon?: LucideIcon;
+  /** Optional grey second line under the label (e.g. a branch name). */
+  description?: string;
   onSelect?: () => void;
   href?: string;
   disabled?: boolean;
@@ -249,25 +251,20 @@ export function OverflowMenu({ items }: { items: OverflowAction[] }) {
       >
         <MoreHorizontal className="size-4" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-auto min-w-56">
+      <DropdownMenuContent align="end">
         {items.map((it) => {
           const Icon = it.icon;
-          const inner = (
-            <>
-              {Icon ? <Icon className="size-4" aria-hidden /> : null}
-              {it.label}
-            </>
-          );
           return (
             <DropdownMenuItem
               key={it.label}
               disabled={it.disabled}
               variant={it.destructive ? "destructive" : "default"}
-              className="min-h-11 text-sm"
+              icon={Icon ? <Icon aria-hidden /> : undefined}
+              description={it.description}
               onClick={it.onSelect}
               {...(it.href ? { render: <Link href={it.href} /> } : {})}
             >
-              {inner}
+              {it.label}
             </DropdownMenuItem>
           );
         })}
