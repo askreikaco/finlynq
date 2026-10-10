@@ -33,6 +33,13 @@ const postSchema = z.object({
   toAccountId: z.number().int().positive(),
   // 0 is allowed for pure in-kind transfers (holdingName + quantity supplied).
   enteredAmount: z.number().nonnegative(),
+  // Optional: currency enteredAmount is typed in (ISO 4217 or crypto/metal
+  // code). Omitted = the From account currency (legacy behaviour). Converted
+  // to the From account currency server-side.
+  enteredCurrency: z
+    .string()
+    .regex(/^[A-Za-z]{3,4}$/, "enteredCurrency must be a 3-4 letter currency code")
+    .optional(),
   date: z.string().optional(),
   receivedAmount: z.number().nonnegative().optional(),
   // In-kind side. Both must be set together; partial → invalid-holding-spec.
@@ -133,6 +140,7 @@ export async function POST(request: NextRequest) {
       fromAccountId: data.fromAccountId,
       toAccountId: data.toAccountId,
       enteredAmount: data.enteredAmount,
+      enteredCurrency: data.enteredCurrency,
       date: data.date,
       receivedAmount: data.receivedAmount,
       holdingName: data.holdingName,

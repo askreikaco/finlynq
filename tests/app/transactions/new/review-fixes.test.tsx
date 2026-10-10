@@ -154,6 +154,53 @@ describe("new transaction page review fixes", () => {
     });
   });
 
+  it("transfer typed in EUR from a USD account posts enteredCurrency and previews the To amount from the converted amount", async () => {
+    H.accounts = [
+      { id: 1, name: "Checking", currency: "USD", archived: false },
+      { id: 4, name: "Euro Account", currency: "EUR", archived: false },
+    ];
+    seedPrefill({ txType: "Transfer", accountId: "1", amount: "100" });
+    window.history.replaceState({}, "", "/transactions/new?prefill=1&kind=transfer");
+    // Pair rates: EUR->USD x1.25, USD->EUR x0.8. The preview echoes amount * rate.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: RequestInit) => {
+        calls.push({ url, init });
+        if (url.startsWith("/api/fx/preview")) {
+          const q = new URL(url, "http://x").searchParams;
+          const rate = q.get("from") === "EUR" ? 1.25 : 0.8;
+          const amt = Number(q.get("amount"));
+          return { ok: true, json: async () => ({ rate, source: "ecb", converted: amt * rate, date: "2026-10-09" }) };
+        }
+        if (url === "/api/settings/active-currencies")
+          return { ok: true, json: async () => ({ active: ["USD", "EUR"] }) };
+        return { ok: true, json: async () => ({ id: 99 }) };
+      }),
+    );
+    render(<Page />);
+    fireEvent.click(screen.getByText("Select Destination Account"));
+    expandCollapsedGroups();
+    fireEvent.click(await screen.findByText("Euro Account"));
+
+    fireEvent.click(screen.getByLabelText("Currency"));
+    fireEvent.click(await screen.findByRole("button", { name: /^EUR/ }));
+
+    // Entry leg: 100 EUR -> 125 USD (From currency), then To preview: 125 USD -> 100 EUR.
+    const received = (await screen.findByLabelText("Received (EUR)")) as HTMLInputElement;
+    await waitFor(() => expect(received.value).toBe("100.00"));
+    expect(calls.some((c) => c.url.includes("from=EUR") && c.url.includes("to=USD"))).toBe(true);
+    expect(calls.some((c) => c.url.includes("from=USD") && c.url.includes("to=EUR") && c.url.includes("amount=125"))).toBe(true);
+
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(postsTo("/api/transactions/transfer").length).toBe(1));
+    expect(bodyOf(postsTo("/api/transactions/transfer")[0])).toMatchObject({
+      fromAccountId: 1,
+      toAccountId: 4,
+      enteredAmount: 100,
+      enteredCurrency: "EUR",
+    });
+  });
+
   it("fx-currency-needs-override on a transfer shows the friendly message, not raw text", async () => {
     H.accounts = [
       { id: 1, name: "Checking", currency: "USD", archived: false },

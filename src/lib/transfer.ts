@@ -111,11 +111,20 @@ export type CreateTransferOpts = {
   fromAccountId: number;
   toAccountId: number;
   /**
-   * Positive amount the user sent, in the source account's currency.
-   * Can be 0 when this is a pure in-kind transfer (holdingName + quantity
-   * provided). For cash-only transfers must be > 0.
+   * Positive amount the user sent. In the source account's currency unless
+   * `enteredCurrency` is set. Can be 0 when this is a pure in-kind transfer
+   * (holdingName + quantity provided). For cash-only transfers must be > 0.
    */
   enteredAmount: number;
+  /**
+   * Optional currency `enteredAmount` is denominated in. When omitted, or equal
+   * to the source account currency, the amount is used as-is. Otherwise it is
+   * converted to the source account currency at the transfer date (same FX
+   * helper as /api/transactions) before the destination leg is derived, so the
+   * To amount follows the usual cross-currency rules. A missing rate fails with
+   * `fx-currency-needs-override` (side "source").
+   */
+  enteredCurrency?: string;
   /** YYYY-MM-DD; defaults to today. */
   date?: string;
   /**
@@ -509,8 +518,39 @@ export async function createTransferPair(
   const toCurrency = (toAcct.currency ?? "CAD").toUpperCase();
   const isCrossCurrency = fromCurrency !== toCurrency;
 
-  // Source leg always uses the source account's currency — no FX needed.
-  const sentAmount = round2(opts.enteredAmount);
+  // Source leg always uses the source account's currency. When the caller
+  // typed the amount in another currency, convert it here first; the To leg
+  // below then derives from the converted amount exactly as before.
+  const enteredCcy = opts.enteredCurrency?.trim().toUpperCase();
+  let sourceAmountInFromCcy = opts.enteredAmount;
+  if (enteredCcy && enteredCcy !== fromCurrency && opts.enteredAmount > 0) {
+    const srcConv = await resolveTxAmountsCore({
+      accountCurrency: fromCurrency,
+      date,
+      userId,
+      enteredAmount: opts.enteredAmount,
+      enteredCurrency: enteredCcy,
+    });
+    if (!srcConv.ok) {
+      return {
+        ok: false,
+        code: srcConv.code === "fx-currency-needs-override" ? "fx-currency-needs-override" : "invalid-amount",
+        message: srcConv.message,
+        side: "source",
+        currency: srcConv.currency,
+      };
+    }
+    if (!wantsHolding && round2(srcConv.amount) === 0) {
+      return {
+        ok: false,
+        code: "invalid-amount",
+        message: "enteredAmount converts to 0 in the source account currency; enter a larger amount",
+        side: "source",
+      };
+    }
+    sourceAmountInFromCcy = srcConv.amount;
+  }
+  const sentAmount = round2(sourceAmountInFromCcy);
 
   // Destination leg: derive via FX unless the caller supplied receivedAmount.
   // Pure in-kind transfers (sentAmount=0) skip the FX step entirely — there's

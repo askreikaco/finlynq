@@ -395,11 +395,24 @@ export default function MobileTransactionPage() {
     !!selectedAcc &&
     !!selectedToAcc &&
     selectedAcc.currency !== selectedToAcc.currency;
+  // Transfer typed in a currency other than the From account: the amount is converted to the
+  // From currency first (the save does the same), and the To preview runs on that converted amount.
+  const transferEnteredCcy = txType === "Transfer" && !!selectedAcc && currency !== selectedAcc.currency;
+  const transferEntryFx = useFxPreview({
+    enabled: transferEnteredCcy,
+    from: currency,
+    to: selectedAcc?.currency,
+    amount: parsedAmount,
+    date,
+  });
+  const transferSourceAmount = transferEnteredCcy
+    ? transferEntryFx.state === "ok" ? transferEntryFx.converted : Number.NaN
+    : parsedAmount;
   const transferFxPreview = useFxPreview({
     enabled: transferCrossCcy,
     from: selectedAcc?.currency ?? "",
     to: selectedToAcc?.currency,
-    amount: parsedAmount,
+    amount: transferSourceAmount,
     date,
   });
   // Pre-fill the received amount from the market rate until the user types their own (as the dialog does).
@@ -544,6 +557,7 @@ export default function MobileTransactionPage() {
           fromAccountId: Number(accountId),
           toAccountId: Number(toAccountId),
           enteredAmount: Math.abs(parsedAmount),
+          enteredCurrency: currency,
           date,
           note: note.trim() || undefined,
           tags: tags.trim() || undefined,
@@ -758,9 +772,11 @@ export default function MobileTransactionPage() {
     .join(" · ");
   const fxAmountLine =
     txType === "Transfer"
-      ? transferCrossCcy && transferFxPreview.state !== "idle"
-        ? <FxPreviewLine preview={transferFxPreview} className="text-xs text-muted-foreground" />
-        : undefined
+      ? transferEnteredCcy && transferEntryFx.state !== "idle"
+        ? <FxPreviewLine preview={transferEntryFx} className="text-xs text-muted-foreground" />
+        : transferCrossCcy && transferFxPreview.state !== "idle"
+          ? <FxPreviewLine preview={transferFxPreview} className="text-xs text-muted-foreground" />
+          : undefined
       : fxPreview.state !== "idle"
         ? <FxPreviewLine preview={fxPreview} className="text-xs text-muted-foreground" />
         : undefined;
@@ -867,7 +883,6 @@ export default function MobileTransactionPage() {
               setShowCurrencySelector(true);
             }}
             showCurrency
-            currencyDisabled={txType === "Transfer"}
             fxLine={fxAmountLine}
             invalid={invalidField === "amount"}
           />
