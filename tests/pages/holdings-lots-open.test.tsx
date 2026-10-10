@@ -32,6 +32,10 @@ vi.mock("@/app/(app)/portfolio/_hooks/use-portfolio", () => ({
 }));
 
 import PortfolioPage from "@/app/(app)/portfolio/page";
+vi.mock("@/lib/client/user-storage", async (orig) => ({
+  ...(await orig<typeof import("@/lib/client/user-storage")>()),
+  useSessionUserId: () => ({ userId: "page-test-user", ready: true }),
+}));
 
 const row = (o: Record<string, unknown>) => ({
   key: "eq:AAPL", symbol: "AAPL", name: "AAPL", description: "Apple Inc.", assetType: "stock", totalQty: 10.5,

@@ -27,6 +27,9 @@ export type ViewMode = "cards" | "list";
 /** Per-user localStorage base; stored as `pf-view-mode:${userId}`. */
 export const VIEW_MODE_STORAGE_KEY = "pf-view-mode";
 
+/** Longest DataView waits for the session before it shows the default view (ms). */
+export const VIEW_MODE_SESSION_WAIT_MS = 2500;
+
 export type ViewKey = "transactions" | "accounts" | "portfolio" | "budgets" | "goals" | "loans" | "subscriptions";
 
 /**
@@ -150,6 +153,14 @@ export function useViewModeState(viewKey: ViewKey): { mode: ViewMode; setMode: (
   const sizeClass = useAppSizeClass();
   const { userId, ready } = useSessionUserId();
   const snap = React.useSyncExternalStore(subscribe, getStore, getServerStore);
+  // After VIEW_MODE_SESSION_WAIT_MS without an answer, show the default view for this size class.
+  // The session request keeps running: when it answers, the stored choice applies.
+  const [waitedOut, setWaitedOut] = React.useState(false);
+  React.useEffect(() => {
+    if (ready) return;
+    const timer = setTimeout(() => setWaitedOut(true), VIEW_MODE_SESSION_WAIT_MS);
+    return () => clearTimeout(timer);
+  }, [ready]);
 
   // Layout effect: the stored prefs land in the same commit, before paint and before any observer
   // sees the DOM, so DataView never shows its pending placeholder for a frame after the session resolves.
@@ -177,7 +188,7 @@ export function useViewModeState(viewKey: ViewKey): { mode: ViewMode; setMode: (
     [ready, userId, key],
   );
 
-  return { mode, setMode, pending: !loaded };
+  return { mode, setMode, pending: !loaded && !waitedOut };
 }
 
 /**

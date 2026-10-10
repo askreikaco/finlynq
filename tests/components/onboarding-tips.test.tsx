@@ -2,6 +2,7 @@
  * @vitest-environment jsdom
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { resetSessionUserIdCache } from "@/lib/client/user-storage";
 import React from "react";
 import { render, fireEvent, waitFor, cleanup } from "@testing-library/react";
 
@@ -26,8 +27,12 @@ const KEY = "pf-dismissed-tips:user-1"; // per-user key (multi-account): `${base
 let sessionUserId: string | null = "user-1";
 let sessionFetch: ReturnType<typeof vi.fn>;
 
+// Every test starts with no cached session answer (the cache lives for the module).
+beforeEach(() => resetSessionUserIdCache());
+
 describe("OnboardingTips", () => {
   beforeEach(() => {
+  resetSessionUserIdCache();
     cleanup();
     // Clear localStorage before each test
     localStorage.clear();

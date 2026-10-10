@@ -91,27 +91,38 @@ function peekSessionUserId(): { userId: string | null } | undefined {
   return { userId: sessionResolved.userId };
 }
 
+/** Abort a session request that has not answered after this long; the caller then gets null (not cached). */
+export const SESSION_REQUEST_TIMEOUT_MS = 10_000;
+
 /**
  * Session user id, shared by every caller for SESSION_CACHE_TTL_MS: one /api/auth/session request
- * per page, not one per hook instance. A network failure is not cached (the next caller asks again).
+ * per page, not one per hook instance. Only a definite answer is cached: a 200 with a user id, or a
+ * 401 (signed out). A network error, abort, other non-OK status or bad JSON resolves to null and is
+ * NOT cached, so the next caller asks again. The caller then falls back to the default view.
  */
 export function loadSessionUserId(): Promise<string | null> {
   const now = Date.now();
   if (sessionCache && now - sessionCache.at < SESSION_CACHE_TTL_MS) return sessionCache.promise;
   const promise = (async (): Promise<string | null> => {
+    await Promise.resolve(); // run after sessionCache is assigned below, so a sync failure cannot be cached
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), SESSION_REQUEST_TIMEOUT_MS);
     try {
-      const res = await fetch("/api/auth/session", { cache: "no-store" });
-      let userId: string | null = null;
-      if (res.ok) {
-        const data = await res.json();
-        userId = typeof data?.userId === "string" && data.userId ? data.userId : null;
+      const res = await fetch("/api/auth/session", { cache: "no-store", signal: controller.signal });
+      if (res.status === 401) {
+        sessionResolved = { at: Date.now(), userId: null };
+        return null;
       }
+      if (!res.ok) throw new Error(`session request failed: ${res.status}`);
+      const data = await res.json();
+      const userId = typeof data?.userId === "string" && data.userId ? data.userId : null;
       sessionResolved = { at: Date.now(), userId };
       return userId;
     } catch {
-      // Offline or failed request: not cached, so the next caller retries.
       sessionCache = null;
       return null;
+    } finally {
+      clearTimeout(timer);
     }
   })();
   sessionCache = { at: now, promise };

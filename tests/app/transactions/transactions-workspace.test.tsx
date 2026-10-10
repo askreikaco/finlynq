@@ -38,6 +38,11 @@ vi.mock("@/app/(app)/transactions/_hooks/use-tx-prefs", async () => {
   return { useLookups: () => H.LK, useTxColumnPrefs: () => colPrefs, useTxSortPref: () => sortv, useTxFilterPrefs: () => filt };
 });
 vi.mock("@/app/(app)/transactions/_hooks/use-transactions", () => ({ useTransactions: () => H.RES }));
+// The stored view-mode choice resolves at once (no /api/auth/session round trip), as in the other page tests.
+vi.mock("@/lib/client/user-storage", async (orig) => ({
+  ...(await orig<typeof import("@/lib/client/user-storage")>()),
+  useSessionUserId: () => ({ userId: "workspace-test-user", ready: true }),
+}));
 import { TransactionsWorkspace } from "@/app/(app)/transactions/_components/transactions-workspace";
 const KEY = "finlynq:tx-prefill";
 class FakeIntersectionObserver {
