@@ -127,6 +127,10 @@ Excluded from the adaptive guard scan (see 3e).
 ### 3b. Form controls
 - Below md (max-width 767.98px) all `input, textarea, select, [contenteditable="true"]` use `font-size: max(16px, 1em)` (`src/app/globals.css:574-578`). Reason in comment `:567-568` (no iOS auto-zoom).
 
+**Controls.** On/off options, settings, consents and flags are `Switch` (`ui/switch.tsx`): label left, switch right (`shrink-0`), row `min-h-row`, label toggles it.
+`Checkbox` (`ui/checkbox.tsx`) only for multi-row selection: row select, select-all, bulk-select lists, per-row include lists. Tri-state is selection, so Checkbox.
+No native `type="checkbox"` outside that list. Guard: `tests/guards/no-checkbox.test.ts`; allowlist `tests/guards/checkbox-allowlist.json` (shrink only).
+
 ### 3c. Numerics
 - `tabular-nums lining-nums` on `.tabular-nums, td, th, [data-value]` (`globals.css:145-149`), on `.hero-number` (`:308-313`).
 - Numbers render system mono on md+; UI font below md.

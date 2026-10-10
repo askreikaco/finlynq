@@ -46,6 +46,7 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { ColumnFilterPopover } from "@/components/ui/column-filter";
+import { Switch } from "@/components/ui/switch";
 import type {
   FilterOption,
   TableColFilter,
@@ -272,14 +273,9 @@ export function DataTable<T>({
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
           <span className="font-medium">Columns:</span>
           {hideableColumns.map((col) => (
-            <label key={col.key} className="inline-flex items-center gap-1 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={!hidden.has(col.key)}
-                onChange={() => toggleHidden(col.key)}
-                className="h-3 w-3 accent-primary"
-              />
+            <label key={col.key} className="inline-flex items-center gap-2 cursor-pointer">
               {typeof col.header === "string" ? col.header : col.key}
+              <Switch checked={!hidden.has(col.key)} onCheckedChange={() => toggleHidden(col.key)} />
             </label>
           ))}
         </div>

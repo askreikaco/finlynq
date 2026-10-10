@@ -130,7 +130,7 @@ describe("email flow", () => {
     render(<CloudAuthPage />);
     await identify("user@example.com", true);
     fireEvent.change(await screen.findByPlaceholderText("Password"), { target: { value: "pw-123" } });
-    fireEvent.click(screen.getByLabelText(/shared computer/i));
+    fireEvent.click(screen.getByRole("switch", { name: /shared computer/i }));
     fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
     await waitFor(() => expect(callCount("/api/auth/login")).toBe(1));
     expect(bodyOf("/api/auth/login")).toStrictEqual({ identifier: "user@example.com", password: "pw-123", trustDevice: false });
