@@ -22,7 +22,7 @@ const OVERLAY_SELECTOR =
   '[data-slot="dialog-content"],[data-slot="sheet-content"],[role="alertdialog"]';
 
 const FAB_CLASS =
-  "regular:hidden print:hidden fixed z-40 inline-flex size-14 min-h-11 min-w-11 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/30 ring-1 ring-white/15 transition-transform duration-150 motion-safe:active:scale-95 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 [-webkit-tap-highlight-color:transparent]";
+  "regular:hidden print:hidden fixed z-40 inline-flex size-14 min-h-row min-w-11 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/30 ring-1 ring-white/15 transition-transform duration-150 motion-safe:active:scale-95 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 [-webkit-tap-highlight-color:transparent]";
 
 const FAB_STYLE = {
   bottom: "calc(var(--mobile-bar-clearance, calc(60px + var(--sab))) + 12px)",
