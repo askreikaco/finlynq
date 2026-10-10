@@ -271,9 +271,7 @@ export function AccountContent({
     <div className="max-w-2xl space-y-6">
       {!hideHeader && <PageHeader
           title="Account"
-          titleClassName="text-2xl font-bold tracking-tight"
           subtitle={<>Login, API key, privacy, and backup / restore</>}
-          subtitleClassName="text-sm text-muted-foreground mt-0.5"
         />}
 
       {/* Security Section */}
