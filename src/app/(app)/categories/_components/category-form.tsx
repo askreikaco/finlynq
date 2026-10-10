@@ -29,10 +29,13 @@ type Category = { id: number; type: string; group: string; name: string; note: s
 export function CategoryForm({
   mode,
   categoryId,
+  chrome = true,
 }: {
   mode: "create" | "rename";
   /** Required when mode is "rename". */
   categoryId?: number | null;
+  /** false: the caller (FormPage) renders the root and PageHeader; this renders the form only. */
+  chrome?: boolean;
 }) {
   const router = useRouter();
   const returnTo = useReturnTo(CATEGORY_RETURN_FALLBACK);
@@ -123,73 +126,79 @@ export function CategoryForm({
     );
   }
 
+  const formNode = (
+    <form onSubmit={handleSubmit} noValidate className={`mt-3 space-y-4 ${TW.formPad}`}>
+      {formError && (
+        <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-lg">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          {formError}
+        </div>
+      )}
+
+      <div>
+        <Input
+          aria-label="Category name"
+          aria-invalid={!!nameError || undefined}
+          className="h-11 text-base regular:pointer-fine:text-sm"
+          value={name}
+          onChange={(e) => {
+            setName(e.target.value);
+            setNameError("");
+          }}
+          placeholder="Category name"
+          disabled={loading}
+        />
+        {nameError && <p className="text-xs text-destructive mt-1">{nameError}</p>}
+      </div>
+
+      {!isRename && (
+        <>
+          <div>
+            <GroupCombobox
+              value={group}
+              onChange={(g) => {
+                setGroup(g);
+                setGroupError("");
+              }}
+              options={uniqueGroups}
+              placeholder="Group"
+              ariaLabel="Group"
+              invalid={!!groupError}
+            />
+            {groupError && <p className="text-xs text-destructive mt-1">{groupError}</p>}
+          </div>
+          <div>
+            <Select items={TYPE_LABELS} value={type} onValueChange={(v) => setType(v ?? "E")}>
+              <SelectTrigger aria-label="Type" className="w-full h-11">
+                <SelectValue placeholder="Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="E">Expense</SelectItem>
+                <SelectItem value="I">Income</SelectItem>
+                <SelectItem value="R">Reconciliation</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </>
+      )}
+
+      <div className="flex justify-end gap-2 pt-2">
+        <Button type="button" variant="ghost" onClick={() => router.push(returnTo)} disabled={submitting}>
+          Cancel
+        </Button>
+        <Button type="submit" disabled={submitting || loading}>
+          {submitting ? "Saving…" : submitLabel}
+        </Button>
+      </div>
+    </form>
+  );
+
+  if (!chrome) return formNode;
+
   return (
     <div data-testid="category-form-root" className={`mx-auto w-full ${TW.form}`}>
       <PageHeader title={title} backHref={returnTo} backLabel="Back" className="flex items-center justify-between" />
-      <form onSubmit={handleSubmit} noValidate className={`mt-3 space-y-4 ${TW.formPad}`}>
-        {formError && (
-          <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-lg">
-            <AlertTriangle className="h-4 w-4 shrink-0" />
-            {formError}
-          </div>
-        )}
-
-        <div>
-          <Input
-            aria-label="Category name"
-            aria-invalid={!!nameError || undefined}
-            className="h-11 text-base regular:pointer-fine:text-sm"
-            value={name}
-            onChange={(e) => {
-              setName(e.target.value);
-              setNameError("");
-            }}
-            placeholder="Category name"
-            disabled={loading}
-          />
-          {nameError && <p className="text-xs text-destructive mt-1">{nameError}</p>}
-        </div>
-
-        {!isRename && (
-          <>
-            <div>
-              <GroupCombobox
-                value={group}
-                onChange={(g) => {
-                  setGroup(g);
-                  setGroupError("");
-                }}
-                options={uniqueGroups}
-                placeholder="Group"
-                ariaLabel="Group"
-                invalid={!!groupError}
-              />
-              {groupError && <p className="text-xs text-destructive mt-1">{groupError}</p>}
-            </div>
-            <div>
-              <Select items={TYPE_LABELS} value={type} onValueChange={(v) => setType(v ?? "E")}>
-                <SelectTrigger aria-label="Type" className="w-full h-11">
-                  <SelectValue placeholder="Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="E">Expense</SelectItem>
-                  <SelectItem value="I">Income</SelectItem>
-                  <SelectItem value="R">Reconciliation</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </>
-        )}
-
-        <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" variant="ghost" onClick={() => router.push(returnTo)} disabled={submitting}>
-            Cancel
-          </Button>
-          <Button type="submit" disabled={submitting || loading}>
-            {submitting ? "Saving…" : submitLabel}
-          </Button>
-        </div>
-      </form>
+      {formNode}
     </div>
   );
 }

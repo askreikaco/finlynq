@@ -1,12 +1,19 @@
 "use client";
 
-import { Suspense } from "react";
-import { CategoryForm } from "../_components/category-form";
+import { FormPage } from "@/components/templates/form-page";
+import { CategoryForm, CATEGORY_RETURN_FALLBACK } from "../_components/category-form";
 
 export default function NewCategoryPage() {
   return (
-    <Suspense fallback={null}>
-      <CategoryForm mode="create" />
-    </Suspense>
+    <FormPage
+      id="category-form"
+      title="New category"
+      fallbackReturn={CATEGORY_RETURN_FALLBACK}
+      form="external"
+      padBottom="none"
+      header={{ actions: null }}
+    >
+      {() => <CategoryForm mode="create" chrome={false} />}
+    </FormPage>
   );
 }
