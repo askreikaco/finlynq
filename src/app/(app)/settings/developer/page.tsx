@@ -18,7 +18,7 @@ const OPEN_SECTIONS = {
   byPath: [{ prefix: "/settings/data", section: "data" }],
   valid: ["data"],
 };
-import { PageHeader } from "@/components/mobile";
+import { SectionPage } from "@/components/templates";
 
 export default function DeveloperSettingsPage() {
   const [devMode, setDevMode] = useState(false);
@@ -58,13 +58,14 @@ export default function DeveloperSettingsPage() {
   }
 
   return (
-    <div className="max-w-2xl space-y-6">
-      <PageHeader
-          title="Developer"
-          titleClassName="text-2xl font-bold tracking-tight"
-          subtitle="Advanced and experimental features"
-          subtitleClassName="text-sm text-muted-foreground mt-0.5"
-        />
+    <SectionPage
+      id="settings-developer"
+      title="Developer"
+      subtitle="Advanced and experimental features"
+      padBottom="none"
+      minW0={false}
+      suspense={false}
+    >
 
       <Card>
         <CardHeader>
@@ -118,6 +119,6 @@ export default function DeveloperSettingsPage() {
           </div>
         </AccordionItem>
       </Accordion>
-    </div>
+    </SectionPage>
   );
 }
