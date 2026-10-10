@@ -326,8 +326,6 @@ describe("nav-config", () => {
         { path: "/settings/dropdown-order", kind: "render-parent", target: "/settings/general" },
         { path: "/settings/data", kind: "render-parent", target: "/settings/developer" },
         { path: "/settings/bank-feeds", kind: "render-parent", target: "/settings/integrations" },
-        { path: "/settings/securities", kind: "render-parent", target: "/settings/investments" },
-        { path: "/settings/holding-accounts", kind: "render-parent", target: "/settings/investments" },
         { path: "/settings/rules", kind: "render-parent", target: "/settings/reconciliation" },
         { path: "/settings/import", kind: "render-parent", target: "/settings/reconciliation" },
         { path: "/connect", kind: "render-parent", target: "/settings/integrations" },
@@ -509,6 +507,8 @@ describe("nav-config", () => {
       for (const entry of NAV_REGISTRY) {
         // Skip entries with query params
         if (entry.path.includes("?")) continue;
+        // Path is served by a next.config redirect (C-36), not a page file
+        if (REDIRECTS.some((r) => r.source === entry.path)) continue;
 
         const basePath = entry.path.split("?")[0];
         const exists = pageFiles.has(basePath);
@@ -621,7 +621,7 @@ describe("nav-config", () => {
   });
 
   describe("Redirects table", () => {
-    it("should have complete REDIRECTS array with all 7 entries in exact form", () => {
+    it("should have complete REDIRECTS array with all 10 entries in exact form", () => {
       const expectedRedirects = [
         { source: "/mcp", destination: "/api/mcp", permanent: true },
         { source: "/mcp/:path*", destination: "/api/mcp/:path*", permanent: true },
@@ -630,6 +630,9 @@ describe("nav-config", () => {
         { source: "/import/reconcile", destination: "/import?tab=reconcile", permanent: false },
         { source: "/import/classic", destination: "/import", permanent: false },
         { source: "/calendar", destination: "/subscriptions?view=calendar", permanent: false },
+        { source: "/admin/env", destination: "/admin/system", permanent: false },
+        { source: "/settings/holding-accounts", destination: "/settings/investments", permanent: false },
+        { source: "/settings/securities", destination: "/settings/investments", permanent: false },
       ];
       expect(REDIRECTS).toEqual(expectedRedirects);
     });
@@ -646,7 +649,7 @@ describe("nav-config", () => {
       const cfg = (await import("../../next.config")).default;
       const result = await cfg.redirects!();
 
-      // Expected 7 entries (full table)
+      // Expected 10 entries (full table)
       const expectedRedirects = [
         { source: "/mcp", destination: "/api/mcp", permanent: true },
         { source: "/mcp/:path*", destination: "/api/mcp/:path*", permanent: true },
@@ -655,6 +658,9 @@ describe("nav-config", () => {
         { source: "/import/reconcile", destination: "/import?tab=reconcile", permanent: false },
         { source: "/import/classic", destination: "/import", permanent: false },
         { source: "/calendar", destination: "/subscriptions?view=calendar", permanent: false },
+        { source: "/admin/env", destination: "/admin/system", permanent: false },
+        { source: "/settings/holding-accounts", destination: "/settings/investments", permanent: false },
+        { source: "/settings/securities", destination: "/settings/investments", permanent: false },
       ];
 
       expect(result).toEqual(expectedRedirects);

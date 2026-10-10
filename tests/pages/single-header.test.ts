@@ -17,7 +17,6 @@ const EXEMPTIONS: Record<string, string> = {
   "settings/": "settings area: renders inside SettingsShell (its own detail bar); owned by the hdr-settings audit",
   "account/": "account area: renders inside AccountShell; owned by the account audit, not this scope",
   "connect/page.tsx": "wrapper: SettingsShell + the settings Integrations page (settings area)",
-  "admin/env/page.tsx": "server redirect to /admin/system; renders nothing",
 };
 
 /**
