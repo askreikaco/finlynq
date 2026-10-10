@@ -47,6 +47,7 @@ describe("picker settings button", () => {
             placeholder="Search..."
             emptyText="None"
             entries={[]}
+            layout="sections"
             onPick={() => {}}
           />
         </SheetContent>
@@ -66,6 +67,7 @@ describe("picker settings button", () => {
             placeholder="Search..."
             emptyText="None"
             entries={[]}
+            layout="sections"
             onPick={() => {}}
             settingsHref="/x"
           />

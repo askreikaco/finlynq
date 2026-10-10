@@ -6,6 +6,9 @@ import * as React from "react";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import {
   NumpadDock,
+  CURRENCY_CHIP_ROW_PX,
+  buildCurrencyChips,
+  currencyChipSymbol,
   type NumpadDockProps,
 } from "@/components/transactions/entry/numpad-dock";
 
@@ -130,5 +133,67 @@ describe("NumpadDock", () => {
     const { props } = renderDock({ activeId: "r2", activeValue: "4.5+", decimals: 0 });
     tap("Delete last digit");
     expect(props.onChange).toHaveBeenCalledWith("r2", "4.5");
+  });
+});
+
+describe("NumpadDock currency chips", () => {
+  const CHIP_CODES = ["VND", "USD", "EUR", "GBP", "JPY", "THB"];
+
+  it("shows no currency row unless chips are passed", () => {
+    renderDock();
+    expect(screen.queryByRole("group", { name: "Currency" })).toBeNull();
+  });
+
+  it("renders the chips in order with symbols, the active chip pressed", () => {
+    renderDock({ currencies: CHIP_CODES, currency: "VND", onCurrencyChange: vi.fn() });
+    const group = screen.getByRole("group", { name: "Currency" });
+    const chips = Array.from(group.querySelectorAll("button"));
+    expect(chips.map((b) => b.getAttribute("aria-label"))).toEqual(CHIP_CODES);
+    expect(chips.map((b) => b.textContent)).toEqual(["₫", "US$", "€", "£", "JP¥", "฿"]);
+    expect(chips.map((b) => b.getAttribute("aria-pressed"))).toEqual([
+      "true", "false", "false", "false", "false", "false",
+    ]);
+    for (const b of chips) expect(b.className).toContain("h-11");
+    expect(group.className).toContain("overflow-x-auto");
+  });
+
+  it("tapping a chip calls onCurrencyChange with the code and keeps the keypad open", () => {
+    const onCurrencyChange = vi.fn();
+    const { props } = renderDock({
+      currencies: CHIP_CODES,
+      currency: "VND",
+      onCurrencyChange,
+      activeValue: "5",
+    });
+    fireEvent.click(screen.getByRole("button", { name: "USD" }));
+    expect(onCurrencyChange).toHaveBeenCalledWith("USD");
+    expect(props.onDone).not.toHaveBeenCalled();
+    expect(screen.getByRole("group", { name: "Amount keypad" })).toBeTruthy();
+  });
+
+  it("buildCurrencyChips: entered first, then the account currency, then the offered list, capped at six", () => {
+    expect(
+      buildCurrencyChips("USD", "VND", ["VND", "USD", "EUR", "GBP", "JPY", "THB", "CHF"]),
+    ).toEqual(["USD", "VND", "EUR", "GBP", "JPY", "THB"]);
+    expect(buildCurrencyChips("EUR", undefined, ["USD"])).toEqual(["EUR", "USD"]);
+    expect(buildCurrencyChips("EUR", "EUR", [])).toEqual(["EUR"]);
+  });
+
+  it("currencyChipSymbol falls back to the code when Intl has only letters", () => {
+    expect(currencyChipSymbol("EUR")).toBe("€");
+    expect(currencyChipSymbol("CHF")).toBe("CHF");
+    expect(currencyChipSymbol("NOPE-NOT-A-CODE")).toBe("NOPE-NOT-A-CODE");
+  });
+
+  it("the chip row is inside the dock, above the keypad", () => {
+    renderDock({ currencies: ["VND", "USD"], currency: "VND", onCurrencyChange: vi.fn() });
+    const dock = screen.getByTestId("numpad-dock");
+    const children = Array.from(dock.children);
+    expect(children[0].getAttribute("aria-label")).toBe("Currency");
+    expect(children[1].getAttribute("aria-label")).toBe("Amount keypad");
+  });
+
+  it("CURRENCY_CHIP_ROW_PX matches py-1.5 plus a 44px chip", () => {
+    expect(CURRENCY_CHIP_ROW_PX).toBe(6 + 44 + 6);
   });
 });

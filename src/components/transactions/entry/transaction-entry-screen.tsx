@@ -34,7 +34,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { AutoTextarea } from "@/components/ui/auto-textarea";
 import { cn } from "@/lib/utils";
-import { NumpadDock } from "./numpad-dock";
+import { NumpadDock, buildCurrencyChips } from "./numpad-dock";
 import { CategorySelector, type Category } from "./category-selector";
 import { AccountSelector, type Account } from "./account-selector";
 import { EMPTY_GROUP_ORDER, type AccountGroupOrder } from "@/lib/accounts/groups";
@@ -414,6 +414,13 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
   // Entered currency: explicit choice, else the account's currency, else the display currency.
   const currency = currencyChoice || selectedAcc?.currency || displayCurrency;
   const currencyOptions = useActiveCurrencies(currency);
+  // Currency chips sit in the keypad only for the main amount (split rows inherit the currency).
+  // Same handler as the currency sheet, so conversion and FX preview follow a chip tap too.
+  const handleCurrencySelect = (code: string) => setCurrencyChoice(code);
+  const showCurrencyChips = padTarget === MAIN_PAD && !isEditTransfer;
+  const currencyChipCodes = showCurrencyChips
+    ? buildCurrencyChips(currency, selectedAcc?.currency, currencyOptions)
+    : undefined;
 
   // Splits (Expense/Income only). One validation feeds the Save gate, the save payload and the messages.
   // Splits use the ENTERED currency (the amount the user typed); the save converts them to the account currency.
@@ -913,10 +920,11 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
   //   Save and Cancel  h-12                         48
   //   closed total                                 519   (rule row 44+8 and error box ~48 add when shown)
   //   budget 763 (47/34): 763 - 519 = 244 spare; budget 844 (0/0): 325 spare.
-  // Numpad open: the dock is pinned to --sab and is NUMPAD_HEIGHT_PX (209) tall, so its top is
-  // 844 - 34 - 209 = 601 with 47/34 insets (635 with 0/0). The amount row and Save sit above that line, and the
-  // scroll region keeps NUMPAD_HEIGHT_PX of bottom padding while open (pointer-coarse only), so a focused
-  // row can scroll above the dock. pb-[209px] below must equal NUMPAD_HEIGHT_PX.
+  // Numpad open: the dock is pinned to --sab and is NUMPAD_HEIGHT_PX (259) tall, so its top is
+  // 844 - 34 - 259 = 551 with 47/34 insets (585 with 0/0). With the currency chip row (main amount only)
+  // the dock adds CURRENCY_CHIP_ROW_PX (56): 315 total. The scroll region keeps that much bottom padding
+  // while open (pointer-coarse only), so a focused row can scroll above the dock. The literal
+  // pb-[259px] / pb-[315px] below must equal NUMPAD_HEIGHT_PX and NUMPAD_HEIGHT_PX + CURRENCY_CHIP_ROW_PX.
   const moreSummary = [
     tags.trim() ? "Tags" : null,
     isBusiness ? "Business" : null,
@@ -999,7 +1007,7 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
       <main
         className={cn(
           "mt-3 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain px-4 pb-3",
-          showNumpad && "pointer-coarse:pb-[209px]",
+          showNumpad && (showCurrencyChips ? "pointer-coarse:pb-[315px]" : "pointer-coarse:pb-[259px]"),
         )}
       >
         {/* Notice banners */}
@@ -1402,6 +1410,9 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
         onChange={handleDockChange}
         onDone={closePad}
         decimals={currencyDecimals(currency)}
+        currencies={currencyChipCodes}
+        currency={currency}
+        onCurrencyChange={showCurrencyChips ? handleCurrencySelect : undefined}
       />
 
       {editMode && (
@@ -1424,7 +1435,7 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
         onOpenChange={setShowCurrencySelector}
         currencies={currencyOptions}
         selected={currency}
-        onSelect={(code) => setCurrencyChoice(code)}
+        onSelect={handleCurrencySelect}
       />
 
       <CategorySelector
