@@ -70,10 +70,17 @@ describe("settings/general at 390", () => {
 });
 
 describe("budgets at 390", () => {
-  it("summary values are text-xl with tabular figures and step up to text-2xl only at md+", () => {
+  it("summary values are text-xl nowrap with tabular figures and step up to text-2xl only at wide (regular stays text-xl: the 4-up tiles are too narrow)", () => {
     const src = read(BUDGETS);
     expect(src).not.toMatch(/(?<![:\w-])text-2xl font-bold/);
-    expect(src.match(/min-w-0 break-words text-xl font-bold tabular-nums regular:text-2xl/g)?.length).toBe(5);
+    expect(src).not.toMatch(/break-words text-xl font-bold tabular-nums/);
+    expect(src.match(/min-w-0 whitespace-nowrap text-xl font-bold tabular-nums wide:text-2xl/g)?.length).toBe(5);
+  });
+
+  it("four-up summary tiles are two columns at regular and four at wide (a 4-up 768 tile is ~117px of text)", () => {
+    const src = read(BUDGETS);
+    expect(src).toContain('"regular:grid-cols-2 wide:grid-cols-4" : "regular:grid-cols-3"');
+    expect(src).not.toContain('"regular:grid-cols-4"');
   });
 
   it("essentials (group) cards use gap-1 so the header is not 16px + padding away from the first row", () => {

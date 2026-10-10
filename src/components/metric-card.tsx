@@ -108,7 +108,8 @@ export function MetricCard({
   const motionVariants = animationsEnabled ? itemVariants : noAnimationVariants;
   const hasSpark = !!sparkData && sparkData.length > 1;
   // Sized by the card's own width so a narrow card (2-up grid on a phone) never clips the number.
-  const numberSize = size === "hero" ? "text-3xl @[24rem]:text-4xl @[36rem]:text-5xl" : "text-xl @[13rem]:text-2xl @[18rem]:text-3xl";
+  // Hero: 5xl only once the number column (card minus the 40% sparkline column) fits "808.924.476 ₫" at 48px (@[42rem]).
+  const numberSize = size === "hero" ? "text-3xl @[24rem]:text-4xl @[42rem]:text-5xl" : "text-xl @[13rem]:text-2xl @[18rem]:text-3xl";
   const toneClasses = tone in METRIC_TONES ? METRIC_TONES[tone as MetricTone] : tone;
   const card = (
     <Card
@@ -129,7 +130,7 @@ export function MetricCard({
           {loading ? (
             <span className="inline-block h-7 w-24 animate-shimmer rounded-md align-middle" />
           ) : (
-            <div className={`${numberSize} font-bold tracking-tight hero-number tabular-nums leading-none break-words ${valueClassName}`}>
+            <div className={`${numberSize} font-bold tracking-tight hero-number tabular-nums leading-none ${size === "hero" && typeof value === "number" ? "whitespace-nowrap" : "break-words"} ${valueClassName}`}>
               {typeof value === "number" ? <AnimatedNumber value={value} currency={resolvedCurrency} /> : value}
             </div>
           )}

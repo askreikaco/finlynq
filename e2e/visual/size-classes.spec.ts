@@ -223,8 +223,16 @@ for (const vp of VIEWPORTS) {
           const top: Measure = await page.evaluate(measure, { rail: RAIL_SEL, bottom: BOTTOM_SEL, fab: FAB_SEL, toggle: TOGGLE_SEL, view: VIEW_SEL });
           let scrolled: Measure | null = null;
           if (top.scrollRange >= 1) {
-            await page.evaluate(() => window.scrollTo(0, Math.min(600, document.documentElement.scrollHeight - window.innerHeight)));
-            await page.waitForTimeout(300);
+            // html is scroll-behavior: smooth, so a bare scrollTo + fixed wait samples mid-animation on a busy
+            // runner (header top = natural offset minus the partial scroll). Jump instantly, then wait for the target.
+            const target = await page.evaluate(() => {
+              document.documentElement.style.scrollBehavior = "auto";
+              const y = Math.min(600, document.documentElement.scrollHeight - window.innerHeight);
+              window.scrollTo(0, y);
+              return y;
+            });
+            await page.waitForFunction((y) => Math.abs(window.scrollY - y) < 1, target, { timeout: 5_000 }).catch(() => {});
+            await page.waitForTimeout(100);
             scrolled = await page.evaluate(measure, { rail: RAIL_SEL, bottom: BOTTOM_SEL, fab: FAB_SEL, toggle: TOGGLE_SEL, view: VIEW_SEL });
           }
           manifest.push({ shot: path.basename(shot), scrollW: top.scrollW, clientW: top.clientW, scrollRange: top.scrollRange, fontFamily: top.fontFamily.slice(0, 60) });

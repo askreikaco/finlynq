@@ -507,7 +507,7 @@ function BudgetsPageContent() {
       </div>
 
       {/* Summary Cards */}
-      <div className={`grid grid-cols-2 gap-3 ${mode === "envelope" ? "regular:grid-cols-4" : ageOfMoney ? "regular:grid-cols-4" : "regular:grid-cols-3"}`}>
+      <div className={`grid grid-cols-2 gap-3 ${mode === "envelope" || ageOfMoney ? "regular:grid-cols-2 wide:grid-cols-4" : "regular:grid-cols-3"}`}>
         <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
@@ -518,7 +518,7 @@ function BudgetsPageContent() {
             </div>
           </CardHeader>
           <CardContent>
-            <p className="min-w-0 break-words text-xl font-bold tabular-nums regular:text-2xl">{formatCurrency(totalBudget, displayCurrency)}</p>
+            <p className="min-w-0 whitespace-nowrap text-xl font-bold tabular-nums wide:text-2xl">{formatCurrency(totalBudget, displayCurrency)}</p>
             {totalRollover > 0 && (
               <p className="text-xs text-warning mt-1 flex items-center gap-1">
                 <ArrowDownRight className="h-3 w-3" />
@@ -537,7 +537,7 @@ function BudgetsPageContent() {
             </div>
           </CardHeader>
           <CardContent>
-            <p className={`min-w-0 break-words text-xl font-bold tabular-nums regular:text-2xl ${totalSpent > totalBudget ? "text-destructive" : "text-pos"}`}>
+            <p className={`min-w-0 whitespace-nowrap text-xl font-bold tabular-nums wide:text-2xl ${totalSpent > totalBudget ? "text-destructive" : "text-pos"}`}>
               {formatCurrency(totalSpent, displayCurrency)}
             </p>
           </CardContent>
@@ -552,7 +552,7 @@ function BudgetsPageContent() {
             </div>
           </CardHeader>
           <CardContent>
-            <p className={`min-w-0 break-words text-xl font-bold tabular-nums regular:text-2xl ${totalRemaining >= 0 ? "text-pos" : "text-destructive"}`}>
+            <p className={`min-w-0 whitespace-nowrap text-xl font-bold tabular-nums wide:text-2xl ${totalRemaining >= 0 ? "text-pos" : "text-destructive"}`}>
               {formatCurrency(totalRemaining, displayCurrency)}
             </p>
           </CardContent>
@@ -570,7 +570,7 @@ function BudgetsPageContent() {
               </div>
             </CardHeader>
             <CardContent>
-              <p className={`min-w-0 break-words text-xl font-bold tabular-nums regular:text-2xl ${availableToBudget >= 0 ? "text-pos" : "text-destructive"}`}>
+              <p className={`min-w-0 whitespace-nowrap text-xl font-bold tabular-nums wide:text-2xl ${availableToBudget >= 0 ? "text-pos" : "text-destructive"}`}>
                 {formatCurrency(availableToBudget, displayCurrency)}
               </p>
               {availableToBudget < 0 && (
@@ -592,7 +592,7 @@ function BudgetsPageContent() {
               </div>
             </CardHeader>
             <CardContent>
-              <p className="min-w-0 break-words text-xl font-bold tabular-nums regular:text-2xl">{ageOfMoney.ageInDays} days</p>
+              <p className="min-w-0 whitespace-nowrap text-xl font-bold tabular-nums wide:text-2xl">{ageOfMoney.ageInDays} days</p>
               {ageOfMoney.trend !== 0 && (
                 <p className={`text-xs mt-1 ${ageOfMoney.trend > 0 ? "text-pos" : "text-destructive"}`}>
                   {ageOfMoney.trend > 0 ? "+" : ""}{ageOfMoney.trend}d vs previous period
