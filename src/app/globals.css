@@ -181,6 +181,16 @@ html {
   --container-form: 36rem;           /* max-w-form; today max-w-xl */
   --container-section: 42rem;        /* max-w-section; today max-w-2xl */
   --container-report: 48rem;         /* max-w-report; today max-w-3xl */
+  --container-doc: 56rem;            /* max-w-doc; today max-w-4xl */
+  --container-console: 80rem;        /* max-w-console; today max-w-7xl */
+  --form-bottom-pad-max: max(24px, var(--sab)); /* pb-[var(--form-bottom-pad-max)]; today pb-[max(24px,var(--sab))] */
+}
+
+/* Soft backdrop blur (8px). Named blur-soft, not backdrop-blur-*: that prefix is a guard pattern (tests/guards/scan.ts).
+   --blur-soft lives in :root, not @theme: a @theme --blur-* key makes Tailwind emit its own blur-soft filter rule. */
+@utility blur-soft {
+  backdrop-filter: blur(var(--blur-soft));
+  -webkit-backdrop-filter: blur(var(--blur-soft));
 }
 
 :root {
@@ -198,6 +208,7 @@ html {
   /* Bottom clearance for content and floating UI above the mobile tab bar (~64px bar + 12px gap + sab). */
   --mobile-bar-clearance: calc(96px + var(--sab));
   --form-bottom-pad: calc(var(--sab, 0px) + 1.5rem);
+  --blur-soft: 8px;
   /* motion (spec values come with the retune) */
   --press-scale: 1;
   --press-dur: 0ms;
