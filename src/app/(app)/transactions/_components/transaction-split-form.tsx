@@ -1,27 +1,29 @@
 "use client";
 
 /**
- * TransactionSplitForm — Split transaction as a full page (PKG1 tx-edit).
- * Replaces split-dialog.tsx. Same rows (category, account, amount, note,
- * description, tags), same balance rule (rows must sum to the total), and the
- * same POST/DELETE /api/transactions/splits payloads as the dialog. Layout:
- * one ListCard per row with the New Transaction row primitives and pickers.
+ * TransactionSplitForm: split an existing transaction as a full page (S-5).
+ * Uses the same SplitRows editor as the new-entry screen: count field, one card per
+ * row, read-only remainder on the last row, NumpadDock for every amount. Saves through
+ * POST/DELETE /api/transactions/splits. accountId/description/tags of loaded rows are
+ * round-tripped (not shown). Validation is validateSplits (single source of messages).
  */
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { mutate, useSWRConfig } from "swr";
-import { Check, Plus, Trash2 } from "lucide-react";
+import { Check } from "lucide-react";
 import { PageHeader } from "@/components/mobile";
 import { Button } from "@/components/ui/button";
-import { AmountInput } from "@/components/amount-input";
 import { TW } from "@/lib/design/tokens";
-import { formatCurrency } from "@/lib/currency";
+import { cn } from "@/lib/utils";
+import { currencyDecimals, formatCurrency } from "@/lib/currency";
 import { revalidateTransactionLists } from "@/lib/transactions/revalidate";
-import { FormRow } from "@/app/(app)/transactions/new/_components/form-row";
+import { parseCount, rowsFromSavedSplits, type SplitAdjustment, type SplitRowModel } from "@/lib/transactions/split-math";
+import { FormRow } from "@/components/forms";
 import { ListCard } from "@/app/(app)/transactions/new/_components/list-card";
 import { CategorySelector } from "@/app/(app)/transactions/new/_components/category-selector";
-import { AccountSelector } from "@/app/(app)/transactions/new/_components/account-selector";
+import { NumpadDock } from "@/app/(app)/transactions/new/_components/numpad-dock";
+import { SplitRows, validateSplits } from "@/components/transactions/split-rows";
 
 export interface SplitCategory {
   id: number;
@@ -42,42 +44,53 @@ export interface SplitTotal {
   id: number;
   amount: number;
   currency: string;
+  categoryId: number | null;
+  payee: string | null;
 }
 
-export interface SplitRowState {
-  categoryId: string;
-  accountId: string;
-  amount: string;
-  note: string;
-  description: string;
-  tags: string;
+/** One saved split row as returned by GET /api/transactions/splits. */
+export interface SavedSplitRow {
+  categoryId: number | null;
+  accountId: number | null;
+  amount: number;
+  note: string | null;
+  description: string | null;
+  tags: string | null;
 }
 
-const emptyRow = (amount = ""): SplitRowState => ({
-  categoryId: "",
-  accountId: "",
-  amount,
-  note: "",
-  description: "",
-  tags: "",
-});
+export interface SplitEditorSeed {
+  /** Raw count text ("2" for no saved splits, else the saved count). */
+  count: string;
+  rows: SplitRowModel[];
+  /** One-time notice when saved splits did not sum to the total. */
+  adjustment: SplitAdjustment | null;
+}
 
-/** Existing splits from GET /api/transactions/splits, or one empty row carrying the full total. */
-export function rowsFromSplits(
-  data: Array<{ categoryId: number | null; accountId: number | null; amount: number; note: string | null; description: string | null; tags: string | null }>,
-  totalAmount: number,
-): SplitRowState[] {
-  if (data.length > 0) {
-    return data.map((s) => ({
+const blankRow = (id: string): SplitRowModel => ({ id, categoryId: "", amount: "", note: "" });
+
+/**
+ * Editor state from the saved splits. No saved splits: two blank rows (row 1 typed,
+ * row 2 = remainder). Saved splits: amounts made absolute (R2); if they do not sum to
+ * the total, the last row becomes the remainder and `adjustment` is set (R6).
+ */
+export function seedSplitEditor(saved: readonly SavedSplitRow[], parentAmount: number, currency: string): SplitEditorSeed {
+  if (saved.length === 0) {
+    return { count: "2", rows: [blankRow("tx-split-row-0"), blankRow("tx-split-row-1")], adjustment: null };
+  }
+  const result = rowsFromSavedSplits(
+    saved.map((s, i) => ({
+      id: `tx-split-row-${i}`,
       categoryId: s.categoryId ? String(s.categoryId) : "",
       accountId: s.accountId ? String(s.accountId) : "",
-      amount: String(s.amount),
+      amount: s.amount,
       note: s.note ?? "",
       description: s.description ?? "",
       tags: s.tags ?? "",
-    }));
-  }
-  return [emptyRow(String(Math.abs(totalAmount)))];
+    })),
+    Math.abs(parentAmount),
+    currency,
+  );
+  return { count: String(saved.length), rows: result.rows, adjustment: result.adjustment };
 }
 
 export function TransactionSplitForm({
@@ -85,7 +98,7 @@ export function TransactionSplitForm({
   total,
   categories,
   accounts,
-  initialRows,
+  initialSeed,
   hasSplitsInitially,
   returnTo,
 }: {
@@ -93,46 +106,44 @@ export function TransactionSplitForm({
   total: SplitTotal;
   categories: SplitCategory[];
   accounts: SplitAccount[];
-  initialRows: SplitRowState[];
+  initialSeed: SplitEditorSeed;
   hasSplitsInitially: boolean;
   returnTo: string;
 }) {
   const router = useRouter();
   const { mutate: swrMutate, cache } = useSWRConfig();
-  const [rows, setRows] = useState<SplitRowState[]>(initialRows);
+  const [count, setCount] = useState(initialSeed.count);
+  const [rows, setRows] = useState<SplitRowModel[]>(initialSeed.rows);
+  const [notice] = useState<SplitAdjustment | null>(initialSeed.adjustment);
+  const [padRowId, setPadRowId] = useState<string | null>(null);
+  const [pickerRowId, setPickerRowId] = useState<string | null>(null);
   const [hasSplits] = useState(hasSplitsInitially);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  // Which row a picker is editing: { kind, index } or null.
-  const [picker, setPicker] = useState<{ kind: "category" | "account"; index: number } | null>(null);
 
-  const allocated = rows.reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
-  const remaining = Math.abs(total.amount) - allocated;
-  const isBalanced = Math.abs(remaining) < 0.01;
   const currency = total.currency;
+  const parentAbs = Math.abs(total.amount);
+  const parentCategoryId = total.categoryId ? String(total.categoryId) : "";
+  const verdict = validateSplits({ count, rows, parentAmount: parentAbs, currency, parentCategoryId });
 
   const categoryById = useMemo(() => new Map(categories.map((c) => [String(c.id), c])), [categories]);
-  const accountById = useMemo(() => new Map(accounts.map((a) => [String(a.id), a])), [accounts]);
-  // Destination picker for a new split leg: archived accounts excluded (as the dialog did).
-  const pickableAccounts = useMemo(() => accounts.filter((a) => a.archived !== true), [accounts]);
+  const parentCategoryName = categoryById.get(parentCategoryId)?.name ?? "—";
+  const pickedRow = pickerRowId ? rows.find((r) => r.id === pickerRowId) : undefined;
+  const padRow = padRowId ? rows.find((r) => r.id === padRowId) : undefined;
 
   const refresh = () => {
     void revalidateTransactionLists(swrMutate, cache);
     void mutate("/api/accounts");
   };
 
-  function updateRow(index: number, field: keyof SplitRowState, value: string) {
-    setRows((prev) => prev.map((r, i) => (i === index ? { ...r, [field]: value } : r)));
+  function updateRow(rowId: string, patch: Partial<SplitRowModel>) {
+    setRows((prev) => prev.map((r) => (r.id === rowId ? { ...r, ...patch } : r)));
   }
 
   async function handleSave() {
     setError("");
-    if (rows.length < 2) {
-      setError("A split requires at least 2 rows.");
-      return;
-    }
-    if (!isBalanced) {
-      setError(`Splits must sum to ${formatCurrency(Math.abs(total.amount), currency)}. Difference: ${formatCurrency(Math.abs(remaining), currency)}`);
+    if (!verdict.canSave) {
+      setError(verdict.firstError ?? "Splits can't be saved yet.");
       return;
     }
     setSaving(true);
@@ -143,14 +154,17 @@ export function TransactionSplitForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           transactionId,
-          splits: rows.map((r) => ({
-            categoryId: r.categoryId ? parseInt(r.categoryId) : null,
-            accountId: r.accountId ? parseInt(r.accountId) : null,
-            amount: sign * Math.abs(parseFloat(r.amount) || 0),
-            note: r.note,
-            description: r.description,
-            tags: r.tags,
-          })),
+          splits: verdict.visible.map((row, i) => {
+            const categoryId = verdict.resolved[i].id;
+            return {
+              categoryId: categoryId ? parseInt(categoryId) : null,
+              accountId: row.accountId ? parseInt(row.accountId) : null,
+              amount: sign * Math.abs(verdict.amounts[i]),
+              note: row.note,
+              description: row.description ?? "",
+              tags: row.tags ?? "",
+            };
+          }),
         }),
       });
       if (!res.ok) {
@@ -183,7 +197,10 @@ export function TransactionSplitForm({
   const categoryPickerEntries = categories.map((c) => ({ ...c, id: c.id }));
 
   return (
-    <div data-testid="tx-split-root" className={`mx-auto w-full ${TW.form}`}>
+    <div
+      data-testid="tx-split-root"
+      className={cn("mx-auto w-full", TW.form, padRowId !== null && "pointer-coarse:pb-[209px]")}
+    >
       <PageHeader
         title="Split transaction"
         backHref={returnTo}
@@ -193,7 +210,7 @@ export function TransactionSplitForm({
             type="button"
             data-testid="tx-split-save"
             onClick={() => void handleSave()}
-            disabled={saving || !isBalanced}
+            disabled={saving || !verdict.canSave}
             className="h-11 gap-1.5"
           >
             <Check className="size-4" aria-hidden="true" />
@@ -204,100 +221,45 @@ export function TransactionSplitForm({
 
       <div className={`mt-3 space-y-3 px-4 ${TW.formPad}`}>
         <ListCard>
-          <div className={`flex ${TW.rowTall} items-center justify-between gap-3 px-4 text-sm`}>
-            <span className="text-muted-foreground">Total amount</span>
-            <span className="font-mono font-semibold text-foreground">{formatCurrency(Math.abs(total.amount), currency)}</span>
-          </div>
+          <FormRow variant="custom" label="Total amount" labelWidth="narrow" height="tall">
+            <span className="font-mono font-semibold text-foreground">{formatCurrency(parentAbs, currency)}</span>
+          </FormRow>
+          <FormRow variant="custom" label="Category" labelWidth="narrow" height="tall">
+            <span data-testid="tx-split-category" className="text-sm text-foreground">
+              {parentCategoryName}
+            </span>
+          </FormRow>
         </ListCard>
 
-        {rows.map((row, i) => {
-          const cat = categoryById.get(row.categoryId);
-          const acc = accountById.get(row.accountId);
-          return (
-            <ListCard key={i} data-testid={`split-row-${i}`}>
-              <FormRow
-                variant="button"
-                testId={`split-row-${i}-category`}
-                label="Category"
-                value={cat?.name}
-                placeholder="Select Category"
-                onClick={() => setPicker({ kind: "category", index: i })}
-              />
-              <FormRow
-                variant="button"
-                testId={`split-row-${i}-account`}
-                label="Account"
-                value={acc?.name}
-                placeholder="Select Account"
-                onClick={() => setPicker({ kind: "account", index: i })}
-              />
-              <div className={`flex ${TW.rowTall} items-center gap-3 px-4`}>
-                <label htmlFor={`split-${i}-amount`} className={`${TW.rowLabelNarrow} shrink-0 text-sm text-muted-foreground`}>
-                  Amount
-                </label>
-                <AmountInput
-                  id={`split-${i}-amount`}
-                  step="0.01"
-                  min="0"
-                  value={row.amount}
-                  onValueChange={(nv) => updateRow(i, "amount", nv)}
-                  placeholder="0.00"
-                  className="min-w-0 flex-1 border-0 bg-transparent px-0 text-base shadow-none focus-visible:ring-0"
-                />
-              </div>
-              <FormRow
-                variant="input"
-                id={`split-${i}-note`}
-                testId={`split-row-${i}-note`}
-                label="Note"
-                inputValue={row.note}
-                onInputChange={(v) => updateRow(i, "note", v)}
-                placeholder="Note"
-                autoComplete="off"
-              />
-              <FormRow
-                variant="input"
-                id={`split-${i}-tags`}
-                testId={`split-row-${i}-tags`}
-                label="Tags"
-                inputValue={row.tags}
-                onInputChange={(v) => updateRow(i, "tags", v)}
-                placeholder="Comma-separated"
-                autoComplete="off"
-              />
-              <div className={`flex ${TW.rowTall} items-center justify-end px-4`}>
-                <button
-                  type="button"
-                  aria-label="Remove split row"
-                  disabled={rows.length <= 1}
-                  onClick={() => setRows((prev) => prev.filter((_, j) => j !== i))}
-                  className={`inline-flex ${TW.row} items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-destructive disabled:opacity-40`}
-                >
-                  <Trash2 className="size-4" aria-hidden="true" /> Remove
-                </button>
-              </div>
-            </ListCard>
-          );
-        })}
+        {notice && (
+          <p data-testid="tx-split-adjusted" role="status" className="px-1 text-xs text-muted-foreground">
+            {`Last split adjusted from ${formatCurrency(notice.from, currency)} to ${formatCurrency(notice.to, currency)} to match the total.`}
+          </p>
+        )}
 
-        <Button type="button" variant="outline" className="h-11 w-full" onClick={() => setRows((prev) => [...prev, emptyRow()])}>
-          <Plus className="mr-1.5 size-4" aria-hidden="true" /> Add row
-        </Button>
+        <SplitRows
+          idPrefix="tx-split"
+          count={count}
+          onCountChange={setCount}
+          rows={rows}
+          onRowsChange={setRows}
+          parentAmount={parentAbs}
+          currency={currency}
+          parentCategoryId={parentCategoryId}
+          parentPayee={total.payee ?? undefined}
+          categories={categories}
+          accounts={accounts}
+          onOpenCategory={(rowId) => setPickerRowId(rowId)}
+          padTargetRowId={padRowId}
+          onOpenPad={(rowId) => setPadRowId(rowId)}
+          onClosePad={() => setPadRowId(null)}
+        />
 
-        <div className="flex items-center justify-between px-1 text-sm">
-          <span className="text-muted-foreground">
-            Allocated <span className="font-mono text-foreground">{formatCurrency(allocated, currency)}</span>
-          </span>
-          {isBalanced ? (
-            <span className="rounded-full border border-pos/30 bg-pos/10 px-2 py-0.5 text-xs text-pos">Balanced</span>
-          ) : (
-            <span className="rounded-full border border-destructive/30 bg-destructive/10 px-2 py-0.5 text-xs text-destructive">
-              {remaining > 0
-                ? `${formatCurrency(remaining, currency)} left`
-                : `${formatCurrency(Math.abs(remaining), currency)} over`}
-            </span>
-          )}
-        </div>
+        {verdict.n < 2 && parseCount(count).hint === null && (
+          <p data-testid="tx-split-hint" className="px-1 text-xs text-muted-foreground">
+            {hasSplits ? "Enter 2 or more, or use Clear splits" : "Enter 2 or more to split"}
+          </p>
+        )}
 
         {error && (
           <p role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
@@ -312,29 +274,24 @@ export function TransactionSplitForm({
         )}
       </div>
 
+      <NumpadDock
+        activeId={padRowId}
+        activeValue={padRow?.amount ?? ""}
+        onChange={(id, value) => updateRow(id, { amount: value })}
+        onDone={() => setPadRowId(null)}
+        decimals={currencyDecimals(currency)}
+      />
+
       <CategorySelector
-        open={picker?.kind === "category"}
+        open={pickerRowId !== null}
         onOpenChange={(open) => {
-          if (!open) setPicker(null);
+          if (!open) setPickerRowId(null);
         }}
         categories={categoryPickerEntries}
-        selectedCategoryId={picker?.kind === "category" ? rows[picker.index]?.categoryId : undefined}
+        selectedCategoryId={pickedRow?.categoryId}
         onSelect={(id) => {
-          if (picker?.kind === "category") updateRow(picker.index, "categoryId", id);
-          setPicker(null);
-        }}
-      />
-      <AccountSelector
-        open={picker?.kind === "account"}
-        onOpenChange={(open) => {
-          if (!open) setPicker(null);
-        }}
-        accounts={pickableAccounts.map((a) => ({ ...a, id: a.id }))}
-        selectedAccountId={picker?.kind === "account" ? rows[picker.index]?.accountId : undefined}
-        title="Select Account"
-        onSelect={(id) => {
-          if (picker?.kind === "account") updateRow(picker.index, "accountId", id);
-          setPicker(null);
+          if (pickerRowId !== null) updateRow(pickerRowId, { categoryId: id });
+          setPickerRowId(null);
         }}
       />
     </div>

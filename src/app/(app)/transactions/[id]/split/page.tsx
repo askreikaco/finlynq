@@ -1,6 +1,6 @@
 "use client";
 
-/** /transactions/[id]/split — Split transaction as a full page (PKG1 tx-edit). */
+/** /transactions/[id]/split — Split transaction as a full page (S-5). */
 
 import { Suspense, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
@@ -8,21 +8,33 @@ import Link from "next/link";
 import { PageHeader } from "@/components/mobile";
 import { useReturnTo } from "@/lib/forms/use-return-to";
 import { TW } from "@/lib/design/tokens";
+import { MAX_SPLITS } from "@/lib/transactions/split-math";
 import {
   TransactionSplitForm,
-  rowsFromSplits,
+  seedSplitEditor,
+  type SavedSplitRow,
   type SplitAccount,
   type SplitCategory,
-  type SplitRowState,
+  type SplitEditorSeed,
   type SplitTotal,
 } from "../../_components/transaction-split-form";
 
 type Loaded = {
   total: SplitTotal;
+  linkId: string | null;
   categories: SplitCategory[];
   accounts: SplitAccount[];
-  initialRows: SplitRowState[];
+  seed: SplitEditorSeed;
   hasSplits: boolean;
+};
+
+type TxRow = {
+  id: number;
+  amount: number;
+  currency: string;
+  categoryId?: number | null;
+  payee?: string | null;
+  linkId?: string | null;
 };
 
 async function getJson<T>(url: string): Promise<T> {
@@ -35,7 +47,12 @@ function SplitInner() {
   const params = useParams<{ id: string }>();
   const returnTo = useReturnTo("/transactions");
   const id = Number(params.id);
-  const [state, setState] = useState<{ status: "loading" } | { status: "missing"; message: string } | { status: "ready"; data: Loaded }>({ status: "loading" });
+  const [state, setState] = useState<
+    | { status: "loading" }
+    | { status: "missing"; message: string }
+    | { status: "blocked"; message: string }
+    | { status: "ready"; data: Loaded }
+  >({ status: "loading" });
 
   useEffect(() => {
     if (!Number.isInteger(id) || id <= 0) {
@@ -46,27 +63,45 @@ function SplitInner() {
     (async () => {
       try {
         const [txRes, categories, accounts, splits] = await Promise.all([
-          getJson<{ data?: Array<{ id: number; amount: number; currency: string }> }>(`/api/transactions?id=${id}`),
+          getJson<{ data?: TxRow[] }>(`/api/transactions?id=${id}`),
           getJson<SplitCategory[]>("/api/categories"),
           getJson<SplitAccount[]>("/api/accounts?includeArchived=1"),
-          getJson<Array<{ categoryId: number | null; accountId: number | null; amount: number; note: string | null; description: string | null; tags: string | null }>>(
-            `/api/transactions/splits?transactionId=${id}`,
-          ).catch(() => []),
+          getJson<SavedSplitRow[]>(`/api/transactions/splits?transactionId=${id}`).catch(() => []),
         ]);
         const tx = txRes.data?.[0];
         if (!tx) {
           if (!cancelled) setState({ status: "missing", message: "This transaction no longer exists." });
           return;
         }
+        if (tx.linkId) {
+          if (!cancelled) setState({ status: "blocked", message: "Transfers can't be split." });
+          return;
+        }
         const splitRows = Array.isArray(splits) ? splits : [];
+        if (splitRows.length > MAX_SPLITS) {
+          if (!cancelled) {
+            setState({
+              status: "blocked",
+              message: `This transaction has ${splitRows.length} splits, more than the ${MAX_SPLITS} this editor supports. Change it on a computer or clear the splits.`,
+            });
+          }
+          return;
+        }
         if (!cancelled) {
           setState({
             status: "ready",
             data: {
-              total: { id: tx.id, amount: tx.amount, currency: tx.currency },
+              total: {
+                id: tx.id,
+                amount: tx.amount,
+                currency: tx.currency,
+                categoryId: tx.categoryId ?? null,
+                payee: tx.payee ?? null,
+              },
+              linkId: tx.linkId ?? null,
               categories: Array.isArray(categories) ? categories : [],
               accounts: Array.isArray(accounts) ? accounts : [],
-              initialRows: rowsFromSplits(splitRows, tx.amount),
+              seed: seedSplitEditor(splitRows, tx.amount, tx.currency),
               hasSplits: splitRows.length > 0,
             },
           });
@@ -88,11 +123,13 @@ function SplitInner() {
       </div>
     );
   }
-  if (state.status === "missing") {
+  if (state.status === "missing" || state.status === "blocked") {
     return (
       <div className={`mx-auto w-full ${TW.form} space-y-3`}>
         <PageHeader title="Split transaction" backHref={returnTo} backLabel="Back" />
-        <p className="text-sm text-foreground">{state.message}</p>
+        <p data-testid={state.status === "blocked" ? "tx-split-blocked" : undefined} className="text-sm text-foreground">
+          {state.message}
+        </p>
         <Link href={returnTo} className="text-sm text-primary underline">Back to transactions</Link>
       </div>
     );
@@ -104,7 +141,7 @@ function SplitInner() {
       total={d.total}
       categories={d.categories}
       accounts={d.accounts}
-      initialRows={d.initialRows}
+      initialSeed={d.seed}
       hasSplitsInitially={d.hasSplits}
       returnTo={returnTo}
     />
