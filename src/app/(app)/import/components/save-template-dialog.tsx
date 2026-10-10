@@ -184,7 +184,7 @@ export function SaveTemplateDialog({
             <div className="grid gap-2 regular:grid-cols-2 rounded-lg border p-2">
               {MAPPING_FIELDS.map((field) => (
                 <div key={field} className="flex items-center gap-2 px-2 py-1.5">
-                  <span className="w-28 text-xs text-muted-foreground shrink-0">
+                  <span className="w-row-label text-xs text-muted-foreground shrink-0">
                     {FIELD_LABELS[field]}
                   </span>
                   <Select
