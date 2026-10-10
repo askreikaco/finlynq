@@ -5,10 +5,30 @@ import { Serwist, NetworkOnly, StaleWhileRevalidate, CacheFirst, ExpirationPlugi
 declare global {
   interface WorkerGlobalScope extends SerwistGlobalConfig {
     __SW_MANIFEST: (PrecacheEntry | string)[] | undefined;
+    addEventListener(
+      type: "activate",
+      listener: (event: { waitUntil(promise: Promise<unknown>): void }) => void,
+    ): void;
   }
 }
 
 declare const self: WorkerGlobalScope;
+
+/** FNV-1a 32-bit hash, base-36. Deterministic, no node crypto. */
+function fnv1a(input: string): string {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < input.length; i++) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+// Changes whenever the precache manifest changes (i.e. every build that ships different content).
+const BUILD_ID = fnv1a(JSON.stringify(self.__SW_MANIFEST ?? []));
+
+// Page caches are versioned per build so a new deploy never serves the previous build's HTML/RSC.
+const STALE_PAGE_CACHE_PREFIXES = ["pages-html-cache", "pages-rsc-cache"];
 
 const runtimeCaching: RuntimeCaching[] = [
   // 1. Critical auth/security and API endpoints must ALWAYS bypass cache
@@ -41,7 +61,7 @@ const runtimeCaching: RuntimeCaching[] = [
       return isDocument && !isExcluded;
     },
     handler: new StaleWhileRevalidate({
-      cacheName: "pages-html-cache",
+      cacheName: `pages-html-cache-${BUILD_ID}`,
       plugins: [
         new ExpirationPlugin({
           maxEntries: 50,
@@ -72,7 +92,7 @@ const runtimeCaching: RuntimeCaching[] = [
       );
     },
     handler: new StaleWhileRevalidate({
-      cacheName: "pages-rsc-cache",
+      cacheName: `pages-rsc-cache-${BUILD_ID}`,
       plugins: [
         new ExpirationPlugin({
           maxEntries: 100,
@@ -128,3 +148,20 @@ const serwist = new Serwist({
 });
 
 serwist.addEventListeners();
+
+// Drop page caches written by previous builds.
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(
+        keys
+          .filter(
+            (key) =>
+              STALE_PAGE_CACHE_PREFIXES.some((prefix) => key.startsWith(prefix)) &&
+              !key.endsWith(`-${BUILD_ID}`),
+          )
+          .map((key) => caches.delete(key)),
+      ),
+    ),
+  );
+});

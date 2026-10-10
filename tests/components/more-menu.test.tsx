@@ -13,6 +13,7 @@ const render = (ui: React.ReactElement) =>
 
 const replace = vi.fn();
 vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
   usePathname: () => "/more",
   useRouter: () => ({ replace, push: vi.fn() }),
 }));

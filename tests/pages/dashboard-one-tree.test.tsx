@@ -14,7 +14,8 @@ import { DEFAULT_CARD_ORDER } from "@/lib/dashboard-layout";
 vi.mock("next/link", () => ({
   default: ({ children, href, ...p }: React.PropsWithChildren<{ href: string }>) => React.createElement("a", { href, ...p }, children),
 }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }), usePathname: () => "/dashboard" }));
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(), useRouter: () => ({ push: vi.fn() }), usePathname: () => "/dashboard" }));
 const dev = vi.hoisted(() => ({ on: true }));
 vi.mock("@/hooks/use-dev-mode", () => ({ useDevMode: () => dev.on }));
 vi.mock("@/components/currency-provider", () => ({ useDisplayCurrency: () => ({ displayCurrency: "VND", isLoading: false }) }));

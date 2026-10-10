@@ -9,6 +9,7 @@ import { notFound } from "next/navigation";
 import LocalFirstDevPage from "@/app/(proto)/dev/local-first/page";
 
 vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
   notFound: vi.fn(() => {
     throw new Error("NEXT_NOT_FOUND");
   }),

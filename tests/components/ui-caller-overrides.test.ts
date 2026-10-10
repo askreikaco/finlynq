@@ -24,6 +24,9 @@ export const EXCEPTIONS: Record<string, string[]> = {
   "src/app/(app)/categories/[id]/page.tsx": ["max-regular:w-40"],
   "src/components/ui/pagination.tsx": ["regular:inline-flex"],
   "src/components/mobile/page-header.tsx": ["regular:hidden"],
+  // Filter icon Button display toggle (hidden at regular width). Display-only, same category as page-header.
+  "src/app/(app)/portfolio/dividends/page.tsx": ["regular:hidden"],
+  "src/app/(app)/portfolio/realized-gains/page.tsx": ["regular:hidden"],
 };
 
 export interface Hit { file: string; line: number; tag: string; token: string }

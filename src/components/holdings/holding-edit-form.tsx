@@ -45,6 +45,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -516,17 +517,16 @@ export function HoldingEditForm({
         )}
       </div>
 
-      <div className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          id="is-crypto"
-          checked={form.isCrypto}
-          onChange={(e) => setForm({ ...form, isCrypto: e.target.checked })}
-          className="h-4 w-4 rounded border-input"
-        />
-        <Label htmlFor="is-crypto" className="cursor-pointer">
+      <div className="flex min-h-row items-center justify-between gap-3">
+        <Label htmlFor="is-crypto" className="flex-1 cursor-pointer">
           Crypto asset
         </Label>
+        <Switch
+          id="is-crypto"
+          checked={form.isCrypto}
+          onCheckedChange={(v) => setForm({ ...form, isCrypto: v })}
+          className="shrink-0"
+        />
       </div>
 
       <div className="space-y-1.5">

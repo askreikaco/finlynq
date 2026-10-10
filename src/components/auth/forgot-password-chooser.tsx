@@ -13,6 +13,7 @@
 import { useEffect, useState } from "react";
 import { hardReload } from "@/lib/client/hard-reload";
 import { passkeyRecovery } from "@/lib/client/passkey-prf";
+import { Switch } from "@/components/ui/switch";
 import {
   AUTH_INPUT_CLASS,
   NewPasswordFields,
@@ -142,9 +143,9 @@ function BackButton({ onBack }: { onBack: () => void }) {
 
 function SharedComputer({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
-    <label className="flex items-center gap-2 text-xs text-muted-foreground">
-      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="h-4 w-4 rounded border-border bg-background accent-primary" />
-      This is a shared computer
+    <label className="flex min-h-row items-center justify-between gap-3 text-xs text-muted-foreground">
+      <span>This is a shared computer</span>
+      <Switch checked={checked} onCheckedChange={(v) => onChange(v)} />
     </label>
   );
 }

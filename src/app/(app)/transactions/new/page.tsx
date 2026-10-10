@@ -5,9 +5,19 @@ import { useRouter } from "next/navigation";
 import {
   ChevronDown,
   AlertCircle,
+  ArrowDownToLine,
+  ArrowUpDown,
+  Briefcase,
+  CalendarDays,
+  Calculator,
   CheckCircle2,
+  Hash,
   Info,
   Loader2,
+  StickyNote,
+  Store,
+  Tag,
+  Wallet,
 } from "lucide-react";
 import { useApi } from "@/lib/data/use-api";
 import { mutate, useSWRConfig } from "swr";
@@ -17,12 +27,13 @@ import Link from "next/link";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
+import { AutoTextarea } from "@/components/ui/auto-textarea";
 import { cn } from "@/lib/utils";
 import { Numpad } from "./_components/numpad";
 import { CategorySelector, type Category } from "./_components/category-selector";
 import { AccountSelector, type Account } from "./_components/account-selector";
+import { CurrencySelector } from "./_components/currency-selector";
 import {
   DateTimePickerSheet,
   formatDateTimeDisplay,
@@ -46,7 +57,7 @@ import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
 import { useFxPreview } from "@/lib/hooks/use-fx-preview";
 import { FxPreviewLine } from "@/components/transactions/fx-preview-line";
 import { buildPayeeCategoryRule } from "@/lib/rules/build-payee-category-rule";
-import { PageHeader } from "@/components/mobile";
+import { PageHeader, HEADER_CELL } from "@/components/mobile";
 
 type TxType = "Expense" | "Income" | "Transfer";
 // "save" books and locks the form; "continue" books and clears the entry fields for the next one.
@@ -158,6 +169,7 @@ export default function MobileTransactionPage() {
   const [showAccSelector, setShowAccSelector] = useState(false);
   const [showToAccSelector, setShowToAccSelector] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showCurrencySelector, setShowCurrencySelector] = useState(false);
   const [activeSplitIndex, setActiveSplitIndex] = useState<number | null>(null);
   const [focusedField, setFocusedField] = useState<"payee" | "note" | "tags" | null>(null);
   // Row to mark invalid after a failed Save/Continue (the first failing check).
@@ -169,6 +181,17 @@ export default function MobileTransactionPage() {
     setFocusedField(null);
   };
   const closePad = () => setShowNumpad(false);
+  // Transfer swap: exchange From/To. The entered currency follows the From account (as on selection),
+  // a typed "receives" amount is cleared so the FX preview refills it for the new pair.
+  const swapTransferAccounts = () => {
+    closePad();
+    setAccountId(toAccountId);
+    setToAccountId(accountId);
+    setCurrencyChoice("");
+    setReceivedTouched(false);
+    setReceivedAmount("");
+    setInvalid((prev) => (prev?.field === "account" || prev?.field === "toAccount" ? null : prev));
+  };
   const goBack = () => {
     if (window.history.length > 1) router.back();
     else router.push("/transactions");
@@ -703,7 +726,7 @@ export default function MobileTransactionPage() {
         backLabel="Back to transactions"
         actions={
           saving ? (
-            <span role="status" aria-label="Saving" className="flex size-11 items-center justify-center">
+            <span role="status" aria-label="Saving" className={`${HEADER_CELL} flex size-11 items-center justify-center`}>
               <Loader2 className="h-4 w-4 animate-spin text-primary" aria-hidden="true" />
             </span>
           ) : undefined
@@ -766,6 +789,7 @@ export default function MobileTransactionPage() {
             variant="button"
             testId="txnew-row-date"
             label="Date"
+            icon={CalendarDays}
             value={formatDateTimeDisplay(date)}
             onClick={() => {
               closePad();
@@ -781,9 +805,12 @@ export default function MobileTransactionPage() {
             }}
             onOpenPad={openPad}
             currency={currency}
-            currencyOptions={currencyOptions}
-            onCurrencyChange={(v) => setCurrencyChoice(v)}
-            showCurrency={txType !== "Transfer"}
+            onOpenCurrency={() => {
+              closePad();
+              setShowCurrencySelector(true);
+            }}
+            showCurrency
+            currencyDisabled={txType === "Transfer"}
             fxLine={fxAmountLine}
             invalid={invalidField === "amount"}
           />
@@ -792,6 +819,7 @@ export default function MobileTransactionPage() {
               variant="button"
               testId="txnew-row-category"
               label="Category"
+              icon={Tag}
               value={
                 selectedCat ? (
                   <>
@@ -811,38 +839,58 @@ export default function MobileTransactionPage() {
               }}
             />
           )}
-          <FormRow
-            variant="button"
-            testId="txnew-row-account"
-            label={txType === "Transfer" ? "From Account" : "Account"}
-            value={selectedAcc?.name}
-            placeholder={loadingAccounts ? "Loading accounts..." : "Select Account"}
-            invalid={invalidField === "account"}
-            onClick={() => {
-              closePad();
-              setShowAccSelector(true);
-            }}
-          />
-          {txType === "Transfer" && (
+          {/* From and To share a relative wrapper so the Transfer swap button sits on their divider. */}
+          <div className="relative">
             <FormRow
               variant="button"
-              testId="txnew-row-to-account"
-              label="To Account"
-              value={selectedToAcc?.name}
-              placeholder={loadingAccounts ? "Loading accounts..." : "Select Destination Account"}
-              invalid={invalidField === "toAccount"}
+              testId="txnew-row-account"
+              label={txType === "Transfer" ? "From" : "Account"}
+              icon={Wallet}
+              value={selectedAcc?.name}
+              placeholder={loadingAccounts ? "Loading accounts..." : "Select Account"}
+              invalid={invalidField === "account"}
+              className={txType === "Transfer" ? "pr-16" : undefined}
               onClick={() => {
                 closePad();
-                setShowToAccSelector(true);
+                setShowAccSelector(true);
               }}
             />
-          )}
+            {txType === "Transfer" && (
+              <>
+                <FormRow
+                  variant="button"
+                  testId="txnew-row-to-account"
+                  label="To"
+                  icon={ArrowDownToLine}
+                  value={selectedToAcc?.name}
+                  placeholder={loadingAccounts ? "Loading accounts..." : "Select Destination Account"}
+                  invalid={invalidField === "toAccount"}
+                  className="pr-16"
+                  onClick={() => {
+                    closePad();
+                    setShowToAccSelector(true);
+                  }}
+                />
+                <button
+                  type="button"
+                  aria-label="Swap accounts"
+                  data-testid="txnew-swap-accounts"
+                  disabled={!accountId && !toAccountId}
+                  onClick={swapTransferAccounts}
+                  className="absolute right-3 top-1/2 z-10 flex size-11 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card/80 text-muted-foreground shadow-sm blur-soft transition-colors active:bg-muted disabled:opacity-50"
+                >
+                  <ArrowUpDown aria-hidden="true" className="size-[18px]" />
+                </button>
+              </>
+            )}
+          </div>
           {transferCrossCcy && (
             <FormRow
               variant="input"
               testId="txnew-row-received"
               id="transfer-received"
               label={`Received (${selectedToAcc?.currency})`}
+              icon={Calculator}
               inputValue={receivedAmount}
               onInputChange={(v) => {
                 setReceivedTouched(true);
@@ -863,6 +911,7 @@ export default function MobileTransactionPage() {
               testId="txnew-row-payee"
               id="txnew-payee"
               label="Payee"
+              icon={Store}
               inputValue={payee}
               onInputChange={setPayee}
               onInputBlur={() => void suggestCategoryForPayee(payee)}
@@ -881,24 +930,30 @@ export default function MobileTransactionPage() {
               }}
             />
           )}
+          {/* Note: two-row minimum (2x the tall row token), grows with the text up to max-h-48. */}
           <FormRow
-            variant="input"
+            variant="custom"
             testId="txnew-row-note"
-            id="txnew-note"
+            htmlFor="txnew-note"
             label="Note"
-            inputValue={note}
-            onInputChange={setNote}
-            placeholder="Note / Description"
-            enterKeyHint="done"
-            autoComplete="off"
-            onInputFocus={() => {
-              closePad();
-              setFocusedField("note");
-            }}
-            onInputKeyDown={(e) => {
-              if (e.key === "Enter") e.currentTarget.blur();
-            }}
-          />
+            icon={StickyNote}
+            className="items-start min-h-[calc(var(--spacing-row-tall)*2)] py-3"
+          >
+            <AutoTextarea
+              id="txnew-note"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Note / Description"
+              enterKeyHint="enter"
+              autoComplete="off"
+              rows={2}
+              className="max-h-48 bg-transparent text-base"
+              onFocus={() => {
+                closePad();
+                setFocusedField("note");
+              }}
+            />
+          </FormRow>
         </ListCard>
 
         {/* Autocomplete pills sit below the list while the field is focused. */}
@@ -947,6 +1002,7 @@ export default function MobileTransactionPage() {
                 testId="txnew-row-tags"
                 id="txnew-tags"
                 label="Tags"
+                icon={Hash}
                 inputValue={tags}
                 onInputChange={setTags}
                 placeholder="Comma-separated"
@@ -956,15 +1012,19 @@ export default function MobileTransactionPage() {
                   setFocusedField("tags");
                 }}
               />
-              <div className="flex min-h-12 items-center gap-3 px-4">
-                <label htmlFor="txnew-business" className="flex min-w-0 flex-1 flex-col text-sm font-medium text-foreground">
-                  Business
-                  <span className="text-xs font-normal text-muted-foreground">
-                    Tag for business accounting and tax reporting
+              <div className="flex min-h-row items-center justify-between gap-3 px-4">
+                <label htmlFor="txnew-business" className="flex min-w-0 flex-1 items-center gap-2 text-sm font-medium text-foreground">
+                  <Briefcase aria-hidden="true" className="size-[18px] shrink-0 text-muted-foreground" />
+                  <span className="flex min-w-0 flex-col">
+                    Business
+                    <span className="text-xs font-normal text-muted-foreground">
+                      Tag for business accounting and tax reporting
+                    </span>
                   </span>
                 </label>
                 <Switch
                   id="txnew-business"
+                  className="shrink-0"
                   checked={isBusiness}
                   onCheckedChange={(checked) => setIsBusiness(checked)}
                 />
@@ -997,19 +1057,20 @@ export default function MobileTransactionPage() {
 
         {/* Rule suggestion (Expense/Income, payee + category set). Outside More details: Payee is on screen one. */}
         {ruleEligible && (
-          <label className="flex min-h-11 shrink-0 cursor-pointer items-center gap-3 rounded-2xl border border-info/30 bg-info/10 px-4 py-2">
-            <Checkbox
-              checked={alsoCreateRule}
-              onChange={(e) => setAlsoCreateRule(e.target.checked)}
-              className="h-4 w-4 shrink-0"
-            />
-            <span className="flex min-w-0 flex-col">
+          <div className="flex min-h-11 shrink-0 items-center justify-between gap-3 rounded-2xl border border-info/30 bg-info/10 px-4 py-2">
+            <label htmlFor="txnew-also-rule" className="flex min-w-0 flex-1 cursor-pointer flex-col">
               <span className="text-sm font-medium text-foreground">Also create a rule for next time</span>
               <span className="truncate text-xs text-muted-foreground">
                 Payee contains &ldquo;{payee.trim()}&rdquo; → {selectedCat?.name}
               </span>
-            </span>
-          </label>
+            </label>
+            <Switch
+              id="txnew-also-rule"
+              className="shrink-0"
+              checked={alsoCreateRule}
+              onCheckedChange={(checked) => setAlsoCreateRule(checked)}
+            />
+          </div>
         )}
 
         {errorMessage && (
@@ -1071,6 +1132,14 @@ export default function MobileTransactionPage() {
       )}
 
       {/* Bottom Sheets */}
+      <CurrencySelector
+        open={showCurrencySelector}
+        onOpenChange={setShowCurrencySelector}
+        currencies={currencyOptions}
+        selected={currency}
+        onSelect={(code) => setCurrencyChoice(code)}
+      />
+
       <CategorySelector
         open={showCatSelector}
         onOpenChange={setShowCatSelector}

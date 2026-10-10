@@ -162,7 +162,7 @@ describe("passkey recovery", () => {
     render(<ForgotPasswordPage />);
     await user.click(await screen.findByRole("button", { name: /use a passkey/i }));
     await fillNewPassword(user, "pk");
-    await user.click(screen.getByLabelText(/shared computer/i));
+    await user.click(screen.getByRole("switch", { name: /shared computer/i }));
     await user.click(screen.getByRole("button", { name: /continue with passkey/i }));
     await waitFor(() => expect(hardReload).toHaveBeenCalled());
     expect(lastBody("/api/auth/recovery/passkey/reset").trustDevice).toBe(false);
@@ -326,7 +326,7 @@ describe("recovery code", () => {
     await user.type(screen.getByLabelText(/email or username/i), "alice");
     await user.type(screen.getByLabelText(/^recovery code$/i), "AAAAA-BBBBB-CCCCC-DDDDD");
     await fillNewPassword(user, "rc");
-    await user.click(screen.getByLabelText(/shared computer/i));
+    await user.click(screen.getByRole("switch", { name: /shared computer/i }));
     await user.click(screen.getByRole("button", { name: /reset password/i }));
     await waitFor(() => expect(hardReload).toHaveBeenCalled());
     expect(lastBody("/api/auth/recovery/code/reset").trustDevice).toBe(false);

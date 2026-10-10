@@ -5,7 +5,8 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { renderHook, act, cleanup } from "@testing-library/react";
 
 let path = "/a";
-vi.mock("next/navigation", () => ({ usePathname: () => path }));
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(), usePathname: () => path }));
 
 type Answer = (url: string) => Promise<unknown>;
 let answers: Record<string, Answer> = {};

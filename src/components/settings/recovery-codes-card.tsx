@@ -14,6 +14,7 @@ import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { LifeBuoy, Check, AlertTriangle } from "lucide-react";
 import { formatDateTimeLocal } from "@/lib/currency";
 
@@ -218,9 +219,9 @@ export function RecoveryCodesCard() {
                 </span>
               )}
             </div>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={saved} onChange={(e) => setSaved(e.target.checked)} className="h-4 w-4 accent-primary" />
-              {STRINGS.savedLabel}
+            <label className="flex min-h-row items-center justify-between gap-3 text-sm">
+              <span>{STRINGS.savedLabel}</span>
+              <Switch checked={saved} onCheckedChange={(v) => setSaved(v)} />
             </label>
             <Button size="sm" disabled={!saved} onClick={handleDone}>
               {STRINGS.done}

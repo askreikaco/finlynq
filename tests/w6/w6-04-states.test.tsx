@@ -9,7 +9,8 @@ import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/re
 vi.mock("next/link", () => ({
   default: ({ children, href, ...p }: React.PropsWithChildren<{ href: string }>) => React.createElement("a", { href, ...p }, children),
 }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), back: vi.fn() }), usePathname: () => "/whats-new" }));
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(), useRouter: () => ({ push: vi.fn(), back: vi.fn() }), usePathname: () => "/whats-new" }));
 
 import WhatsNewPage from "@/app/(app)/whats-new/page";
 import InfoPage from "@/app/(app)/account/info/page";

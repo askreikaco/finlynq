@@ -11,6 +11,7 @@ import { getEntriesBySurface } from "@/lib/nav-config";
 
 // Mock next/navigation to provide usePathname
 vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
   usePathname: vi.fn(() => "/settings"),
 }));
 

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
@@ -100,14 +100,7 @@ export function InviteDialog({ onClose, onSuccess }: InviteDialogProps) {
               disabled={busy}
             />
 
-            <div className="flex items-start gap-2">
-              <Checkbox
-                id="family-invite-must-share-back"
-                checked={mustShareBack}
-                onCheckedChange={setMustShareBack}
-                disabled={busy}
-                className="mt-0.5"
-              />
+            <div className="flex items-center justify-between gap-3 min-h-row">
               <div className="flex-1">
                 <Label htmlFor="family-invite-must-share-back" className="font-normal cursor-pointer">
                   {FAMILY_STRINGS.invite_dialog_must_share_back}
@@ -116,6 +109,13 @@ export function InviteDialog({ onClose, onSuccess }: InviteDialogProps) {
                   {FAMILY_STRINGS.invite_dialog_must_share_back_description}
                 </p>
               </div>
+              <Switch
+                id="family-invite-must-share-back"
+                checked={mustShareBack}
+                onCheckedChange={(v) => setMustShareBack(v)}
+                disabled={busy}
+                className="shrink-0"
+              />
             </div>
 
             <section

@@ -8,6 +8,7 @@ import { readFileSync } from "fs";
 import path from "path";
 
 vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
   useRouter: () => ({ push: vi.fn(), back: vi.fn() }), usePathname: () => "/transactions/new",
 }));
 vi.mock("next/link", () => ({
@@ -49,7 +50,7 @@ function seedPrefill(over: Record<string, unknown> = {}) {
 
 // Testids of the direct children of the field list (one ListCard of FormRows).
 const rowIds = () =>
-  Array.from(screen.getByTestId("txnew-list").children).map((el) => el.getAttribute("data-testid"));
+  Array.from(screen.getByTestId("txnew-list").querySelectorAll("[data-testid^='txnew-row-']")).map((el) => el.getAttribute("data-testid"));
 
 beforeEach(() => {
   sessionStorage.clear();
@@ -84,7 +85,7 @@ describe("compact new-transaction layout", () => {
       "txnew-row-to-account",
       "txnew-row-note",
     ]);
-    expect(screen.getByTestId("txnew-row-account").textContent).toContain("From Account");
+    expect(screen.getByTestId("txnew-row-account").textContent).toContain("From");
   });
 
   it("More details is collapsed by default, and expands to Tags, Business and Split", () => {
@@ -98,7 +99,8 @@ describe("compact new-transaction layout", () => {
     expect(toggle.getAttribute("aria-expanded")).toBe("true");
     expect(toggle.getAttribute("aria-controls")).toBe("txnew-more-panel");
     expect(screen.getByPlaceholderText("Comma-separated")).toBeTruthy();
-    expect(screen.getByRole("switch")).toBeTruthy();
+    expect(screen.getByRole("switch", { name: /Split this transaction/ })).toBeTruthy();
+    expect(screen.getByRole("switch", { name: /Business/ })).toBeTruthy();
   });
 
   it("numpad dock is touch-only (pointer-coarse) and docks at the safe-area bottom (tab bar hidden on this route)", () => {

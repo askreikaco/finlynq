@@ -11,6 +11,7 @@ const mockRedirect = vi.fn((path: string) => {
 });
 
 vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
   redirect: mockRedirect,
 }));
 

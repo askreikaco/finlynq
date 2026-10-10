@@ -51,7 +51,8 @@ describe("M1: header glass excludes primary-filled buttons", () => {
     const lines = block.split("\n");
     lines.forEach((line, idx) => {
       if (!line.includes('[data-slot="header-capsule"]')) return;
-      if (line.includes(":is(button, a)") && !line.includes(":not([data-variant")) {
+      // .phone-icon-action (the neutral primary cell) is default-variant on purpose: it sets its own transparent background
+      if (line.includes(":is(button, a)") && !line.includes(":not([data-variant") && !line.includes(".phone-icon-action")) {
         // only the sizing rule may be unscoped
         const body = lines.slice(idx, idx + 4).join("\n");
         expect(body).not.toMatch(/background/);

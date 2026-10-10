@@ -17,9 +17,11 @@ const categories: Category[] = [
 ];
 
 const accounts: Account[] = [
-  { id: "10", name: "Cash VND", type: "Cash", currency: "VND" },
-  { id: "11", name: "TCB", type: "Bank", currency: "VND" },
-  { id: "12", name: "Old Card", type: "Bank", currency: "VND", archived: true },
+  { id: "10", name: "Cash VND", type: "A", group: "Cash", currency: "VND" },
+  { id: "11", name: "TCB", type: "A", group: "Checking", currency: "VND" },
+  { id: "12", name: "Old Card", type: "L", group: "Credit Card", currency: "VND", archived: true },
+  { id: "13", name: "Visa", type: "L", group: "Credit Card", currency: "USD" },
+  { id: "14", name: "Loose", type: "A", group: null, currency: "VND" },
 ];
 
 function sheetContent(): HTMLElement {
@@ -312,7 +314,7 @@ describe("AccountSelector accordion", () => {
       />,
     );
     expect(screen.getAllByRole("heading", { level: 3 })[0].textContent).toBe("Recent");
-    expect(recentRows()).toEqual(["TCBBank · VND"]);
+    expect(recentRows()).toEqual(["TCBChecking · VND"]);
   });
 
   it("is absent when no recentIds match", () => {
@@ -328,14 +330,29 @@ describe("AccountSelector accordion", () => {
     expect(screen.queryByText("Recent")).toBeNull();
   });
 
-  it("groups by type, collapsed by default, and hides archived accounts", () => {
+  it("groups by account group name (not type), alphabetical with Other last, collapsed, archived hidden", () => {
     render(
       <AccountSelector open onOpenChange={() => {}} accounts={accounts} onSelect={() => {}} />,
     );
+    const sheet = sheetContent();
+    const headers = Array.from(sheet.querySelectorAll('button[aria-expanded]')).map((b) => b.textContent);
+    expect(headers).toEqual(["Cash1", "Checking1", "Credit Card1", "Other1"]);
     expect(header("Cash", 1).getAttribute("aria-expanded")).toBe("false");
-    expect(header("Bank", 1).getAttribute("aria-expanded")).toBe("false");
+    expect(header("Checking", 1).getAttribute("aria-expanded")).toBe("false");
+    expect(header("Credit Card", 1).getAttribute("aria-expanded")).toBe("false");
+    expect(header("Other", 1).getAttribute("aria-expanded")).toBe("false");
     expect(rowOrNull("TCB")).toBeNull();
     expect(screen.queryByText("Old Card")).toBeNull();
+  });
+
+  it("accounts with no group sit under Other", () => {
+    render(
+      <AccountSelector open onOpenChange={() => {}} accounts={accounts} onSelect={() => {}} />,
+    );
+    fireEvent.click(header("Other", 1));
+    expect(row("Loose")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /^A\s*\d+$/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^L\s*\d+$/ })).toBeNull();
   });
 
   it("auto-expands the group holding the selected account", () => {
@@ -348,7 +365,7 @@ describe("AccountSelector accordion", () => {
         selectedAccountId="11"
       />,
     );
-    expect(header("Bank", 1).getAttribute("aria-expanded")).toBe("true");
+    expect(header("Checking", 1).getAttribute("aria-expanded")).toBe("true");
     expect(row("TCB").getAttribute("aria-current")).toBe("true");
     expect(header("Cash", 1).getAttribute("aria-expanded")).toBe("false");
   });
@@ -359,20 +376,30 @@ describe("AccountSelector accordion", () => {
     render(
       <AccountSelector open onOpenChange={onOpenChange} accounts={accounts} onSelect={onSelect} />,
     );
-    fireEvent.click(header("Bank", 1));
+    fireEvent.click(header("Checking", 1));
     fireEvent.click(row("TCB"));
     expect(onSelect).toHaveBeenCalledWith("11");
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it("search flattens matches with type and currency as secondary text", () => {
+  it("search flattens matches with group and currency as secondary text", () => {
     render(
       <AccountSelector open onOpenChange={() => {}} accounts={accounts} onSelect={() => {}} />,
     );
     fireEvent.change(screen.getByPlaceholderText("Search account..."), { target: { value: "vnd" } });
     expect(row("Cash VND").textContent).toContain("Cash · VND");
-    expect(row("TCB").textContent).toContain("Bank · VND");
-    expect(screen.queryByRole("button", { name: /^Bank\s*\d+$/ })).toBeNull();
+    expect(row("TCB").textContent).toContain("Checking · VND");
+    expect(screen.queryByRole("button", { name: /^Checking\s*\d+$/ })).toBeNull();
+  });
+
+  it("search matches the group name", () => {
+    render(
+      <AccountSelector open onOpenChange={() => {}} accounts={accounts} onSelect={() => {}} />,
+    );
+    fireEvent.change(screen.getByPlaceholderText("Search account..."), { target: { value: "credit" } });
+    expect(row("Visa").textContent).toContain("Credit Card · USD");
+    expect(rowOrNull("TCB")).toBeNull();
+    expect(rowOrNull("Loose")).toBeNull();
   });
 
   it("sheet keeps pt-0 and is capped at 70dvh; search is text-base", () => {

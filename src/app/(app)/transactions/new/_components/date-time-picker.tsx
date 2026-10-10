@@ -101,7 +101,7 @@ export function DateTimePickerSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="flex flex-col p-0 rounded-t-3xl bg-background border-t border-border text-foreground max-h-[85dvh]"
+        className="flex flex-col p-0 pb-[var(--sab)] rounded-t-3xl bg-background border-t border-border text-foreground max-h-[85dvh]"
       >
         <SheetHeader className="px-5 py-4 border-b border-border shrink-0">
           <SheetTitle className="text-foreground text-lg font-semibold">

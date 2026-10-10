@@ -161,7 +161,7 @@ describe("/cloud: shared computer", () => {
     wirePasskeyLogin();
     startAuthentication.mockResolvedValue(assertion(PRF32));
     render(<CloudAuthPage />);
-    const box = await screen.findByLabelText(/this is a shared computer/i);
+    const box = await screen.findByRole("switch", { name: /this is a shared computer/i });
     expect(box).not.toBeChecked();
     await user.click(box);
     await user.click(screen.getByRole("button", { name: /sign in with a passkey/i }));
@@ -184,7 +184,7 @@ describe("/cloud: shared computer", () => {
     const passwordInput = await screen.findByPlaceholderText("Password");
     await user.type(passwordInput, "secret-pass");
     // Check shared computer and submit
-    const sharedCheckbox = screen.getByLabelText(/this is a shared computer/i);
+    const sharedCheckbox = screen.getByRole("switch", { name: /this is a shared computer/i });
     await user.click(sharedCheckbox);
     await user.click(screen.getByRole("button", { name: "Sign in" }));
     await waitFor(() => expect(bodiesOf("/api/auth/login")).toHaveLength(1));
@@ -284,7 +284,7 @@ describe("/cloud: 2FA step", () => {
     handlers["/api/auth/mfa/recovery/verify"] = () => ({ body: { success: true } });
     handlers["/api/auth/mfa/verify"] = () => ({ body: { success: true } });
     await toMfaStep();
-    await user.click(screen.getByLabelText(/this is a shared computer/i));
+    await user.click(screen.getByRole("switch", { name: /this is a shared computer/i }));
     await user.type(screen.getByLabelText("Authentication code"), "123456");
     await user.click(screen.getByRole("button", { name: "Verify" }));
     await waitFor(() => expect(bodiesOf("/api/auth/mfa/verify")).toHaveLength(1));

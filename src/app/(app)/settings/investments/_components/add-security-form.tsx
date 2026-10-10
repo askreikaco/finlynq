@@ -10,6 +10,7 @@
 import { useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { Loader2 } from "lucide-react";
 import { parseSaveError } from "@/lib/save-error";
 import { cn } from "@/lib/utils";
@@ -187,17 +188,16 @@ export function AddSecurityForm({
           />
         </FormRow>
         <FormRow label="Crypto">
-          <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm">
-            <input
-              type="checkbox"
+          <label className="flex min-h-11 cursor-pointer items-center justify-between gap-3 text-sm">
+            <span>Crypto asset</span>
+            <Switch
               checked={isCrypto}
-              onChange={(e) => {
-                setIsCrypto(e.target.checked);
+              onCheckedChange={(v) => {
+                setIsCrypto(v);
                 cryptoTouchedRef.current = true;
-                lookupTicker(symbol, e.target.checked);
+                lookupTicker(symbol, v);
               }}
             />
-            Crypto asset
           </label>
         </FormRow>
         <FormRow

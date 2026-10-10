@@ -8,6 +8,7 @@ import GalleryPage from "@/app/(app)/dev/gallery/page";
 
 const mockReplace = vi.fn();
 vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
   useRouter: () => ({
     replace: mockReplace,
   }),

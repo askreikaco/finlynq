@@ -18,6 +18,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { DataTable, type DataTableColumn, type SortDir } from "@/components/ui/data-table";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Database, RefreshCw, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
@@ -366,29 +367,25 @@ export default function AdminPriceCachePage() {
             className="h-8 w-40 rounded-md border bg-background px-2 text-sm text-foreground"
           />
         </label>
-        <label className="flex items-center gap-1.5 text-sm">
-          <input
-            type="checkbox"
-            checked={todayOnly}
-            onChange={(e) => {
-              setTodayOnly(e.target.checked);
-              resetOffset();
-            }}
-            className="h-3.5 w-3.5 accent-primary"
-          />
+        <label className="flex items-center gap-2 text-sm">
           Today only
-        </label>
-        <label className="flex items-center gap-1.5 text-sm">
-          <input
-            type="checkbox"
-            checked={staleOnly}
-            onChange={(e) => {
-              setStaleOnly(e.target.checked);
+          <Switch
+            checked={todayOnly}
+            onCheckedChange={(v) => {
+              setTodayOnly(v);
               resetOffset();
             }}
-            className="h-3.5 w-3.5 accent-primary"
           />
+        </label>
+        <label className="flex items-center gap-2 text-sm">
           Stale today only
+          <Switch
+            checked={staleOnly}
+            onCheckedChange={(v) => {
+              setStaleOnly(v);
+              resetOffset();
+            }}
+          />
         </label>
         <label className="flex flex-col gap-1 text-xs text-muted-foreground">
           Page size

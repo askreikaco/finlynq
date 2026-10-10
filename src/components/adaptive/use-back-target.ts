@@ -10,8 +10,9 @@
  * Routes with no registry prefix (e.g. /foo) resolve to null.
  */
 
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { NAV_REGISTRY, getNavEntry, type NavPageEntry } from "@/lib/nav-config";
+import { safeReturnTo } from "@/lib/nav/return-to";
 
 export interface BackTarget {
   href: string | null;
@@ -57,7 +58,28 @@ export function resolveBackTarget(pathname: string | null | undefined): BackTarg
   return { href: owner.path, level: level + 1 };
 }
 
-/** Back target for the current route. */
+/**
+ * Applies a validated `?returnTo=` to the automatic back target. A valid in-app path replaces the registry
+ * parent and makes the page a level 2+ page, so a level 1 tab opened with a returnTo still shows Back.
+ * Invalid values (external, `//`, backslash, protocol, control chars) and a returnTo that is the current page
+ * are ignored. Pure: the hook passes the raw search param and the pathname.
+ */
+export function applyReturnTo(
+  target: BackTarget | null,
+  returnTo: string | null | undefined,
+  pathname: string | null | undefined,
+): BackTarget | null {
+  const valid = safeReturnTo(returnTo, "");
+  if (!valid) return target;
+  const cleanPath = (p: string) => p.split(/[?#]/)[0].replace(/\/+$/, "") || "/";
+  if (pathname && cleanPath(valid) === cleanPath(pathname)) return target;
+  const base: BackTarget = target ?? { href: null, level: 1 };
+  return { href: valid, level: Math.max(base.level, 2) };
+}
+
+/** Back target for the current route. A valid `?returnTo=` replaces the registry parent (see applyReturnTo). */
 export function useBackTarget(): BackTarget | null {
-  return resolveBackTarget(usePathname());
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  return applyReturnTo(resolveBackTarget(pathname), searchParams?.get("returnTo") ?? null, pathname);
 }

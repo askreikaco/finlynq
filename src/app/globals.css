@@ -414,7 +414,7 @@ html {
     box-shadow: var(--glass-capsule-shadow);
   }
   /* Every cell in the capsule is one 44x44 slot (no gaps; the capsule is the only glass): icon buttons,
-     the overflow trigger and HeaderStatus. The primary is a separate control (header-primary). Buttons are bare; hover and press
+     the overflow trigger and HeaderStatus. The primary is the last icon cell (phone-icon-action), neutral like the rest. Buttons are bare; hover and press
      state is a round tint inside the slot, not a box. */
   [data-slot="header-capsule"] > :is(button, a) {
     width: 2.75rem;
@@ -439,30 +439,29 @@ html {
     backdrop-filter: none;
   }
   [data-slot="header-capsule"] > :is(button, a):not([data-variant="default"]):hover,
-  [data-slot="header-capsule"] > :is(button, a):not([data-variant="default"]):active {
+  [data-slot="header-capsule"] > :is(button, a):not([data-variant="default"]):active,
+  [data-slot="header-capsule"] > :is(button, a).phone-icon-action:hover,
+  [data-slot="header-capsule"] > :is(button, a).phone-icon-action:active {
     background: oklch(0 0 0 / 7%);
   }
   .dark [data-slot="header-capsule"] > :is(button, a):not([data-variant="default"]):hover,
-  .dark [data-slot="header-capsule"] > :is(button, a):not([data-variant="default"]):active {
+  .dark [data-slot="header-capsule"] > :is(button, a):not([data-variant="default"]):active,
+  .dark [data-slot="header-capsule"] > :is(button, a).phone-icon-action:hover,
+  .dark [data-slot="header-capsule"] > :is(button, a).phone-icon-action:active {
     background: oklch(1 0 0 / 12%);
   }
-  /* Primary action (PageHeader adds .phone-icon-action to the last visible action): iOS-style icon-only
-     44pt filled circle. Text is hidden with font-size 0; its accessible name is the aria-label PageHeader sets.
-     Solid token fill, never glass: --primary-foreground on --primary is 5.14:1 (AA) in light and dark. */
-  [data-slot="header-primary"] > :is(button, a).phone-icon-action {
-    width: 2.75rem;
-    min-width: 2.75rem;
-    height: 2.75rem;
-    padding: 0;
-    gap: 0;
-    font-size: 0;
-    border-radius: 9999px;
-    background: var(--primary);
-    color: var(--primary-foreground);
+  /* Primary action (PageHeader adds .phone-icon-action): the last icon cell of the capsule, neutral like every
+     other cell (no accent fill). Icon-only: the text is hidden with font-size 0; its accessible name is the
+     aria-label PageHeader sets. Hover and press reuse the cell tint rules above. */
+  [data-slot="header-capsule"] > :is(button, a).phone-icon-action {
+    background: transparent;
     border-color: transparent;
+    color: var(--foreground);
     box-shadow: none;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
+    font-size: 0;
+    gap: 0;
   }
   /* The top bar: translucent tint, blur, saturate, 1px bottom rim. */
   .glass-bar {

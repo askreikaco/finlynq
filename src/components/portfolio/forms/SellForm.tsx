@@ -15,6 +15,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -440,17 +441,15 @@ export default function SellForm() {
 
         {selectedHolding && (
           <OpGroup label="Lots">
-            <label className="flex min-h-11 items-center gap-3 px-4 text-sm">
-              <input
-                type="checkbox"
-                checked={useLotPicker}
-                onChange={(e) => {
-                  setUseLotPicker(e.target.checked);
-                  if (!e.target.checked) setLotSelection([]);
-                }}
-                className="size-5"
-              />
+            <label className="flex min-h-11 items-center justify-between gap-3 px-4 text-sm">
               <span>Choose specific lots (advanced). FIFO by default.</span>
+              <Switch
+                checked={useLotPicker}
+                onCheckedChange={(v) => {
+                  setUseLotPicker(v);
+                  if (!v) setLotSelection([]);
+                }}
+              />
             </label>
             {useLotPicker && (
               <div className="px-0 py-0">

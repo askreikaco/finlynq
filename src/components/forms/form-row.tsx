@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import type { LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -29,6 +30,8 @@ interface FormRowBaseProps {
   className?: string;
   labelWidth?: FormLabelWidth;
   height?: FormRowHeight;
+  /** Optional lucide icon shown before the label (18px, muted). Label column width is unchanged. */
+  icon?: LucideIcon;
   /** Message rendered under the row (text-destructive). */
   error?: string;
   /** Helper text rendered under the row (muted). Ignored when `error` is set. */
@@ -93,12 +96,22 @@ function ValueText({
  */
 export function FormRow(props: FormRowProps) {
   const generatedId = React.useId();
-  const { label, invalid, testId, right, className, error, hint } = props;
+  const { label, invalid, testId, right, className, error, hint, icon: Icon } = props;
   const rowClass = cn(ROW_BASE, ROW_HEIGHT[props.height ?? "default"]);
   const labelClass = cn(
     LABEL_BASE,
     LABEL_WIDTH[props.labelWidth ?? "default"],
     invalid && "text-neg",
+    Icon && "flex items-center gap-2",
+  );
+  // Without an icon the label stays a bare string, so existing callers render exactly as before.
+  const labelContent = Icon ? (
+    <>
+      <Icon aria-hidden="true" data-slot="form-row-icon" className="size-[18px] shrink-0 text-muted-foreground" />
+      <span className="min-w-0 truncate">{label}</span>
+    </>
+  ) : (
+    label
   );
   const note = error ? (
     <p className="px-4 pb-2 text-xs text-destructive">{error}</p>
@@ -116,7 +129,7 @@ export function FormRow(props: FormRowProps) {
           onClick={props.onClick}
           className={cn(rowClass, "transition-colors active:bg-muted disabled:opacity-50", className)}
         >
-          <span className={labelClass}>{label}</span>{" "}
+          <span className={labelClass}>{labelContent}</span>{" "}
           <ValueText value={props.value} placeholder={props.placeholder} invalid={invalid} />
           {right}
         </button>
@@ -131,7 +144,7 @@ export function FormRow(props: FormRowProps) {
       <>
         <div data-testid={testId} className={cn(rowClass, className)}>
           <LabelTag htmlFor={props.htmlFor} className={labelClass}>
-            {label}
+            {labelContent}
           </LabelTag>
           <div className="min-w-0 flex-1">{props.children}</div>
           {right}
@@ -146,7 +159,7 @@ export function FormRow(props: FormRowProps) {
     <>
       <div data-testid={testId} className={cn(rowClass, className)}>
         <label htmlFor={inputId} className={labelClass}>
-          {label}
+          {labelContent}
         </label>
         <input
           id={inputId}

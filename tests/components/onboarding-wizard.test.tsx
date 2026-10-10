@@ -17,6 +17,7 @@ vi.mock("framer-motion", () => ({
 
 // Mock Next.js router
 vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
   useRouter: () => ({
     push: vi.fn(),
   }),

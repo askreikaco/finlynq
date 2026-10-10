@@ -28,7 +28,7 @@ import { useDevMode } from "@/hooks/use-dev-mode";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { CurrencyAuditBanner } from "@/components/currency-audit-banner";
 import type { DashboardData, HealthData } from "./_components/types";
-import { PageHeader, HEADER_SECONDARY, CustomizeDashboardSheet } from "@/components/mobile";
+import { PageHeader, HEADER_SECONDARY, HEADER_CELL, CustomizeDashboardSheet } from "@/components/mobile";
 import { Disclosure } from "@/components/adaptive";
 import { Button } from "@/components/ui/button";
 import { DASHBOARD_CARDS } from "@/lib/dashboard-layout";
@@ -579,10 +579,11 @@ export default function DashboardPage() {
         </Button>
         <Link
           href="/settings/general"
-          className="flex h-11 w-11 regular:h-9 regular:w-9 shrink-0 items-center justify-center rounded-full bg-muted/60 hover:bg-muted transition-colors"
+          aria-label="Settings"
+          className={`${HEADER_CELL} flex h-11 w-11 regular:h-9 regular:w-9 shrink-0 items-center justify-center rounded-full bg-muted/60 hover:bg-muted transition-colors`}
           title="Settings"
         >
-          <User className="h-4 w-4 text-muted-foreground" />
+          <User className="h-4 w-4 text-foreground" />
         </Link>
         </>
           }

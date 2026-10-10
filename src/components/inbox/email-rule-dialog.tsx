@@ -25,6 +25,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -574,15 +575,12 @@ export function EmailRuleDialog({
           {/* Mapping / transforms */}
           <div className="rounded-lg border p-3 space-y-2.5 bg-muted/30">
             <p className="text-xs font-medium">Field mapping</p>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                className="h-4 w-4 rounded border"
-                checked={flipSign}
-                onChange={(e) => setFlipSign(e.target.checked)}
-              />
-              Reverse amount sign
-              <span className="text-xs text-muted-foreground">(for alerts that report expenses as positive)</span>
+            <label className="flex min-h-row items-center justify-between gap-3 text-sm">
+              <span className="flex min-w-0 flex-col">
+                Reverse amount sign
+                <span className="text-xs text-muted-foreground">(for alerts that report expenses as positive)</span>
+              </span>
+              <Switch checked={flipSign} onCheckedChange={setFlipSign} />
             </label>
             <div className="flex flex-wrap items-center gap-2 text-sm">
               <label className="text-xs text-muted-foreground w-20">Use date</label>

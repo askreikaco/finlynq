@@ -6,7 +6,7 @@ import React from "react";
 import * as fs from "fs";
 import * as path from "path";
 import { render, screen, cleanup, fireEvent, within } from "@testing-library/react";
-import { Loader2, Plus, RefreshCw, Share2 } from "lucide-react";
+import { Loader2, Plus, RefreshCw } from "lucide-react";
 
 vi.mock("next/link", () => ({
   default: ({ children, href, ...p }: React.PropsWithChildren<{ href: string }>) => React.createElement("a", { href, ...p }, children),
@@ -28,12 +28,11 @@ afterEach(cleanup);
 
 const cls = (el: Element | null | undefined) => (el ? el.className.toString().split(/\s+/) : []);
 const CAPSULE = '[data-slot="header-capsule"]';
-const PRIMARY = '[data-slot="header-primary"]';
 const CSS = fs.readFileSync(path.join(process.cwd(), "src/app/globals.css"), "utf-8");
 const PHONE = CSS.slice(CSS.indexOf("@media (width < 40rem) {"), CSS.indexOf("/* Mobile bottom tab bar"));
 
-describe("header capsule: icon cells and status in ONE capsule, the primary beside it", () => {
-  it("icon actions and a spinner render inside exactly one capsule; no control sits outside it except the primary", () => {
+describe("header capsule: icon cells, status, the primary and overflow are ONE neutral capsule", () => {
+  it("icon actions, a spinner, the primary and the overflow trigger render inside exactly one capsule, in that order", () => {
     const { container } = render(
       <PageHeader
         title="Goals"
@@ -51,23 +50,21 @@ describe("header capsule: icon cells and status in ONE capsule, the primary besi
     expect(capsule.querySelector('[role="status"]')).not.toBeNull();
     expect(capsule.querySelector('[aria-label="Refresh"]')).not.toBeNull();
     expect(capsule.querySelector('[data-slot="overflow-trigger"]')).not.toBeNull();
-    // the primary is the only control outside the capsule, and it is a sibling in its own slot
-    expect(capsule.querySelector('[aria-label="Add goal"]')).toBeNull();
-    const primarySlot = container.querySelector(PRIMARY);
-    expect(primarySlot?.querySelector('[aria-label="Add goal"]')).not.toBeNull();
-    expect(capsule.nextElementSibling).toBe(primarySlot);
+    // the primary is the last icon cell, just before the overflow trigger; no separate accent control exists
+    const labels = Array.from(capsule.children).map((el) => el.getAttribute("aria-label") ?? el.getAttribute("data-slot"));
+    expect(labels).toEqual(["Refresh", "Saving", "Add goal", "More actions"]);
+    expect(container.querySelector('[data-slot="header-primary"]')).toBeNull();
     container.querySelectorAll("button, [role='status']").forEach((el) => {
-      expect(el.closest(CAPSULE) ?? el.closest(PRIMARY)).not.toBeNull();
+      expect(el.closest(CAPSULE)).not.toBeNull();
     });
   });
 
-  it("the capsule holds one 44px slot per cell: 3 icon cells and the overflow trigger make 4 (11rem)", () => {
+  it("the capsule holds one 44px slot per cell: 3 icon cells (the primary counts) and the overflow trigger make 4 (11rem)", () => {
     const { container } = render(
       <PageHeader
         title="Goals"
         actions={[
           <Button key="r" variant="outline" size="icon" aria-label="Refresh"><RefreshCw /></Button>,
-          <Button key="sh" variant="outline" size="icon" aria-label="Share"><Share2 /></Button>,
           <HeaderStatus key="s" label="Saving"><Loader2 className="animate-spin" /></HeaderStatus>,
           <Button key="p" aria-label="Add goal"><Plus /></Button>,
         ]}
@@ -82,9 +79,8 @@ describe("header capsule: icon cells and status in ONE capsule, the primary besi
     expect(PHONE_CAPSULE).toContain("max-regular:max-w-[11rem]");
     expect(HEADER_MAX_PHONE_ACTIONS).toBe(3);
     expect((HEADER_MAX_PHONE_ACTIONS + 1) * 44).toBeLessThanOrEqual(11 * 16);
-    // the group keeps the 10px gap between capsule and primary
-    expect(cls(container.querySelector('[data-slot="page-header-actions"]'))).toContain("max-regular:gap-2.5");
     expect(PHONE_BAR_RIGHT).not.toContain("overflow-x-auto");
+    expect(PHONE_BAR_RIGHT).not.toContain("gap-2.5");
   });
 
   it("a spinner is never the primary action: the last real action keeps the filled circle", () => {
@@ -115,13 +111,19 @@ describe("header capsule: icon cells and status in ONE capsule, the primary besi
     expect(PHONE).toMatch(/\[data-slot="header-capsule"\] > :not\(:is\(button, a\)\) \{\s*width: 2\.75rem;\s*min-width: 2\.75rem;\s*height: 2\.75rem;/);
   });
 
-  it("a lone action stands alone as a 44px primary circle, with no capsule around it", () => {
+  it("a lone primary is the only cell of the capsule: a 44px neutral circle, never an accent fill", () => {
     const { container } = render(<PageHeader title="Budgets" actions={<Button aria-label="Add budget"><Plus /></Button>} />);
-    expect(container.querySelector(CAPSULE)).toBeNull();
+    const capsule = container.querySelector(CAPSULE) as HTMLElement;
+    expect(capsule.children.length).toBe(1);
     const primary = screen.getByRole("button", { name: "Add budget" });
     expect(cls(primary)).toContain(PHONE_PRIMARY_CLASS);
-    expect(primary.parentElement).toBe(container.querySelector(PRIMARY));
-    expect(PHONE).toMatch(/\[data-slot="header-primary"\] > :is\(button, a\)\.phone-icon-action \{\s*width: 2\.75rem;/);
+    expect(primary.parentElement).toBe(capsule);
+    const rule = PHONE.slice(PHONE.indexOf('[data-slot="header-capsule"] > :is(button, a).phone-icon-action {'));
+    const block = rule.slice(0, rule.indexOf("}"));
+    expect(block).toMatch(/background:\s*transparent;/);
+    expect(block).toMatch(/font-size:\s*0;/);
+    expect(block).not.toMatch(/var\(--primary\)/);
+    expect(PHONE).not.toMatch(/header-primary/);
   });
 
   it("a lone overflow trigger is a capsule with one 44px cell (a circle)", () => {
@@ -146,10 +148,11 @@ describe("header capsule: icon cells and status in ONE capsule, the primary besi
       />,
     );
     const capsule = container.querySelector(CAPSULE) as HTMLElement;
-    // phone-visible cells inside the capsule: the overflow trigger only (the four secondaries are hidden below regular)
+    // phone-visible cells inside the capsule: the primary and the overflow trigger (the four secondaries are hidden below regular)
     const visible = Array.from(capsule.children).filter((el) => !cls(el).includes(HEADER_SECONDARY));
-    expect(visible.length).toBe(1);
-    expect(container.querySelector(PRIMARY)?.querySelector('[aria-label="Add account"]')).not.toBeNull();
+    expect(visible.length).toBe(2);
+    expect(visible[0].getAttribute("aria-label")).toBe("Add account");
+    expect(visible[1].getAttribute("data-slot")).toBe("overflow-trigger");
     secondaries.forEach((label) => expect(cls(screen.getByRole("button", { name: label }))).toContain(HEADER_SECONDARY));
     fireEvent.click(screen.getByRole("button", { name: "More actions" }));
     const menu = within(await screen.findByRole("menu", undefined, { timeout: 5000 }));

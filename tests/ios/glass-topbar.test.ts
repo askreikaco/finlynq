@@ -106,16 +106,17 @@ describe("PageHeader phone bar (render)", () => {
     expect(capsule).not.toBeNull();
     expect(cls(capsule)).toEqual(expect.arrayContaining(["glass-capsule", "max-regular:rounded-full", "max-regular:h-11"]));
     expect(capsule?.querySelector('[aria-label="Refresh"]')).not.toBeNull();
-    expect(capsule?.querySelector('[aria-label="Add"]')).toBeNull();
-    expect(container.querySelector('[data-slot="header-primary"] [aria-label="Add"]')).not.toBeNull();
+    // the primary is the last cell inside the capsule, not a separate control
+    expect(capsule?.querySelector('[aria-label="Add"]')).not.toBeNull();
+    expect(container.querySelector('[data-slot="header-primary"]')).toBeNull();
   });
 
-  it("the primary sits beside the capsule, never inside it, and keeps its own fill", () => {
+  it("the primary is the only cell inside the capsule and is neutral (no accent fill)", () => {
     const { container } = render(h(PageHeader, { title: "Tx", actions: h(Button, { "aria-label": "Add transaction" }, "Add") }));
     const primary = screen.getByRole("button", { name: "Add transaction" });
     expect(primary.getAttribute("data-variant")).toBe("default");
-    expect(primary.parentElement).toBe(container.querySelector('[data-slot="header-primary"]'));
-    expect(container.querySelector('[data-slot="header-capsule"]')).toBeNull();
+    expect(primary.parentElement).toBe(container.querySelector('[data-slot="header-capsule"]'));
+    expect(container.querySelector('[data-slot="header-primary"]')).toBeNull();
     // the see-through reset is scoped to non-default buttons only
     expect(css).toContain('[data-slot="header-capsule"] > :is(button, a):not([data-variant="default"]) {\n    background: transparent;');
   });

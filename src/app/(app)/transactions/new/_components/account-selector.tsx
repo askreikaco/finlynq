@@ -7,11 +7,14 @@ import {
   PICKER_SHEET_CLASS,
   type PickerEntry,
 } from "./grouped-picker";
+import { OTHER_GROUP, normalizeGroupName, orderGroups } from "@/lib/accounts/groups";
 
 export interface Account {
   id: string | number;
   name: string;
   type?: string | null;
+  /** User account group (Cash, Checking, Credit Card, ...). Unset rows fall under "Other". */
+  group?: string | null;
   currency?: string;
   isInvestment?: boolean;
   archived?: boolean;
@@ -28,8 +31,6 @@ interface AccountSelectorProps {
   recentIds?: string[];
 }
 
-const OTHER_GROUP = "Other";
-
 export function AccountSelector({
   open,
   onOpenChange,
@@ -39,23 +40,28 @@ export function AccountSelector({
   title = "Select Account",
   recentIds,
 }: AccountSelectorProps) {
-  const entries = useMemo<PickerEntry[]>(
-    () =>
-      accounts
-        .filter((acc) => !acc.archived)
-        .map((acc) => {
-          const type = acc.type || OTHER_GROUP;
-          return {
-            id: String(acc.id),
-            name: acc.name,
-            group: type,
-            groupDetail: acc.currency || undefined,
-            flatDetail: [type, acc.currency].filter(Boolean).join(" · "),
-            searchText: [acc.name, acc.type ?? "", acc.currency ?? ""],
-          };
-        }),
-    [accounts],
-  );
+  const entries = useMemo<PickerEntry[]>(() => {
+    const rows: PickerEntry[] = accounts
+      .filter((acc) => !acc.archived)
+      .map((acc) => {
+        const group = normalizeGroupName(acc.group) ?? OTHER_GROUP;
+        return {
+          id: String(acc.id),
+          name: acc.name,
+          group,
+          groupDetail: acc.currency || undefined,
+          flatDetail: [group, acc.currency].filter(Boolean).join(" · "),
+          searchText: [acc.name, group, acc.currency ?? "", acc.type ?? ""],
+        };
+      });
+    // Sections alphabetical with "Other" last. The Accounts page also honours a saved
+    // per-user group order, which needs its own fetch; not done here (the picker takes
+    // accounts as props). Keys are lowercased so case variants share one section.
+    const order = orderGroups(rows.map((r) => r.group), []);
+    const rank = new Map(order.map((g, i) => [g.toLowerCase(), i] as const));
+    const rankOf = (g: string) => rank.get(g.toLowerCase()) ?? order.length;
+    return rows.sort((a, b) => rankOf(a.group) - rankOf(b.group));
+  }, [accounts]);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -67,6 +73,8 @@ export function AccountSelector({
           entries={entries}
           selectedId={selectedAccountId}
           recentIds={recentIds}
+          settingsHref="/accounts"
+          settingsLabel="Manage accounts"
           onPick={(id) => {
             onSelect(id);
             onOpenChange(false);

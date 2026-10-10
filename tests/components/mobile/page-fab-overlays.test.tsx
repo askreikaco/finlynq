@@ -8,6 +8,7 @@ import { render, screen, cleanup, waitFor } from "@testing-library/react";
 const nav = vi.hoisted(() => ({ path: "/dashboard" }));
 
 vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
   usePathname: () => nav.path,
 }));
 

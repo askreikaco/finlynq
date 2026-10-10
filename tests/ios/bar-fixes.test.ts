@@ -113,22 +113,22 @@ describe("1. phone primary action is an icon-only 44pt filled circle (below regu
 
   it("the phone rule sits inside the phone media block only (below regular), with size, icon-only text and token fill", () => {
     const phone = phoneBlock();
-    const rule = body(phone, '[data-slot="header-primary"] > :is(button, a).phone-icon-action');
-    expect(rule).toMatch(/width:\s*2\.75rem;/);
-    expect(rule).toMatch(/min-width:\s*2\.75rem;/);
-    expect(rule).toMatch(/height:\s*2\.75rem;/);
-    expect(rule).toMatch(/border-radius:\s*9999px;/);
+    const rule = body(phone, '[data-slot="header-capsule"] > :is(button, a).phone-icon-action');
+    expect(rule).toMatch(/background:\s*transparent;/);
+    expect(rule).toMatch(/color:\s*var\(--foreground\);/);
     expect(rule).toMatch(/font-size:\s*0;/);
-    expect(rule).toMatch(/background:\s*var\(--primary\);/);
-    expect(rule).toMatch(/color:\s*var\(--primary-foreground\);/);
+    expect(rule).not.toMatch(/var\(--primary\)/);
+    expect(rule).not.toMatch(/var\(--primary-foreground\)/);
+    // the cell geometry comes from the shared capsule cell rule (44px, round)
+    expect(phone).toMatch(/\[data-slot="header-capsule"\] > :is\(button, a\) \{\s*width: 2\.75rem;/);
     expect(rule).not.toMatch(/backdrop-filter:\s*blur/);
     expect(css.slice(0, css.indexOf("iOS 26-style liquid glass, phones only"))).not.toContain(".phone-icon-action");
   });
 
-  it("primary text on the filled primary is at least 4.5:1 in light and dark (palette tokens)", () => {
-    const primaryFill = oklch(0.75, 0.165, 70);
-    const primaryFg = oklch(0.18, 0.05, 70);
-    expect(contrast(primaryFg, primaryFill)).toBeGreaterThanOrEqual(4.5);
+  it("the primary cell is neutral: its icon is --foreground on the glass capsule (no accent fill to check)", () => {
+    const fg = oklch(0.18, 0.015, 250);
+    const glass = oklch(1, 0, 0);
+    expect(contrast(fg, glass)).toBeGreaterThanOrEqual(4.5);
   });
 
   it("the tab-bar and bar pieces the render relies on are in the source (no text-[Npx] in the bar code)", () => {
@@ -156,7 +156,7 @@ describe("2. title block insets equal the measured left slot and right capsule",
   it("the capsule is the third column, one 44px slot per item, capped at 11rem and never scrolling", () => {
     expect(PHONE_BAR_RIGHT).toContain("max-regular:col-start-3");
     expect(PHONE_BAR_RIGHT).toContain("max-regular:justify-self-end");
-    expect(PHONE_BAR_RIGHT).toContain("max-regular:gap-2.5"); // 10px between capsule and primary
+    expect(PHONE_BAR_RIGHT).not.toContain("gap-2.5"); // one capsule child group; the primary sits inside it
     expect(PHONE_CAPSULE).toContain("max-regular:max-w-[11rem]");
     expect(PHONE_CAPSULE).toContain("max-regular:gap-0");
     expect(PHONE_CAPSULE).not.toContain("overflow-x-auto");

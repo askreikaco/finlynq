@@ -73,8 +73,8 @@ describe("New account page: fields", () => {
     expect(screen.getByLabelText(/Note/)).toBeTruthy();
     expect(screen.getByLabelText("Opening balance")).toBeTruthy();
     expect(screen.getByLabelText("Date")).toBeTruthy();
-    expect(screen.getByLabelText("Investment account")).toBeTruthy();
-    expect(screen.getByLabelText("Invisible")).toBeTruthy();
+    expect(screen.getByRole("switch", { name: "Investment account" })).toBeTruthy();
+    expect(screen.getByRole("switch", { name: "Invisible" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Create Account" })).toBeTruthy();
   });
 

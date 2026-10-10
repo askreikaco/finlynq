@@ -9,7 +9,8 @@ import { formatCurrency } from "@/lib/currency";
 vi.mock("next/link", () => ({
   default: ({ children, href, ...p }: React.PropsWithChildren<{ href: string }>) => React.createElement("a", { href, ...p }, children),
 }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }), usePathname: () => "/portfolio" }));
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(), useRouter: () => ({ push: vi.fn() }), usePathname: () => "/portfolio" }));
 vi.mock("@/hooks/use-dev-mode", () => ({ useDevMode: () => false }));
 vi.mock("@/components/currency-provider", () => ({ useDisplayCurrency: () => ({ displayCurrency: "VND" }) }));
 vi.mock("@/components/portfolio/PerformanceChart", () => ({ PerformanceChart: () => <div data-testid="perf-chart" /> }));

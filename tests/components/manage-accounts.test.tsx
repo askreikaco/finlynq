@@ -11,6 +11,7 @@ import userEvent from "@testing-library/user-event";
 
 const hardReload = vi.fn();
 vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }),
   usePathname: () => "/manage-accounts",
 }));

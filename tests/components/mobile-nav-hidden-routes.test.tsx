@@ -7,6 +7,7 @@ import { render, screen, cleanup } from "@testing-library/react";
 
 let mockPath = "/dashboard";
 vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
   usePathname: () => mockPath,
   useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
 }));

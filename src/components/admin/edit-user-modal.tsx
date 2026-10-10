@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -184,16 +185,9 @@ export function EditUserModal({
             />
           </div>
 
-          <div className="flex items-center gap-2">
-            <input
-              id="emailVerified"
-              type="checkbox"
-              checked={emailVerified}
-              onChange={(e) => setEmailVerified(e.target.checked)}
-              disabled={loading}
-              className="h-4 w-4"
-            />
+          <div className="flex min-h-row items-center justify-between gap-3">
             <Label htmlFor="emailVerified">Email Verified</Label>
+            <Switch id="emailVerified" checked={emailVerified} onCheckedChange={setEmailVerified} disabled={loading} />
           </div>
 
           <div>

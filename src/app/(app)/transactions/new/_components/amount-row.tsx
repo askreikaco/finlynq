@@ -1,15 +1,10 @@
 "use client";
 
 import * as React from "react";
+import { TW } from "@/lib/design/tokens";
+import { Banknote, ChevronDown } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 interface AmountRowProps {
   value: string;
@@ -17,10 +12,12 @@ interface AmountRowProps {
   /** Called on focus; the page opens the numpad here. Typing from a hardware keyboard still works. */
   onOpenPad: () => void;
   currency: string;
-  currencyOptions: string[];
-  onCurrencyChange: (currency: string) => void;
-  /** Hide the currency chip (Transfer). */
+  /** Opens the currency sheet (CurrencySelector). */
+  onOpenCurrency: () => void;
+  /** Hide the currency chip. */
   showCurrency?: boolean;
+  /** Show the chip but not allow changing it (Transfer: the amount is in the From account currency). */
+  currencyDisabled?: boolean;
   /** Optional FX preview line under the amount. */
   fxLine?: React.ReactNode;
   invalid?: boolean;
@@ -28,14 +25,18 @@ interface AmountRowProps {
   className?: string;
 }
 
+/**
+ * Amount row. The currency trigger sits in a label-width cell (TW.rowLabelNarrow, 6rem), the same label
+ * column FormRow uses (narrow), so the amount starts at the shared value column x.
+ */
 export function AmountRow({
   value,
   onChange,
   onOpenPad,
   currency,
-  currencyOptions,
-  onCurrencyChange,
+  onOpenCurrency,
   showCurrency = true,
+  currencyDisabled = false,
   fxLine,
   invalid,
   testId,
@@ -45,18 +46,20 @@ export function AmountRow({
     <div data-testid={testId} className={cn("flex min-h-14 flex-col gap-1 px-4 py-2", className)}>
       <div className="flex min-w-0 items-center gap-3">
         {showCurrency && (
-          <Select value={currency} onValueChange={(v) => onCurrencyChange(v ?? "")}>
-            <SelectTrigger aria-label="Currency" className="shrink-0">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {currencyOptions.map((c) => (
-                <SelectItem key={c} value={c}>
-                  {c}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div data-slot="amount-label-cell" className={cn(TW.rowLabelNarrow, "shrink-0")}>
+            <button
+              type="button"
+              aria-label="Currency"
+              aria-haspopup="dialog"
+              disabled={currencyDisabled}
+              onClick={onOpenCurrency}
+              className="flex w-full items-center justify-between gap-1.5 rounded-lg border border-input bg-transparent py-2 pr-2 pl-2.5 text-sm whitespace-nowrap transition-colors outline-none hover:bg-muted/50 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:bg-muted disabled:opacity-50 disabled:hover:bg-transparent disabled:active:bg-transparent"
+            >
+              <Banknote aria-hidden="true" data-slot="form-row-icon" className="size-[18px] shrink-0 text-muted-foreground" />
+              <span className="min-w-0 flex-1 text-left font-medium text-foreground">{currency}</span>
+              <ChevronDown aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
+            </button>
+          </div>
         )}
         <input
           type="text"

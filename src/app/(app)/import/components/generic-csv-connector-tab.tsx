@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -499,16 +500,16 @@ export function GenericCsvConnectorTab() {
                     maxLength={10}
                   />
                 </div>
-                <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <input
-                    type="checkbox"
+                <label className="flex items-center justify-between gap-3 min-h-row text-xs text-muted-foreground">
+                  <span className="flex-1">Import opening-balance rows</span>
+                  <Switch
                     checked={includeOpening}
-                    onChange={(e) => {
-                      setIncludeOpening(e.target.checked);
+                    onCheckedChange={(v) => {
+                      setIncludeOpening(v);
                       if (mapping.date && mapping.amount && mapping.account) runPreview(mapping);
                     }}
+                    className="shrink-0"
                   />
-                  Import opening-balance rows
                 </label>
               </div>
 

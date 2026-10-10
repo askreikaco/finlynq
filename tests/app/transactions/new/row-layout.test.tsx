@@ -8,6 +8,7 @@ import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/re
 const H = vi.hoisted(() => ({ push: vi.fn(), back: vi.fn() }));
 
 vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
   useRouter: () => ({ push: H.push, back: H.back }),
   usePathname: () => "/transactions/new",
 }));
@@ -81,7 +82,7 @@ afterEach(() => {
 
 const postsTo = (url: string) => calls.filter((c) => c.url === url && c.init?.method === "POST");
 const rowIds = () =>
-  Array.from(screen.getByTestId("txnew-list").children).map((el) => el.getAttribute("data-testid"));
+  Array.from(screen.getByTestId("txnew-list").querySelectorAll("[data-testid^='txnew-row-']")).map((el) => el.getAttribute("data-testid"));
 
 describe("new transaction row layout", () => {
   it("rows are in order: Date, Amount, Category, Account, Payee, Note", () => {

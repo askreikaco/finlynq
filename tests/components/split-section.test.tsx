@@ -66,9 +66,9 @@ describe("SplitSection with AmountInput", () => {
     render(<SplitSectionHarness currency="USD" />);
 
     // Check that split toggle is rendered
-    const checkbox = screen.getByRole("checkbox");
+    const checkbox = screen.getByRole("switch");
     expect(checkbox).toBeTruthy();
-    expect((checkbox as HTMLInputElement).type).toBe("checkbox");
+    expect(checkbox.getAttribute("role")).toBe("switch");
   });
 
   it("vi language: typing decimal comma in amount input parses to canonical dot decimal", async () => {

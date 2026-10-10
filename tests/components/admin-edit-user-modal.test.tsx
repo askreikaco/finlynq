@@ -25,9 +25,10 @@ describe("EditUserModal", () => {
     const dlg = screen.getByRole("dialog");
     expect(dlg).toHaveAccessibleName(/edit user/i);
     expect(dlg).toHaveAccessibleDescription();
-    for (const l of [/display name/i, /username/i, /^email$/i, /email verified/i, /plan expires at/i]) {
+    for (const l of [/display name/i, /username/i, /^email$/i, /plan expires at/i]) {
       expect(screen.getByLabelText(l)).toBeInTheDocument();
     }
+    expect(screen.getByRole("switch", { name: /email verified/i })).toBeInTheDocument();
   });
 
   it("changing only the display name sends ONLY {displayName}", async () => {
@@ -56,7 +57,7 @@ describe("EditUserModal", () => {
   it("changing email + verified sends exactly those two keys", async () => {
     const { onSave } = setup();
     fireEvent.change(screen.getByLabelText(/^email$/i), { target: { value: "new@example.com" } });
-    fireEvent.click(screen.getByLabelText(/email verified/i));
+    fireEvent.click(screen.getByRole("switch", { name: /email verified/i }));
     save();
     await waitFor(() => expect(onSave).toHaveBeenCalled());
     expect(onSave).toHaveBeenCalledWith({ email: "new@example.com", emailVerified: false });

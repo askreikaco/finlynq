@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Share2 } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
+import { HEADER_CELL } from "@/components/mobile";
 import { FAMILY_STRINGS } from "@/lib/family/strings";
 import { OverviewTab } from "./_components/overview-tab";
 import { InviteLinkHandler } from "./_components/invite-link-handler";
@@ -39,7 +40,7 @@ export default function FamilyPage() {
             href={FAMILY_SHARE_PATH}
             aria-label={FAMILY_STRINGS.share_action}
             title={FAMILY_STRINGS.share_action}
-            className={buttonVariants({ variant: "outline", size: "icon" })}
+            className={`${HEADER_CELL} ${buttonVariants({ variant: "outline", size: "icon" })}`}
           >
             <Share2 className="h-4 w-4" aria-hidden="true" />
           </Link>

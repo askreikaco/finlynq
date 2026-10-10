@@ -8,6 +8,7 @@ import { ReportingRecomputeIndicator } from "@/components/reporting-recompute-in
 
 // Mock next/navigation
 vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
   usePathname: vi.fn(),
 }));
 

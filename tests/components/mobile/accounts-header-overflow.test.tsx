@@ -8,7 +8,7 @@ import { render, screen, cleanup, fireEvent, within, waitFor } from "@testing-li
 vi.mock("next/link", () => ({
   default: ({ children, href, ...p }: React.PropsWithChildren<{ href: string }>) => React.createElement("a", { href, ...p }, children),
 }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }), usePathname: () => "/accounts" }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }), usePathname: () => "/accounts", useSearchParams: () => new URLSearchParams() }));
 vi.mock("@/components/currency-provider", () => ({ useDisplayCurrency: () => ({ displayCurrency: "VND" }) }));
 vi.mock("@/components/dropdown-order-provider", () => ({
   useDropdownOrder: () => <T,>(items: T[]) => items,
