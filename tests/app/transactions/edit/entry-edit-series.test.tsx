@@ -119,7 +119,7 @@ describe("series pill on an edited row (read-only)", () => {
     expect(b.textContent).toBe("Installment 2/6");
     expect(b.tagName).toBe("SPAN");
     expect(screen.getByTestId("txnew-row-date").contains(b)).toBe(true);
-    expect(screen.getByTestId("txnew-series-hint").textContent).toBe("Edits apply to this payment only");
+    expect(screen.getByTestId("txnew-series-hint").textContent).toBe("Edits can apply to this payment or the following ones");
     expect(screen.queryByTestId("txnew-repeat-pill")).toBeNull();
   });
 
@@ -201,5 +201,95 @@ describe("Delete on an installment row: two scopes", () => {
     fireEvent.click(within(dlg).getByRole("button", { name: "Delete" }));
     await waitFor(() => expect(H.push).toHaveBeenCalled());
     expect(calls.filter((c) => c.method === "DELETE").map((c) => c.url)).toEqual(["/api/transactions?id=7"]);
+  });
+});
+
+describe("Save on an installment row: scope dialog", () => {
+  const putCalls = () => calls.filter((c) => c.method === "PUT" && c.url.split("?")[0] === "/api/transactions");
+  const clickSave = () => fireEvent.click(screen.getByTestId("txnew-save"));
+  const changeNote = (v: string) => fireEvent.change(document.getElementById("txnew-note") as HTMLTextAreaElement, { target: { value: v } });
+
+  it("opens on a relevant change; nothing is written until a choice is made", async () => {
+    stubFetch(withTx(INST));
+    await mountReady();
+    changeNote("changed");
+    clickSave();
+    const dlg = await screen.findByTestId("edit-save-dialog");
+    expect(within(dlg).getByRole("button", { name: "This payment only" })).toBeTruthy();
+    expect(within(dlg).getByRole("button", { name: "This and following" })).toBeTruthy();
+    expect(within(dlg).getByRole("button", { name: "Cancel" })).toBeTruthy();
+    expect(within(dlg).queryByTestId("edit-save-date-note")).toBeNull();
+    expect(putCalls()).toHaveLength(0);
+    fireEvent.click(within(dlg).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(screen.queryByTestId("edit-save-dialog")).toBeNull());
+    expect(putCalls()).toHaveLength(0);
+  });
+
+  it("This payment only -> PUT with scope: this", async () => {
+    stubFetch(withTx(INST));
+    await mountReady();
+    changeNote("changed");
+    clickSave();
+    const dlg = await screen.findByTestId("edit-save-dialog");
+    fireEvent.click(within(dlg).getByRole("button", { name: "This payment only" }));
+    await waitFor(() => expect(putCalls()).toHaveLength(1));
+    expect(putCalls()[0].body).toMatchObject({ id: 7, note: "changed", scope: "this" });
+    await waitFor(() => expect(H.push).toHaveBeenCalledWith("/transactions?page=2"));
+  });
+
+  it("This and following -> PUT with scope: following", async () => {
+    stubFetch(withTx(INST));
+    await mountReady();
+    changeNote("changed");
+    clickSave();
+    const dlg = await screen.findByTestId("edit-save-dialog");
+    fireEvent.click(within(dlg).getByRole("button", { name: "This and following" }));
+    await waitFor(() => expect(putCalls()).toHaveLength(1));
+    expect(putCalls()[0].body).toMatchObject({ id: 7, note: "changed", scope: "following" });
+    expect(putCalls()[0].body.date).toBe("2026-01-01");
+  });
+
+  it("a changed date is called out in the dialog and nothing else triggers it", async () => {
+    stubFetch(withTx(INST));
+    await mountReady();
+    fireEvent.change(document.getElementById("txnew-date") as HTMLInputElement, { target: { value: "2026-01-15" } });
+    clickSave();
+    // date alone is not a shared field: saves straight away, this row only
+    await waitFor(() => expect(putCalls()).toHaveLength(1));
+    expect(screen.queryByTestId("edit-save-dialog")).toBeNull();
+    expect(putCalls()[0].body).not.toHaveProperty("scope");
+    expect(putCalls()[0].body.date).toBe("2026-01-15");
+  });
+
+  it("date + shared change: the dialog says the date applies to this payment only", async () => {
+    stubFetch(withTx(INST));
+    await mountReady();
+    fireEvent.change(document.getElementById("txnew-date") as HTMLInputElement, { target: { value: "2026-01-15" } });
+    changeNote("changed");
+    clickSave();
+    const dlg = await screen.findByTestId("edit-save-dialog");
+    expect(within(dlg).getByTestId("edit-save-date-note").textContent).toMatch(/this payment only/);
+  });
+
+  it("no change at all: plain save, no dialog, no scope", async () => {
+    stubFetch(withTx(INST));
+    await mountReady();
+    clickSave();
+    await waitFor(() => expect(putCalls()).toHaveLength(1));
+    expect(screen.queryByTestId("edit-save-dialog")).toBeNull();
+    expect(putCalls()[0].body).not.toHaveProperty("scope");
+  });
+
+  it("a plain row never shows the dialog and keeps the golden payload (no scope)", async () => {
+    stubFetch();
+    await mountReady();
+    changeNote("changed");
+    clickSave();
+    await waitFor(() => expect(putCalls()).toHaveLength(1));
+    expect(screen.queryByTestId("edit-save-dialog")).toBeNull();
+    expect(putCalls()[0].body).toEqual({
+      id: 7, date: "2026-01-01", accountId: 1, categoryId: 1, enteredCurrency: "USD", enteredAmount: -5,
+      payee: "p", note: "changed", tags: "t1", isBusiness: 1,
+    });
   });
 });

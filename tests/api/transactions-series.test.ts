@@ -29,6 +29,8 @@ const h = vi.hoisted(() => ({
   whereLog: [] as Array<{ table: string; cond: unknown; kind: string }>,
   cascadeIds: [] as number[][],
   subInsertError: null as unknown,
+  updateCalls: 0,
+  failAtUpdate: 0,
 }));
 
 vi.mock("@/lib/auth/require-auth", () => ({
@@ -141,9 +143,12 @@ vi.mock("@/lib/transactions/delete-cascade", () => ({
 }));
 
 import { POST as postInstallments } from "@/app/api/transactions/installments/route";
-import { POST as postTx, DELETE as deleteTx } from "@/app/api/transactions/route";
+import { POST as postTx, PUT as putTx, DELETE as deleteTx } from "@/app/api/transactions/route";
 import { requireAuth } from "@/lib/auth/require-auth";
-import { createTransaction } from "@/lib/queries";
+import { createTransaction, updateTransaction } from "@/lib/queries";
+import { canEditPortfolioRow } from "@/lib/portfolio/operations";
+import { verifyOwnership } from "@/lib/verify-ownership";
+import { encryptField } from "@/lib/crypto/envelope";
 import { deleteTransactionsCascade } from "@/lib/transactions/delete-cascade";
 
 const URL_INST = "http://localhost:3000/api/transactions/installments";
@@ -478,5 +483,189 @@ describe("DELETE /api/transactions?scope=following", () => {
     const { status, data } = await parseResponse(res);
     expect(status).toBe(409);
     expect((data as { code: string }).code).toBe("portfolio_edit_blocked");
+  });
+});
+
+describe("PUT /api/transactions scope=following (installment edit)", () => {
+  const put = (body: Record<string, unknown>) => createMockRequest(URL_TX, { method: "PUT", body });
+  const note = (id: number) => decryptField(TEST_DEK, h.store.tx.find((r) => r.id === id)!.note as string);
+  const dialect = new PgDialect();
+
+  beforeEach(() => {
+    vi.mocked(canEditPortfolioRow).mockReset();
+    vi.mocked(canEditPortfolioRow).mockResolvedValue({ allowed: true } as never);
+    vi.mocked(verifyOwnership).mockClear();
+    vi.mocked(updateTransaction).mockReset();
+    vi.mocked(updateTransaction).mockImplementation((async (id: number, _u: string, data: Row) => {
+      h.updateCalls++;
+      if (h.failAtUpdate && h.updateCalls === h.failAtUpdate) throw new Error("boom on update " + h.updateCalls);
+      h.store.tx = h.store.tx.map((r) => (r.id === id ? { ...r, ...data } : r));
+      return h.store.tx.find((r) => r.id === id);
+    }) as never);
+    h.updateCalls = 0;
+    h.failAtUpdate = 0;
+    // A 4-payment plan, edited row = seq 2 (id 12). Rows 11..14, own suffixes, own dates.
+    const mk = (id: number, seq: number, date: string, extra: Row = {}) => ({
+      id, seq, date, accountId: 1, currency: "USD", amount: -100, enteredCurrency: "USD", enteredAmount: -100,
+      payee: "p-old", tags: "old", categoryId: 2, isBusiness: 0,
+      note: encryptField(TEST_DEK, `Laptop ${seq}/4`), ...extra,
+    });
+    const all = [mk(11, 1, "2026-01-10"), mk(12, 2, "2026-02-10"), mk(13, 3, "2026-03-10"), mk(14, 4, "2026-04-10", { amount: -103, enteredAmount: -103 })];
+    h.store.tx = all;
+    h.seedRow = { groupId: "g-1", seq: 2, accountId: 1, currency: "USD", amount: -100, enteredCurrency: "USD", enteredAmount: -100 };
+    h.laterRows = all.slice(1);
+  });
+
+  const base = { id: 12, scope: "following", categoryId: 5, accountId: 1, payee: "New shop", tags: "t", isBusiness: 1, date: "2026-02-20" };
+
+  it("applies shared fields to this and every later row, keeps each row's own suffix, never the date", async () => {
+    const res = await putTx(put({ ...base, note: "Phone case 2/4", enteredAmount: -100, enteredCurrency: "USD" }));
+    const { status, data } = await parseResponse(res);
+    expect(status).toBe(200);
+    expect((data as { updatedIds: number[] }).updatedIds).toEqual([12, 13, 14]);
+    expect(h.updateCalls).toBe(3);
+    // edited row 11 (earlier) untouched
+    expect(note(11)).toBe("Laptop 1/4");
+    expect(h.store.tx.find((r) => r.id === 11)!.categoryId).toBe(2);
+    for (const id of [12, 13, 14]) {
+      const r = h.store.tx.find((x) => x.id === id)!;
+      expect(r.categoryId).toBe(5);
+      expect(r.accountId).toBe(1);
+      expect(r.isBusiness).toBe(1);
+      expect(decryptField(TEST_DEK, r.payee as string)).toBe("New shop");
+      expect(decryptField(TEST_DEK, r.tags as string)).toBe("t");
+    }
+    expect(note(12)).toBe("Phone case 2/4"); // edited row: as submitted
+    expect(note(13)).toBe("Phone case 3/4");
+    expect(note(14)).toBe("Phone case 4/4");
+    // date: only the edited row gets it
+    expect(h.store.tx.find((r) => r.id === 12)!.date).toBe("2026-02-20");
+    expect(h.store.tx.find((r) => r.id === 13)!.date).toBe("2026-03-10");
+    expect(h.store.tx.find((r) => r.id === 14)!.date).toBe("2026-04-10");
+    // amount unchanged: later rows keep their own amounts (incl. the remainder row)
+    expect(h.store.tx.find((r) => r.id === 14)!.amount).toBe(-103);
+    expect((data as { warning?: string }).warning).toBeUndefined();
+  });
+
+  it("re-appends own suffix when the submitted note has no suffix, and handles an emptied note", async () => {
+    await putTx(put({ ...base, note: "Case" }));
+    expect(note(13)).toBe("Case 3/4");
+    await putTx(put({ ...base, note: "2/4" }));
+    expect(note(13)).toBe("3/4");
+    expect(note(14)).toBe("4/4");
+  });
+
+  it("leaves fields the body does not carry alone", async () => {
+    await putTx(put({ id: 12, scope: "following", tags: "only-tags" }));
+    const r = h.store.tx.find((x) => x.id === 13)!;
+    expect(decryptField(TEST_DEK, r.tags as string)).toBe("only-tags");
+    expect(r.categoryId).toBe(2);
+    expect(r.payee).toBe("p-old");
+    expect(note(13)).toBe("Laptop 3/4");
+  });
+
+  it("amount changed: the new per-payment amount goes to every later row (no remainder) with a warning", async () => {
+    const res = await putTx(put({ ...base, note: "x 2/4", enteredAmount: -80, enteredCurrency: "USD" }));
+    const { status, data } = await parseResponse(res);
+    expect(status).toBe(200);
+    for (const id of [12, 13, 14]) {
+      const r = h.store.tx.find((x) => x.id === id)!;
+      expect(r.amount).toBe(-80);
+      expect(r.enteredAmount).toBe(-80);
+      expect(r.enteredCurrency).toBe("USD");
+    }
+    expect(h.store.tx.find((r) => r.id === 11)!.amount).toBe(-100);
+    expect((data as { warning: string }).warning).toMatch(/not rebalanced/);
+  });
+
+  it("converts the new amount per row with the single-row helper (entered currency differs from the account)", async () => {
+    await putTx(put({ ...base, note: "x 2/4", enteredAmount: -50, enteredCurrency: "EUR" }));
+    for (const id of [13, 14]) {
+      const r = h.store.tx.find((x) => x.id === id)!;
+      expect(r.enteredAmount).toBe(-50);
+      expect(r.enteredCurrency).toBe("EUR");
+      expect(r.amount).toBe(-100); // fake FX x2
+      expect(r.enteredFxRate).toBe(2);
+    }
+  });
+
+  it("an unchanged amount sent again does not touch the later amounts", async () => {
+    await putTx(put({ ...base, note: "x 2/4", enteredAmount: -100, enteredCurrency: "USD" }));
+    expect(h.store.tx.find((r) => r.id === 14)!.amount).toBe(-103);
+  });
+
+  it("an account change alone re-converts each row's own entered amount at its own date", async () => {
+    await putTx(put({ id: 12, scope: "following", accountId: 2, categoryId: 5 }));
+    for (const id of [12, 13, 14]) expect(h.store.tx.find((r) => r.id === id)!.accountId).toBe(2);
+    // row 14 keeps its own remainder amount
+    expect(h.store.tx.find((r) => r.id === 14)!.enteredAmount).toBe(-103);
+    expect(h.store.tx.find((r) => r.id === 14)!.date).toBe("2026-04-10");
+  });
+
+  it("is all or none: a failure on a later row rolls back the edited row and the earlier updates", async () => {
+    const before = JSON.stringify(h.store.tx);
+    h.failAtUpdate = 3;
+    const res = await putTx(put({ ...base, note: "Case 2/4" }));
+    expect(res.status).toBe(500);
+    expect(h.updateCalls).toBe(3);
+    expect(JSON.stringify(h.store.tx)).toBe(before);
+  });
+
+  it("scope is validated; default / this updates only the one row without a group lookup", async () => {
+    const bad = await parseResponse(await putTx(put({ id: 12, scope: "all" })));
+    expect(bad.status).toBe(400);
+    expect(h.updateCalls).toBe(0);
+    h.whereLog = [];
+    const res = await putTx(put({ id: 12, tags: "z" }));
+    expect(res.status).toBe(200);
+    expect(h.updateCalls).toBe(1);
+    expect(note(13)).toBe("Laptop 3/4");
+    expect(((await res.json()) as { updatedIds?: number[] }).updatedIds).toBeUndefined();
+    const res2 = await putTx(put({ id: 12, tags: "z", scope: "this" }));
+    expect(res2.status).toBe(200);
+    expect(h.updateCalls).toBe(2);
+  });
+
+  it("400 not_installment for a row without a group; nothing written", async () => {
+    h.seedRow = { groupId: null, seq: null };
+    const res = await putTx(put({ ...base }));
+    const { status, data } = await parseResponse(res);
+    expect(status).toBe(400);
+    expect((data as { code: string }).code).toBe("not_installment");
+    expect(h.updateCalls).toBe(0);
+  });
+
+  it("404 for an unknown / foreign row id", async () => {
+    h.seedRow = null;
+    const res = await putTx(put({ ...base }));
+    expect(res.status).toBe(404);
+    expect(h.updateCalls).toBe(0);
+  });
+
+  it("scopes the lookup to the user, the group and seq >= the edited row's; verifies account/category ownership", async () => {
+    await putTx(put({ ...base, note: "n 2/4" }));
+    const later = h.whereLog.filter((w) => w.table === "transactions").map((w) => dialect.sqlToQuery(w.cond as never)).find((q) => q.sql.includes("installment_seq"));
+    expect(later).toBeTruthy();
+    expect(later!.sql).toContain('"transactions"."user_id" = $');
+    expect(later!.sql).toContain('"transactions"."installment_group_id" = $');
+    expect(later!.sql).toContain('"transactions"."installment_seq" >= $');
+    expect(later!.params).toEqual(expect.arrayContaining(["u1", "g-1", 2]));
+    expect(verifyOwnership).toHaveBeenCalledWith("u1", expect.objectContaining({ accountIds: [1], categoryIds: [5] }));
+  });
+
+  it("keeps the portfolio_edit_blocked 409 and writes nothing", async () => {
+    vi.mocked(canEditPortfolioRow).mockResolvedValue({ allowed: false, reason: "blocked", blockingClosureTxIds: [3] } as never);
+    const res = await putTx(put({ ...base }));
+    const { status, data } = await parseResponse(res);
+    expect(status).toBe(409);
+    expect((data as { code: string }).code).toBe("portfolio_edit_blocked");
+    expect(h.updateCalls).toBe(0);
+  });
+
+  it("423 without a DEK", async () => {
+    h.authDek = null;
+    const res = await putTx(put({ ...base }));
+    expect(res.status).toBe(423);
+    expect(h.updateCalls).toBe(0);
   });
 });

@@ -69,6 +69,8 @@ describe("payload builders", () => {
     const base = { id: 7, date: "d", accountId: 1, categoryId: 2, enteredCurrency: "USD", enteredAmount: -5, payee: "", note: "", tags: "", isBusiness: false };
     expect(buildTransactionPutBody(base)).toEqual({ id: 7, date: "d", accountId: 1, categoryId: 2, enteredCurrency: "USD", enteredAmount: -5, payee: "", note: "", tags: "", isBusiness: 0 });
     expect(buildTransactionPutBody({ ...base, isBusiness: true, confirmReallocation: true })).toMatchObject({ isBusiness: 1, confirmReallocation: true });
+    expect(buildTransactionPutBody(base)).not.toHaveProperty("scope");
+    expect(buildTransactionPutBody({ ...base, scope: "following" })).toMatchObject({ scope: "following" });
   });
   it("splits body re-signs every row", () => {
     expect(buildSplitsBody({ transactionId: 7, sign: -1, rows: [{ categoryId: 2, amount: 2, note: "n" }, { categoryId: 2, amount: -3, note: "" }] })).toEqual({
