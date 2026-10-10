@@ -85,7 +85,8 @@ async function readBlobs(db: IDBDatabase, snapshotId: string): Promise<Uint8Arra
   const range = IDBKeyRange.bound(`${snapshotId}|`, `${snapshotId}|￿`);
   const [keys, values] = await Promise.all([req(store.getAllKeys(range)), req(store.getAll(range))]);
   return values.map((v, i) => {
-    if (keys[i] !== blobKey(snapshotId, i) || !(v instanceof Uint8Array)) throw new Error("snapshot blob missing or out of place");
+    // ArrayBuffer.isView, not instanceof: bytes from IndexedDB or TextEncoder can come from another realm (jsdom).
+    if (keys[i] !== blobKey(snapshotId, i) || !ArrayBuffer.isView(v)) throw new Error("snapshot blob missing or out of place");
     return v;
   });
 }

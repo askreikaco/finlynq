@@ -12,10 +12,14 @@
 
 import { PER_USER_STORAGE_KEYS, userStorageKey, dropLegacyUnscopedKeys } from "@/lib/client/user-storage";
 import { persistSupported, wipeUser } from "@/lib/data/persist";
+import { dropLocalUserCache } from "@/lib/data/local-read-cache-wipe";
 
 export { PER_USER_STORAGE_KEYS };
 
-/** Remove one user's namespaced per-user keys (+ legacy bare keys). */
+/**
+ * Remove one user's namespaced per-user keys (+ legacy bare keys), and drop that user's opt-in on-device
+ * read cache. Called on every logout path (sign out, sign out all, remove account).
+ */
 export function clearPerUserStorage(userId: string): void {
   if (typeof window === "undefined") return;
   try {
@@ -26,6 +30,7 @@ export function clearPerUserStorage(userId: string): void {
     // localStorage blocked — ignore
   }
   dropLegacyUnscopedKeys();
+  void dropLocalUserCache(userId);
 }
 
 /** Navigate with a full page load (default: reload the current path). */
