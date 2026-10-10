@@ -223,6 +223,17 @@ for (const vp of VIEWPORTS) {
           const top: Measure = await page.evaluate(measure, { rail: RAIL_SEL, bottom: BOTTOM_SEL, fab: FAB_SEL, toggle: TOGGLE_SEL, view: VIEW_SEL });
           let scrolled: Measure | null = null;
           if (top.scrollRange >= 1) {
+            // A page only a few px taller than the viewport (e.g. /accounts with the seeded data: range 5 at 768) cannot
+            // scroll past the header's natural offset (~32px), so the pin would be unobservable and the check would
+            // measure the page length. Add a spacer after the screenshot so the sticky check has room to scroll.
+            if (top.scrollRange < 600) {
+              await page.evaluate(() => {
+                const s = document.createElement("div");
+                s.setAttribute("data-visual-spacer", "");
+                s.style.height = "1000px";
+                document.querySelector("main")?.appendChild(s);
+              });
+            }
             // html is scroll-behavior: smooth, so a bare scrollTo + fixed wait samples mid-animation on a busy
             // runner (header top = natural offset minus the partial scroll). Jump instantly, then wait for the target.
             const target = await page.evaluate(() => {
