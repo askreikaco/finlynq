@@ -131,7 +131,7 @@ export function GroupedPickerPanel({
     <>
       <SheetHeader className="shrink-0 border-b border-border px-5 py-4">
         {settingsLink ? (
-          <div className="flex items-center justify-between gap-3 pr-11">
+          <div className="flex items-center justify-between gap-3 pr-18">
             <SheetTitle className="text-lg font-semibold text-foreground">{title}</SheetTitle>
             <Link
               href={settingsLink}
