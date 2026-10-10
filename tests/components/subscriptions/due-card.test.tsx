@@ -77,6 +77,13 @@ describe("DueCard", () => {
     expect(H.push).toHaveBeenCalledWith("/transactions/new?subscription=2&occurrence=2026-06-02&return=%2Ftransactions");
   });
 
+  it("returnTo (the dashboard card) is passed on to the entry screen", () => {
+    H.subs = [sub(2)];
+    render(<DueCard returnTo="/dashboard" />);
+    fireEvent.click(screen.getByTestId("due-post-2"));
+    expect(H.push).toHaveBeenCalledWith("/transactions/new?subscription=2&occurrence=2026-06-02&return=%2Fdashboard");
+  });
+
   it("Skip calls the skip endpoint with the due date, then revalidates the subscription keys", async () => {
     H.subs = [sub(2)];
     render(<DueCard />);

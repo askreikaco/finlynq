@@ -13,6 +13,7 @@ export interface DashboardCardDef {
 
 export const DASHBOARD_CARDS: readonly DashboardCardDef[] = [
   { id: "onboarding-tips", title: "Getting started tips" },
+  { id: "due-subscriptions", title: "Due subscriptions" },
   { id: "net-worth", title: "Net worth" },
   { id: "health-score", title: "Financial health" },
   { id: "summary-stats", title: "Monthly summary" },

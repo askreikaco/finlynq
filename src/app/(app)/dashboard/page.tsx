@@ -15,6 +15,7 @@ import { KeyMetrics } from "./_components/key-metrics";
 import { ActionCenter } from "./_components/action-center";
 import { WeeklyRecap } from "./_components/weekly-recap";
 import { OnboardingTips } from "@/components/onboarding-tips";
+import { DueCard } from "@/components/subscriptions/due-card";
 import { OnboardingWizard } from "@/components/onboarding-wizard";
 import { ErrorState } from "@/components/error-state";
 import { QuickImport } from "./_components/quick-import";
@@ -368,6 +369,10 @@ export default function DashboardPage() {
           <OnboardingTips page="dashboard" />
         </motion.div>
       ),
+    },
+    // Subscriptions with an occurrence due: Post now / Skip. Renders nothing (no DOM, no gap) when none is due.
+    "due-subscriptions": {
+      render: () => <DueCard key="due-subscriptions" returnTo="/dashboard" />,
     },
     "net-worth": { group: HERO_GRID, render: ({ grouped }) => heroNode(grouped) },
     "health-score": { group: HERO_GRID, render: () => <HealthScoreCard key="health-score" health={health} /> },
