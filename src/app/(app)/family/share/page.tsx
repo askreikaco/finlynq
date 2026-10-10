@@ -2,24 +2,26 @@
 
 import { useState } from "react";
 import { FAMILY_STRINGS } from "@/lib/family/strings";
-import { PageHeader } from "@/components/mobile";
+import { SectionPage } from "@/components/templates/section-page";
 import { SharingTab } from "../_components/sharing-tab";
 
 /** /family/share: invite family members and manage shares (was the "Sharing" tab of /family). */
 export default function FamilySharePage() {
   const [reloadKey, setReloadKey] = useState(0);
   return (
-    <div className="space-y-6">
-      <PageHeader
-        className="flex items-start gap-3"
-        title={FAMILY_STRINGS.share_page_title}
-        titleClassName="text-2xl font-bold tracking-tight"
-        subtitle={FAMILY_STRINGS.share_page_description}
-        subtitleClassName="text-sm text-muted-foreground mt-0.5"
-        backHref="/family"
-        backLabel={FAMILY_STRINGS.share_back}
-      />
+    <SectionPage
+      id="family-share"
+      title={FAMILY_STRINGS.share_page_title}
+      subtitle={FAMILY_STRINGS.share_page_description}
+      backFallback="/family"
+      backLabel={FAMILY_STRINGS.share_back}
+      width="none"
+      padBottom="none"
+      minW0={false}
+      suspense={false}
+      header={{ className: "flex items-start gap-3" }}
+    >
       <SharingTab reloadKey={reloadKey} onSharesChanged={() => setReloadKey((k) => k + 1)} />
-    </div>
+    </SectionPage>
   );
 }

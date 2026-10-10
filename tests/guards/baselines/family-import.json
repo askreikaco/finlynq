@@ -1,9 +1,6 @@
 {
   "family": "family-import",
   "unmigrated": [
-    "src/app/(app)/family/accept/page.tsx",
-    "src/app/(app)/family/page.tsx",
-    "src/app/(app)/family/share/page.tsx",
     "src/app/(app)/import/page.tsx",
     "src/app/(app)/import/pending/page.tsx",
     "src/app/(app)/manage-accounts/page.tsx"
@@ -11,17 +8,6 @@
   "chrome": {
     "src/app/(app)/family/_components/overview-tab.tsx": {
       "backdrop-blur": 1
-    },
-    "src/app/(app)/family/accept/page.tsx": {
-      "title-prop": 1
-    },
-    "src/app/(app)/family/page.tsx": {
-      "title-prop": 2,
-      "subtitle-prop": 1
-    },
-    "src/app/(app)/family/share/page.tsx": {
-      "title-prop": 2,
-      "subtitle-prop": 1
     },
     "src/app/(app)/import/page.tsx": {
       "title-prop": 4,
