@@ -88,7 +88,7 @@ export function registerSubscriptionsTools(server: McpServer, ctx: PgToolContext
   // detect_subscriptions stays 1:1.
 
   // ── op: list — lifted VERBATIM from list_subscriptions ─────────────────────
-  async function opList(args: { status?: "active" | "paused" | "cancelled" | "all" }): Promise<ToolResult> {
+  async function opList(args: { status?: "active" | "paused" | "cancelled" | "ended" | "all" }): Promise<ToolResult> {
       const { status } = args;
       // Roll passed next-payment dates forward (lib/subscriptions/advance-next-dates.ts).
       await advanceStaleSubscriptionDatesSafe(db, userId);
@@ -198,7 +198,7 @@ export function registerSubscriptionsTools(server: McpServer, ctx: PgToolContext
     category_id?: number;
     account?: string;
     account_id?: number;
-    status?: "active" | "paused" | "cancelled";
+    status?: "active" | "paused" | "cancelled" | "ended";
     cancel_reminder_date?: string;
     notes?: string;
   }): Promise<ToolResult> {
@@ -385,7 +385,7 @@ export function registerSubscriptionsTools(server: McpServer, ctx: PgToolContext
   // op:list with include_summary:true also runs opSummary and merges it under a
   // `summary` key; without it, returns the plain list unchanged.
   async function opListWithOptionalSummary(args: {
-    status?: "active" | "paused" | "cancelled" | "all";
+    status?: "active" | "paused" | "cancelled" | "ended" | "all";
     include_summary?: boolean;
     reportingCurrency?: string;
   }): Promise<ToolResult> {
@@ -619,7 +619,7 @@ export function registerSubscriptionsTools(server: McpServer, ctx: PgToolContext
         category_id: z.number().int().positive().optional().describe("Category FK fast-path — wins over the fuzzy `category` name."),
         account: z.string().optional().describe("Account name or alias (fuzzy matched against name; exact match on alias — mistyped/unmatched is REFUSED). Empty string clears."),
         account_id: z.number().int().positive().optional().describe("Account FK fast-path — wins over the fuzzy `account` name."),
-        status: z.enum(["active", "paused", "cancelled"]).optional(),
+        status: z.enum(["active", "paused", "cancelled", "ended"]).optional(),
         cancel_reminder_date: ymdDate.optional().describe("YYYY-MM-DD"),
         notes: z.string().optional(),
       }),
@@ -630,7 +630,7 @@ export function registerSubscriptionsTools(server: McpServer, ctx: PgToolContext
       }),
       z.object({
         op: z.literal("list"),
-        status: z.enum(["active", "paused", "cancelled", "all"]).optional().describe("Filter by status (default: all)"),
+        status: z.enum(["active", "paused", "cancelled", "ended", "all"]).optional().describe("Filter by status (default: all)"),
         include_summary: z.boolean().optional().describe("When true, ALSO return aggregate monthly/annual cost + upcoming renewals under a `summary` key."),
         reportingCurrency: z.string().optional().describe("ISO code for the summary totals; defaults to user's display currency. Only used with include_summary."),
       }),

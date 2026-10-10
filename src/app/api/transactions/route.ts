@@ -24,6 +24,13 @@ import { and, eq, gte, or } from "drizzle-orm";
 import { markSnapshotsDirty } from "@/lib/portfolio/snapshots/dirty";
 import { markCashSnapshotsDirty } from "@/lib/portfolio/snapshots/cash-dirty";
 import { resolveTxAmounts } from "@/lib/transactions/resolve-amounts";
+import {
+  consumeOccurrence,
+  lockDueOccurrence,
+  mapPostError,
+  type AdvancedSubscription,
+} from "@/lib/subscriptions/post-occurrence";
+import { isValidIsoDate } from "@/lib/subscriptions/schedule";
 import { createOrLinkRepeatSubscription, planRepeat, repeatSchema, RepeatError } from "@/lib/transactions/repeat-subscription";
 import { z } from "zod";
 import { validateBody, safeErrorMessage, logApiError } from "@/lib/validate";
@@ -60,6 +67,11 @@ const postSchema = z.object({
   // to the booked row (same DB transaction). Unknown keys are stripped, so a
   // client cannot set installment_group_id / subscription_id directly.
   repeat: repeatSchema.optional(),
+  // Phase 2a — "Post now" for a due subscription occurrence. Both are required
+  // together, mutually exclusive with `repeat`; the server inserts the row with
+  // subscription_id + occurrence_date and advances the subscription atomically.
+  subscriptionId: z.number().int().positive().optional(),
+  occurrenceDate: z.string().refine((v) => isValidIsoDate(v), { message: "occurrenceDate must be YYYY-MM-DD" }).optional(),
 }).refine(
   (data) => data.amount != null || data.enteredAmount != null,
   { message: "Either amount or enteredAmount is required" }
@@ -509,8 +521,29 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const parsed = validateBody(body, postSchema);
     if (parsed.error) return parsed.error;
-    const { repeat, ...rest } = parsed.data;
+    const { repeat, subscriptionId: postSubId, occurrenceDate, ...rest } = parsed.data;
     const data = { ...rest };
+    if ((postSubId == null) !== (occurrenceDate == null)) {
+      return NextResponse.json(
+        { error: "subscriptionId and occurrenceDate must be sent together", code: "invalid_request" },
+        { status: 400 },
+      );
+    }
+    if (postSubId != null && repeat) {
+      return NextResponse.json(
+        { error: "repeat cannot be combined with subscriptionId/occurrenceDate", code: "invalid_request" },
+        { status: 400 },
+      );
+    }
+    if (
+      postSubId != null &&
+      (data.portfolioHolding || data.portfolioHoldingId != null || (data.quantity != null && data.quantity !== 0))
+    ) {
+      return NextResponse.json(
+        { error: "Posting a subscription is not supported for portfolio holding rows", code: "invalid_request" },
+        { status: 400 },
+      );
+    }
     if (
       repeat &&
       (data.portfolioHolding || data.portfolioHoldingId != null || (data.quantity != null && data.quantity !== 0))
@@ -582,7 +615,12 @@ export async function POST(request: NextRequest) {
     const encrypted = encryptTxWrite(auth.dek, data);
     const { withDbTransaction } = await import("@/db");
     const { incrementDataVersion } = await import("@/lib/data-version");
-    const { tx, repeatSub } = await withDbTransaction(async () => {
+    const { tx, repeatSub, postedSub } = await withDbTransaction(async () => {
+      // Post now: validate + lock the due occurrence, insert, then advance — one DB transaction.
+      let due: Awaited<ReturnType<typeof lockDueOccurrence>> | null = null;
+      if (postSubId != null && occurrenceDate != null) {
+        due = await lockDueOccurrence(auth.userId, postSubId, occurrenceDate);
+      }
       // Repeat: the subscription and the booked row commit or roll back together.
       let sub: { id: number; created: boolean } | null = null;
       if (repeat) {
@@ -597,11 +635,18 @@ export async function POST(request: NextRequest) {
       }
       const inserted = await createTransaction(
         auth.userId,
-        { ...encrypted, source: "manual", ...(sub ? { subscriptionId: sub.id } : {}) },
+        {
+          ...encrypted,
+          source: "manual",
+          ...(sub ? { subscriptionId: sub.id } : {}),
+          ...(due ? { subscriptionId: due.id, occurrenceDate } : {}),
+        },
         auth.dek,
       );
+      let advanced: AdvancedSubscription | null = null;
+      if (due) advanced = await consumeOccurrence(auth.userId, due);
       await incrementDataVersion(auth.userId);
-      return { tx: inserted, repeatSub: sub };
+      return { tx: inserted, repeatSub: sub, postedSub: advanced };
     });
     invalidateUserTxCache(auth.userId);
     // Portfolio lot tracking — open/close a lot when the row touches a
@@ -625,12 +670,20 @@ export async function POST(request: NextRequest) {
         ...tx,
         ...(signWarn ? { warning: signWarn.message } : {}),
         ...(repeatSub ? { subscription: repeatSub } : {}),
+        ...(postedSub ? { subscription: postedSub } : {}),
       },
       { status: 201 },
     );
   } catch (error: unknown) {
     if (error instanceof RepeatError) {
       return NextResponse.json({ error: error.message, code: error.code }, { status: error.status });
+    }
+    const occErr = mapPostError(error);
+    if (occErr) {
+      return NextResponse.json(
+        occErr.status === 404 ? { error: "Not found" } : { error: occErr.message, code: occErr.code },
+        { status: occErr.status },
+      );
     }
     if (isPgErrorCode(error, "23505") && pgErrorConstraint(error) === "subscriptions_user_name_lookup_uniq") {
       return NextResponse.json(

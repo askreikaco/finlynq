@@ -378,7 +378,7 @@ describe("POST /api/transactions { repeat }", () => {
     const res = await postTx(
       createMockRequest(URL_TX, {
         method: "POST",
-        body: { ...body, installmentGroupId: "evil", installmentSeq: 9, subscriptionId: 7 },
+        body: { ...body, installmentGroupId: "evil", installmentSeq: 9, occurrence_date: "2026-01-01", subscription_id: 7 },
       }),
     );
     expect(res.status).toBe(201);

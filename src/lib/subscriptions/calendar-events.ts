@@ -26,6 +26,11 @@ export interface SubscriptionRow {
   status: string;
   /** Current-rate conversion of `amount` into `displayCurrency` (FINLYNQ-123). */
   displayAmount?: number;
+  /** Phase 2a: >= 1 booked transaction links to it (created/linked via Repeat); user posts each occurrence. */
+  postable?: boolean;
+  /** Phase 2a: occurrences from next_date up to today (first 12) and the full count. */
+  overdue?: string[];
+  dueCount?: number;
 }
 
 /** GET /api/recurring `recurring[]` row. */
@@ -91,6 +96,8 @@ export function subDisplayAmount(s: SubscriptionRow): number {
 /** Effective next payment date: a passed date on an active row is rolled forward. */
 export function effectiveNextDate(s: SubscriptionRow, today: string): string | null {
   if (s.status !== "active") return s.nextDate;
+  // A postable subscription's next_date is the oldest UNPOSTED occurrence: never roll it forward.
+  if (s.postable) return s.nextDate;
   return rollForwardNextDate(s.nextDate, s.frequency, today);
 }
 

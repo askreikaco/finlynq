@@ -227,7 +227,14 @@ export const transactions = pgTable("transactions", {
   installmentGroupId: text("installment_group_id"),
   installmentSeq: smallint("installment_seq"),
   subscriptionId: integer("subscription_id").references(() => subscriptions.id, { onDelete: "set null" }),
+  // Repeat + Installment phase 2a (20261013): the subscription occurrence
+  // (YYYY-MM-DD) a "Post now" row was posted for. NULL for every other row,
+  // incl. the first row booked with a Repeat. Unique per (user, subscription,
+  // occurrence) so a retry/double tap cannot post twice.
+  occurrenceDate: text("occurrence_date"),
 }, (t) => [
+  uniqueIndex("uniq_transactions_subscription_occurrence").on(t.userId, t.subscriptionId, t.occurrenceDate)
+    .where(sql`(subscription_id IS NOT NULL AND occurrence_date IS NOT NULL)`),
   index("idx_transactions_bank_tx").on(t.bankTransactionId)
     .where(sql`(bank_transaction_id IS NOT NULL)`),
   index("idx_transactions_link_id").on(t.linkId).where(sql`(link_id IS NOT NULL)`),

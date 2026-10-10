@@ -535,7 +535,8 @@ export async function POST(request: NextRequest) {
         // which is restored AFTER transactions with fresh ids — the raw old id
         // would dangle or point at another row. It is dropped here and re-linked
         // from the old->new subscription id map once subscriptions are inserted.
-        // installment_group_id / installment_seq round-trip unchanged via ...rest.
+        // installment_group_id / installment_seq / occurrence_date (20261013) round-trip unchanged via ...rest;
+        // the partial unique (user, subscription, occurrence) only applies once subscription_id is re-linked.
         // Issue #28: a backup that pre-dates the audit-fields migration has
         // no `source` per row — fall back to 'backup_restore'. Newer
         // backups round-trip the original surface (CSV-imported stays

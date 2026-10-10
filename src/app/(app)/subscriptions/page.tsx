@@ -53,6 +53,7 @@ import {
   type RecurringRow,
 } from "@/lib/subscriptions/calendar-events";
 import { EMPTY_DRAFT, type SubscriptionDraft } from "./_components/subscription-form";
+import { dueSubscriptions, postNowHref, skipOccurrence } from "@/lib/subscriptions/due";
 import { draftSearchParams } from "./_components/draft-params";
 import { SubscriptionsCalendar } from "./_components/subscriptions-calendar";
 import type { Subscription } from "./_components/types";
@@ -95,7 +96,35 @@ const STATUS_BADGE: Record<string, { label: string; className: string }> = {
     label: "Cancelled",
     className: "bg-destructive/10 text-destructive border-destructive/30",
   },
+  ended: {
+    label: "Ended",
+    className: "bg-muted text-muted-foreground border-border",
+  },
 };
+
+/** An active subscription with an occurrence on/before today (server-computed). */
+function isDue(sub: Subscription): boolean {
+  return dueSubscriptions([sub]).length > 0;
+}
+
+function dueLabel(sub: Subscription): string {
+  const n = sub.dueCount ?? 0;
+  return n > 1 ? `${n} due` : "Due";
+}
+
+/** Post now / Skip for a due subscription (Repeat + Installment phase 2a). */
+function DueActions({ sub, busy, onPost, onSkip }: { sub: Subscription; busy: boolean; onPost: () => void; onSkip: () => void }) {
+  return (
+    <>
+      <Button size="sm" data-testid={`sub-post-${sub.id}`} disabled={busy} onClick={onPost}>
+        Post now
+      </Button>
+      <Button size="sm" variant="ghost" data-testid={`sub-skip-${sub.id}`} disabled={busy} onClick={onSkip}>
+        Skip
+      </Button>
+    </>
+  );
+}
 
 /** "today" / "tomorrow" / "in 5 days" for near dates, else null. */
 function relativeDue(date: string, today: string): string | null {
@@ -195,6 +224,7 @@ function SubscriptionsPageContent() {
     { key: "active", title: "Active", icon: <Play className="h-4 w-4 text-pos" />, rows: sorted.filter((s) => s.status === "active") },
     { key: "paused", title: "Paused", icon: <Pause className="h-4 w-4 text-warning" />, rows: sorted.filter((s) => s.status === "paused") },
     { key: "cancelled", title: "Cancelled", icon: <XCircle className="h-4 w-4 text-destructive" />, rows: sorted.filter((s) => s.status === "cancelled") },
+    { key: "ended", title: "Ended", icon: <CalendarClock className="h-4 w-4 text-muted-foreground" />, rows: sorted.filter((s) => s.status === "ended") },
   ];
 
   // ── navigation (create / edit are full pages, not dialogs) ─────────────────
@@ -270,6 +300,19 @@ function SubscriptionsPageContent() {
         }),
       `Couldn't add ${r.payee}`,
     );
+  }
+
+  // Post now: the entry screen prefilled from the subscription (date = the due date).
+  function postNow(sub: Subscription) {
+    if (!sub.nextDate) return;
+    router.push(postNowHref(sub.id, sub.nextDate, LIST_HREF));
+  }
+
+  // Skip: advance one occurrence without booking a transaction.
+  function skipDue(sub: Subscription) {
+    if (!sub.nextDate) return Promise.resolve(false);
+    const occurrence = sub.nextDate;
+    return mutate(`skip:${sub.id}`, () => skipOccurrence(sub.id, occurrence), "Couldn't skip this payment");
   }
 
   function changeStatus(sub: Subscription, status: string) {
@@ -348,6 +391,11 @@ function SubscriptionsPageContent() {
               <TableCell className="tabular-nums">
                 {sub.status === "active" && next ? formatDate(next) : "—"}
                 {rel && <span className="ml-1.5 text-xs text-muted-foreground">({rel})</span>}
+                {isDue(sub) && (
+                  <Badge className="ml-1.5 bg-warning/10 text-warning border-warning/30" data-testid={`sub-due-badge-${sub.id}`}>
+                    {dueLabel(sub)}
+                  </Badge>
+                )}
               </TableCell>
               <TableCell>
                 {statusBadge ? (
@@ -357,7 +405,10 @@ function SubscriptionsPageContent() {
                 )}
               </TableCell>
               <TableCell className="text-right">
-                <div className="relative z-10 inline-flex">
+                <div className="relative z-10 inline-flex items-center gap-1.5">
+                  {isDue(sub) && (
+                    <DueActions sub={sub} busy={busyKey !== null} onPost={() => postNow(sub)} onSkip={() => skipDue(sub)} />
+                  )}
                   <SubscriptionActionsMenu
                     sub={sub}
                     busy={busyKey !== null}
@@ -551,6 +602,8 @@ function SubscriptionsPageContent() {
                       onStatus={(s) => changeStatus(sub, s)}
                       onToggleReminder={() => toggleReminder(sub)}
                       onDelete={() => setDeleteId(sub.id)}
+                      onPost={() => postNow(sub)}
+                      onSkip={() => skipDue(sub)}
                     />
                   ))}
                 </div>
@@ -587,6 +640,8 @@ function SubscriptionRowCard({
   onStatus,
   onToggleReminder,
   onDelete,
+  onPost,
+  onSkip,
 }: {
   sub: Subscription;
   today: string;
@@ -596,6 +651,8 @@ function SubscriptionRowCard({
   onStatus: (status: string) => void;
   onToggleReminder: () => void;
   onDelete: () => void;
+  onPost: () => void;
+  onSkip: () => void;
 }) {
   const freq = frequencyOrMonthly(sub.frequency);
   const next = effectiveNextDate(sub, today);
@@ -624,7 +681,11 @@ function SubscriptionRowCard({
           <div className="flex items-center gap-2 min-w-0">
             <h3 className="font-semibold truncate">{sub.name ?? "Subscription"}</h3>
             {statusBadge && <Badge className={statusBadge.className}>{statusBadge.label}</Badge>}
-            {rel === "today" || rel === "tomorrow" ? (
+            {isDue(sub) ? (
+              <Badge className="bg-warning/10 text-warning border-warning/30" data-testid={`sub-due-badge-${sub.id}`}>
+                {dueLabel(sub)}
+              </Badge>
+            ) : rel === "today" || rel === "tomorrow" ? (
               <Badge className="bg-warning/10 text-warning border-warning/30">
                 Due {rel}
               </Badge>
@@ -635,6 +696,11 @@ function SubscriptionRowCard({
             <p className="text-xs text-warning mt-0.5 flex items-center gap-1">
               <Bell className="h-3 w-3" /> Cancel reminder {formatDate(sub.cancelReminderDate)}
             </p>
+          )}
+          {isDue(sub) && (
+            <div className="mt-2 flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+              <DueActions sub={sub} busy={busy} onPost={onPost} onSkip={onSkip} />
+            </div>
           )}
         </div>
         <div className="text-right shrink-0">
@@ -700,7 +766,7 @@ function SubscriptionActionsMenu({
             {sub.status === "paused" && (
               <DropdownMenuItem onClick={() => onStatus("active")}><Play /> Resume</DropdownMenuItem>
             )}
-            {sub.status === "cancelled" && (
+            {(sub.status === "cancelled" || sub.status === "ended") && (
               <DropdownMenuItem onClick={() => onStatus("active")}><RotateCcw /> Reactivate</DropdownMenuItem>
             )}
             <DropdownMenuSeparator />

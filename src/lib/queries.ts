@@ -365,6 +365,7 @@ function txRowsQuery(conditions: SQL[], orderClauses: SQL[]) {
       installmentGroupId: transactions.installmentGroupId,
       installmentSeq: transactions.installmentSeq,
       subscriptionId: transactions.subscriptionId,
+      occurrenceDate: transactions.occurrenceDate,
       // Total payments of the row's installment plan (0 when not an installment); drives "Installment 2/6".
       installmentCount: sql<number>`CASE WHEN ${transactions.installmentGroupId} IS NULL THEN 0 ELSE (SELECT CAST(COUNT(*) AS INTEGER) FROM transactions AS inst WHERE inst.installment_group_id = ${transactions.installmentGroupId} AND inst.user_id = ${transactions.userId}) END`,
     })
@@ -560,6 +561,8 @@ export async function createTransaction(userId: string, data: {
   installmentGroupId?: string | null;
   installmentSeq?: number | null;
   subscriptionId?: number | null;
+  // Phase 2a: occurrence a "Post now" row was posted for (20261013).
+  occurrenceDate?: string | null;
   // Audit-source attribution (issue #28). Defaults to 'manual' when the
   // caller doesn't pass one — the UI POST handler relies on the default,
   // every other writer (import/MCP/connector/sample-data/restore) sets
