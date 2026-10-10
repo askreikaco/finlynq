@@ -1,19 +1,10 @@
 import { describe, it, expect } from "vitest";
 import * as fs from "fs";
-import * as path from "path";
 import { FAB_ROUTES, routeFromPageFile } from "@/components/mobile/fab-registry";
+import { pageRoutesOnDisk } from "../../_helpers/app-routes";
 
 // Ratchet: every page under src/app/(app) must have an explicit registry entry.
-const APP_DIR = "src/app/(app)";
 const INVENTORY = "docs/page-inventory.md";
-
-function pageRoutesOnDisk(): string[] {
-  const files = fs.readdirSync(APP_DIR, { recursive: true }) as string[];
-  return files
-    .map((f) => f.split(path.sep).join("/"))
-    .filter((f) => f.endsWith("page.tsx"))
-    .map((f) => routeFromPageFile(`${APP_DIR}/${f}`));
-}
 
 describe("fab-registry coverage ratchet", () => {
   const routes = pageRoutesOnDisk();
@@ -32,7 +23,8 @@ describe("fab-registry coverage ratchet", () => {
     const text = fs.readFileSync(INVENTORY, "utf8");
     const rows = [...text.matchAll(/^\| `(\/[^`]*)` \| `src\/app\/\(app\)\/(.+?)` \|/gm)];
     expect(rows).toHaveLength(routes.length);
-    expect(routes).toHaveLength(103); // every page.tsx under src/app/(app), including the PKG1 edit/split pages
+    expect(routes).toHaveLength(Object.keys(FAB_ROUTES).length); // derived: one FAB key per page.tsx
+    expect(routes.length).toBeLessThanOrEqual(103); // ratchet: the page count may only go down from 103
     for (const row of rows) {
       const route = routeFromPageFile(`src/app/(app)/${row[2]}`);
       expect(Object.prototype.hasOwnProperty.call(FAB_ROUTES, route), route).toBe(true);

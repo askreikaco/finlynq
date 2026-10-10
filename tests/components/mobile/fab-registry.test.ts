@@ -10,6 +10,7 @@ import {
   type FabHandlerKey,
   type FabHandlerRegistration,
 } from "@/components/mobile/fab-registry";
+import { ALL_ROUTES } from "@/lib/routes";
 
 const none = new Map<FabHandlerKey, FabHandlerRegistration>();
 
@@ -90,8 +91,9 @@ describe("resolveFab", () => {
 });
 
 describe("FAB_ROUTES table", () => {
-  it("has 103 route keys (100 + 3 PKG1 transaction edit/split pages)", () => {
-    expect(Object.keys(FAB_ROUTES)).toHaveLength(103);
+  it("has one key per registry route, ratcheted at most 103", () => {
+    expect(Object.keys(FAB_ROUTES)).toHaveLength(ALL_ROUTES.length);
+    expect(ALL_ROUTES.length).toBeLessThanOrEqual(103);
   });
 
   it("kind counts are 38 fallback, 17 route, 6 handler, 39 hidden, 3 redirect", () => {
