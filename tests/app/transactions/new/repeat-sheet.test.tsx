@@ -43,7 +43,7 @@ describe("RepeatSheet: segmented control", () => {
     mount();
     expect(screen.getByRole("radio", { name: "Repeat" }).getAttribute("aria-checked")).toBe("true");
     expect(screen.getByRole("button", { name: "Never" })).toBeTruthy();
-    for (const l of ["Weekly", "Every 2 weeks", "Every 4 weeks", "Monthly", "Last day of month", "Every 2 months", "Every 3 months", "Every 6 months", "Annually"]) {
+    for (const l of ["Every day", "Weekdays", "Weekend", "Weekly", "Every 2 weeks", "Every 4 weeks", "Monthly", "Last day of month", "Every 2 months", "Every 3 months", "Every 6 months", "Annually"]) {
       expect(screen.getByRole("button", { name: l })).toBeTruthy();
     }
     fireEvent.click(screen.getByRole("radio", { name: "Installment" }));
@@ -66,8 +66,35 @@ describe("RepeatSheet: segmented control", () => {
   });
 });
 
+describe("RepeatSheet: Daily group", () => {
+  it("shows a Daily group ABOVE Weekly with Every day / Weekdays / Weekend in that order", () => {
+    mount();
+    const names = screen.getAllByRole("button").map((b) => b.textContent ?? "");
+    const idx = (label: string) => names.findIndex((n) => n.startsWith(label));
+    expect(idx("Never")).toBeLessThan(idx("Every day"));
+    expect(idx("Every day")).toBeLessThan(idx("Weekdays"));
+    expect(idx("Weekdays")).toBeLessThan(idx("Weekend"));
+    expect(idx("Weekend")).toBeLessThan(idx("Weekly"));
+    const headings = Array.from(document.querySelectorAll("*"))
+      .map((e) => (e.children.length === 0 ? e.textContent?.trim() : ""))
+      .filter((t) => t === "Daily" || t === "Weekly" || t === "Monthly" || t === "Yearly");
+    expect(headings.slice(0, 2)).toEqual(["Daily", "Weekly"]);
+  });
+
+  it("a weekdays repeat with an end count applies { weekdays, count }", () => {
+    const { onApply } = mount();
+    fireEvent.click(screen.getByRole("button", { name: "Weekdays" }));
+    fireEvent.click(screen.getByRole("radio", { name: "After N times" }));
+    done();
+    expect(onApply).toHaveBeenCalledWith(expect.objectContaining({ kind: "repeat", frequency: "weekdays" }));
+  });
+});
+
 describe("RepeatSheet: Repeat panel maps each row to its API frequency", () => {
   const CASES: Array<[string, string]> = [
+    ["Every day", "daily"],
+    ["Weekdays", "weekdays"],
+    ["Weekend", "weekend"],
     ["Weekly", "weekly"],
     ["Every 2 weeks", "biweekly"],
     ["Every 4 weeks", "every4weeks"],

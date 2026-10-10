@@ -6,6 +6,7 @@ import {
   seriesSummary,
   shortDate,
   REPEAT_GROUPS,
+  repeatLabel,
   type Series,
 } from "@/lib/transactions/series";
 import { SUBSCRIPTION_FREQUENCIES } from "@/lib/subscriptions/schedule";
@@ -28,6 +29,26 @@ describe("seriesSummary (pill text)", () => {
   it("formats dates without a timezone", () => {
     expect(shortDate("2027-01-05")).toBe("5 Jan 2027");
     expect(shortDate("2027-01-05", false)).toBe("5 Jan");
+  });
+});
+
+describe("repeat list: Daily group", () => {
+  it("is the first group, ahead of Weekly, with Every day / Weekdays / Weekend", () => {
+    expect(REPEAT_GROUPS.map((g) => g.title)).toEqual(["Daily", "Weekly", "Monthly", "Yearly"]);
+    expect(REPEAT_GROUPS[0].options).toEqual([
+      { frequency: "daily", label: "Every day" },
+      { frequency: "weekdays", label: "Weekdays" },
+      { frequency: "weekend", label: "Weekend" },
+    ]);
+  });
+  it("summaries, labels and API body for the daily cadences", () => {
+    expect(repeatLabel("daily")).toBe("Every day");
+    expect(repeatLabel("weekdays")).toBe("Weekdays");
+    expect(repeatLabel("weekend")).toBe("Weekend");
+    expect(seriesSummary({ kind: "repeat", frequency: "weekdays", end: { type: "forever" } })).toBe("Weekdays");
+    expect(seriesSummary({ kind: "repeat", frequency: "daily", end: { type: "count", count: 30 } })).toBe("Every day · 30×");
+    expect(seriesSummary({ kind: "repeat", frequency: "weekend", end: { type: "until", date: "2026-12-31" } })).toBe("Weekend until 31 Dec 2026");
+    expect(buildRepeatBody({ kind: "repeat", frequency: "weekend", end: { type: "forever" } })).toEqual({ frequency: "weekend", end: { type: "forever" } });
   });
 });
 

@@ -201,7 +201,7 @@ const API_GROUPS: ApiGroup[] = [
         body: [
           { name: "name", type: "string", required: true, description: "Subscription name" },
           { name: "amount", type: "number", required: true, description: "Recurring amount" },
-          { name: "frequency", type: "string", required: false, description: "weekly, monthly, quarterly, annual" },
+          { name: "frequency", type: "string", required: false, description: "daily, weekdays, weekend, weekly, biweekly, every4weeks, monthly, monthly_eom, bimonthly, quarterly, semiannual, annual" },
         ],
       },
     ],
