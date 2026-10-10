@@ -9,6 +9,7 @@ export function pageRoutesOnDisk(): string[] {
   const files = fs.readdirSync(APP_DIR, { recursive: true }) as string[];
   return files
     .map((f) => f.split(path.sep).join("/"))
-    .filter((f) => f.endsWith("page.tsx"))
+    // exact basename: "_components/link-page.tsx" is a component, not a route
+    .filter((f) => path.posix.basename(f) === "page.tsx")
     .map((f) => routeFromPageFile(`${APP_DIR}/${f}`));
 }

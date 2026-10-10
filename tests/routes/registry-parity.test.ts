@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import * as Lucide from "lucide-react";
 import { FAB_ROUTES, matchFabRoute } from "@/components/mobile/fab-registry";
 import { isTabBarHidden } from "@/components/nav";
-import { ALL_ROUTES } from "@/lib/routes";
+import { ALL_ROUTES, matchRoute } from "@/lib/routes";
 
 // Snapshot taken before the route-family registry (C-04) moved any entry. Icons are stored by lucide export name.
 // fabRoutes: FAB_ROUTES values. tabBarHidden: isTabBarHidden for every route (sample ids substituted) plus 10 sample paths.
@@ -60,9 +60,6 @@ const SNAPSHOT = {
     },
     "/admin/email-inbox": {
       "kind": "fallback"
-    },
-    "/admin/env": {
-      "kind": "redirect"
     },
     "/admin/feedback": {
       "kind": "fallback"
@@ -230,35 +227,7 @@ const SNAPSHOT = {
       "kind": "hidden",
       "reason": "is the create flow"
     },
-    "/portfolio/new/buy": {
-      "kind": "hidden",
-      "reason": "is the create flow"
-    },
-    "/portfolio/new/deposit": {
-      "kind": "hidden",
-      "reason": "is the create flow"
-    },
-    "/portfolio/new/fx-conversion": {
-      "kind": "hidden",
-      "reason": "is the create flow"
-    },
-    "/portfolio/new/in-kind-transfer": {
-      "kind": "hidden",
-      "reason": "is the create flow"
-    },
-    "/portfolio/new/income-expense": {
-      "kind": "hidden",
-      "reason": "is the create flow"
-    },
-    "/portfolio/new/sell": {
-      "kind": "hidden",
-      "reason": "is the create flow"
-    },
-    "/portfolio/new/swap": {
-      "kind": "hidden",
-      "reason": "is the create flow"
-    },
-    "/portfolio/new/withdrawal": {
+    "/portfolio/new/[op]": {
       "kind": "hidden",
       "reason": "is the create flow"
     },
@@ -316,9 +285,6 @@ const SNAPSHOT = {
     "/settings/general": {
       "kind": "fallback"
     },
-    "/settings/holding-accounts": {
-      "kind": "redirect"
-    },
     "/settings/import": {
       "kind": "fallback"
     },
@@ -374,9 +340,6 @@ const SNAPSHOT = {
     "/settings/rules/[id]/edit": {
       "kind": "hidden",
       "reason": "is the edit flow"
-    },
-    "/settings/securities": {
-      "kind": "redirect"
     },
     "/subscriptions": {
       "kind": "route",
@@ -551,7 +514,7 @@ const SNAPSHOT = {
     "/admin/api-log": "/admin/api-log",
     "/admin/diagnostics": "/admin/diagnostics",
     "/admin/email-inbox": "/admin/email-inbox",
-    "/admin/env": "/admin/env",
+    "/admin/env": null,
     "/admin/feedback": "/admin/feedback",
     "/admin/inbox": "/admin/inbox",
     "/admin/instance": "/admin/instance",
@@ -591,14 +554,14 @@ const SNAPSHOT = {
     "/portfolio": "/portfolio",
     "/portfolio/dividends": "/portfolio/dividends",
     "/portfolio/new": "/portfolio/new",
-    "/portfolio/new/buy": "/portfolio/new/buy",
-    "/portfolio/new/deposit": "/portfolio/new/deposit",
-    "/portfolio/new/fx-conversion": "/portfolio/new/fx-conversion",
-    "/portfolio/new/in-kind-transfer": "/portfolio/new/in-kind-transfer",
-    "/portfolio/new/income-expense": "/portfolio/new/income-expense",
-    "/portfolio/new/sell": "/portfolio/new/sell",
-    "/portfolio/new/swap": "/portfolio/new/swap",
-    "/portfolio/new/withdrawal": "/portfolio/new/withdrawal",
+    "/portfolio/new/buy": "/portfolio/new/[op]",
+    "/portfolio/new/deposit": "/portfolio/new/[op]",
+    "/portfolio/new/fx-conversion": "/portfolio/new/[op]",
+    "/portfolio/new/in-kind-transfer": "/portfolio/new/[op]",
+    "/portfolio/new/income-expense": "/portfolio/new/[op]",
+    "/portfolio/new/sell": "/portfolio/new/[op]",
+    "/portfolio/new/swap": "/portfolio/new/[op]",
+    "/portfolio/new/withdrawal": "/portfolio/new/[op]",
     "/portfolio/realized-gains": "/portfolio/realized-gains",
     "/reports": "/reports",
     "/scenarios": "/scenarios",
@@ -614,7 +577,7 @@ const SNAPSHOT = {
     "/settings/display": "/settings/display",
     "/settings/dropdown-order": "/settings/dropdown-order",
     "/settings/general": "/settings/general",
-    "/settings/holding-accounts": "/settings/holding-accounts",
+    "/settings/holding-accounts": null,
     "/settings/import": "/settings/import",
     "/settings/import/reconcile-visibility": "/settings/import/reconcile-visibility",
     "/settings/integrations": "/settings/integrations",
@@ -631,7 +594,7 @@ const SNAPSHOT = {
     "/settings/rules/7/edit": "/settings/rules/[id]/edit",
     "/settings/rules/9/edit": "/settings/rules/[id]/edit",
     "/settings/rules/new": "/settings/rules/new",
-    "/settings/securities": "/settings/securities",
+    "/settings/securities": null,
     "/subscriptions": "/subscriptions",
     "/subscriptions/7/edit": "/subscriptions/[id]/edit",
     "/subscriptions/new": "/subscriptions/new",
@@ -675,6 +638,21 @@ describe("route registry parity (C-04)", () => {
     const actual: Record<string, string | null> = {};
     for (const p of concretePaths()) actual[p] = matchFabRoute(p)?.pattern ?? null;
     expect(actual).toEqual(SNAPSHOT.matchPattern);
+  });
+
+  it("the 8 retired /portfolio/new/<op> routes resolve to /portfolio/new/[op] with the old fab and fullScreen values", () => {
+    const OLD_PORTFOLIO_OPS = ["buy", "deposit", "fx-conversion", "in-kind-transfer", "income-expense", "sell", "swap", "withdrawal"];
+    for (const op of OLD_PORTFOLIO_OPS) {
+      const path = `/portfolio/new/${op}`;
+      const route = matchRoute(path);
+      expect(route?.pattern, path).toBe("/portfolio/new/[op]");
+      expect(route?.fab, path).toEqual({ kind: "hidden", reason: "is the create flow" });
+      expect(route?.fullScreen, path).toBe(true);
+      expect(isTabBarHidden(path), path).toBe(true);
+    }
+    // the list keeps the tab bar
+    expect(matchRoute("/portfolio/new")?.fullScreen ?? false).toBe(false);
+    expect(isTabBarHidden("/portfolio/new")).toBe(false);
   });
 
   it("registry has one def per FAB key and no duplicate patterns", () => {

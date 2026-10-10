@@ -5,6 +5,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as React from "react";
 import { readFileSync } from "fs";
 import { resolve } from "path";
+import { resolvedDecls } from "../helpers/css-tokens";
 import { render, screen, cleanup } from "@testing-library/react";
 import { Plus } from "lucide-react";
 
@@ -188,7 +189,8 @@ describe("PageHeader with backHref: phone glass header row", () => {
   it("ships the glass-capsule and glass-bar material phone-only in globals.css", () => {
     const css = readFileSync(resolve(__dirname, "../../src/app/globals.css"), "utf-8");
     expect(css).toMatch(/@media \(width < 40rem\) \{\s*\.glass-capsule \{/);
-    expect(css).toMatch(/\.glass-bar \{[^}]*blur\(28px\) saturate\(1\.8\)/);
+    // Literal blur/saturate moved into --glass-bar-* tokens; assert the resolved .glass-bar rule.
+    expect(resolvedDecls(css, ".glass-bar", "light")).toMatch(/blur\(28px\) saturate\(1\.8\)/);
     expect(css).toContain("prefers-reduced-transparency");
   });
 });

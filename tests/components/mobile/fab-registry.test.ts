@@ -69,9 +69,16 @@ describe("resolveFab", () => {
     expect(r).toMatchObject({ type: "button", label: "Buy", icon: TrendingUp });
   });
 
-  it("hidden and redirect routes -> null", () => {
-    for (const p of ["/chat", "/family/accept", "/portfolio/new", "/portfolio/new/buy", "/portfolio/new/in-kind-transfer", "/accounts/new", "/accounts/7/edit", "/transactions/new", "/transactions/search", "/admin/env", "/settings/holding-accounts", "/settings/securities"]) {
+  it("hidden routes -> null", () => {
+    for (const p of ["/chat", "/family/accept", "/portfolio/new", "/portfolio/new/buy", "/portfolio/new/in-kind-transfer", "/accounts/new", "/accounts/7/edit", "/transactions/new", "/transactions/search"]) {
       expect(resolveFab(p, none), p).toBeNull();
+    }
+  });
+
+  it("routes removed by C-36 have no registry entry -> DEFAULT_FAB link with null pattern", () => {
+    for (const p of ["/admin/env", "/settings/holding-accounts", "/settings/securities"]) {
+      expect(matchFabRoute(p), p).toBeNull();
+      expect(resolveFab(p, none), p).toMatchObject({ type: "link", href: DEFAULT_FAB.href, pattern: null });
     }
   });
 
@@ -91,15 +98,16 @@ describe("resolveFab", () => {
 });
 
 describe("FAB_ROUTES table", () => {
-  it("has one key per registry route, ratcheted at most 103", () => {
+  it("has one key per registry route, ratcheted at most 93", () => {
     expect(Object.keys(FAB_ROUTES)).toHaveLength(ALL_ROUTES.length);
-    expect(ALL_ROUTES.length).toBeLessThanOrEqual(103);
+    expect(ALL_ROUTES.length).toBeLessThanOrEqual(93);
   });
 
-  it("kind counts are 38 fallback, 17 route, 6 handler, 39 hidden, 3 redirect", () => {
+  it("kind counts are 38 fallback, 17 route, 6 handler, 32 hidden, 0 redirect", () => {
     const counts: Record<string, number> = {};
     for (const e of Object.values(FAB_ROUTES)) counts[e.kind] = (counts[e.kind] ?? 0) + 1;
-    expect(counts).toEqual({ fallback: 38, route: 17, handler: 6, hidden: 39, redirect: 3 });
+    expect(counts).toEqual({ fallback: 38, route: 17, handler: 6, hidden: 32 });
+    expect(counts.redirect).toBeUndefined();
   });
 
   it("label/href table for the route entries", () => {

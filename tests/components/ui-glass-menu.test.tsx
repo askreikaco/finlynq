@@ -8,6 +8,7 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import React from "react";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { resolvedDecls } from "../helpers/css-tokens";
 import { render, screen, cleanup, fireEvent, within, act } from "@testing-library/react";
 import { Share2, Trash2 } from "lucide-react";
 import {
@@ -168,7 +169,8 @@ describe("glass menu: motion, tokens and layout", () => {
   });
 
   it("the glass-menu CSS carries blur 24px saturate 1.8 (spec 6.2 large glass) with the -webkit- prefix and an inset rim", () => {
-    const block = css.slice(css.indexOf(".glass-menu {"), css.indexOf(".glass-menu {") + 900);
+    // Literal values live in --glass-menu-* tokens now; assert the resolved declarations (light theme).
+    const block = resolvedDecls(css, ".glass-menu", "light");
     expect(block).toMatch(/-webkit-backdrop-filter:\s*blur\(24px\) saturate\(1\.8\)/);
     expect(block).toMatch(/\n\s+backdrop-filter:\s*blur\(24px\) saturate\(1\.8\)/);
     expect(block).toMatch(/box-shadow:\s*inset 0 0 0 1px oklch\(1 0 0 \/ 6%\)/);
