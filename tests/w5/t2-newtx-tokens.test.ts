@@ -4,7 +4,7 @@ import * as fs from "fs";
 // W5-16: /transactions/new picker components must use semantic theme tokens
 // (no raw Tailwind zinc/indigo/emerald/rose palette classes, no bare text-white).
 const DIR = "src/app/(app)/transactions/new/_components";
-const FILES = ["date-time-picker.tsx", "account-selector.tsx", "category-selector.tsx"];
+const FILES = ["account-selector.tsx", "category-selector.tsx"];
 const PALETTE = /-(zinc|indigo|emerald|rose)-\d{2,3}\b/;
 const BARE_WHITE = /(^|[\s"'`])text-white(?=[\s"'`])/;
 

@@ -470,6 +470,16 @@ html {
     height: 1.25rem;
     margin: 0;
   }
+  /* Sheet close (ui/sheet.tsx): the iOS round glass X, a 44px circle with a 20px glyph below regular. */
+  [data-slot="sheet-close"] {
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 9999px;
+  }
+  [data-slot="sheet-close"] svg {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
   /* The top bar: translucent tint, blur, saturate, 1px bottom rim. */
   .glass-bar {
     background: var(--glass-bar-bg);
