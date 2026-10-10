@@ -13,12 +13,16 @@ import { frequencyOrMonthly, isValidIsoDate, normalizeFrequency, SUBSCRIPTION_FR
 import { advanceStaleSubscriptionDatesSafe } from "@/lib/subscriptions/advance-next-dates";
 import { todayISO } from "@/lib/utils/date";
 import { pgErrorConstraint } from "@/lib/db-utils";
+import { dueOccurrences } from "@/lib/subscriptions/occurrences";
+import { consumeOccurrence, lockDueOccurrence, mapPostError } from "@/lib/subscriptions/post-occurrence";
 
 // The Subscriptions page (list + calendar, merged 2026-10) is a regular,
 // non-dev-mode feature on web AND mobile, so none of these handlers are
 // dev-mode gated any more.
 
-const STATUSES = ["active", "paused", "cancelled"] as const;
+// "ended" is set by the server when an end_date passes / remaining_count hits 0
+// (Repeat + Installment phase 2a); a client may also set it or re-activate.
+const STATUSES = ["active", "paused", "cancelled", "ended"] as const;
 const FREQUENCY_ERROR = `frequency must be one of: ${SUBSCRIPTION_FREQUENCIES.join(", ")}`;
 
 // Optional, clearable date: "" and null both mean "no date".
@@ -73,6 +77,12 @@ const putSchema = z.object({
   status: z.enum(STATUSES).optional(),
   cancelReminderDate: optionalDate,
   notes: z.string().nullable().optional(),
+});
+
+const skipSchema = z.object({
+  action: z.literal("skip"),
+  id: z.number().int().positive(),
+  occurrenceDate: z.string().refine((v) => isValidIsoDate(v), { message: "occurrenceDate must be YYYY-MM-DD" }),
 });
 
 export async function GET(request: NextRequest) {
@@ -133,8 +143,27 @@ export async function GET(request: NextRequest) {
   // instead of raw-summing them (feedback #7).
   const displayCurrency = await getDisplayCurrency(userId, request.nextUrl.searchParams.get("currency"));
   const rateMap = await getRateMap(displayCurrency, userId);
+  // Phase 2a — which subscriptions are POSTABLE (>= 1 transaction links to
+  // them, i.e. created/linked via Repeat) and which occurrences are due.
+  const linked = await db
+    .selectDistinct({ subscriptionId: schema.transactions.subscriptionId })
+    .from(schema.transactions)
+    .where(and(eq(schema.transactions.userId, userId), sql`${schema.transactions.subscriptionId} IS NOT NULL`))
+    .all();
+  const postableIds = new Set(linked.map((r) => r.subscriptionId));
+  const today = todayISO();
   const withDisplay = subs.map((s) => ({
     ...s,
+    postable: postableIds.has(s.id),
+    ...(s.status === "active"
+      ? (() => {
+          const due = dueOccurrences(
+            { nextDate: s.nextDate, frequency: s.frequency, endDate: s.endDate, remainingCount: s.remainingCount },
+            today,
+          );
+          return { overdue: due.overdue, dueCount: due.dueCount };
+        })()
+      : { overdue: [] as string[], dueCount: 0 }),
     // Canonical cadence on the way out ("yearly" written by MCP reads as
     // "annual"), so every client prices and schedules it the same way.
     frequency: frequencyOrMonthly(s.frequency),
@@ -219,6 +248,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ suggestions });
     }
 
+    // Skip one due occurrence WITHOUT posting a transaction (same advance /
+    // end logic as "Post now"). 404 not yours, 409 not due / not active.
+    if (body.action === "skip") {
+      const parsedSkip = validateBody(body, skipSchema);
+      if (parsedSkip.error) return parsedSkip.error;
+      const { withDbTransaction } = await import("@/db");
+      const advanced = await withDbTransaction(async () => {
+        const sub = await lockDueOccurrence(userId, parsedSkip.data.id, parsedSkip.data.occurrenceDate);
+        return consumeOccurrence(userId, sub);
+      });
+      return NextResponse.json({ success: true, subscription: advanced });
+    }
+
     // Normal create
     const parsed = validateBody(body, createSchema);
     if (parsed.error) return parsed.error;
@@ -266,6 +308,13 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(sub, { status: 201 });
   } catch (error: unknown) {
+    const occErr = mapPostError(error);
+    if (occErr) {
+      return NextResponse.json(
+        occErr.status === 404 ? { error: "Not found" } : { error: occErr.message, code: occErr.code },
+        { status: occErr.status },
+      );
+    }
     if (error instanceof OwnershipError) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
