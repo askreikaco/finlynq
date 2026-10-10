@@ -406,6 +406,40 @@ html {
   }
 }
 
+/* Glass menu: every DropdownMenu panel (ui/dropdown-menu.tsx), all sizes. Translucent DARK glass in both
+   themes so the 17px label keeps high contrast over blurred content. --menu-* tokens are read by the item
+   classes in dropdown-menu.tsx. Values follow spec/liquid-glass-spec.md (large glass, 6.2 dark tokens):
+   blur 24px, bg alpha .78 (range .70-.85), sat 1.8, --glass-label .97, --glass-rim-hi .16 / rim-lo .06,
+   --glass-pill .14. Radius 28px and shadow are the owner's values. Opaque fallbacks (no backdrop-filter,
+   prefers-reduced-transparency) use --menu-solid (spec 6.4 allows .94 alpha; opaque is stricter). */
+.glass-menu {
+  --menu-solid: oklch(0.2 0.008 250);
+  --menu-fg: oklch(0.97 0 0);
+  --menu-muted: oklch(0.74 0.01 250);
+  --menu-hairline: oklch(1 0 0 / 12%);
+  --menu-highlight: oklch(1 0 0 / 14%);
+  --menu-destructive: oklch(0.74 0.16 25);
+  --menu-destructive-highlight: oklch(0.6 0.16 25 / 22%);
+  background: oklch(0.2 0.008 250 / 78%);
+  -webkit-backdrop-filter: blur(24px) saturate(1.8);
+  backdrop-filter: blur(24px) saturate(1.8);
+  box-shadow: inset 0 0 0 1px oklch(1 0 0 / 6%), inset 0 1px 0 oklch(1 0 0 / 16%), 0 12px 40px oklch(0 0 0 / 35%);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass-menu {
+    background: var(--menu-solid);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .glass-menu {
+    background: var(--menu-solid);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
 /* Mobile bottom tab bar: floating iOS 26 liquid-glass capsule (nav.tsx MobileBottomBar).
    Geometry (fixed, 16px insets, bottom max(12px,--sab), h-16, rounded-[28px]) is on the nav classes.
    Tab label size = the single --tab-label-size token. iOS UITabBar labels are 10pt (HIG); 10px here (1pt = 1px
