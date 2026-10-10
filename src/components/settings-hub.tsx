@@ -41,7 +41,7 @@ export function SettingsHub() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-xl space-y-6 wide:max-w-3xl">
+    <div className="mx-auto w-full max-w-form space-y-6 wide:max-w-report">
       <PageHeader title="Settings" />
       <div className="grid gap-6 wide:grid-cols-2">
         {groups.map((group) => (
