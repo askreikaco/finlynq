@@ -11,6 +11,7 @@ import {
   type SplitRowModel,
 } from "@/components/transactions/split-rows";
 import { formatCurrency } from "@/lib/currency";
+import { stepCount } from "@/components/transactions/split-rows/split-count-row";
 
 afterEach(() => {
   cleanup();
@@ -31,6 +32,7 @@ interface HarnessProps {
   onClosePad?: () => void;
   onOpenCategory?: (rowId: string) => void;
   onRowBlur?: (rowId: string) => void;
+  variant?: "entry" | "page";
 }
 
 /** Controlled host: state lives here, SplitRows only renders and reports changes. */
@@ -44,6 +46,7 @@ function Harness({
   onClosePad = () => {},
   onOpenCategory = () => {},
   onRowBlur,
+  variant,
 }: HarnessProps) {
   const [count, setCount] = useState(initialCount);
   const [rows, setRows] = useState<SplitRowModel[]>(initialRows);
@@ -72,6 +75,7 @@ function Harness({
         }}
         onRowBlur={onRowBlur}
         idPrefix="t"
+        variant={variant}
       />
       <output data-testid="state-rows">{JSON.stringify(rows)}</output>
     </>
@@ -574,5 +578,186 @@ describe("validateSplits", () => {
     });
     expect(result.canSave).toBe(true);
     expect(result.amounts).toEqual([0.1, 0.1, 0.1]);
+  });
+});
+
+describe("SplitRows entry variant (New Expense)", () => {
+  it("renders the Splits group card with -/+ stepper buttons (44px) around the count", () => {
+    render(<Harness variant="entry" />);
+    const dec = screen.getByRole("button", { name: "Decrease splits" });
+    const inc = screen.getByRole("button", { name: "Increase splits" });
+    expect(dec.className).toContain("size-11");
+    expect(inc.className).toContain("size-11");
+    expect(countInput().getAttribute("aria-label")).toBe("Number of splits");
+    expect(screen.getByText("Splits")).toBeTruthy();
+  });
+
+  it("the stepper moves the count by the stepper rules and creates rows", () => {
+    render(<Harness variant="entry" />);
+    fireEvent.click(screen.getByRole("button", { name: "Increase splits" }));
+    expect(countInput().value).toBe("2");
+    expect(screen.getByTestId("split-row-2")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Increase splits" }));
+    expect(countInput().value).toBe("3");
+    fireEvent.click(screen.getByRole("button", { name: "Decrease splits" }));
+    fireEvent.click(screen.getByRole("button", { name: "Decrease splits" }));
+    expect(countInput().value).toBe("");
+    expect(screen.queryByTestId("split-row-1")).toBeNull();
+  });
+
+  it("labels rows '#1', '#2' with no 'SPLIT 1' header and no 'Remaining' text", () => {
+    render(<Harness variant="entry" initialCount="2" />);
+    expect(screen.getByText("#1")).toBeTruthy();
+    expect(screen.getByText("#2")).toBeTruthy();
+    expect(screen.queryByText("Split 1")).toBeNull();
+    expect(screen.queryByText("Split 2 · Remaining")).toBeNull();
+    expect(document.body.textContent).not.toContain("Remaining");
+  });
+
+  it("has no currency chip, no category chip, no context line and no allocated line", () => {
+    const { container } = render(<Harness variant="entry" initialCount="2" />);
+    expect(container.querySelector('[data-slot="split-currency"]')).toBeNull();
+    expect(screen.queryByTestId("split-category-1")).toBeNull();
+    expect(screen.queryByText("Choose category")).toBeNull();
+    expect(screen.queryByTestId("t-context")).toBeNull();
+    expect(screen.queryByTestId("t-status")).toBeNull();
+    expect(screen.queryByText(/Allocated/)).toBeNull();
+    expect(screen.queryByText(/Payee Coffee shop/)).toBeNull();
+    expect(screen.queryByText(/same as above/)).toBeNull();
+  });
+
+  it("keeps the note row with the placeholder and the remainder auto pill", () => {
+    render(<Harness variant="entry" initialCount="2" />);
+    expect(screen.getAllByPlaceholderText("Note (optional)")).toHaveLength(2);
+    expect(screen.getByText("auto")).toBeTruthy();
+    expect(amountInput(2).readOnly).toBe(true);
+    expect(amountInput(2).value).toBe("100.00");
+  });
+
+  it("shows the remainder error as a status line only when there is an error", () => {
+    render(<Harness variant="entry" initialCount="2" />);
+    expect(screen.queryByTestId("split-status-error")).toBeNull();
+    typeAmount(1, "120");
+    expect(screen.getByTestId("split-status-error").textContent).toBe(
+      `Splits exceed the total by ${formatCurrency(20, "USD")}`,
+    );
+  });
+
+  it("keeps per-row amount errors", () => {
+    render(<Harness variant="entry" initialCount="2" />);
+    expect(screen.getByTestId("split-error-1").textContent).toBe("Enter an amount");
+    typeAmount(1, "0");
+    expect(screen.getByTestId("split-error-1").textContent).toBe("Amount must be more than 0");
+  });
+
+  it("shows 'Choose a category first' as the status error when the parent category is empty", () => {
+    render(<Harness variant="entry" initialCount="2" parentCategoryId="" />);
+    expect(screen.getByTestId("split-status-error").textContent).toBe("Choose a category first");
+    expect(screen.queryByText("Choose category")).toBeNull();
+    expect(screen.queryByText(/Choose a category for split/)).toBeNull();
+  });
+
+  it("uses no chip for categories or accounts even when rows carry accounts", () => {
+    render(
+      <SplitRows
+        count="2"
+        onCountChange={() => {}}
+        rows={[{ id: "a", categoryId: "", amount: "30", note: "", accountId: 5 }, row("b")]}
+        onRowsChange={() => {}}
+        parentAmount={100}
+        currency="USD"
+        parentCategoryId="1"
+        onOpenCategory={() => {}}
+        padTargetRowId={null}
+        onOpenPad={() => {}}
+        onClosePad={() => {}}
+        idPrefix="t"
+        variant="entry"
+        accounts={[{ id: 5, name: "Cash" }]}
+      />,
+    );
+    expect(screen.queryByTestId("split-account-1")).toBeNull();
+    expect(screen.queryByText("Account: Cash")).toBeNull();
+  });
+});
+
+describe("stepCount (entry stepper rules)", () => {
+  it("'+' from empty, 0 or 1 goes to 2", () => {
+    for (const from of ["", "0", "1"]) expect(stepCount(from, 1)).toBe("2");
+  });
+
+  it("'+' goes up by one and stops at 20", () => {
+    expect(stepCount("2", 1)).toBe("3");
+    expect(stepCount("19", 1)).toBe("20");
+    expect(stepCount("20", 1)).toBe("20");
+  });
+
+  it("'-' from 2 goes to empty (none), otherwise -1", () => {
+    expect(stepCount("2", -1)).toBe("");
+    expect(stepCount("3", -1)).toBe("2");
+    expect(stepCount("20", -1)).toBe("19");
+  });
+
+  it("'-' does nothing from empty or 0", () => {
+    expect(stepCount("", -1)).toBe("");
+    expect(stepCount("0", -1)).toBe("");
+  });
+});
+
+describe("validateSplits entry variant", () => {
+  const base = { currency: "USD", parentCategoryId: "1" };
+
+  it("blocks save with 'Choose a category first' and no per-row category errors", () => {
+    const result = validateSplits({
+      ...base,
+      parentCategoryId: "",
+      variant: "entry",
+      count: "2",
+      rows: [row("a", "30"), row("b")],
+      parentAmount: 100,
+    });
+    expect(result.canSave).toBe(false);
+    expect(result.formError).toBe("Choose a category first");
+    expect(result.firstError).toBe("Choose a category first");
+    expect(result.rowErrors).toEqual({});
+  });
+
+  it("still reports per-row amount errors alongside the missing parent category", () => {
+    const result = validateSplits({
+      ...base,
+      parentCategoryId: "",
+      variant: "entry",
+      count: "2",
+      rows: [row("a", ""), row("b")],
+      parentAmount: 100,
+    });
+    expect(result.canSave).toBe(false);
+    expect(result.rowErrors).toEqual({ a: "Enter an amount" });
+    expect(result.firstError).toBe("Choose a category first");
+  });
+
+  it("inherits the parent category on every row and saves", () => {
+    const result = validateSplits({
+      ...base,
+      variant: "entry",
+      count: "3",
+      rows: [row("a", "30"), row("b", "20"), row("c")],
+      parentAmount: 100,
+    });
+    expect(result.canSave).toBe(true);
+    expect(result.resolved.map((r) => r.id)).toEqual(["1", "1", "1"]);
+    expect(result.amounts).toEqual([30, 20, 50]);
+  });
+
+  it("keeps the page variant's per-row 'Choose a category' error by default", () => {
+    const result = validateSplits({
+      ...base,
+      parentCategoryId: "",
+      count: "2",
+      rows: [row("a", "30"), row("b")],
+      parentAmount: 100,
+    });
+    expect(result.firstError).toBe("Choose a category for split 1");
+    expect(result.formError).toBeUndefined();
   });
 });
