@@ -101,7 +101,7 @@ describe("pointer-based touch targets (pointer-coarse: 44px, every coarse device
 describe("app shell below md", () => {
   it("(app) layout: flat bg + tight top padding below md, desktop padding unchanged", () => {
     const l = read("src/app/(app)/layout.tsx");
-    expect(l).toContain("px-4 py-3 regular:px-6 regular:py-8 wide:px-8");
+    expect(l).toContain("px-4 pt-0 pb-3 regular:px-6 regular:py-8 wide:px-8");
     // Main pads for the PageFab on phones; no padding on desktop
     expect(l).toContain("pb-[calc(var(--mobile-bar-clearance)+80px)] regular:pb-0");
     // Assert bg-dot-pattern is still present

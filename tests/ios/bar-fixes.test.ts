@@ -140,7 +140,7 @@ describe("1. phone primary action is an icon-only 44pt filled circle (below regu
 
 describe("2. title block insets equal the measured left slot and right capsule", () => {
   it("the bar is a three-column grid: side tracks min 2.75rem (44pt) and auto, title in the 1fr middle", () => {
-    expect(PHONE_BAR).toContain("max-regular:grid-cols-[minmax(2.75rem,auto)_minmax(0,1fr)_minmax(2.75rem,auto)]");
+    expect(PHONE_BAR).toContain("max-regular:grid-cols-[auto_minmax(0,1fr)_auto]");
     expect(PHONE_BAR).toContain("max-regular:items-center");
     expect(PHONE_BAR).toContain("max-regular:min-h-[var(--phone-header-h)]");
   });

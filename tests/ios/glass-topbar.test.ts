@@ -2,7 +2,7 @@
  * @vitest-environment jsdom
  */
 // Glass top bar on phones (PageHeader + settings detail row). CSS-level checks on globals.css and
-// render checks on PageHeader: centred title, subtitle on phones, left spacer or back circle,
+// render checks on PageHeader: left-aligned title, subtitle on phones, left spacer or back circle,
 // one right capsule only when there are actions, primary action never see-through.
 import { describe, it, expect, afterEach } from "vitest";
 import * as React from "react";
@@ -72,7 +72,7 @@ describe("PageHeader phone bar (render)", () => {
     const { container } = render(h(PageHeader, { title: "Accounts" }));
     const h1 = screen.getByRole("heading", { level: 1, name: "Accounts" });
     const block = h1.parentElement as HTMLElement;
-    expect(cls(block)).toEqual(expect.arrayContaining(["max-regular:col-start-2", "max-regular:row-start-1", "max-regular:min-w-0", "max-regular:text-center", "max-regular:pointer-events-none"]));
+    expect(cls(block)).toEqual(expect.arrayContaining(["max-regular:col-start-2", "max-regular:row-start-1", "max-regular:min-w-0", "max-regular:text-left", "max-regular:pointer-events-none"]));
     expect(cls(block)).not.toContain("max-regular:absolute");
     expect(container.querySelector('[data-slot="page-header"]')).not.toBeNull();
   });
@@ -84,11 +84,11 @@ describe("PageHeader phone bar (render)", () => {
     expect(cls(sub)).not.toContain("hidden");
   });
 
-  it("left slot is an empty 44px spacer on top-level pages (title stays centred)", () => {
+  it("top-level pages have no left slot (the title sits at the left edge)", () => {
     const { container } = render(h(PageHeader, { title: "Dashboard" }));
     const spacer = container.querySelector('[data-slot="page-header-spacer"]');
     expect(spacer).not.toBeNull();
-    expect(cls(spacer)).toEqual(expect.arrayContaining(["max-regular:size-11", "hidden", "max-regular:flex"]));
+    expect(cls(spacer)).toEqual(["hidden"]);
     expect(container.querySelector('[data-slot="back-button"]')).toBeNull();
   });
 
