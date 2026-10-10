@@ -138,7 +138,8 @@ describe("merged categories (WP8)", () => {
       render(<CategoriesPageContent isMerged={true} />);
       await waitFor(
         () => {
-          expect(screen.getByText("Spending by category")).toBeTruthy();
+          // Embedded in the hub the overview has no own title; its Spending/Income switch is the original content.
+          expect(screen.getByRole("tab", { name: "Spending" })).toBeTruthy();
         },
         { timeout: 5000 }
       );
