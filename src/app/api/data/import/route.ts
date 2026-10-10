@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, schema } from "@/db";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { requireEncryption } from "@/lib/auth/require-encryption";
 import { encryptField, isEncrypted } from "@/lib/crypto/envelope";
 import { invalidateUser as invalidateUserTxCache } from "@/lib/mcp/user-tx-cache";
@@ -530,7 +530,12 @@ export async function POST(request: NextRequest) {
     // happened to match.
     const txnIdMap = new Map<number, number>();
     if (d.transactions?.length) {
-      const remapped = d.transactions.map(({ id: _id, userId: _uid, accountId, categoryId, bankTransactionId: rawBankTxId, source: rawSource, ...rest }) => {
+      const remapped = d.transactions.map(({ id: _id, userId: _uid, accountId, categoryId, bankTransactionId: rawBankTxId, source: rawSource, subscriptionId: _rawSubId, ...rest }) => {
+        // transactions.subscription_id (20261012) is an FK into `subscriptions`,
+        // which is restored AFTER transactions with fresh ids — the raw old id
+        // would dangle or point at another row. It is dropped here and re-linked
+        // from the old->new subscription id map once subscriptions are inserted.
+        // installment_group_id / installment_seq round-trip unchanged via ...rest.
         // Issue #28: a backup that pre-dates the audit-fields migration has
         // no `source` per row — fall back to 'backup_restore'. Newer
         // backups round-trip the original surface (CSV-imported stays
@@ -829,7 +834,28 @@ export async function POST(request: NextRequest) {
       await db.insert(schema.recurringTransactions).values(strip(d.recurringTransactions, userId, { accountIdMap, categoryIdMap }) as (typeof schema.recurringTransactions.$inferInsert)[]);
     }
     if (d.subscriptions?.length) {
-      await db.insert(schema.subscriptions).values(strip(d.subscriptions, userId, { accountIdMap, categoryIdMap }) as (typeof schema.subscriptions.$inferInsert)[]);
+      const insertedSubs = await db
+        .insert(schema.subscriptions)
+        .values(strip(d.subscriptions, userId, { accountIdMap, categoryIdMap }) as (typeof schema.subscriptions.$inferInsert)[])
+        .returning({ id: schema.subscriptions.id });
+      // Re-link transactions.subscription_id (dropped on the transaction
+      // restore above) through the old->new subscription id map. Pre-20261012
+      // backups carry no subscriptionId and skip this.
+      const subIdMap = new Map<number, number>();
+      d.subscriptions.forEach((old, i) => {
+        if (insertedSubs[i] && typeof old.id === "number") subIdMap.set(old.id, insertedSubs[i].id);
+      });
+      for (const old of d.transactions ?? []) {
+        const oldSub = (old as { subscriptionId?: unknown }).subscriptionId;
+        const newTx = txnIdMap.get(old.id as number);
+        const newSub = typeof oldSub === "number" ? subIdMap.get(oldSub) : undefined;
+        if (newTx != null && newSub != null) {
+          await db
+            .update(schema.transactions)
+            .set({ subscriptionId: newSub })
+            .where(and(eq(schema.transactions.id, newTx), eq(schema.transactions.userId, userId)));
+        }
+      }
     }
     if (d.transactionRules?.length) {
       // FINLYNQ-12 — pre-migration backups carry `isActive` as 0/1 (INTEGER);
