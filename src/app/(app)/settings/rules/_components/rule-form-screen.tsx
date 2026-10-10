@@ -24,7 +24,9 @@ import {
   type RuleSeed,
   type SubmitResult,
 } from "@/components/rules/rule-editor-form";
-import { safeReturnTo } from "@/lib/accounts/groups-return-to";
+import { TW } from "@/lib/design/tokens";
+import { useReturnTo } from "@/lib/forms/use-return-to";
+import { cn } from "@/lib/utils";
 import { rulePrefillFromParams } from "@/lib/rules/rule-prefill";
 import type { Action, Condition } from "@/lib/rules/schema";
 
@@ -48,7 +50,7 @@ export type RuleFormMode = { mode: "create" } | { mode: "edit"; ruleId: number |
 export function RuleFormPage(props: RuleFormMode) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const returnTo = safeReturnTo(searchParams.get("returnTo"), RULES_RETURN_FALLBACK);
+  const returnTo = useReturnTo(RULES_RETURN_FALLBACK);
   const isEdit = props.mode === "edit";
   const ruleId = props.mode === "edit" ? props.ruleId : null;
   // Edit route with a non-numeric id: not found, never the create form.
@@ -152,7 +154,7 @@ export function RuleFormPage(props: RuleFormMode) {
 
   if (loading && !invalidId) {
     return (
-      <div className="mx-auto w-full max-w-3xl">
+      <div className={cn("mx-auto w-full", TW.report)}>
         <PageHeader title={title} backHref={returnTo} backLabel="Back" className="flex items-center justify-between" />
         <p className="mt-6 text-sm text-muted-foreground">Loading…</p>
       </div>
@@ -161,7 +163,7 @@ export function RuleFormPage(props: RuleFormMode) {
 
   if (isEdit && (invalidId || notFound || (!rule && loadError))) {
     return (
-      <div className="mx-auto w-full max-w-3xl">
+      <div className={cn("mx-auto w-full", TW.report)}>
         <PageHeader title="Edit rule" backHref={returnTo} backLabel="Back" className="flex items-center justify-between" />
         <p className="mt-6 text-sm text-destructive">{loadError || "Rule not found."}</p>
       </div>
@@ -169,9 +171,9 @@ export function RuleFormPage(props: RuleFormMode) {
   }
 
   return (
-    <div data-testid="rule-form-root" className="mx-auto w-full max-w-3xl">
+    <div data-testid="rule-form-root" className={cn("mx-auto w-full", TW.report)}>
       <PageHeader title={title} backHref={returnTo} backLabel="Back" className="flex items-center justify-between" />
-      <div className="mt-3 space-y-4 pb-[calc(var(--sab,0px)+1.5rem)]">
+      <div className={cn("mt-3 space-y-4", TW.formPad)}>
         <RuleEditorForm
           rule={rule}
           initialName={rule ? undefined : prefill.name}
