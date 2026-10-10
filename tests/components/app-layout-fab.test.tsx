@@ -16,6 +16,7 @@ vi.mock("@/components/mobile/page-fab", () => ({
 
 vi.mock("@/components/nav", () => ({
   AppTabs: () => <div data-testid="nav">Nav</div>,
+  isTabBarHidden: () => false,
 }));
 
 vi.mock("@/components/unlock-gate", () => ({

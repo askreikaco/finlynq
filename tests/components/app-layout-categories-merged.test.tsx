@@ -24,6 +24,7 @@ vi.mock("@/components/nav", () => ({
   AppTabs: (props: Record<string, unknown>) => (
     <div data-testid="nav" data-props={JSON.stringify(props ?? {})}>Nav</div>
   ),
+  isTabBarHidden: () => false,
 }));
 
 vi.mock("@/components/unlock-gate", () => ({

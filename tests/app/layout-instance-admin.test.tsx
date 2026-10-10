@@ -2,7 +2,7 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import type { ReactElement, ReactNode } from "react";
 
-vi.mock("@/components/nav", () => ({ AppTabs: () => null }));
+vi.mock("@/components/nav", () => ({ AppTabs: () => null, isTabBarHidden: () => false }));
 for (const m of ["unlock-gate","announcement-banner","prompt-gate","currency-provider","dropdown-order-provider","language-provider","font-provider","animation-provider","reporting-recompute-indicator","version-gate","web-vitals"]) {
   vi.doMock(`@/components/${m}`, () => new Proxy({}, { get: () => () => null }));
 }
