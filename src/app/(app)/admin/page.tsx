@@ -651,7 +651,7 @@ export default function AdminPage() {
       className="space-y-6"
     >
       {/* Header */}
-      <PageHeader title="Admin" titleClassName="text-2xl font-bold tracking-tight" />
+      <PageHeader title="Admin" />
       <motion.p variants={itemVariants} className="mt-0 text-muted-foreground">
         Manage users and monitor platform usage
       </motion.p>

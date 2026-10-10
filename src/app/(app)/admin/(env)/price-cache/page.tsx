@@ -291,7 +291,6 @@ export default function AdminPriceCachePage() {
         lead={<Database className={`h-5 w-5 text-primary ${HEADER_DESKTOP_ONLY}`} />}
         leadClassName="flex items-center gap-2"
         title="Rate Cache"
-        titleClassName="text-2xl font-bold tracking-tight"
         actions={
           <Button variant="outline" size="sm" onClick={load} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? "animate-spin" : ""}`} />

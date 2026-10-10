@@ -222,7 +222,6 @@ export default function AdminDiagnosticsPage() {
             )}
           </>
         }
-        titleClassName="text-2xl font-bold tracking-tight"
         overflow={[
           { label: auto ? "Auto-refresh: on" : "Auto-refresh: off", onSelect: () => setAuto(!auto) },
           {

@@ -244,7 +244,7 @@ export default function AdminIntegrationsPage() {
 
   const Heading = (
     <PageHeader title={<><Plug className="w-8 h-8" />
-      Integrations</>} titleClassName="text-2xl font-bold tracking-tight flex items-center gap-2" />
+      Integrations</>} />
   );
 
   if (loading) {
