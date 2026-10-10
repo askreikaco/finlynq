@@ -1173,7 +1173,7 @@ export default function MobileTransactionPage() {
           </div>
         )}
 
-        {/* Save and Continue (48px), in normal flow after the fields. */}
+        {/* Save and Cancel (48px), in normal flow after the fields. */}
         <div data-testid="txnew-actions" className="mt-1 grid shrink-0 grid-cols-[1fr_auto] gap-3">
           <Button
             type="button"
@@ -1196,12 +1196,12 @@ export default function MobileTransactionPage() {
           <Button
             type="button"
             variant="outline"
-            data-testid="txnew-continue"
-            disabled={saving || done || splitBlocked}
-            onClick={() => void handleSave("continue")}
+            data-testid="txnew-cancel"
+            disabled={saving}
+            onClick={goBack}
             className="h-12 rounded-2xl px-5 text-base font-semibold"
           >
-            Continue
+            Cancel
           </Button>
         </div>
       </main>
