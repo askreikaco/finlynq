@@ -3,7 +3,7 @@
 /**
  * Shared transaction-rule editor FORM (no dialog chrome). Hosts:
  *   - /settings/rules/new and /settings/rules/[id]/edit (full pages, via
- *     app/(app)/settings/rules/_components/rule-form-screen.tsx)
+ *     app/(app)/settings/rules/new and [id]/edit pages)
  *   - RuleEditorDialog (rule-editor-dialog.tsx), kept for the transaction
  *     "Customize…" flow until transactions moves to /settings/rules/new.
  *
