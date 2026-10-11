@@ -12,9 +12,12 @@ export type FormRowHeight = "default" | "tall";
 // The --spacing-row* token vars (spec 2.1, C-01) are not in globals.css yet, so
 // var() classes would drop the sizing. Switch these to TW.* in Wave 2.
 const LABEL_WIDTH: Record<FormLabelWidth, string> = { default: "w-28", narrow: "w-24" };
-const ROW_HEIGHT: Record<FormRowHeight, string> = { default: "min-h-11", tall: "min-h-12" };
+const ROW_HEIGHT: Record<FormRowHeight, string> = {
+  default: "min-h-11 dense:pointer-fine:min-h-9",
+  tall: "min-h-12 dense:pointer-fine:min-h-10",
+};
 
-const ROW_BASE = "flex w-full items-center gap-3 px-4 text-left";
+const ROW_BASE = "flex w-full items-center gap-3 dense:gap-2 px-4 text-left";
 const LABEL_BASE = "shrink-0 text-sm text-muted-foreground";
 
 interface FormRowBaseProps {
@@ -114,9 +117,9 @@ export function FormRow(props: FormRowProps) {
     label
   );
   const note = error ? (
-    <p className="px-4 pb-2 text-xs text-destructive">{error}</p>
+    <p className="px-4 pb-2 dense:pb-1 text-xs text-destructive">{error}</p>
   ) : hint ? (
-    <div className="px-4 pb-2 text-xs text-muted-foreground">{hint}</div>
+    <div className="px-4 pb-2 dense:pb-1 text-xs text-muted-foreground">{hint}</div>
   ) : null;
 
   if (props.variant === "button") {

@@ -41,6 +41,9 @@ export type DashboardData = {
   incomeExpenseBreakdown?: IncomeExpenseBreakdown;
   spendingByCategory: CategorySpend[];
   netWorthOverTime: NetWorthPoint[];
+  /** Same shape, accounts.type 'A' only / 'L' only (Accounts page tiles). */
+  assetsOverTime?: NetWorthPoint[];
+  liabilitiesOverTime?: NetWorthPoint[];
   displayCurrency?: string;
 };
 

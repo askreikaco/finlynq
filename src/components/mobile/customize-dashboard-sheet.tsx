@@ -95,7 +95,7 @@ export function CustomizeDashboardSheet({
         side="bottom"
         className={cn(
           "max-h-[90dvh] rounded-t-2xl",
-          "sm:data-[side=bottom]:inset-x-auto sm:data-[side=bottom]:right-6 sm:data-[side=bottom]:left-auto sm:data-[side=bottom]:w-[28rem] sm:data-[side=bottom]:rounded-xl sm:data-[side=bottom]:border",
+          "regular:data-[side=bottom]:inset-x-auto regular:data-[side=bottom]:right-6 regular:data-[side=bottom]:left-auto regular:data-[side=bottom]:w-[28rem] regular:data-[side=bottom]:rounded-xl regular:data-[side=bottom]:border",
         )}
       >
         <SheetHeader>
@@ -127,7 +127,7 @@ export function CustomizeDashboardSheet({
             {error}
           </p>
         ) : null}
-        <div className="flex flex-col gap-2 border-t p-4 sm:flex-row-reverse">
+        <div className="flex flex-col gap-2 border-t p-4 regular:flex-row-reverse">
           <Button className="min-h-row flex-1" disabled={busy} onClick={() => run(() => onSave(normalizeLayout({ order, hidden: [...hidden] })))}>
             {busy ? "Saving..." : "Save"}
           </Button>

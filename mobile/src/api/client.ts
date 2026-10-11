@@ -340,6 +340,8 @@ interface RawDashboardResponse {
   incomeVsExpenses?: RawIncomeExpenseRow[];
   spendingByCategory?: Array<{ categoryId: number; categoryName?: string; total: number }>;
   netWorthOverTime?: Array<{ month: string; cumulative: number; currency?: string }>;
+  assetsOverTime?: Array<{ month: string; cumulative: number; currency?: string }>;
+  liabilitiesOverTime?: Array<{ month: string; cumulative: number; currency?: string }>;
 }
 
 /**

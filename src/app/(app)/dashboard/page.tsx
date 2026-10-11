@@ -9,6 +9,7 @@ import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
 import { DollarSign, TrendingUp, CreditCard, Target, User, Upload, FileUp, SlidersHorizontal } from "lucide-react";
 import { motion } from "framer-motion";
 import { StatCard } from "./_components/stat-card";
+import { deriveSeriesChange } from "@/lib/dashboard/series-change";
 import { NetWorthHeroCard } from "./_components/net-worth-hero-card";
 import { HealthScoreCard } from "./_components/health-score-card";
 import { KeyMetrics } from "./_components/key-metrics";
@@ -224,30 +225,15 @@ export default function DashboardPage() {
   // Net worth over time — API returns rows already converted to display
   // currency (route.ts collapses currencies via getRateMap + convertWithRateMap
   // before returning).
-  const nwMap = new Map<string, number>();
-  let runningTotal = 0;
-  (data.netWorthOverTime ?? [])
-    .forEach((p) => {
-      runningTotal += p.cumulative;
-      nwMap.set(p.month, runningTotal);
-    });
-  const netWorthData = Array.from(nwMap.entries())
-    .map(([month, value]) => ({ month, value }))
-    .slice(-24);
+  // Shared with /accounts (src/lib/dashboard/series-change.ts).
+  const nwSeries = deriveSeriesChange(data.netWorthOverTime);
   // Net Worth sparkline shows the last twelve months (hero + stat tile share it).
-  const nwSparkPoints = netWorthData.slice(-12);
-  const nwSparkline = nwSparkPoints.map((d) => d.value);
-  const nwSparkLabels = nwSparkPoints.map((d) => d.month);
+  const nwSparkline = nwSeries.sparkData;
+  const nwSparkLabels = nwSeries.sparkLabels;
 
-  // Month-over-month change
-  let momChange = 0;
-  let momPct = 0;
-  if (netWorthData.length >= 2) {
-    const current = netWorthData[netWorthData.length - 1].value;
-    const prev = netWorthData[netWorthData.length - 2].value;
-    momChange = current - prev;
-    momPct = prev !== 0 ? (momChange / Math.abs(prev)) * 100 : 0;
-  }
+  // Month-over-month change (0 when there is no history, as before)
+  const momChange = nwSeries.change ?? 0;
+  const momPct = nwSeries.changePct;
 
   // FINLYNQ-291 (C1) — the Monthly Income / Expenses / Budgets tiles summarize a
   // single reference month. The newest tracked month is usually the CURRENT
