@@ -563,6 +563,8 @@ export async function createTransaction(userId: string, data: {
   subscriptionId?: number | null;
   // Phase 2a: occurrence a "Post now" row was posted for (20261013).
   occurrenceDate?: string | null;
+  // Local-first outbox (20261015): POST Idempotency-Key header, route-only.
+  idempotencyKey?: string | null;
   // Audit-source attribution (issue #28). Defaults to 'manual' when the
   // caller doesn't pass one — the UI POST handler relies on the default,
   // every other writer (import/MCP/connector/sample-data/restore) sets

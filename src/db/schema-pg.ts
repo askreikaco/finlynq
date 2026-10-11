@@ -232,7 +232,13 @@ export const transactions = pgTable("transactions", {
   // incl. the first row booked with a Repeat. Unique per (user, subscription,
   // occurrence) so a retry/double tap cannot post twice.
   occurrenceDate: text("occurrence_date"),
+  // Local-first outbox (20261015): the POST `Idempotency-Key` header of the
+  // request that created this row. NULL when no header was sent. Unique per
+  // (user, key) so a retried POST resolves to this row instead of duplicating.
+  idempotencyKey: text("idempotency_key"),
 }, (t) => [
+  uniqueIndex("uniq_transactions_idempotency_key").on(t.userId, t.idempotencyKey)
+    .where(sql`(idempotency_key IS NOT NULL)`),
   uniqueIndex("uniq_transactions_subscription_occurrence").on(t.userId, t.subscriptionId, t.occurrenceDate)
     .where(sql`(subscription_id IS NOT NULL AND occurrence_date IS NOT NULL)`),
   index("idx_transactions_bank_tx").on(t.bankTransactionId)

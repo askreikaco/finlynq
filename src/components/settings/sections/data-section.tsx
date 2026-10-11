@@ -16,6 +16,7 @@ import { Upload, FileText, Wallet, Tag, Briefcase, ArrowLeftRight, Database, Dow
 import { RebuildSnapshotsButton } from "@/components/portfolio/rebuild-snapshots-button";
 import { getPasskeyStepUp } from "@/lib/client/passkey-stepup";
 import { getSessionInfo } from "@/lib/data/session-info";
+import { PendingSyncCard } from "./pending-sync-card";
 import { dropAllLocalCaches, dropAllLocalCachesWithin, dropLocalUserCache } from "@/lib/data/local-read-cache-wipe";
 
 type ImportRow = Record<string, string>;
@@ -351,6 +352,7 @@ export function DataSection() {
 
   return (
     <div className="space-y-6">
+      <PendingSyncCard />
       {/* CSV Import */}
       <Card>
         <CardHeader>

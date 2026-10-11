@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { SWRConfig, type Cache } from "swr";
+import { SWRConfig, useSWRConfig, type Cache } from "swr";
 import { dataDefaults } from "./config";
 import { installWriteRevalidation } from "./write-revalidation";
 import { getSessionInfo, onSessionInfo } from "./session-info";
@@ -9,6 +9,8 @@ import { loadPersisted, persistSupported, purgeDisallowed, wipeUser } from "./pe
 import { createPersistentCache } from "./persistent-cache";
 import { isSafeToPersist } from "./persist-policy";
 import { dropLocalUserCache } from "./local-read-cache-wipe";
+import { setLocalWriteSyncedHandler, startLocalWriteQueue } from "./local-write-queue";
+import { revalidateTransactionLists } from "@/lib/transactions/revalidate";
 
 const BUILD = process.env.NEXT_PUBLIC_APP_BUILD ?? "dev";
 /** Never hold the first paint longer than this waiting for the on-device copy. */
@@ -25,6 +27,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [cache, setCache] = useState<Map<string, { data?: unknown }> | null>(null);
   const trusted = useRef(false);
   const locked = useRef(true);
+  const deviceId = useRef<string | null>(null);
 
   useEffect(() => {
     const info = getSessionInfo();
@@ -60,6 +63,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       .then((r) => (r.ok ? r.json() : { id: null }))
       .then((d: { id?: string | null }) => {
         trusted.current = !!d?.id;
+        deviceId.current = d?.id ?? null;
+        // Offline write queue (flag off = no-op): only on a trusted, unlocked device.
+        if (trusted.current && !locked.current && d?.id) startLocalWriteQueue(userId, d.id);
         if (!trusted.current) {
           void wipeUser(userId);
           void dropLocalUserCache(userId);
@@ -68,6 +74,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       .catch(() => undefined);
 
     const off = onSessionInfo((next) => {
+      if (next && !next.locked) {
+        locked.current = false;
+        if (trusted.current && deviceId.current) startLocalWriteQueue(userId, deviceId.current);
+      }
       if (!next || next.locked) {
         locked.current = true;
         void wipeUser(userId);
@@ -82,6 +92,22 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   if (!cache) return null;
   return (
-    <SWRConfig value={{ ...dataDefaults, provider: () => cache as unknown as Cache }}>{children}</SWRConfig>
+    <SWRConfig value={{ ...dataDefaults, provider: () => cache as unknown as Cache }}>
+      <WriteQueueBridge />
+      {children}
+    </SWRConfig>
   );
+}
+
+/** Lets the offline write queue refresh the lists once queued writes reach the server. Renders nothing. */
+function WriteQueueBridge() {
+  const { mutate, cache } = useSWRConfig();
+  useEffect(() => {
+    setLocalWriteSyncedHandler(() => {
+      void revalidateTransactionLists(mutate, cache);
+      void mutate("/api/accounts");
+    });
+    return () => setLocalWriteSyncedHandler(null);
+  }, [mutate, cache]);
+  return null;
 }
