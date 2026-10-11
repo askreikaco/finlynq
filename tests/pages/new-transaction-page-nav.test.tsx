@@ -44,7 +44,7 @@ afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 describe("Add opens the New Transaction page, not the dialog", () => {
   it("N1 header Add button navigates to /transactions/new and opens no dialog", () => {
     render(<TransactionsWorkspace />);
-    const addBtn = screen.getByText("Add Transaction").closest("button")!;
+    const addBtn = screen.getByRole("button", { name: "Add Transaction" });
     fireEvent.click(addBtn);
     expect(H.push).toHaveBeenCalledWith("/transactions/new");
     expect(screen.queryByRole("dialog")).toBeNull();
@@ -52,7 +52,7 @@ describe("Add opens the New Transaction page, not the dialog", () => {
   it("N2 dropdown Transaction item navigates to /transactions/new", () => {
     render(<TransactionsWorkspace />);
     fireEvent.click(screen.getByLabelText("More transaction types"));
-    fireEvent.click(screen.getByText("Transaction"));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Transaction" }));
     expect(H.push).toHaveBeenCalledWith("/transactions/new");
     expect(screen.queryByRole("dialog")).toBeNull();
   });

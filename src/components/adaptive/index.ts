@@ -3,7 +3,6 @@ export type { AppSizeClassProviderProps } from "./size-class-context";
 export { ContainerQuery } from "./container-query";
 export type { ContainerQueryProps, ContainerName } from "./container-query";
 export type { SizeClass } from "@/components/ui/size-class";
-export { CompactOnly, FromMd } from "@/components/mobile/adaptive";
 export { useViewMode, ViewModeToggle, VIEW_MODE_DEFAULTS, VIEW_MODE_STORAGE_KEY } from "./view-mode";
 export type { ViewMode, ViewKey } from "./view-mode";
 export { DataView } from "./data-view";

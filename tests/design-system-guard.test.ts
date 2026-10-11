@@ -7,6 +7,8 @@ import {
   BREAKPOINT_PATTERN,
   BREAKPOINT_EXEMPT,
   SIZE_CLASS_WRAPPER_PATTERN,
+  HIDDEN_PAIR_PATTERN,
+  HIDDEN_PAIR_EXEMPT,
   SOURCE_EXTS,
   countMatches,
   isExempt,
@@ -145,6 +147,42 @@ describe("design-system-guard: size-class wrapper ratchet (approximate)", () => 
   it("ratchet tightens: lower the wrapper baseline when usage decreases", () => {
     const report = ratchet(baseline, current);
     expect(ratchetFailure("wrapper", { ...report, newFiles: [], increased: [] })).toEqual([]);
+  });
+});
+
+// Files that keep a single phone-only `regular:hidden` element (no duplicated content, nothing to swap).
+// Anything new must use one responsive element, `max-regular:hidden`, or useAppSizeClass() instead.
+const HIDDEN_PAIR_KEPT: Counts = {
+  // Phone-only fixed FAB; the class is pinned by tests/components/mobile/page-fab.test.tsx. Single element, no desktop twin.
+  "src/components/mobile/page-fab.tsx": 1,
+  // Admin env tab-bar active marker: a plain element, asserted verbatim by tests/pages/codemod-14c.test.ts. No twin.
+  "src/app/(app)/admin/(env)/layout.tsx": 1,
+};
+
+describe("design-system-guard: regular:hidden / hidden regular: pairs", () => {
+  let current: Counts;
+
+  beforeAll(() => {
+    current = scanAll(HIDDEN_PAIR_PATTERN, HIDDEN_PAIR_EXEMPT);
+  });
+
+  it("no new regular:hidden / hidden regular: outside nav.tsx, page-header.tsx and adaptive primitives", () => {
+    const report = ratchet(HIDDEN_PAIR_KEPT, current);
+    expect(
+      ratchetFailure("hidden-pair", { ...report, decreased: [], stale: [] }),
+      "Use one responsive element, max-regular:hidden, or useAppSizeClass() instead of a show/hide pair"
+    ).toEqual([]);
+  });
+
+  it("keep-list has no stale entries", () => {
+    const report = ratchet(HIDDEN_PAIR_KEPT, current);
+    expect(ratchetFailure("hidden-pair", { ...report, newFiles: [], increased: [] })).toEqual([]);
+  });
+
+  it("pattern matches the pair forms and not max-regular:hidden", () => {
+    expect(countMatches('<div className="regular:hidden" />', HIDDEN_PAIR_PATTERN)).toBe(1);
+    expect(countMatches('<div className="hidden regular:block" />', HIDDEN_PAIR_PATTERN)).toBe(1);
+    expect(countMatches('<div className="max-regular:hidden" />', HIDDEN_PAIR_PATTERN)).toBe(0);
   });
 });
 

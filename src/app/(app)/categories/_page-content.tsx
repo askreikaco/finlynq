@@ -311,10 +311,10 @@ function CategoriesOverview({ embedded = false }: CategoriesOverviewProps) {
                           </p>
                         </div>
                       </div>
-                      <div className="hidden regular:block">
+                      <div className="max-regular:hidden">
                         <Sparkline data={c.trend} color={isIncome ? CHART_COLORS.positive : CHART_COLORS.negative} labels={sparkLabels} currency={cur} />
                       </div>
-                      <div className="hidden regular:block">
+                      <div className="max-regular:hidden">
                         <div className="h-1.5 rounded-full bg-muted overflow-hidden">
                           <div className="h-full rounded-full" style={{ width: `${Math.min(100, c.share * 100)}%`, backgroundColor: dot }} />
                         </div>

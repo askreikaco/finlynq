@@ -1,6 +1,6 @@
 // @vitest-environment node
 // Static guard for the portfolio report pages (realized gains, dividend income) and their shared
-// controls: PageHeader page, ListRow below md, a FromMd-wrapped table with a sticky header in its own
+// controls: PageHeader page, ListRow below md, a size-class-gated table with a sticky header in its own
 // scroll box, system text sizes only, palette tokens only, dvh not vh, and no adaptive literals.
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
@@ -17,13 +17,11 @@ const ALL = [REALIZED, DIVIDENDS, CONTROLS];
 
 const PALETTE = /\b(bg|text|border|ring|from|to|via|fill|stroke|outline|divide|shadow|decoration|accent|caret|placeholder)-(slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-[0-9]{2,3}\b/;
 
-/** Every `<Table` opening must sit inside a `<FromMd>` wrapper (md+ only), never bare below md. */
-function tablesInsideFromMd(src: string): boolean {
-  for (const m of src.matchAll(/<Table\b/g)) {
-    const before = src.slice(0, m.index!);
-    if (before.lastIndexOf("<FromMd") <= before.lastIndexOf("</FromMd>")) return false;
-  }
-  return true;
+/** Every `<Table` opening must sit in the regular branch of a `regular ? ... : ...` / `!regular ? ... : ...` switch, never bare. */
+function tablesGatedBySizeClass(src: string): boolean {
+  if (!/useAppSizeClass\(\)/.test(src)) return false;
+  const first = src.search(/<Table\b/);
+  return first > src.indexOf("!regular ?");
 }
 
 describe("portfolio report pages: PageHeader page below and above md", () => {
@@ -43,17 +41,17 @@ describe("portfolio report pages: PageHeader page below and above md", () => {
   });
 });
 
-describe("below md: ListRow lists; md+: table only inside FromMd", () => {
-  it.each(PAGES)("%s uses ListRow for the phone list and CompactOnly for the phone-only block", (f) => {
+describe("below md: ListRow lists; md+: table only in the regular branch", () => {
+  it.each(PAGES)("%s uses ListRow for the phone list, rendered only when the size class is compact", (f) => {
     const src = read(f);
     expect(src).toMatch(/<ListRow\b/);
-    expect(src).toMatch(/<CompactOnly/);
+    expect(src).toMatch(/!regular \? /);
+    expect(src).not.toMatch(/<(CompactOnly|FromMd)\b/);
   });
 
-  it.each(PAGES)("%s: no raw table below md (every <Table is inside a FromMd wrapper)", (f) => {
+  it.each(PAGES)("%s: no raw table below md (every <Table is in the regular branch of the size-class switch)", (f) => {
     const src = read(f);
-    expect(src).toMatch(/<FromMd/);
-    expect(tablesInsideFromMd(src)).toBe(true);
+    expect(tablesGatedBySizeClass(src)).toBe(true);
   });
 
   it.each(PAGES)("%s: md+ table header is sticky inside its own max-height scroll container", (f) => {
@@ -95,8 +93,8 @@ describe("system type scale, palette tokens, units, adaptive helpers", () => {
 });
 
 describe("mutation anchors (the three assertions the mutation check breaks)", () => {
-  it("the realized page keeps its md+ table wrapped in FromMd", () => {
-    expect(tablesInsideFromMd(read(REALIZED))).toBe(true);
+  it("the realized page keeps its md+ table in the regular branch", () => {
+    expect(tablesGatedBySizeClass(read(REALIZED))).toBe(true);
   });
 
   it("the dividends page has no arbitrary text size", () => {
