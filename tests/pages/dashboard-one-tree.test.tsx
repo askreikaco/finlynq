@@ -131,4 +131,17 @@ describe("dashboard one tree: mount", () => {
     expect(screen.getByTestId("card-action-center")).toBeTruthy();
     await waitFor(() => expect(screen.getByTestId("card-key-metrics")).toBeTruthy());
   });
+
+  it("header: no person/Settings icon; Add transaction is the rightmost primary, More stays on its left and holds General settings", async () => {
+    await dashboard();
+    expect(screen.queryByRole("link", { name: "Settings" })).toBeNull();
+    const add = screen.getByRole("link", { name: "Add transaction" });
+    expect(add.getAttribute("href")).toBe("/transactions/new");
+    const group = document.querySelector('[data-slot="page-header-actions"]') as HTMLElement;
+    expect(group.lastElementChild).toBe(add);
+    const capsule = group.querySelector('[data-slot="header-capsule"]') as HTMLElement;
+    expect(capsule.contains(add)).toBe(false);
+    expect(capsule.querySelector('[data-slot="overflow-trigger"]')).not.toBeNull();
+    expect(group.firstElementChild).toBe(capsule);
+  });
 });

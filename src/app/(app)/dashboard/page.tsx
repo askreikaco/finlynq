@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatCurrency, getCurrentMonth, getMonthLabel } from "@/lib/currency";
 import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
-import { DollarSign, TrendingUp, CreditCard, Target, User, Upload, FileUp, SlidersHorizontal } from "lucide-react";
+import { DollarSign, TrendingUp, CreditCard, Target, Settings, Plus, Upload, FileUp, SlidersHorizontal } from "lucide-react";
 import { motion } from "framer-motion";
 import { StatCard } from "./_components/stat-card";
 import { deriveSeriesChange } from "@/lib/dashboard/series-change";
@@ -30,7 +30,7 @@ import { useDevMode } from "@/hooks/use-dev-mode";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { CurrencyAuditBanner } from "@/components/currency-audit-banner";
 import type { DashboardData, HealthData } from "./_components/types";
-import { PageHeader, HEADER_SECONDARY, HEADER_CELL, CustomizeDashboardSheet } from "@/components/mobile";
+import { PageHeader, HEADER_SECONDARY, CustomizeDashboardSheet } from "@/components/mobile";
 import { Disclosure } from "@/components/adaptive";
 import { Button } from "@/components/ui/button";
 import { DASHBOARD_CARDS } from "@/lib/dashboard-layout";
@@ -555,7 +555,10 @@ export default function DashboardPage() {
           titleClassName="text-2xl font-bold tracking-tight"
           subtitleClassName="text-sm text-muted-foreground mt-0.5"
           subtitle={`${greeting}. Here's your financial overview`}
-          overflow={[{ label: "Customize", icon: SlidersHorizontal, onSelect: () => setCustomizeOpen(true) }]}
+          overflow={[
+            { label: "Customize", icon: SlidersHorizontal, onSelect: () => setCustomizeOpen(true) },
+            { label: "General settings", icon: Settings, href: "/settings/general" },
+          ]}
           actions={
         <>
         <Button
@@ -568,14 +571,14 @@ export default function DashboardPage() {
           <SlidersHorizontal className="h-4 w-4 mr-1.5" />
           Customize
         </Button>
-        <Link
-          href="/settings/general"
-          aria-label="Settings"
-          className={`${HEADER_CELL} flex h-11 w-11 regular:h-9 regular:w-9 shrink-0 items-center justify-center rounded-full bg-muted/60 hover:bg-muted transition-colors`}
-          title="Settings"
+        <Button
+          render={<Link href="/transactions/new" />}
+          aria-label="Add transaction"
+          title="Add transaction"
         >
-          <User className="h-4 w-4 text-foreground" />
-        </Link>
+          <Plus className="h-4 w-4 mr-1.5" />
+          Add
+        </Button>
         </>
           }
         />
