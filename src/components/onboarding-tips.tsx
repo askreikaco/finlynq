@@ -5,7 +5,7 @@ import { X, Lightbulb, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useSessionUserId, readUserItem, writeUserItem } from "@/lib/client/user-storage";
-import { Disclosure } from "@/components/adaptive";
+import { Disclosure, useAppSizeClass } from "@/components/adaptive";
 
 interface OnboardingTip {
   id: string;
@@ -94,6 +94,7 @@ const TIPS_BY_PAGE: Record<string, OnboardingTip[]> = {
 export function OnboardingTips({ page }: OnboardingTipsProps) {
   const [dismissed, setDismissedState] = useState<Set<string>>(new Set());
   const [mounted, setMounted] = useState(false);
+  const regular = useAppSizeClass() !== "compact";
 
   const { userId, ready } = useSessionUserId();
 
@@ -138,8 +139,7 @@ export function OnboardingTips({ page }: OnboardingTipsProps) {
           <>
             <Lightbulb className="h-4 w-4 text-primary" />
             <span className="text-sm font-medium text-primary-text">
-              <span className="regular:hidden">Tips ({tips.length})</span>
-              <span className="max-regular:hidden">Tips for getting started</span>
+              {regular ? "Tips for getting started" : `Tips (${tips.length})`}
             </span>
           </>
         }

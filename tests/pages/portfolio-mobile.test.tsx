@@ -90,8 +90,7 @@ describe("Portfolio summary and holdings cards (one page, every size)", () => {
     expect(within(grid).getByText("Realized G/L")).toBeTruthy();
     // total return is a regular-and-up tile; compact keeps the six tiles it always had
     const totalTile = Array.from(grid.children).find((c) => c.textContent?.includes("Total return")) as HTMLElement;
-    expect(cls(totalTile)).toContain("hidden");
-    expect(cls(totalTile)).toContain("regular:block");
+    expect(cls(totalTile)).toContain("max-regular:hidden");
     // the desktop-only stat cards and returns block are gone (folded into the summary)
     expect(screen.queryByText("Investment Returns")).toBeNull();
     expect(screen.queryByText("Total Holdings")).toBeNull();
@@ -152,8 +151,7 @@ describe("Portfolio summary and holdings cards (one page, every size)", () => {
       summary: { ...makeOverview().summary, totalHoldings: 1 },
     });
     render(<PortfolioPage />);
-    expect(cls(screen.getByTestId("perf-chart").parentElement!)).toContain("hidden");
-    expect(cls(screen.getByTestId("perf-chart").parentElement!)).toContain("regular:block");
+    expect(cls(screen.getByTestId("perf-chart").parentElement!)).toContain("max-regular:hidden");
   });
 
   it("chart stays visible when there are positions", () => {

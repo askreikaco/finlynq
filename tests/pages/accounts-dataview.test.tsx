@@ -127,10 +127,9 @@ describe("Accounts page: one DataView, one toolbar", () => {
 });
 
 describe("Accounts page: no size-class wrappers around sections", () => {
-  it("CompactOnly / FromMd appear only as the Add / New-account label swap (span)", () => {
-    const wrappers = SRC.match(/<(CompactOnly|FromMd)\b[^>]*>/g) ?? [];
-    expect(wrappers.length).toBeGreaterThan(0);
-    for (const tag of wrappers) expect(tag).toMatch(/as="span"/);
+  it("no CompactOnly / FromMd and no regular:hidden pair: the Add label is one element, the summary switches by size class", () => {
+    expect(SRC).not.toMatch(/<(CompactOnly|FromMd)\b/);
+    expect(SRC).not.toMatch(/(?<!max-)regular:hidden|hidden regular:/);
   });
 
   it("the sections live inside the DataView, not behind size wrappers", () => {

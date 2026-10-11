@@ -29,8 +29,8 @@ import {
   Archive,
   FolderCog,
 } from "lucide-react";
-import { PageHeader, HEADER_DESKTOP_ONLY, NetWorthHero, SectionLabel, AccountRow, CompactOnly, FromMd } from "@/components/mobile";
-import { DataView, ViewModeToggle } from "@/components/adaptive";
+import { PageHeader, HEADER_DESKTOP_ONLY, NetWorthHero, SectionLabel, AccountRow } from "@/components/mobile";
+import { DataView, ViewModeToggle, useAppSizeClass } from "@/components/adaptive";
 
 type AccountBalance = {
   accountId: number;
@@ -97,6 +97,7 @@ function SummarySkeleton() {
 }
 
 export default function AccountsPage() {
+  const regular = useAppSizeClass() !== "compact";
   const { displayCurrency } = useDisplayCurrency();
   const [accounts, setAccounts] = useState<AccountBalance[]>([]);
   const [loading, setLoading] = useState(true);
@@ -343,7 +344,7 @@ export default function AccountsPage() {
       aria-label="Create Account"
       className={buttonVariants({ size: "sm", className: "bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-sm" })}
     >
-      <Plus className="h-4 w-4 mr-1.5" /> <FromMd as="span">Create Account</FromMd><CompactOnly as="span">Add</CompactOnly>
+      <Plus className="h-4 w-4 mr-1.5" /> Add<span className="max-regular:sr-only"> account</span>
     </Link>
   );
 
@@ -414,11 +415,10 @@ export default function AccountsPage() {
       <OnboardingTips page="accounts" />
 
       {/* Summary tiles: the Net Worth hero on phones, the two stat cards from the regular size class up. */}
-      <div className="regular:hidden">
+      {!regular ? (
         <NetWorthHero totalAssets={totalAssetsConverted} totalLiabilities={totalLiabilitiesConverted} currency={displayCurrency} />
-      </div>
-
-      <div className="hidden regular:grid grid-cols-2 gap-3">
+      ) : (
+      <div className="grid grid-cols-2 gap-3">
         {[
           { label: "Total Assets", value: totalAssetsConverted, Icon: TrendingUp, color: "emerald" },
           { label: "Total Liabilities", value: totalLiabilitiesConverted, Icon: TrendingDown, color: "rose" },
@@ -436,6 +436,7 @@ export default function AccountsPage() {
           </Card>
         ))}
       </div>
+      )}
 
       {/* One toolbar, one DataView. Cards = AccountRow sections (phone layout); List = the grid layout. */}
       <div className="flex justify-end">

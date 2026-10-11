@@ -65,13 +65,12 @@ describe("Accounts page: cards view (compact default)", () => {
   it("net worth hero: assets, liabilities and their sum; desktop stat cards only from the regular size class", async () => {
     await cards();
     const hero = document.querySelector("[data-slot=net-worth-hero]") as HTMLElement;
-    expect(hero.closest(".regular\\:hidden")).not.toBeNull();
     const assets = 40000000 + 2500000 + 10000000;
     expect(within(hero).getByText(formatCurrency(assets, "VND"))).toBeTruthy();
     expect(within(hero).getByText(formatCurrency(-5000000, "VND"))).toBeTruthy();
     expect(within(hero).getByText(formatCurrency(assets - 5000000, "VND"))).toBeTruthy();
-    const stats = screen.getByText("Total Assets").closest(".regular\\:grid") as HTMLElement;
-    expect(cls(stats)).toEqual(expect.arrayContaining(["hidden", "regular:grid"]));
+    // one summary per size class: the stat cards are not in the DOM on compact
+    expect(screen.queryByText("Total Assets")).toBeNull();
   });
 
   it("accounts are grouped by type then group; every group is expanded by default and toggles on its own", async () => {

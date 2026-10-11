@@ -39,7 +39,7 @@ import { todayISO } from "@/lib/utils/date";
 import { LotReallocationNotice } from "@/components/portfolio/lot-reallocation-notice";
 import type { LotReallocationPreview } from "@/lib/portfolio/lots/types";
 import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
-import { DataView, ViewModeToggle, useViewMode } from "@/components/adaptive";
+import { DataView, ViewModeToggle, useViewMode, useAppSizeClass } from "@/components/adaptive";
 import { cn } from "@/lib/utils";
 
 /**
@@ -277,6 +277,9 @@ export function TransactionsWorkspace({
   const [selected, setSelected] = useState<Set<number>>(new Set());
   // Cards / List for this view (one shared store; ViewModeToggle and DataView agree).
   const [viewMode] = useViewMode("transactions");
+  // Phone Cards view shows the search link + filter chip; regular and List use the inline Card below.
+  const compactSize = useAppSizeClass() === "compact";
+  const phoneCards = viewMode === "cards" && compactSize;
   // Bulk selection exists only in List mode: leaving List drops the selection.
   useEffect(() => {
     if (viewMode === "cards") setSelected((prev) => (prev.size === 0 ? prev : new Set()));
@@ -588,7 +591,7 @@ export function TransactionsWorkspace({
                 onClick={() => router.push("/transactions/new")}
                 aria-label="Add Transaction"
               >
-                <Plus className="h-4 w-4 mr-1" /> <span className="hidden regular:inline">Add Transaction</span><span className="regular:hidden">Add</span>
+                <Plus className="h-4 w-4 mr-1" /> Add<span className="max-regular:sr-only"> Transaction</span>
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger
@@ -658,25 +661,21 @@ export function TransactionsWorkspace({
       )}
       {/* One toolbar. Phone Cards: search link + filter count. Toggle at every size. */}
       <div className="flex gap-2 items-center">
+        {phoneCards && (
         <Link
           href={`/transactions/search?${mobileSearchQuery}`}
           aria-label="Search and filter"
-          className={cn(
-            "flex min-h-11 flex-1 items-center gap-2 px-3 py-2.5 bg-muted rounded-lg text-sm text-muted-foreground hover:bg-muted/80 transition-colors",
-            viewMode === "list" ? "hidden" : "regular:hidden",
-          )}
+          className="flex min-h-11 flex-1 items-center gap-2 px-3 py-2.5 bg-muted rounded-lg text-sm text-muted-foreground hover:bg-muted/80 transition-colors"
         >
           <Search className="h-4 w-4" />
           <span>Search and filter</span>
         </Link>
-        {activeMobileFilters > 0 && (
+        )}
+        {phoneCards && activeMobileFilters > 0 && (
           <button
             type="button"
             onClick={clearFilters}
-            className={cn(
-              "flex min-h-11 items-center gap-1 rounded-full bg-muted px-3 text-xs font-medium",
-              viewMode === "list" ? "hidden" : "regular:hidden",
-            )}
+            className="flex min-h-11 items-center gap-1 rounded-full bg-muted px-3 text-xs font-medium"
             aria-label={`Clear ${activeMobileFilters} filters`}
             data-testid="mobile-filter-chip"
           >

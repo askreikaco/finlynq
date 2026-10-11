@@ -439,7 +439,7 @@ function BudgetsPageContent() {
               title="Monthly budget limits per category"
             >
               <LayoutGrid className="h-3 w-3" />
-              <span className="hidden regular:inline">Traditional</span>
+              <span className="max-regular:hidden">Traditional</span>
             </button>
             <button
               className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-150 flex items-center gap-1.5 ${
@@ -451,7 +451,7 @@ function BudgetsPageContent() {
               title="Zero-based envelope budgeting"
             >
               <Wallet className="h-3 w-3" />
-              <span className="hidden regular:inline">Envelope</span>
+              <span className="max-regular:hidden">Envelope</span>
             </button>
           </div>
 
