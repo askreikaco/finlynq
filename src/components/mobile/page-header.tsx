@@ -118,9 +118,10 @@ export const PHONE_BAR_SUBTITLE = "max-regular:mt-0 max-regular:w-full max-regul
 export const HEADER_MAX_PHONE_ACTIONS = 3;
 
 /**
- * Right group below regular (grid column 3): ONE capsule (data-slot="header-capsule") holding every phone action
- * as a neutral 44px cell: icon cells, then the primary (last icon cell), then the overflow trigger. No accent-filled
- * control sits outside it. From regular the group is the plain actions row (actionsClassName).
+ * Right group below regular (grid column 3), left to right: [secondary capsule][gap-2][PRIMARY]. The capsule
+ * (data-slot="header-capsule") holds the neutral secondary 44px cells (icon cells, HeaderStatus, the overflow
+ * trigger). The primary (or HEADER_SAVE) is its OWN round yellow 44px button, always rightmost. From regular the
+ * group is the plain actions row (actionsClassName), primary still last.
  */
 export const PHONE_BAR_RIGHT =
   "max-regular:col-start-3 max-regular:row-start-1 max-regular:flex max-regular:min-w-0 max-regular:shrink-0 max-regular:flex-nowrap max-regular:items-center max-regular:justify-self-end";
@@ -235,8 +236,9 @@ function textOf(node: React.ReactNode): string {
  * `actions` is the page's action node(s). Secondary buttons inside it must carry HEADER_SECONDARY and have a
  * matching entry in `overflow`; the primary stays visible at every size.
  *
- * Capsule rule (phones): all right-side items sit in ONE capsule (data-slot="header-capsule"), each a 44px slot:
- * icon buttons, the overflow trigger, the primary (filled circle) and HeaderStatus indicators. At most
+ * Capsule rule (phones): secondary items sit in ONE capsule (data-slot="header-capsule") on the left, each a 44px
+ * slot: icon buttons, the overflow trigger and HeaderStatus indicators. The primary is a separate yellow round
+ * button on the far right (primary = the main action, secondary = More). At most
  * HEADER_MAX_PHONE_ACTIONS phone-visible actions; extra secondary actions MUST go to the overflow menu.
  * Never put a spinner or any other control outside `actions`: it would render as a separate circle beside the capsule.
  */
@@ -309,7 +311,12 @@ export function PageHeader({
   );
   const hasLeft = !!effectiveBackHref || !!onBack || !!lead;
   const { cells, primary } = splitPhoneActions(otherActions);
-  const hasCells = (overflow?.length ?? 0) > 0 || !!primary || cells.some((c) => !isSecondaryNode(c));
+  // With a HEADER_SAVE the save is the primary (round yellow, rightmost) and any other primary stays a capsule cell.
+  // Otherwise the primary is its OWN yellow round button on the far right, the secondary cells + overflow a capsule on its left.
+  const primaryOwn = !save && !!primary;
+  const capsulePrimary = save ? primary : null;
+  const hasCapsule =
+    (overflow?.length ?? 0) > 0 || !!capsulePrimary || cells.some((c) => !isSecondaryNode(c));
   return (
     <div data-slot="page-header" className={cn(className, PHONE_BAR)}>
       {hasLeft ? (
@@ -329,17 +336,18 @@ export function PageHeader({
         </>
       )}
       {hasRight ? (
-        <div data-slot="page-header-actions" className={cn(actionsClassName, PHONE_BAR_RIGHT, save && "max-regular:gap-2")}>
-          {hasCells ? (
+        <div data-slot="page-header-actions" className={cn(actionsClassName, PHONE_BAR_RIGHT, "max-regular:gap-2")}>
+          {hasCapsule ? (
             <div data-slot="header-capsule" className={PHONE_CAPSULE}>
               {cells}
-              {primary}
+              {capsulePrimary}
               {overflow && overflow.length > 0 ? <OverflowMenu items={overflow} /> : null}
             </div>
           ) : (
             // Only secondary actions (hidden below regular): no capsule, so no empty glass pill on phones.
             cells
           )}
+          {primaryOwn ? primary : null}
           {save}
         </div>
       ) : null}

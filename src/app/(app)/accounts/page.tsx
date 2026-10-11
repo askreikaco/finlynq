@@ -224,15 +224,11 @@ export default function AccountsPage() {
     list: AccountBalance[],
     color: string,
     SectionIcon: typeof TrendingUp,
-    avatarClasses: string,
   ) => (
     <div className="space-y-2">
       <div className="flex items-center gap-2">
         <SectionIcon className={`h-5 w-5 ${color}`} />
         <h2 className="text-xl font-semibold">{title}</h2>
-        <span className="ml-auto font-mono text-lg font-semibold tabular-nums" data-testid="section-total">
-          {formatCurrency(groupTotal(list), displayCurrency)}
-        </span>
       </div>
       {/* Each group is its own accordion, expanded by default (toggled independently): header = name, count, total. */}
       <div className="flex flex-col gap-2">
@@ -247,11 +243,6 @@ export default function AccountsPage() {
                   className="flex items-center justify-between flex-1 py-1.5 px-3 gap-2 min-w-0"
                 >
                   <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <div
-                      className={`h-7 w-7 shrink-0 rounded-lg flex items-center justify-center text-xs font-bold ${avatarClasses}`}
-                    >
-                      {(a.accountName ?? "?").charAt(0).toUpperCase()}
-                    </div>
                     <div className="flex items-center gap-2 min-w-0">
                       <p className="font-medium text-sm truncate">
                         {a.accountName}
@@ -422,8 +413,8 @@ export default function AccountsPage() {
       </div>
 
       <div data-slot="accounts-list" className="grid grid-cols-1 wide:grid-cols-2 gap-4">
-        {renderSection("Assets", assets, "text-pos", ArrowUpRight, "bg-primary/10 text-primary")}
-        {renderSection("Liabilities", liabilities, "text-destructive", ArrowDownRight, "bg-destructive/10 text-destructive")}
+        {renderSection("Assets", assets, "text-pos", ArrowUpRight)}
+        {renderSection("Liabilities", liabilities, "text-destructive", ArrowDownRight)}
       </div>
     </div>
   );

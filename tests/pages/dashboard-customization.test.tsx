@@ -39,7 +39,9 @@ vi.mock("@/app/(app)/dashboard/_components/animated-number", () => ({
   AnimatedNumber: ({ value }: { value: number }) => <span>{value}</span>,
 }));
 vi.mock("@/app/(app)/dashboard/_components/stat-card", () => ({
-  StatCard: ({ label }: { label: string }) => <div data-testid={`stat-${label}`}>{label}</div>,
+  StatCard: ({ label, badgePct, invertTone }: { label: string; badgePct?: number | null; invertTone?: boolean }) => (
+    <div data-testid={`stat-${label}`} data-badge={badgePct ?? ""} data-invert={invertTone ? "1" : ""}>{label}</div>
+  ),
 }));
 
 import DashboardPage from "@/app/(app)/dashboard/page";
@@ -103,9 +105,12 @@ describe("Dashboard card layout", () => {
   it("default markup keeps the card rows (one tree; desktop grid shape unchanged)", async () => {
     await dashboard();
     const grid = (id: string) => screen.getByTestId(`card-${id}`).closest("div.grid") as HTMLElement;
-    expect(grid("health-score").className).toBe("grid grid-cols-1 wide:grid-cols-3 gap-4");
-    expect(screen.getByText("Total Net Worth").closest("div.grid")).toBe(grid("health-score"));
-    expect(screen.getByText("Total Net Worth").closest("div.wide\\:col-span-2")).not.toBeNull();
+    // Net worth hero is full width on its own; health + income/expense/budget + key metrics are
+    // ONE shared small-tile grid (2-up on a phone, 3-up on wide)
+    expect(grid("health-score").className).toBe("grid grid-cols-2 wide:grid-cols-3 gap-3 regular:gap-4");
+    expect(screen.getByText("Total Net Worth").closest("div.grid")).not.toBe(grid("health-score"));
+    expect(grid("key-metrics")).toBe(grid("health-score"));
+    expect(screen.getByTestId("stat-Monthly Income").closest("div.grid")).toBe(grid("health-score"));
     expect(grid("action-center").className).toBe("grid grid-cols-1 wide:grid-cols-3 gap-5");
     // the secondary cards sit in the More insights disclosure, which shares the action-center row
     const toggle = screen.getByRole("button", { name: "More insights" });
@@ -115,8 +120,6 @@ describe("Dashboard card layout", () => {
     expect(grid("income-expense-chart").className).toContain("grid grid-cols-1 wide:grid-cols-2 gap-5");
     expect(grid("spending-category-chart")).toBe(grid("income-expense-chart"));
     expect(grid("available-to-spend").className).toContain("grid grid-cols-1 wide:grid-cols-3 gap-5");
-    // stat tiles grid: three tiles (the Net Worth tile is the hero above)
-    expect(screen.getByTestId("stat-Monthly Income").closest("div.grid")!.className).toBe("grid grid-cols-1 regular:grid-cols-3 gap-4");
   });
 
   it("the Due card sits right after the tips, before the hero, and posts return to /dashboard", async () => {
@@ -156,6 +159,40 @@ describe("Dashboard card layout", () => {
     expect(screen.queryByText("Total Net Worth")).toBeNull();
     expect(screen.getByTestId("card-action-center")).toBeTruthy();
     expect(screen.getByTestId("card-quick-import")).toBeTruthy();
+  });
+
+  it("hiding some small tiles keeps the rest in one shared tile grid", async () => {
+    saved = { order: [...DEFAULT_CARD_ORDER], hidden: ["health-score"] };
+    await dashboard();
+    const tiles = screen.getByTestId("stat-Monthly Income").closest("div.grid") as HTMLElement;
+    expect(tiles.className).toContain("grid-cols-2");
+    expect(tiles.contains(screen.getByTestId("card-key-metrics"))).toBe(true);
+    expect(screen.queryByTestId("card-health-score")).toBeNull();
+  });
+
+  it("Monthly Income / Expenses carry a % change vs the previous month (expense inverted); none without a prior month", async () => {
+    const rows = (months: [string, number, number][]) =>
+      months.flatMap(([month, inc, exp]) => [
+        { month, type: "I", total: inc },
+        { month, type: "E", total: -exp },
+      ]);
+    const withRows = (r: unknown[]) => {
+      const f = (globalThis.fetch as unknown as ReturnType<typeof vi.fn>).getMockImplementation()!;
+      vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) =>
+        String(url).includes("/api/dashboard") && !String(url).includes("layout")
+          ? { ok: true, json: async () => ({ balances: [], incomeVsExpenses: r, netWorthOverTime: [], spendingByCategory: [], displayCurrency: "VND" }) }
+          : f(url, init)));
+    };
+    withRows(rows([["2020-01", 100, 50], ["2020-02", 150, 40]]));
+    await dashboard();
+    expect(screen.getByTestId("stat-Monthly Income").getAttribute("data-badge")).toBe("50");
+    expect(screen.getByTestId("stat-Monthly Expenses").getAttribute("data-badge")).toBe("-20");
+    expect(screen.getByTestId("stat-Monthly Expenses").getAttribute("data-invert")).toBe("1");
+    expect(screen.getByTestId("stat-Monthly Income").getAttribute("data-invert")).toBe("");
+    cleanup();
+    withRows(rows([["2020-02", 150, 40]]));
+    await dashboard();
+    expect(screen.getByTestId("stat-Monthly Income").getAttribute("data-badge")).toBe("");
   });
 
   it("the saved order is applied", async () => {
