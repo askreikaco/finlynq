@@ -232,6 +232,45 @@ export function isOfflineQueueEligible(a: OfflineEligibilityInput): boolean {
   return true;
 }
 
+/** A list row as far as offline delete eligibility is concerned (GET /api/transactions fields). */
+export interface OfflineDeleteCandidate {
+  amount: number;
+  linkId?: string | null;
+  installmentGroupId?: string | null;
+  subscriptionId?: number | null;
+  portfolioHolding?: string | null;
+  quantity?: number | null;
+  isBusiness?: number | null;
+  kind?: string | null;
+  tradeLinkId?: string | null;
+}
+
+/**
+ * A delete may go to the queue only for the rows an offline edit may touch (same rule as isOfflineQueueEligible in edit
+ * mode), plus: no portfolio operation kind / trade pair, and the repeat/installment membership must be KNOWN (a row
+ * whose list payload lacks those fields is treated as online-only). Splits are checked by the caller (needs a request).
+ */
+export function isOfflineDeleteEligible(t: OfflineDeleteCandidate): boolean {
+  if (t.installmentGroupId === undefined || t.subscriptionId === undefined) return false;
+  if (t.kind || t.tradeLinkId) return false;
+  return isOfflineQueueEligible({
+    txType: t.amount < 0 ? "Expense" : "Income",
+    splitActive: false,
+    hasSeries: false,
+    isPostTarget: false,
+    isBusiness: false,
+    mode: { kind: "edit", tx: t as unknown as DialogTransaction, splits: [], returnTo: "" },
+  });
+}
+
+/**
+ * Whether a failed DELETE request goes to the offline queue: the queue is on, the failure is "no connection", the row is
+ * eligible AND the row is known to have no splits (`hasSplits` false; null = could not be read = online-only).
+ */
+export function canQueueOfflineDelete(a: { queueActive: boolean; error: unknown; row: OfflineDeleteCandidate; hasSplits: boolean | null }): boolean {
+  return a.queueActive && isNetworkFailure(a.error) && a.hasSplits === false && isOfflineDeleteEligible(a.row);
+}
+
 /** Fields of a queued create (same names the POST body uses; empty payee/note/tags omitted as the POST does). */
 export function buildOfflineCreateFields(a: {
   date: string;

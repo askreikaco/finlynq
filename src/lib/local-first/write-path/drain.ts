@@ -6,6 +6,8 @@
  *   client-side adopt step below stays as a belt-and-braces check (older servers, a key that was never stored): look
  *   for a row created after the first send with identical fields; if found, adopt it instead of POSTing again.
  *   PUT does not use the key (an edit PUT is already idempotent: same fields, same result).
+ * - Deletes: fetch the server row; gone already (or DELETE 404) = success; changed since the baseline (updatedAt, else
+ *   the field values) = failed 'Row changed on the server', never deleted silently; else DELETE.
  * - Edits: fetch the server row (GET ?id=), resolve per field by HLC last-writer-wins (conflict.ts), PUT only the winners.
  * - Backoff: transient failure (network, 408, 429, 5xx) -> exponential, capped, jittered. 401/403/423 (signed out or
  *   locked) pauses the whole drain without counting an attempt. Other 4xx -> entry marked failed, never retried.
@@ -92,7 +94,11 @@ class Transient extends Error {
     super(`transient ${status ?? "network"}`);
   }
 }
-class Permanent extends Error {}
+class Permanent extends Error {
+  constructor(message: string, readonly status: number | null = null) {
+    super(message);
+  }
+}
 
 function classify(status: number): "pause" | "transient" | "permanent" {
   if (status === 401 || status === 403 || status === 423) return "pause";
@@ -111,7 +117,7 @@ async function call(f: DrainFetch, url: string, init?: FetchInit): Promise<Drain
   const c = classify(r.status);
   if (c === "pause") throw new Pause();
   if (c === "transient") throw new Transient(r.status);
-  throw new Permanent(`http ${r.status}`);
+  throw new Permanent(`http ${r.status}`, r.status);
 }
 
 async function readJson(r: DrainResponse): Promise<unknown> {
@@ -137,13 +143,25 @@ async function findCreated(deps: DrainDeps, e: OutboxEntry, fetchImpl: DrainFetc
   return null;
 }
 
-async function fetchServerTx(fetchImpl: DrainFetch, serverId: number): Promise<ServerTx | null> {
+/** Message shown on a queued delete that was not sent because the row was edited on the server meanwhile. */
+export const ROW_CHANGED_REASON = "Row changed on the server";
+
+async function fetchServerTx(fetchImpl: DrainFetch, serverId: number, needUpdatedAt = true): Promise<(ServerTx & { updatedAt: string | null }) | null> {
   const r = await call(fetchImpl, `/api/transactions?id=${serverId}`);
   const row = unwrapRows(await readJson(r)).find((x) => x.id === serverId);
   if (!row) return null;
   const ms = typeof row.updatedAt === "string" ? Date.parse(row.updatedAt) : NaN;
-  if (!Number.isFinite(ms)) throw new Permanent("server row has no updatedAt");
-  return { fields: toFields(row), updatedAtMs: ms };
+  if (!Number.isFinite(ms) && needUpdatedAt) throw new Permanent("server row has no updatedAt");
+  return { fields: toFields(row), updatedAtMs: ms, updatedAt: typeof row.updatedAt === "string" ? row.updatedAt : null };
+}
+
+/** True when the server row differs from what the user saw when deleting (never delete silently over a newer edit). */
+function changedSinceBaseline(e: OutboxEntry, row: ServerTx & { updatedAt: string | null }): boolean {
+  if (e.baseUpdatedAt) {
+    const baseMs = Date.parse(e.baseUpdatedAt);
+    if (Number.isFinite(baseMs) && Number.isFinite(row.updatedAtMs)) return baseMs !== row.updatedAtMs;
+  }
+  return (Object.keys(e.base) as EditableField[]).some((f) => !eq(row.fields[f], e.base[f]));
 }
 
 /** Builds a drain function. It is single-flight: a call while one runs returns that run's promise. */
@@ -154,6 +172,10 @@ export function createDrain(deps: DrainDeps): () => Promise<DrainReport> {
 
   async function swapCache(e: OutboxEntry, serverId: number): Promise<void> {
     if (!deps.cache) return;
+    if (e.kind === "delete") {
+      await deps.cache.deleteRows("transactions", [e.rowId]);
+      return;
+    }
     if (e.kind === "create") {
       await deps.cache.deleteRows("transactions", [e.rowId]);
       await deps.cache.upsertRows("transactions", [rowFromEntry({ ...e, rowId: String(serverId), serverId })]);
@@ -183,6 +205,27 @@ export function createDrain(deps: DrainDeps): () => Promise<DrainReport> {
       if (id !== null) await swapCache(e, id);
       await deps.store.remove(e.opId);
       if (id !== null) deps.onSynced?.(e, id);
+      return;
+    }
+    if (e.kind === "delete") {
+      const id = e.serverId as number;
+      const row = await fetchServerTx(deps.fetchImpl, id, false);
+      // Already gone (deleted elsewhere): the goal is met. Same for a 404 on the DELETE below.
+      let gone = row === null;
+      if (row) {
+        if (changedSinceBaseline(e, row)) throw new Permanent(ROW_CHANGED_REASON);
+        try {
+          await call(deps.fetchImpl, `/api/transactions?id=${id}`, { method: "DELETE", headers: headers(e.opId) });
+          report.sent++;
+        } catch (err) {
+          if (!(err instanceof Permanent && err.status === 404)) throw err;
+          gone = true;
+        }
+      }
+      if (gone) report.adopted++;
+      await swapCache(e, id);
+      await deps.store.remove(e.opId);
+      deps.onSynced?.(e, id);
       return;
     }
     // edit

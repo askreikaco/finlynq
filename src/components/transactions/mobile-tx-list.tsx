@@ -7,6 +7,7 @@ import { todayISO, localDateISO } from "@/lib/utils/date";
 import { SectionLabel } from "@/components/mobile/section-label";
 import type { Transaction } from "@/app/(app)/transactions/_types";
 import { cn } from "@/lib/utils";
+import { PendingSyncBadge } from "./pending-sync-badge";
 
 interface MobileTxListProps {
   transactions: Transaction[];
@@ -175,7 +176,10 @@ function TransactionRow({
 
       {/* Payee and category */}
       <div className="min-w-0 flex-1">
-        <div className="block truncate font-medium text-sm">{payee}</div>
+        <div className="flex items-center gap-2">
+          <div className="block min-w-0 truncate font-medium text-sm">{payee}</div>
+          <PendingSyncBadge mark={t.pendingSync} />
+        </div>
         {subtitle && <div className="block truncate text-xs text-muted-foreground">{subtitle}</div>}
       </div>
 

@@ -2,7 +2,7 @@ import type { DrainFetch, DrainResponse, FetchInit } from "@/lib/local-first/wri
 
 interface Row { id: number; [k: string]: unknown }
 
-/** Minimal in-memory /api/transactions: POST, PUT (merge, stamps updatedAt), GET ?id= and date range. */
+/** Minimal in-memory /api/transactions: POST, PUT (merge, stamps updatedAt), DELETE (404 when gone), GET ?id= and date range. */
 export class FakeServer {
   rows = new Map<number, Row>();
   nextId = 1;
@@ -42,6 +42,11 @@ export class FakeServer {
       if (!r) return res(404, { error: "nf" });
       Object.assign(r, patch, { updatedAt: new Date(this.clock).toISOString() });
       out = res(200, r);
+    } else if (method === "DELETE") {
+      const id = Number(u.searchParams.get("id"));
+      if (!this.rows.has(id)) return res(404, { error: "nf" });
+      this.rows.delete(id);
+      out = res(200, { success: true });
     } else {
       const id = u.searchParams.get("id");
       const d = u.searchParams.get("startDate");

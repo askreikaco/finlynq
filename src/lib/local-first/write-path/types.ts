@@ -27,8 +27,8 @@ export type EntryStatus =
 export interface OutboxEntry {
   /** Idempotency key and dedupe key. */
   opId: string;
-  kind: "create" | "edit";
-  /** Local row id in the read cache: `local-<opId>` for a create, String(serverId) for an edit. */
+  kind: "create" | "edit" | "delete";
+  /** Local row id in the read cache: `local-<opId>` for a create, String(serverId) for an edit or delete. */
   rowId: string;
   /** Server id: set for an edit at enqueue, for a create after the POST succeeded (then the entry is removed). */
   serverId: number | null;
@@ -36,7 +36,9 @@ export interface OutboxEntry {
   fields: TxFields;
   /** Per-field HLC of the last local write of that field. */
   fieldHlc: Partial<Record<EditableField, Hlc>>;
-  /** Edit only: the server-confirmed values of the edited fields when the edit was made (conflict baseline). */
+  /** Delete only: the row's server updatedAt when the delete was made (concurrent-change baseline). Null/absent = compare `base`. */
+  baseUpdatedAt?: string | null;
+  /** Edit and delete: the server-confirmed values of the edited fields when the edit was made (conflict baseline). */
   base: TxFields;
   createdAt: number;
   attempts: number;
