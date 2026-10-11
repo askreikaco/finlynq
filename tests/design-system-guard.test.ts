@@ -175,11 +175,12 @@ describe("design-system-guard: scanner self-test (synthetic strings)", () => {
     const entries = {
       "src/components/a.tsx": "md:hidden md:hidden",
       "src/components/mobile/b.tsx": "md:hidden",
-      "src/components/ui/size-class.ts": "isMobile",
+      "src/components/ui/size-class.ts": "md:hidden",
       "src/components/c.tsx": "clean",
     };
-    expect(scanContents(entries, BANNED_PATTERN, BANNED_EXEMPT)).toEqual({ "src/components/a.tsx": 2 });
-    expect(isExempt("src/components/mobile/b.tsx", BANNED_EXEMPT)).toBe(true);
+    expect(scanContents(entries, BANNED_PATTERN, BANNED_EXEMPT)).toEqual({ "src/components/a.tsx": 2, "src/components/mobile/b.tsx": 1 });
+    expect(isExempt("src/components/ui/size-class.ts", BANNED_EXEMPT)).toBe(true);
+    expect(isExempt("src/components/mobile/b.tsx", BANNED_EXEMPT)).toBe(false);
     expect(isExempt("src/components/mobilex.tsx", BANNED_EXEMPT)).toBe(false);
   });
 
