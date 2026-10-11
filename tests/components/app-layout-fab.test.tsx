@@ -77,7 +77,7 @@ import AppLayout from "@/app/(app)/layout";
 import * as indicatorModule from "@/components/reporting-recompute-indicator";
 import * as pageFabModule from "@/components/mobile/page-fab";
 
-describe("AppLayout mounts the per-page FAB", () => {
+describe("AppLayout has no floating action button", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -87,24 +87,23 @@ describe("AppLayout mounts the per-page FAB", () => {
     vi.restoreAllMocks();
   });
 
-  it("renders PageFab inside PageFabProvider", () => {
+  it("keeps PageFabProvider but mounts no floating button", () => {
     render(<AppLayout><div>Test Content</div></AppLayout>);
 
-    const provider = screen.getByTestId("page-fab-provider");
-    expect(provider).toBeInTheDocument();
-    expect(provider.querySelector("[data-testid='page-fab']")).not.toBeNull();
-    expect(pageFabModule.PageFab).toHaveBeenCalled();
+    expect(screen.getByTestId("page-fab-provider")).toBeInTheDocument();
+    expect(screen.queryByTestId("page-fab")).toBeNull();
+    expect(pageFabModule.PageFab).not.toHaveBeenCalled();
   });
 
-  it("renders PageFab regardless of FINLYNQ_QUICK_ADD (flag no longer gates it)", () => {
+  it("mounts no floating button regardless of FINLYNQ_QUICK_ADD", () => {
     vi.stubEnv("FINLYNQ_QUICK_ADD", "0");
     render(<AppLayout><div>Test Content</div></AppLayout>);
-    expect(screen.getByTestId("page-fab")).toBeInTheDocument();
+    expect(screen.queryByTestId("page-fab")).toBeNull();
 
     cleanup();
     vi.stubEnv("FINLYNQ_QUICK_ADD", "1");
     render(<AppLayout><div>Test Content</div></AppLayout>);
-    expect(screen.getByTestId("page-fab")).toBeInTheDocument();
+    expect(screen.queryByTestId("page-fab")).toBeNull();
   });
 
   it("no longer passes avoidFab to ReportingRecomputeIndicator", () => {

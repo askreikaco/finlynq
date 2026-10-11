@@ -269,4 +269,31 @@ describe("MobileTxList", () => {
       expect(src.match(/(?<![\w-])(max-)?(sm|md|lg|xl|2xl):/g) ?? []).toEqual([]);
     });
   });
+
+  describe("Income / expense icons and transfer From / To", () => {
+    const icon = (name: RegExp) => screen.getByRole("button", { name }).querySelector("svg")!;
+
+    it("income uses the Assets arrow (up-right), expense the Liabilities arrow (down-right)", () => {
+      render(
+        <MobileTxList
+          transactions={[mockTx({ id: 1, payee: "Salary", amount: 100 }), mockTx({ id: 2, payee: "Lunch", amount: -20 })]}
+          onEdit={() => {}}
+        />,
+      );
+      expect(icon(/^Edit Salary$/).getAttribute("class")).toContain("lucide-arrow-up-right");
+      expect(icon(/^Edit Lunch$/).getAttribute("class")).toContain("lucide-arrow-down-right");
+    });
+
+    it("a transfer row shows From and To once the other leg is known", () => {
+      const leg = mockTx({ id: 5, payee: "Move", amount: -300, linkId: "L1", accountName: "Cash", accountAlias: null });
+      render(
+        <MobileTxList
+          transactions={[leg]}
+          onEdit={() => {}}
+          transferPeers={new Map([[5, { accountId: 9, accountName: "Savings" }]])}
+        />,
+      );
+      expect(screen.getByText("From Cash · To Savings")).toBeInTheDocument();
+    });
+  });
 });

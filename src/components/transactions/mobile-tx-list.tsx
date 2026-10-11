@@ -1,7 +1,8 @@
 "use client";
 
 import React from "react";
-import { ArrowDownLeft, ArrowUpRight, ArrowLeftRight, type LucideIcon } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, ArrowLeftRight, type LucideIcon } from "lucide-react";
+import { transferEnds, type TransferPeer } from "@/lib/transactions/transfer-ends";
 import { formatCurrency, formatDate } from "@/lib/currency";
 import { todayISO, localDateISO } from "@/lib/utils/date";
 import { SectionLabel } from "@/components/mobile/section-label";
@@ -17,12 +18,15 @@ interface MobileTxListProps {
   onLoadMore?: () => void;
   hasMore?: boolean;
   isLoadingMore?: boolean;
+  /** Other leg of each transfer row by transaction id: enables the "From … · To …" line. */
+  transferPeers?: ReadonlyMap<number, TransferPeer>;
 }
 
 /**
  * Mobile transaction list: grouped by date with sticky labels, clean banking-app styling.
  * Date labels: "Today", "Yesterday", or the formatted date.
- * Icons: transfer (ArrowLeftRight), incoming (ArrowDownLeft), outgoing (ArrowUpRight).
+ * Icons match the Accounts page: income = ArrowUpRight (like Assets), expense = ArrowDownRight (like Liabilities), transfer = ArrowLeftRight.
+ * Transfer rows show "From … · To …" when the other leg is known.
  * Each row: icon tile | payee (fallback category) | amount with color + sign.
  * Account name shown only when not scoped to a single account.
  */
@@ -34,6 +38,7 @@ export function MobileTxList({
   onLoadMore,
   hasMore = false,
   isLoadingMore = false,
+  transferPeers,
 }: MobileTxListProps) {
   const today = todayISO();
   const yesterday = new Date();
@@ -65,6 +70,7 @@ export function MobileTxList({
                 transaction={t}
                 onEdit={onEdit}
                 showAccountName={showAccountName}
+                peer={transferPeers?.get(t.id) ?? null}
               />
             ))}
           </div>
@@ -124,15 +130,15 @@ function getTransactionIcon(transaction: Transaction): { Icon: LucideIcon; bgCla
   // Money in: amount > 0
   if (transaction.amount > 0) {
     return {
-      Icon: ArrowDownLeft,
+      Icon: ArrowUpRight,
       bgClass: "bg-pos/10 text-pos",
     };
   }
 
   // Money out: amount < 0
   return {
-    Icon: ArrowUpRight,
-    bgClass: "bg-muted dark:bg-card text-muted-foreground",
+    Icon: ArrowDownRight,
+    bgClass: "bg-destructive/10 text-destructive",
   };
 }
 
@@ -140,16 +146,21 @@ function TransactionRow({
   transaction: t,
   onEdit,
   showAccountName,
+  peer,
 }: {
   transaction: Transaction;
   onEdit: (t: Transaction) => void;
   showAccountName: boolean;
+  peer: TransferPeer | null;
 }) {
   const { Icon, bgClass } = getTransactionIcon(t);
   const payee = t.payee || t.categoryName || "—";
-  const subtitle = showAccountName
-    ? `${t.categoryName} · ${t.accountAlias || t.accountName}`
-    : t.categoryName;
+  const ends = transferEnds(t, peer);
+  const subtitle = ends
+    ? `From ${ends.from} · To ${ends.to}`
+    : showAccountName
+      ? `${t.categoryName} · ${t.accountAlias || t.accountName}`
+      : t.categoryName;
 
   // Amount formatting with sign
   const isIncoming = t.amount > 0;

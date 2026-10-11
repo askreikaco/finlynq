@@ -52,7 +52,7 @@ describe("layout wiring", () => {
   const layout = readFileSync(resolve(process.cwd(), "src/app/(app)/layout.tsx"), "utf8");
 
   it("keeps the bar clearance padding and adds the bar-hidden variant (safe-area bottom only)", () => {
-    expect(layout).toContain("pb-[calc(var(--mobile-bar-clearance)+80px)] regular:pb-0");
+    expect(layout).toContain("pb-[calc(var(--mobile-bar-clearance)+16px)] regular:pb-0");
     expect(layout).toContain("data-[bar-hidden]:max-regular:pb-[var(--sab,0px)]");
   });
 
