@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Dialog } from "@/components/ui/dialog";
 import { BackButton } from "./back-button";
-import { FromMd } from "./adaptive";
 import { useBackTarget } from "@/components/adaptive/use-back-target";
 
 export interface OverflowAction {
@@ -168,7 +167,7 @@ function flattenActions(node: React.ReactNode): React.ReactNode[] {
 
 /** Non-visual roots render no element; their triggers are the real actions. Never the primary themselves. */
 function isPhoneInvisible(c: React.ReactElement): boolean {
-  return c.type === Dialog || c.type === DropdownMenu || c.type === FromMd;
+  return c.type === Dialog || c.type === DropdownMenu;
 }
 
 /** The primary action is the last child that is not a secondary action (HEADER_SECONDARY) and not a header cell

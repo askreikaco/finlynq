@@ -13,6 +13,7 @@ import {
   type RecurringRow,
   type ScheduleEvent,
 } from "@/lib/subscriptions/calendar-events";
+import { useAppSizeClass } from "@/components/adaptive";
 import type { Subscription } from "./types";
 import { CalendarDays, ChevronLeft, ChevronRight, Plus, TrendingDown, TrendingUp, Scale } from "lucide-react";
 
@@ -49,6 +50,7 @@ export function SubscriptionsCalendar({
   onTrack: (r: RecurringRow) => void;
 }) {
   const today = localDateISO();
+  const regular = useAppSizeClass() !== "compact";
   const [year, setYear] = useState(() => Number(today.slice(0, 4)));
   const [month, setMonth] = useState(() => Number(today.slice(5, 7)) - 1);
   const [selectedDay, setSelectedDay] = useState<number | null>(() => Number(today.slice(8, 10)));
@@ -155,15 +157,16 @@ export function SubscriptionsCalendar({
                   >
                     {day}
                   </span>
-                  {/* Phone width: dots. Wider: named chips. */}
-                  {dayEvents.length > 0 && (
-                    <div className="flex flex-wrap gap-0.5 mt-1 regular:hidden">
+                  {/* Phone width: dots. Wider: named chips. One of the two renders. */}
+                  {dayEvents.length > 0 && !regular && (
+                    <div className="flex flex-wrap gap-0.5 mt-1">
                       {dayEvents.slice(0, 3).map((ev, idx) => (
                         <span key={idx} className={`h-1.5 w-1.5 rounded-full ${eventTone(ev).dot}`} />
                       ))}
                     </div>
                   )}
-                  <div className="hidden regular:flex flex-col gap-0.5 mt-1 w-full min-w-0">
+                  {regular && (
+                  <div className="flex flex-col gap-0.5 mt-1 w-full min-w-0">
                     {dayEvents.slice(0, 2).map((ev, idx) => (
                       <span
                         key={idx}
@@ -177,6 +180,7 @@ export function SubscriptionsCalendar({
                       <span className="text-xs text-muted-foreground leading-3 px-1">+{dayEvents.length - 2} more</span>
                     )}
                   </div>
+                  )}
                 </button>
               );
             })}

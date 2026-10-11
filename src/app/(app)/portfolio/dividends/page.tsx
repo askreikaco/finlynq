@@ -28,15 +28,14 @@ import {
   HEADER_CELL,
   HEADER_DESKTOP_ONLY,
   Amount,
-  CompactOnly,
   DetailSheet,
-  FromMd,
   ListRow,
   MetricGrid,
   SectionCard,
   type DetailItem,
   type MetricItem,
 } from "@/components/mobile";
+import { useAppSizeClass } from "@/components/adaptive";
 import { SectionPage } from "@/components/templates/section-page";
 import { ErrorState } from "@/components/error-state";
 import { EmptyState } from "@/components/empty-state";
@@ -95,6 +94,8 @@ export default function DividendsPage() {
   const [loadError, setLoadError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  // One structure per size class (list on compact, table + toolbar from regular), never both in the DOM.
+  const regular = useAppSizeClass() !== "compact";
   const [openGroup, setOpenGroup] = useState<GroupRow | null>(null);
 
   // Build the shared param set (used by both the fetch and the CSV link) so
@@ -274,15 +275,17 @@ export default function DividendsPage() {
       header={{
         actions: (
           <>
-            <Button
-              variant="outline"
-              size="icon"
-              aria-label="Filters"
-              className={`${HEADER_CELL} regular:hidden`}
-              onClick={() => setFiltersOpen(true)}
-            >
-              <SlidersHorizontal className="size-4" />
-            </Button>
+            {!regular && (
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label="Filters"
+                className={HEADER_CELL}
+                onClick={() => setFiltersOpen(true)}
+              >
+                <SlidersHorizontal className="size-4" />
+              </Button>
+            )}
             <a
               href={csvHref}
               className={`${buttonVariants({ variant: "outline", size: "sm" })} ${HEADER_DESKTOP_ONLY}`}
@@ -296,12 +299,15 @@ export default function DividendsPage() {
     >
 
       {/* md+ filter toolbar (below md the same fields live in ReportFilterSheet). */}
-      <FromMd className="flex flex-wrap gap-x-8 gap-y-4 rounded-xl border border-border/50 bg-card p-4">
-        {filterFields("toolbar")}
-      </FromMd>
-      <ReportFilterSheet open={filtersOpen} onOpenChange={setFiltersOpen} title="Filter dividends">
-        {filterFields("sheet")}
-      </ReportFilterSheet>
+      {regular ? (
+        <div className="flex flex-wrap gap-x-8 gap-y-4 rounded-xl border border-border/50 bg-card p-4">
+          {filterFields("toolbar")}
+        </div>
+      ) : (
+        <ReportFilterSheet open={filtersOpen} onOpenChange={setFiltersOpen} title="Filter dividends">
+          {filterFields("sheet")}
+        </ReportFilterSheet>
+      )}
 
       {!loading && data && data.totals.rowCount > 0 && <MetricGrid metrics={summaryMetrics} />}
 
@@ -327,7 +333,7 @@ export default function DividendsPage() {
           />
         ) : (
           <>
-            <CompactOnly>
+            {!regular ? (
               <SectionCard label={firstHeader} padded={false} className="divide-y divide-border/50 px-3">
                 {data.groups.map((g) => (
                   <ListRow
@@ -340,9 +346,7 @@ export default function DividendsPage() {
                   />
                 ))}
               </SectionCard>
-            </CompactOnly>
-
-            <FromMd>
+            ) : (
               <Table containerClassName="max-h-[70dvh] overflow-y-auto rounded-xl border border-border/50">
                 <TableHeader className="sticky top-0 z-10 bg-card">
                   <TableRow>
@@ -390,7 +394,7 @@ export default function DividendsPage() {
                   ))}
                 </TableBody>
               </Table>
-            </FromMd>
+            )}
           </>
         )}
       </section>

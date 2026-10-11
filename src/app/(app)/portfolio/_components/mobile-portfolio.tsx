@@ -76,7 +76,7 @@ export function PortfolioSummary({ summary, currency }: { summary: OverviewData[
           <StatTile
             key={m.label}
             label={m.label}
-            className={m.regularOnly ? "hidden regular:block" : undefined}
+            className={m.regularOnly ? "max-regular:hidden" : undefined}
             value={
               m.currency ? (
                 <Amount value={m.value} currency={m.currency} size="md" tone={m.tone ?? "none"} showSign={m.showSign} />

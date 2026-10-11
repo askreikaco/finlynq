@@ -29,7 +29,7 @@ import {
   Archive,
   FolderCog,
 } from "lucide-react";
-import { PageHeader, HEADER_DESKTOP_ONLY, CompactOnly, FromMd } from "@/components/mobile";
+import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
 import { StatCard } from "@/app/(app)/dashboard/_components/stat-card";
 import { NetWorthHeroCard } from "@/app/(app)/dashboard/_components/net-worth-hero-card";
 import { deriveSeriesChange, type SeriesPoint } from "@/lib/dashboard/series-change";
@@ -313,7 +313,7 @@ export default function AccountsPage() {
       aria-label="Create Account"
       className={buttonVariants({ size: "sm", className: "bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-sm" })}
     >
-      <Plus className="h-4 w-4 mr-1.5" /> <FromMd as="span">Create Account</FromMd><CompactOnly as="span">Add</CompactOnly>
+      <Plus className="h-4 w-4 mr-1.5" /> Add<span className="max-regular:sr-only"> account</span>
     </Link>
   );
 

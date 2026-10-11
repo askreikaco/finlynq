@@ -9,6 +9,8 @@ import { formatCurrency } from "@/lib/currency";
 vi.mock("next/link", () => ({
   default: ({ children, href, ...p }: React.PropsWithChildren<{ href: string }>) => React.createElement("a", { href, ...p }, children),
 }));
+const size = vi.hoisted(() => ({ cls: "compact" as "compact" | "regular" }));
+vi.mock("@/components/adaptive", async (orig) => ({ ...(await orig<typeof import("@/components/adaptive")>()), useAppSizeClass: () => size.cls }));
 vi.mock("@/components/currency-provider", () => ({ useDisplayCurrency: () => ({ displayCurrency: "VND", isLoading: false }) }));
 
 import DividendsPage from "@/app/(app)/portfolio/dividends/page";
@@ -45,6 +47,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  size.cls = "compact";
   cleanup();
   vi.unstubAllGlobals();
 });
@@ -97,10 +100,24 @@ describe("Dividend income page (report page, not a dialog)", () => {
     expect(within(dlg).getByLabelText("Tax year")).toBeTruthy();
   });
 
-  it("a group-by chip refetches with the new groupBy and keeps the native pivot", async () => {
+  it("renders one structure per size class: no table and no toolbar on compact, no ListRow on regular", async () => {
     render(<DividendsPage />);
     await screen.findByRole("button", { name: "2026, 3 dividend rows" });
-    const groupBy = screen.getAllByRole("group", { name: "Group by" })[0];
+    expect(document.querySelector("table")).toBeNull();
+    cleanup();
+    size.cls = "regular";
+    render(<DividendsPage />);
+    await screen.findByRole("table");
+    expect(document.querySelector("[data-slot=list-row]")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Filters" })).toBeNull();
+    expect(screen.getAllByRole("group", { name: "Group by" })).toHaveLength(1);
+  });
+
+  it("a group-by chip refetches with the new groupBy and keeps the native pivot", async () => {
+    size.cls = "regular";
+    render(<DividendsPage />);
+    await screen.findByRole("table");
+    const groupBy = screen.getByRole("group", { name: "Group by" });
     fireEvent.click(within(groupBy).getByRole("button", { name: "Holding" }));
     await waitFor(() => expect(urls.some((u) => u.includes("groupBy=holding") && u.includes("pivot=1"))).toBe(true));
   });
@@ -114,8 +131,9 @@ describe("Dividend income page (report page, not a dialog)", () => {
   });
 
   it("md+ table keeps a sticky header in a scroll box", async () => {
+    size.cls = "regular";
     render(<DividendsPage />);
-    await screen.findByRole("button", { name: "2026, 3 dividend rows" });
+    await screen.findByRole("table");
     const head = document.querySelector("thead") as HTMLElement;
     expect(head.className).toContain("sticky");
     const container = head.closest("[data-slot=table-container]") as HTMLElement;

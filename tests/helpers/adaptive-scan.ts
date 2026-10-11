@@ -17,6 +17,17 @@ export const BREAKPOINT_PATTERN = /(?<![\w@.-])(max-)?(sm|md|lg|xl|2xl):/g;
 // Approximate size-class wrapper usage (ratchet via tests/fixtures/size-class-wrapper-baseline.json).
 export const SIZE_CLASS_WRAPPER_PATTERN = /<(CompactOnly|FromMd)\b/g;
 
+// `regular:hidden` / `hidden regular:` show/hide pairs (the new-variant version of md:hidden pairs).
+// `max-regular:hidden` is NOT matched: a `-` before `regular` skips it. Gated by an explicit keep-list
+// in tests/design-system-guard.test.ts; migrate to a single responsive element or useAppSizeClass instead.
+export const HIDDEN_PAIR_PATTERN = /(?<![\w-])regular:hidden|(?<![\w-])hidden\s+regular:/g;
+// Files allowed to use the hidden-pair pattern: the rail/bar shell, the page header, and adaptive primitives.
+export const HIDDEN_PAIR_EXEMPT: readonly string[] = [
+  "src/components/nav.tsx",
+  "src/components/mobile/page-header.tsx",
+  "src/components/adaptive/",
+];
+
 // Source roots and extensions for the banned scan (unchanged from guard v1).
 export const BANNED_DIRS = ["src/app", "src/components"] as const;
 export const SOURCE_EXTS = [".tsx", ".ts", ".jsx", ".js"] as const;

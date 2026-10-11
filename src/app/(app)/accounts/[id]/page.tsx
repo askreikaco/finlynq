@@ -44,7 +44,7 @@ import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
 import type { Mode } from "@/components/inbox/modes";
 import { NetWorthHistoryChart } from "@/components/net-worth-history-chart";
 import { TransactionsWorkspace } from "../../transactions/_components/transactions-workspace";
-import { PageHeader, HEADER_DESKTOP_ONLY, CompactOnly, FromMd } from "@/components/mobile";
+import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
 import { usePageFab } from "@/components/mobile/page-fab";
 
 type Account = {
@@ -429,7 +429,7 @@ export default function AccountDetailPage() {
         <>
           {!isInvestment && (
             <Button size="sm" aria-label="New transaction" onClick={() => router.push(`/transactions/new?account=${account.id}`)}>
-              <Receipt className="h-3.5 w-3.5 mr-1.5" /> <FromMd as="span">New transaction</FromMd><CompactOnly as="span">Add</CompactOnly>
+              <Receipt className="h-3.5 w-3.5 mr-1.5" /> Add<span className="max-regular:sr-only"> transaction</span>
             </Button>
           )}
           <DropdownMenu>

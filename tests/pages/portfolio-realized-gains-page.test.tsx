@@ -9,6 +9,8 @@ import { formatCurrency } from "@/lib/currency";
 vi.mock("next/link", () => ({
   default: ({ children, href, ...p }: React.PropsWithChildren<{ href: string }>) => React.createElement("a", { href, ...p }, children),
 }));
+const size = vi.hoisted(() => ({ cls: "compact" as "compact" | "regular" }));
+vi.mock("@/components/adaptive", async (orig) => ({ ...(await orig<typeof import("@/components/adaptive")>()), useAppSizeClass: () => size.cls }));
 vi.mock("@/components/currency-provider", () => ({ useDisplayCurrency: () => ({ displayCurrency: "VND", isLoading: false }) }));
 
 import RealizedGainsPage from "@/app/(app)/portfolio/realized-gains/page";
@@ -55,6 +57,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  size.cls = "compact";
   cleanup();
   vi.unstubAllGlobals();
 });
@@ -119,9 +122,10 @@ describe("Realized gains page (report page, not a dialog)", () => {
   });
 
   it("a tax-year chip refetches with taxYear set (filters drive the same API call)", async () => {
+    size.cls = "regular";
     render(<RealizedGainsPage />);
-    await screen.findByRole("button", { name: "AAPL, closed 2026-03-10" });
-    const yearGroup = screen.getAllByRole("group", { name: "Tax year" })[0];
+    await screen.findByRole("table");
+    const yearGroup = screen.getByRole("group", { name: "Tax year" });
     fireEvent.click(within(yearGroup).getByRole("button", { name: "2025" }));
     await waitFor(() => expect(fetchUrls.some((u) => u.includes("taxYear=2025"))).toBe(true));
   });
@@ -136,8 +140,9 @@ describe("Realized gains page (report page, not a dialog)", () => {
   });
 
   it("md+ table has a sticky header inside its own scroll box", async () => {
+    size.cls = "regular";
     render(<RealizedGainsPage />);
-    await screen.findByRole("button", { name: "AAPL, closed 2026-03-10" });
+    await screen.findByRole("table");
     const head = document.querySelector("thead") as HTMLElement;
     expect(head.className).toContain("sticky");
     expect(head.className).toContain("top-0");

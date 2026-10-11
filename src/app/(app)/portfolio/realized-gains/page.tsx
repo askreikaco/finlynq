@@ -29,8 +29,6 @@ import {
   HEADER_CELL,
   HEADER_DESKTOP_ONLY,
   Amount,
-  CompactOnly,
-  FromMd,
   ListRow,
   DetailSheet,
   MetricGrid,
@@ -39,6 +37,7 @@ import {
   type DetailItem,
   type MetricItem,
 } from "@/components/mobile";
+import { useAppSizeClass } from "@/components/adaptive";
 import { SectionPage } from "@/components/templates/section-page";
 import { ErrorState } from "@/components/error-state";
 import { EmptyState } from "@/components/empty-state";
@@ -232,6 +231,8 @@ export default function RealizedGainsPage() {
   const [loadError, setLoadError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  // One structure per size class (list on compact, table + toolbar from regular), never both in the DOM.
+  const regular = useAppSizeClass() !== "compact";
   const [openLot, setOpenLot] = useState<ApiRow | null>(null);
 
   useEffect(() => {
@@ -460,15 +461,17 @@ export default function RealizedGainsPage() {
       header={{
         actions: (
           <>
-            <Button
-              variant="outline"
-              size="icon"
-              aria-label="Filters"
-              className={`${HEADER_CELL} regular:hidden`}
-              onClick={() => setFiltersOpen(true)}
-            >
-              <SlidersHorizontal className="size-4" />
-            </Button>
+            {!regular && (
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label="Filters"
+                className={HEADER_CELL}
+                onClick={() => setFiltersOpen(true)}
+              >
+                <SlidersHorizontal className="size-4" />
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -485,12 +488,15 @@ export default function RealizedGainsPage() {
     >
 
       {/* md+ filter toolbar (below md the same fields live in ReportFilterSheet). */}
-      <FromMd className="flex flex-wrap gap-x-8 gap-y-4 rounded-xl border border-border/50 bg-card p-4">
-        {filterFields}
-      </FromMd>
-      <ReportFilterSheet open={filtersOpen} onOpenChange={setFiltersOpen} title="Filter realized gains">
-        {filterFields}
-      </ReportFilterSheet>
+      {regular ? (
+        <div className="flex flex-wrap gap-x-8 gap-y-4 rounded-xl border border-border/50 bg-card p-4">
+          {filterFields}
+        </div>
+      ) : (
+        <ReportFilterSheet open={filtersOpen} onOpenChange={setFiltersOpen} title="Filter realized gains">
+          {filterFields}
+        </ReportFilterSheet>
+      )}
 
       {!loading && data && data.rows.length > 0 && <MetricGrid metrics={summaryMetrics} />}
 
@@ -517,7 +523,8 @@ export default function RealizedGainsPage() {
           </div>
         ) : (
           <>
-            <CompactOnly>
+            {!regular ? (
+              <>
               {grouped ? (
                 <SectionCard label={groupMode === "account" ? "By account" : groupMode === "holding" ? "By holding" : "By holding and account"} padded={false} className="divide-y divide-border/50 px-3">
                   {groupRows.map((g) => (
@@ -556,9 +563,9 @@ export default function RealizedGainsPage() {
                   </section>
                 ))
               )}
-            </CompactOnly>
-
-            <FromMd>
+              </>
+            ) : (
+              <>
               {grouped ? (
                 // FINLYNQ-193 — rolled-up grouped view. Per-share + date columns
                 // collapse (not meaningful aggregated); we show qty + a closure
@@ -670,7 +677,8 @@ export default function RealizedGainsPage() {
                   </TableBody>
                 </Table>
               )}
-            </FromMd>
+              </>
+            )}
           </>
         )}
       </section>

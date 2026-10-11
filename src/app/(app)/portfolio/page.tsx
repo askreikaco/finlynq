@@ -258,7 +258,7 @@ export default function PortfolioPage() {
             className={buttonVariants({ size: "sm" })}
             aria-label="Add holding"
           >
-            <Plus className="h-4 w-4 mr-1.5" /> <span className="hidden regular:inline">Add holding</span><span className="regular:hidden">Add</span>
+            <Plus className="h-4 w-4 mr-1.5" /> Add<span className="max-regular:sr-only"> holding</span>
           </Link>
         </>
         }
@@ -268,7 +268,7 @@ export default function PortfolioPage() {
           Empty-state copy in the component explains how to populate
           /portfolio_snapshots via the nightly cron + admin backfill.
           Below regular the empty chart (no open positions) is hidden. */}
-      <div className={cn(!hasPositions && "hidden regular:block")}>
+      <div className={cn(!hasPositions && "max-regular:hidden")}>
         <PerformanceChart accountId={null} />
       </div>
 
