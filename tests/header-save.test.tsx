@@ -62,7 +62,7 @@ describe("PageHeader HEADER_SAVE", () => {
 
   it("CSS: below regular the save is a 44px round primary-coloured circle with a 20px glyph and no label", () => {
     const css = readFileSync(join(__dirname, "..", "src", "app", "globals.css"), "utf8");
-    const i = css.indexOf('[data-slot="page-header-actions"] > .header-save {');
+    const i = css.indexOf('[data-slot="page-header-actions"] > :is(.header-save, .phone-icon-action) {');
     expect(i).toBeGreaterThan(css.indexOf("@media (width < 40rem) {"));
     const body = css.slice(i, css.indexOf("}", i));
     for (const d of ["width: 2.75rem", "height: 2.75rem", "border-radius: 9999px", "background: var(--primary)", "font-size: 0"]) {
