@@ -128,7 +128,7 @@ describe("invisible accounts never reach a metric (static gates)", () => {
   it("list-shaped payloads include invisible rows, and their consumers skip them in totals", () => {
     expect(read("src/app/api/dashboard/route.ts")).toMatch(/includeInvisible: true/);
     expect(read("src/app/(app)/dashboard/page.tsx")).toMatch(/sumAssetsLiabilities\(\s*balances/);
-    expect(read("src/app/(app)/accounts/page.tsx")).toContain("excludeInvisible(accounts)");
+    expect(read("src/app/(app)/accounts/page.tsx")).toMatch(/sumAssetsLiabilities\(\s*accounts/);
     expect(read("mobile/src/api/client.ts")).toMatch(/filter\(\(b\) => b\.invisible !== true\)/);
     expect(read("mobile/src/screens/AccountsScreen.tsx")).toMatch(/b\.invisible !== true/);
   });
