@@ -213,6 +213,83 @@ describe("API /api/subscriptions", () => {
       }
     });
 
+    it("POST every_n_days stores the interval; other cadences store null", async () => {
+      mockDbChain.get!.mockReturnValueOnce({ id: 11 });
+      const res = await POST(createMockRequest("http://localhost:3000/api/subscriptions", {
+        method: "POST",
+        body: { name: "Plant watering", amount: 1, frequency: "every_n_days", intervalDays: 10, nextDate: "2026-12-25" },
+      }));
+      expect(res.status).toBe(201);
+      expect(mockDbChain.values).toHaveBeenLastCalledWith(
+        expect.objectContaining({ frequency: "every_n_days", intervalDays: 10, nextDate: "2026-12-25", anchorDate: "2026-12-25" }),
+      );
+      mockDbChain.get!.mockReturnValueOnce({ id: 12 });
+      await POST(createMockRequest("http://localhost:3000/api/subscriptions", {
+        method: "POST",
+        body: { name: "Gym", amount: 1, frequency: "monthly", intervalDays: 10 },
+      }));
+      expect(mockDbChain.values).toHaveBeenLastCalledWith(expect.objectContaining({ frequency: "monthly", intervalDays: null }));
+    });
+
+    it("POST rejects every_n_days without a valid interval (1..365 whole days)", async () => {
+      for (const extra of [{}, { intervalDays: null }, { intervalDays: 0 }, { intervalDays: 366 }, { intervalDays: 1.5 }]) {
+        const res = await POST(createMockRequest("http://localhost:3000/api/subscriptions", {
+          method: "POST",
+          body: { name: "X", amount: 1, frequency: "every_n_days", ...extra },
+        }));
+        expect(res.status, JSON.stringify(extra)).toBe(400);
+      }
+    });
+
+    it("GET serves intervalDays and counts due occurrences by the step", async () => {
+      mockDbChain.all!.mockReturnValueOnce([
+        { id: 7, amount: 5, currency: "USD", frequency: "every_n_days", intervalDays: 3, nextDate: "2020-01-01", anchorDate: "2020-01-01", status: "active", endDate: "2020-01-08", remainingCount: null },
+      ]);
+      const res = await GET(createMockRequest("http://localhost:3000/api/subscriptions"));
+      const { data } = await parseResponse(res);
+      expect(data).toEqual([expect.objectContaining({ frequency: "every_n_days", intervalDays: 3, overdue: ["2020-01-01", "2020-01-04", "2020-01-07"], dueCount: 3 })]);
+    });
+
+    it("PUT: switching to every_n_days sets the interval and restarts the anchor; leaving it clears the interval", async () => {
+      mockDbChain.get!.mockReturnValueOnce({ nextDate: "2026-02-28", frequency: "monthly", intervalDays: null }).mockReturnValueOnce({ id: 1 });
+      await PUT(createMockRequest("http://localhost:3000/api/subscriptions", {
+        method: "PUT",
+        body: { id: 1, frequency: "every_n_days", intervalDays: 4 },
+      }));
+      expect(mockDbChain.set!.mock.calls[0][0]).toMatchObject({ frequency: "every_n_days", intervalDays: 4, anchorDate: "2026-02-28" });
+
+      mockDbChain.set!.mockClear();
+      mockDbChain.get!.mockReturnValueOnce({ nextDate: "2026-02-28", frequency: "every_n_days", intervalDays: 4 }).mockReturnValueOnce({ id: 1 });
+      await PUT(createMockRequest("http://localhost:3000/api/subscriptions", {
+        method: "PUT",
+        body: { id: 1, frequency: "weekly" },
+      }));
+      expect(mockDbChain.set!.mock.calls[0][0]).toMatchObject({ frequency: "weekly", intervalDays: null });
+    });
+
+    it("PUT: a changed interval restarts the anchor; the same interval re-sent does not; every_n_days needs one", async () => {
+      mockDbChain.get!.mockReturnValueOnce({ nextDate: "2026-02-28", frequency: "every_n_days", intervalDays: 4 }).mockReturnValueOnce({ id: 1 });
+      await PUT(createMockRequest("http://localhost:3000/api/subscriptions", {
+        method: "PUT",
+        body: { id: 1, frequency: "every_n_days", intervalDays: 5 },
+      }));
+      expect(mockDbChain.set!.mock.calls[0][0]).toMatchObject({ intervalDays: 5, anchorDate: "2026-02-28" });
+
+      mockDbChain.set!.mockClear();
+      mockDbChain.get!.mockReturnValueOnce({ nextDate: "2026-02-28", frequency: "every_n_days", intervalDays: 4 }).mockReturnValueOnce({ id: 1 });
+      await PUT(createMockRequest("http://localhost:3000/api/subscriptions", {
+        method: "PUT",
+        body: { id: 1, frequency: "every_n_days", intervalDays: 4, nextDate: "2026-02-28" },
+      }));
+      expect(mockDbChain.set!.mock.calls[0][0]).not.toHaveProperty("anchorDate");
+
+      const bad = await PUT(createMockRequest("http://localhost:3000/api/subscriptions", {
+        method: "PUT",
+        body: { id: 1, frequency: "every_n_days" },
+      }));
+      expect(bad.status).toBe(400);
+    });
+
     it("PUT re-sending the UNCHANGED next_date keeps the anchor", async () => {
       mockDbChain.get!
         .mockReturnValueOnce({ nextDate: "2026-02-28", frequency: "monthly" }) // current row

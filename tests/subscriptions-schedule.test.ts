@@ -22,9 +22,9 @@ import {
 } from "@/lib/subscriptions/schedule";
 
 describe("subscription schedule — frequencies", () => {
-  it("offers daily through annual, including every-2-weeks and semi-annual", () => {
+  it("offers daily through annual, including every-2-weeks, semi-annual and the custom every_n_days", () => {
     expect(SUBSCRIPTION_FREQUENCIES).toEqual([
-      "daily", "weekdays", "weekend", "weekly", "biweekly", "every4weeks", "monthly", "monthly_eom", "bimonthly", "quarterly", "semiannual", "annual",
+      "daily", "weekdays", "weekend", "weekly", "biweekly", "every4weeks", "monthly", "monthly_eom", "bimonthly", "quarterly", "semiannual", "annual", "every_n_days",
     ]);
   });
 

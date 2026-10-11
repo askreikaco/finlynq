@@ -15,7 +15,11 @@ import {
   MAX_REPEAT_COUNT,
   MIN_INSTALLMENTS,
   MIN_REPEAT_COUNT,
-  REPEAT_GROUPS,
+  DEFAULT_INTERVAL_DAYS,
+  isValidInterval,
+  MAX_INTERVAL_DAYS,
+  MIN_INTERVAL_DAYS,
+  REPEAT_OPTIONS,
   seriesSummary,
   type InstallmentMode,
   type RepeatEnd,
@@ -256,7 +260,7 @@ export interface RepeatSheetProps {
 }
 
 /**
- * Bottom sheet: segmented [Repeat | Installment]. Repeat = frequency list (Never first) plus End;
+ * Bottom sheet: segmented [Repeat | Installment]. Repeat = one flat list (No repeat, Daily ... Annually, Custom = every N days) plus End;
  * Installment = months stepper, amount mode and a live preview. Done applies, Never clears.
  */
 export function RepeatSheet(props: RepeatSheetProps) {
@@ -275,6 +279,9 @@ function RepeatPanel({ onOpenChange, value, onApply, startDate, amount, currency
   const [tab, setTab] = React.useState<Tab>(value?.kind === "installment" ? "installment" : "repeat");
   const [frequency, setFrequency] = React.useState<SubscriptionFrequency | null>(
     value?.kind === "repeat" ? value.frequency : null,
+  );
+  const [intervalText, setIntervalText] = React.useState(
+    String(value?.kind === "repeat" && value.intervalDays ? value.intervalDays : DEFAULT_INTERVAL_DAYS),
   );
   const [endType, setEndType] = React.useState<EndType>(value?.kind === "repeat" ? value.end.type : "forever");
   const [endDate, setEndDate] = React.useState(
@@ -297,6 +304,9 @@ function RepeatPanel({ onOpenChange, value, onApply, startDate, amount, currency
     if (next === "until" && !endDate) setEndDate(occurrenceAt(startDate, "annual", 1));
   };
 
+  const intervalNum = /^\d+$/.test(intervalText.trim()) ? Number(intervalText) : NaN;
+  const intervalInvalid = frequency === "every_n_days" && !isValidInterval(intervalNum);
+
   const untilInvalid = endType === "until" && (!endDate || endDate <= startDate);
 
   const preview = installmentPreview({ startDate, count: months, mode, amount, currency });
@@ -313,7 +323,12 @@ function RepeatPanel({ onOpenChange, value, onApply, startDate, amount, currency
           : endType === "count"
             ? { type: "count", count: endCount }
             : { type: "forever" };
-      onApply({ kind: "repeat", frequency, end });
+      onApply({
+        kind: "repeat",
+        frequency,
+        ...(frequency === "every_n_days" ? { intervalDays: intervalNum } : {}),
+        end,
+      });
     }
     onOpenChange(false);
   };
@@ -331,22 +346,44 @@ function RepeatPanel({ onOpenChange, value, onApply, startDate, amount, currency
         {tab === "repeat" ? (
           <>
             <PickerCard>
-              <PickerRow label="Never" selected={frequency === null} onSelect={never} />
+              {REPEAT_OPTIONS.map((o) => (
+                <PickerRow
+                  key={o.value}
+                  label={o.label}
+                  selected={o.value === "none" ? frequency === null : frequency === o.value}
+                  onSelect={o.value === "none" ? never : () => setFrequency(o.value as SubscriptionFrequency)}
+                />
+              ))}
             </PickerCard>
-            {REPEAT_GROUPS.map((group) => (
-              <PickerSection key={group.title} title={group.title}>
-                <PickerCard>
-                  {group.options.map((o) => (
-                    <PickerRow
-                      key={o.frequency}
-                      label={o.label}
-                      selected={frequency === o.frequency}
-                      onSelect={() => setFrequency(o.frequency)}
+            {frequency === "every_n_days" && (
+              <PickerCard>
+                <FormRow
+                  variant="custom"
+                  label="Every"
+                  htmlFor="repeat-interval-days"
+                  labelWidth="narrow"
+                  height="tall"
+                  error={intervalInvalid ? `Enter a whole number from ${MIN_INTERVAL_DAYS} to ${MAX_INTERVAL_DAYS}` : undefined}
+                >
+                  <div className="flex items-center gap-2">
+                    <input
+                      id="repeat-interval-days"
+                      data-testid="repeat-interval-days"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      autoComplete="off"
+                      maxLength={3}
+                      value={intervalText}
+                      aria-invalid={intervalInvalid || undefined}
+                      onChange={(e) => setIntervalText(e.target.value.replace(/\D/g, ""))}
+                      className="block min-h-row w-full min-w-0 bg-transparent text-left text-base tabular-nums text-foreground outline-none"
                     />
-                  ))}
-                </PickerCard>
-              </PickerSection>
-            ))}
+                    <span className="shrink-0 text-base text-muted-foreground">days</span>
+                  </div>
+                </FormRow>
+              </PickerCard>
+            )}
             {frequency !== null && (
               <PickerSection title="End">
                 <div className="space-y-2">
@@ -432,7 +469,7 @@ function RepeatPanel({ onOpenChange, value, onApply, startDate, amount, currency
         <Button
           type="button"
           data-testid="repeat-done"
-          disabled={tab === "repeat" && frequency !== null && untilInvalid}
+          disabled={tab === "repeat" && frequency !== null && (untilInvalid || intervalInvalid)}
           onClick={done}
           className="h-12 w-full rounded-2xl bg-primary text-base font-semibold text-primary-foreground hover:bg-primary/90"
         >

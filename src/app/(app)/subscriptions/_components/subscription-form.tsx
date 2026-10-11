@@ -12,7 +12,7 @@ import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
 import { AmountInput } from "@/components/amount-input";
 import { parseSaveError } from "@/lib/save-error";
 import { TW } from "@/lib/design/tokens";
-import { FREQUENCY_LABELS, SUBSCRIPTION_FREQUENCIES, frequencyOrMonthly } from "@/lib/subscriptions/schedule";
+import { FREQUENCY_LABELS, MAX_INTERVAL_DAYS, MIN_INTERVAL_DAYS, SUBSCRIPTION_FREQUENCIES, frequencyOrMonthly } from "@/lib/subscriptions/schedule";
 import type { Subscription } from "./types";
 
 export type SubscriptionDraft = {
@@ -20,6 +20,8 @@ export type SubscriptionDraft = {
   amount: string;
   currency: string;
   frequency: string;
+  /** Days between payments; only used when frequency is "every_n_days". */
+  intervalDays: string;
   categoryId: string;
   accountId: string;
   nextDate: string;
@@ -32,6 +34,7 @@ export const EMPTY_DRAFT: SubscriptionDraft = {
   amount: "",
   currency: "",
   frequency: "monthly",
+  intervalDays: "",
   categoryId: "",
   accountId: "",
   nextDate: "",
@@ -45,6 +48,7 @@ export function draftFromSubscription(sub: Subscription): SubscriptionDraft {
     amount: String(sub.amount),
     currency: sub.currency,
     frequency: frequencyOrMonthly(sub.frequency),
+    intervalDays: sub.intervalDays != null ? String(sub.intervalDays) : "",
     categoryId: sub.categoryId ? String(sub.categoryId) : "",
     accountId: sub.accountId ? String(sub.accountId) : "",
     nextDate: sub.nextDate ?? "",
@@ -111,11 +115,18 @@ export function SubscriptionForm({ mode, editing, initial, categories, accounts,
     if (!form.name.trim()) return setError("Name is required");
     if (!Number.isFinite(amount) || amount <= 0) return setError("Amount must be greater than 0");
 
+    const custom = form.frequency === "every_n_days";
+    const interval = Number(form.intervalDays);
+    if (custom && !(Number.isInteger(interval) && interval >= MIN_INTERVAL_DAYS && interval <= MAX_INTERVAL_DAYS)) {
+      return setError(`Days between payments must be a whole number from ${MIN_INTERVAL_DAYS} to ${MAX_INTERVAL_DAYS}`);
+    }
+
     const payload = {
       name: form.name.trim(),
       amount,
       currency: formCurrency,
       frequency: form.frequency,
+      intervalDays: custom ? interval : null,
       categoryId: form.categoryId ? parseInt(form.categoryId) : null,
       accountId: form.accountId ? parseInt(form.accountId) : null,
       nextDate: form.nextDate || null,
@@ -178,6 +189,23 @@ export function SubscriptionForm({ mode, editing, initial, categories, accounts,
             </SelectContent>
           </Select>
         </Row>
+        {form.frequency === "every_n_days" && (
+          <Row label="Every (days)" htmlFor="sub-interval">
+            <Input
+              id="sub-interval"
+              className={ROW_CONTROL}
+              type="number"
+              inputMode="numeric"
+              min={MIN_INTERVAL_DAYS}
+              max={MAX_INTERVAL_DAYS}
+              step={1}
+              value={form.intervalDays}
+              onChange={(e) => setForm({ ...form, intervalDays: e.target.value })}
+              placeholder="e.g. 10"
+              required
+            />
+          </Row>
+        )}
         <Row label="Currency">
           <Combobox
             value={formCurrency}

@@ -127,14 +127,23 @@ describe("Repeat pill on the Date row", () => {
   it("shows the summary after Done and clears through the sheet's Never", async () => {
     await mount();
     openSheet();
-    fireEvent.click(screen.getByRole("button", { name: "Every 2 weeks" }));
+    fireEvent.click(screen.getByRole("button", { name: "Weekly" }));
     fireEvent.click(screen.getByRole("radio", { name: "After N times" }));
     done();
-    expect(pill().textContent).toBe("Every 2 weeks · 12×");
-    expect(pill().getAttribute("aria-label")).toBe("Repeat: Every 2 weeks · 12×");
+    expect(pill().textContent).toBe("Weekly · 12×");
+    expect(pill().getAttribute("aria-label")).toBe("Repeat: Weekly · 12×");
     openSheet();
-    fireEvent.click(screen.getByRole("button", { name: "Never" }));
+    fireEvent.click(screen.getByRole("button", { name: "No repeat" }));
     expect(pill().textContent).toBe("Repeat");
+  });
+
+  it("a custom interval reads 'Every 3 days' on the pill", async () => {
+    await mount();
+    openSheet();
+    fireEvent.click(screen.getByRole("button", { name: "Custom" }));
+    fireEvent.change(screen.getByTestId("repeat-interval-days"), { target: { value: "3" } });
+    done();
+    expect(pill().textContent).toBe("Every 3 days");
   });
 
   it("shows an installment summary", async () => {
@@ -150,7 +159,7 @@ describe("Save: repeat", () => {
   it("adds repeat to the single POST body (expense is negative, entered currency kept)", async () => {
     await mount();
     openSheet();
-    fireEvent.click(screen.getByRole("button", { name: "Last day of month" }));
+    fireEvent.click(screen.getByRole("button", { name: "Monthly" }));
     fireEvent.click(screen.getByRole("radio", { name: "Until date" }));
     fireEvent.change(screen.getByLabelText("End date"), { target: { value: "2027-12-31" } });
     done();
@@ -160,7 +169,7 @@ describe("Save: repeat", () => {
     expect(p.url).toBe("/api/transactions");
     expect(p.body).toMatchObject({
       date: "2027-01-10", accountId: 1, categoryId: 10, enteredCurrency: "USD", enteredAmount: -500, payee: "Landlord",
-      repeat: { frequency: "monthly_eom", end: { type: "until", date: "2027-12-31" } },
+      repeat: { frequency: "monthly", end: { type: "until", date: "2027-12-31" } },
     });
     await waitFor(() => expect(screen.getByText("Expense saved successfully!")).toBeTruthy());
     // subscription lists are refreshed

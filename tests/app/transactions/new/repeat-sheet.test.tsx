@@ -39,12 +39,15 @@ function mount(over: Partial<React.ComponentProps<typeof RepeatSheet>> = {}) {
 const done = () => fireEvent.click(screen.getByRole("button", { name: "Done" }));
 
 describe("RepeatSheet: segmented control", () => {
-  it("opens on Repeat with the grouped list, and switches to Installment", () => {
+  it("opens on Repeat with ONE flat list, and switches to Installment", () => {
     mount();
     expect(screen.getByRole("radio", { name: "Repeat" }).getAttribute("aria-checked")).toBe("true");
-    expect(screen.getByRole("button", { name: "Never" })).toBeTruthy();
-    for (const l of ["Every day", "Weekdays", "Weekend", "Weekly", "Every 2 weeks", "Every 4 weeks", "Monthly", "Last day of month", "Every 2 months", "Every 3 months", "Every 6 months", "Annually"]) {
+    for (const l of ["No repeat", "Daily", "Weekly", "Monthly", "Quarterly", "Annually", "Custom"]) {
       expect(screen.getByRole("button", { name: l })).toBeTruthy();
+    }
+    // the removed options are gone from the sheet
+    for (const l of ["Weekdays", "Weekend", "Every 4 weeks", "Every 2 months", "Last day of month", "Every day", "Every 2 weeks", "Every 3 months", "Every 6 months", "Never"]) {
+      expect(screen.queryByRole("button", { name: l })).toBeNull();
     }
     fireEvent.click(screen.getByRole("radio", { name: "Installment" }));
     expect(screen.getByRole("radio", { name: "Installment" }).getAttribute("aria-checked")).toBe("true");
@@ -66,43 +69,87 @@ describe("RepeatSheet: segmented control", () => {
   });
 });
 
-describe("RepeatSheet: Daily group", () => {
-  it("shows a Daily group ABOVE Weekly with Every day / Weekdays / Weekend in that order", () => {
+describe("RepeatSheet: flat list", () => {
+  it("lists No repeat, Daily, Weekly, Monthly, Quarterly, Annually, Custom in that order with no group titles", () => {
     mount();
-    const names = screen.getAllByRole("button").map((b) => b.textContent ?? "");
-    const idx = (label: string) => names.findIndex((n) => n.startsWith(label));
-    expect(idx("Never")).toBeLessThan(idx("Every day"));
-    expect(idx("Every day")).toBeLessThan(idx("Weekdays"));
-    expect(idx("Weekdays")).toBeLessThan(idx("Weekend"));
-    expect(idx("Weekend")).toBeLessThan(idx("Weekly"));
-    const headings = Array.from(document.querySelectorAll("*"))
-      .map((e) => (e.children.length === 0 ? e.textContent?.trim() : ""))
-      .filter((t) => t === "Daily" || t === "Weekly" || t === "Monthly" || t === "Yearly");
-    expect(headings.slice(0, 2)).toEqual(["Daily", "Weekly"]);
+    const dialog = screen.getByRole("dialog");
+    const names = within(dialog).getAllByRole("button").map((b) => b.textContent ?? "");
+    const order = ["No repeat", "Daily", "Weekly", "Monthly", "Quarterly", "Annually", "Custom"].map((l) => names.indexOf(l));
+    expect(order.every((i) => i >= 0)).toBe(true);
+    expect([...order].sort((x, y) => x - y)).toEqual(order);
+    // no section headings (the "End" title only shows once a frequency is chosen)
+    const leaf = Array.from(dialog.querySelectorAll("*"))
+      .filter((e) => e.children.length === 0)
+      .map((e) => e.textContent?.trim());
+    expect(leaf).not.toContain("Yearly");
+    expect(leaf).not.toContain("End");
+    // "Daily" / "Weekly" / "Monthly" appear once each (as rows), not also as headings
+    for (const l of ["Daily", "Weekly", "Monthly"]) expect(leaf.filter((t) => t === l)).toHaveLength(1);
   });
 
-  it("a weekdays repeat with an end count applies { weekdays, count }", () => {
+  it("No repeat is selected when there is no series", () => {
+    mount();
+    expect(screen.getByRole("button", { name: "No repeat" }).getAttribute("aria-current")).toBe("true");
+    expect(screen.getByRole("button", { name: "Daily" }).getAttribute("aria-current")).toBeNull();
+  });
+});
+
+describe("RepeatSheet: Custom (every N days)", () => {
+  const pickCustom = () => fireEvent.click(screen.getByRole("button", { name: "Custom" }));
+  const input = () => screen.getByTestId("repeat-interval-days") as HTMLInputElement;
+
+  it("is hidden until Custom is chosen, then defaults to 2 with a numeric keypad", () => {
+    mount();
+    expect(screen.queryByTestId("repeat-interval-days")).toBeNull();
+    pickCustom();
+    expect(input().value).toBe("2");
+    expect(input().getAttribute("inputmode")).toBe("numeric");
+    expect(screen.getByLabelText("Every")).toBe(input());
+    expect(screen.getByText("days")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Monthly" }));
+    expect(screen.queryByTestId("repeat-interval-days")).toBeNull();
+  });
+
+  it("applies { every_n_days, intervalDays } and shows the End section", () => {
     const { onApply } = mount();
-    fireEvent.click(screen.getByRole("button", { name: "Weekdays" }));
-    fireEvent.click(screen.getByRole("radio", { name: "After N times" }));
+    pickCustom();
+    expect(screen.getByRole("radiogroup", { name: "Repeat end" })).toBeTruthy();
+    fireEvent.change(input(), { target: { value: "10" } });
     done();
-    expect(onApply).toHaveBeenCalledWith(expect.objectContaining({ kind: "repeat", frequency: "weekdays" }));
+    expect(onApply).toHaveBeenCalledWith({ kind: "repeat", frequency: "every_n_days", intervalDays: 10, end: { type: "forever" } });
+  });
+
+  it("strips non-digits and blocks Done on empty, 0 and > 365", () => {
+    const { onApply } = mount();
+    pickCustom();
+    const doneBtn = () => screen.getByRole("button", { name: "Done" }) as HTMLButtonElement;
+    fireEvent.change(input(), { target: { value: "1a2" } });
+    expect(input().value).toBe("12");
+    expect(doneBtn().disabled).toBe(false);
+    for (const bad of ["", "0", "366"]) {
+      fireEvent.change(input(), { target: { value: bad } });
+      expect(doneBtn().disabled).toBe(true);
+      expect(screen.getByText("Enter a whole number from 1 to 365")).toBeTruthy();
+    }
+    fireEvent.change(input(), { target: { value: "365" } });
+    expect(doneBtn().disabled).toBe(false);
+    done();
+    expect(onApply).toHaveBeenCalledWith(expect.objectContaining({ frequency: "every_n_days", intervalDays: 365 }));
+  });
+
+  it("re-opens seeded from the current custom repeat", () => {
+    mount({ value: { kind: "repeat", frequency: "every_n_days", intervalDays: 3, end: { type: "forever" } } });
+    expect(screen.getByRole("button", { name: "Custom" }).getAttribute("aria-current")).toBe("true");
+    expect(input().value).toBe("3");
   });
 });
 
 describe("RepeatSheet: Repeat panel maps each row to its API frequency", () => {
   const CASES: Array<[string, string]> = [
-    ["Every day", "daily"],
-    ["Weekdays", "weekdays"],
-    ["Weekend", "weekend"],
+    ["Daily", "daily"],
     ["Weekly", "weekly"],
-    ["Every 2 weeks", "biweekly"],
-    ["Every 4 weeks", "every4weeks"],
     ["Monthly", "monthly"],
-    ["Last day of month", "monthly_eom"],
-    ["Every 2 months", "bimonthly"],
-    ["Every 3 months", "quarterly"],
-    ["Every 6 months", "semiannual"],
+    ["Quarterly", "quarterly"],
     ["Annually", "annual"],
   ];
   it.each(CASES)("%s -> %s (forever)", (label, frequency) => {
@@ -167,12 +214,12 @@ describe("RepeatSheet: Repeat panel maps each row to its API frequency", () => {
   });
 });
 
-describe("RepeatSheet: Never clears", () => {
+describe("RepeatSheet: No repeat clears", () => {
   const current: Series = { kind: "repeat", frequency: "monthly", end: { type: "forever" } };
-  it("the Never row clears and closes at once", () => {
+  it("the No repeat row clears and closes at once", () => {
     const { onApply, onOpenChange } = mount({ value: current });
     expect(screen.getByRole("button", { name: "Monthly" }).getAttribute("aria-current")).toBe("true");
-    fireEvent.click(screen.getByRole("button", { name: "Never" }));
+    fireEvent.click(screen.getByRole("button", { name: "No repeat" }));
     expect(onApply).toHaveBeenCalledWith(null);
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
@@ -182,7 +229,7 @@ describe("RepeatSheet: Never clears", () => {
     expect(onApply).toHaveBeenCalledWith(null);
   });
   it("re-opens seeded from the current repeat (count end)", () => {
-    mount({ value: { kind: "repeat", frequency: "biweekly", end: { type: "count", count: 7 } } });
+    mount({ value: { kind: "repeat", frequency: "weekly", end: { type: "count", count: 7 } } });
     expect(screen.getByRole("radio", { name: "After N times" }).getAttribute("aria-checked")).toBe("true");
     expect(screen.getByTestId("repeat-count-value").textContent).toBe("7");
   });

@@ -13,6 +13,7 @@ import {
   effectiveAnchor,
   occurrencesBetween,
   rollForwardNextDate,
+  scheduleFrequency,
   type SubscriptionFrequency,
 } from "./schedule";
 
@@ -23,6 +24,8 @@ export interface SubscriptionRow {
   amount: number;
   currency: string;
   frequency: string;
+  /** subscriptions.interval_days: step of `every_n_days`; null/absent otherwise. */
+  intervalDays?: number | null;
   nextDate: string | null;
   /** subscriptions.anchor_date (month-end anchor); null/absent = project from nextDate. */
   anchorDate?: string | null;
@@ -62,6 +65,8 @@ export interface ScheduleEvent {
   type: "bill" | "income";
   source: "subscription" | "detected";
   frequency: SubscriptionFrequency;
+  /** Step of an `every_n_days` event (for labels); null otherwise. */
+  intervalDays?: number | null;
   /** Set for `source: "subscription"`. */
   subscriptionId?: number;
   /** Set for `source: "detected"`, so the UI can offer "Track". */
@@ -101,7 +106,7 @@ export function effectiveNextDate(s: SubscriptionRow, today: string): string | n
   if (s.status !== "active") return s.nextDate;
   // A postable subscription's next_date is the oldest UNPOSTED occurrence: never roll it forward.
   if (s.postable) return s.nextDate;
-  return rollForwardNextDate(s.nextDate, s.frequency, today, s.anchorDate);
+  return rollForwardNextDate(s.nextDate, scheduleFrequency(s.frequency, s.intervalDays), today, s.anchorDate);
 }
 
 export interface SubscriptionTotals {
@@ -120,12 +125,13 @@ export function subscriptionTotals(
   dueSoonEnd: string,
 ): SubscriptionTotals {
   const active = subs.filter((s) => s.status === "active");
-  const monthly = active.reduce((sum, s) => sum + monthlyEquivalent(subDisplayAmount(s), s.frequency), 0);
+  const monthly = active.reduce((sum, s) => sum + monthlyEquivalent(subDisplayAmount(s), s.frequency, s.intervalDays), 0);
   let dueSoonAmount = 0;
   let dueSoonCount = 0;
   for (const s of active) {
     if (!s.nextDate) continue;
-    const n = occurrencesBetween(effectiveAnchor(s.anchorDate, s.nextDate, s.frequency), s.frequency, today, dueSoonEnd).length;
+    const key = scheduleFrequency(s.frequency, s.intervalDays);
+    const n = occurrencesBetween(effectiveAnchor(s.anchorDate, s.nextDate, key), key, today, dueSoonEnd).length;
     dueSoonAmount += n * Math.abs(subDisplayAmount(s));
     dueSoonCount += n;
   }
@@ -148,7 +154,8 @@ export function buildScheduleEvents(
   for (const s of subs) {
     if (s.status !== "active" || !s.nextDate) continue;
     const frequency = frequencyOrMonthly(s.frequency);
-    for (const date of occurrencesBetween(effectiveAnchor(s.anchorDate, s.nextDate, frequency), frequency, start, end)) {
+    const key = scheduleFrequency(s.frequency, s.intervalDays);
+    for (const date of occurrencesBetween(effectiveAnchor(s.anchorDate, s.nextDate, key), key, start, end)) {
       events.push({
         date,
         name: s.name ?? "Subscription",
@@ -158,6 +165,7 @@ export function buildScheduleEvents(
         type: "bill",
         source: "subscription",
         frequency,
+        intervalDays: s.intervalDays ?? null,
         subscriptionId: s.id,
       });
     }

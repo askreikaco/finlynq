@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/currency";
 import { localDateISO } from "@/lib/utils/date";
-import { FREQUENCY_LABELS } from "@/lib/subscriptions/schedule";
+import { frequencyLabel } from "@/lib/subscriptions/schedule";
 import { formatDateNames, weekdayShortNames } from "@/lib/locale";
 import {
   buildScheduleEvents,
@@ -222,7 +222,7 @@ export function SubscriptionsCalendar({
                             <Badge variant="secondary" className="text-xs">
                               {ev.source === "subscription" ? "Subscription" : ev.type === "income" ? "Expected income" : "Detected"}
                             </Badge>
-                            <Badge variant="outline" className="text-xs">{FREQUENCY_LABELS[ev.frequency]}</Badge>
+                            <Badge variant="outline" className="text-xs">{frequencyLabel(ev.frequency, ev.intervalDays)}</Badge>
                           </div>
                         </div>
                       </div>
