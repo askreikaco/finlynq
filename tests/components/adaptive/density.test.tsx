@@ -134,3 +134,44 @@ function mount2() {
     </DensityProvider>,
   );
 }
+
+describe("shared layout components honour dense:", () => {
+  const read = (p: string) => fs.readFileSync(p, "utf8");
+
+  it("Card tightens gap and padding in compact only", () => {
+    const src = read("src/components/ui/card.tsx");
+    for (const c of ["dense:pointer-fine:gap-3", "dense:pointer-fine:py-2.5", "dense:pointer-fine:[.border-b]:pb-3"]) expect(src).toContain(c);
+    // Default classes untouched.
+    expect(src).toContain("gap-4");
+    expect(src).toContain("py-3 regular:py-4");
+  });
+
+  it("FormRow / FormGroup / ListRow / DataView carry dense: tweaks", () => {
+    const row = read("src/components/forms/form-row.tsx");
+    expect(row).toContain('"min-h-11 dense:pointer-fine:min-h-9"');
+    expect(row).toContain("dense:gap-2");
+    expect(read("src/components/forms/form-group.tsx")).toContain("dense:rounded-xl");
+    expect(read("src/components/mobile/list-row.tsx")).toContain("dense:py-1.5");
+    expect(read("src/components/adaptive/data-view.tsx")).toContain("dense:[&[data-view=cards]>.grid]:gap-2");
+  });
+
+  it("default (comfortable) output keeps the original classes; dense: classes are inert without data-density=compact", async () => {
+    const { Card } = await import("@/components/ui/card");
+    const { FormGroup } = await import("@/components/forms/form-group");
+    const { container } = render(
+      <div>
+        <Card>x</Card>
+        <FormGroup>y</FormGroup>
+      </div>,
+    );
+    const card = container.querySelector('[data-slot="card"]')!;
+    expect(card.className).toContain("gap-4");
+    expect(card.className).toContain("py-3");
+    expect(card.className).toContain("regular:py-4");
+    const group = container.firstElementChild!.lastElementChild!;
+    expect(group.className).toContain("rounded-2xl");
+    // Every added token is dense:-prefixed; stripping them yields the original class list.
+    const stripped = card.className.split(/\s+/).filter((t) => !t.startsWith("dense:")).join(" ");
+    expect(stripped).toContain("group/card flex flex-col gap-4 overflow-hidden rounded-xl bg-card py-3 regular:py-4 text-sm");
+  });
+});
