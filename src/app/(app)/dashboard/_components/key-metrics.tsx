@@ -39,12 +39,18 @@ export interface KeyMetricsProps {
    * "—" in the neutral tone with this text, never a computed or zero figure.
    */
   unavailable?: { savings?: string; dti?: string };
+  /**
+   * Home dashboard: render just the two tiles (a fragment) so they flow into the page's shared
+   * small-card grid, instead of wrapping them in their own grid.
+   */
+  tiles?: boolean;
 }
 
 export function KeyMetrics({
   health,
   savingsWindow = "last 3 months",
   unavailable,
+  tiles = false,
 }: KeyMetricsProps) {
   const loading = health === null;
   const savings = unavailable?.savings
@@ -91,24 +97,25 @@ export function KeyMetrics({
     },
   ];
 
+  const tileNodes = cells.map((c) => (
+    <MetricCard
+      key={c.key}
+      label={c.label}
+      icon={c.icon}
+      tone={c.key === "savings" ? "emerald" : "amber"}
+      value={c.value}
+      valueClassName={c.tone}
+      sub={c.sub}
+      loading={loading}
+    />
+  ));
+  if (tiles) return <>{tileNodes}</>;
+
   // Two global MetricCards (same design as every other metric card).
   return (
     // side by side only when the slot is wide enough; stacked next to the Net Worth hero
     <div className="@container h-full">
-      <div className="grid h-full grid-cols-1 gap-4 @lg:grid-cols-2">
-        {cells.map((c) => (
-          <MetricCard
-            key={c.key}
-            label={c.label}
-            icon={c.icon}
-            tone={c.key === "savings" ? "emerald" : "amber"}
-            value={c.value}
-            valueClassName={c.tone}
-            sub={c.sub}
-            loading={loading}
-          />
-        ))}
-      </div>
+      <div className="grid h-full grid-cols-1 gap-4 @lg:grid-cols-2">{tileNodes}</div>
     </div>
   );
 }

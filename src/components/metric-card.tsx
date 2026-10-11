@@ -61,6 +61,8 @@ export type MetricCardProps = {
   sub?: ReactNode;
   /** Percentage badge before the sub-line (green ↗ / red ↘); null/undefined = none. */
   badgePct?: number | null;
+  /** Flip the badge colours (up = red, down = green) for metrics where less is better, e.g. expenses. */
+  invertTone?: boolean;
   /** A second small line under the sub-line. */
   note?: ReactNode;
   /** Shimmer placeholder instead of the number. */
@@ -90,6 +92,7 @@ export function MetricCard({
   valueClassName = "",
   sub,
   badgePct,
+  invertTone = false,
   note,
   loading = false,
   sparkData,
@@ -142,7 +145,7 @@ export function MetricCard({
               <>
                 {(badgePct != null || sub) && (
                   <div className="flex flex-wrap items-center gap-2">
-                    {badgePct != null && <PctBadge pct={badgePct} />}
+                    {badgePct != null && <PctBadge pct={badgePct} invert={invertTone} />}
                     {sub && <span className="min-w-0">{sub}</span>}
                   </div>
                 )}
@@ -225,13 +228,14 @@ export function MetricCardSkeleton({
 }
 
 /** The green ↗ / red ↘ percentage pill (value already in percent, e.g. -0.5 = -0.5%). */
-export function PctBadge({ pct }: { pct: number }) {
+export function PctBadge({ pct, invert = false }: { pct: number; invert?: boolean }) {
   const up = pct >= 0;
+  const good = invert ? !up : up;
   const Arrow = up ? ArrowUpRight : ArrowDownRight;
   return (
     <span
-      className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full ${
-        up
+      className={`inline-flex items-center gap-0.5 @[11rem]:gap-1 text-xs font-semibold px-1.5 @[11rem]:px-2.5 py-0.5 rounded-full ${
+        good
           ? "text-pos bg-pos/10"
           : "text-destructive bg-destructive/10"
       }`}
