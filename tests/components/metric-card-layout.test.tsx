@@ -173,3 +173,13 @@ describe("MetricCard badge tone", () => {
     expect(html(true, -5)).toContain("text-pos");
   });
 });
+
+describe("MetricCard label wraps instead of truncating", () => {
+  afterEach(cleanup);
+  it("label wraps words and never ellipsizes", () => {
+    const { getByText } = render(<MetricCard label="Financial Health" icon={DollarSign} value={73} />);
+    const cls = getByText("Financial Health").className;
+    expect(cls).toMatch(/\bbreak-words\b/);
+    expect(cls).not.toMatch(/\btruncate\b/);
+  });
+});

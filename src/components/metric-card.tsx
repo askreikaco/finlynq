@@ -127,7 +127,7 @@ export function MetricCard({
             >
               <Icon className="h-4 w-4" aria-hidden="true" />
             </div>
-            <p className="text-xs font-medium text-muted-foreground tracking-wide uppercase truncate">{label}</p>
+            <p className="min-w-0 text-xs font-medium text-muted-foreground tracking-wide uppercase leading-tight break-words">{label}</p>
           </div>
 
           {loading ? (
