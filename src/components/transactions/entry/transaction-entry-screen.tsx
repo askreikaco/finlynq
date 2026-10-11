@@ -57,7 +57,7 @@ import {
   isOfflineQueueEligible,
   type EntryMode,
 } from "@/lib/transactions/entry-mode";
-import { isLocalWriteQueueActive, queueOfflineCreate, queueOfflineEdit } from "@/lib/data/local-write-queue";
+import { getQueuedCreate, isLocalWriteQueueActive, isLocalWriteQueueOn, queueOfflineCreate, queueOfflineEdit, saveQueuedCreate } from "@/lib/data/local-write-queue";
 import { parseSaveError } from "@/lib/save-error";
 
 const OFFLINE_SAVED_NOTICE = "Saved on this device — will sync when online";
@@ -171,6 +171,8 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
   );
   const groupOrder = groupOrderRes?.order ?? EMPTY_GROUP_ORDER;
 
+  // Offline queue: set when this screen edits a create that is still waiting on this device (flag off: never set).
+  const [queuedOpId, setQueuedOpId] = useState<string | null>(null);
   // Prefill notice (malformed/expired sessionStorage entry)
   const [prefillNotice, setPrefillNotice] = useState<string | null>(null);
 
@@ -233,6 +235,13 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
     prefillReadRef.current = true;
 
     preselectAccountRef.current = new URLSearchParams(window.location.search).get("account");
+
+    // ?queued=<opId> (list row "Waiting to sync"): this screen edits that queued create; its values load below.
+    const queuedParam = new URLSearchParams(window.location.search).get("queued");
+    if (queuedParam && isLocalWriteQueueOn()) {
+      setQueuedOpId(queuedParam);
+      prefillAppliedRef.current = true;
+    }
 
     const prefill = readAndClearPrefill(Date.now());
     if (prefill) {
@@ -611,6 +620,36 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
     }
   };
 
+  // Edit of a queued create: load its values from the outbox (the queue may still be starting, so retry briefly).
+  useEffect(() => {
+    if (!queuedOpId) return;
+    let alive = true;
+    let tries = 0;
+    const load = async () => {
+      const f = await getQueuedCreate(queuedOpId);
+      if (!alive) return;
+      if (!f) {
+        if (++tries < 12) setTimeout(() => void load(), 400);
+        else setPrefillNotice("This entry is no longer waiting on this device (it may have just synced).");
+        return;
+      }
+      const entered = Number(f.enteredAmount ?? f.amount ?? 0);
+      setTxType(entered > 0 ? "Income" : "Expense");
+      setAmount(String(Math.abs(entered)));
+      if (f.accountId != null) setAccountId(String(f.accountId));
+      if (f.categoryId != null) setCategoryId(String(f.categoryId));
+      if (f.date) setDate(String(f.date));
+      if (f.enteredCurrency) setCurrencyChoice(String(f.enteredCurrency));
+      setPayee(String(f.payee ?? ""));
+      setNote(String(f.note ?? ""));
+      setTags(String(f.tags ?? ""));
+    };
+    void load();
+    return () => {
+      alive = false;
+    };
+  }, [queuedOpId]);
+
   // Submit Handler: Save books the entry and locks the form.
   // Offline queue (L3, off by default): a network failure on a simple create/edit is kept on this device instead.
   // Every check runs before any queue call, so with the flag off nothing here touches the queue or IndexedDB.
@@ -670,6 +709,9 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
     setSaving(true);
 
     try {
+      if (queuedOpId && (txType === "Transfer" || splitActive)) {
+        throw new Error("A saved-on-device entry can only be a simple expense or income. Use a new entry for transfers and splits.");
+      }
       if (txType === "Transfer") {
         // Transfer Mode Validation
         if (!toAccountId) {
@@ -872,6 +914,23 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
         doneRef.current = true;
         setDone(true);
         goReturn();
+        return;
+      }
+
+      if (queuedOpId) {
+        // Editing a create that has not synced: save back into the outbox entry, nothing is sent.
+        const queuedOk = await saveQueuedCreate(queuedOpId, {
+          date,
+          accountId: Number(accountId),
+          categoryId: effectiveCategoryId,
+          enteredCurrency: currency,
+          enteredAmount: signedAmount,
+          payee: payee.trim() || null,
+          note: note.trim() || null,
+          tags: tags.trim() || null,
+        });
+        if (!queuedOk) throw new Error("This entry is no longer waiting on this device (it may have just synced).");
+        finishQueued(afterSaveHref);
         return;
       }
 

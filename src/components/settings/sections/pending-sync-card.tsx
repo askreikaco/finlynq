@@ -28,11 +28,11 @@ export function PendingSyncCard() {
           {failed.map((i) => (
             <div key={i.opId} className="flex items-center justify-between gap-3" data-testid="pending-sync-failed">
               <div className="min-w-0">
-                <div className="truncate text-sm">{i.summary || (i.kind === "create" ? "New transaction" : "Edit")}</div>
+                <div className="truncate text-sm">{i.summary || (i.kind === "create" ? "New transaction" : i.kind === "delete" ? "Delete" : "Edit")}</div>
                 <div className="text-xs text-muted-foreground">{i.failReason ?? "Rejected by the server"}</div>
               </div>
               <div className="flex shrink-0 items-center gap-2">
-                <Badge variant="outline">{i.kind === "create" ? "New" : "Edit"}</Badge>
+                <Badge variant="outline">{i.kind === "create" ? "New" : i.kind === "delete" ? "Delete" : "Edit"}</Badge>
                 <Button size="sm" variant="outline" onClick={() => void retryPendingSync(i.opId)}>Retry</Button>
                 <Button size="sm" variant="outline" onClick={() => void discardPendingSync(i.opId)}>Discard</Button>
               </div>

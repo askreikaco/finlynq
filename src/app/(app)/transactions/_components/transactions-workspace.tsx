@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
@@ -41,6 +41,10 @@ import type { LotReallocationPreview } from "@/lib/portfolio/lots/types";
 import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
 import { DataView, ViewModeToggle, useViewMode, useAppSizeClass } from "@/components/adaptive";
 import { cn } from "@/lib/utils";
+import { PendingSyncBadge } from "@/components/transactions/pending-sync-badge";
+import { applyPendingToTransactions, countPendingDeletes } from "@/lib/transactions/pending-overlay";
+import { canQueueOfflineDelete, isNetworkFailure } from "@/lib/transactions/entry-mode";
+import { discardQueuedCreate, isLocalWriteQueueActive, queueOfflineDelete, usePendingTransactions } from "@/lib/data/local-write-queue";
 
 /**
  * TransactionsWorkspace — the full transactions surface (filters, per-column
@@ -179,12 +183,20 @@ export function TransactionsWorkspace({
   const { colFilters, setColFilters, findColFilter, setColFilter } = useTxFilterPrefs(() => setPage(0));
 
   // Main list (txns / total / loading) + loadTxns + infinite scroll loadNextPage
-  const { txns, total, loading, limit, loadTxns, loadNextPage, resetPage, hasMore, loadError, loadMoreError, isLoadingMore } = useTransactions(
+  const { txns: serverTxns, total, loading, limit, loadTxns, loadNextPage, resetPage, hasMore, loadError, loadMoreError, isLoadingMore } = useTransactions(
     filters,
     sortPref,
     colFilters,
     accounts,
   );
+  // Offline queue (flag off: the shared empty snapshot, so `txns` is `serverTxns` itself): queued creates on top,
+  // queued edits overlaid, queued deletes hidden. One list feeds both Cards and List.
+  const pendingTx = usePendingTransactions();
+  const txns = useMemo(
+    () => applyPendingToTransactions(serverTxns, pendingTx, { accounts, categories, filters, hasColFilters: colFilters.length > 0 }),
+    [serverTxns, pendingTx, accounts, categories, filters, colFilters],
+  );
+  const pendingDeleteCount = countPendingDeletes(pendingTx);
   // Assigned in an effect (not during render); setPage is only called from handlers and effects.
   useEffect(() => { resetPageRef.current = resetPage; }, [resetPage]);
 
@@ -378,13 +390,45 @@ export function TransactionsWorkspace({
   /** Edit-row entry point: navigates to the edit page. That page loads the row and
    *  hands transfer pairs to the transfer edit page and portfolio rows to their op page. */
   function startEdit(t: Transaction) {
+    if (t.pendingSync) {
+      // A failed entry is resolved in Settings > Data (Retry / Discard); a queued create reopens the entry screen
+      // prefilled from the outbox; other queued rows have nothing newer on the server to edit yet.
+      if (t.pendingSync.status === "failed") router.push("/settings/data");
+      else if (t.pendingSync.kind === "create") router.push(`/transactions/new?queued=${encodeURIComponent(t.pendingSync.opId)}`);
+      return;
+    }
     const portfolioHref = portfolioEditHref(t.kind, t.id);
     router.push(portfolioHref ?? transactionEditHref(t.id, currentReturnTo()));
   }
 
+  // Offline delete: whether the row being confirmed has splits, read while the request still works (queue active only).
+  const splitsCheckRef = useRef<{ id: number; result: Promise<boolean | null> } | null>(null);
+
   function confirmDelete(t: Transaction) {
+    if (t.id > 0 && isLocalWriteQueueActive()) {
+      splitsCheckRef.current = {
+        id: t.id,
+        result: fetch(`/api/transactions/splits?transactionId=${t.id}`)
+          .then((r) => (r.ok ? r.json() : null))
+          .then((d: unknown) => (Array.isArray(d) ? d.length > 0 : null))
+          .catch(() => null),
+      };
+    }
     setDeleteConfirmId(t.id);
     setDeleteConfirmPayee(t.payee || `Transaction #${t.id}`);
+  }
+
+  /** Network failure on a simple row: keep the delete on this device (hidden from the list, synced later). */
+  async function queueDeleteOffline(err: unknown, id: number): Promise<boolean> {
+    if (!isLocalWriteQueueActive() || !isNetworkFailure(err)) return false;
+    const row = txns.find((x) => x.id === id);
+    const chk = splitsCheckRef.current;
+    if (!row || row.pendingSync || !chk || chk.id !== id) return false;
+    if (!canQueueOfflineDelete({ queueActive: true, error: err, row, hasSplits: await chk.result })) return false;
+    if (!(await queueOfflineDelete(id, row as unknown as Record<string, unknown>))) return false;
+    setDeleting(false);
+    setDeleteConfirmId(null);
+    return true;
   }
 
   async function handleDelete() {
@@ -392,7 +436,26 @@ export function TransactionsWorkspace({
     setDeleting(true);
     setDeleteError(null);
     setDeleteBlockedError(null);
-    const res = await fetch(`/api/transactions?id=${deleteConfirmId}`, { method: "DELETE" });
+    if (deleteConfirmId < 0) {
+      // A queued create deleted before it synced: drop the outbox entry, nothing goes to the server.
+      const opId = txns.find((x) => x.id === deleteConfirmId)?.pendingSync?.opId;
+      const dropped = opId ? await discardQueuedCreate(opId) : false;
+      setDeleting(false);
+      if (!dropped) {
+        setDeleteError("This entry is being sent right now. Try again in a moment.");
+        return;
+      }
+      setDeleteConfirmId(null);
+      return;
+    }
+    let res: Response;
+    try {
+      res = await fetch(`/api/transactions?id=${deleteConfirmId}`, { method: "DELETE" });
+    } catch (netErr) {
+      // Flag off / not eligible / online: nothing is queued and the error path is exactly what it was.
+      if (await queueDeleteOffline(netErr, deleteConfirmId)) return;
+      throw netErr;
+    }
     setDeleting(false);
     if (!res.ok) {
       // Portfolio edit-guard refusal. The server returns 409 + the list of
@@ -466,14 +529,14 @@ export function TransactionsWorkspace({
   }
 
   // Bulk selection helpers
-  const allSelected = txns.length > 0 && txns.every((t) => selected.has(t.id));
+  const allSelected = txns.length > 0 && txns.every((t) => t.pendingSync || selected.has(t.id));
   const someSelected = selected.size > 0;
 
   function toggleAll() {
     if (allSelected) {
       setSelected(new Set());
     } else {
-      setSelected(new Set(txns.map((t) => t.id)));
+      setSelected(new Set(txns.filter((t) => !t.pendingSync).map((t) => t.id)));
     }
   }
 
@@ -911,6 +974,13 @@ export function TransactionsWorkspace({
           )}
         </CardContent>
       </Card>
+
+      {pendingDeleteCount > 0 && (
+        <div data-testid="tx-pending-deletes" className="flex items-center gap-2 text-sm text-muted-foreground">
+          <PendingSyncBadge mark={{ kind: "delete", status: "pending", opId: "", failReason: null }} />
+          <span>{pendingDeleteCount === 1 ? "1 deleted transaction is hidden until it syncs." : `${pendingDeleteCount} deleted transactions are hidden until they sync.`}</span>
+        </div>
+      )}
 
       {/* One DataView: Cards (phone rows, paged) or List (bulk select, column filters). Only one is mounted. */}
       <DataView

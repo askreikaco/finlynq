@@ -49,6 +49,21 @@ export type Transaction = {
   // cash leg in the editor.
   kind?: string | null;
   tradeLinkId?: string | null;
+  /** Repeat + Installment membership as GET /api/transactions returns it (absent = unknown). */
+  installmentGroupId?: string | null;
+  subscriptionId?: number | null;
+  /**
+   * Client-only marker (offline queue, flag off = never set): the row is a queued create, carries a queued edit,
+   * or is a failed delete. `id` of a queued create is a negative local id, never a server id.
+   */
+  pendingSync?: PendingSyncMark;
+};
+
+export type PendingSyncMark = {
+  kind: "create" | "edit" | "delete";
+  status: "pending" | "failed";
+  opId: string;
+  failReason: string | null;
 };
 
 export type LinkedSibling = {

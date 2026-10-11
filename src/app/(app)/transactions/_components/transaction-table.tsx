@@ -27,6 +27,7 @@ import {
 } from "@/lib/transactions/columns";
 import { ColumnFilterPopover } from "./column-filter-popover";
 import { SplitBadge } from "./split-badge";
+import { PendingSyncBadge } from "@/components/transactions/pending-sync-badge";
 import { canDuplicate } from "@/lib/transactions/prefill";
 import type { Transaction, Account, Category, ColFilterShape, SortPref, ColumnPref } from "../_types";
 import { getDisplayLocale } from "@/lib/locale";
@@ -205,12 +206,14 @@ export function TransactionTable({
                 case "select":
                   return (
                     <TableCell key={c.id}>
-                      <input
-                        type="checkbox"
-                        checked={selected.has(t.id)}
-                        onChange={() => toggleOne(t.id)}
-                        className="h-4 w-4 rounded border-input cursor-pointer"
-                      />
+                      {t.id > 0 && !t.pendingSync && (
+                        <input
+                          type="checkbox"
+                          checked={selected.has(t.id)}
+                          onChange={() => toggleOne(t.id)}
+                          className="h-4 w-4 rounded border-input cursor-pointer"
+                        />
+                      )}
                     </TableCell>
                   );
                 case "date":
@@ -246,7 +249,8 @@ export function TransactionTable({
                         {t.categoryName && (
                           <Badge variant="outline" className={`text-xs ${getCategoryBadgeClass(t.categoryType)}`}>{t.categoryName}</Badge>
                         )}
-                        <SplitBadge transactionId={t.id} />
+                        {t.id > 0 && <SplitBadge transactionId={t.id} />}
+                        <PendingSyncBadge mark={t.pendingSync} />
                         {t.linkId && (
                           <Link2 className="h-3 w-3 text-info shrink-0" aria-label="Linked transaction" />
                         )}
@@ -494,9 +498,11 @@ export function TransactionTable({
                             <Copy className="h-3 w-3" />
                           </Button>
                         )}
-                        <Button aria-label="Split" variant="ghost" size="icon" className="h-7 w-7 text-chart-5" onClick={() => openSplitDialog(t)} title="Split">
-                          <Scissors className="h-3 w-3" />
-                        </Button>
+                        {!t.pendingSync && (
+                          <Button aria-label="Split" variant="ghost" size="icon" className="h-7 w-7 text-chart-5" onClick={() => openSplitDialog(t)} title="Split">
+                            <Scissors className="h-3 w-3" />
+                          </Button>
+                        )}
                         <Button aria-label="Delete" variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => confirmDelete(t)} title="Delete">
                           <Trash2 className="h-3 w-3" />
                         </Button>

@@ -10,7 +10,7 @@ import { createHlc, type HlcClock } from "../clock/hlc";
 import type { LocalStore, TransactionRow } from "../store/types";
 import { isLocalWriteQueueEnabled } from "./flag";
 import { createOutboxStore, wipeOutboxUser, type OutboxStore } from "./outbox-store";
-import { EDITABLE_FIELDS, type EditableField, type OutboxEntry, type TxFields } from "./types";
+import { EDITABLE_FIELDS, type EditableField, type FieldValue, type OutboxEntry, type TxFields } from "./types";
 
 export type ApplyStore = Pick<LocalStore, "upsertRows" | "deleteRows">;
 
@@ -30,6 +30,16 @@ export interface WriteQueue {
   enqueueCreate(fields: TxFields, cache?: ApplyStore): Promise<OutboxEntry | null>;
   /** `current` is the cached server-confirmed row (conflict baseline and optimistic base). */
   enqueueEdit(serverId: number, patch: TxFields, current: TransactionRow, cache?: ApplyStore): Promise<OutboxEntry | null>;
+  /**
+   * Delete of server row `serverId`. Supersedes (removes) any queued edit of that row. `current` carries the
+   * cached server values and `updatedAt` (the baseline for "changed on the server since").
+   */
+  enqueueDelete(serverId: number, current: TransactionRow & { updatedAt?: string | null }, cache?: ApplyStore): Promise<OutboxEntry | null>;
+  /**
+   * Drops a queued create that is deleted before it synced. Null when there is no such entry, or when a send may
+   * already be in flight (firstSendAt set): then the row may exist on the server and must be deleted there instead.
+   */
+  dequeueCreate(rowId: string, cache?: ApplyStore): Promise<OutboxEntry | null>;
   /** Edit of a row that only exists locally (queued create): merged into that create, per-field newer wins. */
   enqueueEditLocal(rowId: string, patch: TxFields, cache?: ApplyStore): Promise<OutboxEntry | null>;
   replayPending(cache: ApplyStore, baseRows?: Map<string, TransactionRow>): Promise<number>;
@@ -139,6 +149,41 @@ export function createWriteQueue(deps: WriteQueueDeps): WriteQueue {
       });
     },
 
+    enqueueDelete(serverId, current, cache) {
+      return serial(async () => {
+        if (!allow()) return null;
+        const rowId = String(serverId);
+        const all = await getStore().list();
+        const dup = all.find((e) => e.kind === "delete" && e.rowId === rowId && e.status === "pending");
+        if (dup) return dup;
+        // A pending edit of the same row is moot once the row is deleted; a failed one stays for review.
+        for (const e of all) if (e.kind === "edit" && e.rowId === rowId && e.status === "pending") await getStore().remove(e.opId);
+        const base: TxFields = {};
+        for (const f of EDITABLE_FIELDS) {
+          const v = (current as unknown as Record<string, unknown>)[f];
+          if (v !== undefined) base[f] = (v === null || v === "" ? null : typeof v === "number" ? v : String(v)) as FieldValue;
+        }
+        const entry: OutboxEntry = {
+          opId: newId(), kind: "delete", rowId, serverId, fields: {}, fieldHlc: {}, base, baseUpdatedAt: current.updatedAt ?? null,
+          createdAt: now(), attempts: 0, nextAttemptAt: 0, firstSendAt: null, status: "pending", failReason: null,
+        };
+        await getStore().put(entry);
+        if (cache) await cache.deleteRows("transactions", [rowId]);
+        return entry;
+      });
+    },
+
+    dequeueCreate(rowId, cache) {
+      return serial(async () => {
+        if (!allow()) return null;
+        const entry = (await getStore().list()).find((e) => e.kind === "create" && e.rowId === rowId);
+        if (!entry || entry.firstSendAt !== null) return null;
+        await getStore().remove(entry.opId);
+        if (cache) await cache.deleteRows("transactions", [rowId]);
+        return entry;
+      });
+    },
+
     enqueueEditLocal(rowId, patch, cache) {
       return serial(async () => {
         if (!allow()) return null;
@@ -146,6 +191,13 @@ export function createWriteQueue(deps: WriteQueueDeps): WriteQueue {
         const entry = (await getStore().list()).find((e) => e.kind === "create" && e.rowId === rowId && e.status === "pending");
         if (!entry) return null;
         stamp(entry, p);
+        // A create has no baseline: a cleared field (null) simply is not part of the POST body.
+        for (const f of Object.keys(p) as EditableField[]) {
+          if (p[f] === null) {
+            delete entry.fields[f];
+            delete entry.fieldHlc[f];
+          }
+        }
         await getStore().put(entry);
         if (cache) await cache.upsertRows("transactions", [rowFromEntry(entry)]);
         return entry;
@@ -156,6 +208,10 @@ export function createWriteQueue(deps: WriteQueueDeps): WriteQueue {
       if (!allow()) return 0;
       const entries = (await getStore().list()).filter((e) => e.status === "pending");
       for (const e of entries) {
+        if (e.kind === "delete") {
+          await cache.deleteRows("transactions", [e.rowId]);
+          continue;
+        }
         const base = e.kind === "edit" ? baseRows?.get(e.rowId) : undefined;
         if (e.kind === "edit" && !base) continue; // cache has no row to merge onto
         await cache.upsertRows("transactions", [rowFromEntry(e, base)]);

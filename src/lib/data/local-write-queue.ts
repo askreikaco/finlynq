@@ -19,6 +19,7 @@ import { fetchTrustedDeviceId } from "./trusted-device";
 import { getSessionInfo } from "./session-info";
 import type { OutboxEntry, TxFields } from "@/lib/local-first/write-path/types";
 import type { TransactionRow } from "@/lib/local-first/store/types";
+import { EMPTY_PENDING, type PendingFields, type PendingTxView } from "@/lib/transactions/pending-overlay";
 
 interface Running {
   userId: string;
@@ -48,7 +49,7 @@ export function startLocalWriteQueue(userId: string, deviceId: string): boolean 
     unlocked = true;
     const allow = () => unlocked && isLocalWriteQueueEnabled();
     const queue = createWriteQueue({ userId, deviceId, allow });
-    const drain = createDrain({
+    const drainOnce = createDrain({
       store: queue.store,
       allow,
       fetchImpl: (url, init) => fetch(url, { credentials: "same-origin", ...init }),
@@ -58,9 +59,18 @@ export function startLocalWriteQueue(userId: string, deviceId: string): boolean 
       },
       onConflict: () => onSynced?.(),
     });
+    // Every run can change an entry's state (failed, backoff): tell the live views, not only when something synced.
+    const drain = async () => {
+      try {
+        return await drainOnce();
+      } finally {
+        notify();
+      }
+    };
     const scheduler = createDrainScheduler({ drain, list: () => queue.store.list(), allow });
     running = { userId, queue, scheduler };
     scheduler.start();
+    notify();
     return true;
   } catch (err) {
     console.warn("[local-first] write queue unavailable", err);
@@ -75,6 +85,11 @@ export function stopLocalWriteQueue(): void {
   running?.scheduler.stop();
   running = null;
   notify();
+}
+
+/** The opt-in flag alone (the queue may still be starting). */
+export function isLocalWriteQueueOn(): boolean {
+  return isLocalWriteQueueEnabled();
 }
 
 export function isLocalWriteQueueActive(): boolean {
@@ -106,9 +121,49 @@ export function queueOfflineEdit(serverId: number, patch: TxFields, current: Rec
   return enqueue((q) => q.enqueueEdit(serverId, patch, { id: String(serverId), serverId, ...current } as unknown as TransactionRow));
 }
 
+/**
+ * Queues a delete of server row `serverId` (the DELETE request failed with a network error). `current` = the row as the
+ * list shows it, with `updatedAt`: the baseline the drain compares against so a newer server edit is never deleted over.
+ */
+export function queueOfflineDelete(serverId: number, current: Record<string, unknown>): Promise<boolean> {
+  return enqueue((q) => q.enqueueDelete(serverId, { id: String(serverId), serverId, ...current } as unknown as TransactionRow & { updatedAt?: string | null }));
+}
+
+/** Deletes a queued create that never synced: just drops the outbox entry. False = nothing dropped (a send may be in flight). */
+export async function discardQueuedCreate(opId: string): Promise<boolean> {
+  const r = running;
+  if (!r || !isLocalWriteQueueEnabled()) return false;
+  try {
+    const e = await r.queue.dequeueCreate(`local-${opId}`);
+    if (!e) return false;
+    notify();
+    return true;
+  } catch (err) {
+    console.warn("[local-first] discard queued create failed", err);
+    return false;
+  }
+}
+
+/** Fields of a queued (still pending) create, to prefill the entry screen. Null while the flag is off or it already synced. */
+export async function getQueuedCreate(opId: string): Promise<PendingFields | null> {
+  const r = running;
+  if (!r || !isLocalWriteQueueEnabled()) return null;
+  try {
+    const e = (await r.queue.store.list()).find((x) => x.opId === opId && x.kind === "create" && x.status === "pending");
+    return e ? { ...e.fields } : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Saves an edit made on the entry screen back into the queued create (merged; null clears a field). */
+export function saveQueuedCreate(opId: string, patch: TxFields): Promise<boolean> {
+  return enqueue((q) => q.enqueueEditLocal(`local-${opId}`, patch));
+}
+
 export interface PendingSyncItem {
   opId: string;
-  kind: "create" | "edit";
+  kind: "create" | "edit" | "delete";
   status: "pending" | "failed";
   failReason: string | null;
   attempts: number;
@@ -116,15 +171,18 @@ export interface PendingSyncItem {
   summary: string;
 }
 
-const toItem = (e: OutboxEntry): PendingSyncItem => ({
-  opId: e.opId,
-  kind: e.kind,
-  status: e.status,
-  failReason: e.failReason,
-  attempts: e.attempts,
-  createdAt: e.createdAt,
-  summary: [e.fields.date, e.fields.payee, e.fields.enteredAmount ?? e.fields.amount].filter((v) => v !== undefined && v !== null && v !== "").join(" · "),
-});
+const toItem = (e: OutboxEntry): PendingSyncItem => {
+  const f = e.kind === "delete" ? e.base : e.fields;
+  return {
+    opId: e.opId,
+    kind: e.kind,
+    status: e.status,
+    failReason: e.failReason,
+    attempts: e.attempts,
+    createdAt: e.createdAt,
+    summary: [f.date, f.payee, f.enteredAmount ?? f.amount].filter((v) => v !== undefined && v !== null && v !== "").join(" · "),
+  };
+};
 
 export async function listPendingSync(): Promise<PendingSyncItem[]> {
   if (!running || !isLocalWriteQueueEnabled()) return [];
@@ -176,6 +234,61 @@ export function usePendingSync(): { items: PendingSyncItem[]; enabled: boolean }
     };
   }, []);
   return { items, enabled };
+}
+
+/** Outbox entries as the transactions list shows them. Pure. */
+export function toPendingTxView(entries: OutboxEntry[]): PendingTxView {
+  const view: PendingTxView = { creates: [], edits: {}, deletes: {} };
+  for (const e of entries) {
+    const base = { opId: e.opId, status: e.status, failReason: e.failReason };
+    if (e.kind === "create") view.creates.push({ ...base, createdAt: e.createdAt, fields: { ...e.fields } });
+    else if (e.serverId === null) continue;
+    else if (e.kind === "edit") view.edits[e.serverId] = { ...base, fields: { ...e.fields } };
+    else view.deletes[e.serverId] = base;
+  }
+  return view;
+}
+
+/**
+ * Live queue state for the transactions list. Always the shared EMPTY_PENDING (and nothing opened) while the flag is off.
+ * Refreshes when the queue changes (enqueue, drain, retry, discard) and every 15 s.
+ */
+export function usePendingTransactions(): PendingTxView {
+  const [view, setView] = useState<PendingTxView>(EMPTY_PENDING);
+  useEffect(() => {
+    if (!isLocalWriteQueueEnabled()) return;
+    let alive = true;
+    let last = "";
+    const refresh = () => {
+      const r = running;
+      if (!r || !isLocalWriteQueueEnabled()) {
+        if (last !== "") {
+          last = "";
+          if (alive) setView(EMPTY_PENDING);
+        }
+        return;
+      }
+      void r.queue.store
+        .list()
+        .then((l) => {
+          const next = toPendingTxView(l);
+          const key = JSON.stringify(next);
+          if (!alive || key === last) return;
+          last = key;
+          setView(l.length === 0 ? EMPTY_PENDING : next);
+        })
+        .catch(() => undefined);
+    };
+    listeners.add(refresh);
+    refresh();
+    const t = setInterval(refresh, 15_000);
+    return () => {
+      alive = false;
+      listeners.delete(refresh);
+      clearInterval(t);
+    };
+  }, []);
+  return view;
 }
 
 /** Number of queued (pending or failed) entries; 0 when the queue is not running. */
