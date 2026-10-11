@@ -18,7 +18,7 @@ import {
   type AccountGroupOrder,
   type AccountGroupType,
 } from "@/lib/accounts/groups";
-import { excludeInvisible } from "@/lib/account-visibility";
+import { sumAssetsLiabilities } from "@/lib/account-visibility";
 import {
   TrendingUp,
   TrendingDown,
@@ -29,8 +29,10 @@ import {
   Archive,
   FolderCog,
 } from "lucide-react";
-import { PageHeader, HEADER_DESKTOP_ONLY, NetWorthHero, SectionLabel, AccountRow } from "@/components/mobile";
-import { DataView, ViewModeToggle, useAppSizeClass } from "@/components/adaptive";
+import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
+import { StatCard } from "@/app/(app)/dashboard/_components/stat-card";
+import { NetWorthHeroCard } from "@/app/(app)/dashboard/_components/net-worth-hero-card";
+import { deriveSeriesChange, type SeriesPoint } from "@/lib/dashboard/series-change";
 
 type AccountBalance = {
   accountId: number;
@@ -97,9 +99,9 @@ function SummarySkeleton() {
 }
 
 export default function AccountsPage() {
-  const regular = useAppSizeClass() !== "compact";
   const { displayCurrency } = useDisplayCurrency();
   const [accounts, setAccounts] = useState<AccountBalance[]>([]);
+  const [series, setSeries] = useState<{ nw: SeriesPoint[]; assets: SeriesPoint[]; liabilities: SeriesPoint[] }>({ nw: [], assets: [], liabilities: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
@@ -142,6 +144,11 @@ export default function AccountsPage() {
       .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
       .then((d) => {
         setAccounts(d.balances ?? []);
+        setSeries({
+          nw: d.netWorthOverTime ?? [],
+          assets: d.assetsOverTime ?? [],
+          liabilities: d.liabilitiesOverTime ?? [],
+        });
         setLoading(false);
       })
       .catch(() => { setError(true); setLoading(false); });
@@ -159,10 +166,6 @@ export default function AccountsPage() {
   // the net-worth chart. Read off the unfiltered `accounts`, not `visible`.
   // Invisible accounts are the exception: they stay LISTED (with a badge) but
   // never count toward any total.
-  const counted = excludeInvisible(accounts);
-  const activeAssets = counted.filter((a) => a.accountType === "A");
-  const activeLiabilities = counted.filter((a) => a.accountType === "L");
-
 
   const groups = (list: AccountBalance[]) => {
     const map = new Map<string, AccountBalance[]>();
@@ -294,48 +297,14 @@ export default function AccountsPage() {
     </div>
   );
 
-  const renderMobileSection = (title: string, list: AccountBalance[], type: "asset" | "liability") =>
-    list.length === 0 ? null : (
-      <section className="space-y-2">
-        <div className="flex items-baseline justify-between gap-3 px-1">
-          <SectionLabel className="px-0">{title}</SectionLabel>
-          <span className="font-mono text-sm font-bold tabular-nums" data-testid="section-total">
-            {formatCurrency(groupTotal(list), displayCurrency)}
-          </span>
-        </div>
-        <div className="flex flex-col gap-2">
-          {groups(list).map(([group, accts]) => (
-            <Accordion key={group} defaultValue={group}>
-            <AccordionItem value={group} title={groupTitle(group, accts)}>
-              <div className="-mx-4 -my-4 divide-y divide-border/50 px-3">
-            {accts.map((a) => (
-              <AccountRow
-                key={a.accountId}
-                accountId={a.accountId}
-                accountName={a.accountName ?? ""}
-                alias={a.alias}
-                currency={a.currency}
-                balance={a.balance}
-                convertedBalance={a.convertedBalance}
-                displayCurrency={displayCurrency}
-                archived={a.archived}
-                type={type}
-                group={group}
-                isInvestment={a.isInvestment}
-              />
-            ))}
-              </div>
-            </AccordionItem>
-            </Accordion>
-          ))}
-        </div>
-      </section>
-    );
-
   // Totals are aggregations across all currencies — sum the API-provided
   // convertedBalance (in displayCurrency) when present, fall back to raw balance.
-  const totalAssetsConverted = activeAssets.reduce((s, a) => s + (a.convertedBalance ?? a.balance), 0);
-  const totalLiabilitiesConverted = activeLiabilities.reduce((s, a) => s + (a.convertedBalance ?? a.balance), 0);
+  const { totalAssets: totalAssetsConverted, totalLiabilities: totalLiabilitiesConverted, netWorth: netWorthConverted } =
+    sumAssetsLiabilities(accounts, (a) => a.convertedBalance ?? a.balance);
+  // Same derivation as Home: monthly deltas -> running total -> last 12 months + MoM change.
+  const nwSeries = deriveSeriesChange(series.nw);
+  const assetsSeries = deriveSeriesChange(series.assets);
+  const liabilitiesSeries = deriveSeriesChange(series.liabilities);
 
   // Create account is its own page (/accounts/new), not a dialog.
   const createAccountLink = (
@@ -414,50 +383,48 @@ export default function AccountsPage() {
 
       <OnboardingTips page="accounts" />
 
-      {/* Summary tiles: the Net Worth hero on phones, the two stat cards from the regular size class up. */}
-      {!regular ? (
-        <NetWorthHero totalAssets={totalAssetsConverted} totalLiabilities={totalLiabilitiesConverted} currency={displayCurrency} />
-      ) : (
-      <div className="grid grid-cols-2 gap-3">
-        {[
-          { label: "Total Assets", value: totalAssetsConverted, Icon: TrendingUp, color: "emerald" },
-          { label: "Total Liabilities", value: totalLiabilitiesConverted, Icon: TrendingDown, color: "rose" },
-        ].map(({ label, value, Icon, color }) => (
-          <Card key={label}>
-            <CardContent className="pt-3 pb-3">
-              <div className={`flex h-7 w-7 items-center justify-center rounded-lg mb-1.5 ${color === "emerald" ? "bg-pos/10 text-pos" : "bg-destructive/10 text-destructive"}`}>
-                <Icon className="h-4 w-4" />
-              </div>
-              <p className="text-xs text-muted-foreground truncate">{label}</p>
-              <p className={`text-lg font-bold mt-0 ${color === "emerald" ? "text-pos" : "text-destructive"}`}>
-                {formatCurrency(value, displayCurrency)}
-              </p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-      )}
-
-      {/* One toolbar, one DataView. Cards = AccountRow sections (phone layout); List = the grid layout. */}
-      <div className="flex justify-end">
-        <ViewModeToggle viewKey="accounts" />
-      </div>
-
-      <DataView
-        viewKey="accounts"
-        cards={
-          <div data-slot="accounts-mobile-list" className="space-y-4">
-            {renderMobileSection("Assets", assets, "asset")}
-            {renderMobileSection("Liabilities", liabilities, "liability")}
-          </div>
-        }
-        list={
-          <div className="grid grid-cols-1 wide:grid-cols-2 gap-4">
-            {renderSection("Assets", assets, "text-pos", ArrowUpRight, "bg-primary/10 text-primary")}
-            {renderSection("Liabilities", liabilities, "text-destructive", ArrowDownRight, "bg-destructive/10 text-destructive")}
-          </div>
-        }
+      {/* Net Worth: the same hero card as Home, then Assets / Liabilities as two StatCards (2 columns at every size). */}
+      <NetWorthHeroCard
+        value={netWorthConverted}
+        currency={displayCurrency}
+        change={nwSeries.change}
+        changePct={nwSeries.changePct}
+        changeCaption="vs last month"
+        sparkData={nwSeries.sparkData}
+        sparkLabels={nwSeries.sparkLabels}
       />
+
+      <div data-slot="accounts-summary" className="grid grid-cols-2 gap-3">
+        <StatCard
+          label="Total Assets"
+          value={totalAssetsConverted}
+          currency={displayCurrency}
+          icon={TrendingUp}
+          iconBg="bg-pos/10 text-pos"
+          sparkColor="#10b981"
+          sparkData={assetsSeries.sparkData}
+          sparkLabels={assetsSeries.sparkLabels}
+          badgePct={assetsSeries.change != null ? assetsSeries.changePct : null}
+          sub={assetsSeries.change != null ? "vs last month" : ""}
+        />
+        <StatCard
+          label="Total Liabilities"
+          value={totalLiabilitiesConverted}
+          currency={displayCurrency}
+          icon={TrendingDown}
+          iconBg="bg-destructive/10 text-destructive"
+          sparkColor="#f43f5e"
+          sparkData={liabilitiesSeries.sparkData}
+          sparkLabels={liabilitiesSeries.sparkLabels}
+          badgePct={liabilitiesSeries.change != null ? liabilitiesSeries.changePct : null}
+          sub={liabilitiesSeries.change != null ? "vs last month" : ""}
+        />
+      </div>
+
+      <div data-slot="accounts-list" className="grid grid-cols-1 wide:grid-cols-2 gap-4">
+        {renderSection("Assets", assets, "text-pos", ArrowUpRight, "bg-primary/10 text-primary")}
+        {renderSection("Liabilities", liabilities, "text-destructive", ArrowDownRight, "bg-destructive/10 text-destructive")}
+      </div>
     </div>
   );
 }

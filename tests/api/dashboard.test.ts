@@ -91,6 +91,29 @@ describe("API /api/dashboard", () => {
     expect(d.netWorthOverTime[0].month).toBe("2024-01");
   });
 
+  it("returns assetsOverTime / liabilitiesOverTime split by account type; netWorthOverTime unchanged", async () => {
+    mockGetNetWorthOverTime.mockReturnValue([
+      { month: "2024-01", currency: "CAD", accountType: "A", cumulative: 5000 },
+      { month: "2024-01", currency: "USD", accountType: "A", cumulative: 3000 },
+      { month: "2024-01", currency: "CAD", accountType: "L", cumulative: -1000 },
+      { month: "2024-02", currency: "CAD", accountType: "A", cumulative: 200 },
+      { month: "2024-02", currency: "CAD", accountType: null, cumulative: 50 },
+    ]);
+    const res = await GET(createMockRequest("http://localhost:3000/api/dashboard"));
+    const { data } = await parseResponse(res);
+    const d = data as Record<string, { month: string; cumulative: number; currency: string }[]>;
+    expect(d.assetsOverTime).toEqual([
+      { month: "2024-01", cumulative: 8000, currency: "CAD" },
+      { month: "2024-02", cumulative: 200, currency: "CAD" },
+    ]);
+    expect(d.liabilitiesOverTime).toEqual([{ month: "2024-01", cumulative: -1000, currency: "CAD" }]);
+    // Net worth still includes every row (account-less too).
+    expect(d.netWorthOverTime).toEqual([
+      { month: "2024-01", cumulative: 7000, currency: "CAD" },
+      { month: "2024-02", cumulative: 250, currency: "CAD" },
+    ]);
+  });
+
   it("accepts custom date range", async () => {
     const req = createMockRequest("http://localhost:3000/api/dashboard?startDate=2023-01-01&endDate=2023-12-31");
     await GET(req);

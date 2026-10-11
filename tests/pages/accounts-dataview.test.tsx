@@ -31,7 +31,6 @@ vi.mock("@/components/dropdown-order-provider", () => ({ useDropdownOrder: () =>
 vi.mock("@/components/onboarding-tips", () => ({ OnboardingTips: () => null }));
 
 import AccountsPage from "@/app/(app)/accounts/page";
-import { VIEW_MODE_STORAGE_KEY } from "@/components/adaptive/view-mode";
 
 const SRC = fs.readFileSync(path.resolve(__dirname, "../../src/app/(app)/accounts/page.tsx"), "utf-8");
 
@@ -58,71 +57,38 @@ async function mountPage() {
   await screen.findByRole("heading", { level: 1, name: "Accounts" });
 }
 
-function mountedViews(): string[] {
-  return Array.from(document.querySelectorAll("[data-view]")).map((el) => el.getAttribute("data-view") ?? "");
-}
-
-function storedPrefs(): Record<string, string> {
-  const raw = localStorage.getItem(`${VIEW_MODE_STORAGE_KEY}:${session.userId}`);
-  return raw ? JSON.parse(raw) : {};
-}
-
-describe("Accounts page: one DataView, one toolbar", () => {
-  it("exactly one of [data-view=cards] / [data-view=list] is mounted; compact defaults to cards", async () => {
-    await mountPage();
-    expect(mountedViews()).toEqual(["cards"]);
-    expect(document.querySelector("[data-view=cards]")).not.toBeNull();
-    expect(document.querySelector("[data-view=list]")).toBeNull();
+describe("Accounts page: a single list layout, no view toggle", () => {
+  it("renders no Cards/List toggle and no DataView at any size class", async () => {
+    for (const sc of ["compact", "regular", "wide"] as const) {
+      size.current = sc;
+      await mountPage();
+      expect(screen.queryAllByRole("radiogroup", { name: "View" })).toHaveLength(0);
+      expect(screen.queryAllByRole("radio")).toHaveLength(0);
+      expect(document.querySelector("[data-view]")).toBeNull();
+      expect(document.querySelector("[data-slot=accounts-mobile-list]")).toBeNull();
+      expect(document.querySelectorAll("[data-slot=accounts-list]")).toHaveLength(1);
+      cleanup();
+    }
   });
 
-  it("the toggle switches the mounted view both ways", async () => {
-    await mountPage();
-    fireEvent.click(screen.getByRole("radio", { name: /List/ }));
-    await waitFor(() => expect(mountedViews()).toEqual(["list"]));
-    expect(screen.getByRole("radio", { name: /List/ }).getAttribute("aria-checked")).toBe("true");
-
-    fireEvent.click(screen.getByRole("radio", { name: /Cards/ }));
-    await waitFor(() => expect(mountedViews()).toEqual(["cards"]));
+  it("source has no DataView / ViewModeToggle / renderMobileSection / NetWorthHero", () => {
+    expect(SRC).not.toMatch(/DataView|ViewModeToggle|renderMobileSection|\bNetWorthHero\b/);
   });
+});
 
-  it("the page has one toolbar with one Cards/List control", async () => {
+describe("Accounts page: summary tiles reuse the Home components", () => {
+  it("one NetWorthHeroCard above exactly two StatCards in a 2-column grid", async () => {
     await mountPage();
-    expect(screen.getAllByRole("radiogroup", { name: "View" })).toHaveLength(1);
-    expect(screen.getAllByRole("radio")).toHaveLength(2);
-  });
-
-  it("the choice persists per size class: a list choice on compact does not change wide", async () => {
-    size.current = "compact";
-    await mountPage();
-    fireEvent.click(screen.getByRole("radio", { name: /List/ }));
-    await waitFor(() => expect(storedPrefs()).toEqual({ "accounts:compact": "list" }));
-    cleanup();
-
-    // Wide has no stored choice: its default for accounts is the list.
-    size.current = "wide";
-    await mountPage();
-    expect(mountedViews()).toEqual(["list"]);
-    fireEvent.click(screen.getByRole("radio", { name: /Cards/ }));
-    await waitFor(() => expect(storedPrefs()["accounts:wide"]).toBe("cards"));
-    expect(storedPrefs()["accounts:compact"]).toBe("list");
-    cleanup();
-
-    // Back on compact the stored list choice still applies, and wide's cards choice is not used.
-    size.current = "compact";
-    await mountPage();
-    expect(mountedViews()).toEqual(["list"]);
-  });
-
-  it("a stored choice survives a remount for the same user and size class", async () => {
-    size.current = "regular";
-    await mountPage();
-    expect(mountedViews()).toEqual(["cards"]);
-    fireEvent.click(screen.getByRole("radio", { name: /List/ }));
-    await waitFor(() => expect(storedPrefs()["accounts:regular"]).toBe("list"));
-    cleanup();
-
-    await mountPage();
-    expect(mountedViews()).toEqual(["list"]);
+    expect(screen.getAllByText("Total Net Worth")).toHaveLength(1);
+    expect(screen.getAllByText("Total Assets")).toHaveLength(1);
+    expect(screen.getAllByText("Total Liabilities")).toHaveLength(1);
+    const grid = document.querySelector("[data-slot=accounts-summary]") as HTMLElement;
+    expect(grid.className).toContain("grid-cols-2");
+    expect(grid.className).not.toMatch(/hidden|regular:/);
+    expect(grid.querySelectorAll("[data-slot=card]").length).toBe(2);
+    expect(SRC).not.toMatch(/regular:hidden|hidden regular:grid/);
+    expect(SRC).toMatch(/<NetWorthHeroCard\b/);
+    expect(SRC.match(/<StatCard\b/g)).toHaveLength(2);
   });
 });
 
@@ -132,18 +98,12 @@ describe("Accounts page: no size-class wrappers around sections", () => {
     expect(SRC).not.toMatch(/(?<!max-)regular:hidden|hidden regular:/);
   });
 
-  it("the sections live inside the DataView, not behind size wrappers", () => {
-    const dataView = SRC.indexOf("<DataView");
-    expect(dataView).toBeGreaterThan(-1);
-    expect(SRC.indexOf("renderMobileSection(\"Assets\"")).toBeGreaterThan(dataView);
-    expect(SRC.indexOf("renderSection(\"Assets\"")).toBeGreaterThan(dataView);
-    expect(SRC.match(/<DataView\b/g)).toHaveLength(1);
-    expect(SRC.match(/<ViewModeToggle\b/g)).toHaveLength(1);
-  });
-
-  it("the list layout carries no viewport tokens (md:/lg:/max-md:)", () => {
-    const list = SRC.slice(SRC.indexOf("list={"), SRC.indexOf("/>", SRC.indexOf("list={")));
+  it("the list layout is one column on a phone and carries no viewport tokens (md:/lg:/max-md:)", () => {
+    const i = SRC.indexOf('data-slot="accounts-list"');
+    expect(i).toBeGreaterThan(-1);
+    const list = SRC.slice(i, SRC.indexOf(">", i));
     expect(list).not.toMatch(/(^|[\s"'`])(max-)?(sm|md|lg|xl|2xl):/);
+    expect(list).toContain("grid-cols-1");
     expect(list).toContain("wide:grid-cols-2");
   });
 });
