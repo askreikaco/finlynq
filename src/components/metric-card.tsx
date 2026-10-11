@@ -109,7 +109,7 @@ export function MetricCard({
   const hasSpark = !!sparkData && sparkData.length > 1;
   // Sized by the card's own width so a narrow card (2-up grid on a phone) never clips the number.
   // Hero: 5xl only once the number column (card minus the 40% sparkline column) fits "808.924.476 ₫" at 48px (@[42rem]).
-  const numberSize = size === "hero" ? "text-3xl @[24rem]:text-4xl @[42rem]:text-5xl" : "text-xl @[13rem]:text-2xl @[18rem]:text-3xl";
+  const numberSize = size === "hero" ? "text-3xl @[24rem]:text-4xl @[42rem]:text-5xl" : "text-lg @[11rem]:text-xl @[13rem]:text-2xl @[18rem]:text-3xl";
   const toneClasses = tone in METRIC_TONES ? METRIC_TONES[tone as MetricTone] : tone;
   const card = (
     <Card
@@ -117,7 +117,7 @@ export function MetricCard({
       onMouseMove={onMouseMove}
     >
       <div className="@[36rem]:flex @[36rem]:items-stretch @[36rem]:gap-6 h-full">
-        <CardContent className={`pt-4 px-5 min-w-0 @[36rem]:flex-1 ${hasSpark ? "pb-0 @[36rem]:pb-4" : "pb-0"}`}>
+        <CardContent className={`pt-4 px-3 @[11rem]:px-5 min-w-0 @[36rem]:flex-1 ${hasSpark ? "pb-0 @[36rem]:pb-4" : "pb-0"}`}>
           <div className="flex items-center gap-2.5 mb-3">
             <div
               className={`flex h-8 w-8 items-center justify-center rounded-lg shrink-0 transition-transform duration-300 group-hover:scale-110 ${toneClasses}`}

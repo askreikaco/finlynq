@@ -1222,6 +1222,8 @@ export async function getNetWorthOverTime(userId: string) {
     .select({
       month: monthExpr(transactions.date),
       currency: accounts.currency,
+      // 'A' | 'L' (null for account-less rows) — lets callers split assets vs liabilities.
+      accountType: accounts.type,
       cumulative: sql<number>`SUM(${transactions.amount})`,
     })
     .from(transactions)
@@ -1229,7 +1231,7 @@ export async function getNetWorthOverTime(userId: string) {
     // Invisible accounts never reach net worth. COALESCE keeps account-less
     // rows (left join → NULL) in the sum, as before.
     .where(and(eq(transactions.userId, userId), sql`COALESCE(${accounts.invisible}, false) = false`))
-    .groupBy(monthExpr(transactions.date), accounts.currency)
+    .groupBy(monthExpr(transactions.date), accounts.currency, accounts.type)
     .orderBy(monthExpr(transactions.date))
     .all();
 }

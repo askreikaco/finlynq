@@ -222,15 +222,22 @@ async function handleGet(request: NextRequest) {
 
     const netWorthRaw = await getNetWorthOverTime(userId);
 
-    // Consolidate net worth across currencies into display currency
-    const netWorthByMonth = new Map<string, number>();
-    for (const row of netWorthRaw) {
-      const converted = convertWithRateMap(row.cumulative, row.currency ?? displayCurrency, rateMap);
-      netWorthByMonth.set(row.month, (netWorthByMonth.get(row.month) ?? 0) + converted);
-    }
-    const netWorthOverTime = Array.from(netWorthByMonth.entries())
-      .sort(([a], [b]) => (a ?? "").localeCompare(b ?? ""))
-      .map(([month, cumulative]) => ({ month, cumulative: Math.round(cumulative * 100) / 100, currency: displayCurrency }));
+    // Consolidate across currencies into display currency. Net worth sums every
+    // row; assets / liabilities split by accounts.type ('A' / 'L') the same way.
+    const consolidate = (pick: (type: string | null | undefined) => boolean) => {
+      const byMonth = new Map<string, number>();
+      for (const row of netWorthRaw) {
+        if (!pick(row.accountType)) continue;
+        const converted = convertWithRateMap(row.cumulative, row.currency ?? displayCurrency, rateMap);
+        byMonth.set(row.month, (byMonth.get(row.month) ?? 0) + converted);
+      }
+      return Array.from(byMonth.entries())
+        .sort(([a], [b]) => (a ?? "").localeCompare(b ?? ""))
+        .map(([month, cumulative]) => ({ month, cumulative: Math.round(cumulative * 100) / 100, currency: displayCurrency }));
+    };
+    const netWorthOverTime = consolidate(() => true);
+    const assetsOverTime = consolidate((t) => t === "A");
+    const liabilitiesOverTime = consolidate((t) => t === "L");
 
     const response = NextResponse.json({
       displayCurrency,
@@ -239,6 +246,8 @@ async function handleGet(request: NextRequest) {
       incomeExpenseBreakdown,
       spendingByCategory,
       netWorthOverTime,
+      assetsOverTime,
+      liabilitiesOverTime,
     });
     if (etag) return withEtagHeaders(response, etag);
     return response;

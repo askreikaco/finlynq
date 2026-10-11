@@ -7,6 +7,8 @@ type StatCardProps = {
   label: string;
   value: number;
   sub: string;
+  /** Percentage badge before the sub-line (green up / red down); null/undefined = none. */
+  badgePct?: number | null;
   icon: LucideIcon;
   iconBg: string;
   sparkColor: string;
