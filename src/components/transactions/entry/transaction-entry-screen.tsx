@@ -48,13 +48,20 @@ import { ListCard } from "./list-card";
 import { buildPrefill, canDuplicate, readAndClearPrefill, writePrefill } from "@/lib/transactions/prefill";
 import {
   buildEntrySeed,
+  buildOfflineCreateFields,
+  buildOfflineEditPatch,
   buildSplitsBody,
   buildTransactionPutBody,
   buildTransferPutBody,
   isEditMode,
+  isNetworkFailure,
+  isOfflineQueueEligible,
   type EntryMode,
 } from "@/lib/transactions/entry-mode";
+import { isLocalWriteQueueActive, queueOfflineCreate, queueOfflineEdit } from "@/lib/data/local-write-queue";
 import { parseSaveError } from "@/lib/save-error";
+
+const OFFLINE_SAVED_NOTICE = "Saved on this device — will sync when online";
 import type { LotReallocationPreview } from "@/lib/portfolio/lots/types";
 import { LotReallocationNotice } from "@/components/portfolio/lot-reallocation-notice";
 import { EditMetaLine } from "./edit-meta-line";
@@ -609,6 +616,37 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
   };
 
   // Submit Handler: Save books the entry and locks the form.
+  // Offline queue (L3, off by default): a network failure on a simple create/edit is kept on this device instead.
+  // Every check runs before any queue call, so with the flag off nothing here touches the queue or IndexedDB.
+  const offlineAllowed = (err: unknown) =>
+    isLocalWriteQueueActive() &&
+    isNetworkFailure(err) &&
+    isOfflineQueueEligible({ txType, splitActive, hasSeries: !!(series && !editMode), isPostTarget: !!postTarget, isBusiness, mode: editMode ?? { kind: "create" } });
+  const finishQueued = (afterHref: string) => {
+    doneRef.current = true;
+    setDone(true);
+    setErrorMessage(null);
+    setSuccessNotice(OFFLINE_SAVED_NOTICE);
+    setTimeout(() => router.push(afterHref), 1200);
+  };
+  const queueCreateOffline = async (err: unknown, signedAmount: number, catId: number): Promise<boolean> => {
+    if (!offlineAllowed(err)) return false;
+    const ok = await queueOfflineCreate(
+      buildOfflineCreateFields({ date, accountId: Number(accountId), categoryId: catId, enteredCurrency: currency, enteredAmount: signedAmount, payee, note, tags }),
+    );
+    if (!ok) return false;
+    setLastAccount(accountId);
+    finishQueued(afterSaveHref);
+    return true;
+  };
+  const queueEditOffline = async (err: unknown, signedAmount: number, catId: number): Promise<boolean> => {
+    if (!editMode || editMode.kind !== "edit" || !offlineAllowed(err)) return false;
+    const { patch, current } = buildOfflineEditPatch(editMode.tx, { date, accountId: Number(accountId), categoryId: catId, enteredCurrency: currency, enteredAmount: signedAmount, payee, note, tags });
+    if (Object.keys(patch).length > 0 && !(await queueOfflineEdit(editMode.tx.id, patch, current))) return false;
+    finishQueued(returnTo);
+    return true;
+  };
+
   const handleSave = async (confirmReallocation = false, scope?: SaveScope) => {
     if (scope) savedScopeRef.current = scope;
     else if (!confirmReallocation) savedScopeRef.current = undefined;
@@ -750,7 +788,7 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
           return;
         }
         // Same PUT (+ splits POST) the old edit form sent.
-        const putRes = await fetch("/api/transactions", {
+        const putInit: RequestInit = {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(
@@ -769,7 +807,15 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
               scope: isInstallmentRow ? (scope ?? savedScopeRef.current) : undefined,
             }),
           ),
-        });
+        };
+        let putRes: Response;
+        try {
+          putRes = await fetch("/api/transactions", putInit);
+        } catch (netErr) {
+          // Flag off / not eligible / online: queueOffline returns false and the error path is unchanged.
+          if (await queueEditOffline(netErr, signedAmount, effectiveCategoryId)) return;
+          throw netErr;
+        }
         if (!putRes.ok) {
           const errData = await putRes.clone().json().catch(() => ({}));
           if (errData?.code === "fx-currency-needs-override") {
@@ -848,20 +894,26 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
       };
 
       const seriesActive = !editMode ? series : null;
-      const res = await fetch(
-        seriesActive?.kind === "installment" ? "/api/transactions/installments" : "/api/transactions",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(
-            seriesActive?.kind === "installment"
-              ? { ...txPayload, count: seriesActive.count, mode: seriesActive.mode }
-              : seriesActive?.kind === "repeat"
-                ? { ...txPayload, repeat: buildRepeatBody(seriesActive) }
-                : txPayload,
-          ),
-        },
-      );
+      let res: Response;
+      try {
+        res = await fetch(
+          seriesActive?.kind === "installment" ? "/api/transactions/installments" : "/api/transactions",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(
+              seriesActive?.kind === "installment"
+                ? { ...txPayload, count: seriesActive.count, mode: seriesActive.mode }
+                : seriesActive?.kind === "repeat"
+                  ? { ...txPayload, repeat: buildRepeatBody(seriesActive) }
+                  : txPayload,
+            ),
+          },
+        );
+      } catch (netErr) {
+        if (await queueCreateOffline(netErr, signedAmount, effectiveCategoryId)) return;
+        throw netErr;
+      }
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));

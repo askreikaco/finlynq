@@ -1,9 +1,11 @@
 /**
  * Outbox drain (local-first L3): POST/PUT queued transaction writes to the existing /api/transactions endpoints.
  *
- * - Every request carries `Idempotency-Key: <opId>`. The route ignores it today (no server-side dedupe), so a
- *   create whose response was lost is reconciled client-side before any re-send: look for a row created after
- *   the first send with identical fields; if found, adopt it instead of POSTing again.
+ * - Every request carries `Idempotency-Key: <opId>`. POST /api/transactions honours it (unique per user+key; a replay
+ *   returns the existing row, no second insert), so a re-sent create whose response was lost cannot duplicate. The
+ *   client-side adopt step below stays as a belt-and-braces check (older servers, a key that was never stored): look
+ *   for a row created after the first send with identical fields; if found, adopt it instead of POSTing again.
+ *   PUT does not use the key (an edit PUT is already idempotent: same fields, same result).
  * - Edits: fetch the server row (GET ?id=), resolve per field by HLC last-writer-wins (conflict.ts), PUT only the winners.
  * - Backoff: transient failure (network, 408, 429, 5xx) -> exponential, capped, jittered. 401/403/423 (signed out or
  *   locked) pauses the whole drain without counting an attempt. Other 4xx -> entry marked failed, never retried.

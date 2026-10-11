@@ -202,3 +202,93 @@ export function buildTransferPutBody(a: {
     destQuantity: null,
   };
 }
+
+// ─── Offline queue (local-first L3, flag off by default) ───────────────
+
+/** What the screen knows when deciding whether a failed save may go to the on-device queue. */
+export interface OfflineEligibilityInput {
+  txType: "Expense" | "Income" | "Transfer";
+  splitActive: boolean;
+  /** A Repeat or Installment series on a new entry. */
+  hasSeries: boolean;
+  /** Posting a due subscription occurrence. */
+  isPostTarget: boolean;
+  isBusiness: boolean;
+  mode: EntryMode;
+}
+
+/**
+ * Simple create/edit only. Splits, repeat/installment, transfers, subscription posting, the business flag
+ * (not in the offline field allowlist) and edits of linked, installment, repeat or portfolio rows stay online-only.
+ */
+export function isOfflineQueueEligible(a: OfflineEligibilityInput): boolean {
+  if (a.txType === "Transfer" || a.splitActive || a.hasSeries || a.isPostTarget || a.isBusiness) return false;
+  if (a.mode.kind === "edit-transfer") return false;
+  if (a.mode.kind === "edit") {
+    const t = a.mode.tx;
+    if (t.linkId || t.installmentGroupId || t.subscriptionId != null || t.portfolioHolding || t.quantity != null) return false;
+    if (t.isBusiness === 1) return false; // saving would silently keep a flag the queue cannot write
+  }
+  return true;
+}
+
+/** Fields of a queued create (same names the POST body uses; empty payee/note/tags omitted as the POST does). */
+export function buildOfflineCreateFields(a: {
+  date: string;
+  accountId: number;
+  categoryId: number;
+  enteredCurrency: string;
+  enteredAmount: number;
+  payee: string;
+  note: string;
+  tags: string;
+}): Record<string, string | number> {
+  return {
+    date: a.date,
+    accountId: a.accountId,
+    categoryId: a.categoryId,
+    enteredCurrency: a.enteredCurrency,
+    enteredAmount: a.enteredAmount,
+    ...(a.payee.trim() ? { payee: a.payee.trim() } : {}),
+    ...(a.note.trim() ? { note: a.note.trim() } : {}),
+    ...(a.tags.trim() ? { tags: a.tags.trim() } : {}),
+  };
+}
+
+/** Changed allowlisted fields of an edit, plus the server values they replace (the conflict baseline). */
+export function buildOfflineEditPatch(
+  tx: DialogTransaction,
+  a: { date: string; accountId: number; categoryId: number; enteredCurrency: string; enteredAmount: number; payee: string; note: string; tags: string },
+): { patch: Record<string, string | number>; current: Record<string, string | number | null> } {
+  const current: Record<string, string | number | null> = {
+    date: tx.date,
+    accountId: tx.accountId,
+    categoryId: tx.categoryId,
+    enteredCurrency: tx.enteredCurrency ?? tx.currency,
+    enteredAmount: tx.enteredAmount ?? tx.amount,
+    payee: tx.payee ?? "",
+    note: tx.note ?? "",
+    tags: tx.tags ?? "",
+  };
+  const next: Record<string, string | number> = {
+    date: a.date,
+    accountId: a.accountId,
+    categoryId: a.categoryId,
+    enteredCurrency: a.enteredCurrency,
+    enteredAmount: a.enteredAmount,
+    payee: a.payee,
+    note: a.note,
+    tags: a.tags,
+  };
+  const patch: Record<string, string | number> = {};
+  for (const k of Object.keys(next)) if (next[k] !== current[k]) patch[k] = next[k];
+  // Baseline as the API reports empty text columns (null), so the drain's server-equals-baseline check holds.
+  for (const k of ["payee", "note", "tags"]) if (current[k] === "") current[k] = null;
+  return { patch, current };
+}
+
+/** True when a thrown fetch error means "no connection" (fetch rejects with TypeError) or the browser reports offline. */
+export function isNetworkFailure(err: unknown): boolean {
+  if (typeof navigator !== "undefined" && navigator.onLine === false) return true;
+  return err instanceof TypeError;
+}

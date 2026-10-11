@@ -52,6 +52,7 @@ const DYN_NONLITERAL_RE = /\bimport\s*\(\s*(?!["'`][^"'`$]*["'`]\s*\))/;
 const NETWORK_ALLOWED: Record<string, string> = {
   "src/lib/local-first/read-cache/hydrate.ts": "GET /api/accounts, /api/categories, /api/transactions via injected fetchImpl (L2a)",
   "src/lib/local-first/read-cache/use-local-balances.ts": "browser fetch passed to hydrate (L2a)",
+  "src/lib/local-first/write-path/drain.ts": "GET/POST/PUT /api/transactions via injected fetchImpl (L3 outbox drain)",
 };
 const FORBIDDEN_PKG_RE = /^(pg|postgres|axios|undici|node:https?|https?)$|^drizzle-orm\/(node-postgres|postgres-js)/;
 const NETWORK_RE = /\bfetch\s*\(|\b(?:globalThis|window|self)\s*\.\s*fetch\b|\bXMLHttpRequest\b|\bWebSocket\b|\bEventSource\b|\bsendBeacon\b|["'`][^"'`\n]*\/api\/[^"'`\n]*["'`]/;
@@ -128,9 +129,15 @@ const files = walk(LOCAL_FIRST).filter((f) => !f.startsWith(SERVER_DIR + "/"));
     const hook = stripComments(readFileSync(join(LOCAL_FIRST, "read-cache/use-local-balances.ts"), "utf8"));
     expect(hook.match(/\bfetch\s*\(/g)?.length ?? 0).toBe(1);
     expect(hook).not.toMatch(/\/api\//);
+    // drain.ts: /api/ routes only through the injected fetchImpl, never a direct fetch call.
+    const drainCode = stripComments(readFileSync(join(LOCAL_FIRST, "write-path/drain.ts"), "utf8"));
+    expect(drainCode.match(/\/api\//g)?.length ?? 0).toBeGreaterThan(0);
+    expect(drainCode).not.toMatch(/(?<![.\w])fetch\s*\(/);
+    expect(drainCode).not.toMatch(/\b(?:globalThis|window|self)\s*\.\s*fetch\b/);
     expect(Object.keys(NETWORK_ALLOWED).sort()).toEqual([
       "src/lib/local-first/read-cache/hydrate.ts",
       "src/lib/local-first/read-cache/use-local-balances.ts",
+      "src/lib/local-first/write-path/drain.ts",
     ]);
   });
 
