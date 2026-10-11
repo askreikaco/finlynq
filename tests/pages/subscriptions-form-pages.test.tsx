@@ -206,6 +206,23 @@ describe("/subscriptions/[id]/edit: edit page", () => {
     await waitFor(() => expect(H.push).toHaveBeenCalledWith("/subscriptions"));
   });
 
+  it("a custom every_n_days subscription shows its interval field and PUTs it; a bad value blocks the save", async () => {
+    subs = [{ ...SUB, frequency: "every_n_days", intervalDays: 10 }];
+    const { container } = render(<EditSubscriptionRoute />);
+    await screen.findByRole("heading", { level: 1, name: "Edit subscription" });
+    const field = screen.getByLabelText("Every (days)") as HTMLInputElement;
+    expect(field.value).toBe("10");
+    expect(field.getAttribute("inputmode")).toBe("numeric");
+    fireEvent.change(field, { target: { value: "400" } });
+    fireEvent.submit(container.querySelector("form")!);
+    expect(await screen.findByText(/whole number from 1 to 365/)).toBeTruthy();
+    expect(callsTo("PUT")).toHaveLength(0);
+    fireEvent.change(field, { target: { value: "14" } });
+    fireEvent.submit(container.querySelector("form")!);
+    await waitFor(() => expect(callsTo("PUT")).toHaveLength(1));
+    expect(body(callsTo("PUT")[0])).toMatchObject({ frequency: "every_n_days", intervalDays: 14 });
+  });
+
   it("deletes only through the overflow confirm dialog", async () => {
     render(<EditSubscriptionRoute />);
     await screen.findByRole("heading", { name: "Edit subscription" });

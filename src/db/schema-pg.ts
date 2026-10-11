@@ -926,6 +926,9 @@ export const subscriptions = pgTable("subscriptions", {
   // date the series started on. Advancing indexes from it so a month-end bill
   // goes Jan 31 -> Feb 28 -> Mar 31. NULL = fall back to next_date.
   anchorDate: text("anchor_date"),
+  // Custom repeat (20261016_subscription_interval_days.sql): the step in days of
+  // frequency = 'every_n_days' (1..365). NULL for every other cadence.
+  intervalDays: integer("interval_days"),
 }, (t) => [
   index("idx_subscriptions_user_id").on(t.userId),
   uniqueIndex("subscriptions_user_name_lookup_uniq").on(t.userId, t.nameLookup),

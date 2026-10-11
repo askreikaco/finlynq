@@ -9,6 +9,7 @@ import { FormRow } from "@/components/transactions/entry/form-row";
 import { AmountRow } from "@/components/transactions/entry/amount-row";
 import { TypeSegmented, TX_TYPE_ORDER } from "@/components/transactions/entry/type-segmented";
 import { ListCard } from "@/components/transactions/entry/list-card";
+import { Tag } from "lucide-react";
 
 afterEach(() => cleanup());
 
@@ -198,5 +199,20 @@ describe("ListCard", () => {
     const card = screen.getByTestId("card");
     expectClass(card, "rounded-2xl", "border", "border-border", "bg-card", "divide-y", "divide-border", "overflow-hidden");
     expect(card.textContent).toContain("row");
+  });
+
+  it("hideLabel with an icon keeps the label as sr-only text (accessible name) and drops the label column", () => {
+    render(
+      <ListCard>
+        <FormRow variant="button" label="Category" icon={Tag} hideLabel placeholder="Category" onClick={() => {}} />
+        <FormRow variant="input" label="Payee" icon={Tag} hideLabel inputValue="" onInputChange={() => {}} placeholder="Payee / Merchant" />
+      </ListCard>,
+    );
+    const btn = screen.getByRole("button", { name: "Category Category" });
+    const sr = btn.querySelector(".sr-only");
+    expect(sr?.textContent).toBe("Category");
+    expect(btn.querySelector(".w-28, .w-24")).toBeNull();
+    expect(btn.querySelector('[data-slot="form-row-icon"]')).toBeTruthy();
+    expect(screen.getByLabelText("Payee")).toBe(screen.getByPlaceholderText("Payee / Merchant"));
   });
 });

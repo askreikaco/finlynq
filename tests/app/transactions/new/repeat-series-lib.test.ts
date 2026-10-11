@@ -5,23 +5,41 @@ import {
   seriesErrorMessage,
   seriesSummary,
   shortDate,
-  REPEAT_GROUPS,
+  REPEAT_OPTIONS,
   repeatLabel,
+  isValidInterval,
   type Series,
 } from "@/lib/transactions/series";
 import { SUBSCRIPTION_FREQUENCIES } from "@/lib/subscriptions/schedule";
 
 describe("seriesSummary (pill text)", () => {
   it("names a forever repeat by its frequency", () => {
+    expect(seriesSummary({ kind: "repeat", frequency: "daily", end: { type: "forever" } })).toBe("Daily");
+    expect(seriesSummary({ kind: "repeat", frequency: "weekly", end: { type: "forever" } })).toBe("Weekly");
     expect(seriesSummary({ kind: "repeat", frequency: "monthly", end: { type: "forever" } })).toBe("Monthly");
-    expect(seriesSummary({ kind: "repeat", frequency: "monthly_eom", end: { type: "forever" } })).toBe("Last day of month");
+    expect(seriesSummary({ kind: "repeat", frequency: "quarterly", end: { type: "forever" } })).toBe("Quarterly");
     expect(seriesSummary({ kind: "repeat", frequency: "annual", end: { type: "forever" } })).toBe("Annually");
   });
+  it("reads a custom interval as 'Every N days' (1 day is just Daily)", () => {
+    const f = "every_n_days" as const;
+    expect(seriesSummary({ kind: "repeat", frequency: f, intervalDays: 3, end: { type: "forever" } })).toBe("Every 3 days");
+    expect(seriesSummary({ kind: "repeat", frequency: f, intervalDays: 365, end: { type: "forever" } })).toBe("Every 365 days");
+    expect(seriesSummary({ kind: "repeat", frequency: f, intervalDays: 1, end: { type: "forever" } })).toBe("Daily");
+    expect(seriesSummary({ kind: "repeat", frequency: f, intervalDays: 10, end: { type: "count", count: 5 } })).toBe("Every 10 days · 5×");
+    expect(seriesSummary({ kind: "repeat", frequency: f, intervalDays: 2, end: { type: "until", date: "2026-12-31" } })).toBe(
+      "Every 2 days until 31 Dec 2026",
+    );
+  });
   it("adds the count or the end date", () => {
-    expect(seriesSummary({ kind: "repeat", frequency: "biweekly", end: { type: "count", count: 12 } })).toBe("Every 2 weeks · 12×");
+    expect(seriesSummary({ kind: "repeat", frequency: "weekly", end: { type: "count", count: 12 } })).toBe("Weekly · 12×");
     expect(seriesSummary({ kind: "repeat", frequency: "monthly", end: { type: "until", date: "2026-12-31" } })).toBe(
       "Monthly until 31 Dec 2026",
     );
+  });
+  it("still labels cadences that only exist on older rows / MCP", () => {
+    expect(seriesSummary({ kind: "repeat", frequency: "monthly_eom", end: { type: "forever" } })).toBe("Last day of month");
+    expect(seriesSummary({ kind: "repeat", frequency: "biweekly", end: { type: "count", count: 12 } })).toBe("Every 2 weeks · 12×");
+    expect(seriesSummary({ kind: "repeat", frequency: "weekdays", end: { type: "forever" } })).toBe("Weekdays");
   });
   it("counts installments", () => {
     expect(seriesSummary({ kind: "installment", count: 6, mode: "split" })).toBe("6 installments");
@@ -32,30 +50,27 @@ describe("seriesSummary (pill text)", () => {
   });
 });
 
-describe("repeat list: Daily group", () => {
-  it("is the first group, ahead of Weekly, with Every day / Weekdays / Weekend", () => {
-    expect(REPEAT_GROUPS.map((g) => g.title)).toEqual(["Daily", "Weekly", "Monthly", "Yearly"]);
-    expect(REPEAT_GROUPS[0].options).toEqual([
-      { frequency: "daily", label: "Every day" },
-      { frequency: "weekdays", label: "Weekdays" },
-      { frequency: "weekend", label: "Weekend" },
+describe("repeat list", () => {
+  it("is ONE flat list in the owner's order", () => {
+    expect(REPEAT_OPTIONS).toEqual([
+      { value: "none", label: "No repeat" },
+      { value: "daily", label: "Daily" },
+      { value: "weekly", label: "Weekly" },
+      { value: "monthly", label: "Monthly" },
+      { value: "quarterly", label: "Quarterly" },
+      { value: "annual", label: "Annually" },
+      { value: "every_n_days", label: "Custom" },
     ]);
   });
-  it("summaries, labels and API body for the daily cadences", () => {
-    expect(repeatLabel("daily")).toBe("Every day");
-    expect(repeatLabel("weekdays")).toBe("Weekdays");
-    expect(repeatLabel("weekend")).toBe("Weekend");
-    expect(seriesSummary({ kind: "repeat", frequency: "weekdays", end: { type: "forever" } })).toBe("Weekdays");
-    expect(seriesSummary({ kind: "repeat", frequency: "daily", end: { type: "count", count: 30 } })).toBe("Every day · 30×");
-    expect(seriesSummary({ kind: "repeat", frequency: "weekend", end: { type: "until", date: "2026-12-31" } })).toBe("Weekend until 31 Dec 2026");
-    expect(buildRepeatBody({ kind: "repeat", frequency: "weekend", end: { type: "forever" } })).toEqual({ frequency: "weekend", end: { type: "forever" } });
+  it("every offered value except 'none' is a real engine frequency", () => {
+    for (const o of REPEAT_OPTIONS) if (o.value !== "none") expect(SUBSCRIPTION_FREQUENCIES).toContain(o.value);
   });
-});
-
-describe("repeat list", () => {
-  it("offers every API frequency exactly once", () => {
-    const all = REPEAT_GROUPS.flatMap((g) => g.options.map((o) => o.frequency)).sort();
-    expect(all).toEqual([...SUBSCRIPTION_FREQUENCIES].sort());
+  it("labels every engine frequency", () => {
+    for (const f of SUBSCRIPTION_FREQUENCIES) expect(repeatLabel(f, 4)).toBeTruthy();
+  });
+  it("validates the interval 1..365 as a whole number", () => {
+    expect([1, 2, 365].every(isValidInterval)).toBe(true);
+    for (const bad of [0, 366, 1.5, NaN, -1, null, undefined, "3"]) expect(isValidInterval(bad)).toBe(false);
   });
 });
 
@@ -70,6 +85,20 @@ describe("buildRepeatBody", () => {
     expect(buildRepeatBody({ ...base, end: { type: "count", count: 4 } })).toEqual({
       frequency: "quarterly",
       end: { type: "count", count: 4 },
+    });
+  });
+});
+
+describe("buildRepeatBody: custom interval", () => {
+  it("sends intervalDays only with every_n_days", () => {
+    expect(buildRepeatBody({ kind: "repeat", frequency: "every_n_days", intervalDays: 10, end: { type: "forever" } })).toEqual({
+      frequency: "every_n_days",
+      intervalDays: 10,
+      end: { type: "forever" },
+    });
+    expect(buildRepeatBody({ kind: "repeat", frequency: "daily", intervalDays: 10, end: { type: "forever" } })).toEqual({
+      frequency: "daily",
+      end: { type: "forever" },
     });
   });
 });

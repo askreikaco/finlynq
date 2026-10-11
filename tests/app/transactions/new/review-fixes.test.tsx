@@ -108,7 +108,7 @@ describe("new transaction page review fixes", () => {
     window.history.replaceState({}, "", "/transactions/new");
     render(<Page />);
     await waitFor(() => expect(screen.getByText("Checking")).toBeTruthy());
-    fireEvent.click(screen.getByText("Account"));
+    fireEvent.click(screen.getByTestId("txnew-row-account"));
     expect(await screen.findByText("Savings")).toBeTruthy();
     expect(screen.queryByText("Brokerage")).toBeNull();
   });
@@ -119,7 +119,7 @@ describe("new transaction page review fixes", () => {
     expect(await screen.findByText(/Investment accounts use Buy\/Sell/)).toBeTruthy();
     const link = screen.getByRole("link", { name: "Open Buy/Sell" });
     expect(link.getAttribute("href")).toBe("/portfolio/new?account=3");
-    expect(screen.getByText("Select Account")).toBeTruthy();
+    expect(screen.getByTestId("txnew-row-account").textContent).toMatch(/^Account\s*Account$/); // sr-only label + placeholder
     expect(screen.queryByText("Brokerage")).toBeNull();
   });
 
@@ -131,7 +131,7 @@ describe("new transaction page review fixes", () => {
     seedPrefill({ txType: "Transfer", accountId: "1", amount: "100" });
     window.history.replaceState({}, "", "/transactions/new?prefill=1&kind=transfer");
     render(<Page />);
-    fireEvent.click(screen.getByText("Select Destination Account"));
+    fireEvent.click(screen.getByText("To account"));
     fireEvent.click(await screen.findByText("Euro Account"));
 
     const received = (await screen.findByLabelText("Received (EUR)")) as HTMLInputElement;
@@ -171,7 +171,7 @@ describe("new transaction page review fixes", () => {
       }),
     );
     render(<Page />);
-    fireEvent.click(screen.getByText("Select Destination Account"));
+    fireEvent.click(screen.getByText("To account"));
     fireEvent.click(await screen.findByText("Euro Account"));
 
     fireEvent.click(screen.getByLabelText("Currency"));
@@ -215,7 +215,7 @@ describe("new transaction page review fixes", () => {
       }),
     );
     render(<Page />);
-    fireEvent.click(screen.getByText("Select Destination Account"));
+    fireEvent.click(screen.getByText("To account"));
     fireEvent.click(await screen.findByText("Euro Account"));
     fireEvent.click(await screen.findByRole("button", { name: "Save" }));
     expect(await screen.findByText("No FX rate for EUR.")).toBeTruthy();

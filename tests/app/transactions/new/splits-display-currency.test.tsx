@@ -134,12 +134,7 @@ describe("SplitSection currency (entered-currency rule)", () => {
       expect(screen.getByText("Savings No Currency")).toBeTruthy();
     });
 
-    // Expand More details
-    const advancedBtn = screen.getByRole("button", {
-      name: /More details/i,
-    });
-    fireEvent.click(advancedBtn);
-
+    // The Split card is always on the page (no More details).
     // Wait for SplitSection to be present
     await waitFor(() => {
       expect(screen.getByTestId("split-section-mock")).toBeTruthy();
@@ -170,12 +165,7 @@ describe("SplitSection currency (entered-currency rule)", () => {
       expect(screen.getByText("Checking CAD")).toBeTruthy();
     });
 
-    // Expand More details
-    const advancedBtn = screen.getByRole("button", {
-      name: /More details/i,
-    });
-    fireEvent.click(advancedBtn);
-
+    // The Split card is always on the page (no More details).
     // Wait for SplitSection to be present
     await waitFor(() => {
       expect(screen.getByTestId("split-section-mock")).toBeTruthy();
@@ -203,7 +193,6 @@ describe("SplitSection currency (entered-currency rule)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Currency" }));
     fireEvent.click(await screen.findByRole("button", { name: /^USD/ }));
 
-    fireEvent.click(screen.getByRole("button", { name: /More details/i }));
     await waitFor(() => {
       expect(screen.getByTestId("split-section-mock")).toBeTruthy();
     });

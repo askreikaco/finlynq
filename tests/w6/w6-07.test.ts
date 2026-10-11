@@ -44,7 +44,9 @@ describe("W6-07 design-system sweep", () => {
     expect(form.includes("<SplitRows")).toBe(true);
     const count = readFileSync(SPLIT_COUNT, "utf8");
     expect(count.includes("data-testid=\"split-count\"")).toBe(true);
-    expect(count.split("aria-label=\"Number of splits\"").length - 1).toBe(1);
+    // Two inputs carry the name: the page-variant input and the shared SplitCountControl (entry variant and the
+    // Split accordion header). They are mutually exclusive variants, never rendered together.
+    expect(count.split("aria-label=\"Number of splits\"").length - 1).toBe(2);
     expect(count.includes("height=\"tall\"")).toBe(true);
   });
   for (const [f, old] of SKELETON) {

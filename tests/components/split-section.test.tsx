@@ -74,7 +74,9 @@ describe("SplitSection count field", () => {
   it("shows the Splits count field instead of a switch, with no Add Split Row button", () => {
     render(<Harness />);
     expect(countInput().getAttribute("inputmode")).toBe("numeric");
-    expect(screen.getByText("Splits")).toBeTruthy();
+    // Accordion card titled "Split", collapsed at 0, with the count in its header.
+    expect(screen.getByText("Split")).toBeTruthy();
+    expect(screen.getByTestId("txnew-split").getAttribute("data-state")).toBe("closed");
     expect(screen.queryByRole("switch")).toBeNull();
     expect(screen.queryByText("Add Split Row")).toBeNull();
     expect(screen.queryByText("Split this transaction")).toBeNull();

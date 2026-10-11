@@ -30,6 +30,14 @@
  * it. Internally a matching day maps to an ordinal (whole weeks since the epoch
  * Monday x matching days per week + position in the week), so index <-> date is
  * O(1) both ways, for negative indexes too. `daily` is just a 1-day step.
+ *
+ * `every_n_days` is a daily-style cadence with a user-chosen step (1..365 days,
+ * `subscriptions.interval_days`). The engine takes a single frequency string, so
+ * the interval travels inside it: {@link scheduleFrequency} turns
+ * (`every_n_days`, 3) into the key `"every_n_days:3"`, which every function in
+ * this module (and the ones in ./occurrences, ./calendar-events) understands.
+ * Other frequencies pass through untouched, so existing rows (null interval) are
+ * unaffected. A missing/invalid interval degrades to a 1-day step (= daily).
  */
 
 export const SUBSCRIPTION_FREQUENCIES = [
@@ -45,6 +53,7 @@ export const SUBSCRIPTION_FREQUENCIES = [
   "quarterly",
   "semiannual",
   "annual",
+  "every_n_days",
 ] as const;
 
 export type SubscriptionFrequency = (typeof SUBSCRIPTION_FREQUENCIES)[number];
@@ -62,6 +71,7 @@ export const FREQUENCY_LABELS: Record<SubscriptionFrequency, string> = {
   quarterly: "Quarterly",
   semiannual: "Semi-annual",
   annual: "Annual",
+  every_n_days: "Custom (days)",
 };
 
 /** Compact per-period suffix for amounts, e.g. `$9.99 / mo`. */
@@ -78,6 +88,7 @@ export const FREQUENCY_SUFFIX: Record<SubscriptionFrequency, string> = {
   quarterly: "qtr",
   semiannual: "6 mo",
   annual: "yr",
+  every_n_days: "period",
 };
 
 // daily/weekdays/weekend are approximations (365 days, 52 x 5, 52 x 2) so the
@@ -95,6 +106,7 @@ const PERIODS_PER_YEAR: Record<SubscriptionFrequency, number> = {
   quarterly: 4,
   semiannual: 2,
   annual: 1,
+  every_n_days: 365, // placeholder (1-day step); the real figure is 365 / interval, see periodsPerYear()
 };
 
 // `eom` pins every occurrence to the month's LAST day regardless of the anchor's
@@ -117,7 +129,55 @@ const STEP: Record<SubscriptionFrequency, Step> = {
   quarterly: { unit: "month", n: 3 },
   semiannual: { unit: "month", n: 6 },
   annual: { unit: "month", n: 12 },
+  every_n_days: { unit: "day", n: 1 }, // placeholder; the real step comes from the interval, see stepOf()
 };
+
+/** Bounds of the custom interval (days). */
+export const MIN_INTERVAL_DAYS = 1;
+export const MAX_INTERVAL_DAYS = 365;
+const EVERY_N = "every_n_days";
+
+export function isValidIntervalDays(n: unknown): n is number {
+  return typeof n === "number" && Number.isInteger(n) && n >= MIN_INTERVAL_DAYS && n <= MAX_INTERVAL_DAYS;
+}
+
+/**
+ * The key the engine functions take: `"every_n_days:N"` for a custom interval,
+ * the plain canonical frequency otherwise (or "monthly" fallback like
+ * {@link frequencyOrMonthly}). `intervalDays` is ignored for other frequencies.
+ */
+export function scheduleFrequency(
+  raw: string | null | undefined,
+  intervalDays?: number | null,
+): string {
+  const key = (raw ?? "").trim().toLowerCase();
+  const m = /^every_n_days(?::(\d+))?$/.exec(key);
+  if (m) {
+    const n = intervalDays != null ? intervalDays : m[1] != null ? Number(m[1]) : NaN;
+    return isValidIntervalDays(n) ? `${EVERY_N}:${n}` : EVERY_N;
+  }
+  return frequencyOrMonthly(raw);
+}
+
+/** The interval carried by a schedule key / row (1 when absent or invalid; null for non-custom cadences). */
+export function intervalDaysOf(raw: string | null | undefined, intervalDays?: number | null): number | null {
+  const key = scheduleFrequency(raw, intervalDays);
+  if (!key.startsWith(EVERY_N)) return null;
+  const n = Number(key.split(":")[1]);
+  return isValidIntervalDays(n) ? n : 1;
+}
+
+/** STEP for a schedule key: the custom interval replaces the placeholder day step. */
+function stepOf(key: string): Step {
+  const n = intervalDaysOf(key);
+  if (n != null) return { unit: "day", n };
+  return STEP[frequencyOrMonthly(key)];
+}
+
+function periodsPerYear(raw: string | null | undefined, intervalDays?: number | null): number {
+  const n = intervalDaysOf(raw, intervalDays);
+  return n != null ? 365 / n : PERIODS_PER_YEAR[frequencyOrMonthly(raw)];
+}
 
 // Older writers used other spellings: the recurring detector and MCP accept
 // "yearly", and free-text rows exist from before the column was constrained by
@@ -179,7 +239,9 @@ const ALIASES: Record<string, SubscriptionFrequency> = {
 /** Canonical cadence for a stored/entered value, or `null` when unrecognised. */
 export function normalizeFrequency(raw: string | null | undefined): SubscriptionFrequency | null {
   if (!raw) return null;
-  return ALIASES[raw.trim().toLowerCase()] ?? null;
+  const key = raw.trim().toLowerCase();
+  if (key === EVERY_N || key.startsWith(`${EVERY_N}:`)) return EVERY_N;
+  return ALIASES[key] ?? null;
 }
 
 /**
@@ -191,19 +253,30 @@ export function frequencyOrMonthly(raw: string | null | undefined): Subscription
   return normalizeFrequency(raw) ?? "monthly";
 }
 
-export function frequencyLabel(raw: string | null | undefined): string {
+/** Per-period amount suffix: "mo", "day", "3 days" for a custom interval. */
+export function frequencySuffix(raw: string | null | undefined, intervalDays?: number | null): string {
+  const n = intervalDaysOf(raw, intervalDays);
+  if (n != null) return n === 1 ? "day" : `${n} days`;
+  return FREQUENCY_SUFFIX[frequencyOrMonthly(raw)];
+}
+
+export function frequencyLabel(raw: string | null | undefined, intervalDays?: number | null): string {
   const f = normalizeFrequency(raw);
+  if (f === EVERY_N) {
+    const n = intervalDaysOf(raw, intervalDays) ?? 1;
+    return n === 1 ? "Every day" : `Every ${n} days`;
+  }
   return f ? FREQUENCY_LABELS[f] : (raw ?? "");
 }
 
 /** What one period costs, spread evenly over a month (weekly = ×52/12). */
-export function monthlyEquivalent(amount: number, frequency: string | null | undefined): number {
-  return (amount * PERIODS_PER_YEAR[frequencyOrMonthly(frequency)]) / 12;
+export function monthlyEquivalent(amount: number, frequency: string | null | undefined, intervalDays?: number | null): number {
+  return (amount * periodsPerYear(frequency, intervalDays)) / 12;
 }
 
 /** What one period costs over a full year. */
-export function annualEquivalent(amount: number, frequency: string | null | undefined): number {
-  return amount * PERIODS_PER_YEAR[frequencyOrMonthly(frequency)];
+export function annualEquivalent(amount: number, frequency: string | null | undefined, intervalDays?: number | null): number {
+  return amount * periodsPerYear(frequency, intervalDays);
 }
 
 // ─── Date helpers (UTC, ISO strings) ────────────────────────────────────────
@@ -274,7 +347,7 @@ function dowDayFromOrdinal(n: number, offsets: readonly number[]): number {
 export function occurrenceAt(anchor: string, frequency: string | null | undefined, k: number): string {
   const p = parseIso(anchor);
   if (!p) return anchor;
-  const step = STEP[frequencyOrMonthly(frequency)];
+  const step = stepOf(scheduleFrequency(frequency));
   if (step.unit === "dow") {
     const n = dowOrdinal(Math.floor(Date.UTC(p.y, p.m0, p.d) / DAY_MS), step.offsets) + k;
     return isoFromUtcMs(dowDayFromOrdinal(n, step.offsets) * DAY_MS);
@@ -291,10 +364,10 @@ export function occurrenceAt(anchor: string, frequency: string | null | undefine
 }
 
 /** Smallest index k whose occurrence is on or after `date`. */
-function firstIndexOnOrAfter(anchor: string, frequency: SubscriptionFrequency, date: string): number {
+function firstIndexOnOrAfter(anchor: string, frequency: string, date: string): number {
   const a = parseIso(anchor)!;
   const t = parseIso(date)!;
-  const step = STEP[frequency];
+  const step = stepOf(frequency);
   if (step.unit === "dow") {
     const day = (x: { y: number; m0: number; d: number }) => Math.floor(Date.UTC(x.y, x.m0, x.d) / DAY_MS);
     return dowOrdinal(day(t), step.offsets) - dowOrdinal(day(a), step.offsets);
@@ -314,7 +387,7 @@ function firstIndexOnOrAfter(anchor: string, frequency: SubscriptionFrequency, d
 /** First occurrence on or after `date` for a schedule anchored at `anchor`. */
 export function nextOnOrAfter(anchor: string, frequency: string | null | undefined, date: string): string | null {
   if (!parseIso(anchor) || !parseIso(date)) return null;
-  const f = frequencyOrMonthly(frequency);
+  const f = scheduleFrequency(frequency);
   return occurrenceAt(anchor, f, firstIndexOnOrAfter(anchor, f, date));
 }
 
@@ -333,7 +406,7 @@ export function nextOnOrAfter(anchor: string, frequency: string | null | undefin
 function resolveSeries(
   anchorDate: string | null | undefined,
   nextDate: string,
-  f: SubscriptionFrequency,
+  f: string,
 ): { anchor: string; base: number } {
   if (anchorDate && parseIso(anchorDate)) {
     const j = firstIndexOnOrAfter(anchorDate, f, nextDate);
@@ -350,7 +423,7 @@ export function effectiveAnchor(
   frequency: string | null | undefined,
 ): string {
   if (!parseIso(nextDate)) return nextDate;
-  return resolveSeries(anchorDate, nextDate, frequencyOrMonthly(frequency)).anchor;
+  return resolveSeries(anchorDate, nextDate, scheduleFrequency(frequency)).anchor;
 }
 
 /**
@@ -365,7 +438,7 @@ export function occurrenceFromNext(
   k: number,
 ): string {
   if (!parseIso(nextDate) || k <= 0) return nextDate;
-  const f = frequencyOrMonthly(frequency);
+  const f = scheduleFrequency(frequency);
   const { anchor, base } = resolveSeries(anchorDate, nextDate, f);
   return occurrenceAt(anchor, f, base + k);
 }
@@ -382,7 +455,7 @@ export function stepsToOnOrAfter(
   date: string,
 ): number {
   if (!parseIso(nextDate) || !parseIso(date) || date <= nextDate) return 0;
-  const f = frequencyOrMonthly(frequency);
+  const f = scheduleFrequency(frequency);
   const { anchor, base } = resolveSeries(anchorDate, nextDate, f);
   return Math.max(0, firstIndexOnOrAfter(anchor, f, date) - base);
 }
@@ -441,7 +514,7 @@ export function occurrencesBetween(
   ending?: ScheduleEnd | null,
 ): string[] {
   if (!parseIso(anchor) || !parseIso(start) || !parseIso(end) || start > end) return [];
-  const f = frequencyOrMonthly(frequency);
+  const f = scheduleFrequency(frequency);
   const out: string[] = [];
   const hasCount = ending?.remainingCount != null && Number.isFinite(ending.remainingCount);
   let k = firstIndexOnOrAfter(anchor, f, start);

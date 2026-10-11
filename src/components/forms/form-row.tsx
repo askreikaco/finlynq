@@ -39,6 +39,12 @@ interface FormRowBaseProps {
   error?: string;
   /** Helper text rendered under the row (muted). Ignored when `error` is set. */
   hint?: React.ReactNode;
+  /**
+   * Icon-only mode: the label text stays in the DOM as sr-only text (accessible name, <label htmlFor>)
+   * but only the icon shows, and the label column shrinks to the icon. Put the visible wording in
+   * `placeholder`. Needs `icon`; ignored without one.
+   */
+  hideLabel?: boolean;
 }
 
 export interface FormRowButtonProps extends FormRowBaseProps {
@@ -100,10 +106,11 @@ function ValueText({
 export function FormRow(props: FormRowProps) {
   const generatedId = React.useId();
   const { label, invalid, testId, right, className, error, hint, icon: Icon } = props;
+  const iconOnly = !!props.hideLabel && !!Icon;
   const rowClass = cn(ROW_BASE, ROW_HEIGHT[props.height ?? "default"]);
   const labelClass = cn(
     LABEL_BASE,
-    LABEL_WIDTH[props.labelWidth ?? "default"],
+    !iconOnly && LABEL_WIDTH[props.labelWidth ?? "default"],
     invalid && "text-neg",
     Icon && "flex items-center gap-2",
   );
@@ -111,7 +118,7 @@ export function FormRow(props: FormRowProps) {
   const labelContent = Icon ? (
     <>
       <Icon aria-hidden="true" data-slot="form-row-icon" className="size-[18px] shrink-0 text-muted-foreground" />
-      <span className="min-w-0 truncate">{label}</span>
+      <span className={iconOnly ? "sr-only" : "min-w-0 truncate"}>{label}</span>
     </>
   ) : (
     label

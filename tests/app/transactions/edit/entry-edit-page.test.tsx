@@ -168,16 +168,19 @@ describe("edit page = entry screen: prefill", () => {
     expect(screen.getByTestId("txnew-row-account").textContent).toContain("Checking");
     expect((document.getElementById("txnew-payee") as HTMLInputElement).value).toBe("p");
     expect((document.getElementById("txnew-note") as HTMLTextAreaElement).value).toBe("n");
-    // Tags and Business make More details open.
-    expect(screen.getByTestId("txnew-more").getAttribute("aria-expanded")).toBe("true");
+    // Tags and Business sit inline in the main card (no More details).
+    expect(screen.queryByTestId("txnew-more")).toBeNull();
     expect((document.getElementById("txnew-tags") as HTMLInputElement).value).toBe("t1");
     expect(screen.getByRole("switch", { name: /Business/ }).getAttribute("aria-checked")).toBe("true");
   });
 
-  it("More details stays closed for a row with no tags / business / splits", async () => {
+  it("Split and Repeat stay collapsed for a row with no splits; Repeat is create-only", async () => {
     stubFetch({ "/api/transactions": () => ({ data: [{ ...tx, tags: "", isBusiness: 0 }] }) });
     await mountReady();
-    expect(screen.getByTestId("txnew-more").getAttribute("aria-expanded")).toBe("false");
+    expect(screen.getByTestId("txnew-split").getAttribute("data-state")).toBe("closed");
+    expect(screen.queryByTestId("split-row-1")).toBeNull();
+    expect(screen.queryByTestId("txnew-repeat")).toBeNull();
+    expect(screen.getByRole("switch", { name: /Business/ }).getAttribute("aria-checked")).toBe("false");
   });
 
   it("ignores a stale Duplicate prefill in sessionStorage and the ?account= preset", async () => {
@@ -188,12 +191,12 @@ describe("edit page = entry screen: prefill", () => {
     expect(screen.getByRole("heading", { name: "Edit expense" })).toBeTruthy();
   });
 
-  it("seeds the stored splits (count and rows) and opens More details", async () => {
+  it("seeds the stored splits (count and rows) and expands the Split card", async () => {
     stubFetch({
       "/api/transactions/splits": () => [{ categoryId: 1, amount: -2, note: "a" }, { categoryId: 1, amount: -3, note: null }],
     });
     await mountReady();
-    expect(screen.getByTestId("txnew-more").getAttribute("aria-expanded")).toBe("true");
+    expect(screen.getByTestId("txnew-split").getAttribute("data-state")).toBe("open");
     expect((document.getElementById("txnew-split-count") as HTMLInputElement | null)?.value ?? "2").toBe("2");
     expect(screen.getByTestId("split-row-1")).toBeTruthy();
     expect(screen.getByTestId("split-row-2")).toBeTruthy();

@@ -9,7 +9,7 @@ import { validateBody, safeErrorMessage, logApiError } from "@/lib/validate";
 import { buildNameFields, decryptNamedRows, decryptTxRows, encryptOptional, decryptOptional } from "@/lib/crypto/encrypted-columns";
 import { verifyOwnership, OwnershipError } from "@/lib/verify-ownership";
 import { getDisplayCurrency, getRateMap, convertWithRateMap } from "@/lib/fx-service";
-import { frequencyOrMonthly, isValidIsoDate, normalizeFrequency, SUBSCRIPTION_FREQUENCIES } from "@/lib/subscriptions/schedule";
+import { frequencyOrMonthly, isValidIsoDate, MAX_INTERVAL_DAYS, MIN_INTERVAL_DAYS, normalizeFrequency, SUBSCRIPTION_FREQUENCIES } from "@/lib/subscriptions/schedule";
 import { advanceStaleSubscriptionDatesSafe } from "@/lib/subscriptions/advance-next-dates";
 import { todayISO } from "@/lib/utils/date";
 import { pgErrorConstraint } from "@/lib/db-utils";
@@ -39,6 +39,15 @@ const nonZeroAmount = z
   .refine((n) => Number.isFinite(n) && n !== 0, { message: "Amount must not be zero" })
   .transform((n) => Math.abs(n));
 
+// Custom cadence: `intervalDays` is the step of frequency "every_n_days".
+const optionalIntervalDays = z
+  .number()
+  .int({ message: "intervalDays must be a whole number" })
+  .min(MIN_INTERVAL_DAYS, { message: `intervalDays must be ${MIN_INTERVAL_DAYS}-${MAX_INTERVAL_DAYS}` })
+  .max(MAX_INTERVAL_DAYS, { message: `intervalDays must be ${MIN_INTERVAL_DAYS}-${MAX_INTERVAL_DAYS}` })
+  .nullable()
+  .optional();
+
 const optionalFk = z.union([z.number().int().positive(), z.null()]).optional();
 const optionalFrequency = z
   .string()
@@ -54,12 +63,16 @@ const createSchema = z.object({
   amount: nonZeroAmount,
   currency: z.string().nullable().optional(),
   frequency: optionalFrequency,
+  intervalDays: optionalIntervalDays,
   categoryId: optionalFk,
   accountId: optionalFk,
   nextDate: optionalDate,
   status: z.enum(STATUSES).optional(),
   cancelReminderDate: optionalDate,
   notes: z.string().nullable().optional(),
+}).refine((v) => v.frequency !== "every_n_days" || v.intervalDays != null, {
+  message: "intervalDays is required when frequency is every_n_days",
+  path: ["intervalDays"],
 });
 
 // Explicit field list. This was `.passthrough()` and the whole body was spread
@@ -71,12 +84,16 @@ const putSchema = z.object({
   amount: nonZeroAmount.optional(),
   currency: z.string().trim().min(3).optional(),
   frequency: optionalFrequency,
+  intervalDays: optionalIntervalDays,
   categoryId: optionalFk,
   accountId: optionalFk,
   nextDate: optionalDate,
   status: z.enum(STATUSES).optional(),
   cancelReminderDate: optionalDate,
   notes: z.string().nullable().optional(),
+}).refine((v) => v.frequency !== "every_n_days" || v.intervalDays != null, {
+  message: "intervalDays is required when frequency is every_n_days",
+  path: ["intervalDays"],
 });
 
 const skipSchema = z.object({
@@ -102,6 +119,7 @@ export async function GET(request: NextRequest) {
       amount: schema.subscriptions.amount,
       currency: schema.subscriptions.currency,
       frequency: schema.subscriptions.frequency,
+      intervalDays: schema.subscriptions.intervalDays,
       categoryId: schema.subscriptions.categoryId,
       categoryNameCt: schema.categories.nameCt,
       accountId: schema.subscriptions.accountId,
@@ -159,7 +177,7 @@ export async function GET(request: NextRequest) {
     ...(s.status === "active"
       ? (() => {
           const due = dueOccurrences(
-            { nextDate: s.nextDate, anchorDate: s.anchorDate, frequency: s.frequency, endDate: s.endDate, remainingCount: s.remainingCount },
+            { nextDate: s.nextDate, anchorDate: s.anchorDate, frequency: s.frequency, intervalDays: s.intervalDays, endDate: s.endDate, remainingCount: s.remainingCount },
             today,
           );
           return { overdue: due.overdue, dueCount: due.dueCount };
@@ -296,6 +314,7 @@ export async function POST(request: NextRequest) {
         amount: d.amount,
         currency,
         frequency: d.frequency ?? "monthly",
+        intervalDays: d.frequency === "every_n_days" ? d.intervalDays ?? null : null,
         categoryId: d.categoryId ?? null,
         accountId: d.accountId ?? null,
         nextDate: d.nextDate ?? null,
@@ -357,9 +376,15 @@ export async function PUT(request: NextRequest) {
     // series, so the anchor follows it. The edit form re-sends the UNCHANGED
     // next_date on every save — that must not clobber a Jan 31 anchor sitting
     // behind a Feb 28 next_date, so only a real change resets it.
-    if (rest.nextDate !== undefined || rest.frequency !== undefined) {
+    // A non-custom cadence never carries an interval.
+    if (rest.frequency !== undefined && rest.frequency !== "every_n_days") set.intervalDays = null;
+    if (rest.nextDate !== undefined || rest.frequency !== undefined || rest.intervalDays !== undefined) {
       const current = await db
-        .select({ nextDate: schema.subscriptions.nextDate, frequency: schema.subscriptions.frequency })
+        .select({
+          nextDate: schema.subscriptions.nextDate,
+          frequency: schema.subscriptions.frequency,
+          intervalDays: schema.subscriptions.intervalDays,
+        })
         .from(schema.subscriptions)
         .where(and(eq(schema.subscriptions.id, id), eq(schema.subscriptions.userId, userId)))
         .get();
@@ -367,7 +392,9 @@ export async function PUT(request: NextRequest) {
         const nextChanged = rest.nextDate !== undefined && rest.nextDate !== current.nextDate;
         const freqChanged =
           rest.frequency !== undefined && rest.frequency !== normalizeFrequency(current.frequency);
-        if (nextChanged || freqChanged) set.anchorDate = rest.nextDate !== undefined ? rest.nextDate : current.nextDate;
+        const intervalChanged =
+          set.intervalDays !== undefined && (set.intervalDays ?? null) !== (current.intervalDays ?? null);
+        if (nextChanged || freqChanged || intervalChanged) set.anchorDate = rest.nextDate !== undefined ? rest.nextDate : current.nextDate;
       }
     }
     // Free-text `notes` is user-DEK encrypted at rest (2026-06-01).
