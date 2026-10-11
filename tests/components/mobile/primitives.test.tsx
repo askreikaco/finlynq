@@ -133,7 +133,7 @@ describe("SectionCard / SectionLabel / StatTile", () => {
     // Assert MetricCard contract: label text is rendered with MetricCard styling
     expect(screen.getByText("Income")).toBeTruthy();
     expect(cls(screen.getByText("Income"))).toEqual(
-      expect.arrayContaining(["text-xs", "font-medium", "text-muted-foreground", "tracking-wide", "uppercase", "truncate"])
+      expect.arrayContaining(["text-xs", "font-medium", "text-muted-foreground", "tracking-wide", "uppercase", "break-words"])
     );
     // Assert value is rendered (the Amount component should show $1.00)
     expect(screen.getByText("$1.00")).toBeTruthy();

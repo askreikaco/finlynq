@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { OnboardingTips } from "@/components/onboarding-tips";
 import { Badge } from "@/components/ui/badge";
-import { Plus, SlidersHorizontal, ChevronDown, Receipt, Search, X, AlertTriangle, ArrowRightLeft, Columns3, TrendingUp, Download, ShoppingCart, Banknote, Repeat, Send, HandCoins, CircleDollarSign, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
+import { Plus, PanelRight, SlidersHorizontal, ChevronDown, Receipt, Search, X, AlertTriangle, ArrowRightLeft, Columns3, TrendingUp, Download, ShoppingCart, Banknote, Repeat, Send, HandCoins, CircleDollarSign, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuGroup, DropdownMenuLabel, DropdownMenuCheckboxItem, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { portfolioEditHref, transactionEditHref, transactionSplitHref } from "@/lib/transactions/edit-flow";
 import { MobileTxList } from "@/components/transactions/mobile-tx-list";
@@ -40,6 +40,8 @@ import { LotReallocationNotice } from "@/components/portfolio/lot-reallocation-n
 import type { LotReallocationPreview } from "@/lib/portfolio/lots/types";
 import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
 import { DataView, ViewModeToggle, useViewMode, useAppSizeClass } from "@/components/adaptive";
+import { useSplitView } from "@/lib/transactions/split-view";
+import { TransactionDetailPane } from "./transaction-detail-pane";
 import { cn } from "@/lib/utils";
 import { PendingSyncBadge } from "@/components/transactions/pending-sync-badge";
 import { applyPendingToTransactions, countPendingDeletes } from "@/lib/transactions/pending-overlay";
@@ -290,7 +292,12 @@ export function TransactionsWorkspace({
   // Cards / List for this view (one shared store; ViewModeToggle and DataView agree).
   const [viewMode] = useViewMode("transactions");
   // Phone Cards view shows the search link + filter chip; regular and List use the inline Card below.
-  const compactSize = useAppSizeClass() === "compact";
+  const sizeClass = useAppSizeClass();
+  const compactSize = sizeClass === "compact";
+  // Optional split view (list | details) on wide screens only; off unless the user turns it on.
+  const [splitPref, setSplitPref] = useSplitView();
+  const splitView = splitPref && sizeClass === "wide";
+  const [splitSelectedId, setSplitSelectedId] = useState<number | null>(null);
   const phoneCards = viewMode === "cards" && compactSize;
   // Bulk selection exists only in List mode: leaving List drops the selection.
   useEffect(() => {
@@ -397,6 +404,15 @@ export function TransactionsWorkspace({
       else if (t.pendingSync.kind === "create") router.push(`/transactions/new?queued=${encodeURIComponent(t.pendingSync.opId)}`);
       return;
     }
+    if (splitView) {
+      setSplitSelectedId(t.id);
+      return;
+    }
+    openEditPage(t);
+  }
+
+  /** Full edit page: portfolio rows go to their op page, everything else to /transactions/[id]/edit. */
+  function openEditPage(t: Transaction) {
     const portfolioHref = portfolioEditHref(t.kind, t.id);
     router.push(portfolioHref ?? transactionEditHref(t.id, currentReturnTo()));
   }
@@ -746,7 +762,20 @@ export function TransactionsWorkspace({
             <X className="h-3.5 w-3.5" />
           </button>
         )}
-        <ViewModeToggle viewKey="transactions" className="ml-auto" />
+        {sizeClass === "wide" && (
+          <Button
+            type="button"
+            variant={splitView ? "secondary" : "outline"}
+            size="sm"
+            className="ml-auto"
+            aria-pressed={splitView}
+            data-testid="tx-split-toggle"
+            onClick={() => { setSplitPref(!splitPref); setSplitSelectedId(null); }}
+          >
+            <PanelRight className="mr-1.5 h-4 w-4" /> Split view
+          </Button>
+        )}
+        <ViewModeToggle viewKey="transactions" className={sizeClass === "wide" ? undefined : "ml-auto"} />
       </div>
 
       {/* Search + Filters. Inline at regular+ and in List; the phone Cards view uses the search link above. */}
@@ -982,137 +1011,148 @@ export function TransactionsWorkspace({
         </div>
       )}
 
-      {/* One DataView: Cards (phone rows, paged) or List (bulk select, column filters). Only one is mounted. */}
-      <DataView
-        viewKey="transactions"
-        className="space-y-6"
-        cards={() => (
-          <MobileTxList
-            transactions={txns}
-            isLoading={loading && txns.length === 0}
-            isLoadingMore={isLoadingMore}
-            onEdit={startEdit}
-            showAccountName={!locked}
-          />
-        )}
-        list={() => (
-          <>
-            {/* Bulk selection exists only in List mode. */}
-            {someSelected && (
-              <div className="flex flex-wrap items-center gap-3 px-4 py-2.5 bg-primary/5 border border-primary/20 rounded-lg text-sm">
-                <span className="font-medium text-primary">{selected.size} selected</span>
-                <div className="flex items-center gap-2 flex-1 flex-wrap">
-                  <Select value={bulkAction} onValueChange={(v) => { setBulkAction(v ?? ""); resetBulkFields(); }}>
-                    <SelectTrigger className="w-44 h-7 text-xs"><SelectValue placeholder="Choose action…" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="update_category">Change category</SelectItem>
-                      <SelectItem value="update_account">Change account</SelectItem>
-                      <SelectItem value="update_date">Change date</SelectItem>
-                      <SelectItem value="update_payee">Change payee</SelectItem>
-                      <SelectItem value="update_note">Change note</SelectItem>
-                      <SelectItem value="update_tags">Change tags</SelectItem>
-                      <SelectItem value="delete">Delete selected</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {bulkAction === "update_category" && (
-                    <Combobox
-                      value={bulkCategoryId}
-                      onValueChange={(v) => setBulkCategoryId(v)}
-                      items={sortCategory(
-                        categories.map((c): ComboboxItemShape => ({ value: String(c.id), label: `${c.group} — ${c.name}` })),
-                        (c) => Number(c.value),
-                        (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
-                      )}
-                      placeholder="Select category"
-                      searchPlaceholder="Search categories…"
-                      emptyMessage="No matches"
+      <div className={splitView ? "grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] items-start gap-6" : undefined}>
+        {/* One DataView: Cards (phone rows, paged) or List (bulk select, column filters). Only one is mounted. */}
+        <DataView
+          viewKey="transactions"
+          className="space-y-6"
+          cards={() => (
+            <MobileTxList
+              transactions={txns}
+              isLoading={loading && txns.length === 0}
+              isLoadingMore={isLoadingMore}
+              onEdit={startEdit}
+              showAccountName={!locked}
+            />
+          )}
+          list={() => (
+            <>
+              {/* Bulk selection exists only in List mode. */}
+              {someSelected && (
+                <div className="flex flex-wrap items-center gap-3 px-4 py-2.5 bg-primary/5 border border-primary/20 rounded-lg text-sm">
+                  <span className="font-medium text-primary">{selected.size} selected</span>
+                  <div className="flex items-center gap-2 flex-1 flex-wrap">
+                    <Select value={bulkAction} onValueChange={(v) => { setBulkAction(v ?? ""); resetBulkFields(); }}>
+                      <SelectTrigger className="w-44 h-7 text-xs"><SelectValue placeholder="Choose action…" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="update_category">Change category</SelectItem>
+                        <SelectItem value="update_account">Change account</SelectItem>
+                        <SelectItem value="update_date">Change date</SelectItem>
+                        <SelectItem value="update_payee">Change payee</SelectItem>
+                        <SelectItem value="update_note">Change note</SelectItem>
+                        <SelectItem value="update_tags">Change tags</SelectItem>
+                        <SelectItem value="delete">Delete selected</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {bulkAction === "update_category" && (
+                      <Combobox
+                        value={bulkCategoryId}
+                        onValueChange={(v) => setBulkCategoryId(v)}
+                        items={sortCategory(
+                          categories.map((c): ComboboxItemShape => ({ value: String(c.id), label: `${c.group} — ${c.name}` })),
+                          (c) => Number(c.value),
+                          (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
+                        )}
+                        placeholder="Select category"
+                        searchPlaceholder="Search categories…"
+                        emptyMessage="No matches"
+                        size="sm"
+                        className="h-7 w-44 text-xs"
+                      />
+                    )}
+                    {bulkAction === "update_account" && (
+                      <Combobox
+                        value={bulkAccountId}
+                        onValueChange={(v) => setBulkAccountId(v)}
+                        // Bulk "move to account" DESTINATION — archived accounts are
+                        // excluded: this writes new rows into whatever you pick, and an
+                        // archived account is one you've said you're done using.
+                        items={sortAccount(
+                          accounts
+                            .filter((a) => a.archived !== true)
+                            .map((a): ComboboxItemShape => ({ value: String(a.id), label: a.name })),
+                          (a) => Number(a.value),
+                          (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
+                        )}
+                        placeholder="Select account"
+                        searchPlaceholder="Search accounts…"
+                        emptyMessage="No matches"
+                        size="sm"
+                        className="h-7 w-44 text-xs"
+                      />
+                    )}
+                    {bulkAction === "update_date" && (
+                      <Input type="date" className="h-7 text-xs w-36" value={bulkDate} onChange={(e) => setBulkDate(e.target.value)} />
+                    )}
+                    {bulkAction === "update_payee" && (
+                      <Input className="h-7 text-xs w-44" placeholder="New payee" value={bulkPayee} onChange={(e) => setBulkPayee(e.target.value)} />
+                    )}
+                    {bulkAction === "update_note" && (
+                      <Input className="h-7 text-xs w-44" placeholder="New note" value={bulkNote} onChange={(e) => setBulkNote(e.target.value)} />
+                    )}
+                    {bulkAction === "update_tags" && (
+                      <Input className="h-7 text-xs w-44" placeholder="New tags" value={bulkTags} onChange={(e) => setBulkTags(e.target.value)} />
+                    )}
+                    <Button
                       size="sm"
-                      className="h-7 w-44 text-xs"
-                    />
-                  )}
-                  {bulkAction === "update_account" && (
-                    <Combobox
-                      value={bulkAccountId}
-                      onValueChange={(v) => setBulkAccountId(v)}
-                      // Bulk "move to account" DESTINATION — archived accounts are
-                      // excluded: this writes new rows into whatever you pick, and an
-                      // archived account is one you've said you're done using.
-                      items={sortAccount(
-                        accounts
-                          .filter((a) => a.archived !== true)
-                          .map((a): ComboboxItemShape => ({ value: String(a.id), label: a.name })),
-                        (a) => Number(a.value),
-                        (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
-                      )}
-                      placeholder="Select account"
-                      searchPlaceholder="Search accounts…"
-                      emptyMessage="No matches"
-                      size="sm"
-                      className="h-7 w-44 text-xs"
-                    />
-                  )}
-                  {bulkAction === "update_date" && (
-                    <Input type="date" className="h-7 text-xs w-36" value={bulkDate} onChange={(e) => setBulkDate(e.target.value)} />
-                  )}
-                  {bulkAction === "update_payee" && (
-                    <Input className="h-7 text-xs w-44" placeholder="New payee" value={bulkPayee} onChange={(e) => setBulkPayee(e.target.value)} />
-                  )}
-                  {bulkAction === "update_note" && (
-                    <Input className="h-7 text-xs w-44" placeholder="New note" value={bulkNote} onChange={(e) => setBulkNote(e.target.value)} />
-                  )}
-                  {bulkAction === "update_tags" && (
-                    <Input className="h-7 text-xs w-44" placeholder="New tags" value={bulkTags} onChange={(e) => setBulkTags(e.target.value)} />
-                  )}
-                  <Button
-                    size="sm"
-                    className="h-7 text-xs"
-                    onClick={executeBulkAction}
-                    disabled={isBulkApplyDisabled}
-                    variant={bulkAction === "delete" ? "destructive" : "default"}
-                  >
-                    {bulkProcessing ? "Processing…" : "Apply"}
-                  </Button>
+                      className="h-7 text-xs"
+                      onClick={executeBulkAction}
+                      disabled={isBulkApplyDisabled}
+                      variant={bulkAction === "delete" ? "destructive" : "default"}
+                    >
+                      {bulkProcessing ? "Processing…" : "Apply"}
+                    </Button>
+                  </div>
+                  <button aria-label="Clear selection" onClick={() => setSelected(new Set())} className="text-muted-foreground hover:text-foreground transition-colors">
+                    <X className="h-4 w-4" />
+                  </button>
                 </div>
-                <button aria-label="Clear selection" onClick={() => setSelected(new Set())} className="text-muted-foreground hover:text-foreground transition-colors">
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            )}
+              )}
 
-            <Card>
-              <CardContent className="p-0">
-                {/* Table: extracted to <TransactionTable> (FINLYNQ-111 Phase 2). */}
-                <TransactionTable
-                  loading={loading}
-                  txns={txns}
-                  columnPrefs={columnPrefs}
-                  accounts={accounts}
-                  categories={categories}
-                  selected={selected}
-                  allSelected={allSelected}
-                  draggingCol={draggingCol}
-                  sortPref={sortPref}
-                  filters={filters}
-                  setFilters={(f) => setFilters(f as typeof filters)}
-                  setPage={setPage}
-                  toggleAll={toggleAll}
-                  toggleOne={toggleOne}
-                  cycleSort={cycleSort}
-                  findColFilter={findColFilter}
-                  setColFilter={setColFilter}
-                  onColDragStart={onColDragStart}
-                  onColDragOver={onColDragOver}
-                  onColDragEnd={onColDragEnd}
-                  startEdit={startEdit}
-                  openSplitDialog={openSplitDialog}
-                  confirmDelete={confirmDelete}
-                  startDuplicate={startDuplicate}
-                />
-              </CardContent>
-            </Card>
-          </>
+              <Card>
+                <CardContent className="p-0">
+                  {/* Table: extracted to <TransactionTable> (FINLYNQ-111 Phase 2). */}
+                  <TransactionTable
+                    loading={loading}
+                    txns={txns}
+                    columnPrefs={columnPrefs}
+                    accounts={accounts}
+                    categories={categories}
+                    selected={selected}
+                    allSelected={allSelected}
+                    draggingCol={draggingCol}
+                    sortPref={sortPref}
+                    filters={filters}
+                    setFilters={(f) => setFilters(f as typeof filters)}
+                    setPage={setPage}
+                    toggleAll={toggleAll}
+                    toggleOne={toggleOne}
+                    cycleSort={cycleSort}
+                    findColFilter={findColFilter}
+                    setColFilter={setColFilter}
+                    onColDragStart={onColDragStart}
+                    onColDragOver={onColDragOver}
+                    onColDragEnd={onColDragEnd}
+                    startEdit={startEdit}
+                    openSplitDialog={openSplitDialog}
+                    confirmDelete={confirmDelete}
+                    startDuplicate={startDuplicate}
+                  />
+                </CardContent>
+              </Card>
+            </>
+          )}
+        />
+        {splitView && (
+          <div className="sticky top-4">
+            <TransactionDetailPane
+              transaction={txns.find((x) => x.id === splitSelectedId) ?? null}
+              onEdit={openEditPage}
+              onClose={() => setSplitSelectedId(null)}
+            />
+          </div>
         )}
-      />
+      </div>
 
       {/* Infinite scroll trigger sentinel at the bottom of the table */}
       <div
