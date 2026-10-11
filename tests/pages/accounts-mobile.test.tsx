@@ -93,13 +93,12 @@ describe("Accounts page: single list layout (phone-first)", () => {
     expect(trigger(card).getAttribute("aria-expanded")).toBe("true");
   });
 
-  it("Assets and Liabilities headers show their section total", async () => {
+  it("Assets and Liabilities headers carry no section total, and account rows have no letter avatar", async () => {
     const root = await list();
-    const totals = Array.from(root.querySelectorAll("[data-testid=section-total]")).map((e) => e.textContent);
-    expect(totals).toEqual([
-      formatCurrency(40000000 + 2500000 + 10000000, "VND"),
-      formatCurrency(-5000000, "VND"),
-    ]);
+    expect(root.querySelector("[data-testid=section-total]")).toBeNull();
+    const firstLink = root.querySelector('a[href^="/accounts/"]')!;
+    // The row is name + currency badge + balance only: no single-letter avatar tile.
+    expect(Array.from(firstLink.querySelectorAll("div")).some((d) => d.textContent?.length === 1 && d.className.includes("rounded-lg"))).toBe(false);
   });
 
   it("each group header shows its account count (pill) and total in the display currency", async () => {
