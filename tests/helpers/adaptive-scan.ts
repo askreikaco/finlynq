@@ -23,20 +23,17 @@ export const SOURCE_EXTS = [".tsx", ".ts", ".jsx", ".js"] as const;
 // Exempt from the banned scan (unchanged from guard v1).
 export const BANNED_EXEMPT: readonly string[] = [
   "src/components/ui/size-class.ts",
-  "src/components/mobile/",
 ];
 
 // ONE exempt list for the breakpoint and wrapper scans. Narrowed later in the
-// migration (plan section 3): mobile/ goes first, then the overlay ui files.
+// migration (plan section 3): mobile/ is now scanned; the overlay ui files remain.
 // Keep it the only place these paths are listed.
 // - src/components/adaptive/: the size-class primitives themselves (G2-01).
-// - src/components/mobile/: legacy mobile tree, still exempt during migration.
 // - overlay ui files: dialog/sheet/popover/dropdown-menu/confirm-dialog are
 //   viewport-agnostic overlays and keep breakpoint classes by design.
 //   (popover.tsx does not exist yet; listed so the exemption is ready.)
 export const BREAKPOINT_EXEMPT: readonly string[] = [
   "src/components/adaptive/",
-  "src/components/mobile/",
   "src/components/ui/dialog.tsx",
   "src/components/ui/sheet.tsx",
   "src/components/ui/popover.tsx",
