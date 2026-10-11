@@ -97,13 +97,14 @@ describe("Account Detail Page", () => {
     expect(backs[0].getAttribute("href")).toBe("/accounts");
   });
 
-  it("shows balance prominently under the header", async () => {
+  it("shows the balance as a metric card (label + amount) under the header", async () => {
     render(<AccountDetailPage />);
     await waitFor(() => {
-      const balance = screen.getByText(formatCurrency(50000000, "VND"));
-      expect(balance).toBeTruthy();
-      // Check it's in a large font (text-3xl)
-      expect(balance.className).toContain("text-3xl");
+      expect(screen.getByText(formatCurrency(50000000, "VND"))).toBeTruthy();
+      const label = screen.getByText("Balance");
+      // Same card as Home's income tile: uppercase label that wraps instead of truncating.
+      expect(label.className).toContain("uppercase");
+      expect(label.className).not.toContain("truncate");
     });
   });
 

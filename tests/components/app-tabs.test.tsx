@@ -104,7 +104,7 @@ describe("visibility by viewport (regular: is a viewport query, 40rem)", () => {
   it("app shell clears the rail on the left and drops bottom clearance from regular up", () => {
     expect(LAYOUT_SRC).toContain("regular:pl-[calc(5rem+var(--sal))]");
     expect(LAYOUT_SRC).toContain("regular:pb-0");
-    expect(LAYOUT_SRC).toContain("pb-[calc(var(--mobile-bar-clearance)+80px)] regular:pb-0");
+    expect(LAYOUT_SRC).toContain("pb-[calc(var(--mobile-bar-clearance)+16px)] regular:pb-0");
     expect(LAYOUT_SRC).not.toMatch(/(^|\s)md:(pb|pl)-/);
   });
 });

@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { InvisibleMark } from "@/components/invisible-mark";
 import { Switch } from "@/components/ui/switch";
 import { formatCurrency } from "@/lib/currency";
 import {
@@ -43,6 +44,8 @@ import { ErrorState } from "@/components/error-state";
 import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
 import type { Mode } from "@/components/inbox/modes";
 import { NetWorthHistoryChart } from "@/components/net-worth-history-chart";
+import { MetricCard } from "@/components/metric-card";
+import { deriveBalanceMonthly, type BalanceMonthly } from "@/lib/accounts/balance-series";
 import { TransactionsWorkspace } from "../../transactions/_components/transactions-workspace";
 import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
 import { usePageFab } from "@/components/mobile/page-fab";
@@ -100,6 +103,8 @@ export default function AccountDetailPage() {
   const [balance, setBalance] = useState<number | null>(null);
   const [cashFlowBasis, setCashFlowBasis] = useState<number | null>(null);
   const [holdingsValue, setHoldingsValue] = useState<number | null>(null);
+  // Monthly balance history for the Balance card's chart + "vs last month" (native currency of the account).
+  const [balanceMonthly, setBalanceMonthly] = useState<BalanceMonthly | null>(null);
 
   // Actions sheet (mobile) / dropdown (desktop)
   const [actionsSheetOpen, setActionsSheetOpen] = useState(false);
@@ -166,6 +171,17 @@ export default function AccountDetailPage() {
         setHoldingsValue(b?.holdingsValue ?? null);
       })
       .catch(() => {});
+    void (async () => {
+      try {
+        const r = await fetch(`/api/net-worth-history?period=1y&accountId=${id}&basis=native`);
+        if (!r || !r.ok) return;
+        const json = await r.json();
+        if (Array.isArray(json?.series)) setBalanceMonthly(deriveBalanceMonthly(json.series));
+      } catch {
+        /* the card still shows the balance without a chart */
+      }
+    })();
+
     fetch(`/api/transactions?accountId=${id}&limit=1`)
       .then((r) => r.json())
       .catch(() => {});
@@ -407,15 +423,7 @@ export default function AccountDetailPage() {
               {account.archived === true && (
                 <Badge variant="secondary" className="text-xs">Archived</Badge>
               )}
-              {account.invisible === true && (
-                <Badge
-                  variant="secondary"
-                  className="text-xs"
-                  title="Hidden from net worth, totals, reports and metrics"
-                >
-                  Invisible
-                </Badge>
-              )}
+              {account.invisible === true && <InvisibleMark />}
             </div>
         }
         overflow={[
@@ -464,27 +472,29 @@ export default function AccountDetailPage() {
         }
       />
 
-      {/* Balance Display */}
-      <Card className="border-0 bg-gradient-to-br from-muted/50 to-muted/20">
-        <CardContent className="pt-6">
-          <div>
-            <p className="text-xs font-medium text-muted-foreground">
-              {holdingsValue && holdingsValue > 0 ? "Market value" : "Balance"}
-            </p>
-            <p className={`text-3xl font-bold tracking-tight mt-2 ${displayBalance >= 0 ? "text-pos" : "text-destructive"}`}>
-              {formatCurrency(displayBalance, account.currency)}
-            </p>
-            {holdingsValue && holdingsValue > 0 && cashFlowBasis !== null ? (
-              <p className="text-xs text-muted-foreground mt-3">
-                Cash flow:{" "}
-                <span className="font-medium text-foreground">
-                  {formatCurrency(cashFlowBasis, account.currency)}
-                </span>
-              </p>
-            ) : null}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Balance: the same card as Home's income / expense tiles (chart + change vs last month). */}
+      <MetricCard
+        label={holdingsValue && holdingsValue > 0 ? "Market value" : "Balance"}
+        icon={Wallet}
+        tone={displayBalance >= 0 ? "emerald" : "rose"}
+        value={displayBalance}
+        currency={account.currency}
+        valueClassName={displayBalance >= 0 ? "text-pos" : "text-destructive"}
+        sparkData={balanceMonthly?.sparkData}
+        sparkLabels={balanceMonthly?.sparkLabels}
+        sparkColor={displayBalance >= 0 ? "#10b981" : "#f43f5e"}
+        badgePct={balanceMonthly?.changePct ?? null}
+        invertTone={account.type === "L"}
+        sub={balanceMonthly?.changePct != null ? "vs last month" : ""}
+        note={
+          holdingsValue && holdingsValue > 0 && cashFlowBasis !== null ? (
+            <>
+              Cash flow:{" "}
+              <span className="font-medium text-foreground">{formatCurrency(cashFlowBasis, account.currency)}</span>
+            </>
+          ) : undefined
+        }
+      />
 
       {/* Actions Card */}
       <Card>

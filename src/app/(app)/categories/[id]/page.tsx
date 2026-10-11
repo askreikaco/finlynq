@@ -416,7 +416,7 @@ function StatTile({
   return (
     <Card>
       <CardContent className="pt-4 pb-4">
-        <p className="text-xs text-muted-foreground truncate">{label}</p>
+        <p className="text-xs text-muted-foreground break-words leading-tight">{label}</p>
         <p className="text-xl font-bold mt-1 tabular-nums truncate">{value}</p>
         {sub && (
           <p className={`text-xs mt-0.5 flex items-center gap-0.5 ${good == null ? "text-muted-foreground" : good ? "text-pos" : "text-destructive"}`}>

@@ -16,6 +16,7 @@ import { EmptyState } from "@/components/empty-state";
 import { formatCurrency, formatDate } from "@/lib/currency";
 import { formatAccountLabel } from "@/lib/account-label";
 import { labelForSource } from "@/lib/tx-source";
+import { transferEnds, type TransferPeer } from "@/lib/transactions/transfer-ends";
 import { Trash2, Pencil, Receipt, Scissors, Link2, ArrowUp, ArrowDown, Copy } from "lucide-react";
 import {
   COLUMN_LABELS as SHARED_COLUMN_LABELS,
@@ -87,6 +88,7 @@ export function TransactionTable({
   onColDragOver,
   onColDragEnd,
   startEdit,
+  transferPeers,
   openSplitDialog,
   confirmDelete,
   startDuplicate,
@@ -112,6 +114,8 @@ export function TransactionTable({
   onColDragOver: (id: ColumnId) => (e: React.DragEvent<HTMLTableCellElement>) => void;
   onColDragEnd: () => void;
   startEdit: (t: Transaction) => void;
+  /** Other leg of each transfer row by transaction id (Account cell shows From / To). */
+  transferPeers?: ReadonlyMap<number, TransferPeer>;
   openSplitDialog: (t: Transaction) => void;
   confirmDelete: (t: Transaction) => void;
   startDuplicate: (t: Transaction) => void;
@@ -223,7 +227,17 @@ export function TransactionTable({
                 case "account":
                   return (
                     <TableCell key={c.id} className="text-sm">
-                      {formatAccountLabel({ name: t.accountName, alias: t.accountAlias, type: t.accountType })}
+                      {(() => {
+                        const ends = transferEnds(t, transferPeers?.get(t.id));
+                        return ends ? (
+                          <span data-testid="transfer-ends" className="flex flex-col leading-tight">
+                            <span><span className="text-muted-foreground">From</span> {ends.from}</span>
+                            <span><span className="text-muted-foreground">To</span> {ends.to}</span>
+                          </span>
+                        ) : (
+                          formatAccountLabel({ name: t.accountName, alias: t.accountAlias, type: t.accountType })
+                        );
+                      })()}
                     </TableCell>
                   );
                 case "accountType":

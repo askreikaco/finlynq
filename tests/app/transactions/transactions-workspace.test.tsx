@@ -219,10 +219,11 @@ describe("workspace", () => {
     }
   });
 
-  it("search input shows a Clear search button with a touch hit area (coarse pointers, any width)", () => {
+  it("one Search and filter link for both views; no inline search input or filter row", () => {
     render(<TransactionsWorkspace />);
-    fireEvent.change(screen.getByPlaceholderText("Search payee, note, or tags…"), { target: { value: "x" } });
-    const btn = screen.getByLabelText("Clear search");
-    expect(btn.className).toContain("pointer-coarse:size-11");
+    const link = screen.getByText("Search and filter").closest("a")!;
+    expect(link.getAttribute("href")).toContain("/transactions/search?");
+    expect(screen.queryByPlaceholderText("Search payee, note, or tags…")).toBeNull();
+    expect(screen.queryByPlaceholderText("All categories")).toBeNull();
   });
 });

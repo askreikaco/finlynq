@@ -136,8 +136,8 @@ describe("clearance above the bar", () => {
     expect(css).toMatch(/:root\s*\{[^}]*--mobile-bar-clearance:\s*calc\(96px \+ var\(--sab\)\)/);
   });
 
-  it("app shell content padding uses the clearance var (with PageFab +80px)", () => {
-    expect(layout).toContain("pb-[calc(var(--mobile-bar-clearance)+80px)] regular:pb-0");
+  it("app shell content padding uses the clearance var (no floating button, +16px)", () => {
+    expect(layout).toContain("pb-[calc(var(--mobile-bar-clearance)+16px)] regular:pb-0");
     expect(layout).not.toContain("132px");
     expect(layout).not.toContain("60px+var(--sab)");
   });

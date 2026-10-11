@@ -14,11 +14,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { OnboardingTips } from "@/components/onboarding-tips";
 import { Badge } from "@/components/ui/badge";
-import { Plus, PanelRight, SlidersHorizontal, ChevronDown, Receipt, Search, X, AlertTriangle, ArrowRightLeft, Columns3, TrendingUp, Download, ShoppingCart, Banknote, Repeat, Send, HandCoins, CircleDollarSign, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
+import { Plus, PanelRight, ChevronDown, Receipt, Search, X, AlertTriangle, ArrowRightLeft, Columns3, TrendingUp, Download, ShoppingCart, Banknote, Repeat, Send, HandCoins, CircleDollarSign, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuGroup, DropdownMenuLabel, DropdownMenuCheckboxItem, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { portfolioEditHref, transactionEditHref, transactionSplitHref } from "@/lib/transactions/edit-flow";
 import { MobileTxList } from "@/components/transactions/mobile-tx-list";
-import { formatAccountLabel } from "@/lib/account-label";
 import { type TransactionSource, labelForSource } from "@/lib/tx-source";
 import { buildPrefill, writePrefill, canDuplicate } from "@/lib/transactions/prefill";
 import {
@@ -42,6 +41,7 @@ import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
 import { DataView, ViewModeToggle, useViewMode, useAppSizeClass } from "@/components/adaptive";
 import { useSplitView } from "@/lib/transactions/split-view";
 import { TransactionDetailPane } from "./transaction-detail-pane";
+import { useTransferPeers } from "../_hooks/use-transfer-peers";
 import { cn } from "@/lib/utils";
 import { PendingSyncBadge } from "@/components/transactions/pending-sync-badge";
 import { applyPendingToTransactions, countPendingDeletes } from "@/lib/transactions/pending-overlay";
@@ -291,14 +291,13 @@ export function TransactionsWorkspace({
   const [selected, setSelected] = useState<Set<number>>(new Set());
   // Cards / List for this view (one shared store; ViewModeToggle and DataView agree).
   const [viewMode] = useViewMode("transactions");
-  // Phone Cards view shows the search link + filter chip; regular and List use the inline Card below.
   const sizeClass = useAppSizeClass();
-  const compactSize = sizeClass === "compact";
   // Optional split view (list | details) on wide screens only; off unless the user turns it on.
   const [splitPref, setSplitPref] = useSplitView();
   const splitView = splitPref && sizeClass === "wide";
   const [splitSelectedId, setSplitSelectedId] = useState<number | null>(null);
-  const phoneCards = viewMode === "cards" && compactSize;
+  // Other leg of each transfer row, so rows can show "From … To …" in both views.
+  const transferPeers = useTransferPeers(txns);
   // Bulk selection exists only in List mode: leaving List drops the selection.
   useEffect(() => {
     if (viewMode === "cards") setSelected((prev) => (prev.size === 0 ? prev : new Set()));
@@ -738,9 +737,8 @@ export function TransactionsWorkspace({
           <OnboardingTips page="transactions" />
         </>
       )}
-      {/* One toolbar. Phone Cards: search link + filter count. Toggle at every size. */}
+      {/* One toolbar at every size and in both views: Search and filter (opens the search page) + filter count + toggles. */}
       <div className="flex gap-2 items-center">
-        {phoneCards && (
         <Link
           href={`/transactions/search?${mobileSearchQuery}`}
           aria-label="Search and filter"
@@ -749,8 +747,7 @@ export function TransactionsWorkspace({
           <Search className="h-4 w-4" />
           <span>Search and filter</span>
         </Link>
-        )}
-        {phoneCards && activeMobileFilters > 0 && (
+        {activeMobileFilters > 0 && (
           <button
             type="button"
             onClick={clearFilters}
@@ -778,72 +775,10 @@ export function TransactionsWorkspace({
         <ViewModeToggle viewKey="transactions" className={sizeClass === "wide" ? undefined : "ml-auto"} />
       </div>
 
-      {/* Search + Filters. Inline at regular+ and in List; the phone Cards view uses the search link above. */}
+      {/* Columns, clear-all, export and active-filter chips. Search and filtering itself is the "Search and filter" link above (both views). */}
       <Card className={cn("bg-muted/30 border-dashed", viewMode === "cards" && "max-regular:hidden")}>
         <CardContent className="pt-4 space-y-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-            <Input
-              className="pl-9 pr-8"
-              placeholder="Search payee, note, or tags…"
-              value={searchInput}
-              onChange={(e) => handleSearchChange(e.target.value)}
-            />
-            {searchInput && (
-              <button onClick={() => { setSearchInput(""); setFilters({ ...filters, search: "" }); setPage(0); }} type="button" aria-label="Clear search" className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-muted transition-colors pointer-coarse:right-0 pointer-coarse:flex pointer-coarse:size-11 pointer-coarse:items-center pointer-coarse:justify-center">
-                <X className="h-3.5 w-3.5 text-muted-foreground" />
-              </button>
-            )}
-          </div>
           <div className="flex flex-wrap gap-2 items-center">
-            <SlidersHorizontal className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            <Input type="date" className="w-full regular:w-36 h-8 regular:pointer-fine:text-xs min-w-0" value={filters.startDate} onChange={(e) => { setFilters({ ...filters, startDate: e.target.value }); setPage(0); }} />
-            <span className="text-xs text-muted-foreground">to</span>
-            <Input type="date" className="w-full regular:w-36 h-8 regular:pointer-fine:text-xs min-w-0" value={filters.endDate} onChange={(e) => { setFilters({ ...filters, endDate: e.target.value }); setPage(0); }} />
-            {/* Account picker is hidden on the account-scoped embed — the view
-                is already locked to a single account (keep the other filters). */}
-            {!locked && (
-              <Combobox
-                value={filters.accountId}
-                onValueChange={(v) => { setFilters({ ...filters, accountId: v === "all" ? "" : v }); setPage(0); }}
-                items={[
-                  { value: "all", label: "All accounts" } satisfies ComboboxItemShape,
-                  // Archived accounts ARE offered here — their transactions are
-                  // in the list, so you must be able to filter to them. Tagged
-                  // the same way the reports account filter tags them.
-                  ...sortAccount(
-                    accounts.map((a): ComboboxItemShape => ({
-                      value: String(a.id),
-                      label: formatAccountLabel(a) + (a.archived ? " (archived)" : ""),
-                    })),
-                    (a) => Number(a.value),
-                    (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
-                  ),
-                ]}
-                placeholder="All accounts"
-                searchPlaceholder="Search accounts…"
-                emptyMessage="No matches"
-                size="sm"
-                className="h-8 w-40 text-xs"
-              />
-            )}
-            <Combobox
-              value={filters.categoryId}
-              onValueChange={(v) => { setFilters({ ...filters, categoryId: v === "all" ? "" : v }); setPage(0); }}
-              items={[
-                { value: "all", label: "All categories" } satisfies ComboboxItemShape,
-                ...sortCategory(
-                  categories.map((c): ComboboxItemShape => ({ value: String(c.id), label: c.name })),
-                  (c) => Number(c.value),
-                  (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
-                ),
-              ]}
-              placeholder="All categories"
-              searchPlaceholder="Search categories…"
-              emptyMessage="No matches"
-              size="sm"
-              className="h-8 w-44 text-xs"
-            />
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={
@@ -1023,6 +958,7 @@ export function TransactionsWorkspace({
               isLoadingMore={isLoadingMore}
               onEdit={startEdit}
               showAccountName={!locked}
+              transferPeers={transferPeers}
             />
           )}
           list={() => (
@@ -1134,6 +1070,7 @@ export function TransactionsWorkspace({
                     onColDragOver={onColDragOver}
                     onColDragEnd={onColDragEnd}
                     startEdit={startEdit}
+                    transferPeers={transferPeers}
                     openSplitDialog={openSplitDialog}
                     confirmDelete={confirmDelete}
                     startDuplicate={startDuplicate}

@@ -131,8 +131,8 @@ describe("accounts/[id] at 390", () => {
     expect(row).toContain("max-w-full flex-wrap");
   });
 
-  it("bottom clearance comes from the (app) layout <main> (clearance + 80px below md), which every page inherits", () => {
-    expect(read(APP_LAYOUT)).toContain("pb-[calc(var(--mobile-bar-clearance)+80px)] regular:pb-0");
+  it("bottom clearance comes from the (app) layout <main> (clearance + 16px below md), which every page inherits", () => {
+    expect(read(APP_LAYOUT)).toContain("pb-[calc(var(--mobile-bar-clearance)+16px)] regular:pb-0");
   });
 });
 
@@ -163,6 +163,6 @@ describe("reporting toast on phones", () => {
   it("sits above the tab bar via the clearance var, not over content rows", () => {
     const src = read("src/components/reporting-recompute-indicator.tsx");
     expect(src).toContain("max-regular:bottom-[calc(var(--mobile-bar-clearance)+0.5rem)]");
-    expect(src).not.toContain("max-regular:bottom-[calc(var(--mobile-bar-clearance)+80px)]");
+    expect(src).not.toContain("max-regular:bottom-[calc(var(--mobile-bar-clearance)+16px)]");
   });
 });

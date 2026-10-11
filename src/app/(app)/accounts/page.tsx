@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
+import { InvisibleMark } from "@/components/invisible-mark";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { formatCurrency } from "@/lib/currency";
@@ -250,15 +251,7 @@ export default function AccountsPage() {
                       </p>
                       <Badge variant="outline" className="text-xs shrink-0">{a.currency}</Badge>
                       {a.archived && <Badge variant="secondary" className="text-xs shrink-0">Archived</Badge>}
-                      {a.invisible && (
-                        <Badge
-                          variant="secondary"
-                          className="text-xs shrink-0"
-                          title="Hidden from net worth, totals, reports and metrics"
-                        >
-                          Invisible
-                        </Badge>
-                      )}
+                      {a.invisible && <InvisibleMark />}
                     </div>
                   </div>
                   {/* FINLYNQ-303 — both bases per row: the account's own
