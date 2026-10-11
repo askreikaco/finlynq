@@ -5,7 +5,12 @@
  */
 
 import { formatCurrency } from "@/lib/currency";
-import type { SubscriptionFrequency } from "@/lib/subscriptions/schedule";
+import {
+  isValidIntervalDays,
+  MAX_INTERVAL_DAYS,
+  MIN_INTERVAL_DAYS,
+  type SubscriptionFrequency,
+} from "@/lib/subscriptions/schedule";
 import {
   InstallmentPlanError,
   MAX_INSTALLMENTS,
@@ -28,51 +33,61 @@ export type RepeatEnd =
   | { type: "count"; count: number };
 
 export type Series =
-  | { kind: "repeat"; frequency: SubscriptionFrequency; end: RepeatEnd }
+  | {
+      kind: "repeat";
+      frequency: SubscriptionFrequency;
+      /** Days between repeats; set only with frequency "every_n_days". */
+      intervalDays?: number | null;
+      end: RepeatEnd;
+    }
   | { kind: "installment"; count: number; mode: InstallmentMode };
 
-/** Repeat list order and labels (the sheet groups them: days, weeks, months, year). */
-export const REPEAT_GROUPS: ReadonlyArray<{
-  title: string;
-  options: ReadonlyArray<{ frequency: SubscriptionFrequency; label: string }>;
-}> = [
-  {
-    title: "Daily",
-    options: [
-      { frequency: "daily", label: "Every day" },
-      { frequency: "weekdays", label: "Weekdays" },
-      { frequency: "weekend", label: "Weekend" },
-    ],
-  },
-  {
-    title: "Weekly",
-    options: [
-      { frequency: "weekly", label: "Weekly" },
-      { frequency: "biweekly", label: "Every 2 weeks" },
-      { frequency: "every4weeks", label: "Every 4 weeks" },
-    ],
-  },
-  {
-    title: "Monthly",
-    options: [
-      { frequency: "monthly", label: "Monthly" },
-      { frequency: "monthly_eom", label: "Last day of month" },
-      { frequency: "bimonthly", label: "Every 2 months" },
-      { frequency: "quarterly", label: "Every 3 months" },
-      { frequency: "semiannual", label: "Every 6 months" },
-    ],
-  },
-  {
-    title: "Yearly",
-    options: [{ frequency: "annual", label: "Annually" }],
-  },
+/** The choices on the Repeat sheet, in order. "none" = no series. No group titles: one flat list. */
+export type RepeatChoice = "none" | "daily" | "weekly" | "monthly" | "quarterly" | "annual" | "every_n_days";
+
+export const REPEAT_OPTIONS: ReadonlyArray<{ value: RepeatChoice; label: string }> = [
+  { value: "none", label: "No repeat" },
+  { value: "daily", label: "Daily" },
+  { value: "weekly", label: "Weekly" },
+  { value: "monthly", label: "Monthly" },
+  { value: "quarterly", label: "Quarterly" },
+  { value: "annual", label: "Annually" },
+  { value: "every_n_days", label: "Custom" },
 ];
 
-const REPEAT_LABEL: Record<SubscriptionFrequency, string> = Object.fromEntries(
-  REPEAT_GROUPS.flatMap((g) => g.options.map((o) => [o.frequency, o.label])),
-) as Record<SubscriptionFrequency, string>;
+/** Bounds + default of the Custom "Every N days" input. */
+export { MIN_INTERVAL_DAYS, MAX_INTERVAL_DAYS };
+export const DEFAULT_INTERVAL_DAYS = 2;
 
-export function repeatLabel(frequency: SubscriptionFrequency): string {
+/** True for a whole number of days within the allowed range. */
+export function isValidInterval(n: unknown): n is number {
+  return isValidIntervalDays(n);
+}
+
+// Labels for every cadence the engine knows. The sheet only offers the ones in
+// REPEAT_OPTIONS, but a row created earlier (or via MCP) can carry any of them.
+const REPEAT_LABEL: Record<SubscriptionFrequency, string> = {
+  daily: "Daily",
+  weekdays: "Weekdays",
+  weekend: "Weekend",
+  weekly: "Weekly",
+  biweekly: "Every 2 weeks",
+  every4weeks: "Every 4 weeks",
+  monthly: "Monthly",
+  monthly_eom: "Last day of month",
+  bimonthly: "Every 2 months",
+  quarterly: "Quarterly",
+  semiannual: "Every 6 months",
+  annual: "Annually",
+  every_n_days: "Custom",
+};
+
+export function repeatLabel(frequency: SubscriptionFrequency, intervalDays?: number | null): string {
+  if (frequency === "every_n_days") {
+    const n = intervalDays ?? NaN;
+    if (!isValidIntervalDays(n)) return REPEAT_LABEL.every_n_days;
+    return n === 1 ? "Daily" : `Every ${n} days`;
+  }
   return REPEAT_LABEL[frequency];
 }
 
@@ -89,7 +104,7 @@ export function shortDate(iso: string, withYear = true): string {
 /** Pill text once a series is set. */
 export function seriesSummary(series: Series): string {
   if (series.kind === "installment") return `${series.count} installments`;
-  const label = repeatLabel(series.frequency);
+  const label = repeatLabel(series.frequency, series.intervalDays);
   if (series.end.type === "count") return `${label} · ${series.end.count}×`;
   if (series.end.type === "until") return `${label} until ${shortDate(series.end.date)}`;
   return label;
@@ -100,6 +115,7 @@ export function buildRepeatBody(series: Extract<Series, { kind: "repeat" }>) {
   const end = series.end;
   return {
     frequency: series.frequency,
+    ...(series.frequency === "every_n_days" ? { intervalDays: series.intervalDays ?? null } : {}),
     end:
       end.type === "until"
         ? { type: "until" as const, date: end.date }

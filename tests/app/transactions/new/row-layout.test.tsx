@@ -3,7 +3,7 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as React from "react";
-import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
+import { within, render, screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
 
 const H = vi.hoisted(() => ({ push: vi.fn(), back: vi.fn() }));
 
@@ -85,7 +85,7 @@ const rowIds = () =>
   Array.from(screen.getByTestId("txnew-list").querySelectorAll("[data-testid^='txnew-row-']")).map((el) => el.getAttribute("data-testid"));
 
 describe("new transaction row layout", () => {
-  it("rows are in order: Date, Amount, Category, Account, Payee, Note", () => {
+  it("rows are in order: Date, Amount, Category, Account, Payee, Note, Tags, Business", () => {
     seedPrefill();
     render(<Page />);
     expect(rowIds()).toEqual([
@@ -95,18 +95,37 @@ describe("new transaction row layout", () => {
       "txnew-row-account",
       "txnew-row-payee",
       "txnew-row-note",
+      "txnew-row-tags",
+      "txnew-row-business",
     ]);
   });
 
-  it("More details is collapsed by default and expands inline (aria-expanded)", () => {
+  it("there is no More details: Tags and Business are inline, Repeat and Split are accordion cards", () => {
     seedPrefill();
     render(<Page />);
-    const more = screen.getByRole("button", { name: /More details/ });
-    expect(more.getAttribute("aria-expanded")).toBe("false");
-    expect(screen.queryByPlaceholderText("Comma-separated")).toBeNull();
-    fireEvent.click(more);
-    expect(more.getAttribute("aria-expanded")).toBe("true");
-    expect(screen.getByPlaceholderText("Comma-separated")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /More details/ })).toBeNull();
+    expect(screen.getByPlaceholderText("Tags")).toBeTruthy();
+    expect(screen.getByTestId("txnew-repeat").getAttribute("data-state")).toBe("closed");
+    expect(screen.getByTestId("txnew-split").getAttribute("data-state")).toBe("closed");
+  });
+
+  it("rows show only their icon: the label text is visually hidden (sr-only) and the wording is the placeholder", () => {
+    seedPrefill({ categoryId: "", accountId: "", payee: "", note: "" });
+    render(<Page />);
+    for (const [row, label] of [
+      ["txnew-row-date", "Date"],
+      ["txnew-row-category", "Category"],
+      ["txnew-row-account", "Account"],
+      ["txnew-row-payee", "Payee"],
+      ["txnew-row-note", "Note"],
+    ] as const) {
+      const el = within(screen.getByTestId(row)).getAllByText(label).find((n) => n.classList.contains("sr-only"));
+      expect(el, `${row} keeps a sr-only "${label}"`).toBeTruthy();
+      expect(screen.getByTestId(row).querySelector('[data-slot="form-row-icon"]')).toBeTruthy();
+    }
+    expect(screen.getByPlaceholderText("Payee / Merchant")).toBeTruthy();
+    expect(screen.getByPlaceholderText("Note")).toBeTruthy();
+    expect(screen.getByTestId("txnew-row-category").textContent).toContain("Category");
   });
 
   it("Cancel leaves without booking anything", async () => {

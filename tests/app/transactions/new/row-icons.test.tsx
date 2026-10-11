@@ -69,10 +69,11 @@ function expectIconInLabel(testId: string) {
   expect(icon, `icon in ${testId}`).not.toBeNull();
   expect(icon!.tagName.toLowerCase()).toBe("svg");
   expect(icon!.getAttribute("aria-hidden")).toBe("true");
-  // The icon sits in the label cell: its nearest w-24 ancestor is that row's label cell.
-  const cell = icon!.closest(".w-24");
-  expect(cell, `w-24 label cell around icon in ${testId}`).not.toBeNull();
-  expect(cell!.classList.contains("shrink-0")).toBe(true);
+  // Icon-only: the icon sits in a shrink-0 label cell that also holds the sr-only label text.
+  const cell = icon!.parentElement as HTMLElement;
+  expect(cell.classList.contains("shrink-0"), `label cell around icon in ${testId}`).toBe(true);
+  expect(cell.classList.contains("w-24") || cell.classList.contains("w-28")).toBe(false);
+  expect(cell.querySelector(".sr-only"), `sr-only label in ${testId}`).not.toBeNull();
 }
 
 describe("New Transaction rows render an icon in their label cell", () => {
@@ -92,14 +93,13 @@ describe("New Transaction rows render an icon in their label cell", () => {
     expect(cell.querySelector('[data-slot="form-row-icon"]')).not.toBeNull();
   });
 
-  it("keeps the value column left edge: every label cell is w-24 shrink-0", async () => {
+  it("icon-only rows: no label column, the cell is shrink-0 and the row keeps gap-3 / px-4", async () => {
     seedPrefill();
     render(<Page />);
     await waitFor(() => expect(screen.getByTestId("txnew-row-date")).toBeTruthy());
     for (const id of ["txnew-row-date", "txnew-row-category", "txnew-row-account", "txnew-row-payee", "txnew-row-note"]) {
       const row = screen.getByTestId(id);
-      const cell = row.querySelector(".w-24") as HTMLElement;
-      expect(cell, `${id} label cell`).not.toBeNull();
+      const cell = row.querySelector('[data-slot="form-row-icon"]')!.parentElement as HTMLElement;
       expect(cell.classList.contains("shrink-0")).toBe(true);
       expect(row.classList.contains("gap-3")).toBe(true);
       expect(row.classList.contains("px-4")).toBe(true);
@@ -115,11 +115,12 @@ describe("New Transaction rows render an icon in their label cell", () => {
     expect(area.tagName).toBe("TEXTAREA");
     expect(area.id).toBe("txnew-note");
     expect(area.getAttribute("rows")).toBe("2");
-    expect(area.getAttribute("placeholder")).toBe("Note / Description");
+    expect(area.getAttribute("placeholder")).toBe("Note");
     expect(row.className).toContain("min-h-[calc(var(--spacing-row-tall)*2)]");
     expect(area.className).toContain("max-h-48");
-    // Label cell keeps the shared narrow label width.
-    expect(row.querySelector(".w-24")).not.toBeNull();
+    // Icon-only row: the label cell no longer reserves the narrow label width, the text is sr-only.
+    expect(row.querySelector(".w-24")).toBeNull();
+    expect(row.querySelector(".sr-only")?.textContent).toBe("Note");
   });
 
   it("Transfer: From Account and To Account carry icons", async () => {

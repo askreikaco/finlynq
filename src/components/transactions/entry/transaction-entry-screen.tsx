@@ -3,7 +3,6 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ChevronDown,
   AlertCircle,
   ArrowUpDown,
   Briefcase,
@@ -69,10 +68,9 @@ import { EditDeleteDialog, type DeleteScope } from "./edit-delete-dialog";
 import { EditSaveDialog, type SaveScope } from "./edit-save-dialog";
 import {
   REPEAT_SPLIT_DISABLED_TITLE,
-  RepeatPill,
-  RepeatSheet,
+  RepeatSection,
   SeriesBadge,
-} from "./repeat-sheet";
+} from "./repeat-section";
 import { buildRepeatBody, seriesErrorMessage, shortDate, type Series } from "@/lib/transactions/series";
 import {
   getLastAccount,
@@ -195,7 +193,8 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
 
   // Repeat / Installment (create mode, Expense/Income only). null = a single transaction.
   const [series, setSeries] = useState<Series | null>(null);
-  const [showRepeatSheet, setShowRepeatSheet] = useState(false);
+  // The Repeat accordion reports a series (null = off) plus whether its inputs block a valid one.
+  const [seriesInvalid, setSeriesInvalid] = useState(false);
 
   // Date & Time State
   const [date, setDate] = useState(() => {
@@ -204,8 +203,6 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   });
 
-  // More details (Tags, Business, Split): collapsed by default; a prefill with tags opens it.
-  const [showMore, setShowMore] = useState(seed?.showMore ?? false);
   const [isBusiness, setIsBusiness] = useState(seed?.isBusiness ?? false);
   // Splits: count text ("" = none; N >= 2 = N rows, see split-math). Rows keep the hidden tail beyond N.
   const [splitCount, setSplitCount] = useState(seed?.splitCount ?? "");
@@ -245,7 +242,6 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
       setPayee(prefill.payee);
       setNote(prefill.note);
       setTags(prefill.tags);
-      if (prefill.tags) setShowMore(true);
       setIsBusiness(prefill.isBusiness);
       setTxType(prefill.txType);
       prefillAppliedRef.current = true;
@@ -765,11 +761,11 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
       }
 
       if (splitActive) {
-        setShowMore(true);
         // Save is disabled while splits are invalid; this guards the same rule for any other path.
         if (!splitCheck.canSave) throw new Error(splitCheck.firstError ?? "Check the split amounts");
-        if (series && !editMode) throw new Error("Repeat and installments cannot be combined with splits. Remove the splits or choose Never.");
+        if (series && !editMode) throw new Error("Repeat and installments cannot be combined with splits. Remove the splits or turn Repeat off.");
       }
+      if (seriesInvalid && !editMode) throw new Error("Check the repeat settings");
       // A repeat is a subscription named after the payee, so the payee is required.
       if (series?.kind === "repeat" && !editMode && !payee.trim()) {
         setInvalid({ field: "payee" });
@@ -1104,13 +1100,6 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
   // the dock adds CURRENCY_CHIP_ROW_PX (56): 315 total. The scroll region keeps that much bottom padding
   // while open (pointer-coarse only), so a focused row can scroll above the dock. The literal
   // pb-[259px] / pb-[315px] below must equal NUMPAD_HEIGHT_PX and NUMPAD_HEIGHT_PX + CURRENCY_CHIP_ROW_PX.
-  const moreSummary = [
-    tags.trim() ? "Tags" : null,
-    isBusiness ? "Business" : null,
-    splitActive ? "Split" : null,
-  ]
-    .filter(Boolean)
-    .join(" · ");
   const fxAmountLine =
     txType === "Transfer"
       ? transferEnteredCcy && transferEntryFx.state !== "idle"
@@ -1175,7 +1164,10 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
           }
           onChange={(next) => {
             setTxType(next);
-            if (next === "Transfer") setSeries(null);
+            if (next === "Transfer") {
+              setSeries(null);
+              setSeriesInvalid(false);
+            }
             setErrorMessage(null);
             setInvalid(null);
             closePad();
@@ -1235,20 +1227,9 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
             label="Date"
             icon={CalendarDays}
             htmlFor="txnew-date"
+            hideLabel
             right={
-              !editMode && txType !== "Transfer" ? (
-                postTarget ? undefined : (
-                  <RepeatPill
-                    series={series}
-                    disabled={splitActive}
-                    disabledTitle={REPEAT_SPLIT_DISABLED_TITLE}
-                    onClick={() => {
-                      closePad();
-                      setShowRepeatSheet(true);
-                    }}
-                  />
-                )
-              ) : isInstallmentRow || isRepeatRow ? (
+              isInstallmentRow || isRepeatRow ? (
                 <SeriesBadge
                   hasInstallment={isInstallmentRow}
                   hasSubscription={isRepeatRow}
@@ -1262,6 +1243,7 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
               id="txnew-date"
               type="date"
               value={date}
+              placeholder="Date"
               max="9999-12-31"
               onFocus={closePad}
               onChange={(e) => {
@@ -1295,6 +1277,7 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
               testId="txnew-row-category"
               label="Category"
               icon={Tag}
+              hideLabel
               value={
                 selectedCat ? (
                   <>
@@ -1305,7 +1288,7 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
                   </>
                 ) : undefined
               }
-              placeholder={loadingCategories ? "Loading categories..." : "Select Category"}
+              placeholder={loadingCategories ? "Loading categories..." : "Category"}
               invalid={invalidField === "category"}
               onClick={() => {
                 closePad();
@@ -1322,8 +1305,9 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
               testId="txnew-row-account"
               label={txType === "Transfer" ? "From" : "Account"}
               icon={Wallet}
+              hideLabel
               value={selectedAcc?.name}
-              placeholder={loadingAccounts ? "Loading accounts..." : "Select Account"}
+              placeholder={loadingAccounts ? "Loading accounts..." : txType === "Transfer" ? "From account" : "Account"}
               invalid={invalidField === "account"}
               className={txType === "Transfer" ? "pr-16" : undefined}
               onClick={() => {
@@ -1338,8 +1322,9 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
                   testId="txnew-row-to-account"
                   label="To"
                   icon={Wallet}
+                  hideLabel
                   value={selectedToAcc?.name}
-                  placeholder={loadingAccounts ? "Loading accounts..." : "Select Destination Account"}
+                  placeholder={loadingAccounts ? "Loading accounts..." : "To account"}
                   invalid={invalidField === "toAccount"}
                   className="pr-16"
                   onClick={() => {
@@ -1388,6 +1373,7 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
               id="txnew-payee"
               label="Payee"
               icon={Store}
+              hideLabel
               inputValue={payee}
               onInputChange={(v) => {
                 setPayee(v);
@@ -1418,13 +1404,14 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
             htmlFor="txnew-note"
             label="Note"
             icon={StickyNote}
+            hideLabel
             className="items-start min-h-[calc(var(--spacing-row-tall)*2)] py-3"
           >
             <AutoTextarea
               id="txnew-note"
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder="Note / Description"
+              placeholder="Note"
               enterKeyHint="enter"
               autoComplete="off"
               rows={2}
@@ -1435,6 +1422,35 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
               }}
             />
           </FormRow>
+          <FormRow
+            variant="input"
+            testId="txnew-row-tags"
+            id="txnew-tags"
+            label="Tags"
+            icon={Hash}
+            hideLabel
+            inputValue={tags}
+            onInputChange={setTags}
+            placeholder="Tags"
+            autoComplete="off"
+            onInputFocus={() => {
+              closePad();
+              setFocusedField("tags");
+            }}
+          />
+          {/* Business: a plain toggle row; the label stays visible because it names the switch. */}
+          <div data-testid="txnew-row-business" className="flex min-h-row items-center justify-between gap-3 px-4">
+            <label htmlFor="txnew-business" className="flex min-w-0 flex-1 items-center gap-2 text-base text-foreground">
+              <Briefcase aria-hidden="true" className="size-[18px] shrink-0 text-muted-foreground" />
+              <span className="min-w-0 truncate">Business</span>
+            </label>
+            <Switch
+              id="txnew-business"
+              className="shrink-0"
+              checked={isBusiness}
+              onCheckedChange={(checked) => setIsBusiness(checked)}
+            />
+          </div>
         </ListCard>
 
         {/* Autocomplete pills sit below the list while the field is focused. */}
@@ -1453,94 +1469,49 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
           visible={focusedField === "note"}
         />
 
-        {/* More details (44px). Tags, Business and Split are collapsed by default. */}
-        <button
-          type="button"
-          data-testid="txnew-more"
-          aria-expanded={showMore}
-          aria-controls={showMore ? "txnew-more-panel" : undefined}
-          onClick={() => {
-            closePad();
-            setShowMore((v) => !v);
-          }}
-          className="flex h-11 w-full shrink-0 items-center justify-between rounded-2xl border border-border bg-card px-4 text-sm font-medium text-foreground transition-colors active:bg-muted"
-        >
-          <span>More details</span>
-          <span className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
-            <span className="truncate">{moreSummary || "Tags · Business · Split"}</span>
-            <ChevronDown
-              className={cn("h-4 w-4 shrink-0 transition-transform", showMore && "rotate-180")}
-              aria-hidden="true"
-            />
-          </span>
-        </button>
+        <AutocompletePills
+          type="tag"
+          currentValue={tags}
+          onSelect={(val) => setTags(val)}
+          visible={focusedField === "tags"}
+        />
 
-        {showMore && (
-          <div id="txnew-more-panel" className="shrink-0 space-y-2 animate-in fade-in duration-200">
-            <ListCard>
-              <FormRow
-                variant="input"
-                testId="txnew-row-tags"
-                id="txnew-tags"
-                label="Tags"
-                icon={Hash}
-                inputValue={tags}
-                onInputChange={setTags}
-                placeholder="Comma-separated"
-                autoComplete="off"
-                onInputFocus={() => {
-                  closePad();
-                  setFocusedField("tags");
-                }}
-              />
-              <div className="flex min-h-row items-center justify-between gap-3 px-4">
-                <label htmlFor="txnew-business" className="flex min-w-0 flex-1 items-center gap-2 text-sm font-medium text-foreground">
-                  <Briefcase aria-hidden="true" className="size-[18px] shrink-0 text-muted-foreground" />
-                  <span className="flex min-w-0 flex-col">
-                    Business
-                    <span className="text-xs font-normal text-muted-foreground">
-                      Tag for business accounting and tax reporting
-                    </span>
-                  </span>
-                </label>
-                <Switch
-                  id="txnew-business"
-                  className="shrink-0"
-                  checked={isBusiness}
-                  onCheckedChange={(checked) => setIsBusiness(checked)}
-                />
-              </div>
-            </ListCard>
-            <AutocompletePills
-              type="tag"
-              currentValue={tags}
-              onSelect={(val) => setTags(val)}
-              visible={focusedField === "tags"}
-            />
-            {txType !== "Transfer" && (
-              <SplitSection
-                count={splitCount}
-                onCountChange={setSplitCount}
-                rows={splitRows}
-                onRowsChange={handleSplitRowsChange}
-                parentAmount={parsedAmount}
-                currency={currency}
-                parentCategoryId={categoryId}
-                onOpenCategory={(rowId) => {
-                  setActiveSplitRowId(rowId);
-                  setShowCatSelector(true);
-                }}
-                padTargetRowId={padTarget === MAIN_PAD ? null : padTarget}
-                onOpenPad={openSplitPad}
-                onClosePad={closePad}
-                onRowBlur={markSplitRowTouched}
-                showEmptyErrors={(rowId) => splitSaveAttempted || touchedSplitRowIds.has(rowId)}
-              />
-            )}
-          </div>
+        {!editMode && txType !== "Transfer" && !postTarget && (
+          <RepeatSection
+            startDate={date}
+            amount={parsedAmount}
+            currency={currency}
+            disabled={splitActive}
+            disabledTitle={REPEAT_SPLIT_DISABLED_TITLE}
+            onChange={(next, invalid) => {
+              setSeries(next);
+              setSeriesInvalid(invalid);
+            }}
+          />
         )}
 
-        {/* Rule suggestion (Expense/Income, payee + category set). Outside More details: Payee is on screen one. */}
+        {txType !== "Transfer" && (
+          <SplitSection
+            count={splitCount}
+            onCountChange={setSplitCount}
+            rows={splitRows}
+            onRowsChange={handleSplitRowsChange}
+            parentAmount={parsedAmount}
+            currency={currency}
+            parentCategoryId={categoryId}
+            onOpenCategory={(rowId) => {
+              setActiveSplitRowId(rowId);
+              setShowCatSelector(true);
+            }}
+            padTargetRowId={padTarget === MAIN_PAD ? null : padTarget}
+            onOpenPad={openSplitPad}
+            onClosePad={closePad}
+            onRowBlur={markSplitRowTouched}
+            showEmptyErrors={(rowId) => splitSaveAttempted || touchedSplitRowIds.has(rowId)}
+          />
+        )}
+
+        {/* Rule suggestion (Expense/Income, payee + category set). Payee is on screen one. */}
         {ruleEligible && (
           <div className="flex min-h-11 shrink-0 items-center justify-between gap-3 rounded-2xl border border-info/30 bg-info/10 px-4 py-2">
             <label htmlFor="txnew-also-rule" className="flex min-w-0 flex-1 cursor-pointer flex-col">
@@ -1670,18 +1641,6 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
       )}
 
       {/* Bottom Sheets */}
-      {!editMode && (
-        <RepeatSheet
-          open={showRepeatSheet}
-          onOpenChange={setShowRepeatSheet}
-          value={series}
-          onApply={setSeries}
-          startDate={date}
-          amount={parsedAmount}
-          currency={currency}
-        />
-      )}
-
       <CurrencySelector
         open={showCurrencySelector}
         onOpenChange={setShowCurrencySelector}

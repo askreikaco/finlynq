@@ -15,8 +15,8 @@
 import {
   isValidIsoDate,
   isWithinEnd,
-  normalizeFrequency,
   occurrenceFromNext,
+  scheduleFrequency,
   stepsToOnOrAfter,
   type ScheduleEnd,
 } from "./schedule";
@@ -24,6 +24,8 @@ import {
 export interface SubscriptionScheduleState extends ScheduleEnd {
   nextDate: string | null;
   frequency: string | null | undefined;
+  /** subscriptions.interval_days: the step of `every_n_days`; null/absent for every other cadence. */
+  intervalDays?: number | null;
   /** subscriptions.anchor_date: the date the series started on; null = use nextDate. */
   anchorDate?: string | null;
 }
@@ -48,7 +50,7 @@ export function isExhausted(s: SubscriptionScheduleState): boolean {
 
 /** Consume the occurrence at next_date (post or skip) and compute the new state. */
 export function advanceOneOccurrence(s: SubscriptionScheduleState & { nextDate: string }): AdvanceResult {
-  const f = normalizeFrequency(s.frequency) ?? "monthly";
+  const f = scheduleFrequency(s.frequency, s.intervalDays);
   const nextDate = occurrenceFromNext(s.anchorDate, s.nextDate, f, 1);
   const remainingCount = s.remainingCount != null ? Math.max(0, s.remainingCount - 1) : null;
   // After consuming one, the next occurrence is index 0 of the new state.
@@ -71,8 +73,9 @@ export function rollForwardWithEnd(
   if (isExhausted(s)) return { nextDate: s.nextDate, remainingCount: s.remainingCount ?? null, ended: true };
   if (s.nextDate >= today) return null;
   // How many occurrences were skipped = steps from next_date to the first one on/after today.
-  const k = stepsToOnOrAfter(s.anchorDate, s.nextDate, s.frequency, today);
-  const next = occurrenceFromNext(s.anchorDate, s.nextDate, s.frequency, k);
+  const f = scheduleFrequency(s.frequency, s.intervalDays);
+  const k = stepsToOnOrAfter(s.anchorDate, s.nextDate, f, today);
+  const next = occurrenceFromNext(s.anchorDate, s.nextDate, f, k);
   if (k === 0 || next === s.nextDate) return null;
   const remainingCount = s.remainingCount != null ? s.remainingCount - k : null;
   if (!isWithinEnd(0, next, { endDate: s.endDate, remainingCount })) {
@@ -92,7 +95,7 @@ export interface DueInfo {
 export function dueOccurrences(s: SubscriptionScheduleState, today: string): DueInfo {
   const empty: DueInfo = { overdue: [], dueCount: 0 };
   if (!s.nextDate || !isValidIsoDate(s.nextDate) || s.nextDate > today) return empty;
-  const f = normalizeFrequency(s.frequency) ?? "monthly";
+  const f = scheduleFrequency(s.frequency, s.intervalDays);
   const overdue: string[] = [];
   let count = 0;
   for (let k = 0; k < MAX_DUE_SCAN; k++) {

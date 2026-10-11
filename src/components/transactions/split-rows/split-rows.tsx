@@ -82,6 +82,8 @@ export interface SplitRowsProps {
   onRowBlur?: (rowId: string) => void;
   /** Default "page". New Expense passes "entry". */
   variant?: SplitRowsVariant;
+  /** True: the parent renders the count field itself (the entry Split accordion header); rows render as usual. */
+  hideCount?: boolean;
 }
 
 export interface ValidateSplitsArgs {
@@ -123,6 +125,24 @@ function fillRows(rows: readonly SplitRowModel[], n: number, prefix: string): Sp
   const start = rows.length;
   let k = 0;
   return ensureRows(rows, n, () => `${prefix}-row-${start + k++}`);
+}
+
+/**
+ * Rows after the count changes from `prevN` to `nextN` (both effective, 0 or 2..20): filled to nextN, and when
+ * growing the former remainder row becomes an editable row with an empty amount. Shared by SplitRows and the
+ * entry Split accordion header.
+ */
+export function rowsForCount(
+  rows: readonly SplitRowModel[],
+  prevN: number,
+  nextN: number,
+  prefix: string,
+): SplitRowModel[] {
+  let nextRows = fillRows(rows, nextN, prefix);
+  if (prevN >= 2 && nextN > prevN) {
+    nextRows = nextRows.map((row, i) => (i === prevN - 1 ? { ...row, amount: "" } : row));
+  }
+  return nextRows;
 }
 
 /**
@@ -239,6 +259,7 @@ export function SplitRows({
   showEmptyErrors = true,
   onRowBlur,
   variant = "page",
+  hideCount = false,
 }: SplitRowsProps) {
   const entry = variant === "entry";
   const effectiveCount = showCount ? count : "";
@@ -267,12 +288,7 @@ export function SplitRows({
     onCountChange(next);
     const nextN = parseCount(next).n;
     if (nextN < 2) return;
-    let nextRows = fillRows(rows, nextN, idPrefix);
-    // Growing: the former remainder row becomes an editable row with an empty amount.
-    if (n >= 2 && nextN > n) {
-      nextRows = nextRows.map((row, i) => (i === n - 1 ? { ...row, amount: "" } : row));
-    }
-    onRowsChange(nextRows);
+    onRowsChange(rowsForCount(rows, n, nextN, idPrefix));
   };
 
   const updateRow = (rowId: string, patch: Partial<SplitRowModel>) => {
@@ -296,14 +312,16 @@ export function SplitRows({
 
   return (
     <div data-testid={`${idPrefix}-rows`} className="space-y-3">
-      <SplitCountRow
-        id={`${idPrefix}-count`}
-        value={count}
-        hint={parsed.hint}
-        onChange={handleCountChange}
-        onFocus={onClosePad}
-        variant={variant}
-      />
+      {!hideCount && (
+        <SplitCountRow
+          id={`${idPrefix}-count`}
+          value={count}
+          hint={parsed.hint}
+          onChange={handleCountChange}
+          onFocus={onClosePad}
+          variant={variant}
+        />
+      )}
 
       {!entry && n >= 2 && (
         <p data-testid={`${idPrefix}-context`} className="px-1 text-xs text-muted-foreground">

@@ -336,6 +336,53 @@ describe("POST /api/transactions { repeat }", () => {
     }
   });
 
+  it("every_n_days: stores the interval, steps N days from the booked date (anchor = booked)", async () => {
+    const res = await postTx(
+      createMockRequest(URL_TX, {
+        method: "POST",
+        body: { ...body, date: "2026-12-31", repeat: { frequency: "every_n_days", intervalDays: 3, end: { type: "count", count: 5 } } },
+      }),
+    );
+    expect(res.status).toBe(201);
+    expect(h.store.subs[0]).toMatchObject({
+      frequency: "every_n_days", intervalDays: 3, nextDate: "2027-01-03", anchorDate: "2026-12-31", remainingCount: 4,
+    });
+  });
+
+  it("an interval is dropped for every other frequency; existing cadences store null", async () => {
+    await postTx(createMockRequest(URL_TX, { method: "POST", body: { ...body, repeat: { frequency: "monthly", intervalDays: 5 } } }));
+    expect(h.store.subs[0]).toMatchObject({ frequency: "monthly", intervalDays: null, nextDate: "2026-11-10" });
+  });
+
+  it("every_n_days validation: interval required, whole number 1..365", async () => {
+    for (const repeat of [
+      { frequency: "every_n_days" },
+      { frequency: "every_n_days", intervalDays: null },
+      { frequency: "every_n_days", intervalDays: 0 },
+      { frequency: "every_n_days", intervalDays: 366 },
+      { frequency: "every_n_days", intervalDays: 2.5 },
+      { frequency: "every_n_days", intervalDays: "3" },
+    ]) {
+      const res = await postTx(createMockRequest(URL_TX, { method: "POST", body: { ...body, repeat } }));
+      expect(res.status, JSON.stringify(repeat)).toBe(400);
+    }
+    for (const n of [1, 365]) {
+      h.store.subs.length = 0;
+      const res = await postTx(createMockRequest(URL_TX, { method: "POST", body: { ...body, repeat: { frequency: "every_n_days", intervalDays: n } } }));
+      expect(res.status).toBe(201);
+      expect(h.store.subs[0]).toMatchObject({ intervalDays: n });
+    }
+  });
+
+  it("links an existing every_n_days subscription only when the interval matches", async () => {
+    h.existingSub = { id: 42, status: "active", frequency: "every_n_days", intervalDays: 3, accountId: 1, amount: 15 };
+    const same = await postTx(createMockRequest(URL_TX, { method: "POST", body: { ...body, repeat: { frequency: "every_n_days", intervalDays: 3 } } }));
+    expect(same.status).toBe(201);
+    expect(h.store.subs).toHaveLength(0);
+    const other = await postTx(createMockRequest(URL_TX, { method: "POST", body: { ...body, repeat: { frequency: "every_n_days", intervalDays: 4 } } }));
+    expect(other.status).toBe(409);
+  });
+
   it("forever (or no end) stores no end fields", async () => {
     await postTx(createMockRequest(URL_TX, { method: "POST", body: { ...body, repeat: { frequency: "every4weeks" } } }));
     expect(h.store.subs[0]).toMatchObject({ frequency: "every4weeks", nextDate: "2026-11-07", endDate: null, remainingCount: null });

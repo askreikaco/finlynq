@@ -55,7 +55,9 @@ describe("where anchor_date is written / read", () => {
     expect(read("src/app/api/subscriptions/route.ts")).toContain("anchorDate: schema.subscriptions.anchorDate");
   });
 
-  it("MCP cadence enum is every SUBSCRIPTION_FREQUENCIES value (+ yearly)", () => {
-    expect(read("mcp-server/tools/subscriptions.ts")).toContain('z.enum([...SUBSCRIPTION_FREQUENCIES, "yearly"])');
+  it("MCP cadence enum is every SUBSCRIPTION_FREQUENCIES value except the web-only every_n_days (+ yearly)", () => {
+    const src = read("mcp-server/tools/subscriptions.ts");
+    expect(src).toContain('z.enum([...MCP_FREQUENCIES, "yearly"])');
+    expect(src).toContain('f !== "every_n_days"');
   });
 });

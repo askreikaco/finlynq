@@ -37,8 +37,9 @@ import { formatCurrency, formatDate } from "@/lib/currency";
 import { parseSaveError } from "@/lib/save-error";
 import { localDateISO } from "@/lib/utils/date";
 import {
-  FREQUENCY_LABELS,
   FREQUENCY_SUFFIX,
+  frequencyLabel,
+  frequencySuffix,
   addDays,
   daysBetween,
   frequencyOrMonthly,
@@ -208,7 +209,7 @@ function SubscriptionsPageContent() {
   const suggestions = useMemo(() => detectedSuggestions(recurring, subs), [recurring, subs]);
 
   const sorted = useMemo(() => {
-    const monthlyCost = (s: Subscription) => monthlyEquivalent(Math.abs(subDisplayAmount(s)), s.frequency);
+    const monthlyCost = (s: Subscription) => monthlyEquivalent(Math.abs(subDisplayAmount(s)), s.frequency, s.intervalDays);
     return [...subs].sort((a, b) => {
       if (sortField === "cost") return monthlyCost(b) - monthlyCost(a);
       if (sortField === "nextDate") {
@@ -369,7 +370,6 @@ function SubscriptionsPageContent() {
       </TableHeader>
       <TableBody>
         {sorted.map((sub) => {
-          const freq = frequencyOrMonthly(sub.frequency);
           const next = effectiveNextDate(sub, today);
           const rel = next && sub.status === "active" ? relativeDue(next, today) : null;
           const statusBadge = STATUS_BADGE[sub.status];
@@ -385,9 +385,9 @@ function SubscriptionsPageContent() {
               </TableCell>
               <TableCell className="text-right font-mono tabular-nums">
                 {formatCurrency(sub.amount, sub.currency)}
-                <span className="ml-1 text-xs text-muted-foreground">/ {FREQUENCY_SUFFIX[freq]}</span>
+                <span className="ml-1 text-xs text-muted-foreground">/ {frequencySuffix(sub.frequency, sub.intervalDays)}</span>
               </TableCell>
-              <TableCell>{FREQUENCY_LABELS[freq]}</TableCell>
+              <TableCell>{frequencyLabel(sub.frequency, sub.intervalDays)}</TableCell>
               <TableCell className="tabular-nums">
                 {sub.status === "active" && next ? formatDate(next) : "—"}
                 {rel && <span className="ml-1.5 text-xs text-muted-foreground">({rel})</span>}
@@ -657,13 +657,13 @@ function SubscriptionRowCard({
   const freq = frequencyOrMonthly(sub.frequency);
   const next = effectiveNextDate(sub, today);
   const rel = next && sub.status === "active" ? relativeDue(next, today) : null;
-  const monthly = monthlyEquivalent(Math.abs(subDisplayAmount(sub)), freq);
+  const monthly = monthlyEquivalent(Math.abs(subDisplayAmount(sub)), freq, sub.intervalDays);
   const showMonthly = freq !== "monthly" || sub.currency !== displayCurrency;
   const statusBadge = STATUS_BADGE[sub.status];
   const initial = (sub.name ?? "?").trim().charAt(0).toUpperCase() || "?";
 
   const meta = [
-    FREQUENCY_LABELS[freq],
+    frequencyLabel(sub.frequency, sub.intervalDays),
     sub.status === "active" ? (next ? `next ${formatDate(next)}${rel ? ` (${rel})` : ""}` : "no date set") : null,
     sub.categoryName,
   ].filter(Boolean).join(" · ");
@@ -706,7 +706,7 @@ function SubscriptionRowCard({
         <div className="text-right shrink-0">
           <p className="font-semibold tabular-nums">
             {formatCurrency(sub.amount, sub.currency)}
-            <span className="text-xs font-normal text-muted-foreground"> / {FREQUENCY_SUFFIX[freq]}</span>
+            <span className="text-xs font-normal text-muted-foreground"> / {frequencySuffix(sub.frequency, sub.intervalDays)}</span>
           </p>
           {showMonthly && (
             <p className="text-xs text-muted-foreground tabular-nums">≈ {formatCurrency(monthly, displayCurrency)} / mo</p>

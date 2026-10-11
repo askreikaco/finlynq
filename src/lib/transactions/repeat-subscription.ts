@@ -16,8 +16,12 @@ import {
   SUBSCRIPTION_FREQUENCIES,
   type SubscriptionFrequency,
   firstOccurrenceAfter,
+  isValidIntervalDays,
   isValidIsoDate,
+  MAX_INTERVAL_DAYS,
+  MIN_INTERVAL_DAYS,
   normalizeFrequency,
+  scheduleFrequency,
 } from "@/lib/subscriptions/schedule";
 
 export const MAX_REPEAT_COUNT = 1000;
@@ -29,6 +33,14 @@ export const repeatSchema = z.object({
       message: `repeat.frequency must be one of: ${SUBSCRIPTION_FREQUENCIES.join(", ")}`,
     })
     .transform((v) => normalizeFrequency(v) as SubscriptionFrequency),
+  /** Days between repeats; required for (and only kept with) frequency "every_n_days". */
+  intervalDays: z
+    .number()
+    .int({ message: "repeat.intervalDays must be an integer" })
+    .min(MIN_INTERVAL_DAYS, { message: `repeat.intervalDays must be ${MIN_INTERVAL_DAYS}-${MAX_INTERVAL_DAYS}` })
+    .max(MAX_INTERVAL_DAYS, { message: `repeat.intervalDays must be ${MIN_INTERVAL_DAYS}-${MAX_INTERVAL_DAYS}` })
+    .nullable()
+    .optional(),
   end: z
     .discriminatedUnion("type", [
       z.object({ type: z.literal("forever") }),
@@ -47,9 +59,17 @@ export const repeatSchema = z.object({
       }),
     ])
     .optional(),
+}).refine((v) => v.frequency !== "every_n_days" || isValidIntervalDays(v.intervalDays), {
+  message: "repeat.intervalDays is required when frequency is every_n_days",
+  path: ["intervalDays"],
 });
 
 export type RepeatInput = z.infer<typeof repeatSchema>;
+
+/** The interval to store for a repeat: the custom step, or null for every other cadence. */
+export function repeatIntervalDays(repeat: RepeatInput): number | null {
+  return repeat.frequency === "every_n_days" ? (repeat.intervalDays ?? null) : null;
+}
 
 export class RepeatError extends Error {
   constructor(
@@ -78,7 +98,7 @@ export function planRepeat(repeat: RepeatInput, booking: RepeatBooking) {
   if (!payee) {
     throw new RepeatError("A payee is required to repeat a transaction", "repeat_requires_payee", 400);
   }
-  const nextDate = firstOccurrenceAfter(booking.date, repeat.frequency);
+  const nextDate = firstOccurrenceAfter(booking.date, scheduleFrequency(repeat.frequency, repeat.intervalDays));
   if (!nextDate) throw new RepeatError("date must be YYYY-MM-DD", "invalid_date", 400);
   const end = repeat.end ?? { type: "forever" as const };
   let endDate: string | null = null;
@@ -127,6 +147,7 @@ export async function createOrLinkRepeatSubscription(
     const matches =
       existing.status === "active" &&
       normalizeFrequency(existing.frequency) === repeat.frequency &&
+      (existing.intervalDays ?? null) === repeatIntervalDays(repeat) &&
       existing.accountId === booking.accountId &&
       Math.abs(Math.abs(existing.amount) - amount) < 0.005;
     if (matches) return { id: existing.id, created: false };
@@ -143,6 +164,7 @@ export async function createOrLinkRepeatSubscription(
       amount,
       currency: booking.currency,
       frequency: repeat.frequency,
+      intervalDays: repeatIntervalDays(repeat),
       categoryId: booking.categoryId,
       accountId: booking.accountId,
       nextDate: plan.nextDate,

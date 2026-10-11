@@ -1,4 +1,4 @@
-export { SplitRows, validateSplits } from "./split-rows";
+export { SplitRows, validateSplits, rowsForCount } from "./split-rows";
 export type {
   SplitAccountOption,
   SplitRowsVariant,

@@ -51,10 +51,11 @@ export async function advanceStaleSubscriptionDates(
     end_date: string | null;
     remaining_count: number | null;
     anchor_date: string | null;
+    interval_days: number | null;
     postable: boolean | number | string;
   }>(
     await db.execute(sql`
-      SELECT s.id, s.next_date, s.frequency, s.end_date, s.remaining_count, s.anchor_date,
+      SELECT s.id, s.next_date, s.frequency, s.end_date, s.remaining_count, s.anchor_date, s.interval_days,
              EXISTS (SELECT 1 FROM transactions t WHERE t.subscription_id = s.id AND t.user_id = s.user_id) AS postable
       FROM subscriptions s
       WHERE s.user_id = ${userId}
@@ -73,6 +74,7 @@ export async function advanceStaleSubscriptionDates(
     const state = {
       nextDate: r.next_date,
       frequency: r.frequency,
+      intervalDays: r.interval_days,
       endDate: r.end_date,
       remainingCount: r.remaining_count,
       anchorDate: r.anchor_date,

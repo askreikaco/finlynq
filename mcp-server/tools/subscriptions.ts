@@ -54,7 +54,12 @@ type ToolResult = { content: Array<{ type: "text"; text: string }> };
 // weekend, weekly, biweekly, every4weeks, monthly, monthly_eom, bimonthly,
 // quarterly, semiannual, annual); "yearly" stays accepted for older callers and
 // is stored as its canonical "annual" (lib/subscriptions/schedule.ts).
-const cadenceEnum = z.enum([...SUBSCRIPTION_FREQUENCIES, "yearly"]);
+// "every_n_days" (custom interval) is web-only: it needs an interval_days value these tools do not take.
+const MCP_FREQUENCIES = SUBSCRIPTION_FREQUENCIES.filter((f) => f !== "every_n_days") as unknown as [
+  Exclude<(typeof SUBSCRIPTION_FREQUENCIES)[number], "every_n_days">,
+  ...Exclude<(typeof SUBSCRIPTION_FREQUENCIES)[number], "every_n_days">[],
+];
+const cadenceEnum = z.enum([...MCP_FREQUENCIES, "yearly"]);
 type SubscriptionCadence = z.infer<typeof cadenceEnum>;
 
 export function registerSubscriptionsTools(server: McpServer, ctx: PgToolContext) {
@@ -313,7 +318,7 @@ export function registerSubscriptionsTools(server: McpServer, ctx: PgToolContext
       const { reportingCurrency } = args;
       await advanceStaleSubscriptionDatesSafe(db, userId);
       const rawSubs = await q(db, sql`
-        SELECT s.id, s.name_ct, s.amount, s.currency, s.frequency, s.next_date, s.status,
+        SELECT s.id, s.name_ct, s.amount, s.currency, s.frequency, s.next_date, s.status, s.interval_days,
                c.name_ct AS category_name_ct
         FROM subscriptions s
         LEFT JOIN categories c ON s.category_id = c.id
@@ -330,6 +335,7 @@ export function registerSubscriptionsTools(server: McpServer, ctx: PgToolContext
         frequency: r.frequency,
         next_date: r.next_date,
         status: r.status,
+        interval_days: r.interval_days,
         category_id: r.category_id,
         name: r.name_ct && dek ? decryptField(dek, r.name_ct) : null,
         category_name: r.category_name_ct && dek ? decryptField(dek, r.category_name_ct) : null,
@@ -357,7 +363,7 @@ export function registerSubscriptionsTools(server: McpServer, ctx: PgToolContext
       for (const s of active) {
         const ccy = String(s.currency ?? reporting);
         const fx = fxByCcy.get(ccy) ?? 1;
-        totalMonthlyCostReporting += monthlyEquivalent(Number(s.amount) * fx, String(s.frequency ?? ""));
+        totalMonthlyCostReporting += monthlyEquivalent(Number(s.amount) * fx, String(s.frequency ?? ""), s.interval_days != null ? Number(s.interval_days) : null);
       }
 
       const thirtyDays = new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0];
