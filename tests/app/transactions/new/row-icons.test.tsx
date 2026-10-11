@@ -86,11 +86,11 @@ describe("New Transaction rows render an icon in their label cell", () => {
     expectIconInLabel("txnew-row-account");
     expectIconInLabel("txnew-row-payee");
     expectIconInLabel("txnew-row-note");
-    // Amount row: the icon sits in the currency trigger inside the w-24 label cell.
+    // Amount row: the icon is the row's first child (like the other rows) and the currency chip is at the right end.
     const amountRow = screen.getByTestId("txnew-row-amount");
-    const cell = amountRow.querySelector('[data-slot="amount-label-cell"]') as HTMLElement;
-    expect(cell.classList.contains("w-row-label-narrow")).toBe(true);
-    expect(cell.querySelector('[data-slot="form-row-icon"]')).not.toBeNull();
+    expect(amountRow.querySelector('[data-slot="form-row-icon"]')).not.toBeNull();
+    expect(amountRow.querySelector('[data-slot="amount-label-cell"]')).toBeNull();
+    expect(amountRow.querySelector('[data-slot="amount-currency-chip"]')).not.toBeNull();
   });
 
   it("icon-only rows: no label column, the cell is shrink-0 and the row keeps gap-3 / px-4", async () => {

@@ -127,24 +127,16 @@ describe("AmountRow", () => {
     expect(screen.queryByRole("button", { name: "Currency" })).toBeNull();
   });
 
-  it("currency trigger sits in the same w-24 label column as FormRow labels, so the amount starts at the value column", () => {
-    const { container } = render(
-      <>
-        <AmountRow {...base} showCurrency />
-        <ListCard>
-          <FormRow variant="input" label="Note" inputValue="" onInputChange={() => {}} />
-        </ListCard>
-      </>,
-    );
-    const cell = container.querySelector('[data-slot="amount-label-cell"]') as HTMLElement;
-    expectClass(cell, "w-row-label-narrow", "shrink-0");
-    const noteLabel = screen.getByText("Note");
-    expectClass(noteLabel, "w-24", "shrink-0");
-    // Same row padding and gap as the FormRow row, so the value column x matches.
-    expect(cell.parentElement!.classList.contains("gap-3")).toBe(true);
-    expect(cell.parentElement!.parentElement!.classList.contains("px-4")).toBe(true);
-    expect(noteLabel.parentElement!.classList.contains("gap-3")).toBe(true);
-    expect(noteLabel.parentElement!.classList.contains("px-4")).toBe(true);
+  it("amount row is laid out like the icon-only FormRows: icon first, amount at the value column, currency chip at the right end", () => {
+    const { container } = render(<AmountRow {...base} showCurrency testId="amt" />);
+    const row = screen.getByTestId("amt").firstElementChild as HTMLElement;
+    // Same row padding and gap as the FormRow row, so the value column x matches the other icon-only rows.
+    expect(row.classList.contains("gap-3")).toBe(true);
+    expect(screen.getByTestId("amt").classList.contains("px-4")).toBe(true);
+    const kids = Array.from(row.children);
+    expect(kids[0].getAttribute("data-slot")).toBe("form-row-icon");
+    expect(kids[kids.length - 1].getAttribute("data-slot")).toBe("amount-currency-chip");
+    expect(container.querySelector('[data-slot="amount-label-cell"]')).toBeNull();
   });
 
   it("renders the fxLine slot", () => {
