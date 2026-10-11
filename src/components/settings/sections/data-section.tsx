@@ -17,6 +17,7 @@ import { RebuildSnapshotsButton } from "@/components/portfolio/rebuild-snapshots
 import { getPasskeyStepUp } from "@/lib/client/passkey-stepup";
 import { getSessionInfo } from "@/lib/data/session-info";
 import { PendingSyncCard } from "./pending-sync-card";
+import { OfflineModeCard } from "./offline-mode-card";
 import { dropAllLocalCaches, dropAllLocalCachesWithin, dropLocalUserCache } from "@/lib/data/local-read-cache-wipe";
 
 type ImportRow = Record<string, string>;
@@ -353,6 +354,7 @@ export function DataSection() {
   return (
     <div className="space-y-6">
       <PendingSyncCard />
+      <OfflineModeCard />
       {/* CSV Import */}
       <Card>
         <CardHeader>
