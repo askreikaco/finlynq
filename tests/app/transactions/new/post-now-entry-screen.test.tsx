@@ -96,9 +96,9 @@ describe("Post now entry mode", () => {
     expect(screen.getByTestId("txnew-row-account").textContent).toMatch(/Savings/);
   });
 
-  it("hides the Repeat pill and disables Transfer", async () => {
+  it("hides the Repeat card and disables Transfer", async () => {
     await mount();
-    expect(screen.queryByTestId("txnew-repeat-pill")).toBeNull();
+    expect(screen.queryByTestId("txnew-repeat")).toBeNull();
     expect((screen.getByRole("radio", { name: "Transfer" }) as HTMLButtonElement).disabled).toBe(true);
   });
 
@@ -139,7 +139,7 @@ describe("Post now entry mode", () => {
     cleanup();
     await mount("subscription=abc&occurrence=soon");
     expect(screen.queryByTestId("txnew-post-line")).toBeNull();
-    expect(screen.getByTestId("txnew-repeat-pill")).toBeTruthy();
+    expect(screen.getByTestId("txnew-repeat")).toBeTruthy();
   });
 
   it("maps already_posted and occurrence_not_due to plain messages and stays on the page", async () => {
@@ -154,9 +154,9 @@ describe("Post now entry mode", () => {
     await waitFor(() => expect(screen.getByText(/no longer due/)).toBeTruthy());
   });
 
-  it("a plain /transactions/new has no post line and still shows the Repeat pill", async () => {
+  it("a plain /transactions/new has no post line and still shows the Repeat card", async () => {
     await mount("account=1");
     expect(screen.queryByTestId("txnew-post-line")).toBeNull();
-    expect(screen.getByTestId("txnew-repeat-pill")).toBeTruthy();
+    expect(screen.getByTestId("txnew-repeat")).toBeTruthy();
   });
 });

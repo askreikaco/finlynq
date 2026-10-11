@@ -58,9 +58,8 @@ const mainAmount = () => document.querySelector<HTMLInputElement>('input[aria-la
 const splitAmount = (n: number) => screen.getByTestId(`split-amount-${n}`) as HTMLInputElement;
 const keypad = () => within(screen.getByRole("group", { name: "Amount keypad" }));
 
-/** Opens the More details panel and types a 2-row split count. */
+/** Types a 2-row split count in the Split card header. */
 async function openSplitTwo() {
-  fireEvent.click(screen.getByRole("button", { name: /More details/i }));
   const count = await screen.findByTestId("split-count");
   fireEvent.change(count, { target: { value: "2" } });
   await waitFor(() => expect(screen.getByTestId("split-amount-1")).toBeTruthy());

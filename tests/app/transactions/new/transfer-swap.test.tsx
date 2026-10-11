@@ -100,6 +100,6 @@ describe("Transfer tab: From/To labels, currency trigger, swap", () => {
     openTransfer({ accountId: "2" });
     fireEvent.click(await screen.findByRole("button", { name: "Swap accounts" }));
     await waitFor(() => expect(screen.getByTestId("txnew-row-to-account").textContent).toContain("Savings"));
-    expect(screen.getByTestId("txnew-row-account").textContent).toContain("Select Account");
+    expect(screen.getByTestId("txnew-row-account").textContent).toContain("From account");
   });
 });

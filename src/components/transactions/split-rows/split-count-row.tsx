@@ -42,6 +42,73 @@ export function stepCount(value: string, delta: 1 | -1): string {
   return String(current - 1);
 }
 
+const STEP_BUTTON =
+  "flex size-11 shrink-0 items-center justify-center rounded-full border border-border text-foreground transition-colors active:bg-muted disabled:opacity-50";
+
+/**
+ * The bare count control: -/+ steppers around a 2-digit integer input (entry variant look). Used by the
+ * "entry" SplitCountRow and by the Split accordion header. Numeric keyboard, no Numpad.
+ */
+export function SplitCountControl({
+  id,
+  value,
+  onChange,
+  onFocus,
+  inputClassName,
+}: Pick<SplitCountRowProps, "id" | "value" | "onChange" | "onFocus"> & { inputClassName?: string }) {
+  const current = /^\d+$/.test(value) ? Number(value) : 0;
+  return (
+    <div className="flex items-center justify-end gap-1">
+      <button
+        type="button"
+        aria-label="Decrease splits"
+        data-testid="split-count-decrease"
+        disabled={current <= 0}
+        onClick={() => {
+          onFocus?.();
+          onChange(stepCount(value, -1));
+        }}
+        className={STEP_BUTTON}
+      >
+        <Minus aria-hidden="true" className="size-[18px]" />
+      </button>
+      <input
+        id={id}
+        type="text"
+        data-testid="split-count"
+        aria-label="Number of splits"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        autoComplete="off"
+        placeholder="0"
+        value={value}
+        onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, 2))}
+        onFocus={() => onFocus?.()}
+        className={cn(
+          "w-12 bg-transparent text-center text-base tabular-nums text-foreground outline-none placeholder:text-muted-foreground",
+          inputClassName,
+        )}
+      />
+      <button
+        type="button"
+        aria-label="Increase splits"
+        data-testid="split-count-increase"
+        disabled={current >= MAX_SPLITS}
+        onClick={() => {
+          onFocus?.();
+          onChange(stepCount(value, 1));
+        }}
+        className={STEP_BUTTON}
+      >
+        <Plus aria-hidden="true" className="size-[18px]" />
+      </button>
+    </div>
+  );
+}
+
+/** Hint text under the count field (shared with the Split accordion). */
+export const SPLIT_COUNT_HINT_TEXT = HINT_TEXT;
+
 /**
  * The "Splits" count field. Page variant: FormRow-style row with the Split icon and a right-aligned
  * integer input. Entry variant: the same row inside a group card, with a -/+ stepper around the
@@ -51,29 +118,6 @@ export function stepCount(value: string, delta: 1 | -1): string {
 export function SplitCountRow({ id, value, hint, onChange, onFocus, variant = "page" }: SplitCountRowProps) {
   const hintText = hint ? HINT_TEXT[hint] : undefined;
   const entry = variant === "entry";
-  const current = /^\d+$/.test(value) ? Number(value) : 0;
-  const stepButton =
-    "flex size-11 shrink-0 items-center justify-center rounded-full border border-border text-foreground transition-colors active:bg-muted disabled:opacity-50";
-  const input = (
-    <input
-      id={id}
-      type="text"
-      data-testid="split-count"
-      aria-label="Number of splits"
-      inputMode="numeric"
-      pattern="[0-9]*"
-      autoComplete="off"
-      placeholder="0"
-      value={value}
-      onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, 2))}
-      onFocus={() => onFocus?.()}
-      className={cn(
-        "bg-transparent text-base tabular-nums text-foreground outline-none placeholder:text-muted-foreground",
-        entry ? "w-12 text-center" : "w-full text-right",
-      )}
-    />
-  );
-
   const row = (
     <FormRow
       variant="custom"
@@ -85,37 +129,22 @@ export function SplitCountRow({ id, value, hint, onChange, onFocus, variant = "p
       hint={hintText}
     >
       {entry ? (
-        <div className="flex items-center justify-end gap-1">
-          <button
-            type="button"
-            aria-label="Decrease splits"
-            data-testid="split-count-decrease"
-            disabled={current <= 0}
-            onClick={() => {
-              onFocus?.();
-              onChange(stepCount(value, -1));
-            }}
-            className={stepButton}
-          >
-            <Minus aria-hidden="true" className="size-[18px]" />
-          </button>
-          {input}
-          <button
-            type="button"
-            aria-label="Increase splits"
-            data-testid="split-count-increase"
-            disabled={current >= MAX_SPLITS}
-            onClick={() => {
-              onFocus?.();
-              onChange(stepCount(value, 1));
-            }}
-            className={stepButton}
-          >
-            <Plus aria-hidden="true" className="size-[18px]" />
-          </button>
-        </div>
+        <SplitCountControl id={id} value={value} onChange={onChange} onFocus={onFocus} />
       ) : (
-        input
+        <input
+          id={id}
+          type="text"
+          data-testid="split-count"
+          aria-label="Number of splits"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          autoComplete="off"
+          placeholder="0"
+          value={value}
+          onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, 2))}
+          onFocus={() => onFocus?.()}
+          className="w-full bg-transparent text-right text-base tabular-nums text-foreground outline-none placeholder:text-muted-foreground"
+        />
       )}
     </FormRow>
   );

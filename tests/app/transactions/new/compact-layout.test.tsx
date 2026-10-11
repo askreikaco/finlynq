@@ -60,7 +60,7 @@ beforeEach(() => {
 afterEach(() => cleanup());
 
 describe("compact new-transaction layout", () => {
-  it("Expense fields are one ListCard of rows: Date, Amount, Category, Account, Payee, Note", () => {
+  it("Expense fields are one ListCard of rows: Date, Amount, Category, Account, Payee, Note, Tags, Business", () => {
     seedPrefill();
     render(<Page />);
     const list = screen.getByTestId("txnew-list");
@@ -72,6 +72,8 @@ describe("compact new-transaction layout", () => {
       "txnew-row-account",
       "txnew-row-payee",
       "txnew-row-note",
+      "txnew-row-tags",
+      "txnew-row-business",
     ]);
   });
 
@@ -84,25 +86,46 @@ describe("compact new-transaction layout", () => {
       "txnew-row-account",
       "txnew-row-to-account",
       "txnew-row-note",
+      "txnew-row-tags",
+      "txnew-row-business",
     ]);
     expect(screen.getByTestId("txnew-row-account").textContent).toContain("From");
   });
 
-  it("More details is collapsed by default, and expands to Tags, Business and Split", () => {
+  it("Tags and Business are inline; Split is an accordion card with its count in the header", () => {
     seedPrefill();
     render(<Page />);
-    expect(screen.queryByPlaceholderText("Comma-separated")).toBeNull();
-    const toggle = screen.getByRole("button", { name: /More details/ });
-    expect(toggle.getAttribute("aria-expanded")).toBe("false");
-    expect(toggle.getAttribute("aria-controls")).toBeNull();
-    fireEvent.click(toggle);
-    expect(toggle.getAttribute("aria-expanded")).toBe("true");
-    expect(toggle.getAttribute("aria-controls")).toBe("txnew-more-panel");
-    expect(screen.getByPlaceholderText("Comma-separated")).toBeTruthy();
-    // Split is a count field now (was the "Split this transaction" switch; S-4).
-    expect(screen.getByTestId("split-count")).toBeTruthy();
-    expect(screen.queryByRole("switch", { name: /Split this transaction/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /More details/ })).toBeNull();
+    expect(screen.getByPlaceholderText("Tags")).toBeTruthy();
     expect(screen.getByRole("switch", { name: /Business/ })).toBeTruthy();
+    // Split is a count field in the card header (was the "Split this transaction" switch; S-4).
+    expect(screen.getByTestId("split-count")).toBeTruthy();
+    expect(screen.getByTestId("txnew-split").getAttribute("data-state")).toBe("closed");
+    expect(screen.queryByTestId("split-row-1")).toBeNull();
+    expect(screen.queryByRole("switch", { name: /Split this transaction/ })).toBeNull();
+  });
+
+  it("Split card: a count above 1 expands the rows, 0 / empty collapses them", () => {
+    seedPrefill();
+    render(<Page />);
+    const card = () => screen.getByTestId("txnew-split");
+    const count = screen.getByTestId("split-count") as HTMLInputElement;
+    expect(count.placeholder).toBe("0");
+    fireEvent.change(count, { target: { value: "1" } });
+    expect(card().getAttribute("data-state")).toBe("closed");
+    expect(screen.getByTestId("txnew-split-summary").textContent).toBe("Enter 2 or more to split");
+    fireEvent.change(count, { target: { value: "3" } });
+    expect(card().getAttribute("data-state")).toBe("open");
+    expect(screen.getByTestId("split-row-1")).toBeTruthy();
+    expect(screen.getByTestId("split-row-3")).toBeTruthy();
+    // the count lives in the header and is not duplicated inside the rows
+    expect(screen.getAllByTestId("split-count")).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", { name: "Decrease splits" }));
+    expect(screen.getByTestId("split-row-2")).toBeTruthy();
+    expect(screen.queryByTestId("split-row-3")).toBeNull();
+    fireEvent.change(count, { target: { value: "" } });
+    expect(card().getAttribute("data-state")).toBe("closed");
+    expect(screen.queryByTestId("split-row-1")).toBeNull();
   });
 
   it("numpad dock is touch-only (pointer-coarse) and docks at the safe-area bottom (tab bar hidden on this route)", () => {

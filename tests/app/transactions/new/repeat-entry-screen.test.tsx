@@ -88,70 +88,66 @@ async function mount(over: Record<string, unknown> = {}) {
   await screen.findByTestId("txnew-row-date");
   fireEvent.change(screen.getByLabelText("Date"), { target: { value: "2027-01-10" } });
 }
-const pill = () => screen.getByTestId("txnew-repeat-pill") as HTMLButtonElement;
-const openSheet = () => fireEvent.click(pill());
-const done = () => fireEvent.click(screen.getByRole("button", { name: "Done" }));
+const repeatToggle = () => screen.getByRole("switch", { name: "Repeat" });
+const summary = () => screen.getByTestId("txnew-repeat-summary").textContent;
+const openSheet = () => fireEvent.click(repeatToggle());
+// The accordion applies every change at once; there is no Done step any more.
+const done = () => {};
 const save = () => fireEvent.click(screen.getByTestId("txnew-save"));
 
-describe("Repeat pill on the Date row", () => {
-  it("sits on the Date row, labelled Repeat, on a new Expense and Income", async () => {
+describe("Repeat accordion card", () => {
+  it("is its own card (not on the Date row), off and collapsed on a new Expense and Income", async () => {
     await mount();
-    expect(screen.getByTestId("txnew-row-date").contains(pill())).toBe(true);
-    expect(pill().textContent).toBe("Repeat");
+    expect(screen.queryByTestId("txnew-repeat-pill")).toBeNull();
+    expect(screen.getByTestId("txnew-row-date").contains(screen.getByTestId("txnew-repeat"))).toBe(false);
+    expect(repeatToggle().getAttribute("aria-checked")).toBe("false");
+    expect(screen.getByTestId("txnew-repeat").getAttribute("data-state")).toBe("closed");
     fireEvent.click(screen.getByRole("radio", { name: "Income" }));
-    expect(screen.getByTestId("txnew-repeat-pill")).toBeTruthy();
+    expect(screen.getByTestId("txnew-repeat")).toBeTruthy();
   });
 
   it("is hidden for Transfer, and a chosen series is cleared on the way", async () => {
     await mount();
     openSheet();
-    fireEvent.click(screen.getByRole("button", { name: "Monthly" }));
-    done();
-    expect(pill().textContent).toBe("Monthly");
+    expect(summary()).toBe("Monthly");
     fireEvent.click(screen.getByRole("radio", { name: "Transfer" }));
-    expect(screen.queryByTestId("txnew-repeat-pill")).toBeNull();
+    expect(screen.queryByTestId("txnew-repeat")).toBeNull();
     fireEvent.click(screen.getByRole("radio", { name: "Expense" }));
-    expect(pill().textContent).toBe("Repeat");
+    expect(repeatToggle().getAttribute("aria-checked")).toBe("false");
   });
 
-  it("is disabled with an explanatory title while splits are on", async () => {
+  it("cannot be switched on while splits are on (explanatory title), and works again after", async () => {
     await mount({ amount: "100" });
-    fireEvent.click(screen.getByTestId("txnew-more"));
     fireEvent.click(screen.getByRole("button", { name: "Increase splits" }));
-    expect(pill().disabled).toBe(true);
-    expect(pill().title).toMatch(/splits/i);
+    expect(repeatToggle().hasAttribute("data-disabled")).toBe(true);
+    expect(repeatToggle().getAttribute("title")).toMatch(/splits/i);
     fireEvent.click(screen.getByRole("button", { name: "Decrease splits" }));
-    expect(pill().disabled).toBe(false);
+    expect(repeatToggle().hasAttribute("data-disabled")).toBe(false);
   });
 
-  it("shows the summary after Done and clears through the sheet's Never", async () => {
+  it("shows the summary under the title and clears when switched off", async () => {
     await mount();
     openSheet();
     fireEvent.click(screen.getByRole("button", { name: "Weekly" }));
     fireEvent.click(screen.getByRole("radio", { name: "After N times" }));
-    done();
-    expect(pill().textContent).toBe("Weekly · 12×");
-    expect(pill().getAttribute("aria-label")).toBe("Repeat: Weekly · 12×");
+    expect(summary()).toBe("Weekly · 12×");
     openSheet();
-    fireEvent.click(screen.getByRole("button", { name: "No repeat" }));
-    expect(pill().textContent).toBe("Repeat");
+    expect(screen.queryByTestId("txnew-repeat-summary")).toBeNull();
   });
 
-  it("a custom interval reads 'Every 3 days' on the pill", async () => {
+  it("a custom interval reads 'Every 3 days'", async () => {
     await mount();
     openSheet();
     fireEvent.click(screen.getByRole("button", { name: "Custom" }));
     fireEvent.change(screen.getByTestId("repeat-interval-days"), { target: { value: "3" } });
-    done();
-    expect(pill().textContent).toBe("Every 3 days");
+    expect(summary()).toBe("Every 3 days");
   });
 
   it("shows an installment summary", async () => {
     await mount();
     openSheet();
     fireEvent.click(screen.getByRole("radio", { name: "Installment" }));
-    done();
-    expect(pill().textContent).toBe("6 installments");
+    expect(summary()).toBe("6 installments");
   });
 });
 
@@ -160,7 +156,7 @@ describe("Save: repeat", () => {
     await mount();
     openSheet();
     fireEvent.click(screen.getByRole("button", { name: "Monthly" }));
-    fireEvent.click(screen.getByRole("radio", { name: "Until date" }));
+    fireEvent.click(screen.getByRole("radio", { name: "On date" }));
     fireEvent.change(screen.getByLabelText("End date"), { target: { value: "2027-12-31" } });
     done();
     save();
@@ -199,6 +195,16 @@ describe("Save: repeat", () => {
     await waitFor(() => expect(posts()).toHaveLength(1));
     expect(posts()[0].body).not.toHaveProperty("repeat");
     expect(posts()[0].url).toBe("/api/transactions");
+  });
+
+  it("an invalid custom interval blocks Save and posts nothing", async () => {
+    await mount();
+    openSheet();
+    fireEvent.click(screen.getByRole("button", { name: "Custom" }));
+    fireEvent.change(screen.getByTestId("repeat-interval-days"), { target: { value: "0" } });
+    save();
+    expect(await screen.findByText("Check the repeat settings")).toBeTruthy();
+    expect(posts()).toHaveLength(0);
   });
 
   it("a repeat without a payee shows the inline error and posts nothing", async () => {

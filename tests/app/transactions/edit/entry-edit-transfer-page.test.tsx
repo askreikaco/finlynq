@@ -157,10 +157,10 @@ describe("transfer edit = entry screen", () => {
     expect(H.mutate).toHaveBeenCalledWith("/api/accounts");
   });
 
-  it("tags go into the body when present and More details opens for them", async () => {
+  it("tags go into the body when present and the inline Tags row shows them", async () => {
     stub({ 1: { ...debitLeg, tags: "a,b" }, 2: creditLeg });
     await mountReady();
-    expect(screen.getByTestId("txnew-more").getAttribute("aria-expanded")).toBe("true");
+    expect(screen.queryByTestId("txnew-more")).toBeNull();
     expect((document.getElementById("txnew-tags") as HTMLInputElement).value).toBe("a,b");
     save();
     await waitFor(() => expect(find("PUT", "/api/transactions/transfer")).toBeTruthy());
