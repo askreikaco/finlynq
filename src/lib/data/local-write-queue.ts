@@ -13,7 +13,10 @@ import { useEffect, useState } from "react";
 import { createWriteQueue, type WriteQueue } from "@/lib/local-first/write-path/queue";
 import { createDrain } from "@/lib/local-first/write-path/drain";
 import { createDrainScheduler, type DrainScheduler } from "@/lib/local-first/write-path/scheduler";
-import { isLocalWriteQueueEnabled } from "@/lib/local-first/write-path/flag";
+import { isLocalWriteQueueEnabled, setLocalWriteQueueEnabled } from "@/lib/local-first/write-path/flag";
+import { setLocalReadCacheEnabled } from "@/lib/local-first/read-cache/optin";
+import { fetchTrustedDeviceId } from "./trusted-device";
+import { getSessionInfo } from "./session-info";
 import type { OutboxEntry, TxFields } from "@/lib/local-first/write-path/types";
 import type { TransactionRow } from "@/lib/local-first/store/types";
 
@@ -173,4 +176,63 @@ export function usePendingSync(): { items: PendingSyncItem[]; enabled: boolean }
     };
   }, []);
   return { items, enabled };
+}
+
+/** Number of queued (pending or failed) entries; 0 when the queue is not running. */
+export async function countUnsyncedWrites(): Promise<number> {
+  return (await listPendingSync()).length;
+}
+
+/**
+ * In-app switch ON: the queue needs the read-cache opt-in (no separate Settings control exists for it), so both
+ * on-device flags are set, then the queue starts for this trusted device. Returns whether the queue is running.
+ */
+export function enableOfflineMode(userId: string | null, deviceId: string | null): boolean {
+  setLocalReadCacheEnabled(true);
+  setLocalWriteQueueEnabled(true);
+  notify();
+  if (!userId || !deviceId) return false;
+  return startLocalWriteQueue(userId, deviceId);
+}
+
+/** In-app switch OFF: stops the scheduler, clears the flag and deletes every on-device outbox (unsynced writes are lost). */
+export function disableOfflineMode(): void {
+  stopLocalWriteQueue();
+  setLocalWriteQueueEnabled(false);
+}
+
+export interface OfflineModeState {
+  /** Real flag state (write key and read-cache opt-in). False until read on the client. */
+  enabled: boolean;
+  /** null while the trusted-device check is in flight. */
+  trusted: boolean | null;
+  deviceId: string | null;
+  userId: string | null;
+  setEnabled: (on: boolean) => void;
+}
+
+/** State for the Settings "Offline mode (beta)" switch. Reads the flag after mount; never opens IndexedDB. */
+export function useOfflineMode(): OfflineModeState {
+  const [enabled, setEnabledState] = useState(false);
+  const [trusted, setTrusted] = useState<boolean | null>(null);
+  const [deviceId, setDeviceId] = useState<string | null>(null);
+  const userId = getSessionInfo()?.userId ?? null;
+  useEffect(() => {
+    setEnabledState(isLocalWriteQueueEnabled());
+    let alive = true;
+    void fetchTrustedDeviceId().then((id) => {
+      if (!alive) return;
+      setDeviceId(id);
+      setTrusted(id !== null);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+  const setEnabled = (on: boolean) => {
+    if (on) enableOfflineMode(userId, deviceId);
+    else disableOfflineMode();
+    setEnabledState(isLocalWriteQueueEnabled());
+  };
+  return { enabled, trusted, deviceId, userId, setEnabled };
 }
