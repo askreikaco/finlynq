@@ -156,3 +156,20 @@ describe("MetricCard layout and sizing", () => {
     expect(lazyViews.length).toBe(0);
   });
 });
+
+describe("MetricCard badge tone", () => {
+  const html = (invert: boolean, pct: number) => {
+    const { container } = render(<MetricCard label="x" icon={DollarSign} value={1} badgePct={pct} invertTone={invert} />);
+    const b = container.querySelector(".rounded-full.font-semibold")!;
+    cleanup();
+    return b.className;
+  };
+  it("default: up is green, down is red", () => {
+    expect(html(false, 5)).toContain("text-pos");
+    expect(html(false, -5)).toContain("text-destructive");
+  });
+  it("invertTone: up is red, down is green (expenses)", () => {
+    expect(html(true, 5)).toContain("text-destructive");
+    expect(html(true, -5)).toContain("text-pos");
+  });
+});

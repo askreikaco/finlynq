@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { Fragment, useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
@@ -269,6 +269,12 @@ export default function DashboardPage() {
     const endDate = `${m[1]}-${m[2]}-${String(last).padStart(2, "0")}`;
     return { startDate, endDate };
   })();
+  // Month-over-month change of the reference month vs the month before it (no badge when there is
+  // no earlier month or it was 0, so we never show a divide-by-zero figure).
+  const momOf = (cur: number | undefined, prev: number | undefined): number | null =>
+    refIdx > 0 && cur != null && prev != null && prev !== 0 ? ((cur - prev) / Math.abs(prev)) * 100 : null;
+  const incomePct = momOf(incExpData[refIdx]?.income, incExpData[refIdx - 1]?.income);
+  const expensePct = momOf(incExpData[refIdx]?.expenses, incExpData[refIdx - 1]?.expenses);
   const budgetSparkline = incExpLast6.map((d) => d.income - d.expenses);
 
   // Dev-mode: spending by category for charts
@@ -284,6 +290,7 @@ export default function DashboardPage() {
       // necessarily the current one (FINLYNQ-291 C1), so the label must be explicit.
       value: lastMonthIncome,
       sub: lastMonthKey ? getMonthLabel(lastMonthKey) : `${incExpData.length} months tracked`,
+      badgePct: incomePct,
       icon: TrendingUp,
       iconBg: "bg-pos/10 text-pos",
       sparkColor: "#10b981",
@@ -295,6 +302,8 @@ export default function DashboardPage() {
       label: "Monthly Expenses",
       value: lastMonthExpenses,
       sub: lastMonthIncome > 0 ? `${Math.round((lastMonthExpenses / lastMonthIncome) * 100)}% of income` : "",
+      badgePct: expensePct,
+      invertTone: true,
       icon: CreditCard,
       iconBg: "bg-destructive/10 text-destructive",
       sparkColor: "#f43f5e",
@@ -319,8 +328,8 @@ export default function DashboardPage() {
   // src/lib/dashboard-layout.ts). `group` cards that sit next to each other in the saved
   // order share the original responsive grid wrapper, so the default order renders the
   // exact same grids as before customisation.
-  const heroNode = (grouped: boolean) => (
-    <motion.div key="net-worth" variants={itemVariants} className={grouped ? "wide:col-span-2" : undefined}>
+  const heroNode = () => (
+    <motion.div key="net-worth" variants={itemVariants}>
       <NetWorthHeroCard
         href="/accounts"
         onMouseMove={handleMouseMove}
@@ -342,7 +351,9 @@ export default function DashboardPage() {
     extra?: boolean;
     render: (ctx: { grouped: boolean }) => React.ReactNode;
   };
-  const HERO_GRID = { key: "hero", className: "grid grid-cols-1 wide:grid-cols-3 gap-4" };
+  // Six small tiles (health, income, expense, budget, saving rate, DTI): 2-up on a phone and
+  // regular, 3-up on wide. Adjacent in the saved order = one shared grid; any hidden subset reflows.
+  const TILES_GRID = { key: "tiles", className: "grid grid-cols-2 wide:grid-cols-3 gap-3 regular:gap-4" };
   const ROW3_GRID = { key: "row3", className: "grid grid-cols-1 wide:grid-cols-3 gap-5" };
   const CHARTS_GRID = { key: "charts", className: "grid grid-cols-1 wide:grid-cols-2 gap-5" };
   const SPEND_GRID = { key: "spend", className: "grid grid-cols-1 wide:grid-cols-3 gap-5" };
@@ -360,24 +371,22 @@ export default function DashboardPage() {
     "due-subscriptions": {
       render: () => <DueCard key="due-subscriptions" returnTo="/dashboard" />,
     },
-    "net-worth": { group: HERO_GRID, render: ({ grouped }) => heroNode(grouped) },
-    "health-score": { group: HERO_GRID, render: () => <HealthScoreCard key="health-score" health={health} /> },
+    "net-worth": { render: () => heroNode() },
+    "health-score": { group: TILES_GRID, render: () => <HealthScoreCard key="health-score" health={health} /> },
     "summary-stats": {
+      group: TILES_GRID,
       render: () => (
-        <div key="summary-stats" className="grid grid-cols-1 regular:grid-cols-3 gap-4">
+        <Fragment key="summary-stats">
           {summaryCards.map((card) => (
             <StatCard key={card.label} {...card} currency={apiDisplayCurrency} />
           ))}
-        </div>
+        </Fragment>
       ),
     },
     // Key ratios: Savings Rate + DTI (FINLYNQ-291) from the same /api/health-score payload.
     "key-metrics": {
-      render: () => (
-        <LazyView key="key-metrics" minHeight={160}>
-          <KeyMetrics health={health} />
-        </LazyView>
-      ),
+      group: TILES_GRID,
+      render: () => <KeyMetrics key="key-metrics" health={health} tiles />,
     },
     // Accurate merged series: cash live from transactions + investments from stored
     // snapshots; latest point matches the hero. plan/net-worth-over-time.md Part A.

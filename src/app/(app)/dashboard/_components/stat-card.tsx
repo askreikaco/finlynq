@@ -9,6 +9,8 @@ type StatCardProps = {
   sub: string;
   /** Percentage badge before the sub-line (green up / red down); null/undefined = none. */
   badgePct?: number | null;
+  /** Less is better (expenses): up = red, down = green. */
+  invertTone?: boolean;
   icon: LucideIcon;
   iconBg: string;
   sparkColor: string;

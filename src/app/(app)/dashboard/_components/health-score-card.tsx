@@ -12,32 +12,6 @@ const itemVariants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" as const } },
 };
 
-function ScoreBar({ label, score, detail }: { label: string; score: number; detail: string }) {
-  const color = score > 70 ? "bg-pos" : score >= 40 ? "bg-warning" : "bg-destructive";
-
-  return (
-    <div className="group/bar">
-      <div className="flex items-center justify-between mb-1">
-        <span className="text-xs text-muted-foreground group-hover/bar:text-foreground transition-colors">
-          {label}
-        </span>
-        <span className="text-xs font-semibold tabular-nums">{score}</span>
-      </div>
-      <div className="w-full h-1.5 rounded-full bg-muted/60 overflow-hidden">
-        <motion.div
-          className={`h-full rounded-full ${color}`}
-          initial={{ width: 0 }}
-          animate={{ width: `${score}%` }}
-          transition={{ duration: 1, ease: "easeOut", delay: 0.3 }}
-        />
-      </div>
-      <p className="text-xs text-muted-foreground/60 mt-0.5 opacity-0 group-hover/bar:opacity-100 transition-opacity">
-        {detail}
-      </p>
-    </div>
-  );
-}
-
 /**
  * When `health` is supplied (dashboard page lifts the `/api/health-score` fetch
  * so it can also feed the KeyMetrics strip), the card renders it directly and
@@ -56,43 +30,38 @@ export function HealthScoreCard({ health: healthProp }: { health?: HealthData | 
       .then((d) => { if (d) setHealthState(d); });
   }, [healthProp]);
 
+  const toneName = health ? (health.score > 70 ? "emerald" : health.score >= 40 ? "amber" : "rose") : "muted";
+  const open = () => setDialogOpen(true);
+
+  // Small tile (2-up on a phone): score + grade. Tap anywhere opens the details dialog, which
+  // carries the per-component breakdown the old tall card showed inline.
   return (
     <motion.div variants={itemVariants} className="h-full relative">
-      <MetricCard
-        label="Financial Health"
-        icon={Activity}
-        tone={health ? (health.score > 70 ? "emerald" : health.score >= 40 ? "amber" : "rose") : "muted"}
-        value={health ? <span>{Math.round(health.score)}</span> : <span className="inline-block h-7 w-24 animate-shimmer rounded-md align-middle" />}
-        valueClassName={health ? (health.score > 70 ? "text-pos" : health.score >= 40 ? "text-warning" : "text-destructive") : ""}
-        sub={
-          health ? (
-            <span className="flex items-center gap-2 cursor-pointer hover:text-foreground transition-colors" onClick={() => setDialogOpen(true)}>
-              {health.grade} ⓘ
-            </span>
-          ) : (
-            <span className="inline-block h-4 w-16 animate-shimmer rounded-md" />
-          )
-        }
+      <div
+        role="button"
+        tabIndex={health ? 0 : -1}
+        aria-label="Financial health details"
+        className="h-full cursor-pointer rounded-xl focus-visible:outline-2 focus-visible:outline-ring"
+        onClick={health ? open : undefined}
+        onKeyDown={(e) => {
+          if (health && (e.key === "Enter" || e.key === " ")) {
+            e.preventDefault();
+            open();
+          }
+        }}
       >
-        {health ? (
-          <div className="mt-4 space-y-2.5">
-            {health.components.map((c) => (
-              <ScoreBar key={c.name} label={c.name} score={c.score} detail={c.detail} />
-            ))}
-          </div>
-        ) : (
-          <div className="mt-4 space-y-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-4 animate-shimmer rounded-md" />
-            ))}
-          </div>
-        )}
-      </MetricCard>
-      
+        <MetricCard
+          label="Financial Health"
+          icon={Activity}
+          tone={toneName}
+          value={health ? <span>{Math.round(health.score)}</span> : <span className="inline-block h-7 w-24 animate-shimmer rounded-md align-middle" />}
+          valueClassName={health ? (health.score > 70 ? "text-pos" : health.score >= 40 ? "text-warning" : "text-destructive") : ""}
+          sub={health ? <span>{health.grade} ⓘ</span> : <span className="inline-block h-4 w-16 animate-shimmer rounded-md" />}
+        />
+      </div>
       {health ? (
         <HealthInfoDialog data={health} open={dialogOpen} onOpenChange={setDialogOpen} />
       ) : null}
     </motion.div>
   );
 }
-
