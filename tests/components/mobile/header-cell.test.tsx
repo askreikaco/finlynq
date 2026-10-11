@@ -66,7 +66,7 @@ describe("primary and cells: mixed header keeps the primary as the last cell bef
     expect(primary.getAttribute("aria-label")).toBe("Add Goal");
   });
 
-  it("mixed cells + primary: cells first, then the primary, then the overflow trigger, all in one capsule", () => {
+  it("mixed cells + primary: secondary capsule (cells, overflow) on the left, the primary its own separate button on the right", () => {
     const { container } = render(
       <PageHeader
         title="Dashboard"
@@ -81,7 +81,12 @@ describe("primary and cells: mixed header keeps the primary as the last cell bef
     const capsules = container.querySelectorAll(CAPSULE);
     expect(capsules.length).toBe(1);
     const order = Array.from(capsules[0].children).map((el) => el.getAttribute("aria-label") ?? el.getAttribute("data-slot"));
-    expect(order).toEqual(["Refresh", "Settings", "Add widget", "More actions"]);
+    expect(order).toEqual(["Refresh", "Settings", "More actions"]);
+    const group = container.querySelector('[data-slot="page-header-actions"]') as HTMLElement;
+    const add = container.querySelector('[aria-label="Add widget"]') as HTMLElement;
+    expect(add.parentElement).toBe(group);
+    expect(group.lastElementChild).toBe(add);
+    expect(group.firstElementChild).toBe(capsules[0]);
     expect(cls(container.querySelector('a[aria-label="Settings"]'))).not.toContain(PHONE_PRIMARY_CLASS);
     expect(cls(container.querySelector('[aria-label="Add widget"]'))).toContain(PHONE_PRIMARY_CLASS);
   });

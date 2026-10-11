@@ -31,8 +31,8 @@ const CAPSULE = '[data-slot="header-capsule"]';
 const CSS = fs.readFileSync(path.join(process.cwd(), "src/app/globals.css"), "utf-8");
 const PHONE = CSS.slice(CSS.indexOf("@media (width < 40rem) {"), CSS.indexOf("/* Mobile bottom tab bar"));
 
-describe("header capsule: icon cells, status, the primary and overflow are ONE neutral capsule", () => {
-  it("icon actions, a spinner, the primary and the overflow trigger render inside exactly one capsule, in that order", () => {
+describe("header capsule: secondary cells + overflow are ONE neutral capsule on the left; the primary is a separate yellow button on the right", () => {
+  it("icon actions, a spinner and the overflow trigger render in one capsule; the primary follows it as its own control", () => {
     const { container } = render(
       <PageHeader
         title="Goals"
@@ -52,14 +52,20 @@ describe("header capsule: icon cells, status, the primary and overflow are ONE n
     expect(capsule.querySelector('[data-slot="overflow-trigger"]')).not.toBeNull();
     // the primary is the last icon cell, just before the overflow trigger; no separate accent control exists
     const labels = Array.from(capsule.children).map((el) => el.getAttribute("aria-label") ?? el.getAttribute("data-slot"));
-    expect(labels).toEqual(["Refresh", "Saving", "Add goal", "More actions"]);
+    expect(labels).toEqual(["Refresh", "Saving", "More actions"]);
     expect(container.querySelector('[data-slot="header-primary"]')).toBeNull();
-    container.querySelectorAll("button, [role='status']").forEach((el) => {
-      expect(el.closest(CAPSULE)).not.toBeNull();
-    });
+    // ordering + separation: [capsule][primary] in the DOM (left to right), a small gap between the two controls
+    const group = container.querySelector('[data-slot="page-header-actions"]') as HTMLElement;
+    const primary = screen.getByRole("button", { name: "Add goal" });
+    expect(Array.from(group.children)).toEqual([capsule, primary]);
+    expect(primary.closest(CAPSULE)).toBeNull();
+    expect(cls(group)).toContain("max-regular:gap-2");
+    // yellow/accent: the shared header-save rule (primary fill) covers .phone-icon-action
+    expect(PHONE).toContain('[data-slot="page-header-actions"] > :is(.header-save, .phone-icon-action) {');
+    expect(PHONE).toMatch(/:is\(\.header-save, \.phone-icon-action\) \{[^}]*background: var\(--primary\);/);
   });
 
-  it("the capsule holds one 44px slot per cell: 3 icon cells (the primary counts) and the overflow trigger make 4 (11rem)", () => {
+  it("the capsule holds one 44px slot per cell: 2 icon cells and the overflow trigger make 3; the cap still bounds it (11rem)", () => {
     const { container } = render(
       <PageHeader
         title="Goals"
@@ -72,7 +78,7 @@ describe("header capsule: icon cells, status, the primary and overflow are ONE n
       />,
     );
     const capsule = container.querySelector(CAPSULE) as HTMLElement;
-    expect(capsule.children.length).toBe(4);
+    expect(capsule.children.length).toBe(3);
     expect(cls(capsule)).toEqual(expect.arrayContaining(PHONE_CAPSULE.split(" ").filter((c) => c.startsWith("max-regular:"))));
     expect(cls(capsule)).toEqual(expect.arrayContaining(["max-regular:flex-nowrap", "max-regular:gap-0"]));
     expect(PHONE_CAPSULE).not.toContain("overflow-x-auto");
@@ -111,18 +117,17 @@ describe("header capsule: icon cells, status, the primary and overflow are ONE n
     expect(PHONE).toMatch(/\[data-slot="header-capsule"\] > :not\(:is\(button, a\)\) \{\s*width: 2\.75rem;\s*min-width: 2\.75rem;\s*height: 2\.75rem;/);
   });
 
-  it("a lone primary is the only cell of the capsule: a 44px neutral circle, never an accent fill", () => {
+  it("a lone primary is just the yellow round button: no capsule", () => {
     const { container } = render(<PageHeader title="Budgets" actions={<Button aria-label="Add budget"><Plus /></Button>} />);
-    const capsule = container.querySelector(CAPSULE) as HTMLElement;
-    expect(capsule.children.length).toBe(1);
+    expect(container.querySelector(CAPSULE)).toBeNull();
     const primary = screen.getByRole("button", { name: "Add budget" });
     expect(cls(primary)).toContain(PHONE_PRIMARY_CLASS);
-    expect(primary.parentElement).toBe(capsule);
-    const rule = PHONE.slice(PHONE.indexOf('[data-slot="header-capsule"] > :is(button, a).phone-icon-action {'));
+    expect(primary.parentElement).toBe(container.querySelector('[data-slot="page-header-actions"]'));
+    const rule = PHONE.slice(PHONE.indexOf('[data-slot="page-header-actions"] > :is(.header-save, .phone-icon-action) {'));
     const block = rule.slice(0, rule.indexOf("}"));
-    expect(block).toMatch(/background:\s*transparent;/);
+    expect(block).toMatch(/background:\s*var\(--primary\);/);
+    expect(block).toMatch(/width:\s*2\.75rem;/);
     expect(block).toMatch(/font-size:\s*0;/);
-    expect(block).not.toMatch(/var\(--primary\)/);
     expect(PHONE).not.toMatch(/header-primary/);
   });
 
@@ -133,7 +138,7 @@ describe("header capsule: icon cells, status, the primary and overflow are ONE n
     expect(cls(capsule)).toEqual(expect.arrayContaining(["max-regular:h-11", "max-regular:rounded-full"]));
   });
 
-  it("more than three secondary actions go to the overflow menu; phones see only the trigger and the primary", async () => {
+  it("more than three secondary actions go to the overflow menu; phones see only the overflow trigger (left) and the primary (right)", async () => {
     const secondaries = ["Export", "Import", "Archive", "Print"];
     const { container } = render(
       <PageHeader
@@ -148,11 +153,14 @@ describe("header capsule: icon cells, status, the primary and overflow are ONE n
       />,
     );
     const capsule = container.querySelector(CAPSULE) as HTMLElement;
-    // phone-visible cells inside the capsule: the primary and the overflow trigger (the four secondaries are hidden below regular)
+    // phone-visible cells inside the capsule: only the overflow trigger (the four secondaries are hidden below regular)
     const visible = Array.from(capsule.children).filter((el) => !cls(el).includes(HEADER_SECONDARY));
-    expect(visible.length).toBe(2);
-    expect(visible[0].getAttribute("aria-label")).toBe("Add account");
-    expect(visible[1].getAttribute("data-slot")).toBe("overflow-trigger");
+    expect(visible.length).toBe(1);
+    expect(visible[0].getAttribute("data-slot")).toBe("overflow-trigger");
+    // the primary is the separate, rightmost control
+    const group = container.querySelector('[data-slot="page-header-actions"]') as HTMLElement;
+    expect(group.lastElementChild?.getAttribute("aria-label")).toBe("Add account");
+    expect(capsule.nextElementSibling).toBe(group.lastElementChild);
     secondaries.forEach((label) => expect(cls(screen.getByRole("button", { name: label }))).toContain(HEADER_SECONDARY));
     fireEvent.click(screen.getByRole("button", { name: "More actions" }));
     const menu = within(await screen.findByRole("menu", undefined, { timeout: 5000 }));
