@@ -59,7 +59,7 @@ describe("AppTabs: /categories is a rail extra (desktop/tablet only), label foll
     const bar = container.querySelector('nav[aria-label="Mobile navigation"]')!;
     expect(bar.querySelector('a[href="/categories"]')).toBeNull();
     const labels = [...bar.querySelectorAll("a")].map((a) => a.textContent);
-    expect(labels).toEqual(["Home", "Accounts", "Portfolio", "Transactions", "More"]);
+    expect(labels).toEqual(["Home", "Accounts", "Investment", "Transactions", "More"]);
   });
 
   it("the rail labels /categories 'Spending by category' when the merged flag is off", async () => {

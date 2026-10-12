@@ -34,6 +34,7 @@ import { BenchmarkChart } from "./_components/benchmark-chart";
 import { HoldingsByAccount } from "./_components/holdings-by-account";
 import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
 import { PortfolioSummary, HoldingCards } from "./_components/mobile-portfolio";
+import { InvestmentTransactions } from "./_components/investment-transactions";
 import { DataView, ViewModeToggle } from "@/components/adaptive";
 
 // ── Main Page ───────────────────────────────────────────────────────
@@ -154,7 +155,7 @@ export default function PortfolioPage() {
   };
 
   if (loading) return <PortfolioSkeleton />;
-  if (!data || !data.summary) return <ErrorState title="Couldn't load portfolio" message="We couldn't load your portfolio. Please try again." onRetry={reload} />;
+  if (!data || !data.summary) return <ErrorState title="Couldn't load investments" message="We couldn't load your investments. Please try again." onRetry={reload} />;
 
   // Empty state — no holdings yet
   if (data.summary.totalHoldings === 0) {
@@ -166,7 +167,7 @@ export default function PortfolioPage() {
         <div>
           <h3 className="text-lg font-semibold">No holdings yet</h3>
           <p className="text-sm text-muted-foreground mt-1 max-w-xs">
-            Add investment accounts and holdings to track your portfolio performance.
+            Add investment accounts and holdings to track your investment performance.
           </p>
         </div>
         <div className="flex gap-3">
@@ -227,7 +228,7 @@ export default function PortfolioPage() {
       {/* ── Header ────────────────────────────────────────────── */}
       <PageHeader
         className="flex flex-wrap items-center justify-between gap-3"
-        title="Portfolio"
+        title="Investment"
         titleClassName="text-2xl font-bold tracking-tight"
         subtitleClassName="text-sm text-muted-foreground mt-0.5"
         subtitle={`${summary.totalHoldings} holdings across ${summary.totalAccounts} accounts`}
@@ -356,6 +357,9 @@ export default function PortfolioPage() {
           </>
         )}
       />
+
+      {/* ── Investment transactions (scope=investment; never on /transactions) ── */}
+      <InvestmentTransactions refreshKey={data} />
 
       {/* ── ETF X-Ray (Combined) — dev only ──────────────────── */}
       {devMode && hasEtfData && (

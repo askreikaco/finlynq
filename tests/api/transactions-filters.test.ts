@@ -190,4 +190,59 @@ describe("API /api/transactions - new mobile filters", () => {
       );
     });
   });
+
+  describe("investment scope (daily | investment | all)", () => {
+    const listScope = () => {
+      const call = mockGetTransactions.mock.calls.at(-1);
+      return (call?.[1] as { scope?: string } | undefined)?.scope;
+    };
+    const run = async (qs: string) => {
+      mockGetTransactions.mockReturnValue([]);
+      mockGetTransactionCount.mockReturnValue(0);
+      await GET(createMockRequest(`http://localhost:3000/api/transactions${qs}`));
+    };
+
+    it("defaults to daily (investment rows excluded)", async () => {
+      await run("");
+      expect(listScope()).toBe("daily");
+      expect(mockGetTransactionCount).toHaveBeenCalledWith("default", expect.objectContaining({ scope: "daily" }));
+    });
+
+    it("scope=investment passes investment", async () => {
+      await run("?scope=investment");
+      expect(listScope()).toBe("investment");
+    });
+
+    it("scope=all passes no scope filter", async () => {
+      await run("?scope=all");
+      expect(mockGetTransactions).toHaveBeenCalledWith("default", expect.objectContaining({ scope: undefined }));
+      expect(listScope()).toBeUndefined();
+    });
+
+    it("ignores unknown scope values and falls back to daily", async () => {
+      await run("?scope=bogus");
+      expect(listScope()).toBe("daily");
+    });
+
+    it.each([
+      ["portfolioHoldingId", "?portfolioHoldingId=5"],
+      ["id", "?id=42"],
+    ])("%s implies all unless scope is explicit", async (_name, qs) => {
+      await run(qs);
+      expect(listScope()).toBeUndefined();
+    });
+
+    it("explicit scope wins over the holding drill-through default", async () => {
+      await run("?portfolioHoldingId=5&scope=daily");
+      expect(listScope()).toBe("daily");
+    });
+
+    it("keeps other filters alongside scope", async () => {
+      await run("?scope=investment&accountId=3&direction=out");
+      expect(mockGetTransactions).toHaveBeenCalledWith(
+        "default",
+        expect.objectContaining({ scope: "investment", accountId: 3, direction: "out" }),
+      );
+    });
+  });
 });

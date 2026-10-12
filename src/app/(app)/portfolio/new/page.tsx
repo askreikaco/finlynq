@@ -41,7 +41,7 @@ function PortfolioNewInner() {
       id="portfolio-new"
       title="New operation"
       backFallback="/portfolio"
-      backLabel="Portfolio"
+      backLabel="Investment"
       width="section"
       center
       minW0={false}

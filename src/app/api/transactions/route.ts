@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getTransactions, getTransactionCount, getTransactionsPage, createTransaction, updateTransaction, type TxSortFilter } from "@/lib/queries";
+import { getTransactions, getTransactionCount, getTransactionsPage, createTransaction, updateTransaction, type TxSortFilter, type TxScope } from "@/lib/queries";
 import { decodeCursor, InvalidCursorError, type TxCursor } from "@/lib/transactions/cursor";
 import { resolveTextFilterIds, resolveAccountTextIds, resolveHoldingTextIds } from "@/lib/transactions/text-filter";
 import { requireAuth } from "@/lib/auth/require-auth";
@@ -352,9 +352,20 @@ export async function GET(request: NextRequest) {
     ? `%${kindNeedle.trim().replace(/[\\%_]/g, "\\$&")}%`
     : undefined;
 
+  // Investment split (GET list only). `scope`: daily (default) | investment | all.
+  // Drill-through by holding (portfolioHolding / portfolioHoldingId) and
+  // single-row lookups (id) imply `all` unless `scope` is given explicitly,
+  // so edit flows and holding drill-downs still reach investment rows.
+  const scopeRaw = params.get("scope");
+  const explicitScope: TxScope | undefined =
+    scopeRaw === "daily" || scopeRaw === "investment" || scopeRaw === "all" ? scopeRaw : undefined;
+  const impliesAll = params.has("portfolioHolding") || params.has("portfolioHoldingId") || params.has("id");
+  const scope: TxScope = explicitScope ?? (impliesAll ? "all" : "daily");
+
   // SQL-side filters (no sort, no paging, no text ids). Also the memo key for
   // resolveTextFilterIds, so sort or paging changes do not re-decrypt.
   const sqlFilters: TxSortFilter = {
+    scope: scope === "all" ? undefined : scope,
     id: idFilter,
     startDate: params.get("startDate") ?? undefined,
     endDate: params.get("endDate") ?? undefined,

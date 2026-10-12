@@ -20,7 +20,7 @@ import { getRailExtrasSorted } from "@/lib/nav-config";
 const EXPECTED_TABS = [
   ["Home", "/dashboard"],
   ["Accounts", "/accounts"],
-  ["Portfolio", "/portfolio"],
+  ["Investment", "/portfolio"],
   ["Transactions", "/transactions"],
   ["More", "/more"],
 ];
@@ -54,7 +54,7 @@ afterEach(() => {
 });
 
 describe("one tab list, two layouts", () => {
-  it("bar shows the 4 mobile tabs then More (Home, Accounts, Portfolio, Transactions, More)", () => {
+  it("bar shows the 4 mobile tabs then More (Home, Accounts, Investment, Transactions, More)", () => {
     render(<AppTabs />);
     expect(tabsOf(bar())).toEqual(EXPECTED_TABS);
   });
@@ -159,7 +159,7 @@ describe("active tab logic (same rule in both layouts)", () => {
   it.each([
     ["/dashboard", "Home"],
     ["/accounts/5", "Accounts"],
-    ["/portfolio/dividends", "Portfolio"],
+    ["/portfolio/dividends", "Investment"],
     ["/transactions", "Transactions"],
     ["/more", "More"],
     ["/settings/general", "More"],
@@ -196,8 +196,8 @@ describe("active tab logic (same rule in both layouts)", () => {
     mockPath = "/portfolio/new/buy";
     render(<AppTabs />);
     expect(queryBar()).toBeNull();
-    expect(currentOf(rail(), "tablet")).toEqual(["Portfolio"]);
-    expect(currentOf(rail(), "wide")).toEqual(["Portfolio"]);
+    expect(currentOf(rail(), "tablet")).toEqual(["Investment"]);
+    expect(currentOf(rail(), "wide")).toEqual(["Investment"]);
   });
 });
 
@@ -250,7 +250,7 @@ describe("unread badges come from the shared store (nav-unread)", () => {
 });
 
 describe("extended rail: tablet 9 tabs + More, desktop 14 tabs + More", () => {
-  const RAIL_WIDE = ["Home", "Accounts", "Portfolio", "Transactions", "Budgets", "Spending by category", "Reports", "Goals", "Loans & Debt", "Subscriptions", "Scenarios", "FIRE Calculator", "Import", "Tax", "More"];
+  const RAIL_WIDE = ["Home", "Accounts", "Investment", "Transactions", "Budgets", "Spending by category", "Reports", "Goals", "Loans & Debt", "Subscriptions", "Scenarios", "FIRE Calculator", "Import", "Tax", "More"];
   const RAIL_TABLET = RAIL_WIDE.slice(0, 9).concat("More");
 
   it("the rail DOM holds 15 desktop items in order, More last (plus the tablet More variant)", () => {
