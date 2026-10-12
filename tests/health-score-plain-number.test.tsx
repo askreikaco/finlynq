@@ -74,7 +74,7 @@ import { HealthScoreCard } from "@/app/(app)/dashboard/_components/health-score-
 import { MetricCard } from "@/components/metric-card";
 import { CurrencyProvider } from "@/components/currency-provider";
 
-function TestWrapper({ children }: { children: ReactNode }) {
+function TestWrapper({ children }: { children: ReactNode; currency?: string }) {
   return <CurrencyProvider>{children}</CurrencyProvider>;
 }
 

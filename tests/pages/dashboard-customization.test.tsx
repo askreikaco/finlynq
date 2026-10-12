@@ -177,7 +177,7 @@ describe("Dashboard card layout", () => {
         { month, type: "E", total: -exp },
       ]);
     const withRows = (r: unknown[]) => {
-      const f = (globalThis.fetch as unknown as ReturnType<typeof vi.fn>).getMockImplementation()!;
+      const f = (globalThis.fetch as unknown as ReturnType<typeof vi.fn>).getMockImplementation()! as (url: string, init?: RequestInit) => unknown;
       vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) =>
         String(url).includes("/api/dashboard") && !String(url).includes("layout")
           ? { ok: true, json: async () => ({ balances: [], incomeVsExpenses: r, netWorthOverTime: [], spendingByCategory: [], displayCurrency: "VND" }) }
