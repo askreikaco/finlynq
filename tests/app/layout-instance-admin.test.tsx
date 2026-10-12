@@ -24,10 +24,10 @@ afterEach(() => { vi.unstubAllEnvs(); });
 
 // The tab bar and rail have no admin group: the instance flag is read by the More page, not by the shell.
 describe("AppLayout does not feed the instance flag to the tab bar", () => {
-  it.each(["", "1"])("FINLYNQ_INSTANCE_ADMIN=%j: AppTabs gets no props", (value) => {
+  it.each(["", "1"])("FINLYNQ_INSTANCE_ADMIN=%j: AppTabs gets only the categoriesMerged label flag", (value) => {
     vi.stubEnv("FINLYNQ_INSTANCE_ADMIN", value);
     const tabs = findTabs(AppLayout({ children: null }));
     expect(tabs).not.toBeNull();
-    expect(Object.keys(tabs!.props)).toEqual([]);
+    expect(Object.keys(tabs!.props)).toEqual(["categoriesMerged"]);
   });
 });

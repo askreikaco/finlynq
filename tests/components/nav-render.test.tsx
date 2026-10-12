@@ -38,7 +38,12 @@ function mockFetch({ announcements = [], announcementsOk = true, feedback = [], 
 
 const bar = () => screen.getByRole("navigation", { name: "Mobile navigation" });
 const rail = () => screen.getByRole("navigation", { name: "Main navigation" });
+// Dots in what the user sees: the bar, or the rail at a breakpoint (rail has a tablet and a desktop More).
 const dots = (root: HTMLElement) => root.querySelectorAll('[data-testid="more-unread-dot"]');
+const railVisible = (bp: "tablet" | "wide") =>
+  [...rail().querySelectorAll("a")].filter((a) => (bp === "wide" ? !a.classList.contains("wide:hidden") : !a.classList.contains("hidden")));
+const railDots = (bp: "tablet" | "wide" = "wide") =>
+  railVisible(bp).flatMap((a) => [...a.querySelectorAll('[data-testid="more-unread-dot"]')]);
 
 beforeEach(() => {
   mockPath = "/dashboard";
@@ -73,15 +78,14 @@ describe("More unread dot (one dot, both layouts)", () => {
     mockFetch({ announcements: [{ id: 1, read: false }, { id: 2, read: false }] });
     render(<AppTabs />);
     await waitFor(() => expect(dots(bar())).toHaveLength(1));
-    expect(dots(rail())).toHaveLength(1);
+    expect(railDots()).toHaveLength(1);
   });
 
   it("the dot sits on the More tab only, in both layouts", async () => {
     mockFetch({ announcements: [{ id: 1, read: false }] });
     render(<AppTabs />);
     await waitFor(() => expect(dots(bar())).toHaveLength(1));
-    for (const nav of [bar(), rail()]) {
-      const dot = nav.querySelector('[data-testid="more-unread-dot"]')!;
+    for (const dot of [...dots(bar()), ...railDots("tablet"), ...railDots("wide")]) {
       expect(dot.closest("a")!.getAttribute("href")).toBe("/more");
       expect(dot.getAttribute("aria-hidden")).toBe("true");
     }
@@ -90,7 +94,7 @@ describe("More unread dot (one dot, both layouts)", () => {
   it("shows the dot for unread feedback replies alone", async () => {
     mockFetch({ feedback: [{ unread: true }] });
     render(<AppTabs />);
-    await waitFor(() => expect(dots(rail())).toHaveLength(1));
+    await waitFor(() => expect(railDots()).toHaveLength(1));
     expect(dots(bar())).toHaveLength(1);
   });
 
@@ -98,7 +102,7 @@ describe("More unread dot (one dot, both layouts)", () => {
     mockFetch({ announcements: [{ id: 1, read: false }], feedback: [{ unread: true }, { unread: true }] });
     render(<AppTabs />);
     await waitFor(() => expect(dots(bar())).toHaveLength(1));
-    expect(dots(rail())).toHaveLength(1);
+    expect(railDots()).toHaveLength(1);
     expect(bar().textContent).not.toMatch(/\b3\b/);
   });
 
@@ -108,7 +112,7 @@ describe("More unread dot (one dot, both layouts)", () => {
     await waitFor(() => expect(f).toHaveBeenCalledWith("/api/feedback"));
     await new Promise((r) => setTimeout(r, 10));
     expect(dots(bar())).toHaveLength(0);
-    expect(dots(rail())).toHaveLength(0);
+    expect(railDots()).toHaveLength(0);
   });
 
   it("no dot when both requests fail (non-OK)", async () => {
@@ -117,16 +121,16 @@ describe("More unread dot (one dot, both layouts)", () => {
     await waitFor(() => expect(f).toHaveBeenCalledWith("/api/feedback"));
     await new Promise((r) => setTimeout(r, 10));
     expect(dots(bar())).toHaveLength(0);
-    expect(dots(rail())).toHaveLength(0);
+    expect(railDots()).toHaveLength(0);
   });
 });
 
 describe("Tab icons and labels", () => {
   it("every tab in both layouts renders an icon (svg) and a label", () => {
     render(<AppTabs />);
-    for (const nav of [bar(), rail()]) {
-      const links = nav.querySelectorAll("a");
-      expect(links).toHaveLength(5);
+    const sets = [bar().querySelectorAll("a"), ...(["tablet", "wide"] as const).map((bp) => railVisible(bp))];
+    expect(sets.map((s) => s.length)).toEqual([5, 10, 15]);
+    for (const links of sets) {
       links.forEach((l) => {
         expect(l.querySelector("svg")).not.toBeNull();
         expect(l.textContent!.trim().length).toBeGreaterThan(0);

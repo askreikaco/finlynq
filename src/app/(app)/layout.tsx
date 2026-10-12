@@ -1,4 +1,5 @@
 import { AppTabs } from "@/components/nav";
+import { isCategoriesMergedEnabled } from "@/lib/categories/flag";
 import { UnlockGate } from "@/components/unlock-gate";
 import { AnnouncementBanner } from "@/components/announcement-banner";
 import { PromptGate } from "@/components/prompt-gate";
@@ -37,7 +38,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <PromptGate />
           <ReportingRecomputeIndicator />
           <div className="flex flex-1">
-            <AppTabs />
+            <AppTabs categoriesMerged={isCategoriesMergedEnabled()} />
             {/* overflow-x-clip, not overflow-x-hidden: hidden forces overflow-y to auto, which makes <main> a scroll container.
                 Its height is content height, so it never scrolls, and the sticky PageHeader inside would never pin to the window. */}
             {/* data-[bar-hidden]: routes without the tab bar (AppMainBarFlag) keep only the safe-area bottom below 640px. */}

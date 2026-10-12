@@ -100,12 +100,12 @@ describe("AppLayout with categoriesMerged wiring", () => {
     vi.restoreAllMocks();
   });
 
-  it.each([true, false])("renders AppTabs with no props when categoriesMerged is %s", (merged) => {
+  it.each([true, false])("passes categoriesMerged=%s to AppTabs (the rail labels /categories from it)", (merged) => {
     vi.mocked(categoriesFlagModule.isCategoriesMergedEnabled).mockReturnValue(merged);
 
     render(<AppLayout><div>Test Content</div></AppLayout>);
 
     const nav = screen.getByTestId("nav");
-    expect(nav).toHaveAttribute("data-props", "{}");
+    expect(nav).toHaveAttribute("data-props", JSON.stringify({ categoriesMerged: merged }));
   });
 });
