@@ -10,6 +10,7 @@
 import { AuthError, open, seal } from "../crypto/aead";
 import { deviceKeys } from "../crypto/device-key-provider";
 import { allLfDbNames, deleteDb, idbSupported, LF_DB_PREFIX, openDb, registerDb, req, txDone, unregisterDb, userDbSuffix } from "../storage/db-registry";
+import { withUserLock } from "../storage/user-lock";
 import type { OutboxEntry } from "./types";
 
 export const OUTBOX_DB_PREFIX = `${LF_DB_PREFIX}outbox-v1-`;
@@ -30,70 +31,142 @@ async function openOutbox(userId: string): Promise<IDBDatabase> {
   return openDb(name, (db) => db.createObjectStore(STORE));
 }
 
+export interface RotateOutboxResult {
+  /** Whether a key rotation happened now (false when there was no key yet, so nothing to rotate). */
+  rotated: boolean;
+  /** Records re-sealed from the previous key to the current one. */
+  resealed: number;
+  /** Records no key could open (damaged); removed, as a normal list() does. */
+  dropped: number;
+}
+
 export interface OutboxStore {
   put(entry: OutboxEntry): Promise<void>;
   remove(opId: string): Promise<void>;
   /** All readable entries, oldest first (createdAt, then opId). */
   list(): Promise<OutboxEntry[]>;
+  /**
+   * Rotates the on-device key and re-seals every queued entry under it, all under the outbox lock so no write can
+   * interleave. The old key is dropped only after every entry opens under the new one. A crash at any point leaves
+   * every entry readable (current + previous key); the next call finishes the sweep. Returns rotated:false when
+   * the device has no key yet.
+   */
+  rotateKeys(): Promise<RotateOutboxResult>;
+  /** Finishes an interrupted rotation sweep (no-op when none is pending). */
+  finishPendingSweep(): Promise<RotateOutboxResult>;
+}
+
+const lockName = (userId: string) => `finlynq-lf-outbox-lock|${userId}`;
+
+async function openEntry(keys: CryptoKey[], v: unknown, userId: string, deviceId: string, opId: string): Promise<{ entry: OutboxEntry; keyIndex: number } | null> {
+  if (!ArrayBuffer.isView(v)) return null;
+  const bytes = new Uint8Array(v.buffer, v.byteOffset, v.byteLength);
+  for (let i = 0; i < keys.length; i++) {
+    try {
+      const plain = await open(keys[i], bytes, aad(userId, deviceId, opId));
+      const e = JSON.parse(dec.decode(plain)) as OutboxEntry;
+      if (e.opId !== opId) return null;
+      return { entry: e, keyIndex: i };
+    } catch {
+      // try the next key
+    }
+  }
+  return null;
 }
 
 /** Encrypted IndexedDB outbox for one (user, device). Throws when IndexedDB/WebCrypto is unavailable. */
 export function createOutboxStore(userId: string, deviceId: string): OutboxStore {
   if (!idbSupported()) throw new Error("IndexedDB or WebCrypto is not available");
+  const locked = <T>(fn: () => Promise<T>) => withUserLock(lockName(userId), fn);
+
+  /** Reads and decrypts everything; re-seals records only the previous key opens; removes records no key opens. */
+  async function sweep(): Promise<{ resealed: number; dropped: number; entries: OutboxEntry[]; hadPrevious: boolean }> {
+    const ring = await deviceKeys.findKeyring(userId);
+    const keys = [ring.current, ring.previous].filter((k): k is CryptoKey => k !== null);
+    const db = await openOutbox(userId);
+    const entries: OutboxEntry[] = [];
+    const reseal = new Map<string, Uint8Array>();
+    const bad: string[] = [];
+    try {
+      const store = db.transaction(STORE).objectStore(STORE);
+      const [recKeys, recValues] = await Promise.all([req(store.getAllKeys()), req(store.getAll())]);
+      for (let i = 0; i < recKeys.length; i++) {
+        const opId = String(recKeys[i]);
+        const found = keys.length > 0 ? await openEntry(keys, recValues[i], userId, deviceId, opId) : null;
+        if (!found) {
+          bad.push(opId);
+          continue;
+        }
+        entries.push(found.entry);
+        // keyIndex 0 is the current key. Index 1 (previous) must move to the current key.
+        if (found.keyIndex > 0 && ring.current) reseal.set(opId, await seal(ring.current, enc.encode(JSON.stringify(found.entry)), aad(userId, deviceId, opId)));
+      }
+      if (reseal.size > 0 || bad.length > 0) {
+        const tx = db.transaction(STORE, "readwrite");
+        for (const [opId, sealed] of reseal) tx.objectStore(STORE).put(sealed, opId);
+        for (const k of bad) tx.objectStore(STORE).delete(k);
+        await txDone(tx);
+      }
+    } finally {
+      db.close();
+    }
+    return { resealed: reseal.size, dropped: bad.length, entries, hadPrevious: ring.previous !== null };
+  }
+
+  /** The previous key is dropped only after a sweep that wrote everything it needed to. */
+  async function sweepAndSettle(): Promise<{ resealed: number; dropped: number; entries: OutboxEntry[] }> {
+    const r = await sweep();
+    if (r.hadPrevious) await deviceKeys.dropPreviousKey(userId);
+    return r;
+  }
+
   return {
-    async put(entry) {
-      const key = await deviceKeys.getOrCreateDeviceKey(userId);
-      const sealed = await seal(key, enc.encode(JSON.stringify(entry)), aad(userId, deviceId, entry.opId));
-      const db = await openOutbox(userId);
-      try {
-        const tx = db.transaction(STORE, "readwrite");
-        tx.objectStore(STORE).put(sealed, entry.opId);
-        await txDone(tx);
-      } finally {
-        db.close();
-      }
-    },
-    async remove(opId) {
-      const db = await openOutbox(userId);
-      try {
-        const tx = db.transaction(STORE, "readwrite");
-        tx.objectStore(STORE).delete(opId);
-        await txDone(tx);
-      } finally {
-        db.close();
-      }
-    },
-    async list() {
-      const key = await deviceKeys.findDeviceKey(userId);
-      const db = await openOutbox(userId);
-      const out: OutboxEntry[] = [];
-      const bad: string[] = [];
-      try {
-        const store = db.transaction(STORE).objectStore(STORE);
-        const [keys, values] = await Promise.all([req(store.getAllKeys()), req(store.getAll())]);
-        for (let i = 0; i < keys.length; i++) {
-          const opId = String(keys[i]);
-          const v: unknown = values[i];
-          try {
-            if (!key || !ArrayBuffer.isView(v)) throw new AuthError();
-            const bytes = await open(key, new Uint8Array(v.buffer, v.byteOffset, v.byteLength), aad(userId, deviceId, opId));
-            const e = JSON.parse(dec.decode(bytes)) as OutboxEntry;
-            if (e.opId !== opId) throw new AuthError();
-            out.push(e);
-          } catch {
-            bad.push(opId);
-          }
-        }
-        if (bad.length > 0) {
+    put: (entry) =>
+      locked(async () => {
+        const key = await deviceKeys.getOrCreateDeviceKey(userId);
+        const sealed = await seal(key, enc.encode(JSON.stringify(entry)), aad(userId, deviceId, entry.opId));
+        const db = await openOutbox(userId);
+        try {
           const tx = db.transaction(STORE, "readwrite");
-          for (const k of bad) tx.objectStore(STORE).delete(k);
-          await txDone(tx).catch(() => undefined);
+          tx.objectStore(STORE).put(sealed, entry.opId);
+          await txDone(tx);
+        } finally {
+          db.close();
         }
-      } finally {
-        db.close();
-      }
-      return out.sort((a, b) => a.createdAt - b.createdAt || (a.opId < b.opId ? -1 : 1));
-    },
+      }),
+    remove: (opId) =>
+      locked(async () => {
+        const db = await openOutbox(userId);
+        try {
+          const tx = db.transaction(STORE, "readwrite");
+          tx.objectStore(STORE).delete(opId);
+          await txDone(tx);
+        } finally {
+          db.close();
+        }
+      }),
+    list: () =>
+      locked(async () => {
+        // A finished-but-unsettled rotation (previous key still held) is completed here, so the previous key never lingers.
+        const { entries } = await sweepAndSettle();
+        return entries.sort((a, b) => a.createdAt - b.createdAt || (a.opId < b.opId ? -1 : 1));
+      }),
+    rotateKeys: () =>
+      locked(async () => {
+        const pending = await deviceKeys.findKeyring(userId);
+        if (pending.previous) await sweepAndSettle(); // finish an earlier interrupted rotation first
+        const ring = await deviceKeys.rotateDeviceKey(userId);
+        if (!ring) return { rotated: false, resealed: 0, dropped: 0 };
+        const r = await sweepAndSettle();
+        return { rotated: true, resealed: r.resealed, dropped: r.dropped };
+      }),
+    finishPendingSweep: () =>
+      locked(async () => {
+        const ring = await deviceKeys.findKeyring(userId);
+        if (!ring.previous) return { rotated: false, resealed: 0, dropped: 0 };
+        const r = await sweepAndSettle();
+        return { rotated: false, resealed: r.resealed, dropped: r.dropped };
+      }),
   };
 }
 

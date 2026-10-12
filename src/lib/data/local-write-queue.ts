@@ -15,6 +15,9 @@ import { createDrain } from "@/lib/local-first/write-path/drain";
 import { createDrainScheduler, type DrainScheduler } from "@/lib/local-first/write-path/scheduler";
 import { isLocalWriteQueueEnabled, setLocalWriteQueueEnabled } from "@/lib/local-first/write-path/flag";
 import { setLocalReadCacheEnabled } from "@/lib/local-first/read-cache/optin";
+import { deviceKeys, type DeviceKeyMeta } from "@/lib/local-first/crypto/device-key-provider";
+import { maybeAutoRotateKeys, rotateOnDeviceKeys, type RotationReport } from "@/lib/local-first/crypto/rotation";
+import { wipeUser as wipePersistedDataCache } from "./persist";
 import { fetchTrustedDeviceId } from "./trusted-device";
 import { getSessionInfo } from "./session-info";
 import type { OutboxEntry, TxFields } from "@/lib/local-first/write-path/types";
@@ -70,6 +73,10 @@ export function startLocalWriteQueue(userId: string, deviceId: string): boolean 
     const scheduler = createDrainScheduler({ drain, list: () => queue.store.list(), allow });
     running = { userId, queue, scheduler };
     scheduler.start();
+    // Key hygiene: a key older than 90 days (or of unknown age) rotates by itself, only when nothing is queued.
+    void maybeAutoRotateKeys(userId, { outbox: queue.store, clearDataCache: wipePersistedDataCache })
+      .then((r) => r && notify())
+      .catch((err) => console.warn("[local-first] automatic key rotation skipped", err));
     notify();
     return true;
   } catch (err) {
@@ -291,6 +298,29 @@ export function usePendingTransactions(): PendingTxView {
   return view;
 }
 
+/**
+ * Rotates the on-device key now: queued writes are re-sealed under a new key (none are lost), saved copies of server
+ * data are cleared and refill. Returns null when offline mode is not running.
+ */
+export async function rotateOfflineKeys(): Promise<RotationReport | null> {
+  const r = running;
+  if (!r || !isLocalWriteQueueEnabled()) return null;
+  const report = await rotateOnDeviceKeys(r.userId, { outbox: r.queue.store, clearDataCache: wipePersistedDataCache });
+  notify();
+  return report;
+}
+
+/** Age info for the current on-device key; null when offline mode is not running or no key exists yet. */
+export async function getOfflineKeyInfo(): Promise<DeviceKeyMeta | null> {
+  const r = running;
+  if (!r || !isLocalWriteQueueEnabled()) return null;
+  try {
+    return await deviceKeys.getKeyMeta(r.userId);
+  } catch {
+    return null;
+  }
+}
+
 /** Number of queued (pending or failed) entries; 0 when the queue is not running. */
 export async function countUnsyncedWrites(): Promise<number> {
   return (await listPendingSync()).length;
@@ -348,4 +378,43 @@ export function useOfflineMode(): OfflineModeState {
     setEnabledState(isLocalWriteQueueEnabled());
   };
   return { enabled, trusted, deviceId, userId, setEnabled };
+}
+
+export interface OfflineKeyState {
+  info: DeviceKeyMeta | null;
+  busy: boolean;
+  /** Result of the last rotation attempt: "ok", "failed", or null before any. */
+  last: "ok" | "failed" | null;
+  rotate: () => Promise<void>;
+}
+
+/** State for the Settings "rotate key" control. Reads key age after mount (only when `enabled`); never opens IndexedDB when off. */
+export function useOfflineKey(enabled: boolean): OfflineKeyState {
+  const [info, setInfo] = useState<DeviceKeyMeta | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [last, setLast] = useState<"ok" | "failed" | null>(null);
+  useEffect(() => {
+    if (!enabled) return;
+    let alive = true;
+    const load = () => void getOfflineKeyInfo().then((m) => alive && setInfo(m));
+    load();
+    listeners.add(load);
+    return () => {
+      alive = false;
+      listeners.delete(load);
+    };
+  }, [enabled]);
+  const rotate = async () => {
+    setBusy(true);
+    try {
+      const r = await rotateOfflineKeys();
+      setLast(r?.rotated ? "ok" : "failed");
+      setInfo(await getOfflineKeyInfo());
+    } catch {
+      setLast("failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return { info, busy, last, rotate };
 }

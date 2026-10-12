@@ -86,4 +86,22 @@ describe("OfflineModeCard", () => {
     expect(sw().getAttribute("aria-checked")).toBe("false");
     expect(window.localStorage.getItem(LOCAL_WRITE_QUEUE_KEY)).toBeNull();
   });
+
+  it("key section: hidden when off; when on it shows the key info and a rotate button that rotates", async () => {
+    render(<OfflineModeCard />);
+    await waitFor(() => expect(sw().hasAttribute("disabled")).toBe(false));
+    expect(screen.queryByTestId("offline-key-section")).toBeNull();
+    fireEvent.click(sw());
+    await screen.findByTestId("offline-key-section");
+    expect(screen.getByTestId("offline-key-age").textContent).toMatch(/Created when you first save something offline|Created (today|\d+ days? ago)/);
+    // No key exists yet: rotating is a harmless no-op that reports "not done".
+    fireEvent.click(screen.getByTestId("offline-key-rotate"));
+    await screen.findByTestId("offline-key-failed");
+    // With a key on this device, the button rotates it (generation goes 1 -> 2) and says so.
+    const { deviceKeys } = await import("@/lib/local-first/crypto/device-key-provider");
+    await deviceKeys.getOrCreateDeviceKey("u1");
+    fireEvent.click(screen.getByTestId("offline-key-rotate"));
+    await screen.findByTestId("offline-key-ok");
+    expect((await deviceKeys.getKeyMeta("u1"))?.generation).toBe(2);
+  });
 });
