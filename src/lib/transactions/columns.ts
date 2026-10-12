@@ -86,7 +86,7 @@ export const COLUMN_LABELS: Record<ColumnId, string> = {
   accountAlias: "Account alias",
   category: "Category",
   payee: "Payee",
-  portfolio: "Portfolio",
+  portfolio: "Investment",
   portfolioTicker: "Ticker",
   note: "Note",
   tags: "Tags",

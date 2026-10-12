@@ -40,7 +40,7 @@ export default function AccountDetailScreen({ route, navigation }: Props) {
       setLoading(true);
       try {
         const res = await endpoints.getTransactions(
-          `accountId=${account.accountId}&limit=50&sort=date&sortDir=desc`
+          `accountId=${account.accountId}&limit=50&sort=date&sortDir=desc&scope=all`
         );
         if (res.success) {
           setTransactions(res.data);

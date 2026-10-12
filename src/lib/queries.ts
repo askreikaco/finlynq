@@ -215,7 +215,18 @@ export type TxSortFilter = {
   ids?: number[];
   // Kind substring/pattern, ILIKE.
   kindLike?: string;
+  // Investment split. "investment" = account.is_investment OR portfolio_holding_id
+  // set; "daily" = the complement; "all"/undefined = no filter. Applied only when
+  // set, so every caller that omits it (balances, insights, text-filter) is unchanged.
+  scope?: TxScope;
 };
+
+export type TxScope = "daily" | "investment" | "all";
+
+/** Investment predicate shared by scope=investment|daily. */
+function investmentTxPredicate(): SQL {
+  return sql`(${transactions.portfolioHoldingId} IS NOT NULL OR EXISTS (SELECT 1 FROM ${accounts} WHERE ${accounts.id} = ${transactions.accountId} AND ${accounts.isInvestment} = true))`;
+}
 
 export function buildTxFilterConditions(userId: string, filters?: TxSortFilter) {
   const conditions = [eq(transactions.userId, userId)];
@@ -267,6 +278,8 @@ export function buildTxFilterConditions(userId: string, filters?: TxSortFilter) 
   } else if (filters?.direction === "out") {
     conditions.push(sql`${transactions.amount} < 0`);
   }
+  if (filters?.scope === "investment") conditions.push(investmentTxPredicate());
+  else if (filters?.scope === "daily") conditions.push(sql`NOT ${investmentTxPredicate()}`);
   // Absolute amount range filters (on ABS(amount))
   if (filters?.minAmount != null) {
     conditions.push(sql`ABS(${transactions.amount}) >= ${filters.minAmount}`);

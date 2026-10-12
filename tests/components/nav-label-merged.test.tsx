@@ -63,7 +63,7 @@ describe("AppTabs has no categories tab (the label switch lives in More)", () =>
     const { container } = render(<AppTabs />);
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/announcements"));
     const labels = [...container.querySelectorAll("a")].map((a) => a.textContent);
-    expect(labels).toEqual(["Home", "Accounts", "Portfolio", "Transactions", "More", "Home", "Accounts", "Portfolio", "Transactions", "More"]);
+    expect(labels).toEqual(["Home", "Accounts", "Investment", "Transactions", "More", "Home", "Accounts", "Investment", "Transactions", "More"]);
   });
 });
 

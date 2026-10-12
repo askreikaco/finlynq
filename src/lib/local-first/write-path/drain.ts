@@ -131,7 +131,7 @@ async function readJson(r: DrainResponse): Promise<unknown> {
 /** Finds a row the lost-response POST may have created: made after the first send, identical fields. */
 async function findCreated(deps: DrainDeps, e: OutboxEntry, fetchImpl: DrainFetch): Promise<number | null> {
   if (e.firstSendAt === null || typeof e.fields.date !== "string") return null;
-  const r = await call(fetchImpl, `/api/transactions?startDate=${e.fields.date}&endDate=${e.fields.date}&limit=200`);
+  const r = await call(fetchImpl, `/api/transactions?startDate=${e.fields.date}&endDate=${e.fields.date}&limit=200&scope=all`);
   const since = e.firstSendAt - 60_000;
   for (const row of unwrapRows(await readJson(r))) {
     const created = typeof row.createdAt === "string" ? Date.parse(row.createdAt) : NaN;
@@ -147,7 +147,7 @@ async function findCreated(deps: DrainDeps, e: OutboxEntry, fetchImpl: DrainFetc
 export const ROW_CHANGED_REASON = "Row changed on the server";
 
 async function fetchServerTx(fetchImpl: DrainFetch, serverId: number, needUpdatedAt = true): Promise<(ServerTx & { updatedAt: string | null }) | null> {
-  const r = await call(fetchImpl, `/api/transactions?id=${serverId}`);
+  const r = await call(fetchImpl, `/api/transactions?id=${serverId}&scope=all`);
   const row = unwrapRows(await readJson(r)).find((x) => x.id === serverId);
   if (!row) return null;
   const ms = typeof row.updatedAt === "string" ? Date.parse(row.updatedAt) : NaN;

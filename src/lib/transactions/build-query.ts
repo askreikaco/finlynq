@@ -37,7 +37,13 @@ export type TxFilters = {
   direction?: string;
   minAmount?: string;
   maxAmount?: string;
+  // Investment split (GET /api/transactions `scope`). Unset = "daily" unless a
+  // holding/id drill-through is present, which implies "all" (see buildTransactionQuery).
+  scope?: TxListScope;
 };
+
+/** `scope` values accepted by GET /api/transactions. */
+export type TxListScope = "daily" | "investment" | "all";
 
 /** Per-user header sort. `null` direction = unsorted (server default date DESC). */
 export type TxSortPref = {
@@ -96,6 +102,9 @@ export function buildTransactionQuery(
   if (filters.direction) params.set("direction", filters.direction);
   if (filters.minAmount) params.set("minAmount", filters.minAmount);
   if (filters.maxAmount) params.set("maxAmount", filters.maxAmount);
+  // Investment split: the Transactions page never shows investment rows
+  // (scope=daily). Holding / single-id drill-throughs need every row → all.
+  params.set("scope", filters.scope ?? (filters.portfolioHolding || filters.id ? "all" : "daily"));
 
   // Issue #59 — sort + per-column filters. The top-bar quick filters
   // above are URL-driven (deep links from /portfolio etc. must keep

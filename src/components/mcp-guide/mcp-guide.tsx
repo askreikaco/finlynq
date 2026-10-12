@@ -142,7 +142,7 @@ const toolGroups: {
     ],
   },
   {
-    title: "Portfolio holdings",
+    title: "Investment holdings",
     icon: Briefcase,
     blurb:
       "Manually create, rename, move, or delete portfolio positions (the import pipeline auto-creates them from CSV/ZIP, but for one-offs these are what you want). Plus the read tools for portfolio metrics, performance, a deep-dive on a single position, and rebalancing/benchmark insights. Renames cascade to all transactions automatically; deletes leave the transactions in place with the holding link cleared.",

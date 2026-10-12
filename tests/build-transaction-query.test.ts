@@ -40,6 +40,11 @@ const ACCOUNTS: TxQueryAccount[] = [
   { id: 5, type: null },
 ];
 
+/**
+ * Legacy param shape. `scope` (investment split) is pinned in the dedicated
+ * "investment scope" block below, so it is removed here to keep these golden
+ * strings byte-identical to the pre-scope builder output.
+ */
 function build(
   filters: TxFilters,
   sort: TxSortPref,
@@ -47,7 +52,9 @@ function build(
   page = PAGE0,
   accounts = ACCOUNTS,
 ): string {
-  return buildTransactionQuery(filters, sort, colFilters, accounts, page).toString();
+  const params = buildTransactionQuery(filters, sort, colFilters, accounts, page);
+  params.delete("scope");
+  return params.toString();
 }
 
 describe("buildTransactionQuery", () => {
@@ -253,5 +260,46 @@ describe("buildTransactionQuery", () => {
       "limit=25&offset=50",
     );
     expect(build(EMPTY_FILTERS, NO_SORT, [], { page: 0, limit: 50 })).toBe("limit=50&offset=0");
+  });
+
+  describe("investment scope", () => {
+    const raw = (filters: TxFilters, page = PAGE0) =>
+      buildTransactionQuery(filters, NO_SORT, [], ACCOUNTS, page);
+
+    it("Transactions page default URL carries scope=daily first", () => {
+      // The /transactions page never shows investment rows: its default list URL is daily.
+      expect(raw(EMPTY_FILTERS).toString()).toBe("scope=daily&limit=50&offset=0");
+      expect(raw(EMPTY_FILTERS).get("scope")).toBe("daily");
+    });
+
+    it("scope sits after the top-bar filters and before sort/paging", () => {
+      const q = buildTransactionQuery(
+        { ...EMPTY_FILTERS, accountId: "8" },
+        { columnId: "date", direction: "desc" },
+        [],
+        ACCOUNTS,
+        PAGE0,
+      ).toString();
+      expect(q).toBe("accountId=8&scope=daily&sort=date&sortDir=desc&limit=50&offset=0");
+    });
+
+    it("explicit scope is emitted as given", () => {
+      expect(raw({ ...EMPTY_FILTERS, scope: "investment" }).get("scope")).toBe("investment");
+      expect(raw({ ...EMPTY_FILTERS, scope: "all" }).get("scope")).toBe("all");
+      expect(raw({ ...EMPTY_FILTERS, scope: "daily" }).get("scope")).toBe("daily");
+    });
+
+    it("holding and id drill-throughs imply scope=all", () => {
+      expect(raw({ ...EMPTY_FILTERS, portfolioHolding: "VTI" }).get("scope")).toBe("all");
+      expect(raw({ ...EMPTY_FILTERS, id: "42" }).get("scope")).toBe("all");
+    });
+
+    it("explicit scope wins over the holding drill-through default", () => {
+      expect(raw({ ...EMPTY_FILTERS, portfolioHolding: "VTI", scope: "daily" }).get("scope")).toBe("daily");
+    });
+
+    it("cursor mode keeps scope ahead of limit/cursor", () => {
+      expect(raw(EMPTY_FILTERS, { page: 0, limit: 50, cursor: "" }).toString()).toBe("scope=daily&limit=50&cursor=");
+    });
   });
 });

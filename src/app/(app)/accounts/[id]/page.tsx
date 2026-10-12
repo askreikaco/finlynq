@@ -182,7 +182,7 @@ export default function AccountDetailPage() {
       }
     })();
 
-    fetch(`/api/transactions?accountId=${id}&limit=1`)
+    fetch(`/api/transactions?accountId=${id}&limit=1&scope=all`)
       .then((r) => r.json())
       .catch(() => {});
   }
@@ -309,7 +309,7 @@ export default function AccountDetailPage() {
         setHoldingsValue(acctBalance?.holdingsValue ?? null);
       });
 
-    fetch(`/api/transactions?accountId=${id}&limit=1`)
+    fetch(`/api/transactions?accountId=${id}&limit=1&scope=all`)
       .then((r) => r.json())
       .catch(() => {});
   }, [id]);
@@ -452,7 +452,7 @@ export default function AccountDetailPage() {
             <DropdownMenuContent align="end" className="min-w-56">
               <DropdownMenuGroup>
                 <DropdownMenuLabel>
-                  {isInvestment ? "Portfolio operations" : "Brokerage cash move"}
+                  {isInvestment ? "Investment operations" : "Brokerage cash move"}
                 </DropdownMenuLabel>
                 {(isInvestment ? INVESTMENT_OPS : normalInvestmentOps).map((o) => (
                   <DropdownMenuItem
