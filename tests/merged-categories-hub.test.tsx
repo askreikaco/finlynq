@@ -93,15 +93,22 @@ describe("merged categories (WP8)", () => {
       expect(overviewCalls.length).toBe(1);
     });
 
-    it("shows category list", async () => {
+    it("shows category list (groups collapsed; a group header opens its categories)", async () => {
       render(<CategoriesPageContent isMerged={false} />);
-      await waitFor(
+      const header = await waitFor(
         () => {
-          expect(screen.getByText("Food")).toBeTruthy();
-          expect(screen.getByText("Transport")).toBeTruthy();
+          const h = screen.getByText("Expenses").closest("button");
+          expect(h).toBeTruthy();
+          return h as HTMLButtonElement;
         },
         { timeout: 5000 }
       );
+      expect(screen.queryByText("Food")).toBeNull();
+      fireEvent.click(header);
+      await waitFor(() => {
+        expect(screen.getByText("Food")).toBeTruthy();
+        expect(screen.getByText("Transport")).toBeTruthy();
+      });
     });
   });
 
