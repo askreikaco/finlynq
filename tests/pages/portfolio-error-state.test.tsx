@@ -35,7 +35,7 @@ describe("portfolio page error state", () => {
     overview.current = null;
     render(<PortfolioPage />);
     const alert = await screen.findByRole("alert");
-    expect(alert.textContent).toContain("Couldn't load portfolio");
+    expect(alert.textContent).toContain("Couldn't load investments");
     fireEvent.click(within(alert).getByRole("button", { name: /Try again/ }));
     expect(reloadFn).toHaveBeenCalledTimes(1);
   });
@@ -44,13 +44,13 @@ describe("portfolio page error state", () => {
     overview.current = { holdings: [], byHolding: [] };
     render(<PortfolioPage />);
     const alert = await screen.findByRole("alert");
-    expect(alert.textContent).toContain("Couldn't load portfolio");
+    expect(alert.textContent).toContain("Couldn't load investments");
   });
 
   it("shows ErrorState (no crash) when the API returns an error object without holdings", async () => {
     overview.current = { error: "Internal error" };
     render(<PortfolioPage />);
     const alert = await screen.findByRole("alert");
-    expect(alert.textContent).toContain("Couldn't load portfolio");
+    expect(alert.textContent).toContain("Couldn't load investments");
   });
 });

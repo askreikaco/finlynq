@@ -19,7 +19,7 @@
 import { useCallback, useMemo } from "react";
 import useSWRInfinite from "swr/infinite";
 import { jsonFetcher, swrListOptions } from "@/lib/swr";
-import { buildTransactionQuery, type TxColFilter, type TxSortPref } from "@/lib/transactions/build-query";
+import { buildTransactionQuery, type TxColFilter, type TxListScope, type TxSortPref } from "@/lib/transactions/build-query";
 import type { Account, ColFilterShape, SortPref, Transaction } from "../_types";
 
 const PAGE = 50;
@@ -103,6 +103,8 @@ export function useTransactions(
   colFilters?: UseTransactionsColFilter[],
   accounts?: Account[],
   _initialPage: number = 1,
+  /** Investment split for the list. Undefined = builder default (daily). Account-scoped embeds pass "all". */
+  listScope?: TxListScope,
 ) {
   const accountList = accounts ?? [];
   // accountType resolves to account ids on the client (build-query), so wait for accounts.
@@ -113,7 +115,7 @@ export function useTransactions(
     if (index > 0 && !prev?.nextCursor) return null;
     if (index === 0 && needsAccounts && accountList.length === 0) return null;
     const params = buildTransactionQuery(
-      filters,
+      { ...filters, scope: listScope },
       toServerSort(sortPref),
       (colFilters ?? []).filter((f): f is TxColFilter => "type" in f) as TxColFilter[],
       accountList,

@@ -173,7 +173,7 @@ export const NAV_REGISTRY: NavPageEntry[] = [
   {
     id: "portfolio",
     path: "/portfolio",
-    label: "Portfolio",
+    label: "Investment",
     icon: TrendingUp,
     group: "Wealth",
     mode: "prod",

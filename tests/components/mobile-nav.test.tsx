@@ -31,13 +31,13 @@ afterEach(() => {
 const bar = () => screen.getByRole("navigation", { name: "Mobile navigation" });
 
 describe("mobile bottom bar", () => {
-  it("shows Home, Accounts, Portfolio, Transactions, More in order with hrefs", () => {
+  it("shows Home, Accounts, Investment, Transactions, More in order with hrefs", () => {
     render(<AppTabs />);
     const links = within(bar()).getAllByRole("link");
     expect(links.map((l) => [l.textContent, l.getAttribute("href")])).toEqual([
       ["Home", "/dashboard"],
       ["Accounts", "/accounts"],
-      ["Portfolio", "/portfolio"],
+      ["Investment", "/portfolio"],
       ["Transactions", "/transactions"],
       ["More", "/more"],
     ]);
@@ -49,7 +49,7 @@ describe("mobile bottom bar", () => {
     expect(mobileBarItems).toHaveLength(4);
     expect(mobileBarItems[0].label).toBe("Home");
     expect(mobileBarItems[1].label).toBe("Accounts");
-    expect(mobileBarItems[2].label).toBe("Portfolio");
+    expect(mobileBarItems[2].label).toBe("Investment");
     expect(mobileBarItems[3].label).toBe("Transactions");
   });
 
@@ -76,7 +76,7 @@ describe("mobile bottom bar", () => {
         },
         {
           "href": "/portfolio",
-          "label": "Portfolio",
+          "label": "Investment",
         },
         {
           "href": "/transactions",
@@ -88,7 +88,7 @@ describe("mobile bottom bar", () => {
 
   it.each([
     ["/accounts/123", "Accounts"],
-    ["/portfolio/holdings/9", "Portfolio"],
+    ["/portfolio/holdings/9", "Investment"],
     ["/transactions", "Transactions"],
     ["/dashboard", "Home"],
     ["/more", "More"],

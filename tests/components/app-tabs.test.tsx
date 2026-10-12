@@ -19,7 +19,7 @@ import { AppTabs, mobileBarItems } from "@/components/nav";
 const EXPECTED_TABS = [
   ["Home", "/dashboard"],
   ["Accounts", "/accounts"],
-  ["Portfolio", "/portfolio"],
+  ["Investment", "/portfolio"],
   ["Transactions", "/transactions"],
   ["More", "/more"],
 ];
@@ -44,7 +44,7 @@ afterEach(() => {
 });
 
 describe("one tab list, two layouts", () => {
-  it("bar and rail render the same hrefs, labels and order (Home, Accounts, Portfolio, Transactions, More)", () => {
+  it("bar and rail render the same hrefs, labels and order (Home, Accounts, Investment, Transactions, More)", () => {
     render(<AppTabs />);
     expect(tabsOf(bar())).toEqual(EXPECTED_TABS);
     expect(tabsOf(rail())).toEqual(EXPECTED_TABS);
@@ -144,7 +144,7 @@ describe("active tab logic (same rule in both layouts)", () => {
   it.each([
     ["/dashboard", "Home"],
     ["/accounts/5", "Accounts"],
-    ["/portfolio/dividends", "Portfolio"],
+    ["/portfolio/dividends", "Investment"],
     ["/transactions", "Transactions"],
     ["/more", "More"],
     ["/settings/general", "More"],
@@ -179,7 +179,7 @@ describe("active tab logic (same rule in both layouts)", () => {
     mockPath = "/portfolio/new/buy";
     render(<AppTabs />);
     expect(queryBar()).toBeNull();
-    expect(currentOf(rail())).toEqual(["Portfolio"]);
+    expect(currentOf(rail())).toEqual(["Investment"]);
   });
 });
 
