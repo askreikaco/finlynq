@@ -1,6 +1,7 @@
 "use client";
 
-import { Suspense, useEffect, useState, useCallback } from "react";
+import { Suspense, useCallback, useMemo, useState } from "react";
+import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,70 +31,53 @@ function BudgetsPageContent() {
   const searchParams = useSearchParams();
   // Month and mode come from the URL so returning from a form page lands on the same view.
   const [month, setMonth] = useState(() => parseMonthParam(searchParams.get("month"), getCurrentMonth()));
-  const [budgets, setBudgets] = useState<Budget[]>([]);
-  const [spending, setSpending] = useState<SpendingRow[]>([]);
-  const [templates, setTemplates] = useState<BudgetTemplate[]>([]);
-  const [ageOfMoney, setAgeOfMoney] = useState<AgeOfMoney | null>(null);
   const [mode, setMode] = useState<BudgetMode>(() => (searchParams.get("mode") === "envelope" ? "envelope" : "traditional"));
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [copying, setCopying] = useState(false);
   const [copyError, setCopyError] = useState("");
 
-  // Envelope mode: track per-category available amounts (income allocated)
-  const [envelopeIncome, setEnvelopeIncome] = useState(0);
 
+  // Reads are cache-first when the local read cache is on (Settings > Data > Offline mode); plain fetches otherwise.
+  const budgetsRes = useCacheFirstJson<Budget[]>(
+    `/api/budgets?month=${month}&rollover=1&currency=${encodeURIComponent(displayCurrency)}`,
+    { keepPrevious: true },
+  );
+  const budgets = useMemo(() => (Array.isArray(budgetsRes.data) ? budgetsRes.data : []), [budgetsRes.data]);
+  const loading = budgetsRes.loading;
+  const loadError = budgetsRes.error;
+
+  const startDate = `${month}-01`;
+  const [y, m] = month.split("-").map(Number);
+  const endDate = `${month}-${new Date(y, m, 0).getDate()}`;
+  const monthRes = useCacheFirstJson<{
+    spendingByCategory?: SpendingRow[];
+    incomeVsExpenses?: { type: string; total: number }[];
+  }>(`/api/dashboard?startDate=${startDate}&endDate=${endDate}&currency=${encodeURIComponent(displayCurrency)}`, {
+    keepPrevious: true,
+  });
+  const spending = useMemo(
+    () => (Array.isArray(monthRes.data?.spendingByCategory) ? (monthRes.data!.spendingByCategory as SpendingRow[]) : []),
+    [monthRes.data],
+  );
+  // Envelope mode: total income for the month
+  const envelopeIncome = useMemo(
+    () => (monthRes.data?.incomeVsExpenses ?? []).filter((row) => row.type === "I").reduce((sum, row) => sum + row.total, 0),
+    [monthRes.data],
+  );
+
+  const templatesRes = useCacheFirstJson<BudgetTemplate[]>("/api/budget-templates");
+  const templates = useMemo(() => (Array.isArray(templatesRes.data) ? templatesRes.data : []), [templatesRes.data]);
+
+  const ageRes = useCacheFirstJson<AgeOfMoney & { error?: unknown }>("/api/age-of-money");
+  const ageOfMoney: AgeOfMoney | null = ageRes.data && !ageRes.data.error ? ageRes.data : null;
+
+  const budgetsReload = budgetsRes.reload;
+  const monthReload = monthRes.reload;
   const loadData = useCallback(() => {
-    setLoadError(false);
-    fetch(`/api/budgets?month=${month}&rollover=1&currency=${encodeURIComponent(displayCurrency)}`)
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("Failed to load budgets"))))
-      .then((data) => setBudgets(Array.isArray(data) ? data : []))
-      .catch(() => setLoadError(true))
-      .finally(() => setLoading(false));
-
-    const startDate = `${month}-01`;
-    const [y, m] = month.split("-").map(Number);
-    const endDate = `${month}-${new Date(y, m, 0).getDate()}`;
-    fetch(`/api/dashboard?startDate=${startDate}&endDate=${endDate}&currency=${encodeURIComponent(displayCurrency)}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (!d) return;
-        setSpending(Array.isArray(d.spendingByCategory) ? d.spendingByCategory : []);
-        // Calculate total income for the month for envelope mode
-        const income = (d.incomeVsExpenses ?? [])
-          .filter((row: { type: string; total: number }) => row.type === "I")
-          .reduce((s: number, row: { total: number }) => s + row.total, 0);
-        setEnvelopeIncome(income);
-      })
-      .catch(() => {});
-  }, [month, displayCurrency]);
-
-  const loadTemplates = useCallback(() => {
-    fetch("/api/budget-templates")
-      .then((r) => (r.ok ? r.json() : []))
-      .then((data) => setTemplates(Array.isArray(data) ? data : []))
-      .catch(() => {});
-  }, []);
-
-  const loadAgeOfMoney = useCallback(() => {
-    fetch("/api/age-of-money")
-      .then((r) => r.json())
-      .then((d) => {
-        if (!d.error) setAgeOfMoney(d);
-      })
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  useEffect(() => {
-    loadTemplates();
-    loadAgeOfMoney();
-  }, [loadTemplates, loadAgeOfMoney]);
+    budgetsReload();
+    monthReload();
+  }, [budgetsReload, monthReload]);
 
   // Keep the address bar in step with month/mode so a reload or browser back returns to this view.
   function syncUrl(nextMonth: string, nextMode: BudgetMode) {
@@ -241,7 +225,7 @@ function BudgetsPageContent() {
   }
 
   if (loading) return <PageSkeleton variant="list" rows={5} />;
-  if (loadError) return <ErrorState title="Couldn't load budgets" message="We couldn't load your budgets. Please try again." onRetry={() => { setLoading(true); loadData(); }} />;
+  if (loadError) return <ErrorState title="Couldn't load budgets" message="We couldn't load your budgets. Please try again." onRetry={loadData} />;
 
   const overflow: OverflowAction[] = [
     mode === "traditional"
