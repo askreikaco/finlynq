@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useState, useCallback, useRef } from "react";
+import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
@@ -125,29 +126,23 @@ function DashboardSkeleton() {
 export default function DashboardPage() {
   const devMode = useDevMode();
   const { displayCurrency, isLoading: currencyLoading } = useDisplayCurrency();
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [health, setHealth] = useState<HealthData | null>(null);
+  // Cache-first when the local read cache is on (Settings > Data > Offline mode); a plain fetch otherwise.
+  const encodedCurrency = encodeURIComponent(displayCurrency);
+  const dashboardRes = useCacheFirstJson<DashboardData>(currencyLoading ? null : `/api/dashboard?currency=${encodedCurrency}`, { keepPrevious: true });
+  // Financial-health payload feeds both the Health Score card and the KeyMetrics strip (savings rate + DTI) — fetched
+  // once here and passed down so the two consumers don't each hit the (query-heavy) endpoint.
+  const healthRes = useCacheFirstJson<HealthData>(currencyLoading ? null : `/api/health-score?currency=${encodedCurrency}`, { keepPrevious: true });
+  const data: DashboardData | null = dashboardRes.data ?? null;
+  const health: HealthData | null = healthRes.data ?? null;
+  const loadError = dashboardRes.error;
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [userInfo, setUserInfo] = useState<{ email: string; displayName?: string } | null>(null);
   const { layout, ready: layoutReady, save: saveLayout, reset: resetLayout } = useDashboardLayout();
   const [customizeOpen, setCustomizeOpen] = useState(false);
-  const [loadError, setLoadError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     if (currencyLoading) return; // wait until provider has read settings
-    fetch(`/api/dashboard?currency=${encodeURIComponent(displayCurrency)}`)
-      .then((r) => { if (!r.ok) throw new Error('dashboard'); return r.json(); })
-      .then((d) => { if (d) { setData(d); setLoadError(false); } })
-      .catch(() => setLoadError(true));
-
-    // Financial-health payload feeds both the Health Score card and the
-    // KeyMetrics strip (savings rate + DTI) — fetched once here and passed down
-    // so the two consumers don't each hit the (query-heavy) endpoint.
-    fetch(`/api/health-score?currency=${encodeURIComponent(displayCurrency)}`)
-      .then((r) => { if (r.ok) return r.json(); })
-      .then((d) => { if (d) setHealth(d); });
-
     // Check if onboarding is needed (managed mode only). Username-only users
     // (no email on file) also see the wizard — fall back to username for the
     // "Signed in as …" line.
@@ -171,7 +166,7 @@ export default function DashboardPage() {
     e.currentTarget.style.setProperty("--mouse-y", `${e.clientY - rect.top}px`);
   }, []);
 
-  if (loadError && !data) return <ErrorState onRetry={() => { setLoadError(false); setReloadKey((k) => k + 1); }} />;
+  if (loadError && !data) return <ErrorState onRetry={() => { dashboardRes.reload(); healthRes.reload(); setReloadKey((k) => k + 1); }} />;
 
   if (!data || !layoutReady) return <DashboardSkeleton />;
 

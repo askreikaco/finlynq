@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
@@ -13,6 +13,7 @@ import { useDisplayCurrency } from "@/components/currency-provider";
 import { OnboardingTips } from "@/components/onboarding-tips";
 import { EmptyState } from "@/components/empty-state";
 import { ErrorState } from "@/components/error-state";
+import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import {
   orderGroups,
   parseGroupOrder,
@@ -101,10 +102,6 @@ function SummarySkeleton() {
 
 export default function AccountsPage() {
   const { displayCurrency } = useDisplayCurrency();
-  const [accounts, setAccounts] = useState<AccountBalance[]>([]);
-  const [series, setSeries] = useState<{ nw: SeriesPoint[]; assets: SeriesPoint[]; liabilities: SeriesPoint[] }>({ nw: [], assets: [], liabilities: [] });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
 
   // Show-archived toggle (persists archived accounts in the list with a badge)
   const [showArchived, setShowArchived] = useState(false);
@@ -135,27 +132,23 @@ export default function AccountsPage() {
   // Always fetch EVERY account, archived included — /api/dashboard returns them
   // unconditionally now, and the totals below need them to match the dashboard
   // hero and the net-worth chart. "Show archived" is a pure list filter.
-  function loadAccounts() {
-    setLoading(true);
-    setError(false);
-    const params = new URLSearchParams();
-    params.set("currency", displayCurrency);
-    const url = `/api/dashboard?${params.toString()}`;
-    fetch(url)
-      .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
-      .then((d) => {
-        setAccounts(d.balances ?? []);
-        setSeries({
-          nw: d.netWorthOverTime ?? [],
-          assets: d.assetsOverTime ?? [],
-          liabilities: d.liabilitiesOverTime ?? [],
-        });
-        setLoading(false);
-      })
-      .catch(() => { setError(true); setLoading(false); });
-  }
-
-  useEffect(() => { loadAccounts();   }, [displayCurrency]);
+  // Cache-first when the local read cache is on (Settings > Data > Offline mode); a plain fetch otherwise.
+  const dashboardUrl = `/api/dashboard?${new URLSearchParams({ currency: displayCurrency }).toString()}`;
+  const { data: dashboard, loading, error, reload: loadAccounts } = useCacheFirstJson<{
+    balances?: AccountBalance[];
+    netWorthOverTime?: SeriesPoint[];
+    assetsOverTime?: SeriesPoint[];
+    liabilitiesOverTime?: SeriesPoint[];
+  }>(dashboardUrl);
+  const accounts = useMemo(() => dashboard?.balances ?? [], [dashboard]);
+  const series = useMemo(
+    () => ({
+      nw: dashboard?.netWorthOverTime ?? [],
+      assets: dashboard?.assetsOverTime ?? [],
+      liabilities: dashboard?.liabilitiesOverTime ?? [],
+    }),
+    [dashboard],
+  );
 
   // The toggle hides archived rows from the LIST only.
   const visible = showArchived ? accounts : accounts.filter((a) => !a.archived);
