@@ -19,9 +19,9 @@ import type { BenchmarkData, OverviewData } from "../_types";
  * `reload()` is the imperative refetch the holding edit/create dialog calls
  * on save.
  */
-export function usePortfolioOverview(displayCurrency: string) {
+export function usePortfolioOverview(displayCurrency: string, currencyLoading = false) {
   const res = useCacheFirstJson<OverviewData>(
-    `/api/portfolio/overview?currency=${encodeURIComponent(displayCurrency)}`,
+    currencyLoading ? null : `/api/portfolio/overview?currency=${encodeURIComponent(displayCurrency)}`,
     { keepPrevious: true },
   );
   return { data: res.data ?? null, loading: res.loading, reload: res.reload };

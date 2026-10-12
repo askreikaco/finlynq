@@ -39,8 +39,8 @@ import { DataView, ViewModeToggle } from "@/components/adaptive";
 // ── Main Page ───────────────────────────────────────────────────────
 export default function PortfolioPage() {
   const devMode = useDevMode();
-  const { displayCurrency } = useDisplayCurrency();
-  const { data, loading, reload } = usePortfolioOverview(displayCurrency);
+  const { displayCurrency, isLoading: currencyLoading } = useDisplayCurrency();
+  const { data, loading, reload } = usePortfolioOverview(displayCurrency, currencyLoading);
   const [filter, setFilter] = useState<FilterType>("all");
   // Edit/delete dialog for individual portfolio holdings. Null = closed.
   // (Create-mode was removed — "Add holding" now navigates to the consolidated
