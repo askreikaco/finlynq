@@ -135,34 +135,40 @@ describe("AppTabs active tab: longest-match rule, both layouts", () => {
     vi.unstubAllGlobals();
   });
 
-  const currentIn = (name: string) =>
+  // The rail holds every item; CSS shows 10 (tablet) or 15 (wide). Mirror that: tablet hides `hidden`,
+  // wide hides `wide:hidden`. The bar has no breakpoint variants.
+  const currentIn = (name: string, bp?: "tablet" | "wide") =>
     within(screen.getByRole("navigation", { name }))
       .queryAllByRole("link")
+      .filter((l) => !bp || (bp === "wide" ? !l.classList.contains("wide:hidden") : !l.classList.contains("hidden")))
       .filter((l) => l.getAttribute("aria-current") === "page")
       .map((l) => l.getAttribute("href"));
 
   it.each([
-    ["/admin/instance", "/more"],
-    ["/admin/system", "/more"],
-    ["/admin", "/more"],
-    ["/settings/general", "/more"],
-    ["/account/info", "/more"],
-    ["/budgets", "/more"],
-    ["/dashboard", "/dashboard"],
-    ["/accounts/3", "/accounts"],
-    ["/transactions", "/transactions"],
-    ["/portfolio/dividends", "/portfolio"],
-  ])("at %s: exactly one current tab, %s, in the bar and in the rail", (path, expected) => {
+    ["/admin/instance", "/more", "/more", "/more"],
+    ["/admin/system", "/more", "/more", "/more"],
+    ["/admin", "/more", "/more", "/more"],
+    ["/settings/general", "/more", "/more", "/more"],
+    ["/account/info", "/more", "/more", "/more"],
+    ["/budgets", "/more", "/budgets", "/budgets"],
+    ["/fire", "/more", "/more", "/fire"],
+    ["/dashboard", "/dashboard", "/dashboard", "/dashboard"],
+    ["/accounts/3", "/accounts", "/accounts", "/accounts"],
+    ["/transactions", "/transactions", "/transactions", "/transactions"],
+    ["/portfolio/dividends", "/portfolio", "/portfolio", "/portfolio"],
+  ])("at %s: exactly one current tab in the bar (%s), tablet (%s) and desktop (%s)", (path, inBar, onTablet, onWide) => {
     mockPath = path;
     render(<AppTabs />);
-    expect(currentIn("Mobile navigation")).toEqual([expected]);
-    expect(currentIn("Main navigation")).toEqual([expected]);
+    expect(currentIn("Mobile navigation")).toEqual([inBar]);
+    expect(currentIn("Main navigation", "tablet")).toEqual([onTablet]);
+    expect(currentIn("Main navigation", "wide")).toEqual([onWide]);
   });
 
   it("at /transactions/new (full-screen entry): bar is hidden by design, rail marks Transactions", () => {
     mockPath = "/transactions/new";
     render(<AppTabs />);
     expect(screen.queryByRole("navigation", { name: "Mobile navigation" })).toBeNull();
-    expect(currentIn("Main navigation")).toEqual(["/transactions"]);
+    expect(currentIn("Main navigation", "tablet")).toEqual(["/transactions"]);
+    expect(currentIn("Main navigation", "wide")).toEqual(["/transactions"]);
   });
 });

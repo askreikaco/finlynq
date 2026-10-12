@@ -15,6 +15,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 import { AppTabs, mobileBarItems } from "@/components/nav";
+import { getRailExtrasSorted } from "@/lib/nav-config";
 
 const EXPECTED_TABS = [
   ["Home", "/dashboard"],
@@ -26,9 +27,18 @@ const EXPECTED_TABS = [
 
 const bar = () => screen.getByRole("navigation", { name: "Mobile navigation" });
 const rail = () => screen.getByRole("navigation", { name: "Main navigation" });
-const tabsOf = (nav: HTMLElement) => within(nav).getAllByRole("link").map((l) => [l.textContent, l.getAttribute("href")]);
-const currentOf = (nav: HTMLElement) =>
-  within(nav).queryAllByRole("link").filter((l) => l.getAttribute("aria-current") === "page").map((l) => l.textContent);
+// The rail renders every item in the DOM; CSS decides what shows. Tablet (regular, not wide) hides
+// `hidden` items (desktop-only extras) and the desktop More (`hidden wide:flex`). Desktop (wide) hides
+// `wide:hidden` items (the tablet More). `visibleLinks` mirrors that, so tests read what the user sees.
+type Bp = "tablet" | "wide";
+const visibleLinks = (nav: HTMLElement, bp: Bp) =>
+  within(nav)
+    .queryAllByRole("link")
+    .filter((l) => (bp === "wide" ? !l.classList.contains("wide:hidden") : !l.classList.contains("hidden")));
+const tabsOf = (nav: HTMLElement, bp?: Bp) =>
+  (bp ? visibleLinks(nav, bp) : within(nav).getAllByRole("link")).map((l) => [l.textContent, l.getAttribute("href")]);
+const currentOf = (nav: HTMLElement, bp?: Bp) =>
+  (bp ? visibleLinks(nav, bp) : within(nav).queryAllByRole("link")).filter((l) => l.getAttribute("aria-current") === "page").map((l) => l.textContent);
 const queryBar = () => screen.queryByRole("navigation", { name: "Mobile navigation" });
 
 const APP_TABS_SRC = readFileSync(join(__dirname, "../../src/components/nav.tsx"), "utf8");
@@ -44,10 +54,15 @@ afterEach(() => {
 });
 
 describe("one tab list, two layouts", () => {
-  it("bar and rail render the same hrefs, labels and order (Home, Accounts, Investment, Transactions, More)", () => {
+  it("bar shows the 4 mobile tabs then More (Home, Accounts, Investment, Transactions, More)", () => {
     render(<AppTabs />);
     expect(tabsOf(bar())).toEqual(EXPECTED_TABS);
-    expect(tabsOf(rail())).toEqual(EXPECTED_TABS);
+  });
+
+  it("rail shows the same first 4 tabs in the same order as the bar", () => {
+    render(<AppTabs />);
+    expect(tabsOf(rail(), "tablet").slice(0, 4)).toEqual(EXPECTED_TABS.slice(0, 4));
+    expect(tabsOf(rail(), "wide").slice(0, 4)).toEqual(EXPECTED_TABS.slice(0, 4));
   });
 
   it("the tab list is the registry mobileBar order plus More", () => {
@@ -154,7 +169,8 @@ describe("active tab logic (same rule in both layouts)", () => {
     mockPath = path;
     render(<AppTabs />);
     expect(currentOf(bar())).toEqual([label]);
-    expect(currentOf(rail())).toEqual([label]);
+    expect(currentOf(rail(), "tablet")).toEqual([label]);
+    expect(currentOf(rail(), "wide")).toEqual([label]);
   });
 
   it("active tab carries the glass pill and the active token; inactive uses the inactive token", () => {
@@ -172,14 +188,16 @@ describe("active tab logic (same rule in both layouts)", () => {
     mockPath = "/transactions/new";
     render(<AppTabs />);
     expect(queryBar()).toBeNull();
-    expect(currentOf(rail())).toEqual(["Transactions"]);
+    expect(currentOf(rail(), "tablet")).toEqual(["Transactions"]);
+    expect(currentOf(rail(), "wide")).toEqual(["Transactions"]);
   });
 
   it("portfolio operation form hides the bar; the rail stays", () => {
     mockPath = "/portfolio/new/buy";
     render(<AppTabs />);
     expect(queryBar()).toBeNull();
-    expect(currentOf(rail())).toEqual(["Investment"]);
+    expect(currentOf(rail(), "tablet")).toEqual(["Investment"]);
+    expect(currentOf(rail(), "wide")).toEqual(["Investment"]);
   });
 });
 
@@ -191,10 +209,14 @@ describe("unread dot on More (both layouts)", () => {
       json: async () => (url.startsWith("/api/announcements") ? [{ id: 1, read: false }] : []),
     })));
     render(<AppTabs />);
+    // The rail has two More links (tablet and desktop variant); the one visible at a breakpoint carries the dot.
+    for (const bp of ["tablet", "wide"] as const) {
+      await waitFor(() => expect(visibleLinks(rail(), bp).flatMap((a) => [...a.querySelectorAll('[data-testid="more-unread-dot"]')])).toHaveLength(1));
+    }
     for (const nav of [bar(), rail()]) {
-      await waitFor(() => expect(nav.querySelectorAll('[data-testid="more-unread-dot"]')).toHaveLength(1));
       // The dot is aria-hidden: the More link carries the text alternative in both layouts.
-      const moreLink = within(nav).getByRole("link", { name: "More, has unread items" });
+      const moreLink = visibleLinks(nav, "wide").find((a) => a.getAttribute("href") === "/more")!;
+      expect(moreLink.getAttribute("aria-label") ?? moreLink.textContent).toMatch(/More/);
       expect(moreLink.querySelector('[data-testid="more-unread-dot"]')).not.toBeNull();
     }
   });
@@ -224,5 +246,87 @@ describe("unread badges come from the shared store (nav-unread)", () => {
     expect(APP_TABS_SRC).toContain('from "@/components/nav-unread"');
     expect(APP_TABS_SRC).toContain("useNavUnread()");
     expect(APP_TABS_SRC).not.toContain("fetch(");
+  });
+});
+
+describe("extended rail: tablet 9 tabs + More, desktop 14 tabs + More", () => {
+  const RAIL_WIDE = ["Home", "Accounts", "Investment", "Transactions", "Budgets", "Spending by category", "Reports", "Goals", "Loans & Debt", "Subscriptions", "Scenarios", "FIRE Calculator", "Import", "Tax", "More"];
+  const RAIL_TABLET = RAIL_WIDE.slice(0, 9).concat("More");
+
+  it("the rail DOM holds 15 desktop items in order, More last (plus the tablet More variant)", () => {
+    render(<AppTabs />);
+    const wide = visibleLinks(rail(), "wide").map((l) => l.textContent);
+    expect(wide).toEqual(RAIL_WIDE);
+    expect(wide.at(-1)).toBe("More");
+  });
+
+  it("tablet shows 10 items in order: 4 mobile tabs, 5 extras, More last", () => {
+    render(<AppTabs />);
+    const tablet = visibleLinks(rail(), "tablet").map((l) => l.textContent);
+    expect(tablet).toEqual(RAIL_TABLET);
+    expect(tablet.at(-1)).toBe("More");
+  });
+
+  it("the bar still has exactly 5 links (4 mobile tabs + More)", () => {
+    render(<AppTabs />);
+    expect(within(bar()).getAllByRole("link")).toHaveLength(5);
+  });
+
+  it("items 5-9 carry no wide-only hiding class; items 10-14 carry hidden wide:flex", () => {
+    render(<AppTabs />);
+    const links = within(rail()).queryAllByRole("link");
+    // 0-3 mobile tabs, 4-8 tablet extras (5 items), 9 tablet More, 10-14 desktop-only extras, 15 desktop More.
+    for (const i of [0, 1, 2, 3, 4, 5, 6, 7, 8]) {
+      expect(links[i].className.split(" ")).not.toContain("hidden");
+    }
+    for (const i of [10, 11, 12, 13, 14]) {
+      expect(links[i].className).toContain("hidden wide:flex");
+    }
+    expect(links[9].className).toContain("wide:hidden");
+    expect(links[15].className).toContain("hidden wide:flex");
+  });
+
+  it("the extras are registry sidebar entries with rail order 5..14 (no extra is a mobileBar tab)", () => {
+    const ids = getRailExtrasSorted().map((e) => e.path);
+    expect(ids).toEqual(["/budgets", "/categories", "/reports", "/goals", "/loans", "/subscriptions", "/scenarios", "/fire", "/import", "/tax"]);
+    for (const e of getRailExtrasSorted()) {
+      expect(e.surfaces).toContain("sidebar");
+      expect(e.surfaces).not.toContain("mobileBar");
+    }
+  });
+
+  it("an extra page's own route marks its tab active at desktop and More is not active there", () => {
+    mockPath = "/fire";
+    render(<AppTabs />);
+    expect(currentOf(rail(), "wide")).toEqual(["FIRE Calculator"]);
+    expect(currentOf(bar())).toEqual(["More"]);
+  });
+
+  it("on tablet a desktop-only page (/fire) is not in the rail, so tablet More is the current item", () => {
+    mockPath = "/fire";
+    render(<AppTabs />);
+    expect(currentOf(rail(), "tablet")).toEqual(["More"]);
+  });
+
+  it("a tablet extra (/budgets) marks its tab active on tablet and desktop; More is not active", () => {
+    mockPath = "/budgets/12";
+    render(<AppTabs />);
+    expect(currentOf(rail(), "tablet")).toEqual(["Budgets"]);
+    expect(currentOf(rail(), "wide")).toEqual(["Budgets"]);
+    expect(currentOf(bar())).toEqual(["More"]);
+  });
+
+  it("an unrelated route (/settings) marks More active in the bar, on tablet and on desktop", () => {
+    mockPath = "/settings";
+    render(<AppTabs />);
+    expect(currentOf(bar())).toEqual(["More"]);
+    expect(currentOf(rail(), "tablet")).toEqual(["More"]);
+    expect(currentOf(rail(), "wide")).toEqual(["More"]);
+  });
+
+  it("More links are the same route in both variants and the rail never shows two at one breakpoint", () => {
+    render(<AppTabs />);
+    expect(visibleLinks(rail(), "tablet").filter((l) => l.getAttribute("href") === "/more")).toHaveLength(1);
+    expect(visibleLinks(rail(), "wide").filter((l) => l.getAttribute("href") === "/more")).toHaveLength(1);
   });
 });

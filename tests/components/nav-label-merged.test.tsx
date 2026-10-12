@@ -50,20 +50,28 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("AppTabs has no categories tab (the label switch lives in More)", () => {
-  it("renders no /categories link in either layout, so no label can differ there", async () => {
+describe("AppTabs: /categories is a rail extra (desktop/tablet only), label follows the merged flag like More", () => {
+  const catLink = (c: HTMLElement) => c.querySelector('nav[aria-label="Main navigation"] a[href="/categories"]');
+
+  it("the bar has no /categories link", async () => {
     const { container } = render(<AppTabs />);
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/announcements"));
-    expect(container.querySelector('a[href="/categories"]')).toBeNull();
-    expect(container.textContent).not.toContain("Spending by category");
-    expect(container.textContent).not.toContain("Categories");
+    const bar = container.querySelector('nav[aria-label="Mobile navigation"]')!;
+    expect(bar.querySelector('a[href="/categories"]')).toBeNull();
+    const labels = [...bar.querySelectorAll("a")].map((a) => a.textContent);
+    expect(labels).toEqual(["Home", "Accounts", "Investment", "Transactions", "More"]);
   });
 
-  it("the bar and the rail list the same five labels", async () => {
+  it("the rail labels /categories 'Spending by category' when the merged flag is off", async () => {
     const { container } = render(<AppTabs />);
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/announcements"));
-    const labels = [...container.querySelectorAll("a")].map((a) => a.textContent);
-    expect(labels).toEqual(["Home", "Accounts", "Investment", "Transactions", "More", "Home", "Accounts", "Investment", "Transactions", "More"]);
+    expect(catLink(container)?.textContent).toBe("Spending by category");
+  });
+
+  it("the rail labels /categories 'Categories' when the merged flag is on", async () => {
+    const { container } = render(<AppTabs categoriesMerged />);
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/announcements"));
+    expect(catLink(container)?.textContent).toBe("Categories");
   });
 });
 
