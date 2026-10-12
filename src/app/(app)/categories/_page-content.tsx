@@ -11,7 +11,8 @@
  * When disabled (default): Shows only overview (backward compatible)
  */
 
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense } from "react";
+import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -116,27 +117,12 @@ function CategoriesOverview({ embedded = false }: CategoriesOverviewProps) {
   const month = monthParam && MONTH_RE.test(monthParam) && monthParam <= currentMonth ? monthParam : currentMonth;
   const type: "E" | "I" = searchParams.get("type") === "I" ? "I" : "E";
 
-  const [data, setData] = useState<OverviewResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [failed, setFailed] = useState(false);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    setFailed(false);
-    try {
-      const res = await fetch(`/api/reports/categories?month=${month}&type=${type}&months=12`);
-      if (!res.ok) throw new Error("load failed");
-      setData((await res.json()).data as OverviewResponse);
-    } catch {
-      setFailed(true);
-    } finally {
-      setLoading(false);
-    }
-  }, [month, type]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+  // Cache-first when the local read cache is on (Settings > Data > Offline mode); a plain fetch otherwise.
+  const overview = useCacheFirstJson<{ data: OverviewResponse }>(`/api/reports/categories?month=${month}&type=${type}&months=12`);
+  const data: OverviewResponse | null = overview.data?.data ?? null;
+  const loading = overview.loading;
+  const failed = overview.error;
+  const load = overview.reload;
 
   function go(next: { month?: string; type?: "E" | "I" }) {
     const m = next.month ?? month;

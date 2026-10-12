@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -126,26 +127,14 @@ function LoansSkeleton() {
 function LoansPageContent() {
   const router = useRouter();
   const { displayCurrency } = useDisplayCurrency();
-  const [loans, setLoans] = useState<Loan[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(false);
+  // Cache-first when the local read cache is on (Settings > Data > Offline mode); a plain fetch otherwise.
+  const { data: loansData, loading, error: loadError, reload: load } = useCacheFirstJson<Loan[]>("/api/loans");
+  const loans = useMemo(() => (Array.isArray(loansData) ? loansData : []), [loansData]);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
   const [amort, setAmort] = useState<AmortResult | null>(null);
   const [whatIf, setWhatIf] = useState<WhatIf[]>([]);
-  const load = useCallback(() => {
-    setLoadError(false);
-    fetch("/api/loans")
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("Failed to load loans"))))
-      .then((data) => { setLoans(Array.isArray(data) ? data : []); })
-      .catch(() => setLoadError(true))
-      .finally(() => setLoading(false));
-  }, []);
-  useEffect(() => {
-    load();
-  }, [load]);
-
   async function viewAmortization(loan: Loan) {
     setSelectedLoan(loan);
     const [amortRes, whatIfRes] = await Promise.all([
@@ -291,7 +280,7 @@ function LoansPageContent() {
   );
 
   if (loading) return <LoansSkeleton />;
-  if (loadError) return <ErrorState title="Couldn't load loans" message="We couldn't load your loans. Please try again." onRetry={() => { setLoading(true); load(); }} />;
+  if (loadError) return <ErrorState title="Couldn't load loans" message="We couldn't load your loans. Please try again." onRetry={load} />;
 
   return (
     <div className="space-y-6">
