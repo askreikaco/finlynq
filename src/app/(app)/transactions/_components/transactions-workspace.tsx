@@ -190,6 +190,10 @@ export function TransactionsWorkspace({
     sortPref,
     colFilters,
     accounts,
+    1,
+    // Account-scoped embed (/accounts/[id]) lists every row of that account, investment included.
+    // The /transactions page (unlocked) stays on the builder default: scope=daily.
+    locked ? "all" : undefined,
   );
   // Offline queue (flag off: the shared empty snapshot, so `txns` is `serverTxns` itself): queued creates on top,
   // queued edits overlaid, queued deletes hidden. One list feeds both Cards and List.
@@ -362,7 +366,7 @@ export function TransactionsWorkspace({
     { header: "Quantity", accessor: (t) => t.quantity ?? "" },
     { header: "Amount", accessor: (t) => t.amount },
     { header: "Currency", accessor: (t) => t.currency },
-    { header: "Portfolio", accessor: (t) => t.portfolioHolding ?? "" },
+    { header: "Investment", accessor: (t) => t.portfolioHolding ?? "" },
     { header: "Source", accessor: (t) => t.source ?? "" },
   ];
 
@@ -371,10 +375,11 @@ export function TransactionsWorkspace({
     setExporting(true);
     try {
       // Same builder + filter/sort state the table uses; page 0 + high limit
-      // pulls the entire filtered view in one shot.
+      // pulls the entire filtered view in one shot. Export matches the screen:
+      // daily on /transactions, everything in an account-locked embed.
       // Intentionally NO cursor: this is the legacy (non-cursor) mode, kept on
       // purpose for export. The paged list uses cursor mode; export does not.
-      const params = buildTransactionQuery(filters, sortPref, colFilters, accounts, {
+      const params = buildTransactionQuery({ ...filters, scope: locked ? "all" : "daily" }, sortPref, colFilters, accounts, {
         page: 0,
         limit: 100000,
       });
@@ -696,7 +701,7 @@ export function TransactionsWorkspace({
                   </DropdownMenuGroup>
                   <DropdownMenuSeparator />
                   <DropdownMenuGroup>
-                    <DropdownMenuLabel>Portfolio operations</DropdownMenuLabel>
+                    <DropdownMenuLabel>Investment operations</DropdownMenuLabel>
                     <DropdownMenuItem icon={<ShoppingCart />} onClick={() => router.push("/portfolio/new/buy")}>
                       Buy
                     </DropdownMenuItem>

@@ -92,8 +92,8 @@ describe("hydrateFromApi", () => {
     expect(api.urls).toEqual([
       "/api/accounts?includeArchived=1",
       "/api/categories",
-      "/api/transactions?limit=200&cursor=",
-      "/api/transactions?limit=200&cursor=cursor-2",
+      "/api/transactions?limit=200&cursor=&scope=all",
+      "/api/transactions?limit=200&cursor=cursor-2&scope=all",
     ]);
   });
 

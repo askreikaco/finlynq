@@ -195,7 +195,7 @@ export async function hydrateFromApi(fetchImpl: FetchLike, store: UpsertStore): 
   const pending: TransactionRow[] = [];
   for (;;) {
     if (pages >= MAX_TX_PAGES) throw new HydrateError("transactions: too many pages");
-    const path = `/api/transactions?limit=${TX_PAGE_LIMIT}&cursor=${encodeURIComponent(cursor)}`;
+    const path = `/api/transactions?limit=${TX_PAGE_LIMIT}&cursor=${encodeURIComponent(cursor)}&scope=all`;
     const page = await getJson(fetchImpl, path);
     pages++;
     if (!isObj(page) || !Array.isArray(page.data)) throw new HydrateError("/api/transactions: unexpected page shape");
