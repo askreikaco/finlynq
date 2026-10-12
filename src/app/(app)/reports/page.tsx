@@ -147,7 +147,7 @@ function localDateStr(y: number, mo: number, d: number): string {
 
 export default function ReportsPage() {
   const currentYear = new Date().getFullYear();
-  const { displayCurrency } = useDisplayCurrency();
+  const { displayCurrency, isLoading: currencyLoading } = useDisplayCurrency();
 
   // Shared filters
   const [startDate, setStartDate] = useState(`${currentYear}-01-01`);
@@ -194,7 +194,7 @@ export default function ReportsPage() {
   // Trends data (the primary fetch). First-paint gate: the page is full of charts that render blank axes against
   // null data, so show a skeleton until this resolves once; a later filter change keeps the previous data on screen.
   const trendsRes = useCacheFirstJson<TrendsData>(
-    `/api/reports/trends?startDate=${startDate}&endDate=${endDate}&period=${period}&groupBy=${groupBy}${biz}${acctParam}&currency=${curr}`,
+    currencyLoading ? null : `/api/reports/trends?startDate=${startDate}&endDate=${endDate}&period=${period}&groupBy=${groupBy}${biz}${acctParam}&currency=${curr}`,
     { keepPrevious: true },
   );
   const trendsData: TrendsData | null = trendsRes.data && typeof trendsRes.data === "object" ? trendsRes.data : null;
@@ -203,19 +203,19 @@ export default function ReportsPage() {
 
   // Balance sheet
   const balanceRes = useCacheFirstJson<BalanceSheet>(
-    `/api/reports?type=balance-sheet&endDate=${endDate}${acctParam}&currency=${curr}`,
+    currencyLoading ? null : `/api/reports?type=balance-sheet&endDate=${endDate}${acctParam}&currency=${curr}`,
   );
   const balanceSheet: BalanceSheet | null = balanceRes.data && typeof balanceRes.data === "object" ? balanceRes.data : null;
 
   // Unrealized P&L (computed inside the income-statement endpoint). Same period as the rest of the income tab.
   const incomeStatementRes = useCacheFirstJson<{ unrealized?: UnrealizedData | null }>(
-    `/api/reports?type=income-statement&startDate=${startDate}&endDate=${endDate}${biz}${acctParam}&currency=${curr}`,
+    currencyLoading ? null : `/api/reports?type=income-statement&startDate=${startDate}&endDate=${endDate}${biz}${acctParam}&currency=${curr}`,
   );
   const unrealizedData: UnrealizedData | null = incomeStatementRes.data?.unrealized ?? null;
 
   // YoY (dev mode only)
   const yoyRes = useCacheFirstJson<YoYData>(
-    devMode ? `/api/reports/yoy?year1=${yoyYear1}&year2=${yoyYear2}${acctParam}&currency=${curr}` : null,
+    devMode && !currencyLoading ? `/api/reports/yoy?year1=${yoyYear1}&year2=${yoyYear2}${acctParam}&currency=${curr}` : null,
   );
   const yoyData: YoYData | null = yoyRes.data && typeof yoyRes.data === "object" ? yoyRes.data : null;
 

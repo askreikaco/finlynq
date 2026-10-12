@@ -18,6 +18,7 @@ import { setLocalReadCacheEnabled } from "@/lib/local-first/read-cache/optin";
 import { deviceKeys, type DeviceKeyMeta } from "@/lib/local-first/crypto/device-key-provider";
 import { maybeAutoRotateKeys, rotateOnDeviceKeys, type RotationReport } from "@/lib/local-first/crypto/rotation";
 import { wipeUser as wipePersistedDataCache } from "./persist";
+import { forgetOfflineIdentity, rememberOfflineIdentity } from "./offline-identity";
 import { fetchTrustedDeviceId } from "./trusted-device";
 import { getSessionInfo } from "./session-info";
 import type { OutboxEntry, TxFields } from "@/lib/local-first/write-path/types";
@@ -335,11 +336,13 @@ export function enableOfflineMode(userId: string | null, deviceId: string | null
   setLocalWriteQueueEnabled(true);
   notify();
   if (!userId || !deviceId) return false;
+  rememberOfflineIdentity({ userId, deviceId }); // so the app can open with no network from now on
   return startLocalWriteQueue(userId, deviceId);
 }
 
 /** In-app switch OFF: stops the scheduler, clears the flag and deletes every on-device outbox (unsynced writes are lost). */
 export function disableOfflineMode(): void {
+  forgetOfflineIdentity();
   stopLocalWriteQueue();
   setLocalWriteQueueEnabled(false);
 }

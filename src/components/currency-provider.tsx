@@ -21,6 +21,7 @@
  */
 
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
+import { readOfflineCurrency, rememberOfflineCurrency } from "@/lib/data/offline-identity";
 
 type CurrencyContextValue = {
   displayCurrency: string;
@@ -41,15 +42,25 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
+    // Offline mode: with no network the session request cannot answer, so use the currency remembered from the last
+    // online visit (every saved API response is keyed with it). Nothing is remembered when Offline mode is off.
+    const remembered = readOfflineCurrency();
+    if (remembered && typeof navigator !== "undefined" && navigator.onLine === false) {
+      setDisplayCurrencyState(remembered);
+      setIsLoading(false);
+    }
     fetch("/api/auth/session")
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (cancelled || !data) return;
         if (typeof data.displayCurrency === "string" && data.displayCurrency.length === 3) {
           setDisplayCurrencyState(data.displayCurrency);
+          rememberOfflineCurrency(data.displayCurrency);
         }
       })
-      .catch(() => {})
+      .catch(() => {
+        if (!cancelled && remembered) setDisplayCurrencyState(remembered);
+      })
       .finally(() => {
         if (!cancelled) setIsLoading(false);
       });
@@ -68,6 +79,7 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ displayCurrency: next }),
       });
+      if (res.ok) rememberOfflineCurrency(next);
       if (!res.ok) {
         setDisplayCurrencyState(previous); // rollback
         const body = await res.json().catch(() => null);

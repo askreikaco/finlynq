@@ -2,7 +2,12 @@
  * Tiny client store for "who is signed in and is the DEK unlocked", filled by
  * UnlockGate from /api/auth/session so the data layer does not refetch it.
  */
-export type SessionInfo = { userId: string; locked: boolean };
+export type SessionInfo = {
+  userId: string;
+  locked: boolean;
+  /** True when the app opened with no network from the remembered identity (see offline-identity.ts); cleared by the next real session check. */
+  offline?: boolean;
+};
 
 let info: SessionInfo | null = null;
 const listeners = new Set<(i: SessionInfo | null) => void>();

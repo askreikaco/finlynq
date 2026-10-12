@@ -101,7 +101,7 @@ function SummarySkeleton() {
 }
 
 export default function AccountsPage() {
-  const { displayCurrency } = useDisplayCurrency();
+  const { displayCurrency, isLoading: currencyLoading } = useDisplayCurrency();
 
   // Show-archived toggle (persists archived accounts in the list with a badge)
   const [showArchived, setShowArchived] = useState(false);
@@ -139,7 +139,7 @@ export default function AccountsPage() {
     netWorthOverTime?: SeriesPoint[];
     assetsOverTime?: SeriesPoint[];
     liabilitiesOverTime?: SeriesPoint[];
-  }>(dashboardUrl);
+  }>(currencyLoading ? null : dashboardUrl);
   const accounts = useMemo(() => dashboard?.balances ?? [], [dashboard]);
   const series = useMemo(
     () => ({

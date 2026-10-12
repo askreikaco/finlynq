@@ -10,6 +10,7 @@ import { createPersistentCache } from "./persistent-cache";
 import { isSafeToPersist } from "./persist-policy";
 import { dropLocalUserCache } from "./local-read-cache-wipe";
 import { setLocalWriteSyncedHandler, startLocalWriteQueue } from "./local-write-queue";
+import { forgetOfflineIdentity, readOfflineIdentity, rememberOfflineIdentity } from "./offline-identity";
 import { revalidateTransactionLists } from "@/lib/transactions/revalidate";
 
 const BUILD = process.env.NEXT_PUBLIC_APP_BUILD ?? "dev";
@@ -59,19 +60,42 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Only a device the user marked as trusted keeps data at rest.
-    void fetch("/api/auth/device-current")
-      .then((r) => (r.ok ? r.json() : { id: null }))
-      .then((d: { id?: string | null }) => {
-        trusted.current = !!d?.id;
-        deviceId.current = d?.id ?? null;
-        // Offline write queue (flag off = no-op): only on a trusted, unlocked device.
-        if (trusted.current && !locked.current && d?.id) startLocalWriteQueue(userId, d.id);
-        if (!trusted.current) {
-          void wipeUser(userId);
-          void dropLocalUserCache(userId);
-        }
-      })
-      .catch(() => undefined);
+    // True while this device is only ASSUMED trusted (opened offline from the remembered identity): verified for real on `online`.
+    let assumedTrusted = false;
+    const verifyDevice = () =>
+      fetch("/api/auth/device-current")
+        .then((r) => (r.ok ? r.json() : { id: null }))
+        .then((d: { id?: string | null }) => {
+          assumedTrusted = false;
+          trusted.current = !!d?.id;
+          deviceId.current = d?.id ?? null;
+          if (d?.id) rememberOfflineIdentity({ userId, deviceId: d.id }); // lets the app open with no network (flag off = no-op)
+          // Offline write queue (flag off = no-op): only on a trusted, unlocked device.
+          if (trusted.current && !locked.current && d?.id) startLocalWriteQueue(userId, d.id);
+          if (!trusted.current) {
+            forgetOfflineIdentity();
+            void wipeUser(userId);
+            void dropLocalUserCache(userId);
+          }
+        })
+        .catch(() => {
+          // No network. Only when the app itself opened offline from the remembered identity (Offline mode on) is this
+          // device treated as the trusted one it was; anything else stays untrusted, as before.
+          if (!getSessionInfo()?.offline) return;
+          const remembered = readOfflineIdentity();
+          if (!remembered || remembered.userId !== userId) return;
+          assumedTrusted = true;
+          trusted.current = true;
+          deviceId.current = remembered.deviceId;
+          locked.current = false;
+          startLocalWriteQueue(userId, remembered.deviceId);
+        });
+    void verifyDevice();
+    // Network back after an offline open: the real device check (an untrusted device wipes, as always).
+    const onOnline = () => {
+      if (!trusted.current || assumedTrusted) void verifyDevice();
+    };
+    window.addEventListener("online", onOnline);
 
     const off = onSessionInfo((next) => {
       if (next && !next.locked) {
@@ -87,6 +111,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
       off();
+      window.removeEventListener("online", onOnline);
     };
   }, []);
 

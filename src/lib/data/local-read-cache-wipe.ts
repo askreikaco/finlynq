@@ -15,9 +15,11 @@ import { disposeReadCache } from "@/lib/local-first/read-cache/session";
 import { isLocalWriteKeySet } from "@/lib/local-first/write-path/flag";
 import { stopLocalWriteQueue } from "./local-write-queue";
 import { wipeAllOutboxes, wipeOutboxUser } from "@/lib/local-first/write-path/outbox-store";
+import { forgetOfflineIdentity } from "./offline-identity";
 
 /** Deletes one user's on-device snapshot and device key (lock, untrusted device, logout, session end). */
 export async function dropLocalUserCache(userId: string): Promise<void> {
+  forgetOfflineIdentity();
   try {
     stopLocalWriteQueue(); // scheduler off before the outbox is deleted
     await disposeReadCache();
@@ -32,6 +34,7 @@ export async function dropLocalUserCache(userId: string): Promise<void> {
 
 /** Deletes every on-device snapshot and device key on this browser (signed-out boot, password reset, account deletion). */
 export async function dropAllLocalCaches(): Promise<void> {
+  forgetOfflineIdentity();
   try {
     stopLocalWriteQueue();
     await disposeReadCache();

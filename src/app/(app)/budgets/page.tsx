@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils";
 import { type Budget, type SpendingRow, type BudgetTemplate, type AgeOfMoney, type BudgetMode, parseMonthParam } from "./_components/budget-types";
 
 function BudgetsPageContent() {
-  const { displayCurrency } = useDisplayCurrency();
+  const { displayCurrency, isLoading: currencyLoading } = useDisplayCurrency();
   const searchParams = useSearchParams();
   // Month and mode come from the URL so returning from a form page lands on the same view.
   const [month, setMonth] = useState(() => parseMonthParam(searchParams.get("month"), getCurrentMonth()));
@@ -40,7 +40,7 @@ function BudgetsPageContent() {
 
   // Reads are cache-first when the local read cache is on (Settings > Data > Offline mode); plain fetches otherwise.
   const budgetsRes = useCacheFirstJson<Budget[]>(
-    `/api/budgets?month=${month}&rollover=1&currency=${encodeURIComponent(displayCurrency)}`,
+    currencyLoading ? null : `/api/budgets?month=${month}&rollover=1&currency=${encodeURIComponent(displayCurrency)}`,
     { keepPrevious: true },
   );
   const budgets = useMemo(() => (Array.isArray(budgetsRes.data) ? budgetsRes.data : []), [budgetsRes.data]);
@@ -53,7 +53,7 @@ function BudgetsPageContent() {
   const monthRes = useCacheFirstJson<{
     spendingByCategory?: SpendingRow[];
     incomeVsExpenses?: { type: string; total: number }[];
-  }>(`/api/dashboard?startDate=${startDate}&endDate=${endDate}&currency=${encodeURIComponent(displayCurrency)}`, {
+  }>(currencyLoading ? null : `/api/dashboard?startDate=${startDate}&endDate=${endDate}&currency=${encodeURIComponent(displayCurrency)}`, {
     keepPrevious: true,
   });
   const spending = useMemo(
