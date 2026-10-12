@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
+import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import Link from "next/link";
 import { useDevMode } from "@/hooks/use-dev-mode";
 import { useDisplayCurrency } from "@/components/currency-provider";
@@ -159,15 +160,6 @@ export default function ReportsPage() {
   const [accountIds, setAccountIds] = useState<number[]>([]);
 
   // Data states
-  const [trendsData, setTrendsData] = useState<TrendsData | null>(null);
-  const [balanceSheet, setBalanceSheet] = useState<BalanceSheet | null>(null);
-  const [yoyData, setYoyData] = useState<YoYData | null>(null);
-  const [unrealizedData, setUnrealizedData] = useState<UnrealizedData | null>(null);
-  // First-paint gate: the page is full of charts that render blank axes against
-  // null data. Show a skeleton until the primary (trends) fetch resolves once.
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(false);
-  const [reloadKey, setReloadKey] = useState(0);
   const [yoyYear1, setYoyYear1] = useState(currentYear - 1);
   const [yoyYear2, setYoyYear2] = useState(currentYear);
 
@@ -195,77 +187,37 @@ export default function ReportsPage() {
     setEndDate(end);
   }, []);
 
-  // Fetch trends data
-  useEffect(() => {
-    let cancelled = false;
-    const biz = isBusiness ? "&business=true" : "";
-    fetch(`/api/reports/trends?startDate=${startDate}&endDate=${endDate}&period=${period}&groupBy=${groupBy}${biz}${acctParam}&currency=${encodeURIComponent(displayCurrency)}`)
-      .then((r) => {
-        if (!r.ok) throw new Error(`trends ${r.status}`);
-        return r.json();
-      })
-      .then((d) => {
-        if (!cancelled) {
-          setTrendsData(d && typeof d === "object" ? (d as TrendsData) : null);
-          setLoadError(false);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setTrendsData(null);
-          setLoadError(true);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [startDate, endDate, period, groupBy, isBusiness, displayCurrency, acctParam, reloadKey]);
+  // Reads are cache-first when the local read cache is on (Settings > Data > Offline mode); plain fetches otherwise.
+  const curr = encodeURIComponent(displayCurrency);
+  const biz = isBusiness ? "&business=true" : "";
 
-  // Fetch balance sheet
-  useEffect(() => {
-    let cancelled = false;
-    fetch(`/api/reports?type=balance-sheet&endDate=${endDate}${acctParam}&currency=${encodeURIComponent(displayCurrency)}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (!cancelled) setBalanceSheet(d && typeof d === "object" ? (d as BalanceSheet) : null);
-      })
-      .catch(() => {
-        if (!cancelled) setBalanceSheet(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [endDate, displayCurrency, acctParam]);
+  // Trends data (the primary fetch). First-paint gate: the page is full of charts that render blank axes against
+  // null data, so show a skeleton until this resolves once; a later filter change keeps the previous data on screen.
+  const trendsRes = useCacheFirstJson<TrendsData>(
+    `/api/reports/trends?startDate=${startDate}&endDate=${endDate}&period=${period}&groupBy=${groupBy}${biz}${acctParam}&currency=${curr}`,
+    { keepPrevious: true },
+  );
+  const trendsData: TrendsData | null = trendsRes.data && typeof trendsRes.data === "object" ? trendsRes.data : null;
+  const loading = trendsRes.loading;
+  const loadError = trendsRes.error;
 
-  // Fetch unrealized P&L (computed inside the income-statement endpoint).
-  // Same period as the rest of the income tab.
-  useEffect(() => {
-    const biz = isBusiness ? "&business=true" : "";
-    fetch(`/api/reports?type=income-statement&startDate=${startDate}&endDate=${endDate}${biz}${acctParam}&currency=${encodeURIComponent(displayCurrency)}`)
-      .then((r) => r.json())
-      .then((d) => setUnrealizedData(d?.unrealized ?? null))
-      .catch(() => setUnrealizedData(null));
-  }, [startDate, endDate, isBusiness, displayCurrency, acctParam]);
+  // Balance sheet
+  const balanceRes = useCacheFirstJson<BalanceSheet>(
+    `/api/reports?type=balance-sheet&endDate=${endDate}${acctParam}&currency=${curr}`,
+  );
+  const balanceSheet: BalanceSheet | null = balanceRes.data && typeof balanceRes.data === "object" ? balanceRes.data : null;
 
-  // Fetch YoY (dev mode only)
-  useEffect(() => {
-    if (!devMode) return;
-    let cancelled = false;
-    fetch(`/api/reports/yoy?year1=${yoyYear1}&year2=${yoyYear2}${acctParam}&currency=${encodeURIComponent(displayCurrency)}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (!cancelled) setYoyData(d && typeof d === "object" ? (d as YoYData) : null);
-      })
-      .catch(() => {
-        if (!cancelled) setYoyData(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [yoyYear1, yoyYear2, devMode, displayCurrency, acctParam]);
+  // Unrealized P&L (computed inside the income-statement endpoint). Same period as the rest of the income tab.
+  const incomeStatementRes = useCacheFirstJson<{ unrealized?: UnrealizedData | null }>(
+    `/api/reports?type=income-statement&startDate=${startDate}&endDate=${endDate}${biz}${acctParam}&currency=${curr}`,
+  );
+  const unrealizedData: UnrealizedData | null = incomeStatementRes.data?.unrealized ?? null;
+
+  // YoY (dev mode only)
+  const yoyRes = useCacheFirstJson<YoYData>(
+    devMode ? `/api/reports/yoy?year1=${yoyYear1}&year2=${yoyYear2}${acctParam}&currency=${curr}` : null,
+  );
+  const yoyData: YoYData | null = yoyRes.data && typeof yoyRes.data === "object" ? yoyRes.data : null;
 
   // Sankey data
   const sankeyIncome = useMemo(() => {
@@ -358,11 +310,7 @@ export default function ReportsPage() {
       <ErrorState
         title="Couldn't load reports"
         message="We couldn't load your reports. Please try again."
-        onRetry={() => {
-          setLoadError(false);
-          setLoading(true);
-          setReloadKey((k) => k + 1);
-        }}
+        onRetry={trendsRes.reload}
       />
     );
   }
