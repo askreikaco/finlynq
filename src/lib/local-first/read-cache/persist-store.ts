@@ -192,6 +192,11 @@ export async function loadSnapshot(userId: string, deviceId: string, ctx: Snapsh
 }
 
 /** Deletes this user's snapshot database only (the device key stays). Rejects if the delete fails or is blocked. */
+export async function wipeSnapshotData(userId: string): Promise<void> {
+  if (!idbSupported()) return;
+  await wipeData(userId);
+}
+
 async function wipeData(userId: string): Promise<void> {
   const name = await readCacheDbName(userId);
   await deleteDb(name);
