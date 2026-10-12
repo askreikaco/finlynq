@@ -24,7 +24,7 @@ describe("OfflineModeCard", () => {
     const open = vi.spyOn(indexedDB, "open");
     render(<OfflineModeCard />);
     expect(screen.getByText("Offline mode (beta)", { selector: "[data-slot=card-title], h3, div" })).toBeTruthy();
-    expect(screen.getByText(/Save new and edited transactions on this device when you are offline and sync them when you are back online\. Trusted devices only\./)).toBeTruthy();
+    expect(screen.getByText(/Save new and edited transactions on this device when you are offline and sync them when you are back online\. Home and Accounts also open from the last saved data\. Trusted devices only\./)).toBeTruthy();
     await waitFor(() => expect(sw().getAttribute("aria-checked")).toBe("false"));
     expect(open).not.toHaveBeenCalled();
     expect(window.localStorage.getItem(LOCAL_WRITE_QUEUE_KEY)).toBeNull();

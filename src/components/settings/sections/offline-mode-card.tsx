@@ -30,7 +30,7 @@ export function OfflineModeCard() {
           <div className="min-w-0">
             <CardTitle>Offline mode (beta)</CardTitle>
             <p className="mt-1 text-sm text-muted-foreground">
-              Save new and edited transactions on this device when you are offline and sync them when you are back online. Trusted devices only.
+              Save new and edited transactions on this device when you are offline and sync them when you are back online. Home and Accounts also open from the last saved data. Trusted devices only.
             </p>
           </div>
           <Switch
