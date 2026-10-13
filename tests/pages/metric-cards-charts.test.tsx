@@ -37,12 +37,13 @@ vi.mock("@/lib/utils/date", async (orig) => ({
 vi.mock("@/components/sparkline", () => ({
   Sparkline: ({ data }: { data: number[] }) => <div data-spark={data.length} />,
 }));
-for (const p of [
-  "action-center", "weekly-recap", "quick-import", "income-expense-chart", "spending-category-chart", "available-to-spend",
-  "insights-section", "net-worth-hero-card",
-]) {
-  vi.mock(`@/app/(app)/dashboard/_components/${p}`, () => ({}));
-}
+vi.mock("@/app/(app)/dashboard/_components/action-center", () => ({ ActionCenter: () => null }));
+vi.mock("@/app/(app)/dashboard/_components/weekly-recap", () => ({ WeeklyRecap: () => null }));
+vi.mock("@/app/(app)/dashboard/_components/quick-import", () => ({ QuickImport: () => null }));
+vi.mock("@/app/(app)/dashboard/_components/income-expense-chart", () => ({ IncomeExpenseChart: () => null }));
+vi.mock("@/app/(app)/dashboard/_components/spending-category-chart", () => ({ SpendingCategoryChart: () => null }));
+vi.mock("@/app/(app)/dashboard/_components/available-to-spend", () => ({ AvailableToSpend: () => null }));
+vi.mock("@/app/(app)/dashboard/_components/insights-section", () => ({ InsightsSection: () => null }));
 vi.mock("@/components/net-worth-history-chart", () => ({ NetWorthHistoryChart: () => null }));
 vi.mock("@/components/subscriptions/due-card", () => ({ DueCard: () => null }));
 vi.mock("recharts", () => {

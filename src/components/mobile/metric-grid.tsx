@@ -63,7 +63,7 @@ export function metricGridClass(count: number, gap = "gap-3", max: 2 | 3 | 4 = 4
 const TONE_CLASS: Record<AmountTone, string> = {
   auto: "",
   pos: "text-pos",
-  neg: "text-destructive",
+  neg: "text-neg",
   muted: "text-muted-foreground",
   none: "",
 };
@@ -98,11 +98,10 @@ export function MetricItemCard({ m }: { m: MetricItem }) {
       sparkLabels={m.sparkLabels}
       sparkColor={m.sparkColor}
       href={m.href}
-      className={m.className}
     />
   );
   return (
-    <div data-testid={m.id ? `metric-${m.id}` : undefined} aria-label={m.id ? (m.ariaLabel ?? m.label) : m.ariaLabel} role={m.id ? "group" : undefined} className="min-w-0">
+    <div data-testid={m.id ? `metric-${m.id}` : undefined} aria-label={m.id ? (m.ariaLabel ?? m.label) : m.ariaLabel} role={m.id ? "group" : undefined} className={`min-w-0${m.className ? ` ${m.className}` : ""}`}>
       {card}
     </div>
   );

@@ -10,7 +10,7 @@ import { formatCurrency, getCurrentMonth, getMonthLabel } from "@/lib/currency";
 import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
 import { DollarSign, TrendingUp, CreditCard, Target, Settings, Plus, Upload, FileUp } from "lucide-react";
 import { motion } from "framer-motion";
-import { StatCard } from "./_components/stat-card";
+import { MetricCard } from "@/components/metric-card";
 import { deriveSeriesChange } from "@/lib/dashboard/series-change";
 import { NetWorthHeroCard } from "./_components/net-worth-hero-card";
 import { HealthScoreCard } from "./_components/health-score-card";
@@ -330,7 +330,7 @@ export default function DashboardPage() {
       note: periodLabel,
       badgePct: incomeCard.badgePct,
       icon: TrendingUp,
-      iconBg: "bg-pos/10 text-pos",
+      tone: "bg-pos/10 text-pos",
       sparkColor: "#10b981",
       sparkData: explicit ? (incomeCard.sparkData ?? incomeSparkline) : incomeSparkline,
       sparkLabels: explicit ? (incomeCard.sparkLabels ?? incExpSparkLabels) : incExpSparkLabels,
@@ -344,7 +344,7 @@ export default function DashboardPage() {
       badgePct: expenseCard.badgePct,
       invertTone: true,
       icon: CreditCard,
-      iconBg: "bg-destructive/10 text-destructive",
+      tone: "bg-destructive/10 text-destructive",
       sparkColor: "#f43f5e",
       sparkData: explicit ? (expenseCard.sparkData ?? expenseSparkline) : expenseSparkline,
       sparkLabels: explicit ? (expenseCard.sparkLabels ?? incExpSparkLabels) : incExpSparkLabels,
@@ -357,7 +357,7 @@ export default function DashboardPage() {
       note: (budgetCard.value ?? availableToSpend) >= 0 ? "Available to spend" : "Over budget",
       badgePct: budgetCard.badgePct,
       icon: Target,
-      iconBg: "bg-warning/10 text-warning",
+      tone: "bg-warning/10 text-warning",
       sparkColor: "#f59e0b",
       sparkData: budgetSparkline,
       sparkLabels: incExpSparkLabels,
@@ -418,7 +418,7 @@ export default function DashboardPage() {
       render: () => (
         <Fragment key="summary-stats">
           {summaryCards.map((card) => (
-            <StatCard key={card.label} {...card} currency={apiDisplayCurrency} />
+            <MetricCard key={card.label} {...card} currency={apiDisplayCurrency} />
           ))}
         </Fragment>
       ),

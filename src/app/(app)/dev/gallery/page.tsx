@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/mobile/page-header";
 import { SectionCard } from "@/components/mobile/section-card";
 import { SectionLabel } from "@/components/mobile/section-label";
 import { ListRow } from "@/components/mobile/list-row";
-import { StatTile } from "@/components/mobile/stat-tile";
+import { Hash } from "lucide-react";
 import { Amount } from "@/components/mobile/amount";
 import { PillButton } from "@/components/mobile/pill-button";
 import { MetricCard } from "@/components/metric-card";
@@ -79,15 +79,15 @@ function GalleryContent() {
               </div>
             </SectionCard>
 
-            {/* StatTile Examples */}
+            {/* MetricCard Examples */}
             <SectionCard>
               <div className="space-y-2 p-4">
-                <h3 className="text-sm font-semibold">StatTile</h3>
+                <h3 className="text-sm font-semibold">MetricCard</h3>
                 <div className="grid grid-cols-2 gap-2">
-                  <StatTile label="Net Worth" value="$125,000.00" />
-                  <StatTile label="Monthly Income" value="$5,200.00" />
-                  <StatTile label="Savings Rate" value="32%" />
-                  <StatTile label="Debt" value="$12,500.00" />
+                  <MetricCard label="Net Worth" icon={Hash} value="$125,000.00" />
+                  <MetricCard label="Monthly Income" icon={Hash} value="$5,200.00" />
+                  <MetricCard label="Savings Rate" icon={Hash} value="32%" />
+                  <MetricCard label="Debt" icon={Hash} value="$12,500.00" />
                 </div>
               </div>
             </SectionCard>

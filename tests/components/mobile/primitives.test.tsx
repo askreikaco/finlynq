@@ -10,7 +10,9 @@ vi.mock("next/link", () => ({
   default: ({ children, href, ...p }: React.PropsWithChildren<{ href: string }>) => React.createElement("a", { href, ...p }, children),
 }));
 
-import { Amount, ListRow, SectionCard, SectionLabel, StatTile, PillButton, DetailSheet } from "@/components/mobile";
+import { MetricCard } from "@/components/metric-card";
+import { Hash } from "lucide-react";
+import { Amount, ListRow, SectionCard, SectionLabel, PillButton, DetailSheet } from "@/components/mobile";
 import { formatCurrency } from "@/lib/currency";
 import { formatCompactNumber } from "@/lib/utils/number";
 
@@ -107,7 +109,7 @@ describe("ListRow", () => {
   });
 });
 
-describe("SectionCard / SectionLabel / StatTile", () => {
+describe("SectionCard / SectionLabel / MetricCard", () => {
   it("SectionLabel is text-xs/700 uppercase tracking-normal muted", () => {
     render(<SectionLabel>Cash</SectionLabel>);
     expect(cls(screen.getByRole("heading", { name: "Cash" }))).toEqual(
@@ -128,8 +130,8 @@ describe("SectionCard / SectionLabel / StatTile", () => {
     expect(screen.queryByRole("heading")).toBeNull();
   });
 
-  it("StatTile asserts MetricCard label contract: label text rendered with MetricCard styling", () => {
-    render(<StatTile label="Income" value={<Amount value={1} currency="USD" />} sub="this month" />);
+  it("MetricCard label contract: label text rendered with MetricCard styling", () => {
+    render(<MetricCard label="Income" icon={Hash} value={<Amount value={1} currency="USD" />} sub="this month" />);
     // Assert MetricCard contract: label text is rendered with MetricCard styling
     expect(screen.getByText("Income")).toBeTruthy();
     expect(cls(screen.getByText("Income"))).toEqual(
@@ -141,8 +143,8 @@ describe("SectionCard / SectionLabel / StatTile", () => {
     expect(screen.getByText("this month")).toBeTruthy();
   });
 
-  it("StatTile renders ReactNode labels (not just strings) and preserves their structure", () => {
-    render(<StatTile label={<span data-testid="lbl">Inc<b>ome</b></span>} value="1" />);
+  it("MetricCard renders ReactNode labels (not just strings) and preserves their structure", () => {
+    render(<MetricCard label={<span data-testid="lbl">Inc<b>ome</b></span>} icon={Hash} value="1" />);
     expect(screen.getByTestId("lbl")).toBeTruthy();
     expect(screen.queryByText("Stat")).toBeNull();
   });
