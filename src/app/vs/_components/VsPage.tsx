@@ -118,7 +118,7 @@ export function VsPage({ content }: { content: VsPageContent }) {
           )}
         />
       )}
-      <div className="mx-auto max-w-3xl px-6 py-16">
+      <div className="w-full px-6 py-16">
         <header className="mb-12 border-b border-border pb-8">
           <Link
             href="/"
@@ -133,7 +133,7 @@ export function VsPage({ content }: { content: VsPageContent }) {
           <h1 className="mt-4 text-4xl font-bold tracking-tight">
             Finlynq vs {competitorName}
           </h1>
-          <p className="mt-4 text-base leading-relaxed text-muted-foreground">
+          <p className="mt-4 max-w-prose text-base leading-relaxed text-muted-foreground">
             {tagline}
           </p>
           <p className="mt-4 text-xs text-muted-foreground">
@@ -141,7 +141,7 @@ export function VsPage({ content }: { content: VsPageContent }) {
           </p>
         </header>
 
-        <section className="prose prose-invert max-w-none space-y-8 text-sm leading-relaxed">
+        <section className="prose prose-invert max-w-none space-y-8 text-sm leading-relaxed [&>h2]:max-w-prose [&>h3]:max-w-prose [&>p]:max-w-prose [&>ul]:max-w-prose [&>ol]:max-w-prose">
           {/* When to choose competitor */}
           <h2 className="text-xl font-semibold mt-12 mb-3">
             {whenCompetitorHeading ?? <>When to choose {competitorName}</>}

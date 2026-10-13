@@ -24,6 +24,7 @@ import { Switch } from "@/components/ui/switch";
 import { type DataTableColumn } from "@/components/ui/data-table";
 import { ColumnList } from "@/components/mobile/column-list";
 import { SectionPage } from "@/components/templates";
+import { TW } from "@/lib/design/tokens";
 import {
   Cpu,
   Database,
@@ -442,7 +443,7 @@ export default function AdminSystemPage() {
       )}
 
       {sys && (
-        <>
+        <div data-slot="system-cards" className={TW.grid3}>
           {/* System health */}
           <SectionCard
             label={
@@ -514,6 +515,7 @@ export default function AdminSystemPage() {
             </div>
           </SectionCard>
 
+          <div className="col-span-full">
           {/* Top operations (24h) — where time goes / where to focus */}
           <SectionCard
             padded={false}
@@ -544,7 +546,9 @@ export default function AdminSystemPage() {
               />
             </div>
           </SectionCard>
+          </div>
 
+          <div className="col-span-full">
           {/* Active DB queries */}
           <SectionCard
             padded={false}
@@ -576,6 +580,7 @@ export default function AdminSystemPage() {
               />
             </div>
           </SectionCard>
+          </div>
 
           {/* Snapshot rebuild activity */}
           <SectionCard
@@ -716,7 +721,7 @@ export default function AdminSystemPage() {
               Full API log <ExternalLink className="h-3.5 w-3.5" />
             </Link>
           </SectionCard>
-        </>
+        </div>
       )}
     </SectionPage>
   );

@@ -13,6 +13,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { Announcement } from "@shared/types";
 import { formatDateTimeLocal } from "@/lib/currency";
+import { TW } from "@/lib/design/tokens";
 import { SectionPage } from "@/components/templates/section-page";
 import { ErrorState } from "@/components/error-state";
 
@@ -72,7 +73,7 @@ export default function WhatsNewPage() {
         </Card>
       )}
 
-      <div className="space-y-3">
+      <div data-slot="announcement-cards" className={TW.grid3}>
         {items?.map((a) => {
           const warning = a.severity === "warning";
           return (
@@ -96,7 +97,7 @@ export default function WhatsNewPage() {
                       {fmtDate(a.publishedAt ?? a.createdAt)}
                     </span>
                   </div>
-                  <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">
+                  <p className={`mt-2 whitespace-pre-wrap text-sm text-muted-foreground ${TW.prose}`}>
                     {a.body}
                   </p>
                 </div>

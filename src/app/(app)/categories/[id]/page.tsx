@@ -10,6 +10,8 @@
  * the Budgets page; the switcher in the header moves between categories.
  */
 
+import { cn } from "@/lib/utils";
+import { TW } from "@/lib/design/tokens";
 import { Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
@@ -350,7 +352,23 @@ function CategoryPageContent() {
         </Tabs>
       </div>
 
-      {shown.map((id) => (nodes[id] ? <div key={id}>{nodes[id]}</div> : null))}
+      {/* Cards: summary and recent span the row, the chart takes 2 of 3 columns at wide, payees 1. */}
+      <div data-slot="category-detail-cards" className={TW.grid3}>
+        {shown.map((id) =>
+          nodes[id] ? (
+            <div
+              key={id}
+              className={cn(
+                "min-w-0",
+                (id === "summary" || id === "recent") && "col-span-full",
+                id === "chart" && "regular:col-span-2",
+              )}
+            >
+              {nodes[id]}
+            </div>
+          ) : null,
+        )}
+      </div>
 
       {!hasData && (
         <Card>

@@ -202,6 +202,7 @@ function FirePageContent() {
         <p className="text-xs text-pos">Some values pre-filled from your dashboard data.</p>
       )}
 
+      <div data-slot="fire-layout" className="grid grid-cols-1 items-start gap-6 wide:grid-cols-3">
       {/* Inputs */}
       <SectionCard label="Your details">
         <div className="space-y-4">
@@ -246,6 +247,7 @@ function FirePageContent() {
       </SectionCard>
 
       {/* Results */}
+      <div className="space-y-6 wide:col-span-2">
       {result ? (
         <>
           <MetricGrid
@@ -515,6 +517,8 @@ function FirePageContent() {
           </div>
         </SectionCard>
       )}
+      </div>
+      </div>
     </SectionPage>
   );
 }

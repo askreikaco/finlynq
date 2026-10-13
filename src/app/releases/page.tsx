@@ -40,7 +40,7 @@ export default function ReleasesIndexPage() {
           { name: "Releases", path: "/releases" },
         ])}
       />
-      <div className="mx-auto max-w-3xl px-6 py-16">
+      <div className="w-full px-6 py-16">
         <header className="mb-12 border-b border-border pb-8">
           <Link
             href="/"
@@ -49,7 +49,7 @@ export default function ReleasesIndexPage() {
             ← Finlynq
           </Link>
           <h1 className="mt-4 text-4xl font-bold tracking-tight">Releases</h1>
-          <p className="mt-3 text-sm text-muted-foreground">
+          <p className="mt-3 text-sm text-muted-foreground max-w-prose">
             Release notes and changelog for Finlynq. Every version, what shipped,
             and why it matters. The full source-level changelog lives on{" "}
             <a
@@ -62,11 +62,11 @@ export default function ReleasesIndexPage() {
           </p>
         </header>
 
-        <section className="space-y-10">
+        <section data-slot="post-cards" className="grid grid-cols-1 items-start gap-6 regular:grid-cols-2 wide:grid-cols-3">
           {RELEASES_BY_DATE.map((release) => (
             <article
               key={release.slug}
-              className="border-b border-border pb-10 last:border-b-0"
+              className="rounded-xl border border-border bg-card p-5"
             >
               <h2 className="flex flex-wrap items-center gap-3 text-2xl font-semibold tracking-tight">
                 <Link

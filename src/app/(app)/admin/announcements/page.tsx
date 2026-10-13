@@ -164,6 +164,7 @@ export default function AdminAnnouncementsPage() {
     >
       {error && <p className="text-sm text-destructive">{error}</p>}
 
+      <div data-slot="announcement-layout" className="grid grid-cols-1 items-start gap-6 wide:grid-cols-3">
       {/* Create / edit form */}
       <Card ref={formRef} className="p-4">
         <div className="flex items-center justify-between">
@@ -265,6 +266,7 @@ export default function AdminAnnouncementsPage() {
       </Card>
 
       {/* Existing announcements */}
+      <div className="wide:col-span-2">
       <h2 className="mb-3 text-sm font-medium text-muted-foreground">
         All announcements
       </h2>
@@ -318,6 +320,8 @@ export default function AdminAnnouncementsPage() {
             </div>
           </Card>
         ))}
+      </div>
+      </div>
       </div>
     </SectionPage>
   );

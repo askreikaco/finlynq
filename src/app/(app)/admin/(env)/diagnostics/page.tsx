@@ -16,6 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { type DataTableColumn } from "@/components/ui/data-table";
 import { ColumnList } from "@/components/mobile/column-list";
 import { SectionPage } from "@/components/templates";
+import { TW } from "@/lib/design/tokens";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { RefreshCw, Trash2 } from "lucide-react";
 import { HEADER_DESKTOP_ONLY } from "@/components/mobile";
@@ -256,7 +257,7 @@ export default function AdminDiagnosticsPage() {
           </>),
       }}
     >
-      <p className="mt-0.5 text-sm text-muted-foreground">
+      <p className={`mt-0.5 text-sm text-muted-foreground ${TW.prose}`}>
         Persistent log of slow queries (≥ {(data?.meta.slowQueryMs ?? 2000).toLocaleString()}ms),
         database errors, API 5xx errors, and outbound provider failures for{" "}
         <span className="font-medium text-foreground">this environment</span>. Survives restarts;

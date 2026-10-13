@@ -68,7 +68,7 @@ export default async function GlossaryTermPage({
           { name: entry.shortTerm, path: `/glossary/${entry.slug}` },
         ])}
       />
-      <div className="mx-auto max-w-3xl px-6 py-16">
+      <div className="w-full px-6 py-16">
         <header className="mb-10 border-b border-border pb-8">
           <Link
             href="/glossary"
@@ -87,7 +87,7 @@ export default async function GlossaryTermPage({
           </p>
         </header>
 
-        <article className="prose prose-invert max-w-none space-y-5 text-sm leading-relaxed">
+        <article className="prose prose-invert max-w-prose space-y-5 text-sm leading-relaxed">
           {entry.blocks.map((block, i) => {
             if (block.type === "h2") {
               return (
