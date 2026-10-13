@@ -26,10 +26,10 @@ import {
 import { MetricRangeSelect } from "@/components/metric-range-select";
 import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { compareCaption, seriesWindow, type MonthPoint } from "@/lib/metrics/period";
-import { resolveCard } from "@/lib/metrics/delta";
+import { NO_HISTORY_CAPTION, resolveCard } from "@/lib/metrics/delta";
 import { SectionPage } from "@/components/templates/section-page";
 import { cn } from "@/lib/utils";
-import { TW } from "@/lib/design/tokens";
+import { CARD_ROW_GRID } from "@/components/mobile/section-card";
 import type { PageCard } from "@/lib/card-layout";
 import { type Budget, type SpendingRow, type BudgetTemplate, type AgeOfMoney, type BudgetMode, parseMonthParam } from "./_components/budget-types";
 import { applyPendingBudgets, type BudgetSyncMark } from "@/lib/budgets/pending-overlay";
@@ -353,9 +353,9 @@ function BudgetsPageContent() {
 
   // Category list: one inset SectionCard per category group, one ListRow per budget (every width).
   const budgetGroups = (
-    <div data-slot="budget-groups" className={TW.grid3}>
+    <div data-slot="budget-groups" className="grid grid-cols-1 gap-6">
       {Array.from(groupMap.entries()).map(([group, items]) => (
-        <SectionCard key={group} label={group} padded={false} className="divide-y divide-border/50 px-3">
+        <SectionCard key={group} label={group} padded={false} className={`col-span-full divide-y divide-border/50 px-3 ${CARD_ROW_GRID}`}>
           {items.map((b) => {
             const { spent, rollover, effectiveBudget, rawPct, over, envelopeAvailable, remaining } = budgetRowValues(b);
             const left = mode === "envelope" ? envelopeAvailable : remaining;
@@ -393,19 +393,19 @@ function BudgetsPageContent() {
   const summaryMetrics: MetricItem[] = [
     {
       id: "total-budget", label: "Total Budget", icon: Wallet, iconTone: "indigo", value: budgetCard.value ?? totalBudget, currency: displayCurrency,
-      sub: budgetCard.delta ?? undefined, note: totalRollover > 0 ? `${formatCurrency(totalRollover, displayCurrency)} rolled over` : undefined,
+      sub: budgetCard.delta ?? NO_HISTORY_CAPTION, note: totalRollover > 0 ? `${formatCurrency(totalRollover, displayCurrency)} rolled over` : undefined,
       badgePct: budgetCard.badgePct, sparkData: budgetCard.sparkData, sparkLabels: budgetCard.sparkLabels, sparkColor: "#6366f1",
     },
     {
       id: "total-spent", label: "Total Spent", icon: Receipt, iconTone: "rose", value: spentCard.value ?? totalSpent, currency: displayCurrency,
       valueClassName: totalSpent > totalBudget ? "text-destructive" : "text-pos",
-      sub: spentCard.delta ?? undefined, badgePct: spentCard.badgePct, invertTone: true,
+      sub: spentCard.delta ?? NO_HISTORY_CAPTION, badgePct: spentCard.badgePct, invertTone: true,
       sparkData: spentCard.sparkData, sparkLabels: spentCard.sparkLabels, sparkColor: "#f43f5e",
     },
     {
       id: "remaining", label: "Remaining", icon: PiggyBank, iconTone: "emerald", value: leftCard.value ?? totalRemaining, currency: displayCurrency,
       valueClassName: totalRemaining >= 0 ? "text-pos" : "text-destructive",
-      sub: leftCard.delta ?? undefined, badgePct: leftCard.badgePct,
+      sub: leftCard.delta ?? NO_HISTORY_CAPTION, badgePct: leftCard.badgePct,
       sparkData: leftCard.sparkData, sparkLabels: leftCard.sparkLabels, sparkColor: "#10b981",
     },
   ];

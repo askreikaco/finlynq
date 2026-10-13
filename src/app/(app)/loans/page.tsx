@@ -18,7 +18,7 @@ import { Amount, MetricGrid, DetailSheet, ListRow, SectionCard, type MetricItem,
 import { MetricRangeSelect } from "@/components/metric-range-select";
 import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { compareCaption, monthsBetween, seriesWindow } from "@/lib/metrics/period";
-import { resolveCard } from "@/lib/metrics/delta";
+import { NO_HISTORY_CAPTION, resolveCard } from "@/lib/metrics/delta";
 import { buildLoanSeries } from "@/lib/metrics/loan-series";
 import { CARD_ROW_GRID } from "@/components/mobile/section-card";
 import { SectionPage } from "@/components/templates/section-page";
@@ -218,17 +218,17 @@ function LoansPageContent() {
   const metrics: MetricItem[] = [
     {
       id: "total-debt", label: "Total debt", icon: Landmark, iconTone: "rose", value: debtCard.value ?? totalDebt, currency: displayCurrency,
-      sub: debtCard.delta ?? undefined, note: caveat, badgePct: debtCard.badgePct, invertTone: true,
+      sub: debtCard.delta ?? NO_HISTORY_CAPTION, note: caveat, badgePct: debtCard.badgePct, invertTone: true,
       sparkData: debtCard.sparkData, sparkLabels: debtCard.sparkLabels, sparkColor: "#f43f5e",
     },
     {
       id: "monthly-payments", label: "Monthly payments", icon: CalendarClock, iconTone: "amber", value: payCard.value ?? totalMonthly, currency: displayCurrency,
-      sub: payCard.delta ?? undefined, note: caveat, badgePct: payCard.badgePct, invertTone: true,
+      sub: payCard.delta ?? NO_HISTORY_CAPTION, note: caveat, badgePct: payCard.badgePct, invertTone: true,
       sparkData: payCard.sparkData, sparkLabels: payCard.sparkLabels, sparkColor: "#f59e0b",
     },
     {
       id: "active-loans", label: "Active loans", icon: ListChecks, iconTone: "indigo", value: <span>{Math.round(activeCard.value ?? activeLoans.length)}</span>,
-      sub: activeCard.delta ?? undefined, badgePct: activeCard.badgePct, invertTone: true,
+      sub: activeCard.delta ?? NO_HISTORY_CAPTION, badgePct: activeCard.badgePct, invertTone: true,
       sparkData: activeCard.sparkData, sparkLabels: activeCard.sparkLabels, sparkColor: "#6366f1",
     },
   ];

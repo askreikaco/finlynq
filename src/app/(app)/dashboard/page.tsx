@@ -39,7 +39,7 @@ import { sumAssetsLiabilities } from "@/lib/account-visibility";
 import { MetricRangeSelect } from "@/components/metric-range-select";
 import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { compareCaption, pctChange, previousPeriod, resolvePeriod, seriesWindow, RANGE_LABELS, type MonthPoint } from "@/lib/metrics/period";
-import { formatDelta, resolveCard } from "@/lib/metrics/delta";
+import { NO_HISTORY_CAPTION, formatDelta, resolveCard } from "@/lib/metrics/delta";
 import { healthSeriesPoints } from "@/lib/health/score";
 import { resolveRatioCard, runningTotal } from "@/lib/metrics/series";
 import { localDateISO } from "@/lib/utils/date";
@@ -385,7 +385,7 @@ export default function DashboardPage() {
       // Percent of the budget spent; the amounts and the covered month go in the note.
       value: <span>{budgetPct != null ? `${Math.round(budgetPct)}%` : "—"}</span>,
       valueClassName: budgetPct == null ? "text-muted-foreground" : budgetPct > 100 ? "text-destructive" : budgetPct > 85 ? "text-warning" : "text-pos",
-      sub: formatDelta({ cur: budgetPct, prev: budgetPrevPct, kind: "pp", caption }) ?? (budgetPct == null ? "No budgets set" : undefined),
+      sub: formatDelta({ cur: budgetPct, prev: budgetPrevPct, kind: "pp", caption }) ?? (budgetPct == null ? "No budgets set" : NO_HISTORY_CAPTION),
       note: budgetNow
         ? `${formatCurrency(budgetNow.spent, apiDisplayCurrency)} of ${formatCurrency(budgetNow.budget, apiDisplayCurrency)} · ${budgetsPeriodLabel}`
         : undefined,
@@ -609,7 +609,7 @@ export default function DashboardPage() {
       </motion.div>
 
       {/* One period control for every metric card on the page (?range=&from=&to=; default = month vs last month) */}
-      <motion.div variants={itemVariants}>
+      <motion.div variants={itemVariants} className="flex justify-end -mb-2 wide:-mb-3" data-slot="dashboard-range">
         <MetricRangeSelect value={selection} onChange={setSelection} />
       </motion.div>
 
