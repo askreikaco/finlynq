@@ -28,13 +28,14 @@ import { NetWorthHistoryChart } from "@/components/net-worth-history-chart";
 import { AvailableToSpend } from "./_components/available-to-spend";
 import { InsightsSection } from "./_components/insights-section";
 import { LazyView } from "@/components/ui/lazy-view";
+import { CountedGrid } from "./_components/counted-grid";
 import { useDevMode } from "@/hooks/use-dev-mode";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { CurrencyAuditBanner } from "@/components/currency-audit-banner";
 import type { DashboardData, HealthData } from "./_components/types";
 import { PageHeader, CustomizeDashboardSheet, useCardLayout, usePageCustomize, metricGridClass, METRIC_GRID_CLASS } from "@/components/mobile";
 import { Button } from "@/components/ui/button";
-import { DASHBOARD_CARDS } from "@/lib/dashboard-layout";
+import { DASHBOARD_CARDS, EMPTY_CELL_CLASS } from "@/lib/dashboard-layout";
 import { sumAssetsLiabilities } from "@/lib/account-visibility";
 import { MetricRangeSelect } from "@/components/metric-range-select";
 import { useMetricRange } from "@/lib/metrics/use-metric-range";
@@ -429,17 +430,19 @@ export default function DashboardPage() {
 
   type CardDef = {
     /** Adjacent cards with the same group share this wrapper's grid classes. */
-    group?: { key: string; className: string };
+    group?: { key: string; className: string; counted?: boolean };
     render: (ctx: { grouped: boolean }) => React.ReactNode;
   };
   // Metric tiles (health score, the three monthly summary tiles, savings rate + DTI): the shared metric grid
   // (2 mobile, 3 tablet, 4 desktop). Adjacent in the saved order = one grid; its columns follow the visible tile count.
   const TILES_GRID = { key: "tiles", className: METRIC_GRID_CLASS };
   const TILE_COUNT: Record<string, number> = { "health-score": 1, "summary-stats": 3, "key-metrics": 2 };
-  const ROW3_GRID = { key: "row3", className: "grid grid-cols-1 regular:grid-cols-2 wide:grid-cols-3 gap-5" };
+  // ROW3 / SPEND columns follow the number of RENDERED cells (see CountedGrid + insightColumns).
+  const ROW3_GRID = { key: "row3", className: "grid items-start gap-5", counted: true };
   // Equal-width cells: 2 columns at regular, 3 at wide. Income vs Expenses spans 2 of 3 at wide.
-  const CHARTS_GRID = { key: "charts", className: "grid grid-cols-1 regular:grid-cols-2 wide:grid-cols-3 items-start gap-5" };
-  const SPEND_GRID = { key: "spend", className: "grid grid-cols-1 regular:grid-cols-2 wide:grid-cols-3 items-start gap-5" };
+  // items-stretch: Spending by Category fills the row height next to the taller Income vs Expenses chart.
+  const CHARTS_GRID = { key: "charts", className: "grid grid-cols-1 regular:grid-cols-2 wide:grid-cols-3 items-stretch gap-5" };
+  const SPEND_GRID = { key: "spend", className: "grid grid-flow-dense items-start gap-5", counted: true };
 
   const CARDS: Record<string, CardDef> = {
     "onboarding-tips": {
@@ -485,7 +488,7 @@ export default function DashboardPage() {
     "action-center": {
       group: ROW3_GRID,
       render: () => (
-        <LazyView key="action-center" minHeight={180}>
+        <LazyView key="action-center" minHeight={180} className={EMPTY_CELL_CLASS}>
           <ActionCenter />
         </LazyView>
       ),
@@ -493,7 +496,7 @@ export default function DashboardPage() {
     "weekly-recap": {
       group: ROW3_GRID,
       render: () => (
-        <LazyView key="weekly-recap" minHeight={220}>
+        <LazyView key="weekly-recap" minHeight={220} className={EMPTY_CELL_CLASS}>
           <WeeklyRecap />
         </LazyView>
       ),
@@ -501,7 +504,7 @@ export default function DashboardPage() {
     "quick-import": {
       group: ROW3_GRID,
       render: () => (
-        <LazyView key="quick-import" minHeight={180}>
+        <LazyView key="quick-import" minHeight={180} className={EMPTY_CELL_CLASS}>
           <QuickImport />
         </LazyView>
       ),
@@ -509,7 +512,7 @@ export default function DashboardPage() {
     "income-expense-chart": {
       group: CHARTS_GRID,
       render: () => (
-        <LazyView key="income-expense-chart" minHeight={300} className="regular:col-span-2 wide:col-span-2">
+        <LazyView key="income-expense-chart" minHeight={300} className={`${EMPTY_CELL_CLASS} h-full [&>*]:h-full [&>*>*]:h-full regular:col-span-2 wide:col-span-2`}>
           <IncomeExpenseChart data={incExpData} currency={apiDisplayCurrency} />
         </LazyView>
       ),
@@ -517,7 +520,7 @@ export default function DashboardPage() {
     "spending-category-chart": {
       group: CHARTS_GRID,
       render: () => (
-        <LazyView key="spending-category-chart" minHeight={260}>
+        <LazyView key="spending-category-chart" minHeight={260} className={`${EMPTY_CELL_CLASS} h-full [&>*]:h-full [&>*>*]:h-full`}>
           <SpendingCategoryChart data={spendingData} currency={apiDisplayCurrency} />
         </LazyView>
       ),
@@ -525,7 +528,7 @@ export default function DashboardPage() {
     "available-to-spend": {
       group: SPEND_GRID,
       render: () => (
-        <LazyView key="available-to-spend" minHeight={200}>
+        <LazyView key="available-to-spend" minHeight={200} className={EMPTY_CELL_CLASS}>
           <AvailableToSpend
             income={shownIncome}
             expenses={shownExpenses}
@@ -568,9 +571,17 @@ export default function DashboardPage() {
       run.group.key === TILES_GRID.key
         ? metricGridClass(run.ids.reduce((n, id) => n + (TILE_COUNT[id] ?? 0), 0), "gap-3 regular:gap-4")
         : run.group.className;
+    const cells = run.ids.map((id) => CARDS[id].render({ grouped: run.ids.length > 1 }));
+    if (run.group.counted) {
+      return (
+        <CountedGrid key={run.ids.join("+")} className={run.group.className}>
+          {cells}
+        </CountedGrid>
+      );
+    }
     return (
       <div key={run.ids.join("+")} className={className}>
-        {run.ids.map((id) => CARDS[id].render({ grouped: run.ids.length > 1 }))}
+        {cells}
       </div>
     );
   });

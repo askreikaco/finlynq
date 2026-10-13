@@ -390,6 +390,8 @@ export default function ReportsPage() {
           value: <span>{rateCard.value ?? trendsData.savingsRate}%</span>,
           valueClassName: (rateCard.value ?? trendsData.savingsRate) >= 0 ? "text-pos" : "text-destructive",
           ...cardProps(rateCard),
+          // No delta available -> still show the basis so the tile has a caption line like its siblings.
+          ...(rateCard.delta ? {} : { sub: "Income minus expenses / income" }),
           ...(rateCard.value != null ? { note: reportNote(`${trendsData.savingsRate}%`) } : {}),
         },
       ]

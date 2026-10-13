@@ -46,3 +46,19 @@ export function defaultLayout(): DashboardLayout {
 export function normalizeLayout(raw: unknown): DashboardLayout {
   return normalizeCardLayout(raw, DASHBOARD_CARDS);
 }
+
+/**
+ * Grid column classes for a row of `count` RENDERED cards (cards that self-hide don't count), so a row never
+ * leaves an orphan cell next to empty columns: 1 -> 1, 2 -> 2, 3 -> 3, 4 -> 2x2, 5+ -> 3 columns at wide.
+ * Phone is always one column; `regular` is at most 2.
+ */
+export function insightColumns(count: number): string {
+  const n = Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 0;
+  if (n <= 1) return "grid-cols-1";
+  if (n === 2) return "grid-cols-1 regular:grid-cols-2 wide:grid-cols-2";
+  if (n === 4) return "grid-cols-1 regular:grid-cols-2 wide:grid-cols-2";
+  return "grid-cols-1 regular:grid-cols-2 wide:grid-cols-3";
+}
+
+/** Classes that make a card cell's wrapper disappear (no grid cell, no gap) when its card rendered nothing. */
+export const EMPTY_CELL_CLASS = "empty:hidden";
