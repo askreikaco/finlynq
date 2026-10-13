@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
+import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import { CARD_ROW_GRID } from "@/components/mobile/section-card";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,11 +10,15 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
-import { Plus, Target, CheckCircle2, Pencil, Trash2 } from "lucide-react";
+import { Plus, Target, CheckCircle2, Pencil, Trash2, PiggyBank } from "lucide-react";
 import {
-  CustomizeCardsSheet, DetailSheet, ListRow, MetricGrid, PHONE_PRIMARY_CLASS, SectionCard,
-  useCardLayout, usePageCustomize, type DetailItem, type MetricItem, type MetricTextItem,
+  ChartMetricGrid, CustomizeCardsSheet, DetailSheet, ListRow, PHONE_PRIMARY_CLASS, SectionCard,
+  useCardLayout, usePageCustomize, type ChartMetric, type DetailItem,
 } from "@/components/mobile";
+import { MetricRangeSelect } from "@/components/metric-range-select";
+import { useMetricRange } from "@/lib/metrics/use-metric-range";
+import { compareCaption, seriesWindow, type MonthPoint } from "@/lib/metrics/period";
+import { resolveCard } from "@/lib/metrics/delta";
 import type { PageCard } from "@/lib/card-layout";
 import { ListPage, type ListPageContext } from "@/components/templates";
 import type { Goal } from "./_components/goal-form";
@@ -126,14 +131,35 @@ function GoalsBody({ ctx, displayCurrency }: { ctx: GoalCtx; displayCurrency: st
   const hasForeignGoal = active.some((g) => g.currency && g.currency !== displayCurrency);
   const caveat = hasForeignGoal ? "converted at today's rates" : undefined;
 
-  const summaryMetrics: Array<MetricItem | MetricTextItem> = [
-    { label: "Total Target", value: totalTarget, currency: displayCurrency, sub: caveat },
-    { label: "Current Progress", value: totalCurrent, currency: displayCurrency, tone: "pos", sub: caveat },
-    { label: "Completed", text: `${completed.length} / ${goals.length}` },
+  // Metric cards. Goals keep no contribution history: Current Progress is the linked accounts' month-end balance
+  // (served by /api/goals/series, null when it cannot be derived honestly); Total Target and Completed have no
+  // history at all, so they show the value only (no badge, no sparkline, no delta).
+  const { selection, explicit, period, setSelection } = useMetricRange();
+  const win = seriesWindow(period);
+  const seriesRes = useCacheFirstJson<{ series: Array<{ month: string; current: number }> | null }>(
+    `/api/goals/series?from=${win.from}&to=${win.to}&currency=${encodeURIComponent(displayCurrency)}`,
+    { keepPrevious: true },
+  );
+  const progressPoints = useMemo<MonthPoint[] | null>(() => {
+    const rows = seriesRes.data && !Array.isArray(seriesRes.data) ? seriesRes.data.series : null;
+    return Array.isArray(rows) ? rows.map((r) => ({ month: r.month, value: r.current })) : null;
+  }, [seriesRes.data]);
+  const progressCard = resolveCard({
+    points: progressPoints, period, mode: "last", isDefault: !explicit, pageValue: totalCurrent,
+    kind: "money", currency: displayCurrency, caption: compareCaption(selection),
+  });
+  const summaryMetrics: ChartMetric[] = [
+    { id: "total-target", label: "Total Target", icon: Target, tone: "indigo", value: totalTarget, currency: displayCurrency, note: caveat },
+    {
+      id: "current-progress", label: "Current Progress", icon: PiggyBank, tone: "emerald", value: progressCard.value ?? totalCurrent, currency: displayCurrency,
+      valueClassName: "text-pos", sub: progressCard.delta ?? undefined, note: caveat, badgePct: progressCard.badgePct,
+      sparkData: progressCard.sparkData, sparkLabels: progressCard.sparkLabels, sparkColor: "#10b981",
+    },
+    { id: "completed", label: "Completed", icon: CheckCircle2, tone: "violet", value: <span>{`${completed.length} / ${goals.length}`}</span> },
   ];
 
   const nodes: Record<string, ReactNode> = {
-    summary: <MetricGrid metrics={summaryMetrics} />,
+    summary: <ChartMetricGrid metrics={summaryMetrics} />,
     active: active.length > 0 ? (
       <SectionCard label="Active" padded={false} className={`divide-y divide-border/50 px-3 ${CARD_ROW_GRID}`}>
         {active.map((g) => {
@@ -183,6 +209,7 @@ function GoalsBody({ ctx, displayCurrency }: { ctx: GoalCtx; displayCurrency: st
 
   return (
     <div className="space-y-6">
+      <MetricRangeSelect value={selection} onChange={setSelection} />
       {shown.map((id) => (nodes[id] ? <div key={id}>{nodes[id]}</div> : null))}
 
       <DetailSheet

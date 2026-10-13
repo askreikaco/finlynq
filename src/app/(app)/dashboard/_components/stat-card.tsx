@@ -1,12 +1,15 @@
 "use client";
 
+import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { MetricCard } from "@/components/metric-card";
 
 type StatCardProps = {
   label: string;
   value: number;
-  sub: string;
+  sub?: ReactNode;
+  /** Second small line (the covered month, a ratio). */
+  note?: ReactNode;
   /** Percentage badge before the sub-line (green up / red down); null/undefined = none. */
   badgePct?: number | null;
   /** Less is better (expenses): up = red, down = green. */

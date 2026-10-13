@@ -17,12 +17,16 @@ import { parseSaveError } from "@/lib/save-error";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import {
   Plus, ChevronLeft, ChevronRight, Trash2, AlertTriangle, Copy,
-  Save, FileDown, ArrowRightLeft, Pencil, Receipt, Wallet, LayoutGrid,
+  Save, FileDown, ArrowRightLeft, Pencil, Receipt, Wallet, LayoutGrid, PiggyBank, Hourglass, Scale,
 } from "lucide-react";
 import {
-  Amount, CustomizeCardsSheet, DetailSheet, ListRow, MetricGrid, PHONE_PRIMARY_CLASS, SectionCard,
-  useCardLayout, usePageCustomize, type DetailItem, type MetricItem, type MetricTextItem, type OverflowAction,
+  Amount, ChartMetricGrid, CustomizeCardsSheet, DetailSheet, ListRow, PHONE_PRIMARY_CLASS, SectionCard,
+  useCardLayout, usePageCustomize, type ChartMetric, type DetailItem, type OverflowAction,
 } from "@/components/mobile";
+import { MetricRangeSelect } from "@/components/metric-range-select";
+import { useMetricRange } from "@/lib/metrics/use-metric-range";
+import { compareCaption, seriesWindow, type MonthPoint } from "@/lib/metrics/period";
+import { resolveCard } from "@/lib/metrics/delta";
 import { SectionPage } from "@/components/templates/section-page";
 import { cn } from "@/lib/utils";
 import type { PageCard } from "@/lib/card-layout";
@@ -109,6 +113,19 @@ function BudgetsPageContent() {
 
   const ageRes = useCacheFirstJson<AgeOfMoney & { error?: unknown }>("/api/age-of-money");
   const ageOfMoney: AgeOfMoney | null = ageRes.data && !ageRes.data.error ? ageRes.data : null;
+
+  // Metric cards: the period defaults to the selected month vs the previous month (?range=&from=&to= overrides);
+  // totals per month come from /api/budgets/series (budgets + the same transactions the page spends from).
+  const { selection, explicit, period, setSelection } = useMetricRange(month);
+  const win = seriesWindow(period);
+  const seriesRes = useCacheFirstJson<{ series: Array<{ month: string; budget: number; spent: number }> }>(
+    currencyLoading ? null : `/api/budgets/series?from=${win.from}&to=${win.to}&currency=${encodeURIComponent(displayCurrency)}`,
+    { keepPrevious: true },
+  );
+  const seriesRows = useMemo(
+    () => (seriesRes.data && !Array.isArray(seriesRes.data) && Array.isArray(seriesRes.data.series) ? seriesRes.data.series : []),
+    [seriesRes.data],
+  );
 
   const budgetsReload = budgetsRes.reload;
   const monthReload = monthRes.reload;
@@ -364,36 +381,51 @@ function BudgetsPageContent() {
     </div>
   );
 
-  // Summary tiles in the shared metric grid (2 / 3 / 4 columns by width).
-  const summaryMetrics: Array<MetricItem | MetricTextItem> = [
+  // Summary cards: the shared MetricCard in the shared metric grid (2 / 3 / 4 columns by width).
+  const caption = compareCaption(selection);
+  const pointsOf = (pick: (r: { budget: number; spent: number }) => number): MonthPoint[] =>
+    seriesRows.map((r) => ({ month: r.month, value: pick(r) }));
+  const common = { period, isDefault: !explicit, currency: displayCurrency, caption, kind: "money" } as const;
+  const budgetCard = resolveCard({ ...common, points: pointsOf((r) => r.budget), mode: "sum", pageValue: totalBudget });
+  const spentCard = resolveCard({ ...common, points: pointsOf((r) => r.spent), mode: "sum", pageValue: totalSpent });
+  const leftCard = resolveCard({ ...common, points: pointsOf((r) => r.budget - r.spent), mode: "sum", pageValue: totalRemaining });
+  const summaryMetrics: ChartMetric[] = [
     {
-      label: "Total Budget",
-      value: totalBudget,
-      currency: displayCurrency,
-      sub: totalRollover > 0 ? `${formatCurrency(totalRollover, displayCurrency)} rolled over` : undefined,
+      id: "total-budget", label: "Total Budget", icon: Wallet, tone: "indigo", value: budgetCard.value ?? totalBudget, currency: displayCurrency,
+      sub: budgetCard.delta ?? undefined, note: totalRollover > 0 ? `${formatCurrency(totalRollover, displayCurrency)} rolled over` : undefined,
+      badgePct: budgetCard.badgePct, sparkData: budgetCard.sparkData, sparkLabels: budgetCard.sparkLabels, sparkColor: "#6366f1",
     },
-    { label: "Total Spent", value: totalSpent, currency: displayCurrency, tone: totalSpent > totalBudget ? "neg" : "pos" },
-    { label: "Remaining", value: totalRemaining, currency: displayCurrency, tone: totalRemaining >= 0 ? "pos" : "neg" },
+    {
+      id: "total-spent", label: "Total Spent", icon: Receipt, tone: "rose", value: spentCard.value ?? totalSpent, currency: displayCurrency,
+      valueClassName: totalSpent > totalBudget ? "text-destructive" : "text-pos",
+      sub: spentCard.delta ?? undefined, badgePct: spentCard.badgePct, invertTone: true,
+      sparkData: spentCard.sparkData, sparkLabels: spentCard.sparkLabels, sparkColor: "#f43f5e",
+    },
+    {
+      id: "remaining", label: "Remaining", icon: PiggyBank, tone: "emerald", value: leftCard.value ?? totalRemaining, currency: displayCurrency,
+      valueClassName: totalRemaining >= 0 ? "text-pos" : "text-destructive",
+      sub: leftCard.delta ?? undefined, badgePct: leftCard.badgePct,
+      sparkData: leftCard.sparkData, sparkLabels: leftCard.sparkLabels, sparkColor: "#10b981",
+    },
   ];
+  // Available to Budget and Age of Money have no monthly series (the income-minus-budget figure and the age are
+  // current-state numbers): value only, no fake delta or chart.
   if (mode === "envelope") {
     summaryMetrics.push({
-      label: "Available to Budget",
-      value: availableToBudget,
-      currency: displayCurrency,
-      tone: availableToBudget >= 0 ? "pos" : "neg",
+      id: "available-to-budget", label: "Available to Budget", icon: Scale, tone: "cyan", value: availableToBudget, currency: displayCurrency,
+      valueClassName: availableToBudget >= 0 ? "text-pos" : "text-destructive",
       sub: availableToBudget < 0 ? "Over-budgeted! Reduce or move funds." : undefined,
     });
   } else if (ageOfMoney) {
     summaryMetrics.push({
-      label: "Age of Money",
-      text: `${ageOfMoney.ageInDays} days`,
+      id: "age-of-money", label: "Age of Money", icon: Hourglass, tone: "violet", value: <span>{`${ageOfMoney.ageInDays} days`}</span>,
       sub: ageOfMoney.trend !== 0 ? `${ageOfMoney.trend > 0 ? "+" : ""}${ageOfMoney.trend}d vs previous period` : undefined,
     });
   }
 
   const summaryNode = (
     <div className="space-y-3">
-      <MetricGrid metrics={summaryMetrics} />
+      <ChartMetricGrid metrics={summaryMetrics} />
       {/* Envelope mode: zero-sum warning */}
       {mode === "envelope" && availableToBudget < 0 && budgets.length > 0 && (
         <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
@@ -456,6 +488,7 @@ function BudgetsPageContent() {
 
   return shell(
     <>
+      <MetricRangeSelect value={selection} onChange={setSelection} />
       {/* Toolbar: month nav and the Traditional / Envelope mode, at every width */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="inline-flex items-center gap-2 rounded-xl bg-muted/50 px-2 py-1.5">

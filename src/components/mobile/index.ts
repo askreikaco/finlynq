@@ -11,6 +11,7 @@ export { NetWorthHero } from "./net-worth-hero";
 export { AccountRow } from "./account-row";
 export { HoldingRow } from "./holding-row";
 export { MetricGrid, METRIC_GRID_CLASS, metricGridClass, type MetricItem, type MetricTextItem } from "./metric-grid";
+export { ChartMetricGrid, type ChartMetric } from "./chart-metric-grid";
 export { CustomizeDashboardSheet, type DashboardCard } from "./customize-dashboard-sheet";
 export { CustomizeCardsSheet } from "./customize-cards-sheet";
 export { useCardLayout } from "./use-card-layout";

@@ -36,6 +36,11 @@ import { PageHeader, CustomizeDashboardSheet, useCardLayout, usePageCustomize, m
 import { Button } from "@/components/ui/button";
 import { DASHBOARD_CARDS } from "@/lib/dashboard-layout";
 import { sumAssetsLiabilities } from "@/lib/account-visibility";
+import { MetricRangeSelect } from "@/components/metric-range-select";
+import { useMetricRange } from "@/lib/metrics/use-metric-range";
+import { aggregate, compareCaption, pctChange, previousPeriod, resolvePeriod, RANGE_LABELS, type MonthPoint } from "@/lib/metrics/period";
+import { formatDelta, resolveCard } from "@/lib/metrics/delta";
+import { localDateISO } from "@/lib/utils/date";
 
 // --- Quick Import Widget ---
 function QuickImportWidget() {
@@ -143,6 +148,7 @@ export default function DashboardPage() {
   const [customizeOpen, setCustomizeOpen] = useState(false);
   usePageCustomize({ onOpen: () => setCustomizeOpen(true) });
   const [reloadKey, setReloadKey] = useState(0);
+  const { selection, explicit, period: rangePeriod, setSelection } = useMetricRange();
 
   useEffect(() => {
     if (currencyLoading) return; // wait until provider has read settings
@@ -267,13 +273,45 @@ export default function DashboardPage() {
     const endDate = `${m[1]}-${m[2]}-${String(last).padStart(2, "0")}`;
     return { startDate, endDate };
   })();
-  // Month-over-month change of the reference month vs the month before it (no badge when there is
-  // no earlier month or it was 0, so we never show a divide-by-zero figure).
-  const momOf = (cur: number | undefined, prev: number | undefined): number | null =>
-    refIdx > 0 && cur != null && prev != null && prev !== 0 ? ((cur - prev) / Math.abs(prev)) * 100 : null;
-  const incomePct = momOf(incExpData[refIdx]?.income, incExpData[refIdx - 1]?.income);
-  const expensePct = momOf(incExpData[refIdx]?.expenses, incExpData[refIdx - 1]?.expenses);
   const budgetSparkline = incExpLast6.map((d) => d.income - d.expenses);
+
+  // Metric cards: default = the reference month vs the month before it (unchanged); a selected range (?range=...)
+  // compares that range with the immediately preceding period of the same length. Everything is derived from the same
+  // monthly income / expense series, so it also works from the offline cache.
+  const caption = compareCaption(selection);
+  const cardPeriod = explicit ? rangePeriod : resolvePeriod({ range: "this_month" }, localDateISO(), lastMonthKey || undefined);
+  const prevCardPeriod = previousPeriod(cardPeriod);
+  const incomePoints: MonthPoint[] = incExpData.map((d) => ({ month: d.month, value: d.income }));
+  const expensePoints: MonthPoint[] = incExpData.map((d) => ({ month: d.month, value: d.expenses }));
+  const netPoints: MonthPoint[] = incExpData.map((d) => ({ month: d.month, value: d.income - d.expenses }));
+  const cardBase = { period: cardPeriod, mode: "sum", isDefault: !explicit, currency: apiDisplayCurrency, caption, kind: "money" } as const;
+  const incomeCard = resolveCard({ ...cardBase, points: incomePoints, pageValue: lastMonthIncome });
+  const expenseCard = resolveCard({ ...cardBase, points: expensePoints, pageValue: lastMonthExpenses });
+  const budgetCard = resolveCard({ ...cardBase, points: netPoints, pageValue: availableToSpend });
+  const periodLabel = explicit
+    ? (selection.range === "custom" ? `${selection.from} to ${selection.to}` : RANGE_LABELS[selection.range])
+    : lastMonthKey ? getMonthLabel(lastMonthKey) : `${incExpData.length} months tracked`;
+  const shownIncome = incomeCard.value ?? lastMonthIncome;
+  const shownExpenses = expenseCard.value ?? lastMonthExpenses;
+
+  // Savings rate by month = (income - expenses) / income; a range's rate uses the range's summed income / expenses.
+  const rateOf = (months: string[]): number | null => {
+    const inc = aggregate(incomePoints, months, "sum");
+    const exp = aggregate(expensePoints, months, "sum");
+    return inc != null && exp != null && inc > 0 ? ((inc - exp) / inc) * 100 : null;
+  };
+  const curRate = rateOf(cardPeriod.months);
+  const prevRate = rateOf(prevCardPeriod.months);
+  const rateSpark = incExpData
+    .filter((d) => d.month <= cardPeriod.months[cardPeriod.months.length - 1] && d.income > 0)
+    .slice(-6)
+    .map((d) => ({ month: d.month, rate: Math.round(((d.income - d.expenses) / d.income) * 1000) / 10 }));
+  const savingsTrend = {
+    badgePct: pctChange(curRate, prevRate),
+    delta: formatDelta({ cur: curRate, prev: prevRate, kind: "pp", caption }),
+    ...(rateSpark.length >= 2 ? { sparkData: rateSpark.map((r) => r.rate), sparkLabels: rateSpark.map((r) => r.month) } : {}),
+    ...(explicit ? { value: curRate != null ? Math.round(curRate * 10) / 10 : null } : {}),
+  };
 
   // Dev-mode: spending by category for charts
   const spendingData = (data.spendingByCategory ?? [])
@@ -286,33 +324,38 @@ export default function DashboardPage() {
       label: "Monthly Income",
       // Name the month the figure covers — it's the last COMPLETE month, not
       // necessarily the current one (FINLYNQ-291 C1), so the label must be explicit.
-      value: lastMonthIncome,
-      sub: lastMonthKey ? getMonthLabel(lastMonthKey) : `${incExpData.length} months tracked`,
-      badgePct: incomePct,
+      value: shownIncome,
+      // Signed difference vs the previous period (like Net Worth); the covered month moves to the note.
+      sub: incomeCard.delta ?? undefined,
+      note: periodLabel,
+      badgePct: incomeCard.badgePct,
       icon: TrendingUp,
       iconBg: "bg-pos/10 text-pos",
       sparkColor: "#10b981",
-      sparkData: incomeSparkline,
-      sparkLabels: incExpSparkLabels,
+      sparkData: explicit ? (incomeCard.sparkData ?? incomeSparkline) : incomeSparkline,
+      sparkLabels: explicit ? (incomeCard.sparkLabels ?? incExpSparkLabels) : incExpSparkLabels,
       href: buildTxDrillUrl({ startDate: monthDrill.startDate, endDate: monthDrill.endDate }),
     },
     {
       label: "Monthly Expenses",
-      value: lastMonthExpenses,
-      sub: lastMonthIncome > 0 ? `${Math.round((lastMonthExpenses / lastMonthIncome) * 100)}% of income` : "",
-      badgePct: expensePct,
+      value: shownExpenses,
+      sub: expenseCard.delta ?? undefined,
+      note: [periodLabel, shownIncome > 0 ? `${Math.round((shownExpenses / shownIncome) * 100)}% of income` : ""].filter(Boolean).join(" · "),
+      badgePct: expenseCard.badgePct,
       invertTone: true,
       icon: CreditCard,
       iconBg: "bg-destructive/10 text-destructive",
       sparkColor: "#f43f5e",
-      sparkData: expenseSparkline,
-      sparkLabels: incExpSparkLabels,
+      sparkData: explicit ? (expenseCard.sparkData ?? expenseSparkline) : expenseSparkline,
+      sparkLabels: explicit ? (expenseCard.sparkLabels ?? incExpSparkLabels) : incExpSparkLabels,
       href: buildTxDrillUrl({ startDate: monthDrill.startDate, endDate: monthDrill.endDate }),
     },
     {
       label: "Budgets",
-      value: availableToSpend,
-      sub: availableToSpend >= 0 ? "Available to spend" : "Over budget",
+      value: budgetCard.value ?? availableToSpend,
+      sub: budgetCard.delta ?? undefined,
+      note: (budgetCard.value ?? availableToSpend) >= 0 ? "Available to spend" : "Over budget",
+      badgePct: budgetCard.badgePct,
       icon: Target,
       iconBg: "bg-warning/10 text-warning",
       sparkColor: "#f59e0b",
@@ -383,7 +426,7 @@ export default function DashboardPage() {
     // Key ratios: Savings Rate + DTI (FINLYNQ-291) from the same /api/health-score payload.
     "key-metrics": {
       group: TILES_GRID,
-      render: () => <KeyMetrics key="key-metrics" health={health} tiles />,
+      render: () => <KeyMetrics key="key-metrics" health={health} tiles savingsTrend={savingsTrend} />,
     },
     // Accurate merged series: cash live from transactions + investments from stored
     // snapshots; latest point matches the hero. plan/net-worth-over-time.md Part A.
@@ -520,6 +563,11 @@ export default function DashboardPage() {
             </Button>
           }
         />
+      </motion.div>
+
+      {/* One period control for every metric card on the page (?range=&from=&to=; default = month vs last month) */}
+      <motion.div variants={itemVariants}>
+        <MetricRangeSelect value={selection} onChange={setSelection} />
       </motion.div>
 
       {/* Currency audit banner — shown only when there are unresolved cross-currency rows */}
