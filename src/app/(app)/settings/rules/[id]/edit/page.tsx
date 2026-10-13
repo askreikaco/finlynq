@@ -1,7 +1,8 @@
+"use client";
+
 import { isLocalWriteQueueActive, queueOfflineEntityEdit } from "@/lib/data/local-write-queue";
 import { isNetworkFailure } from "@/lib/transactions/entry-mode";
 import { ruleChangedFields, type RuleLike } from "@/lib/rules/offline-fields";
-"use client";
 
 import { Suspense, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
