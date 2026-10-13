@@ -139,8 +139,9 @@ export function ratioSeries(num: readonly MonthPoint[], den: readonly MonthPoint
 export const throughMonthOf = (today: string): string => monthOf(today);
 export { shiftMonth };
 
-import { compareCaption, type Period, type RangeSelection } from "./period";
-import { resolveCard, type DeltaKind, type ResolvedCard } from "./delta";
+import type { MetricCardProps } from "@/components/metric-card";
+import { aggregate, compareCaption, pctChange, previousPeriod, type Period, type RangeSelection } from "./period";
+import { formatDelta, resolveCard, type DeltaKind, type ResolvedCard } from "./delta";
 
 /**
  * Bind the page's selected range once, get a resolver per card:
@@ -164,10 +165,40 @@ export function makeCardResolver(
 }
 
 /** The card props every MetricCard / MetricItem takes from a ResolvedCard (delta line as `sub`, badge, sparkline). */
-export function cardProps(c: ResolvedCard): { sub?: string; badgePct: number | null; sparkData?: number[]; sparkLabels?: string[] } {
+export function cardProps(c: ResolvedCard): Pick<MetricCardProps, "sub" | "badgePct" | "sparkData" | "sparkLabels"> {
   return {
     ...(c.delta ? { sub: c.delta } : {}),
     badgePct: c.badgePct,
     ...(c.sparkData ? { sparkData: c.sparkData, sparkLabels: c.sparkLabels } : {}),
+  };
+}
+
+/**
+ * A rate card (savings rate: net / income as a percent) from two monthly flow series. The value, the badge, the
+ * "+x pp" delta and the sparkline all use the SAME basis: the rate of the period's summed numerator over its summed
+ * denominator, against the previous period's. `value` is the percent (one decimal), null when the denominator is 0.
+ */
+export function resolveRatioCard(opts: {
+  num: readonly MonthPoint[];
+  den: readonly MonthPoint[];
+  period: Period;
+  caption: string;
+  sparkMonths?: number;
+}): ResolvedCard {
+  const { num, den, period, caption } = opts;
+  const rateOf = (months: string[]): number | null => {
+    const n = aggregate([...num], months, "sum");
+    const d = aggregate([...den], months, "sum");
+    return n != null && d != null && d > 0 ? (n / d) * 100 : null;
+  };
+  const cur = rateOf(period.months);
+  const prev = rateOf(previousPeriod(period).months);
+  const end = period.months[period.months.length - 1];
+  const spark = ratioSeries(num.filter((p) => p.month <= end), den).slice(-(opts.sparkMonths ?? 6));
+  return {
+    value: cur != null ? Math.round(cur * 10) / 10 : null,
+    badgePct: pctChange(cur, prev),
+    delta: formatDelta({ cur, prev, kind: "pp", caption }),
+    ...(spark.length >= 2 ? { sparkData: spark.map((p) => p.value), sparkLabels: spark.map((p) => p.month) } : {}),
   };
 }

@@ -53,6 +53,6 @@ describe("one metric card", () => {
 
   it("no hand-rolled KPI block in an app page (text-2xl font-bold values outside MetricCard)", () => {
     const hits = FILES.filter((f) => f.rel.startsWith("src/app/(app)/") && /text-2xl font-(bold|semibold)[^"`]*(tabular-nums|hero-number)/.test(f.src)).map((f) => f.rel);
-    expect(hits).toEqual(["src/app/(app)/reports/page.tsx"]);
+    expect(hits).toEqual([]);
   });
 });

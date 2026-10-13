@@ -391,8 +391,7 @@ export default function AccountsPage() {
               change={null}
               changePct={0}
               changeCaption=""
-              delta={nwCard.delta}
-              badgePct={nwCard.badgePct}
+              comparison={{ delta: nwCard.delta, pct: nwCard.badgePct }}
               sparkData={nwCard.sparkData ?? []}
               sparkLabels={nwCard.sparkLabels}
             />
