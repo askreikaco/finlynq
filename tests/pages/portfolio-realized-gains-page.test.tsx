@@ -92,7 +92,7 @@ describe("Realized gains page (report page, not a dialog)", () => {
     const vnm = screen.getByRole("button", { name: "VNM, closed 2026-02-01" });
     expect(within(vnm).getByText("-22.22%").getAttribute("data-tone")).toBe("neg");
     // two month sections (March, February)
-    const labels = document.querySelectorAll("[data-slot=section-label]");
+    const labels = document.querySelectorAll("[data-slot=section-card-label]");
     expect(labels.length).toBe(2);
   });
 

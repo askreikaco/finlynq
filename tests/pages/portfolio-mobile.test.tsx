@@ -80,7 +80,7 @@ const cls = (el: Element) => el.className.toString().split(/\s+/);
 /** The holdings of one account (its SectionCard), as list rows. */
 const groupRows = (account: string): HTMLElement[] => {
   const card = Array.from(document.querySelectorAll<HTMLElement>("[data-slot=section-card]")).find(
-    (c) => c.querySelector("[data-slot=section-label]")?.textContent === account,
+    (c) => c.querySelector("[data-slot=section-card-label]")?.textContent === account,
   );
   if (!card) return [];
   return Array.from(card.querySelectorAll<HTMLElement>("[data-slot=list-row]"));

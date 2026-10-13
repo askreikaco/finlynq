@@ -131,7 +131,7 @@ export function IncomeExpenseChart({
 
   return (
     <motion.div variants={animationsEnabled ? itemVariants : noAnimationVariants}>
-      <SectionCard label="Income vs Expenses" className="card-hover">
+      <SectionCard label="Income vs Expenses" cardClassName="card-hover">
         <div className="flex items-center justify-between gap-3 mb-3">
           <p className="text-xs text-muted-foreground">Last 12 months</p>
           {stackable && (

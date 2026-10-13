@@ -79,9 +79,9 @@ export function OpPage({
 /** Inset grouped list (iOS Settings style): rounded card, hairline dividers, optional UPPERCASE label. */
 export function OpGroup({ label, children }: { label?: string; children: React.ReactNode }) {
   return (
-    <section className="space-y-2">
-      {label ? <SectionLabel>{label}</SectionLabel> : null}
-      <div className="divide-y divide-border/50 overflow-hidden rounded-2xl bg-card">{children}</div>
+    <section className="divide-y divide-border/50 overflow-hidden rounded-2xl bg-card">
+      {label ? <SectionLabel className="px-4 pb-1 pt-3">{label}</SectionLabel> : null}
+      {children}
     </section>
   );
 }

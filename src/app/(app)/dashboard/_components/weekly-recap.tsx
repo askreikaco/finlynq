@@ -59,7 +59,7 @@ export function WeeklyRecap() {
   }));
   return (
     <motion.div variants={animationsEnabled ? itemVariants : noAnimationVariants}>
-      <SectionCard label="Weekly Recap" className="card-hover relative overflow-hidden">
+      <SectionCard label="Weekly Recap" cardClassName="card-hover relative overflow-hidden">
         <div className="absolute -top-16 -right-16 w-40 h-40 rounded-full bg-primary/5 blur-3xl pointer-events-none" />
 
         <div className="mb-3 flex items-center justify-between">

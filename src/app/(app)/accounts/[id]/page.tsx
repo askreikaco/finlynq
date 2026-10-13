@@ -48,7 +48,7 @@ import { MetricCard } from "@/components/metric-card";
 import { deriveBalanceMonthly, type BalanceMonthly } from "@/lib/accounts/balance-series";
 import { TransactionsWorkspace } from "../../transactions/_components/transactions-workspace";
 import {
-  PageHeader, HEADER_DESKTOP_ONLY, CustomizeCardsSheet, ListRow, SectionLabel, useCardLayout, usePageCustomize,
+  PageHeader, HEADER_DESKTOP_ONLY, CustomizeCardsSheet, ListRow, SectionCard, useCardLayout, usePageCustomize,
 } from "@/components/mobile";
 import type { PageCard } from "@/lib/card-layout";
 import { usePageFab } from "@/components/mobile/page-fab";
@@ -584,21 +584,24 @@ export default function AccountDetailPage() {
       </Card>
 ),
           information: (
-        <section data-slot="account-information" className="space-y-2">
-          <div className="flex items-center justify-between">
-            <SectionLabel as="h3">Information</SectionLabel>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="pointer-coarse:w-11 pointer-coarse:px-0"
-              onClick={() => openEdit("details")}
-              title="Edit account"
-              aria-label="Edit account"
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-          </div>
-          <div className="surface-card min-w-0 rounded-xl border border-border/50 px-3 divide-y divide-border/50">
+        <SectionCard
+          data-slot="account-information"
+          label="Information"
+          padded={false}
+          className="divide-y divide-border/50 px-3"
+          action={
+        <Button
+          size="sm"
+          variant="ghost"
+          className="pointer-coarse:w-11 pointer-coarse:px-0"
+          onClick={() => openEdit("details")}
+          title="Edit account"
+          aria-label="Edit account"
+        >
+          <Pencil className="h-4 w-4" />
+        </Button>
+          }
+        >
             <ListRow title="Account number" value={account.alias || "—"} />
             <ListRow title="Group" value={account.group || "—"} />
             <ListRow
@@ -630,8 +633,7 @@ export default function AccountDetailPage() {
               }
             />
             {account.archived === true && <ListRow title="Status" value={<Badge variant="secondary" className="text-xs">Archived</Badge>} />}
-          </div>
-        </section>
+        </SectionCard>
       ),
           history: (
             <NetWorthHistoryChart
