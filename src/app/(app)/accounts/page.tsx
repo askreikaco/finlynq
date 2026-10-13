@@ -37,7 +37,11 @@ import { SectionPage } from "@/components/templates/section-page";
 import type { PageCard } from "@/lib/card-layout";
 import { MetricCard } from "@/components/metric-card";
 import { NetWorthHeroCard } from "@/app/(app)/dashboard/_components/net-worth-hero-card";
-import { deriveSeriesChange, type SeriesPoint } from "@/lib/dashboard/series-change";
+import type { SeriesPoint } from "@/lib/dashboard/series-change";
+import { MetricRangeSelect } from "@/components/metric-range-select";
+import { useMetricRange } from "@/lib/metrics/use-metric-range";
+import { cardProps, makeCardResolver, runningTotal } from "@/lib/metrics/series";
+import { localDateISO } from "@/lib/utils/date";
 
 type AccountBalance = {
   accountId: number;
@@ -153,6 +157,7 @@ export default function AccountsPage() {
     assetsOverTime?: SeriesPoint[];
     liabilitiesOverTime?: SeriesPoint[];
   }>(currencyLoading ? null : dashboardUrl);
+  const metricRange = useMetricRange();
   const accounts = useMemo(() => dashboard?.balances ?? [], [dashboard]);
   const series = useMemo(
     () => ({
@@ -279,10 +284,13 @@ export default function AccountsPage() {
   // convertedBalance (in displayCurrency) when present, fall back to raw balance.
   const { totalAssets: totalAssetsConverted, totalLiabilities: totalLiabilitiesConverted, netWorth: netWorthConverted } =
     sumAssetsLiabilities(accounts, (a) => a.convertedBalance ?? a.balance);
-  // Same derivation as Home: monthly deltas -> running total -> last 12 months + MoM change.
-  const nwSeries = deriveSeriesChange(series.nw);
-  const assetsSeries = deriveSeriesChange(series.assets);
-  const liabilitiesSeries = deriveSeriesChange(series.liabilities);
+  // Same derivation as Home: monthly deltas -> running total per month, compared with the previous month by default
+  // (or the previous period of the selected range). From the same cached /api/dashboard payload, so offline works too.
+  const thisMonth = localDateISO().slice(0, 7);
+  const card = makeCardResolver(metricRange, displayCurrency);
+  const nwCard = card(runningTotal(series.nw, thisMonth), "last", netWorthConverted);
+  const assetsCard = card(runningTotal(series.assets, thisMonth), "last", totalAssetsConverted);
+  const liabilitiesCard = card(runningTotal(series.liabilities, thisMonth), "last", totalLiabilitiesConverted);
 
   // Create account is its own page (/accounts/new), not a dialog.
   const createAccountLink = (
@@ -370,46 +378,44 @@ export default function AccountsPage() {
     >
       <OnboardingTips page="accounts" />
 
+      <MetricRangeSelect value={metricRange.selection} onChange={metricRange.setSelection} />
+
       {(() => {
         const shown = cardLayout.layout.order.filter((id) => !cardLayout.layout.hidden.includes(id));
         // Net worth, summary and the Assets / Liabilities section cards, in the user's saved order.
         const nodes: Record<string, ReactNode> = {
           "net-worth": (
             <NetWorthHeroCard
-              value={netWorthConverted}
+              value={nwCard.value ?? netWorthConverted}
               currency={displayCurrency}
-              change={nwSeries.change}
-              changePct={nwSeries.changePct}
-              changeCaption="vs last month"
-              sparkData={nwSeries.sparkData}
-              sparkLabels={nwSeries.sparkLabels}
+              change={null}
+              changePct={0}
+              changeCaption=""
+              delta={nwCard.delta}
+              badgePct={nwCard.badgePct}
+              sparkData={nwCard.sparkData ?? []}
+              sparkLabels={nwCard.sparkLabels}
             />
           ),
           summary: (
             <div data-slot="accounts-summary" className={`${metricGridClass(2)} regular:contents`}>
               <MetricCard
                 label="Total Assets"
-                value={totalAssetsConverted}
+                value={assetsCard.value ?? totalAssetsConverted}
                 currency={displayCurrency}
                 icon={TrendingUp}
                 tone="bg-pos/10 text-pos"
                 sparkColor="#10b981"
-                sparkData={assetsSeries.sparkData}
-                sparkLabels={assetsSeries.sparkLabels}
-                badgePct={assetsSeries.change != null ? assetsSeries.changePct : null}
-                sub={assetsSeries.change != null ? "vs last month" : ""}
+                {...cardProps(assetsCard)}
               />
               <MetricCard
                 label="Total Liabilities"
-                value={totalLiabilitiesConverted}
+                value={liabilitiesCard.value ?? totalLiabilitiesConverted}
                 currency={displayCurrency}
                 icon={TrendingDown}
                 tone="bg-destructive/10 text-destructive"
                 sparkColor="#f43f5e"
-                sparkData={liabilitiesSeries.sparkData}
-                sparkLabels={liabilitiesSeries.sparkLabels}
-                badgePct={liabilitiesSeries.change != null ? liabilitiesSeries.changePct : null}
-                sub={liabilitiesSeries.change != null ? "vs last month" : ""}
+                {...cardProps(liabilitiesCard)}
               />
             </div>
           ),
