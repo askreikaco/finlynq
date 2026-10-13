@@ -71,7 +71,7 @@ describe("nothing caps, clips or hides the header", () => {
     const shell = code("src/components/settings-shell.tsx");
     expect(shell).not.toMatch(/\bhidden\b|display:\s*none|overflow-(x-)?(hidden|auto|scroll)\b|max-w-/);
     // overflow-x-clip does not create a scroll container, so the sticky bar still pins to the page scroller.
-    expect(shell).toMatch(/overflow-x-clip/);
+    expect(shell).not.toMatch(/className="[^"]*overflow-/); // overflow-x-clip clipped the full-bleed bar to an inset
   });
 
   it("the header is sticky with no `hidden` on its bar", () => {

@@ -97,7 +97,8 @@ describe("bars that must use the sticky bar", () => {
 
 describe("no ancestor breaks sticky (scroll container and containing block)", () => {
   it("settings content slot is not a scroll container at any breakpoint", () => {
-    expect(settingsShell).toContain('<div className="overflow-x-clip">{children}</div>');
+    expect(settingsShell).toContain("<div>{children}</div>");
+    expect(settingsShell).not.toMatch(/className="[^"]*overflow-/); // a clip cut the full-bleed header bar (inset bar)
     expect(settingsShell).not.toContain("md:overflow-x-auto");
     expect(settingsShell).not.toContain("max-md:overflow-x-clip md:");
   });

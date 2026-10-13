@@ -104,7 +104,8 @@ describe("elements under the header offset by sat + header height", () => {
     expect(settingsShell).not.toContain("[&_[data-slot=page-header]]:static");
     expect(settingsShell).not.toContain("[&_[data-slot=page-header-title]]:sr-only");
     expect(settingsShell).not.toContain("sr-only");
-    expect(settingsShell).toContain('<div className="overflow-x-clip">{children}</div>');
+    expect(settingsShell).toContain("<div>{children}</div>");
+    expect(settingsShell).not.toMatch(/className="[^"]*overflow-/); // a clip cut the full-bleed header bar (inset bar)
   });
 
   it("dashboard header wrapper is display:contents at every breakpoint (its parent must span the page)", () => {
