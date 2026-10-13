@@ -41,7 +41,7 @@ import { CATEGORY_WINDOWS, type CategoryDetail } from "@/lib/reports/category-de
 import { Receipt, Store } from "lucide-react";
 import {
   Amount, CustomizeCardsSheet, HEADER_DESKTOP_ONLY, ListRow, MetricGrid, PageHeader, SectionCard,
-  useCardLayout, usePageCustomize, type MetricTextItem,
+  useCardLayout, usePageCustomize, type MetricItem,
 } from "@/components/mobile";
 import type { PageCard } from "@/lib/card-layout";
 
@@ -175,30 +175,30 @@ function CategoryPageContent() {
 
   const categoriesBackHref = `/categories${category.type === "I" ? "?type=I" : ""}`;
 
-  const summaryMetrics: MetricTextItem[] = [
+  const summaryMetrics: MetricItem[] = [
     {
       label: "This month so far",
-      text: formatCurrency(stats.thisMonth, cur),
+      value: formatCurrency(stats.thisMonth, cur),
       sub: currentMonth?.budget != null
         ? `of ${formatCurrency(currentMonth.budget, cur)} budget`
         : `${currentMonth?.count ?? 0} transaction${currentMonth?.count === 1 ? "" : "s"}`,
     },
     {
       label: `Last month (${monthLabel(data.months[data.months.length - 2]?.month ?? "", "short")})`,
-      text: formatCurrency(stats.lastMonth, cur),
+      value: formatCurrency(stats.lastMonth, cur),
       sub: lastVsAvg ? `${lastVsAvg.text} vs average` : undefined,
     },
     {
       label: "Monthly average",
-      text: stats.averageMonthly != null ? formatCurrency(stats.averageMonthly, cur) : "—",
+      value: stats.averageMonthly != null ? formatCurrency(stats.averageMonthly, cur) : "—",
       sub: stats.medianMonthly != null ? `median ${formatCurrency(stats.medianMonthly, cur)}` : "needs a full month",
     },
     {
       label: `${monthLabel(currentMonth?.month ?? "", "long").split(" ")[0]} last year`,
-      text: formatCurrency(stats.sameMonthLastYear, cur),
+      value: formatCurrency(stats.sameMonthLastYear, cur),
       sub: "same month, a year ago",
     },
-    { label: `Share of ${noun}`, text: pct(stats.shareOfType), sub: `of all ${noun}, last ${months} months` },
+    { label: `Share of ${noun}`, value: pct(stats.shareOfType), sub: `of all ${noun}, last ${months} months` },
   ];
 
   const nodes: Record<string, ReactNode> = {

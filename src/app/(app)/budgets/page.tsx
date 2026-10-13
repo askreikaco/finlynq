@@ -20,8 +20,8 @@ import {
   Save, FileDown, ArrowRightLeft, Pencil, Receipt, Wallet, LayoutGrid, PiggyBank, Hourglass, Scale,
 } from "lucide-react";
 import {
-  Amount, ChartMetricGrid, CustomizeCardsSheet, DetailSheet, ListRow, PHONE_PRIMARY_CLASS, SectionCard,
-  useCardLayout, usePageCustomize, type ChartMetric, type DetailItem, type OverflowAction,
+  Amount, MetricGrid, CustomizeCardsSheet, DetailSheet, ListRow, PHONE_PRIMARY_CLASS, SectionCard,
+  useCardLayout, usePageCustomize, type MetricItem, type DetailItem, type OverflowAction,
 } from "@/components/mobile";
 import { MetricRangeSelect } from "@/components/metric-range-select";
 import { useMetricRange } from "@/lib/metrics/use-metric-range";
@@ -389,20 +389,20 @@ function BudgetsPageContent() {
   const budgetCard = resolveCard({ ...common, points: pointsOf((r) => r.budget), mode: "sum", pageValue: totalBudget });
   const spentCard = resolveCard({ ...common, points: pointsOf((r) => r.spent), mode: "sum", pageValue: totalSpent });
   const leftCard = resolveCard({ ...common, points: pointsOf((r) => r.budget - r.spent), mode: "sum", pageValue: totalRemaining });
-  const summaryMetrics: ChartMetric[] = [
+  const summaryMetrics: MetricItem[] = [
     {
-      id: "total-budget", label: "Total Budget", icon: Wallet, tone: "indigo", value: budgetCard.value ?? totalBudget, currency: displayCurrency,
+      id: "total-budget", label: "Total Budget", icon: Wallet, iconTone: "indigo", value: budgetCard.value ?? totalBudget, currency: displayCurrency,
       sub: budgetCard.delta ?? undefined, note: totalRollover > 0 ? `${formatCurrency(totalRollover, displayCurrency)} rolled over` : undefined,
       badgePct: budgetCard.badgePct, sparkData: budgetCard.sparkData, sparkLabels: budgetCard.sparkLabels, sparkColor: "#6366f1",
     },
     {
-      id: "total-spent", label: "Total Spent", icon: Receipt, tone: "rose", value: spentCard.value ?? totalSpent, currency: displayCurrency,
+      id: "total-spent", label: "Total Spent", icon: Receipt, iconTone: "rose", value: spentCard.value ?? totalSpent, currency: displayCurrency,
       valueClassName: totalSpent > totalBudget ? "text-destructive" : "text-pos",
       sub: spentCard.delta ?? undefined, badgePct: spentCard.badgePct, invertTone: true,
       sparkData: spentCard.sparkData, sparkLabels: spentCard.sparkLabels, sparkColor: "#f43f5e",
     },
     {
-      id: "remaining", label: "Remaining", icon: PiggyBank, tone: "emerald", value: leftCard.value ?? totalRemaining, currency: displayCurrency,
+      id: "remaining", label: "Remaining", icon: PiggyBank, iconTone: "emerald", value: leftCard.value ?? totalRemaining, currency: displayCurrency,
       valueClassName: totalRemaining >= 0 ? "text-pos" : "text-destructive",
       sub: leftCard.delta ?? undefined, badgePct: leftCard.badgePct,
       sparkData: leftCard.sparkData, sparkLabels: leftCard.sparkLabels, sparkColor: "#10b981",
@@ -412,20 +412,20 @@ function BudgetsPageContent() {
   // current-state numbers): value only, no fake delta or chart.
   if (mode === "envelope") {
     summaryMetrics.push({
-      id: "available-to-budget", label: "Available to Budget", icon: Scale, tone: "cyan", value: availableToBudget, currency: displayCurrency,
+      id: "available-to-budget", label: "Available to Budget", icon: Scale, iconTone: "cyan", value: availableToBudget, currency: displayCurrency,
       valueClassName: availableToBudget >= 0 ? "text-pos" : "text-destructive",
       sub: availableToBudget < 0 ? "Over-budgeted! Reduce or move funds." : undefined,
     });
   } else if (ageOfMoney) {
     summaryMetrics.push({
-      id: "age-of-money", label: "Age of Money", icon: Hourglass, tone: "violet", value: <span>{`${ageOfMoney.ageInDays} days`}</span>,
+      id: "age-of-money", label: "Age of Money", icon: Hourglass, iconTone: "violet", value: <span>{`${ageOfMoney.ageInDays} days`}</span>,
       sub: ageOfMoney.trend !== 0 ? `${ageOfMoney.trend > 0 ? "+" : ""}${ageOfMoney.trend}d vs previous period` : undefined,
     });
   }
 
   const summaryNode = (
     <div className="space-y-3">
-      <ChartMetricGrid metrics={summaryMetrics} />
+      <MetricGrid metrics={summaryMetrics} />
       {/* Envelope mode: zero-sum warning */}
       {mode === "envelope" && availableToBudget < 0 && budgets.length > 0 && (
         <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">

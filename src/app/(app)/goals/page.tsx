@@ -12,8 +12,8 @@ import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { Plus, Target, CheckCircle2, Pencil, Trash2, PiggyBank } from "lucide-react";
 import {
-  ChartMetricGrid, CustomizeCardsSheet, DetailSheet, ListRow, PHONE_PRIMARY_CLASS, SectionCard,
-  useCardLayout, usePageCustomize, type ChartMetric, type DetailItem,
+  MetricGrid, CustomizeCardsSheet, DetailSheet, ListRow, PHONE_PRIMARY_CLASS, SectionCard,
+  useCardLayout, usePageCustomize, type MetricItem, type DetailItem,
 } from "@/components/mobile";
 import { MetricRangeSelect } from "@/components/metric-range-select";
 import { useMetricRange } from "@/lib/metrics/use-metric-range";
@@ -148,18 +148,18 @@ function GoalsBody({ ctx, displayCurrency }: { ctx: GoalCtx; displayCurrency: st
     points: progressPoints, period, mode: "last", isDefault: !explicit, pageValue: totalCurrent,
     kind: "money", currency: displayCurrency, caption: compareCaption(selection),
   });
-  const summaryMetrics: ChartMetric[] = [
-    { id: "total-target", label: "Total Target", icon: Target, tone: "indigo", value: totalTarget, currency: displayCurrency, note: caveat },
+  const summaryMetrics: MetricItem[] = [
+    { id: "total-target", label: "Total Target", icon: Target, iconTone: "indigo", value: totalTarget, currency: displayCurrency, note: caveat },
     {
-      id: "current-progress", label: "Current Progress", icon: PiggyBank, tone: "emerald", value: progressCard.value ?? totalCurrent, currency: displayCurrency,
+      id: "current-progress", label: "Current Progress", icon: PiggyBank, iconTone: "emerald", value: progressCard.value ?? totalCurrent, currency: displayCurrency,
       valueClassName: "text-pos", sub: progressCard.delta ?? undefined, note: caveat, badgePct: progressCard.badgePct,
       sparkData: progressCard.sparkData, sparkLabels: progressCard.sparkLabels, sparkColor: "#10b981",
     },
-    { id: "completed", label: "Completed", icon: CheckCircle2, tone: "violet", value: <span>{`${completed.length} / ${goals.length}`}</span> },
+    { id: "completed", label: "Completed", icon: CheckCircle2, iconTone: "violet", value: <span>{`${completed.length} / ${goals.length}`}</span> },
   ];
 
   const nodes: Record<string, ReactNode> = {
-    summary: <ChartMetricGrid metrics={summaryMetrics} />,
+    summary: <MetricGrid metrics={summaryMetrics} />,
     active: active.length > 0 ? (
       <SectionCard label="Active" padded={false} className={`divide-y divide-border/50 px-3 ${CARD_ROW_GRID}`}>
         {active.map((g) => {
