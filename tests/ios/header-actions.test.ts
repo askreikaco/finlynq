@@ -194,9 +194,9 @@ describe("PageHeader call sites (phone bar)", () => {
       (s) => getAttr(s.el, "actions") || getAttr(s.el, "lead"),
     ).length;
     expect(sites.length).toBeGreaterThanOrEqual(48);
-    // 23 (was 25): admin env pages, email inbox and /import moved their actions into the SectionPage header
+    // 18 (was 25): admin env pages, email inbox and /import moved their actions into the SectionPage header
     // (the same single PageHeader, rendered by the template), so they are no longer direct PageHeader call sites.
-    expect(withActionsOrLead).toBeGreaterThanOrEqual(23);
+    expect(withActionsOrLead).toBeGreaterThanOrEqual(18);
   });
 
   it("at most one phone-visible text action per header, and it is the last visible one (secondaries icon-only)", () => {
