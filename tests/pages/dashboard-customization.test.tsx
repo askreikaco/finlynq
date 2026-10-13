@@ -122,9 +122,13 @@ describe("Dashboard card layout", () => {
     expect(grid("action-center").className).toBe("grid grid-cols-1 regular:grid-cols-2 wide:grid-cols-3 gap-5");
     expect(grid("weekly-recap")).toBe(grid("action-center"));
     expect(grid("quick-import")).toBe(grid("action-center"));
-    expect(grid("income-expense-chart").className).toBe("grid grid-cols-1 wide:grid-cols-2 gap-5");
+    // chart row: equal-width cells (2 regular, 3 wide); Income vs Expenses spans 2 of 3, Spending by Category 1 of 3
+    expect(grid("income-expense-chart").className).toBe("grid grid-cols-1 regular:grid-cols-2 wide:grid-cols-3 items-start gap-5");
     expect(grid("spending-category-chart")).toBe(grid("income-expense-chart"));
-    expect(grid("available-to-spend").className).toBe("grid grid-cols-1 wide:grid-cols-3 gap-5");
+    expect(screen.getByTestId("card-income-expense-chart").parentElement?.className).toContain("wide:col-span-2");
+    // Available to Spend + the insight cards fill one equal-width 3-column grid
+    expect(grid("available-to-spend").className).toBe("grid grid-cols-1 regular:grid-cols-2 wide:grid-cols-3 items-start gap-5");
+    expect(grid("insights")).toBe(grid("available-to-spend"));
     // no accordion any more
     expect(screen.queryByRole("button", { name: /More insights|Fewer insights/ })).toBeNull();
   });

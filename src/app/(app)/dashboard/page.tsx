@@ -437,8 +437,9 @@ export default function DashboardPage() {
   const TILES_GRID = { key: "tiles", className: METRIC_GRID_CLASS };
   const TILE_COUNT: Record<string, number> = { "health-score": 1, "summary-stats": 3, "key-metrics": 2 };
   const ROW3_GRID = { key: "row3", className: "grid grid-cols-1 regular:grid-cols-2 wide:grid-cols-3 gap-5" };
-  const CHARTS_GRID = { key: "charts", className: "grid grid-cols-1 wide:grid-cols-2 gap-5" };
-  const SPEND_GRID = { key: "spend", className: "grid grid-cols-1 wide:grid-cols-3 gap-5" };
+  // Equal-width cells: 2 columns at regular, 3 at wide. Income vs Expenses spans 2 of 3 at wide.
+  const CHARTS_GRID = { key: "charts", className: "grid grid-cols-1 regular:grid-cols-2 wide:grid-cols-3 items-start gap-5" };
+  const SPEND_GRID = { key: "spend", className: "grid grid-cols-1 regular:grid-cols-2 wide:grid-cols-3 items-start gap-5" };
 
   const CARDS: Record<string, CardDef> = {
     "onboarding-tips": {
@@ -508,7 +509,7 @@ export default function DashboardPage() {
     "income-expense-chart": {
       group: CHARTS_GRID,
       render: () => (
-        <LazyView key="income-expense-chart" minHeight={300}>
+        <LazyView key="income-expense-chart" minHeight={300} className="regular:col-span-2 wide:col-span-2">
           <IncomeExpenseChart data={incExpData} currency={apiDisplayCurrency} />
         </LazyView>
       ),
@@ -536,8 +537,11 @@ export default function DashboardPage() {
       ),
     },
     insights: {
+      // `contents` + disabled lazy: the insight cards become cells of the shared spend grid (an observed
+      // display:contents box never intersects, so it mounts immediately).
+      group: SPEND_GRID,
       render: () => (
-        <LazyView key="insights" minHeight={200}>
+        <LazyView key="insights" minHeight={200} disabled className="contents">
           <InsightsSection currency={apiDisplayCurrency} />
         </LazyView>
       ),

@@ -109,6 +109,13 @@ describe("desktop columns: card grids", () => {
     expect(code(`${APP}/dashboard/page.tsx`)).toMatch(/ROW3_GRID = \{[^}]*grid-cols-1 regular:grid-cols-2 wide:grid-cols-3/);
   });
 
+  it("dashboard: chart + insight rows are equal-width 1 / 2 / 3 grids; Income vs Expenses spans 2 of 3", () => {
+    const src = code(`${APP}/dashboard/page.tsx`);
+    expect(src).toMatch(/CHARTS_GRID = \{[^}]*grid-cols-1 regular:grid-cols-2 wide:grid-cols-3 items-start/);
+    expect(src).toMatch(/SPEND_GRID = \{[^}]*grid-cols-1 regular:grid-cols-2 wide:grid-cols-3 items-start/);
+    expect(src).toMatch(/income-expense-chart" minHeight=\{300\} className="[^"]*wide:col-span-2/);
+  });
+
   it("family, tax, fire, scenarios, admin, import, utility pages", () => {
     expect(code(`${APP}/family/_components/overview-tab.tsx`)).toMatch(/data-slot="household-charts"[^>]*wide:grid-cols-2/);
     expect(code(`${APP}/tax/page.tsx`)).toMatch(/data-slot="tax-cards" className=\{TW\.grid3\}/);
