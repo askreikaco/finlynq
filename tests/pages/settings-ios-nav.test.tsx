@@ -48,12 +48,12 @@ describe("Settings iOS multi-level menu: hub (level 1)", () => {
     });
   });
 
-  it("uses the shared bar title: text-base semibold below regular, text-3xl/9 extrabold from regular", () => {
+  it("uses the shared bar title: text-base semibold at every width", () => {
     render(<SettingsHub />);
     const h1 = screen.getByRole("heading", { level: 1, name: "Settings" });
-    expect(cls(h1)).toContain("max-regular:text-base");
-    expect(cls(h1)).toContain("max-regular:font-semibold");
-    expect(cls(h1)).toEqual(expect.arrayContaining(["text-3xl/9", "font-extrabold"]));
+    expect(cls(h1)).toContain("text-base");
+    expect(cls(h1)).toContain("font-semibold");
+    expect(cls(h1)).not.toContain("font-extrabold");
   });
 });
 
@@ -82,14 +82,14 @@ describe("Settings detail pages (level 3): the page's PageHeader is the one top 
 
     const back = screen.getByRole("link", { name: "Back" });
     expect(back.getAttribute("href")).toBe("/settings");
-    expect(cls(back)).toEqual(expect.arrayContaining(["glass-capsule", "max-regular:size-11", "max-regular:rounded-full"]));
+    expect(cls(back)).toEqual(expect.arrayContaining(["glass-capsule", "size-11", "rounded-full"]));
     expect(bar?.contains(back)).toBe(true);
-    expect(cls(bar)).toEqual(expect.arrayContaining(["glass-bar", "sticky", "max-regular:-mx-4", "regular:bg-background/90"]));
+    expect(cls(bar)).toEqual(expect.arrayContaining(["glass-bar", "sticky", "page-header-bleed", "page-header-bleed"]));
 
     const title = screen.getByRole("heading", { level: 1, name: "Investments" });
     expect(bar?.contains(title)).toBe(true);
-    expect(cls(title)).toEqual(expect.arrayContaining(["text-3xl/9", "font-extrabold", "max-regular:text-base", "max-regular:text-left"]));
-    expect(cls(bar?.querySelector('[data-slot="page-header-title-block"]'))).toContain("max-regular:items-start");
+    expect(cls(title)).toEqual(expect.arrayContaining(["text-base", "text-left"]));
+    expect(cls(bar?.querySelector('[data-slot="page-header-title-block"]'))).toContain("items-start");
   });
 
   it("the page header is never hidden at any size (no viewport-only display classes)", () => {
@@ -140,10 +140,10 @@ describe("PageHeader with backHref: phone glass header row", () => {
     const { container } = render(<PageHeader title="Currency Review" backHref="/transactions" backLabel="Back to Transactions" />);
 
     const back = screen.getByRole("link", { name: "Back to Transactions" });
-    expect(cls(back)).toEqual(expect.arrayContaining(["glass-capsule", "max-regular:size-11", "max-regular:rounded-full"]));
+    expect(cls(back)).toEqual(expect.arrayContaining(["glass-capsule", "size-11", "rounded-full"]));
 
     const h1 = screen.getByRole("heading", { level: 1, name: "Currency Review" });
-    expect(cls(h1)).toEqual(expect.arrayContaining(["max-regular:truncate", "max-regular:text-base", "max-regular:font-semibold"]));
+    expect(cls(h1)).toEqual(expect.arrayContaining(["truncate", "text-base", "font-semibold"]));
     expect(cls(h1)).not.toContain("glass-capsule");
 
     const row = container.querySelector('[data-slot="page-header"]');
@@ -187,9 +187,10 @@ describe("PageHeader with backHref: phone glass header row", () => {
     expect(cls(triggers[0])).toContain("pointer-coarse:size-11");
   });
 
-  it("ships the glass-capsule and glass-bar material phone-only in globals.css", () => {
+  it("ships the glass-capsule and glass-bar material at every width (no media gate) in globals.css", () => {
     const css = readFileSync(resolve(__dirname, "../../src/app/globals.css"), "utf-8");
-    expect(css).toMatch(/@media \(width < 40rem\) \{\s*\.glass-capsule \{/);
+    expect(css).toMatch(/liquid glass, every width[\s\S]*?\n\.glass-capsule \{/);
+    expect(css).not.toMatch(/@media \(width < 40rem\) \{\s*\.glass-capsule \{/);
     // Literal blur/saturate moved into --glass-bar-* tokens; assert the resolved .glass-bar rule.
     expect(resolvedDecls(css, ".glass-bar", "light")).toMatch(/blur\(32px\) saturate\(1\.8\)/);
     expect(css).toContain("prefers-reduced-transparency");

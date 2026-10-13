@@ -98,7 +98,7 @@ describe("PageHeader: Customize in the More group", () => {
     );
     const capsule = screen.getByRole("button", { name: "More actions" }).closest('[data-slot="header-capsule"]') as HTMLElement;
     expect(within(capsule).queryByText("Manage")).not.toBeNull();
-    expect(screen.getByText("Manage").className).toContain("max-regular:hidden");
+    expect(screen.getByText("Manage").className).toContain("header-secondary");
   });
 });
 

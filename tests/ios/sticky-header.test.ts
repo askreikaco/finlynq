@@ -21,7 +21,7 @@ function constant(name: string): string {
   return m![1];
 }
 
-describe("phone top bar: sticky on every PageHeader row (below regular)", () => {
+describe("top bar: sticky on every PageHeader row (every width)", () => {
   const bar = constant("PHONE_BAR");
   const tokens = bar.split(/\s+/);
 
@@ -31,9 +31,9 @@ describe("phone top bar: sticky on every PageHeader row (below regular)", () => 
     expect(tokens.filter((t) => /^(md:|sm:|lg:)?(sticky|relative|absolute|fixed|static)$/.test(t))).toEqual(["sticky"]);
   });
 
-  it("is pinned at the safe-area inset below regular, 0 from regular (iOS status bar)", () => {
+  it("is pinned at the safe-area inset at every width (no regular: top override)", () => {
     expect(tokens).toContain("top-[var(--sat,0px)]");
-    expect(tokens).toContain("regular:top-0");
+    expect(tokens).not.toContain("regular:top-0");
     expect(tokens).not.toContain("max-regular:top-0");
   });
 
@@ -47,12 +47,12 @@ describe("phone top bar: sticky on every PageHeader row (below regular)", () => 
   });
 
   it("row height comes from --phone-header-h", () => {
-    expect(tokens).toContain("max-regular:min-h-[var(--phone-header-h)]");
+    expect(tokens).toContain("min-h-[var(--phone-header-h)]");
   });
 
-  it("is full-bleed inside the app shell gutter (-mx-4 + px-4)", () => {
-    expect(tokens).toContain("max-regular:-mx-4");
-    expect(tokens).toContain("max-regular:px-4");
+  it("is full-bleed across the main area via page-header-bleed (shell-width side margins + padding)", () => {
+    expect(tokens).toContain("page-header-bleed");
+    expect(css).toMatch(/\.page-header-bleed \{[^}]*margin-inline:[^}]*padding-inline:/);
   });
 
   it("every PageHeader row (title only, back, actions) renders the shared bar", () => {

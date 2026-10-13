@@ -507,8 +507,6 @@ export default function DashboardPage() {
         <PageHeader
           className="flex flex-wrap items-center justify-between gap-3"
           title="Dashboard"
-          titleClassName="text-2xl font-bold tracking-tight"
-          subtitleClassName="text-sm text-muted-foreground mt-0.5"
           subtitle={`${greeting}. Here's your financial overview`}
           overflow={[{ label: "General settings", icon: Settings, href: "/settings/general" }]}
           actions={

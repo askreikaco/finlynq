@@ -40,7 +40,7 @@ describe("PageHeader HEADER_SAVE", () => {
     expect(capsule!.contains(save)).toBe(false);
     const actions = document.querySelector('[data-slot="page-header-actions"]')!;
     expect(actions.lastElementChild).toBe(save);
-    expect(actions.className).toContain("max-regular:gap-2");
+    expect(actions.className).toContain("gap-2");
   });
 
   it("is the only action: no empty capsule, still renders", () => {
@@ -60,10 +60,10 @@ describe("PageHeader HEADER_SAVE", () => {
     expect((r.rest[0] as React.ReactElement<{ children?: string }>).props.children).toBe("a");
   });
 
-  it("CSS: below regular the save is a 44px round primary-coloured circle with a 20px glyph and no label", () => {
+  it("CSS: at every width the save is a 44px round primary-coloured circle with a 20px glyph and no label", () => {
     const css = readFileSync(join(__dirname, "..", "src", "app", "globals.css"), "utf8");
     const i = css.indexOf('[data-slot="page-header-actions"] > :is(.header-save, .phone-icon-action) {');
-    expect(i).toBeGreaterThan(css.indexOf("@media (width < 40rem) {"));
+    expect(i).toBeGreaterThan(css.indexOf("iOS 26-style liquid glass, every width"));
     const body = css.slice(i, css.indexOf("}", i));
     for (const d of ["width: 2.75rem", "height: 2.75rem", "border-radius: 9999px", "background: var(--primary)", "font-size: 0"]) {
       expect(body).toContain(d);

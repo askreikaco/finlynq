@@ -176,10 +176,8 @@ export function ReconcileHeader({
       <PageHeader
         className="flex flex-wrap items-center justify-between gap-3"
         title={title}
-        titleClassName="text-2xl font-bold tracking-tight"
         onBack={closeDetail}
         backLabel="Back to Pending Imports"
-        actionsClassName="flex flex-wrap items-center gap-2"
         actions={actions}
         overflow={overflow}
       />

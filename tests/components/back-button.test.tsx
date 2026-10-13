@@ -40,10 +40,10 @@ describe("BackButton", () => {
     expect(link).toBeTruthy();
   });
 
-  it("has minimum 44x44 hit area classes", () => {
+  it("is a 44x44 round hit area (size-11 rounded-full) at every width", () => {
     render(<BackButton href="/previous" />);
     const link = screen.getByRole("link");
-    expect(cls(link)).toEqual(expect.arrayContaining(["min-h-11", "min-w-11"]));
+    expect(cls(link)).toEqual(expect.arrayContaining(["size-11", "rounded-full"]));
   });
 
   it("has data-slot attribute", () => {

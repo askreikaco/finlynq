@@ -234,7 +234,6 @@ export default function AdminDiagnosticsPage() {
             disabled: rows.length === 0 || clearing,
           },
         ],
-        actionsClassName: "flex flex-wrap items-center gap-2",
         actions: (<>
             <label className={`${HEADER_DESKTOP_ONLY} flex items-center gap-2 text-xs text-muted-foreground`}>
               Auto-refresh

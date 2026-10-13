@@ -52,7 +52,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               {/* No floating action button (owner 2026-10-11): each page's header carries its own add action.
                   The 16px below the bar clearance is breathing room; no bottom padding from 640px (regular:pb-0).
                   From 640px the left padding clears the fixed tab rail (AppTabs). */}
-              <div className="relative z-10 min-w-0 px-4 pt-0 pb-3 regular:px-6 regular:py-8 wide:px-8">
+              <div className="relative z-10 min-w-0 px-4 pt-0 pb-3 regular:px-6 regular:pt-0 regular:pb-8 wide:px-8">
                 {children}
               </div>
             </main>

@@ -346,7 +346,6 @@ export default function PortfolioPage() {
       subtitle={`${summary.totalHoldings} holdings across ${summary.totalAccounts} accounts`}
       width="report"
       header={{
-        actionsClassName: "flex flex-wrap items-center gap-2",
         overflow: [
           { label: "Realized gains", icon: TrendingUp, href: "/portfolio/realized-gains" },
           { label: "Dividends", icon: Coins, href: "/portfolio/dividends" },

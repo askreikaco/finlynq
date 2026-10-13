@@ -29,7 +29,7 @@ afterEach(cleanup);
 const cls = (el: Element | null | undefined) => (el ? el.className.toString().split(/\s+/) : []);
 const CAPSULE = '[data-slot="header-capsule"]';
 const CSS = fs.readFileSync(path.join(process.cwd(), "src/app/globals.css"), "utf-8");
-const PHONE = CSS.slice(CSS.indexOf("@media (width < 40rem) {"), CSS.indexOf("/* Mobile bottom tab bar"));
+const PHONE = CSS.slice(CSS.indexOf("/* iOS 26-style liquid glass"), CSS.indexOf("/* Mobile bottom tab bar"));
 
 describe("header capsule: secondary cells + overflow are ONE neutral capsule on the left; the primary is a separate yellow button on the right", () => {
   it("icon actions, a spinner and the overflow trigger render in one capsule; the primary follows it as its own control", () => {
@@ -59,7 +59,7 @@ describe("header capsule: secondary cells + overflow are ONE neutral capsule on 
     const primary = screen.getByRole("button", { name: "Add goal" });
     expect(Array.from(group.children)).toEqual([capsule, primary]);
     expect(primary.closest(CAPSULE)).toBeNull();
-    expect(cls(group)).toContain("max-regular:gap-2");
+    expect(cls(group)).toContain("gap-2");
     // yellow/accent: the shared header-save rule (primary fill) covers .phone-icon-action
     expect(PHONE).toContain('[data-slot="page-header-actions"] > :is(.header-save, .phone-icon-action) {');
     expect(PHONE).toMatch(/:is\(\.header-save, \.phone-icon-action\) \{[^}]*background: var\(--primary\);/);
@@ -79,10 +79,10 @@ describe("header capsule: secondary cells + overflow are ONE neutral capsule on 
     );
     const capsule = container.querySelector(CAPSULE) as HTMLElement;
     expect(capsule.children.length).toBe(3);
-    expect(cls(capsule)).toEqual(expect.arrayContaining(PHONE_CAPSULE.split(" ").filter((c) => c.startsWith("max-regular:"))));
-    expect(cls(capsule)).toEqual(expect.arrayContaining(["max-regular:flex-nowrap", "max-regular:gap-0"]));
+    expect(cls(capsule)).toEqual(expect.arrayContaining(PHONE_CAPSULE.split(" ").filter((c) => c.startsWith(""))));
+    expect(cls(capsule)).toEqual(expect.arrayContaining(["flex-nowrap", "gap-0"]));
     expect(PHONE_CAPSULE).not.toContain("overflow-x-auto");
-    expect(PHONE_CAPSULE).toContain("max-regular:max-w-[11rem]");
+    expect(PHONE_CAPSULE).toContain("max-w-[11rem]");
     expect(HEADER_MAX_PHONE_ACTIONS).toBe(3);
     expect((HEADER_MAX_PHONE_ACTIONS + 1) * 44).toBeLessThanOrEqual(11 * 16);
     expect(PHONE_BAR_RIGHT).not.toContain("overflow-x-auto");
@@ -135,7 +135,7 @@ describe("header capsule: secondary cells + overflow are ONE neutral capsule on 
     const { container } = render(<PageHeader title="Budgets" overflow={[{ label: "Export", onSelect: () => {} }]} />);
     const capsule = container.querySelector(CAPSULE) as HTMLElement;
     expect(capsule.children.length).toBe(1);
-    expect(cls(capsule)).toEqual(expect.arrayContaining(["max-regular:h-11", "max-regular:rounded-full"]));
+    expect(cls(capsule)).toEqual(expect.arrayContaining(["h-11", "rounded-full"]));
   });
 
   it("more than three secondary actions go to the overflow menu; phones see only the overflow trigger (left) and the primary (right)", async () => {
@@ -154,21 +154,21 @@ describe("header capsule: secondary cells + overflow are ONE neutral capsule on 
     );
     const capsule = container.querySelector(CAPSULE) as HTMLElement;
     // phone-visible cells inside the capsule: only the overflow trigger (the four secondaries are hidden below regular)
-    const visible = Array.from(capsule.children).filter((el) => !cls(el).includes(HEADER_SECONDARY));
+    const visible = Array.from(capsule.children).filter((el) => !cls(el).includes("header-secondary"));
     expect(visible.length).toBe(1);
     expect(visible[0].getAttribute("data-slot")).toBe("overflow-trigger");
     // the primary is the separate, rightmost control
     const group = container.querySelector('[data-slot="page-header-actions"]') as HTMLElement;
     expect(group.lastElementChild?.getAttribute("aria-label")).toBe("Add account");
     expect(capsule.nextElementSibling).toBe(group.lastElementChild);
-    secondaries.forEach((label) => expect(cls(screen.getByRole("button", { name: label }))).toContain(HEADER_SECONDARY));
+    secondaries.forEach((label) => expect(cls(screen.getByRole("button", { name: label }))).toContain("header-secondary"));
     fireEvent.click(screen.getByRole("button", { name: "More actions" }));
     const menu = within(await screen.findByRole("menu", undefined, { timeout: 5000 }));
     expect(menu.getAllByRole("menuitem").map((i) => i.textContent)).toEqual(secondaries);
   });
 
   it("title column keeps its reserve: side tracks at least 44pt, title in the middle, the right group in the third column", () => {
-    expect(PHONE_BAR).toContain("max-regular:grid-cols-[auto_minmax(0,1fr)_auto]");
+    expect(PHONE_BAR).toContain("grid-cols-[auto_minmax(0,1fr)_auto]");
     const { container } = render(
       <PageHeader
         title="Goals"
@@ -179,17 +179,18 @@ describe("header capsule: secondary cells + overflow are ONE neutral capsule on 
         ]}
       />,
     );
-    expect(cls(container.querySelector('[data-slot="page-header-title-block"]'))).toContain("max-regular:col-start-2");
+    expect(cls(container.querySelector('[data-slot="page-header-title-block"]'))).toContain("col-start-2");
     const group = container.querySelector('[data-slot="page-header-actions"]');
-    expect(cls(group)).toContain("max-regular:col-start-3");
-    expect(cls(group)).toContain("max-regular:justify-self-end");
+    expect(cls(group)).toContain("col-start-3");
+    expect(cls(group)).toContain("justify-self-end");
   });
 
-  it("at regular and up the primary keeps its text label; the glass is phone-only", () => {
+  it("the primary keeps its accessible label (icon-only) and the glass has no breakpoint gate", () => {
     render(<PageHeader title="Budgets" actions={<Button>Add Budget</Button>} />);
     const primary = screen.getByRole("button", { name: "Add Budget" });
     expect(primary.textContent).toContain("Add Budget");
     expect(cls(primary.parentElement)).not.toContain("regular:hidden");
+    expect(PHONE.slice(0, 400)).not.toContain("@media (width < 40rem)");
     expect(PHONE).toContain(".glass-capsule {");
     expect(PHONE_BAR).not.toMatch(/\bregular:glass/);
   });

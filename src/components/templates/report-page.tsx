@@ -49,7 +49,6 @@ export interface ReportHeader {
   overflow?: OverflowAction[];
   actions?: React.ReactNode;
   className?: string;
-  actionsClassName?: string;
 }
 
 export interface ReportPageProps<TRaw, T> {
@@ -186,7 +185,6 @@ export function ReportPage<TRaw, T>({
         overflow={header?.overflow}
         actions={header?.actions}
         className={header?.className}
-        actionsClassName={header?.actionsClassName}
       />
       {filters ? <div data-slot="report-filters">{filters}</div> : null}
       <Suspense fallback={loadingNode}>{body}</Suspense>

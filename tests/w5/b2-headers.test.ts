@@ -9,7 +9,6 @@ const ROOT = process.cwd();
 const SECTION_PAGE_FILES = ["src/app/(app)/whats-new/page.tsx", "src/app/(app)/feedback/page.tsx"];
 const FILES = [...SECTION_PAGE_FILES, "src/app/(app)/categories/[id]/page.tsx"];
 
-const TITLE_TARGET_RE = /^text-2xl font-bold tracking-tight( truncate| flex items-center gap-2)?$/;
 const SUBTITLE_TARGET = "text-sm text-muted-foreground mt-0.5";
 const OLD_STRINGS = [
   "text-2xl font-semibold tracking-tight",
@@ -42,10 +41,8 @@ describe("W5-6 page headers", () => {
           expect(titles).toEqual([]);
           return;
         }
-        expect(titles.length).toBeGreaterThan(0);
-        for (const v of titles) {
-          expect(v).toMatch(TITLE_TARGET_RE);
-        }
+        // One top bar at every width: no page passes a title override any more.
+        expect(titles).toEqual([]);
       });
 
       it("every subtitleClassName equals the header target where present", () => {

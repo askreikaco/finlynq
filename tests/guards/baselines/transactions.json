@@ -17,9 +17,7 @@
       "suspense-null": 1
     },
     "src/app/(app)/transactions/_components/transactions-workspace.tsx": {
-      "min-h": 3,
-      "title-prop": 2,
-      "subtitle-prop": 1
+      "min-h": 3
     },
     "src/app/(app)/transactions/transfer/[linkId]/edit/page.tsx": {
       "suspense-null": 1,

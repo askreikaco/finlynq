@@ -28,27 +28,25 @@ export interface OverflowAction {
 }
 
 /**
- * Secondary header action: visible from regular (640px) up, moved to the overflow menu below it.
- * Viewport variant `max-regular:` (globals.css), not a container query (design-system-spec 3f).
+ * Secondary header action: hidden from the bar at EVERY width (one top bar, phone design everywhere); it must have a
+ * matching entry in the PageHeader `overflow` menu. The `header-secondary` token is the marker splitPhoneActions reads.
  */
-export const HEADER_SECONDARY = "max-regular:hidden";
+export const HEADER_SECONDARY = "header-secondary hidden";
 
 /** Alias of HEADER_SECONDARY, kept so existing callers keep working. */
 export const HEADER_DESKTOP_ONLY = HEADER_SECONDARY;
 
 /**
- * Sticky top bar, every size (owner D5). Pinned at the top of the scroll container: the window below
- * regular (safe-area inset), <main> from regular (top 0). z-30 above section labels (z-10).
- * From regular the bar is opaque (translucent background + blur, no glass).
- * Sticky is inert if any ancestor between the bar and the scroller has overflow-* other than visible/clip.
- * Keep ONE position class on the bar: cn()/twMerge drops sticky if a relative/absolute/fixed class is merged in.
+ * Sticky top bar, every width. Pinned at the top of the window (safe-area inset). z-30 above section labels (z-10),
+ * below the rail (z-50). Keep ONE position class on the bar: cn()/twMerge drops sticky if a relative/absolute/fixed
+ * class is merged in.
  */
-export const PHONE_BAR_STICKY =
-  "glass-bar sticky top-[var(--sat,0px)] z-30 regular:top-0 regular:bg-background/90 regular:backdrop-blur-sm";
+export const PHONE_BAR_STICKY = "glass-bar sticky top-[var(--sat,0px)] z-30";
 
 /**
- * Phone top bar (below regular), shared by PageHeader and the settings detail row. Adds to PHONE_BAR_STICKY:
- * full-bleed (-mx-4 cancels the app shell's px-4), a three-column grid, min-h --phone-header-h (3.75rem).
+ * The top bar, shared by PageHeader and the settings detail row, at EVERY width. Adds to PHONE_BAR_STICKY:
+ * `page-header-bleed` (globals.css) makes the bar span the FULL width of the main area right of the rail (back at the left
+ * edge, actions at the right edge, shell padding inside); a three-column grid, min-h --phone-header-h (3.75rem).
  * Columns: [left slot | title | right capsule]. The side tracks are min 2.75rem (one 44pt target) and
  * size to their content, so the title column is exactly the space between the MEASURED slots: a title or
  * subtitle can never run under the capsule. The title block is left-aligned in its column, next to the back button.
@@ -56,29 +54,28 @@ export const PHONE_BAR_STICKY =
  * No pt-[var(--sat)]: body already pads its in-flow top by --sat.
  */
 export const PHONE_BAR =
-  "glass-bar sticky top-[var(--sat,0px)] z-30 regular:top-0 regular:bg-background/90 regular:backdrop-blur-sm max-regular:-mx-4 max-regular:grid max-regular:min-h-[var(--phone-header-h)] max-regular:grid-cols-[auto_minmax(0,1fr)_auto] max-regular:gap-x-2 max-regular:items-center max-regular:px-4";
+  "glass-bar sticky top-[var(--sat,0px)] z-30 page-header-bleed grid min-h-[var(--phone-header-h)] grid-cols-[auto_minmax(0,1fr)_auto] gap-x-2 items-center";
 
 /** Left slot placeholder (no back target): keeps the title column aligned. */
-export const PHONE_BAR_SIDE = "hidden max-regular:flex max-regular:size-11 max-regular:shrink-0 max-regular:col-start-1 max-regular:row-start-1";
+export const PHONE_BAR_SIDE = "flex size-11 shrink-0 col-start-1 row-start-1";
 
 /** Title block: the middle grid column (between the measured slots). min-w-0 lets the title truncate.
  * pointer-events-none: taps reach the buttons. */
 export const PHONE_BAR_CENTER =
-  "max-regular:col-start-2 max-regular:row-start-1 max-regular:flex max-regular:min-w-0 max-regular:flex-col max-regular:items-start max-regular:justify-center max-regular:text-left max-regular:pointer-events-none";
+  "col-start-2 row-start-1 flex min-w-0 flex-col items-start justify-center text-left pointer-events-none";
 
-/** Class added to the primary action: below regular it is an icon-only 44px neutral cell in the capsule (globals.css). */
+/** Class added to the primary action: an icon-only 44px cell at every width (globals.css). */
 export const PHONE_PRIMARY_CLASS = "phone-icon-action";
 
 /**
  * Marks a non-primary header control (avatar link, status toggle, icon link) so it is never chosen as the primary
- * action. It stays a plain neutral capsule cell below regular (no accent fill).
+ * action. It stays a plain neutral capsule cell (no accent fill).
  */
 export const HEADER_CELL = "header-cell";
 
 /**
- * Marks the page's SAVE action (Add / Edit screens). Below regular it leaves the capsule and is its own round
- * yellow check button beside it (the iOS Notes "Done" pattern, globals.css .header-save); from regular up it is an
- * ordinary primary button with its label. The action keeps its own onClick / form / disabled; give it an
+ * Marks the page's SAVE action (Add / Edit screens). At every width it leaves the capsule and is its own round
+ * yellow check button beside it (the iOS Notes "Done" pattern, globals.css .header-save). The action keeps its own onClick / form / disabled; give it an
  * aria-label ("Save") and an icon child plus the visible text.
  */
 export const HEADER_SAVE = "header-save";
@@ -97,18 +94,12 @@ export function splitHeaderSave(actions: React.ReactNode): { save: React.ReactNo
   return { save, rest };
 }
 
-/** Title at regular and up: one system style at every size (owner D4, 28/800). text-3xl is the nearest
- * system step to 28px, so no arbitrary size. */
-export const HEADER_TITLE_CLASS = "text-3xl/9 font-extrabold tracking-tight";
-
-/** Title below regular: system scale (iOS headline is 17pt semibold; text-base is the nearest step), one line. */
+/** Title, every width: system scale (iOS headline is 17pt semibold; text-base is the nearest step), one line. */
 export const PHONE_BAR_TITLE =
-  "max-regular:max-w-full max-regular:text-base max-regular:font-semibold max-regular:tracking-normal max-regular:truncate max-regular:text-left";
+  "max-w-full text-base font-semibold tracking-normal truncate text-left";
 
-/** Subtitle, every size: muted, one line. Shown from regular up as a line under the title; below regular it
- * is a truncated caption (text-xs, the system caption step) left-aligned under the title. */
-export const HEADER_SUBTITLE_CLASS = "block text-sm text-muted-foreground mt-1";
-export const PHONE_BAR_SUBTITLE = "max-regular:mt-0 max-regular:w-full max-regular:truncate max-regular:text-left max-regular:text-xs";
+/** Subtitle, every width: a truncated muted caption (text-xs, the system caption step) left-aligned under the title. */
+export const PHONE_BAR_SUBTITLE = "block mt-0 w-full truncate text-left text-xs text-muted-foreground";
 
 /**
  * Icon cells in the capsule: at most this many phone-visible non-primary actions (icon buttons, HeaderStatus).
@@ -119,13 +110,12 @@ export const PHONE_BAR_SUBTITLE = "max-regular:mt-0 max-regular:w-full max-regul
 export const HEADER_MAX_PHONE_ACTIONS = 3;
 
 /**
- * Right group below regular (grid column 3), left to right: [secondary capsule][gap-2][PRIMARY]. The capsule
+ * Right group (grid column 3, every width), left to right: [secondary capsule][gap-2][PRIMARY]. The capsule
  * (data-slot="header-capsule") holds the neutral secondary 44px cells (icon cells, HeaderStatus, the overflow
- * trigger). The primary (or HEADER_SAVE) is its OWN round yellow 44px button, always rightmost. From regular the
- * group is the plain actions row (actionsClassName), primary still last.
+ * trigger). The primary (or HEADER_SAVE) is its OWN round yellow 44px button, always rightmost.
  */
 export const PHONE_BAR_RIGHT =
-  "max-regular:col-start-3 max-regular:row-start-1 max-regular:flex max-regular:min-w-0 max-regular:shrink-0 max-regular:flex-nowrap max-regular:items-center max-regular:justify-self-end";
+  "col-start-3 row-start-1 flex min-w-0 shrink-0 flex-nowrap items-center justify-self-end gap-2";
 
 /**
  * The capsule: ONE glass pill (44px high, no padding, no gaps) holding only icon cells, the primary (as the last
@@ -134,7 +124,7 @@ export const PHONE_BAR_RIGHT =
  * Icon buttons and text buttons never share a capsule (HIG), so text is never a cell.
  */
 export const PHONE_CAPSULE =
-  "glass-capsule flex items-center gap-2 max-regular:h-11 max-regular:max-w-[11rem] max-regular:min-w-0 max-regular:shrink-0 max-regular:flex-nowrap max-regular:gap-0 max-regular:rounded-full max-regular:p-0";
+  "glass-capsule flex h-11 max-w-[11rem] min-w-0 shrink-0 flex-nowrap items-center gap-0 rounded-full p-0";
 
 
 /**
@@ -153,6 +143,8 @@ export function HeaderStatus({ label, children }: { label: string; children: Rea
     </span>
   );
 }
+
+const SECONDARY_RE = /(^|\s)header-secondary(\s|$)/;
 
 /** Flatten Fragments so a fragment-wrapped action is seen as its own child (no DOM change). */
 function flattenActions(node: React.ReactNode): React.ReactNode[] {
@@ -181,7 +173,7 @@ export function withPhonePrimary(actions: React.ReactNode): React.ReactNode[] {
   items.forEach((c, i) => {
     if (!React.isValidElement(c) || isPhoneInvisible(c) || c.type === HeaderStatus) return;
     const cn0 = String((c.props as { className?: string }).className ?? "");
-    if (!cn0.includes(HEADER_SECONDARY) && !cn0.includes(HEADER_CELL)) idx = i;
+    if (!SECONDARY_RE.test(cn0) && !cn0.includes(HEADER_CELL)) idx = i;
   });
   if (idx < 0) return items;
   return items.map((c, i) => {
@@ -195,9 +187,9 @@ export function withPhonePrimary(actions: React.ReactNode): React.ReactNode[] {
   });
 }
 
-/** A secondary action: hidden below regular (HEADER_SECONDARY), so it never takes a phone slot. */
+/** A secondary action: hidden at every width (HEADER_SECONDARY), so it never takes a bar slot. */
 function isSecondaryNode(c: React.ReactNode): boolean {
-  return React.isValidElement(c) && String((c.props as { className?: string }).className ?? "").includes(HEADER_SECONDARY);
+  return React.isValidElement(c) && SECONDARY_RE.test(String((c.props as { className?: string }).className ?? ""));
 }
 
 /**
@@ -227,21 +219,18 @@ function textOf(node: React.ReactNode): string {
 }
 
 /**
- * Page header, one component for every size. The phone design is the base: below regular (640px) it is one
- * glass top bar (PHONE_BAR): [left 44px circle back | lead | spacer] [title left-aligned, subtitle under it]
- * [ONE glass capsule holding the primary action and the ⋯ overflow menu]. From regular up the same bar is
- * opaque, the title and subtitle use the system style, the primary action shows its label, and secondary
- * actions (HEADER_SECONDARY) appear inline. `className` and `actionsClassName` are the page's own layout
- * classes and apply at every size.
+ * Page header, one design at every width (owner 2026-10-13): one glass top bar (PHONE_BAR): [left 44px circle back |
+ * lead | spacer] [title left-aligned, subtitle under it] [ONE glass capsule holding the secondary icon cells and the
+ * ⋯ overflow menu, then the primary as its own round button]. The glass spans the main area right of the rail;
+ * the grid fills it edge to edge. There is no separate desktop layout.
  *
- * `actions` is the page's action node(s). Secondary buttons inside it must carry HEADER_SECONDARY and have a
- * matching entry in `overflow`; the primary stays visible at every size.
+ * `actions` is the page's action node(s). Secondary buttons inside it must carry HEADER_SECONDARY (hidden at every
+ * width) and have a matching entry in `overflow`; the primary stays visible.
  *
- * Capsule rule (phones): secondary items sit in ONE capsule (data-slot="header-capsule") on the left, each a 44px
- * slot: icon buttons, the overflow trigger and HeaderStatus indicators. The primary is a separate yellow round
- * button on the far right (primary = the main action, secondary = More). At most
- * HEADER_MAX_PHONE_ACTIONS phone-visible actions; extra secondary actions MUST go to the overflow menu.
- * Never put a spinner or any other control outside `actions`: it would render as a separate circle beside the capsule.
+ * Capsule rule: secondary items sit in ONE capsule (data-slot="header-capsule"), each a 44px slot: icon buttons,
+ * the overflow trigger and HeaderStatus indicators. The primary is a separate round button on the far right
+ * (primary = the main action, secondary = More). At most HEADER_MAX_PHONE_ACTIONS visible actions; extra secondary
+ * actions MUST go to the overflow menu. Never put a spinner or any other control outside `actions`.
  */
 export function PageHeader({
   title,
@@ -249,9 +238,7 @@ export function PageHeader({
   actions,
   overflow,
   className,
-  actionsClassName = "flex items-center gap-2",
   lead,
-  leadClassName = "flex items-center gap-3",
   belowTitle,
   backHref,
   backLabel,
@@ -261,7 +248,7 @@ export function PageHeader({
   subtitle?: React.ReactNode;
   actions?: React.ReactNode;
   overflow?: OverflowAction[];
-  /** Page layout classes for the bar (apply at every size). */
+  /** Page layout classes for the bar; the bar's grid layout always wins over conflicting ones. */
   className?: string;
   /**
    * @deprecated No-op since G2-07: the title is one system style at every size. Still accepted and ignored,
@@ -273,9 +260,11 @@ export function PageHeader({
    * Remove the prop at the call site.
    */
   subtitleClassName?: string;
+  /** @deprecated No-op: the right group is the fixed bar layout. Accepted and ignored. */
   actionsClassName?: string;
-  /** Node left of the title block (e.g. an avatar tile); wrapped with `leadClassName`. */
+  /** Node left of the title block (e.g. an avatar tile). */
   lead?: React.ReactNode;
+  /** @deprecated No-op: the left slot is part of the fixed bar grid. Accepted and ignored. */
   leadClassName?: string;
   /** Always-visible node under the h1 (e.g. badges). */
   belowTitle?: React.ReactNode;
@@ -297,7 +286,7 @@ export function PageHeader({
   const customize = usePageCustomizeRegistration();
   const hasRight = !!actions || (overflow?.length ?? 0) > 0 || !!customize;
   const h1 = (
-    <h1 data-slot="page-header-title" className={cn(HEADER_TITLE_CLASS, PHONE_BAR_TITLE)}>
+    <h1 data-slot="page-header-title" className={PHONE_BAR_TITLE}>
       {title}
     </h1>
   );
@@ -305,7 +294,7 @@ export function PageHeader({
     <div data-slot="page-header-title-block" className={PHONE_BAR_CENTER}>
       {h1}
       {subtitle ? (
-        <p data-slot="page-header-subtitle" className={cn(HEADER_SUBTITLE_CLASS, PHONE_BAR_SUBTITLE)}>
+        <p data-slot="page-header-subtitle" className={PHONE_BAR_SUBTITLE}>
           {subtitle}
         </p>
       ) : null}
@@ -323,7 +312,7 @@ export function PageHeader({
   return (
     <div data-slot="page-header" className={cn(className, PHONE_BAR)}>
       {hasLeft ? (
-        <div className={cn(leadClassName, "max-regular:contents")}>
+        <div className="contents">
           {effectiveBackHref ? (
             <BackButton href={effectiveBackHref} label={backLabel} className="justify-self-start" />
           ) : onBack ? (
@@ -339,7 +328,7 @@ export function PageHeader({
         </>
       )}
       {hasRight ? (
-        <div data-slot="page-header-actions" className={cn(actionsClassName, PHONE_BAR_RIGHT, "max-regular:gap-2")}>
+        <div data-slot="page-header-actions" className={PHONE_BAR_RIGHT}>
           {hasCapsule ? (
             <div data-slot="header-capsule" className={PHONE_CAPSULE}>
               {cells}
@@ -348,7 +337,7 @@ export function PageHeader({
               {customize ? <CustomizeButton onOpen={customize.onOpen} title={customize.title} /> : null}
             </div>
           ) : (
-            // Only secondary actions (hidden below regular): no capsule, so no empty glass pill on phones.
+            // Only secondary actions (hidden at every width): no capsule, so no empty glass pill.
             cells
           )}
           {primaryOwn ? primary : null}
@@ -361,7 +350,7 @@ export function PageHeader({
 
 /**
  * "Customize" (gear): opens the page's card sheet. Same group as More (the header capsule), an icon button with the
- * accessible name and tooltip "Customize". One 44px slot below regular (header-capsule cell rule in globals.css).
+ * accessible name and tooltip "Customize". One 44px slot (header-capsule cell rule in globals.css).
  */
 export function CustomizeButton({ onOpen, title = "Customize" }: { onOpen: () => void; title?: string }) {
   return (
@@ -379,7 +368,7 @@ export function CustomizeButton({ onOpen, title = "Customize" }: { onOpen: () =>
   );
 }
 
-/** "⋯" button (44px below regular) + accessible menu. Shown at every size (the More group). */
+/** "⋯" button (44px) + accessible menu. Shown at every width (the More group). */
 export function OverflowMenu({ items }: { items: OverflowAction[] }) {
   return (
     <DropdownMenu>

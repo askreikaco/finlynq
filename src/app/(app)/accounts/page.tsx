@@ -316,7 +316,7 @@ export default function AccountsPage() {
         title="Accounts"
         subtitle="Overview of your assets, liabilities, and net worth"
         width="report"
-        header={{ actions: createAccountLink, actionsClassName: "contents" }}
+        header={{ actions: createAccountLink }}
       >
         <OnboardingTips page="accounts" />
         <EmptyState

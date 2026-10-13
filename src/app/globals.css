@@ -433,99 +433,158 @@ html {
   }
 }
 
-/* iOS 26-style liquid glass, phones only (below regular, 40rem = 640px). Three parts: the round back button
-   (.glass-capsule on BackButton), the page top bar (.glass-bar), and the grouped action capsule
-   (.glass-capsule on [data-slot=header-capsule]). The regular+ layout never receives any of it. */
+/* iOS 26-style liquid glass, every width (one top bar, owner 2026-10-13). Three parts: the round back button
+ (.glass-capsule on BackButton), the page top bar (.glass-bar), and the grouped action capsule
+ (.glass-capsule on [data-slot=header-capsule]). */
+.glass-capsule {
+  background: var(--glass-capsule-bg);
+  -webkit-backdrop-filter: blur(var(--glass-capsule-blur)) saturate(var(--glass-capsule-sat));
+  backdrop-filter: blur(var(--glass-capsule-blur)) saturate(var(--glass-capsule-sat));
+  border: 1px solid var(--glass-capsule-border);
+  box-shadow: var(--glass-capsule-shadow);
+}
+/* Every cell in the capsule is one 44x44 slot (no gaps; the capsule is the only glass): icon buttons,
+   the overflow trigger and HeaderStatus. The primary is the last icon cell (phone-icon-action), neutral like the rest. Buttons are bare; hover and press
+   state is a round tint inside the slot, not a box. */
+[data-slot="header-capsule"] > :is(button, a) {
+  width: 2.75rem;
+  min-width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  flex-shrink: 0;
+  border-radius: 9999px;
+}
+[data-slot="header-capsule"] > :not(:is(button, a)) {
+  width: 2.75rem;
+  min-width: 2.75rem;
+  height: 2.75rem;
+  flex-shrink: 0;
+  border-radius: 9999px;
+}
+[data-slot="header-capsule"] > :is(button, a):not([data-variant="default"]) {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+[data-slot="header-capsule"] > :is(button, a):not([data-variant="default"]):hover,
+[data-slot="header-capsule"] > :is(button, a):not([data-variant="default"]):active,
+[data-slot="header-capsule"] > :is(button, a).phone-icon-action:hover,
+[data-slot="header-capsule"] > :is(button, a).phone-icon-action:active {
+  background: oklch(0 0 0 / 7%);
+}
+.dark [data-slot="header-capsule"] > :is(button, a):not([data-variant="default"]):hover,
+.dark [data-slot="header-capsule"] > :is(button, a):not([data-variant="default"]):active,
+.dark [data-slot="header-capsule"] > :is(button, a).phone-icon-action:hover,
+.dark [data-slot="header-capsule"] > :is(button, a).phone-icon-action:active {
+  background: oklch(1 0 0 / 12%);
+}
+/* Primary action INSIDE the capsule (only when a HEADER_SAVE is also present; else the primary is its own yellow round button, see .header-save rule): neutral like every
+   other cell (no accent fill). Icon-only: the text is hidden with font-size 0; its accessible name is the
+   aria-label PageHeader sets. Hover and press reuse the cell tint rules above. */
+[data-slot="header-capsule"] > :is(button, a).phone-icon-action {
+  background: transparent;
+  border-color: transparent;
+  color: var(--foreground);
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  font-size: 0;
+  gap: 0;
+}
+/* The page's Save (PageHeader HEADER_SAVE): its own round yellow check button beside the capsule, a 44px
+   circle in the primary colour with a 20px glyph and no label (the iOS Notes "Done"). */
+[data-slot="page-header-actions"] > :is(.header-save, .phone-icon-action) {
+  width: 2.75rem;
+  min-width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  border-color: transparent;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: var(--glass-edge);
+  font-size: 0;
+  gap: 0;
+}
+[data-slot="page-header-actions"] > :is(.header-save, .phone-icon-action) svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0;
+}
+[data-slot="page-header-actions"] > :is(.header-save, .phone-icon-action):disabled {
+  opacity: 0.5;
+}
+/* Every primary's icon is the same 20px, centred, whatever size or margin the page gave it (a page's own
+   h-4 / mr-1 / mr-2 must not make one page's plus bigger or off-centre than another's). */
+[data-slot="header-capsule"] > :is(button, a).phone-icon-action svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0;
+}
+/* The top bar: translucent tint, blur, saturate, 1px bottom rim. */
+.glass-bar {
+  background: var(--glass-bar-bg);
+  -webkit-backdrop-filter: blur(var(--glass-bar-blur)) saturate(var(--glass-bar-sat));
+  backdrop-filter: blur(var(--glass-bar-blur)) saturate(var(--glass-bar-sat));
+  border-bottom: 1px solid var(--glass-bar-border);
+  box-shadow: var(--glass-edge);
+  /* Own compositor layer: a sticky backdrop-filter bar over scrolling content repaints every frame
+     on iOS otherwise (laggy scroll). No visual change. */
+  transform: translateZ(0);
+  will-change: transform;
+}
+/* Opaque fallbacks, light and dark, after the base rules so they win at equal specificity. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass-bar,
+  .dark .glass-bar {
+    background: var(--background);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .glass-capsule,
+  .dark .glass-capsule {
+    background: var(--card);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .glass-bar,
+  .dark .glass-bar {
+    background: var(--background);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .glass-capsule,
+  .dark .glass-capsule {
+    background: var(--card);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* Page header bar bleed. The bar sits inside the page column (often max-w-report, centred), but it is FULL WIDTH of
+   the main area right of the rail at every width: the side margins grow it to (100vw - rail) around the column
+   centre, and the side padding equals the app shell's own (px-4, regular 1.5rem, wide 2rem), so back sits at the
+   left edge, the action capsule at the right edge. The rail (z-50, fixed, 5rem + safe-area wide from 40rem) is never covered. */
+.page-header-bleed {
+  --header-rail: 0px;
+  --header-pad: 1rem;
+  margin-inline: calc((100% - (100vw - var(--header-rail))) / 2);
+  padding-inline: var(--header-pad);
+}
+@media (width >= 40rem) {
+  .page-header-bleed { --header-rail: calc(5rem + var(--sal, 0px)); --header-pad: 1.5rem; }
+}
+@media (width >= 64rem) {
+  .page-header-bleed { --header-pad: 2rem; }
+}
+
+/* Sheet close (ui/sheet.tsx): the iOS round glass X, a 44px circle with a 20px glyph below regular (640px). */
 @media (width < 40rem) {
-  .glass-capsule {
-    background: var(--glass-capsule-bg);
-    -webkit-backdrop-filter: blur(var(--glass-capsule-blur)) saturate(var(--glass-capsule-sat));
-    backdrop-filter: blur(var(--glass-capsule-blur)) saturate(var(--glass-capsule-sat));
-    border: 1px solid var(--glass-capsule-border);
-    box-shadow: var(--glass-capsule-shadow);
-  }
-  /* Every cell in the capsule is one 44x44 slot (no gaps; the capsule is the only glass): icon buttons,
-     the overflow trigger and HeaderStatus. The primary is the last icon cell (phone-icon-action), neutral like the rest. Buttons are bare; hover and press
-     state is a round tint inside the slot, not a box. */
-  [data-slot="header-capsule"] > :is(button, a) {
-    width: 2.75rem;
-    min-width: 2.75rem;
-    height: 2.75rem;
-    padding: 0;
-    flex-shrink: 0;
-    border-radius: 9999px;
-  }
-  [data-slot="header-capsule"] > :not(:is(button, a)) {
-    width: 2.75rem;
-    min-width: 2.75rem;
-    height: 2.75rem;
-    flex-shrink: 0;
-    border-radius: 9999px;
-  }
-  [data-slot="header-capsule"] > :is(button, a):not([data-variant="default"]) {
-    background: transparent;
-    border-color: transparent;
-    box-shadow: none;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
-  [data-slot="header-capsule"] > :is(button, a):not([data-variant="default"]):hover,
-  [data-slot="header-capsule"] > :is(button, a):not([data-variant="default"]):active,
-  [data-slot="header-capsule"] > :is(button, a).phone-icon-action:hover,
-  [data-slot="header-capsule"] > :is(button, a).phone-icon-action:active {
-    background: oklch(0 0 0 / 7%);
-  }
-  .dark [data-slot="header-capsule"] > :is(button, a):not([data-variant="default"]):hover,
-  .dark [data-slot="header-capsule"] > :is(button, a):not([data-variant="default"]):active,
-  .dark [data-slot="header-capsule"] > :is(button, a).phone-icon-action:hover,
-  .dark [data-slot="header-capsule"] > :is(button, a).phone-icon-action:active {
-    background: oklch(1 0 0 / 12%);
-  }
-  /* Primary action INSIDE the capsule (only when a HEADER_SAVE is also present; else the primary is its own yellow round button, see .header-save rule): neutral like every
-     other cell (no accent fill). Icon-only: the text is hidden with font-size 0; its accessible name is the
-     aria-label PageHeader sets. Hover and press reuse the cell tint rules above. */
-  [data-slot="header-capsule"] > :is(button, a).phone-icon-action {
-    background: transparent;
-    border-color: transparent;
-    color: var(--foreground);
-    box-shadow: none;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-    font-size: 0;
-    gap: 0;
-  }
-  /* The page's Save (PageHeader HEADER_SAVE): its own round yellow check button beside the capsule, a 44px
-     circle in the primary colour with a 20px glyph and no label (the iOS Notes "Done"). */
-  [data-slot="page-header-actions"] > :is(.header-save, .phone-icon-action) {
-    width: 2.75rem;
-    min-width: 2.75rem;
-    height: 2.75rem;
-    padding: 0;
-    flex-shrink: 0;
-    border-radius: 9999px;
-    border-color: transparent;
-    background: var(--primary);
-    color: var(--primary-foreground);
-    box-shadow: var(--glass-edge);
-    font-size: 0;
-    gap: 0;
-  }
-  [data-slot="page-header-actions"] > :is(.header-save, .phone-icon-action) svg {
-    width: 1.25rem;
-    height: 1.25rem;
-    margin: 0;
-  }
-  [data-slot="page-header-actions"] > :is(.header-save, .phone-icon-action):disabled {
-    opacity: 0.5;
-  }
-  /* Every primary's icon is the same 20px, centred, whatever size or margin the page gave it (a page's own
-     h-4 / mr-1 / mr-2 must not make one page's plus bigger or off-centre than another's). */
-  [data-slot="header-capsule"] > :is(button, a).phone-icon-action svg {
-    width: 1.25rem;
-    height: 1.25rem;
-    margin: 0;
-  }
-  /* Sheet close (ui/sheet.tsx): the iOS round glass X, a 44px circle with a 20px glyph below regular. */
   [data-slot="sheet-close"] {
     width: 2.75rem;
     height: 2.75rem;
@@ -534,47 +593,6 @@ html {
   [data-slot="sheet-close"] svg {
     width: 1.25rem;
     height: 1.25rem;
-  }
-  /* The top bar: translucent tint, blur, saturate, 1px bottom rim. */
-  .glass-bar {
-    background: var(--glass-bar-bg);
-    -webkit-backdrop-filter: blur(var(--glass-bar-blur)) saturate(var(--glass-bar-sat));
-    backdrop-filter: blur(var(--glass-bar-blur)) saturate(var(--glass-bar-sat));
-    border-bottom: 1px solid var(--glass-bar-border);
-    box-shadow: var(--glass-edge);
-    /* Own compositor layer: a sticky backdrop-filter bar over scrolling content repaints every frame
-       on iOS otherwise (laggy scroll). No visual change. */
-    transform: translateZ(0);
-    will-change: transform;
-  }
-  /* Opaque fallbacks, light and dark, after the base rules so they win at equal specificity. */
-  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-    .glass-bar,
-    .dark .glass-bar {
-      background: var(--background);
-      -webkit-backdrop-filter: none;
-      backdrop-filter: none;
-    }
-    .glass-capsule,
-    .dark .glass-capsule {
-      background: var(--card);
-      -webkit-backdrop-filter: none;
-      backdrop-filter: none;
-    }
-  }
-  @media (prefers-reduced-transparency: reduce) {
-    .glass-bar,
-    .dark .glass-bar {
-      background: var(--background);
-      -webkit-backdrop-filter: none;
-      backdrop-filter: none;
-    }
-    .glass-capsule,
-    .dark .glass-capsule {
-      background: var(--card);
-      -webkit-backdrop-filter: none;
-      backdrop-filter: none;
-    }
   }
 }
 

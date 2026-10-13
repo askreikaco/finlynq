@@ -306,9 +306,7 @@ function CategoryPageContent() {
       {/* Header */}
       <PageHeader
         className="flex flex-wrap items-start justify-between gap-3"
-        leadClassName="flex min-w-0 items-center gap-3"
         title={category.name ?? "Category"}
-        titleClassName="text-2xl font-bold tracking-tight truncate"
         backHref={categoriesBackHref}
         backLabel="Back to Categories"
         actions={

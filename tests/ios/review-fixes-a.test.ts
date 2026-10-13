@@ -15,9 +15,9 @@ const pageFab = read("src/components/mobile/page-fab.tsx");
 
 const GLASS_SEL = '[data-slot="header-capsule"] > :is(button, a):not([data-variant="default"])';
 
-// Text of the phone-only glass block (from its opening @media to the tab bar section).
+// Text of the top-bar glass block (from .glass-capsule to the tab bar section).
 function phoneGlassBlock(): string {
-  const start = css.indexOf("@media (width < 40rem) {\n  .glass-capsule {");
+  const start = css.indexOf("\n.glass-capsule {");
   const end = css.indexOf("/* Mobile bottom tab bar", start);
   expect(start).toBeGreaterThan(-1);
   return css.slice(start, end);
@@ -37,9 +37,9 @@ describe("M1: header glass excludes primary-filled buttons", () => {
 
   it("non-primary action children are bare on the capsule; the exclusion is on the rule", () => {
     const block = phoneGlassBlock();
-    expect(block).toContain(`${GLASS_SEL} {\n    background: transparent;`);
+    expect(block).toContain(`${GLASS_SEL} {\n  background: transparent;`);
     // Sizing/shape rule stays unscoped so primary CTAs become round 44px too.
-    const sizing = bodyOf(block, '  [data-slot="header-capsule"] > :is(button, a)');
+    const sizing = bodyOf(block, '[data-slot="header-capsule"] > :is(button, a)');
     expect(sizing).toContain("border-radius: 9999px");
     expect(sizing).toContain("height: 2.75rem");
     expect(sizing).not.toContain("background");
@@ -69,8 +69,8 @@ describe("m1: dark fallbacks in both no-backdrop blocks", () => {
     expect(at).toBeGreaterThan(-1);
     expect(mq).toBeGreaterThan(at);
     const supports = block.slice(at, mq);
-    expect(supports).toContain(".glass-bar,\n    .dark .glass-bar {");
-    expect(supports).toContain(".glass-capsule,\n    .dark .glass-capsule {");
+    expect(supports).toContain(".glass-bar,\n  .dark .glass-bar {");
+    expect(supports).toContain(".glass-capsule,\n  .dark .glass-capsule {");
     expect(supports).toContain("-webkit-backdrop-filter: none;");
   });
 
@@ -79,8 +79,8 @@ describe("m1: dark fallbacks in both no-backdrop blocks", () => {
     const mq = block.indexOf("@media (prefers-reduced-transparency: reduce)");
     expect(mq).toBeGreaterThan(-1);
     const tail = block.slice(mq);
-    expect(tail).toContain(".glass-bar,\n    .dark .glass-bar {");
-    expect(tail).toContain(".glass-capsule,\n    .dark .glass-capsule {");
+    expect(tail).toContain(".glass-bar,\n  .dark .glass-bar {");
+    expect(tail).toContain(".glass-capsule,\n  .dark .glass-capsule {");
     expect(tail).toContain("backdrop-filter: none;");
   });
 });

@@ -11,13 +11,6 @@
     "src/app/(app)/import/page.tsx": {
       "suspense-null": 1
     },
-    "src/app/(app)/import/pending/_components/reconcile-header.tsx": {
-      "title-prop": 1
-    },
-    "src/app/(app)/import/pending/_components/staged-list-view.tsx": {
-      "title-prop": 2,
-      "subtitle-prop": 1
-    },
     "src/app/(app)/import/pending/page.tsx": {
       "suspense-null": 1
     }

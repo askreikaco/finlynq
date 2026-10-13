@@ -416,13 +416,9 @@ export default function AccountDetailPage() {
   return (
     <div className="w-full space-y-6">
       {/* The back control is PageHeader's automatic back (level 2 under /accounts). */}
-      {/* actionsClassName has no w-full: on phones the actions sit in PageHeader's glass capsule, and a
-          100%-width capsule ran off the right edge. */}
       <PageHeader
         className="flex flex-wrap items-center justify-between gap-3"
         title={account.name}
-        titleClassName="text-2xl font-bold tracking-tight"
-        actionsClassName="flex min-w-0 flex-wrap items-center gap-1.5 regular:w-auto"
         lead={
           <div className={`${HEADER_DESKTOP_ONLY} h-10 w-10 shrink-0 rounded-xl flex items-center justify-center text-sm font-bold ${account.type === "A" ? "bg-pos/10 text-pos" : "bg-destructive/10 text-destructive"}`}>
             {(account.name ?? "?").charAt(0)}
