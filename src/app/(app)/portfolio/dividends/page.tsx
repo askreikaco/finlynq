@@ -40,6 +40,12 @@ import { ErrorState } from "@/components/error-state";
 import { EmptyState } from "@/components/empty-state";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { ChipGroup, ReportFilterSheet } from "../_components/report-controls";
+import { useCacheFirstJson } from "@/lib/data/use-cache-first";
+import { MetricRangeSelect } from "@/components/metric-range-select";
+import { useMetricRange } from "@/lib/metrics/use-metric-range";
+import { cardProps, countByMonth, makeCardResolver, sumByMonth } from "@/lib/metrics/series";
+import { formatCurrency } from "@/lib/currency";
+import { localDateISO } from "@/lib/utils/date";
 
 interface CurrencyCell {
   amount: number;
@@ -96,6 +102,16 @@ export default function DividendsPage() {
   // One list at every size class (no table). The toolbar layout still follows the size class.
   const regular = useAppSizeClass() !== "compact";
   const [openGroup, setOpenGroup] = useState<GroupRow | null>(null);
+  // Cards: this month vs last month by default (or the selected range vs the one before), from every dividend row.
+  const metricRange = useMetricRange();
+  const rangeArg = useMemo(
+    () => ({ selection: metricRange.selection, explicit: metricRange.explicit, period: metricRange.period }),
+    [metricRange.selection, metricRange.explicit, metricRange.period],
+  );
+  const rowsRes = useCacheFirstJson<{ success?: boolean; data?: { rows?: Array<{ date: string; amount: number; currency: string; reportingAmount: number | null; reportingCurrency: string | null }> } }>(
+    "/api/portfolio/dividends",
+  );
+  const divRows = rowsRes.data?.success ? (rowsRes.data.data?.rows ?? null) : null;
 
   // Build the shared param set (used by both the fetch and the CSV link) so
   // the export always reflects the active mode + filters.
@@ -152,16 +168,32 @@ export default function DividendsPage() {
   const summaryMetrics = useMemo<MetricItem[]>(() => {
     if (!data) return [];
     const items: MetricItem[] = [];
+    const through = localDateISO().slice(0, 7);
+    const card = (ccy: string) => makeCardResolver(rangeArg, ccy);
+    // Period figure (this month by default) with the page's total in the note: the big value, badge and delta share one basis.
+    const moneyItem = (label: string, ccy: string, total: number, points: ReturnType<typeof sumByMonth>): MetricItem => {
+      const c = card(ccy)(points, "sum");
+      return {
+        label, value: c.value ?? total, currency: ccy, tone: "auto", showSign: true, ...cardProps(c),
+        ...(c.value != null ? { note: `Total in view: ${formatCurrency(total, ccy)}` } : {}),
+      };
+    };
     if (reporting) {
-      items.push({ label: `Total (${reportingCcy})`, value: data.totals.amount, currency: reportingCcy, tone: "auto", showSign: true });
+      const usable = divRows && divRows.length > 0 && divRows.every((r) => r.reportingAmount != null && (r.reportingCurrency ?? reportingCcy).toUpperCase() === reportingCcy.toUpperCase());
+      items.push(moneyItem(`Total (${reportingCcy})`, reportingCcy, data.totals.amount, usable ? sumByMonth(divRows, (r) => r.date, (r) => r.reportingAmount ?? 0, through) : []));
     } else {
       for (const [ccy, total] of Object.entries(data.totals.byCurrency)) {
-        items.push({ label: `Total (${ccy})`, value: total, currency: ccy, tone: "auto", showSign: true });
+        const mine = divRows ? divRows.filter((r) => r.currency === ccy) : [];
+        items.push(moneyItem(`Total (${ccy})`, ccy, total, mine.length > 0 ? sumByMonth(mine, (r) => r.date, (r) => r.amount, through) : []));
       }
     }
-    items.push({ label: "Dividend rows", value: data.totals.rowCount });
+    const rowsCard = makeCardResolver(rangeArg)(divRows && divRows.length > 0 ? countByMonth(divRows, (r) => r.date, through) : [], "sum", undefined, "count");
+    items.push({
+      label: "Dividend rows", value: rowsCard.value ?? data.totals.rowCount, ...cardProps(rowsCard),
+      ...(rowsCard.value != null ? { note: `Total in view: ${data.totals.rowCount}` } : {}),
+    });
     return items;
-  }, [data, reporting, reportingCcy]);
+  }, [data, reporting, reportingCcy, divRows, rangeArg]);
 
   const periodLabel = [
     groupBy === "year" ? "By year" : groupBy === "quarter" ? "By quarter" : "By holding",
@@ -308,7 +340,12 @@ export default function DividendsPage() {
         </ReportFilterSheet>
       )}
 
-      {!loading && data && data.totals.rowCount > 0 && <MetricGrid metrics={summaryMetrics} />}
+      {!loading && data && data.totals.rowCount > 0 && (
+        <>
+          <MetricRangeSelect value={metricRange.selection} onChange={metricRange.setSelection} />
+          <MetricGrid metrics={summaryMetrics} />
+        </>
+      )}
 
       {reporting && data && (data.totals.unratedCount ?? 0) > 0 && (
         <p className="text-xs text-warning">

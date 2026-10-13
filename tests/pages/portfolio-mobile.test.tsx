@@ -93,7 +93,9 @@ describe("Portfolio summary and holdings cards (one page, every size)", () => {
     const summary = document.querySelector("[data-slot=portfolio-summary]") as HTMLElement;
     expect(summary).toBeTruthy();
     expect(summary.querySelector("[class*='md:hidden']")).toBeNull();
-    const hero = summary.firstElementChild as HTMLElement;
+    // The Total value hero is the ONE MetricCard (hero size); the range control sits above it.
+    expect(summary.querySelector("[data-slot=metric-range]")).toBeTruthy();
+    const hero = summary.querySelector("[data-testid=metric-total-value]") as HTMLElement;
     expect(within(hero).getByText(formatCurrency(65500000, "VND"))).toBeTruthy();
     expect(within(hero).getByText(/\+.*100,000.*\(\+0\.15%\)/)).toBeTruthy();
     expect(within(hero).getByText("Total gain")).toBeTruthy();

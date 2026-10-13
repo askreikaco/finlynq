@@ -54,6 +54,7 @@ export function sumByMonth<T>(
   dateOf: (item: T) => string | null | undefined,
   valueOf: (item: T) => number,
   throughMonth?: string,
+  fromMonth?: string,
 ): MonthPoint[] {
   const byMonth = new Map<string, number>();
   for (const it of items ?? []) {
@@ -66,12 +67,34 @@ export function sumByMonth<T>(
   const months = Array.from(byMonth.keys()).sort();
   if (months.length === 0) return [];
   const end = throughMonth && throughMonth > months[months.length - 1] ? throughMonth : months[months.length - 1];
-  return monthsBetween(months[0], end).map((month) => ({ month, value: Math.round((byMonth.get(month) ?? 0) * 100) / 100 }));
+  // `fromMonth`: the list is known to be complete from there on (e.g. a tax-year filter), so earlier empty months are real zeros.
+  const start = fromMonth && fromMonth < months[0] ? fromMonth : months[0];
+  return monthsBetween(start, end).map((month) => ({ month, value: Math.round((byMonth.get(month) ?? 0) * 100) / 100 }));
 }
 
 /** Count of rows per month (same density rule as sumByMonth). */
-export function countByMonth<T>(items: readonly T[] | null | undefined, dateOf: (item: T) => string | null | undefined, throughMonth?: string): MonthPoint[] {
-  return sumByMonth(items, dateOf, () => 1, throughMonth);
+export function countByMonth<T>(
+  items: readonly T[] | null | undefined,
+  dateOf: (item: T) => string | null | undefined,
+  throughMonth?: string,
+  fromMonth?: string,
+): MonthPoint[] {
+  return sumByMonth(items, dateOf, () => 1, throughMonth, fromMonth);
+}
+
+/** Running total of a (dense) flow series: the lifetime figure at each month end. */
+export function cumulate(points: readonly MonthPoint[]): MonthPoint[] {
+  let running = 0;
+  return [...points]
+    .sort((a, b) => a.month.localeCompare(b.month))
+    .map((p) => ({ month: p.month, value: Math.round((running += p.value) * 100) / 100 }));
+}
+
+/** The latest point at or before `month` (0 before the series starts, e.g. a lifetime total before the first row). */
+export function valueAt(points: readonly MonthPoint[], month: string): number {
+  let v = 0;
+  for (const p of points) if (p.month <= month) v = p.value; else break;
+  return v;
 }
 
 /**
