@@ -3,7 +3,8 @@
  * Not wired into any page, session or hook yet.
  *
  * Layout, one database per user: `finlynq-lf-v1-<sha256(userId) first 8 bytes hex>`
- *   meta  : "current" -> { snapshotId, createdAt }   (the only pointer; plaintext metadata)
+ *   meta  : "current" -> { snapshotId, createdAt, layers? }   (the only pointer; plaintext metadata. layers 2 = every
+ *           blob has the passkey inner layer; absent = 1; see ../crypto/passkey-seal.ts)
  *   blobs : "<snapshotId>|<seq 8 digits>" -> sealed bytes (seq 0 = manifest, 1..n = chunks)
  * The device key lives in its own database (device-key-provider.ts).
  *
@@ -15,6 +16,8 @@
  * that user's database and returns null. The caller then has no snapshot and re-hydrates from the APIs.
  */
 import { deviceKeys, type DeviceKeyProvider } from "../crypto/device-key-provider";
+import { innerKeyFor } from "../crypto/passkey-seal";
+import { isPasskeyLockedError } from "../crypto/passkey-unlock";
 import {
   allLfDbNames,
   deleteDb,
@@ -48,6 +51,8 @@ export interface SaveSnapshotContext extends SnapshotStoreContext {
 interface Pointer {
   snapshotId: string;
   createdAt: number;
+  /** 2 when every blob has the passkey inner layer. Absent = 1 (pointers written before passkey unlock). */
+  layers?: 1 | 2;
 }
 
 export async function readCacheDbName(userId: string): Promise<string> {
@@ -119,7 +124,10 @@ async function pruneOthers(db: IDBDatabase, keep: string): Promise<void> {
   await txDone(tx);
 }
 
-/** Seals `rows` under the device key and makes them the current snapshot for this user. */
+/**
+ * Seals `rows` under the device key (and the passkey inner key while enrolled) and makes them the current snapshot.
+ * Throws PasskeyLockedError while passkey-locked: nothing is written.
+ */
 export async function saveSnapshot(
   userId: string,
   deviceId: string,
@@ -127,9 +135,11 @@ export async function saveSnapshot(
   ctx: SaveSnapshotContext,
 ): Promise<void> {
   if (!idbSupported()) return;
+  const inner = await innerKeyFor(userId, "snapshot");
   const key = await deviceKeys.getOrCreateDeviceKey(userId);
   const sealed = await encodeSnapshot(rows, {
     key,
+    inner,
     userId,
     deviceId,
     build: ctx.build,
@@ -145,7 +155,7 @@ export async function saveSnapshot(
     [sealed.manifestBlob, ...sealed.chunkBlobs].forEach((blob, seq) => store.put(blob, blobKey(sealed.snapshotId, seq)));
     await txDone(tx);
 
-    await switchPointer(db, { snapshotId: sealed.snapshotId, createdAt: sealed.createdAt });
+    await switchPointer(db, { snapshotId: sealed.snapshotId, createdAt: sealed.createdAt, layers: sealed.layers });
 
     await pruneOthers(db, sealed.snapshotId).catch(() => {
       // Best effort: the new snapshot is already current. The next save prunes again.
@@ -156,6 +166,8 @@ export async function saveSnapshot(
 }
 
 async function loadInner(userId: string, deviceId: string, ctx: SnapshotStoreContext, keys: DeviceKeyProvider): Promise<SnapshotRows | null> {
+  // Checked first: while locked nothing below runs (no key deletion, no wipe).
+  const inner = await innerKeyFor(userId, "snapshot");
   const key = await keys.findDeviceKey(userId);
   if (!key) {
     // No key means no snapshot can be read: drop the (empty) key database as well.
@@ -166,9 +178,14 @@ async function loadInner(userId: string, deviceId: string, ctx: SnapshotStoreCon
   try {
     const pointer = await readPointer(db);
     if (!pointer) return null;
+    const layers: 1 | 2 = pointer.layers === 2 ? 2 : 1;
+    // A snapshot whose layer count does not match the passkey state is stale: wiped by the caller (disposable copy).
+    if ((inner !== null) !== (layers === 2)) throw new Error("snapshot layers do not match the passkey state");
     const blobs = await readBlobs(db, pointer.snapshotId);
     return await decodeSnapshot(blobs, {
       key,
+      inner,
+      layers,
       userId,
       deviceId,
       build: ctx.build,
@@ -185,7 +202,9 @@ export async function loadSnapshot(userId: string, deviceId: string, ctx: Snapsh
   if (!idbSupported()) return null;
   try {
     return await loadInner(userId, deviceId, ctx, deviceKeys);
-  } catch {
+  } catch (err) {
+    // Passkey-locked: the snapshot stays where it is and the caller goes to the network.
+    if (isPasskeyLockedError(err)) return null;
     await wipeData(userId).catch(() => {});
     return null;
   }

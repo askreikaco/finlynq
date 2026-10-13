@@ -3,7 +3,8 @@
 /**
  * Passkey unlock for the on-device offline copy (local-first, flagged: localStorage "finlynq.lf.passkey" === "1").
  * Local-only: nothing is registered with the server. It does NOT unlock the server data or replace the password.
- * Hidden unless the flag is on.
+ * Once turned on, the offline outbox and snapshot are sealed under a second layer that needs this passkey (see the
+ * lifecycle module). Hidden unless the flag is on.
  */
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,10 +15,12 @@ import { countUnsyncedWrites } from "@/lib/data/local-write-queue";
 import {
   disablePasskeyUnlock,
   enablePasskeyUnlock,
+  forgetPasskeyAndDiscardOffline,
   getPasskeyUnlockStatus,
   hasPasskeyUnlockedSession,
   isPasskeyUnlockOn,
   unlockWithPasskey,
+  usePasskeyLock,
   type PasskeyResult,
 } from "@/lib/data/passkey-unlock";
 
@@ -28,21 +31,31 @@ const MESSAGES: Record<string, string> = {
   failed: "Could not complete passkey unlock. Nothing was changed. Try again.",
   not_enabled: "Passkey unlock is not set up on this device.",
   wrong_passkey: "That passkey does not match this device's setup. Your saved data was not changed.",
+  already_enabled: "Passkey unlock is already on for this browser.",
+  untrusted: "Passkey unlock works only on a trusted device. Nothing was changed.",
+  offline_off: "Turn on offline mode first. Passkey unlock protects the offline copy.",
+  unsynced_blocked: "Unsynced changes are waiting on this device. Nothing was changed.",
 };
 
 function describe(r: PasskeyResult): string {
-  return r.ok ? MESSAGES.ok : MESSAGES[r.code] ?? MESSAGES.failed;
+  if (r.ok) return MESSAGES.ok;
+  if (r.code === "failed" && r.failed) {
+    return `Could not turn passkey unlock on: ${r.failed} offline ${r.failed === 1 ? "change" : "changes"} could not be protected. Nothing was changed.`;
+  }
+  return MESSAGES[r.code] ?? MESSAGES.failed;
 }
 
 export function PasskeyUnlockCard() {
   // UnlockGate renders only a spinner before the client session check, so this card never SSRs with content.
   const [on] = useState(() => isPasskeyUnlockOn());
   const [userId] = useState<string | null>(() => getSessionInfo()?.userId ?? null);
+  const passkey = usePasskeyLock();
   const [supported, setSupported] = useState<boolean | null>(null);
   const [enabled, setEnabled] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
   const [confirmCount, setConfirmCount] = useState<number | null>(null);
+  const [forgetCount, setForgetCount] = useState<number | null>(null);
 
   const refresh = async (uid: string) => {
     const st = await getPasskeyUnlockStatus(uid);
@@ -88,12 +101,18 @@ export function PasskeyUnlockCard() {
     else await run(() => disablePasskeyUnlock(userId, { unsyncedCount: 0, confirmed: false }));
   };
 
+  const onForget = async () => {
+    const n = await countUnsyncedWrites().catch(() => 0);
+    setForgetCount(n);
+  };
+
   return (
     <Card data-testid="passkey-unlock-card">
       <CardHeader>
         <CardTitle>Passkey unlock (beta)</CardTitle>
         <p className="mt-1 text-sm text-muted-foreground">
-          Unlock the saved copy on this device with Face ID, Touch ID or Windows Hello. It stays on this device, is never sent to the
+          Protect the saved copy on this device with Face ID, Touch ID or Windows Hello. Once it is on, the offline copy can be
+          read only after you use the passkey, and only in this browser tab until you reload. It stays on this device, is never sent to the
           server, and does not replace your password or unlock your server data.
         </p>
       </CardHeader>
@@ -110,6 +129,11 @@ export function PasskeyUnlockCard() {
         )}
         {supported === true && enabled && (
           <div className="flex flex-wrap items-center gap-2">
+            {passkey.locked && (
+              <Button size="sm" disabled={busy} onClick={() => void run(() => unlockWithPasskey(userId))} data-testid="passkey-unlock-now">
+                Unlock now
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -122,7 +146,14 @@ export function PasskeyUnlockCard() {
             <Button variant="outline" size="sm" disabled={busy} onClick={() => void onDisable()} data-testid="passkey-unlock-disable">
               Turn off
             </Button>
-            {hasPasskeyUnlockedSession(userId) && <span className="text-xs text-muted-foreground">Verified this session.</span>}
+            <Button variant="outline" size="sm" disabled={busy} onClick={() => void onForget()} data-testid="passkey-unlock-forget">
+              Forget passkey and discard offline copies
+            </Button>
+            {passkey.locked ? (
+              <span className="text-xs text-muted-foreground" data-testid="passkey-unlock-locked">Locked: unlock with passkey</span>
+            ) : (
+              hasPasskeyUnlockedSession(userId) && <span className="text-xs text-muted-foreground">Verified this session.</span>
+            )}
           </div>
         )}
         {message && (
@@ -141,6 +172,17 @@ export function PasskeyUnlockCard() {
           const n = confirmCount ?? 0;
           setConfirmCount(null);
           void run(() => disablePasskeyUnlock(userId, { unsyncedCount: n, confirmed: true }));
+        }}
+      />
+      <ConfirmDialog
+        open={forgetCount !== null}
+        onOpenChange={(o) => !o && setForgetCount(null)}
+        title="Forget passkey and discard offline copies"
+        description={`${forgetCount ?? 0} unsynced ${forgetCount === 1 ? "change" : "changes"} on this device will be discarded, and the offline copy is deleted. Use this only if you have lost the passkey. Everything already synced stays on the server.`}
+        confirmLabel="Discard"
+        onConfirm={() => {
+          setForgetCount(null);
+          void run(() => forgetPasskeyAndDiscardOffline(userId));
         }}
       />
     </Card>

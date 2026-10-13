@@ -131,12 +131,13 @@ async function seedFromSnapshot(p: SnapshotPersistDeps, s: Session): Promise<boo
   const now = p.now ?? Date.now;
   const ctx = { build: p.build, schemaVer: p.schemaVer ?? READ_CACHE_SCHEMA_VER };
   try {
+    // Checked before the age wipe: a locked page (DEK or passkey) deletes nothing here.
+    if (!p.allowPersist()) return false;
     const age = await snapshotAgeMs(p.userId, now());
     if (age !== null && age > (p.maxAgeMs ?? TRUSTED_DEVICE_LIFETIME_MS)) {
       await wipeUser(p.userId).catch(() => undefined);
       return false;
     }
-    if (!p.allowPersist()) return false;
     const rows: SnapshotRows | null = await loadSnapshot(p.userId, p.deviceId, ctx);
     if (!rows || !p.allowPersist()) return false;
     const sink = recordingStore(s);
