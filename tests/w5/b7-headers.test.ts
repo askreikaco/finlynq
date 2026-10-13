@@ -11,7 +11,7 @@ const FILES = [
 ];
 
 /** Pages whose header moved onto a page template (titleClassName removed by the migration; see the test below). */
-const TEMPLATE_OWNED = new Set(["src/app/(app)/transactions/audit/page.tsx"]);
+const TEMPLATE_OWNED = new Set(["src/app/(app)/transactions/audit/page.tsx", "src/app/(app)/subscriptions/page.tsx"]);
 
 const TITLE_TARGET = "text-2xl font-bold tracking-tight";
 const TITLE_ALLOWED = /^text-2xl font-bold tracking-tight( truncate| flex items-center gap-2)?$/;

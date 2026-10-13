@@ -119,7 +119,7 @@ describe("SectionCard / SectionLabel / StatTile", () => {
     const { container } = render(<SectionCard label="Net worth">body</SectionCard>);
     expect(screen.getByRole("heading", { name: "Net worth" })).toBeTruthy();
     const body = container.querySelector("[data-slot=section-card-body]")!;
-    expect(cls(body)).toEqual(expect.arrayContaining(["rounded-xl", "p-4", "bg-card", "border-border/50"]));
+    expect(cls(body)).toEqual(expect.arrayContaining(["rounded-xl", "p-4", "surface-card", "border-border/50"]));
     expect(body.textContent).toBe("body");
   });
 

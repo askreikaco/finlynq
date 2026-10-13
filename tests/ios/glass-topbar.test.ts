@@ -36,7 +36,7 @@ describe("glass-bar material (globals.css, phones only)", () => {
 
   it("has a translucent tint and backdrop blur with saturate, with the -webkit- prefix", () => {
     const body = resolvedDecls(css, ".glass-bar", "light");
-    expect(body).toMatch(/background:\s*oklch\(1 0 0 \/ 38%\)/);
+    expect(body).toMatch(/background:\s*oklch\(1 0 0 \/ 72%\)/);
     expect(body).toMatch(/-webkit-backdrop-filter:\s*blur\(32px\) saturate\(1\.8\)/);
     expect(body).toMatch(/\n\s+backdrop-filter:\s*blur\(32px\) saturate\(1\.8\)/);
   });
