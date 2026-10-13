@@ -15,6 +15,7 @@ import { ErrorState } from "@/components/error-state";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CspSafeBar } from "@/components/csp-safe-bar";
 import { Amount, DetailSheet, ListRow, MetricGrid, SectionCard, type DetailItem } from "@/components/mobile";
+import { CARD_ROW_GRID } from "@/components/mobile/section-card";
 import { SectionPage } from "@/components/templates/section-page";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
 import { isLoanCompleted } from "@/lib/loan-status";
@@ -48,7 +49,7 @@ type WhatIf = { extraPayment: number; monthsSaved: number; interestSaved: number
 
 function LoansSkeleton() {
   return (
-    <div className="mx-auto w-full max-w-report space-y-6">
+    <div className="w-full space-y-6">
       <div>
         <div className="h-8 w-48 animate-shimmer rounded-lg" />
         <div className="h-4 w-72 animate-shimmer rounded-lg mt-2" />
@@ -208,8 +209,7 @@ function LoansPageContent() {
       title="Loans & Debt"
       subtitle="Track balances, amortization schedules, and payoff strategies"
       width="report"
-      center
-      header={{
+            header={{
         actions: (
           <Button id="add-loan-btn" onClick={() => router.push("/loans/new")}>
             <Plus className="h-4 w-4 mr-1" /> Add Loan
@@ -235,7 +235,7 @@ function LoansPageContent() {
       )}
 
       {activeLoans.length > 0 && (
-        <SectionCard label="Active" padded={false} className="divide-y divide-border/50 px-3">
+        <SectionCard label="Active" padded={false} className={`divide-y divide-border/50 px-3 ${CARD_ROW_GRID}`}>
           {activeLoans.map((loan) => (
             <LoanRow key={loan.id} loan={loan} paidOff={false} displayCurrency={displayCurrency} onOpen={() => setDetailId(loan.id)} />
           ))}

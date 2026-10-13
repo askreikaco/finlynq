@@ -37,7 +37,6 @@ const CONVERTED = [
   "src/app/(app)/admin/(env)/system/page.tsx",
   "src/app/(app)/family/_components/overview-cards.tsx",
   "src/app/(app)/family/_components/overview-tab.tsx",
-  "src/components/more-menu.tsx",
   "src/app/(app)/feedback/page.tsx",
   "src/app/(app)/whats-new/page.tsx",
   "src/app/(app)/admin/announcements/page.tsx",
@@ -73,10 +72,10 @@ describe("Batch 5: one column at every width (no wide: / regular: column switche
     expect(src).toMatch(/<Sheet\b/);
   });
 
-  it("more-menu groups stack in one column", () => {
+  it("more-menu is full width: groups one column on phone, 2 at regular, 3 at wide", () => {
     const src = read("src/components/more-menu.tsx");
-    expect(src).not.toMatch(/wide:grid-cols-2/);
-    expect(src).not.toMatch(/wide:max-w-3xl/);
+    expect(src).toMatch(/grid-cols-1[^"]*regular:grid-cols-2[^"]*wide:grid-cols-3/);
+    expect(src).not.toMatch(/wide:max-w-3xl|max-w-xl|mx-auto/);
   });
 
   it("family overview headline and chart stacks are single-column", () => {

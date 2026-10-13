@@ -305,7 +305,7 @@ describe("non-admin pages", () => {
     expect(header).toMatch(/return \(\s*<>\s*<PageHeader\b/);
     expect(header).toMatch(/if \(embedded\) \{[\s\S]*?<h2 /);
     const surface = read("src/components/import/staged-review-surface.tsx");
-    expect(surface).toMatch(/<div className="mx-auto flex w-full max-w-report flex-col gap-4">\s*<ReconcileHeader/);
+    expect(surface).toMatch(/<div className="flex w-full flex-col gap-4">\s*<ReconcileHeader/);
   });
 
   it("no header-only wrapper: no page or component in (app) holds a PageHeader in a justify-between row or a bare div", () => {

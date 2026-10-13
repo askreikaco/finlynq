@@ -369,7 +369,7 @@ export default function AccountDetailPage() {
   usePageCustomize(account ? { onOpen: () => setCustomizeOpen(true) } : null);
 
   if (!account && loadFailed) return (
-    <div className="mx-auto w-full max-w-report space-y-6">
+    <div className="w-full space-y-6">
       <PageHeader title="Account" backHref="/accounts" backLabel="Back to Accounts" />
       <ErrorState
         title="Account not found"
@@ -379,7 +379,7 @@ export default function AccountDetailPage() {
   );
 
   if (!account) return (
-    <div className="mx-auto w-full max-w-report space-y-6">
+    <div className="w-full space-y-6">
       <PageHeader title="Account" backHref="/accounts" backLabel="Back to accounts" />
       <div className="grid grid-cols-1 regular:grid-cols-3 gap-4">
         {[1, 2, 3].map((i) => <div key={i} className="h-24 animate-shimmer rounded-xl" />)}
@@ -414,7 +414,7 @@ export default function AccountDetailPage() {
   );
 
   return (
-    <div className="mx-auto w-full max-w-report space-y-6">
+    <div className="w-full space-y-6">
       {/* The back control is PageHeader's automatic back (level 2 under /accounts). */}
       {/* actionsClassName has no w-full: on phones the actions sit in PageHeader's glass capsule, and a
           100%-width capsule ran off the right edge. */}

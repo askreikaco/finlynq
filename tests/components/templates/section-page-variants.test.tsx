@@ -53,7 +53,6 @@ describe("SectionPage variants", () => {
     ["doc", "max-w-doc"],
     ["console", "max-w-console"],
     ["section", "max-w-section"],
-    ["report", "max-w-report"],
   ] as const)("width=%s applies %s", (width, cls) => {
     render(
       <SectionPage id={`v-w-${width}`} title="W" backFallback="/x" width={width}>
@@ -61,6 +60,15 @@ describe("SectionPage variants", () => {
       </SectionPage>,
     );
     expect(screen.getByTestId(`v-w-${width}-root`)).toHaveClass(cls);
+  });
+
+  it("width=report is full width (no max-width token, no mx-auto even with center)", () => {
+    render(
+      <SectionPage id="v-w-report" title="W" backFallback="/x" width="report" center>
+        <p>body</p>
+      </SectionPage>,
+    );
+    expect(screen.getByTestId("v-w-report-root").className).not.toMatch(/max-w-|mx-auto/);
   });
 
   it("width=none applies no max-width token", () => {

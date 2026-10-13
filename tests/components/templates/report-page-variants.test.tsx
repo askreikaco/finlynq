@@ -64,7 +64,7 @@ describe("ReportPage variants", () => {
         </ReportPage>,
       );
       expect(screen.getByTestId("d-root").className).toBe(
-        "mx-auto w-full space-y-6 max-w-report pb-[var(--form-bottom-pad)]",
+        "w-full space-y-6 pb-[var(--form-bottom-pad)]",
       );
     });
 

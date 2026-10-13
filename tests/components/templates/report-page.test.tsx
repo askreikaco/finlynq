@@ -70,7 +70,7 @@ describe("ReportPage", () => {
         {() => <p>body</p>}
       </ReportPage>,
     );
-    expect(screen.getByTestId("tax-root").className).toContain("max-w-report");
+    expect(screen.getByTestId("tax-root").className).not.toMatch(/max-w-|mx-auto/);
   });
 
   it("renders the filters slot when given and omits it otherwise", () => {

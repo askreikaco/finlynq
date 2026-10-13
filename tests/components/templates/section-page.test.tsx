@@ -51,7 +51,7 @@ describe("SectionPage", () => {
         <p>body</p>
       </SectionPage>,
     );
-    expect(screen.getByTestId("w-report-root")).toHaveClass("max-w-report");
+    expect(screen.getByTestId("w-report-root")).not.toHaveClass("max-w-report");
     expect(screen.getByTestId("w-report-root")).not.toHaveClass("max-w-section");
   });
 
