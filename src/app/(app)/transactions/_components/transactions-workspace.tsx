@@ -1023,6 +1023,7 @@ export function TransactionsWorkspace({
             isLoadingMore={isLoadingMore}
             onOpen={handleOpenRow}
             showAccountName={!locked}
+            singleColumn={splitView}
             transferPeers={transferPeers}
             emptyState={
               <EmptyState
