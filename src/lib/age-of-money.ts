@@ -5,42 +5,21 @@ const { transactions, categories } = schema;
 
 type IncomeRecord = { date: string; amount: number; remaining: number };
 type AgeEntry = { date: string; ageInDays: number };
+export type AgeOfMoneyRow = { date: string; amount: number };
+export type AgeOfMoneyResult = { ageInDays: number; trend: number; history: AgeEntry[] };
 
 /**
- * Age of Money (FIFO):
- * For the last 10 expenses, trace each dollar back to when it was received as income.
- * The "age" is the average number of days between income receipt and spending.
+ * Pure FIFO core of Age of Money. `incomeRows` ascending by date; `last10` = the 10 newest expenses, `older10` = the
+ * 10 before them (both newest first, as the queries return them). Split out of calculateAgeOfMoney so the health
+ * series can evaluate the same calculation as of a past month end (income and expenses up to that date).
  */
-export async function calculateAgeOfMoney(userId: string): Promise<{
-  ageInDays: number;
-  trend: number;
-  history: AgeEntry[];
-}> {
-  // Get all income transactions ordered by date ascending (FIFO pool)
-  const incomeRows = await db
-    .select({
-      date: transactions.date,
-      amount: transactions.amount,
-    })
-    .from(transactions)
-    .leftJoin(categories, eq(transactions.categoryId, categories.id))
-    .where(and(eq(transactions.userId, userId), eq(categories.type, "I")))
-    .orderBy(asc(transactions.date))
-    .all();
-
-  // Get the last 10 expense transactions ordered by date descending
-  const expenseRows = await db
-    .select({
-      date: transactions.date,
-      amount: transactions.amount,
-    })
-    .from(transactions)
-    .leftJoin(categories, eq(transactions.categoryId, categories.id))
-    .where(and(eq(transactions.userId, userId), eq(categories.type, "E")))
-    .orderBy(desc(transactions.date))
-    .limit(10)
-    .all();
-
+export function computeAgeOfMoney(
+  incomeRows: readonly AgeOfMoneyRow[],
+  last10: readonly AgeOfMoneyRow[],
+  older10: readonly AgeOfMoneyRow[],
+): AgeOfMoneyResult {
+  const expenseRows = last10;
+  const olderExpenseRows = older10;
   if (incomeRows.length === 0 || expenseRows.length === 0) {
     return { ageInDays: 0, trend: 0, history: [] };
   }
@@ -108,19 +87,6 @@ export async function calculateAgeOfMoney(userId: string): Promise<{
   );
 
   // Calculate 30-day trend: compare current age to what it was ~30 days ago
-  const olderExpenseRows = await db
-    .select({
-      date: transactions.date,
-      amount: transactions.amount,
-    })
-    .from(transactions)
-    .leftJoin(categories, eq(transactions.categoryId, categories.id))
-    .where(and(eq(transactions.userId, userId), eq(categories.type, "E")))
-    .orderBy(desc(transactions.date))
-    .limit(10)
-    .offset(10)
-    .all();
-
   let trend = 0;
   if (olderExpenseRows.length > 0) {
     // Rebuild pool for older calculation
@@ -170,4 +136,55 @@ export async function calculateAgeOfMoney(userId: string): Promise<{
   }
 
   return { ageInDays: currentAge, trend, history };
+}
+
+/**
+ * Age of Money (FIFO):
+ * For the last 10 expenses, trace each dollar back to when it was received as income.
+ * The "age" is the average number of days between income receipt and spending.
+ */
+export async function calculateAgeOfMoney(userId: string): Promise<AgeOfMoneyResult> {
+  // Get all income transactions ordered by date ascending (FIFO pool)
+  const incomeRows = await db
+    .select({
+      date: transactions.date,
+      amount: transactions.amount,
+    })
+    .from(transactions)
+    .leftJoin(categories, eq(transactions.categoryId, categories.id))
+    .where(and(eq(transactions.userId, userId), eq(categories.type, "I")))
+    .orderBy(asc(transactions.date))
+    .all();
+
+  // Get the last 10 expense transactions ordered by date descending
+  const expenseRows = await db
+    .select({
+      date: transactions.date,
+      amount: transactions.amount,
+    })
+    .from(transactions)
+    .leftJoin(categories, eq(transactions.categoryId, categories.id))
+    .where(and(eq(transactions.userId, userId), eq(categories.type, "E")))
+    .orderBy(desc(transactions.date))
+    .limit(10)
+    .all();
+
+  if (incomeRows.length === 0 || expenseRows.length === 0) {
+    return { ageInDays: 0, trend: 0, history: [] };
+  }
+
+  const olderExpenseRows = await db
+    .select({
+      date: transactions.date,
+      amount: transactions.amount,
+    })
+    .from(transactions)
+    .leftJoin(categories, eq(transactions.categoryId, categories.id))
+    .where(and(eq(transactions.userId, userId), eq(categories.type, "E")))
+    .orderBy(desc(transactions.date))
+    .limit(10)
+    .offset(10)
+    .all();
+
+  return computeAgeOfMoney(incomeRows, expenseRows, olderExpenseRows);
 }

@@ -40,6 +40,10 @@ import { ErrorState } from "@/components/error-state";
 import { EmptyState } from "@/components/empty-state";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { ChipGroup, ReportFilterSheet, monthLabel, signedPercent } from "../_components/report-controls";
+import { MetricRangeSelect } from "@/components/metric-range-select";
+import { useMetricRange } from "@/lib/metrics/use-metric-range";
+import { cardProps, countByMonth, makeCardResolver, sumByMonth } from "@/lib/metrics/series";
+import { localDateISO } from "@/lib/utils/date";
 
 // Phase 3 follow-up (2026-05-26): short_close = a Buy that covered a short
 // position; gain inverts (cost − buy_price). short_open = the audit-marker
@@ -231,6 +235,11 @@ export default function RealizedGainsPage() {
   // One structure per size class (list on compact, table + toolbar from regular), never both in the DOM.
   const regular = useAppSizeClass() !== "compact";
   const [openLot, setOpenLot] = useState<ApiRow | null>(null);
+  const metricRange = useMetricRange();
+  const rangeArg = useMemo(
+    () => ({ selection: metricRange.selection, explicit: metricRange.explicit, period: metricRange.period }),
+    [metricRange.selection, metricRange.explicit, metricRange.period],
+  );
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -308,16 +317,33 @@ export default function RealizedGainsPage() {
 
   const summaryMetrics = useMemo<MetricItem[]>(() => {
     const items: MetricItem[] = [];
+    // Monthly history of the closed lots in view (their close dates). A tax-year load is complete for that year, so
+    // its empty months are real zeros; earlier months were not loaded and give no comparison.
+    const today = localDateISO().slice(0, 7);
+    const through = taxYear && `${taxYear}-12` < today ? `${taxYear}-12` : today;
+    const from = taxYear ? `${taxYear}-01` : undefined;
+    const money = (label: string, ccy: string, total: number, rows: ApiRow[], valueOf: (r: ApiRow) => number): MetricItem => {
+      const c = makeCardResolver(rangeArg, ccy)(rows.length > 0 ? sumByMonth(rows, (r) => r.closeDate, valueOf, through, from) : [], "sum");
+      return {
+        label, value: c.value ?? total, currency: ccy, tone: "auto", showSign: true, ...cardProps(c),
+        ...(c.value != null ? { note: `Total in view: ${formatCurrency(total, ccy)}` } : {}),
+      };
+    };
     if (showUnified && data?.totalRealizedGainInBase != null) {
-      items.push({ label: `Realized (${unifiedCurrency})`, value: visibleTotalInBase, currency: unifiedCurrency, tone: "auto", showSign: true });
+      const complete = visibleRows.every((r) => r.realizedGainInBase != null);
+      items.push(money(`Realized (${unifiedCurrency})`, unifiedCurrency, visibleTotalInBase, complete ? visibleRows : [], (r) => r.realizedGainInBase ?? 0));
     } else {
       for (const [ccy, t] of Object.entries(visibleByCurrency)) {
-        items.push({ label: `Realized (${ccy})`, value: t.realizedGain, currency: ccy, tone: "auto", showSign: true });
+        items.push(money(`Realized (${ccy})`, ccy, t.realizedGain, visibleRows.filter((r) => r.currency === ccy), (r) => r.realizedGain));
       }
     }
-    items.push({ label: "Closed lots", value: visibleRows.length });
+    const lots = makeCardResolver(rangeArg)(visibleRows.length > 0 ? countByMonth(visibleRows, (r) => r.closeDate, through, from) : [], "sum", undefined, "count");
+    items.push({
+      label: "Closed lots", value: lots.value ?? visibleRows.length, ...cardProps(lots),
+      ...(lots.value != null ? { note: `Total in view: ${visibleRows.length}` } : {}),
+    });
     return items;
-  }, [data, showUnified, unifiedCurrency, visibleTotalInBase, visibleByCurrency, visibleRows.length]);
+  }, [data, showUnified, unifiedCurrency, visibleTotalInBase, visibleByCurrency, visibleRows, taxYear, rangeArg]);
 
   // FINLYNQ-193 — CSV now reflects the active hide-zero + group-by state, so
   // the download byte-matches what's on screen. Built CLIENT-SIDE from the
@@ -495,7 +521,12 @@ export default function RealizedGainsPage() {
         </ReportFilterSheet>
       )}
 
-      {!loading && data && data.rows.length > 0 && <MetricGrid metrics={summaryMetrics} />}
+      {!loading && data && data.rows.length > 0 && (
+        <>
+          <MetricRangeSelect value={metricRange.selection} onChange={metricRange.setSelection} />
+          <MetricGrid metrics={summaryMetrics} />
+        </>
+      )}
 
       <section aria-label="Closed lots" className="space-y-2">
         {loading ? (

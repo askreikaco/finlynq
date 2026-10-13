@@ -84,6 +84,12 @@ export type HealthData = {
    */
   netWorthBasis?: "market" | "ledger";
   netWorthNote?: string;
+  /**
+   * Month-by-month score / savings rate / DTI (oldest first, last point = the current month = the figures above),
+   * present when requested with ?history=N. Drives the Financial Health and Debt-to-Income cards' sparkline, badge
+   * and signed difference.
+   */
+  history?: { month: string; score: number; savingsRatePct: number | null; dtiPct: number | null }[];
 };
 
 export type SpotlightItem = {

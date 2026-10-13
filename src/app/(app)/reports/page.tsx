@@ -17,6 +17,11 @@ import { formatCompactNumber } from "@/lib/utils/number";
 import { exportCsv } from "@/lib/csv-export";
 import { CHART_COLORS } from "@/lib/chart-colors";
 import { todayISO } from "@/lib/utils/date";
+import { MetricRangeSelect } from "@/components/metric-range-select";
+import { MetricCard } from "@/components/metric-card";
+import { useMetricRange } from "@/lib/metrics/use-metric-range";
+import { compareCaption, monthsBetween, seriesWindow, shiftMonth, resolvePeriod, type Period as MetricPeriod } from "@/lib/metrics/period";
+import { cardProps, makeCardResolver, monthEndBalances, resolveRatioCard, sumByMonth } from "@/lib/metrics/series";
 import { getPresetRange } from "@/lib/reports/preset-range";
 import { AccountFilter } from "./_components/account-filter";
 import { serializeAccountIds } from "@/lib/reports/account-filter";
@@ -49,7 +54,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { CustomizeCardsSheet, MetricGrid, useCardLayout, usePageCustomize } from "@/components/mobile";
+import { CustomizeCardsSheet, MetricGrid, MetricItemCard, useCardLayout, usePageCustomize, type MetricItem } from "@/components/mobile";
 import { SectionPage } from "@/components/templates/section-page";
 import {
   GroupedStatementRows,
@@ -231,6 +236,31 @@ export default function ReportsPage() {
   );
   const yoyData: YoYData | null = yoyRes.data && typeof yoyRes.data === "object" ? yoyRes.data : null;
 
+  // Metric cards: the ONE MetricCard design. A monthly income / expense history (a second read of the trends endpoint,
+  // same filters) feeds them: the selected metric range (default this month) against the period before it.
+  const metricRange = useMetricRange();
+  const metricWin = useMemo(() => seriesWindow(metricRange.period), [metricRange.period]);
+  const lastDayOf = (m: string) => `${m}-${String(new Date(Number(m.slice(0, 4)), Number(m.slice(5, 7)), 0).getDate()).padStart(2, "0")}`;
+  const monthlyRes = useCacheFirstJson<TrendsData>(
+    currencyLoading ? null : `/api/reports/trends?startDate=${metricWin.from}-01&endDate=${lastDayOf(metricWin.to)}&period=monthly&groupBy=category&metrics=1${biz}${acctParam}&currency=${curr}`,
+    { keepPrevious: true },
+  );
+  const monthly = monthlyRes.data && typeof monthlyRes.data === "object" && Array.isArray(monthlyRes.data.timeseries) ? monthlyRes.data.timeseries : null;
+  // The report range itself (Net Savings block): compared with the preceding period of the same number of months when it starts on a 1st.
+  const reportMonths = useMemo(() => monthsBetween(startDate, endDate), [startDate, endDate]);
+  const reportAligned = startDate.endsWith("-01") && reportMonths.length > 0;
+  const reportPrevFrom = reportAligned ? shiftMonth(reportMonths[0], -reportMonths.length) : reportMonths[0];
+  const reportRes = useCacheFirstJson<TrendsData>(
+    currencyLoading || !reportAligned ? null : `/api/reports/trends?startDate=${reportPrevFrom}-01&endDate=${endDate}&period=monthly&groupBy=category&metrics=1${biz}${acctParam}&currency=${curr}`,
+    { keepPrevious: true },
+  );
+  const reportMonthly = reportRes.data && typeof reportRes.data === "object" && Array.isArray(reportRes.data.timeseries) ? reportRes.data.timeseries : null;
+  // Balance-sheet net worth: month-end history of the account balances (not available per account selection).
+  const nwHistoryRes = useCacheFirstJson<{ series?: Array<{ date: string; value: number }> }>(
+    currencyLoading || accountIds.length > 0 ? null : "/api/net-worth-history?period=all",
+    { keepPrevious: true },
+  );
+
   // Sankey data
   const sankeyIncome = useMemo(() => {
     if (!trendsData) return [];
@@ -331,65 +361,75 @@ export default function ReportsPage() {
     );
   }
 
+  // Summary cards. Value = the metric period's figure (this month by default) with badge / delta / sparkline of the same
+  // basis; the report range's own total stays in the note.
+  const caption = compareCaption(metricRange.selection);
+  const resolveFlow = makeCardResolver(metricRange, displayCurrency);
+  const incomePts = monthly ? sumByMonth(monthly, (p) => p.period, (p) => p.income, metricWin.to, metricWin.from) : [];
+  const expensePts = monthly ? sumByMonth(monthly, (p) => p.period, (p) => p.expenses, metricWin.to, metricWin.from) : [];
+  const netPts = incomePts.map((p, i) => ({ month: p.month, value: p.value - (expensePts[i]?.value ?? 0) }));
+  const incomeCard = resolveFlow(incomePts, "sum");
+  const expenseCard = resolveFlow(expensePts, "sum");
+  const netCard = resolveFlow(netPts, "sum");
+  const rateCard = resolveRatioCard({ num: netPts, den: incomePts, period: metricRange.period, caption });
+  const reportNote = (v: string) => `${startDate} to ${endDate}: ${v}`;
+  const summaryMetrics: MetricItem[] = trendsData
+    ? [
+        {
+          id: "report-income", label: "Total Income", icon: TrendingUp, iconTone: "emerald", tone: "pos", sparkColor: "#10b981",
+          value: incomeCard.value ?? trendsData.totalIncome, currency: displayCurrency, ...cardProps(incomeCard),
+          ...(incomeCard.value != null ? { note: reportNote(formatCurrency(trendsData.totalIncome, displayCurrency)) } : {}),
+        },
+        {
+          id: "report-expenses", label: "Total Expenses", icon: TrendingDown, iconTone: "rose", tone: "none", valueClassName: "text-destructive", sparkColor: "#f43f5e", invertTone: true,
+          value: expenseCard.value ?? trendsData.totalExpenses, currency: displayCurrency, ...cardProps(expenseCard),
+          ...(expenseCard.value != null ? { note: reportNote(formatCurrency(trendsData.totalExpenses, displayCurrency)) } : {}),
+        },
+        {
+          id: "report-net-savings", label: "Net Savings", icon: DollarSign, iconTone: "indigo", tone: "auto", sparkColor: "#6366f1",
+          value: netCard.value ?? trendsData.netSavings, currency: displayCurrency, ...cardProps(netCard),
+          ...(netCard.value != null ? { note: reportNote(formatCurrency(trendsData.netSavings, displayCurrency)) } : {}),
+        },
+        {
+          id: "report-savings-rate", label: "Savings Rate", icon: PiggyBank, iconTone: "violet", sparkColor: "#8b5cf6",
+          value: <span>{rateCard.value ?? trendsData.savingsRate}%</span>,
+          valueClassName: (rateCard.value ?? trendsData.savingsRate) >= 0 ? "text-pos" : "text-destructive",
+          ...cardProps(rateCard),
+          ...(rateCard.value != null ? { note: reportNote(`${trendsData.savingsRate}%`) } : {}),
+        },
+      ]
+    : [];
+
+  // Net Savings block (income tab): the report range against the preceding period of the same number of months.
+  const reportPeriod: MetricPeriod | null = reportAligned
+    ? { start: startDate, end: endDate, months: reportMonths, monthAligned: true }
+    : null;
+  const reportNet = (() => {
+    if (!reportPeriod || !reportMonthly || !trendsData) return null;
+    const inc = sumByMonth(reportMonthly, (p) => p.period, (p) => p.income, reportMonths[reportMonths.length - 1], reportPrevFrom);
+    const exp = sumByMonth(reportMonthly, (p) => p.period, (p) => p.expenses, reportMonths[reportMonths.length - 1], reportPrevFrom);
+    const net = inc.map((p, i) => ({ month: p.month, value: p.value - (exp[i]?.value ?? 0) }));
+    return makeCardResolver({ selection: { range: "custom", from: startDate, to: endDate }, explicit: false, period: reportPeriod }, displayCurrency)(net, "sum", trendsData.netSavings);
+  })();
+  // Balance-sheet net worth: month-end balance of the as-of month vs the month before.
+  const balanceNet = (() => {
+    if (!balanceSheet) return null;
+    const asOf = resolvePeriod({ range: "this_month" }, balanceSheet.date || endDate);
+    const pts = monthEndBalances(nwHistoryRes.data?.series ?? null, asOf.months[0]);
+    return makeCardResolver({ selection: { range: "this_month" }, explicit: false, period: asOf }, displayCurrency)(pts, "last", balanceSheet.netWorth);
+  })();
+
   // Summary metrics and trend chart, keyed by REPORT_CARDS ids; rendered in the user's saved order.
   const cardNodes: Record<string, ReactNode> = {
     summary: (
       <>
       {trendsData && (
-        <div className="grid grid-cols-2 gap-4 regular:grid-cols-4">
-          <Card className="card-hover">
-            <CardContent className="pt-4 pb-4">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-pos/10 text-pos">
-                  <TrendingUp className="h-3.5 w-3.5" />
-                </div>
-                <span className="text-xs text-muted-foreground font-medium">Total Income</span>
-              </div>
-              <p className="text-xl font-bold font-mono hero-number text-pos">
-                {formatCurrency(trendsData.totalIncome, displayCurrency)}
-              </p>
-            </CardContent>
-          </Card>
-          <Card className="card-hover">
-            <CardContent className="pt-4 pb-4">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-destructive/10 text-destructive">
-                  <TrendingDown className="h-3.5 w-3.5" />
-                </div>
-                <span className="text-xs text-muted-foreground font-medium">Total Expenses</span>
-              </div>
-              <p className="text-xl font-bold font-mono hero-number text-destructive">
-                {formatCurrency(trendsData.totalExpenses, displayCurrency)}
-              </p>
-            </CardContent>
-          </Card>
-          <Card className="card-hover">
-            <CardContent className="pt-4 pb-4">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <DollarSign className="h-3.5 w-3.5" />
-                </div>
-                <span className="text-xs text-muted-foreground font-medium">Net Savings</span>
-              </div>
-              <p className={`text-xl font-bold font-mono hero-number ${trendsData.netSavings >= 0 ? "text-pos" : "text-destructive"}`}>
-                {formatCurrency(trendsData.netSavings, displayCurrency)}
-              </p>
-            </CardContent>
-          </Card>
-          <Card className="card-hover">
-            <CardContent className="pt-4 pb-4">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-chart-5/10 text-chart-5">
-                  <PiggyBank className="h-3.5 w-3.5" />
-                </div>
-                <span className="text-xs text-muted-foreground font-medium">Savings Rate</span>
-              </div>
-              <p className={`text-xl font-bold font-mono hero-number ${trendsData.savingsRate >= 0 ? "text-pos" : "text-destructive"}`}>
-                {trendsData.savingsRate}%
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+        <>
+          <MetricRangeSelect value={metricRange.selection} onChange={metricRange.setSelection} />
+          <div className="grid grid-cols-2 gap-4 regular:grid-cols-4">
+            {summaryMetrics.map((m) => <MetricItemCard key={m.id ?? m.label} m={m} />)}
+          </div>
+        </>
       )}
       </>
     ),
@@ -749,25 +789,17 @@ export default function ReportsPage() {
               </Card>
 
               {/* Net summary */}
-              <Card className="bg-muted/30">
-                <CardContent className="pt-5 pb-5">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <p className="text-lg font-bold">Net Savings</p>
-                      <p className="text-sm text-muted-foreground">
-                        Savings Rate: <span className="font-semibold">{trendsData.savingsRate}%</span>
-                      </p>
-                    </div>
-                    <p
-                      className={`text-2xl font-bold font-mono hero-number ${
-                        trendsData.netSavings >= 0 ? "text-pos" : "text-destructive"
-                      }`}
-                    >
-                      {formatCurrency(trendsData.netSavings, displayCurrency)}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+              <MetricCard
+                label="Net Savings"
+                icon={DollarSign}
+                tone="indigo"
+                value={trendsData.netSavings}
+                currency={displayCurrency}
+                valueClassName={trendsData.netSavings >= 0 ? "text-pos" : "text-destructive"}
+                sparkColor="#6366f1"
+                {...(reportNet ? cardProps(reportNet) : {})}
+                note={<>Savings Rate: <span className="font-semibold">{trendsData.savingsRate}%</span></>}
+              />
 
               {/* ── Unrealized gains / losses ── */}
               {unrealizedData && (unrealizedData.accounts.length > 0 || Math.abs(unrealizedData.totals.totalGL) > 0.005) && (
@@ -848,16 +880,16 @@ export default function ReportsPage() {
                 </div>
                 <BalanceStatementRows rows={balanceSheet.liabilities} totalLabel="Total Liabilities" total={balanceSheet.totalLiabilities} displayCurrency={displayCurrency} tone="neg" />
                 <Separator className="my-5" />
-                <div className="flex justify-between items-center p-4 rounded-xl bg-muted/50">
-                  <p className="text-lg font-bold">Net Worth</p>
-                  <p
-                    className={`text-2xl font-bold font-mono hero-number ${
-                      balanceSheet.netWorth >= 0 ? "text-pos" : "text-destructive"
-                    }`}
-                  >
-                    {formatCurrency(balanceSheet.netWorth, displayCurrency)}
-                  </p>
-                </div>
+                <MetricCard
+                  label="Net Worth"
+                  icon={Wallet}
+                  tone="indigo"
+                  value={balanceSheet.netWorth}
+                  currency={displayCurrency}
+                  valueClassName={balanceSheet.netWorth >= 0 ? "text-pos" : "text-destructive"}
+                  sparkColor="#6366f1"
+                  {...(balanceNet ? cardProps(balanceNet) : {})}
+                />
               </CardContent>
             </Card>
           )}

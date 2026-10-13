@@ -78,7 +78,8 @@ describe("Realized gains page (report page, not a dialog)", () => {
     await screen.findByRole("button", { name: "AAPL, closed 2026-03-10" });
     const grid = document.querySelector("[data-slot=metric-grid]") as HTMLElement;
     expect(within(grid).getByText("Closed lots")).toBeTruthy();
-    expect(within(grid).getByText("2")).toBeTruthy();
+    // the card shows the period (this month, none closed) and keeps the page total in its note
+    expect(within(grid).getByText("Total in view: 2")).toBeTruthy();
     expect(within(grid).getByText(/Realized \(USD\)/)).toBeTruthy();
   });
 

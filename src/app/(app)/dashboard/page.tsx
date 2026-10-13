@@ -38,8 +38,10 @@ import { DASHBOARD_CARDS } from "@/lib/dashboard-layout";
 import { sumAssetsLiabilities } from "@/lib/account-visibility";
 import { MetricRangeSelect } from "@/components/metric-range-select";
 import { useMetricRange } from "@/lib/metrics/use-metric-range";
-import { aggregate, compareCaption, pctChange, previousPeriod, resolvePeriod, RANGE_LABELS, type MonthPoint } from "@/lib/metrics/period";
+import { compareCaption, pctChange, previousPeriod, resolvePeriod, seriesWindow, RANGE_LABELS, type MonthPoint } from "@/lib/metrics/period";
 import { formatDelta, resolveCard } from "@/lib/metrics/delta";
+import { healthSeriesPoints } from "@/lib/health/score";
+import { resolveRatioCard, runningTotal } from "@/lib/metrics/series";
 import { localDateISO } from "@/lib/utils/date";
 
 // --- Quick Import Widget ---
@@ -135,7 +137,7 @@ export default function DashboardPage() {
   const dashboardRes = useCacheFirstJson<DashboardData>(currencyLoading ? null : `/api/dashboard?currency=${encodedCurrency}`, { keepPrevious: true });
   // Financial-health payload feeds both the Health Score card and the KeyMetrics strip (savings rate + DTI) — fetched
   // once here and passed down so the two consumers don't each hit the (query-heavy) endpoint.
-  const healthRes = useCacheFirstJson<HealthData>(currencyLoading ? null : `/api/health-score?currency=${encodedCurrency}`, { keepPrevious: true });
+  const healthRes = useCacheFirstJson<HealthData>(currencyLoading ? null : `/api/health-score?currency=${encodedCurrency}&history=12`, { keepPrevious: true });
   const data: DashboardData | null = dashboardRes.data ?? null;
   const health: HealthData | null = healthRes.data ?? null;
   const loadError = dashboardRes.error;
@@ -149,6 +151,14 @@ export default function DashboardPage() {
   usePageCustomize({ onOpen: () => setCustomizeOpen(true) });
   const [reloadKey, setReloadKey] = useState(0);
   const { selection, explicit, period: rangePeriod, setSelection } = useMetricRange();
+  // Budgets card: budgeted vs spent per month (the /budgets page's own series API). The window covers the selected
+  // period (default: the current month), the one before it and a 6-month sparkline.
+  const budgetWin = seriesWindow(rangePeriod);
+  const budgetSeriesRes = useCacheFirstJson<{ series?: Array<{ month: string; budget: number; spent: number }> }>(
+    currencyLoading ? null : `/api/budgets/series?from=${budgetWin.from}&to=${budgetWin.to}&currency=${encodedCurrency}`,
+    { keepPrevious: true },
+  );
+  const budgetRows = budgetSeriesRes.data && Array.isArray(budgetSeriesRes.data.series) ? budgetSeriesRes.data.series : null;
 
   useEffect(() => {
     if (currencyLoading) return; // wait until provider has read settings
@@ -273,45 +283,65 @@ export default function DashboardPage() {
     const endDate = `${m[1]}-${m[2]}-${String(last).padStart(2, "0")}`;
     return { startDate, endDate };
   })();
-  const budgetSparkline = incExpLast6.map((d) => d.income - d.expenses);
 
   // Metric cards: default = the reference month vs the month before it (unchanged); a selected range (?range=...)
   // compares that range with the immediately preceding period of the same length. Everything is derived from the same
   // monthly income / expense series, so it also works from the offline cache.
   const caption = compareCaption(selection);
   const cardPeriod = explicit ? rangePeriod : resolvePeriod({ range: "this_month" }, localDateISO(), lastMonthKey || undefined);
-  const prevCardPeriod = previousPeriod(cardPeriod);
   const incomePoints: MonthPoint[] = incExpData.map((d) => ({ month: d.month, value: d.income }));
   const expensePoints: MonthPoint[] = incExpData.map((d) => ({ month: d.month, value: d.expenses }));
   const netPoints: MonthPoint[] = incExpData.map((d) => ({ month: d.month, value: d.income - d.expenses }));
   const cardBase = { period: cardPeriod, mode: "sum", isDefault: !explicit, currency: apiDisplayCurrency, caption, kind: "money" } as const;
   const incomeCard = resolveCard({ ...cardBase, points: incomePoints, pageValue: lastMonthIncome });
   const expenseCard = resolveCard({ ...cardBase, points: expensePoints, pageValue: lastMonthExpenses });
-  const budgetCard = resolveCard({ ...cardBase, points: netPoints, pageValue: availableToSpend });
+  const availableCard = resolveCard({ ...cardBase, points: netPoints, pageValue: availableToSpend });
   const periodLabel = explicit
     ? (selection.range === "custom" ? `${selection.from} to ${selection.to}` : RANGE_LABELS[selection.range])
     : lastMonthKey ? getMonthLabel(lastMonthKey) : `${incExpData.length} months tracked`;
   const shownIncome = incomeCard.value ?? lastMonthIncome;
   const shownExpenses = expenseCard.value ?? lastMonthExpenses;
 
-  // Savings rate by month = (income - expenses) / income; a range's rate uses the range's summed income / expenses.
-  const rateOf = (months: string[]): number | null => {
-    const inc = aggregate(incomePoints, months, "sum");
-    const exp = aggregate(expensePoints, months, "sum");
-    return inc != null && exp != null && inc > 0 ? ((inc - exp) / inc) * 100 : null;
-  };
-  const curRate = rateOf(cardPeriod.months);
-  const prevRate = rateOf(prevCardPeriod.months);
-  const rateSpark = incExpData
-    .filter((d) => d.month <= cardPeriod.months[cardPeriod.months.length - 1] && d.income > 0)
-    .slice(-6)
-    .map((d) => ({ month: d.month, rate: Math.round(((d.income - d.expenses) / d.income) * 1000) / 10 }));
+  // Savings Rate: the rate of the card period (the reference month by default, or the selected range) against the
+  // previous period. The big value, badge, signed difference and sparkline all share that basis; the health payload's
+  // 3-month figure is only the note.
+  const rate = resolveRatioCard({ num: netPoints, den: incomePoints, period: cardPeriod, caption });
   const savingsTrend = {
-    badgePct: pctChange(curRate, prevRate),
-    delta: formatDelta({ cur: curRate, prev: prevRate, kind: "pp", caption }),
-    ...(rateSpark.length >= 2 ? { sparkData: rateSpark.map((r) => r.rate), sparkLabels: rateSpark.map((r) => r.month) } : {}),
-    ...(explicit ? { value: curRate != null ? Math.round(curRate * 10) / 10 : null } : {}),
+    badgePct: rate.badgePct,
+    delta: rate.delta,
+    ...(rate.sparkData ? { sparkData: rate.sparkData, sparkLabels: rate.sparkLabels } : {}),
+    value: rate.value,
   };
+
+  // Financial Health + Debt-to-Income: the live figures against the same score / DTI at the previous month end
+  // (src/lib/health). Default = this month vs last month; a selected range compares month-end values.
+  const healthPeriod = explicit ? rangePeriod : resolvePeriod({ range: "this_month" }, localDateISO());
+  const healthPts = healthSeriesPoints(health?.history);
+  const healthCard = resolveCard({
+    points: healthPts.score, period: healthPeriod, mode: "last", isDefault: !explicit, pageValue: health?.score ?? null, kind: "points", caption,
+  });
+  const dtiCard = resolveCard({
+    points: healthPts.dti, period: healthPeriod, mode: "last", isDefault: !explicit, pageValue: health?.dti?.pct ?? null, kind: "pp", caption,
+  });
+  const healthTrend = { badgePct: healthCard.badgePct, delta: healthCard.delta, sparkData: healthCard.sparkData, sparkLabels: healthCard.sparkLabels };
+  const dtiTrend = { badgePct: dtiCard.badgePct, delta: dtiCard.delta, sparkData: dtiCard.sparkData, sparkLabels: dtiCard.sparkLabels };
+
+  // Budgets: % of the budget spent (spent in the budgeted categories / budgeted) for the selected period (default: the
+  // current month) with the monthly series, against the previous period (percentage points).
+  const budgetMonths = (months: string[]) => {
+    const rows = (budgetRows ?? []).filter((r) => months.includes(r.month));
+    const budget = rows.reduce((t, r) => t + r.budget, 0);
+    return rows.length > 0 && budget > 0 ? { budget, spent: rows.reduce((t, r) => t + r.spent, 0) } : null;
+  };
+  const budgetNow = budgetMonths(rangePeriod.months);
+  const budgetPrev = budgetMonths(previousPeriod(rangePeriod).months);
+  const budgetPct = budgetNow ? (budgetNow.spent / budgetNow.budget) * 100 : null;
+  const budgetPrevPct = budgetPrev ? (budgetPrev.spent / budgetPrev.budget) * 100 : null;
+  const budgetSpark = (budgetRows ?? [])
+    .filter((r) => r.budget > 0 && r.month <= rangePeriod.months[rangePeriod.months.length - 1])
+    .sort((a, b) => a.month.localeCompare(b.month))
+    .slice(-6);
+  const budgetsPeriodLabel = selection.range === "custom" ? `${selection.from} to ${selection.to}` : selection.range === "this_month" ? getMonthLabel(rangePeriod.months[0]) : RANGE_LABELS[selection.range];
 
   // Dev-mode: spending by category for charts
   const spendingData = (data.spendingByCategory ?? [])
@@ -352,15 +382,20 @@ export default function DashboardPage() {
     },
     {
       label: "Budgets",
-      value: budgetCard.value ?? availableToSpend,
-      sub: budgetCard.delta ?? undefined,
-      note: (budgetCard.value ?? availableToSpend) >= 0 ? "Available to spend" : "Over budget",
-      badgePct: budgetCard.badgePct,
+      // Percent of the budget spent; the amounts and the covered month go in the note.
+      value: <span>{budgetPct != null ? `${Math.round(budgetPct)}%` : "—"}</span>,
+      valueClassName: budgetPct == null ? "text-muted-foreground" : budgetPct > 100 ? "text-destructive" : budgetPct > 85 ? "text-warning" : "text-pos",
+      sub: formatDelta({ cur: budgetPct, prev: budgetPrevPct, kind: "pp", caption }) ?? (budgetPct == null ? "No budgets set" : undefined),
+      note: budgetNow
+        ? `${formatCurrency(budgetNow.spent, apiDisplayCurrency)} of ${formatCurrency(budgetNow.budget, apiDisplayCurrency)} · ${budgetsPeriodLabel}`
+        : undefined,
+      badgePct: pctChange(budgetPct, budgetPrevPct),
+      invertTone: true,
       icon: Target,
       tone: "bg-warning/10 text-warning",
       sparkColor: "#f59e0b",
-      sparkData: budgetSparkline,
-      sparkLabels: incExpSparkLabels,
+      sparkData: budgetSpark.length >= 2 ? budgetSpark.map((r) => Math.round((r.spent / r.budget) * 1000) / 10) : undefined,
+      sparkLabels: budgetSpark.length >= 2 ? budgetSpark.map((r) => r.month) : undefined,
       href: "/budgets",
     },
   ];
@@ -369,16 +404,23 @@ export default function DashboardPage() {
   // src/lib/dashboard-layout.ts). `group` cards that sit next to each other in the saved
   // order share the original responsive grid wrapper, so the default order renders the
   // exact same grids as before customisation.
+  // Net Worth (the model card): the running total of the monthly series, this month vs last month by default or the
+  // selected range's last month vs the previous period's.
+  const nwCard = resolveCard({
+    points: runningTotal(data.netWorthOverTime, localDateISO().slice(0, 7)), period: rangePeriod, mode: "last", isDefault: !explicit,
+    pageValue: totalNetWorth, kind: "money", currency: apiDisplayCurrency, caption,
+  });
   const heroNode = () => (
     <motion.div key="net-worth" variants={itemVariants}>
       <NetWorthHeroCard
         href="/accounts"
         onMouseMove={handleMouseMove}
-        value={totalNetWorth}
+        value={nwCard.value ?? totalNetWorth}
         currency={apiDisplayCurrency}
         change={momChange}
         changePct={momPct}
         changeCaption="vs last month"
+        comparison={nwSeries.change != null || nwCard.delta != null ? { delta: nwCard.delta, pct: nwCard.badgePct } : undefined}
         sparkData={nwSparkline}
         sparkLabels={nwSparkLabels}
       />
@@ -412,7 +454,7 @@ export default function DashboardPage() {
       render: () => <DueCard key="due-subscriptions" returnTo="/dashboard" />,
     },
     "net-worth": { render: () => heroNode() },
-    "health-score": { group: TILES_GRID, render: () => <HealthScoreCard key="health-score" health={health} /> },
+    "health-score": { group: TILES_GRID, render: () => <HealthScoreCard key="health-score" health={health} trend={healthTrend} /> },
     "summary-stats": {
       group: TILES_GRID,
       render: () => (
@@ -426,7 +468,7 @@ export default function DashboardPage() {
     // Key ratios: Savings Rate + DTI (FINLYNQ-291) from the same /api/health-score payload.
     "key-metrics": {
       group: TILES_GRID,
-      render: () => <KeyMetrics key="key-metrics" health={health} tiles savingsTrend={savingsTrend} />,
+      render: () => <KeyMetrics key="key-metrics" health={health} tiles savingsTrend={savingsTrend} dtiTrend={dtiTrend} savingsWindow={explicit ? periodLabel : lastMonthKey ? getMonthLabel(lastMonthKey) : "last month"} />,
     },
     // Accurate merged series: cash live from transactions + investments from stored
     // snapshots; latest point matches the hero. plan/net-worth-over-time.md Part A.
@@ -484,10 +526,11 @@ export default function DashboardPage() {
       render: () => (
         <LazyView key="available-to-spend" minHeight={200}>
           <AvailableToSpend
-            income={lastMonthIncome}
-            expenses={lastMonthExpenses}
+            income={shownIncome}
+            expenses={shownExpenses}
             currency={apiDisplayCurrency}
-            monthLabel={lastMonthKey ? getMonthLabel(lastMonthKey) : undefined}
+            monthLabel={explicit ? periodLabel : lastMonthKey ? getMonthLabel(lastMonthKey) : undefined}
+            trend={{ badgePct: availableCard.badgePct, delta: availableCard.delta, sparkData: availableCard.sparkData, sparkLabels: availableCard.sparkLabels }}
           />
         </LazyView>
       ),

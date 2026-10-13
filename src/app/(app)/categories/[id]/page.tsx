@@ -46,6 +46,11 @@ import {
   useCardLayout, usePageCustomize, type MetricItem,
 } from "@/components/mobile";
 import type { PageCard } from "@/lib/card-layout";
+import { MetricRangeSelect } from "@/components/metric-range-select";
+import { useMetricRange } from "@/lib/metrics/use-metric-range";
+import { compareCaption, resolvePeriod, RANGE_LABELS } from "@/lib/metrics/period";
+import { resolveCard } from "@/lib/metrics/delta";
+import { cardProps } from "@/lib/metrics/series";
 
 /** Cards of the category page, default order (Customize). The period selector and the header are not cards. */
 const CATEGORY_DETAIL_CARDS: readonly PageCard[] = [
@@ -101,6 +106,7 @@ function CategoryPageContent() {
   const monthsParam = Number(searchParams.get("months") ?? 12);
   const months = (CATEGORY_WINDOWS as readonly number[]).includes(monthsParam) ? monthsParam : 12;
 
+  const metricRange = useMetricRange();
   const [data, setData] = useState<CategoryResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<"not_found" | "failed" | null>(null);
@@ -177,34 +183,64 @@ function CategoryPageContent() {
 
   const categoriesBackHref = `/categories${category.type === "I" ? "?type=I" : ""}`;
 
+  // Cards 1-2 follow the shared metric range (default: this month so far vs last month, last month vs the month
+  // before); they come from the same monthly amounts as the chart. Average / same month last year / share have no
+  // comparable previous value in this window, so they show the figure only.
+  const caption = compareCaption(metricRange.selection);
+  const points = data.months.map((m) => ({ month: m.month, value: m.amount }));
+  const countPts = data.months.map((m) => ({ month: m.month, value: m.count }));
+  const thisCard = resolveCard({
+    points, period: metricRange.period, mode: "sum", isDefault: !metricRange.explicit, pageValue: stats.thisMonth, kind: "money", currency: cur, caption,
+  });
+  const lastMonthPeriod = resolvePeriod({ range: "last_month" }, today);
+  const lastCard = resolveCard({
+    points, period: lastMonthPeriod, mode: "sum", isDefault: true, pageValue: stats.lastMonth, kind: "money", currency: cur, caption: "vs the month before",
+  });
+  const rangeTitle = metricRange.explicit
+    ? (metricRange.selection.range === "custom" ? `${metricRange.selection.from} to ${metricRange.selection.to}` : RANGE_LABELS[metricRange.selection.range])
+    : "This month so far";
+  const countCard = resolveCard({ points: countPts, period: metricRange.period, mode: "sum", isDefault: false, kind: "count", caption });
   const summaryMetrics: MetricItem[] = [
     {
-      label: "This month so far",
-      value: formatCurrency(stats.thisMonth, cur),
-      sub: currentMonth?.budget != null
+      label: rangeTitle,
+      value: metricRange.explicit ? (thisCard.value ?? 0) : stats.thisMonth,
+      currency: cur,
+      ...cardProps(thisCard),
+      invertTone: !isIncome,
+      note: currentMonth?.budget != null && !metricRange.explicit
         ? `of ${formatCurrency(currentMonth.budget, cur)} budget`
-        : `${currentMonth?.count ?? 0} transaction${currentMonth?.count === 1 ? "" : "s"}`,
+        : `${countCard.value ?? currentMonth?.count ?? 0} transaction${(countCard.value ?? currentMonth?.count) === 1 ? "" : "s"}`,
     },
     {
       label: `Last month (${monthLabel(data.months[data.months.length - 2]?.month ?? "", "short")})`,
-      value: formatCurrency(stats.lastMonth, cur),
-      sub: lastVsAvg ? `${lastVsAvg.text} vs average` : undefined,
+      value: stats.lastMonth,
+      currency: cur,
+      ...cardProps(lastCard),
+      invertTone: !isIncome,
+      note: lastVsAvg ? `${lastVsAvg.text} vs average` : undefined,
     },
     {
       label: "Monthly average",
-      value: stats.averageMonthly != null ? formatCurrency(stats.averageMonthly, cur) : "—",
+      value: stats.averageMonthly != null ? stats.averageMonthly : "—",
+      currency: stats.averageMonthly != null ? cur : undefined,
       sub: stats.medianMonthly != null ? `median ${formatCurrency(stats.medianMonthly, cur)}` : "needs a full month",
     },
     {
       label: `${monthLabel(currentMonth?.month ?? "", "long").split(" ")[0]} last year`,
-      value: formatCurrency(stats.sameMonthLastYear, cur),
+      value: stats.sameMonthLastYear,
+      currency: cur,
       sub: "same month, a year ago",
     },
     { label: `Share of ${noun}`, value: pct(stats.shareOfType), sub: `of all ${noun}, last ${months} months` },
   ];
 
   const nodes: Record<string, ReactNode> = {
-    summary: <MetricGrid metrics={summaryMetrics} />,
+    summary: (
+      <div className="space-y-3">
+        <MetricRangeSelect value={metricRange.selection} onChange={metricRange.setSelection} />
+        <MetricGrid metrics={summaryMetrics} />
+      </div>
+    ),
     chart: hasData ? (
       <SectionCard label={`Monthly ${noun}`}>
         <p className="mb-3 text-xs text-muted-foreground">
