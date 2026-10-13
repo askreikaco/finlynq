@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SectionCard } from "@/components/mobile/section-card";
 import { AlertTriangle, Bell, CheckCircle2, X, ChevronRight, Shield } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { motion, AnimatePresence } from "framer-motion";
@@ -72,22 +72,17 @@ export function ActionCenter() {
 
   return (
     <motion.div variants={itemVariants}>
-      <Card className="card-hover">
-        <CardHeader className="pb-2 px-5 pt-5">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
-              <Shield className="h-4 w-4" />
-            </div>
-            <div className="flex-1">
-              <CardTitle className="text-sm font-semibold">Action Center</CardTitle>
-              <p className="text-xs text-muted-foreground">
-                {visible.length === 0 ? "All clear" : `${visible.length} item${visible.length !== 1 ? "s" : ""} need attention`}
-              </p>
-            </div>
+      <SectionCard label="Action Center" className="card-hover">
+        <div className="mb-3 flex items-center gap-2.5">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
+            <Shield className="h-4 w-4" />
           </div>
-        </CardHeader>
+          <p className="flex-1 text-xs text-muted-foreground">
+            {visible.length === 0 ? "All clear" : `${visible.length} item${visible.length !== 1 ? "s" : ""} need attention`}
+          </p>
+        </div>
 
-        <CardContent className="px-5 pb-4">
+        <div>
           {visible.length === 0 ? (
             <div className="flex items-center gap-3 py-3 px-3 rounded-xl bg-pos/10 border border-pos/30">
               <CheckCircle2 className="h-4.5 w-4.5 text-pos shrink-0" />
@@ -169,8 +164,8 @@ export function ActionCenter() {
               <ChevronRight className="h-3 w-3" />
             </button>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </SectionCard>
     </motion.div>
   );
 }

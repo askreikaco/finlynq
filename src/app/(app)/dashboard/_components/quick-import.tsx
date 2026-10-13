@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent } from "@/components/ui/card";
+import { SectionCard } from "@/components/mobile/section-card";
 import { Upload, FileText, FileUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { setHandoffFile } from "@/lib/import/file-handoff";
@@ -47,22 +47,20 @@ export function QuickImport() {
   const isActive = state === "hover";
 
   return (
-    <Card
+    <SectionCard
+      label="Quick Import"
       className={`card-hover transition-colors duration-200 cursor-pointer ${isActive ? "border-primary bg-primary/5" : ""}`}
       onDrop={onDrop}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onClick={() => inputRef.current?.click()}
     >
-      <CardContent className="px-5 py-4">
+      <div>
         <div className="flex items-center gap-2.5 mb-3">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
             <Upload className="h-4 w-4" />
           </div>
-          <div>
-            <p className="text-sm font-semibold">Quick Import</p>
-            <p className="text-xs text-muted-foreground">Drop a CSV or OFX file to import</p>
-          </div>
+          <p className="text-xs text-muted-foreground">Drop a CSV or OFX file to import</p>
         </div>
 
         <label className="block cursor-pointer">
@@ -95,7 +93,7 @@ export function QuickImport() {
             </AnimatePresence>
           </div>
         </label>
-      </CardContent>
-    </Card>
+      </div>
+    </SectionCard>
   );
 }

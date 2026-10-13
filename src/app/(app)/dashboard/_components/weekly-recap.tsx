@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SectionCard } from "@/components/mobile/section-card";
+import { metricGridClass } from "@/components/mobile/metric-grid";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
@@ -9,7 +10,6 @@ import { Calendar, ChevronDown, ChevronUp, ArrowUpRight, ArrowDownRight } from "
 import { motion, AnimatePresence } from "framer-motion";
 import type { WeeklyRecapData } from "./types";
 import { CspSafeBar } from "@/components/csp-safe-bar";
-import { metricGridClass } from "@/components/mobile/metric-grid";
 import { useAnimations } from "@/hooks/use-animations";
 
 const itemVariants = {
@@ -59,22 +59,18 @@ export function WeeklyRecap() {
   }));
   return (
     <motion.div variants={animationsEnabled ? itemVariants : noAnimationVariants}>
-      <Card className="card-hover relative overflow-hidden">
+      <SectionCard label="Weekly Recap" className="card-hover relative overflow-hidden">
         <div className="absolute -top-16 -right-16 w-40 h-40 rounded-full bg-primary/5 blur-3xl pointer-events-none" />
 
-        <CardHeader className="pb-2 px-5 pt-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <Calendar className="h-4 w-4" />
-              </div>
-              <div>
-                <CardTitle className="text-sm font-semibold">Weekly Recap</CardTitle>
-                <p className="text-xs text-muted-foreground">
-                  {recap.weekStart} — {recap.weekEnd}
-                </p>
-              </div>
+        <div className="mb-3 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <Calendar className="h-4 w-4" />
             </div>
+            <p className="text-xs text-muted-foreground">
+              {recap.weekStart} — {recap.weekEnd}
+            </p>
+          </div>
             <button
               onClick={() => setExpanded(!expanded)}
               aria-label={expanded ? "Collapse weekly recap" : "Expand weekly recap"}
@@ -88,9 +84,7 @@ export function WeeklyRecap() {
               )}
             </button>
           </div>
-        </CardHeader>
-
-        <CardContent className="px-5">
+        <div>
           {/* Summary: Spent / Income / Cash Flow */}
           <div className={`${metricGridClass(3, "gap-4")} mb-4`}>
             <div>
@@ -246,8 +240,8 @@ export function WeeklyRecap() {
               </motion.div>
             )}
           </AnimatePresence>
-        </CardContent>
-      </Card>
+        </div>
+      </SectionCard>
     </motion.div>
   );
 }

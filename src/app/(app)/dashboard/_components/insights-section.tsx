@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SectionCard } from "@/components/mobile/section-card";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { AlertTriangle, RefreshCw, Store, TrendingUp, ArrowUpRight, ArrowDownRight } from "lucide-react";
@@ -36,20 +36,15 @@ function InsightCard({
 }) {
   return (
     <motion.div variants={itemVariants}>
-      <Card className="card-hover">
-        <CardHeader className="pb-2 px-5 pt-5">
-          <div className="flex items-center gap-2.5">
-            <div className={`flex h-8 w-8 items-center justify-center rounded-xl ${iconBg}`}>
-              <Icon className="h-4 w-4" />
-            </div>
-            <div>
-              <CardTitle className="text-sm font-semibold">{title}</CardTitle>
-              <p className="text-xs text-muted-foreground">{subtitle}</p>
-            </div>
+      <SectionCard label={title} className="card-hover">
+        <div className="mb-3 flex items-center gap-2.5">
+          <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${iconBg}`}>
+            <Icon className="h-4 w-4" />
           </div>
-        </CardHeader>
-        <CardContent className="px-5 pb-4">{children}</CardContent>
-      </Card>
+          <p className="text-xs text-muted-foreground">{subtitle}</p>
+        </div>
+        <div>{children}</div>
+      </SectionCard>
     </motion.div>
   );
 }
@@ -85,7 +80,7 @@ export function InsightsSection({ currency }: { currency?: string }) {
 
   return (
     <motion.div
-      className="grid grid-cols-1 wide:grid-cols-2 gap-5"
+      className="grid grid-cols-1 gap-5"
       variants={containerVariants}
       initial="hidden"
       animate="visible"

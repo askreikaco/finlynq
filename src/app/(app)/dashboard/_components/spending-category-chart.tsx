@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SectionCard } from "@/components/mobile/section-card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { PieTooltip } from "./chart-tooltip";
 import { formatCurrency } from "@/lib/currency";
@@ -33,14 +33,11 @@ export function SpendingCategoryChart({ data, currency }: { data: SpendingItem[]
 
   return (
     <motion.div variants={animationsEnabled ? itemVariants : noAnimationVariants}>
-      <Card className="card-hover">
-        <CardHeader className="pb-1 px-5 pt-5">
-          <CardTitle className="text-sm font-semibold">Spending by Category</CardTitle>
-          {/* /api/dashboard defaults to a trailing 12-month window (plus the current
-              month), not the current month alone. */}
-          <p className="text-xs text-muted-foreground">Last 12 months breakdown</p>
-        </CardHeader>
-        <CardContent className="px-5 pb-5">
+      <SectionCard label="Spending by Category" className="card-hover">
+        {/* /api/dashboard defaults to a trailing 12-month window (plus the current
+            month), not the current month alone. */}
+        <p className="text-xs text-muted-foreground mb-3">Last 12 months breakdown</p>
+        <div>
           <div className="flex items-center gap-5">
             {/* Donut chart */}
             <div className="w-44 h-44 shrink-0 relative">
@@ -106,8 +103,8 @@ export function SpendingCategoryChart({ data, currency }: { data: SpendingItem[]
               })}
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </SectionCard>
     </motion.div>
   );
 }
