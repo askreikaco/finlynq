@@ -19,6 +19,12 @@ import { EditUserModal } from "@/components/admin/edit-user-modal";
 import { Pagination } from "@/components/ui/pagination";
 import { DetailSheet, ListRow, METRIC_GRID_CLASS, MetricGrid, SectionCard } from "@/components/mobile";
 import { SectionPage } from "@/components/templates";
+import { MetricRangeSelect } from "@/components/metric-range-select";
+import { useMetricRange } from "@/lib/metrics/use-metric-range";
+import { cardProps, makeCardResolver, runningTotal } from "@/lib/metrics/series";
+import { formatDelta } from "@/lib/metrics/delta";
+import { pctChange } from "@/lib/metrics/period";
+import { localDateISO } from "@/lib/utils/date";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -62,6 +68,8 @@ interface UsageStats {
   totalTransactions: number;
   totalAccounts: number;
   registrationsLast7Days: number;
+  registrationsPrevious7Days?: number;
+  registrationsByMonth?: Record<string, number>;
   registrationsLast30Days: number;
   verifiedUsers: number;
   mfaEnabledUsers: number;
@@ -166,6 +174,7 @@ const itemVariants = {
 export default function AdminPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [stats, setStats] = useState<UsageStats | null>(null);
+  const metricRange = useMetricRange();
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -420,14 +429,32 @@ export default function AdminPage() {
       >
         {/* Stats Grid */}
         {stats && (
-          <MetricGrid
-            metrics={[
-              { label: "Total Users", value: stats.totalUsers },
-              { label: "Transactions", value: stats.totalTransactions.toLocaleString() },
-              { label: "New (7d)", value: stats.registrationsLast7Days },
-              { label: "MFA Enabled", value: stats.mfaEnabledUsers },
-            ]}
-          />
+          <div className="space-y-3">
+            <MetricRangeSelect value={metricRange.selection} onChange={metricRange.setSelection} />
+            <MetricGrid
+              metrics={[
+                {
+                  label: "Total Users",
+                  value: stats.totalUsers,
+                  // Running total of signups by month (users that still exist), this month vs last month by default.
+                  ...(() => {
+                    const rows = Object.entries(stats.registrationsByMonth ?? {}).map(([month, cumulative]) => ({ month, cumulative }));
+                    const c = makeCardResolver(metricRange)(runningTotal(rows, localDateISO().slice(0, 7)), "last", stats.totalUsers, "count");
+                    return cardProps(c);
+                  })(),
+                },
+                { label: "Transactions", value: stats.totalTransactions.toLocaleString() },
+                {
+                  label: "New (7d)",
+                  value: stats.registrationsLast7Days,
+                  // Fixed 7-day window: the 7 days before it.
+                  badgePct: stats.registrationsPrevious7Days != null ? pctChange(stats.registrationsLast7Days, stats.registrationsPrevious7Days) : null,
+                  sub: formatDelta({ cur: stats.registrationsLast7Days, prev: stats.registrationsPrevious7Days, kind: "count", caption: "vs previous 7 days" }) ?? undefined,
+                },
+                { label: "MFA Enabled", value: stats.mfaEnabledUsers },
+              ]}
+            />
+          </div>
         )}
 
         {/* Live activity — near-real-time "who's using it right now" from

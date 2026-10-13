@@ -154,6 +154,7 @@ export function MemberCard({
               savingsUnavailable={s.cashflow ? undefined : why("cashflow")}
               dti={s.cashflow?.debtToIncome ?? null}
               dtiUnavailable={s.cashflow?.debtToIncome ? undefined : FAMILY_STRINGS.overview_card_dti_needs}
+              lifetime={{ history: cs.net_worth?.history ?? null, monthly: cs.cashflow?.monthly ?? null }}
             />
 
             {(cs.net_worth || cs.cashflow) && (

@@ -353,6 +353,7 @@ function HouseholdBlock({ data, chartData, period }: { data: OverviewResponse; c
         savingsUnavailable={flows.included === 0 ? FAMILY_STRINGS.overview_card_not_shared : undefined}
         dti={flows.dti}
         dtiUnavailable={flows.dti ? undefined : FAMILY_STRINGS.overview_card_dti_needs}
+        lifetime={{ history: chartTotals.included > 0 ? chartTotals.history : null, monthly: chartFlows.included > 0 ? chartFlows.monthly : null }}
       />
 
       {(chartTotals.included > 0 || chartFlows.included > 0) && (
