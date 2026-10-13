@@ -100,8 +100,8 @@ export function dropAllLocalCachesWithin(ms: number): Promise<void> {
 }
 
 /**
- * Deletes one user's passkey unlock wrap (logout, remove account). Deliberately NOT called from dropLocalUserCache:
- * that also runs on lock, and a lock must keep the passkey so it can unlock again. Never throws.
+ * Deletes one user's passkey record (sign-out, untrusted device, offline mode off, forget). NOT called on a lock: a lock
+ * keeps the record so the passkey can unlock again. Call it wherever the outbox it protects is wiped. Never throws.
  */
 export async function dropPasskeyUnlockFor(userId: string): Promise<void> {
   try {

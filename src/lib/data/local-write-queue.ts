@@ -14,6 +14,7 @@ import { createWriteQueue, type WriteQueue } from "@/lib/local-first/write-path/
 import { createDrain } from "@/lib/local-first/write-path/drain";
 import { createDrainScheduler, type DrainScheduler } from "@/lib/local-first/write-path/scheduler";
 import {
+  isLocalWriteKeySet,
   isLocalWriteQueueEnabled,
   localWriteQueueState,
   markOfflineQueueUnavailable,
@@ -22,9 +23,11 @@ import {
 import { setLocalReadCacheEnabled } from "@/lib/local-first/read-cache/optin";
 import type { OptInState } from "@/lib/local-first/opt-state";
 import { deviceKeys, type DeviceKeyMeta } from "@/lib/local-first/crypto/device-key-provider";
+import { isPasskeyLockedError, onPasskeyLockChange, passkeyLockedNow, wipeAllPasskeyUnlocks } from "@/lib/local-first/crypto/passkey-unlock";
+import { countOutboxRecords } from "@/lib/local-first/write-path/outbox-store";
 import { maybeAutoRotateKeys, rotateOnDeviceKeys, type RotationReport } from "@/lib/local-first/crypto/rotation";
 import { wipeUser as wipePersistedDataCache } from "./persist";
-import { forgetOfflineIdentity, rememberOfflineIdentity } from "./offline-identity";
+import { forgetOfflineIdentity, readOfflineIdentity, rememberOfflineIdentity } from "./offline-identity";
 import { fetchTrustedDeviceId } from "./trusted-device";
 import { getSessionInfo } from "./session-info";
 import { entityOf } from "@/lib/local-first/write-path/entities";
@@ -50,6 +53,17 @@ const listeners = new Set<() => void>();
 const notify = () => {
   for (const l of listeners) l();
 };
+/** The trusted device the queue last started on (used to resume after a passkey unlock). */
+let lastDevice: { userId: string; deviceId: string } | null = null;
+
+// Passkey lock changes (enrol, unlock, lock, wipe) refresh the live views.
+onPasskeyLockChange(() => notify());
+
+/** True while a passkey record exists for the signed-in user and this page holds no unlock secret. Sync, hint-based. */
+export function isOfflineLockedNow(): boolean {
+  const uid = running?.userId ?? getSessionInfo()?.userId ?? null;
+  return uid !== null && passkeyLockedNow(uid);
+}
 
 /** Called by a mounted component (inside SWRConfig) to refresh lists after queued writes reach the server. */
 export function setLocalWriteSyncedHandler(fn: (() => void) | null): void {
@@ -85,11 +99,14 @@ export function startLocalWriteQueue(userId: string, deviceId: string): boolean 
     };
     const scheduler = createDrainScheduler({ drain, list: () => queue.store.list(), allow });
     running = { userId, queue, scheduler };
+    lastDevice = { userId, deviceId };
     scheduler.start();
     // Key hygiene: a key older than 90 days (or of unknown age) rotates by itself, only when nothing is queued.
     void maybeAutoRotateKeys(userId, { outbox: queue.store, clearDataCache: wipePersistedDataCache })
       .then((r) => r && notify())
-      .catch((err) => console.warn("[local-first] automatic key rotation skipped", err));
+      .catch((err) => {
+        if (!isPasskeyLockedError(err)) console.warn("[local-first] automatic key rotation skipped", err);
+      });
     notify();
     return true;
   } catch (err) {
@@ -117,6 +134,10 @@ export function isLocalWriteQueueActive(): boolean {
   return running !== null && isLocalWriteQueueEnabled();
 }
 
+/**
+ * Queues one change. False = not queued: the queue is not running, the page is passkey-locked (refused, nothing written,
+ * the queue stays available for the next unlock), or a runtime failure (latched OFF for this page session).
+ */
 async function enqueue(fn: (q: WriteQueue) => Promise<OutboxEntry | null>): Promise<boolean> {
   const r = running;
   if (!r || !isLocalWriteQueueEnabled()) return false;
@@ -127,6 +148,10 @@ async function enqueue(fn: (q: WriteQueue) => Promise<OutboxEntry | null>): Prom
     void r.scheduler.kick();
     return true;
   } catch (err) {
+    if (isPasskeyLockedError(err)) {
+      notify();
+      return false;
+    }
     console.warn("[local-first] enqueue failed", err);
     markOfflineQueueUnavailable(); // typically the device key cannot be created: silent OFF for this page session
     return false;
@@ -444,15 +469,19 @@ export async function discardPendingSync(opId: string): Promise<void> {
   notify();
 }
 
-/** Live list for the Settings indicator. Always [] (and nothing opened) while the flag is off. */
-export function usePendingSync(): { items: PendingSyncItem[]; enabled: boolean } {
+/** Live list for the Settings indicator. Always [] (and nothing opened) while the flag is off. `locked`: passkey-locked. */
+export function usePendingSync(): { items: PendingSyncItem[]; enabled: boolean; locked: boolean } {
   const [items, setItems] = useState<PendingSyncItem[]>([]);
   const [enabled, setEnabled] = useState(false);
+  const [locked, setLocked] = useState(false);
   useEffect(() => {
     if (!isLocalWriteQueueEnabled()) return;
     setEnabled(true);
     let alive = true;
-    const refresh = () => void listPendingSync().then((l) => alive && setItems(l));
+    const refresh = () => {
+      setLocked(isOfflineLockedNow());
+      void listPendingSync().then((l) => alive && setItems(l));
+    };
     listeners.add(refresh);
     refresh();
     const t = setInterval(refresh, 15_000);
@@ -462,7 +491,7 @@ export function usePendingSync(): { items: PendingSyncItem[]; enabled: boolean }
       clearInterval(t);
     };
   }, []);
-  return { items, enabled };
+  return { items, enabled, locked };
 }
 
 /** Outbox entries as the transactions list shows them. Pure. */
@@ -544,9 +573,31 @@ export async function getOfflineKeyInfo(): Promise<DeviceKeyMeta | null> {
   }
 }
 
-/** Number of queued (pending or failed) entries; 0 when the queue is not running. */
+/**
+ * Number of queued (pending or failed) entries, for confirmation prompts. Counts stored records (no decryption), so it is
+ * right while passkey-locked too. 0 when nobody is signed in or the write switch is off.
+ */
 export async function countUnsyncedWrites(): Promise<number> {
-  return (await listPendingSync()).length;
+  const uid = running?.userId ?? getSessionInfo()?.userId ?? null;
+  if (!uid || !isLocalWriteKeySet()) return 0;
+  try {
+    return await countOutboxRecords(uid);
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * After a passkey unlock on this page: restarts the queue on the trusted device if it is not running, else wakes the
+ * drain. The drain was paused by the lock, so nothing sends until this runs.
+ */
+export function resumeOfflineAfterPasskey(userId: string, deviceId: string | null): void {
+  if (running && running.userId === userId) {
+    void running.scheduler.kick();
+    return;
+  }
+  const dev = deviceId ?? (lastDevice?.userId === userId ? lastDevice.deviceId : null) ?? readOfflineIdentity()?.deviceId ?? null;
+  if (dev) startLocalWriteQueue(userId, dev);
 }
 
 /**
@@ -571,6 +622,8 @@ export function disableOfflineMode(): void {
   stopLocalWriteQueue();
   setLocalWriteQueueEnabled(false);
   setLocalReadCacheEnabled(false);
+  // The outboxes are gone, so their passkey records go with them (no ceremony: nothing is left to re-seal).
+  void wipeAllPasskeyUnlocks().catch((err) => console.warn("[local-first] passkey wipe on offline-mode off failed", err));
 }
 
 export interface OfflineModeState {

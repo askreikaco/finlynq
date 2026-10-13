@@ -25,7 +25,7 @@ import {
 import { seal, open, AuthError } from "@/lib/local-first/crypto/aead";
 import { deviceKeys } from "@/lib/local-first/crypto/device-key-provider";
 import { rotateOnDeviceKeys } from "@/lib/local-first/crypto/rotation";
-import { createOutboxStore } from "@/lib/local-first/write-path/outbox-store";
+import { createOutboxStore, countOutboxRecords } from "@/lib/local-first/write-path/outbox-store";
 import type { OutboxEntry } from "@/lib/local-first/write-path/types";
 import { wipeAll } from "@/lib/local-first/read-cache/persist-store";
 
@@ -154,7 +154,7 @@ describe("enable", () => {
     type CreateOpts = { publicKey: { rp: { id: string }; authenticatorSelection: Record<string, unknown>; extensions: unknown } };
     type GetOpts = { publicKey: { userVerification: string; allowCredentials: { type: string; id: Uint8Array }[]; extensions: { prf: { eval: { first: Uint8Array } } } } };
     const create = auth.calls.create[0] as CreateOpts;
-    expect(create.publicKey.authenticatorSelection).toMatchObject({ userVerification: "required", authenticatorAttachment: "platform", residentKey: "preferred" });
+    expect(create.publicKey.authenticatorSelection).toMatchObject({ userVerification: "required", authenticatorAttachment: "platform", residentKey: "discouraged" });
     expect(create.publicKey.rp.id).toBe("localhost");
     expect(create.publicKey.extensions).toEqual({ prf: {} });
     const get = auth.calls.get[0] as GetOpts;
@@ -243,12 +243,14 @@ describe("unlock", () => {
     const box = createOutboxStore(uid, DEV);
     await box.put(entry("queued-1", 1));
     const before = Buffer.from((await readPasskeyUnlockRecord(uid))!.wrapped);
+    clearPasskeyUnlockedSession(uid); // enrolment leaves the page unlocked; a page reload is the state under test
 
     auth.state.mode = "wrongPrf";
     await expect(unlockWithPasskey(uid, deps(auth))).resolves.toEqual({ ok: false, code: "wrong_passkey" });
     expect(hasPasskeyUnlockedSession(uid)).toBe(false);
     expect(Buffer.from((await readPasskeyUnlockRecord(uid))!.wrapped).equals(before)).toBe(true);
-    expect((await box.list()).map((e) => e.opId)).toEqual(["queued-1"]);
+    await expect(box.list()).rejects.toThrow("offline data is locked");
+    expect(await countOutboxRecords(uid)).toBe(1);
   });
 
   it("cancelled assertion: cancelled, the record and queued writes are untouched", async () => {
