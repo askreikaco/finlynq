@@ -1,7 +1,8 @@
 /**
  * Sealed on-device snapshot of the read cache (local-first L2b). PROTOTYPE, unreviewed. Pure: no IndexedDB, no network.
  *
- * A snapshot is one sealed manifest plus N sealed chunks of rows. Each blob is aead.seal() under the
+ * A snapshot is one sealed manifest plus N sealed chunks of rows. While passkey unlock is enrolled every blob is
+ * double-sealed (layers = 2, ../crypto/passkey-seal.ts); the caller passes the inner key. Each blob is aead.seal() under the
  * per-device key (fresh random 96-bit nonce per blob). Plaintext is canonical JSON (oplog/canon.ts).
  *
  *   manifest  = { build, chunks: [{count, idx, table}], createdAt, schemaVer, serverWatermark, snapshotId }
@@ -17,7 +18,8 @@
  * failure: AAD or key mismatch, bit flip, missing / extra / reordered blob, or wrong user, device,
  * snapshot, schemaVer or build. AuthError carries no detail.
  */
-import { AuthError, open, seal } from "../crypto/aead";
+import { AuthError } from "../crypto/aead";
+import { openLayers, sealLayers } from "../crypto/passkey-seal";
 import { canonicalJson } from "../oplog/canon";
 import { createUlidFactory } from "../oplog/ulid";
 import type { AccountRow, CategoryRow, TransactionRow } from "../store/types";
@@ -51,6 +53,7 @@ export interface SnapshotManifest {
 
 /** What binds a snapshot to one user, one device and one schema. */
 export interface SnapshotBindings {
+  /** Device key (outer layer). */
   key: CryptoKey;
   userId: string;
   deviceId: string;
@@ -59,6 +62,8 @@ export interface SnapshotBindings {
 }
 
 export interface EncodeOptions extends SnapshotBindings {
+  /** Passkey inner key. Set while passkey unlock is enrolled: every blob gets the second layer (layers = 2). */
+  inner?: CryptoKey | null;
   serverWatermark?: string | null;
   /** Defaults to a fresh ULID. */
   snapshotId?: string;
@@ -69,11 +74,15 @@ export interface EncodeOptions extends SnapshotBindings {
 export interface DecodeOptions extends SnapshotBindings {
   /** The snapshot the caller expects (from its pointer). Must equal the sealed manifest's snapshotId. */
   snapshotId: string;
+  /** Layer count from the pointer (absent = 1). layers 2 needs `inner`, else PasskeyLockedError. */
+  layers?: 1 | 2;
+  inner?: CryptoKey | null;
 }
 
 export interface EncodedSnapshot {
   snapshotId: string;
   createdAt: number;
+  layers: 1 | 2;
   manifestBlob: Uint8Array;
   chunkBlobs: Uint8Array[];
 }
@@ -127,13 +136,14 @@ export async function encodeSnapshot(rows: SnapshotRows, opts: EncodeOptions): P
     serverWatermark: opts.serverWatermark ?? null,
     chunks,
   };
-  const manifestBlob = await seal(opts.key, enc.encode(canonicalJson(manifest)), aad(opts, snapshotId, MANIFEST_TABLE, 0, 0));
+  const inner = opts.inner ?? null;
+  const manifestBlob = await sealLayers(opts.key, inner, enc.encode(canonicalJson(manifest)), aad(opts, snapshotId, MANIFEST_TABLE, 0, 0));
   const chunkBlobs: Uint8Array[] = [];
   for (let i = 0; i < chunks.length; i++) {
     const c = chunks[i];
-    chunkBlobs.push(await seal(opts.key, plains[i], aad(opts, snapshotId, c.table, c.idx, c.count)));
+    chunkBlobs.push(await sealLayers(opts.key, inner, plains[i], aad(opts, snapshotId, c.table, c.idx, c.count)));
   }
-  return { snapshotId, createdAt, manifestBlob, chunkBlobs };
+  return { snapshotId, createdAt, layers: inner ? 2 : 1, manifestBlob, chunkBlobs };
 }
 
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
@@ -187,8 +197,10 @@ export async function decodeSnapshot(blobs: Uint8Array[], opts: DecodeOptions): 
   if (typeof opts.snapshotId !== "string" || opts.snapshotId.length === 0) throw new Error("snapshotId is required");
   if (blobs.length === 0) throw new AuthError();
 
+  const layers = opts.layers ?? 1;
+  const inner = opts.inner ?? null;
   const manifest = parseManifest(
-    await open(opts.key, blobs[0], aad(opts, opts.snapshotId, MANIFEST_TABLE, 0, 0)),
+    await openLayers(opts.key, inner, blobs[0], aad(opts, opts.snapshotId, MANIFEST_TABLE, 0, 0), layers),
   );
   if (manifest.snapshotId !== opts.snapshotId) throw new AuthError();
   if (manifest.schemaVer !== opts.schemaVer) throw new AuthError();
@@ -201,7 +213,7 @@ export async function decodeSnapshot(blobs: Uint8Array[], opts: DecodeOptions): 
     const c = manifest.chunks[i];
     if ((nextIdx.get(c.table) ?? 0) !== c.idx) throw new AuthError();
     nextIdx.set(c.table, c.idx + 1);
-    const pt = await open(opts.key, blobs[i + 1], aad(opts, opts.snapshotId, c.table, c.idx, c.count));
+    const pt = await openLayers(opts.key, inner, blobs[i + 1], aad(opts, opts.snapshotId, c.table, c.idx, c.count), layers);
     (out[c.table] as unknown[]).push(...parseRows(pt, c.count));
   }
   return out;

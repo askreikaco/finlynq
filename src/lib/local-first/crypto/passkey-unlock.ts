@@ -1,6 +1,7 @@
 /**
  * Passkey unlock for the ON-DEVICE offline data (local-first). PROTOTYPE, unreviewed. Flag: localStorage
- * "finlynq.lf.passkey" === "1" (off by default, per browser). Off = every export here is inert until called.
+ * "finlynq.lf.passkey" === "1" (off by default, per browser). The flag gates the Settings card; the sealing gate below
+ * keys off the stored passkey RECORD, so a browser that has enrolled stays locked whatever the flag says.
  *
  * What it is:
  *  - A LOCAL-ONLY WebAuthn credential (platform authenticator, PRF extension). Never registered with the server,
@@ -8,13 +9,12 @@
  *  - A random 32-byte "unlock secret", AES-GCM-wrapped under a key derived (HKDF-SHA-256) from the PRF output.
  *    Stored in its own IndexedDB database (one per user) as the wrapped bytes + credential id + PRF salt + rp id.
  *  - Unlock = a passkey assertion with user verification; PRF output -> wrap key -> unwrap. On success the unlock
- *    secret is kept in memory only (per user) until clearPasskeyUnlockedSession / a wipe.
- *
- * What it does NOT do: the unlock secret is not yet used to seal or open any data. The on-device device key
- * (device-key-provider.ts) stays non-extractable and usable without a passkey, so today this is a presence check plus
- * a verified unlock path, not a cryptographic gate. See the report for the decision this needs.
+ *    secret is kept in memory only (per user, this page session) until a lock, a wipe or a page reload.
+ *  - While the record exists the unlock secret seals a second layer over the offline outbox and snapshot
+ *    (see passkey-seal.ts). Enrolment, re-seal and disable live in passkey-lifecycle.ts.
  *
  * Never stored: the PRF output, the password, the DEK, the unlock secret in plaintext.
+ * Credential: residentKey "discouraged". Unlock always passes allowCredentials, so no discoverable key is needed.
  */
 import { seal, open, AuthError } from "./aead";
 import { deleteDb, idbSupported, openDb, registerDb, req, txDone, unregisterDb, userDbSuffix, allLfDbNames, LF_DB_PREFIX } from "../storage/db-registry";
@@ -39,9 +39,14 @@ export type PasskeyCode =
   | "failed"
   | "not_enabled"
   | "wrong_passkey"
-  | "unsynced_blocked";
+  | "unsynced_blocked"
+  | "already_enabled"
+  | "untrusted"
+  | "offline_off";
 
-export type PasskeyResult = { ok: true } | { ok: false; code: Exclude<PasskeyCode, "ok"> };
+export type PasskeyResult =
+  | { ok: true; rewritten?: number }
+  | { ok: false; code: Exclude<PasskeyCode, "ok">; /** Records that could not be re-sealed (enrolment aborted). */ failed?: number };
 
 export interface PasskeyUnlockRecord {
   v: 1;
@@ -52,6 +57,13 @@ export interface PasskeyUnlockRecord {
   /** seal() output: nonce || ciphertext || tag, of the 32-byte unlock secret. */
   wrapped: Uint8Array;
   createdAt: number;
+  /** The trusted device the offline copy belongs to (AAD of its records). Stored so unlock needs no network. */
+  deviceId?: string;
+  /**
+   * false while the outbox may still hold single-sealed records (enrolment in progress, or interrupted). Absent = true.
+   * Reads still work for both forms; unlock finishes the re-seal when this is false.
+   */
+  sealed?: boolean;
 }
 
 export interface PasskeyDeps {
@@ -59,6 +71,21 @@ export interface PasskeyDeps {
   credentials?: Pick<CredentialsContainer, "create" | "get">;
   /** Defaults to location.hostname. Must match the origin the page runs on. */
   rpId?: string;
+}
+
+/**
+ * Thrown by every on-device offline operation (outbox, snapshot) while a passkey record exists and this page holds no
+ * unlock secret. Callers treat it as "locked": nothing is read, deleted or written.
+ */
+export class PasskeyLockedError extends Error {
+  constructor() {
+    super("offline data is locked: unlock with passkey");
+    this.name = "PasskeyLockedError";
+  }
+}
+
+export function isPasskeyLockedError(e: unknown): boolean {
+  return e instanceof PasskeyLockedError || (typeof e === "object" && e !== null && (e as { name?: unknown }).name === "PasskeyLockedError");
 }
 
 /** Reads the flag. Any storage failure means OFF. */
@@ -87,7 +114,7 @@ function markEnrolled(): void {
   try {
     window.localStorage.setItem(PASSKEY_ENROLLED_KEY, "1");
   } catch {
-    /* storage blocked: the wipe may then miss a leftover database; the flag still gates unlock */
+    /* storage blocked: the wipe may then miss a leftover database; the record still gates unlock */
   }
 }
 
@@ -135,14 +162,83 @@ export async function deriveWrapKey(prfOutput: Uint8Array, userId: string): Prom
 
 /** Unlock secrets held in memory after a successful passkey unlock. Never persisted. */
 const sessionUnlocked = new Map<string, Uint8Array>();
+/**
+ * Last known "does a passkey record exist" per user (true/false). A hint for UI and for the page-side persist gates:
+ * the authoritative check is the read inside each on-device operation. Absent = not read yet on this page.
+ */
+const enrolledHint = new Map<string, boolean>();
+const lockListeners = new Set<() => void>();
+const unlockListeners = new Set<() => void>();
+
+function emitLock(userId?: string, enrolled?: boolean): void {
+  if (userId !== undefined && enrolled !== undefined) enrolledHint.set(userId, enrolled);
+  for (const l of lockListeners) l();
+}
+
+/** Called after every change of the lock state (enrol, unlock, lock, disable, wipe). */
+export function onPasskeyLockChange(listener: () => void): () => void {
+  lockListeners.add(listener);
+  return () => {
+    lockListeners.delete(listener);
+  };
+}
+
+/** Called only after a successful passkey unlock on this page (not after enrolment or a refresh). */
+export function onPasskeyUnlocked(listener: () => void): () => void {
+  unlockListeners.add(listener);
+  return () => {
+    unlockListeners.delete(listener);
+  };
+}
 
 export function hasPasskeyUnlockedSession(userId: string): boolean {
   return sessionUnlocked.has(userId);
 }
 
+/** The in-memory unlock secret for this user, or null. For the local-first crypto layer only. */
+export function unlockSecretFor(userId: string): Uint8Array | null {
+  return sessionUnlocked.get(userId) ?? null;
+}
+
+/** Enrolled (true), not enrolled (false), or undefined when not read yet on this page. */
+export function passkeyEnrolledHint(userId: string): boolean | undefined {
+  return enrolledHint.get(userId);
+}
+
+/** True when a passkey record exists for this user and this page holds no unlock secret (hint-based, sync). */
+export function passkeyLockedNow(userId: string): boolean {
+  return enrolledHint.get(userId) === true && !sessionUnlocked.has(userId);
+}
+
+/**
+ * True unless the user is known to have no passkey record. Persist gates (the SWR cache) use it: until the first
+ * refresh on this page, nothing is written to disk for an unknown user.
+ */
+export function passkeyPersistBlocked(userId: string): boolean {
+  return enrolledHint.get(userId) !== false;
+}
+
+/** Reads the record and updates the hint. A malformed record counts as enrolled (fail closed). */
+export async function refreshPasskeyLock(userId: string): Promise<boolean> {
+  let enrolled: boolean;
+  try {
+    enrolled = (await readPasskeyUnlockRecord(userId)) !== null;
+  } catch {
+    enrolled = true;
+  }
+  emitLock(userId, enrolled);
+  return enrolled;
+}
+
+function setUnlocked(userId: string, secret: Uint8Array): void {
+  sessionUnlocked.set(userId, secret);
+  emitLock(userId, true);
+}
+
 export function clearPasskeyUnlockedSession(userId?: string): void {
   if (userId === undefined) sessionUnlocked.clear();
   else sessionUnlocked.delete(userId);
+  emitLock();
 }
 
 function resolveDeps(deps?: PasskeyDeps): { credentials: Pick<CredentialsContainer, "create" | "get"> | undefined; rpId: string } {
@@ -207,7 +303,10 @@ function asRecord(v: unknown): PasskeyUnlockRecord | null {
   const prfSalt = bytesOf(r.prfSalt);
   const wrapped = bytesOf(r.wrapped);
   if (r.v !== 1 || typeof r.rpId !== "string" || !credentialId || !userHandle || !prfSalt || !wrapped || typeof r.createdAt !== "number") return null;
-  return { v: 1, rpId: r.rpId, credentialId, userHandle, prfSalt, wrapped, createdAt: r.createdAt };
+  const rec: PasskeyUnlockRecord = { v: 1, rpId: r.rpId, credentialId, userHandle, prfSalt, wrapped, createdAt: r.createdAt };
+  if (typeof r.sealed === "boolean") rec.sealed = r.sealed;
+  if (typeof r.deviceId === "string" && r.deviceId !== "") rec.deviceId = r.deviceId;
+  return rec;
 }
 
 /** True when the user's passkey database exists (checked without creating it). */
@@ -235,13 +334,30 @@ export async function readPasskeyUnlockRecord(userId: string): Promise<PasskeyUn
 }
 
 /**
- * Creates the local credential, derives the PRF output, wraps a fresh unlock secret and stores the wrapped record.
- * Re-enabling replaces the record; the earlier platform credential is not removable from the page (see report).
- * Nothing is stored unless the wrap round-trips with the same PRF output.
+ * Sets the record's `sealed` flag. Used as the commit step of a re-seal (passkey-lifecycle.ts), never on its own.
  */
-export async function enablePasskeyUnlock(userId: string, deps?: PasskeyDeps): Promise<PasskeyResult> {
+export async function setRecordSealed(userId: string, sealed: boolean): Promise<void> {
+  const rec = await readPasskeyUnlockRecord(userId);
+  if (!rec) throw new Error("no passkey record to update");
+  await putRecord(userId, { ...rec, sealed });
+}
+
+/**
+ * Creates the local credential, derives the PRF output, wraps a fresh unlock secret and stores the wrapped record,
+ * with sealed = false. This is the RECORD step only: it does not touch the outbox or the snapshot. Callers use
+ * enrollPasskeySeal (passkey-lifecycle.ts), which re-seals the data and then sets sealed = true.
+ * Refused when a record already exists. Nothing is stored unless the wrap round-trips with the same PRF output.
+ */
+export async function enablePasskeyUnlock(userId: string, deps?: PasskeyDeps, deviceId?: string): Promise<PasskeyResult> {
   const { credentials, rpId } = resolveDeps(deps);
   if (!credentials || !rpId || !idbSupported() || (await passkeyPrfKnownUnsupported())) return { ok: false, code: "unsupported" };
+  let existing: PasskeyUnlockRecord | null;
+  try {
+    existing = await readPasskeyUnlockRecord(userId);
+  } catch {
+    return { ok: false, code: "already_enabled" };
+  }
+  if (existing) return { ok: false, code: "already_enabled" };
 
   const userHandle = rand(16);
   const prfSalt = rand(32);
@@ -253,7 +369,8 @@ export async function enablePasskeyUnlock(userId: string, deps?: PasskeyDeps): P
         rp: { id: rpId, name: RP_NAME },
         user: { id: userHandle, name: "finlynq-on-device", displayName: "Finlynq on-device unlock" },
         pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
-        authenticatorSelection: { residentKey: "preferred", userVerification: "required", authenticatorAttachment: "platform" },
+        // discouraged: unlock always passes allowCredentials, so a discoverable key would only add a passkey-picker entry.
+        authenticatorSelection: { residentKey: "discouraged", userVerification: "required", authenticatorAttachment: "platform" },
         attestation: "none",
         timeout: CEREMONY_TIMEOUT_MS,
         extensions: { prf: {} } as AuthenticationExtensionsClientInputs,
@@ -293,8 +410,19 @@ export async function enablePasskeyUnlock(userId: string, deps?: PasskeyDeps): P
   const check = await open(wrapKey, wrapped, aad).catch(() => null);
   if (!check || !equalBytes(check, secret)) return { ok: false, code: "failed" };
 
-  await putRecord(userId, { v: 1, rpId, credentialId, userHandle, prfSalt, wrapped, createdAt: Date.now() });
+  await putRecord(userId, {
+    v: 1,
+    rpId,
+    credentialId,
+    userHandle,
+    prfSalt,
+    wrapped,
+    createdAt: Date.now(),
+    sealed: false,
+    ...(deviceId ? { deviceId } : {}),
+  });
   markEnrolled();
+  setUnlocked(userId, secret);
   return { ok: true };
 }
 
@@ -334,7 +462,8 @@ export async function unlockWithPasskey(userId: string, deps?: PasskeyDeps): Pro
   try {
     const wrapKey = await deriveWrapKey(prf, userId);
     const secret = await open(wrapKey, rec.wrapped, recordAad(userId, rec.credentialId));
-    sessionUnlocked.set(userId, secret);
+    setUnlocked(userId, secret);
+    for (const l of unlockListeners) l();
     return { ok: true };
   } catch (e) {
     if (e instanceof AuthError) return { ok: false, code: "wrong_passkey" };
@@ -343,8 +472,9 @@ export async function unlockWithPasskey(userId: string, deps?: PasskeyDeps): Pro
 }
 
 /**
- * Turns passkey unlock off for this user: deletes the wrap record and clears the in-memory secret.
- * Refused while queued writes exist unless the caller passes confirmed = true (the UI asks first).
+ * RECORD step of turning passkey unlock off: deletes the wrap record and clears the in-memory secret. It does NOT re-seal
+ * the outbox. Callers must re-seal first (passkey-lifecycle.ts disablePasskeySeal). Refused while queued writes exist
+ * unless the caller passes confirmed = true (the UI asks first).
  */
 export async function disablePasskeyUnlock(userId: string, opts: { unsyncedCount: number; confirmed: boolean }): Promise<PasskeyResult> {
   if (opts.unsyncedCount > 0 && !opts.confirmed) return { ok: false, code: "unsynced_blocked" };
@@ -359,6 +489,8 @@ export async function disablePasskeyUnlock(userId: string, opts: { unsyncedCount
 /** Deletes one user's passkey wrap database and forgets the in-memory secret. Resolves once the database is gone. */
 export async function wipePasskeyUnlock(userId: string): Promise<void> {
   clearPasskeyUnlockedSession(userId);
+  enrolledHint.set(userId, false);
+  emitLock();
   if (!idbSupported() || !passkeyMayExist()) return; // browsers that never enrolled do no IndexedDB work
   // The enrolled marker is kept: other accounts on this browser may still have a database.
   const name = await passkeyDbName(userId);
@@ -366,9 +498,11 @@ export async function wipePasskeyUnlock(userId: string): Promise<void> {
   await unregisterDb(name);
 }
 
-/** Deletes every passkey wrap database on this browser (signed-out boot, password reset). */
+/** Deletes every passkey wrap database on this browser (signed-out boot, password reset, offline mode off). */
 export async function wipeAllPasskeyUnlocks(): Promise<void> {
   clearPasskeyUnlockedSession();
+  for (const k of [...enrolledHint.keys()]) enrolledHint.set(k, false);
+  emitLock();
   if (!idbSupported() || !passkeyMayExist()) return;
   for (const name of (await allLfDbNames()).filter((n) => n.startsWith(PASSKEY_DB_PREFIX))) {
     await deleteDb(name);

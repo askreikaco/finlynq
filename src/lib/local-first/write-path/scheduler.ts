@@ -7,6 +7,7 @@
  * a run still in flight is not re-armed. A paused drain (signed out / locked, 401/403/423) arms no timer.
  * Nothing runs while the browser reports offline (navigator.onLine false); the `online` event resumes.
  */
+import { isPasskeyLockedError } from "../crypto/passkey-unlock";
 import type { DrainReport } from "./drain";
 import type { OutboxEntry } from "./types";
 
@@ -84,7 +85,9 @@ export function createDrainScheduler(deps: SchedulerDeps): DrainScheduler {
         const report = await deps.drain();
         paused = report.paused || report.skipped;
       } catch (err) {
-        console.warn("[local-first] drain failed", err);
+        // Passkey-locked: the outbox cannot be read. Paused until the page is unlocked (kick), no retry timer, no warning.
+        if (isPasskeyLockedError(err)) paused = true;
+        else console.warn("[local-first] drain failed", err);
       }
       if (!active) return;
       if (!paused) await arm();

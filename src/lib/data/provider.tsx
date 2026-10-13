@@ -8,7 +8,9 @@ import { getSessionInfo, onSessionInfo } from "./session-info";
 import { loadPersisted, persistSupported, purgeDisallowed, wipeUser } from "./persist";
 import { createPersistentCache } from "./persistent-cache";
 import { isSafeToPersist } from "./persist-policy";
-import { dropLocalDisposableCaches, dropLocalUserCache } from "./local-read-cache-wipe";
+import { dropLocalDisposableCaches, dropLocalUserCache, dropPasskeyUnlockFor } from "./local-read-cache-wipe";
+import { passkeyPersistBlocked, refreshPasskeyLock } from "@/lib/local-first/crypto/passkey-unlock";
+import { PasskeyLockBanner } from "@/components/passkey-lock-banner";
 import { setLocalWriteSyncedHandler, startLocalWriteQueue } from "./local-write-queue";
 import { forgetOfflineIdentity, readOfflineIdentity, rememberOfflineIdentity } from "./offline-identity";
 import { revalidateTransactionLists } from "@/lib/transactions/revalidate";
@@ -38,8 +40,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
     const userId = info.userId;
     locked.current = info.locked;
-    const enabled = () => trusted.current && !locked.current;
+    // Passkey enrolled for this user: the SWR copy is never written or read on disk (memory only). Unknown until the
+    // first refresh, so nothing is persisted before the check.
+    const enabled = () => trusted.current && !locked.current && !passkeyPersistBlocked(userId);
     let cancelled = false;
+    const passkeyReady = refreshPasskeyLock(userId).catch(() => true);
 
     const make = (initial: Map<string, unknown>) =>
       createPersistentCache({ userId, build: BUILD, initial, enabled });
@@ -50,7 +55,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setCache(make(new Map()));
     } else {
       const budget = new Promise<Map<string, unknown>>((r) => setTimeout(() => r(new Map()), HYDRATE_BUDGET_MS));
-      void Promise.race([loadPersisted(userId, BUILD, isSafeToPersist).catch(() => new Map<string, unknown>()), budget])
+      const load = passkeyReady.then(() =>
+        passkeyPersistBlocked(userId) ? new Map<string, unknown>() : loadPersisted(userId, BUILD, isSafeToPersist),
+      );
+      void Promise.race([load.catch(() => new Map<string, unknown>()), budget])
         .then((initial) => {
           if (!cancelled) setCache(make(initial));
           // Purge disallowed keys from IndexedDB in parallel (fire-and-forget).
@@ -76,6 +84,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             forgetOfflineIdentity();
             void wipeUser(userId);
             void dropLocalUserCache(userId);
+            void dropPasskeyUnlockFor(userId); // the outbox it protected is gone
           }
         })
         .catch(() => {
@@ -107,7 +116,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         void wipeUser(userId);
         // Sign-out (next null) drops the outbox too; a lock keeps it (unsynced writes exist nowhere else).
         if (next) void dropLocalDisposableCaches(userId);
-        else void dropLocalUserCache(userId);
+        else {
+          void dropLocalUserCache(userId);
+          void dropPasskeyUnlockFor(userId);
+        }
       }
     });
     return () => {
@@ -121,6 +133,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   return (
     <SWRConfig value={{ ...dataDefaults, provider: () => cache as unknown as Cache }}>
       <WriteQueueBridge />
+      <PasskeyLockBanner />
       {children}
     </SWRConfig>
   );

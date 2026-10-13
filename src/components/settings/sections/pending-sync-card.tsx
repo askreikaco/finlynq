@@ -4,10 +4,12 @@
  * Offline write queue status (local-first L3). Renders nothing unless the opt-in is on AND something is queued,
  * so with the flag off Settings is unchanged. Pending = waiting to sync; Failed = rejected by the server, with Retry / Discard.
  */
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { discardPendingSync, retryPendingSync, usePendingSync } from "@/lib/data/local-write-queue";
+import { usePasskeyLock } from "@/lib/data/passkey-unlock";
 
 /** What each queued kind is called on the Pending sync list (the copy the user sees). */
 const ENTITY_LABEL: Record<string, string> = {
@@ -20,8 +22,34 @@ const ENTITY_LABEL: Record<string, string> = {
 };
 
 export function PendingSyncCard() {
-  const { items, enabled } = usePendingSync();
-  if (!enabled || items.length === 0) return null;
+  const { items, enabled, locked } = usePendingSync();
+  const passkey = usePasskeyLock();
+  const [busy, setBusy] = useState(false);
+  if (!enabled) return null;
+  if (locked) {
+    return (
+      <Card data-testid="pending-sync-locked">
+        <CardHeader>
+          <CardTitle>Pending sync</CardTitle>
+          <CardDescription>Locked: unlock with passkey</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={busy}
+            onClick={() => {
+              setBusy(true);
+              void passkey.unlock().finally(() => setBusy(false));
+            }}
+          >
+            {busy ? "Waiting for passkey…" : "Use passkey to unlock"}
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+  if (items.length === 0) return null;
   const pending = items.filter((i) => i.status === "pending");
   const failed = items.filter((i) => i.status === "failed");
   return (
