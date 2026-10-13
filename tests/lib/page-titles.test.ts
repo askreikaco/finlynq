@@ -17,6 +17,8 @@ const TITLE_EXEMPTIONS: Record<string, string> = {
   "/categories": "Feature-flagged: page.tsx delegates to _page-content.tsx (merged layout titles 'Categories' tabs)",
   "/dev/gallery": "Dev-only tool page; descriptive title 'Component Gallery'",
   "/portfolio/new": "Op-catalog chooser (buy, sell, deposit...); header 'New operation' is the catalog heading, registry label is the nav child name",
+  "/admin": "Title 'Admin' lives in the shared adminPageProps object spread into SectionPage (batch 4)",
+  "/settings/investments": "Title lives in a shared props object spread into SectionPage (batch 4)",
   "/account": "Redirects to /account/info (or AccountHub); the Account title comes from the AccountShell layout, not this page",
 };
 
