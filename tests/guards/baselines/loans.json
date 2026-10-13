@@ -1,8 +1,7 @@
 {
   "family": "loans",
   "unmigrated": [
-    "src/app/(app)/loans/[id]/edit/page.tsx",
-    "src/app/(app)/loans/page.tsx"
+    "src/app/(app)/loans/[id]/edit/page.tsx"
   ],
   "chrome": {
     "src/app/(app)/loans/[id]/edit/page.tsx": {

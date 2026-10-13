@@ -22,15 +22,8 @@
  *   - amount + decoded payee + decoded category name (when linked tx).
  */
 
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { ListRow } from "@/components/mobile";
 import { formatCurrency } from "@/lib/currency";
 import { matchRowClass, type PaneMatchStatus } from "./match-status";
 
@@ -144,105 +137,75 @@ export function DbPane({
   return (
     <div className="flex flex-col h-full">
       {header}
-      <div className="flex-1 overflow-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Payee</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead className="text-right">Amount</TableHead>
-              <TableHead
-                className="text-right"
-                title="System's running balance — derived by walking bank rows from the latest loaded anchor"
-              >
-                Calculated
-              </TableHead>
-              <TableHead
-                className="text-right"
-                title="Bank's reported balance — the actual value loaded from a statement anchor for that exact date"
-              >
-                Loaded
-              </TableHead>
-              {rowActions && <TableHead className="w-32 text-right">Actions</TableHead>}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.map((r) => {
-              const dimmed = r.linkedStagedRowId != null ? "opacity-70" : "";
-              // Calculated column — first row of the day shows the value
-              // when one is computed, otherwise "—" so the column still
-              // signals where balances will appear.
-              const showCalc =
-                r.runningBalance != null && !calcShownForDate.has(r.date);
-              if (showCalc) calcShownForDate.add(r.date);
-              const isFirstOfDayCalcEmpty =
-                r.runningBalance == null && !dayFirstSeenForCalc.has(r.date);
-              if (isFirstOfDayCalcEmpty) dayFirstSeenForCalc.add(r.date);
-              // Loaded column — same pattern: value or "—" on first of day.
-              const showLoaded =
-                r.anchorBalance != null && !loadedShownForDate.has(r.date);
-              if (showLoaded) loadedShownForDate.add(r.date);
-              const isFirstOfDayLoadedEmpty =
-                r.anchorBalance == null && !dayFirstSeenForLoaded.has(r.date);
-              if (isFirstOfDayLoadedEmpty) dayFirstSeenForLoaded.add(r.date);
-              const highlighted = highlightedBankIds?.has(r.id) ?? false;
-              // Ring (not a bg) so the click highlight layers cleanly over the
-              // persistent full-row match tint.
-              const highlightClass = highlighted
-                ? "ring-2 ring-inset ring-info/60"
-                : "";
-              const ms = matchStatus?.get(r.id);
-              const clickable = onRowClick != null;
-              return (
-                <TableRow
-                  key={r.id}
-                  className={`h-11 ${dimmed} ${matchRowClass(ms)} ${highlightClass} ${clickable ? "cursor-pointer" : ""}`}
-                  onClick={
-                    clickable
-                      ? (e) => {
-                          // Defensive: rowActions render buttons (Pick / Flag /
-                          // unflag) inside this row. Suppress the row-click
-                          // when the target is inside any interactive child.
-                          const target = e.target as HTMLElement;
-                          if (target.closest("button")) return;
-                          if (target.closest("input")) return;
-                          onRowClick?.(r.id);
-                        }
-                      : undefined
-                  }
-                >
-                  <TableCell className="font-mono text-xs">{r.date}</TableCell>
-                  <TableCell className="text-xs truncate max-w-[220px]">
-                    {r.payee || (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                    {r.category && (
-                      <span className="text-muted-foreground"> · {r.category}</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-xs">
-                    <div className="flex items-center gap-1 flex-nowrap">
-                      {r.txType === "R" ? (
-                        <Badge variant="outline" className="text-xs">
-                          Transfer
-                        </Badge>
-                      ) : r.txType === "I" ? (
-                        <Badge
-                          variant="outline"
-                          className="text-xs bg-pos/10 text-pos border-pos/30"
-                        >
-                          Income
-                        </Badge>
-                      ) : r.txType === "T" ? (
-                        <Badge variant="outline" className="text-xs">
-                          True-up
-                        </Badge>
-                      ) : r.txType === "E" ? (
-                        <Badge variant="outline" className="text-xs">
-                          Expense
-                        </Badge>
-                      ) : null}
+      {/* One native list row per bank-ledger entry (no table). Balances sit on a second line. */}
+      <div className="flex-1 overflow-auto divide-y divide-border/50">
+        {rows.map((r) => {
+          const dimmed = r.linkedStagedRowId != null ? "opacity-70" : "";
+          // Calculated column — first row of the day shows the value
+          // when one is computed, otherwise "—" so the column still
+          // signals where balances will appear.
+          const showCalc =
+            r.runningBalance != null && !calcShownForDate.has(r.date);
+          if (showCalc) calcShownForDate.add(r.date);
+          const isFirstOfDayCalcEmpty =
+            r.runningBalance == null && !dayFirstSeenForCalc.has(r.date);
+          if (isFirstOfDayCalcEmpty) dayFirstSeenForCalc.add(r.date);
+          // Loaded column — same pattern: value or "—" on first of day.
+          const showLoaded =
+            r.anchorBalance != null && !loadedShownForDate.has(r.date);
+          if (showLoaded) loadedShownForDate.add(r.date);
+          const isFirstOfDayLoadedEmpty =
+            r.anchorBalance == null && !dayFirstSeenForLoaded.has(r.date);
+          if (isFirstOfDayLoadedEmpty) dayFirstSeenForLoaded.add(r.date);
+          const highlighted = highlightedBankIds?.has(r.id) ?? false;
+          // Ring (not a bg) so the click highlight layers cleanly over the
+          // persistent full-row match tint.
+          const highlightClass = highlighted
+            ? "ring-2 ring-inset ring-info/60"
+            : "";
+          const ms = matchStatus?.get(r.id);
+          const clickable = onRowClick != null;
+          const typeLabel =
+            r.txType === "R" ? "Transfer"
+              : r.txType === "I" ? "Income"
+                : r.txType === "T" ? "True-up"
+                  : r.txType === "E" ? "Expense"
+                    : null;
+              const amountCell = (
+                <span className="font-mono text-sm">
+                  {formatCurrency(r.amount, r.currency || "CAD")}
+                </span>
+              );
+          return (
+            <div
+              key={r.id}
+              className={`px-2 ${dimmed} ${matchRowClass(ms)} ${highlightClass} ${clickable ? "cursor-pointer" : ""}`}
+              onClick={
+                clickable
+                  ? (e) => {
+                      // Defensive: rowActions render buttons (Pick / Flag /
+                      // unflag) inside this row. Suppress the row-click
+                      // when the target is inside any interactive child.
+                      const target = e.target as HTMLElement;
+                      if (target.closest("button")) return;
+                      if (target.closest("input")) return;
+                      onRowClick?.(r.id);
+                    }
+                  : undefined
+              }
+            >
+              <ListRow
+                title={
+                  <>
+                    {r.payee || <span className="text-muted-foreground">—</span>}
+                    {r.category && <span className="text-muted-foreground"> · {r.category}</span>}
+                  </>
+                }
+                subtitle={`${r.date}${typeLabel ? ` · ${typeLabel}` : ""}`}
+                value={amountCell}
+                secondary={
+                  r.linkedStagedRowId != null || r.reconciliationFlag ? (
+                    <span className="flex flex-wrap justify-end gap-1">
                       {r.linkedStagedRowId != null && (
                         <Badge
                           variant="outline"
@@ -261,51 +224,48 @@ export function DbPane({
                           missing from statement
                         </Badge>
                       )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right font-mono text-xs">
-                    {formatCurrency(r.amount, r.currency || "CAD")}
-                  </TableCell>
-                  <TableCell
-                    className="text-right font-mono text-xs"
-                    title={
-                      showCalc
-                        ? `Calculated end-of-day balance for ${r.date} (anchor + transactions)`
-                        : isFirstOfDayCalcEmpty
-                          ? "No anchor loaded yet — calculated balance can't be derived"
-                          : undefined
-                    }
-                  >
-                    {showCalc && r.runningBalance != null
-                      ? formatCurrency(r.runningBalance, r.currency || "CAD")
+                    </span>
+                  ) : undefined
+                }
+              />
+              <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1 pb-2 pl-11 font-mono text-xs">
+                <span
+                  title={
+                    showCalc
+                      ? `Calculated end-of-day balance for ${r.date} (anchor + transactions)`
                       : isFirstOfDayCalcEmpty
-                        ? <span className="text-muted-foreground">—</span>
-                        : ""}
-                  </TableCell>
-                  <TableCell
-                    className="text-right font-mono text-xs"
-                    title={
-                      showLoaded && r.anchorBalance != null
-                        ? `Bank-reported balance for ${r.date}${r.anchorSource ? ` (${r.anchorSource})` : ""}`
-                        : isFirstOfDayLoadedEmpty
-                          ? "No bank-reported anchor for this date"
-                          : undefined
-                    }
-                  >
-                    {showLoaded && r.anchorBalance != null
-                      ? formatCurrency(r.anchorBalance, r.currency || "CAD")
+                        ? "No anchor loaded yet — calculated balance can't be derived"
+                        : undefined
+                  }
+                >
+                  <span className="font-sans text-muted-foreground">Calc </span>
+                  {showCalc && r.runningBalance != null
+                    ? formatCurrency(r.runningBalance, r.currency || "CAD")
+                    : isFirstOfDayCalcEmpty
+                      ? <span className="text-muted-foreground">—</span>
+                      : ""}
+                </span>
+                <span
+                  title={
+                    showLoaded && r.anchorBalance != null
+                      ? `Bank-reported balance for ${r.date}${r.anchorSource ? ` (${r.anchorSource})` : ""}`
                       : isFirstOfDayLoadedEmpty
-                        ? <span className="text-muted-foreground">—</span>
-                        : ""}
-                  </TableCell>
-                  {rowActions && (
-                    <TableCell className="text-right">{rowActions(r)}</TableCell>
-                  )}
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+                        ? "No bank-reported anchor for this date"
+                        : undefined
+                  }
+                >
+                  <span className="font-sans text-muted-foreground">Loaded </span>
+                  {showLoaded && r.anchorBalance != null
+                    ? formatCurrency(r.anchorBalance, r.currency || "CAD")
+                    : isFirstOfDayLoadedEmpty
+                      ? <span className="text-muted-foreground">—</span>
+                      : ""}
+                </span>
+                {rowActions && <span className="ml-auto">{rowActions(r)}</span>}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

@@ -1,43 +1,24 @@
 "use client";
 
-import { MetricCard } from "@/components/metric-card";
-import type { LucideIcon } from "lucide-react";
-
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Users,
-  Activity,
-  Shield,
-  CreditCard,
-  BarChart3,
-  CheckCircle,
-  XCircle,
-  Mail,
-  KeyRound,
-} from "lucide-react";
+import { Users, Activity, Shield, Mail, KeyRound } from "lucide-react";
 import { motion } from "framer-motion";
 import { DORMANT_DAYS, isDormant } from "@/lib/auth/dormancy";
 import {
+  findColFilter,
   serializeTableFilters,
   setColFilter,
   type TableColFilter,
 } from "@/lib/table-filters";
 import { formatDateTimeLocal } from "@/lib/currency";
 import { EditUserModal } from "@/components/admin/edit-user-modal";
-import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { Pagination } from "@/components/ui/pagination";
-import { PageHeader } from "@/components/mobile";
+import { DetailSheet, ListRow, METRIC_GRID_CLASS, MetricGrid, SectionCard } from "@/components/mobile";
+import { SectionPage } from "@/components/templates";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -127,7 +108,23 @@ interface AdminGrant {
 // @/lib/auth/queries). The hand-rolled client comparator that used to live here
 // was removed with the 50-row cap: it could only ever order the rows already
 // fetched, so sorting a multi-page table silently sorted one page in isolation.
-// `DataTable` renders in `manualSort` mode and reports header clicks upward.
+
+/** The sort keys offered as compact pills on the users list (server-side sort). */
+const USER_SORT_OPTIONS: Array<{ key: UserSortKey; label: string }> = [
+  { key: "user", label: "Name" },
+  { key: "lastActive", label: "Last active" },
+  { key: "joined", label: "Joined" },
+  { key: "txns", label: "Txns" },
+];
+
+/** The one SectionPage shell for the admin console (centred report column at every width). */
+const adminPageProps = {
+  id: "admin",
+  title: "Admin",
+  subtitle: "Manage users and monitor platform usage",
+  width: "report" as const,
+  center: true,
+};
 
 /** Rows per page. The route clamps `limit` to 200. */
 const USERS_PAGE_SIZE = 50;
@@ -144,14 +141,6 @@ type UserSortKey =
   | "joined"
   | "span";
 
-/**
- * A column descriptor whose key is constrained to a real sort key (or the
- * non-sortable actions column). Typo a key and this fails at compile time
- * rather than at runtime with a 400 from the route's strict validation.
- */
-type UserColumn = DataTableColumn<AdminUser> & {
-  key: UserSortKey | "actions";
-};
 
 // ─── Animation ──────────────────────────────────────────────────────────────
 
@@ -171,49 +160,6 @@ const itemVariants = {
     transition: { duration: 0.4, ease: "easeOut" as const },
   },
 };
-
-// ─── Stat Card ──────────────────────────────────────────────────────────────
-
-function StatCard({
-  label,
-  value,
-  icon,
-  color,
-}: {
-  label: string;
-  value: string | number;
-  icon: LucideIcon;
-  color: string;
-}) {
-  // counts, not money: never let MetricCard format a number as currency
-  return <MetricCard label={label} icon={icon} tone={color} value={typeof value === "number" ? value.toLocaleString() : value} />;
-}
-
-// ─── Role Badge ─────────────────────────────────────────────────────────────
-
-function RoleBadge({ role }: { role: string }) {
-  if (role === "admin") {
-    return (
-      <Badge variant="default" className="bg-warning/15 text-warning border-warning/30">
-        Admin
-      </Badge>
-    );
-  }
-  return <Badge variant="secondary">User</Badge>;
-}
-
-function PlanBadge({ plan }: { plan: string }) {
-  const colors: Record<string, string> = {
-    free: "bg-muted text-muted-foreground border-border",
-    pro: "bg-info/15 text-info border-info/30",
-    premium: "bg-chart-5/15 text-chart-5 border-chart-5/30",
-  };
-  return (
-    <Badge variant="outline" className={colors[plan] || colors.free}>
-      {plan.charAt(0).toUpperCase() + plan.slice(1)}
-    </Badge>
-  );
-}
 
 // ─── Main Page ──────────────────────────────────────────────────────────────
 
@@ -235,6 +181,9 @@ export default function AdminPage() {
   // FINLYNQ-167 — OAuth grants panel.
   const [grants, setGrants] = useState<AdminGrant[]>([]);
   const [revokingGrant, setRevokingGrant] = useState<number | null>(null);
+  // Row tapped open in a detail sheet (users and OAuth grants).
+  const [detailUserId, setDetailUserId] = useState<string | null>(null);
+  const [detailGrantId, setDetailGrantId] = useState<number | null>(null);
 
   /**
    * The users page. Split from the stats/grants fetch below so paging or
@@ -390,211 +339,18 @@ export default function AdminPage() {
     }
   };
 
-  /**
-   * Column descriptors for the shared DataTable. `accessor` is only the
-   * fallback cell value here — every column renders explicitly, and sorting is
-   * server-side (`manualSort`), so the accessors are never used to order rows.
-   * The `key` of each sortable column MUST match a key in USER_SORT_SQL
-   * (@/lib/auth/queries); the route 400s on anything else.
-   */
-  const userColumns: UserColumn[] = useMemo(
-    () => [
-      {
-        key: "user",
-        header: "User",
-        // Text search spans display name, username AND email server-side, so it
-        // matches whichever of them the cell happens to be showing.
-        filterType: "text",
-        accessor: (u) => u.displayName ?? u.username ?? u.email ?? "",
-        render: (u) => {
-          const primary = u.displayName || u.username || u.email || "—";
-          const secondary = u.username ?? u.email ?? null;
-          // Single line. The secondary identifier is appended inline ONLY when
-          // it adds information — most signups have displayName === username,
-          // and rendering both unconditionally doubled every row's height to
-          // show the same string twice. The comparison is case- and
-          // whitespace-insensitive because a display name is typically just the
-          // capitalized username ("Jason" / "jason"), which is still the same
-          // value shown twice.
-          const showSecondary =
-            secondary !== null &&
-            secondary.trim().toLowerCase() !== primary.trim().toLowerCase();
-          return (
-            <span className="flex items-baseline gap-1.5 whitespace-nowrap">
-              <span className="font-medium">{primary}</span>
-              {showSecondary && (
-                <span className="text-xs text-muted-foreground">
-                  {secondary}
-                </span>
-              )}
-            </span>
-          );
-        },
-      },
-      {
-        key: "role",
-        header: "Role",
-        filterType: "enum",
-        filterOptions: [
-          { value: "user", label: "User" },
-          { value: "admin", label: "Admin" },
-        ],
-        accessor: (u) => u.role,
-        render: (u) => <RoleBadge role={u.role} />,
-      },
-      {
-        key: "plan",
-        header: "Plan",
-        filterType: "enum",
-        filterOptions: [
-          { value: "free", label: "Free" },
-          { value: "pro", label: "Pro" },
-          { value: "premium", label: "Premium" },
-        ],
-        accessor: (u) => u.plan ?? "free",
-        render: (u) => <PlanBadge plan={u.plan ?? "free"} />,
-      },
-      {
-        key: "verified",
-        header: "Verified",
-        filterType: "enum",
-        filterOptions: [
-          { value: "1", label: "Verified" },
-          { value: "0", label: "Not verified" },
-        ],
-        accessor: (u) => (u.emailVerified ? 1 : 0),
-        render: (u) =>
-          u.emailVerified ? (
-            <CheckCircle className="h-4 w-4 text-pos" />
-          ) : (
-            <XCircle className="h-4 w-4 text-muted-foreground" />
-          ),
-      },
-      {
-        key: "mfa",
-        header: "MFA",
-        filterType: "enum",
-        filterOptions: [
-          { value: "1", label: "Enabled" },
-          { value: "0", label: "Disabled" },
-        ],
-        accessor: (u) => (u.mfaEnabled ? 1 : 0),
-        render: (u) =>
-          u.mfaEnabled ? (
-            <Shield className="h-4 w-4 text-pos" />
-          ) : (
-            <span className="text-muted-foreground">—</span>
-          ),
-      },
-      {
-        key: "txns",
-        header: "Txns",
-        align: "right",
-        filterType: "numeric",
-        accessor: (u) => u.transactionCount ?? 0,
-        render: (u) => (
-          <span className="font-mono text-sm">
-            {(u.transactionCount ?? 0).toLocaleString()}
-          </span>
-        ),
-      },
-      {
-        key: "lastActive",
-        header: "Last active",
-        filterType: "date",
-        accessor: (u) => u.lastActiveAt as string | null,
-        render: (u) => {
-          // FINLYNQ-166 — dormant (null OR >DORMANT_DAYS) renders muted.
-          const dormant = isDormant(u.lastActiveAt);
-          return (
-            <span
-              className={`text-sm ${dormant ? "text-muted-foreground" : "text-foreground"}`}
-              title={
-                u.lastActiveAt === null
-                  ? "No authenticated activity recorded"
-                  : dormant
-                    ? `Dormant: inactive over ${DORMANT_DAYS} days`
-                    : undefined
-              }
-            >
-              {u.lastActiveAt === null
-                ? "Never"
-                : formatDateTimeLocal(u.lastActiveAt ?? "")}
-            </span>
-          );
-        },
-      },
-      {
-        key: "span",
-        header: "Active span",
-        align: "right",
-        // Numeric rather than the earlier fixed buckets: "> 30 days" is both
-        // more precise and more flexible than picking a predefined band.
-        filterType: "numeric",
-        accessor: (u) => u.activeSpanDays,
-        render: (u) => (
-          <span
-            className="font-mono text-sm"
-            title={
-              u.lastActiveAt === null
-                ? "Never active — counted as 0 days"
-                : `${u.activeSpanDays} day(s) between signing up and last recorded activity`
-            }
-          >
-            {u.activeSpanDays}
-          </span>
-        ),
-      },
-      {
-        key: "joined",
-        header: "Joined",
-        filterType: "date",
-        accessor: (u) => u.createdAt,
-        render: (u) => (
-          <span className="text-sm text-muted-foreground">
-            {formatDateTimeLocal(u.createdAt)}
-          </span>
-        ),
-      },
-      {
-        key: "actions",
-        header: "Actions",
-        sortable: false,
-        align: "right",
-        accessor: () => null,
-        render: (u) => (
-          <span className="space-x-2 whitespace-nowrap">
-            <button
-              className="text-xs px-2 py-1 rounded border hover:bg-muted transition-colors disabled:opacity-50"
-              disabled={updatingUser === u.id}
-              onClick={() => handleEditUser(u)}
-            >
-              Edit
-            </button>
-            <button
-              className="text-xs px-2 py-1 rounded border hover:bg-muted transition-colors disabled:opacity-50"
-              disabled={updatingUser === u.id}
-              onClick={() => handleRoleToggle(u.id, u.role)}
-            >
-              {u.role === "admin" ? "Revoke Admin" : "Make Admin"}
-            </button>
-            <select
-              className="text-xs px-2 py-1 rounded border bg-background"
-              value={u.plan ?? "free"}
-              disabled={updatingUser === u.id}
-              onChange={(e) => handlePlanChange(u.id, e.target.value)}
-            >
-              <option value="free">Free</option>
-              <option value="pro">Pro</option>
-              <option value="premium">Premium</option>
-            </select>
-          </span>
-        ),
-      },
-    ],
-    // handleRoleToggle / handlePlanChange are stable closures over setState only.
-    [updatingUser]
-  );
+  // Compact sort and filter helpers. They write the same server-side TableColFilter
+  // wire format the shared table used, so paging, sorting and filtering stay server-side.
+  const enumFilterValue = (columnId: string): string => {
+    const f = findColFilter(colFilters, columnId);
+    return f && f.type === "enum" ? (f.values[0] ?? "") : "";
+  };
+  const setEnumFilter = (columnId: string, value: string) => {
+    handleColumnFilterChange(columnId, value ? { type: "enum", columnId, values: [value] } : null);
+  };
+  const toggleUserSort = (key: UserSortKey) => {
+    handleSortChange(sort?.key === key ? { key, dir: sort.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" });
+  };
 
   // FINLYNQ-167 — admin revoke of a grant (kills access + refresh). Reuses the
   // FINLYNQ-154 revoke path via the admin-scoped route; drops the row from the
@@ -615,482 +371,492 @@ export default function AdminPage() {
 
   if (loading) {
     return (
-      <div className="space-y-5">
-        <div className="h-7 w-52 animate-shimmer rounded-lg" />
-        <div className="grid grid-cols-1 regular:grid-cols-2 wide:grid-cols-4 gap-4 mt-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-24 animate-shimmer rounded-2xl" />
-          ))}
+      <SectionPage {...adminPageProps}>
+        <div className="space-y-5">
+          <div className={METRIC_GRID_CLASS}>
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-24 animate-shimmer rounded-xl" />
+            ))}
+          </div>
+          <div className="h-96 animate-shimmer rounded-xl" />
         </div>
-        <div className="h-96 animate-shimmer rounded-2xl mt-4" />
-      </div>
+      </SectionPage>
     );
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-[40vh]">
-        <Card>
-          <CardContent className="p-8 text-center">
-            <Shield className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <p className="text-lg font-medium">{error}</p>
-            <p className="text-sm text-muted-foreground mt-2">
-              You need admin privileges to access this page.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  return (
-    <motion.div
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-      className="space-y-6"
-    >
-      {/* Header */}
-      <PageHeader title="Admin" />
-      <motion.p variants={itemVariants} className="mt-0 text-muted-foreground">
-        Manage users and monitor platform usage
-      </motion.p>
-
-      {/* Stats Grid */}
-      {stats && (
-        <div className="grid grid-cols-1 regular:grid-cols-2 wide:grid-cols-4 gap-4">
-          <StatCard
-            label="Total Users"
-            value={stats.totalUsers}
-            icon={Users}
-            color="bg-info/15 text-info"
-          />
-          <StatCard
-            label="Transactions"
-            value={stats.totalTransactions.toLocaleString()}
-            icon={Activity}
-            color="bg-pos/15 text-pos"
-          />
-          <StatCard
-            label="New (7d)"
-            value={stats.registrationsLast7Days}
-            icon={BarChart3}
-            color="bg-chart-5/15 text-chart-5"
-          />
-          <StatCard
-            label="MFA Enabled"
-            value={stats.mfaEnabledUsers}
-            icon={Shield}
-            color="bg-warning/15 text-warning"
-          />
-        </div>
-      )}
-
-      {/* Live activity — near-real-time "who's using it right now" from
-          last_active_at (web + MCP + API key). The 15-min window is the
-          deploy-safety glance: ~0 means a restart disrupts nobody. */}
-      {stats && (
-        <motion.div variants={itemVariants}>
-          <div className="flex items-center gap-2 mb-3">
-            <span className="relative flex h-2 w-2 shrink-0">
-              {(stats.activeUsersLast15Min ?? 0) > 0 && (
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-pos/20 opacity-75" />
-              )}
-              <span
-                className={`relative inline-flex h-2 w-2 rounded-full ${
-                  (stats.activeUsersLast15Min ?? 0) > 0
-                    ? "bg-pos"
-                    : "bg-muted"
-                }`}
-              />
-            </span>
-            <h2 className="text-sm font-semibold text-muted-foreground">
-              Live activity
-            </h2>
-          </div>
-          <div className="grid grid-cols-1 regular:grid-cols-3 gap-4">
-            <StatCard
-              label="Active now (15 min)"
-              value={stats.activeUsersLast15Min ?? 0}
-              icon={Activity}
-              color="bg-pos/15 text-pos"
-            />
-            <StatCard
-              label="Active (last hour)"
-              value={stats.activeUsersLast60Min ?? 0}
-              icon={Activity}
-              color="bg-pos/15 text-pos"
-            />
-            <StatCard
-              label="Active (last 24h)"
-              value={stats.activeUsersLast24Hours ?? 0}
-              icon={Activity}
-              color="bg-info/15 text-info"
-            />
-          </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            Counts users with any authenticated request (web, MCP, or API key)
-            in the window. Best glance before a deploy: the restart rotates JWTs
-            and forces a re-login.
-          </p>
-        </motion.div>
-      )}
-
-      {/* FINLYNQ-301 — Decision-prompt completion (per prompt, current version) */}
-      {stats && stats.promptAcks && stats.promptAcks.length > 0 && (
-        <motion.div variants={itemVariants}>
+      <SectionPage {...adminPageProps}>
+        <div className="flex items-center justify-center min-h-[40vh]">
           <Card>
-            <CardContent className="p-4">
-              <h3 className="text-sm font-semibold mb-3">Decision prompts</h3>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Prompt</TableHead>
-                    <TableHead className="text-right">Answered</TableHead>
-                    <TableHead className="text-right">Deferred</TableHead>
-                    <TableHead className="text-right">Dismissed</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {stats.promptAcks.map((p) => (
-                    <TableRow key={`${p.promptId}:${p.version}`}>
-                      <TableCell>
-                        <span className="font-medium">{p.promptId}</span>
-                        <span className="ml-2 text-xs text-muted-foreground">v{p.version}</span>
-                      </TableCell>
-                      <TableCell className="text-right">{p.answered}</TableCell>
-                      <TableCell className="text-right">{p.deferred}</TableCell>
-                      <TableCell className="text-right">{p.dismissed}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              <p className="text-xs text-muted-foreground mt-2">
-                Rows appear once a user has interacted with a prompt; users never
-                shown a prompt have no ack row. Answered is terminal for that
-                version; bump the prompt&apos;s version to re-ask everyone.
+            <CardContent className="p-8 text-center">
+              <Shield className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+              <p className="text-lg font-medium">{error}</p>
+              <p className="text-sm text-muted-foreground mt-2">
+                You need admin privileges to access this page.
               </p>
             </CardContent>
           </Card>
-        </motion.div>
-      )}
+        </div>
+      </SectionPage>
+    );
+  }
 
-      {/* Plan Breakdown */}
-      {stats && (
+  const roleFilter = enumFilterValue("role");
+  const planFilter = enumFilterValue("plan");
+  const verifiedFilter = enumFilterValue("verified");
+  const mfaFilter = enumFilterValue("mfa");
+  const textFilter = findColFilter(colFilters, "user");
+  const detailUser = users.find((u) => u.id === detailUserId) ?? null;
+  const detailGrant = grants.find((g) => g.id === detailGrantId) ?? null;
+
+  return (
+    <SectionPage {...adminPageProps}>
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="space-y-6"
+      >
+        {/* Stats Grid */}
+        {stats && (
+          <MetricGrid
+            metrics={[
+              { label: "Total Users", value: stats.totalUsers },
+              { label: "Transactions", text: stats.totalTransactions.toLocaleString() },
+              { label: "New (7d)", value: stats.registrationsLast7Days },
+              { label: "MFA Enabled", value: stats.mfaEnabledUsers },
+            ]}
+          />
+        )}
+
+        {/* Live activity — near-real-time "who's using it right now" from
+            last_active_at (web + MCP + API key). The 15-min window is the
+            deploy-safety glance: ~0 means a restart disrupts nobody. */}
+        {stats && (
+          <motion.div variants={itemVariants}>
+            <div className="flex items-center gap-2 mb-3">
+              <span className="relative flex h-2 w-2 shrink-0">
+                {(stats.activeUsersLast15Min ?? 0) > 0 && (
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-pos/20 opacity-75" />
+                )}
+                <span
+                  className={`relative inline-flex h-2 w-2 rounded-full ${
+                    (stats.activeUsersLast15Min ?? 0) > 0
+                      ? "bg-pos"
+                      : "bg-muted"
+                  }`}
+                />
+              </span>
+              <h2 className="text-sm font-semibold text-muted-foreground">
+                Live activity
+              </h2>
+            </div>
+            <MetricGrid
+              metrics={[
+                { label: "Active now (15 min)", value: stats.activeUsersLast15Min ?? 0 },
+                { label: "Active (last hour)", value: stats.activeUsersLast60Min ?? 0 },
+                { label: "Active (last 24h)", value: stats.activeUsersLast24Hours ?? 0 },
+              ]}
+            />
+            <p className="text-xs text-muted-foreground mt-2">
+              Counts users with any authenticated request (web, MCP, or API key)
+              in the window. Best glance before a deploy: the restart rotates JWTs
+              and forces a re-login.
+            </p>
+          </motion.div>
+        )}
+
+        {/* FINLYNQ-301 — Decision-prompt completion (per prompt, current version) */}
+        {stats && stats.promptAcks && stats.promptAcks.length > 0 && (
+          <motion.div variants={itemVariants}>
+            <SectionCard label="Decision prompts" padded={false} className="divide-y divide-border/50 px-3">
+              {stats.promptAcks.map((p) => (
+                <ListRow
+                  key={`${p.promptId}:${p.version}`}
+                  title={
+                    <>
+                      <span className="font-medium">{p.promptId}</span>
+                      <span className="ml-2 text-xs text-muted-foreground">v{p.version}</span>
+                    </>
+                  }
+                  subtitle={`${p.answered} answered`}
+                  value={<span className="font-mono text-sm">{p.deferred}</span>}
+                  secondary={`${p.deferred} deferred · ${p.dismissed} dismissed`}
+                />
+              ))}
+            </SectionCard>
+            <p className="text-xs text-muted-foreground mt-2">
+              Rows appear once a user has interacted with a prompt; users never
+              shown a prompt have no ack row. Answered is terminal for that
+              version; bump the prompt&apos;s version to re-ask everyone.
+            </p>
+          </motion.div>
+        )}
+
+        {/* Plan Breakdown */}
+        {stats && (
+          <motion.div variants={itemVariants}>
+            <MetricGrid
+              metrics={Object.entries(stats.planBreakdown).map(([plan, count]) => ({
+                label: plan.charAt(0).toUpperCase() + plan.slice(1),
+                value: count,
+              }))}
+            />
+          </motion.div>
+        )}
+
+        {/* User Management */}
         <motion.div variants={itemVariants}>
-          <div className="grid grid-cols-1 regular:grid-cols-3 gap-4">
-            {Object.entries(stats.planBreakdown).map(([plan, count]) => (
-              <Card key={plan}>
-                <CardContent className="p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <CreditCard className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium capitalize">{plan}</span>
-                  </div>
-                  <span className="text-xl font-bold">{count}</span>
+          <Tabs defaultValue="users">
+            <TabsList>
+              <TabsTrigger value="users">
+                <Users className="h-4 w-4 mr-1.5" />
+                Users ({total})
+              </TabsTrigger>
+              <TabsTrigger value="activity">
+                <Activity className="h-4 w-4 mr-1.5" />
+                Activity
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="users" className="mt-4 space-y-3">
+              {/* Compact sort and filter controls. Sort, filter and paging stay server-side. */}
+              <div role="group" aria-label="Sort users" className="flex flex-wrap gap-2">
+                {USER_SORT_OPTIONS.map((o) => {
+                  const active = sort?.key === o.key;
+                  return (
+                    <button
+                      key={o.key}
+                      type="button"
+                      aria-pressed={active}
+                      onClick={() => toggleUserSort(o.key)}
+                      className={`inline-flex h-8 items-center gap-1 rounded-full border px-3 text-xs font-medium ${
+                        active ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"
+                      }`}
+                    >
+                      {o.label}
+                      {active ? (sort?.dir === "asc" ? "↑" : "↓") : null}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Input
+                  aria-label="Search users"
+                  placeholder="Search name, username or email"
+                  value={textFilter?.type === "text" ? textFilter.value : ""}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    handleColumnFilterChange("user", value.trim() ? { type: "text", columnId: "user", value } : null);
+                  }}
+                  className="col-span-2 h-8 text-xs"
+                />
+                <select
+                  aria-label="Filter by role"
+                  value={roleFilter}
+                  onChange={(e) => setEnumFilter("role", e.target.value)}
+                  className="h-8 rounded-md border bg-background px-2 text-xs"
+                >
+                  <option value="">All roles</option>
+                  <option value="user">User</option>
+                  <option value="admin">Admin</option>
+                </select>
+                <select
+                  aria-label="Filter by plan"
+                  value={planFilter}
+                  onChange={(e) => setEnumFilter("plan", e.target.value)}
+                  className="h-8 rounded-md border bg-background px-2 text-xs"
+                >
+                  <option value="">All plans</option>
+                  <option value="free">Free</option>
+                  <option value="pro">Pro</option>
+                  <option value="premium">Premium</option>
+                </select>
+                <select
+                  aria-label="Filter by verified"
+                  value={verifiedFilter}
+                  onChange={(e) => setEnumFilter("verified", e.target.value)}
+                  className="h-8 rounded-md border bg-background px-2 text-xs"
+                >
+                  <option value="">Any verification</option>
+                  <option value="1">Verified</option>
+                  <option value="0">Not verified</option>
+                </select>
+                <select
+                  aria-label="Filter by MFA"
+                  value={mfaFilter}
+                  onChange={(e) => setEnumFilter("mfa", e.target.value)}
+                  className="h-8 rounded-md border bg-background px-2 text-xs"
+                >
+                  <option value="">Any MFA</option>
+                  <option value="1">Enabled</option>
+                  <option value="0">Disabled</option>
+                </select>
+              </div>
+              {colFilters.length > 0 && (
+                <div className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
+                  <span>
+                    {colFilters.length} column filter
+                    {colFilters.length === 1 ? "" : "s"} active
+                  </span>
+                  <button
+                    type="button"
+                    className="text-xs px-2 py-1 rounded border hover:bg-muted transition-colors"
+                    onClick={() => {
+                      setColFilters([]);
+                      setPage(0);
+                    }}
+                  >
+                    Clear all
+                  </button>
+                </div>
+              )}
+
+              <SectionCard padded={false} className="divide-y divide-border/50 px-3">
+                {users.length === 0 ? (
+                  <p className="py-8 text-center text-sm text-muted-foreground">No users found.</p>
+                ) : (
+                  users.map((u) => {
+                    const primary = u.displayName || u.username || u.email || "—";
+                    const secondaryId = u.username ?? u.email ?? null;
+                    const showSecondary =
+                      secondaryId !== null &&
+                      secondaryId.trim().toLowerCase() !== primary.trim().toLowerCase();
+                    const dormant = isDormant(u.lastActiveAt);
+                    const flags = [
+                      showSecondary ? secondaryId : null,
+                      u.role === "admin" ? "Admin" : null,
+                      (u.plan ?? "free").charAt(0).toUpperCase() + (u.plan ?? "free").slice(1),
+                      u.emailVerified ? "Verified" : null,
+                      u.mfaEnabled ? "MFA" : null,
+                    ].filter(Boolean);
+                    return (
+                      <ListRow
+                        key={u.id}
+                        title={primary}
+                        subtitle={flags.join(" · ")}
+                        value={<span className="font-mono text-sm">{(u.transactionCount ?? 0).toLocaleString()} txns</span>}
+                        secondary={u.lastActiveAt === null ? "Never active" : formatDateTimeLocal(u.lastActiveAt ?? "")}
+                        secondaryTone={dormant ? "muted" : "pos"}
+                        onPress={() => setDetailUserId(u.id)}
+                      />
+                    );
+                  })
+                )}
+              </SectionCard>
+
+              <Pagination
+                page={page}
+                limit={USERS_PAGE_SIZE}
+                total={total}
+                onPageChange={setPage}
+                label="users"
+              />
+            </TabsContent>
+
+            <TabsContent value="activity" className="mt-4 space-y-4">
+              <Card>
+                <CardContent className="p-6">
+                  {stats && (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between py-3 border-b">
+                        <span className="text-muted-foreground">
+                          Registrations (last 30 days)
+                        </span>
+                        <span className="font-bold">
+                          {stats.registrationsLast30Days}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between py-3 border-b">
+                        <span className="text-muted-foreground">
+                          Email-verified users
+                        </span>
+                        <span className="font-bold flex items-center gap-1">
+                          <Mail className="h-4 w-4" />
+                          {stats.verifiedUsers} / {stats.totalUsers}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between py-3 border-b">
+                        <span className="text-muted-foreground">
+                          Total logins
+                        </span>
+                        <span className="font-bold">
+                          {stats.totalLogins.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between py-3 border-b">
+                        <span className="text-muted-foreground">
+                          Active users (last 7 days)
+                        </span>
+                        <span className="font-bold">
+                          {stats.activeUsersLast7Days}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between py-3 border-b">
+                        <span className="text-muted-foreground">
+                          Active users (last 30 days)
+                        </span>
+                        <span className="font-bold">
+                          {stats.activeUsersLast30Days}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between py-3 border-b">
+                        <span className="text-muted-foreground">
+                          Total accounts created
+                        </span>
+                        <span className="font-bold">{stats.totalAccounts}</span>
+                      </div>
+                      <div className="flex items-center justify-between py-3">
+                        <span className="text-muted-foreground">
+                          Total transactions
+                        </span>
+                        <span className="font-bold">
+                          {stats.totalTransactions.toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
-            ))}
-          </div>
-        </motion.div>
-      )}
 
-      {/* User Management */}
-      <motion.div variants={itemVariants}>
-        <Tabs defaultValue="users">
-          <TabsList>
-            <TabsTrigger value="users">
-              <Users className="h-4 w-4 mr-1.5" />
-              Users ({total})
-            </TabsTrigger>
-            <TabsTrigger value="activity">
-              <Activity className="h-4 w-4 mr-1.5" />
-              Activity
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="users" className="mt-4 space-y-3">
-            {colFilters.length > 0 && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span>
-                  {colFilters.length} column filter
-                  {colFilters.length === 1 ? "" : "s"} active
-                </span>
-                <button
-                  type="button"
-                  className="text-xs px-2 py-1 rounded border hover:bg-muted transition-colors"
-                  onClick={() => {
-                    setColFilters([]);
-                    setPage(0);
-                  }}
-                >
-                  Clear all
-                </button>
-              </div>
-            )}
-
-            <Card>
-              <CardContent className="p-0">
-                <DataTable
-                  columns={userColumns}
-                  rows={users}
-                  rowKey={(u) => u.id}
-                  manualSort
-                  sort={sort}
-                  onSortChange={handleSortChange}
-                  columnFilters={colFilters}
-                  onColumnFilterChange={handleColumnFilterChange}
-                  emptyState={
-                    <p className="text-center py-8 text-sm text-muted-foreground">
-                      No users found.
+              <Card>
+                <CardContent className="p-4 space-y-2">
+                  <div className="px-1">
+                    <h2 className="font-semibold">Recent logins</h2>
+                    <p className="text-sm text-muted-foreground">
+                      Last 15 users who signed in, most recent first.
                     </p>
-                  }
-                />
-              </CardContent>
-            </Card>
-
-            <Pagination
-              page={page}
-              limit={USERS_PAGE_SIZE}
-              total={total}
-              onPageChange={setPage}
-              label="users"
-            />
-          </TabsContent>
-
-          <TabsContent value="activity" className="mt-4 space-y-4">
-            <Card>
-              <CardContent className="p-6">
-                {stats && (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between py-3 border-b">
-                      <span className="text-muted-foreground">
-                        Registrations (last 30 days)
-                      </span>
-                      <span className="font-bold">
-                        {stats.registrationsLast30Days}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between py-3 border-b">
-                      <span className="text-muted-foreground">
-                        Email-verified users
-                      </span>
-                      <span className="font-bold flex items-center gap-1">
-                        <Mail className="h-4 w-4" />
-                        {stats.verifiedUsers} / {stats.totalUsers}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between py-3 border-b">
-                      <span className="text-muted-foreground">
-                        Total logins
-                      </span>
-                      <span className="font-bold">
-                        {stats.totalLogins.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between py-3 border-b">
-                      <span className="text-muted-foreground">
-                        Active users (last 7 days)
-                      </span>
-                      <span className="font-bold">
-                        {stats.activeUsersLast7Days}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between py-3 border-b">
-                      <span className="text-muted-foreground">
-                        Active users (last 30 days)
-                      </span>
-                      <span className="font-bold">
-                        {stats.activeUsersLast30Days}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between py-3 border-b">
-                      <span className="text-muted-foreground">
-                        Total accounts created
-                      </span>
-                      <span className="font-bold">{stats.totalAccounts}</span>
-                    </div>
-                    <div className="flex items-center justify-between py-3">
-                      <span className="text-muted-foreground">
-                        Total transactions
-                      </span>
-                      <span className="font-bold">
-                        {stats.totalTransactions.toLocaleString()}
-                      </span>
-                    </div>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-0">
-                <div className="px-6 py-4 border-b">
-                  <h2 className="font-semibold">Recent logins</h2>
-                  <p className="text-sm text-muted-foreground">
-                    Last 15 users who signed in, most recent first.
-                  </p>
-                </div>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>User</TableHead>
-                      <TableHead className="text-right">Logins</TableHead>
-                      <TableHead>Last login</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {stats?.recentLogins?.map((row) => (
-                      <TableRow key={row.id}>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">
-                              {row.displayName || row.username || "—"}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {row.username ?? row.email ?? "—"}
-                            </p>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right font-mono">
-                          {row.loginCount.toLocaleString()}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {row.lastLoginAt
-                            ? new Date(row.lastLoginAt).toLocaleString()
-                            : "—"}
-                        </TableCell>
-                      </TableRow>
+                  <div className="divide-y divide-border/50">
+                    {(stats?.recentLogins ?? []).map((row) => (
+                      <ListRow
+                        key={row.id}
+                        title={row.displayName || row.username || "—"}
+                        subtitle={row.username ?? row.email ?? "—"}
+                        value={<span className="font-mono text-sm">{row.loginCount.toLocaleString()}</span>}
+                        secondary={row.lastLoginAt ? new Date(row.lastLoginAt).toLocaleString() : "—"}
+                      />
                     ))}
-                    {(!stats?.recentLogins ||
-                      stats.recentLogins.length === 0) && (
-                      <TableRow>
-                        <TableCell
-                          colSpan={3}
-                          className="text-center py-8 text-muted-foreground"
-                        >
-                          No login activity yet.
-                        </TableCell>
-                      </TableRow>
+                    {(!stats?.recentLogins || stats.recentLogins.length === 0) && (
+                      <p className="py-8 text-center text-sm text-muted-foreground">No login activity yet.</p>
                     )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+                  </div>
+                </CardContent>
+              </Card>
 
-            {/* FINLYNQ-167 — OAuth grants across users */}
-            <Card>
-              <CardContent className="p-0">
-                <div className="px-6 py-4 border-b">
-                  <h2 className="font-semibold flex items-center gap-2">
-                    <KeyRound className="h-4 w-4" />
-                    OAuth grants ({grants.length})
-                  </h2>
-                  <p className="text-sm text-muted-foreground">
-                    Live OAuth / MCP grants across all users. A grant is dormant
-                    when it has not been used in over {DORMANT_DAYS} days.
-                  </p>
-                </div>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>App</TableHead>
-                      <TableHead>User</TableHead>
-                      <TableHead>Scope</TableHead>
-                      <TableHead>Granted</TableHead>
-                      <TableHead>Last used</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+              {/* FINLYNQ-167 — OAuth grants across users */}
+              <Card>
+                <CardContent className="p-4 space-y-2">
+                  <div className="px-1">
+                    <h2 className="font-semibold flex items-center gap-2">
+                      <KeyRound className="h-4 w-4" />
+                      OAuth grants ({grants.length})
+                    </h2>
+                    <p className="text-sm text-muted-foreground">
+                      Live OAuth / MCP grants across all users. A grant is dormant
+                      when it has not been used in over {DORMANT_DAYS} days.
+                    </p>
+                  </div>
+                  <div className="divide-y divide-border/50">
                     {grants.map((grant) => {
                       // FINLYNQ-166's pure dormancy predicate — reused here for
                       // last_used_at (null OR >DORMANT_DAYS ago = dormant).
                       const dormant = isDormant(grant.lastUsedAt);
                       return (
-                        <TableRow key={grant.id}>
-                          <TableCell>
-                            <p className="font-medium">{grant.clientName}</p>
-                            <p className="text-xs text-muted-foreground font-mono">
-                              {grant.clientId}
-                            </p>
-                          </TableCell>
-                          <TableCell className="text-sm">
-                            {grant.userLabel}
-                          </TableCell>
-                          <TableCell className="text-xs font-mono text-muted-foreground">
-                            {grant.scope}
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {formatDateTimeLocal(grant.createdAt)}
-                          </TableCell>
-                          <TableCell className="text-sm">
-                            <span className="flex items-center gap-2">
-                              <span
-                                className={
-                                  dormant
-                                    ? "text-muted-foreground"
-                                    : "text-foreground"
-                                }
-                                title={
-                                  grant.lastUsedAt === null
-                                    ? "Never used since tracking began"
-                                    : dormant
-                                      ? `Dormant: unused over ${DORMANT_DAYS} days`
-                                      : undefined
-                                }
-                              >
-                                {grant.lastUsedAt === null
-                                  ? "Never"
-                                  : formatDateTimeLocal(grant.lastUsedAt)}
-                              </span>
-                              {dormant ? (
-                                <Badge
-                                  variant="outline"
-                                  className="bg-muted text-muted-foreground border-border"
-                                >
-                                  Dormant
-                                </Badge>
-                              ) : (
-                                <Badge
-                                  variant="outline"
-                                  className="bg-pos/15 text-pos border-pos/30"
-                                >
-                                  Active
-                                </Badge>
-                              )}
+                        <ListRow
+                          key={grant.id}
+                          title={grant.clientName}
+                          subtitle={`${grant.userLabel} · ${grant.scope}`}
+                          value={
+                            <span className={`text-xs ${dormant ? "text-muted-foreground" : "text-pos"}`}>
+                              {dormant ? "Dormant" : "Active"}
                             </span>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <button
-                              className="text-xs px-2 py-1 rounded border border-destructive/40 text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
-                              disabled={revokingGrant === grant.id}
-                              onClick={() => handleRevokeGrant(grant.id)}
-                            >
-                              {revokingGrant === grant.id
-                                ? "Revoking…"
-                                : "Revoke"}
-                            </button>
-                          </TableCell>
-                        </TableRow>
+                          }
+                          secondary={grant.lastUsedAt === null ? "Never used" : formatDateTimeLocal(grant.lastUsedAt)}
+                          onPress={() => setDetailGrantId(grant.id)}
+                        />
                       );
                     })}
                     {grants.length === 0 && (
-                      <TableRow>
-                        <TableCell
-                          colSpan={6}
-                          className="text-center py-8 text-muted-foreground"
-                        >
-                          No active OAuth grants.
-                        </TableCell>
-                      </TableRow>
+                      <p className="py-8 text-center text-sm text-muted-foreground">No active OAuth grants.</p>
                     )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </motion.div>
       </motion.div>
+
+      {detailUser && (
+        <DetailSheet
+          open
+          onOpenChange={(o) => { if (!o) setDetailUserId(null); }}
+          title={detailUser.displayName || detailUser.username || detailUser.email || "User"}
+          description={detailUser.username ?? detailUser.email ?? undefined}
+          items={[
+            { label: "Role", value: detailUser.role === "admin" ? "Admin" : "User" },
+            { label: "Plan", value: (detailUser.plan ?? "free").charAt(0).toUpperCase() + (detailUser.plan ?? "free").slice(1) },
+            { label: "Email verified", value: detailUser.emailVerified ? "Yes" : "No" },
+            { label: "MFA", value: detailUser.mfaEnabled ? "Enabled" : "Disabled" },
+            { label: "Transactions", value: (detailUser.transactionCount ?? 0).toLocaleString() },
+            { label: "Active span", value: `${detailUser.activeSpanDays} day(s)` },
+            { label: "Last active", value: detailUser.lastActiveAt === null ? "Never" : formatDateTimeLocal(detailUser.lastActiveAt) },
+            { label: "Joined", value: formatDateTimeLocal(detailUser.createdAt) },
+          ]}
+        >
+          <Button variant="outline" disabled={updatingUser === detailUser.id} onClick={() => { setDetailUserId(null); handleEditUser(detailUser); }}>
+            Edit
+          </Button>
+          <Button variant="outline" disabled={updatingUser === detailUser.id} onClick={() => handleRoleToggle(detailUser.id, detailUser.role)}>
+            {detailUser.role === "admin" ? "Revoke Admin" : "Make Admin"}
+          </Button>
+          <label className="flex items-center justify-between gap-3 text-sm">
+            <span className="text-muted-foreground">Plan</span>
+            <select
+              aria-label="Plan"
+              className="h-9 rounded-md border bg-background px-2 text-sm"
+              value={detailUser.plan ?? "free"}
+              disabled={updatingUser === detailUser.id}
+              onChange={(e) => handlePlanChange(detailUser.id, e.target.value)}
+            >
+              <option value="free">Free</option>
+              <option value="pro">Pro</option>
+              <option value="premium">Premium</option>
+            </select>
+          </label>
+        </DetailSheet>
+      )}
+
+      {detailGrant && (
+        <DetailSheet
+          open
+          onOpenChange={(o) => { if (!o) setDetailGrantId(null); }}
+          title={detailGrant.clientName}
+          description={<span className="font-mono text-xs">{detailGrant.clientId}</span>}
+          items={[
+            { label: "User", value: detailGrant.userLabel },
+            { label: "Scope", value: <span className="font-mono text-xs">{detailGrant.scope}</span> },
+            { label: "Granted", value: formatDateTimeLocal(detailGrant.createdAt) },
+            {
+              label: "Last used",
+              value: detailGrant.lastUsedAt === null
+                ? "Never"
+                : `${formatDateTimeLocal(detailGrant.lastUsedAt)}${isDormant(detailGrant.lastUsedAt) ? ` (dormant: unused over ${DORMANT_DAYS} days)` : ""}`,
+            },
+          ]}
+        >
+          <Button
+            variant="outline"
+            className="text-destructive"
+            disabled={revokingGrant === detailGrant.id}
+            onClick={() => { setDetailGrantId(null); handleRevokeGrant(detailGrant.id); }}
+          >
+            {revokingGrant === detailGrant.id ? "Revoking…" : "Revoke grant"}
+          </Button>
+        </DetailSheet>
+      )}
 
       {editingUser && editModalOpen && (
         <EditUserModal
@@ -1100,6 +866,6 @@ export default function AdminPage() {
           onSave={handleSaveUserEdits}
         />
       )}
-    </motion.div>
+    </SectionPage>
   );
 }

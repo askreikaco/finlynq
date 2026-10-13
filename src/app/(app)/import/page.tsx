@@ -55,7 +55,7 @@ import { InboxToCategorizeTab } from "@/components/inbox/inbox-to-categorize-tab
 import { InboxEmailTab } from "@/components/inbox/inbox-email-tab";
 import { ReconcileSummaryPanel } from "@/components/inbox/reconcile-summary-panel";
 import { takeHandoffFile } from "@/lib/import/file-handoff";
-import { PageHeader } from "@/components/mobile";
+import { SectionPage } from "@/components/templates";
 import { usePageFab } from "@/components/mobile/page-fab";
 
 interface Account {
@@ -317,31 +317,29 @@ function ImportPageInner() {
 
   if (accountsLoading) {
     return (
-      <div className="container mx-auto p-4">
+      <SectionPage id="import" title="Import" width="report" center>
         <p className="text-sm text-muted-foreground">Loading accounts…</p>
-      </div>
+      </SectionPage>
     );
   }
 
   if (visibleAccounts.length === 0) {
     return (
-      <div className="container mx-auto p-4 space-y-3">
-        <PageHeader title="Import" titleClassName="text-2xl font-bold tracking-tight" />
+      <SectionPage id="import" title="Import" width="report" center>
         <p className="text-sm text-muted-foreground">
           No accounts found. Create an account first to start importing.
         </p>
-      </div>
+      </SectionPage>
     );
   }
 
   if (account == null) {
     return (
-      <div className="container mx-auto p-4 space-y-3">
-        <PageHeader title="Import" titleClassName="text-2xl font-bold tracking-tight" />
+      <SectionPage id="import" title="Import" width="report" center>
         <p className="text-sm text-muted-foreground">
           Pick an account to start importing.
         </p>
-      </div>
+      </SectionPage>
     );
   }
 
@@ -350,27 +348,26 @@ function ImportPageInner() {
   const showLensToast = isLensActive && !savingPolicy;
 
   return (
-    <div className="container mx-auto p-4 space-y-4">
-      <PageHeader
-        className="flex items-center justify-between flex-wrap gap-3"
-        title="Import"
-        titleClassName="text-2xl font-bold tracking-tight"
-        subtitleClassName="text-sm text-muted-foreground mt-0.5"
-        subtitle={<>
+    <SectionPage
+      id="import"
+      title="Import"
+      subtitle={<>
             One surface per account. Upload a statement, then review it the way
             this account is set up — pick a lens to flip the view, or change
             the account&apos;s policy via the gear in the chip.
         </>}
-        actions={
-          <Button
+      width="report"
+      center
+      header={{
+        actions: (<Button
             size="sm"
             className="gap-1.5"
             onClick={() => setUploadOpen(true)}
           >
             <Upload className="h-4 w-4" /> Upload
-          </Button>
-        }
-      />
+          </Button>),
+      }}
+    >
 
       {error && (
         <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
@@ -391,7 +388,7 @@ function ImportPageInner() {
                 if (Number.isFinite(n)) switchAccount(n);
               }}
             >
-              <SelectTrigger className="w-[260px]">
+              <SelectTrigger className="w-full max-w-[260px]">
                 {/* Base UI SelectValue otherwise renders the raw `value`
                  *  (the account id as string, e.g. "768") on first render
                  *  before items register their text. Pass an explicit
@@ -564,6 +561,6 @@ function ImportPageInner() {
           saving={savingPolicy}
         />
       )}
-    </div>
+    </SectionPage>
   );
 }

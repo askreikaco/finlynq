@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ListRow, SectionCard } from "@/components/mobile";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -449,26 +450,16 @@ export function ConnectorTab() {
                   <div className="pt-2 border-t border-pos/20 space-y-2">
                     <div className="text-xs font-medium">Balance reconciliation (as of {zipSummary.reconciliation.date})</div>
                     <div className="max-h-56 overflow-y-auto">
-                      <table className="w-full text-xs font-mono">
-                        <thead className="text-muted-foreground text-left">
-                          <tr>
-                            <th className="pb-1">Account</th>
-                            <th className="pb-1 text-right">WP</th>
-                            <th className="pb-1 text-right">Finlynq</th>
-                            <th className="pb-1 text-right">Diff</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {zipSummary.reconciliation.rows.map((r) => (
-                            <tr key={r.finlynqAccountId} className={r.matches ? "" : "text-warning"}>
-                              <td className="py-0.5 pr-2">{r.accountName} <span className="text-muted-foreground">{r.currency}</span></td>
-                              <td className="py-0.5 text-right">{formatCurrency(r.wpBalance, r.currency)}</td>
-                              <td className="py-0.5 text-right">{formatCurrency(r.pfBalance, r.currency)}</td>
-                              <td className="py-0.5 text-right">{r.matches ? "✓" : formatCurrency(r.diff, r.currency)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                      <SectionCard padded={false} className="divide-y divide-border/50 px-3">
+                        {zipSummary.reconciliation.rows.map((r) => (
+                          <ListRow
+                            key={r.finlynqAccountId}
+                            title={<>{r.accountName} <span className="text-muted-foreground">{r.currency}</span></>}
+                            subtitle={`WP ${formatCurrency(r.wpBalance, r.currency)} · Finlynq ${formatCurrency(r.pfBalance, r.currency)}`}
+                            value={<span className={`font-mono text-sm ${r.matches ? "" : "text-warning"}`}>{r.matches ? "✓" : formatCurrency(r.diff, r.currency)}</span>}
+                          />
+                        ))}
+                      </SectionCard>
                     </div>
                     <div className="pt-1">
                       <Button size="sm" variant="outline" onClick={() => setReconcileOpen(true)}>

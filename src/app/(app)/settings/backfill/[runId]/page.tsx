@@ -18,7 +18,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, CheckCircle2, Loader2, RefreshCw, Undo2 } from "lucide-react";
-import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
+import { HEADER_DESKTOP_ONLY, ListRow, MetricGrid, SectionCard, SectionLabel } from "@/components/mobile";
+import { SectionPage } from "@/components/templates";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 // MUST stay in sync with the CHECK constraint on
 // backfill_proposals.chosen_kind (migration 20260609), with OverrideKind
@@ -182,6 +184,8 @@ export default function BackfillReviewPage({ params }: { params: Promise<{ runId
   const [coverage, setCoverage] = useState<Coverage | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  // Proposal detail sheet (the list is the one column at every width).
+  const [detailOpen, setDetailOpen] = useState(false);
   // Left-list ordering: "default" = API order (by proposal id); "date" =
   // earliest displaced-row date ascending (the natural ledger reading order).
   const [sortMode, setSortMode] = useState<"default" | "date">("default");
@@ -298,14 +302,14 @@ export default function BackfillReviewPage({ params }: { params: Promise<{ runId
   }, [proposals, displacedRows, sortMode]);
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-4">
-      <PageHeader
-        className="flex flex-wrap items-center justify-between gap-3"
-        title="Backfill review"
-        titleClassName="text-2xl font-bold tracking-tight"
-        subtitle={<>{proposals.length} proposal(s) · {approvedCount} approved · {appliedCount} applied</>}
-        subtitleClassName="text-sm text-muted-foreground mt-0.5"
-        actions={
+    <SectionPage
+      id="settings-backfill-run"
+      title="Backfill review"
+      subtitle={`${proposals.length} proposal(s) · ${approvedCount} approved · ${appliedCount} applied`}
+      width="report"
+      center
+      header={{
+        actions: (
           <>
             <Button variant="outline" onClick={() => router.push("/settings/backfill")} className={HEADER_DESKTOP_ONLY}>
               <RefreshCw className="size-4 mr-2" /> New run
@@ -315,10 +319,10 @@ export default function BackfillReviewPage({ params }: { params: Promise<{ runId
               {applying ? (<><Loader2 className="size-4 animate-spin mr-2" /> Applying…</>) : `Apply ${approvedCount} approved`}
             </Button>
           </>
-        }
-        overflow={[{ label: "New run", onSelect: () => router.push("/settings/backfill") }]}
-      />
-
+        ),
+        overflow: [{ label: "New run", onSelect: () => router.push("/settings/backfill") }],
+      }}
+    >
       {error && <div className="border border-destructive bg-destructive/10 text-destructive rounded p-3 text-sm">{error}</div>}
       {info && <div className="border border-pos/40 bg-pos/10 text-pos rounded p-3 text-sm flex items-center gap-2"><CheckCircle2 className="size-4" /> {info}</div>}
 
@@ -327,53 +331,57 @@ export default function BackfillReviewPage({ params }: { params: Promise<{ runId
       {loading && <div className="flex items-center gap-2 text-muted-foreground"><Loader2 className="size-4 animate-spin" /> Loading…</div>}
 
       {!loading && proposals.length === 0 && (
-        <Card>
-          <CardContent className="py-8 text-center text-muted-foreground">
+        <SectionCard>
+          <p className="py-8 text-center text-sm text-muted-foreground">
             No proposals — your ledger appears already canonical. Great!
-          </CardContent>
-        </Card>
+          </p>
+        </SectionCard>
       )}
 
       {!loading && proposals.length > 0 && (
-        <div className="grid grid-cols-1 wide:grid-cols-12 gap-4">
-          {/* LEFT: proposal list */}
-          <div className="col-span-full wide:col-span-5 space-y-2">
-            <div className="flex items-center justify-between gap-2 text-xs px-1">
-              <span className="text-muted-foreground">{sortedProposals.length} proposal(s)</span>
-              <div className="flex items-center gap-1">
-                <span className="text-muted-foreground">Sort:</span>
-                <button
-                  type="button"
-                  onClick={() => setSortMode("default")}
-                  className={`rounded px-2 py-0.5 border ${sortMode === "default" ? "border-primary bg-primary/5 text-foreground" : "border-border text-muted-foreground hover:border-primary/50"}`}
-                >
-                  Default
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSortMode("date")}
-                  className={`rounded px-2 py-0.5 border ${sortMode === "date" ? "border-primary bg-primary/5 text-foreground" : "border-border text-muted-foreground hover:border-primary/50"}`}
-                >
-                  Date
-                </button>
-              </div>
-            </div>
-            <div className="space-y-2 max-h-[70vh] overflow-y-auto pr-2">
-              {sortedProposals.map((p) => (
-                <ProposalCard
-                  key={p.id}
-                  proposal={p}
-                  selected={p.id === selectedId}
-                  onSelect={() => setSelectedId(p.id)}
-                  onToggleApprove={() => updateProposal(p.id, { status: p.status === "approved" ? "pending" : "approved" })}
-                />
-              ))}
+        <SectionCard padded={false} className="px-3">
+          <div className="flex items-center justify-between gap-2 pt-3 pb-2 text-xs">
+            <span className="text-muted-foreground">{sortedProposals.length} proposal(s)</span>
+            <div className="flex items-center gap-1">
+              <span className="text-muted-foreground">Sort:</span>
+              <button
+                type="button"
+                onClick={() => setSortMode("default")}
+                className={`rounded px-2 py-0.5 border ${sortMode === "default" ? "border-primary bg-primary/5 text-foreground" : "border-border text-muted-foreground hover:border-primary/50"}`}
+              >
+                Default
+              </button>
+              <button
+                type="button"
+                onClick={() => setSortMode("date")}
+                className={`rounded px-2 py-0.5 border ${sortMode === "date" ? "border-primary bg-primary/5 text-foreground" : "border-border text-muted-foreground hover:border-primary/50"}`}
+              >
+                Date
+              </button>
             </div>
           </div>
+          <div className="max-h-[70dvh] divide-y divide-border/50 overflow-y-auto">
+            {sortedProposals.map((p) => (
+              <ProposalCard
+                key={p.id}
+                proposal={p}
+                selected={p.id === selectedId}
+                onSelect={() => { setSelectedId(p.id); setDetailOpen(true); }}
+                onToggleApprove={() => updateProposal(p.id, { status: p.status === "approved" ? "pending" : "approved" })}
+              />
+            ))}
+          </div>
+        </SectionCard>
+      )}
 
-          {/* RIGHT: detail */}
-          <div className="col-span-full wide:col-span-7">
-            {selected ? (
+      {/* Proposal detail: a bottom sheet at every width (the list above is the one column). */}
+      <Sheet open={detailOpen && selected != null} onOpenChange={setDetailOpen}>
+        <SheetContent side="bottom" className="max-h-[92dvh] overflow-y-auto overscroll-contain rounded-t-2xl">
+          <SheetHeader>
+            <SheetTitle className="sr-only">Proposal detail</SheetTitle>
+          </SheetHeader>
+          {selected && (
+            <div className="px-4 pb-6">
               <ProposalDetail
                 runId={runId}
                 proposal={selected}
@@ -398,13 +406,11 @@ export default function BackfillReviewPage({ params }: { params: Promise<{ runId
                   })
                 }
               />
-            ) : (
-              <Card><CardContent className="py-8 text-center text-muted-foreground">Select a proposal to view detail.</CardContent></Card>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+    </SectionPage>
   );
 }
 
@@ -436,38 +442,30 @@ function ProposalCard({
   const isApproved = proposal.status === "approved";
   const isApplied = proposal.status === "applied";
   const isRefused = proposal.confidence === "refused";
+  const realized = proposal.deltasJson.realizedGainBase;
+  // The checkbox sits beside the row, not inside its button (no interactive nesting).
   return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={`w-full text-left rounded-lg border p-3 transition-colors ${
-        selected ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
-      }`}
-    >
-      <div className="flex items-start gap-2">
-        {!isRefused && !isApplied && (
-          <input
-            type="checkbox"
-            checked={isApproved}
-            onChange={(e) => { e.stopPropagation(); onToggleApprove(); }}
-            onClick={(e) => e.stopPropagation()}
-            className="mt-1"
-          />
-        )}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <ConfidenceBadge confidence={proposal.confidence} />
-            <Badge variant="outline" className="text-xs">{proposal.proposalKind}</Badge>
-            {isApplied && <Badge className="text-xs bg-pos/20 text-pos border-pos/40">Applied</Badge>}
-          </div>
-          <div className="text-sm font-medium mt-1.5 truncate">{proposal.summary}</div>
-          <div className="text-xs text-muted-foreground mt-1 flex gap-3">
-            <span>Δ balance: {proposal.deltasJson.balance.toFixed(2)}</span>
-            {proposal.deltasJson.realizedGainBase != null && <span>realized: {proposal.deltasJson.realizedGainBase.toFixed(2)}</span>}
-          </div>
-        </div>
+    <div className={`flex items-center gap-2 ${selected ? "bg-primary/5" : ""}`}>
+      {!isRefused && !isApplied && (
+        <input
+          type="checkbox"
+          aria-label={`Approve: ${proposal.summary}`}
+          checked={isApproved}
+          onChange={onToggleApprove}
+          className="size-4 shrink-0"
+        />
+      )}
+      <div className="min-w-0 flex-1">
+        <ListRow
+          title={proposal.summary}
+          subtitle={`${proposal.proposalKind} · Δ balance ${proposal.deltasJson.balance.toFixed(2)}${realized != null ? ` · realized ${realized.toFixed(2)}` : ""}`}
+          value={<ConfidenceBadge confidence={proposal.confidence} />}
+          secondary={isApplied ? "Applied" : isApproved ? "Approved" : undefined}
+          secondaryTone={isApplied ? "pos" : "muted"}
+          onPress={onSelect}
+        />
       </div>
-    </button>
+    </div>
   );
 }
 
@@ -683,48 +681,26 @@ function DisplacedRowsTable({
   categoryMap: Record<number, CategoryMeta>;
 }) {
   return (
-    <div>
-      <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Existing rows being displaced</div>
-      <div className="rounded border overflow-x-auto">
-        <table className="w-full text-xs">
-          <thead className="bg-muted/40">
-            <tr>
-              <th className="text-left px-2 py-1.5">Tx</th>
-              <th className="text-left px-2 py-1.5">Date</th>
-              <th className="text-left px-2 py-1.5">Account</th>
-              <th className="text-left px-2 py-1.5">Holding</th>
-              <th className="text-right px-2 py-1.5">Qty</th>
-              <th className="text-right px-2 py-1.5">Amount</th>
-              <th className="text-left px-2 py-1.5">Kind</th>
-            </tr>
-          </thead>
-          <tbody>
-            {ids.length === 0 && (
-              <tr><td colSpan={7} className="text-center text-muted-foreground px-2 py-2">none</td></tr>
-            )}
-            {ids.map((id) => {
-              const r = displacedRows[id];
-              if (!r) return (
-                <tr key={id} className="border-t"><td colSpan={7} className="px-2 py-1.5 text-muted-foreground">Tx #{id} (row not found)</td></tr>
-              );
-              return (
-                <>
-                  <tr key={`${id}-primary`} className="border-t">
-                    <td className="px-2 py-1.5 font-mono">#{r.id}</td>
-                    <td className="px-2 py-1.5">{r.date}</td>
-                    <td className="px-2 py-1.5">{accountLabelFor(r.accountId, accountMap)}</td>
-                    <td className="px-2 py-1.5">{holdingLabelFor(r.portfolioHoldingId, holdingMap)}</td>
-                    <td className="px-2 py-1.5 text-right font-mono">{r.quantity ?? "—"}</td>
-                    <td className="px-2 py-1.5 text-right font-mono">{r.amount.toFixed(2)} {r.currency}</td>
-                    <td className="px-2 py-1.5 font-mono">{r.kind ?? "—"}</td>
-                  </tr>
-                  <RowDetailsLine row={r} holdingMap={holdingMap} categoryMap={categoryMap} colSpan={7} />
-                </>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+    <div className="space-y-1.5">
+      <SectionLabel>Existing rows being displaced</SectionLabel>
+      <SectionCard padded={false} className="divide-y divide-border/50 px-3">
+        {ids.length === 0 && <p className="py-3 text-sm text-muted-foreground">none</p>}
+        {ids.map((id) => {
+          const r = displacedRows[id];
+          if (!r) return <p key={id} className="py-3 text-sm text-muted-foreground">Tx #{id} (row not found)</p>;
+          return (
+            <div key={id}>
+              <ListRow
+                title={`#${r.id} · ${r.date}`}
+                subtitle={`${accountLabelFor(r.accountId, accountMap)} · ${holdingLabelFor(r.portfolioHoldingId, holdingMap)}${r.quantity != null ? ` · qty ${r.quantity}` : ""}`}
+                value={<span className="font-mono text-sm">{r.amount.toFixed(2)} {r.currency}</span>}
+                secondary={r.kind ?? "—"}
+              />
+              <RowDetailsLine row={r} holdingMap={holdingMap} categoryMap={categoryMap} />
+            </div>
+          );
+        })}
+      </SectionCard>
     </div>
   );
 }
@@ -738,7 +714,6 @@ function RowDetailsLine({
   row,
   holdingMap,
   categoryMap,
-  colSpan,
   highlight,
 }: {
   row: {
@@ -751,7 +726,6 @@ function RowDetailsLine({
   };
   holdingMap: Record<number, HoldingMeta>;
   categoryMap: Record<number, CategoryMeta>;
-  colSpan: number;
   highlight?: ReadonlySet<keyof typeof FIELD_LABELS>;
 }) {
   const category = row.categoryId != null ? categoryMap[row.categoryId] : null;
@@ -770,20 +744,18 @@ function RowDetailsLine({
   if (row.payee) items.push({ key: "payee", value: row.payee });
   if (items.length === 0) return null;
   return (
-    <tr key={`details`} className="bg-muted/20">
-      <td colSpan={colSpan} className="px-2 py-1 text-xs text-muted-foreground">
-        <div className="flex flex-wrap gap-x-3 gap-y-1">
-          {items.map((it) => {
-            const isHi = highlight?.has(it.key);
-            return (
-              <span key={it.key} className={isHi ? "font-semibold text-foreground" : ""}>
-                <span className="opacity-70">{FIELD_LABELS[it.key]}:</span> {it.value}
-              </span>
-            );
-          })}
-        </div>
-      </td>
-    </tr>
+    <div className="px-1 pb-2 text-xs text-muted-foreground">
+      <div className="flex flex-wrap gap-x-3 gap-y-1">
+        {items.map((it) => {
+          const isHi = highlight?.has(it.key);
+          return (
+            <span key={it.key} className={isHi ? "font-semibold text-foreground" : ""}>
+              <span className="opacity-70">{FIELD_LABELS[it.key]}:</span> {it.value}
+            </span>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -812,63 +784,37 @@ function ReplacementPreviewTable({
   return (
     <div className="space-y-3">
       {rows.length > 0 && (
-        <div>
-          <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Will become (UPDATE in place)</div>
-          <div className="rounded border overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead className="bg-muted/40">
-                <tr>
-                  <th className="text-left px-2 py-1.5">Tx</th>
-                  <th className="text-right px-2 py-1.5">New amount</th>
-                  <th className="text-left px-2 py-1.5">New kind</th>
-                  <th className="text-left px-2 py-1.5">trade_link_id</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((r) => (
-                  <tr key={r.txId} className="border-t">
-                    <td className="px-2 py-1.5 font-mono">#{r.txId}</td>
-                    <td className="px-2 py-1.5 text-right font-mono">{r.amount?.toFixed(2) ?? "(unchanged)"}</td>
-                    <td className="px-2 py-1.5 font-mono">{r.kind ?? "(unchanged)"}</td>
-                    <td className="px-2 py-1.5 font-mono text-muted-foreground truncate max-w-[120px]">{r.tradeLinkId ?? "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <div className="space-y-1.5">
+          <SectionLabel>Will become (UPDATE in place)</SectionLabel>
+          <SectionCard padded={false} className="divide-y divide-border/50 px-3">
+            {rows.map((r) => (
+              <ListRow
+                key={r.txId}
+                title={`#${r.txId}`}
+                subtitle={`trade_link_id: ${r.tradeLinkId ?? "—"}`}
+                value={<span className="font-mono text-sm">{r.amount?.toFixed(2) ?? "(unchanged)"}</span>}
+                secondary={`kind: ${r.kind ?? "(unchanged)"}`}
+              />
+            ))}
+          </SectionCard>
         </div>
       )}
       {synth.length > 0 && (
-        <div>
-          <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">New rows (synthesized — tagged source=&apos;backfill_synth&apos;)</div>
-          <div className="rounded border border-warning/40 bg-warning/5 overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead className="bg-warning/10">
-                <tr>
-                  <th className="text-left px-2 py-1.5">Date</th>
-                  <th className="text-left px-2 py-1.5">Account</th>
-                  <th className="text-left px-2 py-1.5">Holding</th>
-                  <th className="text-right px-2 py-1.5">Qty</th>
-                  <th className="text-right px-2 py-1.5">Amount</th>
-                  <th className="text-left px-2 py-1.5">Kind</th>
-                </tr>
-              </thead>
-              <tbody>
-                {synth.map((r, i) => (
-                  <tr key={i} className="border-t border-warning/30">
-                    <td className="px-2 py-1.5">{r.date}</td>
-                    <td className="px-2 py-1.5">{accountLabelFor(r.accountId, accountMap)}</td>
-                    <td className="px-2 py-1.5">{holdingLabelFor(r.portfolioHoldingId, holdingMap)}</td>
-                    <td className="px-2 py-1.5 text-right font-mono">{r.quantity ?? "—"}</td>
-                    <td className="px-2 py-1.5 text-right font-mono">{r.amount.toFixed(2)} {r.currency}</td>
-                    <td className="px-2 py-1.5 font-mono">{r.kind}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <div className="space-y-1.5">
+          <SectionLabel>New rows (synthesized — tagged source=&apos;backfill_synth&apos;)</SectionLabel>
+          <SectionCard padded={false} className="divide-y divide-border/50 border-warning/40 bg-warning/5 px-3">
+            {synth.map((r, i) => (
+              <ListRow
+                key={i}
+                title={`${r.date} · ${accountLabelFor(r.accountId, accountMap)}`}
+                subtitle={`${holdingLabelFor(r.portfolioHoldingId, holdingMap)}${r.quantity != null ? ` · qty ${r.quantity}` : ""}`}
+                value={<span className="font-mono text-sm">{r.amount.toFixed(2)} {r.currency}</span>}
+                secondary={r.kind}
+              />
+            ))}
+          </SectionCard>
           {synth[0]?.synthReason && (
-            <p className="text-xs text-muted-foreground mt-1 italic">{synth[0].synthReason}</p>
+            <p className="px-1 text-xs text-muted-foreground italic">{synth[0].synthReason}</p>
           )}
         </div>
       )}
@@ -1718,43 +1664,23 @@ function WillBecomeTable({
   const secondaryHi = new Set<keyof typeof FIELD_LABELS>();
   if (changedKeys.has("related")) secondaryHi.add("related");
   return (
-    <div>
-      <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Will become</div>
-      <div className="rounded border border-pos/40 bg-pos/5 overflow-x-auto">
-        <table className="w-full text-xs">
-          <thead className="bg-pos/10">
-            <tr>
-              <th className="text-left px-2 py-1.5">Tx</th>
-              <th className="text-left px-2 py-1.5">Date</th>
-              <th className="text-left px-2 py-1.5">Account</th>
-              <th className="text-left px-2 py-1.5">Holding</th>
-              <th className="text-right px-2 py-1.5">Qty</th>
-              <th className="text-right px-2 py-1.5">Amount</th>
-              <th className="text-left px-2 py-1.5">Kind</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td className="px-2 py-1.5 font-mono">#{willBecome.id}</td>
-              <td className="px-2 py-1.5">{willBecome.date}</td>
-              <td className="px-2 py-1.5">{accountLabelFor(willBecome.accountId, accountMap)}</td>
-              <td className={`px-2 py-1.5 ${hi("holding")}`}>
-                {holdingLabelFor(willBecome.portfolioHoldingId, holdingMap)}
-              </td>
-              <td className="px-2 py-1.5 text-right font-mono">{willBecome.quantity ?? "—"}</td>
-              <td className="px-2 py-1.5 text-right font-mono">{willBecome.amount.toFixed(2)} {willBecome.currency}</td>
-              <td className={`px-2 py-1.5 font-mono ${hi("kind")}`}>{willBecome.kind ?? "—"}</td>
-            </tr>
-            <RowDetailsLine
-              row={willBecome}
-              holdingMap={holdingMap}
-              categoryMap={categoryMap}
-              colSpan={7}
-              highlight={secondaryHi}
-            />
-          </tbody>
-        </table>
-      </div>
+    <div className="space-y-1.5">
+      <SectionLabel>Will become</SectionLabel>
+      <SectionCard padded={false} className="border-pos/40 bg-pos/5 px-3">
+        <ListRow
+          title={`#${willBecome.id} · ${willBecome.date}`}
+          subtitle={
+            <>
+              {accountLabelFor(willBecome.accountId, accountMap)} ·{" "}
+              <span className={hi("holding")}>{holdingLabelFor(willBecome.portfolioHoldingId, holdingMap)}</span>
+              {willBecome.quantity != null ? ` · qty ${willBecome.quantity}` : ""}
+            </>
+          }
+          value={<span className="font-mono text-sm">{willBecome.amount.toFixed(2)} {willBecome.currency}</span>}
+          secondary={<span className={`font-mono ${hi("kind")}`}>{willBecome.kind ?? "—"}</span>}
+        />
+        <RowDetailsLine row={willBecome} holdingMap={holdingMap} categoryMap={categoryMap} highlight={secondaryHi} />
+      </SectionCard>
       {existing.kind !== willBecome.kind && (
         <p className="text-xs text-muted-foreground mt-1">
           Existing kind: <span className="font-mono">{existing.kind ?? "—"}</span> → new: <span className="font-mono font-semibold">{willBecome.kind}</span>
@@ -1912,120 +1838,70 @@ function CoverageDashboard({ coverage, proposals }: { coverage: Coverage; propos
   const projectedPct = coverage.totalTxs === 0 ? 0 : Math.round((projectedCanonical / coverage.totalTxs) * 100);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Canonicalization coverage</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-2 regular:grid-cols-3 wide:grid-cols-5 gap-4 text-sm">
-          <Metric label="Investment accounts" value={String(coverage.accountCount)} />
-          <Metric label="Total transactions" value={String(coverage.totalTxs)} />
-          <Metric
-            label="Canonical (kind set + paired)"
-            value={`${coverage.canonicalTxs} / ${coverage.totalTxs}`}
-            sub={`${coverage.canonicalPct}%`}
-            tone="good"
-          />
-          <Metric
-            label="Pending (needs backfill)"
-            value={String(coverage.nonCanonicalTxs)}
-            sub={coverage.totalTxs > 0 ? `${100 - coverage.canonicalPct}%` : undefined}
-            tone={coverage.nonCanonicalTxs > 0 ? "warn" : "good"}
-          />
-          <Metric
-            label="Not investment txs (no holding)"
-            value={String(coverage.nonInvestmentRows ?? 0)}
-            sub={(coverage.nonInvestmentRows ?? 0) > 0 ? "review & move/delete" : undefined}
-            tone={(coverage.nonInvestmentRows ?? 0) > 0 ? "warn" : "good"}
-          />
-        </div>
+    <SectionCard label="Canonicalization coverage">
+      <MetricGrid
+        metrics={[
+          { label: "Investment accounts", text: String(coverage.accountCount) },
+          { label: "Total transactions", text: String(coverage.totalTxs) },
+          {
+            label: "Canonical (kind set + paired)",
+            text: `${coverage.canonicalTxs} / ${coverage.totalTxs}`,
+            sub: `${coverage.canonicalPct}%`,
+          },
+          {
+            label: "Pending (needs backfill)",
+            text: String(coverage.nonCanonicalTxs),
+            sub: coverage.totalTxs > 0 ? `${100 - coverage.canonicalPct}%` : undefined,
+          },
+          {
+            label: "Not investment txs (no holding)",
+            text: String(coverage.nonInvestmentRows ?? 0),
+            sub: (coverage.nonInvestmentRows ?? 0) > 0 ? "review & move/delete" : undefined,
+          },
+        ]}
+      />
 
-        {/* Progress bar — current vs projected after applying approved */}
-        <div className="mt-4 space-y-1">
-          <div className="h-2 w-full rounded-full bg-muted/40 overflow-hidden relative">
+      {/* Progress bar — current vs projected after applying approved */}
+      <div className="mt-4 space-y-1">
+        <div className="h-2 w-full rounded-full bg-muted/40 overflow-hidden relative">
+          <div
+            className="h-full bg-pos/70 absolute left-0 top-0"
+            style={{ width: `${coverage.canonicalPct}%` }}
+            title={`${coverage.canonicalPct}% already canonical`}
+          />
+          {willCanonicalize > 0 && (
             <div
-              className="h-full bg-pos/70 absolute left-0 top-0"
-              style={{ width: `${coverage.canonicalPct}%` }}
-              title={`${coverage.canonicalPct}% already canonical`}
+              className="h-full bg-warning/60 absolute top-0"
+              style={{ left: `${coverage.canonicalPct}%`, width: `${projectedPct - coverage.canonicalPct}%` }}
+              title={`+${willCanonicalize} after applying ${approvedCount + appliedCount} approved/applied proposals → ${projectedPct}%`}
             />
-            {willCanonicalize > 0 && (
-              <div
-                className="h-full bg-warning/60 absolute top-0"
-                style={{ left: `${coverage.canonicalPct}%`, width: `${projectedPct - coverage.canonicalPct}%` }}
-                title={`+${willCanonicalize} after applying ${approvedCount + appliedCount} approved/applied proposals → ${projectedPct}%`}
-              />
-            )}
-          </div>
-          <div className="text-xs text-muted-foreground flex justify-between">
-            <span>Now: {coverage.canonicalPct}% canonical</span>
-            {willCanonicalize > 0 && <span>After this run: {projectedPct}% (+{willCanonicalize} rows)</span>}
-          </div>
+          )}
         </div>
+        <div className="text-xs text-muted-foreground flex justify-between">
+          <span>Now: {coverage.canonicalPct}% canonical</span>
+          {willCanonicalize > 0 && <span>After this run: {projectedPct}% (+{willCanonicalize} rows)</span>}
+        </div>
+      </div>
 
-        {/* Per-account breakdown */}
-        {coverage.perAccount.length > 0 && (
-          <div className="mt-4">
-            <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Per-account breakdown</div>
-            <div className="rounded border overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead className="bg-muted/40">
-                  <tr>
-                    <th className="text-left px-2 py-1.5">Account</th>
-                    <th className="text-right px-2 py-1.5">Total</th>
-                    <th className="text-right px-2 py-1.5">Canonical</th>
-                    <th className="text-right px-2 py-1.5">Pending</th>
-                    <th className="text-right px-2 py-1.5">Not inv.</th>
-                    <th className="text-left px-2 py-1.5 w-40">Coverage</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {coverage.perAccount.map((a) => (
-                    <tr key={a.accountId} className="border-t">
-                      <td className="px-2 py-1.5">{a.name}</td>
-                      <td className="px-2 py-1.5 text-right font-mono">{a.total}</td>
-                      <td className="px-2 py-1.5 text-right font-mono">{a.canonical}</td>
-                      <td className="px-2 py-1.5 text-right font-mono">
-                        {a.pending > 0 ? (
-                          <span className="text-warning">{a.pending}</span>
-                        ) : (
-                          <span className="text-pos">0</span>
-                        )}
-                      </td>
-                      <td className="px-2 py-1.5 text-right font-mono">
-                        {(a.nonInvestmentRows ?? 0) > 0 ? (
-                          <span className="text-warning">{a.nonInvestmentRows}</span>
-                        ) : (
-                          <span className="text-muted-foreground">0</span>
-                        )}
-                      </td>
-                      <td className="px-2 py-1.5">
-                        <div className="h-1.5 w-full rounded-full bg-muted/40 overflow-hidden">
-                          <div
-                            className="h-full bg-pos/70"
-                            style={{ width: `${100 - a.pendingPct}%` }}
-                          />
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-function Metric({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: "good" | "warn" }) {
-  const toneClass = tone === "good" ? "text-pos" : tone === "warn" ? "text-warning" : "";
-  return (
-    <div>
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className={`text-lg font-semibold ${toneClass}`}>{value}</div>
-      {sub && <div className={`text-xs ${toneClass}`}>{sub}</div>}
-    </div>
+      {/* Per-account breakdown */}
+      {coverage.perAccount.length > 0 && (
+        <div className="mt-4 space-y-1.5">
+          <SectionLabel>Per-account breakdown</SectionLabel>
+          <SectionCard padded={false} className="divide-y divide-border/50 px-3">
+            {coverage.perAccount.map((a) => (
+              <ListRow
+                key={a.accountId}
+                title={a.name}
+                subtitle={`${a.total} total · ${a.canonical} canonical · ${a.nonInvestmentRows ?? 0} not inv.`}
+                value={<span className={`font-mono text-sm ${a.pending > 0 ? "text-warning" : "text-pos"}`}>{a.pending} pending</span>}
+                secondary={`${100 - a.pendingPct}% covered`}
+                secondaryTone={a.pending > 0 ? "neg" : "pos"}
+              />
+            ))}
+          </SectionCard>
+        </div>
+      )}
+    </SectionCard>
   );
 }
 

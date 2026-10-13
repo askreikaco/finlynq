@@ -11,14 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { ListRow } from "@/components/mobile";
 import { AlertCircle, AlertTriangle, ArrowLeft, BookTemplate, CheckCircle2, Copy } from "lucide-react";
 import type { RawTransaction } from "@/lib/import-pipeline";
 import { formatCurrency } from "@/lib/currency";
@@ -250,167 +243,123 @@ export function ImportPreviewDialog({
           </div>
         )}
 
-        {/* Table */}
-        <div className="overflow-auto flex-1 rounded-lg border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-8"></TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Account</TableHead>
-                <TableHead>Payee</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {allRows.slice(0, 100).map((row) => {
-                const isDuplicate = duplicateIndices.has(row.rowIndex);
-                const isForced = includeDuplicates.has(row.rowIndex);
-                const probable = probableByRowIndex.get(row.rowIndex);
-                const isProbable = !isDuplicate && !!probable;
-                const isSkipped = isProbable && skipProbable.has(row.rowIndex);
-                const isExpanded = isProbable && expandedProbable.has(row.rowIndex);
-                const dupMatch = isDuplicate ? duplicateByRowIndex.get(row.rowIndex) : undefined;
-                const isDupExpanded = isDuplicate && expandedDuplicate.has(row.rowIndex);
-                const rowClass = isDuplicate && !isForced
-                  ? "bg-warning/10 text-muted-foreground"
-                  : isProbable
-                    ? isSkipped
-                      ? "bg-warning/5 text-muted-foreground"
-                      : "bg-warning/10"
-                    : "";
-                return (
-                  <>
-                    <TableRow key={row.rowIndex} className={rowClass}>
-                      <TableCell>
-                        {isDuplicate && (
-                          <input
-                            type="checkbox"
-                            checked={isForced}
-                            onChange={() => toggleDuplicate(row.rowIndex)}
-                            className="h-4 w-4 rounded border-border"
-                            title="Force import this duplicate"
-                          />
+        {/* Rows: one native list row per transaction (no table). Tap a probable or duplicate row for its match. */}
+        <div className="flex-1 overflow-auto rounded-lg border divide-y divide-border/50">
+          {allRows.slice(0, 100).map((row) => {
+            const isDuplicate = duplicateIndices.has(row.rowIndex);
+            const isForced = includeDuplicates.has(row.rowIndex);
+            const probable = probableByRowIndex.get(row.rowIndex);
+            const isProbable = !isDuplicate && !!probable;
+            const isSkipped = isProbable && skipProbable.has(row.rowIndex);
+            const isExpanded = isProbable && expandedProbable.has(row.rowIndex);
+            const dupMatch = isDuplicate ? duplicateByRowIndex.get(row.rowIndex) : undefined;
+            const isDupExpanded = isDuplicate && expandedDuplicate.has(row.rowIndex);
+            const rowClass = isDuplicate && !isForced
+              ? "bg-warning/10 text-muted-foreground"
+              : isProbable
+                ? isSkipped
+                  ? "bg-warning/5 text-muted-foreground"
+                  : "bg-warning/10"
+                : "";
+            const status = isDuplicate ? "Duplicate" : isProbable ? "Probable dup" : "New";
+            const onPress = isProbable
+              ? () => toggleExpandProbable(row.rowIndex)
+              : dupMatch
+                ? () => toggleExpandDuplicate(row.rowIndex)
+                : undefined;
+            return (
+              <div key={row.rowIndex} className={rowClass}>
+                <div className="flex items-center gap-2 pl-3">
+                  <div className="flex w-5 shrink-0 justify-center">
+                    {isDuplicate && (
+                      <input
+                        type="checkbox"
+                        checked={isForced}
+                        onChange={() => toggleDuplicate(row.rowIndex)}
+                        className="h-4 w-4 rounded border-border"
+                        title="Force import this duplicate"
+                      />
+                    )}
+                    {isProbable && (
+                      <input
+                        type="checkbox"
+                        checked={!isSkipped}
+                        onChange={() => toggleSkipProbable(row.rowIndex)}
+                        className="h-4 w-4 rounded border-warning/30"
+                        title="Uncheck to skip this probable duplicate"
+                      />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <ListRow
+                      title={row.payee || "(no payee)"}
+                      subtitle={`${row.date} · ${row.account} · ${row.category || "—"}`}
+                      value={
+                        <span className={`font-mono text-sm ${row.amount < 0 ? "text-destructive" : "text-pos"}`}>
+                          {formatCurrency(row.amount, row.currency ?? displayCurrency)}
+                        </span>
+                      }
+                      secondary={status}
+                      secondaryTone={isDuplicate || isProbable ? "neg" : "pos"}
+                      onPress={onPress}
+                    />
+                  </div>
+                </div>
+                {isProbable && isExpanded && probable && (
+                  <div className="border-l-2 border-warning/50 bg-warning/10 px-6 py-3 text-xs text-foreground">
+                    <div className="space-y-1">
+                      <div>
+                        Matches existing transaction <span className="font-mono text-warning">#{probable.matchedTx.id}</span>
+                        {probable.matchedTx.source && (
+                          <> (source: <span className="font-mono">{probable.matchedTx.source}</span>)</>
                         )}
-                        {isProbable && (
-                          <input
-                            type="checkbox"
-                            checked={!isSkipped}
-                            onChange={() => toggleSkipProbable(row.rowIndex)}
-                            className="h-4 w-4 rounded border-warning/30"
-                            title="Uncheck to skip this probable duplicate"
-                          />
-                        )}
-                      </TableCell>
-                      <TableCell className="font-mono text-xs">{row.date}</TableCell>
-                      <TableCell className="text-xs">{row.account}</TableCell>
-                      <TableCell className="text-xs max-w-[200px] truncate">{row.payee}</TableCell>
-                      <TableCell className={`text-right font-mono text-xs ${row.amount < 0 ? "text-destructive" : "text-pos"}`}>
-                        {formatCurrency(row.amount, row.currency ?? displayCurrency)}
-                      </TableCell>
-                      <TableCell className="text-xs">{row.category || "—"}</TableCell>
-                      <TableCell>
-                        {isDuplicate ? (
-                          dupMatch ? (
-                            <button
-                              type="button"
-                              onClick={() => toggleExpandDuplicate(row.rowIndex)}
-                              className="inline-flex items-center gap-1"
-                              title="Click to view match details"
-                            >
-                              <Badge variant="secondary" className="text-xs bg-warning/20 text-warning border border-warning/30 cursor-pointer hover:bg-warning/30">
-                                Duplicate
-                              </Badge>
-                            </button>
-                          ) : (
-                            <Badge variant="secondary" className="text-xs bg-warning/20 text-warning border border-warning/30">
-                              Duplicate
-                            </Badge>
-                          )
-                        ) : isProbable ? (
-                          <button
-                            type="button"
-                            onClick={() => toggleExpandProbable(row.rowIndex)}
-                            className="inline-flex items-center gap-1"
-                            title="Click to view match details"
-                          >
-                            <Badge variant="secondary" className="text-xs bg-warning/20 text-warning border border-warning/30 cursor-pointer hover:bg-warning/30">
-                              <AlertTriangle className="h-3 w-3 mr-0.5" />
-                              Probable dup
-                            </Badge>
-                          </button>
+                      </div>
+                      <div className="text-muted-foreground">
+                        Existing: <span className="font-mono text-foreground">{probable.matchedTx.date}</span> <span className="font-mono text-foreground">{formatCurrency(probable.matchedTx.amount, displayCurrency)}</span> —
+                        {" "}<span className="font-medium text-foreground">{probable.matchedTx.daysOff}d</span> off,
+                        {" "}delta <span className="font-mono text-foreground">{formatCurrency(probable.matchedTx.amountDeltaAbs, displayCurrency)}</span> ({formatPercent(probable.matchedTx.amountDeltaPct * 100, 2)})
+                      </div>
+                      <div className="text-warning font-medium">
+                        Score {probable.matchScore.toFixed(2)} · {probable.matchReason}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {isDuplicate && isDupExpanded && dupMatch && (
+                  <div className="border-l-2 border-warning/50 bg-warning/10 px-6 py-3 text-xs text-foreground">
+                    <div className="space-y-1">
+                      <div>
+                        {dupMatch.matchedTx.id != null ? (
+                          <>
+                            Matches existing transaction <span className="font-mono text-warning">#{dupMatch.matchedTx.id}</span>
+                          </>
                         ) : (
-                          <Badge variant="secondary" className="text-xs bg-pos/20 text-pos border border-pos/30">
-                            New
-                          </Badge>
+                          <span className="text-warning">Previously imported (no current transaction)</span>
                         )}
-                      </TableCell>
-                    </TableRow>
-                    {isProbable && isExpanded && probable && (
-                      <TableRow key={`${row.rowIndex}-detail`} className="bg-warning/10 border-l-2 border-warning/50">
-                        <TableCell colSpan={7} className="text-xs text-foreground px-6 py-3">
-                          <div className="space-y-1">
-                            <div>
-                              Matches existing transaction <span className="font-mono text-warning">#{probable.matchedTx.id}</span>
-                              {probable.matchedTx.source && (
-                                <> (source: <span className="font-mono">{probable.matchedTx.source}</span>)</>
-                              )}
-                            </div>
-                            <div className="text-muted-foreground">
-                              Existing: <span className="font-mono text-foreground">{probable.matchedTx.date}</span> <span className="font-mono text-foreground">{formatCurrency(probable.matchedTx.amount, displayCurrency)}</span> —
-                              {" "}<span className="font-medium text-foreground">{probable.matchedTx.daysOff}d</span> off,
-                              {" "}delta <span className="font-mono text-foreground">{formatCurrency(probable.matchedTx.amountDeltaAbs, displayCurrency)}</span> ({formatPercent(probable.matchedTx.amountDeltaPct * 100, 2)})
-                            </div>
-                            <div className="text-warning font-medium">
-                              Score {probable.matchScore.toFixed(2)} · {probable.matchReason}
-                            </div>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )}
-                    {isDuplicate && isDupExpanded && dupMatch && (
-                      <TableRow key={`${row.rowIndex}-dup-detail`} className="bg-warning/10 border-l-2 border-warning/50">
-                        <TableCell colSpan={7} className="text-xs text-foreground px-6 py-3">
-                          <div className="space-y-1">
-                            <div>
-                              {dupMatch.matchedTx.id != null ? (
-                                <>
-                                  Matches existing transaction <span className="font-mono text-warning">#{dupMatch.matchedTx.id}</span>
-                                </>
-                              ) : (
-                                <span className="text-warning">Previously imported (no current transaction)</span>
-                              )}
-                              {dupMatch.matchedTx.source && (
-                                <> (source: <span className="font-mono">{dupMatch.matchedTx.source}</span>)</>
-                              )}
-                            </div>
-                            <div className="text-muted-foreground">
-                              Existing: <span className="font-mono text-foreground">{dupMatch.matchedTx.date}</span> <span className="font-mono text-foreground">{formatCurrency(dupMatch.matchedTx.amount, displayCurrency)}</span>
-                            </div>
-                            <div className="text-warning font-medium">
-                              {dupMatch.matchBasis === "fit_id"
-                                ? "Exact match · bank-provided fitId"
-                                : "Exact match · date + account + amount + payee"}
-                              {!isForced && " · check the box above to import anyway"}
-                            </div>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </>
-                );
-              })}
-              {allRows.length > 100 && (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center text-xs text-muted-foreground py-4">
-                    Showing first 100 of {allRows.length} rows
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                        {dupMatch.matchedTx.source && (
+                          <> (source: <span className="font-mono">{dupMatch.matchedTx.source}</span>)</>
+                        )}
+                      </div>
+                      <div className="text-muted-foreground">
+                        Existing: <span className="font-mono text-foreground">{dupMatch.matchedTx.date}</span> <span className="font-mono text-foreground">{formatCurrency(dupMatch.matchedTx.amount, displayCurrency)}</span>
+                      </div>
+                      <div className="text-warning font-medium">
+                        {dupMatch.matchBasis === "fit_id"
+                          ? "Exact match · bank-provided fitId"
+                          : "Exact match · date + account + amount + payee"}
+                        {!isForced && " · check the box above to import anyway"}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          {allRows.length > 100 && (
+            <p className="py-4 text-center text-xs text-muted-foreground">
+              Showing first 100 of {allRows.length} rows
+            </p>
+          )}
         </div>
 
         {/* Errors */}

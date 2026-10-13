@@ -26,14 +26,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { PageSkeleton } from "@/components/page-skeleton";
@@ -46,7 +38,6 @@ import {
   Plus,
   Pencil,
   Trash2,
-  ArrowUpDown,
   ChevronUp,
   ChevronDown,
   ChevronRight,
@@ -66,7 +57,9 @@ import {
   type InvestmentsTab,
   type Security,
 } from "./_components/shared";
-import { PageHeader } from "@/components/mobile";
+import { DetailSheet, ListRow, SectionCard } from "@/components/mobile";
+import { SectionPage } from "@/components/templates";
+import { cn } from "@/lib/utils";
 
 type SortKey = "symbol" | "description" | "type" | "currency";
 type SortDir = "asc" | "desc";
@@ -106,6 +99,8 @@ function InvestmentsSettingsPage() {
   // Collapsible expand sets.
   const [expandedSecurities, setExpandedSecurities] = useState<Set<number>>(new Set());
   const [expandedAccounts, setExpandedAccounts] = useState<Set<number>>(new Set());
+  // Securities row tapped open in the detail sheet (Prices / Edit / Delete).
+  const [detailId, setDetailId] = useState<number | null>(null);
 
   // A route that just saved sends ?notice=<code>; show it once.
   useEffect(() => {
@@ -303,70 +298,66 @@ function InvestmentsSettingsPage() {
   }
 
   // ---- Render ----
-  // The page header is the top bar in every state (loading and error included), so it is built once here.
-  const header = (
-    <PageHeader
-        title="Investments"
-        titleClassName="text-2xl font-bold tracking-tight"
-        subtitle="Your securities, and how they map to your accounts."
-        subtitleClassName="text-sm text-muted-foreground mt-0.5"
-      />
-  );
+  const allSecurities = securities ?? [];
+  // One centred SectionPage column at every width; the shared PageHeader is the top bar in every state.
+  const pageProps = {
+    id: "settings-investments",
+    title: "Investments",
+    subtitle: "Your securities, and how they map to your accounts.",
+    width: "report" as const,
+    center: true,
+  };
   if (loading && !securities) {
     return (
-      <div className="max-w-5xl space-y-6">
-        <div className="contents">{header}</div>
+      <SectionPage {...pageProps}>
         <PageSkeleton variant="cards" rows={4} />
-      </div>
+      </SectionPage>
     );
   }
   if (error && !securities) {
     return (
-      <div className="max-w-5xl space-y-6">
-        <div className="contents">{header}</div>
+      <SectionPage {...pageProps}>
         <ErrorState title="Couldn't load investments" message={error} onRetry={load} />
-      </div>
+      </SectionPage>
     );
   }
 
-  const sortHeader = (k: SortKey, label: string) => {
+  const sortPill = (k: SortKey, label: string) => {
     const active = sort.key === k;
     return (
       <button
+        key={k}
         type="button"
+        aria-pressed={active}
         onClick={() => toggleSort(k)}
-        className="inline-flex items-center gap-1 font-medium hover:text-foreground"
+        className={cn(
+          "inline-flex h-8 shrink-0 items-center gap-1 rounded-full border px-3 text-xs font-medium",
+          active ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground",
+        )}
       >
         {label}
-        {active ? (
-          sort.dir === "asc" ? (
-            <ChevronUp className="h-3 w-3" />
-          ) : (
-            <ChevronDown className="h-3 w-3" />
-          )
-        ) : (
-          <ArrowUpDown className="h-3 w-3 opacity-40" />
-        )}
+        {active ? (sort.dir === "asc" ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />) : null}
       </button>
     );
   };
 
-  const filterInput = (col: FilterKey) => (
+  const filterInput = (col: FilterKey, label: string) => (
     <Input
       value={filters[col]}
       onChange={(e) => setFilters((p) => ({ ...p, [col]: e.target.value }))}
-      placeholder="Filter…"
-      className="h-7 text-xs"
+      placeholder={`${label}…`}
+      className="h-8 text-xs"
       aria-label={`Filter by ${col}`}
     />
   );
 
-  const allSecurities = securities ?? [];
+  const detailSecurity = allSecurities.find((s) => s.id === detailId) ?? null;
+  const detailRow = detailSecurity
+    ? { s: detailSecurity, symbol: symbolLabel(detailSecurity), description: descriptionOf(detailSecurity), type: detailSecurity.assetType, currency: detailSecurity.currency }
+    : null;
 
   return (
-    <div className="max-w-5xl space-y-6">
-      <div className="contents">{header}</div>
-
+    <SectionPage {...pageProps}>
       {toast && (
         <div
           className={`rounded-lg border p-3 text-sm ${
@@ -478,117 +469,47 @@ function InvestmentsSettingsPage() {
               action={{ label: "Add security", onClick: openAdd }}
             />
           ) : (
-            <div className="rounded-md border overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{sortHeader("symbol", "Symbol")}</TableHead>
-                    <TableHead>{sortHeader("description", "Description")}</TableHead>
-                    <TableHead>{sortHeader("type", "Type")}</TableHead>
-                    <TableHead>{sortHeader("currency", "Currency")}</TableHead>
-                    <TableHead>Pricing</TableHead>
-                    <TableHead className="text-right" />
-                  </TableRow>
-                  <TableRow>
-                    <TableHead className="py-1">{filterInput("symbol")}</TableHead>
-                    <TableHead className="py-1">{filterInput("description")}</TableHead>
-                    <TableHead className="py-1">{filterInput("type")}</TableHead>
-                    <TableHead className="py-1">{filterInput("currency")}</TableHead>
-                    <TableHead className="py-1" />
-                    <TableHead className="py-1" />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {rows.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">
-                        {hasActiveFilter ? "No securities match the current filters." : "No securities."}
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    rows.map((r) => (
-                      <TableRow key={r.s.id}>
-                        <TableCell className="text-sm font-mono font-medium">
-                          {r.symbol}
-                          {r.s.isCash && (
-                            <Badge variant="outline" className="ml-1.5 text-xs">
-                              cash
-                            </Badge>
-                          )}
-                          {advisoryFor(r.s) && (
-                            <span
-                              className="ml-1.5 inline-flex align-text-bottom"
-                              title={advisoryFor(r.s)!.message}
-                            >
-                              <AlertTriangle className="h-3.5 w-3.5 text-warning" />
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {r.description || <span className="text-muted-foreground">--</span>}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="text-xs">
-                            {r.type}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="font-mono text-xs">
-                            {r.currency}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {r.s.priceSource === "manual" ? (
-                            <div className="flex flex-col gap-0.5">
-                              <Badge
-                                variant="secondary"
-                                className="w-fit text-xs border-warning/30 bg-warning/10 text-warning"
-                              >
-                                Manual
-                              </Badge>
-                              {r.s.latestPrice ? (
-                                <span className="text-xs text-muted-foreground tabular-nums">
-                                  {formatCurrency(r.s.latestPrice.price, r.s.currency)} · {r.s.latestPrice.date}
-                                </span>
-                              ) : (
-                                <span className="text-xs text-warning">
-                                  No price yet
-                                </span>
-                              )}
-                            </div>
-                          ) : (
-                            <Badge variant="outline" className="text-xs">
-                              Auto
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="inline-flex gap-1">
-                            {r.s.priceSource === "manual" && (
-                              <Button variant="ghost" size="sm" onClick={() => openPrices(r.s)}>
-                                <DollarSign className="h-3.5 w-3.5 mr-1" /> Prices
-                              </Button>
-                            )}
-                            <Button variant="ghost" size="sm" onClick={() => openEdit(r.s)}>
-                              <Pencil className="h-3.5 w-3.5 mr-1" /> Edit
-                            </Button>
-                            {r.s.accounts.length === 0 && (
-                              <Button aria-label="Delete this unused security"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setDeleteTarget(r.s)}
-                                title="Delete this unused security"
-                              >
-                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+            <div className="space-y-3">
+              <div role="group" aria-label="Sort securities" className="flex flex-wrap gap-2">
+                {sortPill("symbol", "Symbol")}
+                {sortPill("description", "Name")}
+                {sortPill("type", "Type")}
+                {sortPill("currency", "Currency")}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {filterInput("symbol", "Symbol")}
+                {filterInput("description", "Name")}
+                {filterInput("type", "Type")}
+                {filterInput("currency", "Currency")}
+              </div>
+              <SectionCard padded={false} className="divide-y divide-border/50 px-3">
+                {rows.length === 0 ? (
+                  <p className="py-8 text-center text-sm text-muted-foreground">
+                    {hasActiveFilter ? "No securities match the current filters." : "No securities."}
+                  </p>
+                ) : (
+                  rows.map((r) => {
+                    const manual = r.s.priceSource === "manual";
+                    return (
+                      <ListRow
+                        key={r.s.id}
+                        title={
+                          <>
+                            <span className="font-mono">{r.symbol}</span>
+                            {r.s.isCash && <Badge variant="outline" className="ml-1.5 text-xs">cash</Badge>}
+                            {advisoryFor(r.s) && <AlertTriangle aria-label={advisoryFor(r.s)!.message} className="ml-1.5 inline size-3.5 align-text-bottom text-warning" />}
+                          </>
+                        }
+                        subtitle={[r.description || "--", r.type, r.currency].join(" · ")}
+                        value={<Badge variant="outline" className="text-xs">{manual ? "Manual" : "Auto"}</Badge>}
+                        secondary={manual ? (r.s.latestPrice ? `${formatCurrency(r.s.latestPrice.price, r.s.currency)} · ${r.s.latestPrice.date}` : "No price yet") : undefined}
+                        secondaryTone={manual && !r.s.latestPrice ? "neg" : "muted"}
+                        onPress={() => setDetailId(r.s.id)}
+                      />
+                    );
+                  })
+                )}
+              </SectionCard>
             </div>
           )}
           {allSecurities.length > 0 && (
@@ -611,7 +532,7 @@ function InvestmentsSettingsPage() {
               description="Add a security on the Securities tab first."
             />
           ) : (
-            <div className="rounded-md border divide-y">
+            <div className="divide-y divide-border/50 overflow-hidden rounded-xl border border-border/50 bg-card">
               {allSecurities.map((s) => {
                 const open = expandedSecurities.has(s.id);
                 return (
@@ -688,7 +609,7 @@ function InvestmentsSettingsPage() {
               description="Create an investment account first, then add securities to it here."
             />
           ) : (
-            <div className="rounded-md border divide-y">
+            <div className="divide-y divide-border/50 overflow-hidden rounded-xl border border-border/50 bg-card">
               {byAccount.map(({ account, items }) => {
                 const open = expandedAccounts.has(account.id);
                 return (
@@ -792,7 +713,47 @@ function InvestmentsSettingsPage() {
         busy={tickerBusy}
         onConfirm={confirmTickerChange}
       />
-    </div>
+      {detailRow && (
+        <DetailSheet
+          open
+          onOpenChange={(o) => { if (!o) setDetailId(null); }}
+          title={<span className="font-mono">{detailRow.symbol}</span>}
+          description={detailRow.description || undefined}
+          items={[
+            { label: "Type", value: detailRow.type },
+            { label: "Currency", value: detailRow.currency },
+            {
+              label: "Pricing",
+              value: detailRow.s.priceSource !== "manual"
+                ? "Auto"
+                : detailRow.s.latestPrice
+                  ? `${formatCurrency(detailRow.s.latestPrice.price, detailRow.s.currency)} · ${detailRow.s.latestPrice.date}`
+                  : "Manual, no price yet",
+            },
+            { label: "Held in", value: `${detailRow.s.accounts.length} ${detailRow.s.accounts.length === 1 ? "account" : "accounts"}` },
+          ]}
+        >
+          {detailRow.s.priceSource === "manual" && (
+            <Button variant="outline" onClick={() => { setDetailId(null); openPrices(detailRow.s); }}>
+              <DollarSign className="h-4 w-4 mr-1.5" /> Prices
+            </Button>
+          )}
+          <Button variant="outline" onClick={() => { setDetailId(null); openEdit(detailRow.s); }}>
+            <Pencil className="h-4 w-4 mr-1.5" /> Edit
+          </Button>
+          {detailRow.s.accounts.length === 0 && (
+            <Button
+              variant="outline"
+              className="text-destructive"
+              aria-label="Delete this unused security"
+              onClick={() => { setDetailId(null); setDeleteTarget(detailRow.s); }}
+            >
+              <Trash2 className="h-4 w-4 mr-1.5" /> Delete
+            </Button>
+          )}
+        </DetailSheet>
+      )}
+    </SectionPage>
   );
 }
 

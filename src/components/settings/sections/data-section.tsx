@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { ListRow, SectionCard } from "@/components/mobile";
 import { Upload, FileText, Wallet, Tag, Briefcase, ArrowLeftRight, Database, Download, AlertTriangle, Trash2, History } from "lucide-react";
 import { RebuildSnapshotsButton } from "@/components/portfolio/rebuild-snapshots-button";
 import { getPasskeyStepUp } from "@/lib/client/passkey-stepup";
@@ -402,26 +403,15 @@ export function DataSection() {
                 <span className="font-medium truncate">{importFileName}</span>
                 <Badge variant="outline" className="text-xs">Preview</Badge>
               </div>
-              <div className="overflow-x-auto rounded border text-xs">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-muted/50">
-                      {importHeaders.map((h) => (
-                        <th key={h} className="px-2 py-1.5 text-left font-medium text-muted-foreground whitespace-nowrap">{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {importPreview.map((row, i) => (
-                      <tr key={i} className="border-t">
-                        {importHeaders.map((h) => (
-                          <td key={h} className="px-2 py-1.5 whitespace-nowrap">{row[h] ?? ""}</td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <SectionCard label="Preview" padded={false} className="divide-y divide-border/50 px-3">
+                {importPreview.map((row, i) => (
+                  <ListRow
+                    key={i}
+                    title={String(row[importHeaders[0]] ?? "") || `Row ${i + 1}`}
+                    subtitle={importHeaders.slice(1).map((h) => `${h}: ${row[h] ?? ""}`).join(" · ")}
+                  />
+                ))}
+              </SectionCard>
               <p className="text-xs text-muted-foreground">Showing first {importPreview.length} rows. Full file will be imported on confirm.</p>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={() => { setImportPreview([]); setImportSection(null); setImportFileName(""); setImportStatus(""); }}>

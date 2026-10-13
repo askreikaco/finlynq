@@ -13,10 +13,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
+import { type DataTableColumn } from "@/components/ui/data-table";
+import { ColumnList } from "@/components/mobile/column-list";
+import { SectionPage } from "@/components/templates";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Activity, RefreshCw, Trash2 } from "lucide-react";
-import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
+import { RefreshCw, Trash2 } from "lucide-react";
+import { HEADER_DESKTOP_ONLY } from "@/components/mobile";
 
 interface OutboundCall {
   id: number;
@@ -185,13 +187,14 @@ export default function AdminApiLogPage() {
   );
 
   return (
-    <div className="max-w-7xl space-y-6">
-      <PageHeader
-        className="flex flex-wrap items-center justify-between gap-3"
-        lead={<Activity className={`h-5 w-5 text-primary ${HEADER_DESKTOP_ONLY}`} />}
-        leadClassName="flex items-center gap-2"
-        title="API Log"
-        overflow={[
+    <SectionPage
+      id="admin-api-log"
+      title="API Log"
+      width="report"
+      center
+      header={{
+        className: "flex flex-wrap items-center justify-between gap-3",
+        overflow: [
           { label: auto ? "Auto-refresh: on" : "Auto-refresh: off", onSelect: () => setAuto(!auto) },
           {
             label: "Clear",
@@ -200,9 +203,8 @@ export default function AdminApiLogPage() {
             onSelect: () => setClearOpen(true),
             disabled: calls.length === 0 || clearing,
           },
-        ]}
-        actions={
-          <>
+        ],
+        actions: (<>
             <label className={`${HEADER_DESKTOP_ONLY} flex items-center gap-2 text-xs text-muted-foreground`}>
               Auto-refresh
               <Switch checked={auto} onCheckedChange={setAuto} />
@@ -221,9 +223,9 @@ export default function AdminApiLogPage() {
               <Trash2 className="mr-1.5 h-3.5 w-3.5" />
               Clear
             </Button>
-          </>
-        }
-      />
+          </>),
+      }}
+    >
       <p className="mt-0.5 text-sm text-muted-foreground">
         Every outbound market-data call (Yahoo / CoinGecko) made by the server, newest first.
         In-memory (last {data?.meta.cap ?? 1000}, cleared on restart). To diagnose an operation:{" "}
@@ -266,8 +268,8 @@ export default function AdminApiLogPage() {
 
       {/* Calls */}
       <Card>
-        <CardContent className="overflow-x-auto p-2">
-          <DataTable<OutboundCall>
+        <CardContent className="p-2">
+          <ColumnList<OutboundCall>
             columns={columns}
             rows={calls}
             rowKey={(r) => r.id}
@@ -291,6 +293,6 @@ export default function AdminApiLogPage() {
         busy={clearing}
         onConfirm={confirmClear}
       />
-    </div>
+    </SectionPage>
   );
 }

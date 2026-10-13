@@ -19,10 +19,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { DataTable, type DataTableColumn, type SortDir } from "@/components/ui/data-table";
+import { type DataTableColumn, type SortDir } from "@/components/ui/data-table";
+import { ColumnList } from "@/components/mobile/column-list";
+import { METRIC_GRID_CLASS } from "@/components/mobile";
+import { cn } from "@/lib/utils";
+import { SectionPage } from "@/components/templates";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Database, RefreshCw, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
-import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
+import { RefreshCw, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 
 type Tab = "price" | "fx";
 
@@ -286,19 +289,19 @@ export default function AdminPriceCachePage() {
   const keyLabel = tab === "fx" ? "currency" : "symbol";
 
   return (
-    <div className="max-w-7xl space-y-6">
-      <PageHeader
-        className="flex items-start justify-between gap-4"
-        lead={<Database className={`h-5 w-5 text-primary ${HEADER_DESKTOP_ONLY}`} />}
-        leadClassName="flex items-center gap-2"
-        title="Rate Cache"
-        actions={
-          <Button variant="outline" size="sm" onClick={load} disabled={loading}>
+    <SectionPage
+      id="admin-price-cache"
+      title="Rate Cache"
+      width="report"
+      center
+      header={{
+        className: "flex items-start justify-between gap-4",
+        actions: (<Button variant="outline" size="sm" onClick={load} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? "animate-spin" : ""}`} />
             Refresh
-          </Button>
-        }
-      />
+          </Button>),
+      }}
+    >
       <p className="text-sm text-muted-foreground mt-0.5">
         Read-only view of the server-side <code className="text-xs">price_cache</code> and{" "}
         <code className="text-xs">fx_rates</code> tables. Today-dated rows past the 30-min TTL show as{" "}
@@ -324,7 +327,7 @@ export default function AdminPriceCachePage() {
       {/* Summary */}
       {data && (
         <Card>
-          <CardContent className="grid grid-cols-2 gap-x-6 gap-y-2 py-4 regular:grid-cols-3 wide:grid-cols-6">
+          <CardContent className={cn(METRIC_GRID_CLASS, "py-4")}>
             <Stat label="Total rows" value={data.summary.totalRows.toLocaleString()} />
             <Stat label={tab === "fx" ? "Currencies" : "Symbols"} value={data.summary.distinctKeys.toLocaleString()} />
             <Stat label="First date" value={data.summary.firstDate ?? "—"} />
@@ -452,8 +455,8 @@ export default function AdminPriceCachePage() {
               </Button>
             </div>
           </div>
-          <div className="overflow-x-auto p-2">
-            <DataTable<Row>
+          <div className="p-2">
+            <ColumnList<Row>
               columns={columns}
               rows={data?.rows ?? []}
               rowKey={(r) => r.id}
@@ -499,7 +502,7 @@ export default function AdminPriceCachePage() {
         busy={bulkDeleting}
         onConfirm={confirmBulkDelete}
       />
-    </div>
+    </SectionPage>
   );
 }
 

@@ -14,8 +14,9 @@ describe("api-docs page uses design tokens (W5-10)", () => {
     expect(hits).toEqual([]);
   });
 
-  it("title uses the shared header size and weight", () => {
-    expect(SRC).toContain('titleClassName="text-2xl font-bold tracking-tight"');
+  it("title renders through the shared SectionPage header (one centred report column)", () => {
+    expect(SRC).toContain('title="API Docs"');
+    expect(SRC).toContain('width="report"');
     expect(SRC).not.toContain("text-3xl");
   });
 
