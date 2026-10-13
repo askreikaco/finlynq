@@ -44,7 +44,7 @@ describe("PasskeyLockBanner", () => {
 
     h.state = { ...h.state, enabled: true, locked: true };
     rerender(<PasskeyLockBanner />);
-    expect(screen.getByTestId("passkey-lock-banner").textContent).toContain("Offline data locked: Unlock with passkey");
+    expect(screen.getByTestId("passkey-lock-banner").textContent).toContain("Offline data locked: use your passkey");
   });
 
   it("the unlock button runs the passkey ceremony from the click and hides once unlocked", async () => {

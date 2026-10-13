@@ -43,7 +43,7 @@ export function PendingSyncCard() {
               void passkey.unlock().finally(() => setBusy(false));
             }}
           >
-            {busy ? "Waiting for passkey…" : "Unlock with passkey"}
+            {busy ? "Waiting for passkey…" : "Use passkey to unlock"}
           </Button>
         </CardContent>
       </Card>
