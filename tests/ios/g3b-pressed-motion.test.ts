@@ -20,7 +20,7 @@ describe("pressed feedback (button.tsx)", () => {
 
   it("default, outline, ghost, secondary and destructive variants define an active: background", () => {
     expect(button).toMatch(/default:\s*"[^"]*active:bg-primary\/80/);
-    expect(button).toMatch(/"border-border bg-background hover:bg-muted hover:text-foreground active:bg-muted/);
+    expect(button).toMatch(/"surface-card border-border hover:bg-muted hover:text-foreground active:bg-muted/);
     expect(button).toMatch(/ghost:\s*\n\s*"hover:bg-muted hover:text-foreground active:bg-muted/);
     expect(button).toMatch(/"bg-destructive\/10 text-destructive hover:bg-destructive\/20 active:bg-destructive\/25/);
   });
