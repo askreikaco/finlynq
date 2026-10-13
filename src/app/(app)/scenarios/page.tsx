@@ -417,7 +417,7 @@ function IncomeChangeTab() {
         <>
           <IncomeSide label="Current" data={result.current} currency={displayCurrency} />
           <IncomeSide label="New" data={result.new} currency={displayCurrency} />
-          <SectionCard label="Impact summary" className="bg-info/10 border-info/30">
+          <SectionCard label="Impact summary" cardClassName="bg-info/10 border-info/30">
             <MetricGrid
               metrics={[
                 { label: "Extra Monthly Take-Home", value: result.difference.monthlyNet, currency: displayCurrency, tone: "pos", showSign: true },
