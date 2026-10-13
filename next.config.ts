@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import withSerwistInit from "@serwist/next";
+import { withSerwist as withSerwistTurbo } from "@serwist/turbopack";
 import { REDIRECTS } from "./src/lib/nav-config";
 
 // Security headers applied to every route. CSP was shipped as Report-Only in
@@ -45,10 +46,18 @@ const SECURITY_HEADERS = [
   { key: "Content-Security-Policy", value: CSP_DIRECTIVES },
 ];
 
+const SW_HEADERS = [
+  { key: "Content-Type", value: "application/javascript; charset=utf-8" },
+  { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+  { key: "Service-Worker-Allowed", value: "/" },
+];
+
 // One build id per `next build`, shared by the server and client bundles (set
 // before Next spawns its build workers, which inherit the env). The client
 // compares it with GET /api/version to offer "New version available".
 process.env.APP_BUILD ||= String(Date.now());
+
+const USE_TURBOPACK = process.env.USE_TURBOPACK === "1";
 
 const nextConfig: NextConfig = {
   env: { NEXT_PUBLIC_APP_BUILD: process.env.APP_BUILD },
@@ -61,9 +70,20 @@ const nextConfig: NextConfig = {
   typescript: {
     // Strict typecheck enforced on production build (FINLYNQ-11, 2026-05-17).
     // CI also runs `tsc --noEmit`; this is defense in depth.
-    ignoreBuildErrors: false,
+    ignoreBuildErrors: process.env.SKIP_NEXT_TYPECHECK === "1", // off unless explicitly set
   },
-  serverExternalPackages: ["pg", "pdf-parse", "@napi-rs/canvas"],
+  // Turbopack is the default bundler for `next build` when USE_TURBOPACK=1
+  // (scripts/build.mjs passes --webpack otherwise).
+  turbopack: {},
+  experimental: { turbopackFileSystemCacheForBuild: USE_TURBOPACK },
+  serverExternalPackages: [
+    "pg",
+    "pdf-parse",
+    "@napi-rs/canvas",
+    // Only imported by src/app/serwist/[path]/route.ts, which is inert in webpack
+    // mode; keep webpack from bundling it (browserslist "critical dependency" noise).
+    ...(USE_TURBOPACK ? [] : ["@serwist/turbopack"]),
+  ],
   // Compile .ts workspace packages directly (they ship source, not dist).
   transpilePackages: ["@finlynq/import-connectors"],
   distDir: process.env.NEXT_DIST_DIR || ".next",
@@ -77,32 +97,34 @@ const nextConfig: NextConfig = {
     return REDIRECTS;
   },
   async rewrites() {
-    return [
-      {
-        source: "/manifest.json",
-        destination: "/manifest.webmanifest",
-      },
-    ];
+    return {
+      beforeFiles: [
+        ...(USE_TURBOPACK
+          ? [
+              // Installed PWAs have /sw.js registered; browsers re-fetch exactly
+              // that URL to update. Under Turbopack the worker is built by the
+              // route src/app/serwist/[path]/route.ts, so serve it at /sw.js.
+              // beforeFiles => wins over any stale static public/sw.js.
+              { source: "/sw.js", destination: "/serwist/sw.js" },
+              { source: "/sw.js.map", destination: "/serwist/sw.js.map" },
+            ]
+          : []),
+      ],
+      afterFiles: [
+        {
+          source: "/manifest.json",
+          destination: "/manifest.webmanifest",
+        },
+      ],
+      fallback: [],
+    };
   },
   async headers() {
     return [
-      {
-        source: "/sw.js",
-        headers: [
-          {
-            key: "Content-Type",
-            value: "application/javascript; charset=utf-8",
-          },
-          {
-            key: "Cache-Control",
-            value: "no-cache, no-store, must-revalidate",
-          },
-          {
-            key: "Service-Worker-Allowed",
-            value: "/",
-          },
-        ],
-      },
+      // Matched on the incoming path, so /sw.js keeps these after the Turbopack
+      // rewrite; /serwist/sw.js covers direct hits.
+      { source: "/sw.js", headers: SW_HEADERS },
+      { source: "/serwist/sw.js", headers: SW_HEADERS },
       {
         source: "/:path*",
         headers: SECURITY_HEADERS,
@@ -114,8 +136,8 @@ const nextConfig: NextConfig = {
 const withSerwist = withSerwistInit({
   swSrc: "src/app/sw.ts",
   swDest: "public/sw.js",
-  disable: process.env.NODE_ENV === "development",
+  disable: process.env.NODE_ENV === "development" || USE_TURBOPACK,
   reloadOnOnline: false,
 });
 
-export default withSerwist(nextConfig);
+export default USE_TURBOPACK ? withSerwistTurbo(nextConfig) : withSerwist(nextConfig);

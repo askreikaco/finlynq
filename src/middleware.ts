@@ -537,7 +537,7 @@ export function middleware(request: NextRequest) {
       : "strict-origin-when-cross-origin"
   );
 
-  if (pathname === "/sw.js") {
+  if (pathname === "/sw.js" || pathname === "/serwist/sw.js") {
     response.headers.set("Service-Worker-Allowed", "/");
     response.headers.set("Cache-Control", "no-cache, no-store, must-revalidate");
   }
