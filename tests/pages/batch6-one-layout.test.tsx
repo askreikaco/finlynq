@@ -77,9 +77,9 @@ describe("Batch 6: old Card / StatCard markup is gone from the overview and inst
 });
 
 describe("Batch 6: one column at every width for the converted overview and instance files", () => {
+  // overview-tab pairs the household charts at wide (desktop columns, owner 2026-10-13): tests/pages/batch5-one-layout.test.tsx.
   for (const f of [
     "src/app/(app)/family/_components/overview-cards.tsx",
-    "src/app/(app)/family/_components/overview-tab.tsx",
     "src/app/(app)/admin/instance/page.tsx",
   ]) {
     it(`${f} has no regular:/wide: column switch`, () => {

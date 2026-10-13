@@ -229,7 +229,7 @@ export default function RoadmapPage() {
           <h1 className="mt-2 text-4xl font-bold tracking-tight">
             Where Finlynq is headed
           </h1>
-          <p className="mt-4 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+          <p className="mt-4 max-w-prose text-sm leading-relaxed text-muted-foreground">
             {INTRO}
           </p>
         </header>
@@ -270,7 +270,7 @@ export default function RoadmapPage() {
         </div>
 
         <footer className="mt-16 border-t border-border pt-8">
-          <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
+          <p className="max-w-prose text-sm leading-relaxed text-muted-foreground">
             {CTA}
           </p>
           <div className="mt-4 flex flex-wrap gap-4 text-sm">
