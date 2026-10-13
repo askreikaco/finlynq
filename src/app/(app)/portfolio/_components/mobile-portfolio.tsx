@@ -5,18 +5,15 @@
  *
  * - PortfolioSummary: hero (total value, day change, total gain) and a metric grid. Shown at
  *   every size. The grid gains columns with the size class (2 compact, 3 regular, 6 wide).
- * - HoldingCards: the Cards view of the holdings, one row each (name | market value | unrealized %).
- *   Tapping a row opens a DetailSheet with the fields the row leaves out.
- * The type filter chips and the Cards/List toggle live in the page toolbar (portfolio-ui.tsx).
+ * Holdings themselves render per account in holding-account-groups.tsx (HoldingRow lists + DetailSheet).
  */
 
 import { metricGridClass } from "@/components/mobile/metric-grid";
-import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { formatCurrency, formatCurrencyAdaptive } from "@/lib/currency";
-import { formatPercent, getDisplayLocale } from "@/lib/locale";
-import { Amount, DetailSheet, HoldingRow, SectionCard, SectionLabel, StatTile, type MetricItem } from "@/components/mobile";
-import type { ByHoldingRow, EnrichedHolding, OverviewData } from "../_types";
+import { formatCurrency } from "@/lib/currency";
+import { formatPercent } from "@/lib/locale";
+import { Amount, SectionCard, SectionLabel, StatTile, type MetricItem } from "@/components/mobile";
+import type { ByHoldingRow, OverviewData } from "../_types";
 
 const signed = (n: number, digits = 2) => `${n >= 0 ? "+" : ""}${formatPercent(n, digits)}`;
 const tone = (n: number) => (n >= 0 ? "text-pos" : "text-neg");
@@ -89,78 +86,5 @@ export function PortfolioSummary({ summary, currency }: { summary: OverviewData[
         ))}
       </div>
     </div>
-  );
-}
-
-export function HoldingCards({
-  holdings,
-  members,
-  currency,
-}: {
-  holdings: ByHoldingRow[];
-  members: Map<string, EnrichedHolding[]>;
-  currency: string;
-}) {
-  const [open, setOpen] = useState<ByHoldingRow | null>(null);
-  const money = (n: number | null | undefined) => (n == null ? "--" : formatCurrencyAdaptive(n, currency));
-  const accounts = open ? Array.from(new Set((members.get(open.key) ?? []).map((h) => h.accountName).filter(Boolean))) : [];
-  return (
-    <section data-slot="portfolio-holding-cards" className="space-y-2">
-      <SectionLabel>Holdings</SectionLabel>
-      <SectionCard padded={false} className="divide-y divide-border/50 px-3">
-        {holdings.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">No holdings match this filter.</p>
-        ) : (
-          holdings.map((r) => (
-            <HoldingRow
-              key={r.key}
-              name={holdingRowTitle(r)}
-              marketValue={r.marketValueDisplay}
-              unrealizedPct={r.assetType === "cash" ? null : r.unrealizedGainPct}
-              currency={currency}
-              onPress={() => setOpen(r)}
-            />
-          ))
-        )}
-      </SectionCard>
-
-      <DetailSheet
-        open={open !== null}
-        onOpenChange={(o) => !o && setOpen(null)}
-        title={open ? holdingRowTitle(open) : ""}
-        description={open && open.description && open.description !== open.symbol ? open.description : undefined}
-        items={
-          open
-            ? [
-                { label: "Quantity", value: open.totalQty.toLocaleString(getDisplayLocale(), { minimumFractionDigits: 0, maximumFractionDigits: 6 }) },
-                { label: "Avg cost", value: money(open.avgCostDisplay) },
-                { label: "Price", value: money(open.currentPriceDisplay) },
-                { label: "Market value", value: money(open.marketValueDisplay) },
-                { label: "Cost basis", value: money(open.costBasisDisplay) },
-                {
-                  label: "Unrealized G/L",
-                  value: (
-                    <span className={tone(open.unrealizedGainDisplay)}>
-                      {open.unrealizedGainDisplay >= 0 ? "+" : ""}
-                      {formatCurrency(open.unrealizedGainDisplay, currency)}
-                      {open.unrealizedGainPct != null ? ` (${signed(open.unrealizedGainPct)})` : ""}
-                    </span>
-                  ),
-                },
-                {
-                  label: "Realized G/L",
-                  value: (
-                    <span className={tone(open.realizedGainDisplay)}>
-                      {open.realizedGainDisplay >= 0 ? "+" : ""}
-                      {formatCurrency(open.realizedGainDisplay, currency)}
-                    </span>
-                  ),
-                },
-                { label: accounts.length === 1 ? "Account" : "Accounts", value: accounts.length ? accounts.join(", ") : "--" },
-              ]
-            : []
-        }
-      />
-    </section>
   );
 }

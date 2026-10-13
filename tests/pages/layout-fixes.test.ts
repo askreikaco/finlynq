@@ -14,7 +14,7 @@ const SETTINGS_GENERAL = "src/app/(app)/settings/general/page.tsx";
 const BUDGETS = "src/app/(app)/budgets/page.tsx";
 const PERF_CHART = "src/components/portfolio/PerformanceChart.tsx";
 const ACCOUNT_DETAIL = "src/app/(app)/accounts/[id]/page.tsx";
-const HOLDINGS_TABLE = "src/app/(app)/portfolio/_components/holdings-table.tsx";
+const HOLDINGS_TABLE = "src/app/(app)/portfolio/_components/holding-account-groups.tsx";
 const LOT_DIALOG = "src/components/portfolio/lot-inspector-dialog.tsx";
 const APP_LAYOUT = "src/app/(app)/layout.tsx";
 const CURRENCY = "src/lib/currency.ts";
@@ -133,22 +133,24 @@ describe("accounts/[id] at 390", () => {
   });
 });
 
-describe("holdings table at 1280", () => {
-  it("per-account sub-table is contained in its card with its own horizontal scroller", () => {
+describe("holdings rows at every width (one layout)", () => {
+  it("each holding is a HoldingRow inside its account's SectionCard; no table at any width", () => {
     const src = read(HOLDINGS_TABLE);
-    expect(src).toContain("w-0 min-w-full overflow-x-auto overscroll-x-contain rounded-md border border-border");
-    expect(src).not.toContain("rounded-md border border-border overflow-hidden");
+    expect(src).toContain("<HoldingRow");
+    expect(src).toContain("<SectionCard");
+    expect(src).not.toMatch(/<Table\b/);
   });
 
-  it("Lots and View txns actions do not wrap", () => {
+  it("the holding sheet offers Lots, Edit and View transactions", () => {
     const src = read(HOLDINGS_TABLE);
-    expect(src).toContain('className="inline-flex items-center gap-1 whitespace-nowrap text-xs');
-    expect(src).toContain("flex items-center justify-end gap-2 whitespace-nowrap");
+    expect(src).toContain(">Lots<");
+    expect(src).toContain(">Edit<");
+    expect(src).toContain("View transactions");
+    expect(src).toContain("buildTxDrillUrl({ portfolioHolding: open.name");
   });
 
   it("Lots opens LotInspectorDialog, and its 'Edit all allocations' opens LotAllocationMatrix", () => {
     const table = read(HOLDINGS_TABLE);
-    expect(table).toMatch(/title="Inspect lots[^"]*"[\s\S]{0,200}?<Layers/);
     expect(table).toContain("<LotInspectorDialog");
     const dlg = read(LOT_DIALOG);
     expect(dlg).toContain("<LotAllocationMatrix");

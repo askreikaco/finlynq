@@ -3,7 +3,6 @@
 
 import { Fragment, useState, useMemo, useCallback, type ReactNode } from "react";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
-import Link from "next/link";
 import { useDevMode } from "@/hooks/use-dev-mode";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -12,13 +11,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { formatCurrency } from "@/lib/currency";
 import { formatCompactNumber } from "@/lib/utils/number";
 import { exportCsv } from "@/lib/csv-export";
-import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
 import { CHART_COLORS } from "@/lib/chart-colors";
 import { todayISO } from "@/lib/utils/date";
 import { getPresetRange } from "@/lib/reports/preset-range";
@@ -39,10 +35,10 @@ import {
   TrendingDown,
   DollarSign,
   PiggyBank,
-  ChevronRight,
-  ChevronDown,
   Calendar,
-  Layers, Wallet, ChartColumn } from "lucide-react";
+  Layers,
+  Wallet,
+} from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -53,7 +49,15 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { PageHeader, CustomizeCardsSheet, metricGridClass, useCardLayout, usePageCustomize } from "@/components/mobile";
+import { CustomizeCardsSheet, MetricGrid, metricGridClass, useCardLayout, usePageCustomize } from "@/components/mobile";
+import { SectionPage } from "@/components/templates/section-page";
+import {
+  GroupedStatementRows,
+  FlatStatementRows,
+  BalanceStatementRows,
+  UnrealizedStatementRows,
+  YoYStatementRows,
+} from "./_components/statement-rows";
 import type { PageCard } from "@/lib/card-layout";
 import { IncomeExpenseTrendCard } from "@/components/reports/income-expense-trend-card";
 
@@ -404,14 +408,13 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <PageHeader
-          title="Reports"
-          titleClassName="text-2xl font-bold tracking-tight"
-          subtitle="Analyze income, expenses, cash flow, and trends across any time period"
-          subtitleClassName="text-sm text-muted-foreground mt-0.5"
-        />
+    <SectionPage
+      id="reports"
+      title="Reports"
+      subtitle="Analyze income, expenses, cash flow, and trends across any time period"
+      width="report"
+      center
+    >
 
       {/* ── Filters Bar ── */}
       <Card className="bg-muted/30 border-dashed">
@@ -656,19 +659,28 @@ export default function ReportsPage() {
                 </CardHeader>
                 <CardContent>
                   {groupBy === "category" ? (
-                    <GroupedTable
+                    <GroupedStatementRows
                       groups={groupItems(trendsData.income)}
                       expanded={expandedIncomeGroups}
                       onToggle={(g) => toggleGroup("income", g)}
-                      colorClass="text-pos"
+                      tone="pos"
                       total={trendsData.totalIncome}
                       currency={displayCurrency}
                       startDate={startDate}
                       endDate={endDate}
                       timeseries={trendsData.timeseries}
+                      totalLabel="Total"
                     />
                   ) : (
-                    <FlatTable items={trendsData.income} colorClass="text-pos" currency={displayCurrency} startDate={startDate} endDate={endDate} timeseries={trendsData.timeseries} />
+                    <FlatStatementRows
+                      items={trendsData.income}
+                      tone="pos"
+                      currency={displayCurrency}
+                      startDate={startDate}
+                      endDate={endDate}
+                      timeseries={trendsData.timeseries}
+                      totalLabel="Total"
+                    />
                   )}
                   <div className="flex justify-between items-center p-3 mt-3 rounded-xl bg-muted/50">
                     <span className="font-semibold text-sm">Total Income</span>
@@ -705,19 +717,28 @@ export default function ReportsPage() {
                 </CardHeader>
                 <CardContent>
                   {groupBy === "category" ? (
-                    <GroupedTable
+                    <GroupedStatementRows
                       groups={groupItems(trendsData.expenses)}
                       expanded={expandedExpenseGroups}
                       onToggle={(g) => toggleGroup("expense", g)}
-                      colorClass="text-destructive"
+                      tone="neg"
                       total={trendsData.totalExpenses}
                       currency={displayCurrency}
                       startDate={startDate}
                       endDate={endDate}
                       timeseries={trendsData.timeseries}
+                      totalLabel="Total"
                     />
                   ) : (
-                    <FlatTable items={trendsData.expenses} colorClass="text-destructive" currency={displayCurrency} startDate={startDate} endDate={endDate} timeseries={trendsData.timeseries} />
+                    <FlatStatementRows
+                      items={trendsData.expenses}
+                      tone="neg"
+                      currency={displayCurrency}
+                      startDate={startDate}
+                      endDate={endDate}
+                      timeseries={trendsData.timeseries}
+                      totalLabel="Total"
+                    />
                   )}
                   <div className="flex justify-between items-center p-3 mt-3 rounded-xl bg-muted/50">
                     <span className="font-semibold text-sm">Total Expenses</span>
@@ -763,98 +784,18 @@ export default function ReportsPage() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {/* Totals row */}
-                    <div className={metricGridClass(3)}>
-                      <div className="rounded-lg border bg-muted/30 p-3">
-                        <p className="text-xs text-muted-foreground">Valuation G/L</p>
-                        <p
-                          className={`text-xl font-bold font-mono mt-1 ${
-                            unrealizedData.totals.valuationGL >= 0 ? "text-pos" : "text-destructive"
-                          }`}
-                        >
-                          {formatCurrency(unrealizedData.totals.valuationGL, displayCurrency)}
-                        </p>
-                      </div>
-                      <div className="rounded-lg border bg-muted/30 p-3">
-                        <p className="text-xs text-muted-foreground">FX G/L</p>
-                        <p
-                          className={`text-xl font-bold font-mono mt-1 ${
-                            unrealizedData.totals.fxGL >= 0 ? "text-pos" : "text-destructive"
-                          }`}
-                        >
-                          {formatCurrency(unrealizedData.totals.fxGL, displayCurrency)}
-                        </p>
-                      </div>
-                      <div className="rounded-lg border bg-primary/5 border-primary/30 p-3">
-                        <p className="text-xs text-muted-foreground">Total unrealized</p>
-                        <p
-                          className={`text-xl font-bold font-mono mt-1 ${
-                            unrealizedData.totals.totalGL >= 0 ? "text-pos" : "text-destructive"
-                          }`}
-                        >
-                          {formatCurrency(unrealizedData.totals.totalGL, displayCurrency)}
-                        </p>
-                      </div>
-                    </div>
+                    <MetricGrid
+                      columns={3}
+                      metrics={[
+                        { label: "Valuation G/L", value: unrealizedData.totals.valuationGL, currency: displayCurrency, tone: "auto" },
+                        { label: "FX G/L", value: unrealizedData.totals.fxGL, currency: displayCurrency, tone: "auto" },
+                        { label: "Total unrealized", value: unrealizedData.totals.totalGL, currency: displayCurrency, tone: "auto" },
+                      ]}
+                    />
 
                     {/* Per-account drilldown */}
                     {unrealizedData.accounts.length > 0 && (
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Account</TableHead>
-                            <TableHead>Currency</TableHead>
-                            <TableHead className="text-right">Cost basis</TableHead>
-                            <TableHead className="text-right">Market value</TableHead>
-                            <TableHead className="text-right">Valuation G/L</TableHead>
-                            <TableHead className="text-right">FX G/L</TableHead>
-                            <TableHead className="text-right">Total</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {unrealizedData.accounts.map((a) => (
-                            <TableRow key={a.accountId}>
-                              <TableCell className="font-medium">
-                                {a.accountName}
-                                {a.costBasisMissing && (
-                                  <span className="ml-2 text-xs text-warning" title="Cost basis defaulted to market value (no buy transactions)">
-                                    no cost basis
-                                  </span>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant="outline" className="text-xs">{a.accountCurrency}</Badge>
-                              </TableCell>
-                              <TableCell className="text-right font-mono text-xs">
-                                {formatCurrency(a.costBasis, displayCurrency)}
-                              </TableCell>
-                              <TableCell className="text-right font-mono text-xs">
-                                {formatCurrency(a.marketValue, displayCurrency)}
-                              </TableCell>
-                              <TableCell
-                                className={`text-right font-mono text-xs ${
-                                  a.valuationGL >= 0 ? "text-pos" : "text-destructive"
-                                }`}
-                              >
-                                {formatCurrency(a.valuationGL, displayCurrency)}
-                              </TableCell>
-                              <TableCell
-                                className={`text-right font-mono text-xs ${
-                                  a.fxGL >= 0 ? "text-pos" : "text-destructive"
-                                }`}
-                              >
-                                {formatCurrency(a.fxGL, displayCurrency)}
-                              </TableCell>
-                              <TableCell
-                                className={`text-right font-mono text-xs font-semibold ${
-                                  a.totalGL >= 0 ? "text-pos" : "text-destructive"
-                                }`}
-                              >
-                                {formatCurrency(a.totalGL, displayCurrency)}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                      <UnrealizedStatementRows rows={unrealizedData.accounts} displayCurrency={displayCurrency} />
                     )}
                   </CardContent>
                 </Card>
@@ -900,59 +841,13 @@ export default function ReportsPage() {
                   <ArrowUpRight className="h-4 w-4 text-pos" />
                   <h3 className="font-semibold text-pos">Assets</h3>
                 </div>
-                <Table>
-                  <TableBody>
-                    {balanceSheet.assets.map((r, i) => (
-                      <TableRow key={i} className="hover:bg-muted/30">
-                        <TableCell className="text-muted-foreground text-xs">{r.accountGroup}</TableCell>
-                        <TableCell className="text-sm">{r.accountName}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="text-xs">
-                            {r.currency}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right font-mono text-sm font-semibold">
-                          {formatCurrency(r.balance, r.currency)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    <TableRow className="font-bold border-t-2">
-                      <TableCell colSpan={3}>Total Assets</TableCell>
-                      <TableCell className="text-right font-mono text-pos">
-                        {formatCurrency(balanceSheet.totalAssets, displayCurrency)}
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
+                <BalanceStatementRows rows={balanceSheet.assets} totalLabel="Total Assets" total={balanceSheet.totalAssets} displayCurrency={displayCurrency} tone="pos" />
                 <Separator className="my-5" />
                 <div className="flex items-center gap-2 mb-3">
                   <ArrowDownRight className="h-4 w-4 text-destructive" />
                   <h3 className="font-semibold text-destructive">Liabilities</h3>
                 </div>
-                <Table>
-                  <TableBody>
-                    {balanceSheet.liabilities.map((r, i) => (
-                      <TableRow key={i} className="hover:bg-muted/30">
-                        <TableCell className="text-muted-foreground text-xs">{r.accountGroup}</TableCell>
-                        <TableCell className="text-sm">{r.accountName}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="text-xs">
-                            {r.currency}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right font-mono text-sm font-semibold">
-                          {formatCurrency(r.balance, r.currency)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    <TableRow className="font-bold border-t-2">
-                      <TableCell colSpan={3}>Total Liabilities</TableCell>
-                      <TableCell className="text-right font-mono text-destructive">
-                        {formatCurrency(balanceSheet.totalLiabilities, displayCurrency)}
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
+                <BalanceStatementRows rows={balanceSheet.liabilities} totalLabel="Total Liabilities" total={balanceSheet.totalLiabilities} displayCurrency={displayCurrency} tone="neg" />
                 <Separator className="my-5" />
                 <div className="flex justify-between items-center p-4 rounded-xl bg-muted/50">
                   <p className="text-lg font-bold">Net Worth</p>
@@ -1122,44 +1017,7 @@ export default function ReportsPage() {
                     <CardDescription>Expense categories year-over-year change</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Category</TableHead>
-                          <TableHead className="text-right">{yoyData.year1}</TableHead>
-                          <TableHead className="text-right">{yoyData.year2}</TableHead>
-                          <TableHead className="text-right">Change</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {yoyData.categories.map((cat, i) => (
-                          <TableRow key={i} className="hover:bg-muted/30">
-                            <TableCell className="text-sm font-medium">{cat.name}</TableCell>
-                            <TableCell className="text-right font-mono text-sm">
-                              {formatCurrency(cat.year1Amount, displayCurrency)}
-                            </TableCell>
-                            <TableCell className="text-right font-mono text-sm">
-                              {formatCurrency(cat.year2Amount, displayCurrency)}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Badge
-                                variant="outline"
-                                className={
-                                  cat.change > 5
-                                    ? "text-destructive border-destructive/30 bg-destructive/10"
-                                    : cat.change < -5
-                                    ? "text-pos border-pos/30 bg-pos/10"
-                                    : "text-muted-foreground"
-                                }
-                              >
-                                {cat.change > 0 ? "+" : ""}
-                                {cat.change}%
-                              </Badge>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                    <YoYStatementRows rows={yoyData.categories} year1={yoyData.year1} year2={yoyData.year2} currency={displayCurrency} />
                   </CardContent>
                 </Card>
               </>
@@ -1167,329 +1025,6 @@ export default function ReportsPage() {
           </div>
         </TabsContent>}
       </Tabs>
-    </div>
-  );
-}
-
-// ── Period-pivot helpers ──
-
-const MAX_PERIOD_COLUMNS = 30;
-
-/** Muted "--" cell for zero/missing period values (avoids $0.00 noise across 30 cols). */
-/** Small chart icon next to a category name → the category view (/categories/[id]). */
-function CategoryInsightsLink({ categoryId, name }: { categoryId: number; name: string }) {
-  return (
-    <Link
-      href={`/categories/${categoryId}`}
-      className="text-muted-foreground/60 hover:text-primary"
-      title={`${name}: trends, average, top payees`}
-      aria-label={`Open ${name} category view`}
-    >
-      <ChartColumn className="h-3.5 w-3.5" />
-    </Link>
-  );
-}
-
-function PeriodCell({ value, currency, colorClass }: { value: number | undefined; currency: string; colorClass: string }) {
-  if (value == null || value === 0) {
-    return <TableCell className="text-right text-xs text-muted-foreground/50 font-mono">--</TableCell>;
-  }
-  return (
-    <TableCell className={`text-right font-mono text-xs ${colorClass}`}>
-      {formatCurrency(value, currency)}
-    </TableCell>
-  );
-}
-
-/** Bottom totals row: per-period column sums + grand total, aligned to the table columns. */
-function TotalsRow({
-  label,
-  items,
-  visibleTs,
-  total,
-  currency,
-  colorClass,
-  leadingCol,
-}: {
-  label: string;
-  items: BreakdownItem[];
-  visibleTs: TimeseriesPoint[];
-  total: number;
-  currency: string;
-  colorClass: string;
-  leadingCol: boolean;
-}) {
-  return (
-    <TableRow className="border-t-2 bg-muted/40 font-semibold hover:bg-muted/40">
-      {leadingCol && <TableCell className="w-8 pr-0"></TableCell>}
-      <TableCell className="text-sm font-semibold">{label}</TableCell>
-      {visibleTs.map((pt) => {
-        const periodSum = items.reduce((s, item) => s + (item.periods[pt.period] ?? 0), 0);
-        return <PeriodCell key={pt.period} value={periodSum} currency={currency} colorClass={`${colorClass} font-semibold`} />;
-      })}
-      <TableCell className={`text-right font-mono text-sm font-bold ${colorClass}`}>
-        {formatCurrency(total, currency)}
-      </TableCell>
-      <TableCell className="text-right text-xs text-muted-foreground">100%</TableCell>
-    </TableRow>
-  );
-}
-
-/** Truncation notice rendered above the table when the series was capped. */
-function TruncationNotice({ visible, shown, total }: { visible: boolean; shown: number; total: number }) {
-  if (!visible) return null;
-  return (
-    <p className="text-xs text-warning mb-2">
-      Showing the most recent {shown} of {total} periods &mdash; Total reflects the full range.
-    </p>
-  );
-}
-
-// ── Grouped Table (collapsible category groups) ──
-
-function GroupedTable({
-  groups,
-  expanded,
-  onToggle,
-  colorClass,
-  total,
-  currency,
-  startDate,
-  endDate,
-  timeseries,
-}: {
-  groups: { name: string; items: BreakdownItem[]; total: number }[];
-  expanded: Set<string>;
-  onToggle: (group: string) => void;
-  colorClass: string;
-  total: number;
-  currency: string;
-  startDate: string;
-  endDate: string;
-  timeseries: TimeseriesPoint[];
-}) {
-  const allTs = timeseries;
-  const truncated = allTs.length > MAX_PERIOD_COLUMNS;
-  const visibleTs = truncated ? allTs.slice(-MAX_PERIOD_COLUMNS) : allTs;
-
-  return (
-    <>
-      <TruncationNotice visible={truncated} shown={MAX_PERIOD_COLUMNS} total={allTs.length} />
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-8"></TableHead>
-              <TableHead className="min-w-[140px]">Name</TableHead>
-              {visibleTs.map((pt) => (
-                <TableHead key={pt.period} className="text-right text-xs whitespace-nowrap min-w-[80px]">
-                  {pt.label}
-                </TableHead>
-              ))}
-              <TableHead className="text-right font-semibold min-w-[90px]">Total</TableHead>
-              <TableHead className="text-right w-20">%</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {groups.map((group) => {
-              const isOpen = expanded.has(group.name);
-              return (
-                <GroupRow
-                  key={group.name}
-                  group={group}
-                  isOpen={isOpen}
-                  onToggle={() => onToggle(group.name)}
-                  colorClass={colorClass}
-                  total={total}
-                  currency={currency}
-                  startDate={startDate}
-                  endDate={endDate}
-                  visibleTs={visibleTs}
-                />
-              );
-            })}
-            <TotalsRow
-              label="Total"
-              items={groups.flatMap((g) => g.items)}
-              visibleTs={visibleTs}
-              total={total}
-              currency={currency}
-              colorClass={colorClass}
-              leadingCol
-            />
-          </TableBody>
-        </Table>
-      </div>
-    </>
-  );
-}
-
-function GroupRow({
-  group,
-  isOpen,
-  onToggle,
-  colorClass,
-  total,
-  currency,
-  startDate,
-  endDate,
-  visibleTs,
-}: {
-  group: { name: string; items: BreakdownItem[]; total: number };
-  isOpen: boolean;
-  onToggle: () => void;
-  colorClass: string;
-  total: number;
-  currency: string;
-  startDate: string;
-  endDate: string;
-  visibleTs: TimeseriesPoint[];
-}) {
-  const pct = total > 0 ? ((group.total / total) * 100).toFixed(1) : "0.0";
-
-  return (
-    <>
-      <TableRow
-        className="hover:bg-muted/30 cursor-pointer font-medium"
-        onClick={onToggle}
-      >
-        <TableCell className="w-8 pr-0">
-          {isOpen ? (
-            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-          ) : (
-            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
-          )}
-        </TableCell>
-        <TableCell className="text-sm font-semibold">{group.name}</TableCell>
-        {visibleTs.map((pt) => {
-          const periodSum = group.items.reduce((s, item) => s + (item.periods[pt.period] ?? 0), 0);
-          return <PeriodCell key={pt.period} value={periodSum} currency={currency} colorClass={`${colorClass} font-semibold`} />;
-        })}
-        <TableCell className={`text-right font-mono text-sm font-semibold ${colorClass}`}>
-          {formatCurrency(group.total, currency)}
-        </TableCell>
-        <TableCell className="text-right text-xs text-muted-foreground">{pct}%</TableCell>
-      </TableRow>
-      {isOpen &&
-        group.items
-          .sort((a, b) => b.total - a.total)
-          .map((item, i) => {
-            const itemPct = total > 0 ? ((item.total / total) * 100).toFixed(1) : "0.0";
-            return (
-              <TableRow key={i} className="hover:bg-muted/20 bg-muted/10">
-                <TableCell></TableCell>
-                <TableCell className="text-sm pl-6 text-muted-foreground">
-                  {item.categoryId != null ? (
-                    <span className="inline-flex items-center gap-1.5">
-                      <Link
-                        href={buildTxDrillUrl({ categoryId: String(item.categoryId), startDate, endDate })}
-                        className="hover:underline hover:text-foreground"
-                        title={`View ${item.name} transactions for this period`}
-                      >
-                        {item.name}
-                      </Link>
-                      <CategoryInsightsLink categoryId={item.categoryId} name={item.name} />
-                    </span>
-                  ) : (
-                    item.name
-                  )}
-                </TableCell>
-                {visibleTs.map((pt) => (
-                  <PeriodCell key={pt.period} value={item.periods[pt.period]} currency={currency} colorClass={colorClass} />
-                ))}
-                <TableCell className={`text-right font-mono text-sm ${colorClass}`}>
-                  {formatCurrency(item.total, currency)}
-                </TableCell>
-                <TableCell className="text-right text-xs text-muted-foreground">{itemPct}%</TableCell>
-              </TableRow>
-            );
-          })}
-    </>
-  );
-}
-
-// ── Flat Table ──
-
-function FlatTable({
-  items,
-  colorClass,
-  currency,
-  startDate,
-  endDate,
-  timeseries,
-}: {
-  items: BreakdownItem[];
-  colorClass: string;
-  currency: string;
-  startDate: string;
-  endDate: string;
-  timeseries: TimeseriesPoint[];
-}) {
-  const total = items.reduce((s, i) => s + i.total, 0);
-  const allTs = timeseries;
-  const truncated = allTs.length > MAX_PERIOD_COLUMNS;
-  const visibleTs = truncated ? allTs.slice(-MAX_PERIOD_COLUMNS) : allTs;
-
-  return (
-    <>
-      <TruncationNotice visible={truncated} shown={MAX_PERIOD_COLUMNS} total={allTs.length} />
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="min-w-[140px]">Name</TableHead>
-              {visibleTs.map((pt) => (
-                <TableHead key={pt.period} className="text-right text-xs whitespace-nowrap min-w-[80px]">
-                  {pt.label}
-                </TableHead>
-              ))}
-              <TableHead className="text-right font-semibold min-w-[90px]">Total</TableHead>
-              <TableHead className="text-right w-20">%</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {items.map((item, i) => {
-              const pct = total > 0 ? ((item.total / total) * 100).toFixed(1) : "0.0";
-              return (
-                <TableRow key={i} className="hover:bg-muted/30">
-                  <TableCell className="text-sm">
-                    {item.categoryId != null ? (
-                      <span className="inline-flex items-center gap-1.5">
-                        <Link
-                          href={buildTxDrillUrl({ categoryId: String(item.categoryId), startDate, endDate })}
-                          className="hover:underline"
-                          title={`View ${item.name} transactions for this period`}
-                        >
-                          {item.name}
-                        </Link>
-                        <CategoryInsightsLink categoryId={item.categoryId} name={item.name} />
-                      </span>
-                    ) : (
-                      item.name
-                    )}
-                  </TableCell>
-                  {visibleTs.map((pt) => (
-                    <PeriodCell key={pt.period} value={item.periods[pt.period]} currency={currency} colorClass={colorClass} />
-                  ))}
-                  <TableCell className={`text-right font-mono text-sm font-semibold ${colorClass}`}>
-                    {formatCurrency(item.total, currency)}
-                  </TableCell>
-                  <TableCell className="text-right text-xs text-muted-foreground">{pct}%</TableCell>
-                </TableRow>
-              );
-            })}
-            <TotalsRow
-              label="Total"
-              items={items}
-              visibleTs={visibleTs}
-              total={total}
-              currency={currency}
-              colorClass={colorClass}
-              leadingCol={false}
-            />
-          </TableBody>
-        </Table>
-      </div>
-    </>
+    </SectionPage>
   );
 }

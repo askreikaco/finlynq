@@ -17,13 +17,6 @@ const ALL = [REALIZED, DIVIDENDS, CONTROLS];
 
 const PALETTE = /\b(bg|text|border|ring|from|to|via|fill|stroke|outline|divide|shadow|decoration|accent|caret|placeholder)-(slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-[0-9]{2,3}\b/;
 
-/** Every `<Table` opening must sit in the regular branch of a `regular ? ... : ...` / `!regular ? ... : ...` switch, never bare. */
-function tablesGatedBySizeClass(src: string): boolean {
-  if (!/useAppSizeClass\(\)/.test(src)) return false;
-  const first = src.search(/<Table\b/);
-  return first > src.indexOf("!regular ?");
-}
-
 describe("portfolio report pages: PageHeader page below and above md", () => {
   it.each(PAGES)("%s uses the shared PageHeader (via SectionPage) with a back link to /portfolio", (f) => {
     const src = read(f);
@@ -41,23 +34,21 @@ describe("portfolio report pages: PageHeader page below and above md", () => {
   });
 });
 
-describe("below md: ListRow lists; md+: table only in the regular branch", () => {
-  it.each(PAGES)("%s uses ListRow for the phone list, rendered only when the size class is compact", (f) => {
+describe("one list at every width: ListRow rows, no table at any size class", () => {
+  it.each(PAGES)("%s uses ListRow for the list at every size class (no size-class switch)", (f) => {
     const src = read(f);
     expect(src).toMatch(/<ListRow\b/);
-    expect(src).toMatch(/!regular \? /);
+    expect(src).not.toMatch(/!regular \? /);
     expect(src).not.toMatch(/<(CompactOnly|FromMd)\b/);
   });
 
-  it.each(PAGES)("%s: no raw table below md (every <Table is in the regular branch of the size-class switch)", (f) => {
-    const src = read(f);
-    expect(tablesGatedBySizeClass(src)).toBe(true);
+  it.each(PAGES)("%s: no <Table at any width", (f) => {
+    expect(read(f)).not.toMatch(/<Table\b/);
+    expect(read(f)).not.toMatch(/from "@\/components\/ui\/table"/);
   });
 
-  it.each(PAGES)("%s: md+ table header is sticky inside its own max-height scroll container", (f) => {
-    const src = read(f);
-    expect(src).toMatch(/<TableHeader className="sticky top-0 z-10 bg-card">/);
-    expect(src).toMatch(/containerClassName="max-h-\[70dvh\] overflow-y-auto/);
+  it.each(PAGES)("%s: the rows scroll with the page (no max-height table box)", (f) => {
+    expect(read(f)).not.toMatch(/containerClassName="max-h-/);
   });
 });
 
@@ -93,15 +84,17 @@ describe("system type scale, palette tokens, units, adaptive helpers", () => {
 });
 
 describe("mutation anchors (the three assertions the mutation check breaks)", () => {
-  it("the realized page keeps its md+ table in the regular branch", () => {
-    expect(tablesGatedBySizeClass(read(REALIZED))).toBe(true);
+  it("the realized page has no table: its list is ListRows at every width", () => {
+    const src = read(REALIZED);
+    expect(src).not.toMatch(/<Table\b/);
+    expect(src).toMatch(/<ListRow\b/);
   });
 
   it("the dividends page has no arbitrary text size", () => {
     expect(read(DIVIDENDS)).not.toMatch(/text-\[\d+(\.\d+)?(px|rem)\]/);
   });
 
-  it("the realized page table container uses dvh", () => {
-    expect(read(REALIZED)).toMatch(/max-h-\[70dvh\]/);
+  it("the realized page keeps its dvh-free, table-free list", () => {
+    expect(read(REALIZED)).not.toMatch(/max-h-\[70dvh\]/);
   });
 });

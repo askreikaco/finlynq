@@ -20,23 +20,25 @@ import { LazyView } from "@/components/ui/lazy-view";
 
 import {
   ASSET_TYPE_CONFIG, REGION_COLORS, SECTOR_COLORS,
-  clientCanonicalKey,
   type EnrichedHolding, type EtfXrayTab, type FilterType,
 } from "./_types";
 import { usePortfolioOverview, useBenchmarks } from "./_hooks/use-portfolio";
 import { PortfolioSkeleton, HoldingTypeChips } from "./_components/portfolio-ui";
 import { ErrorState } from "@/components/error-state";
 import { TopMoversCard } from "./_components/top-movers-card";
-import { HoldingsTable } from "./_components/holdings-table";
 import { EtfXrayCard } from "./_components/etf-xray-card";
 import { AllocationCharts } from "./_components/allocation-charts";
 import { BenchmarkChart } from "./_components/benchmark-chart";
-import { HoldingsByAccount } from "./_components/holdings-by-account";
-import { PageHeader, HEADER_DESKTOP_ONLY, CustomizeCardsSheet, useCardLayout, usePageCustomize } from "@/components/mobile";
+import { HoldingAccountGroups, accountHoldingTitle, type AccountHoldingGroup } from "./_components/holding-account-groups";
+import { HEADER_DESKTOP_ONLY, CustomizeCardsSheet, useCardLayout, usePageCustomize } from "@/components/mobile";
+import { SectionPage } from "@/components/templates/section-page";
+import { ArrowDownUp, Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { exportByHoldingToCSV } from "./_components/csv";
 import type { PageCard } from "@/lib/card-layout";
-import { PortfolioSummary, HoldingCards } from "./_components/mobile-portfolio";
+import { PortfolioSummary } from "./_components/mobile-portfolio";
 import { InvestmentTransactions } from "./_components/investment-transactions";
-import { DataView, ViewModeToggle } from "@/components/adaptive";
 
 // ── Main Page ───────────────────────────────────────────────────────
 /** Customizable sections of the investments page, default order. Dev-only ones show only in dev mode. */
@@ -51,6 +53,8 @@ const PORTFOLIO_CARDS: readonly (PageCard & { devOnly?: boolean })[] = [
   { id: "benchmarks", title: "Benchmarks", devOnly: true },
 ];
 
+type HoldingSortField = "marketValue" | "unrealized" | "name";
+
 export default function PortfolioPage() {
   const devMode = useDevMode();
   const { displayCurrency, isLoading: currencyLoading } = useDisplayCurrency();
@@ -62,13 +66,9 @@ export default function PortfolioPage() {
   const [editingHolding, setEditingHolding] = useState<EnrichedHolding | null>(null);
   const [benchmarkPeriod, setBenchmarkPeriod] = useState("1y");
   const { benchmarks, benchmarkLoading } = useBenchmarks(benchmarkPeriod, !!devMode);
-  const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(new Set());
-  const [sortField, setSortField] = useState<"name" | "totalQty" | "avgCost" | "price" | "marketValueDisplay" | "totalCost" | "dayChangeDisplay" | "dayChangePct" | "unrealizedGainDisplay" | "unrealizedGainPct" | "realizedGain" | "accounts">("marketValueDisplay");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
-  // Tracks expanded rows by canonical-holding key (string) — issue #25
-  // restructure. Was Set<number> (portfolio_holdings.id) before the
-  // top-level All Holdings table aggregated by canonical key.
-  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  // Holdings sort (compact control in the holdings toolbar): applies within each account.
+  const [holdingSort, setHoldingSort] = useState<HoldingSortField>("marketValue");
+  const [holdingSortDir, setHoldingSortDir] = useState<"asc" | "desc">("desc");
   const [etfXrayTab, setEtfXrayTab] = useState<EtfXrayTab>("stocks");
   const [stocksPage, setStocksPage] = useState(1);
   const STOCKS_PER_PAGE = 25;
@@ -86,86 +86,32 @@ export default function PortfolioPage() {
   // Toggle lives in the holdings table filter bar.
   const [hideEmpty, setHideEmpty] = useState(true);
 
-  // Issue #25 restructure: top-level All Holdings rows are canonical-
-  // holding rollups (one row per ticker / cash sleeve / currency code),
-  // not per-(account, holding) `portfolio_holdings.id` rows. Sort + filter
-  // operate on `byHolding`. Per-account members live in the expand region.
-  const filteredHoldings = useMemo(() => {
-    if (!data?.byHolding) return [];
-    let list = data.byHolding;
-    if (filter !== "all") list = list.filter(r => r.assetType === filter);
-    if (hideEmpty) list = list.filter(r => r.totalQty !== 0 || r.marketValueDisplay !== 0);
-
-    list = [...list].sort((a, b) => {
-      let cmp = 0;
-      switch (sortField) {
-        case "name": cmp = (a.name ?? "").localeCompare(b.name ?? ""); break;
-        case "totalQty": cmp = (a.totalQty ?? 0) - (b.totalQty ?? 0); break;
-        case "avgCost": cmp = (a.avgCostDisplay ?? 0) - (b.avgCostDisplay ?? 0); break;
-        case "price": cmp = (a.currentPriceDisplay ?? 0) - (b.currentPriceDisplay ?? 0); break;
-        case "marketValueDisplay": cmp = (a.marketValueDisplay ?? 0) - (b.marketValueDisplay ?? 0); break;
-        case "totalCost": cmp = (a.costBasisDisplay ?? 0) - (b.costBasisDisplay ?? 0); break;
-        case "dayChangeDisplay": cmp = (a.dayChangeDisplay ?? 0) - (b.dayChangeDisplay ?? 0); break;
-        case "dayChangePct": cmp = (a.dayChangePct ?? 0) - (b.dayChangePct ?? 0); break;
-        case "unrealizedGainDisplay": cmp = (a.unrealizedGainDisplay ?? 0) - (b.unrealizedGainDisplay ?? 0); break;
-        case "unrealizedGainPct": cmp = (a.unrealizedGainPct ?? 0) - (b.unrealizedGainPct ?? 0); break;
-        case "realizedGain": cmp = (a.realizedGainDisplay ?? 0) - (b.realizedGainDisplay ?? 0); break;
-        case "accounts": cmp = (a.accountCount ?? 0) - (b.accountCount ?? 0); break;
-      }
-      return sortDir === "desc" ? -cmp : cmp;
-    });
-    return list;
-  }, [data, filter, sortField, sortDir, hideEmpty]);
-
-  // Per-canonical-key list of the underlying per-(account, holding) rows
-  // — the body of the expanded section under each top-level row.
-  const holdingsByCanonicalKey = useMemo(() => {
-    if (!data?.holdings) return new Map<string, EnrichedHolding[]>();
-    const map = new Map<string, EnrichedHolding[]>();
-    for (const h of data.holdings) {
-      const k = clientCanonicalKey(h);
-      const arr = map.get(k) ?? [];
-      arr.push(h);
-      map.set(k, arr);
-    }
-    // Sort each bucket by accountName for stable rendering.
-    for (const [k, arr] of map) {
-      map.set(k, arr.slice().sort((a, b) => (a.accountName ?? "").localeCompare(b.accountName ?? "")));
-    }
-    return map;
-  }, [data]);
-
-  // Account groups for collapsible section
-  const accountGroups = useMemo(() => {
+  // Holdings grouped per account (one HoldingRow list per account). Type filter and hide-empty apply to
+  // each holding; the sort applies within each account; accounts are listed by name.
+  const accountGroupRows = useMemo<AccountHoldingGroup[]>(() => {
     if (!data?.holdings) return [];
-    const groups = new Map<string, EnrichedHolding[]>();
+    const keep = (h: EnrichedHolding) =>
+      (filter === "all" || h.assetType === filter) &&
+      (!hideEmpty || (h.quantity ?? 0) !== 0 || (h.marketValueDisplay ?? 0) !== 0);
+    const cmp = (x: EnrichedHolding, y: EnrichedHolding): number => {
+      switch (holdingSort) {
+        case "name": return accountHoldingTitle(x).localeCompare(accountHoldingTitle(y));
+        case "unrealized": return (x.unrealizedGainPct ?? 0) - (y.unrealizedGainPct ?? 0);
+        default: return (x.marketValueDisplay ?? 0) - (y.marketValueDisplay ?? 0);
+      }
+    };
+    const byAccount = new Map<string, EnrichedHolding[]>();
     for (const h of data.holdings) {
-      const acc = h.accountName;
-      groups.set(acc, [...(groups.get(acc) ?? []), h]);
+      if (!keep(h)) continue;
+      byAccount.set(h.accountName, [...(byAccount.get(h.accountName) ?? []), h]);
     }
-    return Array.from(groups.entries()).sort(([a], [b]) => (a ?? "").localeCompare(b ?? ""));
-  }, [data]);
-
-  const toggleAccount = (name: string) => {
-    setExpandedAccounts(prev => {
-      const next = new Set(prev);
-      if (next.has(name)) next.delete(name); else next.add(name);
-      return next;
-    });
-  };
-
-  const handleSort = (field: "name" | "totalQty" | "avgCost" | "price" | "marketValueDisplay" | "totalCost" | "dayChangeDisplay" | "dayChangePct" | "unrealizedGainDisplay" | "unrealizedGainPct" | "realizedGain" | "accounts") => {
-    if (sortField === field) setSortDir(d => d === "asc" ? "desc" : "asc");
-    else { setSortField(field); setSortDir("asc"); }
-  };
-
-  const toggleRow = (key: string) => {
-    setExpandedRows(prev => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key); else next.add(key);
-      return next;
-    });
-  };
+    return Array.from(byAccount.entries())
+      .sort(([x], [y]) => (x ?? "").localeCompare(y ?? ""))
+      .map(([accountName, holdings]) => ({
+        accountName,
+        holdings: [...holdings].sort((x, y) => (holdingSortDir === "desc" ? -cmp(x, y) : cmp(x, y))),
+      }));
+  }, [data, filter, hideEmpty, holdingSort, holdingSortDir]);
 
   const cardLayout = useCardLayout("portfolio", PORTFOLIO_CARDS);
   const [customizeOpen, setCustomizeOpen] = useState(false);
@@ -274,48 +220,68 @@ export default function PortfolioPage() {
     ),
     holdings: (
       <>
-      <div data-slot="portfolio-toolbar" className="flex flex-col gap-3 regular:flex-row regular:items-center regular:justify-between">
+      <div data-slot="portfolio-toolbar" className="flex flex-col gap-3">
         <HoldingTypeChips
           filter={filter}
           setFilter={setFilter}
           counts={{ all: summary.totalHoldings, ...Object.fromEntries(Object.entries(byType).map(([k, v]) => [k, v.count])) }}
         />
-        <ViewModeToggle viewKey="portfolio" className="self-start regular:self-auto shrink-0" />
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={holdingSort} onValueChange={(v) => setHoldingSort((v ?? "marketValue") as HoldingSortField)}>
+            <SelectTrigger className="h-8 w-44 text-xs" aria-label="Sort holdings by" data-testid="holding-sort-select">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="marketValue">Market value</SelectItem>
+              <SelectItem value="unrealized">Unrealized %</SelectItem>
+              <SelectItem value="name">Name</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setHoldingSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+            aria-label={holdingSortDir === "asc" ? "Sorted ascending. Sort descending" : "Sorted descending. Sort ascending"}
+            title={holdingSortDir === "asc" ? "Ascending" : "Descending"}
+          >
+            <ArrowDownUp className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant={hideEmpty ? "default" : "outline"}
+            size="sm"
+            className="h-8 text-xs"
+            onClick={() => setHideEmpty(!hideEmpty)}
+            title="Hide holdings with no current position (quantity = 0, e.g. fully-sold)"
+          >
+            {hideEmpty ? "Hiding empty" : "Showing all"}
+          </Button>
+          <Button
+            variant={showNative ? "default" : "outline"}
+            size="sm"
+            className="h-8 text-xs"
+            onClick={() => setShowNative(!showNative)}
+            title={`Show each holding in its own currency instead of your display currency (${data.displayCurrency ?? displayCurrency})`}
+          >
+            {showNative ? "Holding currency" : `In ${data.displayCurrency ?? displayCurrency}`}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs gap-1.5 ml-auto"
+            onClick={() => exportByHoldingToCSV(data.byHolding ?? [], data.displayCurrency ?? displayCurrency)}
+          >
+            <Download className="h-3.5 w-3.5" />
+            CSV
+          </Button>
+        </div>
       </div>
-      <DataView
-        viewKey="portfolio"
-        className="space-y-6"
-        cards={() => (
-          <HoldingCards holdings={filteredHoldings} members={holdingsByCanonicalKey} currency={displayCurrency} />
-        )}
-        list={() => (
-          <>
-            <HoldingsTable
-              data={data}
-              displayCurrency={displayCurrency}
-              filteredHoldings={filteredHoldings}
-              holdingsByCanonicalKey={holdingsByCanonicalKey}
-              filter={filter}
-              hideEmpty={hideEmpty}
-              setHideEmpty={setHideEmpty}
-              showNative={showNative}
-              setShowNative={setShowNative}
-              sortField={sortField}
-              sortDir={sortDir}
-              handleSort={handleSort}
-              expandedRows={expandedRows}
-              toggleRow={toggleRow}
-              setEditingHolding={setEditingHolding}
-            />
-            {/* Holdings by Account (collapsible). Issue #25: per-account breakdown stays here. */}
-            <HoldingsByAccount
-              accountGroups={accountGroups}
-              expandedAccounts={expandedAccounts}
-              toggleAccount={toggleAccount}
-              displayCurrency={displayCurrency}
-            />
-          </>
-        )}
+      {/* Holdings per account: one list at every width. Tap a holding for its sheet (Edit, Lots, transactions). */}
+      <HoldingAccountGroups
+        groups={accountGroupRows}
+        displayCurrency={displayCurrency}
+        showNative={showNative}
+        onEdit={setEditingHolding}
       />
 
       </>
@@ -374,21 +340,19 @@ export default function PortfolioPage() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* ── Header ────────────────────────────────────────────── */}
-      <PageHeader
-        className="flex flex-wrap items-center justify-between gap-3"
-        title="Investment"
-        titleClassName="text-2xl font-bold tracking-tight"
-        subtitleClassName="text-sm text-muted-foreground mt-0.5"
-        subtitle={`${summary.totalHoldings} holdings across ${summary.totalAccounts} accounts`}
-        actionsClassName="flex flex-wrap items-center gap-2"
-        overflow={[
+    <SectionPage
+      id="portfolio"
+      title="Investment"
+      subtitle={`${summary.totalHoldings} holdings across ${summary.totalAccounts} accounts`}
+      width="report"
+      center
+      header={{
+        actionsClassName: "flex flex-wrap items-center gap-2",
+        overflow: [
           { label: "Realized gains", icon: TrendingUp, href: "/portfolio/realized-gains" },
           { label: "Dividends", icon: Coins, href: "/portfolio/dividends" },
-        ]}
-        actions={
-        <>
+        ],
+        actions: <>
           <Link
             href="/portfolio/realized-gains"
             className={cn(buttonVariants({ variant: "outline", size: "sm" }), HEADER_DESKTOP_ONLY)}
@@ -411,9 +375,9 @@ export default function PortfolioPage() {
           >
             <Plus className="h-4 w-4 mr-1.5" /> Add<span className="max-regular:sr-only"> holding</span>
           </Link>
-        </>
-        }
-      />
+        </>,
+      }}
+    >
 
       {/* Re-login prompt — surfaces when the server couldn't decrypt
           tx.portfolio_holding (cold DEK cache after a server restart).
@@ -484,7 +448,7 @@ export default function PortfolioPage() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </SectionPage>
   );
 }
 

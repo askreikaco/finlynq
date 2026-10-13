@@ -2,10 +2,6 @@
   "src/components/ui/column-filter.tsx": {
     "reason": "Multi-select enum filter list (Match any of): several rows of values chosen at once. Selection-type, keep Checkbox."
   },
-  "src/app/(app)/transactions/_components/transaction-table.tsx": {
-    "reason": "Row select column plus select-all in the transactions list (bulk selection).",
-    "optional": true
-  },
   "src/app/(app)/settings/backfill/[runId]/page.tsx": {
     "reason": "Per-row approve include/exclude in the backfill review list.",
     "optional": true
@@ -36,6 +32,14 @@
   },
   "src/components/reconcile/preview-table.tsx": {
     "reason": "Per-row force-commit include for probable matches in the reconcile preview.",
+    "optional": true
+  },
+  "src/components/transactions/mobile-tx-list.tsx": {
+    "reason": "Row select checkbox in the transactions list (Select mode bulk selection, select-all in the workspace).",
+    "optional": true
+  },
+  "src/app/(app)/transactions/_components/transactions-workspace.tsx": {
+    "reason": "Select-all checkbox in the transactions list Select mode (bulk selection).",
     "optional": true
   }
 }

@@ -8,8 +8,7 @@ const FILES: string[] = [
   "src/app/(app)/portfolio/_components/allocation-charts.tsx",
   "src/app/(app)/portfolio/_components/benchmark-chart.tsx",
   "src/app/(app)/portfolio/_components/etf-xray-card.tsx",
-  "src/app/(app)/portfolio/_components/holdings-by-account.tsx",
-  "src/app/(app)/portfolio/_components/holdings-table.tsx",
+  "src/app/(app)/portfolio/_components/holding-account-groups.tsx",
 ];
 const ARIA: [string, string, number][] = [
   ["src/app/(app)/portfolio/_components/etf-xray-card.tsx", "aria-label=\"Previous page\"", 1],

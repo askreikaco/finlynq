@@ -26,10 +26,6 @@ describe("transactions perf quick wins", () => {
   });
 
   it("(1) skeleton shows only on initial load, not on background revalidate", () => {
-    const table = read("src/app/(app)/transactions/_components/transaction-table.tsx");
-    expect(table).toContain("if (loading && txns.length === 0) return <TableSkeleton />;");
-    expect(table).not.toContain("if (loading) return <TableSkeleton />;");
-
     const mobile = read("src/components/transactions/mobile-tx-list.tsx");
     expect(mobile).toContain("if (isLoading && transactions.length === 0) {");
 

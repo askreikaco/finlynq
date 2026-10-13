@@ -18,9 +18,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Download, ArrowDownLeft, ArrowUpLeft, RefreshCw, Coins, SlidersHorizontal } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
@@ -523,7 +521,6 @@ export default function RealizedGainsPage() {
           </div>
         ) : (
           <>
-            {!regular ? (
               <>
               {grouped ? (
                 <SectionCard label={groupMode === "account" ? "By account" : groupMode === "holding" ? "By holding" : "By holding and account"} padded={false} className="divide-y divide-border/50 px-3">
@@ -564,121 +561,6 @@ export default function RealizedGainsPage() {
                 ))
               )}
               </>
-            ) : (
-              <>
-              {grouped ? (
-                // FINLYNQ-193 — rolled-up grouped view. Per-share + date columns
-                // collapse (not meaningful aggregated); we show qty + a closure
-                // count + a date range + the summed realized gain (always in the
-                // unified display currency, since grouping is unified-only).
-                <Table containerClassName="max-h-[70dvh] overflow-y-auto rounded-xl border border-border/50">
-                  <TableHeader className="sticky top-0 z-10 bg-card">
-                    <TableRow>
-                      {groupMode !== "account" && <TableHead>Holding</TableHead>}
-                      {groupMode !== "holding" && <TableHead>Account</TableHead>}
-                      <TableHead className="text-right">Closures</TableHead>
-                      <TableHead className="text-right">Qty</TableHead>
-                      <TableHead>Date range</TableHead>
-                      <TableHead className="text-right">Realized ({unifiedCurrency})</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {groupRows.map((g) => (
-                      <TableRow key={g.key}>
-                        {groupMode !== "account" && (
-                          <TableCell>{g.holdingLabel}</TableCell>
-                        )}
-                        {groupMode !== "holding" && (
-                          <TableCell>{g.accountLabel}</TableCell>
-                        )}
-                        <TableCell className="text-right">{g.closureCount}</TableCell>
-                        <TableCell className="text-right">{g.qtyClosed}</TableCell>
-                        <TableCell className="font-mono text-xs">
-                          {g.earliestClose === g.latestClose
-                            ? g.earliestClose
-                            : `${g.earliestClose} → ${g.latestClose}`}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Amount value={g.realizedGain} currency={unifiedCurrency} size="md" tone="auto" showSign className="font-mono" />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              ) : (
-                <Table containerClassName="max-h-[70dvh] overflow-y-auto rounded-xl border border-border/50">
-                  <TableHeader className="sticky top-0 z-10 bg-card">
-                    <TableRow>
-                      <TableHead>Closed</TableHead>
-                      <TableHead>Opened</TableHead>
-                      <TableHead>Days</TableHead>
-                      <TableHead>Term</TableHead>
-                      <TableHead>Holding</TableHead>
-                      <TableHead>Account</TableHead>
-                      <TableHead className="text-right">Qty</TableHead>
-                      <TableHead className="text-right">Cost / sh</TableHead>
-                      <TableHead className="text-right">Proceeds / sh</TableHead>
-                      <TableHead className="text-right">Realized</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {visibleRows.map((r) => {
-                      const kindMeta = CLOSE_KIND_META[r.closeKind] ?? null;
-                      const KindIcon = kindMeta?.icon ?? null;
-                      const inBase = showUnified && r.realizedGainInBase != null && r.baseCurrency;
-                      return (
-                        <TableRow key={r.closureId}>
-                          <TableCell className="font-mono text-xs">{r.closeDate}</TableCell>
-                          <TableCell className="font-mono text-xs">{r.openDate}</TableCell>
-                          <TableCell className="text-xs">{r.daysHeld}</TableCell>
-                          <TableCell>
-                            <Badge variant={r.term === "long" ? "secondary" : "outline"}>
-                              {r.term}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              {KindIcon && (
-                                <KindIcon className={`h-3.5 w-3.5 ${kindMeta!.className.split(" ").filter(c => c.startsWith("text-")).join(" ")}`} />
-                              )}
-                              <span>{holdingLabelOf(r)}</span>
-                              {kindMeta && (
-                                <Badge
-                                  variant="outline"
-                                  className={`text-xs h-5 px-1 ${kindMeta.className}`}
-                                  title={kindMeta.tooltip}
-                                >
-                                  {kindMeta.label}
-                                </Badge>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>{accountLabelOf(r)}</TableCell>
-                          <TableCell className="text-right">{r.qtyClosed}</TableCell>
-                          <TableCell className="text-right font-mono">
-                            {formatCurrency(r.costPerShare, r.currency)}
-                          </TableCell>
-                          <TableCell className="text-right font-mono">
-                            {formatCurrency(r.proceedsPerShare, r.currency)}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Amount
-                              value={inBase ? r.realizedGainInBase! : r.realizedGain}
-                              currency={inBase ? r.baseCurrency! : r.currency}
-                              size="md"
-                              tone="auto"
-                              showSign
-                              className="font-mono"
-                            />
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              )}
-              </>
-            )}
           </>
         )}
       </section>

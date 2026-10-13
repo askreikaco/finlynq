@@ -21,7 +21,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Download, SlidersHorizontal, Coins } from "lucide-react";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import {
@@ -94,7 +93,7 @@ export default function DividendsPage() {
   const [loadError, setLoadError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [filtersOpen, setFiltersOpen] = useState(false);
-  // One structure per size class (list on compact, table + toolbar from regular), never both in the DOM.
+  // One list at every size class (no table). The toolbar layout still follows the size class.
   const regular = useAppSizeClass() !== "compact";
   const [openGroup, setOpenGroup] = useState<GroupRow | null>(null);
 
@@ -333,7 +332,6 @@ export default function DividendsPage() {
           />
         ) : (
           <>
-            {!regular ? (
               <SectionCard label={firstHeader} padded={false} className="divide-y divide-border/50 px-3">
                 {data.groups.map((g) => (
                   <ListRow
@@ -346,55 +344,6 @@ export default function DividendsPage() {
                   />
                 ))}
               </SectionCard>
-            ) : (
-              <Table containerClassName="max-h-[70dvh] overflow-y-auto rounded-xl border border-border/50">
-                <TableHeader className="sticky top-0 z-10 bg-card">
-                  <TableRow>
-                    <TableHead>{firstHeader}</TableHead>
-                    <TableHead className="text-right">Rows</TableHead>
-                    <TableHead className="text-right">Reinvested</TableHead>
-                    <TableHead className="text-right">Withholding</TableHead>
-                    {reporting ? (
-                      <TableHead className="text-right">Total ({reportingCcy})</TableHead>
-                    ) : (
-                      currencyColumns.map((c) => (
-                        <TableHead key={c} className="text-right">
-                          {c}
-                        </TableHead>
-                      ))
-                    )}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.groups.map((g) => (
-                    <TableRow key={g.bucket}>
-                      <TableCell>{g.label}</TableCell>
-                      <TableCell className="text-right">{g.rowCount}</TableCell>
-                      <TableCell className="text-right">{g.reinvestedCount}</TableCell>
-                      <TableCell className="text-right">{g.withholdingCount}</TableCell>
-                      {reporting ? (
-                        <TableCell className="text-right">
-                          <Amount value={g.amount} currency={reportingCcy} size="md" tone="auto" showSign className="font-mono" />
-                        </TableCell>
-                      ) : (
-                        currencyColumns.map((c) => {
-                          const cell = g.byCurrency?.[c];
-                          return (
-                            <TableCell key={c} className="text-right">
-                              {cell ? (
-                                <Amount value={cell.amount} currency={c} size="md" tone="auto" showSign className="font-mono" />
-                              ) : (
-                                <span className="text-muted-foreground">—</span>
-                              )}
-                            </TableCell>
-                          );
-                        })
-                      )}
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
           </>
         )}
       </section>

@@ -67,7 +67,7 @@ describe("MobileTxList", () => {
         mockTx({ id: 4, date: twoDaysAgoISO }),
       ];
       render(
-        <MobileTxList transactions={txns} onEdit={onEdit} />
+        <MobileTxList transactions={txns} onOpen={onEdit} />
       );
 
       expect(screen.getByText("Today")).toBeInTheDocument();
@@ -79,13 +79,13 @@ describe("MobileTxList", () => {
 
     it("shows 'Today' for today's date", () => {
       const txns = [mockTx({ id: 1, date: todayISO })];
-      render(<MobileTxList transactions={txns} onEdit={onEdit} />);
+      render(<MobileTxList transactions={txns} onOpen={onEdit} />);
       expect(screen.getByText("Today")).toBeInTheDocument();
     });
 
     it("shows 'Yesterday' for yesterday's date", () => {
       const txns = [mockTx({ id: 1, date: yesterdayISO })];
-      render(<MobileTxList transactions={txns} onEdit={onEdit} />);
+      render(<MobileTxList transactions={txns} onOpen={onEdit} />);
       expect(screen.getByText("Yesterday")).toBeInTheDocument();
     });
   });
@@ -93,7 +93,7 @@ describe("MobileTxList", () => {
   describe("icons and colors", () => {
     it("shows transfer icon when linkId is set", () => {
       const txns = [mockTx({ id: 1, amount: -100, linkId: "link1" })];
-      render(<MobileTxList transactions={txns} onEdit={onEdit} />);
+      render(<MobileTxList transactions={txns} onOpen={onEdit} />);
       // Just verify the row is rendered; icon logic is handled internally
       const row = screen.getByRole("button", { name: /Walmart/i });
       expect(row).toBeInTheDocument();
@@ -101,7 +101,7 @@ describe("MobileTxList", () => {
 
     it("shows incoming icon and emerald color for positive amounts", () => {
       const txns = [mockTx({ id: 1, amount: 100 })];
-      render(<MobileTxList transactions={txns} onEdit={onEdit} />);
+      render(<MobileTxList transactions={txns} onOpen={onEdit} />);
       const row = screen.getByRole("button", { name: /Walmart/i });
       // Check for emerald color on the amount
       const amount = within(row as HTMLElement).getByText(/\+\$100/);
@@ -110,7 +110,7 @@ describe("MobileTxList", () => {
 
     it("shows outgoing icon and default color for negative amounts", () => {
       const txns = [mockTx({ id: 1, amount: -100 })];
-      render(<MobileTxList transactions={txns} onEdit={onEdit} />);
+      render(<MobileTxList transactions={txns} onOpen={onEdit} />);
       const row = screen.getByRole("button", { name: /Walmart/i });
       const amount = within(row as HTMLElement).getByText(/-\$100/);
       expect(amount).toHaveClass("text-foreground");
@@ -120,13 +120,13 @@ describe("MobileTxList", () => {
   describe("payee and category", () => {
     it("shows payee when available", () => {
       const txns = [mockTx({ id: 1, payee: "Amazon" })];
-      render(<MobileTxList transactions={txns} onEdit={onEdit} />);
+      render(<MobileTxList transactions={txns} onOpen={onEdit} />);
       expect(screen.getByText("Amazon")).toBeInTheDocument();
     });
 
     it("falls back to category when payee is empty", () => {
       const txns = [mockTx({ id: 1, payee: "" })];
-      render(<MobileTxList transactions={txns} onEdit={onEdit} />);
+      render(<MobileTxList transactions={txns} onOpen={onEdit} />);
       // Category should appear somewhere on the page when payee is empty
       const groceriesElements = screen.getAllByText("Groceries");
       expect(groceriesElements.length).toBeGreaterThan(0);
@@ -134,7 +134,7 @@ describe("MobileTxList", () => {
 
     it("shows dash when both payee and category are empty", () => {
       const txns = [mockTx({ id: 1, payee: "", categoryName: "" })];
-      render(<MobileTxList transactions={txns} onEdit={onEdit} />);
+      render(<MobileTxList transactions={txns} onOpen={onEdit} />);
       // Dash should appear as the title when both are empty
       expect(screen.getByText("—")).toBeInTheDocument();
     });
@@ -143,7 +143,7 @@ describe("MobileTxList", () => {
   describe("account name visibility", () => {
     it("hides account name when showAccountName is false", () => {
       const txns = [mockTx({ id: 1 })];
-      render(<MobileTxList transactions={txns} onEdit={onEdit} showAccountName={false} />);
+      render(<MobileTxList transactions={txns} onOpen={onEdit} showAccountName={false} />);
       // Should only show category, not account
       expect(screen.getByText("Groceries")).toBeInTheDocument();
       expect(screen.queryByText(/Main/)).not.toBeInTheDocument();
@@ -151,17 +151,17 @@ describe("MobileTxList", () => {
 
     it("shows account name when showAccountName is true", () => {
       const txns = [mockTx({ id: 1, accountAlias: "My Checking" })];
-      render(<MobileTxList transactions={txns} onEdit={onEdit} showAccountName={true} />);
+      render(<MobileTxList transactions={txns} onOpen={onEdit} showAccountName={true} />);
       // Should show both category and account
       expect(screen.getByText(/Groceries · My Checking/)).toBeInTheDocument();
     });
   });
 
   describe("edit handler", () => {
-    it("calls onEdit when row is clicked", async () => {
+    it("calls onOpen when row is clicked", async () => {
       const user = userEvent.setup();
       const txns = [mockTx({ id: 42, payee: "Target" })];
-      render(<MobileTxList transactions={txns} onEdit={onEdit} />);
+      render(<MobileTxList transactions={txns} onOpen={onEdit} />);
 
       const row = screen.getByRole("button", { name: /Target/i });
       await user.click(row);
@@ -175,7 +175,7 @@ describe("MobileTxList", () => {
         mockTx({ id: 1, payee: "Store1" }),
         mockTx({ id: 2, payee: "Store2" }),
       ];
-      render(<MobileTxList transactions={txns} onEdit={onEdit} />);
+      render(<MobileTxList transactions={txns} onOpen={onEdit} />);
 
       await user.click(screen.getByRole("button", { name: /Store1/i }));
       await user.click(screen.getByRole("button", { name: /Store2/i }));
@@ -189,26 +189,28 @@ describe("MobileTxList", () => {
   describe("amount formatting", () => {
     it("adds + sign to positive amounts", () => {
       const txns = [mockTx({ id: 1, amount: 123.45 })];
-      render(<MobileTxList transactions={txns} onEdit={onEdit} />);
+      render(<MobileTxList transactions={txns} onOpen={onEdit} />);
       expect(screen.getByText("+$123.45")).toBeInTheDocument();
     });
 
     it("keeps - sign for negative amounts", () => {
       const txns = [mockTx({ id: 1, amount: -123.45 })];
-      render(<MobileTxList transactions={txns} onEdit={onEdit} />);
+      render(<MobileTxList transactions={txns} onOpen={onEdit} />);
       expect(screen.getByText("-$123.45")).toBeInTheDocument();
     });
   });
 
   describe("empty state", () => {
     it("shows empty message when no transactions", () => {
-      render(<MobileTxList transactions={[]} onEdit={onEdit} />);
+      render(<MobileTxList transactions={[]} onOpen={onEdit} />);
       expect(screen.getByText("No transactions found")).toBeInTheDocument();
     });
 
     it("shows loading message when isLoading is true", () => {
-      render(<MobileTxList transactions={[]} onEdit={onEdit} isLoading={true} />);
-      expect(screen.getByText("Loading transactions...")).toBeInTheDocument();
+      const { container } = render(<MobileTxList transactions={[]} onOpen={onEdit} isLoading={true} />);
+      // First load shows shimmer rows (aria-busy), not a text message; background reloads keep the rows.
+      expect(container.querySelector('[data-slot="tx-list-skeleton"]')).toBeTruthy();
+      expect(container.querySelector('[aria-busy="true"]')).toBeTruthy();
     });
   });
 
@@ -218,7 +220,7 @@ describe("MobileTxList", () => {
       render(
         <MobileTxList
           transactions={txns}
-          onEdit={onEdit}
+          onOpen={onEdit}
           hasMore={true}
           onLoadMore={vi.fn()}
         />
@@ -233,7 +235,7 @@ describe("MobileTxList", () => {
       render(
         <MobileTxList
           transactions={txns}
-          onEdit={onEdit}
+          onOpen={onEdit}
           hasMore={true}
           onLoadMore={onLoadMore}
         />
@@ -248,7 +250,7 @@ describe("MobileTxList", () => {
       render(
         <MobileTxList
           transactions={txns}
-          onEdit={onEdit}
+          onOpen={onEdit}
           hasMore={true}
           isLoadingMore={true}
           onLoadMore={vi.fn()}
@@ -259,11 +261,11 @@ describe("MobileTxList", () => {
     });
   });
 
-  describe("Cards view (phone rows)", () => {
-    it("a row tap edits that transaction; the list carries no breakpoint tokens", () => {
+  describe("One list at every width: row tap", () => {
+    it("a row tap opens that transaction (the sheet is the workspace's job); the list carries no breakpoint tokens", () => {
       const onEditSpy = vi.fn();
-      render(<MobileTxList transactions={[mockTx({ id: 7, payee: "Lidl" })]} onEdit={onEditSpy} />);
-      fireEvent.click(screen.getByRole("button", { name: /^Edit Lidl$/ }));
+      render(<MobileTxList transactions={[mockTx({ id: 7, payee: "Lidl" })]} onOpen={onEditSpy} />);
+      fireEvent.click(screen.getByRole("button", { name: /Lidl/ }));
       expect(onEditSpy).toHaveBeenCalledWith(expect.objectContaining({ id: 7 }));
       const src = fs.readFileSync(path.resolve(__dirname, "../../src/components/transactions/mobile-tx-list.tsx"), "utf-8");
       expect(src.match(/(?<![\w-])(max-)?(sm|md|lg|xl|2xl):/g) ?? []).toEqual([]);
@@ -277,11 +279,11 @@ describe("MobileTxList", () => {
       render(
         <MobileTxList
           transactions={[mockTx({ id: 1, payee: "Salary", amount: 100 }), mockTx({ id: 2, payee: "Lunch", amount: -20 })]}
-          onEdit={() => {}}
+          onOpen={() => {}}
         />,
       );
-      expect(icon(/^Edit Salary$/).getAttribute("class")).toContain("lucide-arrow-up-right");
-      expect(icon(/^Edit Lunch$/).getAttribute("class")).toContain("lucide-arrow-down-right");
+      expect(icon(/Salary/).getAttribute("class")).toContain("lucide-arrow-up-right");
+      expect(icon(/Lunch/).getAttribute("class")).toContain("lucide-arrow-down-right");
     });
 
     it("a transfer row shows From and To once the other leg is known", () => {
@@ -289,7 +291,7 @@ describe("MobileTxList", () => {
       render(
         <MobileTxList
           transactions={[leg]}
-          onEdit={() => {}}
+          onOpen={() => {}}
           transferPeers={new Map([[5, { accountId: 9, accountName: "Savings" }]])}
         />,
       );

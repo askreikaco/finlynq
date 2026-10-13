@@ -17,7 +17,6 @@ vi.mock("@/components/portfolio/PerformanceChart", () => ({ PerformanceChart: ()
 vi.mock("@/components/portfolio/lot-inspector-dialog", () => ({ LotInspectorDialog: () => null }));
 vi.mock("@/components/holdings/holding-edit-form", () => ({ HoldingEditForm: () => null }));
 vi.mock("@/app/(app)/portfolio/_components/allocation-charts", () => ({ AllocationCharts: () => null }));
-vi.mock("@/app/(app)/portfolio/_components/holdings-by-account", () => ({ HoldingsByAccount: () => <div data-testid="by-account" /> }));
 
 const overview = vi.hoisted(() => ({ current: null as unknown }));
 vi.mock("@/app/(app)/portfolio/_hooks/use-portfolio", () => ({
@@ -40,12 +39,23 @@ const row = (o: Record<string, unknown>) => ({
   realizedGainNative: null, dividendsNative: null, totalReturnNative: null, dayChangeNative: null, pctOfPortfolio: 50, accountCount: 1, image: null,
   ...o,
 });
-const holding = (o: Record<string, unknown>) => ({ id: 1, accountId: 1, accountName: "TCBS", name: "AAPL", symbol: "AAPL", currency: "USD", assetType: "stock", ...o });
+const holding = (o: Record<string, unknown>) => ({
+  id: 1, accountId: 1, accountName: "TCBS", name: "AAPL", symbol: "AAPL", currency: "USD", assetType: "stock",
+  quantity: 10.5, marketValue: 52500000, marketValueDisplay: 52500000, avgCostPerShare: 4000000, costBasisDisplay: 42000000,
+  totalCostBasis: 42000000, price: 5000000, quoteCurrency: null, unrealizedGain: 10500000, unrealizedGainDisplay: 10500000,
+  unrealizedGainPct: 25, realizedGain: 1200000, realizedGainDisplay: 1200000,
+  ...o,
+});
 
 function makeOverview(over: Record<string, unknown> = {}) {
   return {
     displayCurrency: "VND",
-    holdings: [holding({}), holding({ id: 2, accountId: 2, accountName: "IBKR" })],
+    holdings: [
+      holding({}),
+      holding({ id: 2, accountId: 2, accountName: "IBKR" }),
+      holding({ id: 3, name: "VNM", symbol: "VNM", quantity: 100, marketValueDisplay: 8000000, unrealizedGainPct: -11.1, unrealizedGainDisplay: -1000000, avgCostPerShare: 90000, price: 80000, costBasisDisplay: 9000000, realizedGainDisplay: 0, realizedGain: 0, unrealizedGain: -1000000 }),
+      holding({ id: 4, accountId: 2, accountName: "IBKR", name: "VND", symbol: "VND", assetType: "cash", quantity: 5000000, marketValueDisplay: 5000000, marketValue: 5000000, unrealizedGainPct: null, unrealizedGainDisplay: 0, costBasisDisplay: null, avgCostPerShare: null, price: null, realizedGainDisplay: 0, realizedGain: 0, unrealizedGain: 0, totalCostBasis: null }),
+    ],
     byHolding: [
       row({}),
       row({ key: "eq:VNM", symbol: "VNM", name: "VNM", description: "Vinamilk", totalQty: 100, marketValueDisplay: 8000000, unrealizedGainDisplay: -1000000, unrealizedGainPct: -11.1, avgCostDisplay: 90000, currentPriceDisplay: 80000 }),
@@ -67,9 +77,15 @@ function makeOverview(over: Record<string, unknown> = {}) {
 beforeEach(() => { overview.current = makeOverview(); });
 afterEach(cleanup);
 const cls = (el: Element) => el.className.toString().split(/\s+/);
-// Cards view (the default at compact): one HoldingRow per holding.
-const cardsView = () => document.querySelector("[data-view=cards]") as HTMLElement;
-const cardRows = () => within(cardsView()).getAllByRole("button").filter((b) => b.getAttribute("data-slot") === "list-row");
+/** The holdings of one account (its SectionCard), as list rows. */
+const groupRows = (account: string): HTMLElement[] => {
+  const card = Array.from(document.querySelectorAll<HTMLElement>("[data-slot=section-card]")).find(
+    (c) => c.querySelector("[data-slot=section-label]")?.textContent === account,
+  );
+  if (!card) return [];
+  return Array.from(card.querySelectorAll<HTMLElement>("[data-slot=list-row]"));
+};
+const allRows = () => Array.from(document.querySelectorAll<HTMLElement>("[data-slot=holdings-by-account] [data-slot=list-row]"));
 
 describe("Portfolio summary and holdings cards (one page, every size)", () => {
   it("hero and metric grid render at every size (no viewport hide on the summary)", () => {
@@ -96,30 +112,30 @@ describe("Portfolio summary and holdings cards (one page, every size)", () => {
     expect(screen.queryByText("Total Holdings")).toBeNull();
   });
 
-  it("Cards view rows show ONLY name | market value + unrealized % in text-pos / text-neg", () => {
+  it("holding rows show ONLY name | market value + unrealized % in text-pos / text-neg", () => {
     render(<PortfolioPage />);
-    const rows = cardRows();
-    expect(rows.map((r) => r.getAttribute("aria-label"))).toEqual(["AAPL", "VNM", "Cash · VND"]);
+    const tcbs = groupRows("TCBS");
+    expect(tcbs.map((r) => r.getAttribute("aria-label"))).toEqual(["AAPL", "VNM"]);
 
-    const aapl = rows[0];
+    const aapl = tcbs[0];
     expect(within(aapl).getByText(formatCurrency(52500000, "VND"))).toBeTruthy();
     expect(cls(within(aapl).getByText("+25.00%"))).toContain("text-pos");
-    const vnm = rows[1];
-    expect(cls(within(vnm).getByText(/11\.10%/))).toContain("text-neg");
+    expect(cls(within(tcbs[1]).getByText(/11\.10%/))).toContain("text-neg");
     // nothing else leaks into the row: no qty / avg cost / price / account / description
     for (const leaked of ["10.5", "Apple Inc.", "TCBS", formatCurrency(4000000, "VND")]) {
       expect(aapl.textContent).not.toContain(leaked);
     }
     // cash row: amount, no % line
-    expect(rows[2].querySelector("[data-slot=list-row-secondary]")).toBeNull();
+    const cash = groupRows("IBKR").find((r) => r.getAttribute("aria-label") === "Cash · VND")!;
+    expect(cash.querySelector("[data-slot=list-row-secondary]")).toBeNull();
   });
 
-  it("tapping a row opens a DetailSheet with qty, avg cost, price, cost basis, unrealized, realized and accounts", () => {
+  it("tapping a holding opens a DetailSheet with qty, avg cost, price, cost basis, unrealized, realized and its account", () => {
     render(<PortfolioPage />);
     expect(screen.queryByRole("dialog")).toBeNull();
-    fireEvent.click(within(cardsView()).getByRole("button", { name: "AAPL" }));
+    fireEvent.click(groupRows("TCBS")[0]);
     const dlg = screen.getByRole("dialog");
-    expect(within(dlg).getByText("Apple Inc.")).toBeTruthy();
+    expect(within(dlg).getAllByText("TCBS").length).toBeGreaterThan(0);
     const dl = dlg.querySelector("[data-slot=detail-list]") as HTMLElement;
     const get = (label: string) => within(dl).getByText(label).parentElement!.querySelector("dd")!.textContent;
     expect(get("Quantity")).toBe("10.5");
@@ -128,21 +144,26 @@ describe("Portfolio summary and holdings cards (one page, every size)", () => {
     expect(get("Cost basis")).toContain("42,000,000");
     expect(get("Unrealized G/L")).toMatch(/\+.*10,500,000.*\(\+25\.00%\)/);
     expect(get("Realized G/L")).toMatch(/\+.*1,200,000/);
-    expect(get("Accounts")).toBe("IBKR, TCBS");
+    expect(get("Account")).toBe("TCBS");
     expect(cls(within(dl).getByText(/10,500,000/))).toContain("text-pos");
+    // the sheet's actions
+    expect(within(dlg).getByRole("button", { name: "Edit" })).toBeTruthy();
+    expect(within(dlg).getByRole("button", { name: "Lots" })).toBeTruthy();
+    expect(within(dlg).getByRole("link", { name: "View transactions" }).getAttribute("href")).toContain("/transactions?");
   });
 
-  it("the type chips in the page toolbar filter the Cards rows", () => {
+  it("the type chips in the page toolbar filter the holding rows", () => {
     render(<PortfolioPage />);
     const group = screen.getByRole("group", { name: "Filter holdings by type" });
     fireEvent.click(within(group).getByRole("button", { name: /^Cash/ }));
-    expect(cardRows().map((r) => r.getAttribute("aria-label"))).toEqual(["Cash · VND"]);
+    expect(allRows().map((r) => r.getAttribute("aria-label"))).toEqual(["Cash · VND"]);
   });
 
-  it("per-holding rows are not duplicated in a second tree (the table is not mounted in Cards)", () => {
+  it("each holding is one row in its account (no table, no Cards/List toggle, no second tree)", () => {
     render(<PortfolioPage />);
     expect(document.querySelector("table")).toBeNull();
-    expect(screen.getByRole("radio", { name: "Cards" }).getAttribute("aria-checked")).toBe("true");
+    expect(screen.queryAllByRole("radiogroup", { name: "View" })).toHaveLength(0);
+    expect(allRows()).toHaveLength(4);
   });
 
   it("empty chart is hidden below regular when there are no open positions", () => {
