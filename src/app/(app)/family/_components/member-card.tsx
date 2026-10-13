@@ -1,8 +1,8 @@
 "use client";
 
 import { useId } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ListRow, SectionCard } from "@/components/mobile";
 import { formatCurrency, formatDate } from "@/lib/currency";
 import { FAMILY_STRINGS } from "@/lib/family/strings";
 import { formatPercent } from "@/lib/locale";
@@ -192,30 +192,23 @@ export function MemberCard({
             )}
 
             {s.loans && (
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">{FAMILY_STRINGS.overview_loans_title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {s.loans.loans.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">{NONE}</p>
-                  ) : (
-                    <ul className="space-y-3">
-                      {s.loans.loans.map((l) => (
-                        <li key={l.ref} className="border-b pb-2 last:border-0">
-                          <p className="text-sm font-medium break-words">
-                            <Label text={l.label} generic={l.labelIsGeneric} />
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {formatPercent(l.annualRate, 2)} · {FAMILY_STRINGS.overview_loan_balance}: {money(l.remainingBalanceConverted)}
-                            {l.payoffDate && ` · ${formatDate(l.payoffDate)}`}
-                          </p>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </CardContent>
-              </Card>
+              <SectionCard label={FAMILY_STRINGS.overview_loans_title}>
+                {s.loans.loans.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">{NONE}</p>
+                ) : (
+                  <ul className="flex flex-col">
+                    {s.loans.loans.map((l) => (
+                      <li key={l.ref}>
+                        <ListRow
+                          title={<Label text={l.label} generic={l.labelIsGeneric} />}
+                          subtitle={`${formatPercent(l.annualRate, 2)} · ${FAMILY_STRINGS.overview_loan_balance}: ${money(l.remainingBalanceConverted)}${l.payoffDate ? ` · ${formatDate(l.payoffDate)}` : ""}`}
+                          chevron={false}
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </SectionCard>
             )}
           </>
         )}

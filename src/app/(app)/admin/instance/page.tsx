@@ -14,8 +14,8 @@
  */
 
 import { useEffect, useState } from "react";
-import { PageHeader } from "@/components/mobile";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ListRow, SectionCard } from "@/components/mobile";
+import { SectionPage } from "@/components/templates/section-page";
 import { Badge } from "@/components/ui/badge";
 import type { EffectiveConfig } from "@/lib/admin/effective-config";
 
@@ -67,17 +67,17 @@ interface ConfigRowProps {
   source: "env" | "db" | "default";
 }
 
+/** One config value: label, masked/display value, and its origin badge (a native ListRow, no table). */
 function ConfigRow({ label, value, source }: ConfigRowProps) {
   return (
-    <div className="flex items-center justify-between py-3 px-4 border-b border-border last:border-b-0">
-      <div className="flex flex-col gap-1">
-        <span className="text-sm font-medium text-foreground">{label}</span>
-      </div>
-      <div className="flex items-center gap-3">
-        <span className="text-sm text-muted-foreground font-mono">{value}</span>
-        <SourceBadge source={source} />
-      </div>
-    </div>
+    <li>
+      <ListRow
+        title={label}
+        value={<span className="text-sm text-muted-foreground font-mono break-all">{value}</span>}
+        secondary={<SourceBadge source={source} />}
+        chevron={false}
+      />
+    </li>
   );
 }
 
@@ -89,13 +89,10 @@ interface SectionProps {
 
 function ConfigSection({ title, description, children }: SectionProps) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
-      </CardHeader>
-      <CardContent className="p-0">{children}</CardContent>
-    </Card>
+    <SectionCard label={title}>
+      <p className="text-sm text-muted-foreground mb-2">{description}</p>
+      <ul className="flex flex-col divide-y divide-border/60">{children}</ul>
+    </SectionCard>
   );
 }
 
@@ -127,9 +124,7 @@ export default function InstanceAdminPage() {
   }, []);
 
   return (
-    <div className="flex flex-col gap-6">
-      <PageHeader title="Instance config" />
-
+    <SectionPage id="admin-instance" title="Instance config" width="report" center>
       {isLoading && (
         <div className="text-center py-8 text-muted-foreground">Loading configuration...</div>
       )}
@@ -142,7 +137,7 @@ export default function InstanceAdminPage() {
       )}
 
       {config && (
-        <div className="space-y-6">
+        <>
           {/* Google OAuth Section */}
           <ConfigSection
             title={SECTIONS[0].label}
@@ -221,8 +216,8 @@ export default function InstanceAdminPage() {
               Secrets are masked above for security.
             </p>
           </div>
-        </div>
+        </>
       )}
-    </div>
+    </SectionPage>
   );
 }
