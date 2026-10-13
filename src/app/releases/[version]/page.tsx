@@ -75,7 +75,7 @@ export default async function ReleaseNotesPage({
           { name: release.name, path: `/releases/${release.slug}` },
         ])}
       />
-      <div className="mx-auto max-w-3xl px-6 py-16">
+      <div className="w-full px-6 py-16">
         <header className="mb-10 border-b border-border pb-8">
           <Link
             href="/releases"
@@ -104,7 +104,7 @@ export default async function ReleaseNotesPage({
           ))}
         </header>
 
-        <article className="space-y-10">
+        <article className="max-w-prose space-y-10">
           {release.sections.map((section) => (
             <section key={section.heading}>
               <h2 className="text-xl font-semibold tracking-tight">

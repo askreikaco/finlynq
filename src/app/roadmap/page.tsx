@@ -215,7 +215,7 @@ export default function RoadmapPage() {
           { name: "Roadmap", path: PATH },
         ])}
       />
-      <div className="mx-auto max-w-4xl px-6 py-16">
+      <div className="w-full px-6 py-16">
         <header className="mb-12 border-b border-border pb-8">
           <Link
             href="/"
@@ -247,7 +247,7 @@ export default function RoadmapPage() {
               <p className="mb-5 text-sm text-muted-foreground">
                 {section.blurb}
               </p>
-              <div className="grid grid-cols-1 gap-4 regular:grid-cols-2">
+              <div className="grid grid-cols-1 items-start gap-4 regular:grid-cols-2 wide:grid-cols-3">
                 {section.items.map((item) => (
                   <div
                     key={item.title}

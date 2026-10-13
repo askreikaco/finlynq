@@ -52,7 +52,7 @@ export default function FinlynqMobileAppPage() {
           { name: "Finlynq is now on iOS and Android", path: `/blog/${SLUG}` },
         ])}
       />
-      <div className="mx-auto max-w-3xl px-6 py-16">
+      <div className="w-full px-6 py-16">
         <header className="mb-12 border-b border-border pb-8">
           <Link
             href="/blog"
@@ -69,7 +69,7 @@ export default function FinlynqMobileAppPage() {
           </p>
         </header>
 
-        <article className="prose prose-invert max-w-none space-y-6 text-sm leading-relaxed">
+        <article className="prose prose-invert max-w-prose space-y-6 text-sm leading-relaxed">
           <p className="text-base">
             Finlynq has always been two things: a web app where you track your
             money, and an MCP server that lets your AI assistant dig into it. The

@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 export default function PrivacyPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto max-w-3xl px-6 py-16">
+      <div className="w-full px-6 py-16">
         <header className="mb-12 border-b border-border pb-8">
           <Link
             href="/"
@@ -29,12 +29,12 @@ export default function PrivacyPage() {
             ← Finlynq
           </Link>
           <h1 className="mt-4 text-4xl font-bold tracking-tight">Privacy Policy</h1>
-          <p className="mt-3 text-sm text-muted-foreground">
+          <p className="mt-3 text-sm text-muted-foreground max-w-prose">
             Last updated: 2026-06-18
           </p>
         </header>
 
-        <section className="prose prose-invert max-w-none space-y-8 text-sm leading-relaxed">
+        <section className="prose prose-invert max-w-prose space-y-8 text-sm leading-relaxed">
           <p className="text-base">
             Finlynq is an open-source personal-finance app (AGPL v3). You can run
             it on your own hardware or use our managed cloud at{" "}

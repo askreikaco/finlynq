@@ -35,7 +35,7 @@ export default function VsIndexPage() {
           { name: "Comparisons", path: "/vs" },
         ])}
       />
-      <div className="mx-auto max-w-3xl px-6 py-16">
+      <div className="w-full px-6 py-16">
         <header className="mb-12 border-b border-border pb-8">
           <Link
             href="/"
@@ -50,7 +50,7 @@ export default function VsIndexPage() {
           <h1 className="mt-4 text-4xl font-bold tracking-tight">
             Finlynq vs other personal finance apps
           </h1>
-          <p className="mt-4 text-base leading-relaxed text-muted-foreground">
+          <p className="mt-4 text-base leading-relaxed text-muted-foreground max-w-prose">
             Honest, sourced side-by-side comparisons. Finlynq is open-source
             (AGPL v3) and self-hostable, and it&apos;s the only personal finance
             manager we know of that ships a first-party MCP server plus per-user
@@ -58,7 +58,7 @@ export default function VsIndexPage() {
           </p>
         </header>
 
-        <section className="space-y-4">
+        <section data-slot="vs-cards" className="grid grid-cols-1 items-start gap-6 regular:grid-cols-2 wide:grid-cols-3">
           {VS_SLUGS.map((slug) => (
             <Link
               key={slug}

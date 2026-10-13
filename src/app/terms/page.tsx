@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 export default function TermsPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto max-w-3xl px-6 py-16">
+      <div className="w-full px-6 py-16">
         <header className="mb-12 border-b border-border pb-8">
           <Link
             href="/"
@@ -28,12 +28,12 @@ export default function TermsPage() {
             ← Finlynq
           </Link>
           <h1 className="mt-4 text-4xl font-bold tracking-tight">Terms of Service</h1>
-          <p className="mt-3 text-sm text-muted-foreground">
+          <p className="mt-3 text-sm text-muted-foreground max-w-prose">
             Effective: 2026-05-09
           </p>
         </header>
 
-        <section className="prose prose-invert max-w-none space-y-8 text-sm leading-relaxed">
+        <section className="prose prose-invert max-w-prose space-y-8 text-sm leading-relaxed">
           <p className="text-base">
             These Terms of Service (&ldquo;Terms&rdquo;) govern your use of the
             Finlynq managed cloud service available at <code>finlynq.com</code>{" "}

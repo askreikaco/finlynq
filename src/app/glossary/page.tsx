@@ -35,7 +35,7 @@ export default function GlossaryIndexPage() {
           { name: "Glossary", path: "/glossary" },
         ])}
       />
-      <div className="mx-auto max-w-3xl px-6 py-16">
+      <div className="w-full px-6 py-16">
         <header className="mb-12 border-b border-border pb-8">
           <Link
             href="/"
@@ -48,13 +48,13 @@ export default function GlossaryIndexPage() {
             Glossary
           </div>
           <h1 className="mt-4 text-4xl font-bold tracking-tight">Glossary</h1>
-          <p className="mt-4 text-base leading-relaxed text-muted-foreground">
+          <p className="mt-4 text-base leading-relaxed text-muted-foreground max-w-prose">
             Plain-English definitions of the concepts behind Finlynq, the open-
             source, MCP-first, end-to-end-encrypted personal finance app.
           </p>
         </header>
 
-        <section className="space-y-4">
+        <section data-slot="glossary-cards" className="grid grid-cols-1 items-start gap-6 regular:grid-cols-2 wide:grid-cols-3">
           {GLOSSARY.map((entry) => (
             <Link
               key={entry.slug}
