@@ -12,7 +12,7 @@ import { metricGridClass } from "@/components/mobile/metric-grid";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/currency";
 import { formatPercent } from "@/lib/locale";
-import { Amount, SectionCard, SectionLabel, StatTile, type MetricItem } from "@/components/mobile";
+import { Amount, SectionCard, StatTile, type MetricItem } from "@/components/mobile";
 import type { ByHoldingRow, OverviewData } from "../_types";
 
 const signed = (n: number, digits = 2) => `${n >= 0 ? "+" : ""}${formatPercent(n, digits)}`;
@@ -45,10 +45,9 @@ export function PortfolioSummary({ summary, currency }: { summary: OverviewData[
   ];
   return (
     <div data-slot="portfolio-summary" className="space-y-3">
-      <SectionCard className="space-y-3">
+      <SectionCard label="Total value" className="space-y-3">
         <div>
-          <SectionLabel>Total value</SectionLabel>
-          <Amount value={summary.totalValueDisplay} currency={currency} size="hero" tone="none" className="mt-1 block" />
+          <Amount value={summary.totalValueDisplay} currency={currency} size="hero" tone="none" className="block" />
         </div>
         <div className="grid grid-cols-2 gap-3 text-xs">
           <div data-slot="hero-day">

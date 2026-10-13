@@ -1,5 +1,4 @@
 import { SectionCard } from "./section-card";
-import { SectionLabel } from "./section-label";
 import { Amount } from "./amount";
 import { StatTile } from "./stat-tile";
 
@@ -18,10 +17,9 @@ export function NetWorthHero({
 }) {
   const netWorth = totalAssets + totalLiabilities;
   return (
-    <SectionCard data-slot="net-worth-hero" className="space-y-4">
+    <SectionCard data-slot="net-worth-hero" label="Net worth" className="space-y-4">
       <div>
-        <SectionLabel>Net worth</SectionLabel>
-        <Amount value={netWorth} currency={currency} size="hero" tone="none" className="mt-1 block" />
+        <Amount value={netWorth} currency={currency} size="hero" tone="none" className="block" />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <StatTile label="Assets" value={<Amount value={totalAssets} currency={currency} size="lg" tone="pos" />} />

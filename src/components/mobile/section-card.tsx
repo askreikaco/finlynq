@@ -10,12 +10,15 @@ const CARD_SURFACE = "surface-card min-w-0 rounded-xl border border-border/50 te
  */
 export function SectionCard({
   label,
+  labelClassName,
   className,
   children,
   padded = true,
   ...props
 }: Omit<React.HTMLAttributes<HTMLElement>, "children"> & {
   label?: React.ReactNode;
+  /** Extra classes for the in-card label row (e.g. a sticky date header). */
+  labelClassName?: string;
   padded?: boolean;
   children?: React.ReactNode;
 }) {
@@ -30,7 +33,7 @@ export function SectionCard({
   }
   return (
     <section data-slot="section-card" {...props} className={cn(CARD_SURFACE, props.className)}>
-      <SectionLabel data-slot="section-card-label" className="px-4 pb-2 pt-4">
+      <SectionLabel data-slot="section-card-label" className={cn("px-4 pb-2 pt-4", labelClassName)}>
         {label}
       </SectionLabel>
       <div data-slot="section-card-body" className={cn(padded && "px-4 pb-4", className)}>

@@ -24,7 +24,7 @@ import { getEntriesBySurface, type Surface } from "@/lib/nav-config";
 import { cn } from "@/lib/utils";
 import { TW } from "@/lib/design/tokens";
 import { PageHeader } from "@/components/mobile/page-header";
-import { InsetGroup, InsetRow, InsetSectionHeader } from "@/components/mobile/inset-group";
+import { InsetGroup, InsetRow } from "@/components/mobile/inset-group";
 import { SectionLabel } from "@/components/mobile/section-label";
 
 export interface HubRow {
@@ -129,16 +129,16 @@ function useNoRedirect(): boolean {
   return false;
 }
 
+/** Group title: always rendered INSIDE the group card as its first row. */
 function renderSectionLabel(title: string, style: NonNullable<HubPageVariants["sectionLabel"]>) {
   if (style === "caps") {
     return (
-      <h2 data-slot="hub-section-label" className="px-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+      <h2 data-slot="hub-section-label" className="px-4 pb-1 pt-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         {title}
       </h2>
     );
   }
-  if (style === "section-label") return <SectionLabel>{title}</SectionLabel>;
-  return <InsetSectionHeader>{title}</InsetSectionHeader>;
+  return <SectionLabel className="px-4 pb-1 pt-3">{title}</SectionLabel>;
 }
 
 interface CardRowOptions {
@@ -276,13 +276,13 @@ function HubPageBody(props: HubPageProps) {
       data-testid={`${id}-group-${group.id}`}
       className="space-y-2"
     >
-      {group.title ? renderSectionLabel(group.title, sectionLabel) : null}
       {look === "card" ? (
         <div className="divide-y divide-border/50 overflow-hidden rounded-group bg-card">
+          {group.title ? renderSectionLabel(group.title, sectionLabel) : null}
           {group.rows.map((row) => renderCardRow(row, cardOpts))}
         </div>
       ) : (
-        <InsetGroup aria-label={group.title}>
+        <InsetGroup aria-label={group.title} header={group.title}>
           {group.rows.map((row) => (
             <InsetRow
               key={row.id}
