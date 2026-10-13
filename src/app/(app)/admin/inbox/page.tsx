@@ -314,7 +314,7 @@ export default function AdminInboxPage() {
 
       {/* ─── Conversation (tap a row) ─── */}
       <Sheet open={selectedId !== null} onOpenChange={(open) => { if (!open) closeThread(); }}>
-        <SheetContent side="bottom" className="max-h-[92dvh] overflow-y-auto overscroll-contain rounded-t-2xl p-0">
+        <SheetContent side="bottom" className="max-h-[92dvh] overflow-y-auto overscroll-contain rounded-t-2xl p-0 pb-[var(--sab)]">
           <SheetHeader className="border-b px-4 py-3 pr-12">
             <SheetTitle className="truncate text-base">{thread ? thread.subject || "(no subject)" : "Email"}</SheetTitle>
             <SheetDescription className="truncate font-mono text-xs">{thread?.counterparty ?? ""}</SheetDescription>
