@@ -14,7 +14,10 @@ permissions:
 
 jobs:
   tsc:
-    runs-on: ${{ vars.CI_RUNNER || 'reika-ci' }}
+    # Labels match deploy-custom.yml. The only runner on this repo is the droplet
+    # runner finlynq-custom; its systemd unit is capped (MemoryMax ~1-2 GB), so
+    # tsc runs with a matching heap cap below.
+    runs-on: ${{ vars.CI_RUNNER || fromJSON('["self-hosted","droplet"]') }}
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -32,6 +35,8 @@ jobs:
         run: npm run generate:mcp-catalog
 
       - name: Typecheck
+        env:
+          NODE_OPTIONS: --max-old-space-size=1536
         run: npx tsc --noEmit
 
       - name: Job summary
