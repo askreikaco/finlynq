@@ -119,11 +119,11 @@ describe("tabs and active state (nav.tsx)", () => {
   });
 
   it("tabs keep aria-current and a 44px minimum touch height", () => {
-    // One shared bar tab literal for all five tabs (registry tabs + More); the rail has its own literal (min-h-14).
+    // One shared bar tab literal for all five tabs (registry tabs + More). Rail items are square (aspect-square), not min-h.
     const tabBlocks = nav.match(/min-h-11/g) ?? [];
     expect(tabBlocks.length).toBe(1);
     expect(nav).toContain('aria-current={isActive ? "page" : undefined}');
-    expect(nav).toContain("min-h-14");
+    expect(nav).toContain("aspect-square");
   });
 
   it("row keeps data-testid mobile-bar-row and fills the capsule", () => {

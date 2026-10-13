@@ -152,38 +152,30 @@ const MORE_LINK: TabLink = { href: "/more", label: "More", icon: MoreHorizontal,
 const MOBILE_LINKS: TabLink[] = mobileBarItems.map((i) => ({ href: i.href, label: i.label, icon: i.icon, color: i.color }));
 // Bottom bar: the 4 mobile tabs, then More.
 const TAB_LINKS: TabLink[] = [...MOBILE_LINKS, MORE_LINK];
-// Rail extras after the mobile tabs (registry rail.order). Tablet shows the first RAIL_TABLET_EXTRAS;
-// the rest are CSS-hidden below wide, so the DOM and jsdom always hold every item.
-const RAIL_TABLET_EXTRAS = 5;
+// Rail extras after the mobile tabs (registry rail.order 5..9). Rail = 4 mobile tabs + these 5 + More.
 const RAIL_EXTRA_LINKS: TabLink[] = getRailExtrasSorted().map((e) => ({ href: e.path, label: e.label, icon: e.icon, color: ACTIVE_ACCENT }));
 const MOBILE_HREFS = MOBILE_LINKS.map((i) => i.href);
-const TABLET_HREFS = [...MOBILE_HREFS, ...RAIL_EXTRA_LINKS.slice(0, RAIL_TABLET_EXTRAS).map((i) => i.href)];
-const WIDE_HREFS = [...MOBILE_HREFS, ...RAIL_EXTRA_LINKS.map((i) => i.href)];
+const RAIL_HREFS = [...MOBILE_HREFS, ...RAIL_EXTRA_LINKS.map((i) => i.href)];
 
 /**
  * App navigation: one tab list, two layouts. Below 40rem (`regular:` is a viewport query) the
- * floating glass bottom bar: 4 mobile tabs + More. From 40rem up a fixed left rail: 9 tabs + More
- * on tablet (regular, not wide), 14 tabs + More on desktop (wide). No groups, collapse toggle,
- * admin group or account switcher: admin and settings live under More.
+ * floating glass bottom bar: 4 mobile tabs + More. From 40rem up a fixed left rail of square
+ * items: 4 mobile tabs + 5 extras + More (10 items, same at every rail width). No groups, collapse
+ * toggle, admin group or account switcher: admin and settings live under More.
  *
- * More active rule: More is current only when the path matches none of the tabs rendered at that
- * breakpoint. The rail has two More links: `wide:hidden` (tablet, matches the 9 tabs) and
- * `hidden wide:flex` (desktop, matches all 14). Exactly one is visible at a time, so aria-current
- * is right in each layout.
+ * More active rule: More is current only when the path matches none of the rail tabs. One More
+ * link in the rail carries the unread dot.
  */
 export const AppTabs = memo(function AppTabs({ categoriesMerged = false }: { categoriesMerged?: boolean }) {
   const pathname = usePathname();
   // Same label rule as More: /categories reads "Categories" when the merged flag is on (flag is read server-side in the layout).
   const railExtras = RAIL_EXTRA_LINKS.map((i) => ({ ...i, label: navLabel(i.href, i.label, { categoriesMerged }) }));
-  const tabletExtraLinks = railExtras.slice(0, RAIL_TABLET_EXTRAS);
-  const wideOnlyExtraLinks = railExtras.slice(RAIL_TABLET_EXTRAS);
   const nav = useNavUnread();
   const moreUnread = nav.announcementsUnread + nav.feedbackUnread;
   const barHidden = isTabBarHidden(pathname);
   const pathIn = (hrefs: string[]) => hrefs.some((h) => isTabActive(pathname, h));
   const barMoreActive = !pathIn(MOBILE_HREFS);
-  const tabletMoreActive = !pathIn(TABLET_HREFS);
-  const wideMoreActive = !pathIn(WIDE_HREFS);
+  const railMoreActive = !pathIn(RAIL_HREFS);
   const tabActive = (href: string) => isTabActive(pathname, href);
   // One unread dot, on the More tab only, in both layouts.
   const moreDot = (href: string) =>
@@ -194,16 +186,15 @@ export const AppTabs = memo(function AppTabs({ categoriesMerged = false }: { cat
   const moreSrText = (href: string) =>
     href === "/more" && moreUnread > 0 ? <span className="sr-only">, has unread items</span> : null;
 
-  // Rail link: `display` is "flex" for always-visible tabs, "hidden wide:flex" for desktop-only, "flex wide:hidden" for tablet More.
-  const railLink = (item: TabLink, active: boolean, display: string, testId?: string) => (
+  // Rail link: square (aspect-square, full rail width). Ring is inset so the scroll container never clips it.
+  const railLink = (item: TabLink, active: boolean, testId?: string) => (
     <Link
       key={item.href + (testId ?? "")}
       data-testid={testId}
       aria-current={active ? "page" : undefined}
       href={item.href}
       className={cn(
-        "min-h-14 wide:min-h-12 w-full min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-1 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
-        display,
+        "flex aspect-square w-full min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-1 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sidebar-ring",
         active ? "mobile-glass-pill text-tab-active" : "text-tab-inactive"
       )}
     >
@@ -247,13 +238,11 @@ export const AppTabs = memo(function AppTabs({ categoriesMerged = false }: { cat
       <nav
         aria-label="Main navigation"
         data-testid="app-rail"
-        className="hidden regular:flex fixed inset-y-0 left-0 z-50 w-[calc(5rem+var(--sal))] flex-col gap-1 wide:gap-0.5 overflow-y-auto overscroll-contain border-r border-sidebar-border/50 bg-sidebar/90 pl-[var(--sal)] pr-2 pt-[calc(var(--sat)+0.75rem)] pb-[calc(var(--sab)+0.75rem)] backdrop-blur-xl"
+        className="hidden regular:flex fixed inset-y-0 left-0 z-50 w-[calc(5rem+var(--sal))] flex-col gap-1.5 overflow-y-auto overscroll-contain border-r border-sidebar-border/50 bg-sidebar/90 pl-[var(--sal)] pr-2 pt-[calc(var(--sat)+0.75rem)] pb-[calc(var(--sab)+0.75rem)] backdrop-blur-xl"
       >
-        {MOBILE_LINKS.map((item) => railLink(item, tabActive(item.href), "flex"))}
-        {tabletExtraLinks.map((item) => railLink(item, tabActive(item.href), "flex"))}
-        {railLink(MORE_LINK, tabletMoreActive, "flex wide:hidden", "rail-more-tablet")}
-        {wideOnlyExtraLinks.map((item) => railLink(item, tabActive(item.href), "hidden wide:flex"))}
-        {railLink(MORE_LINK, wideMoreActive, "hidden wide:flex", "rail-more-wide")}
+        {MOBILE_LINKS.map((item) => railLink(item, tabActive(item.href)))}
+        {railExtras.map((item) => railLink(item, tabActive(item.href)))}
+        {railLink(MORE_LINK, railMoreActive, "rail-more")}
       </nav>
     </>
   );
