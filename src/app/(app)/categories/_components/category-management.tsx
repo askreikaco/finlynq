@@ -113,7 +113,7 @@ export function CategoryManagement({ returnTo }: { returnTo: string }) {
           {sections.map(({ type, groups }) => (
             <section key={type} data-testid={`type-section-${type}`} aria-label={TYPE_LABELS[type]}>
               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{TYPE_LABELS[type]}</h3>
-              <div className="space-y-2">
+              <div data-slot="category-manage-groups" className="grid grid-cols-1 items-start gap-2 regular:grid-cols-2 wide:grid-cols-3">
                 {groups.map(([group, cats]) => (
                   <div key={group || "__none"}>
                     {group && <h4 className="text-xs text-muted-foreground/80 px-3 mb-1">{group}</h4>}

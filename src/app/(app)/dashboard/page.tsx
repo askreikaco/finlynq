@@ -394,7 +394,7 @@ export default function DashboardPage() {
   // (2 mobile, 3 tablet, 4 desktop). Adjacent in the saved order = one grid; its columns follow the visible tile count.
   const TILES_GRID = { key: "tiles", className: METRIC_GRID_CLASS };
   const TILE_COUNT: Record<string, number> = { "health-score": 1, "summary-stats": 3, "key-metrics": 2 };
-  const ROW3_GRID = { key: "row3", className: "grid grid-cols-1 wide:grid-cols-3 gap-5" };
+  const ROW3_GRID = { key: "row3", className: "grid grid-cols-1 regular:grid-cols-2 wide:grid-cols-3 gap-5" };
   const CHARTS_GRID = { key: "charts", className: "grid grid-cols-1 wide:grid-cols-2 gap-5" };
   const SPEND_GRID = { key: "spend", className: "grid grid-cols-1 wide:grid-cols-3 gap-5" };
 
