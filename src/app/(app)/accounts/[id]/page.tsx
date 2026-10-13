@@ -45,6 +45,7 @@ import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
 import type { Mode } from "@/components/inbox/modes";
 import { NetWorthHistoryChart } from "@/components/net-worth-history-chart";
 import { MetricCard } from "@/components/metric-card";
+import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import { MetricRangeSelect } from "@/components/metric-range-select";
 import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { cardProps, makeCardResolver, monthEndBalances } from "@/lib/metrics/series";
@@ -120,7 +121,9 @@ export default function AccountDetailPage() {
   const [cashFlowBasis, setCashFlowBasis] = useState<number | null>(null);
   const [holdingsValue, setHoldingsValue] = useState<number | null>(null);
   // Monthly balance history for the Balance card's chart + "vs last month" (native currency of the account).
-  const [balanceSeries, setBalanceSeries] = useState<BalancePoint[] | null>(null);
+  // Month-end balance history (native currency), cache-first so it also paints offline; a range reaches back past a year.
+  const balanceHistory = useCacheFirstJson<{ series?: BalancePoint[] }>(`/api/net-worth-history?period=all&accountId=${id}&basis=native`);
+  const balanceSeries = Array.isArray(balanceHistory.data?.series) ? balanceHistory.data.series : null;
   const metricRange = useMetricRange();
 
   // Actions sheet (mobile) / dropdown (desktop)
@@ -188,16 +191,7 @@ export default function AccountDetailPage() {
         setHoldingsValue(b?.holdingsValue ?? null);
       })
       .catch(() => {});
-    void (async () => {
-      try {
-        const r = await fetch(`/api/net-worth-history?period=1y&accountId=${id}&basis=native`);
-        if (!r || !r.ok) return;
-        const json = await r.json();
-        if (Array.isArray(json?.series)) setBalanceSeries(json.series);
-      } catch {
-        /* the card still shows the balance without a chart */
-      }
-    })();
+    balanceHistory.reload();
 
     fetch(`/api/transactions?accountId=${id}&limit=1&scope=all`)
       .then((r) => r.json())
