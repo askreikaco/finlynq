@@ -37,6 +37,22 @@ describe("metric grid rule: 2 mobile (max), 3 tablet (max), 4 desktop (default)"
     expect(metricGridClass(3)).not.toContain("wide:grid-cols-4");
   });
 
+  it("6 cards = 3 columns from tablet up (never 4 + 2); 4 and 8 keep the 4-column desktop default", () => {
+    expect(metricGridClass(6)).toContain("regular:grid-cols-3");
+    expect(metricGridClass(6)).not.toContain("wide:grid-cols-4");
+    expect(metricGridClass(4)).toContain("wide:grid-cols-4");
+    expect(metricGridClass(8)).toContain("wide:grid-cols-4");
+  });
+
+  it("odd counts on mobile lead with one full-width card (3 = 1 + 2); even counts do not", () => {
+    expect(metricGridClass(3)).toContain("[&>*:first-child]:col-span-2");
+    expect(metricGridClass(3)).toContain("regular:[&>*:first-child]:col-span-1");
+    expect(metricGridClass(5)).toContain("[&>*:first-child]:col-span-2");
+    expect(metricGridClass(4)).not.toContain("first-child");
+    expect(metricGridClass(6)).not.toContain("first-child");
+    expect(metricGridClass(2)).not.toContain("first-child");
+  });
+
   it("max caps the desktop columns (3 = at most 3, 2 = always 2)", () => {
     expect(metricGridClass(6, "gap-3", 3)).not.toContain("wide:grid-cols-4");
     expect(metricGridClass(6, "gap-3", 3)).toContain("regular:grid-cols-3");

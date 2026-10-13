@@ -74,9 +74,10 @@ describe("desktop columns: card grids", () => {
     expect(code("src/lib/design/tokens.ts")).toMatch(GRID3);
   });
 
-  it("budgets: category group cards use the 3-column grid", () => {
+  it("budgets: category group cards span the full row, their rows in the inner 2 / 3-column grid", () => {
     const src = code(`${APP}/budgets/page.tsx`);
-    expect(src).toMatch(/data-slot="budget-groups" className=\{TW\.grid3\}/);
+    expect(src).toMatch(/data-slot="budget-groups" className="grid grid-cols-1 gap-6"/);
+    expect(src).toMatch(/col-span-full[^`]*\$\{CARD_ROW_GRID\}/);
   });
 
   it("categories: group cards are 2 / 3 columns and rows reflow with a container query", () => {
@@ -96,8 +97,12 @@ describe("desktop columns: card grids", () => {
     expect(src).toContain('"regular:col-span-2"');
   });
 
-  it("subscriptions: status group cards use the 3-column grid", () => {
-    expect(code(`${APP}/subscriptions/page.tsx`)).toMatch(/data-slot="subscription-groups" className=\{TW\.grid3\}/);
+  it("subscriptions: status group and suggestion cards span the full row with inner row grids; empty state is a card", () => {
+    const src = code(`${APP}/subscriptions/page.tsx`);
+    expect(src).toMatch(/data-slot="subscription-groups" className="grid grid-cols-1 gap-6"/);
+    expect(src).toMatch(/Found in your transactions" padded=\{false\} className="col-span-full/);
+    expect(src).toMatch(/col-span-full[^`]*\$\{CARD_ROW_GRID\}/);
+    expect(src).toMatch(/<Card className="col-span-full"><CardContent className="p-0"><EmptyState/);
   });
 
   it("dashboard: the 3-card row is 1 / 2 / 3 columns", () => {

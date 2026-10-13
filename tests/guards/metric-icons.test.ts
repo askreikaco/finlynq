@@ -23,3 +23,17 @@ describe("metric icons", () => {
     expect(bad).toEqual([]);
   });
 });
+
+describe("no-history cards stay captioned, never invented", () => {
+  it("goals / loans / budgets / dashboard budgets fall back to NO_HISTORY_CAPTION when no delta is derivable", () => {
+    for (const p of ["goals", "loans", "budgets", "dashboard"]) {
+      const src = read(`src/app/(app)/${p}/page.tsx`);
+      expect(src, p).toContain("NO_HISTORY_CAPTION");
+    }
+    expect(read("src/lib/metrics/delta.ts")).toContain('NO_HISTORY_CAPTION = "No earlier history to compare"');
+  });
+
+  it("the dashboard range control is one slim right-aligned row", () => {
+    expect(read("src/app/(app)/dashboard/page.tsx")).toMatch(/data-slot="dashboard-range"/);
+  });
+});

@@ -12,7 +12,10 @@ describe("Button nativeButton", () => {
   it("render={<a>} does not trigger the Base UI native-button warning", () => {
     const err = vi.spyOn(console, "error").mockImplementation(() => {});
     render(<Button render={<a href="/x" />}>Go</Button>);
-    expect(screen.getByText("Go").closest("a")).not.toBeNull();
+    // Stays a real link (no role="button" override) and carries the button styling.
+    const link = screen.getByRole("link", { name: "Go" });
+    expect(link.getAttribute("role")).toBeNull();
+    expect(link.getAttribute("data-slot")).toBe("button");
     const msgs = err.mock.calls.map((c) => String(c[0]));
     err.mockRestore();
     expect(msgs.filter((m) => m.includes("nativeButton"))).toEqual([]);

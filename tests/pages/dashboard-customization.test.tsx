@@ -113,8 +113,8 @@ describe("Dashboard card layout", () => {
     await dashboard();
     const grid = (id: string) => screen.getByTestId(`card-${id}`).closest("div.grid") as HTMLElement;
     // Net worth hero is full width on its own; health + summary tiles + key metrics are ONE shared metric grid
-    // (2 mobile, 3 tablet, 4 desktop: 6 tiles)
-    expect(grid("health-score").className).toBe("grid grid-cols-2 regular:grid-cols-3 wide:grid-cols-4 gap-3 regular:gap-4");
+    // (2 mobile, 3 tablet and desktop for the 6 tiles: 3 + 3, never 4 + 2)
+    expect(grid("health-score").className).toBe("grid grid-cols-2 regular:grid-cols-3 gap-3 regular:gap-4");
     expect(screen.getByText("Total Net Worth").closest("div.grid")).not.toBe(grid("health-score"));
     expect(grid("key-metrics")).toBe(grid("health-score"));
     expect(screen.getByTestId("stat-Monthly Income").closest("div.grid")).toBe(grid("health-score"));
