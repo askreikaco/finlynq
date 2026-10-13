@@ -2,7 +2,12 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import { SectionLabel } from "./section-label";
 
-/** Native card: 12px radius, p-4, optional UPPERCASE section label above. */
+const CARD_SURFACE = "surface-card min-w-0 rounded-xl border border-border/50 text-card-foreground";
+
+/**
+ * Native card: 12px radius, p-4. A `label` is the card's own title: rendered INSIDE the card as its
+ * first row (UPPERCASE small label, card padding), never as a heading above the card box.
+ */
 export function SectionCard({
   label,
   className,
@@ -14,17 +19,21 @@ export function SectionCard({
   padded?: boolean;
   children?: React.ReactNode;
 }) {
+  if (!label) {
+    return (
+      <section data-slot="section-card" {...props}>
+        <div data-slot="section-card-body" className={cn(CARD_SURFACE, padded && "p-4", className)}>
+          {children}
+        </div>
+      </section>
+    );
+  }
   return (
-    <section data-slot="section-card" className="space-y-2" {...props}>
-      {label ? <SectionLabel>{label}</SectionLabel> : null}
-      <div
-        data-slot="section-card-body"
-        className={cn(
-          "surface-card min-w-0 rounded-xl border border-border/50 text-card-foreground",
-          padded && "p-4",
-          className,
-        )}
-      >
+    <section data-slot="section-card" {...props} className={cn(CARD_SURFACE, props.className)}>
+      <SectionLabel data-slot="section-card-label" className="px-4 pb-2 pt-4">
+        {label}
+      </SectionLabel>
+      <div data-slot="section-card-body" className={cn(padded && "px-4 pb-4", className)}>
         {children}
       </div>
     </section>

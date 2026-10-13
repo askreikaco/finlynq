@@ -115,11 +115,14 @@ describe("SectionCard / SectionLabel / StatTile", () => {
     );
   });
 
-  it("SectionCard: label above a 12px-radius, p-4 card using theme tokens", () => {
+  it("SectionCard: label inside a 12px-radius card using theme tokens, body padded", () => {
     const { container } = render(<SectionCard label="Net worth">body</SectionCard>);
     expect(screen.getByRole("heading", { name: "Net worth" })).toBeTruthy();
+    const card = container.querySelector("[data-slot=section-card]")!;
+    expect(cls(card)).toEqual(expect.arrayContaining(["rounded-xl", "surface-card", "border-border/50"]));
+    expect(card.contains(screen.getByRole("heading", { name: "Net worth" }))).toBe(true);
     const body = container.querySelector("[data-slot=section-card-body]")!;
-    expect(cls(body)).toEqual(expect.arrayContaining(["rounded-xl", "p-4", "surface-card", "border-border/50"]));
+    expect(cls(body)).toEqual(expect.arrayContaining(["px-4", "pb-4"]));
     expect(body.textContent).toBe("body");
   });
 
