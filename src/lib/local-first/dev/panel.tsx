@@ -134,7 +134,7 @@ export function LocalFirstDevPanel() {
       </p>
 
       <section aria-label="Read cache" className="space-y-2">
-        <h2 className="text-sm font-medium text-foreground">In-memory read cache (opt-in, default off, not persisted)</h2>
+        <h2 className="text-sm font-medium text-foreground">In-memory read cache (on by default, toggle to turn off; not persisted)</h2>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={toggleReadCache} disabled={!available}>
             Read cache: {readOn ? "on" : "off"}

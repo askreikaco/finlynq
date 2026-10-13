@@ -1,9 +1,9 @@
 "use client";
 
 /**
- * In-app switch for the offline write queue (local-first L3, beta). Default OFF.
- * State comes from the facade (real on-device flag); the component never touches storage or local-first directly.
- * Disabled with an explanation on untrusted devices, where the queue never runs.
+ * In-app switch for offline mode (local-first L3, beta). ON by default for every signed-in user (opt-out model).
+ * State comes from the facade (real on-device flag plus its source: default, on or off); the component never touches
+ * storage or local-first directly. Disabled with an explanation on untrusted devices, where offline mode never runs.
  */
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,10 +18,13 @@ function daysAgo(ts: number): string {
 }
 
 export function OfflineModeCard() {
-  const { enabled, trusted, setEnabled } = useOfflineMode();
+  const { enabled, source, trusted, setEnabled } = useOfflineMode();
   const key = useOfflineKey(enabled);
   const [confirmCount, setConfirmCount] = useState<number | null>(null);
   const untrusted = trusted === false;
+  // Untrusted devices never run offline mode, whatever the stored flag says.
+  const on = enabled && !untrusted;
+  const status = !on ? "Off" : source === "default" ? "On (default)" : "On";
 
   async function onChange(next: boolean) {
     if (next) return setEnabled(true);
@@ -39,13 +42,22 @@ export function OfflineModeCard() {
             <p className="mt-1 text-sm text-muted-foreground">
               Save new and edited transactions on this device when you are offline and sync them when you are back online. Home and Accounts also open from the last saved data. Trusted devices only.
             </p>
+            <p className="mt-1 text-sm text-muted-foreground" data-testid="offline-mode-encryption">
+              Offline copies are encrypted on this device and wiped when you sign out. On a shared computer, turn this off.
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground" data-testid="offline-mode-unsynced-note">
+              If you are signed out unexpectedly, unsent changes stay encrypted on this device until you sign in again.
+            </p>
           </div>
-          <Switch
-            checked={enabled}
-            onCheckedChange={(v) => void onChange(v)}
-            disabled={trusted !== true}
-            aria-label="Offline mode (beta)"
-          />
+          <div className="flex shrink-0 items-center gap-3">
+            <span className="text-sm text-muted-foreground" data-testid="offline-mode-status">{status}</span>
+            <Switch
+              checked={on}
+              onCheckedChange={(v) => void onChange(v)}
+              disabled={trusted !== true}
+              aria-label="Offline mode (beta)"
+            />
+          </div>
         </div>
       </CardHeader>
       {enabled && trusted === true && (

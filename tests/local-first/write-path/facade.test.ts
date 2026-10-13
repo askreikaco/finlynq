@@ -25,6 +25,11 @@ afterEach(async () => {
 });
 
 describe("flag off", () => {
+  beforeEach(() => {
+    window.localStorage.setItem(LOCAL_READ_CACHE_KEY, "0");
+    window.localStorage.setItem(LOCAL_WRITE_QUEUE_KEY, "0");
+  });
+
   it("start is a no-op, nothing is queued, no IndexedDB is opened, fetch never called", async () => {
     const open = vi.spyOn(indexedDB, "open");
     const f = vi.fn(); vi.stubGlobal("fetch", f);
@@ -37,8 +42,9 @@ describe("flag off", () => {
     expect(f).not.toHaveBeenCalled();
   });
 
-  it("write key alone (no read-cache opt-in) is still off", async () => {
+  it("write key on but read cache opted out ('0') is still off", async () => {
     window.localStorage.setItem(LOCAL_WRITE_QUEUE_KEY, "1");
+    window.localStorage.setItem(LOCAL_READ_CACHE_KEY, "0");
     expect(startLocalWriteQueue("u-off2", "d1")).toBe(false);
     expect(await queueOfflineCreate(FIELDS)).toBe(false);
   });

@@ -220,6 +220,24 @@ export async function wipeUser(userId: string): Promise<void> {
   if (failures.length > 0) throw new Error(`wipeUser incomplete (${failures.length} failed)`);
 }
 
+/**
+ * Deletes every user's read-cache SNAPSHOT database on this browser. Outbox databases and device keys are NOT touched:
+ * used at a signed-out boot so unsynced writes survive until that account signs in again.
+ */
+export async function wipeAllSnapshots(): Promise<void> {
+  if (!idbSupported()) return;
+  const failed: string[] = [];
+  for (const n of (await allLfDbNames()).filter((x) => x.startsWith(READ_CACHE_DB_PREFIX))) {
+    try {
+      await deleteDb(n);
+      await unregisterDb(n);
+    } catch {
+      failed.push(n);
+    }
+  }
+  if (failed.length > 0) throw new Error(`wipeAllSnapshots incomplete (${failed.length} failed)`);
+}
+
 /** Deletes every `finlynq-lf-` database on this browser: snapshots, device keys and the registry. */
 export async function wipeAll(): Promise<void> {
   if (!idbSupported()) return;

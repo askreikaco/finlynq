@@ -10,12 +10,14 @@ vi.mock("@/lib/data/persist", () => ({ wipeAll: vi.fn(() => Promise.resolve()) }
 vi.mock("@/lib/data/session-info", () => ({ getSessionInfo: vi.fn(() => null), setSessionInfo: vi.fn() }));
 vi.mock("@/lib/data/local-read-cache-wipe", () => ({
   dropAllLocalCaches: vi.fn(() => Promise.resolve()),
+  dropSignedOutDisposableCaches: vi.fn(() => Promise.resolve()),
   dropLocalUserCache: vi.fn(() => Promise.resolve()),
+  dropLocalDisposableCaches: vi.fn(() => Promise.resolve()),
 }));
 
 import { UnlockGate } from "@/components/unlock-gate";
 import { getSessionInfo, setSessionInfo } from "@/lib/data/session-info";
-import { dropAllLocalCaches, dropLocalUserCache } from "@/lib/data/local-read-cache-wipe";
+import { dropAllLocalCaches, dropLocalDisposableCaches, dropLocalUserCache, dropSignedOutDisposableCaches } from "@/lib/data/local-read-cache-wipe";
 
 const json = (body: unknown, status = 200) => ({ ok: status < 300, status, json: async () => body }) as Response;
 
@@ -24,11 +26,13 @@ describe("UnlockGate: local-first read-cache wipes", () => {
     vi.clearAllMocks();
   });
 
-  it("signed-out boot drops every on-device read cache", async () => {
+  it("signed-out boot (expired session) drops the disposable caches only; the outbox is kept", async () => {
     const f = vi.fn(async () => json({ authenticated: false }));
     vi.stubGlobal("fetch", f);
     render(<UnlockGate><div>app</div></UnlockGate>);
-    await waitFor(() => expect(dropAllLocalCaches).toHaveBeenCalled());
+    await waitFor(() => expect(dropSignedOutDisposableCaches).toHaveBeenCalled());
+    expect(dropAllLocalCaches).not.toHaveBeenCalled();
+    expect(dropLocalUserCache).not.toHaveBeenCalled();
     expect(setSessionInfo).toHaveBeenCalledWith(null);
     vi.unstubAllGlobals();
   });
@@ -49,7 +53,9 @@ describe("UnlockGate: local-first read-cache wipes", () => {
       await window.fetch("/api/accounts");
       expect(setSessionInfo).toHaveBeenCalledWith({ userId: "u1", locked: true });
     });
-    expect(dropLocalUserCache).toHaveBeenCalledWith("u1");
+    // A 423 is a lock: only the disposable copies go, the outbox is kept.
+    expect(dropLocalDisposableCaches).toHaveBeenCalledWith("u1");
+    expect(dropLocalUserCache).not.toHaveBeenCalled();
     expect(dropAllLocalCaches).not.toHaveBeenCalled();
     vi.unstubAllGlobals();
   });

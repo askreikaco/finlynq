@@ -1,49 +1,45 @@
 /**
- * Opt-in switch for the offline write queue (local-first L3). Default OFF.
- * Per-browser only (localStorage key, never sent to the server). Requires the read-cache opt-in too:
- * the queue only works with the device key and caches that opt-in already owns.
+ * Switch for the offline write queue (local-first L3). ON by default (opt-out model).
+ * Per-browser only (localStorage key, never sent to the server). Tri-state storage rules: see ../opt-state.ts.
+ * Requires the read-cache switch too: the queue only works with the device key and caches that switch already owns.
  */
 import { wipeAllOutboxes } from "./outbox-store";
-import { isLocalReadCacheEnabled, type OptInStorage } from "../read-cache/optin";
+import { isLocalReadCacheEnabled } from "../read-cache/optin";
+import { defaultOptStorage, readOptIn, readOptInState, writeOptIn, type OptInState, type OptInStorage } from "../opt-state";
 
 export const LOCAL_WRITE_QUEUE_KEY = "finlynq.lf.write";
 
-function defaultStorage(): OptInStorage | null {
-  try {
-    if (typeof window === "undefined") return null;
-    return window.localStorage ?? null;
-  } catch {
-    return null;
-  }
+/**
+ * Set when the device key cannot be used at runtime (see local-write-queue.ts). Silently keeps the queue OFF for the rest
+ * of this page session. Never persisted, so the next page load tries again.
+ */
+let unavailableThisSession = false;
+
+/** Latches the queue OFF for this page session after a runtime failure. No error is shown to the user. */
+export function markOfflineQueueUnavailable(): void {
+  unavailableThisSession = true;
 }
 
-/** True only when the write key is exactly "1" AND the read-cache opt-in is on. Any read failure means OFF. */
-export function isLocalWriteQueueEnabled(storage: OptInStorage | null = defaultStorage()): boolean {
-  if (!storage) return false;
-  try {
-    return storage.getItem(LOCAL_WRITE_QUEUE_KEY) === "1" && isLocalReadCacheEnabled(storage);
-  } catch {
-    return false;
-  }
+/** True when the write switch is not "0", the read-cache switch is on, the device supports it and no runtime failure latched it off. */
+export function isLocalWriteQueueEnabled(storage: OptInStorage | null = defaultOptStorage()): boolean {
+  return !unavailableThisSession && readOptIn(storage, LOCAL_WRITE_QUEUE_KEY) && isLocalReadCacheEnabled(storage);
 }
 
-/** True when the write key itself is set (ignores the read opt-in). Used by wipe triggers so a queue is never orphaned. */
-export function isLocalWriteKeySet(storage: OptInStorage | null = defaultStorage()): boolean {
-  try {
-    return !!storage && storage.getItem(LOCAL_WRITE_QUEUE_KEY) === "1";
-  } catch {
-    return false;
-  }
+/**
+ * Tri-state of the write switch alone ("default" | "on" | "off"), ignoring device support. Used by the wipe triggers:
+ * anything but an explicit "0" counts, so a user's outbox is never orphaned.
+ */
+export function isLocalWriteKeySet(storage: OptInStorage | null = defaultOptStorage()): boolean {
+  return readOptIn(storage, LOCAL_WRITE_QUEUE_KEY);
 }
 
-/** Sets or clears the write opt-in. Switching OFF deletes every on-device outbox (queued, unsent writes are lost). */
-export function setLocalWriteQueueEnabled(on: boolean, storage: OptInStorage | null = defaultStorage()): void {
-  if (!storage) return;
-  try {
-    if (on) storage.setItem(LOCAL_WRITE_QUEUE_KEY, "1");
-    else storage.removeItem(LOCAL_WRITE_QUEUE_KEY);
-  } catch {
-    return; // flag did not change: nothing to wipe
-  }
+/** Where the write switch comes from (for the Settings card): "default", "on" or "off". */
+export function localWriteQueueState(storage: OptInStorage | null = defaultOptStorage()): OptInState {
+  return readOptInState(storage, LOCAL_WRITE_QUEUE_KEY);
+}
+
+/** Sets the choice: true writes "1", false writes "0" and deletes every on-device outbox (queued, unsent writes are lost). */
+export function setLocalWriteQueueEnabled(on: boolean, storage: OptInStorage | null = defaultOptStorage()): void {
+  if (!writeOptIn(storage, LOCAL_WRITE_QUEUE_KEY, on)) return; // flag did not change: nothing to wipe
   if (!on) void wipeAllOutboxes().catch((err) => console.warn("[local-first] outbox wipe on opt-out failed", err));
 }

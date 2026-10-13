@@ -8,7 +8,7 @@ import { getSessionInfo, onSessionInfo } from "./session-info";
 import { loadPersisted, persistSupported, purgeDisallowed, wipeUser } from "./persist";
 import { createPersistentCache } from "./persistent-cache";
 import { isSafeToPersist } from "./persist-policy";
-import { dropLocalUserCache } from "./local-read-cache-wipe";
+import { dropLocalDisposableCaches, dropLocalUserCache } from "./local-read-cache-wipe";
 import { setLocalWriteSyncedHandler, startLocalWriteQueue } from "./local-write-queue";
 import { forgetOfflineIdentity, readOfflineIdentity, rememberOfflineIdentity } from "./offline-identity";
 import { revalidateTransactionLists } from "@/lib/transactions/revalidate";
@@ -46,7 +46,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     if (info.locked) {
       void wipeUser(userId);
-      void dropLocalUserCache(userId);
+      void dropLocalDisposableCaches(userId); // lock: keep the outbox
       setCache(make(new Map()));
     } else {
       const budget = new Promise<Map<string, unknown>>((r) => setTimeout(() => r(new Map()), HYDRATE_BUDGET_MS));
@@ -105,7 +105,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       if (!next || next.locked) {
         locked.current = true;
         void wipeUser(userId);
-        void dropLocalUserCache(userId);
+        // Sign-out (next null) drops the outbox too; a lock keeps it (unsynced writes exist nowhere else).
+        if (next) void dropLocalDisposableCaches(userId);
+        else void dropLocalUserCache(userId);
       }
     });
     return () => {
