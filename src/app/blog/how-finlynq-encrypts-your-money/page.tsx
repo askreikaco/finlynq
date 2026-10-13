@@ -53,7 +53,7 @@ export default function HowFinlynqEncryptsYourMoneyPage() {
           { name: "How Finlynq encrypts your money", path: `/blog/${SLUG}` },
         ])}
       />
-      <div className="mx-auto max-w-3xl px-6 py-16">
+      <div className="w-full px-6 py-16">
         <header className="mb-12 border-b border-border pb-8">
           <Link
             href="/blog"
@@ -69,7 +69,7 @@ export default function HowFinlynqEncryptsYourMoneyPage() {
           </p>
         </header>
 
-        <article className="prose prose-invert max-w-none space-y-6 text-sm leading-relaxed">
+        <article className="prose prose-invert max-w-prose space-y-6 text-sm leading-relaxed">
           <p className="text-base">
             If your AI assistant can read your money, who else can? I had to
             answer that for myself before I felt okay handing a language model

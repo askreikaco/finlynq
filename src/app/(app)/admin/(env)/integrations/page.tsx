@@ -9,6 +9,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { SectionPage } from "@/components/templates/section-page";
+import { TW } from "@/lib/design/tokens";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -276,7 +277,7 @@ export default function AdminIntegrationsPage() {
       )}
 
       {!error && status && (
-        <>
+        <div data-slot="integration-cards" className={TW.grid3}>
           <SectionCard label="Email Transport Status" className="space-y-4">
             <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
               <div className="flex items-center gap-2">
@@ -483,7 +484,7 @@ export default function AdminIntegrationsPage() {
               </div>
             </SectionCard>
           )}
-        </>
+        </div>
       )}
     </SectionPage>
   );

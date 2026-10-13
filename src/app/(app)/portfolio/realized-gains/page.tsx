@@ -31,7 +31,6 @@ import {
   DetailSheet,
   MetricGrid,
   SectionCard,
-  SectionLabel,
   type DetailItem,
   type MetricItem,
 } from "@/components/mobile";
@@ -535,9 +534,8 @@ export default function RealizedGainsPage() {
                 </SectionCard>
               ) : (
                 Array.from(groupLotsByMonth(visibleRows)).map(([ym, lots]) => (
-                  <section key={ym} className="space-y-2">
-                    <SectionLabel>{monthLabel(ym)}</SectionLabel>
-                    <SectionCard padded={false} className="divide-y divide-border/50 px-3">
+                  <section key={ym}>
+                    <SectionCard label={monthLabel(ym)} padded={false} className="divide-y divide-border/50 px-3">
                       {lots.map((r) => {
                         const inBase = showUnified && r.realizedGainInBase != null && r.baseCurrency;
                         const amount = inBase ? r.realizedGainInBase! : r.realizedGain;

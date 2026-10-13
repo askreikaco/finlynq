@@ -16,7 +16,7 @@ import { setPasskeyAutoSkip } from "@/lib/client/passkey-auto";
 import { getEntriesBySurface, navLabel } from "@/lib/nav-config";
 import { useNavUnread } from "@/components/nav-unread";
 import { PageHeader } from "@/components/mobile";
-import { InsetGroup, InsetRow, InsetSectionHeader, ThemePicker, type ThemeChoice } from "@/components/mobile/inset-group";
+import { InsetGroup, InsetRow, ThemePicker, type ThemeChoice } from "@/components/mobile/inset-group";
 
 export type MoreRow = { href: string; label: string; icon: LucideIcon; id: string };
 export type MoreGroup = { id: string; header?: string; rows: MoreRow[] };
@@ -227,17 +227,15 @@ export const MoreMenu = memo(function MoreMenu({ instanceAdminEnabled = false, c
       {/* Card groups: one column on phone, 2 at regular, 3 at wide; each group is one grid cell (never split). */}
       <div className="grid grid-cols-1 items-start gap-6 regular:grid-cols-2 wide:grid-cols-3" data-testid="more-grid">
       <section data-testid="more-account" className="space-y-2">
-        <InsetSectionHeader>Account</InsetSectionHeader>
         {/* Current account (taps to /account), other accounts, Add account, Manage accounts. */}
-        <InsetGroup inset="avatar" data-testid="more-account-card">
+        <InsetGroup header="Account" inset="avatar" data-testid="more-account-card">
           <AccountSwitcher variant="list" />
         </InsetGroup>
       </section>
 
         {groups.map((g) => (
           <section key={g.id} data-testid={`more-group-${g.id}`} className="space-y-2">
-            {g.header && <InsetSectionHeader>{g.header}</InsetSectionHeader>}
-            <InsetGroup>
+            <InsetGroup header={g.header}>
               {g.rows.map((r) => (
                 <InsetRow
                   key={r.id}
@@ -253,8 +251,7 @@ export const MoreMenu = memo(function MoreMenu({ instanceAdminEnabled = false, c
         ))}
 
         <section data-testid="more-group-appearance" className="space-y-2">
-          <InsetSectionHeader>Appearance</InsetSectionHeader>
-          <InsetGroup data-testid="more-appearance">
+          <InsetGroup header="Appearance" data-testid="more-appearance">
             <ThemePicker value={current} onChange={(v) => setTheme(v)} />
           </InsetGroup>
         </section>

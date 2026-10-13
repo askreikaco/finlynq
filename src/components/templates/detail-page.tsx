@@ -80,7 +80,7 @@ function DetailShell({
   children?: ReactNode;
 }) {
   return (
-    <div data-testid={`${id}-root`} className={cn("mx-auto w-full space-y-6", TW.section, TW.formPad)}>
+    <div data-testid={`${id}-root`} className={cn("w-full space-y-6", TW.formPad)}>
       <PageHeader title={placeholderTitle ?? ""} backHref={backFallback} backLabel={backLabel ?? "Back"} />
       {children ?? <PageSkeleton variant="list" rows={3} />}
     </div>
@@ -124,7 +124,7 @@ function DetailContent<D, R>({
 
   const overflowItems = resolve(overflow, record, [] as OverflowAction[]);
   return (
-    <div data-testid={`${id}-root`} className={cn("mx-auto w-full space-y-6", TW.section, TW.formPad)}>
+    <div data-testid={`${id}-root`} className={cn("w-full space-y-6", TW.formPad)}>
       <PageHeader
         title={resolve(title, record, placeholderTitle)}
         backHref={returnTo}
@@ -132,7 +132,7 @@ function DetailContent<D, R>({
         actions={resolve(actions, record, null)}
         overflow={overflowItems}
       />
-      {resolve(sections, record, null)}
+      <div data-slot="detail-grid" className={TW.grid3}>{resolve(sections, record, null)}</div>
     </div>
   );
 }

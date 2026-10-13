@@ -24,7 +24,7 @@ import { getEntriesBySurface, type Surface } from "@/lib/nav-config";
 import { cn } from "@/lib/utils";
 import { TW } from "@/lib/design/tokens";
 import { PageHeader } from "@/components/mobile/page-header";
-import { InsetGroup, InsetRow, InsetSectionHeader } from "@/components/mobile/inset-group";
+import { InsetGroup, InsetRow } from "@/components/mobile/inset-group";
 import { SectionLabel } from "@/components/mobile/section-label";
 
 export interface HubRow {
@@ -129,16 +129,16 @@ function useNoRedirect(): boolean {
   return false;
 }
 
+/** Group title: always rendered INSIDE the group card as its first row. */
 function renderSectionLabel(title: string, style: NonNullable<HubPageVariants["sectionLabel"]>) {
   if (style === "caps") {
     return (
-      <h2 data-slot="hub-section-label" className="px-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+      <h2 data-slot="hub-section-label" className="px-4 pb-1 pt-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         {title}
       </h2>
     );
   }
-  if (style === "section-label") return <SectionLabel>{title}</SectionLabel>;
-  return <InsetSectionHeader>{title}</InsetSectionHeader>;
+  return <SectionLabel className="px-4 pb-1 pt-3">{title}</SectionLabel>;
 }
 
 interface CardRowOptions {
@@ -249,8 +249,6 @@ function HubPageBody(props: HubPageProps) {
     className,
     look = "inset",
     sectionLabel = "inset",
-    columns = 1,
-    width = "section",
     padBottom = true,
     back,
     iconSize = "4",
@@ -266,7 +264,7 @@ function HubPageBody(props: HubPageProps) {
 
   if (redirected) return null;
 
-  const rootWidth = width === "form-report" ? `${TW.form} wide:${TW.report}` : TW.section;
+  // Full width on desktop (owner 2026-10-13); `width` is kept for call sites.
   const cardOpts: CardRowOptions = { id, iconSize, chevronSize, activeBg, rowSlot, iconSlot, chevronSlot };
 
   const groupNodes = groups.map((group) => (
@@ -276,13 +274,13 @@ function HubPageBody(props: HubPageProps) {
       data-testid={`${id}-group-${group.id}`}
       className="space-y-2"
     >
-      {group.title ? renderSectionLabel(group.title, sectionLabel) : null}
       {look === "card" ? (
         <div className="divide-y divide-border/50 overflow-hidden rounded-group bg-card">
+          {group.title ? renderSectionLabel(group.title, sectionLabel) : null}
           {group.rows.map((row) => renderCardRow(row, cardOpts))}
         </div>
       ) : (
-        <InsetGroup aria-label={group.title}>
+        <InsetGroup aria-label={group.title} header={group.title}>
           {group.rows.map((row) => (
             <InsetRow
               key={row.id}
@@ -316,18 +314,14 @@ function HubPageBody(props: HubPageProps) {
     <div
       data-testid={`${id}-root`}
       data-slot="hub-page"
-      className={cn("mx-auto w-full space-y-6", rootWidth, padBottom ? TW.formPad : undefined, className)}
+      className={cn("w-full space-y-6", padBottom ? TW.formPad : undefined, className)}
     >
       <PageHeader title={title} backHref={back?.href} backLabel={back?.label} />
       <React.Suspense fallback={null}>
         {header ? <div data-slot="hub-header">{header}</div> : null}
-        {columns === "wide-2" ? (
-          <div data-slot="hub-columns" className="grid gap-6 wide:grid-cols-2">
-            {groupNodes}
-          </div>
-        ) : (
-          groupNodes
-        )}
+        <div data-slot="hub-columns" className={TW.grid3}>
+          {groupNodes}
+        </div>
         {!hasRows && empty ? <div data-slot="hub-empty">{empty}</div> : null}
         {footer ? <div data-slot="hub-footer">{footer}</div> : null}
       </React.Suspense>

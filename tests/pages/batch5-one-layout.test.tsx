@@ -54,8 +54,15 @@ describe("Batch 5: converted files render no <table>", () => {
   }
 });
 
+// Desktop width becomes columns (owner 2026-10-13): these two files lay cards in wide: grids on purpose,
+// pinned in tests/pages/desktop-columns.test.tsx. Everything else stays single-column.
+const DESKTOP_GRIDDED = new Set([
+  "src/app/(app)/family/_components/overview-tab.tsx",
+  "src/app/(app)/admin/announcements/page.tsx",
+]);
+
 describe("Batch 5: one column at every width (no wide: / regular: column switches)", () => {
-  for (const f of CONVERTED) {
+  for (const f of CONVERTED.filter((c) => !DESKTOP_GRIDDED.has(c))) {
     it(`${f} has no two-column wide:/regular: grid`, () => {
       const src = read(f);
       expect(src).not.toMatch(/wide:grid-cols-/);
@@ -78,9 +85,12 @@ describe("Batch 5: one column at every width (no wide: / regular: column switche
     expect(src).not.toMatch(/wide:max-w-3xl|max-w-xl|mx-auto/);
   });
 
-  it("family overview headline and chart stacks are single-column", () => {
+  it("family overview headline stack is single-column; only the household charts pair up at wide", () => {
     expect(read("src/app/(app)/family/_components/overview-cards.tsx")).not.toMatch(/regular:col-span-2/);
-    expect(read("src/app/(app)/family/_components/overview-tab.tsx")).not.toMatch(/wide:grid-cols-2/);
+    const tab = read("src/app/(app)/family/_components/overview-tab.tsx");
+    expect(tab.match(/wide:grid-cols-2/g)?.length).toBe(1);
+    expect(tab).toMatch(/data-slot="household-charts"[^>]*wide:grid-cols-2/);
+    expect(tab).not.toMatch(/regular:grid-cols-/);
   });
 });
 

@@ -33,6 +33,7 @@ import { useDisplayCurrency } from "@/components/currency-provider";
 import { formatCurrency, formatDate } from "@/lib/currency";
 import { parseSaveError } from "@/lib/save-error";
 import { localDateISO } from "@/lib/utils/date";
+import { TW } from "@/lib/design/tokens";
 import {
   FREQUENCY_SUFFIX,
   frequencyLabel,
@@ -415,7 +416,7 @@ function SubscriptionsPageContent() {
           onTrack={trackDetected}
         />
       ) : (
-        <>
+        <div data-slot="subscription-groups" className={TW.grid3}>
           {/* Detected from transactions */}
           {suggestions.length > 0 && (
             <SectionCard label="Found in your transactions" padded={false} className="px-3">
@@ -456,12 +457,12 @@ function SubscriptionsPageContent() {
           )}
 
           {subs.length === 0 && (
-            <EmptyState
+            <div className="col-span-full"><EmptyState
               icon={CreditCard}
               title="No subscriptions tracked yet"
               description="Add streaming services, insurance, memberships and other repeating bills (weekly to annual) to see what they cost you and when each one is due."
               action={{ label: "Add subscription", onClick: openAdd }}
-            />
+            /></div>
           )}
 
           {/* One inset list per status group, in the sort order chosen above. */}
@@ -483,7 +484,7 @@ function SubscriptionsPageContent() {
               </SectionCard>
             ),
           )}
-        </>
+        </div>
       )}
 
       {openSub && (

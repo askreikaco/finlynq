@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { formatCurrency, formatDate } from "@/lib/currency";
-import { Amount, DetailSheet, ListRow, SectionCard, SectionLabel } from "@/components/mobile";
+import { Amount, DetailSheet, ListRow, SectionCard } from "@/components/mobile";
 import type { Transaction } from "@/app/(app)/transactions/_types";
 
 const PAGE_SIZE = 50;
@@ -40,16 +40,15 @@ export function InvestmentTransactions({ refreshKey }: { refreshKey?: unknown })
 
   return (
     <section data-slot="investment-transactions" className="space-y-2">
-      <SectionLabel>Transactions</SectionLabel>
-      {rows === null ? (
-        <p className="text-sm text-muted-foreground">Loading…</p>
-      ) : error ? (
-        <p className="text-sm text-muted-foreground">Couldn&apos;t load investment transactions.</p>
-      ) : rows.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No investment transactions yet.</p>
-      ) : (
-        <>
-          <SectionCard padded={false} className="divide-y divide-border/50 px-3">
+      <SectionCard label="Transactions" padded={false}>
+        {rows === null ? (
+          <p className="px-4 pb-4 text-sm text-muted-foreground">Loading…</p>
+        ) : error ? (
+          <p className="px-4 pb-4 text-sm text-muted-foreground">Couldn&apos;t load investment transactions.</p>
+        ) : rows.length === 0 ? (
+          <p className="px-4 pb-4 text-sm text-muted-foreground">No investment transactions yet.</p>
+        ) : (
+          <div className="divide-y divide-border/50 px-3">
             {rows.map((t) => (
               <ListRow
                 key={t.id}
@@ -59,14 +58,14 @@ export function InvestmentTransactions({ refreshKey }: { refreshKey?: unknown })
                 onPress={() => setOpen(t)}
               />
             ))}
-          </SectionCard>
-          {total > rows.length && (
-            <p className="mt-2 text-xs text-muted-foreground">
-              Showing {rows.length} of {total}.
-            </p>
-          )}
-        </>
-      )}
+          </div>
+        )}
+        {rows !== null && !error && total > rows.length && (
+          <p className="px-4 pb-4 text-xs text-muted-foreground">
+            Showing {rows.length} of {total}.
+          </p>
+        )}
+      </SectionCard>
       {open && (
         <DetailSheet
           open

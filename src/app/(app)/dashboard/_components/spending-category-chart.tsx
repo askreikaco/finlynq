@@ -33,7 +33,7 @@ export function SpendingCategoryChart({ data, currency }: { data: SpendingItem[]
 
   return (
     <motion.div variants={animationsEnabled ? itemVariants : noAnimationVariants}>
-      <SectionCard label="Spending by Category" className="card-hover">
+      <SectionCard label="Spending by Category" cardClassName="card-hover">
         {/* /api/dashboard defaults to a trailing 12-month window (plus the current
             month), not the current month alone. */}
         <p className="text-xs text-muted-foreground mb-3">Last 12 months breakdown</p>

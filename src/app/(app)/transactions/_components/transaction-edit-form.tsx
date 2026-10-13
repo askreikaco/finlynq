@@ -119,7 +119,7 @@ export function TransactionEditForm({
       ];
 
   return (
-    <div data-testid="tx-edit-root" className={`mx-auto w-full ${TW.form}`}>
+    <div data-testid="tx-edit-root" className="w-full">
       <PageHeader
         title={isTransfer ? "Edit transfer" : "Edit transaction"}
         backHref={returnTo}
@@ -138,7 +138,7 @@ export function TransactionEditForm({
           </Button>
         }
       />
-      <div className={`mt-3 px-4 ${TW.formPad}`}>
+      <div className={`mt-3 px-4 ${TW.form} ${TW.formPad}`}>
         <TransactionFormBody
           f={f}
           variant="page"

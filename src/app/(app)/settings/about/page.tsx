@@ -15,6 +15,7 @@ export default function AboutSettingsPage() {
       padBottom="none"
       minW0={false}
       suspense={false}
+      grid
     >
 
       <Card>

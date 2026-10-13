@@ -124,7 +124,7 @@ export default function McpServersForPersonalFinancePage() {
         ])}
       />
       <JsonLd data={faqSchema(FAQ)} />
-      <div className="mx-auto max-w-3xl px-6 py-16">
+      <div className="w-full px-6 py-16">
         <header className="mb-12 border-b border-border pb-8">
           <Link
             href="/blog"
@@ -141,7 +141,7 @@ export default function McpServersForPersonalFinancePage() {
           </p>
         </header>
 
-        <article className="prose prose-invert max-w-none space-y-6 text-sm leading-relaxed">
+        <article className="prose prose-invert max-w-prose space-y-6 text-sm leading-relaxed">
           <p className="text-base">
             If you have ever wanted to ask Claude {`"`}how much did I spend on
             groceries last month{`"`} and get an answer from your actual data,

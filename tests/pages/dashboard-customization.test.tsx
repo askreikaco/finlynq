@@ -119,7 +119,7 @@ describe("Dashboard card layout", () => {
     expect(grid("key-metrics")).toBe(grid("health-score"));
     expect(screen.getByTestId("stat-Monthly Income").closest("div.grid")).toBe(grid("health-score"));
     // action center, weekly recap and quick import share the 3-up row
-    expect(grid("action-center").className).toBe("grid grid-cols-1 wide:grid-cols-3 gap-5");
+    expect(grid("action-center").className).toBe("grid grid-cols-1 regular:grid-cols-2 wide:grid-cols-3 gap-5");
     expect(grid("weekly-recap")).toBe(grid("action-center"));
     expect(grid("quick-import")).toBe(grid("action-center"));
     expect(grid("income-expense-chart").className).toBe("grid grid-cols-1 wide:grid-cols-2 gap-5");

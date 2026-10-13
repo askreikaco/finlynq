@@ -35,6 +35,8 @@ export interface InsetGroupProps {
   className?: string;
   /** Where hairlines start: after a 22px icon (default) or after a 36-40px avatar. */
   inset?: "icon" | "avatar";
+  /** Group title, rendered INSIDE the group card as its first row (never above the card). */
+  header?: React.ReactNode;
   "data-testid"?: string;
   "aria-label"?: string;
 }
@@ -44,7 +46,7 @@ const INSET_SEP: Record<NonNullable<InsetGroupProps["inset"]>, string> = {
   avatar: "4rem",
 };
 
-export function InsetGroup({ children, className, inset = "icon", ...rest }: InsetGroupProps) {
+export function InsetGroup({ children, className, inset = "icon", header, ...rest }: InsetGroupProps) {
   return (
     <div
       data-slot="inset-group"
@@ -52,6 +54,9 @@ export function InsetGroup({ children, className, inset = "icon", ...rest }: Ins
       style={{ ["--inset-sep" as string]: INSET_SEP[inset] } as React.CSSProperties}
       {...rest}
     >
+      {header ? (
+        <InsetSectionHeader className="pb-1 pt-3 text-xs font-bold uppercase tracking-normal">{header}</InsetSectionHeader>
+      ) : null}
       {children}
     </div>
   );

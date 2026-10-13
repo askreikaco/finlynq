@@ -53,9 +53,9 @@ function PortfolioNewInner() {
       {OP_GROUPS.map((group) => {
         const ops = OPS.filter((o) => o.group === group.key);
         return (
-          <section key={group.key} className="space-y-2">
-            <SectionLabel>{group.label}</SectionLabel>
+          <section key={group.key}>
             <div className="divide-y divide-border/50 overflow-hidden rounded-2xl bg-card">
+              <SectionLabel className="px-4 pb-1 pt-3">{group.label}</SectionLabel>
               {ops.map((o) => {
                 const Icon = o.icon;
                 return (

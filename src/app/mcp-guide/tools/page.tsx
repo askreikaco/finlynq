@@ -117,7 +117,7 @@ export default function ToolCatalogPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-5xl px-6 py-12">
+      <div className="w-full px-6 py-12">
         {/* Header */}
         <header className="mb-10">
           <div className="mb-2 text-xs font-mono uppercase tracking-widest text-muted-foreground">
@@ -129,7 +129,7 @@ export default function ToolCatalogPage() {
           <h1 className="text-3xl regular:text-4xl font-bold tracking-tight text-foreground">
             Finlynq MCP tool catalog
           </h1>
-          <p className="mt-3 text-base text-muted-foreground max-w-2xl leading-relaxed">
+          <p className="mt-3 text-base text-muted-foreground max-w-prose leading-relaxed">
             Every tool the Finlynq MCP server exposes: what it does, whether
             it reads or writes, which OAuth scope it needs, and which transports
             (HTTP, stdio) carry it. Source-of-truth is the registration code
@@ -201,13 +201,14 @@ export default function ToolCatalogPage() {
           </div>
         </section>
 
-        {/* Tool groups */}
+        {/* Tool groups: independent cards, 2 / 3 columns on desktop */}
+        <div data-slot="tool-groups" className="mb-10 grid grid-cols-1 items-start gap-6 regular:grid-cols-2 wide:grid-cols-3">
         {CATEGORY_ORDER.map((cat) => {
           const tools = grouped.get(cat.key) ?? [];
           if (tools.length === 0) return null;
           const Icon = cat.icon;
           return (
-            <section key={cat.key} id={cat.key} className="mb-10 scroll-mt-8">
+            <section key={cat.key} id={cat.key} className="min-w-0 scroll-mt-8">
               <div className="mb-4 flex items-start gap-3">
                 <div
                   className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ring-1 ${cat.badgeClass}`}
@@ -223,7 +224,7 @@ export default function ToolCatalogPage() {
                       {tools.length} {tools.length === 1 ? "tool" : "tools"}
                     </span>
                   </div>
-                  <p className="mt-1 text-sm text-muted-foreground leading-relaxed max-w-3xl">
+                  <p className="mt-1 text-sm text-muted-foreground leading-relaxed max-w-prose">
                     {cat.blurb}
                   </p>
                 </div>
@@ -237,6 +238,7 @@ export default function ToolCatalogPage() {
             </section>
           );
         })}
+        </div>
 
         {/* Safety pattern callout */}
         <section className="mt-12 mb-8 rounded-xl border border-border bg-card p-5">

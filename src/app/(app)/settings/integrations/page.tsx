@@ -79,6 +79,7 @@ export default function IntegrationsSettingsPage() {
       padBottom="none"
       minW0={false}
       suspense={false}
+      grid
     >
 
       {loaded && !isConnected && (
@@ -108,6 +109,7 @@ export default function IntegrationsSettingsPage() {
 
       <ConnectedApps />
 
+      <div className="col-span-full">
       <Accordion value={tab} onValueChange={setTab}>
         <AccordionItem
           value="connect"
@@ -133,6 +135,7 @@ export default function IntegrationsSettingsPage() {
         <ImportMigrateItem />
         <ImportStatementsItem />
       </Accordion>
+      </div>
 
       {loaded && isConnected && (
         <div className="text-center text-sm text-muted-foreground">

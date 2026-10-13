@@ -5,7 +5,7 @@ import { ArrowDownRight, ArrowUpRight, ArrowLeftRight, type LucideIcon } from "l
 import { transferEnds, type TransferPeer } from "@/lib/transactions/transfer-ends";
 import { formatDate } from "@/lib/currency";
 import { todayISO, localDateISO } from "@/lib/utils/date";
-import { Amount, ListRow, SectionCard, SectionLabel } from "@/components/mobile";
+import { Amount, ListRow, SectionCard } from "@/components/mobile";
 import type { Transaction } from "@/app/(app)/transactions/_types";
 import { cn } from "@/lib/utils";
 import { PendingSyncBadge } from "./pending-sync-badge";
@@ -34,6 +34,8 @@ interface MobileTxListProps {
   emptyState?: React.ReactNode;
   /** Set while bulk-select mode is on. */
   selection?: TxListSelection;
+  /** Force one column at every width (the split-view list pane is already narrow). */
+  singleColumn?: boolean;
 }
 
 /**
@@ -53,6 +55,7 @@ export function MobileTxList({
   transferPeers,
   emptyState,
   selection,
+  singleColumn = false,
 }: MobileTxListProps) {
   const today = todayISO();
   const yesterday = new Date();
@@ -72,26 +75,32 @@ export function MobileTxList({
 
   return (
     <div className="space-y-6">
+      {/* Date cards: 1 column up to regular, 2 at wide (each card unbroken, items-start). */}
+      <div
+        data-slot="tx-date-groups"
+        className={cn("grid grid-cols-1 items-start gap-6", !singleColumn && "wide:grid-cols-2")}
+      >
       {Object.entries(grouped).map(([dateLabel, txns]) => (
-        <div key={dateLabel} className="space-y-2">
-          {/* The date label sticks under the page header while its group scrolls. */}
-          <SectionLabel className="sticky top-[calc(var(--sat,0px)+var(--header-h))] z-10 bg-background/80 py-2 backdrop-blur-sm">
-            {dateLabel}
-          </SectionLabel>
-          <SectionCard padded={false} className="divide-y divide-border/50 px-3">
-            {txns.map((t) => (
-              <TransactionRow
-                key={t.id}
-                transaction={t}
-                onOpen={onOpen}
-                showAccountName={showAccountName}
-                peer={transferPeers?.get(t.id) ?? null}
-                selection={selection}
-              />
-            ))}
-          </SectionCard>
-        </div>
+        <SectionCard
+          key={dateLabel}
+          label={dateLabel}
+          /* The date label sticks under the page header while its group scrolls. */
+          labelClassName="sticky top-[calc(var(--sat,0px)+var(--header-h))] z-10 rounded-t-xl bg-card/90 pt-3 backdrop-blur-sm"
+          padded={false} className="divide-y divide-border/50 px-3"
+        >
+          {txns.map((t) => (
+            <TransactionRow
+              key={t.id}
+              transaction={t}
+              onOpen={onOpen}
+              showAccountName={showAccountName}
+              peer={transferPeers?.get(t.id) ?? null}
+              selection={selection}
+            />
+          ))}
+        </SectionCard>
       ))}
+      </div>
 
       {hasMore && (
         <div>

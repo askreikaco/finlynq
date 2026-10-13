@@ -356,7 +356,7 @@ function HouseholdBlock({ data, chartData, period }: { data: OverviewResponse; c
       />
 
       {(chartTotals.included > 0 || chartFlows.included > 0) && (
-        <div className="space-y-4">
+        <div data-slot="household-charts" className="grid grid-cols-1 items-start gap-4 wide:grid-cols-2">
           {chartTotals.included > 0 && (
             <NetWorthOverTimeCard
               history={chartTotals.history}

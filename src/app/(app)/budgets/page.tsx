@@ -29,6 +29,7 @@ import { compareCaption, seriesWindow, type MonthPoint } from "@/lib/metrics/per
 import { resolveCard } from "@/lib/metrics/delta";
 import { SectionPage } from "@/components/templates/section-page";
 import { cn } from "@/lib/utils";
+import { TW } from "@/lib/design/tokens";
 import type { PageCard } from "@/lib/card-layout";
 import { type Budget, type SpendingRow, type BudgetTemplate, type AgeOfMoney, type BudgetMode, parseMonthParam } from "./_components/budget-types";
 import { applyPendingBudgets, type BudgetSyncMark } from "@/lib/budgets/pending-overlay";
@@ -352,7 +353,7 @@ function BudgetsPageContent() {
 
   // Category list: one inset SectionCard per category group, one ListRow per budget (every width).
   const budgetGroups = (
-    <div className="space-y-6">
+    <div data-slot="budget-groups" className={TW.grid3}>
       {Array.from(groupMap.entries()).map(([group, items]) => (
         <SectionCard key={group} label={group} padded={false} className="divide-y divide-border/50 px-3">
           {items.map((b) => {

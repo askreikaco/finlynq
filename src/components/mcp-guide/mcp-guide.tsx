@@ -325,7 +325,7 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
   return (
     <div className={embedded ? "" : "min-h-screen bg-background"}>
       {!embedded && <AnalyticsConsent />}
-      <div className={embedded ? "mx-auto max-w-4xl" : "mx-auto max-w-4xl px-6 py-10"}>
+      <div className={embedded ? "w-full" : "w-full px-6 py-10"}>
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-4">
@@ -924,7 +924,7 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
         <section className="mb-10">
           <h2 className="mb-1 text-lg font-semibold text-foreground">Example Prompts</h2>
           <p className="mb-4 text-sm text-muted-foreground">Click any prompt to copy it, then paste into your AI assistant.</p>
-          <div className="grid gap-2 regular:grid-cols-2">
+          <div className="grid gap-2 regular:grid-cols-2 wide:grid-cols-3">
             {examplePrompts.map((item, i) => (
               <button
                 key={i}
@@ -950,7 +950,7 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
             Paste any of these into Claude to watch a preview / confirm / execute flow run end-to-end. Claude
             always asks before it commits anything destructive.
           </p>
-          <div className="grid gap-3 regular:grid-cols-2">
+          <div className="grid gap-3 regular:grid-cols-2 wide:grid-cols-3">
             {workedExamples.map((ex) => (
               <button
                 key={ex.title}
@@ -980,7 +980,7 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
             Or use <code className="bg-muted px-1 rounded">/api-docs</code> /{" "}
             <code className="bg-muted px-1 rounded">/.well-known/mcp.json</code> for the JSON-Schema view.
           </p>
-          <div className="grid gap-4 regular:grid-cols-2">
+          <div className="grid gap-4 regular:grid-cols-2 wide:grid-cols-3">
             {toolGroups.map((group) => {
               const Icon = group.icon;
               return (

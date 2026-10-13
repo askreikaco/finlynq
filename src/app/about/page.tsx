@@ -101,7 +101,7 @@ export default function AboutPage() {
           { name: "About", path: "/about" },
         ])}
       />
-      <div className="mx-auto max-w-3xl px-6 py-16">
+      <div className="w-full px-6 py-16">
         <header className="mb-12 border-b border-border pb-8">
           <Link
             href="/"
@@ -116,7 +116,7 @@ export default function AboutPage() {
           <h1 className="mt-4 text-4xl font-bold tracking-tight">
             What is Finlynq?
           </h1>
-          <p className="mt-4 text-base leading-relaxed text-muted-foreground">
+          <p className="mt-4 text-base leading-relaxed text-muted-foreground max-w-prose">
             Finlynq is an open-source (AGPL v3) personal finance web application
             with a first-party Model Context Protocol (MCP) server. Track your
             money here, analyze it anywhere: Claude, Cursor, Windsurf, or any
@@ -127,7 +127,7 @@ export default function AboutPage() {
           </p>
         </header>
 
-        <section className="prose prose-invert max-w-none space-y-6 text-sm leading-relaxed">
+        <section className="prose prose-invert max-w-prose space-y-6 text-sm leading-relaxed">
           <h2 className="text-xl font-semibold mt-8 mb-3">
             The short version
           </h2>

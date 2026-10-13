@@ -58,7 +58,7 @@ export default function BlogIndexPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <AnalyticsConsent />
-      <div className="mx-auto max-w-3xl px-6 py-16">
+      <div className="w-full px-6 py-16">
         <header className="mb-12 border-b border-border pb-8">
           <Link
             href="/"
@@ -67,17 +67,17 @@ export default function BlogIndexPage() {
             ← Finlynq
           </Link>
           <h1 className="mt-4 text-4xl font-bold tracking-tight">Blog</h1>
-          <p className="mt-3 text-sm text-muted-foreground">
+          <p className="mt-3 text-sm text-muted-foreground max-w-prose">
             Longer pieces on encryption, MCP design, and what it&apos;s
             actually like to run an open-source personal-finance app.
           </p>
         </header>
 
-        <section className="space-y-10">
+        <section data-slot="post-cards" className="grid grid-cols-1 items-start gap-6 regular:grid-cols-2 wide:grid-cols-3">
           {POSTS.map((post) => (
             <article
               key={post.slug}
-              className="border-b border-border pb-10 last:border-b-0"
+              className="rounded-xl border border-border bg-card p-5"
             >
               <h2 className="text-2xl font-semibold tracking-tight">
                 <Link

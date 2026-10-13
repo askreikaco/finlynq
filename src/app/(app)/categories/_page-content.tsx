@@ -163,12 +163,12 @@ function RowBody({ label, sub, dot, amount, share, trend, change, cur, isIncome,
           <p className="text-xs text-muted-foreground truncate">{sub}</p>
         </div>
       </div>
-      <div className="max-regular:hidden">
+      <div className="hidden @xl:block">
         {trend ? (
           <Sparkline data={trend} color={isIncome ? CHART_COLORS.positive : CHART_COLORS.negative} labels={sparkLabels} currency={cur} />
         ) : null}
       </div>
-      <div className="max-regular:hidden">
+      <div className="hidden @xl:block">
         <div className="h-1.5 rounded-full bg-muted overflow-hidden">
           <div className="h-full rounded-full" style={{ width: `${Math.min(100, share * 100)}%`, backgroundColor: dot }} />
         </div>
@@ -190,7 +190,7 @@ function RowBody({ label, sub, dot, amount, share, trend, change, cur, isIncome,
 }
 
 const ROW_BASE =
-  "grid grid-cols-[minmax(0,1fr)_auto] regular:grid-cols-[minmax(0,1.4fr)_7rem_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 text-left hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+  "grid grid-cols-[minmax(0,1fr)_auto] @xl:grid-cols-[minmax(0,1.4fr)_7rem_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 text-left hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 /** A category row inside an open group. */
 const ROW_CLASS = `${ROW_BASE} rounded-lg px-2 py-3`;
 /** A top-level ungrouped category row, styled like a collapsed group header card. */
@@ -443,10 +443,10 @@ function CategoriesOverview({ embedded = false }: CategoriesOverviewProps) {
           {data.categories.length === 0 ? (
             <p className="text-sm text-muted-foreground px-2">No categories with {noun} in the last 12 months.</p>
           ) : (
-            <ul className="flex flex-col gap-2">
+            <ul data-slot="category-group-cards" className="grid grid-cols-1 items-start gap-2 regular:grid-cols-2 regular:gap-3 wide:grid-cols-3">
               {rows.map((row) =>
                 row.kind === "group" ? (
-                  <li key={row.key} id={groupDomId(row.key)}>
+                  <li key={row.key} id={groupDomId(row.key)} className="@container min-w-0">
                     <Accordion
                       value={openKeys.has(row.key) ? row.key : null}
                       onValueChange={(v) => setOpen(row.key, v === row.key)}
@@ -465,7 +465,7 @@ function CategoriesOverview({ embedded = false }: CategoriesOverviewProps) {
                     </Accordion>
                   </li>
                 ) : (
-                  <li key={row.key}>
+                  <li key={row.key} className="@container min-w-0">
                     <Link href={`/categories/${row.categories[0].id}`} className={CARD_ROW}>
                       {categoryRowBody(row.categories[0], "")}
                     </Link>
