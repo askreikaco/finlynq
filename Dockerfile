@@ -1,24 +1,13 @@
-# ── Stage 1: Install dependencies ────────────────────────────────────────────
+# syntax=docker/dockerfile:1
+# ── Stage 1: Build the application ───────────────────────────────────────────
 # TODO(security): pin node:22-alpine to a digest (e.g. node:22-alpine@sha256:...)
 # so a tag rebase can't silently swap the base image we publish from.
-FROM node:22-alpine AS deps
-RUN apk add --no-cache libc6-compat python3 make g++
-WORKDIR /app
-
-COPY package.json package-lock.json ./
-# --ignore-scripts: the `postinstall` hook runs scripts/generate-mcp-tool-catalog.mjs
-# which needs files we haven't COPY'd yet. The builder stage regenerates the
-# catalog via the `prebuild` script before `npm run build` once the source is in.
-RUN npm ci --omit=dev --ignore-scripts
-
-# ── Stage 2: Build the application ───────────────────────────────────────────
-# TODO(security): pin node:22-alpine to a digest — see deps stage.
 FROM node:22-alpine AS builder
 RUN apk add --no-cache libc6-compat python3 make g++
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm ci --ignore-scripts
+RUN --mount=type=cache,target=/root/.npm npm ci --ignore-scripts
 
 # `.dockerignore` (added in the Docker hardening pass) keeps `.env*`, `.git`,
 # `node_modules`, `.next`, tests, agent state, etc. out of the image. If you
@@ -31,10 +20,14 @@ COPY . .
 ARG NEXT_BASE_PATH=""
 ENV NEXT_BASE_PATH=$NEXT_BASE_PATH
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN npm run build
+# Builder only (the runner stage does not inherit it). Heap cap for the
+# compile; the capped builder is 5 GB. The .next/cache mount keeps webpack's
+# persistent cache in the BuildKit cache between builds (not in the layer).
+ENV NODE_OPTIONS="--max-old-space-size=3072"
+RUN --mount=type=cache,target=/app/.next/cache npm run build
 
-# ── Stage 3: Production image ─────────────────────────────────────────────────
-# TODO(security): pin node:22-alpine to a digest — see deps stage.
+# ── Stage 2: Production image ─────────────────────────────────────────────────
+# TODO(security): pin node:22-alpine to a digest — same base as the builder stage.
 FROM node:22-alpine AS runner
 RUN apk add --no-cache curl netcat-openbsd
 WORKDIR /app
