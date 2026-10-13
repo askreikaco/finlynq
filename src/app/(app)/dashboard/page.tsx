@@ -289,13 +289,13 @@ export default function DashboardPage() {
   // monthly income / expense series, so it also works from the offline cache.
   const caption = compareCaption(selection);
   const cardPeriod = explicit ? rangePeriod : resolvePeriod({ range: "this_month" }, localDateISO(), lastMonthKey || undefined);
-  const prevCardPeriod = previousPeriod(cardPeriod);
   const incomePoints: MonthPoint[] = incExpData.map((d) => ({ month: d.month, value: d.income }));
   const expensePoints: MonthPoint[] = incExpData.map((d) => ({ month: d.month, value: d.expenses }));
   const netPoints: MonthPoint[] = incExpData.map((d) => ({ month: d.month, value: d.income - d.expenses }));
   const cardBase = { period: cardPeriod, mode: "sum", isDefault: !explicit, currency: apiDisplayCurrency, caption, kind: "money" } as const;
   const incomeCard = resolveCard({ ...cardBase, points: incomePoints, pageValue: lastMonthIncome });
   const expenseCard = resolveCard({ ...cardBase, points: expensePoints, pageValue: lastMonthExpenses });
+  const availableCard = resolveCard({ ...cardBase, points: netPoints, pageValue: availableToSpend });
   const periodLabel = explicit
     ? (selection.range === "custom" ? `${selection.from} to ${selection.to}` : RANGE_LABELS[selection.range])
     : lastMonthKey ? getMonthLabel(lastMonthKey) : `${incExpData.length} months tracked`;
@@ -526,10 +526,11 @@ export default function DashboardPage() {
       render: () => (
         <LazyView key="available-to-spend" minHeight={200}>
           <AvailableToSpend
-            income={lastMonthIncome}
-            expenses={lastMonthExpenses}
+            income={shownIncome}
+            expenses={shownExpenses}
             currency={apiDisplayCurrency}
-            monthLabel={lastMonthKey ? getMonthLabel(lastMonthKey) : undefined}
+            monthLabel={explicit ? periodLabel : lastMonthKey ? getMonthLabel(lastMonthKey) : undefined}
+            trend={{ badgePct: availableCard.badgePct, delta: availableCard.delta, sparkData: availableCard.sparkData, sparkLabels: availableCard.sparkLabels }}
           />
         </LazyView>
       ),

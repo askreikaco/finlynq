@@ -5,6 +5,7 @@ import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { Wallet } from "lucide-react";
 import { motion } from "framer-motion";
+import type { MetricTrend } from "./key-metrics";
 
 type Props = {
   income: number;
@@ -13,9 +14,11 @@ type Props = {
   /** Label of the month the figures cover (the dashboard's reference month,
    * usually the last complete month — not necessarily the current one). */
   monthLabel?: string;
+  /** Badge / signed difference / sparkline of income minus expenses over the months (null / omitted = value only). */
+  trend?: MetricTrend;
 };
 
-export function AvailableToSpend({ income, expenses, currency, monthLabel }: Props) {
+export function AvailableToSpend({ income, expenses, currency, monthLabel, trend }: Props) {
   const { displayCurrency: userDisplayCurrency } = useDisplayCurrency();
   const resolvedCurrency = currency?.trim() ? currency : userDisplayCurrency;
   const available = income - expenses;
@@ -29,7 +32,13 @@ export function AvailableToSpend({ income, expenses, currency, monthLabel }: Pro
       value={Math.abs(available)}
       currency={resolvedCurrency}
       valueClassName={available >= 0 ? "text-pos" : "text-destructive"}
-      sub={monthLabel ? `${monthLabel} remaining` : "This month remaining"}
+      sub={trend?.delta ?? (monthLabel ? `${monthLabel} remaining` : "This month remaining")}
+      note={trend?.delta ? (monthLabel ? `${monthLabel} remaining` : "This month remaining") : undefined}
+      badgePct={trend?.badgePct}
+      invertTone={false}
+      sparkData={trend?.sparkData}
+      sparkLabels={trend?.sparkLabels}
+      sparkColor="#06b6d4"
     >
       {income > 0 && (
         <div className="mt-4 space-y-2">
