@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import "fake-indexeddb/auto"; // on by default: needs IndexedDB + WebCrypto
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, waitFor, act, cleanup } from "@testing-library/react";
 import { useLocalAccountBalances } from "@/lib/local-first/read-cache/use-local-balances";
@@ -63,6 +64,7 @@ describe("useLocalAccountBalances", () => {
   });
 
   it("is inert when off: no store, no fetch, status off, refresh resolves null", async () => {
+    window.localStorage.setItem(LOCAL_READ_CACHE_KEY, "0");
     const { result } = renderHook(() => useLocalAccountBalances());
     await waitFor(() => expect(result.current.status).toBe("off"));
     expect(pgliteCtor).not.toHaveBeenCalled();
@@ -73,8 +75,14 @@ describe("useLocalAccountBalances", () => {
     expect(pgliteCtor).not.toHaveBeenCalled();
   });
 
-  it("is inert when the flag is set to anything but '1'", async () => {
-    window.localStorage.setItem(LOCAL_READ_CACHE_KEY, "true");
+  it("is on by default (key absent): hydrates without any stored choice", async () => {
+    const { result } = renderHook(() => useLocalAccountBalances());
+    await waitFor(() => expect(result.current.status).toBe("ready"));
+    expect(pgliteCtor).toHaveBeenCalledTimes(1);
+  });
+
+  it("is inert when the flag is '0'", async () => {
+    window.localStorage.setItem(LOCAL_READ_CACHE_KEY, "0");
     const { result } = renderHook(() => useLocalAccountBalances());
     await waitFor(() => expect(result.current.status).toBe("off"));
     expect(fetchSpy).not.toHaveBeenCalled();
@@ -113,7 +121,7 @@ describe("useLocalAccountBalances", () => {
     window.localStorage.setItem(LOCAL_READ_CACHE_KEY, "1");
     const { result } = renderHook(() => useLocalAccountBalances());
     await waitFor(() => expect(result.current.status).toBe("ready"));
-    window.localStorage.removeItem(LOCAL_READ_CACHE_KEY);
+    window.localStorage.setItem(LOCAL_READ_CACHE_KEY, "0");
     await act(async () => {
       await result.current.refresh();
     });

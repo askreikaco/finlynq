@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import "fake-indexeddb/auto"; // Offline mode needs IndexedDB + WebCrypto to be ON (device support check)
 // Cold start with no network (Offline mode): the gate opens from the remembered identity instead of redirecting to a
 // login page it cannot load; the real check runs again when the network returns.
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
@@ -11,7 +12,9 @@ vi.mock("@/components/unlock-panel", () => ({ UnlockPanel: () => null }));
 vi.mock("@/lib/data/persist", () => ({ wipeAll: vi.fn(() => Promise.resolve()) }));
 vi.mock("@/lib/data/local-read-cache-wipe", () => ({
   dropAllLocalCaches: vi.fn(() => Promise.resolve()),
+  dropSignedOutDisposableCaches: vi.fn(() => Promise.resolve()),
   dropLocalUserCache: vi.fn(() => Promise.resolve()),
+  dropLocalDisposableCaches: vi.fn(() => Promise.resolve()),
 }));
 vi.mock("@/lib/data/session-info", () => ({
   getSessionInfo: () => h.info,
@@ -21,7 +24,7 @@ vi.mock("@/lib/data/session-info", () => ({
 }));
 
 import { UnlockGate } from "@/components/unlock-gate";
-import { dropAllLocalCaches } from "@/lib/data/local-read-cache-wipe";
+import { dropAllLocalCaches, dropSignedOutDisposableCaches } from "@/lib/data/local-read-cache-wipe";
 import { OFFLINE_IDENTITY_KEY } from "@/lib/data/offline-identity";
 import { LOCAL_WRITE_QUEUE_KEY } from "@/lib/local-first/write-path/flag";
 import { LOCAL_READ_CACHE_KEY } from "@/lib/local-first/read-cache/optin";
@@ -38,6 +41,7 @@ beforeEach(() => {
   h.info = null;
   h.replace.mockReset();
   vi.mocked(dropAllLocalCaches).mockClear();
+  vi.mocked(dropSignedOutDisposableCaches).mockClear();
 });
 afterEach(() => {
   cleanup();
@@ -63,7 +67,9 @@ describe("UnlockGate: opening with no network", () => {
     await waitFor(() => expect(h.replace).toHaveBeenCalledWith("/cloud"));
   });
 
-  it("Offline mode off (stray record ignored): unchanged, sent to sign in", async () => {
+  it("Offline mode off ('0', stray record ignored): unchanged, sent to sign in", async () => {
+    window.localStorage.setItem(LOCAL_READ_CACHE_KEY, "0");
+    window.localStorage.setItem(LOCAL_WRITE_QUEUE_KEY, "0");
     remember();
     vi.stubGlobal("fetch", vi.fn(async () => { throw new TypeError("Failed to fetch"); }));
     render(<UnlockGate><div>app</div></UnlockGate>);
@@ -128,7 +134,9 @@ describe("UnlockGate: opening with no network", () => {
     online = true;
     await act(async () => { window.dispatchEvent(new Event("online")); });
     await waitFor(() => expect(h.replace).toHaveBeenCalledWith("/cloud"));
-    expect(dropAllLocalCaches).toHaveBeenCalled();
+    // Expired or unauthenticated session: disposable copies only; outboxes stay for the same account to drain later.
+    expect(dropSignedOutDisposableCaches).toHaveBeenCalled();
+    expect(dropAllLocalCaches).not.toHaveBeenCalled();
     expect(h.info).toBeNull();
   });
 });

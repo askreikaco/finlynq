@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import "fake-indexeddb/auto"; // Offline mode needs IndexedDB + WebCrypto to be ON (device support check)
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, waitFor, cleanup } from "@testing-library/react";
 import { CurrencyProvider, useDisplayCurrency } from "@/components/currency-provider";

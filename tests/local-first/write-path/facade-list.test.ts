@@ -28,6 +28,11 @@ afterEach(async () => {
 });
 
 describe("flag off", () => {
+  beforeEach(() => {
+    window.localStorage.setItem(LOCAL_READ_CACHE_KEY, "0");
+    window.localStorage.setItem(LOCAL_WRITE_QUEUE_KEY, "0");
+  });
+
   it("usePendingTransactions is the shared empty snapshot; new facade calls are inert and open no IndexedDB", async () => {
     const open = vi.spyOn(indexedDB, "open");
     const { result } = renderHook(() => usePendingTransactions());

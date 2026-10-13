@@ -2,9 +2,10 @@
 // Wipe triggers (local-first L2b, WP5): each trigger removes the lf databases; with the opt-in off nothing is touched.
 import "fake-indexeddb/auto";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { dropAllLocalCaches, dropAllLocalCachesWithin, dropLocalUserCache } from "@/lib/data/local-read-cache-wipe";
+import { dropAllLocalCaches, dropAllLocalCachesWithin, dropLocalDisposableCaches, dropLocalUserCache } from "@/lib/data/local-read-cache-wipe";
 import { clearPerUserStorage } from "@/lib/client/hard-reload";
 import { LOCAL_READ_CACHE_KEY, setLocalReadCacheEnabled, type OptInStorage } from "@/lib/local-first/read-cache/optin";
+import { LOCAL_WRITE_QUEUE_KEY } from "@/lib/local-first/write-path/flag";
 import { readCacheDbName, saveSnapshot, snapshotAgeMs, wipeAll } from "@/lib/local-first/read-cache/persist-store";
 import { disposeReadCache } from "@/lib/local-first/read-cache/session";
 
@@ -43,7 +44,13 @@ afterEach(async () => {
 });
 
 describe("each wipe trigger removes the local-first databases it owns", () => {
-  it("lock / untrusted device removes only that user's database (and its device key)", async () => {
+  it("lock removes only that user's snapshot database (the device key and outbox stay)", async () => {
+    await dropLocalDisposableCaches("u1");
+    expect(await hasSnapshot("u1")).toBe(false);
+    expect(await hasSnapshot("u2")).toBe(true);
+  });
+
+  it("untrusted device removes only that user's database (and its device key)", async () => {
     await dropLocalUserCache("u1");
     expect(await hasSnapshot("u1")).toBe(false);
     expect(await dbNames()).toContain(await readCacheDbName("u2"));
@@ -69,7 +76,7 @@ describe("each wipe trigger removes the local-first databases it owns", () => {
     const storage: OptInStorage = window.localStorage;
     setLocalReadCacheEnabled(false, storage);
     await until(async () => (await lfDbs()).length === 0);
-    expect(window.localStorage.getItem(LOCAL_READ_CACHE_KEY)).toBeNull();
+    expect(window.localStorage.getItem(LOCAL_READ_CACHE_KEY)).toBe("0");
   });
 
   it("opt-in turned on does not wipe anything", async () => {
@@ -80,9 +87,26 @@ describe("each wipe trigger removes the local-first databases it owns", () => {
   });
 });
 
-describe("with the opt-in off the wipe triggers do no IndexedDB work", () => {
+describe("default-on (key never set): every wipe trigger still removes the caches", () => {
   beforeEach(() => {
     window.localStorage.removeItem(LOCAL_READ_CACHE_KEY);
+  });
+
+  it("lock / untrusted device, logout and signed-out boot wipe without any stored choice", async () => {
+    await dropLocalUserCache("u1");
+    expect(await hasSnapshot("u1")).toBe(false);
+    clearPerUserStorage("u2");
+    await until(async () => !(await hasSnapshot("u2")));
+    await seed("u3");
+    await dropAllLocalCaches();
+    expect(await lfDbs()).toEqual([]);
+  });
+});
+
+describe("with both switches explicitly off ('0') the wipe triggers do no IndexedDB work", () => {
+  beforeEach(() => {
+    window.localStorage.setItem(LOCAL_READ_CACHE_KEY, "0");
+    window.localStorage.setItem(LOCAL_WRITE_QUEUE_KEY, "0");
   });
 
   it("no open, no delete, data left alone", async () => {

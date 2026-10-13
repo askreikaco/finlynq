@@ -45,17 +45,20 @@ const mkQueue = (dev: string, clock: () => number = now, allow = () => true, use
 };
 
 describe("flag", () => {
-  it("is off by default and needs both keys", () => {
+  it("is on by default (both keys absent); an explicit '0' on either key turns it off", () => {
     window.localStorage.clear();
-    expect(isLocalWriteQueueEnabled()).toBe(false);
+    expect(isLocalWriteQueueEnabled()).toBe(true);
+    window.localStorage.setItem(LOCAL_READ_CACHE_KEY, "0");
+    expect(isLocalWriteQueueEnabled()).toBe(false); // read cache opted out
+    window.localStorage.removeItem(LOCAL_READ_CACHE_KEY);
+    window.localStorage.setItem(LOCAL_WRITE_QUEUE_KEY, "0");
+    expect(isLocalWriteQueueEnabled()).toBe(false); // write queue opted out
     window.localStorage.setItem(LOCAL_WRITE_QUEUE_KEY, "1");
-    expect(isLocalWriteQueueEnabled()).toBe(false); // read cache opt-in missing
-    window.localStorage.setItem(LOCAL_READ_CACHE_KEY, "1");
     expect(isLocalWriteQueueEnabled()).toBe(true);
   });
 
   it("flag off: enqueue does nothing and creates no IndexedDB database", async () => {
-    window.localStorage.clear();
+    window.localStorage.setItem(LOCAL_WRITE_QUEUE_KEY, "0");
     const q = createWriteQueue({ userId: uid, deviceId: "d1" }); // default allow = opt-in flags
     const cache = new FakeCache();
     expect(await q.enqueueCreate({ date: "2026-10-02", accountId: 1, categoryId: 2, amount: -5 }, cache)).toBeNull();
@@ -313,8 +316,8 @@ describe("wipe", () => {
     expect((await q.pending())).toEqual([]);
   });
 
-  it("works with only the write key set (read opt-in off): the queue is not orphaned", async () => {
-    window.localStorage.removeItem(LOCAL_READ_CACHE_KEY);
+  it("works with the write key on and the read cache opted out (0): the queue is not orphaned", async () => {
+    window.localStorage.setItem(LOCAL_READ_CACHE_KEY, "0");
     const q = mkQueue("d1");
     await q.enqueueCreate({ date: "2026-10-02", accountId: 1, categoryId: 2, amount: -5 }, undefined);
     await dropLocalUserCache(uid);
@@ -334,7 +337,8 @@ describe("wipe", () => {
   });
 
   it("flag fully off: the wipe triggers do no IndexedDB work", async () => {
-    window.localStorage.clear();
+    window.localStorage.setItem(LOCAL_READ_CACHE_KEY, "0");
+    window.localStorage.setItem(LOCAL_WRITE_QUEUE_KEY, "0");
     const spy = vi.spyOn(indexedDB, "deleteDatabase");
     await dropLocalUserCache(uid);
     await dropAllLocalCaches();

@@ -6,7 +6,7 @@ import { UnlockPanel, type AutoAttempt, type AutoPasskeyGate } from "@/component
 import { INVITE_RETURN_PATH, stashInviteFromLocation } from "@/lib/family/invite-stash";
 import { getSessionInfo, setSessionInfo } from "@/lib/data/session-info";
 import { wipeAll } from "@/lib/data/persist";
-import { dropAllLocalCaches, dropLocalUserCache } from "@/lib/data/local-read-cache-wipe";
+import { dropLocalDisposableCaches, dropSignedOutDisposableCaches } from "@/lib/data/local-read-cache-wipe";
 import { readOfflineIdentity } from "@/lib/data/offline-identity";
 
 /** How long the sign-in check may hang before an Offline-mode device opens from its remembered identity. */
@@ -72,10 +72,11 @@ export function UnlockGate({ children }: { children: React.ReactNode }) {
           setIdentifier(data.username ?? data.email ?? null);
           setSessionInfo({ userId: String(data.userId), locked: data.encryptionLocked === true });
         } else {
-          // signed out: no account's on-device data cache may outlive the session
+          // signed out (expired or unauthenticated session): drop the disposable copies only. Outboxes and device keys
+          // stay, so unsynced writes drain after the same account signs in again. Explicit sign-out is a full wipe.
           setSessionInfo(null);
           void wipeAll().catch(() => undefined);
-          void dropAllLocalCaches();
+          void dropSignedOutDisposableCaches();
         }
         setState(data.authenticated ? "authenticated" : "unauthenticated");
         if (data.authenticated && data.encryptionLocked === true) setLocked(true);
@@ -115,11 +116,11 @@ export function UnlockGate({ children }: { children: React.ReactNode }) {
         const path = url.startsWith("http") ? new URL(url).pathname : url;
         if (path.startsWith("/api/") && !path.startsWith("/api/auth/passkey")) {
           setLocked(true);
-          // locked DEK: stop persisting and wipe this user's on-device data cache
+          // locked DEK: stop persisting and wipe this user's disposable on-device copies (the outbox is kept)
           const info = getSessionInfo();
           if (info && !info.locked) {
             setSessionInfo({ ...info, locked: true });
-            void dropLocalUserCache(info.userId);
+            void dropLocalDisposableCaches(info.userId);
           }
         }
       }

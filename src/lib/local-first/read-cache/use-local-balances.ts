@@ -2,7 +2,8 @@
 
 /**
  * useLocalAccountBalances (local-first L2a, persistence L2b): opt-in, account balances from the local read cache.
- * Off by default (localStorage "finlynq.lf.read" !== "1"): does nothing, no store, no fetch, no IndexedDB.
+ * Off only when the user turned it off (localStorage "finlynq.lf.read" === "0") or the device cannot store it: then it
+ * does nothing, no store, no fetch, no IndexedDB. ON by default (see ../opt-state.ts).
  * Never throws into the page: every failure becomes status "error".
  *
  * Persistence is allowed only when opted in AND the device is trusted (/api/auth/device-current returns an id)

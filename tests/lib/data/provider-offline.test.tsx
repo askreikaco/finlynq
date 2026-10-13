@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import "fake-indexeddb/auto"; // Offline mode is ON by default and needs IndexedDB + WebCrypto (device support check)
 // DataProvider and the remembered identity: a trusted device is remembered while Offline mode is on; opened with no
 // network, the remembered (trusted) device starts the offline write queue; the real device check runs on `online`.
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
@@ -60,7 +61,9 @@ describe("DataProvider: remembered identity", () => {
     expect(stored()).toMatchObject({ userId: "u1", deviceId: "d1" });
   });
 
-  it("Offline mode off: nothing is remembered", async () => {
+  it("Offline mode off ('0'): nothing is remembered", async () => {
+    window.localStorage.setItem(LOCAL_READ_CACHE_KEY, "0");
+    window.localStorage.setItem(LOCAL_WRITE_QUEUE_KEY, "0");
     vi.stubGlobal("fetch", vi.fn(async () => device("d1")));
     render(<DataProvider><div>x</div></DataProvider>);
     await waitFor(() => expect(h.start).toHaveBeenCalled());

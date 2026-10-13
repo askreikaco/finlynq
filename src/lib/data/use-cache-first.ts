@@ -3,8 +3,8 @@
 /**
  * useCacheFirstJson (local-first L2, read path): one GET, painted from the on-device cache first.
  *
- * Flag OFF (default; localStorage "finlynq.lf.read" !== "1"): exactly the old behaviour — one plain fetch per url,
- * no SWR key, no cache. Flag ON: the same url goes through useApi, so a revisit (or an offline open on a trusted,
+ * Flag OFF (the user turned it off: localStorage "finlynq.lf.read" === "0", or no device support): exactly the old
+ * behaviour — one plain fetch per url, no SWR key, no cache. Flag ON (default for every signed-in user): the same url goes through useApi, so a revisit (or an offline open on a trusted,
  * unlocked device, where the SWR cache is persisted encrypted) paints the last data at once and revalidates in the
  * background. A failed revalidation never hides data that is already on screen.
  * Pass `null` to skip (e.g. until a dependency is known). `keepPrevious` keeps showing the last data while the next

@@ -1,6 +1,7 @@
 /**
  * @vitest-environment jsdom
  */
+import "fake-indexeddb/auto";
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import React from "react";
 import { renderHook, waitFor, cleanup, act } from "@testing-library/react";
@@ -32,7 +33,9 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("flag OFF (default): plain fetch, same as before", () => {
+describe("flag OFF ('0'): plain fetch, same as before", () => {
+  beforeEach(() => window.localStorage.setItem(LOCAL_READ_CACHE_KEY, "0"));
+
   it("loads once and returns the data", async () => {
     fetchMock.mockResolvedValue(ok({ a: 1 }));
     const { result } = renderHook(() => useCacheFirstJson<{ a: number }>("/api/x"), { wrapper: wrapperWith(new Map()) });

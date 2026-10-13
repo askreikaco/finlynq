@@ -1,20 +1,26 @@
 "use client";
 /**
- * App-side facade for the opt-in offline write queue (local-first L3). Default OFF.
+ * App-side facade for the offline write queue (local-first L3). ON by default (opt-out model).
  *
  * Lives under src/lib/data (not src/components or src/app) so app code never names the local-first package
  * directly (tests/local-first/inventory-absence.test.ts), like local-read-cache-wipe.ts.
  *
- * With the flag off (finlynq.lf.write != "1", or no read-cache opt-in) every export is an inert no-op:
- * nothing is created, IndexedDB is never opened and queueOffline* return false.
+ * With the flag off (finlynq.lf.write === "0", or no read-cache opt-in, or no device support) every export is an inert
+ * no-op: nothing is created, IndexedDB is never opened and queueOffline* return false. ON by default (opt-out model).
  * start/stop are driven by DataProvider (trusted + unlocked) and by the wipe triggers in local-read-cache-wipe.ts.
  */
 import { useEffect, useState } from "react";
 import { createWriteQueue, type WriteQueue } from "@/lib/local-first/write-path/queue";
 import { createDrain } from "@/lib/local-first/write-path/drain";
 import { createDrainScheduler, type DrainScheduler } from "@/lib/local-first/write-path/scheduler";
-import { isLocalWriteQueueEnabled, setLocalWriteQueueEnabled } from "@/lib/local-first/write-path/flag";
+import {
+  isLocalWriteQueueEnabled,
+  localWriteQueueState,
+  markOfflineQueueUnavailable,
+  setLocalWriteQueueEnabled,
+} from "@/lib/local-first/write-path/flag";
 import { setLocalReadCacheEnabled } from "@/lib/local-first/read-cache/optin";
+import type { OptInState } from "@/lib/local-first/opt-state";
 import { deviceKeys, type DeviceKeyMeta } from "@/lib/local-first/crypto/device-key-provider";
 import { maybeAutoRotateKeys, rotateOnDeviceKeys, type RotationReport } from "@/lib/local-first/crypto/rotation";
 import { wipeUser as wipePersistedDataCache } from "./persist";
@@ -83,6 +89,7 @@ export function startLocalWriteQueue(userId: string, deviceId: string): boolean 
   } catch (err) {
     console.warn("[local-first] write queue unavailable", err);
     running = null;
+    markOfflineQueueUnavailable(); // silent OFF for this page session
     return false;
   }
 }
@@ -115,6 +122,7 @@ async function enqueue(fn: (q: WriteQueue) => Promise<OutboxEntry | null>): Prom
     return true;
   } catch (err) {
     console.warn("[local-first] enqueue failed", err);
+    markOfflineQueueUnavailable(); // typically the device key cannot be created: silent OFF for this page session
     return false;
   }
 }
@@ -340,16 +348,22 @@ export function enableOfflineMode(userId: string | null, deviceId: string | null
   return startLocalWriteQueue(userId, deviceId);
 }
 
-/** In-app switch OFF: stops the scheduler, clears the flag and deletes every on-device outbox (unsynced writes are lost). */
+/**
+ * In-app switch OFF: stops the scheduler, writes "0" for both switches (so the default cannot turn it back on),
+ * deletes every on-device outbox (unsynced writes are lost) and every on-device read cache.
+ */
 export function disableOfflineMode(): void {
   forgetOfflineIdentity();
   stopLocalWriteQueue();
   setLocalWriteQueueEnabled(false);
+  setLocalReadCacheEnabled(false);
 }
 
 export interface OfflineModeState {
-  /** Real flag state (write key and read-cache opt-in). False until read on the client. */
+  /** Real state (write key and read-cache switch, plus device support). False until read on the client. */
   enabled: boolean;
+  /** Where the switch comes from: "default" (never set, so ON by default), "on" (user turned it on) or "off". */
+  source: OptInState;
   /** null while the trusted-device check is in flight. */
   trusted: boolean | null;
   deviceId: string | null;
@@ -357,14 +371,16 @@ export interface OfflineModeState {
   setEnabled: (on: boolean) => void;
 }
 
-/** State for the Settings "Offline mode (beta)" switch. Reads the flag after mount; never opens IndexedDB. */
+/** State for the Settings "Offline mode" switch. Reads the flag after mount; never opens IndexedDB. */
 export function useOfflineMode(): OfflineModeState {
   const [enabled, setEnabledState] = useState(false);
+  const [source, setSource] = useState<OptInState>("off");
   const [trusted, setTrusted] = useState<boolean | null>(null);
   const [deviceId, setDeviceId] = useState<string | null>(null);
   const userId = getSessionInfo()?.userId ?? null;
   useEffect(() => {
     setEnabledState(isLocalWriteQueueEnabled());
+    setSource(localWriteQueueState());
     let alive = true;
     void fetchTrustedDeviceId().then((id) => {
       if (!alive) return;
@@ -379,8 +395,9 @@ export function useOfflineMode(): OfflineModeState {
     if (on) enableOfflineMode(userId, deviceId);
     else disableOfflineMode();
     setEnabledState(isLocalWriteQueueEnabled());
+    setSource(localWriteQueueState());
   };
-  return { enabled, trusted, deviceId, userId, setEnabled };
+  return { enabled, source, trusted, deviceId, userId, setEnabled };
 }
 
 export interface OfflineKeyState {

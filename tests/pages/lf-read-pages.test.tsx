@@ -1,8 +1,9 @@
 /**
  * @vitest-environment jsdom
  */
-// Local-first read path on real pages: with the read flag ON, a second open of a page paints the saved data even
-// when the network is gone; with it OFF the page makes plain fetches and keeps nothing between opens.
+import "fake-indexeddb/auto"; // Offline mode is ON by default and needs IndexedDB + WebCrypto (device support check)
+// Local-first read path on real pages: with the read flag ON (the default), a second open of a page paints the saved data
+// even when the network is gone; with it OFF ("0") the page makes plain fetches and keeps nothing between opens.
 import * as React from "react";
 import { render, screen, cleanup, waitFor } from "@testing-library/react";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
@@ -79,7 +80,8 @@ describe("Loans page: local read cache", () => {
     expect(screen.queryByText(/Couldn't load loans/)).toBeNull();
   });
 
-  it("flag OFF (default): offline on a second open shows the error, nothing was kept", async () => {
+  it("flag OFF ('0'): offline on a second open shows the error, nothing was kept", async () => {
+    localStorage.setItem(LOCAL_READ_CACHE_KEY, "0");
     const cache = new Map<string, unknown>();
     fetchMock.mockResolvedValue({ ok: true, status: 200, json: async () => [LOAN] });
     const first = mount(cache);
@@ -124,7 +126,8 @@ describe("Accounts page: local read cache", () => {
     expect(screen.queryByText(/Couldn't load accounts/)).toBeNull();
   });
 
-  it("flag OFF (default): offline on a second open shows the error", async () => {
+  it("flag OFF ('0'): offline on a second open shows the error", async () => {
+    localStorage.setItem(LOCAL_READ_CACHE_KEY, "0");
     const cache = new Map<string, unknown>();
     fetchMock.mockImplementation(online);
     const first = mountAccounts(cache);
