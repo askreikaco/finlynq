@@ -74,7 +74,7 @@ export interface NavPageEntry {
   surfaces: Surface[];
   activePrefixes?: string[]; // for parent routes that should highlight child paths
   tab?: { order: number }; // mobileBar tab ordering
-  rail?: { order: number }; // sidebar rail extras after the mobile tabs; orders 5..14 (tablet shows 5..9, wide 5..14)
+  rail?: { order: number }; // sidebar rail extras after the mobile tabs; orders 5..9 (rail = 4 mobile + 5 extras + More = 10)
 }
 
 export interface AliasEntry {
@@ -160,7 +160,6 @@ export const NAV_REGISTRY: NavPageEntry[] = [
     group: "Tracking",
     mode: "prod",
     surfaces: ["sidebar", "more"],
-    rail: { order: 10 },
   },
 
   // Wealth section
@@ -241,7 +240,6 @@ export const NAV_REGISTRY: NavPageEntry[] = [
     group: "Analysis",
     mode: "dev",
     surfaces: ["sidebar", "more"],
-    rail: { order: 14 },
   },
 
   // Planning section
@@ -254,7 +252,6 @@ export const NAV_REGISTRY: NavPageEntry[] = [
     group: "Planning",
     mode: "dev",
     surfaces: ["sidebar", "more"],
-    rail: { order: 11 },
   },
   {
     id: "fire",
@@ -265,7 +262,6 @@ export const NAV_REGISTRY: NavPageEntry[] = [
     group: "Planning",
     mode: "dev",
     surfaces: ["sidebar", "more"],
-    rail: { order: 12 },
   },
 
   // Tools section
@@ -279,7 +275,6 @@ export const NAV_REGISTRY: NavPageEntry[] = [
     mode: "prod",
     surfaces: ["sidebar", "more"],
     activePrefixes: ["/import"],
-    rail: { order: 13 },
   },
   {
     id: "api-docs",

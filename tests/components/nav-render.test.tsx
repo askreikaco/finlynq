@@ -38,12 +38,10 @@ function mockFetch({ announcements = [], announcementsOk = true, feedback = [], 
 
 const bar = () => screen.getByRole("navigation", { name: "Mobile navigation" });
 const rail = () => screen.getByRole("navigation", { name: "Main navigation" });
-// Dots in what the user sees: the bar, or the rail at a breakpoint (rail has a tablet and a desktop More).
+// Dots: the bar has one, the rail has one (one More link, no breakpoint variants).
 const dots = (root: HTMLElement) => root.querySelectorAll('[data-testid="more-unread-dot"]');
-const railVisible = (bp: "tablet" | "wide") =>
-  [...rail().querySelectorAll("a")].filter((a) => (bp === "wide" ? !a.classList.contains("wide:hidden") : !a.classList.contains("hidden")));
-const railDots = (bp: "tablet" | "wide" = "wide") =>
-  railVisible(bp).flatMap((a) => [...a.querySelectorAll('[data-testid="more-unread-dot"]')]);
+const railVisible = () => [...rail().querySelectorAll("a")];
+const railDots = () => railVisible().flatMap((a) => [...a.querySelectorAll('[data-testid="more-unread-dot"]')]);
 
 beforeEach(() => {
   mockPath = "/dashboard";
@@ -85,7 +83,7 @@ describe("More unread dot (one dot, both layouts)", () => {
     mockFetch({ announcements: [{ id: 1, read: false }] });
     render(<AppTabs />);
     await waitFor(() => expect(dots(bar())).toHaveLength(1));
-    for (const dot of [...dots(bar()), ...railDots("tablet"), ...railDots("wide")]) {
+    for (const dot of [...dots(bar()), ...railDots()]) {
       expect(dot.closest("a")!.getAttribute("href")).toBe("/more");
       expect(dot.getAttribute("aria-hidden")).toBe("true");
     }
@@ -128,8 +126,8 @@ describe("More unread dot (one dot, both layouts)", () => {
 describe("Tab icons and labels", () => {
   it("every tab in both layouts renders an icon (svg) and a label", () => {
     render(<AppTabs />);
-    const sets = [bar().querySelectorAll("a"), ...(["tablet", "wide"] as const).map((bp) => railVisible(bp))];
-    expect(sets.map((s) => s.length)).toEqual([5, 10, 15]);
+    const sets = [bar().querySelectorAll("a"), railVisible()];
+    expect(sets.map((s) => s.length)).toEqual([5, 10]);
     for (const links of sets) {
       links.forEach((l) => {
         expect(l.querySelector("svg")).not.toBeNull();

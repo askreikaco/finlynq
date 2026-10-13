@@ -118,13 +118,13 @@ html {
   --chart-4: oklch(0.68 0.10 250);
   --chart-5: oklch(0.58 0.09 300);
   --radius: 0.5rem;
-  --sidebar: oklch(0.11 0.006 245);
-  --sidebar-foreground: oklch(0.90 0.005 245);
+  --sidebar: oklch(0.985 0.003 85);
+  --sidebar-foreground: oklch(0.18 0.015 250);
   --sidebar-primary: oklch(0.75 0.165 70);
   --sidebar-primary-foreground: oklch(0.18 0.05 70);
-  --sidebar-accent: oklch(0.18 0.008 245);
-  --sidebar-accent-foreground: oklch(0.95 0.003 245);
-  --sidebar-border: oklch(0.22 0.010 245);
+  --sidebar-accent: oklch(0.94 0.02 70);
+  --sidebar-accent-foreground: oklch(0.32 0.08 70);
+  --sidebar-border: oklch(0.92 0.008 250);
   --sidebar-ring: oklch(0.75 0.165 70);
 }
 
@@ -363,10 +363,9 @@ html {
   background-image: radial-gradient(oklch(0.30 0.01 245 / 18%) 1px, transparent 1px);
 }
 
-/* Flat background below md (native parity): no dot grid, no glow. */
+/* Flat background below md (native parity): no dot grid. */
 @media (width < 48rem) {
   .bg-dot-pattern { background-image: none !important; }
-  .ambient-glow::after { display: none !important; }
 }
 
 /* SVG noise texture overlay — gives dark surfaces a tactile, photographic quality */
@@ -385,20 +384,9 @@ html {
   opacity: 0.035;
 }
 
-/* Ambient radial glow — simulates overhead light in dark mode */
+/* .ambient-glow: dark-mode radial glow removed (was meaningless); class kept as a harmless hook. */
 .ambient-glow {
   position: relative;
-}
-.dark .ambient-glow::after {
-  content: "";
-  position: fixed;
-  top: -30%;
-  left: 20%;
-  width: 60%;
-  height: 60%;
-  background: radial-gradient(ellipse at center, color-mix(in oklab, var(--primary) 10%, transparent), transparent 70%);
-  pointer-events: none;
-  z-index: 0;
 }
 
 /* ═══════════════════════════════════════════════

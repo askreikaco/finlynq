@@ -25,20 +25,15 @@ const EXPECTED_TABS = [
   ["More", "/more"],
 ];
 
+const RAIL_LINKS_EXPECTED = ["Home", "Accounts", "Investment", "Transactions", "Budgets", "Spending by category", "Reports", "Goals", "Loans & Debt", "More"];
+
 const bar = () => screen.getByRole("navigation", { name: "Mobile navigation" });
 const rail = () => screen.getByRole("navigation", { name: "Main navigation" });
-// The rail renders every item in the DOM; CSS decides what shows. Tablet (regular, not wide) hides
-// `hidden` items (desktop-only extras) and the desktop More (`hidden wide:flex`). Desktop (wide) hides
-// `wide:hidden` items (the tablet More). `visibleLinks` mirrors that, so tests read what the user sees.
-type Bp = "tablet" | "wide";
-const visibleLinks = (nav: HTMLElement, bp: Bp) =>
-  within(nav)
-    .queryAllByRole("link")
-    .filter((l) => (bp === "wide" ? !l.classList.contains("wide:hidden") : !l.classList.contains("hidden")));
-const tabsOf = (nav: HTMLElement, bp?: Bp) =>
-  (bp ? visibleLinks(nav, bp) : within(nav).getAllByRole("link")).map((l) => [l.textContent, l.getAttribute("href")]);
-const currentOf = (nav: HTMLElement, bp?: Bp) =>
-  (bp ? visibleLinks(nav, bp) : within(nav).queryAllByRole("link")).filter((l) => l.getAttribute("aria-current") === "page").map((l) => l.textContent);
+// The rail is one list at every width >= regular: 4 mobile tabs, 5 extras, More (10 items, no breakpoint variants).
+const railLinks = () => within(rail()).queryAllByRole("link");
+const tabsOf = (nav: HTMLElement) => within(nav).getAllByRole("link").map((l) => [l.textContent, l.getAttribute("href")]);
+const currentOf = (nav: HTMLElement) =>
+  within(nav).queryAllByRole("link").filter((l) => l.getAttribute("aria-current") === "page").map((l) => l.textContent);
 const queryBar = () => screen.queryByRole("navigation", { name: "Mobile navigation" });
 
 const APP_TABS_SRC = readFileSync(join(__dirname, "../../src/components/nav.tsx"), "utf8");
@@ -61,8 +56,7 @@ describe("one tab list, two layouts", () => {
 
   it("rail shows the same first 4 tabs in the same order as the bar", () => {
     render(<AppTabs />);
-    expect(tabsOf(rail(), "tablet").slice(0, 4)).toEqual(EXPECTED_TABS.slice(0, 4));
-    expect(tabsOf(rail(), "wide").slice(0, 4)).toEqual(EXPECTED_TABS.slice(0, 4));
+    expect(tabsOf(rail()).slice(0, 4)).toEqual(EXPECTED_TABS.slice(0, 4));
   });
 
   it("the tab list is the registry mobileBar order plus More", () => {
@@ -71,7 +65,7 @@ describe("one tab list, two layouts", () => {
 
   it("rail labels use the single --tab-label-size token class (mobile-tab-label)", () => {
     render(<AppTabs />);
-    for (const l of within(rail()).getAllByRole("link")) {
+    for (const l of railLinks()) {
       expect(l.querySelector("span.mobile-tab-label")).not.toBeNull();
     }
   });
@@ -109,10 +103,33 @@ describe("visibility by viewport (regular: is a viewport query, 40rem)", () => {
     expect(c).toContain("z-50");
   });
 
-  it("rail tab targets are at least 44px tall (min-h-14 = 56px)", () => {
+  it("rail items are square: aspect-square + w-full (72px wide rail content), no fixed min-h", () => {
     render(<AppTabs />);
-    for (const l of within(rail()).getAllByRole("link")) {
-      expect(l.className).toContain("min-h-14");
+    for (const l of railLinks()) {
+      expect(l.className.split(" ")).toContain("aspect-square");
+      expect(l.className.split(" ")).toContain("w-full");
+      expect(l.className).not.toContain("min-h-14");
+      expect(l.className).not.toContain("wide:min-h-12");
+    }
+  });
+
+  it("rail has 1.5 spacing between items and no wide-only gap override", () => {
+    render(<AppTabs />);
+    const c = rail().className.split(" ");
+    expect(c).toContain("gap-1.5");
+    expect(c).not.toContain("gap-1");
+    expect(rail().className).not.toContain("wide:gap-0.5");
+    expect(rail().className).toContain("overflow-y-auto");
+  });
+
+  it("mobile bar links are unchanged: rounded-full, min-h-11, flex-1, no square or rail classes", () => {
+    render(<AppTabs />);
+    for (const l of within(bar()).getAllByRole("link")) {
+      expect(l.className).toContain("min-h-11");
+      expect(l.className).toContain("flex-1");
+      expect(l.className).toContain("rounded-full");
+      expect(l.className).not.toContain("aspect-square");
+      expect(l.className).not.toContain("min-h-14");
     }
   });
 
@@ -169,8 +186,7 @@ describe("active tab logic (same rule in both layouts)", () => {
     mockPath = path;
     render(<AppTabs />);
     expect(currentOf(bar())).toEqual([label]);
-    expect(currentOf(rail(), "tablet")).toEqual([label]);
-    expect(currentOf(rail(), "wide")).toEqual([label]);
+    expect(currentOf(rail())).toEqual([label]);
   });
 
   it("active tab carries the glass pill and the active token; inactive uses the inactive token", () => {
@@ -188,16 +204,14 @@ describe("active tab logic (same rule in both layouts)", () => {
     mockPath = "/transactions/new";
     render(<AppTabs />);
     expect(queryBar()).toBeNull();
-    expect(currentOf(rail(), "tablet")).toEqual(["Transactions"]);
-    expect(currentOf(rail(), "wide")).toEqual(["Transactions"]);
+    expect(currentOf(rail())).toEqual(["Transactions"]);
   });
 
   it("portfolio operation form hides the bar; the rail stays", () => {
     mockPath = "/portfolio/new/buy";
     render(<AppTabs />);
     expect(queryBar()).toBeNull();
-    expect(currentOf(rail(), "tablet")).toEqual(["Investment"]);
-    expect(currentOf(rail(), "wide")).toEqual(["Investment"]);
+    expect(currentOf(rail())).toEqual(["Investment"]);
   });
 });
 
@@ -209,13 +223,10 @@ describe("unread dot on More (both layouts)", () => {
       json: async () => (url.startsWith("/api/announcements") ? [{ id: 1, read: false }] : []),
     })));
     render(<AppTabs />);
-    // The rail has two More links (tablet and desktop variant); the one visible at a breakpoint carries the dot.
-    for (const bp of ["tablet", "wide"] as const) {
-      await waitFor(() => expect(visibleLinks(rail(), bp).flatMap((a) => [...a.querySelectorAll('[data-testid="more-unread-dot"]')])).toHaveLength(1));
-    }
+    await waitFor(() => expect(rail().querySelectorAll('[data-testid="more-unread-dot"]')).toHaveLength(1));
     for (const nav of [bar(), rail()]) {
       // The dot is aria-hidden: the More link carries the text alternative in both layouts.
-      const moreLink = visibleLinks(nav, "wide").find((a) => a.getAttribute("href") === "/more")!;
+      const moreLink = within(nav).getAllByRole("link").find((a) => a.getAttribute("href") === "/more")!;
       expect(moreLink.getAttribute("aria-label") ?? moreLink.textContent).toMatch(/More/);
       expect(moreLink.querySelector('[data-testid="more-unread-dot"]')).not.toBeNull();
     }
@@ -249,22 +260,26 @@ describe("unread badges come from the shared store (nav-unread)", () => {
   });
 });
 
-describe("extended rail: tablet 9 tabs + More, desktop 14 tabs + More", () => {
-  const RAIL_WIDE = ["Home", "Accounts", "Investment", "Transactions", "Budgets", "Spending by category", "Reports", "Goals", "Loans & Debt", "Subscriptions", "Scenarios", "FIRE Calculator", "Import", "Tax", "More"];
-  const RAIL_TABLET = RAIL_WIDE.slice(0, 9).concat("More");
-
-  it("the rail DOM holds 15 desktop items in order, More last (plus the tablet More variant)", () => {
+describe("rail: 4 mobile tabs + 5 extras + More (10 items at every width >= regular)", () => {
+  it("the rail holds exactly 10 links in order, More last", () => {
     render(<AppTabs />);
-    const wide = visibleLinks(rail(), "wide").map((l) => l.textContent);
-    expect(wide).toEqual(RAIL_WIDE);
-    expect(wide.at(-1)).toBe("More");
+    expect(railLinks().map((l) => l.textContent)).toEqual(RAIL_LINKS_EXPECTED);
+    expect(railLinks().at(-1)!.textContent).toBe("More");
   });
 
-  it("tablet shows 10 items in order: 4 mobile tabs, 5 extras, More last", () => {
+  it("the rail has exactly one More link and one unread dot (no wide-only variants)", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => ({
+      ok: true,
+      status: 200,
+      json: async () => (url.startsWith("/api/announcements") ? [{ id: 1, read: false }] : []),
+    })));
     render(<AppTabs />);
-    const tablet = visibleLinks(rail(), "tablet").map((l) => l.textContent);
-    expect(tablet).toEqual(RAIL_TABLET);
-    expect(tablet.at(-1)).toBe("More");
+    expect(railLinks().filter((l) => l.getAttribute("href") === "/more")).toHaveLength(1);
+    await waitFor(() => expect(rail().querySelectorAll('[data-testid="more-unread-dot"]')).toHaveLength(1));
+    for (const l of railLinks()) {
+      expect(l.className).not.toMatch(/\bwide:(hidden|flex)\b/);
+      expect(l.className.split(" ")).not.toContain("hidden");
+    }
   });
 
   it("the bar still has exactly 5 links (4 mobile tabs + More)", () => {
@@ -272,61 +287,35 @@ describe("extended rail: tablet 9 tabs + More, desktop 14 tabs + More", () => {
     expect(within(bar()).getAllByRole("link")).toHaveLength(5);
   });
 
-  it("items 5-9 carry no wide-only hiding class; items 10-14 carry hidden wide:flex", () => {
-    render(<AppTabs />);
-    const links = within(rail()).queryAllByRole("link");
-    // 0-3 mobile tabs, 4-8 tablet extras (5 items), 9 tablet More, 10-14 desktop-only extras, 15 desktop More.
-    for (const i of [0, 1, 2, 3, 4, 5, 6, 7, 8]) {
-      expect(links[i].className.split(" ")).not.toContain("hidden");
-    }
-    for (const i of [10, 11, 12, 13, 14]) {
-      expect(links[i].className).toContain("hidden wide:flex");
-    }
-    expect(links[9].className).toContain("wide:hidden");
-    expect(links[15].className).toContain("hidden wide:flex");
-  });
-
-  it("the extras are registry sidebar entries with rail order 5..14 (no extra is a mobileBar tab)", () => {
+  it("the rail extras are the 5 registry entries with rail order 5..9 (no extra is a mobileBar tab)", () => {
     const ids = getRailExtrasSorted().map((e) => e.path);
-    expect(ids).toEqual(["/budgets", "/categories", "/reports", "/goals", "/loans", "/subscriptions", "/scenarios", "/fire", "/import", "/tax"]);
+    expect(ids).toEqual(["/budgets", "/categories", "/reports", "/goals", "/loans"]);
     for (const e of getRailExtrasSorted()) {
       expect(e.surfaces).toContain("sidebar");
       expect(e.surfaces).not.toContain("mobileBar");
     }
   });
 
-  it("an extra page's own route marks its tab active at desktop and More is not active there", () => {
-    mockPath = "/fire";
-    render(<AppTabs />);
-    expect(currentOf(rail(), "wide")).toEqual(["FIRE Calculator"]);
-    expect(currentOf(bar())).toEqual(["More"]);
-  });
-
-  it("on tablet a desktop-only page (/fire) is not in the rail, so tablet More is the current item", () => {
-    mockPath = "/fire";
-    render(<AppTabs />);
-    expect(currentOf(rail(), "tablet")).toEqual(["More"]);
-  });
-
-  it("a tablet extra (/budgets) marks its tab active on tablet and desktop; More is not active", () => {
+  it("a rail extra (/budgets) marks its item active; More is not active", () => {
     mockPath = "/budgets/12";
     render(<AppTabs />);
-    expect(currentOf(rail(), "tablet")).toEqual(["Budgets"]);
-    expect(currentOf(rail(), "wide")).toEqual(["Budgets"]);
+    expect(currentOf(rail())).toEqual(["Budgets"]);
     expect(currentOf(bar())).toEqual(["More"]);
   });
 
-  it("an unrelated route (/settings) marks More active in the bar, on tablet and on desktop", () => {
+  it("a page that is no longer in the rail (/fire, /tax) marks More active", () => {
+    for (const p of ["/fire", "/tax", "/subscriptions", "/scenarios", "/import"]) {
+      cleanup();
+      mockPath = p;
+      render(<AppTabs />);
+      expect(currentOf(rail())).toEqual(["More"]);
+    }
+  });
+
+  it("an unrelated route (/settings) marks More active in the bar and the rail", () => {
     mockPath = "/settings";
     render(<AppTabs />);
     expect(currentOf(bar())).toEqual(["More"]);
-    expect(currentOf(rail(), "tablet")).toEqual(["More"]);
-    expect(currentOf(rail(), "wide")).toEqual(["More"]);
-  });
-
-  it("More links are the same route in both variants and the rail never shows two at one breakpoint", () => {
-    render(<AppTabs />);
-    expect(visibleLinks(rail(), "tablet").filter((l) => l.getAttribute("href") === "/more")).toHaveLength(1);
-    expect(visibleLinks(rail(), "wide").filter((l) => l.getAttribute("href") === "/more")).toHaveLength(1);
+    expect(currentOf(rail())).toEqual(["More"]);
   });
 });

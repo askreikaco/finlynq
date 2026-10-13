@@ -110,7 +110,11 @@ describe("app shell below md", () => {
 
   it("globals.css: dot/glow off and sans amounts under 48rem only, pos/neg tokens exist", () => {
     const css = read("src/app/globals.css");
-    expect(css).toMatch(/@media \(width < 48rem\) \{\s*\.bg-dot-pattern \{ background-image: none !important; \}\s*\.ambient-glow::after \{ display: none !important; \}/);
+    expect(css).toMatch(/@media \(width < 48rem\) \{\s*\.bg-dot-pattern \{ background-image: none !important; \}\s*\}/);
+    // The dark ambient glow (.ambient-glow::after) is removed everywhere, not just below 48rem.
+    expect(css).not.toContain(".ambient-glow::after");
+    expect(css).not.toContain(".dark .ambient-glow::after");
+    expect(css).not.toContain("color-mix(in oklab, var(--primary) 10%, transparent)");
     expect(css).toMatch(/@media \(width < 48rem\) \{\s*\.tabular-nums, \[data-value\] \{\s*font-family: var\(--font-ui\);/);
     expect(css).toContain("--color-pos: var(--pos)");
     expect(css).toContain("--color-neg: var(--destructive)");
