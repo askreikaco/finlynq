@@ -21,8 +21,8 @@ describe("W6-01 status tokens", () => {
 
   it("light :root defines AA-contrast pos/warning/info values", () => {
     const root = block(/\n:root \{([\s\S]*?)\n\}/);
-    expect(root).toContain("--pos: oklch(0.55 0.11 170);");
-    expect(root).toContain("--warning: oklch(0.56 0.14 60);");
+    expect(root).toContain("--pos: oklch(0.52 0.11 170);");
+    expect(root).toContain("--warning: oklch(0.52 0.14 60);");
     expect(root).toContain("--info: oklch(0.52 0.13 250);");
   });
 
