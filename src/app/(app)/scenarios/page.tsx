@@ -133,7 +133,6 @@ function HomePurchaseTab() {
             </ResponsiveContainer>
           </SectionCard>
           <MetricGrid
-            columns={3}
             metrics={[
               { label: "Monthly Property Tax", value: result.monthlyPropertyTax, currency: displayCurrency },
               { label: "Monthly Maintenance", value: result.monthlyMaintenance, currency: displayCurrency },
@@ -188,7 +187,6 @@ function ExtraSavingsTab() {
       {result ? (
         <>
           <MetricGrid
-            columns={3}
             metrics={[
               { label: "Future Value", value: result.futureValue, currency: displayCurrency, tone: "pos" },
               { label: "Total Contributed", value: result.totalContributions, currency: displayCurrency },

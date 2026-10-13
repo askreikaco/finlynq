@@ -17,7 +17,7 @@ const NO_REVALIDATE: RegExp[] = [
   /^\/api\/metrics/,
   /^\/api\/feedback/,
   /^\/api\/version/,
-  /^\/api\/settings\/(tx-columns|tx-filters|tx-sort|dashboard-layout|account-group-order|dropdown-order|api-key|change-password|change-email|passkeys|recovery-codes|sign-in-methods|devices|connected-apps)/,
+  /^\/api\/settings\/(tx-columns|tx-filters|tx-sort|dashboard-layout|card-layout|account-group-order|dropdown-order|api-key|change-password|change-email|passkeys|recovery-codes|sign-in-methods|devices|connected-apps)/,
 ];
 
 const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);

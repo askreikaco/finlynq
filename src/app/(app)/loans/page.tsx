@@ -218,7 +218,6 @@ function LoansPageContent() {
       }}
     >
       <MetricGrid
-        columns={3}
         metrics={[
           { label: "Total debt", value: totalDebt, currency: displayCurrency, tone: "neg", sub: caveat },
           { label: "Monthly payments", value: totalMonthly, currency: displayCurrency, sub: caveat },

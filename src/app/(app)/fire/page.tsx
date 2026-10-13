@@ -249,7 +249,6 @@ function FirePageContent() {
       {result ? (
         <>
           <MetricGrid
-            columns={3}
             metrics={[
               { label: "FIRE Number", value: result.fireNumber, currency: displayCurrency },
               { label: "Years to FIRE", text: `${result.yearsToFire} years` },
@@ -445,7 +444,6 @@ function FirePageContent() {
 
                   {/* Final value percentiles */}
                   <MetricGrid
-                    columns={3}
                     metrics={[
                       { label: "Worst case (P10)", text: fmtMoney(mcResult.finalValues.p10) },
                       { label: "P25", text: fmtMoney(mcResult.finalValues.p25) },

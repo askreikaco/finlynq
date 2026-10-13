@@ -10,6 +10,7 @@
  * date-merge helper.
  */
 
+import { metricGridClass } from "@/components/mobile/metric-grid";
 import { LineChart, Line, XAxis, YAxis, Legend, ResponsiveContainer, Tooltip } from "recharts";
 import { formatDate } from "@/lib/currency";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -134,7 +135,7 @@ export function BenchmarkChart({
                 ))}
               </LineChart>
             </ResponsiveContainer>
-            <div className="mt-4 grid grid-cols-2 wide:grid-cols-4 gap-3">
+            <div className={`mt-4 ${metricGridClass(benchmarks.length)}`}>
               {benchmarks.map(b => (
                 <div key={b.symbol} className="flex items-center gap-2 p-2 rounded-lg bg-muted/30">
                   <ColorDot color={b.color} className="h-2.5 w-2.5" />

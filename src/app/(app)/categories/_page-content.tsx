@@ -11,7 +11,7 @@
  * When disabled (default): Shows only overview (backward compatible)
  */
 
-import { Suspense, useState } from "react";
+import { Fragment, Suspense, useState, type ReactNode } from "react";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -32,7 +32,8 @@ import { useAnimations } from "@/hooks/use-animations";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { CategoryManagement } from "./_components/category-management";
-import { PageHeader } from "@/components/mobile";
+import { PageHeader, CustomizeCardsSheet, useCardLayout, usePageCustomize } from "@/components/mobile";
+import type { PageCard } from "@/lib/card-layout";
 
 type OverviewResponse = CategoryOverview & { type: "E" | "I"; displayCurrency: string };
 
@@ -41,6 +42,11 @@ const PIE_SEGMENTS = 7;
 const OTHER_KEY = "other";
 const OTHER_COLOR = CHART_COLORS.categories[11];
 const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
+/** Cards of the categories overview, default order. */
+const CATEGORY_CARDS: readonly PageCard[] = [
+  { id: "summary", title: "Month summary" },
+  { id: "by-category", title: "By category" },
+];
 
 function monthName(key: string, style: "long" | "short" = "long"): string {
   const [y, m] = key.split("-").map(Number);
@@ -246,6 +252,10 @@ function CategoriesOverview({ embedded = false }: CategoriesOverviewProps) {
     router.replace(`/categories${qs.toString() ? `?${qs}` : ""}`, { scroll: false });
   }
 
+  const cardLayout = useCardLayout("categories", CATEGORY_CARDS);
+  const [customizeOpen, setCustomizeOpen] = useState(false);
+  usePageCustomize(data && !failed ? { onOpen: () => setCustomizeOpen(true) } : null);
+
   if (loading && !data) return <PageSkeleton variant="list" rows={6} />;
   if (failed || !data) {
     return <ErrorState title="Couldn't load categories" message="Please try again." onRetry={load} />;
@@ -343,17 +353,10 @@ function CategoriesOverview({ embedded = false }: CategoriesOverviewProps) {
     </div>
   );
 
-  return (
-    <div className="space-y-6">
-      {!embedded && (
-        <PageHeader
-          title="Spending by category"
-          subtitle="Where your money goes, and how each category compares with a usual month."
-        />
-      )}
-      {embeddedHeader}
-
-      {/* Month summary + where it went */}
+  // The two cards, keyed by their CATEGORY_CARDS id; rendered in the user's saved order (see below).
+  const cardNodes: Record<string, ReactNode> = {
+    summary: (
+      <>
       <Card>
         <CardContent className="pt-5 space-y-4">
           <div className="flex flex-col regular:flex-row regular:items-center gap-5">
@@ -425,8 +428,10 @@ function CategoriesOverview({ embedded = false }: CategoriesOverviewProps) {
           </div>
         </CardContent>
       </Card>
-
-      {/* Category list: top-level groups as collapsed accordions (several may be open), ungrouped categories as plain rows */}
+      </>
+    ),
+    "by-category": (
+      <>
       <Card>
         <CardHeader>
           <CardTitle className="text-base">By category</CardTitle>
@@ -471,6 +476,36 @@ function CategoriesOverview({ embedded = false }: CategoriesOverviewProps) {
           )}
         </CardContent>
       </Card>
+      </>
+    ),
+  };
+
+  return (
+    <div className="space-y-6">
+      {!embedded && (
+        <PageHeader
+          title="Spending by category"
+          subtitle="Where your money goes, and how each category compares with a usual month."
+        />
+      )}
+      {embeddedHeader}
+
+      {cardLayout.layout.order
+        .filter((id) => !cardLayout.layout.hidden.includes(id))
+        .map((id) => (
+          <Fragment key={id}>{cardNodes[id]}</Fragment>
+        ))}
+
+      <CustomizeCardsSheet
+        open={customizeOpen}
+        onOpenChange={setCustomizeOpen}
+        title="Customize categories"
+        description="Show, hide and reorder the cards on the categories overview."
+        cards={CATEGORY_CARDS}
+        layout={cardLayout.layout}
+        onSave={cardLayout.save}
+        onReset={cardLayout.reset}
+      />
 
       {data.partial && (
         <p className="text-xs text-muted-foreground">

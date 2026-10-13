@@ -75,7 +75,6 @@ function TaxPageContent() {
       center
     >
       <MetricGrid
-        columns={3}
         metrics={[
           { label: "TFSA Room", value: data.tfsa.remaining, currency: displayCurrency, tone: "pos", sub: `Used ${Math.round(tfsaPct)}%` },
           { label: "RESP Grant", text: `${formatCurrency(data.resp.grantExample, displayCurrency)}/yr`, sub: "CESG: 20% on first $2,500/year" },

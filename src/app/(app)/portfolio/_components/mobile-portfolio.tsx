@@ -10,6 +10,7 @@
  * The type filter chips and the Cards/List toggle live in the page toolbar (portfolio-ui.tsx).
  */
 
+import { metricGridClass } from "@/components/mobile/metric-grid";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { formatCurrency, formatCurrencyAdaptive } from "@/lib/currency";
@@ -71,7 +72,7 @@ export function PortfolioSummary({ summary, currency }: { summary: OverviewData[
           )}
         </div>
       </SectionCard>
-      <div data-slot="metric-grid" className="grid grid-cols-2 gap-3 regular:grid-cols-3 wide:grid-cols-6">
+      <div data-slot="metric-grid" className={metricGridClass(metrics.length)}>
         {metrics.map((m) => (
           <StatTile
             key={m.label}
