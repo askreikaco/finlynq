@@ -42,7 +42,7 @@ describe("goals list: openers navigate, no create/edit dialog", () => {
 
   it("links the create and edit actions to their pages", () => {
     expect(GOALS).toContain('href="/goals/new"');
-    expect(GOALS).toContain("href={`/goals/${g.id}/edit`}");
+    expect(GOALS).toContain("href={`/goals/${detail.id}/edit`}");
   });
 
   it("keeps the delete confirmation as a dialog (ListPage deleteFlow renders the ConfirmDialog)", () => {

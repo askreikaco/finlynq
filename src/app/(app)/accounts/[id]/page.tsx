@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Fragment, Suspense, useEffect, useState, type ReactNode } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { Card, CardContent } from "@/components/ui/card";
@@ -47,7 +47,10 @@ import { NetWorthHistoryChart } from "@/components/net-worth-history-chart";
 import { MetricCard } from "@/components/metric-card";
 import { deriveBalanceMonthly, type BalanceMonthly } from "@/lib/accounts/balance-series";
 import { TransactionsWorkspace } from "../../transactions/_components/transactions-workspace";
-import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
+import {
+  PageHeader, HEADER_DESKTOP_ONLY, CustomizeCardsSheet, ListRow, SectionLabel, useCardLayout, usePageCustomize,
+} from "@/components/mobile";
+import type { PageCard } from "@/lib/card-layout";
 import { usePageFab } from "@/components/mobile/page-fab";
 
 type Account = {
@@ -87,6 +90,15 @@ const INVESTMENT_OPS: { op: string; label: string }[] = [
   { op: "withdrawal", label: "Withdrawal" },
   { op: "income-expense", label: "Income / expense" },
   { op: "fx-conversion", label: "FX conversion" },
+];
+
+/** Cards of the account detail page, default order (Customize). The page header and the dialogs are not cards. */
+const ACCOUNT_DETAIL_CARDS: readonly PageCard[] = [
+  { id: "balance", title: "Balance" },
+  { id: "actions", title: "Quick actions" },
+  { id: "information", title: "Information" },
+  { id: "history", title: "Balance over time" },
+  { id: "transactions", title: "Transactions" },
 ];
 
 export default function AccountDetailPage() {
@@ -351,8 +363,13 @@ export default function AccountDetailPage() {
   };
   usePageFab("accounts.detail.add", fabAdd, fabIsInvestment ? { label: "Buy", icon: TrendingUp } : {});
 
+  // Customize: the page's cards (hidden cards are not rendered). Registered once the account has loaded.
+  const cardLayout = useCardLayout("account-detail", ACCOUNT_DETAIL_CARDS);
+  const [customizeOpen, setCustomizeOpen] = useState(false);
+  usePageCustomize(account ? { onOpen: () => setCustomizeOpen(true) } : null);
+
   if (!account && loadFailed) return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-report space-y-6">
       <PageHeader title="Account" backHref="/accounts" backLabel="Back to Accounts" />
       <ErrorState
         title="Account not found"
@@ -362,7 +379,7 @@ export default function AccountDetailPage() {
   );
 
   if (!account) return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-report space-y-6">
       <PageHeader title="Account" backHref="/accounts" backLabel="Back to accounts" />
       <div className="grid grid-cols-1 regular:grid-cols-3 gap-4">
         {[1, 2, 3].map((i) => <div key={i} className="h-24 animate-shimmer rounded-xl" />)}
@@ -397,7 +414,7 @@ export default function AccountDetailPage() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-report space-y-6">
       {/* The back control is PageHeader's automatic back (level 2 under /accounts). */}
       {/* actionsClassName has no w-full: on phones the actions sit in PageHeader's glass capsule, and a
           100%-width capsule ran off the right edge. */}
@@ -472,7 +489,30 @@ export default function AccountDetailPage() {
         }
       />
 
-      {/* Balance: the same card as Home's income / expense tiles (chart + change vs last month). */}
+      {/* Reconciliation mode, Import preferences and Cash sleeves live on the
+          Edit account page (its tabs). Reached via the Edit button, or the
+          #reconciliation-mode / #import-prefs deep-links (see the hash effect). */}
+
+      {accountActionError && (
+        <p role="alert" className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {accountActionError}
+        </p>
+      )}
+      <ConfirmDialog
+        open={deleteAccountOpen}
+        onOpenChange={setDeleteAccountOpen}
+        title="Delete this account?"
+        description="This can't be undone. An account that still has transactions or other linked records can't be deleted; archive it instead."
+        confirmLabel="Delete account"
+        onConfirm={() => void deleteThisAccount()}
+        busy={deletingAccount}
+      />
+
+      {(() => {
+        const shown = cardLayout.layout.order.filter((id) => !cardLayout.layout.hidden.includes(id));
+        // Account cards in the user's saved order (Customize). Each id renders once.
+        const nodes: Record<string, ReactNode> = {
+          balance: (
       <MetricCard
         label={holdingsValue && holdingsValue > 0 ? "Market value" : "Balance"}
         icon={Wallet}
@@ -495,12 +535,11 @@ export default function AccountDetailPage() {
           ) : undefined
         }
       />
-
-      {/* Actions Card */}
+),
+          actions: (
       <Card>
         <CardContent className="pt-5">
           <div className="flex items-center justify-between gap-2">
-            {/* In */}
             <button
               onClick={() => router.push(`/transactions/new?kind=income&account=${account.id}`)}
               className="flex flex-col items-center justify-center gap-2 flex-1 p-3 rounded-lg hover:bg-muted transition-colors"
@@ -512,7 +551,6 @@ export default function AccountDetailPage() {
               <span className="text-xs font-medium text-center">In</span>
             </button>
 
-            {/* Out */}
             <button
               onClick={() => router.push(`/transactions/new?kind=expense&account=${account.id}`)}
               className="flex flex-col items-center justify-center gap-2 flex-1 p-3 rounded-lg hover:bg-muted transition-colors"
@@ -524,7 +562,6 @@ export default function AccountDetailPage() {
               <span className="text-xs font-medium text-center">Out</span>
             </button>
 
-            {/* Transfer */}
             <button
               onClick={() => router.push(`/transactions/new?kind=transfer&account=${account.id}`)}
               className="flex flex-col items-center justify-center gap-2 flex-1 p-3 rounded-lg hover:bg-muted transition-colors"
@@ -536,7 +573,6 @@ export default function AccountDetailPage() {
               <span className="text-xs font-medium text-center">Transfer</span>
             </button>
 
-            {/* More: one control at every size, opens the Actions bottom sheet (owner D8). */}
             <button
               onClick={() => setActionsSheetOpen(true)}
               className="flex flex-col items-center justify-center gap-2 flex-1 p-3 rounded-lg hover:bg-muted transition-colors"
@@ -550,27 +586,11 @@ export default function AccountDetailPage() {
           </div>
         </CardContent>
       </Card>
-
-      {accountActionError && (
-        <p role="alert" className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {accountActionError}
-        </p>
-      )}
-      <ConfirmDialog
-        open={deleteAccountOpen}
-        onOpenChange={setDeleteAccountOpen}
-        title="Delete this account?"
-        description="This can't be undone. An account that still has transactions or other linked records can't be deleted; archive it instead."
-        confirmLabel="Delete account"
-        onConfirm={() => void deleteThisAccount()}
-        busy={deletingAccount}
-      />
-
-      {/* Information Card */}
-      <Card>
-        <CardContent className="pt-5">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-sm">Information</h3>
+),
+          information: (
+        <section data-slot="account-information" className="space-y-2">
+          <div className="flex items-center justify-between">
+            <SectionLabel as="h3">Information</SectionLabel>
             <Button
               size="sm"
               variant="ghost"
@@ -582,109 +602,71 @@ export default function AccountDetailPage() {
               <Pencil className="h-4 w-4" />
             </Button>
           </div>
-
-          <div className="space-y-0 divide-y">
-            {/* Alias / Account Number */}
-            <div className="flex items-center justify-between py-3">
-              <p className="text-xs font-medium text-muted-foreground">Account number</p>
-              <p className="text-sm text-right">{account.alias || "—"}</p>
-            </div>
-
-            {/* Group */}
-            <div className="flex items-center justify-between py-3">
-              <p className="text-xs font-medium text-muted-foreground">Group</p>
-              <p className="text-sm text-right">{account.group || "—"}</p>
-            </div>
-
-            {/* Type */}
-            <div className="flex items-center justify-between py-3">
-              <p className="text-xs font-medium text-muted-foreground">Type</p>
-              <div className="flex gap-1">
-                {account.type === "A" ? (
-                  <Badge variant="default" className="text-xs">Asset</Badge>
-                ) : (
-                  <Badge variant="destructive" className="text-xs">Liability</Badge>
-                )}
-                {isInvestment && (
-                  <Badge variant="secondary" className="text-xs">Investment</Badge>
-                )}
-              </div>
-            </div>
-
-            {/* Currency */}
-            <div className="flex items-center justify-between py-3">
-              <p className="text-xs font-medium text-muted-foreground">Currency</p>
-              <p className="text-sm font-mono text-right">{account.currency}</p>
-            </div>
-
-            {/* Import Mode */}
-            {account.mode && (
-              <div className="flex items-center justify-between py-3">
-                <p className="text-xs font-medium text-muted-foreground">Import mode</p>
-                <p className="text-sm text-right capitalize">{account.mode}</p>
-              </div>
-            )}
-
-            {/* Note */}
-            {account.note && (
-              <div className="flex items-start justify-between py-3 gap-2">
-                <p className="text-xs font-medium text-muted-foreground">Note</p>
-                <p className="text-sm text-right text-muted-foreground">{account.note}</p>
-              </div>
-            )}
-
-            {/* Invisible Toggle */}
-            <div className="flex items-center justify-between py-3">
-              <div className="flex-1">
-                <p className="text-xs font-medium text-muted-foreground">Invisible</p>
-                <p className="text-xs text-muted-foreground mt-1">Hidden from net worth, totals, reports and metrics</p>
-              </div>
-              <Switch
-                checked={invisible}
-                onCheckedChange={handleInvisibleToggle}
-                disabled={savingInvisible}
-                role="switch"
-              />
-            </div>
-
-            {/* Archived Status */}
-            {account.archived === true && (
-              <div className="flex items-center justify-between py-3">
-                <p className="text-xs font-medium text-muted-foreground">Status</p>
-                <Badge variant="secondary" className="text-xs">Archived</Badge>
-              </div>
-            )}
+          <div className="surface-card min-w-0 rounded-xl border border-border/50 px-3 divide-y divide-border/50">
+            <ListRow title="Account number" value={account.alias || "—"} />
+            <ListRow title="Group" value={account.group || "—"} />
+            <ListRow
+              title="Type"
+              value={
+                <span className="flex gap-1">
+                  {account.type === "A" ? (
+                    <Badge variant="default" className="text-xs">Asset</Badge>
+                  ) : (
+                    <Badge variant="destructive" className="text-xs">Liability</Badge>
+                  )}
+                  {isInvestment && <Badge variant="secondary" className="text-xs">Investment</Badge>}
+                </span>
+              }
+            />
+            <ListRow title="Currency" value={<span className="font-mono">{account.currency}</span>} />
+            {account.mode && <ListRow title="Import mode" value={<span className="capitalize">{account.mode}</span>} />}
+            {account.note && <ListRow title="Note" subtitle={undefined} value={<span className="whitespace-normal text-muted-foreground">{account.note}</span>} />}
+            <ListRow
+              title="Invisible"
+              subtitle="Hidden from net worth, totals, reports and metrics"
+              value={
+                <Switch
+                  checked={invisible}
+                  onCheckedChange={handleInvisibleToggle}
+                  disabled={savingInvisible}
+                  role="switch"
+                />
+              }
+            />
+            {account.archived === true && <ListRow title="Status" value={<Badge variant="secondary" className="text-xs">Archived</Badge>} />}
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Balance Over Time — accurate daily series (cash live from
-          transactions, investments from stored snapshots).
-          plan/net-worth-over-time.md Part A. */}
-      <NetWorthHistoryChart
+        </section>
+      ),
+          history: (
+            <NetWorthHistoryChart
         accountId={account.id}
         title="Balance Over Time"
         accountCurrency={account.currency}
       />
-
-      {/* Reconciliation mode, Import preferences and Cash sleeves live on the
-          Edit account page (its tabs). Reached via the Edit button, or the
-          #reconciliation-mode / #import-prefs deep-links (see the hash effect). */}
-
-      {/* Transactions — the FULL transactions surface (multi-select bulk
-          update/delete, filters, per-column customize, sort, CSV export)
-          reused verbatim from the /transactions page (DRY), scoped to this
-          account. `lockedAccountId` forces + hides the account filter and
-          disables URL sync; the other filter options stay available.
-          `onDataChange` keeps the header tiles (balance + tx count) in sync
-          after a bulk/inline edit. Wrapped in Suspense for its useSearchParams. */}
-      <Suspense fallback={<div className="h-40 animate-shimmer rounded-xl" />}>
+),
+          transactions: (
+            <Suspense fallback={<div className="h-40 animate-shimmer rounded-xl" />}>
         <TransactionsWorkspace
           lockedAccountId={account.id}
           showHeader={false}
           onDataChange={refreshBalanceAndTxns}
         />
       </Suspense>
+),
+        };
+        return shown.map((id) => <Fragment key={id}>{nodes[id]}</Fragment>);
+      })()}
+
+      <CustomizeCardsSheet
+        open={customizeOpen}
+        onOpenChange={setCustomizeOpen}
+        title="Customize account"
+        description="Show, hide and reorder the cards on this account."
+        cards={ACCOUNT_DETAIL_CARDS}
+        layout={cardLayout.layout}
+        onSave={cardLayout.save}
+        onReset={cardLayout.reset}
+      />
 
       {/* Create cash sleeve dialog */}
       <Dialog open={newSleeveOpen} onOpenChange={setNewSleeveOpen}>

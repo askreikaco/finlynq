@@ -1,12 +1,11 @@
 /**
  * @vitest-environment jsdom
  */
-// G2-13: budgets, goals, loans and subscriptions on one adaptive UI.
-// Each list page mounts exactly ONE DataView: Cards (the phone layout) or List (table rows).
+// G2-13 / batch 2: budgets, goals, loans and subscriptions on one layout at every size (inset ListRows, no table).
 import * as React from "react";
 import * as fs from "fs";
 import * as path from "path";
-import { render, screen, fireEvent, cleanup, waitFor, within } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup, waitFor } from "@testing-library/react";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { SizeClass } from "@/components/ui/size-class";
 
@@ -116,31 +115,41 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function dataViews(container: HTMLElement) {
-  return Array.from(container.querySelectorAll("[data-view]"));
-}
-
-/** Waits for the page to finish loading, then returns the single mounted data view. */
-async function loadedView(container: HTMLElement) {
-  await waitFor(() => expect(dataViews(container).length).toBe(1));
-  return dataViews(container)[0] as HTMLElement;
-}
-
-describe("G2-13: one DataView per list page (cards by default at compact)", () => {
-  it("budgets mounts exactly one data view, defaulting to cards", async () => {
+// Budgets and goals: one inset ListRow layout at every size (no Cards / List toggle, no table).
+describe("budgets and goals: one ListRow layout at every size", () => {
+  it("budgets renders its rows as ListRows and no table or data view", async () => {
     H.search = "month=2026-10";
     const { container } = render(<BudgetsPage />);
-    const view = await loadedView(container);
-    expect(view.getAttribute("data-view")).toBe("cards");
-    expect(screen.getByText("Groceries")).toBeTruthy();
+    const name = await screen.findByText("Groceries");
+    expect(name.closest("[data-slot=list-row]")).toBeTruthy();
+    expect(container.querySelector("[data-view]")).toBeNull();
+    expect(container.querySelector("table")).toBeNull();
   });
 
-  it("goals mounts exactly one data view, defaulting to cards", async () => {
+  it("goals renders its rows as ListRows and no table or data view", async () => {
     const { container } = render(<GoalsPage />);
-    const view = await loadedView(container);
-    expect(view.getAttribute("data-view")).toBe("cards");
+    const name = await screen.findByText("Emergency fund");
+    expect(name.closest("[data-slot=list-row]")).toBeTruthy();
+    expect(container.querySelector("[data-view]")).toBeNull();
+    expect(container.querySelector("table")).toBeNull();
   });
 
+  it("a budget row opens the detail sheet with the edit and transactions actions", async () => {
+    H.search = "month=2026-10";
+    render(<BudgetsPage />);
+    fireEvent.click(await screen.findByRole("button", { name: /Groceries/ }));
+    expect((await screen.findByRole("link", { name: "Edit budget" })).getAttribute("href")).toMatch(/^\/budgets\/new\?month=2026-10/);
+    expect(screen.getByRole("link", { name: "View transactions" }).getAttribute("href")).toMatch(/categoryId=10/);
+    expect(screen.getByRole("button", { name: "Delete budget for Groceries" })).toBeTruthy();
+  });
+
+  it("a goal row opens the detail sheet with Edit, Mark complete and Delete", async () => {
+    render(<GoalsPage />);
+    fireEvent.click(await screen.findByRole("button", { name: /Emergency fund/ }));
+    expect((await screen.findByRole("link", { name: "Edit goal Emergency fund" })).getAttribute("href")).toBe("/goals/3/edit");
+    expect(screen.getByRole("button", { name: "Mark goal Emergency fund complete" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Delete goal Emergency fund" })).toBeTruthy();
+  });
 });
 
 // Loans and subscriptions have one inset-list layout at every size: no DataView, no table.
@@ -162,70 +171,11 @@ describe("loans and subscriptions: one ListRow layout at every size", () => {
   });
 });
 
-describe("G2-13: List view columns and rows", () => {
-  const cases: Array<{
-    name: string;
-    Page: () => React.JSX.Element;
-    search?: string;
-    headers: string[];
-    row: { text: string; href: RegExp };
-  }> = [
-    {
-      name: "budgets",
-      Page: BudgetsPage,
-      search: "month=2026-10",
-      headers: ["Category", "Budgeted", "Spent", "Remaining", "Progress"],
-      row: { text: "Groceries", href: /^\/budgets\/new\?month=2026-10/ },
-    },
-    {
-      name: "goals",
-      Page: GoalsPage,
-      headers: ["Goal", "Target", "Saved", "Progress", "Deadline"],
-      row: { text: "Emergency fund", href: /^\/goals\/3\/edit$/ },
-    },
-  ];
-
-  it.each(cases)("$name: List shows the table headers and rows that navigate to the edit page", async ({ Page, search, headers, row }) => {
-    H.search = search ?? "";
-    const { container } = render(<Page />);
-    await loadedView(container);
-
-    fireEvent.click(screen.getByRole("radio", { name: "List" }));
-
-    const view = await loadedView(container);
-    expect(view.getAttribute("data-view")).toBe("list");
-    const table = within(view).getByRole("table");
-    for (const h of headers) {
-      expect(within(table).getByRole("columnheader", { name: h })).toBeTruthy();
-    }
-    const link = within(table).getByRole("link", { name: row.text });
-    expect(link.getAttribute("href")).toMatch(row.href);
-  });
-});
-
 describe("G2-13: loans detail sheet shows the estimated next due date", () => {
   it("the Car loan sheet shows 2026-10-15 (start 2026-01-15, monthly, today 2026-10-09)", async () => {
     render(<LoansPage />);
     fireEvent.click(await screen.findByText("Car loan"));
     expect(await screen.findByText("2026-10-15")).toBeTruthy();
-  });
-});
-
-describe("G2-13: per size class persistence", () => {
-  it("a List choice at regular does not change compact, and comes back at regular", async () => {
-    size.current = "regular";
-    const { container, rerender } = render(<GoalsPage />);
-    await loadedView(container);
-    fireEvent.click(screen.getByRole("radio", { name: "List" }));
-    expect((await loadedView(container)).getAttribute("data-view")).toBe("list");
-
-    size.current = "compact";
-    rerender(<GoalsPage />);
-    expect((await loadedView(container)).getAttribute("data-view")).toBe("cards");
-
-    size.current = "regular";
-    rerender(<GoalsPage />);
-    expect((await loadedView(container)).getAttribute("data-view")).toBe("list");
   });
 });
 
