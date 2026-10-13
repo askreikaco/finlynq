@@ -5,18 +5,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup, waitFor, within } from "@testing-library/react";
 
-// Mock the PageHeader component (heading level 1 so it can be found by role)
-vi.mock("@/components/mobile", () => ({
+// Real SectionCard / ListRow / MetricGrid; only the PageHeader is stubbed (heading level 1 so it can be found by role).
+vi.mock("@/components/mobile", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/components/mobile")>()),
   PageHeader: ({ title }: { title: string }) => <h1>{title}</h1>,
 }));
-
-// Each Card renders as a <section> so a row can be scoped to its own section.
-vi.mock("@/components/ui/card", () => ({
-  Card: ({ children }: { children: React.ReactNode }) => <section>{children}</section>,
-  CardContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  CardDescription: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
-  CardHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  CardTitle: ({ children }: { children: React.ReactNode }) => <h2>{children}</h2>,
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn(), refresh: vi.fn() }),
+  useSearchParams: () => new URLSearchParams(""),
+  useParams: () => ({}),
+  usePathname: () => "/admin/instance",
 }));
 
 // Badges are tagged so each one can be counted and read per row.
@@ -104,7 +102,7 @@ function getSection(title: string): HTMLElement {
 }
 
 function getRow(section: HTMLElement, label: string): HTMLElement {
-  const row = within(section).getByText(label).closest(".border-b");
+  const row = within(section).getByText(label).closest('[data-slot="list-row"]');
   if (!row) throw new Error(`no row for ${label}`);
   return row as HTMLElement;
 }
@@ -143,7 +141,7 @@ describe("InstanceAdminPage", () => {
 
       expect(within(section).getByText(description)).toBeTruthy();
       expect(within(section).getAllByTestId("source-badge")).toHaveLength(rows.length);
-      expect(section.querySelectorAll(".border-b")).toHaveLength(rows.length);
+      expect(section.querySelectorAll('[data-slot="list-row"]')).toHaveLength(rows.length);
     });
 
     it.each(rows)("row %s shows displayValue %s with source badge %s", async (label, display, badge) => {

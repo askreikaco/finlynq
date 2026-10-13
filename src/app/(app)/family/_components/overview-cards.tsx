@@ -1,19 +1,17 @@
 "use client";
 
 /**
- * Dashboard / reports / portfolio cards as rendered on the Family overview. Each card reuses the
- * source page's own component (StatCard, NetWorthHeroCard, KeyMetrics, NetWorthAreaChart,
- * IncomeExpenseTrendCard, PerformanceBadges/PerformanceLineChart, TopMoversCard) and is fed from
+ * Dashboard / reports / portfolio cards as rendered on the Family overview. Cards sit in SectionCard,
+ * income and expenses in MetricGrid, and the rest reuse the source page's own component (NetWorthHeroCard,
+ * KeyMetrics, NetWorthAreaChart, IncomeExpenseTrendCard, PerformanceBadges/PerformanceLineChart), fed from
  * the allow-listed overview DTO, so the figures and the look match those pages.
  */
 import { useMemo } from "react";
 import { ResponsiveContainer } from "recharts";
-import { CreditCard, TrendingUp } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency, formatDate } from "@/lib/currency";
 import { prepareTimeSeries } from "@/lib/chart-series";
 import { FAMILY_STRINGS } from "@/lib/family/strings";
-import { StatCard } from "@/app/(app)/dashboard/_components/stat-card";
+import { MetricGrid, SectionCard, metricGridClass } from "@/components/mobile";
 import { NetWorthHeroCard } from "@/app/(app)/dashboard/_components/net-worth-hero-card";
 import { KeyMetrics } from "@/app/(app)/dashboard/_components/key-metrics";
 import { NetWorthAreaChart } from "@/components/net-worth-history-chart";
@@ -57,17 +55,12 @@ function flowLabel(key: string, daily: boolean): string {
 /** A card slot whose data is not available (section not shared / failed): never a 0. */
 export function UnavailableCard({ title, text }: { title: string; text: string }) {
   return (
-    <Card className="h-full" data-testid="card-unavailable">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-xs font-medium text-muted-foreground tracking-wide uppercase">{title}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="text-3xl font-bold leading-none text-muted-foreground" aria-hidden="true">
-          {FAMILY_STRINGS.overview_none}
-        </p>
-        <p className="text-xs text-muted-foreground mt-1">{text}</p>
-      </CardContent>
-    </Card>
+    <SectionCard label={title} data-testid="card-unavailable">
+      <p className="text-3xl font-bold leading-none text-muted-foreground" aria-hidden="true">
+        {FAMILY_STRINGS.overview_none}
+      </p>
+      <p className="text-xs text-muted-foreground mt-1">{text}</p>
+    </SectionCard>
   );
 }
 
@@ -117,40 +110,28 @@ export function HeadlineCards(d: HeadlineData) {
 
   const incomeLabel = period === "month" ? FAMILY_STRINGS.overview_card_monthly_income : FAMILY_STRINGS.overview_card_income;
   const expensesLabel = period === "month" ? FAMILY_STRINGS.overview_card_monthly_expenses : FAMILY_STRINGS.overview_card_expenses;
-  let income: React.ReactNode;
-  let expenses: React.ReactNode;
+  let figures: React.ReactNode;
   if ("unavailable" in d.flows) {
-    income = <UnavailableCard title={incomeLabel} text={d.flows.unavailable} />;
-    expenses = <UnavailableCard title={expensesLabel} text={d.flows.unavailable} />;
-  } else {
-    const { points, daily } = flowPoints(d.flows, period);
-    const last = points.slice(-12);
-    const labels = daily ? undefined : last.map((p) => p.key);
-    const share = d.flows.income > 0 ? Math.round((d.flows.expenses / d.flows.income) * 100) : null;
-    income = (
-      <StatCard
-        label={incomeLabel}
-        value={d.flows.income}
-        sub={caption}
-        icon={TrendingUp}
-        iconBg="bg-pos/10 text-pos"
-        sparkColor="#10b981"
-        sparkData={last.map((p) => p.income)}
-        sparkLabels={labels}
-        currency={currency}
-      />
+    figures = (
+      <div className={metricGridClass(2)}>
+        <UnavailableCard title={incomeLabel} text={d.flows.unavailable} />
+        <UnavailableCard title={expensesLabel} text={d.flows.unavailable} />
+      </div>
     );
-    expenses = (
-      <StatCard
-        label={expensesLabel}
-        value={d.flows.expenses}
-        sub={share == null ? caption : `${caption} · ${fill(FAMILY_STRINGS.overview_card_pct_of_income, { pct: share })}`}
-        icon={CreditCard}
-        iconBg="bg-destructive/10 text-destructive"
-        sparkColor="#f43f5e"
-        sparkData={last.map((p) => p.expenses)}
-        sparkLabels={labels}
-        currency={currency}
+  } else {
+    const share = d.flows.income > 0 ? Math.round((d.flows.expenses / d.flows.income) * 100) : null;
+    figures = (
+      <MetricGrid
+        columns={2}
+        metrics={[
+          { label: incomeLabel, value: d.flows.income, currency, sub: caption },
+          {
+            label: expensesLabel,
+            value: d.flows.expenses,
+            currency,
+            sub: share == null ? caption : `${caption} · ${fill(FAMILY_STRINGS.overview_card_pct_of_income, { pct: share })}`,
+          },
+        ]}
       />
     );
   }
@@ -159,8 +140,7 @@ export function HeadlineCards(d: HeadlineData) {
     <div className="space-y-4">
       <div className="space-y-4">
         {hero}
-        {income}
-        {expenses}
+        {figures}
       </div>
       <KeyMetrics
         health={{ savingsRatePct: d.savingsRatePct, dti: d.dti ?? { pct: null, reliable: true } }}
@@ -195,16 +175,11 @@ export function NetWorthOverTimeCard({
   const first = history[0];
   const last = history[history.length - 1];
   return (
-    <Card className="card-hover">
-      <CardHeader className="pb-1 px-5 pt-5">
-        <div>
-          <CardTitle className="text-sm font-semibold">{title}</CardTitle>
-          <p className="text-xs text-muted-foreground">
-            {currency}{period === "all" ? " · All time" : ""}
-          </p>
-        </div>
-      </CardHeader>
-      <CardContent className="px-5 pb-5">
+    <SectionCard label={title}>
+      <div className="space-y-2">
+        <p className="text-xs text-muted-foreground">
+          {currency}{period === "all" ? " · All time" : ""}
+        </p>
         {history.length < 2 ? (
           <p className="text-sm text-muted-foreground py-16 text-center">{FAMILY_STRINGS.overview_card_no_history}</p>
         ) : (
@@ -230,8 +205,8 @@ export function NetWorthOverTimeCard({
           </div>
         )}
         {note && <p className="text-xs text-muted-foreground mt-2">{note}</p>}
-      </CardContent>
-    </Card>
+      </div>
+    </SectionCard>
   );
 }
 
@@ -252,14 +227,9 @@ export function IncomeVsExpensesCard({
   const { points, daily } = flowPoints(series, period);
   if (points.length === 0) {
     return (
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">{FAMILY_STRINGS.overview_card_income_vs_expenses}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground py-12 text-center">{FAMILY_STRINGS.overview_card_no_cashflow}</p>
-        </CardContent>
-      </Card>
+      <SectionCard label={FAMILY_STRINGS.overview_card_income_vs_expenses}>
+        <p className="text-sm text-muted-foreground py-12 text-center">{FAMILY_STRINGS.overview_card_no_cashflow}</p>
+      </SectionCard>
     );
   }
   const from = series.from ?? (daily ? points[0].key : `${points[0].key}-01`);
@@ -293,11 +263,8 @@ export function PerformanceCard({ performance, currency }: { performance: Perfor
     [performance.series],
   );
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{FAMILY_STRINGS.overview_card_performance}</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <SectionCard label={FAMILY_STRINGS.overview_card_performance}>
+      <div className="space-y-2">
         {prepared.data.length === 0 ? (
           <p className="text-sm text-muted-foreground">{FAMILY_STRINGS.overview_card_no_snapshots}</p>
         ) : (
@@ -316,7 +283,7 @@ export function PerformanceCard({ performance, currency }: { performance: Perfor
             </div>
           </>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </SectionCard>
   );
 }

@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { SectionCard } from "@/components/mobile";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Loader2, RefreshCw, Users } from "lucide-react";
-import { formatDate } from "@/lib/currency";
 import { FAMILY_STRINGS } from "@/lib/family/strings";
 import type { MemberDto, OverviewResponse } from "./types";
 import { MfaRequiredCta } from "./mfa-required-cta";
@@ -164,8 +163,8 @@ export function OverviewTab({ reloadKey = 0 }: { reloadKey?: number }) {
 
   if (error && !data) {
     return (
-      <Card className="border-destructive bg-destructive/5">
-        <CardContent className="pt-6 flex gap-3">
+      <SectionCard className="border-destructive bg-destructive/5">
+        <div className="flex gap-3">
           <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" aria-hidden="true" />
           <div role="alert">
             <p className="font-medium text-destructive">{error}</p>
@@ -173,18 +172,16 @@ export function OverviewTab({ reloadKey = 0 }: { reloadKey?: number }) {
               {FAMILY_STRINGS.overview_retry}
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </SectionCard>
     );
   }
 
   if (!data || data.members.length === 0) {
     return (
-      <Card>
-        <CardContent className="pt-6 text-center py-12">
-          <p className="text-muted-foreground">{FAMILY_STRINGS.overview_empty}</p>
-        </CardContent>
-      </Card>
+      <SectionCard>
+        <p className="text-center py-12 text-muted-foreground">{FAMILY_STRINGS.overview_empty}</p>
+      </SectionCard>
     );
   }
 

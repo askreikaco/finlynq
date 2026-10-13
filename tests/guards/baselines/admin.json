@@ -1,7 +1,5 @@
 {
   "family": "admin",
-  "unmigrated": [
-    "src/app/(app)/admin/instance/page.tsx"
-  ],
+  "unmigrated": [],
   "chrome": {}
 }
