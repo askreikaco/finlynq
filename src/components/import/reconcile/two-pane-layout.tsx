@@ -1,17 +1,11 @@
 "use client";
 
 /**
- * TwoPaneLayout — side-by-side container for the FilePane (right) +
- * DbPane (left) on /import/pending (FINLYNQ-56).
+ * TwoPaneLayout — the reconcile panes (DbPane / FilePane) on /import, as ONE column at every width.
  *
- * On wide viewports (lg+), both panes sit side-by-side with the DB pane
- * (existing transactions) on the left and the File pane (staged rows) on
- * the right — matching the user's mental model of "what I had → what
- * the bank sent." On narrow viewports the layout stacks (DB on top).
- *
- * The panes are equal-width columns; the parent owns each pane's
- * internal scroll. No content-clipping happens here — long lists scroll
- * within their pane to keep the action bar above the fold.
+ * Both panes stack (left first, then right) with the same centred width as the rest of the page. Each
+ * pane scrolls inside its own capped box, so a long list never pushes the action bar out of reach.
+ * `rightWide` is accepted for callers but has no effect: there is no side-by-side layout any more.
  */
 
 import type { ReactNode } from "react";
@@ -21,40 +15,33 @@ export function TwoPaneLayout({
   left,
   rightLabel,
   right,
-  rightWide = false,
 }: {
   leftLabel: ReactNode;
   left: ReactNode;
   rightLabel: ReactNode;
   right: ReactNode;
-  /** When true, the right pane gets ~60% of the width instead of an even
-   *  50/50 split — used by the investment reconcile view whose bank ledger
-   *  carries extra Ticker / Security / Qty columns that don't fit at 50%. */
+  /** @deprecated no-op: the panes are always one column. */
   rightWide?: boolean;
 }) {
   return (
-    <div
-      className={`grid grid-cols-1 gap-4 ${
-        rightWide ? "wide:grid-cols-[2fr_3fr]" : "wide:grid-cols-2"
-      }`}
-    >
-      <section className="flex flex-col min-h-0">
+    <div className="grid grid-cols-1 gap-4">
+      <section className="flex flex-col">
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             {leftLabel}
           </h2>
         </div>
-        <div className="flex-1 min-h-0 border rounded-lg bg-card overflow-hidden">
+        <div className="max-h-[55dvh] overflow-y-auto rounded-lg border bg-card">
           {left}
         </div>
       </section>
-      <section className="flex flex-col min-h-0">
+      <section className="flex flex-col">
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             {rightLabel}
           </h2>
         </div>
-        <div className="flex-1 min-h-0 border rounded-lg bg-card overflow-hidden">
+        <div className="max-h-[55dvh] overflow-y-auto rounded-lg border bg-card">
           {right}
         </div>
       </section>

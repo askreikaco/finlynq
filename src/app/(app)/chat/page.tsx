@@ -11,7 +11,7 @@ import { useDisplayCurrency } from "@/components/currency-provider";
 import { useSessionUserId, readUserItem, writeUserItem, removeUserItem } from "@/lib/client/user-storage";
 import { CHART_COLORS } from "@/lib/chart-colors";
 import { Send, Trash2, Bot, User, Sparkles } from "lucide-react";
-import { PageHeader, HEADER_CELL } from "@/components/mobile";
+import { PageHeader, HEADER_CELL, ListRow } from "@/components/mobile";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BarChart,
@@ -226,30 +226,16 @@ function InlineTable({ data }: { data: Record<string, unknown>[] }) {
   if (data.length === 0) return null;
   const keys = Object.keys(data[0]);
 
+  // One list row per result row (no table): the first column is the title, the rest read as a subtitle.
   return (
-    <div className="overflow-x-auto rounded-lg border border-border">
-      <table className="w-full text-xs">
-        <thead>
-          <tr className="border-b border-border bg-muted/50">
-            {keys.map((key) => (
-              <th key={key} className="px-3 py-2 text-left font-medium text-muted-foreground capitalize">
-                {key}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((row, i) => (
-            <tr key={i} className="border-b border-border/50 last:border-0">
-              {keys.map((key) => (
-                <td key={key} className="px-3 py-1.5 whitespace-nowrap">
-                  {String(row[key] ?? "")}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="divide-y divide-border/50 overflow-hidden rounded-xl border border-border/50 bg-card px-3">
+      {data.map((row, i) => (
+        <ListRow
+          key={i}
+          title={String(row[keys[0]] ?? "") || `Row ${i + 1}`}
+          subtitle={keys.slice(1).map((key) => `${key}: ${String(row[key] ?? "")}`).join(" · ")}
+        />
+      ))}
     </div>
   );
 }

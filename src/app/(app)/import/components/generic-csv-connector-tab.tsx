@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Combobox } from "@/components/ui/combobox";
+import { ListRow, SectionCard } from "@/components/mobile";
 import {
   AlertCircle,
   CheckCircle2,
@@ -458,29 +459,16 @@ export function GenericCsvConnectorTab() {
                   <h4 className="text-xs font-medium text-muted-foreground">
                     First {sampleRows.length} rows
                   </h4>
-                  <div className="overflow-x-auto rounded-md border">
-                    <table className="w-full text-xs">
-                      <thead className="bg-muted/40">
-                        <tr>
-                          {headers.map((h) => (
-                            <th key={h} className="px-2 py-1 text-left font-mono font-medium">
-                              {h}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {sampleRows.map((row, i) => (
-                          <tr key={i} className="border-t">
-                            {headers.map((h) => (
-                              <td key={h} className="whitespace-nowrap px-2 py-1 text-muted-foreground">
-                                {row[h] ?? ""}
-                              </td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <div className="max-h-64 overflow-y-auto">
+                    <SectionCard padded={false} className="divide-y divide-border/50 px-3">
+                      {sampleRows.map((row, i) => (
+                        <ListRow
+                          key={i}
+                          title={String(row[headers[0]] ?? "") || `Row ${i + 1}`}
+                          subtitle={headers.slice(1).map((h) => `${h}: ${row[h] ?? ""}`).join(" · ")}
+                        />
+                      ))}
+                    </SectionCard>
                   </div>
                 </div>
               )}

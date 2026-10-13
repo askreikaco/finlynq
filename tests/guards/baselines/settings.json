@@ -1,14 +1,9 @@
 {
   "family": "settings",
   "unmigrated": [
-    "src/app/(app)/settings/backfill/[runId]/page.tsx",
     "src/app/(app)/settings/import/reconcile-visibility/page.tsx"
   ],
   "chrome": {
-    "src/app/(app)/settings/backfill/[runId]/page.tsx": {
-      "title-prop": 2,
-      "subtitle-prop": 1
-    },
     "src/app/(app)/settings/import/reconcile-visibility/page.tsx": {
       "title-prop": 1
     },

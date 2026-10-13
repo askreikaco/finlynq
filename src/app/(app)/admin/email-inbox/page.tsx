@@ -16,16 +16,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Mailbox, RefreshCw, Lock, Users } from "lucide-react";
-import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
+import { RefreshCw, Lock } from "lucide-react";
+import { ListRow, SectionCard } from "@/components/mobile";
+import { SectionPage } from "@/components/templates";
 
 interface ByUser {
   userId: string;
@@ -140,19 +133,20 @@ export default function AdminEmailInboxPage() {
   }, [userId, data]);
 
   return (
-    <div className="max-w-7xl space-y-6">
-      <PageHeader
-        className="flex items-start justify-between gap-4"
-        lead={<Mailbox className={`h-5 w-5 text-primary ${HEADER_DESKTOP_ONLY}`} />}
-        leadClassName="flex items-center gap-2"
-        title="Email Oversight"
-        actions={
+    <SectionPage
+      id="admin-email-inbox"
+      title="Email Oversight"
+      width="report"
+      center
+      header={{
+        actions: (
           <Button variant="outline" size="sm" onClick={load} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? "animate-spin" : ""}`} />
             Refresh
           </Button>
-        }
-      />
+        ),
+      }}
+    >
       <p className="text-sm text-muted-foreground mt-0.5">
         Cross-user view of inbound email-import rows. Metadata is always
         shown; from/subject preview is available only for service-tier rows
@@ -167,71 +161,38 @@ export default function AdminEmailInboxPage() {
       )}
 
       {/* ─── Per-user grouped counts ──────────────────────────────────────── */}
-      <Card>
-        <CardContent className="p-0">
-          <div className="flex items-center gap-2 px-6 py-4 border-b">
-            <Users className="h-4 w-4 text-muted-foreground" />
-            <h2 className="font-semibold">By user</h2>
-            <span className="text-xs text-muted-foreground">
-              Counts honor the action / source / date filters (not the selected user).
-            </span>
-          </div>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>User</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-                <TableHead className="text-right">Needs review</TableHead>
-                <TableHead className="text-right">Unparseable</TableHead>
-                <TableHead className="text-right">Unparseable rate</TableHead>
-                <TableHead className="w-24" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data?.byUser.map((g) => (
-                <TableRow key={g.userId} className={userId === g.userId ? "bg-primary/5" : ""}>
-                  <TableCell className="text-sm font-medium">{who(g)}</TableCell>
-                  <TableCell className="text-right font-mono text-sm">{g.total}</TableCell>
-                  <TableCell className="text-right font-mono text-sm">
-                    {g.needsReview > 0 ? (
-                      <span className="text-warning">{g.needsReview}</span>
-                    ) : (
-                      g.needsReview
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right font-mono text-sm">
-                    {g.unparseable > 0 ? (
-                      <span className="text-destructive">{g.unparseable}</span>
-                    ) : (
-                      g.unparseable
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right font-mono text-sm text-muted-foreground">
-                    {(g.unparseableRate * 100).toFixed(0)}%
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-xs"
-                      onClick={() => setUserId(userId === g.userId ? "" : g.userId)}
-                    >
-                      {userId === g.userId ? "Clear" : "Filter"}
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {data && data.byUser.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                    No email-import rows match these filters.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      <SectionCard
+        label="By user"
+        padded={false}
+        className="divide-y divide-border/50 px-3"
+      >
+        <p className="px-1 pt-3 text-xs text-muted-foreground">
+          Counts honor the action / source / date filters (not the selected user).
+        </p>
+        {data?.byUser.map((g) => (
+          <ListRow
+            key={g.userId}
+            title={who(g)}
+            subtitle={`${g.total} total · ${g.needsReview} need review · ${g.unparseable} unparseable (${(g.unparseableRate * 100).toFixed(0)}%)`}
+            value={
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs"
+                onClick={() => setUserId(userId === g.userId ? "" : g.userId)}
+              >
+                {userId === g.userId ? "Clear" : "Filter"}
+              </Button>
+            }
+            className={userId === g.userId ? "bg-primary/5" : undefined}
+          />
+        ))}
+        {data && data.byUser.length === 0 && (
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            No email-import rows match these filters.
+          </p>
+        )}
+      </SectionCard>
 
       {/* ─── Filters ──────────────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-end gap-4">
@@ -294,80 +255,52 @@ export default function AdminEmailInboxPage() {
       </div>
 
       {/* ─── Rows ─────────────────────────────────────────────────────────── */}
-      <Card>
-        <CardContent className="p-0">
-          {loading && !data && (
-            <p className="p-6 text-sm text-muted-foreground text-center">Loading…</p>
-          )}
-          {data && data.rows.length === 0 && (
-            <p className="p-8 text-sm text-muted-foreground text-center">No rows match these filters.</p>
-          )}
-          {data && data.rows.length > 0 && (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>User</TableHead>
-                  <TableHead>From / Subject</TableHead>
-                  <TableHead className="w-28">Action</TableHead>
-                  <TableHead className="w-20">Source</TableHead>
-                  <TableHead className="w-24">Confidence</TableHead>
-                  <TableHead className="w-20">Tier</TableHead>
-                  <TableHead>Received</TableHead>
-                  <TableHead className="w-20">Rule</TableHead>
-                  <TableHead className="w-16">Txn</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.rows.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell className="text-xs">{who(r)}</TableCell>
-                    <TableCell className="text-xs max-w-[320px]">
-                      {r.redacted ? (
-                        <span className="inline-flex items-center gap-1 text-muted-foreground">
-                          <Lock className="h-3 w-3" /> user-encrypted
-                        </span>
-                      ) : r.fromAddress || r.subject ? (
-                        <>
-                          <div className="font-mono truncate">{r.fromAddress || "—"}</div>
-                          <div className="text-muted-foreground truncate">
-                            {r.subject || <span className="italic">(no subject)</span>}
-                          </div>
-                        </>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant="outline"
-                        className={`text-xs ${actionColor[r.action] ?? "bg-muted text-muted-foreground"}`}
-                      >
-                        {r.action.replace(/_/g, " ")}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-xs">{r.sourceKind}</TableCell>
-                    <TableCell className="text-xs">
-                      {r.parseConfidence ?? <span className="text-muted-foreground">—</span>}
-                    </TableCell>
-                    <TableCell className="text-xs">
-                      <Badge variant="outline" className="text-xs">
-                        {r.encryptionTier ?? "service"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-xs">{fmt(r.receivedAt)}</TableCell>
-                    <TableCell className="text-xs font-mono">
-                      {r.matchedRuleId ?? <span className="text-muted-foreground">—</span>}
-                    </TableCell>
-                    <TableCell className="text-xs font-mono">
-                      {r.recordedTransactionId ?? <span className="text-muted-foreground">—</span>}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+      <SectionCard label="Rows" padded={false} className="divide-y divide-border/50 px-3">
+        {loading && !data && (
+          <p className="p-6 text-sm text-muted-foreground text-center">Loading…</p>
+        )}
+        {data && data.rows.length === 0 && (
+          <p className="p-8 text-sm text-muted-foreground text-center">No rows match these filters.</p>
+        )}
+        {data && data.rows.map((r) => (
+          <div key={r.id} className="py-1">
+            <ListRow
+              title={who(r)}
+              subtitle={
+                r.redacted ? (
+                  <span className="inline-flex items-center gap-1 text-muted-foreground">
+                    <Lock className="h-3 w-3" /> user-encrypted
+                  </span>
+                ) : r.fromAddress || r.subject ? (
+                  <>
+                    <span className="font-mono">{r.fromAddress || "—"}</span>
+                    {" · "}
+                    {r.subject || <span className="italic">(no subject)</span>}
+                  </>
+                ) : (
+                  <span className="text-muted-foreground">—</span>
+                )
+              }
+              value={
+                <Badge
+                  variant="outline"
+                  className={`text-xs ${actionColor[r.action] ?? "bg-muted text-muted-foreground"}`}
+                >
+                  {r.action.replace(/_/g, " ")}
+                </Badge>
+              }
+              secondary={fmt(r.receivedAt)}
+            />
+            <div className="flex flex-wrap gap-x-3 gap-y-1 px-1 pb-2 text-xs text-muted-foreground">
+              <span>Source {r.sourceKind}</span>
+              <span>Confidence {r.parseConfidence ?? "—"}</span>
+              <span>Tier {r.encryptionTier ?? "service"}</span>
+              <span className="font-mono">Rule {r.matchedRuleId ?? "—"}</span>
+              <span className="font-mono">Txn {r.recordedTransactionId ?? "—"}</span>
+            </div>
+          </div>
+        ))}
+      </SectionCard>
+    </SectionPage>
   );
 }

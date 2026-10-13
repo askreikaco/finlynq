@@ -13,16 +13,8 @@
  * by the parent — this component just renders + emits events.
  */
 
-import { Fragment } from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { ListRow } from "@/components/mobile";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import {
@@ -33,8 +25,6 @@ import {
 } from "@/components/staging/staged-row-editor";
 import { RowBadge, type ReconcileState } from "./row-badge";
 import { matchRowClass, type PaneMatchStatus } from "./match-status";
-
-const RowFragment = Fragment;
 
 export interface FilePaneProps {
   stagedImportId: string;
@@ -119,213 +109,167 @@ export function FilePane({
       r.reconcileState !== "linked" &&
       r.reconcileState !== "skipped_duplicate",
   );
-  // colSpan for the expanded editor row must cover every header column.
-  // Columns: checkbox (1) + chevron (2) + Date (3) + Payee (4) + Type (5)
-  //          + Amount (6) [+ Balance (7)] [+ Actions (last)]
-  const editorColSpan = 6 + (hasAnyAnchor ? 1 : 0) + (rowActions ? 1 : 0);
 
   return (
     <div className="flex flex-col h-full">
       {header}
+      {/* One native list row per staged row (no table). Select, expand and actions sit beside the row. */}
       <div className="flex-1 overflow-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-10">
-                <input
-                  type="checkbox"
-                  // Already-imported rows (row_status='approved') aren't
-                  // selectable — they've been pushed to the bank ledger — so
-                  // select-all operates only on the still-sendable rows.
-                  checked={
-                    selectableRows.length > 0 &&
-                    selectableRows.every((r) => selected.has(r.id))
-                  }
-                  onChange={() => {
-                    const everySelected = selectableRows.every((r) => selected.has(r.id));
-                    if (everySelected) {
-                      selectableRows.forEach((r) => onToggleSelect(r.id));
-                    } else {
-                      selectableRows
-                        .filter((r) => !selected.has(r.id))
-                        .forEach((r) => onToggleSelect(r.id));
-                    }
-                  }}
-                  aria-label="Select all sendable rows"
-                />
-              </TableHead>
-              <TableHead className="w-8" />
-              <TableHead>Date</TableHead>
-              <TableHead>Payee</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead className="text-right">Amount</TableHead>
-              {hasAnyAnchor && (
-                <TableHead className="text-right">Balance</TableHead>
-              )}
-              {rowActions && <TableHead className="w-32 text-right">Actions</TableHead>}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.map((r) => {
-              const isExpanded = expanded.has(r.id);
-              // Pushed to the bank ledger on a prior "Send" — kept visible,
-              // highlighted, not re-sendable.
-              const isImported = r.rowStatus === "approved";
-              const dimmed =
-                r.reconcileState === "skipped_duplicate"
-                  ? "opacity-60 line-through"
-                  : r.isDuplicate || r.reconcileState === "linked"
-                    ? "opacity-60"
-                    : "";
-              const importedClass = isImported
-                ? "bg-pos/10 hover:bg-pos/15"
-                : "";
-              const dayBalance = hasAnyAnchor ? anchorsByDate?.get(r.date) : undefined;
-              const showBalance =
-                hasAnyAnchor &&
-                dayBalance !== undefined &&
-                !balanceShownForDate.has(r.date);
-              if (showBalance) balanceShownForDate.add(r.date);
-              const highlighted = highlightedStagedIds?.has(r.id) ?? false;
-              // Ring (not a bg) so the click highlight layers cleanly over the
-              // persistent full-row match tint.
-              const highlightClass = highlighted
-                ? "ring-2 ring-inset ring-info/60"
-                : "";
-              const ms = matchStatus?.get(r.id);
-              const clickable = onRowClick != null;
-              return (
-                <RowFragment key={r.id}>
-                  <TableRow
-                    className={`h-11 ${dimmed} ${importedClass} ${matchRowClass(ms)} ${highlightClass} ${clickable ? "cursor-pointer" : ""}`}
-                    onClick={
-                      clickable
-                        ? (e) => {
-                            // The row carries an interactive checkbox + the
-                            // chevron expand button + optional action buttons
-                            // (Link / Skip / Unlink). Suppress the row-click
-                            // when the target is inside any of them so those
-                            // actions retain their original semantics.
-                            const target = e.target as HTMLElement;
-                            if (target.closest("button")) return;
-                            if (target.closest("input")) return;
-                            onRowClick?.(r.id);
-                          }
-                        : undefined
-                    }
-                  >
-                    <TableCell>
-                      <input
-                        type="checkbox"
-                        checked={selected.has(r.id)}
-                        onChange={() => onToggleSelect(r.id)}
-                        disabled={isImported}
-                        title={isImported ? "Already loaded into the bank ledger" : undefined}
-                        aria-label={`Select row ${r.rowIndex}`}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <button
-                        type="button"
-                        onClick={() => onToggleExpand(r.id)}
-                        aria-label={isExpanded ? "Collapse row editor" : "Edit row"}
-                        className="text-muted-foreground hover:text-foreground p-1 -m-1"
-                      >
-                        {isExpanded ? (
-                          <ChevronDown className="h-3.5 w-3.5" />
-                        ) : (
-                          <ChevronRight className="h-3.5 w-3.5" />
-                        )}
-                      </button>
-                    </TableCell>
-                    <TableCell className="font-mono text-xs">{r.date}</TableCell>
-                    <TableCell className="text-xs truncate max-w-[220px]">
-                      {r.payee || (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                      {r.category && (
-                        <span className="text-muted-foreground"> · {r.category}</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-xs">
-                      <div className="flex items-center gap-1 flex-nowrap">
-                        {r.txType === "R" ? (
-                          <Badge variant="outline" className="text-xs">
-                            Transfer
-                          </Badge>
-                        ) : r.txType === "I" ? (
-                          <Badge
-                            variant="outline"
-                            className="text-xs bg-pos/10 text-pos border-pos/30"
-                          >
-                            Income
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-xs">
-                            Expense
-                          </Badge>
-                        )}
-                        {r.isDuplicate && r.reconcileState !== "skipped_duplicate" && (
-                          <Badge variant="outline" className="text-xs">
-                            dupe
-                          </Badge>
-                        )}
-                        {isImported && (
-                          <Badge
-                            variant="outline"
-                            className="text-xs bg-pos/10 text-pos border-pos/30"
-                          >
-                            imported
-                          </Badge>
-                        )}
-                        <RowBadge
-                          state={r.reconcileState as ReconcileState}
-                          linkedTransactionId={r.linkedTransactionId ?? null}
-                        />
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right font-mono text-xs">
-                      {formatCurrency(r.amount, r.currency || "CAD")}
-                    </TableCell>
-                    {hasAnyAnchor && (
-                      <TableCell
-                        className="text-right font-mono text-xs"
-                        title={
-                          showBalance
-                            ? `Bank-stated balance from file on ${r.date}`
-                            : undefined
-                        }
-                      >
-                        {showBalance && dayBalance !== undefined
-                          ? formatCurrency(dayBalance, r.currency || "CAD")
-                          : ""}
-                      </TableCell>
-                    )}
-                    {rowActions && (
-                      <TableCell className="text-right">
-                        {rowActions(r)}
-                      </TableCell>
-                    )}
-                  </TableRow>
-                  {isExpanded && (
-                    <TableRow>
-                      <TableCell colSpan={editorColSpan} className="p-0">
-                        <StagedRowEditor
-                          stagedImportId={stagedImportId}
-                          row={r}
-                          siblingRows={rows}
-                          accounts={accounts}
-                          holdings={holdings}
-                          onUpdated={onRowUpdated}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </RowFragment>
+        <label className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground">
+          <input
+            type="checkbox"
+            // Already-imported rows (row_status='approved') aren't
+            // selectable — they've been pushed to the bank ledger — so
+            // select-all operates only on the still-sendable rows.
+            checked={
+              selectableRows.length > 0 &&
+              selectableRows.every((r) => selected.has(r.id))
+            }
+            onChange={() => {
+              const everySelected = selectableRows.every((r) => selected.has(r.id));
+              if (everySelected) {
+                selectableRows.forEach((r) => onToggleSelect(r.id));
+              } else {
+                selectableRows
+                  .filter((r) => !selected.has(r.id))
+                  .forEach((r) => onToggleSelect(r.id));
+              }
+            }}
+            aria-label="Select all sendable rows"
+          />
+          Select all sendable
+        </label>
+        <div className="divide-y divide-border/50">
+          {rows.map((r) => {
+            const isExpanded = expanded.has(r.id);
+            // Pushed to the bank ledger on a prior "Send" — kept visible,
+            // highlighted, not re-sendable.
+            const isImported = r.rowStatus === "approved";
+            const dimmed =
+              r.reconcileState === "skipped_duplicate"
+                ? "opacity-60 line-through"
+                : r.isDuplicate || r.reconcileState === "linked"
+                  ? "opacity-60"
+                  : "";
+            const importedClass = isImported
+              ? "bg-pos/10 hover:bg-pos/15"
+              : "";
+            const dayBalance = hasAnyAnchor ? anchorsByDate?.get(r.date) : undefined;
+            const showBalance =
+              hasAnyAnchor &&
+              dayBalance !== undefined &&
+              !balanceShownForDate.has(r.date);
+            if (showBalance) balanceShownForDate.add(r.date);
+            const highlighted = highlightedStagedIds?.has(r.id) ?? false;
+            // Ring (not a bg) so the click highlight layers cleanly over the
+            // persistent full-row match tint.
+            const highlightClass = highlighted
+              ? "ring-2 ring-inset ring-info/60"
+              : "";
+            const ms = matchStatus?.get(r.id);
+            const clickable = onRowClick != null;
+            const typeLabel = r.txType === "R" ? "Transfer" : r.txType === "I" ? "Income" : "Expense";
+              const amountCell = (
+                <span className="font-mono text-sm">
+                  {formatCurrency(r.amount, r.currency || "CAD")}
+                </span>
               );
-            })}
-          </TableBody>
-        </Table>
+            return (
+              <div
+                key={r.id}
+                className={`px-2 ${dimmed} ${importedClass} ${matchRowClass(ms)} ${highlightClass} ${clickable ? "cursor-pointer" : ""}`}
+                onClick={
+                  clickable
+                    ? (e) => {
+                        // The row carries an interactive checkbox + the
+                        // chevron expand button + optional action buttons
+                        // (Link / Skip / Unlink). Suppress the row-click
+                        // when the target is inside any of them so those
+                        // actions retain their original semantics.
+                        const target = e.target as HTMLElement;
+                        if (target.closest("button")) return;
+                        if (target.closest("input")) return;
+                        onRowClick?.(r.id);
+                      }
+                    : undefined
+                }
+              >
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={selected.has(r.id)}
+                    onChange={() => onToggleSelect(r.id)}
+                    disabled={isImported}
+                    title={isImported ? "Already loaded into the bank ledger" : undefined}
+                    aria-label={`Select row ${r.rowIndex}`}
+                    className="shrink-0"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <ListRow
+                      title={
+                        <>
+                          {r.payee || <span className="text-muted-foreground">—</span>}
+                          {r.category && <span className="text-muted-foreground"> · {r.category}</span>}
+                        </>
+                      }
+                      subtitle={`${r.date} · ${typeLabel}`}
+                      value={amountCell}
+                      secondary={
+                        hasAnyAnchor && showBalance && dayBalance !== undefined
+                          ? formatCurrency(dayBalance, r.currency || "CAD")
+                          : undefined
+                      }
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onToggleExpand(r.id)}
+                    aria-label={isExpanded ? "Collapse row editor" : "Edit row"}
+                    className="text-muted-foreground hover:text-foreground p-1 -m-1"
+                  >
+                    {isExpanded ? (
+                      <ChevronDown className="h-3.5 w-3.5" />
+                    ) : (
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+                </div>
+                <div className="flex flex-wrap items-center gap-1 pb-2 pl-7 text-xs">
+                  {r.isDuplicate && r.reconcileState !== "skipped_duplicate" && (
+                    <Badge variant="outline" className="text-xs">
+                      dupe
+                    </Badge>
+                  )}
+                  {isImported && (
+                    <Badge
+                      variant="outline"
+                      className="text-xs bg-pos/10 text-pos border-pos/30"
+                    >
+                      imported
+                    </Badge>
+                  )}
+                  <RowBadge
+                    state={r.reconcileState as ReconcileState}
+                    linkedTransactionId={r.linkedTransactionId ?? null}
+                  />
+                  {rowActions && <span className="ml-auto">{rowActions(r)}</span>}
+                </div>
+                {isExpanded && (
+                  <div className="pb-3">
+                    <StagedRowEditor
+                      stagedImportId={stagedImportId}
+                      row={r}
+                      siblingRows={rows}
+                      accounts={accounts}
+                      holdings={holdings}
+                      onUpdated={onRowUpdated}
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

@@ -13,10 +13,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
+import { type DataTableColumn } from "@/components/ui/data-table";
+import { ColumnList } from "@/components/mobile/column-list";
+import { SectionPage } from "@/components/templates";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { ScrollText, RefreshCw, Trash2 } from "lucide-react";
-import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
+import { RefreshCw, Trash2 } from "lucide-react";
+import { HEADER_DESKTOP_ONLY } from "@/components/mobile";
 
 interface Row {
   id: number;
@@ -208,22 +210,21 @@ export default function AdminDiagnosticsPage() {
   );
 
   return (
-    <div className="max-w-7xl space-y-6">
-      <PageHeader
-        className="flex flex-wrap items-center justify-between gap-3"
-        lead={<ScrollText className={`h-5 w-5 text-primary ${HEADER_DESKTOP_ONLY}`} />}
-        leadClassName="flex items-center gap-2"
-        title={
-          <>
+    <SectionPage
+      id="admin-diagnostics"
+      title={<>
             Diagnostics
             {data?.meta.env && (
               <Badge variant="outline" className="ml-1 uppercase">
                 {data.meta.env}
               </Badge>
             )}
-          </>
-        }
-        overflow={[
+          </>}
+      width="report"
+      center
+      header={{
+        className: "flex flex-wrap items-center justify-between gap-3",
+        overflow: [
           { label: auto ? "Auto-refresh: on" : "Auto-refresh: off", onSelect: () => setAuto(!auto) },
           {
             label: "Clear",
@@ -232,10 +233,9 @@ export default function AdminDiagnosticsPage() {
             onSelect: () => setClearOpen(true),
             disabled: rows.length === 0 || clearing,
           },
-        ]}
-        actionsClassName="flex flex-wrap items-center gap-2"
-        actions={
-          <>
+        ],
+        actionsClassName: "flex flex-wrap items-center gap-2",
+        actions: (<>
             <label className={`${HEADER_DESKTOP_ONLY} flex items-center gap-2 text-xs text-muted-foreground`}>
               Auto-refresh
               <Switch checked={auto} onCheckedChange={setAuto} />
@@ -254,9 +254,9 @@ export default function AdminDiagnosticsPage() {
               <Trash2 className="mr-1.5 h-3.5 w-3.5" />
               Clear
             </Button>
-          </>
-        }
-      />
+          </>),
+      }}
+    >
       <p className="mt-0.5 text-sm text-muted-foreground">
         Persistent log of slow queries (≥ {(data?.meta.slowQueryMs ?? 2000).toLocaleString()}ms),
         database errors, API 5xx errors, and outbound provider failures for{" "}
@@ -316,8 +316,8 @@ export default function AdminDiagnosticsPage() {
 
       {/* Rows */}
       <Card>
-        <CardContent className="overflow-x-auto p-2">
-          <DataTable<Row>
+        <CardContent className="p-2">
+          <ColumnList<Row>
             columns={columns}
             rows={rows}
             rowKey={(r) => r.id}
@@ -345,6 +345,6 @@ export default function AdminDiagnosticsPage() {
         busy={clearing}
         onConfirm={confirmClear}
       />
-    </div>
+    </SectionPage>
   );
 }
