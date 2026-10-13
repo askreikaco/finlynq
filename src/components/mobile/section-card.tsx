@@ -2,29 +2,56 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import { SectionLabel } from "./section-label";
 
-/** Native card: 12px radius, p-4, optional UPPERCASE section label above. */
+const CARD_SURFACE = "surface-card min-w-0 rounded-xl border border-border/50 text-card-foreground";
+
+/**
+ * Native card: 12px radius, p-4. A `label` is the card's own title: rendered INSIDE the card as its
+ * first row (UPPERCASE small label, card padding), never as a heading above the card box.
+ */
 export function SectionCard({
   label,
+  labelClassName,
+  action,
+  cardClassName,
   className,
   children,
   padded = true,
   ...props
 }: Omit<React.HTMLAttributes<HTMLElement>, "children"> & {
   label?: React.ReactNode;
+  /** Extra classes for the in-card label row (e.g. a sticky date header). */
+  labelClassName?: string;
+  /** Optional control on the right of the label row (e.g. an edit button). */
+  action?: React.ReactNode;
+  /** Classes for the outer card element when a label is present (tints, borders); `className` styles the content area. */
+  cardClassName?: string;
   padded?: boolean;
   children?: React.ReactNode;
 }) {
+  if (!label) {
+    return (
+      <section data-slot="section-card" {...props}>
+        <div data-slot="section-card-body" className={cn(CARD_SURFACE, padded && "p-4", className)}>
+          {children}
+        </div>
+      </section>
+    );
+  }
   return (
-    <section data-slot="section-card" className="space-y-2" {...props}>
-      {label ? <SectionLabel>{label}</SectionLabel> : null}
-      <div
-        data-slot="section-card-body"
-        className={cn(
-          "surface-card min-w-0 rounded-xl border border-border/50 text-card-foreground",
-          padded && "p-4",
-          className,
-        )}
-      >
+    <section data-slot="section-card" {...props} className={cn(CARD_SURFACE, cardClassName)}>
+      {action ? (
+        <div data-slot="section-card-header" className="flex items-center justify-between gap-2 pr-2">
+          <SectionLabel data-slot="section-card-label" className={cn("px-4 pb-2 pt-4", labelClassName)}>
+            {label}
+          </SectionLabel>
+          {action}
+        </div>
+      ) : (
+        <SectionLabel data-slot="section-card-label" className={cn("px-4 pb-2 pt-4", labelClassName)}>
+          {label}
+        </SectionLabel>
+      )}
+      <div data-slot="section-card-body" className={cn(padded && "px-4 pb-4", className)}>
         {children}
       </div>
     </section>

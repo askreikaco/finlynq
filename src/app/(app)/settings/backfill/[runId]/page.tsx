@@ -18,7 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, CheckCircle2, Loader2, RefreshCw, Undo2 } from "lucide-react";
-import { HEADER_DESKTOP_ONLY, ListRow, MetricGrid, SectionCard, SectionLabel } from "@/components/mobile";
+import { HEADER_DESKTOP_ONLY, ListRow, MetricGrid, SectionCard } from "@/components/mobile";
 import { SectionPage } from "@/components/templates";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
@@ -682,8 +682,7 @@ function DisplacedRowsTable({
 }) {
   return (
     <div className="space-y-1.5">
-      <SectionLabel>Existing rows being displaced</SectionLabel>
-      <SectionCard padded={false} className="divide-y divide-border/50 px-3">
+      <SectionCard label="Existing rows being displaced" padded={false} className="divide-y divide-border/50 px-3">
         {ids.length === 0 && <p className="py-3 text-sm text-muted-foreground">none</p>}
         {ids.map((id) => {
           const r = displacedRows[id];
@@ -785,8 +784,7 @@ function ReplacementPreviewTable({
     <div className="space-y-3">
       {rows.length > 0 && (
         <div className="space-y-1.5">
-          <SectionLabel>Will become (UPDATE in place)</SectionLabel>
-          <SectionCard padded={false} className="divide-y divide-border/50 px-3">
+          <SectionCard label="Will become (UPDATE in place)" padded={false} className="divide-y divide-border/50 px-3">
             {rows.map((r) => (
               <ListRow
                 key={r.txId}
@@ -801,8 +799,7 @@ function ReplacementPreviewTable({
       )}
       {synth.length > 0 && (
         <div className="space-y-1.5">
-          <SectionLabel>New rows (synthesized — tagged source=&apos;backfill_synth&apos;)</SectionLabel>
-          <SectionCard padded={false} className="divide-y divide-border/50 border-warning/40 bg-warning/5 px-3">
+          <SectionCard label="New rows (synthesized — tagged source=&apos;backfill_synth&apos;)" padded={false} className="divide-y divide-border/50 px-3" cardClassName="border-warning/40 bg-warning/5">
             {synth.map((r, i) => (
               <ListRow
                 key={i}
@@ -1665,8 +1662,7 @@ function WillBecomeTable({
   if (changedKeys.has("related")) secondaryHi.add("related");
   return (
     <div className="space-y-1.5">
-      <SectionLabel>Will become</SectionLabel>
-      <SectionCard padded={false} className="border-pos/40 bg-pos/5 px-3">
+      <SectionCard label="Will become" padded={false} className="px-3" cardClassName="border-pos/40 bg-pos/5">
         <ListRow
           title={`#${willBecome.id} · ${willBecome.date}`}
           subtitle={
@@ -1841,21 +1837,21 @@ function CoverageDashboard({ coverage, proposals }: { coverage: Coverage; propos
     <SectionCard label="Canonicalization coverage">
       <MetricGrid
         metrics={[
-          { label: "Investment accounts", text: String(coverage.accountCount) },
-          { label: "Total transactions", text: String(coverage.totalTxs) },
+          { label: "Investment accounts", value: String(coverage.accountCount) },
+          { label: "Total transactions", value: String(coverage.totalTxs) },
           {
             label: "Canonical (kind set + paired)",
-            text: `${coverage.canonicalTxs} / ${coverage.totalTxs}`,
+            value: `${coverage.canonicalTxs} / ${coverage.totalTxs}`,
             sub: `${coverage.canonicalPct}%`,
           },
           {
             label: "Pending (needs backfill)",
-            text: String(coverage.nonCanonicalTxs),
+            value: String(coverage.nonCanonicalTxs),
             sub: coverage.totalTxs > 0 ? `${100 - coverage.canonicalPct}%` : undefined,
           },
           {
             label: "Not investment txs (no holding)",
-            text: String(coverage.nonInvestmentRows ?? 0),
+            value: String(coverage.nonInvestmentRows ?? 0),
             sub: (coverage.nonInvestmentRows ?? 0) > 0 ? "review & move/delete" : undefined,
           },
         ]}
@@ -1886,8 +1882,7 @@ function CoverageDashboard({ coverage, proposals }: { coverage: Coverage; propos
       {/* Per-account breakdown */}
       {coverage.perAccount.length > 0 && (
         <div className="mt-4 space-y-1.5">
-          <SectionLabel>Per-account breakdown</SectionLabel>
-          <SectionCard padded={false} className="divide-y divide-border/50 px-3">
+          <SectionCard label="Per-account breakdown" padded={false} className="divide-y divide-border/50 px-3">
             {coverage.perAccount.map((a) => (
               <ListRow
                 key={a.accountId}

@@ -123,9 +123,9 @@ describe("Batch 5: shared pieces render as one column", () => {
     render(
       <MetricGrid
         metrics={[
-          { label: "A", text: "1" },
-          { label: "B", text: "2" },
-          { label: "C", text: "3" },
+          { label: "A", value: "1" },
+          { label: "B", value: "2" },
+          { label: "C", value: "3" },
         ]}
         columns={3}
       />,

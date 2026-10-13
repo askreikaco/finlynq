@@ -251,11 +251,11 @@ function FirePageContent() {
           <MetricGrid
             metrics={[
               { label: "FIRE Number", value: result.fireNumber, currency: displayCurrency },
-              { label: "Years to FIRE", text: `${result.yearsToFire} years` },
-              { label: "FIRE Age", text: `Age ${result.fireAge}` },
-              { label: "Projected FIRE Date", text: result.fireDate },
+              { label: "Years to FIRE", value: `${result.yearsToFire} years` },
+              { label: "FIRE Age", value: `Age ${result.fireAge}` },
+              { label: "Projected FIRE Date", value: result.fireDate },
               { label: "Coast FIRE Number", value: result.coastFireNumber, currency: displayCurrency },
-              { label: "Coast FIRE Age", text: `Age ${result.coastFireAge}` },
+              { label: "Coast FIRE Age", value: `Age ${result.coastFireAge}` },
             ]}
           />
 
@@ -445,11 +445,11 @@ function FirePageContent() {
                   {/* Final value percentiles */}
                   <MetricGrid
                     metrics={[
-                      { label: "Worst case (P10)", text: fmtMoney(mcResult.finalValues.p10) },
-                      { label: "P25", text: fmtMoney(mcResult.finalValues.p25) },
-                      { label: "Median (P50)", text: fmtMoney(mcResult.finalValues.p50) },
-                      { label: "P75", text: fmtMoney(mcResult.finalValues.p75) },
-                      { label: "Best case (P90)", text: fmtMoney(mcResult.finalValues.p90) },
+                      { label: "Worst case (P10)", value: fmtMoney(mcResult.finalValues.p10) },
+                      { label: "P25", value: fmtMoney(mcResult.finalValues.p25) },
+                      { label: "Median (P50)", value: fmtMoney(mcResult.finalValues.p50) },
+                      { label: "P75", value: fmtMoney(mcResult.finalValues.p75) },
+                      { label: "Best case (P90)", value: fmtMoney(mcResult.finalValues.p90) },
                     ]}
                   />
                 </>

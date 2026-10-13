@@ -26,6 +26,7 @@ vi.mock("@/lib/data/local-read-cache-wipe", () => ({
   dropLocalUserCache: vi.fn(() => Promise.resolve()),
   dropLocalDisposableCaches: vi.fn(() => Promise.resolve()),
   dropAllLocalCaches: vi.fn(() => Promise.resolve()),
+  dropPasskeyUnlockFor: vi.fn(() => Promise.resolve()),
 }));
 
 import { getSessionInfo } from "@/lib/data/session-info";

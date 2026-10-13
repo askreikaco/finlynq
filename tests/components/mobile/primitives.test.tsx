@@ -10,7 +10,9 @@ vi.mock("next/link", () => ({
   default: ({ children, href, ...p }: React.PropsWithChildren<{ href: string }>) => React.createElement("a", { href, ...p }, children),
 }));
 
-import { Amount, ListRow, SectionCard, SectionLabel, StatTile, PillButton, DetailSheet } from "@/components/mobile";
+import { MetricCard } from "@/components/metric-card";
+import { Hash } from "lucide-react";
+import { Amount, ListRow, SectionCard, SectionLabel, PillButton, DetailSheet } from "@/components/mobile";
 import { formatCurrency } from "@/lib/currency";
 import { formatCompactNumber } from "@/lib/utils/number";
 
@@ -107,7 +109,7 @@ describe("ListRow", () => {
   });
 });
 
-describe("SectionCard / SectionLabel / StatTile", () => {
+describe("SectionCard / SectionLabel / MetricCard", () => {
   it("SectionLabel is text-xs/700 uppercase tracking-normal muted", () => {
     render(<SectionLabel>Cash</SectionLabel>);
     expect(cls(screen.getByRole("heading", { name: "Cash" }))).toEqual(
@@ -115,11 +117,14 @@ describe("SectionCard / SectionLabel / StatTile", () => {
     );
   });
 
-  it("SectionCard: label above a 12px-radius, p-4 card using theme tokens", () => {
+  it("SectionCard: label inside a 12px-radius card using theme tokens, body padded", () => {
     const { container } = render(<SectionCard label="Net worth">body</SectionCard>);
     expect(screen.getByRole("heading", { name: "Net worth" })).toBeTruthy();
+    const card = container.querySelector("[data-slot=section-card]")!;
+    expect(cls(card)).toEqual(expect.arrayContaining(["rounded-xl", "surface-card", "border-border/50"]));
+    expect(card.contains(screen.getByRole("heading", { name: "Net worth" }))).toBe(true);
     const body = container.querySelector("[data-slot=section-card-body]")!;
-    expect(cls(body)).toEqual(expect.arrayContaining(["rounded-xl", "p-4", "surface-card", "border-border/50"]));
+    expect(cls(body)).toEqual(expect.arrayContaining(["px-4", "pb-4"]));
     expect(body.textContent).toBe("body");
   });
 
@@ -128,8 +133,8 @@ describe("SectionCard / SectionLabel / StatTile", () => {
     expect(screen.queryByRole("heading")).toBeNull();
   });
 
-  it("StatTile asserts MetricCard label contract: label text rendered with MetricCard styling", () => {
-    render(<StatTile label="Income" value={<Amount value={1} currency="USD" />} sub="this month" />);
+  it("MetricCard label contract: label text rendered with MetricCard styling", () => {
+    render(<MetricCard label="Income" icon={Hash} value={<Amount value={1} currency="USD" />} sub="this month" />);
     // Assert MetricCard contract: label text is rendered with MetricCard styling
     expect(screen.getByText("Income")).toBeTruthy();
     expect(cls(screen.getByText("Income"))).toEqual(
@@ -141,8 +146,8 @@ describe("SectionCard / SectionLabel / StatTile", () => {
     expect(screen.getByText("this month")).toBeTruthy();
   });
 
-  it("StatTile renders ReactNode labels (not just strings) and preserves their structure", () => {
-    render(<StatTile label={<span data-testid="lbl">Inc<b>ome</b></span>} value="1" />);
+  it("MetricCard renders ReactNode labels (not just strings) and preserves their structure", () => {
+    render(<MetricCard label={<span data-testid="lbl">Inc<b>ome</b></span>} icon={Hash} value="1" />);
     expect(screen.getByTestId("lbl")).toBeTruthy();
     expect(screen.queryByText("Stat")).toBeNull();
   });

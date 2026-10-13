@@ -84,7 +84,7 @@ describe("level 1: /portfolio/new operation list", () => {
       expect(row.querySelectorAll("svg").length).toBe(2); // leading icon + chevron
       expect(row.className).toMatch(/min-h-14/);
     }
-    expect(container.querySelector(".grid")).toBeNull();
+    expect(container.querySelector("section .grid, [data-slot='section-card'] .grid")).toBeNull();
     expect(container.querySelector("[data-slot='card']")).toBeNull();
     expect(screen.queryByText(/Open/)).toBeNull();
   });

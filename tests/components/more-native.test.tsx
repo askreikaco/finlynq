@@ -102,13 +102,13 @@ describe("More account card", () => {
 });
 
 describe("More section headers and groups", () => {
-  it("headers appear in the existing group order (Explore, Tools, Admin) with Appearance after them, in grouped lists", async () => {
+  it("headers appear in the existing group order (Explore, Tools, Admin) with Appearance after them, inside their grouped lists", async () => {
     session = { isAdmin: true };
     render(<MoreMenu />);
     await waitFor(() => expect(screen.getByTestId("more-group-admin")).toBeTruthy());
     const headers = screen
       .getByTestId("more-menu")
-      .querySelectorAll("section > h2");
+      .querySelectorAll("[data-slot='inset-group'] > h2");
     expect(Array.from(headers).map((h) => h.textContent)).toEqual([
       "Account",
       "Explore",

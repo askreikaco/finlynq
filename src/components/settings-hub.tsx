@@ -46,10 +46,10 @@ export function SettingsHub() {
       <div className="grid grid-cols-1 items-start gap-6 regular:grid-cols-2 wide:grid-cols-3">
         {groups.map((group) => (
           <section key={group.title} data-slot="settings-hub-group" className="space-y-2">
-            <h2 className="px-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              {group.title}
-            </h2>
             <div className="divide-y divide-border/50 overflow-hidden rounded-2xl bg-card">
+              <h2 className="px-4 pb-1 pt-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {group.title}
+              </h2>
               {group.entries.map((entry) => {
                 const Icon = entry.icon;
                 return (

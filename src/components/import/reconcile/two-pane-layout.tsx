@@ -25,23 +25,19 @@ export function TwoPaneLayout({
 }) {
   return (
     <div className="grid grid-cols-1 gap-4">
-      <section className="flex flex-col">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            {leftLabel}
-          </h2>
-        </div>
-        <div className="max-h-[55dvh] overflow-y-auto rounded-lg border bg-card">
+      <section className="flex max-h-[55dvh] flex-col overflow-hidden rounded-lg border bg-card">
+        <h2 className="px-4 pb-2 pt-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          {leftLabel}
+        </h2>
+        <div className="min-h-0 overflow-y-auto">
           {left}
         </div>
       </section>
-      <section className="flex flex-col">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            {rightLabel}
-          </h2>
-        </div>
-        <div className="max-h-[55dvh] overflow-y-auto rounded-lg border bg-card">
+      <section className="flex max-h-[55dvh] flex-col overflow-hidden rounded-lg border bg-card">
+        <h2 className="px-4 pb-2 pt-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          {rightLabel}
+        </h2>
+        <div className="min-h-0 overflow-y-auto">
           {right}
         </div>
       </section>

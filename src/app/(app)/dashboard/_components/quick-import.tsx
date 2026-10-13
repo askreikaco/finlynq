@@ -49,7 +49,7 @@ export function QuickImport() {
   return (
     <SectionCard
       label="Quick Import"
-      className={`card-hover transition-colors duration-200 cursor-pointer ${isActive ? "border-primary bg-primary/5" : ""}`}
+      cardClassName={`card-hover transition-colors duration-200 cursor-pointer ${isActive ? "border-primary bg-primary/5" : ""}`}
       onDrop={onDrop}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
