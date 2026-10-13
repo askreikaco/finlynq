@@ -18,6 +18,10 @@ export async function JsonLd({ data }: { data: object }) {
     <script
       type="application/ld+json"
       nonce={nonce}
+      // Browsers hide the nonce attribute value from the DOM after load (nonce hiding), so the client sees nonce=""
+      // while the server HTML carries the real one: React reports a hydration mismatch. The nonce is the ONLY
+      // attribute that differs and the content is static, so this single element is safe to suppress.
+      suppressHydrationWarning
       // Structured data is server-built from literals — no user input.
       dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
     />

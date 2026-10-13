@@ -6,6 +6,7 @@
 // single column (ListRows, tap opens a bottom Sheet), stat blocks sit in MetricGrid, and the remaining pages use
 // SectionPage (report width, centred). Static checks cover every converted file; render checks cover the shared
 // pieces and the inbox list without a live backend.
+import { Wallet } from "lucide-react";
 import * as React from "react";
 import * as fs from "fs";
 import * as path from "path";
@@ -133,9 +134,9 @@ describe("Batch 5: shared pieces render as one column", () => {
     render(
       <MetricGrid
         metrics={[
-          { label: "A", value: "1" },
-          { label: "B", value: "2" },
-          { label: "C", value: "3" },
+          { icon: Wallet, label: "A", value: "1" },
+          { icon: Wallet, label: "B", value: "2" },
+          { icon: Wallet, label: "C", value: "3" },
         ]}
         columns={3}
       />,

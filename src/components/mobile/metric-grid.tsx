@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
-import { Hash } from "lucide-react";
 import { MetricCard, type MetricTone } from "@/components/metric-card";
 import { type AmountTone } from "./amount";
 import { formatCurrency } from "@/lib/currency";
@@ -21,7 +20,8 @@ export interface MetricItem {
   /** Stable id -> data-testid="metric-<id>" on the card wrapper. */
   id?: string;
   ariaLabel?: string;
-  icon?: LucideIcon;
+  /** REQUIRED: every metric card carries a meaningful icon tile (no placeholder). */
+  icon: LucideIcon;
   /** Icon tile colour. */
   iconTone?: MetricTone;
   valueClassName?: string;
@@ -48,16 +48,24 @@ export interface MetricItem {
  */
 export const METRIC_GRID_CLASS = "grid grid-cols-2 regular:grid-cols-3 wide:grid-cols-4 gap-3";
 
+/** Odd card counts on mobile (2 columns): the first card spans the full row, then pairs (Net Worth first, then 2 + 2). */
+const MOBILE_LEAD = "[&>*:first-child]:col-span-2 regular:[&>*:first-child]:col-span-1";
+
 /**
- * METRIC_GRID_CLASS, but never more columns than items (no empty cells): 1 item = 1 column, 2 items = 2 columns
- * at every size, 3 items = 2 then 3 columns. 4 or more items use METRIC_GRID_CLASS.
+ * METRIC_GRID_CLASS, but count-aware (no empty cells):
+ * - 1 item = 1 column, 2 items = 2 columns at every size;
+ * - 3 items = first card full-width then 2 on mobile, 3 columns from tablet;
+ * - 6 items = 3 columns from tablet up (3 + 3, never 4 + 2);
+ * - other counts use METRIC_GRID_CLASS (4 and 8 keep the owner default of 4 on desktop); an odd count >= 5
+ *   leads with one full-width card on mobile.
  * `max` caps the desktop column count (default 4; 3 = at most 3 on desktop, 2 = always 2).
  */
 export function metricGridClass(count: number, gap = "gap-3", max: 2 | 3 | 4 = 4): string {
   if (count <= 1) return `grid grid-cols-1 ${gap}`;
   if (count === 2 || max === 2) return `grid grid-cols-2 ${gap}`;
-  if (count === 3 || max === 3) return `grid grid-cols-2 regular:grid-cols-3 ${gap}`;
-  return `grid grid-cols-2 regular:grid-cols-3 wide:grid-cols-4 ${gap}`;
+  if (count === 3 || max === 3) return `grid grid-cols-2 regular:grid-cols-3 ${gap}${count % 2 === 1 ? ` ${MOBILE_LEAD}` : ""}`;
+  if (count === 6) return `grid grid-cols-2 regular:grid-cols-3 ${gap}`;
+  return `grid grid-cols-2 regular:grid-cols-3 wide:grid-cols-4 ${gap}${count % 2 === 1 ? ` ${MOBILE_LEAD}` : ""}`;
 }
 
 const TONE_CLASS: Record<AmountTone, string> = {
@@ -85,7 +93,7 @@ export function MetricItemCard({ m }: { m: MetricItem }) {
   const card = (
     <MetricCard
       label={m.label}
-      icon={m.icon ?? Hash}
+      icon={m.icon}
       tone={m.iconTone}
       value={value}
       currency={money ? m.currency : undefined}

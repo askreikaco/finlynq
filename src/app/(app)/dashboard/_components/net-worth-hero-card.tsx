@@ -19,6 +19,8 @@ export interface NetWorthHeroCardProps {
   onMouseMove?: React.MouseEventHandler<HTMLDivElement>;
   /** Optional line under the number (shown instead of the pill when there is no change). */
   footnote?: string;
+  /** Range-aware comparison (src/lib/metrics ResolvedCard): the formatted signed-difference line and the % change. When given it replaces change / changePct. */
+  comparison?: { delta: string | null; pct: number | null };
 }
 
 /**
@@ -37,6 +39,7 @@ export function NetWorthHeroCard({
   href,
   onMouseMove,
   footnote,
+  comparison,
 }: NetWorthHeroCardProps) {
   return (
     <MetricCard
@@ -46,8 +49,8 @@ export function NetWorthHeroCard({
       size="hero"
       value={value}
       currency={currency}
-      badgePct={change != null ? changePct : null}
-      sub={change != null ? `${change >= 0 ? "+" : ""}${formatCurrency(change, currency)} ${changeCaption}` : undefined}
+      badgePct={comparison ? comparison.pct : change != null ? changePct : null}
+      sub={comparison ? (comparison.delta ?? undefined) : change != null ? `${change >= 0 ? "+" : ""}${formatCurrency(change, currency)} ${changeCaption}` : undefined}
       note={footnote}
       sparkData={sparkData}
       sparkLabels={sparkLabels}

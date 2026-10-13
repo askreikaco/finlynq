@@ -18,7 +18,7 @@ import {
 import { MetricRangeSelect } from "@/components/metric-range-select";
 import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { compareCaption, seriesWindow, type MonthPoint } from "@/lib/metrics/period";
-import { resolveCard } from "@/lib/metrics/delta";
+import { NO_HISTORY_CAPTION, resolveCard } from "@/lib/metrics/delta";
 import type { PageCard } from "@/lib/card-layout";
 import { ListPage, type ListPageContext } from "@/components/templates";
 import type { Goal } from "./_components/goal-form";
@@ -149,13 +149,13 @@ function GoalsBody({ ctx, displayCurrency }: { ctx: GoalCtx; displayCurrency: st
     kind: "money", currency: displayCurrency, caption: compareCaption(selection),
   });
   const summaryMetrics: MetricItem[] = [
-    { id: "total-target", label: "Total Target", icon: Target, iconTone: "indigo", value: totalTarget, currency: displayCurrency, note: caveat },
+    { id: "total-target", label: "Total Target", icon: Target, iconTone: "indigo", value: totalTarget, currency: displayCurrency, sub: `Across ${goals.length} goal${goals.length === 1 ? "" : "s"}`, note: caveat },
     {
       id: "current-progress", label: "Current Progress", icon: PiggyBank, iconTone: "emerald", value: progressCard.value ?? totalCurrent, currency: displayCurrency,
-      valueClassName: "text-pos", sub: progressCard.delta ?? undefined, note: caveat, badgePct: progressCard.badgePct,
+      valueClassName: "text-pos", sub: progressCard.delta ?? NO_HISTORY_CAPTION, note: caveat, badgePct: progressCard.badgePct,
       sparkData: progressCard.sparkData, sparkLabels: progressCard.sparkLabels, sparkColor: "#10b981",
     },
-    { id: "completed", label: "Completed", icon: CheckCircle2, iconTone: "violet", value: <span>{`${completed.length} / ${goals.length}`}</span> },
+    { id: "completed", label: "Completed", icon: CheckCircle2, iconTone: "violet", value: <span>{`${completed.length} / ${goals.length}`}</span>, sub: `${active.length} still active` },
   ];
 
   const nodes: Record<string, ReactNode> = {

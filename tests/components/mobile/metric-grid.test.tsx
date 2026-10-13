@@ -1,6 +1,7 @@
 /**
  * @vitest-environment jsdom
  */
+import { Wallet } from "lucide-react";
 import { describe, it, expect, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 import { MetricGrid, METRIC_GRID_CLASS, metricGridClass } from "@/components/mobile/metric-grid";
@@ -10,10 +11,10 @@ afterEach(cleanup);
 
 const tokens = (cls: string) => cls.split(/\s+/);
 const four = [
-  { label: "A", value: 1 },
-  { label: "B", value: 2 },
-  { label: "C", value: 3 },
-  { label: "D", value: 4 },
+  { icon: Wallet, label: "A", value: 1 },
+  { icon: Wallet, label: "B", value: 2 },
+  { icon: Wallet, label: "C", value: 3 },
+  { icon: Wallet, label: "D", value: 4 },
 ];
 
 describe("metric grid rule: 2 mobile (max), 3 tablet (max), 4 desktop (default)", () => {
@@ -34,6 +35,22 @@ describe("metric grid rule: 2 mobile (max), 3 tablet (max), 4 desktop (default)"
     expect(metricGridClass(2)).not.toContain("regular:grid-cols-3");
     expect(metricGridClass(3)).toContain("grid-cols-2 regular:grid-cols-3");
     expect(metricGridClass(3)).not.toContain("wide:grid-cols-4");
+  });
+
+  it("6 cards = 3 columns from tablet up (never 4 + 2); 4 and 8 keep the 4-column desktop default", () => {
+    expect(metricGridClass(6)).toContain("regular:grid-cols-3");
+    expect(metricGridClass(6)).not.toContain("wide:grid-cols-4");
+    expect(metricGridClass(4)).toContain("wide:grid-cols-4");
+    expect(metricGridClass(8)).toContain("wide:grid-cols-4");
+  });
+
+  it("odd counts on mobile lead with one full-width card (3 = 1 + 2); even counts do not", () => {
+    expect(metricGridClass(3)).toContain("[&>*:first-child]:col-span-2");
+    expect(metricGridClass(3)).toContain("regular:[&>*:first-child]:col-span-1");
+    expect(metricGridClass(5)).toContain("[&>*:first-child]:col-span-2");
+    expect(metricGridClass(4)).not.toContain("first-child");
+    expect(metricGridClass(6)).not.toContain("first-child");
+    expect(metricGridClass(2)).not.toContain("first-child");
   });
 
   it("max caps the desktop columns (3 = at most 3, 2 = always 2)", () => {
@@ -71,8 +88,8 @@ describe("MetricGrid", () => {
     render(
       <MetricGrid
         metrics={[
-          { label: "Total debt", value: 1234.5, currency: "USD", tone: "neg" },
-          { label: "FIRE age", value: "Age 65" },
+          { icon: Wallet, label: "Total debt", value: 1234.5, currency: "USD", tone: "neg" },
+          { icon: Wallet, label: "FIRE age", value: "Age 65" },
         ]}
       />,
     );
@@ -81,13 +98,13 @@ describe("MetricGrid", () => {
   });
 
   it("shows the sub line under the value and a signed amount when showSign is set", () => {
-    render(<MetricGrid metrics={[{ label: "Extra", value: 50, currency: "USD", showSign: true, sub: "per month" }]} />);
+    render(<MetricGrid metrics={[{ icon: Wallet, label: "Extra", value: 50, currency: "USD", showSign: true, sub: "per month" }]} />);
     expect(screen.getByText("+" + formatCurrency(50, "USD"))).toBeTruthy();
     expect(screen.getByText("per month")).toBeTruthy();
   });
 
   it("renders no table", () => {
-    const { container } = render(<MetricGrid metrics={[{ label: "A", value: 1 }]} />);
+    const { container } = render(<MetricGrid metrics={[{ icon: Wallet, label: "A", value: 1 }]} />);
     expect(container.querySelector("table")).toBeNull();
   });
 });

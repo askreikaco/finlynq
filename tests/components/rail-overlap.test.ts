@@ -35,8 +35,7 @@ describe("desktop rail: fixed elements clear it at regular+", () => {
     expect(read("src/components/analytics-consent.tsx")).toContain(RAIL_OFFSET);
   });
 
-  it("version gate and unlock panel (inset-x-0) are offset past the rail", () => {
-    expect(read("src/components/version-gate.tsx")).toContain(RAIL_OFFSET);
+  it("unlock panel (inset-x-0) is offset past the rail", () => {
     expect(read("src/components/unlock-panel.tsx")).toContain(RAIL_OFFSET);
   });
 

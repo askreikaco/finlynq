@@ -19,11 +19,16 @@ export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const reportingCurrency = await getDisplayCurrency(userId, url.searchParams.get("currency"));
 
+  // ?history=N adds the month-by-month series (N previous month ends + the current month) for the dashboard cards.
+  const historyParam = Number(url.searchParams.get("history"));
+  const historyMonths = Number.isFinite(historyParam) ? Math.min(12, Math.max(0, Math.floor(historyParam))) : 0;
+
   const payload = await calculateFinancialHealth({
     db,
     userId,
     dek: dek ?? null,
     reportingCurrency,
+    historyMonths,
   });
 
   return NextResponse.json(payload);

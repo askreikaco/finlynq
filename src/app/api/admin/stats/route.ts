@@ -57,7 +57,9 @@ export async function GET(request: NextRequest) {
   const d30 = now - 30 * 86_400_000;
 
   let last7 = 0;
+  let prev7 = 0;
   let last30 = 0;
+  const registrationsByMonth: Record<string, number> = {};
   let verified = 0;
   let mfaEnabled = 0;
   let totalLogins = 0;
@@ -68,7 +70,12 @@ export async function GET(request: NextRequest) {
   for (const u of allUsers) {
     const t = new Date(u.createdAt as string).getTime();
     if (t >= d7) last7++;
+    else if (t >= now - 14 * 86_400_000) prev7++;
     if (t >= d30) last30++;
+    if (Number.isFinite(t)) {
+      const m = new Date(t).toISOString().slice(0, 7);
+      registrationsByMonth[m] = (registrationsByMonth[m] ?? 0) + 1;
+    }
     if (u.emailVerified) verified++;
     if (u.mfaEnabled) mfaEnabled++;
     const plan = (u.plan as string | null) ?? "free";
@@ -112,6 +119,10 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     ...stats,
     registrationsLast7Days: last7,
+    // The 7 days before those (for the "New (7d)" card's comparison) and the signups per month (users that still exist;
+    // the Total Users card's history is their running total).
+    registrationsPrevious7Days: prev7,
+    registrationsByMonth,
     registrationsLast30Days: last30,
     verifiedUsers: verified,
     mfaEnabledUsers: mfaEnabled,

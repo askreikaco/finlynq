@@ -27,13 +27,14 @@ import { DetailSheet, ListRow, MetricGrid, SectionCard, type DetailItem } from "
 import { SectionPage } from "@/components/templates/section-page";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { EmptyState } from "@/components/empty-state";
+import { Card, CardContent } from "@/components/ui/card";
+import { CARD_ROW_GRID } from "@/components/mobile/section-card";
 import { ErrorState } from "@/components/error-state";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { formatCurrency, formatDate } from "@/lib/currency";
 import { parseSaveError } from "@/lib/save-error";
 import { localDateISO } from "@/lib/utils/date";
-import { TW } from "@/lib/design/tokens";
 import {
   FREQUENCY_SUFFIX,
   frequencyLabel,
@@ -70,6 +71,9 @@ import {
   Sparkles,
   Trash2,
   XCircle,
+  CalendarClock,
+  CalendarRange,
+  CheckCircle2,
 } from "lucide-react";
 
 type SortField = "nextDate" | "name" | "cost";
@@ -364,15 +368,15 @@ function SubscriptionsPageContent() {
     >
       <MetricGrid
         metrics={[
-          { label: "Per month", value: totals.monthly, currency: displayCurrency },
-          { label: "Per year", value: totals.annual, currency: displayCurrency },
-          {
+          { icon: CalendarClock, label: "Per month", value: totals.monthly, currency: displayCurrency, sub: `${totals.activeCount} active subscription${totals.activeCount === 1 ? "" : "s"}` },
+          { icon: CalendarRange, label: "Per year", value: totals.annual, currency: displayCurrency, sub: "Annualised" },
+          { icon: CalendarClock,
             label: `Due in next ${DUE_SOON_DAYS} days`,
             value: totals.dueSoonAmount,
             currency: displayCurrency,
             sub: `${totals.dueSoonCount} payment${totals.dueSoonCount === 1 ? "" : "s"}`,
           },
-          { label: "Active", value: String(totals.activeCount), sub: `of ${subs.length} tracked` },
+          { icon: CheckCircle2, label: "Active", value: String(totals.activeCount), sub: `of ${subs.length} tracked` },
         ]}
       />
 
@@ -416,16 +420,16 @@ function SubscriptionsPageContent() {
           onTrack={trackDetected}
         />
       ) : (
-        <div data-slot="subscription-groups" className={TW.grid3}>
+        <div data-slot="subscription-groups" className="grid grid-cols-1 gap-6">
           {/* Detected from transactions */}
           {suggestions.length > 0 && (
-            <SectionCard label="Found in your transactions" padded={false} className="px-3">
+            <SectionCard label="Found in your transactions" padded={false} className="col-span-full px-3">
               <p className="px-1 pt-3 pb-1 text-sm text-muted-foreground">
                 {suggestions.length === 1
                   ? "1 payment repeats on a schedule but isn't tracked yet."
                   : `${suggestions.length} payments repeat on a schedule but aren't tracked yet.`}
               </p>
-              <div className="divide-y divide-border/50">
+              <div className={`divide-y divide-border/50 ${CARD_ROW_GRID}`}>
                 {visibleSuggestions.map((r) => {
                   const key = `track:${r.payee}|${r.currency}`;
                   const freq = frequencyOrMonthly(r.frequency);
@@ -457,18 +461,18 @@ function SubscriptionsPageContent() {
           )}
 
           {subs.length === 0 && (
-            <div className="col-span-full"><EmptyState
+            <Card className="col-span-full"><CardContent className="p-0"><EmptyState
               icon={CreditCard}
               title="No subscriptions tracked yet"
               description="Add streaming services, insurance, memberships and other repeating bills (weekly to annual) to see what they cost you and when each one is due."
               action={{ label: "Add subscription", onClick: openAdd }}
-            /></div>
+            /></CardContent></Card>
           )}
 
           {/* One inset list per status group, in the sort order chosen above. */}
           {groups.map((g) =>
             g.rows.length === 0 ? null : (
-              <SectionCard key={g.key} label={`${g.title} (${g.rows.length})`} padded={false} className="divide-y divide-border/50 px-3">
+              <SectionCard key={g.key} label={`${g.title} (${g.rows.length})`} padded={false} className={`col-span-full divide-y divide-border/50 px-3 ${CARD_ROW_GRID}`}>
                 {g.rows.map((sub) => (
                   <SubscriptionRow
                     key={sub.id}

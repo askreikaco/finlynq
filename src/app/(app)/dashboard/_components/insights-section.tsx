@@ -80,7 +80,7 @@ export function InsightsSection({ currency }: { currency?: string }) {
 
   return (
     <motion.div
-      className="grid grid-cols-1 gap-5"
+      className="contents"
       variants={containerVariants}
       initial="hidden"
       animate="visible"

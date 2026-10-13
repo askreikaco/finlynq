@@ -30,20 +30,32 @@ function toneForDti(pct: number): string {
  */
 export type KeyMetricsData = Pick<HealthData, "savingsRatePct" | "dti">;
 
-/** Savings-rate history derived from the monthly income / expense series (see the dashboard page). */
-export type SavingsTrend = {
+/** Badge / signed difference / monthly sparkline of one dashboard ratio card (null / undefined = value only). */
+export type MetricTrend = {
   badgePct: number | null;
   /** Signed difference line ("+2.5 pp vs last month"); null = previous period not derivable. */
   delta: string | null;
   sparkData?: number[];
   sparkLabels?: string[];
-  /** Replaces the health payload's 3-month figure when a custom range is selected. */
+};
+
+/** Savings-rate history derived from the monthly income / expense series (see the dashboard page). */
+export type SavingsTrend = MetricTrend & {
+  /**
+   * The Savings Rate shown as the big value: the rate of the SAME period the badge / delta compare (the reference
+   * month by default, or the selected range). The health payload's 3-month figure then moves to the note.
+   */
   value?: number | null;
 };
 
+/** Debt-to-Income: badge / delta (percentage points) / sparkline from the monthly DTI history. */
+export type DtiTrend = MetricTrend;
+
 export interface KeyMetricsProps {
-  /** Savings Rate badge / delta / sparkline. DTI has no monthly series, so it stays value-only. */
+  /** Savings Rate badge / delta / sparkline. */
   savingsTrend?: SavingsTrend;
+  /** Debt-to-Income badge / delta / sparkline (omitted = value only, e.g. the Family overview has no DTI history). */
+  dtiTrend?: DtiTrend;
   health: KeyMetricsData | null;
   /** Window caption of the savings rate (dashboard: "last 3 months"). */
   savingsWindow?: string;
@@ -65,6 +77,7 @@ export function KeyMetrics({
   unavailable,
   tiles = false,
   savingsTrend,
+  dtiTrend,
 }: KeyMetricsProps) {
   const loading = health === null;
   const savings = unavailable?.savings
@@ -85,6 +98,11 @@ export function KeyMetrics({
         (savings != null
           ? `of income saved · ${savingsWindow}`
           : "No income data yet"),
+      // 3-month figure (health payload) as the note when the big value is the period's own rate.
+      threeMonth:
+        savingsTrend?.value !== undefined && health?.savingsRatePct != null && !unavailable?.savings
+          ? `last 3 months: ${health.savingsRatePct}%`
+          : undefined,
     },
     {
       key: "dti",
@@ -111,6 +129,8 @@ export function KeyMetrics({
     },
   ];
 
+  const trendOf = (key: string): SavingsTrend | DtiTrend | undefined => (key === "savings" ? savingsTrend : key === "dti" ? dtiTrend : undefined);
+
   const tileNodes = cells.map((c) => (
     <MetricCard
       key={c.key}
@@ -119,12 +139,17 @@ export function KeyMetrics({
       tone={c.key === "savings" ? "emerald" : "amber"}
       value={c.value}
       valueClassName={c.tone}
-      sub={c.key === "savings" && savingsTrend?.delta ? savingsTrend.delta : c.sub}
-      note={c.key === "savings" && savingsTrend?.delta ? c.sub : undefined}
-      badgePct={c.key === "savings" ? savingsTrend?.badgePct : undefined}
-      sparkData={c.key === "savings" ? savingsTrend?.sparkData : undefined}
-      sparkLabels={c.key === "savings" ? savingsTrend?.sparkLabels : undefined}
-      sparkColor="#10b981"
+      sub={trendOf(c.key)?.delta ? trendOf(c.key)!.delta : c.sub}
+      note={
+        trendOf(c.key)?.delta
+          ? ("threeMonth" in c && c.threeMonth ? `${c.sub} · ${c.threeMonth}` : c.sub)
+          : "threeMonth" in c ? c.threeMonth : undefined
+      }
+      badgePct={trendOf(c.key)?.badgePct}
+      invertTone={c.key === "dti"}
+      sparkData={trendOf(c.key)?.sparkData}
+      sparkLabels={trendOf(c.key)?.sparkLabels}
+      sparkColor={c.key === "savings" ? "#10b981" : "#f59e0b"}
       loading={loading}
     />
   ));

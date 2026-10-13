@@ -268,6 +268,34 @@ describe("persist store", () => {
     expect(await loadSnapshot(b, "dev-1", CTX)).toBeNull();
   });
 
+  it("(6a) a deploy (new build id, same data schema version) keeps the snapshot; a schema version change drops it", async () => {
+    const { DATA_SCHEMA_VERSION } = await import("@/lib/local-first/data-schema-version");
+    const a = uid();
+    const prev = process.env.NEXT_PUBLIC_APP_BUILD;
+    try {
+      process.env.NEXT_PUBLIC_APP_BUILD = "build-1";
+      await saveSnapshot(a, "dev-1", fixture(), { build: DATA_SCHEMA_VERSION, schemaVer: 1 });
+      process.env.NEXT_PUBLIC_APP_BUILD = "build-2";
+      expect(await loadSnapshot(a, "dev-1", { build: DATA_SCHEMA_VERSION, schemaVer: 1 })).not.toBeNull();
+      expect(await loadSnapshot(a, "dev-1", { build: `${DATA_SCHEMA_VERSION}-next`, schemaVer: 1 })).toBeNull();
+      // legacy snapshot bound to an old build string reads as "no snapshot", not a crash
+      await saveSnapshot(a, "dev-1", fixture(), { build: "1760000000", schemaVer: 1 });
+      expect(await loadSnapshot(a, "dev-1", { build: DATA_SCHEMA_VERSION, schemaVer: 1 })).toBeNull();
+    } finally {
+      if (prev === undefined) delete process.env.NEXT_PUBLIC_APP_BUILD;
+      else process.env.NEXT_PUBLIC_APP_BUILD = prev;
+    }
+  });
+
+  it("(6b) provider and use-local-balances key the device cache by the schema version, not the build id", async () => {
+    const { readFileSync } = await import("node:fs");
+    for (const f of ["src/lib/data/provider.tsx", "src/lib/local-first/read-cache/use-local-balances.ts"]) {
+      const src = readFileSync(f, "utf8");
+      expect(src).toContain("DATA_SCHEMA_VERSION");
+      expect(src).not.toContain("NEXT_PUBLIC_APP_BUILD");
+    }
+  });
+
   it("(6) a schemaVer or build mismatch wipes the database and returns null", async () => {
     const a = uid();
     const name = await readCacheDbName(a);

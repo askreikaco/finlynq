@@ -100,7 +100,9 @@ describe("Settings shell: no top bar of its own (the page's PageHeader is the on
     );
     const slot = container.querySelector('[data-slot="settings-content"]') as HTMLElement;
     expect(slot.className).not.toMatch(/overflow-x-(auto|scroll)/);
-    expect(slot.querySelector(".overflow-x-clip")?.textContent).toBe("Test content");
+    expect(slot.className).not.toMatch(/overflow-/);
+    expect(slot.textContent).toBe("Test content");
+    expect(slot.querySelector("[class*=overflow-]")).toBeNull(); // nothing clips the full-bleed header bar
   });
 
   it("source: no hand-built bar, no PHONE_BAR primitives, no back context, no sr-only title hack, no viewport split", () => {

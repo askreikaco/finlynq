@@ -13,7 +13,7 @@ import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
   AreaChart, Area, Legend,
 } from "recharts";
-import { Calculator } from "lucide-react";
+import { Calculator, CalendarClock, Coins, Landmark, PiggyBank, Percent, Receipt, TrendingUp, Wallet } from "lucide-react";
 import { AmountInput } from "@/components/amount-input";
 import { Amount, ListRow, MetricGrid, SectionCard } from "@/components/mobile";
 import { SectionPage } from "@/components/templates/section-page";
@@ -115,10 +115,10 @@ function HomePurchaseTab() {
         <>
           <MetricGrid
             metrics={[
-              { label: "Monthly Mortgage", value: result.monthlyPayment, currency: displayCurrency },
-              { label: "Total Monthly Cost", value: result.monthlyCashFlow, currency: displayCurrency, tone: "neg" },
-              { label: "Down Payment", value: result.downPayment, currency: displayCurrency },
-              { label: "Total Interest", value: result.totalInterest, currency: displayCurrency, tone: "neg" },
+              { icon: Landmark, label: "Monthly Mortgage", value: result.monthlyPayment, currency: displayCurrency },
+              { icon: Wallet, label: "Total Monthly Cost", value: result.monthlyCashFlow, currency: displayCurrency, tone: "neg" },
+              { icon: PiggyBank, label: "Down Payment", value: result.downPayment, currency: displayCurrency },
+              { icon: Percent, label: "Total Interest", value: result.totalInterest, currency: displayCurrency, tone: "neg" },
             ]}
           />
           <SectionCard label="Mortgage balance over time">
@@ -135,9 +135,9 @@ function HomePurchaseTab() {
           </SectionCard>
           <MetricGrid
             metrics={[
-              { label: "Monthly Property Tax", value: result.monthlyPropertyTax, currency: displayCurrency },
-              { label: "Monthly Maintenance", value: result.monthlyMaintenance, currency: displayCurrency },
-              { label: "Total Payments", value: result.totalPayments, currency: displayCurrency },
+              { icon: Receipt, label: "Monthly Property Tax", value: result.monthlyPropertyTax, currency: displayCurrency },
+              { icon: Receipt, label: "Monthly Maintenance", value: result.monthlyMaintenance, currency: displayCurrency },
+              { icon: Coins, label: "Total Payments", value: result.totalPayments, currency: displayCurrency },
             ]}
           />
         </>
@@ -191,9 +191,9 @@ function ExtraSavingsTab() {
         <>
           <MetricGrid
             metrics={[
-              { label: "Future Value", value: result.futureValue, currency: displayCurrency, tone: "pos" },
-              { label: "Total Contributed", value: result.totalContributions, currency: displayCurrency },
-              { label: "Investment Growth", value: result.totalGrowth, currency: displayCurrency },
+              { icon: TrendingUp, label: "Future Value", value: result.futureValue, currency: displayCurrency, tone: "pos" },
+              { icon: PiggyBank, label: "Total Contributed", value: result.totalContributions, currency: displayCurrency },
+              { icon: Coins, label: "Investment Growth", value: result.totalGrowth, currency: displayCurrency },
             ]}
           />
           <SectionCard label="Growth over time">
@@ -224,8 +224,8 @@ function StrategyCard({ title, hint, data, currency }: { title: string; hint: st
       <div className="space-y-4">
         <MetricGrid
           metrics={[
-            { label: "Total Interest", value: data.totalInterest, currency, tone: "neg" },
-            { label: "Months to Debt-Free", value: String(data.totalMonths) },
+            { icon: Percent, label: "Total Interest", value: data.totalInterest, currency, tone: "neg" },
+            { icon: CalendarClock, label: "Months to Debt-Free", value: String(data.totalMonths) },
           ]}
         />
         <div className="divide-y divide-border/50">
@@ -372,10 +372,10 @@ function IncomeSide({ label, data, currency }: { label: string; data: IncomeChan
     <SectionCard label={label}>
       <MetricGrid
         metrics={[
-          { label: "Annual Income", value: data.annualIncome, currency },
-          { label: "Monthly Take-Home", value: data.monthlyNet, currency },
-          { label: "Monthly Savings", value: data.monthlySavings, currency },
-          { label: "Savings Rate", value: `${data.savingsRate}%` },
+          { icon: Wallet, label: "Annual Income", value: data.annualIncome, currency },
+          { icon: Wallet, label: "Monthly Take-Home", value: data.monthlyNet, currency },
+          { icon: PiggyBank, label: "Monthly Savings", value: data.monthlySavings, currency },
+          { icon: Percent, label: "Savings Rate", value: `${data.savingsRate}%` },
         ]}
       />
     </SectionCard>
@@ -427,10 +427,10 @@ function IncomeChangeTab() {
           <SectionCard label="Impact summary" cardClassName="bg-info/10 border-info/30">
             <MetricGrid
               metrics={[
-                { label: "Extra Monthly Take-Home", value: result.difference.monthlyNet, currency: displayCurrency, tone: "pos", showSign: true },
-                { label: "Extra Monthly Savings", value: result.difference.monthlySavings, currency: displayCurrency, tone: "pos", showSign: true },
-                { label: "Additional Annual Tax", value: result.difference.annualTax, currency: displayCurrency, tone: "neg", showSign: true },
-                { label: "Annual Income Increase", value: result.difference.annualIncome, currency: displayCurrency, showSign: true },
+                { icon: Wallet, label: "Extra Monthly Take-Home", value: result.difference.monthlyNet, currency: displayCurrency, tone: "pos", showSign: true },
+                { icon: PiggyBank, label: "Extra Monthly Savings", value: result.difference.monthlySavings, currency: displayCurrency, tone: "pos", showSign: true },
+                { icon: Receipt, label: "Additional Annual Tax", value: result.difference.annualTax, currency: displayCurrency, tone: "neg", showSign: true },
+                { icon: TrendingUp, label: "Annual Income Increase", value: result.difference.annualIncome, currency: displayCurrency, showSign: true },
               ]}
             />
           </SectionCard>

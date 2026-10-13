@@ -120,7 +120,7 @@ export function MetricCard({
       onMouseMove={onMouseMove}
     >
       <div className="@[36rem]:flex @[36rem]:items-stretch @[36rem]:gap-6 h-full">
-        <CardContent className={`pt-4 px-3 @[11rem]:px-5 min-w-0 @[36rem]:flex-1 ${hasSpark ? "pb-0 @[36rem]:pb-4" : "pb-0"}`}>
+        <CardContent className={`pt-4 px-3 @[11rem]:px-5 min-w-0 ${size === "hero" ? "@[36rem]:flex-none @[36rem]:min-w-[16rem]" : "@[36rem]:flex-1"} ${hasSpark ? "pb-0 @[36rem]:pb-4" : "pb-0"}`}>
           <div className="flex items-center gap-2.5 mb-3">
             <div
               className={`flex h-8 w-8 items-center justify-center rounded-lg shrink-0 transition-transform duration-300 group-hover:scale-110 ${toneClasses}`}
@@ -159,7 +159,7 @@ export function MetricCard({
         {hasSpark && (
           <>
             {/* wide card: right-hand column, full height */}
-            <div className="hidden @[36rem]:block @[36rem]:w-[40%] @[36rem]:max-w-[18rem] @[36rem]:self-center shrink-0 pr-5 py-5 opacity-60 group-hover:opacity-100 transition-opacity duration-300">
+            <div className={`hidden @[36rem]:block ${size === "hero" ? "@[36rem]:flex-1 @[36rem]:min-w-0" : "@[36rem]:w-[40%] @[36rem]:max-w-[18rem]"} @[36rem]:self-center shrink-0 pr-5 py-5 opacity-60 group-hover:opacity-100 transition-opacity duration-300`}>
               <LazyView minHeight={96} className="w-full">
                 <Sparkline data={sparkData!} color={sparkColor} labels={sparkLabels} currency={resolvedCurrency} height={96} className="w-full sparkline-fade" />
               </LazyView>

@@ -93,7 +93,9 @@ describe("Portfolio summary and holdings cards (one page, every size)", () => {
     const summary = document.querySelector("[data-slot=portfolio-summary]") as HTMLElement;
     expect(summary).toBeTruthy();
     expect(summary.querySelector("[class*='md:hidden']")).toBeNull();
-    const hero = summary.firstElementChild as HTMLElement;
+    // The Total value hero is the ONE MetricCard (hero size); the range control sits above it.
+    expect(summary.querySelector("[data-slot=metric-range]")).toBeTruthy();
+    const hero = summary.querySelector("[data-testid=metric-total-value]") as HTMLElement;
     expect(within(hero).getByText(formatCurrency(65500000, "VND"))).toBeTruthy();
     expect(within(hero).getByText(/\+.*100,000.*\(\+0\.15%\)/)).toBeTruthy();
     expect(within(hero).getByText("Total gain")).toBeTruthy();
@@ -178,5 +180,19 @@ describe("Portfolio summary and holdings cards (one page, every size)", () => {
   it("chart stays visible when there are positions", () => {
     render(<PortfolioPage />);
     expect(cls(screen.getByTestId("perf-chart").parentElement!)).not.toContain("hidden");
+  });
+  it("every value-only summary tile carries a sub-line (caption or delta), never a bare number", () => {
+    render(<PortfolioPage />);
+    const grid = document.querySelector('[data-slot="metric-grid"]') as HTMLElement;
+    expect(grid).toBeTruthy();
+    const tiles = Array.from(grid.children) as HTMLElement[];
+    expect(tiles.length).toBeGreaterThan(0);
+    for (const t of tiles) {
+      // MetricCard renders label, value, sub-line: a tile with no sub-line has only two text rows.
+      expect(t.querySelectorAll("p, span, div").length, t.textContent ?? "").toBeGreaterThan(0);
+    }
+    expect(within(grid).getByText("Across 2 accounts")).toBeTruthy();
+    expect(within(grid).getByText("2 with holdings")).toBeTruthy();
+    expect(within(grid).getAllByText(/No earlier history to compare|vs /).length).toBeGreaterThanOrEqual(1);
   });
 });

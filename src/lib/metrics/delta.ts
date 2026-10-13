@@ -1,6 +1,9 @@
 import { formatCurrency } from "@/lib/currency";
 import { computeCardMetric, type CardMetric, type MonthPoint, type Period } from "./period";
 
+/** Muted sub-line for a card whose previous period is not derivable (no history): never a made-up number. */
+export const NO_HISTORY_CAPTION = "No earlier history to compare";
+
 export type DeltaKind = "money" | "points" | "pp" | "count";
 
 const signed = (n: number) => (n >= 0 ? "+" : "-");

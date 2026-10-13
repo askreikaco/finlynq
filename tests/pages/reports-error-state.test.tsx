@@ -38,7 +38,8 @@ beforeEach(() => {
     "fetch",
     vi.fn(async (url: string) => {
       const u = String(url);
-      if (u.includes("/api/reports/trends")) {
+      // `metrics=1` reads are the cards' own monthly history, not the page's primary load.
+      if (u.includes("/api/reports/trends") && !u.includes("metrics=1")) {
         trendsCalls++;
         if (trendsCalls === 1) return { ok: false, status: 500, json: async () => null };
         return { ok: true, status: 200, json: async () => TRENDS_OK };

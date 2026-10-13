@@ -1,6 +1,9 @@
 "use client"
 
+import * as React from "react"
 import { Button as ButtonPrimitive } from "@base-ui/react/button"
+import { mergeProps } from "@base-ui/react/merge-props"
+import { useRender } from "@base-ui/react/use-render"
 import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
@@ -44,19 +47,55 @@ const buttonVariants = cva(
   }
 )
 
-function Button({
+/**
+ * Base UI's Button assumes a native <button> and, for any other element, either warns (nativeButton) or overrides
+ * the semantics with role="button". A link rendered through `render` (render={<Link href=... />}) must stay a
+ * link, so a `render` element that is not a literal <button> is rendered with useRender (props merged onto the
+ * element, no button behaviour) instead of ButtonPrimitive.
+ */
+function isNonButtonRender(render: unknown): boolean {
+  return React.isValidElement(render) && render.type !== "button"
+}
+
+function ButtonAsElement({
   className,
   variant = "default",
   size = "default",
+  render,
+  disabled,
+  ref,
+  nativeButton: _nativeButton,
+  focusableWhenDisabled: _focusableWhenDisabled,
   ...props
 }: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
+  void _nativeButton
+  void _focusableWhenDisabled
+  return useRender({
+    render: render as React.ReactElement,
+    ref: ref as React.Ref<HTMLAnchorElement> | undefined,
+    props: mergeProps<"a">(
+      {
+        "data-slot": "button",
+        "data-size": size,
+        "data-variant": variant,
+        className: cn(buttonVariants({ variant, size, className }), "aria-disabled:pointer-events-none aria-disabled:opacity-50"),
+        ...(disabled ? { "aria-disabled": true, tabIndex: -1 } : {}),
+      } as React.ComponentPropsWithRef<"a">,
+      props as React.ComponentPropsWithRef<"a">
+    ),
+  })
+}
+
+function Button(props: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
+  if (isNonButtonRender(props.render) && props.nativeButton !== true) return <ButtonAsElement {...props} />
+  const { className, variant = "default", size = "default", ...rest } = props
   return (
     <ButtonPrimitive
       data-slot="button"
       data-size={size}
       data-variant={variant}
       className={cn(buttonVariants({ variant, size, className }))}
-      {...props}
+      {...rest}
     />
   )
 }

@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Activity, Shield, Mail, KeyRound } from "lucide-react";
+import { Users, Activity, Shield, Mail, KeyRound, Layers, Receipt, UserPlus, ShieldCheck } from "lucide-react";
 import { motion } from "framer-motion";
 import { DORMANT_DAYS, isDormant } from "@/lib/auth/dormancy";
 import {
@@ -20,6 +20,12 @@ import { Pagination } from "@/components/ui/pagination";
 import { DetailSheet, ListRow, METRIC_GRID_CLASS, MetricGrid, SectionCard } from "@/components/mobile";
 import { SectionPage } from "@/components/templates";
 import { TW } from "@/lib/design/tokens";
+import { MetricRangeSelect } from "@/components/metric-range-select";
+import { useMetricRange } from "@/lib/metrics/use-metric-range";
+import { cardProps, makeCardResolver, runningTotal } from "@/lib/metrics/series";
+import { formatDelta } from "@/lib/metrics/delta";
+import { pctChange } from "@/lib/metrics/period";
+import { localDateISO } from "@/lib/utils/date";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -63,6 +69,8 @@ interface UsageStats {
   totalTransactions: number;
   totalAccounts: number;
   registrationsLast7Days: number;
+  registrationsPrevious7Days?: number;
+  registrationsByMonth?: Record<string, number>;
   registrationsLast30Days: number;
   verifiedUsers: number;
   mfaEnabledUsers: number;
@@ -167,6 +175,7 @@ const itemVariants = {
 export default function AdminPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [stats, setStats] = useState<UsageStats | null>(null);
+  const metricRange = useMetricRange();
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -421,14 +430,32 @@ export default function AdminPage() {
       >
         {/* Stats Grid */}
         {stats && (
-          <MetricGrid
-            metrics={[
-              { label: "Total Users", value: stats.totalUsers },
-              { label: "Transactions", value: stats.totalTransactions.toLocaleString() },
-              { label: "New (7d)", value: stats.registrationsLast7Days },
-              { label: "MFA Enabled", value: stats.mfaEnabledUsers },
-            ]}
-          />
+          <div className="space-y-3">
+            <MetricRangeSelect value={metricRange.selection} onChange={metricRange.setSelection} />
+            <MetricGrid
+              metrics={[
+                { icon: Users,
+                  label: "Total Users",
+                  value: stats.totalUsers,
+                  // Running total of signups by month (users that still exist), this month vs last month by default.
+                  ...(() => {
+                    const rows = Object.entries(stats.registrationsByMonth ?? {}).map(([month, cumulative]) => ({ month, cumulative }));
+                    const c = makeCardResolver(metricRange)(runningTotal(rows, localDateISO().slice(0, 7)), "last", stats.totalUsers, "count");
+                    return cardProps(c);
+                  })(),
+                },
+                { icon: Receipt, label: "Transactions", value: stats.totalTransactions.toLocaleString() },
+                { icon: UserPlus,
+                  label: "New (7d)",
+                  value: stats.registrationsLast7Days,
+                  // Fixed 7-day window: the 7 days before it.
+                  badgePct: stats.registrationsPrevious7Days != null ? pctChange(stats.registrationsLast7Days, stats.registrationsPrevious7Days) : null,
+                  sub: formatDelta({ cur: stats.registrationsLast7Days, prev: stats.registrationsPrevious7Days, kind: "count", caption: "vs previous 7 days" }) ?? undefined,
+                },
+                { icon: ShieldCheck, label: "MFA Enabled", value: stats.mfaEnabledUsers },
+              ]}
+            />
+          </div>
         )}
 
         {/* Live activity — near-real-time "who's using it right now" from
@@ -455,9 +482,9 @@ export default function AdminPage() {
             </div>
             <MetricGrid
               metrics={[
-                { label: "Active now (15 min)", value: stats.activeUsersLast15Min ?? 0 },
-                { label: "Active (last hour)", value: stats.activeUsersLast60Min ?? 0 },
-                { label: "Active (last 24h)", value: stats.activeUsersLast24Hours ?? 0 },
+                { icon: Activity, label: "Active now (15 min)", value: stats.activeUsersLast15Min ?? 0 },
+                { icon: Activity, label: "Active (last hour)", value: stats.activeUsersLast60Min ?? 0 },
+                { icon: Activity, label: "Active (last 24h)", value: stats.activeUsersLast24Hours ?? 0 },
               ]}
             />
             <p className="text-xs text-muted-foreground mt-2">
@@ -502,6 +529,7 @@ export default function AdminPage() {
               metrics={Object.entries(stats.planBreakdown).map(([plan, count]) => ({
                 label: plan.charAt(0).toUpperCase() + plan.slice(1),
                 value: count,
+                icon: Layers,
               }))}
             />
           </motion.div>

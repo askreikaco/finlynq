@@ -17,7 +17,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, CheckCircle2, Loader2, RefreshCw, Undo2 } from "lucide-react";
+import { AlertTriangle, CalendarClock, CheckCircle2, Layers, Landmark, Receipt, Wallet, Loader2, RefreshCw, Undo2 } from "lucide-react";
 import { HEADER_DESKTOP_ONLY, ListRow, MetricGrid, SectionCard } from "@/components/mobile";
 import { SectionPage } from "@/components/templates";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -1837,19 +1837,19 @@ function CoverageDashboard({ coverage, proposals }: { coverage: Coverage; propos
     <SectionCard label="Canonicalization coverage">
       <MetricGrid
         metrics={[
-          { label: "Investment accounts", value: String(coverage.accountCount) },
-          { label: "Total transactions", value: String(coverage.totalTxs) },
-          {
+          { icon: Landmark, label: "Investment accounts", value: String(coverage.accountCount) },
+          { icon: Receipt, label: "Total transactions", value: String(coverage.totalTxs) },
+          { icon: CheckCircle2,
             label: "Canonical (kind set + paired)",
             value: `${coverage.canonicalTxs} / ${coverage.totalTxs}`,
             sub: `${coverage.canonicalPct}%`,
           },
-          {
+          { icon: CalendarClock,
             label: "Pending (needs backfill)",
             value: String(coverage.nonCanonicalTxs),
             sub: coverage.totalTxs > 0 ? `${100 - coverage.canonicalPct}%` : undefined,
           },
-          {
+          { icon: Layers,
             label: "Not investment txs (no holding)",
             value: String(coverage.nonInvestmentRows ?? 0),
             sub: (coverage.nonInvestmentRows ?? 0) > 0 ? "review & move/delete" : undefined,

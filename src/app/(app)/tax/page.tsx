@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
-import { Lightbulb } from "lucide-react";
+import { Coins, Lightbulb, Percent, PiggyBank } from "lucide-react";
 import { AmountInput } from "@/components/amount-input";
 import { DetailSheet, ListRow, MetricGrid, SectionCard } from "@/components/mobile";
 import { TW } from "@/lib/design/tokens";
@@ -77,9 +77,9 @@ function TaxPageContent() {
     >
       <MetricGrid
         metrics={[
-          { label: "TFSA Room", value: data.tfsa.remaining, currency: displayCurrency, tone: "pos", sub: `Used ${Math.round(tfsaPct)}%` },
-          { label: "RESP Grant", value: `${formatCurrency(data.resp.grantExample, displayCurrency)}/yr`, sub: "CESG: 20% on first $2,500/year" },
-          { label: "Marginal Rate @ $100K", value: `${data.marginalRates.at100k.combined}%`, sub: `Federal ${data.marginalRates.at100k.federal}% · Provincial ${data.marginalRates.at100k.provincial}%` },
+          { icon: PiggyBank, label: "TFSA Room", value: data.tfsa.remaining, currency: displayCurrency, tone: "pos", sub: `Used ${Math.round(tfsaPct)}%` },
+          { icon: Coins, label: "RESP Grant", value: `${formatCurrency(data.resp.grantExample, displayCurrency)}/yr`, sub: "CESG: 20% on first $2,500/year" },
+          { icon: Percent, label: "Marginal Rate @ $100K", value: `${data.marginalRates.at100k.combined}%`, sub: `Federal ${data.marginalRates.at100k.federal}% · Provincial ${data.marginalRates.at100k.provincial}%` },
         ]}
       />
 

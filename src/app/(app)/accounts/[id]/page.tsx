@@ -45,7 +45,12 @@ import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
 import type { Mode } from "@/components/inbox/modes";
 import { NetWorthHistoryChart } from "@/components/net-worth-history-chart";
 import { MetricCard } from "@/components/metric-card";
-import { deriveBalanceMonthly, type BalanceMonthly } from "@/lib/accounts/balance-series";
+import { useCacheFirstJson } from "@/lib/data/use-cache-first";
+import { MetricRangeSelect } from "@/components/metric-range-select";
+import { useMetricRange } from "@/lib/metrics/use-metric-range";
+import { cardProps, makeCardResolver, monthEndBalances } from "@/lib/metrics/series";
+import { localDateISO } from "@/lib/utils/date";
+import type { BalancePoint } from "@/lib/accounts/balance-series";
 import { TransactionsWorkspace } from "../../transactions/_components/transactions-workspace";
 import {
   PageHeader, HEADER_DESKTOP_ONLY, CustomizeCardsSheet, ListRow, SectionCard, useCardLayout, usePageCustomize,
@@ -116,7 +121,10 @@ export default function AccountDetailPage() {
   const [cashFlowBasis, setCashFlowBasis] = useState<number | null>(null);
   const [holdingsValue, setHoldingsValue] = useState<number | null>(null);
   // Monthly balance history for the Balance card's chart + "vs last month" (native currency of the account).
-  const [balanceMonthly, setBalanceMonthly] = useState<BalanceMonthly | null>(null);
+  // Month-end balance history (native currency), cache-first so it also paints offline; a range reaches back past a year.
+  const balanceHistory = useCacheFirstJson<{ series?: BalancePoint[] }>(`/api/net-worth-history?period=all&accountId=${id}&basis=native`);
+  const balanceSeries = Array.isArray(balanceHistory.data?.series) ? balanceHistory.data.series : null;
+  const metricRange = useMetricRange();
 
   // Actions sheet (mobile) / dropdown (desktop)
   const [actionsSheetOpen, setActionsSheetOpen] = useState(false);
@@ -183,16 +191,7 @@ export default function AccountDetailPage() {
         setHoldingsValue(b?.holdingsValue ?? null);
       })
       .catch(() => {});
-    void (async () => {
-      try {
-        const r = await fetch(`/api/net-worth-history?period=1y&accountId=${id}&basis=native`);
-        if (!r || !r.ok) return;
-        const json = await r.json();
-        if (Array.isArray(json?.series)) setBalanceMonthly(deriveBalanceMonthly(json.series));
-      } catch {
-        /* the card still shows the balance without a chart */
-      }
-    })();
+    balanceHistory.reload();
 
     fetch(`/api/transactions?accountId=${id}&limit=1&scope=all`)
       .then((r) => r.json())
@@ -388,6 +387,12 @@ export default function AccountDetailPage() {
   );
 
   const displayBalance = balance ?? 0;
+  // Month-end balances (native currency): this month vs last month by default, or the selected range vs the one before.
+  const balanceCard = makeCardResolver(metricRange, account.currency)(
+    monthEndBalances(balanceSeries, localDateISO().slice(0, 7)),
+    "last",
+    displayBalance,
+  );
   const isInvestment = account.isInvestment === true;
 
   // Build a `/portfolio/new?op=<key>&account=<id>[&accountField=…]` href for an
@@ -504,6 +509,8 @@ export default function AccountDetailPage() {
         busy={deletingAccount}
       />
 
+      <MetricRangeSelect value={metricRange.selection} onChange={metricRange.setSelection} />
+
       {(() => {
         const shown = cardLayout.layout.order.filter((id) => !cardLayout.layout.hidden.includes(id));
         // Account cards in the user's saved order (Customize). Each id renders once.
@@ -513,15 +520,12 @@ export default function AccountDetailPage() {
         label={holdingsValue && holdingsValue > 0 ? "Market value" : "Balance"}
         icon={Wallet}
         tone={displayBalance >= 0 ? "emerald" : "rose"}
-        value={displayBalance}
+        value={balanceCard.value ?? displayBalance}
         currency={account.currency}
         valueClassName={displayBalance >= 0 ? "text-pos" : "text-destructive"}
-        sparkData={balanceMonthly?.sparkData}
-        sparkLabels={balanceMonthly?.sparkLabels}
         sparkColor={displayBalance >= 0 ? "#10b981" : "#f43f5e"}
-        badgePct={balanceMonthly?.changePct ?? null}
         invertTone={account.type === "L"}
-        sub={balanceMonthly?.changePct != null ? "vs last month" : ""}
+        {...cardProps(balanceCard)}
         note={
           holdingsValue && holdingsValue > 0 && cashFlowBasis !== null ? (
             <>

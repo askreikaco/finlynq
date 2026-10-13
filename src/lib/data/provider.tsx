@@ -1,5 +1,6 @@
 "use client";
 
+import { DATA_SCHEMA_VERSION } from "@/lib/local-first/data-schema-version";
 import { useEffect, useRef, useState } from "react";
 import { SWRConfig, useSWRConfig, type Cache } from "swr";
 import { dataDefaults } from "./config";
@@ -15,7 +16,8 @@ import { setLocalWriteSyncedHandler, startLocalWriteQueue } from "./local-write-
 import { forgetOfflineIdentity, readOfflineIdentity, rememberOfflineIdentity } from "./offline-identity";
 import { revalidateTransactionLists } from "@/lib/transactions/revalidate";
 
-const BUILD = process.env.NEXT_PUBLIC_APP_BUILD ?? "dev";
+// Device cache binding: the data schema version, NOT the deploy build id (see data-schema-version.ts).
+const BUILD = DATA_SCHEMA_VERSION;
 /** Never hold the first paint longer than this waiting for the on-device copy. */
 const HYDRATE_BUDGET_MS = 250;
 

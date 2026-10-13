@@ -1,6 +1,7 @@
 /**
  * @vitest-environment jsdom
  */
+import { Wallet } from "lucide-react";
 import React from "react";
 import { render, screen, fireEvent, cleanup, waitFor } from "@testing-library/react";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
@@ -99,7 +100,7 @@ describe("ListPage", () => {
 
   it("shows the empty state with its CTA and no views when there are no records", () => {
     api.data = [];
-    render(<ListPage<Goal> {...baseProps()} summary={[{ label: "Total", value: 0 }]} />);
+    render(<ListPage<Goal> {...baseProps()} summary={[{ icon: Wallet, label: "Total", value: 0 }]} />);
     expect(screen.getByText("No goals yet")).toBeTruthy();
     expect(screen.getByRole("link", { name: "Create goal" }).getAttribute("href")).toBe("/goals/new");
     expect(screen.queryByText("cards-content")).toBeNull();
@@ -112,14 +113,14 @@ describe("ListPage", () => {
     const { unmount } = render(
       <ListPage<Goal>
         {...baseProps()}
-        summary={(records) => [{ label: "Count", value: records.length }]}
+        summary={(records) => [{ icon: Wallet, label: "Count", value: records.length }]}
       />,
     );
     expect(screen.getByText("Count")).toBeTruthy();
     expect(screen.getByText("2")).toBeTruthy();
     unmount();
 
-    render(<ListPage<Goal> {...baseProps()} summary={[{ label: "Static", value: 7 }]} />);
+    render(<ListPage<Goal> {...baseProps()} summary={[{ icon: Wallet, label: "Static", value: 7 }]} />);
     expect(screen.getByText("Static")).toBeTruthy();
     expect(screen.getByText("7")).toBeTruthy();
   });

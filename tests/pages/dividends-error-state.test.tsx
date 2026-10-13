@@ -31,6 +31,10 @@ function stubFetch(firstFailure: "unsuccessful" | "rejected") {
     "fetch",
     vi.fn(async (url: string) => {
       const u = String(url);
+      // The cards' monthly history is a second, ungrouped read of the same endpoint; only the grouped page load is counted/failed.
+      if (u.includes("/api/portfolio/dividends") && !u.includes("groupBy=")) {
+        return { ok: true, status: 200, json: async () => ({ success: true, data: { rows: [], totals: DIVIDENDS_OK.data.totals } }) };
+      }
       if (u.includes("/api/portfolio/dividends")) {
         dividendsCalls++;
         if (dividendsCalls === 1) {

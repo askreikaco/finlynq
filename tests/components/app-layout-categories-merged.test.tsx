@@ -63,9 +63,6 @@ vi.mock("@/components/reporting-recompute-indicator", () => ({
   ReportingRecomputeIndicator: () => null,
 }));
 
-vi.mock("@/components/version-gate", () => ({
-  VersionGate: () => null,
-}));
 
 vi.mock("@/lib/data", () => ({
   DataProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,

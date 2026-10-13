@@ -74,9 +74,10 @@ describe("desktop columns: card grids", () => {
     expect(code("src/lib/design/tokens.ts")).toMatch(GRID3);
   });
 
-  it("budgets: category group cards use the 3-column grid", () => {
+  it("budgets: category group cards span the full row, their rows in the inner 2 / 3-column grid", () => {
     const src = code(`${APP}/budgets/page.tsx`);
-    expect(src).toMatch(/data-slot="budget-groups" className=\{TW\.grid3\}/);
+    expect(src).toMatch(/data-slot="budget-groups" className="grid grid-cols-1 gap-6"/);
+    expect(src).toMatch(/col-span-full[^`]*\$\{CARD_ROW_GRID\}/);
   });
 
   it("categories: group cards are 2 / 3 columns and rows reflow with a container query", () => {
@@ -96,12 +97,32 @@ describe("desktop columns: card grids", () => {
     expect(src).toContain('"regular:col-span-2"');
   });
 
-  it("subscriptions: status group cards use the 3-column grid", () => {
-    expect(code(`${APP}/subscriptions/page.tsx`)).toMatch(/data-slot="subscription-groups" className=\{TW\.grid3\}/);
+  it("subscriptions: status group and suggestion cards span the full row with inner row grids; empty state is a card", () => {
+    const src = code(`${APP}/subscriptions/page.tsx`);
+    expect(src).toMatch(/data-slot="subscription-groups" className="grid grid-cols-1 gap-6"/);
+    expect(src).toMatch(/Found in your transactions" padded=\{false\} className="col-span-full/);
+    expect(src).toMatch(/col-span-full[^`]*\$\{CARD_ROW_GRID\}/);
+    expect(src).toMatch(/<Card className="col-span-full"><CardContent className="p-0"><EmptyState/);
   });
 
-  it("dashboard: the 3-card row is 1 / 2 / 3 columns", () => {
-    expect(code(`${APP}/dashboard/page.tsx`)).toMatch(/ROW3_GRID = \{[^}]*grid-cols-1 regular:grid-cols-2 wide:grid-cols-3/);
+  it("dashboard: the 3-card row is a counted grid (columns follow rendered cards: 1 / 2 / 3)", () => {
+    expect(code(`${APP}/dashboard/page.tsx`)).toMatch(/ROW3_GRID = \{[^}]*counted: true/);
+    expect(code(`${APP}/dashboard/_components/counted-grid.tsx`)).toMatch(/insightColumns\(count\)/);
+  });
+
+  it("dashboard: chart + insight rows are equal-width 1 / 2 / 3 grids; Income vs Expenses spans 2 of 3", () => {
+    const src = code(`${APP}/dashboard/page.tsx`);
+    expect(src).toMatch(/CHARTS_GRID = \{[^}]*grid-cols-1 regular:grid-cols-2 wide:grid-cols-3 items-stretch/);
+    expect(src).toMatch(/SPEND_GRID = \{[^}]*grid-flow-dense items-start[^}]*counted: true/);
+    expect(src).toMatch(/spending-category-chart" minHeight=\{260\} className=\{`[^`]*h-full/);
+    expect(src).toMatch(/income-expense-chart" minHeight=\{300\} className=\{`[^`]*wide:col-span-2/);
+  });
+
+  it("accounts: Assets / Liabilities headings are SectionCard labels inside the card; group headers are not monospace", () => {
+    const src = code(`${APP}/accounts/page.tsx`);
+    expect(src).toMatch(/<SectionCard\s+label=\{/);
+    expect(src).not.toMatch(/font-mono/);
+    expect(src).not.toMatch(/<h2 className="text-xl font-semibold">/);
   });
 
   it("family, tax, fire, scenarios, admin, import, utility pages", () => {

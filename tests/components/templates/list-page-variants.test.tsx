@@ -1,6 +1,7 @@
 /**
  * @vitest-environment jsdom
  */
+import { Wallet } from "lucide-react";
 import React from "react";
 import { render, screen, fireEvent, cleanup, waitFor } from "@testing-library/react";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
@@ -207,7 +208,7 @@ describe("ListPage variants: summary, empty, body slots", () => {
     render(
       <ListPage<Goal, Goal[], { tag: string }>
         {...baseProps()}
-        summary={[{ label: "Static", value: 7 }]}
+        summary={[{ icon: Wallet, label: "Static", value: 7 }]}
         summarySlot={(records) => <p>{`slot-${records.length}`}</p>}
       />,
     );

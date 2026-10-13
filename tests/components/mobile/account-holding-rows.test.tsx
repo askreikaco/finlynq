@@ -1,6 +1,7 @@
 /**
  * @vitest-environment jsdom
  */
+import { Wallet } from "lucide-react";
 import { describe, it, expect, vi, afterEach } from "vitest";
 import * as React from "react";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
@@ -81,7 +82,7 @@ describe("NetWorthHero + MetricGrid", () => {
   });
 
   it("MetricGrid is 2-col; counts plain, money via Amount", () => {
-    render(<MetricGrid metrics={[{ label: "Holdings", value: 4 }, { label: "Cost", value: 1234.5, currency: "USD" }]} />);
+    render(<MetricGrid metrics={[{ icon: Wallet, label: "Holdings", value: 4 }, { icon: Wallet, label: "Cost", value: 1234.5, currency: "USD" }]} />);
     expect(cls(document.querySelector("[data-slot=metric-grid]")!)).toContain("grid-cols-2");
     expect(screen.getByText("4")).toBeTruthy();
     expect(screen.getByText("$1,234.50")).toBeTruthy();

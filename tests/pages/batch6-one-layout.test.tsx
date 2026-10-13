@@ -4,6 +4,7 @@
 // Batch 6 mobile-design pages (Family overview cards and states, admin instance config): one layout at every
 // size. The overview stat tiles sit in MetricGrid, the sections are SectionCards, the loans are ListRows, and the
 // admin instance page renders through SectionPage (report width, centred) with ListRows instead of a table.
+import { Wallet } from "lucide-react";
 import * as React from "react";
 import * as fs from "fs";
 import * as path from "path";
@@ -96,8 +97,8 @@ describe("Batch 6: shared metric grid for two figures stays two columns", () => 
       <MetricGrid
         columns={2}
         metrics={[
-          { label: "Income", value: 1200, currency: "USD", sub: "This month" },
-          { label: "Expenses", value: 300, currency: "USD", sub: "This month · 25% of income" },
+          { icon: Wallet, label: "Income", value: 1200, currency: "USD", sub: "This month" },
+          { icon: Wallet, label: "Expenses", value: 300, currency: "USD", sub: "This month · 25% of income" },
         ]}
       />,
     );

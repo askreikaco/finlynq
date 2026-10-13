@@ -16,7 +16,8 @@ export function SettingsShell({ children }: { children: React.ReactNode }) {
   return (
     <div data-slot="settings-content" className="min-w-0">
       {/* No scroll container here at any size: the page's sticky PageHeader pins to the page scroller. */}
-      <div className="overflow-x-clip">{children}</div>
+      {/* No overflow-x-clip here: the full-bleed .page-header-bleed bar paints outside this box and the clip cut it (inset bar). */}
+      <div>{children}</div>
     </div>
   );
 }

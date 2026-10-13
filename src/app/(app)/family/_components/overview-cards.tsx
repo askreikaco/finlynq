@@ -7,18 +7,23 @@
  * the allow-listed overview DTO, so the figures and the look match those pages.
  */
 import { useMemo } from "react";
+import { TrendingDown, TrendingUp } from "lucide-react";
 import { ResponsiveContainer } from "recharts";
 import { formatCurrency, formatDate } from "@/lib/currency";
 import { prepareTimeSeries } from "@/lib/chart-series";
 import { FAMILY_STRINGS } from "@/lib/family/strings";
 import { MetricGrid, SectionCard, metricGridClass } from "@/components/mobile";
 import { NetWorthHeroCard } from "@/app/(app)/dashboard/_components/net-worth-hero-card";
-import { KeyMetrics } from "@/app/(app)/dashboard/_components/key-metrics";
+import { KeyMetrics, type SavingsTrend } from "@/app/(app)/dashboard/_components/key-metrics";
 import { NetWorthAreaChart } from "@/components/net-worth-history-chart";
 import { IncomeExpenseTrendCard } from "@/components/reports/income-expense-trend-card";
 import { PerformanceBadges, PerformanceLineChart } from "@/components/portfolio/PerformanceChart";
 import type { OverviewResponse, PerformanceDto } from "./types";
 import { seriesChange, type Point } from "./household";
+import { resolvePeriod, type Period as MetricPeriod } from "@/lib/metrics/period";
+import { resolveCard } from "@/lib/metrics/delta";
+import { cardProps, monthEndBalances, resolveRatioCard, sumByMonth } from "@/lib/metrics/series";
+import { localDateISO } from "@/lib/utils/date";
 import { fill } from "./section-labels";
 
 export type Period = OverviewResponse["period"];
@@ -73,12 +78,29 @@ export interface HeadlineData {
   savingsUnavailable?: string;
   dti: { pct: number | null; reliable: boolean } | null;
   dtiUnavailable?: string;
+  /**
+   * The scope's full history (the lifetime fetch the charts below use): net-worth points and monthly income / expenses.
+   * It gives the previous period of the selected range, the badge, the signed difference and the monthly sparklines;
+   * without it the cards show their figures only.
+   */
+  lifetime?: { history: Point[] | null; monthly: Array<{ month: string; income: number; expenses: number }> | null };
+}
+
+/** The metric period of the overview range: this month, or year to date. All time (and the legacy windows) have no previous period. */
+function metricPeriodOf(period: Period): MetricPeriod | null {
+  const today = localDateISO();
+  if (period === "month") return resolvePeriod({ range: "this_month" }, today);
+  if (period === "year") return resolvePeriod({ range: "ytd" }, today);
+  return null;
 }
 
 /** Total Net Worth + Income + Expenses (dashboard row 1-2) and Savings Rate + Debt-to-Income (row 2.25). */
 export function HeadlineCards(d: HeadlineData) {
   const { currency, period } = d;
   const caption = RANGE_CAPTION[d.period];
+  const metricPeriod = metricPeriodOf(period);
+  const compareCap = period === "month" ? "vs last month" : "vs previous period";
+  const thisMonth = localDateISO().slice(0, 7);
   const nwSpark = useMemo(() => {
     if ("unavailable" in d.netWorth) return { data: [] as number[] };
     const pts = d.netWorth.history;
@@ -92,6 +114,12 @@ export function HeadlineCards(d: HeadlineData) {
     hero = <UnavailableCard title={FAMILY_STRINGS.overview_card_total_net_worth} text={d.netWorth.unavailable} />;
   } else {
     const { change, pct } = seriesChange(d.netWorth.history);
+    const nwCard = metricPeriod && d.lifetime?.history
+      ? resolveCard({
+          points: monthEndBalances(d.lifetime.history, thisMonth), period: metricPeriod, mode: "last", isDefault: true,
+          pageValue: d.netWorth.net, kind: "money", currency, caption: compareCap,
+        })
+      : null;
     hero = (
       <NetWorthHeroCard
         value={d.netWorth.net}
@@ -99,7 +127,9 @@ export function HeadlineCards(d: HeadlineData) {
         change={change}
         changePct={pct}
         changeCaption={caption.toLowerCase()}
-        sparkData={nwSpark.data}
+        comparison={nwCard ? { delta: nwCard.delta, pct: nwCard.badgePct } : undefined}
+        sparkData={nwCard?.sparkData ?? nwSpark.data}
+        sparkLabels={nwCard?.sparkLabels}
         footnote={fill(FAMILY_STRINGS.overview_card_assets_liabilities, {
           assets: formatCurrency(d.netWorth.assets, currency),
           liabilities: formatCurrency(d.netWorth.liabilities, currency),
@@ -120,20 +150,53 @@ export function HeadlineCards(d: HeadlineData) {
     );
   } else {
     const share = d.flows.income > 0 ? Math.round((d.flows.expenses / d.flows.income) * 100) : null;
+    const monthly = d.lifetime?.monthly ?? null;
+    const flowCard = (pick: "income" | "expenses", pageValue: number) =>
+      metricPeriod && monthly && monthly.length > 0
+        ? resolveCard({
+            points: sumByMonth(monthly, (m) => m.month, (m) => m[pick], thisMonth), period: metricPeriod, mode: "sum", isDefault: true,
+            pageValue, kind: "money", currency, caption: compareCap,
+          })
+        : null;
+    const incomeCard = flowCard("income", d.flows.income);
+    const expensesCard = flowCard("expenses", d.flows.expenses);
     figures = (
       <MetricGrid
         columns={2}
         metrics={[
-          { label: incomeLabel, value: d.flows.income, currency, sub: caption },
           {
+            icon: TrendingUp, label: incomeLabel, value: d.flows.income, currency,
+            ...(incomeCard ? cardProps(incomeCard) : {}),
+            ...(incomeCard?.delta ? { note: caption } : { sub: caption }),
+          },
+          {
+            icon: TrendingDown,
             label: expensesLabel,
             value: d.flows.expenses,
             currency,
-            sub: share == null ? caption : `${caption} · ${fill(FAMILY_STRINGS.overview_card_pct_of_income, { pct: share })}`,
+            invertTone: true,
+            ...(expensesCard ? cardProps(expensesCard) : {}),
+            ...(expensesCard?.delta
+              ? { note: share == null ? caption : `${caption} · ${fill(FAMILY_STRINGS.overview_card_pct_of_income, { pct: share })}` }
+              : { sub: share == null ? caption : `${caption} · ${fill(FAMILY_STRINGS.overview_card_pct_of_income, { pct: share })}` }),
           },
         ]}
       />
     );
+  }
+
+  // Savings rate of the selected range (value, badge, delta and sparkline on the same basis) against the previous one.
+  const lifetimeMonthly = d.lifetime?.monthly ?? null;
+  let savingsTrend: SavingsTrend | undefined;
+  if (metricPeriod && lifetimeMonthly && lifetimeMonthly.length > 0) {
+    const inc = sumByMonth(lifetimeMonthly, (m) => m.month, (m) => m.income, thisMonth);
+    const exp = sumByMonth(lifetimeMonthly, (m) => m.month, (m) => m.expenses, thisMonth);
+    const net = inc.map((p, i) => ({ month: p.month, value: p.value - (exp[i]?.value ?? 0) }));
+    const rate = resolveRatioCard({ num: net, den: inc, period: metricPeriod, caption: compareCap });
+    savingsTrend = {
+      badgePct: rate.badgePct, delta: rate.delta, sparkData: rate.sparkData, sparkLabels: rate.sparkLabels,
+      ...(rate.value != null ? { value: rate.value } : {}),
+    };
   }
 
   return (
@@ -144,7 +207,8 @@ export function HeadlineCards(d: HeadlineData) {
       </div>
       <KeyMetrics
         health={{ savingsRatePct: d.savingsRatePct, dti: d.dti ?? { pct: null, reliable: true } }}
-        savingsWindow="last 12 months"
+        savingsTrend={savingsTrend}
+        savingsWindow={savingsTrend ? caption.toLowerCase() : "last 12 months"}
         unavailable={{ savings: d.savingsUnavailable, dti: d.dtiUnavailable }}
       />
     </div>

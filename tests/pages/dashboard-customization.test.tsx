@@ -1,6 +1,7 @@
 /**
  * @vitest-environment jsdom
  */
+import { insightColumns } from "@/lib/dashboard-layout";
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import * as React from "react";
 import { render, screen, cleanup, fireEvent, waitFor, within } from "@testing-library/react";
@@ -113,18 +114,26 @@ describe("Dashboard card layout", () => {
     await dashboard();
     const grid = (id: string) => screen.getByTestId(`card-${id}`).closest("div.grid") as HTMLElement;
     // Net worth hero is full width on its own; health + summary tiles + key metrics are ONE shared metric grid
-    // (2 mobile, 3 tablet, 4 desktop: 6 tiles)
-    expect(grid("health-score").className).toBe("grid grid-cols-2 regular:grid-cols-3 wide:grid-cols-4 gap-3 regular:gap-4");
+    // (2 mobile, 3 tablet and desktop for the 6 tiles: 3 + 3, never 4 + 2)
+    expect(grid("health-score").className).toBe("grid grid-cols-2 regular:grid-cols-3 gap-3 regular:gap-4");
     expect(screen.getByText("Total Net Worth").closest("div.grid")).not.toBe(grid("health-score"));
     expect(grid("key-metrics")).toBe(grid("health-score"));
     expect(screen.getByTestId("stat-Monthly Income").closest("div.grid")).toBe(grid("health-score"));
     // action center, weekly recap and quick import share the 3-up row
-    expect(grid("action-center").className).toBe("grid grid-cols-1 regular:grid-cols-2 wide:grid-cols-3 gap-5");
+    // (columns follow the rendered-cell count: 3 cells -> 3 columns at wide; empty cells collapse via empty:hidden)
+    expect(grid("action-center").className).toBe(`grid items-start gap-5 ${insightColumns(3)}`);
+    expect(grid("action-center").hasAttribute("data-counted-grid")).toBe(true);
+    expect(screen.getByTestId("card-action-center").parentElement?.className).toContain("empty:hidden");
     expect(grid("weekly-recap")).toBe(grid("action-center"));
     expect(grid("quick-import")).toBe(grid("action-center"));
-    expect(grid("income-expense-chart").className).toBe("grid grid-cols-1 wide:grid-cols-2 gap-5");
+    // chart row: equal-width cells (2 regular, 3 wide); Income vs Expenses spans 2 of 3, Spending by Category 1 of 3
+    expect(grid("income-expense-chart").className).toBe("grid grid-cols-1 regular:grid-cols-2 wide:grid-cols-3 items-stretch gap-5");
     expect(grid("spending-category-chart")).toBe(grid("income-expense-chart"));
-    expect(grid("available-to-spend").className).toBe("grid grid-cols-1 wide:grid-cols-3 gap-5");
+    expect(screen.getByTestId("card-income-expense-chart").parentElement?.className).toContain("wide:col-span-2");
+    // Available to Spend + the insight cards fill one equal-width 3-column grid
+    expect(grid("available-to-spend").className).toContain("grid grid-flow-dense items-start gap-5");
+    expect(grid("available-to-spend").hasAttribute("data-counted-grid")).toBe(true);
+    expect(grid("insights")).toBe(grid("available-to-spend"));
     // no accordion any more
     expect(screen.queryByRole("button", { name: /More insights|Fewer insights/ })).toBeNull();
   });
