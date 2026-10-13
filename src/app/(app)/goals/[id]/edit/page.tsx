@@ -46,6 +46,7 @@ export default function EditGoalRoute() {
             initial={ctx.extra.form}
             accounts={ctx.extra.accounts}
             displayCurrency={displayCurrency}
+            baseline={ctx.record}
             onSaved={() => ctx.router.push(ctx.returnTo)}
             onCancel={() => ctx.router.push(ctx.returnTo)}
           />

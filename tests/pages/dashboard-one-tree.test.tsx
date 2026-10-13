@@ -99,40 +99,29 @@ describe("dashboard one tree: mount", () => {
     expect(screen.getAllByTestId("stat-Monthly Income")).toHaveLength(1);
   });
 
-  it("the secondary cards sit inside the one More insights disclosure, and no other card does", async () => {
+  it("the secondary cards render inline, always expanded: no More insights accordion anywhere", async () => {
     await dashboard();
     const extras = ["weekly-recap", "quick-import", "income-expense-chart", "spending-category-chart", "available-to-spend", "insights"];
-    const toggles = screen.getAllByRole("button", { name: /More insights|Fewer insights/ });
-    expect(toggles).toHaveLength(1);
-    const region = document.getElementById(toggles[0].getAttribute("aria-controls")!)!;
-    expect(region.getAttribute("role")).toBe("region");
-    for (const id of extras) expect(region.contains(screen.getByTestId(`card-${id}`)), id).toBe(true);
-    for (const id of ["action-center", "net-worth-history", "key-metrics", "health-score", "onboarding-tips"]) {
-      expect(region.contains(screen.getByTestId(`card-${id}`)), id).toBe(false);
-    }
+    for (const id of extras) expect(screen.getAllByTestId(`card-${id}`), id).toHaveLength(1);
+    expect(screen.queryByRole("button", { name: /More insights|Fewer insights/ })).toBeNull();
+    expect(screen.queryByRole("region")).toBeNull();
   });
 
-  it("dev mode off: no secondary chart cards, the disclosure still holds the weekly recap and quick import", async () => {
+  it("dev mode off: no secondary chart cards, the weekly recap and quick import still render", async () => {
     dev.on = false;
     await dashboard();
     expect(screen.queryByTestId("card-income-expense-chart")).toBeNull();
-    const toggle = screen.getByRole("button", { name: "More insights" });
-    const region = document.getElementById(toggle.getAttribute("aria-controls")!)!;
-    expect(region.contains(screen.getByTestId("card-weekly-recap"))).toBe(true);
-    expect(region.contains(screen.getByTestId("card-quick-import"))).toBe(true);
+    expect(screen.getByTestId("card-weekly-recap")).toBeTruthy();
+    expect(screen.getByTestId("card-quick-import")).toBeTruthy();
   });
 
-  it("the disclosure is collapsed by default (compact) and the core cards stay visible", async () => {
+  it("the core cards are visible without any toggle", async () => {
     await dashboard();
-    const toggle = screen.getByRole("button", { name: "More insights" });
-    expect(toggle.getAttribute("aria-expanded")).toBe("false");
-    const region = document.getElementById(toggle.getAttribute("aria-controls")!)!;
-    expect(region.hidden).toBe(true);
     expect(screen.getByTestId("card-action-center")).toBeTruthy();
     await waitFor(() => expect(screen.getByTestId("card-key-metrics")).toBeTruthy());
   });
 
-  it("header: no person/Settings icon; Add transaction is the rightmost primary, More stays on its left and holds General settings", async () => {
+  it("header: no person/Settings icon; Add transaction is the rightmost primary, More and Customize stay on its left", async () => {
     await dashboard();
     expect(screen.queryByRole("link", { name: "Settings" })).toBeNull();
     const add = screen.getByRole("link", { name: "Add transaction" });
@@ -142,6 +131,7 @@ describe("dashboard one tree: mount", () => {
     const capsule = group.querySelector('[data-slot="header-capsule"]') as HTMLElement;
     expect(capsule.contains(add)).toBe(false);
     expect(capsule.querySelector('[data-slot="overflow-trigger"]')).not.toBeNull();
+    expect(capsule.querySelector('[data-slot="customize-trigger"]')).not.toBeNull();
     expect(group.firstElementChild).toBe(capsule);
   });
 });

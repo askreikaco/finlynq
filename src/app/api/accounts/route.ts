@@ -134,7 +134,7 @@ export async function PUT(request: NextRequest) {
     const { withDbTransaction } = await import("@/db");
     const { incrementDataVersion } = await import("@/lib/data-version");
     const account = await withDbTransaction(async () => {
-      const a = await updateAccount(id, userId, { ...normalized, ...enc });
+      const a = await updateAccount(id, userId, { ...normalized, ...enc, updatedAt: new Date() });
       await incrementDataVersion(userId);
       return a;
     });

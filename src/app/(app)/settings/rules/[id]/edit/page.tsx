@@ -1,3 +1,6 @@
+import { isLocalWriteQueueActive, queueOfflineEntityEdit } from "@/lib/data/local-write-queue";
+import { isNetworkFailure } from "@/lib/transactions/entry-mode";
+import { ruleChangedFields, type RuleLike } from "@/lib/rules/offline-fields";
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
@@ -112,6 +115,11 @@ function EditRuleForm({ ruleId }: { ruleId: number | null }) {
       }
       return { ok: true };
     } catch (e) {
+      // Offline queue (local-first L3): a network failure keeps the edit on this device (changed fields only).
+      if (rule && rule.id != null && isLocalWriteQueueActive() && isNetworkFailure(e)) {
+        const { patch, current } = ruleChangedFields(payload as RuleLike, rule as unknown as RuleLike);
+        if (Object.keys(patch).length === 0 || (await queueOfflineEntityEdit("rule", rule.id, patch, current))) return { ok: true };
+      }
       return { ok: false, error: e instanceof Error ? e.message : String(e) };
     }
   }

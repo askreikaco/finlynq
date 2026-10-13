@@ -2,23 +2,21 @@
 
 import { DevModeGuard } from "@/components/dev-mode-guard";
 
-import { useEffect, useState, useCallback } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
   AreaChart, Area, Legend,
 } from "recharts";
-import { Home, PiggyBank, CreditCard, TrendingUp, Calculator } from "lucide-react";
+import { Calculator } from "lucide-react";
 import { AmountInput } from "@/components/amount-input";
-import { PageHeader } from "@/components/mobile";
+import { Amount, ListRow, MetricGrid, SectionCard } from "@/components/mobile";
+import { SectionPage } from "@/components/templates/section-page";
 
 // --- Types ---
 type HomePurchaseResult = {
@@ -33,9 +31,11 @@ type ExtraSavingsResult = {
   projections: { year: number; contributions: number; growth: number; total: number }[];
 };
 
+type DebtStrategy = { strategy: string; totalInterest: number; totalMonths: number; order: { name: string; paidOffMonth: number }[] };
+
 type DebtPayoffResult = {
-  avalanche: { strategy: string; totalInterest: number; totalMonths: number; order: { name: string; paidOffMonth: number }[] };
-  snowball: { strategy: string; totalInterest: number; totalMonths: number; order: { name: string; paidOffMonth: number }[] };
+  avalanche: DebtStrategy;
+  snowball: DebtStrategy;
   avalancheTimeline: { month: number; totalDebt: number }[];
   snowballTimeline: { month: number; totalDebt: number }[];
 };
@@ -51,15 +51,18 @@ type Loan = {
   termMonths: number; remainingBalance: number; monthlyPayment: number;
 };
 
-// --- Helper ---
-function ResultCard({ label, value, color }: { label: string; value: string; color?: string }) {
+// --- Helpers ---
+/** Empty state for a calculator tab that has no result yet. */
+function Placeholder({ text }: { text: string }) {
   return (
-    <div className="rounded-xl border bg-card p-4">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className={`text-xl font-bold font-mono mt-1 ${color ?? ""}`}>{value}</p>
-    </div>
+    <SectionCard>
+      <p className="py-12 text-center text-sm text-muted-foreground">{text}</p>
+    </SectionCard>
   );
 }
+
+/** Two-column form on the regular breakpoint and up, one column on phones. */
+const FORM_GRID = "grid grid-cols-1 regular:grid-cols-2 gap-4";
 
 // ===== HOME PURCHASE TAB =====
 function HomePurchaseTab() {
@@ -90,15 +93,10 @@ function HomePurchaseTab() {
   }
 
   return (
-    <div className="grid grid-cols-1 wide:grid-cols-2 gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Home className="h-5 w-5 text-primary" /> Purchase Details
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+    <div className="space-y-4">
+      <SectionCard label="Purchase details">
+        <div className="space-y-4">
+          <div className={FORM_GRID}>
             <div><Label>Purchase Price ($)</Label><AmountInput  value={form.purchasePrice} onValueChange={(nv) => setForm({ ...form, purchasePrice: nv })} /></div>
             <div><Label>Down Payment (%)</Label><AmountInput  value={form.downPaymentPct} onValueChange={(nv) => setForm({ ...form, downPaymentPct: nv })} /></div>
             <div><Label>Interest Rate (%)</Label><AmountInput  step="0.1" value={form.interestRate} onValueChange={(nv) => setForm({ ...form, interestRate: nv })} /></div>
@@ -109,46 +107,42 @@ function HomePurchaseTab() {
           <Button onClick={calculate} disabled={loading} className="w-full">
             <Calculator className="h-4 w-4 mr-1" /> {loading ? "Calculating..." : "Calculate"}
           </Button>
-        </CardContent>
-      </Card>
+        </div>
+      </SectionCard>
 
-      <div className="space-y-4">
-        {result && (
-          <>
-            <div className="grid grid-cols-2 gap-3">
-              <ResultCard label="Monthly Mortgage" value={formatCurrency(result.monthlyPayment, displayCurrency)} color="text-primary" />
-              <ResultCard label="Total Monthly Cost" value={formatCurrency(result.monthlyCashFlow, displayCurrency)} color="text-destructive" />
-              <ResultCard label="Down Payment" value={formatCurrency(result.downPayment, displayCurrency)} />
-              <ResultCard label="Total Interest" value={formatCurrency(result.totalInterest, displayCurrency)} color="text-warning" />
-            </div>
-            <Card>
-              <CardHeader><CardTitle className="text-sm">Mortgage Balance Over Time</CardTitle></CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={280}>
-                  <LineChart data={result.balanceOverTime}>
-                    <XAxis dataKey="year" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `Yr ${v}`} />
-                    <YAxis fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
-                    <Tooltip formatter={(v) => formatCurrency(Number(v), displayCurrency)} />
-                    <Legend />
-                    <Line type="monotone" dataKey="balance" stroke="#6366f1" strokeWidth={2} dot={false} name="Remaining Balance" />
-                    <Line type="monotone" dataKey="equity" stroke="#10b981" strokeWidth={2} dot={false} name="Equity" />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-            <div className="grid grid-cols-1 regular:grid-cols-3 gap-3">
-              <ResultCard label="Monthly Property Tax" value={formatCurrency(result.monthlyPropertyTax, displayCurrency)} />
-              <ResultCard label="Monthly Maintenance" value={formatCurrency(result.monthlyMaintenance, displayCurrency)} />
-              <ResultCard label="Total Payments" value={formatCurrency(result.totalPayments, displayCurrency)} />
-            </div>
-          </>
-        )}
-        {!result && (
-          <Card className="flex items-center justify-center h-64">
-            <p className="text-muted-foreground">Enter purchase details and click Calculate</p>
-          </Card>
-        )}
-      </div>
+      {result ? (
+        <>
+          <MetricGrid
+            metrics={[
+              { label: "Monthly Mortgage", value: result.monthlyPayment, currency: displayCurrency },
+              { label: "Total Monthly Cost", value: result.monthlyCashFlow, currency: displayCurrency, tone: "neg" },
+              { label: "Down Payment", value: result.downPayment, currency: displayCurrency },
+              { label: "Total Interest", value: result.totalInterest, currency: displayCurrency, tone: "neg" },
+            ]}
+          />
+          <SectionCard label="Mortgage balance over time">
+            <ResponsiveContainer width="100%" height={280}>
+              <LineChart data={result.balanceOverTime}>
+                <XAxis dataKey="year" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `Yr ${v}`} />
+                <YAxis fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
+                <Tooltip formatter={(v) => formatCurrency(Number(v), displayCurrency)} />
+                <Legend />
+                <Line type="monotone" dataKey="balance" stroke="#6366f1" strokeWidth={2} dot={false} name="Remaining Balance" />
+                <Line type="monotone" dataKey="equity" stroke="#10b981" strokeWidth={2} dot={false} name="Equity" />
+              </LineChart>
+            </ResponsiveContainer>
+          </SectionCard>
+          <MetricGrid
+            metrics={[
+              { label: "Monthly Property Tax", value: result.monthlyPropertyTax, currency: displayCurrency },
+              { label: "Monthly Maintenance", value: result.monthlyMaintenance, currency: displayCurrency },
+              { label: "Total Payments", value: result.totalPayments, currency: displayCurrency },
+            ]}
+          />
+        </>
+      ) : (
+        <Placeholder text="Enter purchase details and click Calculate" />
+      )}
     </div>
   );
 }
@@ -176,55 +170,67 @@ function ExtraSavingsTab() {
   }
 
   return (
-    <div className="grid grid-cols-1 wide:grid-cols-2 gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <PiggyBank className="h-5 w-5 text-pos" /> Savings Details
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div><Label>Additional Monthly Savings ($)</Label><AmountInput  value={form.monthlySavings} onValueChange={(nv) => setForm({ ...form, monthlySavings: nv })} /></div>
-          <div><Label>Expected Annual Return (%)</Label><AmountInput  step="0.5" value={form.returnRate} onValueChange={(nv) => setForm({ ...form, returnRate: nv })} /></div>
-          <div><Label>Time Horizon (years)</Label><Input type="number" value={form.years} onChange={(e) => setForm({ ...form, years: e.target.value })} /></div>
+    <div className="space-y-4">
+      <SectionCard label="Savings details">
+        <div className="space-y-4">
+          <div className={FORM_GRID}>
+            <div><Label>Additional Monthly Savings ($)</Label><AmountInput  value={form.monthlySavings} onValueChange={(nv) => setForm({ ...form, monthlySavings: nv })} /></div>
+            <div><Label>Expected Annual Return (%)</Label><AmountInput  step="0.5" value={form.returnRate} onValueChange={(nv) => setForm({ ...form, returnRate: nv })} /></div>
+            <div><Label>Time Horizon (years)</Label><Input type="number" value={form.years} onChange={(e) => setForm({ ...form, years: e.target.value })} /></div>
+          </div>
           <Button onClick={calculate} disabled={loading} className="w-full">
             <Calculator className="h-4 w-4 mr-1" /> {loading ? "Calculating..." : "Calculate"}
           </Button>
-        </CardContent>
-      </Card>
+        </div>
+      </SectionCard>
 
-      <div className="space-y-4">
-        {result && (
-          <>
-            <div className="grid grid-cols-1 regular:grid-cols-3 gap-3">
-              <ResultCard label="Future Value" value={formatCurrency(result.futureValue, displayCurrency)} color="text-pos" />
-              <ResultCard label="Total Contributed" value={formatCurrency(result.totalContributions, displayCurrency)} />
-              <ResultCard label="Investment Growth" value={formatCurrency(result.totalGrowth, displayCurrency)} color="text-primary" />
-            </div>
-            <Card>
-              <CardHeader><CardTitle className="text-sm">Growth Over Time</CardTitle></CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <AreaChart data={result.projections}>
-                    <XAxis dataKey="year" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `Yr ${v}`} />
-                    <YAxis fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
-                    <Tooltip formatter={(v) => formatCurrency(Number(v), displayCurrency)} />
-                    <Legend />
-                    <Area type="monotone" dataKey="contributions" stackId="1" stroke="#6366f1" fill="#6366f1" fillOpacity={0.3} name="Contributions" />
-                    <Area type="monotone" dataKey="growth" stackId="1" stroke="#10b981" fill="#10b981" fillOpacity={0.3} name="Investment Growth" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </>
-        )}
-        {!result && (
-          <Card className="flex items-center justify-center h-64">
-            <p className="text-muted-foreground">Enter savings details and click Calculate</p>
-          </Card>
-        )}
-      </div>
+      {result ? (
+        <>
+          <MetricGrid
+            metrics={[
+              { label: "Future Value", value: result.futureValue, currency: displayCurrency, tone: "pos" },
+              { label: "Total Contributed", value: result.totalContributions, currency: displayCurrency },
+              { label: "Investment Growth", value: result.totalGrowth, currency: displayCurrency },
+            ]}
+          />
+          <SectionCard label="Growth over time">
+            <ResponsiveContainer width="100%" height={300}>
+              <AreaChart data={result.projections}>
+                <XAxis dataKey="year" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `Yr ${v}`} />
+                <YAxis fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
+                <Tooltip formatter={(v) => formatCurrency(Number(v), displayCurrency)} />
+                <Legend />
+                <Area type="monotone" dataKey="contributions" stackId="1" stroke="#6366f1" fill="#6366f1" fillOpacity={0.3} name="Contributions" />
+                <Area type="monotone" dataKey="growth" stackId="1" stroke="#10b981" fill="#10b981" fillOpacity={0.3} name="Investment Growth" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </SectionCard>
+        </>
+      ) : (
+        <Placeholder text="Enter savings details and click Calculate" />
+      )}
     </div>
+  );
+}
+
+/** One payoff strategy: totals as tiles, then the order the debts are cleared in. */
+function StrategyCard({ title, hint, data, currency }: { title: string; hint: string; data: DebtStrategy; currency: string }) {
+  return (
+    <SectionCard label={`${title} · ${hint}`}>
+      <div className="space-y-4">
+        <MetricGrid
+          metrics={[
+            { label: "Total Interest", value: data.totalInterest, currency, tone: "neg" },
+            { label: "Months to Debt-Free", text: String(data.totalMonths) },
+          ]}
+        />
+        <div className="divide-y divide-border/50">
+          {data.order.map((o, i) => (
+            <ListRow key={`${o.name}-${i}`} title={`${i + 1}. ${o.name}`} subtitle={`Paid off in month ${o.paidOffMonth}`} />
+          ))}
+        </div>
+      </div>
+    </SectionCard>
   );
 }
 
@@ -286,134 +292,87 @@ function DebtPayoffTab() {
   })() : [];
 
   return (
-    <div className="grid grid-cols-1 wide:grid-cols-2 gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CreditCard className="h-5 w-5 text-destructive" /> Your Debts
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {loansLoading ? (
-            <div className="space-y-2">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="h-10 animate-shimmer rounded" />
+    <div className="space-y-4">
+      <SectionCard label="Your debts">
+        {loansLoading ? (
+          <div className="space-y-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-10 animate-shimmer rounded" />
+            ))}
+          </div>
+        ) : loans.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No loans found. Add loans on the Loans page first.</p>
+        ) : (
+          <div className="space-y-4">
+            <div className="divide-y divide-border/50">
+              {loans.map((l) => (
+                <ListRow
+                  key={l.id}
+                  title={l.name}
+                  subtitle={`${l.annualRate}% · min ${formatCurrency(l.monthlyPayment, displayCurrency)} / mo`}
+                  value={<Amount value={l.remainingBalance} currency={displayCurrency} size="md" tone="none" />}
+                />
               ))}
             </div>
-          ) : loans.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No loans found. Add loans on the Loans page first.</p>
-          ) : (
-            <>
-              <div className="max-h-64 overflow-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Balance</TableHead>
-                      <TableHead>Rate</TableHead>
-                      <TableHead>Min Payment</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {loans.map((l) => (
-                      <TableRow key={l.id}>
-                        <TableCell className="font-medium">{l.name}</TableCell>
-                        <TableCell className="font-mono">{formatCurrency(l.remainingBalance, displayCurrency)}</TableCell>
-                        <TableCell>{l.annualRate}%</TableCell>
-                        <TableCell className="font-mono">{formatCurrency(l.monthlyPayment, displayCurrency)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-              <div>
-                <Label>Extra Monthly Budget ($)</Label>
-                <AmountInput  value={extraBudget} onValueChange={(nv) => setExtraBudget(nv)} />
-              </div>
-              <Button onClick={calculate} disabled={loading} className="w-full">
-                <Calculator className="h-4 w-4 mr-1" /> {loading ? "Calculating..." : "Compare Strategies"}
-              </Button>
-            </>
-          )}
-        </CardContent>
-      </Card>
-
-      <div className="space-y-4">
-        {result && (
-          <>
-            <div className="grid grid-cols-2 gap-4">
-              <Card className="border-l-4 border-l-primary">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    Avalanche <Badge variant="secondary" className="bg-primary/10 text-primary">Highest Rate First</Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div><p className="text-xs text-muted-foreground">Total Interest</p><p className="font-mono font-bold text-destructive">{formatCurrency(result.avalanche.totalInterest, displayCurrency)}</p></div>
-                  <div><p className="text-xs text-muted-foreground">Months to Debt-Free</p><p className="font-mono font-bold">{result.avalanche.totalMonths}</p></div>
-                  <div className="pt-2 border-t">
-                    <p className="text-xs text-muted-foreground mb-1">Payoff Order</p>
-                    {result.avalanche.order.map((o, i) => (
-                      <p key={i} className="text-xs font-mono">{i + 1}. {o.name} <span className="text-muted-foreground">(month {o.paidOffMonth})</span></p>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="border-l-4 border-l-warning">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    Snowball <Badge variant="secondary" className="bg-warning/10 text-warning">Lowest Balance First</Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div><p className="text-xs text-muted-foreground">Total Interest</p><p className="font-mono font-bold text-destructive">{formatCurrency(result.snowball.totalInterest, displayCurrency)}</p></div>
-                  <div><p className="text-xs text-muted-foreground">Months to Debt-Free</p><p className="font-mono font-bold">{result.snowball.totalMonths}</p></div>
-                  <div className="pt-2 border-t">
-                    <p className="text-xs text-muted-foreground mb-1">Payoff Order</p>
-                    {result.snowball.order.map((o, i) => (
-                      <p key={i} className="text-xs font-mono">{i + 1}. {o.name} <span className="text-muted-foreground">(month {o.paidOffMonth})</span></p>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+            <div>
+              <Label>Extra Monthly Budget ($)</Label>
+              <AmountInput  value={extraBudget} onValueChange={(nv) => setExtraBudget(nv)} />
             </div>
-
-            {result.avalanche.totalInterest !== result.snowball.totalInterest && (
-              <Card className="bg-pos/10 border-pos/30">
-                <CardContent className="py-3">
-                  <p className="text-sm text-pos">
-                    {result.avalanche.totalInterest < result.snowball.totalInterest
-                      ? `Avalanche saves you ${formatCurrency(result.snowball.totalInterest - result.avalanche.totalInterest, displayCurrency)} in interest and ${result.snowball.totalMonths - result.avalanche.totalMonths} months.`
-                      : `Snowball saves you ${formatCurrency(result.avalanche.totalInterest - result.snowball.totalInterest, displayCurrency)} in interest.`}
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-
-            <Card>
-              <CardHeader><CardTitle className="text-sm">Total Debt Over Time</CardTitle></CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={280}>
-                  <LineChart data={chartData}>
-                    <XAxis dataKey="month" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `Mo ${v}`} />
-                    <YAxis fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
-                    <Tooltip formatter={(v) => formatCurrency(Number(v), displayCurrency)} />
-                    <Legend />
-                    <Line type="monotone" dataKey="avalanche" stroke="#6366f1" strokeWidth={2} dot={false} name="Avalanche" />
-                    <Line type="monotone" dataKey="snowball" stroke="#f59e0b" strokeWidth={2} dot={false} name="Snowball" />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </>
+            <Button onClick={calculate} disabled={loading} className="w-full">
+              <Calculator className="h-4 w-4 mr-1" /> {loading ? "Calculating..." : "Compare Strategies"}
+            </Button>
+          </div>
         )}
-        {!result && loans.length > 0 && (
-          <Card className="flex items-center justify-center h-64">
-            <p className="text-muted-foreground">Click Compare Strategies to see results</p>
-          </Card>
-        )}
-      </div>
+      </SectionCard>
+
+      {result ? (
+        <>
+          <StrategyCard title="Avalanche" hint="Highest rate first" data={result.avalanche} currency={displayCurrency} />
+          <StrategyCard title="Snowball" hint="Lowest balance first" data={result.snowball} currency={displayCurrency} />
+
+          {result.avalanche.totalInterest !== result.snowball.totalInterest && (
+            <SectionCard className="bg-pos/10 border-pos/30">
+              <p className="text-sm text-pos">
+                {result.avalanche.totalInterest < result.snowball.totalInterest
+                  ? `Avalanche saves you ${formatCurrency(result.snowball.totalInterest - result.avalanche.totalInterest, displayCurrency)} in interest and ${result.snowball.totalMonths - result.avalanche.totalMonths} months.`
+                  : `Snowball saves you ${formatCurrency(result.avalanche.totalInterest - result.snowball.totalInterest, displayCurrency)} in interest.`}
+              </p>
+            </SectionCard>
+          )}
+
+          <SectionCard label="Total debt over time">
+            <ResponsiveContainer width="100%" height={280}>
+              <LineChart data={chartData}>
+                <XAxis dataKey="month" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `Mo ${v}`} />
+                <YAxis fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
+                <Tooltip formatter={(v) => formatCurrency(Number(v), displayCurrency)} />
+                <Legend />
+                <Line type="monotone" dataKey="avalanche" stroke="#6366f1" strokeWidth={2} dot={false} name="Avalanche" />
+                <Line type="monotone" dataKey="snowball" stroke="#f59e0b" strokeWidth={2} dot={false} name="Snowball" />
+              </LineChart>
+            </ResponsiveContainer>
+          </SectionCard>
+        </>
+      ) : (
+        loans.length > 0 && <Placeholder text="Click Compare Strategies to see results" />
+      )}
     </div>
+  );
+}
+
+/** One side of the income comparison: the figures for that income. */
+function IncomeSide({ label, data, currency }: { label: string; data: IncomeChangeResult["current"]; currency: string }) {
+  return (
+    <SectionCard label={label}>
+      <MetricGrid
+        metrics={[
+          { label: "Annual Income", value: data.annualIncome, currency },
+          { label: "Monthly Take-Home", value: data.monthlyNet, currency },
+          { label: "Monthly Savings", value: data.monthlySavings, currency },
+          { label: "Savings Rate", text: `${data.savingsRate}%` },
+        ]}
+      />
+    </SectionCard>
   );
 }
 
@@ -440,78 +399,38 @@ function IncomeChangeTab() {
   }
 
   return (
-    <div className="grid grid-cols-1 wide:grid-cols-2 gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-info" /> Income Details
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div><Label>Current Annual Income ($)</Label><AmountInput  value={form.currentIncome} onValueChange={(nv) => setForm({ ...form, currentIncome: nv })} /></div>
-          <div><Label>New Annual Income ($)</Label><AmountInput  value={form.newIncome} onValueChange={(nv) => setForm({ ...form, newIncome: nv })} /></div>
-          <div><Label>Current Savings Rate (%)</Label><AmountInput  value={form.currentSavingsRate} onValueChange={(nv) => setForm({ ...form, currentSavingsRate: nv })} /></div>
+    <div className="space-y-4">
+      <SectionCard label="Income details">
+        <div className="space-y-4">
+          <div className={FORM_GRID}>
+            <div><Label>Current Annual Income ($)</Label><AmountInput  value={form.currentIncome} onValueChange={(nv) => setForm({ ...form, currentIncome: nv })} /></div>
+            <div><Label>New Annual Income ($)</Label><AmountInput  value={form.newIncome} onValueChange={(nv) => setForm({ ...form, newIncome: nv })} /></div>
+            <div><Label>Current Savings Rate (%)</Label><AmountInput  value={form.currentSavingsRate} onValueChange={(nv) => setForm({ ...form, currentSavingsRate: nv })} /></div>
+          </div>
           <Button onClick={calculate} disabled={loading} className="w-full">
             <Calculator className="h-4 w-4 mr-1" /> {loading ? "Calculating..." : "Calculate Impact"}
           </Button>
-        </CardContent>
-      </Card>
+        </div>
+      </SectionCard>
 
-      <div className="space-y-4">
-        {result && (
-          <>
-            <div className="grid grid-cols-2 gap-4">
-              <Card className="border-t-4 border-t-border">
-                <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Current</CardTitle></CardHeader>
-                <CardContent className="space-y-2">
-                  <div><p className="text-xs text-muted-foreground">Annual Income</p><p className="font-mono font-bold">{formatCurrency(result.current.annualIncome, displayCurrency)}</p></div>
-                  <div><p className="text-xs text-muted-foreground">Monthly Take-Home</p><p className="font-mono">{formatCurrency(result.current.monthlyNet, displayCurrency)}</p></div>
-                  <div><p className="text-xs text-muted-foreground">Monthly Savings</p><p className="font-mono">{formatCurrency(result.current.monthlySavings, displayCurrency)}</p></div>
-                  <div><p className="text-xs text-muted-foreground">Savings Rate</p><p className="font-mono">{result.current.savingsRate}%</p></div>
-                </CardContent>
-              </Card>
-              <Card className="border-t-4 border-t-pos">
-                <CardHeader className="pb-2"><CardTitle className="text-sm text-pos">New</CardTitle></CardHeader>
-                <CardContent className="space-y-2">
-                  <div><p className="text-xs text-muted-foreground">Annual Income</p><p className="font-mono font-bold">{formatCurrency(result.new.annualIncome, displayCurrency)}</p></div>
-                  <div><p className="text-xs text-muted-foreground">Monthly Take-Home</p><p className="font-mono">{formatCurrency(result.new.monthlyNet, displayCurrency)}</p></div>
-                  <div><p className="text-xs text-muted-foreground">Monthly Savings</p><p className="font-mono">{formatCurrency(result.new.monthlySavings, displayCurrency)}</p></div>
-                  <div><p className="text-xs text-muted-foreground">Savings Rate</p><p className="font-mono">{result.new.savingsRate}%</p></div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <Card className="bg-info/10 border-info/30">
-              <CardHeader className="pb-2"><CardTitle className="text-sm">Impact Summary</CardTitle></CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Extra Monthly Take-Home</p>
-                    <p className="font-mono font-bold text-pos">+{formatCurrency(result.difference.monthlyNet, displayCurrency)}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Extra Monthly Savings</p>
-                    <p className="font-mono font-bold text-pos">+{formatCurrency(result.difference.monthlySavings, displayCurrency)}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Additional Annual Tax</p>
-                    <p className="font-mono font-bold text-warning">+{formatCurrency(result.difference.annualTax, displayCurrency)}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Annual Income Increase</p>
-                    <p className="font-mono font-bold text-primary">+{formatCurrency(result.difference.annualIncome, displayCurrency)}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </>
-        )}
-        {!result && (
-          <Card className="flex items-center justify-center h-64">
-            <p className="text-muted-foreground">Enter income details and click Calculate Impact</p>
-          </Card>
-        )}
-      </div>
+      {result ? (
+        <>
+          <IncomeSide label="Current" data={result.current} currency={displayCurrency} />
+          <IncomeSide label="New" data={result.new} currency={displayCurrency} />
+          <SectionCard label="Impact summary" className="bg-info/10 border-info/30">
+            <MetricGrid
+              metrics={[
+                { label: "Extra Monthly Take-Home", value: result.difference.monthlyNet, currency: displayCurrency, tone: "pos", showSign: true },
+                { label: "Extra Monthly Savings", value: result.difference.monthlySavings, currency: displayCurrency, tone: "pos", showSign: true },
+                { label: "Additional Annual Tax", value: result.difference.annualTax, currency: displayCurrency, tone: "neg", showSign: true },
+                { label: "Annual Income Increase", value: result.difference.annualIncome, currency: displayCurrency, showSign: true },
+              ]}
+            />
+          </SectionCard>
+        </>
+      ) : (
+        <Placeholder text="Enter income details and click Calculate Impact" />
+      )}
     </div>
   );
 }
@@ -519,16 +438,15 @@ function IncomeChangeTab() {
 // ===== MAIN PAGE =====
 function ScenariosPageContent() {
   return (
-    <div className="space-y-6">
-      <PageHeader
-          title="Scenarios"
-          titleClassName="text-2xl font-bold tracking-tight"
-          subtitle="Model financial decisions and see their long-term impact"
-          subtitleClassName="text-sm text-muted-foreground mt-0.5"
-        />
-
+    <SectionPage
+      id="scenarios"
+      title="Scenarios"
+      subtitle="Model financial decisions and see their long-term impact"
+      width="report"
+      center
+    >
       <Tabs defaultValue="home-purchase">
-        <TabsList>
+        <TabsList className="h-auto flex-wrap">
           <TabsTrigger value="home-purchase">Home Purchase</TabsTrigger>
           <TabsTrigger value="extra-savings">Extra Savings</TabsTrigger>
           <TabsTrigger value="debt-payoff">Debt Payoff</TabsTrigger>
@@ -539,7 +457,7 @@ function ScenariosPageContent() {
         <TabsContent value="debt-payoff" className="mt-6"><DebtPayoffTab /></TabsContent>
         <TabsContent value="income-change" className="mt-6"><IncomeChangeTab /></TabsContent>
       </Tabs>
-    </div>
+    </SectionPage>
   );
 }
 

@@ -9,6 +9,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { discardPendingSync, retryPendingSync, usePendingSync } from "@/lib/data/local-write-queue";
 
+/** What each queued kind is called on the Pending sync list (the copy the user sees). */
+const ENTITY_LABEL: Record<string, string> = {
+  transaction: "Transaction",
+  budget: "Budget",
+  goal: "Goal",
+  rule: "Rule",
+  account: "Account",
+  category: "Category",
+};
+
 export function PendingSyncCard() {
   const { items, enabled } = usePendingSync();
   if (!enabled || items.length === 0) return null;
@@ -28,8 +38,12 @@ export function PendingSyncCard() {
           {failed.map((i) => (
             <div key={i.opId} className="flex items-center justify-between gap-3" data-testid="pending-sync-failed">
               <div className="min-w-0">
-                <div className="truncate text-sm">{i.summary || (i.kind === "create" ? "New transaction" : i.kind === "delete" ? "Delete" : "Edit")}</div>
-                <div className="text-xs text-muted-foreground">{i.failReason ?? "Rejected by the server"}</div>
+                <div className="truncate text-sm">
+                  {i.summary || `${ENTITY_LABEL[i.entity] ?? "Item"} ${i.kind === "create" ? "new" : i.kind === "delete" ? "delete" : "edit"}`}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {ENTITY_LABEL[i.entity] ?? "Item"} · {i.failReason ?? "Rejected by the server"}
+                </div>
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 <Badge variant="outline">{i.kind === "create" ? "New" : i.kind === "delete" ? "Delete" : "Edit"}</Badge>

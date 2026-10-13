@@ -10,6 +10,8 @@ import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { useActiveCurrencies } from "@/lib/hooks/useActiveCurrencies";
 import { X } from "lucide-react";
 import { parseSaveError } from "@/lib/save-error";
+import { isNetworkFailure } from "@/lib/transactions/entry-mode";
+import { isLocalWriteQueueActive, queueOfflineEntityCreate, queueOfflineEntityEdit } from "@/lib/data/local-write-queue";
 import { AmountInput } from "@/components/amount-input";
 
 export type Goal = {
@@ -22,9 +24,13 @@ export type Goal = {
   accountIds: number[]; accounts: string[]; accountName: string | null;
   priority: number; status: string;
   progress: number; remaining: number; monthlyNeeded: number; note: string;
+  /** Offline queue (local-first L3): set on rows that are queued on this device. */
+  pendingSync?: { kind: "create" | "edit" | "delete"; status: "pending" | "failed"; opId: string; failReason: string | null };
   // FINLYNQ-123: current-rate conversions into the display currency. The ONLY
   // figures the summary tiles may sum — per-goal amounts stay in `currency`.
   targetAmountDisplay?: number; currentAmountDisplay?: number;
+  /** Server clock (goals.updated_at): the baseline for a queued delete. */
+  updatedAt?: string | null;
 };
 export type Account = { id: number; name: string };
 
@@ -94,6 +100,7 @@ export function GoalForm({
   onSaved,
   onCancel,
   displayCurrency,
+  baseline,
 }: {
   mode: "add" | "edit";
   goalId?: number;
@@ -102,6 +109,8 @@ export function GoalForm({
   onSaved: () => void;
   onCancel: () => void;
   displayCurrency: string;
+  /** Edit: the server goal the form was opened with (conflict baseline for an offline save). */
+  baseline?: Goal;
 }) {
   const [form, setForm] = useState<GoalFormState>(initial);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -138,6 +147,38 @@ export function GoalForm({
     setForm({ ...form, accountIds: form.accountIds.filter((x) => x !== id) });
   }
 
+  /**
+   * Saves the goal on this device when the request could not reach the server (local-first L3). Scalar fields only.
+   * Account links are online-only: an offline save that changes them (or creates a goal with a linked account) is refused.
+   */
+  async function queueSaveOffline(err: unknown, payload: Record<string, unknown>): Promise<boolean> {
+    if (!isLocalWriteQueueActive() || !isNetworkFailure(err)) return false;
+    const fields: Record<string, string | number | null> = {
+      name: String(payload.name),
+      type: String(payload.type),
+      targetAmount: Number(payload.targetAmount),
+      currency: String(payload.currency),
+      deadline: (payload.deadline as string | null) ?? null,
+      priority: Number(payload.priority),
+      note: String(payload.note ?? ""),
+    };
+    if (mode === "edit" && goalId != null) {
+      if (!baseline) return false;
+      const sameLinks = [...form.accountIds].sort().join(",") === [...baseline.accountIds].sort().join(",");
+      if (!sameLinks) return false;
+      const current: Record<string, string | number | null> = {
+        name: baseline.name, type: baseline.type, targetAmount: baseline.targetAmount, currency: baseline.currency,
+        deadline: baseline.deadline, priority: baseline.priority, note: baseline.note,
+      };
+      const patch: Record<string, string | number | null> = {};
+      for (const k of Object.keys(fields)) if (fields[k] !== current[k]) patch[k] = fields[k];
+      if (Object.keys(patch).length === 0) return true;
+      return queueOfflineEntityEdit("goal", goalId, patch, current);
+    }
+    if (form.accountIds.length > 0) return false;
+    return queueOfflineEntityCreate("goal", fields);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!validateForm()) return;
@@ -154,19 +195,29 @@ export function GoalForm({
         note: form.note,
       };
       let res: Response;
-      if (mode === "edit" && goalId != null) {
-        payload.id = goalId;
-        res = await fetch("/api/goals", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-      } else {
-        res = await fetch("/api/goals", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
+      try {
+        if (mode === "edit" && goalId != null) {
+          payload.id = goalId;
+          res = await fetch("/api/goals", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+        } else {
+          res = await fetch("/api/goals", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+        }
+      } catch (netErr) {
+        // Flag off / not eligible / online: nothing is queued and the error path is unchanged.
+        if (await queueSaveOffline(netErr, payload)) {
+          setErrors({ ...errors, form: "" });
+          onSaved();
+          return;
+        }
+        throw netErr;
       }
       if (!res.ok) {
         // Keep the page open with input intact; surface the reason.

@@ -1,16 +1,23 @@
 /**
- * Offline write queue facade (local-first L3). PROTOTYPE, flag off by default; nothing imports this yet.
+ * Offline write queue (local-first L3). PROTOTYPE, flag off by default; nothing imports this yet.
  *
- * enqueueCreate / enqueueEdit: stamp per-field HLCs, persist the encrypted entry, apply optimistically to the
- * in-memory read cache. Edits to a row that already has a queued entry are coalesced into it (per-field newer
+ * enqueue*: stamp per-field HLCs, persist the encrypted entry, apply optimistically to the in-memory read cache (for
+ * entities with a cache table). Edits to a row that already has a queued entry are coalesced into it (per-field newer
  * HLC wins), which is also the dedupe. replayPending re-applies queued entries to a freshly hydrated cache.
  * Every entry point is a no-op that returns null when the flag (or the live allow check) is off.
+ *
+ * The transaction methods (enqueueCreate, enqueueEdit, ...) keep their original signatures. The enqueueEntity* methods
+ * take an entity kind and dispatch field rules and the cache table through its adapter (./entities).
  */
 import { createHlc, type HlcClock } from "../clock/hlc";
-import type { LocalStore, TransactionRow } from "../store/types";
+import type { LocalStore, LocalRow, TransactionRow } from "../store/types";
 import { isLocalWriteQueueEnabled } from "./flag";
+import { adapterFor, entityOf, rowIdFor } from "./entities";
 import { createOutboxStore, wipeOutboxUser, type OutboxStore } from "./outbox-store";
-import { EDITABLE_FIELDS, type EditableField, type FieldValue, type OutboxEntry, type TxFields } from "./types";
+import { rowFromEntry } from "./entities/transaction";
+import type { EntityFields, EntityKind, FieldValue, OutboxEntry, TxFields } from "./types";
+
+export { rowFromEntry };
 
 export type ApplyStore = Pick<LocalStore, "upsertRows" | "deleteRows">;
 
@@ -44,40 +51,28 @@ export interface WriteQueue {
   enqueueEditLocal(rowId: string, patch: TxFields, cache?: ApplyStore): Promise<OutboxEntry | null>;
   replayPending(cache: ApplyStore, baseRows?: Map<string, TransactionRow>): Promise<number>;
   pending(): Promise<OutboxEntry[]>;
+  /** Generic create. `ref` = identity and display hints kept beside the entry (not sent as values). */
+  enqueueEntityCreate(entity: EntityKind, fields: EntityFields, ref?: EntityFields, cache?: ApplyStore): Promise<OutboxEntry | null>;
+  /** Generic edit. `current` = the server values the edit was made against (conflict baseline). */
+  enqueueEntityEdit(entity: EntityKind, serverId: number, patch: EntityFields, current: EntityFields, ref?: EntityFields, cache?: ApplyStore): Promise<OutboxEntry | null>;
+  /** Generic delete. `current` carries `updatedAt` as the concurrent-change baseline. */
+  enqueueEntityDelete(entity: EntityKind, serverId: number, current: EntityFields & { updatedAt?: string | null }, ref?: EntityFields, cache?: ApplyStore): Promise<OutboxEntry | null>;
 }
 
-const isField = (k: string): k is EditableField => (EDITABLE_FIELDS as readonly string[]).includes(k);
+/** Field names of an entity the queue may write for a given operation. Unknown entity or field = RangeError. */
+function allowed(entity: EntityKind, names: "createFields" | "editableFields"): readonly string[] {
+  const a = adapterFor(entity);
+  if (!a) throw new RangeError(`no offline adapter for entity: ${entity}`);
+  return a[names];
+}
 
-function clean(fields: TxFields): TxFields {
-  const out: TxFields = {};
+function clean(fields: EntityFields, names: readonly string[]): EntityFields {
+  const out: EntityFields = {};
   for (const [k, v] of Object.entries(fields)) {
-    if (!isField(k)) throw new RangeError(`field not allowed offline: ${k}`);
+    if (!names.includes(k)) throw new RangeError(`field not allowed offline: ${k}`);
     if (v !== undefined) out[k] = v;
   }
   return out;
-}
-
-const str = (v: unknown): string | null => (v === null || v === undefined ? null : String(v));
-
-/** Local row for an entry, merged onto `base` when editing. */
-export function rowFromEntry(entry: OutboxEntry, base?: TransactionRow): TransactionRow {
-  const f = entry.fields;
-  const b: TransactionRow = base ?? { id: entry.rowId, serverId: entry.serverId, date: "1970-01-01", accountId: null, categoryId: null, currency: null, amount: 0 };
-  return {
-    ...b,
-    id: entry.rowId,
-    serverId: entry.serverId,
-    date: f.date !== undefined ? String(f.date) : b.date,
-    amount: f.amount !== undefined ? Number(f.amount) : b.amount,
-    accountId: f.accountId !== undefined ? str(f.accountId) : b.accountId,
-    categoryId: f.categoryId !== undefined ? str(f.categoryId) : b.categoryId,
-    currency: f.currency !== undefined ? str(f.currency) : b.currency,
-    enteredAmount: f.enteredAmount !== undefined ? (f.enteredAmount === null ? null : Number(f.enteredAmount)) : b.enteredAmount,
-    enteredCurrency: f.enteredCurrency !== undefined ? str(f.enteredCurrency) : b.enteredCurrency,
-    payee: f.payee !== undefined ? str(f.payee) : b.payee,
-    note: f.note !== undefined ? str(f.note) : b.note,
-    tags: f.tags !== undefined ? str(f.tags) : b.tags,
-  };
 }
 
 export function createWriteQueue(deps: WriteQueueDeps): WriteQueue {
@@ -95,12 +90,74 @@ export function createWriteQueue(deps: WriteQueueDeps): WriteQueue {
     return run;
   };
 
-  function stamp(entry: OutboxEntry, fields: TxFields): void {
+  function stamp(entry: OutboxEntry, fields: EntityFields): void {
     const hlc = clock.send();
-    for (const f of Object.keys(fields) as EditableField[]) {
-      entry.fields[f] = fields[f] as string | number | null;
+    for (const f of Object.keys(fields)) {
+      entry.fields[f] = fields[f];
       entry.fieldHlc[f] = { ms: hlc.ms, counter: hlc.counter };
     }
+  }
+
+  const newEntry = (fields: Partial<OutboxEntry> & Pick<OutboxEntry, "kind" | "rowId" | "serverId" | "entity">): OutboxEntry => ({
+    opId: newId(), fields: {}, fieldHlc: {}, base: {},
+    createdAt: now(), attempts: 0, nextAttemptAt: 0, firstSendAt: null, status: "pending", failReason: null,
+    ...fields,
+  });
+
+  async function enqueueCreate(entity: EntityKind, fields: EntityFields, ref: EntityFields | undefined, cache: ApplyStore | undefined): Promise<OutboxEntry | null> {
+    if (!allow()) return null;
+    const adapter = adapterFor(entity);
+    if (!adapter) throw new RangeError(`no offline adapter for entity: ${entity}`);
+    if (!adapter.canCreateOffline) throw new RangeError(`create is online-only for ${entity}`);
+    const entry = newEntry({ entity, kind: "create", rowId: "", serverId: null });
+    entry.rowId = `local-${entry.opId}`;
+    stamp(entry, clean(fields, allowed(entity, "createFields")));
+    if (ref && Object.keys(ref).length > 0) entry.ref = ref;
+    await getStore().put(entry);
+    if (cache && adapter.cacheTable) await cache.upsertRows(adapter.cacheTable, [adapter.rowFromEntry(entry) as LocalRow]);
+    return entry;
+  }
+
+  async function enqueueEdit(entity: EntityKind, serverId: number, patch: EntityFields, current: Record<string, unknown>, ref: EntityFields | undefined, cache: ApplyStore | undefined): Promise<OutboxEntry | null> {
+    if (!allow()) return null;
+    const adapter = adapterFor(entity);
+    if (!adapter) throw new RangeError(`no offline adapter for entity: ${entity}`);
+    if (!adapter.canEditOffline) throw new RangeError(`edit is online-only for ${entity}`);
+    const p = clean(patch, allowed(entity, "editableFields"));
+    const rowId = rowIdFor(entity, serverId);
+    const existing = (await getStore().list()).find((e) => e.kind === "edit" && e.rowId === rowId && e.status === "pending" && entityOf(e) === entity);
+    const entry = existing ?? newEntry({ entity, kind: "edit", rowId, serverId });
+    if (!existing && ref && Object.keys(ref).length > 0) entry.ref = ref;
+    for (const f of Object.keys(p)) {
+      if (!(f in entry.base)) entry.base[f] = ((current[f] ?? null) as FieldValue);
+    }
+    stamp(entry, p);
+    await getStore().put(entry);
+    if (cache && adapter.cacheTable) await cache.upsertRows(adapter.cacheTable, [adapter.rowFromEntry(entry, current) as LocalRow]);
+    return entry;
+  }
+
+  async function enqueueDelete(entity: EntityKind, serverId: number, current: Record<string, unknown>, ref: EntityFields | undefined, cache: ApplyStore | undefined): Promise<OutboxEntry | null> {
+    if (!allow()) return null;
+    const adapter = adapterFor(entity);
+    if (!adapter) throw new RangeError(`no offline adapter for entity: ${entity}`);
+    if (!adapter.canDeleteOffline) throw new RangeError(`delete is online-only for ${entity}`);
+    const rowId = rowIdFor(entity, serverId);
+    const all = await getStore().list();
+    const dup = all.find((e) => e.kind === "delete" && e.rowId === rowId && e.status === "pending" && entityOf(e) === entity);
+    if (dup) return dup;
+    // A pending edit of the same row is moot once the row is deleted; a failed one stays for review.
+    for (const e of all) if (e.kind === "edit" && e.rowId === rowId && e.status === "pending" && entityOf(e) === entity) await getStore().remove(e.opId);
+    const base: EntityFields = {};
+    for (const f of adapter.editableFields) {
+      const v = current[f];
+      if (v !== undefined) base[f] = (v === null || v === "" ? null : typeof v === "number" ? v : String(v)) as FieldValue;
+    }
+    const entry = newEntry({ entity, kind: "delete", rowId, serverId, base, baseUpdatedAt: (current.updatedAt as string | null | undefined) ?? null });
+    if (ref && Object.keys(ref).length > 0) entry.ref = ref;
+    await getStore().put(entry);
+    if (cache && adapter.cacheTable) await cache.deleteRows(adapter.cacheTable, [rowId]);
+    return entry;
   }
 
   return {
@@ -110,67 +167,15 @@ export function createWriteQueue(deps: WriteQueueDeps): WriteQueue {
     clock,
 
     enqueueCreate(fields, cache) {
-      return serial(async () => {
-        if (!allow()) return null;
-        const opId = newId();
-        const entry: OutboxEntry = {
-          opId, kind: "create", rowId: `local-${opId}`, serverId: null, fields: {}, fieldHlc: {}, base: {},
-          createdAt: now(), attempts: 0, nextAttemptAt: 0, firstSendAt: null, status: "pending", failReason: null,
-        };
-        stamp(entry, clean(fields));
-        await getStore().put(entry);
-        if (cache) await cache.upsertRows("transactions", [rowFromEntry(entry)]);
-        return entry;
-      });
+      return serial(() => enqueueCreate("transaction", fields, undefined, cache));
     },
 
     enqueueEdit(serverId, patch, current, cache) {
-      return serial(async () => {
-        if (!allow()) return null;
-        const p = clean(patch);
-        const rowId = String(serverId);
-        const existing = (await getStore().list()).find((e) => e.kind === "edit" && e.rowId === rowId && e.status === "pending");
-        let entry: OutboxEntry;
-        if (existing) {
-          entry = existing; // coalesce: newer local write wins per field; the baseline of an already-queued field stays
-        } else {
-          entry = {
-            opId: newId(), kind: "edit", rowId, serverId, fields: {}, fieldHlc: {}, base: {},
-            createdAt: now(), attempts: 0, nextAttemptAt: 0, firstSendAt: null, status: "pending", failReason: null,
-          };
-        }
-        for (const f of Object.keys(p) as EditableField[]) {
-          if (!(f in entry.base)) entry.base[f] = ((current as unknown as Record<string, unknown>)[f] ?? null) as string | number | null;
-        }
-        stamp(entry, p);
-        await getStore().put(entry);
-        if (cache) await cache.upsertRows("transactions", [rowFromEntry(entry, current)]);
-        return entry;
-      });
+      return serial(() => enqueueEdit("transaction", serverId, patch, current as unknown as Record<string, unknown>, undefined, cache));
     },
 
     enqueueDelete(serverId, current, cache) {
-      return serial(async () => {
-        if (!allow()) return null;
-        const rowId = String(serverId);
-        const all = await getStore().list();
-        const dup = all.find((e) => e.kind === "delete" && e.rowId === rowId && e.status === "pending");
-        if (dup) return dup;
-        // A pending edit of the same row is moot once the row is deleted; a failed one stays for review.
-        for (const e of all) if (e.kind === "edit" && e.rowId === rowId && e.status === "pending") await getStore().remove(e.opId);
-        const base: TxFields = {};
-        for (const f of EDITABLE_FIELDS) {
-          const v = (current as unknown as Record<string, unknown>)[f];
-          if (v !== undefined) base[f] = (v === null || v === "" ? null : typeof v === "number" ? v : String(v)) as FieldValue;
-        }
-        const entry: OutboxEntry = {
-          opId: newId(), kind: "delete", rowId, serverId, fields: {}, fieldHlc: {}, base, baseUpdatedAt: current.updatedAt ?? null,
-          createdAt: now(), attempts: 0, nextAttemptAt: 0, firstSendAt: null, status: "pending", failReason: null,
-        };
-        await getStore().put(entry);
-        if (cache) await cache.deleteRows("transactions", [rowId]);
-        return entry;
-      });
+      return serial(() => enqueueDelete("transaction", serverId, current as unknown as Record<string, unknown>, undefined, cache));
     },
 
     dequeueCreate(rowId, cache) {
@@ -179,7 +184,8 @@ export function createWriteQueue(deps: WriteQueueDeps): WriteQueue {
         const entry = (await getStore().list()).find((e) => e.kind === "create" && e.rowId === rowId);
         if (!entry || entry.firstSendAt !== null) return null;
         await getStore().remove(entry.opId);
-        if (cache) await cache.deleteRows("transactions", [rowId]);
+        const adapter = adapterFor(entityOf(entry));
+        if (cache && adapter?.cacheTable) await cache.deleteRows(adapter.cacheTable, [rowId]);
         return entry;
       });
     },
@@ -187,19 +193,22 @@ export function createWriteQueue(deps: WriteQueueDeps): WriteQueue {
     enqueueEditLocal(rowId, patch, cache) {
       return serial(async () => {
         if (!allow()) return null;
-        const p = clean(patch);
         const entry = (await getStore().list()).find((e) => e.kind === "create" && e.rowId === rowId && e.status === "pending");
         if (!entry) return null;
+        const entity = entityOf(entry);
+        const adapter = adapterFor(entity);
+        if (!adapter) return null;
+        const p = clean(patch, adapter.createFields);
         stamp(entry, p);
         // A create has no baseline: a cleared field (null) simply is not part of the POST body.
-        for (const f of Object.keys(p) as EditableField[]) {
+        for (const f of Object.keys(p)) {
           if (p[f] === null) {
             delete entry.fields[f];
             delete entry.fieldHlc[f];
           }
         }
         await getStore().put(entry);
-        if (cache) await cache.upsertRows("transactions", [rowFromEntry(entry)]);
+        if (cache && adapter.cacheTable) await cache.upsertRows(adapter.cacheTable, [adapter.rowFromEntry(entry) as LocalRow]);
         return entry;
       });
     },
@@ -208,19 +217,33 @@ export function createWriteQueue(deps: WriteQueueDeps): WriteQueue {
       if (!allow()) return 0;
       const entries = (await getStore().list()).filter((e) => e.status === "pending");
       for (const e of entries) {
+        const adapter = adapterFor(entityOf(e));
+        if (!adapter?.cacheTable) continue; // no local table for this entity: nothing to re-apply
         if (e.kind === "delete") {
-          await cache.deleteRows("transactions", [e.rowId]);
+          await cache.deleteRows(adapter.cacheTable, [e.rowId]);
           continue;
         }
         const base = e.kind === "edit" ? baseRows?.get(e.rowId) : undefined;
         if (e.kind === "edit" && !base) continue; // cache has no row to merge onto
-        await cache.upsertRows("transactions", [rowFromEntry(e, base)]);
+        await cache.upsertRows(adapter.cacheTable, [adapter.rowFromEntry(e, base) as LocalRow]);
       }
       return entries.length;
     },
 
     pending() {
       return getStore().list();
+    },
+
+    enqueueEntityCreate(entity, fields, ref, cache) {
+      return serial(() => enqueueCreate(entity, fields, ref, cache));
+    },
+
+    enqueueEntityEdit(entity, serverId, patch, current, ref, cache) {
+      return serial(() => enqueueEdit(entity, serverId, patch, current, ref, cache));
+    },
+
+    enqueueEntityDelete(entity, serverId, current, ref, cache) {
+      return serial(() => enqueueDelete(entity, serverId, current, ref, cache));
     },
   };
 }

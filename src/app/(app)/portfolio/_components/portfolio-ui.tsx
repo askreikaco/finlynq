@@ -8,6 +8,7 @@
  * components can share them.
  */
 
+import { METRIC_GRID_CLASS } from "@/components/mobile/metric-grid";
 import { ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/currency";
@@ -99,7 +100,7 @@ export function PortfolioSkeleton() {
         <div className="h-8 w-48 bg-muted animate-shimmer rounded-lg" />
         <div className="h-4 w-72 bg-muted animate-shimmer rounded-lg mt-2" />
       </div>
-      <div className="grid grid-cols-2 wide:grid-cols-4 gap-4">
+      <div className={METRIC_GRID_CLASS}>
         {Array.from({ length: 4 }).map((_, i) => (
           <Card key={i}>
             <CardContent className="pt-5">

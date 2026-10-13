@@ -249,9 +249,11 @@ describe("/subscriptions list: navigation, not dialogs", () => {
     expect(H.push).toHaveBeenCalledWith("/subscriptions/new");
   });
 
-  it("clicking a row navigates to its edit page with a validated returnTo", async () => {
+  it("tapping a row opens its detail sheet; Edit in the sheet navigates to the edit page with a validated returnTo", async () => {
     render(<SubscriptionsPage />);
     fireEvent.click(await screen.findByText("Netflix"));
+    expect(H.push).not.toHaveBeenCalled();
+    fireEvent.click(await screen.findByRole("button", { name: /Edit/ }));
     expect(H.push).toHaveBeenCalledWith("/subscriptions/7/edit?returnTo=%2Fsubscriptions");
   });
 
