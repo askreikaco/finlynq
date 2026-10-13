@@ -172,6 +172,6 @@ describe("shared layout components honour dense:", () => {
     expect(group.className).toContain("rounded-2xl");
     // Every added token is dense:-prefixed; stripping them yields the original class list.
     const stripped = card.className.split(/\s+/).filter((t) => !t.startsWith("dense:")).join(" ");
-    expect(stripped).toContain("group/card flex flex-col gap-4 overflow-hidden rounded-xl bg-card py-3 regular:py-4 text-sm");
+    expect(stripped).toContain("group/card flex flex-col gap-4 overflow-hidden rounded-xl surface-card py-3 regular:py-4 text-sm");
   });
 });
