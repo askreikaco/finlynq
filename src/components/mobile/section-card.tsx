@@ -20,7 +20,7 @@ export function SectionCard({
       <div
         data-slot="section-card-body"
         className={cn(
-          "min-w-0 rounded-xl border border-border/50 bg-card text-card-foreground",
+          "surface-card min-w-0 rounded-xl border border-border/50 text-card-foreground",
           padded && "p-4",
           className,
         )}
