@@ -1,9 +1,6 @@
 {
   "family": "admin",
   "unmigrated": [
-    "src/app/(app)/admin/(env)/integrations/page.tsx",
-    "src/app/(app)/admin/announcements/page.tsx",
-    "src/app/(app)/admin/feedback/page.tsx",
     "src/app/(app)/admin/instance/page.tsx"
   ],
   "chrome": {}

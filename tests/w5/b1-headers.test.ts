@@ -31,8 +31,8 @@ describe("W5-5 admin page headers", () => {
     describe(file, () => {
       const content = fs.readFileSync(file, "utf-8");
 
-      it("renders the shared PageHeader", () => {
-        expect(content).toMatch(/<PageHeader\b/);
+      it("renders the shared header (PageHeader, or SectionPage which owns it)", () => {
+        expect(content).toMatch(/<(PageHeader|SectionPage)\b/);
       });
 
       it("every titleClassName override equals the shared header target", () => {

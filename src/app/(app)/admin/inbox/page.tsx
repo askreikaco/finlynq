@@ -1,9 +1,9 @@
 "use client";
 
 /**
- * /admin/inbox — admin triage for non-import emails, two-pane (list | thread).
+ * /admin/inbox — admin triage for non-import emails. One column: the list of emails; tap one to open its conversation in a bottom sheet.
  *
- * Left: compact list (Mailbox / Trash tabs). Right: the selected email's full
+ * List: Mailbox / Trash tabs. The selected email's full
  * CONVERSATION — their inbound messages + our sent replies (from
  * /api/admin/inbox/[id]/thread) — plus a reply box. Replying sends via the
  * Resend transport from the mailbox address and is persisted, so the thread
@@ -16,7 +16,6 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -28,9 +27,10 @@ import {
   CheckCircle2,
   Send,
   X,
-  Mail,
 } from "lucide-react";
 import { SectionPage } from "@/components/templates/section-page";
+import { ListRow, SectionCard } from "@/components/mobile";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 interface InboxRow {
   id: string;
@@ -249,13 +249,9 @@ export default function AdminInboxPage() {
       id="admin-inbox"
       title="Admin Inbox"
       subtitle={<>Non-import email routed to this app. Mailbox is kept indefinitely; trash auto-deletes after 24 hours.</>}
-      width="console"
-      stack="4"
-      padBottom="none"
-      minW0={false}
-      suspense={false}
+      width="report"
+      center
       header={{
-        className: "flex items-start justify-between gap-4",
         actions: (
           <Button variant="outline" size="sm" onClick={load} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? "animate-spin" : ""}`} />
@@ -264,172 +260,149 @@ export default function AdminInboxPage() {
         ),
       }}
     >
-
       {error && (
-        <Card className="border-destructive/30 bg-destructive/10">
-          <CardContent className="py-3 text-sm text-destructive">{error}</CardContent>
-        </Card>
+        <SectionCard className="border-destructive/30 bg-destructive/10 py-3 text-sm text-destructive">{error}</SectionCard>
       )}
 
-      <div className="grid gap-4 wide:grid-cols-[340px_minmax(0,1fr)] items-start">
-        {/* ─── Left: list ─── */}
-        <Card className="overflow-hidden">
-          <Tabs value={category} onValueChange={(v) => setCategory(v as "mailbox" | "trash")}>
-            <div className="border-b px-3 pt-3">
-              <TabsList>
-                <TabsTrigger value="mailbox"><Inbox className="h-4 w-4 mr-1.5" />Mailbox</TabsTrigger>
-                <TabsTrigger value="trash"><Trash2 className="h-4 w-4 mr-1.5" />Trash</TabsTrigger>
-              </TabsList>
-            </div>
-          </Tabs>
-          <div className="max-h-[calc(100vh-16rem)] overflow-y-auto">
-            {loading && !rows && (
-              <p className="p-6 text-sm text-muted-foreground text-center">Loading…</p>
-            )}
-            {rows && rows.length === 0 && (
-              <p className="p-8 text-sm text-muted-foreground text-center">No {category} messages.</p>
-            )}
-            {rows && rows.length > 0 && (
-              <ul className="divide-y">
-                {rows.map((r) => {
-                  const active = r.id === selectedId;
-                  return (
-                    <li key={r.id}>
-                      <button
-                        type="button"
-                        onClick={() => openThread(r.id)}
-                        className={`w-full text-left px-3 py-2.5 transition-colors hover:bg-muted/50 ${active ? "bg-muted" : ""}`}
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className={`text-xs font-mono truncate ${r.triagedAt ? "text-muted-foreground" : "font-semibold"}`}>
-                            {r.fromAddress}
-                          </span>
-                          <span className="text-xs text-muted-foreground whitespace-nowrap">{fmtTime(r.receivedAt)}</span>
-                        </div>
-                        <div className="text-xs mt-0.5 truncate">
-                          {r.subject || <span className="text-muted-foreground">(no subject)</span>}
-                        </div>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-xs text-muted-foreground truncate">→ {r.toAddress}</span>
-                          {!r.triagedAt && (
-                            <Badge variant="outline" className="bg-warning/10 text-warning border-warning/30 text-xs px-1 py-0">new</Badge>
-                          )}
-                          {r.attachmentCount > 0 && (
-                            <span className="text-xs text-muted-foreground">📎 {r.attachmentCount}</span>
-                          )}
-                          {category === "trash" && r.expiresAt && (
-                            <span className="text-xs text-muted-foreground ml-auto">{hoursUntil(r.expiresAt)}h left</span>
-                          )}
-                        </div>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
+      {/* ─── List (one column at every width) ─── */}
+      <SectionCard padded={false}>
+        <Tabs value={category} onValueChange={(v) => setCategory(v as "mailbox" | "trash")}>
+          <div className="border-b px-3 pt-3">
+            <TabsList>
+              <TabsTrigger value="mailbox"><Inbox className="h-4 w-4 mr-1.5" />Mailbox</TabsTrigger>
+              <TabsTrigger value="trash"><Trash2 className="h-4 w-4 mr-1.5" />Trash</TabsTrigger>
+            </TabsList>
           </div>
-        </Card>
+        </Tabs>
+        <div>
+          {loading && !rows && (
+            <p className="p-6 text-sm text-muted-foreground text-center">Loading…</p>
+          )}
+          {rows && rows.length === 0 && (
+            <p className="p-8 text-sm text-muted-foreground text-center">No {category} messages.</p>
+          )}
+          {rows && rows.length > 0 && (
+            <ul className="divide-y divide-border/50 px-3">
+              {rows.map((r) => (
+                <li key={r.id}>
+                  <ListRow
+                    title={
+                      <span className={`font-mono text-xs ${r.triagedAt ? "font-normal text-muted-foreground" : "font-semibold"}`}>
+                        {r.fromAddress}
+                      </span>
+                    }
+                    subtitle={
+                      <>
+                        {r.subject || "(no subject)"} · → {r.toAddress}
+                        {r.attachmentCount > 0 ? ` · 📎 ${r.attachmentCount}` : ""}
+                      </>
+                    }
+                    value={!r.triagedAt ? <Badge variant="outline" className="bg-warning/10 text-warning border-warning/30 text-xs px-1 py-0">new</Badge> : undefined}
+                    secondary={
+                      category === "trash" && r.expiresAt
+                        ? `${fmtTime(r.receivedAt)} · ${hoursUntil(r.expiresAt)}h left`
+                        : fmtTime(r.receivedAt)
+                    }
+                    onPress={() => openThread(r.id)}
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </SectionCard>
 
-        {/* ─── Right: conversation ─── */}
-        <Card className="min-h-[calc(100vh-16rem)]">
-          <CardContent className="p-0 h-full">
-            {!selectedId && (
-              <div className="flex flex-col items-center justify-center text-center h-full min-h-[300px] p-8 text-muted-foreground">
-                <Mail className="h-8 w-8 mb-2 opacity-40" />
-                <p className="text-sm">Select a message to read and reply.</p>
-              </div>
-            )}
+      {/* ─── Conversation (tap a row) ─── */}
+      <Sheet open={selectedId !== null} onOpenChange={(open) => { if (!open) closeThread(); }}>
+        <SheetContent side="bottom" className="max-h-[92dvh] overflow-y-auto overscroll-contain rounded-t-2xl p-0">
+          <SheetHeader className="border-b px-4 py-3 pr-12">
+            <SheetTitle className="truncate text-base">{thread ? thread.subject || "(no subject)" : "Email"}</SheetTitle>
+            <SheetDescription className="truncate font-mono text-xs">{thread?.counterparty ?? ""}</SheetDescription>
+          </SheetHeader>
 
-            {selectedId && threadLoading && !thread && (
-              <p className="p-6 text-sm text-muted-foreground">Loading conversation…</p>
-            )}
+          {selectedId && threadLoading && !thread && (
+            <p className="p-6 text-sm text-muted-foreground">Loading conversation…</p>
+          )}
 
-            {selectedId && thread && (
-              <div className="flex flex-col h-full">
-                {/* Header */}
-                <div className="flex items-start justify-between gap-3 border-b px-4 py-3">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{thread.subject || "(no subject)"}</p>
-                    <p className="text-xs text-muted-foreground font-mono truncate">{thread.counterparty}</p>
-                  </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    {!thread.triagedAt && (
-                      <Button variant="outline" size="sm" onClick={markTriaged} disabled={acting}>
-                        <CheckCircle2 className="h-4 w-4 mr-1.5" />Triage
-                      </Button>
-                    )}
-                    {thread.category === "trash" && (
-                      <Button variant="outline" size="sm" onClick={promote} disabled={acting}>
-                        <ArrowUpFromLine className="h-4 w-4 mr-1.5" />Keep
-                      </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={remove}
-                      aria-label="Delete email"
-                      disabled={acting}
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={closeThread} aria-label="Close thread">
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Conversation */}
-                <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 max-h-[calc(100vh-28rem)]">
-                  {thread.messages.map((m) => (
-                    <div
-                      key={m.id}
-                      className={`rounded-lg border p-3 ${m.kind === "outbound" ? "bg-primary/10 border-primary/30 ml-6" : "bg-muted/40 mr-6"}`}
-                    >
-                      <div className="flex items-center justify-between gap-2 mb-1.5">
-                        <span className="text-xs font-mono truncate">
-                          {m.kind === "outbound" ? (
-                            <><span className="font-semibold text-primary">You</span> · {m.fromAddress}</>
-                          ) : (
-                            m.fromAddress
-                          )}
-                        </span>
-                        <span className="text-xs text-muted-foreground whitespace-nowrap">{fmtTime(m.at)}</span>
-                      </div>
-                      <MessageBody m={m} />
-                    </div>
-                  ))}
-                </div>
-
-                {/* Reply box */}
-                {thread.category === "mailbox" && (
-                  <div className="border-t px-4 py-3 space-y-2">
-                    <label className="text-xs font-medium text-muted-foreground">
-                      Reply to <span className="font-mono">{thread.counterparty}</span>
-                    </label>
-                    <textarea
-                      value={replyText}
-                      onChange={(e) => setReplyText(e.target.value)}
-                      rows={4}
-                      maxLength={50000}
-                      placeholder="Write your reply…"
-                      disabled={sending}
-                      className="w-full resize-y rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-60"
-                    />
-                    {replyError && <p className="text-xs text-destructive">{replyError}</p>}
-                    <div className="flex justify-end">
-                      <Button size="sm" onClick={sendReply} disabled={sending || !replyText.trim()}>
-                        <Send className={`h-4 w-4 mr-1.5 ${sending ? "animate-pulse" : ""}`} />
-                        {sending ? "Sending…" : "Send reply"}
-                      </Button>
-                    </div>
-                  </div>
+          {selectedId && thread && (
+            <div className="flex flex-col">
+              {/* Actions */}
+              <div className="flex flex-wrap items-center gap-1.5 border-b px-4 py-3">
+                {!thread.triagedAt && (
+                  <Button variant="outline" size="sm" onClick={markTriaged} disabled={acting}>
+                    <CheckCircle2 className="h-4 w-4 mr-1.5" />Triage
+                  </Button>
                 )}
+                {thread.category === "trash" && (
+                  <Button variant="outline" size="sm" onClick={promote} disabled={acting}>
+                    <ArrowUpFromLine className="h-4 w-4 mr-1.5" />Keep
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={remove}
+                  aria-label="Delete email"
+                  disabled={acting}
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="sm" onClick={closeThread} aria-label="Close thread" className="ml-auto">
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+
+              {/* Conversation */}
+              <div className="space-y-3 px-4 py-3">
+                {thread.messages.map((m) => (
+                  <div
+                    key={m.id}
+                    className={`rounded-lg border p-3 ${m.kind === "outbound" ? "bg-primary/10 border-primary/30 ml-6" : "bg-muted/40 mr-6"}`}
+                  >
+                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                      <span className="text-xs font-mono truncate">
+                        {m.kind === "outbound" ? (
+                          <><span className="font-semibold text-primary">You</span> · {m.fromAddress}</>
+                        ) : (
+                          m.fromAddress
+                        )}
+                      </span>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">{fmtTime(m.at)}</span>
+                    </div>
+                    <MessageBody m={m} />
+                  </div>
+                ))}
+              </div>
+
+              {/* Reply box */}
+              {thread.category === "mailbox" && (
+                <div className="border-t px-4 py-3 space-y-2">
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Reply to <span className="font-mono">{thread.counterparty}</span>
+                  </label>
+                  <textarea
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                    rows={4}
+                    maxLength={50000}
+                    placeholder="Write your reply…"
+                    disabled={sending}
+                    className="w-full resize-y rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-60"
+                  />
+                  {replyError && <p className="text-xs text-destructive">{replyError}</p>}
+                  <div className="flex justify-end">
+                    <Button size="sm" onClick={sendReply} disabled={sending || !replyText.trim()}>
+                      <Send className={`h-4 w-4 mr-1.5 ${sending ? "animate-pulse" : ""}`} />
+                      {sending ? "Sending…" : "Send reply"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </SectionPage>
   );
 }
