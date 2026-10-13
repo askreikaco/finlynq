@@ -2,7 +2,6 @@
  * @vitest-environment jsdom
  */
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
-import { HEADER_SECONDARY } from "@/components/mobile";
 import * as React from "react";
 import { render, screen, cleanup, fireEvent, waitFor, within } from "@testing-library/react";
 import { DASHBOARD_CARDS, DEFAULT_CARD_ORDER } from "@/lib/dashboard-layout";
@@ -102,24 +101,24 @@ describe("Dashboard card layout", () => {
     expect(renderedIds()).toEqual([...DEFAULT_CARD_ORDER]);
   });
 
-  it("default markup keeps the card rows (one tree; desktop grid shape unchanged)", async () => {
+  it("default markup keeps the card rows: tiles share the metric grid, the row-3 and chart rows are unchanged, no accordion", async () => {
     await dashboard();
     const grid = (id: string) => screen.getByTestId(`card-${id}`).closest("div.grid") as HTMLElement;
-    // Net worth hero is full width on its own; health + income/expense/budget + key metrics are
-    // ONE shared small-tile grid (2-up on a phone, 3-up on wide)
-    expect(grid("health-score").className).toBe("grid grid-cols-2 wide:grid-cols-3 gap-3 regular:gap-4");
+    // Net worth hero is full width on its own; health + summary tiles + key metrics are ONE shared metric grid
+    // (2 mobile, 3 tablet, 4 desktop: 6 tiles)
+    expect(grid("health-score").className).toBe("grid grid-cols-2 regular:grid-cols-3 wide:grid-cols-4 gap-3 regular:gap-4");
     expect(screen.getByText("Total Net Worth").closest("div.grid")).not.toBe(grid("health-score"));
     expect(grid("key-metrics")).toBe(grid("health-score"));
     expect(screen.getByTestId("stat-Monthly Income").closest("div.grid")).toBe(grid("health-score"));
+    // action center, weekly recap and quick import share the 3-up row
     expect(grid("action-center").className).toBe("grid grid-cols-1 wide:grid-cols-3 gap-5");
-    // the secondary cards sit in the More insights disclosure, which shares the action-center row
-    const toggle = screen.getByRole("button", { name: "More insights" });
-    expect(toggle.closest("div.grid")).toBe(grid("action-center"));
-    expect(grid("weekly-recap").className).toBe("grid grid-cols-1 wide:grid-cols-2 gap-5");
-    expect(grid("weekly-recap").closest('[role="region"]')).toBe(document.getElementById(toggle.getAttribute("aria-controls")!));
-    expect(grid("income-expense-chart").className).toContain("grid grid-cols-1 wide:grid-cols-2 gap-5");
+    expect(grid("weekly-recap")).toBe(grid("action-center"));
+    expect(grid("quick-import")).toBe(grid("action-center"));
+    expect(grid("income-expense-chart").className).toBe("grid grid-cols-1 wide:grid-cols-2 gap-5");
     expect(grid("spending-category-chart")).toBe(grid("income-expense-chart"));
-    expect(grid("available-to-spend").className).toContain("grid grid-cols-1 wide:grid-cols-3 gap-5");
+    expect(grid("available-to-spend").className).toBe("grid grid-cols-1 wide:grid-cols-3 gap-5");
+    // no accordion any more
+    expect(screen.queryByRole("button", { name: /More insights|Fewer insights/ })).toBeNull();
   });
 
   it("the Due card sits right after the tips, before the hero, and posts return to /dashboard", async () => {
@@ -127,10 +126,7 @@ describe("Dashboard card layout", () => {
     const ids = renderedIds();
     expect(ids.slice(0, 3)).toEqual(["onboarding-tips", "due-subscriptions", "net-worth"]);
     expect(screen.getByTestId("card-due-subscriptions").getAttribute("data-return")).toBe("/dashboard");
-    // a plain main card: not inside the More insights disclosure, not in the hero grid
-    const toggle = screen.getByRole("button", { name: "More insights" });
-    const region = document.getElementById(toggle.getAttribute("aria-controls")!) as HTMLElement;
-    expect(region.contains(screen.getByTestId("card-due-subscriptions"))).toBe(false);
+    // a plain full-width card: not in any grid
     expect(screen.getByTestId("card-due-subscriptions").closest("div.grid")).toBeNull();
   });
 
@@ -216,29 +212,17 @@ describe("Dashboard card layout", () => {
     expect(screen.getByText("Total Net Worth").closest("div.lg\\:col-span-2")).toBeNull();
   });
 
-  it("one tree at every size: the Net Worth figure shows once, secondary cards sit once inside More insights", async () => {
+  it("one tree at every size: the Net Worth figure shows once, every secondary card renders inline (no disclosure)", async () => {
     await dashboard();
     // the hero is the single Net Worth block; the duplicate stat tile is gone at every size
     expect(screen.queryByTestId("stat-Net Worth")).toBeNull();
     expect(screen.getAllByText("Total Net Worth")).toHaveLength(1);
     expect(screen.getByTestId("stat-Monthly Income").parentElement!.className).not.toContain("hidden");
-
-    // core cards are never inside the disclosure
-    const toggle = screen.getByRole("button", { name: "More insights" });
-    const region = document.getElementById(toggle.getAttribute("aria-controls")!) as HTMLElement;
-    expect(region.getAttribute("role")).toBe("region");
-    expect(region.contains(screen.getByTestId("card-action-center"))).toBe(false);
-    // secondary cards are mounted once, inside the region
-    for (const id of ["weekly-recap", "quick-import", "income-expense-chart", "insights"]) {
-      expect(region.contains(screen.getByTestId(`card-${id}`))).toBe(true);
+    // secondary cards are mounted once, always expanded (no region, no toggle)
+    for (const id of ["weekly-recap", "quick-import", "income-expense-chart", "insights", "action-center"]) {
+      expect(screen.getAllByTestId(`card-${id}`)).toHaveLength(1);
     }
-
-    // collapsed by default (no size provider = compact), and the toggle opens it
-    expect(toggle.getAttribute("aria-expanded")).toBe("false");
-    expect(region.hidden).toBe(true);
-    fireEvent.click(toggle);
-    expect(region.hidden).toBe(false);
-    expect(screen.getByRole("button", { name: "Fewer insights" }).getAttribute("aria-expanded")).toBe("true");
+    expect(screen.queryByRole("region")).toBeNull();
   });
 });
 
@@ -249,12 +233,21 @@ describe("Customize flow", () => {
     return await screen.findByRole("dialog");
   };
 
-  it("header has a Customize action (desktop button + mobile overflow entry)", async () => {
+  it("header: [More][Customize] in one group, the Add primary to the right; Customize is not in the More menu", async () => {
     await dashboard();
-    expect(screen.getByRole("button", { name: /Customize/ }).className).toContain(HEADER_SECONDARY);
-    fireEvent.click(screen.getByRole("button", { name: "More actions" }));
+    const customize = screen.getByRole("button", { name: "Customize" });
+    expect(customize.getAttribute("title")).toBe("Customize");
+    const capsule = customize.closest('[data-slot="header-capsule"]') as HTMLElement;
+    const more = capsule.querySelector('[data-slot="overflow-trigger"]') as HTMLElement;
+    // More first, then Customize, in the same capsule
+    expect(more.compareDocumentPosition(customize) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const add = screen.getByRole("link", { name: "Add transaction" });
+    expect(capsule.contains(add)).toBe(false);
+    expect(customize.compareDocumentPosition(add) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    fireEvent.click(more);
     const menu = await screen.findByRole("menu");
-    expect(within(menu).getByText("Customize")).toBeTruthy();
+    expect(within(menu).queryByText("Customize")).toBeNull();
+    expect(within(menu).getByText("General settings")).toBeTruthy();
   });
 
   it("the Customize sheet lists Due subscriptions as a switchable card", async () => {

@@ -1,5 +1,6 @@
 "use client";
 
+
 import { Fragment, useEffect, useState, useCallback, useRef } from "react";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import Link from "next/link";
@@ -7,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatCurrency, getCurrentMonth, getMonthLabel } from "@/lib/currency";
 import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
-import { DollarSign, TrendingUp, CreditCard, Target, Settings, Plus, Upload, FileUp, SlidersHorizontal } from "lucide-react";
+import { DollarSign, TrendingUp, CreditCard, Target, Settings, Plus, Upload, FileUp } from "lucide-react";
 import { motion } from "framer-motion";
 import { StatCard } from "./_components/stat-card";
 import { deriveSeriesChange } from "@/lib/dashboard/series-change";
@@ -31,11 +32,9 @@ import { useDevMode } from "@/hooks/use-dev-mode";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { CurrencyAuditBanner } from "@/components/currency-audit-banner";
 import type { DashboardData, HealthData } from "./_components/types";
-import { PageHeader, HEADER_SECONDARY, CustomizeDashboardSheet } from "@/components/mobile";
-import { Disclosure } from "@/components/adaptive";
+import { PageHeader, CustomizeDashboardSheet, useCardLayout, usePageCustomize, metricGridClass, METRIC_GRID_CLASS } from "@/components/mobile";
 import { Button } from "@/components/ui/button";
 import { DASHBOARD_CARDS } from "@/lib/dashboard-layout";
-import { useDashboardLayout } from "./_components/use-dashboard-layout";
 import { sumAssetsLiabilities } from "@/lib/account-visibility";
 
 // --- Quick Import Widget ---
@@ -113,7 +112,7 @@ function DashboardSkeleton() {
         <div className="wide:col-span-2 h-44 animate-shimmer rounded-2xl" />
         <div className="h-44 animate-shimmer rounded-2xl" />
       </div>
-      <div className="grid grid-cols-1 regular:grid-cols-2 wide:grid-cols-4 gap-4">
+      <div className={METRIC_GRID_CLASS}>
         {[1, 2, 3, 4].map((i) => <div key={i} className="h-32 animate-shimmer rounded-2xl" />)}
       </div>
       <div className="grid grid-cols-1 wide:grid-cols-3 gap-5">
@@ -137,8 +136,12 @@ export default function DashboardPage() {
   const loadError = dashboardRes.error;
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [userInfo, setUserInfo] = useState<{ email: string; displayName?: string } | null>(null);
-  const { layout, ready: layoutReady, save: saveLayout, reset: resetLayout } = useDashboardLayout();
+  // Same generic hook as every page; the dashboard keeps its legacy storage endpoint (format unchanged).
+  const { layout, ready: layoutReady, save: saveLayout, reset: resetLayout } = useCardLayout("dashboard", DASHBOARD_CARDS, {
+    endpoint: "/api/settings/dashboard-layout",
+  });
   const [customizeOpen, setCustomizeOpen] = useState(false);
+  usePageCustomize({ onOpen: () => setCustomizeOpen(true) });
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
@@ -342,13 +345,12 @@ export default function DashboardPage() {
   type CardDef = {
     /** Adjacent cards with the same group share this wrapper's grid classes. */
     group?: { key: string; className: string };
-    /** Secondary card: rendered inside the single "More insights" Disclosure (collapsed below regular). */
-    extra?: boolean;
     render: (ctx: { grouped: boolean }) => React.ReactNode;
   };
-  // Six small tiles (health, income, expense, budget, saving rate, DTI): 2-up on a phone and
-  // regular, 3-up on wide. Adjacent in the saved order = one shared grid; any hidden subset reflows.
-  const TILES_GRID = { key: "tiles", className: "grid grid-cols-2 wide:grid-cols-3 gap-3 regular:gap-4" };
+  // Metric tiles (health score, the three monthly summary tiles, savings rate + DTI): the shared metric grid
+  // (2 mobile, 3 tablet, 4 desktop). Adjacent in the saved order = one grid; its columns follow the visible tile count.
+  const TILES_GRID = { key: "tiles", className: METRIC_GRID_CLASS };
+  const TILE_COUNT: Record<string, number> = { "health-score": 1, "summary-stats": 3, "key-metrics": 2 };
   const ROW3_GRID = { key: "row3", className: "grid grid-cols-1 wide:grid-cols-3 gap-5" };
   const CHARTS_GRID = { key: "charts", className: "grid grid-cols-1 wide:grid-cols-2 gap-5" };
   const SPEND_GRID = { key: "spend", className: "grid grid-cols-1 wide:grid-cols-3 gap-5" };
@@ -404,7 +406,6 @@ export default function DashboardPage() {
     },
     "weekly-recap": {
       group: ROW3_GRID,
-      extra: true,
       render: () => (
         <LazyView key="weekly-recap" minHeight={220}>
           <WeeklyRecap />
@@ -413,7 +414,6 @@ export default function DashboardPage() {
     },
     "quick-import": {
       group: ROW3_GRID,
-      extra: true,
       render: () => (
         <LazyView key="quick-import" minHeight={180}>
           <QuickImport />
@@ -422,7 +422,6 @@ export default function DashboardPage() {
     },
     "income-expense-chart": {
       group: CHARTS_GRID,
-      extra: true,
       render: () => (
         <LazyView key="income-expense-chart" minHeight={300}>
           <IncomeExpenseChart data={incExpData} currency={apiDisplayCurrency} />
@@ -431,7 +430,6 @@ export default function DashboardPage() {
     },
     "spending-category-chart": {
       group: CHARTS_GRID,
-      extra: true,
       render: () => (
         <LazyView key="spending-category-chart" minHeight={260}>
           <SpendingCategoryChart data={spendingData} currency={apiDisplayCurrency} />
@@ -440,7 +438,6 @@ export default function DashboardPage() {
     },
     "available-to-spend": {
       group: SPEND_GRID,
-      extra: true,
       render: () => (
         <LazyView key="available-to-spend" minHeight={200}>
           <AvailableToSpend
@@ -453,7 +450,6 @@ export default function DashboardPage() {
       ),
     },
     insights: {
-      extra: true,
       render: () => (
         <LazyView key="insights" minHeight={200}>
           <InsightsSection currency={apiDisplayCurrency} />
@@ -462,77 +458,32 @@ export default function DashboardPage() {
     },
   };
 
-  // Saved order, minus hidden cards, minus dev-only cards when dev mode is off.
+  // Saved order, minus hidden cards, minus dev-only cards when dev mode is off. Every card renders inline.
   const devOnly = new Set(DASHBOARD_CARDS.filter((c) => c.devOnly).map((c) => c.id));
   const visibleIds = layout.order.filter((id) => CARDS[id] && !layout.hidden.includes(id) && (devMode || !devOnly.has(id)));
   const availableIds = DASHBOARD_CARDS.filter((c) => devMode || !c.devOnly).map((c) => c.id);
 
-  // One tree at every size. Main cards keep their responsive grid rows. Secondary (extra) cards
-  // render once, inside one "More insights" Disclosure: collapsed below regular, open from regular up.
-  // The Disclosure takes the first extra card's place in the saved order. When that card's grid row
-  // also holds a main card (the action center), the Disclosure sits inside that row, so the desktop
-  // row keeps its shape. The saved order of the extras is kept inside the Disclosure.
+  // Adjacent cards that share a group (in saved order) share one responsive grid wrapper.
   type Run = { group?: CardDef["group"]; ids: string[] };
-  const toRuns = (ids: string[]) => {
-    const out: Run[] = [];
-    for (const id of ids) {
-      const g = CARDS[id].group;
-      const last = out[out.length - 1];
-      if (g && last?.group?.key === g.key) last.ids.push(id);
-      else out.push({ group: g, ids: [id] });
-    }
-    return out;
-  };
-  const isExtra = (id: string) => !!CARDS[id].extra;
-  const extraIds = visibleIds.filter(isExtra);
-  const extraRuns = toRuns(extraIds);
-  const mainRuns = toRuns(visibleIds.filter((id) => !isExtra(id)));
-  const firstExtraAt = visibleIds.findIndex(isExtra);
-  const firstExtraGroup = firstExtraAt >= 0 ? CARDS[visibleIds[firstExtraAt]].group?.key : undefined;
-  const hostIndex = firstExtraGroup ? mainRuns.findIndex((run) => run.group?.key === firstExtraGroup) : -1;
-  // Without a host row, the Disclosure goes in the run that follows the first extra in the saved order.
-  const standaloneAt = (() => {
-    const k = mainRuns.findIndex((run) => visibleIds.indexOf(run.ids[0]) > firstExtraAt);
-    return k === -1 ? mainRuns.length : k;
-  })();
-  // Inside the host row the 3-up action row becomes 2-up beside the disclosure header.
-  const extraGroupClass = (g: NonNullable<CardDef["group"]>) =>
-    g.key === ROW3_GRID.key ? "grid grid-cols-1 wide:grid-cols-2 gap-5" : g.className;
-  const renderCard = (id: string, grouped: boolean) => CARDS[id].render({ grouped });
-
-  const moreInsights =
-    extraIds.length > 0 ? (
-      <Disclosure
-        key="more-insights"
-        title="More insights"
-        expandedTitle="Fewer insights"
-        collapseBelow="regular"
-        className={hostIndex >= 0 ? "wide:col-span-2" : undefined}
-        headerClassName="min-h-11 w-full justify-center rounded-xl border border-border/60 font-semibold hover:bg-muted/50 regular:min-h-9"
-        contentClassName="space-y-5 pt-5"
-      >
-        {extraRuns.map((run) =>
-          run.group ? (
-            <div key={run.ids.join("+")} className={extraGroupClass(run.group)}>
-              {run.ids.map((id) => renderCard(id, run.ids.length > 1))}
-            </div>
-          ) : (
-            renderCard(run.ids[0], false)
-          ),
-        )}
-      </Disclosure>
-    ) : null;
-
-  const rows = mainRuns.map((run, i) => {
-    if (!run.group) return renderCard(run.ids[0], false);
+  const runs: Run[] = [];
+  for (const id of visibleIds) {
+    const g = CARDS[id].group;
+    const last = runs[runs.length - 1];
+    if (g && last?.group?.key === g.key) last.ids.push(id);
+    else runs.push({ group: g, ids: [id] });
+  }
+  const rows = runs.map((run) => {
+    if (!run.group) return CARDS[run.ids[0]].render({ grouped: false });
+    const className =
+      run.group.key === TILES_GRID.key
+        ? metricGridClass(run.ids.reduce((n, id) => n + (TILE_COUNT[id] ?? 0), 0), "gap-3 regular:gap-4")
+        : run.group.className;
     return (
-      <div key={run.ids.join("+")} className={run.group.className}>
-        {run.ids.map((id) => renderCard(id, run.ids.length > 1))}
-        {i === hostIndex && moreInsights}
+      <div key={run.ids.join("+")} className={className}>
+        {run.ids.map((id) => CARDS[id].render({ grouped: run.ids.length > 1 }))}
       </div>
     );
   });
-  if (hostIndex < 0 && moreInsights) rows.splice(standaloneAt, 0, moreInsights);
 
   return (
     <>
@@ -550,7 +501,7 @@ export default function DashboardPage() {
       animate="visible"
     >
       {/* ============================================
-          HEADER — Greeting + Customize + Profile hint
+          HEADER — Greeting + More, Customize (shared header), Add
           ============================================ */}
       <motion.div variants={itemVariants} className="contents">
         <PageHeader
@@ -559,31 +510,16 @@ export default function DashboardPage() {
           titleClassName="text-2xl font-bold tracking-tight"
           subtitleClassName="text-sm text-muted-foreground mt-0.5"
           subtitle={`${greeting}. Here's your financial overview`}
-          overflow={[
-            { label: "Customize", icon: SlidersHorizontal, onSelect: () => setCustomizeOpen(true) },
-            { label: "General settings", icon: Settings, href: "/settings/general" },
-          ]}
+          overflow={[{ label: "General settings", icon: Settings, href: "/settings/general" }]}
           actions={
-        <>
-        <Button
-          variant="outline"
-          size="sm"
-          className={HEADER_SECONDARY}
-          onClick={() => setCustomizeOpen(true)}
-          title="Show, hide and reorder dashboard cards"
-        >
-          <SlidersHorizontal className="h-4 w-4 mr-1.5" />
-          Customize
-        </Button>
-        <Button
-          render={<Link href="/transactions/new" />}
-          aria-label="Add transaction"
-          title="Add transaction"
-        >
-          <Plus className="h-4 w-4 mr-1.5" />
-          Add
-        </Button>
-        </>
+            <Button
+              render={<Link href="/transactions/new" />}
+              aria-label="Add transaction"
+              title="Add transaction"
+            >
+              <Plus className="h-4 w-4 mr-1.5" />
+              Add
+            </Button>
           }
         />
       </motion.div>

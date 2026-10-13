@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { MoreHorizontal, type LucideIcon } from "lucide-react";
+import { MoreHorizontal, Settings, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,6 +14,7 @@ import {
 import { Dialog } from "@/components/ui/dialog";
 import { BackButton } from "./back-button";
 import { useBackTarget } from "@/components/adaptive/use-back-target";
+import { usePageCustomizeRegistration } from "./page-customize";
 
 export interface OverflowAction {
   label: string;
@@ -292,7 +293,9 @@ export function PageHeader({
     ? undefined
     : backHref ?? (autoBack && autoBack.level >= 2 ? autoBack.href ?? undefined : undefined);
   const { save, rest: otherActions } = splitHeaderSave(actions);
-  const hasRight = !!actions || (overflow?.length ?? 0) > 0;
+  // Set by a page with cards (usePageCustomize): the Customize button joins the More group, right after More.
+  const customize = usePageCustomizeRegistration();
+  const hasRight = !!actions || (overflow?.length ?? 0) > 0 || !!customize;
   const h1 = (
     <h1 data-slot="page-header-title" className={cn(HEADER_TITLE_CLASS, PHONE_BAR_TITLE)}>
       {title}
@@ -316,7 +319,7 @@ export function PageHeader({
   const primaryOwn = !save && !!primary;
   const capsulePrimary = save ? primary : null;
   const hasCapsule =
-    (overflow?.length ?? 0) > 0 || !!capsulePrimary || cells.some((c) => !isSecondaryNode(c));
+    (overflow?.length ?? 0) > 0 || !!capsulePrimary || !!customize || cells.some((c) => !isSecondaryNode(c));
   return (
     <div data-slot="page-header" className={cn(className, PHONE_BAR)}>
       {hasLeft ? (
@@ -342,6 +345,7 @@ export function PageHeader({
               {cells}
               {capsulePrimary}
               {overflow && overflow.length > 0 ? <OverflowMenu items={overflow} /> : null}
+              {customize ? <CustomizeButton onOpen={customize.onOpen} title={customize.title} /> : null}
             </div>
           ) : (
             // Only secondary actions (hidden below regular): no capsule, so no empty glass pill on phones.
@@ -355,7 +359,27 @@ export function PageHeader({
   );
 }
 
-/** "⋯" button (44px below regular) + accessible menu. Visible below regular only. */
+/**
+ * "Customize" (gear): opens the page's card sheet. Same group as More (the header capsule), an icon button with the
+ * accessible name and tooltip "Customize". One 44px slot below regular (header-capsule cell rule in globals.css).
+ */
+export function CustomizeButton({ onOpen, title = "Customize" }: { onOpen: () => void; title?: string }) {
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="icon"
+      aria-label="Customize"
+      title={title}
+      data-slot="customize-trigger"
+      onClick={onOpen}
+    >
+      <Settings className="size-4" aria-hidden />
+    </Button>
+  );
+}
+
+/** "⋯" button (44px below regular) + accessible menu. Shown at every size (the More group). */
 export function OverflowMenu({ items }: { items: OverflowAction[] }) {
   return (
     <DropdownMenu>
@@ -366,7 +390,6 @@ export function OverflowMenu({ items }: { items: OverflowAction[] }) {
             size="icon"
             aria-label="More actions"
             data-slot="overflow-trigger"
-            className="regular:hidden"
           />
         }
       >
