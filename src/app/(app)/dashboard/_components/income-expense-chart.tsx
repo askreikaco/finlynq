@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SectionCard } from "@/components/mobile/section-card";
 import {
   XAxis, YAxis, Tooltip, ResponsiveContainer,
   AreaChart, Area,
@@ -131,26 +131,21 @@ export function IncomeExpenseChart({
 
   return (
     <motion.div variants={animationsEnabled ? itemVariants : noAnimationVariants}>
-      <Card className="card-hover">
-        <CardHeader className="pb-1 px-5 pt-5">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <CardTitle className="text-sm font-semibold">Income vs Expenses</CardTitle>
-              <p className="text-xs text-muted-foreground">Last 12 months</p>
-            </div>
-            {stackable && (
-              <Button
-                size="sm"
-                variant={stacked ? "default" : "outline"}
-                onClick={() => setStacked((s) => !s)}
-                title="Split into stacked top-10 category views"
-              >
-                By category
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent className="px-5 pb-5">
+      <SectionCard label="Income vs Expenses" className="card-hover">
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <p className="text-xs text-muted-foreground">Last 12 months</p>
+          {stackable && (
+            <Button
+              size="sm"
+              variant={stacked ? "default" : "outline"}
+              onClick={() => setStacked((s) => !s)}
+              title="Split into stacked top-10 category views"
+            >
+              By category
+            </Button>
+          )}
+        </div>
+        <div>
           {showStacked ? (
             <div className="space-y-4">
               <StackedSideChart
@@ -233,8 +228,8 @@ export function IncomeExpenseChart({
               </div>
             </>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </SectionCard>
     </motion.div>
   );
 }
