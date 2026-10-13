@@ -22,7 +22,7 @@ export function ManageAccounts() {
   const [confirmAll, setConfirmAll] = useState(false);
 
   return (
-    <div className={cn("mx-auto space-y-4", TW.form)} data-testid="manage-accounts">
+    <div className={cn("w-full space-y-4")} data-testid="manage-accounts">
       <PageHeader title="Manage accounts" />
       <p className="text-sm text-muted-foreground">
         Accounts signed in on this device. Hidden accounts stay signed in but are left out of the account menu.

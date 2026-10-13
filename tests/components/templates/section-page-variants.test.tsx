@@ -13,7 +13,7 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
-const DEFAULT_ROOT = "min-w-0 space-y-6 max-w-section pb-[var(--form-bottom-pad)]";
+const DEFAULT_ROOT = "min-w-0 space-y-6 pb-[var(--form-bottom-pad)]";
 
 describe("SectionPage variants", () => {
   it("default props render the original root className literal", () => {
@@ -53,13 +53,14 @@ describe("SectionPage variants", () => {
     ["doc", "max-w-doc"],
     ["console", "max-w-console"],
     ["section", "max-w-section"],
-  ] as const)("width=%s applies %s", (width, cls) => {
+  ] as const)("width=%s applies no %s cap (full width on desktop)", (width, cls) => {
     render(
       <SectionPage id={`v-w-${width}`} title="W" backFallback="/x" width={width}>
         <p>body</p>
       </SectionPage>,
     );
-    expect(screen.getByTestId(`v-w-${width}-root`)).toHaveClass(cls);
+    expect(screen.getByTestId(`v-w-${width}-root`)).not.toHaveClass(cls);
+    expect(screen.getByTestId(`v-w-${width}-root`).className).not.toMatch(/max-w-/);
   });
 
   it("width=report is full width (no max-width token, no mx-auto even with center)", () => {
@@ -179,5 +180,28 @@ describe("SectionPage variants", () => {
       </SectionPage>,
     );
     expect(screen.getByText("direct body")).toBeInTheDocument();
+  });
+});
+
+describe("SectionPage variants: grid", () => {
+  it("grid renders the body in the 1 / 2 / 3 column card grid", () => {
+    render(
+      <SectionPage id="v-grid" title="G" backFallback="/x" grid>
+        <p>a</p>
+        <p>b</p>
+      </SectionPage>,
+    );
+    const g = screen.getByTestId("v-grid-root").querySelector('[data-slot="section-grid"]');
+    expect(g).toHaveClass("grid", "grid-cols-1", "items-start", "regular:grid-cols-2", "wide:grid-cols-3");
+    expect(g?.children).toHaveLength(2);
+  });
+
+  it("without grid there is no grid wrapper", () => {
+    render(
+      <SectionPage id="v-nogrid" title="G" backFallback="/x">
+        <p>a</p>
+      </SectionPage>,
+    );
+    expect(screen.getByTestId("v-nogrid-root").querySelector('[data-slot="section-grid"]')).toBeNull();
   });
 });

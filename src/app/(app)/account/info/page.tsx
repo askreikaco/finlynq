@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { ErrorState } from "@/components/error-state";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { User, Mail, Phone, Check, AlertCircle, Trash2 } from "lucide-react";
+import { TW } from "@/lib/design/tokens";
 
 type Profile = {
   username: string | null;
@@ -302,7 +303,7 @@ export default function InfoPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className={TW.grid3}>
       {/* Avatar */}
       <Card>
         <CardHeader>

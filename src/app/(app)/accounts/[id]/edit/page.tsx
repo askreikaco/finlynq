@@ -16,7 +16,7 @@ import { TW } from "@/lib/design/tokens";
 import { AccountForm, type AccountFormAccount } from "../../_components/account-form";
 
 /** Root class of every state (loading, not found, loaded): the form width token. */
-const ROOT_CLASS = `mx-auto w-full ${TW.form}`;
+const ROOT_CLASS = "w-full";
 
 /** The account as /api/accounts returns it (the reconciliation / import tabs need the extra prefs). */
 type EditAccount = AccountFormAccount & {
@@ -247,7 +247,7 @@ function EditAccountPage() {
   return (
     <div data-testid="account-edit-root" className={ROOT_CLASS}>
       {header}
-      <div className={`mt-3 ${TW.formPad}`}>
+      <div className={`mt-3 ${TW.form} ${TW.formPad}`}>
         <Tabs value={tab} onValueChange={(v) => setTab(parseTab(v))}>
           <TabsList className="w-full">
             <TabsTrigger value="details">Details</TabsTrigger>

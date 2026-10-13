@@ -35,13 +35,13 @@ describe("SectionPage", () => {
     expect(screen.getByRole("link", { name: "Back" })).toHaveAttribute("href", "/admin");
   });
 
-  it("applies the section width token", () => {
+  it("does not cap the section width (full width on desktop)", () => {
     render(
       <SectionPage id="w-section" title="S" backFallback="/settings" width="section">
         <p>body</p>
       </SectionPage>,
     );
-    expect(screen.getByTestId("w-section-root")).toHaveClass("max-w-section");
+    expect(screen.getByTestId("w-section-root")).not.toHaveClass("max-w-section");
     expect(screen.getByTestId("w-section-root")).not.toHaveClass("max-w-report");
   });
 

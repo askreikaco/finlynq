@@ -36,7 +36,7 @@ type Goal = { id: number; name: string };
 type Values = { name: string };
 type Extra = { accounts: string[] };
 
-const ROOT_DEFAULT_BAR = "mx-auto w-full max-w-form pb-[var(--form-bottom-pad)]";
+const ROOT_DEFAULT_BAR = "w-full pb-[var(--form-bottom-pad)]";
 
 function Fields({ ctx, initial = "" }: { ctx: { registerValues: (get: () => Values) => void }; initial?: string }) {
   const [name, setName] = React.useState(initial);
@@ -108,7 +108,7 @@ describe("FormPage variants: default is unchanged", () => {
     const root = screen.getByTestId("goal-edit-root");
     expect(root.className).toBe(ROOT_DEFAULT_BAR);
     const form = document.getElementById("goal-edit-form");
-    expect(form?.className).toBe("mt-3 space-y-3");
+    expect(form?.className).toBe("mt-3 space-y-3 max-w-form");
     expect(form?.tagName).toBe("FORM");
     expect(screen.getByRole("heading", { level: 1, name: "Edit goal" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Save" })).toBeTruthy();
@@ -117,7 +117,7 @@ describe("FormPage variants: default is unchanged", () => {
   it("bottom placement root has no pad class by default", () => {
     loaded();
     renderPage({ savePlacement: "bottom" });
-    expect(screen.getByTestId("goal-edit-root").className).toBe("mx-auto w-full max-w-form");
+    expect(screen.getByTestId("goal-edit-root").className).toBe("w-full");
   });
 
   it("explicit form=owned, width=form, padBottom=default match the default root", () => {
@@ -161,7 +161,7 @@ describe("FormPage variants: form=external", () => {
   it("pads the body, not the root", () => {
     loaded();
     renderPage({ form: "external" });
-    expect(screen.getByTestId("goal-edit-root").className).toBe("mx-auto w-full max-w-form");
+    expect(screen.getByTestId("goal-edit-root").className).toBe("w-full");
     const body = screen.getByLabelText("Name").closest("div");
     expect(body?.className).toContain("mt-3");
     expect(body?.className).toContain("pb-[var(--form-bottom-pad)]");
@@ -202,7 +202,7 @@ describe("FormPage variants: bodyClassName", () => {
     loaded();
     renderPage({ bodyClassName: "space-y-5" });
     // twMerge keeps the later space-y utility, so the default space-y-3 is replaced.
-    expect(document.getElementById("goal-edit-form")?.className).toBe("mt-3 space-y-5");
+    expect(document.getElementById("goal-edit-form")?.className).toBe("mt-3 max-w-form space-y-5");
   });
 
   it("appends to the external body div", () => {
@@ -507,11 +507,12 @@ describe("FormPage variants: width", () => {
     ["form", "max-w-form"],
     ["section", "max-w-section"],
     ["report", "max-w-report"],
-  ] as const)("width=%s sets %s on the root", (width, cls) => {
+  ] as const)("width=%s caps the fields (the body), never the root", (width, cls) => {
     loaded();
     renderPage({ width });
     const root = screen.getByTestId("goal-edit-root");
-    expect(root.className.split(" ")).toContain(cls);
+    expect(root.className.split(" ")).not.toContain(cls);
+    expect(document.getElementById("goal-edit-form")?.className.split(" ")).toContain(cls);
   });
 });
 
@@ -519,19 +520,19 @@ describe("FormPage variants: padBottom", () => {
   it("padBottom=none removes the root pad class", () => {
     loaded();
     renderPage({ padBottom: "none" });
-    expect(screen.getByTestId("goal-edit-root").className).toBe("mx-auto w-full max-w-form");
+    expect(screen.getByTestId("goal-edit-root").className).toBe("w-full");
   });
 
   it("padBottom=max uses the max pad token", () => {
     loaded();
     renderPage({ padBottom: "max" });
-    expect(screen.getByTestId("goal-edit-root").className).toBe("mx-auto w-full max-w-form pb-[var(--form-bottom-pad-max)]");
+    expect(screen.getByTestId("goal-edit-root").className).toBe("w-full pb-[var(--form-bottom-pad-max)]");
   });
 
   it("padBottom=default on a bottom-save owned form has no pad (today)", () => {
     loaded();
     renderPage({ padBottom: "default", savePlacement: "bottom" });
-    expect(screen.getByTestId("goal-edit-root").className).toBe("mx-auto w-full max-w-form");
+    expect(screen.getByTestId("goal-edit-root").className).toBe("w-full");
   });
 
   it("padBottom=none on external removes the body pad too", () => {

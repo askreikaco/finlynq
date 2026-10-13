@@ -7,7 +7,6 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { PageHeader } from "@/components/mobile";
 import { useReturnTo } from "@/lib/forms/use-return-to";
-import { TW } from "@/lib/design/tokens";
 import { MAX_SPLITS } from "@/lib/transactions/split-math";
 import {
   TransactionSplitForm,
@@ -117,7 +116,7 @@ function SplitInner() {
 
   if (state.status === "loading") {
     return (
-      <div className={`mx-auto w-full ${TW.form}`}>
+      <div className={"w-full"}>
         <PageHeader title="Split transaction" backHref={returnTo} backLabel="Back" />
         <div data-testid="tx-split-loading" className="mt-3 text-sm text-muted-foreground">Loading…</div>
       </div>
@@ -125,7 +124,7 @@ function SplitInner() {
   }
   if (state.status === "missing" || state.status === "blocked") {
     return (
-      <div className={`mx-auto w-full ${TW.form} space-y-3`}>
+      <div className={"w-full space-y-3"}>
         <PageHeader title="Split transaction" backHref={returnTo} backLabel="Back" />
         <p data-testid={state.status === "blocked" ? "tx-split-blocked" : undefined} className="text-sm text-foreground">
           {state.message}

@@ -105,6 +105,7 @@ export default function GeneralSettingsPage() {
       padBottom="none"
       minW0={false}
       suspense={false}
+      grid
     >
 
       {/* Display Preferences */}
@@ -271,7 +272,9 @@ export default function GeneralSettingsPage() {
 
       <ActiveCurrenciesSection />
 
-      <FxOverridesSection />
+      <div className="col-span-full">
+        <FxOverridesSection />
+      </div>
 
       <DisplaySection />
     </SectionPage>

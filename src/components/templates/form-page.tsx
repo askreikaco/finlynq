@@ -206,6 +206,14 @@ export interface FormPageProps<T, R, V, X = unknown> {
 type RouteParams = Record<string, string | undefined>;
 
 const WIDTH_CLASS: Record<FormPageWidth, string> = {
+  // Root is full width (the page-header bar bleeds from it); the fields keep a readable width via BODY_WIDTH_CLASS.
+  form: "",
+  section: "",
+  report: "",
+};
+
+/** Body (fields) width: a form's own column, never the whole 1900px. */
+const BODY_WIDTH_CLASS: Record<FormPageWidth, string> = {
   form: TW.form,
   section: TW.section,
   report: TW.report,
@@ -524,7 +532,7 @@ function FormPageBody<T, R, V, X>({
   } else if (external) {
     body = (
       <div
-        className={cn("mt-3", padValue, bodyClassName)}
+        className={cn("mt-3", BODY_WIDTH_CLASS[width], padValue, bodyClassName)}
         onChange={dirtyGuard ? () => setDirty(true) : undefined}
       >
         {delError}
@@ -535,7 +543,7 @@ function FormPageBody<T, R, V, X>({
     body = (
       <form
         id={formId}
-        className={cn("mt-3 space-y-3", bodyClassName)}
+        className={cn("mt-3 space-y-3", BODY_WIDTH_CLASS[width], bodyClassName)}
         noValidate
         onSubmit={handleFormSubmit}
         onChange={dirtyGuard ? () => setDirty(true) : undefined}
@@ -568,7 +576,7 @@ function FormPageBody<T, R, V, X>({
   return (
     <div
       data-testid={rootTestId ?? `${id}-root`}
-      className={cn("mx-auto w-full", WIDTH_CLASS[width], !external && padValue)}
+      className={cn("w-full", WIDTH_CLASS[width], !external && padValue)}
     >
       {headerNode}
       {body}

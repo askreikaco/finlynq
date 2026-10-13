@@ -15,7 +15,7 @@ import { PageHeader } from "@/components/mobile";
 
 export default function ReconcileVisibilityPage() {
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="w-full space-y-6">
       <div className="contents">
         <PageHeader title="Reconcile dropdown visibility" backHref="/settings/import" backLabel="Back to Import settings" />
         <p className="text-sm text-muted-foreground mt-0.5">

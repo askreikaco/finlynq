@@ -214,8 +214,9 @@ describe("non-admin pages", () => {
   // Sticky pins only inside its containing block: the nearest ancestor that spans the page. A PageHeader
   // whose parent is a header-only wrapper (a flex row or a short div) never stays on screen.
   // Static check: walk the open div-like ancestors of the PageHeader tag, skipping display:contents
-  // wrappers, and require the first real ancestor to be a tall page container.
-  const TALL = /(^|\s)(space-y-\d+|flex-col|min-h-screen|container|mx-auto|max-w-\w+)(\s|$)/;
+  // wrappers, and require the first real ancestor to be a tall page container. w-full: the full-width page root
+  // (desktop pages no longer cap or centre their root, owner 2026-10-13).
+  const TALL = /(^|\s)(space-y-\d+|flex-col|min-h-screen|container|mx-auto|max-w-\w+|w-full)(\s|$)/;
 
   function classOf(attrs: string): string {
     const m = attrs.match(/className=\{?[^"'`]*["'`]([^"'`]*)/);

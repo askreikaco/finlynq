@@ -35,9 +35,9 @@ function NewSubscriptionPage() {
   }, []);
 
   return (
-    <div data-testid="subscription-new-root" className="mx-auto w-full max-w-xl">
+    <div data-testid="subscription-new-root" className="w-full">
       <PageHeader title="New subscription" backHref={returnTo} backLabel="Back" className="flex items-center justify-between" />
-      <div className="mt-3 pb-[calc(var(--sab,0px)+1.5rem)]">
+      <div className="mt-3 max-w-form pb-[calc(var(--sab,0px)+1.5rem)]">
         <SubscriptionForm
           mode="create"
           initial={initial}

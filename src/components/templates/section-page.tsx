@@ -35,9 +35,8 @@ export interface SectionPageProps {
   /** Back control label (PageHeader backLabel). */
   backLabel?: string;
   /**
-   * Width token. "section" = max-w-section (settings forms), "report" = full width (data pages, no cap),
-   * "form" = max-w-form, "doc" = max-w-doc, "console" = max-w-console, "none" = no width cap.
-   * Default "section".
+   * Width token. Every token is full width on desktop now (no max-w on the root); the names stay so call sites
+   * keep compiling. Default "section".
    */
   width?: SectionPageWidth;
   /** Bottom pad: "default" = form pad, "max" = max(24px, safe-area) pad, "none" = no pad. Default "default". */
@@ -50,6 +49,11 @@ export interface SectionPageProps {
   stack?: SectionPageStack;
   /** Passthrough to PageHeader (actions, overflow, className, belowTitle). */
   header?: SectionPageHeader;
+  /**
+   * Lay the body's children out as the card grid (TW.grid3: 1 col phone, 2 at regular, 3 at wide, items-start).
+   * Wrap a child that must span the row (tables, long lists, accordions) in an element with class col-span-full.
+   */
+  grid?: boolean;
   /** Appended last to the root className (escape hatch, e.g. `p-6`). */
   className?: string;
   /** Wrap the body in a Suspense boundary. Default true. */
@@ -58,11 +62,14 @@ export interface SectionPageProps {
 }
 
 const WIDTH_CLASS: Record<SectionPageWidth, string> = {
-  section: TW.section,
-  report: "", // data pages are full width on desktop (owner 2026-10-13); TW.report stays the token
-  form: TW.form,
-  doc: TW.doc,
-  console: TW.console,
+  // Full width on desktop at every token (owner 2026-10-13). A capped, non-centred root also broke the
+  // page-header bleed (the bar slid left under the rail, see tests/pages/settings-topbar.test.tsx). Prose pages
+  // cap the prose element only (TW.prose); the TW.* width tokens stay for dialogs and tests.
+  section: "",
+  report: "",
+  form: "",
+  doc: "",
+  console: "",
   none: "",
 };
 
@@ -92,9 +99,11 @@ export function SectionPage({
   header,
   className,
   suspense = true,
+  grid = false,
   children,
 }: SectionPageProps) {
-  const body = suspense ? <React.Suspense fallback={null}>{children}</React.Suspense> : children;
+  const content = grid ? <SectionGrid>{children}</SectionGrid> : children;
+  const body = suspense ? <React.Suspense fallback={null}>{content}</React.Suspense> : content;
   return (
     <div
       data-testid={`${id}-root`}
@@ -118,6 +127,15 @@ export function SectionPage({
         belowTitle={header?.belowTitle}
       />
       {body}
+    </div>
+  );
+}
+
+/** The card grid body (SectionPage `grid`): 1 col phone, 2 at regular, 3 at wide. */
+function SectionGrid({ children }: { children: React.ReactNode }) {
+  return (
+    <div data-slot="section-grid" className={TW.grid3}>
+      {children}
     </div>
   );
 }

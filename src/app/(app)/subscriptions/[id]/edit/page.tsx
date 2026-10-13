@@ -84,7 +84,7 @@ function EditSubscriptionPage() {
   }
 
   return (
-    <div data-testid="subscription-edit-root" className="mx-auto w-full max-w-xl">
+    <div data-testid="subscription-edit-root" className="w-full">
       <PageHeader
         title="Edit subscription"
         backHref={returnTo}
@@ -92,7 +92,7 @@ function EditSubscriptionPage() {
         className="flex items-center justify-between"
         overflow={[{ label: "Delete subscription", icon: Trash2, destructive: true, onSelect: () => setConfirmDelete(true) }]}
       />
-      <div className="mt-3 pb-[calc(var(--sab,0px)+1.5rem)] space-y-3">
+      <div className="mt-3 max-w-form pb-[calc(var(--sab,0px)+1.5rem)] space-y-3">
         {deleteError && <p role="alert" className="text-sm text-destructive">{deleteError}</p>}
         <SubscriptionForm
           key={sub.id}
