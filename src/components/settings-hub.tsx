@@ -41,9 +41,9 @@ export function SettingsHub() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-form space-y-6 wide:max-w-report">
+    <div className="w-full space-y-6">
       <PageHeader title="Settings" />
-      <div className="grid gap-6 wide:grid-cols-2">
+      <div className="grid grid-cols-1 items-start gap-6 regular:grid-cols-2 wide:grid-cols-3">
         {groups.map((group) => (
           <section key={group.title} data-slot="settings-hub-group" className="space-y-2">
             <h2 className="px-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">

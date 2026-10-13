@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { CARD_ROW_GRID } from "@/components/mobile/section-card";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -134,7 +135,7 @@ function GoalsBody({ ctx, displayCurrency }: { ctx: GoalCtx; displayCurrency: st
   const nodes: Record<string, ReactNode> = {
     summary: <MetricGrid metrics={summaryMetrics} />,
     active: active.length > 0 ? (
-      <SectionCard label="Active" padded={false} className="divide-y divide-border/50 px-3">
+      <SectionCard label="Active" padded={false} className={`divide-y divide-border/50 px-3 ${CARD_ROW_GRID}`}>
         {active.map((g) => {
           const currency = g.currency || displayCurrency;
           return (
@@ -164,7 +165,7 @@ function GoalsBody({ ctx, displayCurrency }: { ctx: GoalCtx; displayCurrency: st
       </Card>
     ),
     completed: completed.length > 0 ? (
-      <SectionCard label="Completed" padded={false} className="divide-y divide-border/50 px-3">
+      <SectionCard label="Completed" padded={false} className={`divide-y divide-border/50 px-3 ${CARD_ROW_GRID}`}>
         {completed.map((g) => (
           <ListRow
             key={g.id}
@@ -241,8 +242,8 @@ export default function GoalsPage() {
   // One body for every view: the ListPage has no Cards / List toggle any more (ListRows at every width).
   const goalsBody = (ctx: GoalCtx) => <GoalsBody ctx={ctx} displayCurrency={displayCurrency} />;
   return (
-    // The whole page (header and body) sits in the centred report column at every width.
-    <div className="mx-auto w-full max-w-report">
+    // The whole page (header and body) is full width on desktop.
+    <div className="w-full">
       <ListPage<Goal>
         id="goals"
         title="Goals"

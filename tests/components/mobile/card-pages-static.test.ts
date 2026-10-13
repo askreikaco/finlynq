@@ -54,10 +54,9 @@ describe("metric grids on the allowed pages use the shared rule", () => {
     expect(read(`${APP}/accounts/page.tsx`)).toContain("metricGridClass(2)");
   });
 
-  it("reports summary is a 4-tile metric grid (2 mobile, 3 tablet, 4 desktop)", () => {
+  it("reports summary is a 4-tile metric grid (2 mobile, one row of 4 from regular)", () => {
     const src = read(`${APP}/reports/page.tsx`);
-    expect(src).toContain('metricGridClass(4, "gap-4")');
-    expect(src).not.toContain("grid-cols-2 regular:grid-cols-4");
+    expect(src).toContain("grid grid-cols-2 gap-4 regular:grid-cols-4");
   });
 
   it("portfolio summary and benchmark tiles follow the item count", () => {

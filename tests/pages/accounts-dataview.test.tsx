@@ -84,7 +84,11 @@ describe("Accounts page: summary tiles reuse the Home components", () => {
     expect(screen.getAllByText("Total Liabilities")).toHaveLength(1);
     const grid = document.querySelector("[data-slot=accounts-summary]") as HTMLElement;
     expect(grid.className).toContain("grid-cols-2");
-    expect(grid.className).not.toMatch(/hidden|regular:/);
+    expect(grid.className).not.toMatch(/hidden/);
+    // regular+: the two tiles dissolve into the parent's 3-column metric row (net worth + assets + liabilities)
+    expect(grid.className).toContain("regular:contents");
+    const row = document.querySelector("[data-slot=accounts-metrics]") as HTMLElement;
+    expect(row.className).toContain("regular:grid-cols-3");
     expect(grid.querySelectorAll("[data-slot=card]").length).toBe(2);
     expect(SRC).not.toMatch(/regular:hidden|hidden regular:grid/);
     expect(SRC).toMatch(/<NetWorthHeroCard\b/);
@@ -103,7 +107,8 @@ describe("Accounts page: no size-class wrappers around sections", () => {
     expect(i).toBeGreaterThan(-1);
     const list = SRC.slice(i, SRC.indexOf(">", i));
     expect(list).not.toMatch(/(^|[\s"'`])(max-)?(sm|md|lg|xl|2xl):/);
-    expect(list).toContain("space-y-6");
-    expect(list).not.toMatch(/grid-cols-/);
+    expect(list).toContain("flex-col");
+    expect(list).toContain("regular:grid-cols-2");
+    expect(list).not.toMatch(/(^|[\s"'`])(wide:)?grid-cols-(?!2\b)/);
   });
 });

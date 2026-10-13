@@ -73,7 +73,7 @@ describe("codemod-14a: import, reconcile and staging folders", () => {
 
   it("the phone (base) classes on the spot-checked lines are unchanged", () => {
     expect(read("src/components/reconcile/balance-summary-card.tsx")).toContain("grid grid-cols-1 regular:grid-cols-3 gap-4");
-    expect(read("src/components/import/staged-review-surface.tsx")).toContain("mx-auto flex w-full max-w-report flex-col gap-4");
+    expect(read("src/components/import/staged-review-surface.tsx")).toContain("flex w-full flex-col gap-4");
   });
 
   it("countMatches sanity: the breakpoint pattern would catch a reintroduced token", () => {

@@ -157,13 +157,14 @@ describe("Transactions: one layout at every size", () => {
 });
 
 describe("Reports: one layout at every size", () => {
-  it("centred SectionPage column, shared header, statement rows, no table", async () => {
+  it("full-width SectionPage column, shared header, statement rows, no table", async () => {
     const { container } = render(<ReportsPage />);
     await screen.findByRole("button", { name: /Income/ });
     expect(container.querySelector("table")).toBeNull();
     const root = container.querySelector('[data-testid="reports-root"]') as HTMLElement;
     expect(root).toBeTruthy();
-    expect(root.className).toContain("mx-auto");
+    expect(root.className).not.toContain("mx-auto");
+    expect(root.className).not.toMatch(/max-w-/);
     expect(root.querySelector('[data-slot="page-header"] h1')?.textContent?.trim()).toBe("Reports");
     expect(rows(container).length).toBeGreaterThanOrEqual(2);
   });
@@ -236,13 +237,14 @@ describe("Investment: one layout at every size", () => {
     H.overview.current = overview();
   });
 
-  it("centred SectionPage column with the shared header (one h1), no table at any width", async () => {
+  it("full-width SectionPage column with the shared header (one h1), no table at any width", async () => {
     const { container } = render(<PortfolioPage />);
     await screen.findByText("TCBS");
     expect(container.querySelector("table")).toBeNull();
     const root = container.querySelector('[data-testid="portfolio-root"]') as HTMLElement;
     expect(root).toBeTruthy();
-    expect(root.className).toContain("mx-auto");
+    expect(root.className).not.toContain("mx-auto");
+    expect(root.className).not.toMatch(/max-w-/);
     expect(root.querySelector('[data-slot="page-header"] h1')?.textContent?.trim()).toBe("Investment");
   });
 

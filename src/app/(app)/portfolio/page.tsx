@@ -345,7 +345,6 @@ export default function PortfolioPage() {
       title="Investment"
       subtitle={`${summary.totalHoldings} holdings across ${summary.totalAccounts} accounts`}
       width="report"
-      center
       header={{
         actionsClassName: "flex flex-wrap items-center gap-2",
         overflow: [

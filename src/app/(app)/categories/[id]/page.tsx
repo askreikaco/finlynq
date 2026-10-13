@@ -302,7 +302,7 @@ function CategoryPageContent() {
   const shown = cardLayout.layout.order.filter((id) => !cardLayout.layout.hidden.includes(id));
 
   return (
-    <div className="mx-auto w-full max-w-report space-y-6">
+    <div className="w-full space-y-6">
       {/* Header */}
       <PageHeader
         className="flex flex-wrap items-start justify-between gap-3"

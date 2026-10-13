@@ -199,10 +199,11 @@ describe("Account detail: one layout at every size", () => {
     await waitFor(() => expect(screen.getByTestId("customize-probe").textContent).toBe("Customize"));
   });
 
-  it("the embedded transactions workspace is still mounted in the centred column", async () => {
+  it("the embedded transactions workspace is still mounted in the full-width column", async () => {
     const { container } = render(<AccountDetailPage />);
     await screen.findByText("Transactions Workspace");
-    expect(container.querySelector(".max-w-report")).toBeTruthy();
+    expect(container.querySelector(".max-w-report")).toBeNull();
+    expect(container.querySelector(".w-full.space-y-6")).toBeTruthy();
   });
 });
 

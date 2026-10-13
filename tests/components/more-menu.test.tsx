@@ -336,14 +336,13 @@ describe("More renders at every size (no redirect, no breakpoint wrapper)", () =
     expect(replace).not.toHaveBeenCalled();
   });
 
-  it("the root is a plain centred column; groups stack in one column at every width (no two-column grid)", () => {
+  it("the root is full width; groups are a grid: 1 column on phone, 2 at regular, 3 at wide", () => {
     render(<MoreMenu />);
     const root = screen.getByTestId("more-menu");
-    expect(root.className).toContain("max-w-xl");
-    expect(root.className).not.toContain("wide:max-w-3xl");
+    expect(root.className).not.toMatch(/max-w-|mx-auto/);
     expect(root.className).not.toMatch(/(^|\s)(max-)?md:/);
-    expect(root.querySelector(".wide\\:grid-cols-2")).toBeNull();
-    expect(root.querySelector(".wide\\:grid")).toBeNull();
+    const grid = root.querySelector('[data-testid="more-grid"]') as HTMLElement;
+    expect(grid.className).toMatch(/grid-cols-1[^"]*regular:grid-cols-2[^"]*wide:grid-cols-3/);
     expect(root.querySelector('[data-testid="more-group-main"]')).not.toBeNull();
   });
 
