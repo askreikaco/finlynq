@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { isLocalWriteQueueActive, queueOfflineEntityEdit } from "@/lib/data/local-write-queue";
+import { isNetworkFailure } from "@/lib/transactions/entry-mode";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -345,11 +347,44 @@ export function AccountForm({
       if (isEdit) onSaved?.(saved);
       else onCreated?.(saved);
       onComplete?.();
-    } catch {
+    } catch (netErr) {
+      // Offline queue (local-first L3): an edit of the editable fields is kept on this device. Creates and
+      // type/currency/investment/opening-balance changes stay online (see queueAccountEditOffline).
+      if (isEdit && account && (await queueAccountEditOffline(netErr, account))) {
+        onSaved?.({ ...account, name: form.name.trim(), group: form.group.trim(), note: form.note.trim(), alias: form.alias.trim() || null, invisible: form.invisible });
+        onComplete?.();
+        return;
+      }
       setSaveError(isEdit ? "Failed to update account" : "Failed to create account");
     } finally {
       setSaving(false);
     }
+  }
+
+  /** Saves the edit on this device when the request could not reach the server. False = not queued (online-only change). */
+  async function queueAccountEditOffline(err: unknown, base: AccountFormAccount): Promise<boolean> {
+    if (!isLocalWriteQueueActive() || !isNetworkFailure(err)) return false;
+    const onlineOnly =
+      form.type !== base.type || form.currency !== base.currency || form.isInvestment !== (base.isInvestment ?? false) || form.obAmount !== (obOriginal?.amount ?? form.obAmount) || form.obDate !== (obOriginal?.date ?? form.obDate);
+    if (onlineOnly) return false;
+    const next: Record<string, string | number | null> = {
+      name: form.name.trim(),
+      group: form.group.trim(),
+      note: form.note.trim(),
+      alias: form.alias.trim() || null,
+      invisible: form.invisible ? 1 : 0,
+    };
+    const current: Record<string, string | number | null> = {
+      name: base.name,
+      group: base.group,
+      note: base.note ?? "",
+      alias: base.alias ?? null,
+      invisible: base.invisible ? 1 : 0,
+    };
+    const patch: Record<string, string | number | null> = {};
+    for (const k of Object.keys(next)) if (next[k] !== current[k]) patch[k] = next[k];
+    if (Object.keys(patch).length === 0) return true;
+    return queueOfflineEntityEdit("account", base.id, patch, current);
   }
 
   const aliasMsg = aliasWarning?.(form.alias, account?.id ?? null) ?? "";

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+
+import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
@@ -31,7 +32,8 @@ import {
   Archive,
   FolderCog,
 } from "lucide-react";
-import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
+import { PageHeader, HEADER_DESKTOP_ONLY, CustomizeCardsSheet, METRIC_GRID_CLASS, metricGridClass, useCardLayout, usePageCustomize } from "@/components/mobile";
+import type { PageCard } from "@/lib/card-layout";
 import { StatCard } from "@/app/(app)/dashboard/_components/stat-card";
 import { NetWorthHeroCard } from "@/app/(app)/dashboard/_components/net-worth-hero-card";
 import { deriveSeriesChange, type SeriesPoint } from "@/lib/dashboard/series-change";
@@ -58,7 +60,7 @@ function SummarySkeleton() {
         <div className="h-8 w-40 animate-shimmer rounded-lg" />
         <div className="h-4 w-64 animate-shimmer rounded-lg mt-2" />
       </div>
-      <div className="grid grid-cols-2 wide:grid-cols-4 gap-4">
+      <div className={METRIC_GRID_CLASS}>
         {Array.from({ length: 4 }).map((_, i) => (
           <Card key={i}>
             <CardHeader className="pb-2">
@@ -99,6 +101,15 @@ function SummarySkeleton() {
     </div>
   );
 }
+
+/** Cards of the accounts page, default order. Assets and liabilities share a 2-up row from wide up. */
+const ACCOUNT_CARDS: readonly PageCard[] = [
+  { id: "net-worth", title: "Net worth" },
+  { id: "summary", title: "Assets and liabilities" },
+  { id: "assets", title: "Assets" },
+  { id: "liabilities", title: "Liabilities" },
+];
+const LIST_CARD_IDS = new Set(["assets", "liabilities"]);
 
 export default function AccountsPage() {
   const { displayCurrency, isLoading: currencyLoading } = useDisplayCurrency();
@@ -294,6 +305,10 @@ export default function AccountsPage() {
     </Link>
   );
 
+  const cardLayout = useCardLayout("accounts", ACCOUNT_CARDS);
+  const [customizeOpen, setCustomizeOpen] = useState(false);
+  usePageCustomize(accounts.length > 0 && !loading && !error ? { onOpen: () => setCustomizeOpen(true) } : null);
+
   if (loading) return <SummarySkeleton />;
 
   if (error) {
@@ -360,48 +375,83 @@ export default function AccountsPage() {
 
       <OnboardingTips page="accounts" />
 
-      {/* Net Worth: the same hero card as Home, then Assets / Liabilities as two StatCards (2 columns at every size). */}
-      <NetWorthHeroCard
-        value={netWorthConverted}
-        currency={displayCurrency}
-        change={nwSeries.change}
-        changePct={nwSeries.changePct}
-        changeCaption="vs last month"
-        sparkData={nwSeries.sparkData}
-        sparkLabels={nwSeries.sparkLabels}
+      {(() => {
+        const shown = cardLayout.layout.order.filter((id) => !cardLayout.layout.hidden.includes(id));
+        // Net worth, summary and the Assets / Liabilities section cards, in the user's saved order.
+        const nodes: Record<string, ReactNode> = {
+          "net-worth": (
+            <NetWorthHeroCard
+              value={netWorthConverted}
+              currency={displayCurrency}
+              change={nwSeries.change}
+              changePct={nwSeries.changePct}
+              changeCaption="vs last month"
+              sparkData={nwSeries.sparkData}
+              sparkLabels={nwSeries.sparkLabels}
+            />
+          ),
+          summary: (
+            <div data-slot="accounts-summary" className={metricGridClass(2)}>
+              <StatCard
+                label="Total Assets"
+                value={totalAssetsConverted}
+                currency={displayCurrency}
+                icon={TrendingUp}
+                iconBg="bg-pos/10 text-pos"
+                sparkColor="#10b981"
+                sparkData={assetsSeries.sparkData}
+                sparkLabels={assetsSeries.sparkLabels}
+                badgePct={assetsSeries.change != null ? assetsSeries.changePct : null}
+                sub={assetsSeries.change != null ? "vs last month" : ""}
+              />
+              <StatCard
+                label="Total Liabilities"
+                value={totalLiabilitiesConverted}
+                currency={displayCurrency}
+                icon={TrendingDown}
+                iconBg="bg-destructive/10 text-destructive"
+                sparkColor="#f43f5e"
+                sparkData={liabilitiesSeries.sparkData}
+                sparkLabels={liabilitiesSeries.sparkLabels}
+                badgePct={liabilitiesSeries.change != null ? liabilitiesSeries.changePct : null}
+                sub={liabilitiesSeries.change != null ? "vs last month" : ""}
+              />
+            </div>
+          ),
+          assets: renderSection("Assets", assets, "text-pos", ArrowUpRight),
+          liabilities: renderSection("Liabilities", liabilities, "text-destructive", ArrowDownRight),
+        };
+        const blocks: ReactNode[] = [];
+        for (let i = 0; i < shown.length; ) {
+          const id = shown[i];
+          if (!LIST_CARD_IDS.has(id)) {
+            blocks.push(<Fragment key={id}>{nodes[id]}</Fragment>);
+            i++;
+            continue;
+          }
+          const run: string[] = [];
+          while (i < shown.length && LIST_CARD_IDS.has(shown[i])) run.push(shown[i++]);
+          blocks.push(
+            <div key={run.join("+")} data-slot="accounts-list" className="grid grid-cols-1 wide:grid-cols-2 gap-4">
+              {run.map((r) => (
+                <Fragment key={r}>{nodes[r]}</Fragment>
+              ))}
+            </div>,
+          );
+        }
+        return blocks;
+      })()}
+
+      <CustomizeCardsSheet
+        open={customizeOpen}
+        onOpenChange={setCustomizeOpen}
+        title="Customize accounts"
+        description="Show, hide and reorder the cards on your accounts page."
+        cards={ACCOUNT_CARDS}
+        layout={cardLayout.layout}
+        onSave={cardLayout.save}
+        onReset={cardLayout.reset}
       />
-
-      <div data-slot="accounts-summary" className="grid grid-cols-2 gap-3">
-        <StatCard
-          label="Total Assets"
-          value={totalAssetsConverted}
-          currency={displayCurrency}
-          icon={TrendingUp}
-          iconBg="bg-pos/10 text-pos"
-          sparkColor="#10b981"
-          sparkData={assetsSeries.sparkData}
-          sparkLabels={assetsSeries.sparkLabels}
-          badgePct={assetsSeries.change != null ? assetsSeries.changePct : null}
-          sub={assetsSeries.change != null ? "vs last month" : ""}
-        />
-        <StatCard
-          label="Total Liabilities"
-          value={totalLiabilitiesConverted}
-          currency={displayCurrency}
-          icon={TrendingDown}
-          iconBg="bg-destructive/10 text-destructive"
-          sparkColor="#f43f5e"
-          sparkData={liabilitiesSeries.sparkData}
-          sparkLabels={liabilitiesSeries.sparkLabels}
-          badgePct={liabilitiesSeries.change != null ? liabilitiesSeries.changePct : null}
-          sub={liabilitiesSeries.change != null ? "vs last month" : ""}
-        />
-      </div>
-
-      <div data-slot="accounts-list" className="grid grid-cols-1 wide:grid-cols-2 gap-4">
-        {renderSection("Assets", assets, "text-pos", ArrowUpRight)}
-        {renderSection("Liabilities", liabilities, "text-destructive", ArrowDownRight)}
-      </div>
     </div>
   );
 }

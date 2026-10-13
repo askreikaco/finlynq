@@ -141,16 +141,24 @@ describe("G2-13: one DataView per list page (cards by default at compact)", () =
     expect(view.getAttribute("data-view")).toBe("cards");
   });
 
-  it("loans mounts exactly one data view, defaulting to cards", async () => {
+});
+
+// Loans and subscriptions have one inset-list layout at every size: no DataView, no table.
+describe("loans and subscriptions: one ListRow layout at every size", () => {
+  it("loans renders its rows as ListRows and no table or data view", async () => {
     const { container } = render(<LoansPage />);
-    const view = await loadedView(container);
-    expect(view.getAttribute("data-view")).toBe("cards");
+    const name = await screen.findByText("Car loan");
+    expect(name.closest("[data-slot=list-row]")).toBeTruthy();
+    expect(container.querySelector("[data-view]")).toBeNull();
+    expect(container.querySelector("table")).toBeNull();
   });
 
-  it("subscriptions (list mode) mounts exactly one data view, defaulting to cards", async () => {
+  it("subscriptions renders its rows as ListRows and no table or data view", async () => {
     const { container } = render(<SubscriptionsPage />);
-    const view = await loadedView(container);
-    expect(view.getAttribute("data-view")).toBe("cards");
+    const name = await screen.findByText("Netflix");
+    expect(name.closest("[data-slot=list-row]")).toBeTruthy();
+    expect(container.querySelector("[data-view]")).toBeNull();
+    expect(container.querySelector("table")).toBeNull();
   });
 });
 
@@ -175,18 +183,6 @@ describe("G2-13: List view columns and rows", () => {
       headers: ["Goal", "Target", "Saved", "Progress", "Deadline"],
       row: { text: "Emergency fund", href: /^\/goals\/3\/edit$/ },
     },
-    {
-      name: "loans",
-      Page: LoansPage,
-      headers: ["Loan", "Principal", "Rate", "Payment", "Next due (estimated)"],
-      row: { text: "Car loan", href: /^\/loans\/5\/edit$/ },
-    },
-    {
-      name: "subscriptions",
-      Page: SubscriptionsPage,
-      headers: ["Name", "Amount", "Frequency", "Next date", "Status"],
-      row: { text: "Netflix", href: /^\/subscriptions\/7\/edit\?returnTo=/ },
-    },
   ];
 
   it.each(cases)("$name: List shows the table headers and rows that navigate to the edit page", async ({ Page, search, headers, row }) => {
@@ -207,14 +203,11 @@ describe("G2-13: List view columns and rows", () => {
   });
 });
 
-describe("G2-13: loans List shows the estimated next due date", () => {
-  it("the Car loan row shows 2026-10-15 (start 2026-01-15, monthly, today 2026-10-09)", async () => {
-    const { container } = render(<LoansPage />);
-    await loadedView(container);
-    fireEvent.click(screen.getByRole("radio", { name: "List" }));
-    const view = await loadedView(container);
-    const row = within(view).getByRole("link", { name: "Car loan" }).closest("tr") as HTMLElement;
-    expect(within(row).getByText("2026-10-15")).toBeTruthy();
+describe("G2-13: loans detail sheet shows the estimated next due date", () => {
+  it("the Car loan sheet shows 2026-10-15 (start 2026-01-15, monthly, today 2026-10-09)", async () => {
+    render(<LoansPage />);
+    fireEvent.click(await screen.findByText("Car loan"));
+    expect(await screen.findByText("2026-10-15")).toBeTruthy();
   });
 });
 
@@ -264,8 +257,8 @@ describe("Repeat + Installment phase 2a: Subscriptions page Post now / Skip", ()
 
   it("a due subscription shows a due badge, Post now and Skip; a not-due one shows neither", async () => {
     DATA.subs = [DUE, SUB];
-    const { container } = render(<SubscriptionsPage />);
-    await loadedView(container);
+    render(<SubscriptionsPage />);
+    await screen.findByTestId("sub-post-9");
     expect(screen.getByTestId("sub-due-badge-9").textContent).toBe("2 due");
     expect(screen.getByTestId("sub-post-9")).toBeTruthy();
     expect(screen.getByTestId("sub-skip-9")).toBeTruthy();
@@ -275,16 +268,15 @@ describe("Repeat + Installment phase 2a: Subscriptions page Post now / Skip", ()
 
   it("Post now opens the entry screen for the oldest unposted occurrence and returns here", async () => {
     DATA.subs = [DUE];
-    const { container } = render(<SubscriptionsPage />);
-    await loadedView(container);
-    fireEvent.click(screen.getByTestId("sub-post-9"));
+    render(<SubscriptionsPage />);
+    fireEvent.click(await screen.findByTestId("sub-post-9"));
     expect(H.push).toHaveBeenCalledWith("/transactions/new?subscription=9&occurrence=2026-10-01&return=%2Fsubscriptions");
   });
 
   it("Skip posts the skip action for next_date and reloads the list", async () => {
     DATA.subs = [DUE];
-    const { container } = render(<SubscriptionsPage />);
-    await loadedView(container);
+    render(<SubscriptionsPage />);
+    await screen.findByTestId("sub-skip-9");
     const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
     const before = fetchMock.mock.calls.filter((c) => c[0] === "/api/subscriptions").length;
     fireEvent.click(screen.getByTestId("sub-skip-9"));
@@ -300,9 +292,8 @@ describe("Repeat + Installment phase 2a: Subscriptions page Post now / Skip", ()
 
   it("an ended subscription is listed under Ended with a badge", async () => {
     DATA.subs = [{ ...SUB, id: 11, name: "Old plan", status: "ended", dueCount: 0, overdue: [] }];
-    const { container } = render(<SubscriptionsPage />);
-    await loadedView(container);
-    expect(screen.getByText("Ended (1)")).toBeTruthy();
+    render(<SubscriptionsPage />);
+    expect(await screen.findByText("Ended (1)")).toBeTruthy();
     expect(screen.getByText("Ended", { selector: "[data-slot=badge], span, div" })).toBeTruthy();
   });
 });

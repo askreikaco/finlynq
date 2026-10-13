@@ -89,11 +89,11 @@ html {
 
 :root {
   /* Light mode — warm neutral, amber primary. */
-  --background: oklch(0.985 0.003 85);
+  --background: oklch(0.9665 0.0045 258.32);     /* #f2f4f7 */
   --foreground: oklch(0.18 0.015 250);
-  --card: oklch(1 0 0);
+  --card: oklch(1 0 0);                          /* #ffffff */
   --card-foreground: oklch(0.18 0.015 250);
-  --popover: oklch(1 0 0);
+  --popover: oklch(1 0 0);                       /* #ffffff */
   --popover-foreground: oklch(0.18 0.015 250);
   --primary: oklch(0.75 0.165 70);
   --primary-foreground: oklch(0.18 0.05 70);
@@ -104,10 +104,10 @@ html {
   --muted-foreground: oklch(0.52 0.012 250);
   --accent: oklch(0.94 0.02 70);
   --accent-foreground: oklch(0.32 0.08 70);
-  --destructive: oklch(0.62 0.19 28);
-  /* Status text tokens (W6): AA contrast on light card. */
-  --pos: oklch(0.55 0.11 170);
-  --warning: oklch(0.56 0.14 60);
+  --destructive: oklch(0.56 0.19 28);            /* AA on #f2f4f7 and #ffffff (was 0.62: 3.6:1) */
+  /* Status text tokens (W6): AA contrast on light card and page background. */
+  --pos: oklch(0.52 0.11 170);                   /* was 0.55: 4.15:1 on background */
+  --warning: oklch(0.52 0.14 60);                /* was 0.56: 4.40:1 on background */
   --info: oklch(0.52 0.13 250);
   --border: oklch(0.92 0.008 250);
   --input: oklch(0.92 0.008 250);
@@ -118,7 +118,7 @@ html {
   --chart-4: oklch(0.68 0.10 250);
   --chart-5: oklch(0.58 0.09 300);
   --radius: 0.5rem;
-  --sidebar: oklch(0.985 0.003 85);
+  --sidebar: oklch(1 0 0);                       /* = --card (#ffffff): the rail matches cards */
   --sidebar-foreground: oklch(0.18 0.015 250);
   --sidebar-primary: oklch(0.75 0.165 70);
   --sidebar-primary-foreground: oklch(0.18 0.05 70);
@@ -129,23 +129,23 @@ html {
 }
 
 .dark {
-  /* Near-black #0b0d10 page, #101317 cards, #161a1f elevated, amber #f5a623 accent. */
-  --background: oklch(0.115 0.006 245);          /* ~#0b0d10 */
+  /* #1c1c1d page, #252728 cards and popovers, amber #f5a623 accent. */
+  --background: oklch(0.2269 0.0019 286.25);     /* #1c1c1d */
   --foreground: oklch(0.925 0.003 250);          /* ~#e8eaed */
-  --card: oklch(0.155 0.007 245);                /* ~#101317 */
+  --card: oklch(0.2711 0.0035 228.92);           /* #252728 */
   --card-foreground: oklch(0.925 0.003 250);
-  --popover: oklch(0.185 0.008 245);             /* ~#161a1f */
+  --popover: oklch(0.2711 0.0035 228.92);        /* #252728 */
   --popover-foreground: oklch(0.925 0.003 250);
   --primary: oklch(0.75 0.165 70);               /* ~#f5a623 */
   --primary-foreground: oklch(0.18 0.05 70);
   --primary-text: oklch(0.75 0.165 70);
   --secondary: oklch(0.185 0.008 245);
   --secondary-foreground: oklch(0.88 0.003 250);
-  --muted: oklch(0.185 0.008 245);
+  --muted: oklch(0.31 0.004 229);                /* hover/tint sits above card (was 0.185: darker than card) */
   --muted-foreground: oklch(0.66 0.008 245);     /* ~#9aa3ad */
   --accent: oklch(0.22 0.010 245);
   --accent-foreground: oklch(0.925 0.003 250);
-  --destructive: oklch(0.63 0.17 28);            /* ~#e5624b */
+  --destructive: oklch(0.68 0.17 28);            /* AA on #252728 (was 0.63: 3.96:1) */
   --pos: oklch(0.75 0.11 170);                   /* teal, = chart-2 */
   --warning: oklch(0.80 0.15 75);                /* amber status */
   --info: oklch(0.74 0.11 245);                  /* blue status */
@@ -157,11 +157,11 @@ html {
   --chart-3: oklch(0.63 0.17 28);                /* coral (negative) */
   --chart-4: oklch(0.70 0.09 245);               /* muted blue */
   --chart-5: oklch(0.60 0.10 300);               /* muted violet */
-  --sidebar: oklch(0.115 0.006 245);
+  --sidebar: oklch(0.2711 0.0035 228.92);        /* = --card (#252728): the rail matches cards */
   --sidebar-foreground: oklch(0.88 0.003 250);
   --sidebar-primary: oklch(0.75 0.165 70);
   --sidebar-primary-foreground: oklch(0.18 0.05 70);
-  --sidebar-accent: oklch(0.185 0.008 245);
+  --sidebar-accent: oklch(0.31 0.004 229);       /* sits above the rail (was 0.185: darker than card) */
   --sidebar-accent-foreground: oklch(0.925 0.003 250);
   --sidebar-border: oklch(0.22 0.010 245);
   --sidebar-ring: oklch(0.75 0.165 70);
@@ -221,16 +221,19 @@ html {
   --glass-edge-bottom: oklch(1 0 0 / 30%);
   --glass-glow: oklch(1 0 0 / 24%);
   --glass-edge: inset 0 1px 0 var(--glass-edge-top), inset 0 -1px 0 var(--glass-edge-bottom), 0 0 14px var(--glass-glow);
-  --glass-card-bg: oklch(1 0 0 / 60%);
-  --glass-card-blur: 20px;
-  --glass-card-sat: 1.6;
+  /* ONE card shadow for every top-level surface (cards, sections, neutral buttons), both themes. */
+  --shadow-card: 0 12px 28px 0 rgb(0 0 0 / 0.2), 0 2px 4px 0 rgb(0 0 0 / 0.1);
+  /* Liquid glass card: card colour at 72%, light blur. Opaque --card when blur is unsupported or reduced. */
+  --glass-card-bg: oklch(1 0 0 / 72%);
+  --glass-card-blur: 14px;
+  --glass-card-sat: 1.4;
   --glass-card-border: oklch(0 0 0 / 6%);
-  --glass-card-shadow: none;
-  --glass-bar-bg: oklch(1 0 0 / 38%);
+  --glass-card-shadow: var(--shadow-card);
+  --glass-bar-bg: oklch(1 0 0 / 72%);
   --glass-bar-blur: var(--glass-blur);
   --glass-bar-sat: var(--glass-sat);
   --glass-bar-border: oklch(0 0 0 / 8%);
-  --glass-capsule-bg: oklch(1 0 0 / 36%);
+  --glass-capsule-bg: oklch(1 0 0 / 72%);
   --glass-capsule-blur: var(--glass-blur);
   --glass-capsule-sat: var(--glass-sat);
   --glass-capsule-border: oklch(0 0 0 / 8%);
@@ -254,19 +257,18 @@ html {
 }
 .dark {
   /* material, dark */
-  --glass-card-bg: oklch(0.155 0.007 245 / 60%);
-  --glass-card-sat: 1.5;
+  --glass-card-bg: oklch(0.2711 0.0035 228.92 / 72%);   /* #252728 at 72% */
   --glass-card-border: oklch(1 0 0 / 6%);
-  --glass-card-shadow: 0 1px 2px oklch(0 0 0 / 30%);
+  --glass-card-shadow: var(--shadow-card);
   --glass-edge-top: oklch(1 0 0 / 28%);
   --glass-edge-bottom: oklch(1 0 0 / 12%);
   --glass-glow: oklch(1 0 0 / 9%);
-  --glass-bar-bg: oklch(0.14 0.01 245 / 36%);
+  --glass-bar-bg: oklch(0.2711 0.0035 228.92 / 72%);
   --glass-bar-border: oklch(1 0 0 / 10%);
-  --glass-capsule-bg: oklch(1 0 0 / 7%);
+  --glass-capsule-bg: oklch(0.2711 0.0035 228.92 / 72%);
   --glass-capsule-border: oklch(1 0 0 / 14%);
   --glass-capsule-shadow: var(--glass-edge), 0 2px 8px oklch(0 0 0 / 35%);
-  --glass-tabbar-bg: oklch(0.16 0.008 245 / 78%);
+  --glass-tabbar-bg: oklch(0.2711 0.0035 228.92 / 80%);
   --glass-tabbar-border: oklch(1 0 0 / 14%);
 }
 
@@ -399,6 +401,36 @@ html {
   -webkit-backdrop-filter: blur(var(--glass-card-blur)) saturate(var(--glass-card-sat));
   border: 1px solid var(--glass-card-border);
   box-shadow: var(--glass-card-shadow);
+}
+
+/* Top-level surface (Card, SectionCard, neutral Button): liquid glass card colour with --shadow-card.
+   Layered in components so a consumer's bg-* utility still wins. The blur is wrapped in @supports and
+   dropped (opaque --card) under prefers-reduced-transparency. Never put this on a surface that contains
+   position:fixed content: backdrop-filter makes it the containing block. */
+@layer components {
+  .surface-card {
+    background: var(--card);
+    box-shadow: var(--shadow-card);
+  }
+  @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .surface-card {
+      background: var(--glass-card-bg);
+      -webkit-backdrop-filter: blur(var(--glass-card-blur)) saturate(var(--glass-card-sat));
+      backdrop-filter: blur(var(--glass-card-blur)) saturate(var(--glass-card-sat));
+    }
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    .surface-card {
+      background: var(--card);
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+  }
+  /* Shadow budget: the large --shadow-card is for top-level surfaces only. Cards, sections and buttons
+     nested in a card or section keep none (inputs, badges, table cells and list rows never get it). */
+  :is([data-slot="card"], [data-slot="section-card-body"]) :is([data-slot="card"], [data-slot="section-card-body"], [data-slot="button"]) {
+    box-shadow: none;
+  }
 }
 
 /* iOS 26-style liquid glass, phones only (below regular, 40rem = 640px). Three parts: the round back button
@@ -716,16 +748,9 @@ html[data-keyboard-open] [data-testid="page-fab"] { display: none; }
 .card-hover {
   transition: box-shadow 0.3s ease, transform 0.2s ease;
 }
+/* The lift keeps the surface's one --shadow-card (no separate hover shadow). */
 .card-hover:hover {
   transform: translateY(-1px);
-  box-shadow:
-    0 4px 16px -4px oklch(0 0 0 / 10%),
-    0 1px 4px -1px oklch(0 0 0 / 5%);
-}
-.dark .card-hover:hover {
-  box-shadow:
-    0 4px 24px -4px oklch(0 0 0 / 50%),
-    0 0 12px -2px color-mix(in oklab, var(--primary) 6%, transparent);
 }
 
 /* Gradient border — reveals colorful top accent on hover */

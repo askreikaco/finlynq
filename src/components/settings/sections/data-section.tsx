@@ -18,6 +18,7 @@ import { getPasskeyStepUp } from "@/lib/client/passkey-stepup";
 import { getSessionInfo } from "@/lib/data/session-info";
 import { PendingSyncCard } from "./pending-sync-card";
 import { OfflineModeCard } from "./offline-mode-card";
+import { PasskeyUnlockCard } from "./passkey-unlock-card";
 import { dropAllLocalCaches, dropAllLocalCachesWithin, dropLocalUserCache } from "@/lib/data/local-read-cache-wipe";
 
 type ImportRow = Record<string, string>;
@@ -355,6 +356,7 @@ export function DataSection() {
     <div className="space-y-6">
       <PendingSyncCard />
       <OfflineModeCard />
+      <PasskeyUnlockCard />
       {/* CSV Import */}
       <Card>
         <CardHeader>

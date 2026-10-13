@@ -9,6 +9,7 @@ import { Calendar, ChevronDown, ChevronUp, ArrowUpRight, ArrowDownRight } from "
 import { motion, AnimatePresence } from "framer-motion";
 import type { WeeklyRecapData } from "./types";
 import { CspSafeBar } from "@/components/csp-safe-bar";
+import { metricGridClass } from "@/components/mobile/metric-grid";
 import { useAnimations } from "@/hooks/use-animations";
 
 const itemVariants = {
@@ -46,6 +47,8 @@ export function WeeklyRecap() {
     };
   }, []);
 
+  const animationsEnabled = useAnimations();
+
   if (!recap) return null;
 
   const spendingUp = recap.spending.changePercent > 0;
@@ -54,8 +57,6 @@ export function WeeklyRecap() {
     name: cat.name.length > 12 ? cat.name.slice(0, 12) + "..." : cat.name,
     amount: cat.total,
   }));
-  const animationsEnabled = useAnimations();
-
   return (
     <motion.div variants={animationsEnabled ? itemVariants : noAnimationVariants}>
       <Card className="card-hover relative overflow-hidden">
@@ -91,7 +92,7 @@ export function WeeklyRecap() {
 
         <CardContent className="px-5">
           {/* Summary: Spent / Income / Cash Flow */}
-          <div className="grid grid-cols-3 gap-4 mb-4">
+          <div className={`${metricGridClass(3, "gap-4")} mb-4`}>
             <div>
               <p className="text-xs text-muted-foreground mb-0.5">Spent</p>
               <p className="text-lg font-bold tracking-tight tabular-nums">

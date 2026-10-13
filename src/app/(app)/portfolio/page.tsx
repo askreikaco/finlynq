@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { Fragment, useState, useMemo, type ReactNode } from "react";
 import Link from "next/link";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -32,12 +32,25 @@ import { EtfXrayCard } from "./_components/etf-xray-card";
 import { AllocationCharts } from "./_components/allocation-charts";
 import { BenchmarkChart } from "./_components/benchmark-chart";
 import { HoldingsByAccount } from "./_components/holdings-by-account";
-import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
+import { PageHeader, HEADER_DESKTOP_ONLY, CustomizeCardsSheet, useCardLayout, usePageCustomize } from "@/components/mobile";
+import type { PageCard } from "@/lib/card-layout";
 import { PortfolioSummary, HoldingCards } from "./_components/mobile-portfolio";
 import { InvestmentTransactions } from "./_components/investment-transactions";
 import { DataView, ViewModeToggle } from "@/components/adaptive";
 
 // ── Main Page ───────────────────────────────────────────────────────
+/** Customizable sections of the investments page, default order. Dev-only ones show only in dev mode. */
+const PORTFOLIO_CARDS: readonly (PageCard & { devOnly?: boolean })[] = [
+  { id: "performance", title: "Performance" },
+  { id: "summary", title: "Summary" },
+  { id: "top-movers", title: "Top movers" },
+  { id: "holdings", title: "Holdings" },
+  { id: "transactions", title: "Investment transactions" },
+  { id: "xray", title: "ETF X-ray", devOnly: true },
+  { id: "allocation", title: "Allocation" },
+  { id: "benchmarks", title: "Benchmarks", devOnly: true },
+];
+
 export default function PortfolioPage() {
   const devMode = useDevMode();
   const { displayCurrency, isLoading: currencyLoading } = useDisplayCurrency();
@@ -154,6 +167,10 @@ export default function PortfolioPage() {
     });
   };
 
+  const cardLayout = useCardLayout("portfolio", PORTFOLIO_CARDS);
+  const [customizeOpen, setCustomizeOpen] = useState(false);
+  usePageCustomize(data?.summary && data.summary.totalHoldings > 0 ? { onOpen: () => setCustomizeOpen(true) } : null);
+
   if (loading) return <PortfolioSkeleton />;
   if (!data || !data.summary) return <ErrorState title="Couldn't load investments" message="We couldn't load your investments. Please try again." onRetry={reload} />;
 
@@ -223,83 +240,25 @@ export default function PortfolioPage() {
   const hasEtfData = etfXray.etfCount > 0;
   const hasPositions = (data.byHolding ?? []).some((r) => r.totalQty !== 0 || r.marketValueDisplay !== 0);
 
-  return (
-    <div className="space-y-6">
-      {/* ── Header ────────────────────────────────────────────── */}
-      <PageHeader
-        className="flex flex-wrap items-center justify-between gap-3"
-        title="Investment"
-        titleClassName="text-2xl font-bold tracking-tight"
-        subtitleClassName="text-sm text-muted-foreground mt-0.5"
-        subtitle={`${summary.totalHoldings} holdings across ${summary.totalAccounts} accounts`}
-        actionsClassName="flex flex-wrap items-center gap-2"
-        overflow={[
-          { label: "Realized gains", icon: TrendingUp, href: "/portfolio/realized-gains" },
-          { label: "Dividends", icon: Coins, href: "/portfolio/dividends" },
-        ]}
-        actions={
-        <>
-          <Link
-            href="/portfolio/realized-gains"
-            className={cn(buttonVariants({ variant: "outline", size: "sm" }), HEADER_DESKTOP_ONLY)}
-          >
-            Realized gains
-          </Link>
-          <Link
-            href="/portfolio/dividends"
-            className={cn(buttonVariants({ variant: "outline", size: "sm" }), HEADER_DESKTOP_ONLY)}
-          >
-            Dividends
-          </Link>
-          {/* Add holding → the consolidated /settings/investments page (the old
-              inline create dialog was removed; securities are defined + linked
-              to accounts there). Per-row edit-in-place stays on the dialog below. */}
-          <Link
-            href="/settings/investments"
-            className={buttonVariants({ size: "sm" })}
-            aria-label="Add holding"
-          >
-            <Plus className="h-4 w-4 mr-1.5" /> Add<span className="max-regular:sr-only"> holding</span>
-          </Link>
-        </>
-        }
-      />
-
-      {/* Phase 3 performance chart — TWRR/MWRR + daily value series.
-          Empty-state copy in the component explains how to populate
-          /portfolio_snapshots via the nightly cron + admin backfill.
-          Below regular the empty chart (no open positions) is hidden. */}
+  // Each customizable section, keyed by PORTFOLIO_CARDS id; rendered in the user's saved order (see below).
+  const cardNodes: Record<string, ReactNode> = {
+    performance: (
+      <>
+      {/* Phase 3 performance chart (empty state explains how to populate /portfolio_snapshots). */}
       <div className={cn(!hasPositions && "max-regular:hidden")}>
         <PerformanceChart accountId={null} />
       </div>
 
-      {/* Re-login prompt — surfaces when the server couldn't decrypt
-          tx.portfolio_holding (cold DEK cache after a server restart).
-          Without this the page would render every encrypted tx as a separate
-          orphan row because each AES-GCM IV is unique. */}
-      {(data.undecryptedTxCount ?? 0) > 0 && (
-        <div className="rounded-lg border border-warning/30 bg-warning/10 p-4 flex items-start gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-warning/10 shrink-0">
-            <span className="text-warning font-semibold">!</span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-warning">
-              {data.undecryptedTxCount} transaction{data.undecryptedTxCount === 1 ? "" : "s"} couldn&apos;t be decrypted
-            </p>
-            <p className="text-xs text-warning/80 mt-0.5">
-              Your session needs to refresh after the last deploy.{" "}
-              {/* Link to /cloud (sign-in page) instead of non-existent /login route */}
-              <Link href="/cloud" className="underline font-medium">Sign in again</Link>{" "}
-              to unlock your portfolio data.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* ── Summary: hero and metric grid, one tree at every size ── */}
+      </>
+    ),
+    summary: (
+      <>
       <PortfolioSummary summary={summary} currency={displayCurrency} />
 
-      {/* ── Top Movers ────────────────────────────────────────── */}
+      </>
+    ),
+    "top-movers": (
+      <>
       {(topGainers.length > 0 || topLosers.length > 0) && (
         <div className="grid grid-cols-1 regular:grid-cols-2 gap-4">
           {topGainers.length > 0 && (
@@ -311,9 +270,10 @@ export default function PortfolioPage() {
         </div>
       )}
 
-      {/* ── Holdings: one toolbar, one DataView (Cards | List) ──────
-          Cards (default at compact and regular): the holding rows.
-          List (default at wide): the All Holdings table and the per-account panel. */}
+      </>
+    ),
+    holdings: (
+      <>
       <div data-slot="portfolio-toolbar" className="flex flex-col gap-3 regular:flex-row regular:items-center regular:justify-between">
         <HoldingTypeChips
           filter={filter}
@@ -358,10 +318,16 @@ export default function PortfolioPage() {
         )}
       />
 
-      {/* ── Investment transactions (scope=investment; never on /transactions) ── */}
+      </>
+    ),
+    transactions: (
+      <>
       <InvestmentTransactions refreshKey={data} />
 
-      {/* ── ETF X-Ray (Combined) — dev only ──────────────────── */}
+      </>
+    ),
+    xray: (
+      <>
       {devMode && hasEtfData && (
         <EtfXrayCard
           etfXray={etfXray}
@@ -376,7 +342,10 @@ export default function PortfolioPage() {
         />
       )}
 
-      {/* ── Allocation Overview ────────────────────────────────── */}
+      </>
+    ),
+    allocation: (
+      <>
       <LazyView minHeight={300}>
         <AllocationCharts
           allocationByType={allocationByType}
@@ -385,7 +354,10 @@ export default function PortfolioPage() {
         />
       </LazyView>
 
-      {/* ── Performance vs Benchmarks — dev only ─────────────── */}
+      </>
+    ),
+    benchmarks: (
+      <>
       {devMode && (
         <LazyView minHeight={300}>
           <BenchmarkChart
@@ -396,6 +368,92 @@ export default function PortfolioPage() {
           />
         </LazyView>
       )}
+
+      </>
+    ),
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* ── Header ────────────────────────────────────────────── */}
+      <PageHeader
+        className="flex flex-wrap items-center justify-between gap-3"
+        title="Investment"
+        titleClassName="text-2xl font-bold tracking-tight"
+        subtitleClassName="text-sm text-muted-foreground mt-0.5"
+        subtitle={`${summary.totalHoldings} holdings across ${summary.totalAccounts} accounts`}
+        actionsClassName="flex flex-wrap items-center gap-2"
+        overflow={[
+          { label: "Realized gains", icon: TrendingUp, href: "/portfolio/realized-gains" },
+          { label: "Dividends", icon: Coins, href: "/portfolio/dividends" },
+        ]}
+        actions={
+        <>
+          <Link
+            href="/portfolio/realized-gains"
+            className={cn(buttonVariants({ variant: "outline", size: "sm" }), HEADER_DESKTOP_ONLY)}
+          >
+            Realized gains
+          </Link>
+          <Link
+            href="/portfolio/dividends"
+            className={cn(buttonVariants({ variant: "outline", size: "sm" }), HEADER_DESKTOP_ONLY)}
+          >
+            Dividends
+          </Link>
+          {/* Add holding → the consolidated /settings/investments page (the old
+              inline create dialog was removed; securities are defined + linked
+              to accounts there). Per-row edit-in-place stays on the dialog below. */}
+          <Link
+            href="/settings/investments"
+            className={buttonVariants({ size: "sm" })}
+            aria-label="Add holding"
+          >
+            <Plus className="h-4 w-4 mr-1.5" /> Add<span className="max-regular:sr-only"> holding</span>
+          </Link>
+        </>
+        }
+      />
+
+      {/* Re-login prompt — surfaces when the server couldn't decrypt
+          tx.portfolio_holding (cold DEK cache after a server restart).
+          Without this the page would render every encrypted tx as a separate
+          orphan row because each AES-GCM IV is unique. */}
+      {(data.undecryptedTxCount ?? 0) > 0 && (
+        <div className="rounded-lg border border-warning/30 bg-warning/10 p-4 flex items-start gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-warning/10 shrink-0">
+            <span className="text-warning font-semibold">!</span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-warning">
+              {data.undecryptedTxCount} transaction{data.undecryptedTxCount === 1 ? "" : "s"} couldn&apos;t be decrypted
+            </p>
+            <p className="text-xs text-warning/80 mt-0.5">
+              Your session needs to refresh after the last deploy.{" "}
+              {/* Link to /cloud (sign-in page) instead of non-existent /login route */}
+              <Link href="/cloud" className="underline font-medium">Sign in again</Link>{" "}
+              to unlock your portfolio data.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {cardLayout.layout.order
+        .filter((id) => !cardLayout.layout.hidden.includes(id) && (devMode || !PORTFOLIO_CARDS.find((c) => c.id === id)?.devOnly))
+        .map((id) => (
+          <Fragment key={id}>{cardNodes[id]}</Fragment>
+        ))}
+
+      <CustomizeCardsSheet
+        open={customizeOpen}
+        onOpenChange={setCustomizeOpen}
+        title="Customize investments"
+        description="Show, hide and reorder the sections of your investments page."
+        cards={PORTFOLIO_CARDS.filter((c) => devMode || !c.devOnly)}
+        layout={cardLayout.layout}
+        onSave={cardLayout.save}
+        onReset={cardLayout.reset}
+      />
 
       {/* Edit / create holding dialog — wraps the shared
           <HoldingEditForm> from src/components/holdings/holding-edit-form.tsx.

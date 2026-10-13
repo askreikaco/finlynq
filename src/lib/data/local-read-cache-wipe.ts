@@ -17,6 +17,7 @@ import { isLocalWriteKeySet } from "@/lib/local-first/write-path/flag";
 import { stopLocalWriteQueue } from "./local-write-queue";
 import { wipeAllOutboxes, wipeOutboxUser } from "@/lib/local-first/write-path/outbox-store";
 import { forgetOfflineIdentity } from "./offline-identity";
+import { wipeAllPasskeyUnlocks, wipePasskeyUnlock } from "@/lib/local-first/crypto/passkey-unlock";
 
 /**
  * LOCK (idle lock, server DEK locked (423), tab restore): drops only the DISPOSABLE copies (the read-cache snapshot and the
@@ -66,6 +67,7 @@ export async function dropAllLocalCaches(): Promise<void> {
   forgetOfflineIdentity();
   try {
     stopLocalWriteQueue();
+    await wipeAllPasskeyUnlocks(); // passkey wrap (flag-independent: a leftover record must not survive a signed-out boot)
     await disposeReadCache();
     if (isLocalWriteKeySet()) await wipeAllOutboxes();
     if (!isLocalReadCacheEnabled() && !isLocalWriteKeySet()) return;
@@ -95,4 +97,16 @@ export async function dropSignedOutDisposableCaches(): Promise<void> {
 /** dropAllLocalCaches, but resolves after at most `ms` so a page about to navigate away still gets a head start. */
 export function dropAllLocalCachesWithin(ms: number): Promise<void> {
   return Promise.race([dropAllLocalCaches(), new Promise<void>((resolve) => setTimeout(resolve, ms))]);
+}
+
+/**
+ * Deletes one user's passkey unlock wrap (logout, remove account). Deliberately NOT called from dropLocalUserCache:
+ * that also runs on lock, and a lock must keep the passkey so it can unlock again. Never throws.
+ */
+export async function dropPasskeyUnlockFor(userId: string): Promise<void> {
+  try {
+    await wipePasskeyUnlock(userId);
+  } catch (err) {
+    console.warn("[local-first] passkey unlock wipe failed", err);
+  }
 }

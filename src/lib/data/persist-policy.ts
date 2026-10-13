@@ -32,6 +32,7 @@ export const PERSIST_ALLOWED = new Set([
   "/api/age-of-money",
   // Safe display-only settings (no credentials/secrets)
   "/api/settings/account-group-order",
+  "/api/settings/card-layout",
   "/api/settings/active-currencies",
   "/api/settings/dashboard-layout",
   "/api/settings/dev-mode",

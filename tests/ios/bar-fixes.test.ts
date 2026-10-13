@@ -244,8 +244,8 @@ describe("4. tab bar glass tint and token colours (contrast measured in the test
     expect(b).toMatch(/backdrop-filter:\s*blur\(32px\) saturate\(1\.8\)/);
   });
 
-  it("dark tint is translucent but raised: oklch(0.16 0.008 245 / 78%)", () => {
-    expect(resolvedDecls(css, ".mobile-glass-bar", "dark")).toMatch(/background:\s*oklch\(0\.16 0\.008 245 \/ 78%\);/);
+  it("dark tint is translucent but raised: card colour #252728 at 80%", () => {
+    expect(resolvedDecls(css, ".mobile-glass-bar", "dark")).toMatch(/background:\s*oklch\(0\.2711 0\.0035 228\.92 \/ 80%\);/);
   });
 
   it("the opaque fallbacks for the tab bar survive (@supports not blur, reduced transparency)", () => {
@@ -263,7 +263,7 @@ describe("4. tab bar glass tint and token colours (contrast measured in the test
 
   it("light inactive label is at least 4.5:1 against the light glass (old value was about 1.4:1)", () => {
     expect(css).toMatch(/:root\s*\{[^}]*--tab-inactive:\s*oklch\(0\.42 0\.012 250\);/);
-    const page = oklch(0.985, 0.003, 85);
+    const page = oklch(0.9665, 0.0045, 258.32); // #f2f4f7
     const lightGlass = over(oklch(1, 0, 0, 0.8), page);
     expect(contrast(oklch(0.42, 0.012, 250), lightGlass)).toBeGreaterThanOrEqual(4.5);
     // Old value: sidebar-foreground (0.90) at 60% over the same glass.
@@ -272,13 +272,13 @@ describe("4. tab bar glass tint and token colours (contrast measured in the test
 
   it("light active label is at least 4.5:1 against the light glass (primary-text, not the 0.75 fill)", () => {
     expect(css).toMatch(/:root\s*\{[^}]*--tab-active:\s*oklch\(0\.45 0\.13 70\);/);
-    const lightGlass = over(oklch(1, 0, 0, 0.8), oklch(0.985, 0.003, 85));
+    const lightGlass = over(oklch(1, 0, 0, 0.8), oklch(0.9665, 0.0045, 258.32));
     expect(contrast(oklch(0.45, 0.13, 70), lightGlass)).toBeGreaterThanOrEqual(4.5);
   });
 
   it("dark inactive and active labels are at least 4.5:1 against the dark glass", () => {
     expect(css).toMatch(/\.dark\s*\{[^}]*--tab-inactive:\s*oklch\(0\.80 0\.006 245\);/);
-    const darkGlass = over(oklch(0.16, 0.008, 245, 0.78), oklch(0.115, 0.006, 245));
+    const darkGlass = over(oklch(0.2711, 0.0035, 228.92, 0.8), oklch(0.2269, 0.0019, 286.25)); // #252728 @80% over #1c1c1d
     expect(contrast(oklch(0.8, 0.006, 245), darkGlass)).toBeGreaterThanOrEqual(4.5);
     expect(contrast(oklch(0.75, 0.165, 70), darkGlass)).toBeGreaterThanOrEqual(4.5);
   });

@@ -90,7 +90,7 @@ export async function PUT(request: NextRequest) {
     const toEncrypt: Record<string, string | null | undefined> = {};
     if ("name" in data && data.name !== undefined) toEncrypt.name = data.name;
     const enc = buildNameFields(dek, toEncrypt);
-    const category = await updateCategory(id, userId, { ...data, ...enc });
+    const category = await updateCategory(id, userId, { ...data, ...enc, updatedAt: new Date() });
     // Family sidecar label sync: fire-and-forget, never blocks/fails the edit.
     enqueueFamilySweep(userId, dek, { entity: "categories" });
     return NextResponse.json(category);

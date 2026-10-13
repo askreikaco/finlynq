@@ -9,7 +9,7 @@
  * no-op: nothing is created, IndexedDB is never opened and queueOffline* return false. ON by default (opt-out model).
  * start/stop are driven by DataProvider (trusted + unlocked) and by the wipe triggers in local-read-cache-wipe.ts.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createWriteQueue, type WriteQueue } from "@/lib/local-first/write-path/queue";
 import { createDrain } from "@/lib/local-first/write-path/drain";
 import { createDrainScheduler, type DrainScheduler } from "@/lib/local-first/write-path/scheduler";
@@ -27,7 +27,13 @@ import { wipeUser as wipePersistedDataCache } from "./persist";
 import { forgetOfflineIdentity, rememberOfflineIdentity } from "./offline-identity";
 import { fetchTrustedDeviceId } from "./trusted-device";
 import { getSessionInfo } from "./session-info";
-import type { OutboxEntry, TxFields } from "@/lib/local-first/write-path/types";
+import { entityOf } from "@/lib/local-first/write-path/entities";
+import type { EntityKind, OutboxEntry, TxFields } from "@/lib/local-first/write-path/types";
+import { EMPTY_PENDING_BUDGETS, isPendingBudgetsEmpty, toPendingBudgetView, type PendingBudgetView } from "@/lib/budgets/pending-overlay";
+import { EMPTY_ENTITY_VIEW, isEntityViewEmpty, toEntityPendingView, type EntityPendingView } from "@/lib/local-first/write-path/entity-view";
+
+/** Re-exported for UI lists (UI code reaches the outbox only through this facade). */
+export { overlayRows } from "@/lib/local-first/write-path/entity-view";
 import type { TransactionRow } from "@/lib/local-first/store/types";
 import { EMPTY_PENDING, type PendingFields, type PendingTxView } from "@/lib/transactions/pending-overlay";
 
@@ -177,8 +183,207 @@ export function saveQueuedCreate(opId: string, patch: TxFields): Promise<boolean
   return enqueue((q) => q.enqueueEditLocal(`local-${opId}`, patch));
 }
 
+/** Shape of a server budget row the queue needs (identity, amount, currency and the server clock). */
+export interface BudgetQueueRow {
+  id: number;
+  categoryId: number;
+  month: string;
+  amount: number;
+  currency?: string | null;
+  updatedAt?: string | null;
+  categoryName?: string;
+  categoryGroup?: string;
+}
+
+const budgetIdentity = (r: BudgetQueueRow) => ({ categoryId: r.categoryId, month: r.month });
+
+/** Queues a new budget (set for a category and month that has no server row). False = not queued. */
+export function queueOfflineBudgetCreate(input: {
+  categoryId: number;
+  month: string;
+  amount: number;
+  currency?: string | null;
+  categoryName?: string;
+  categoryGroup?: string;
+}): Promise<boolean> {
+  return enqueue((q) =>
+    q.enqueueEntityCreate(
+      "budget",
+      { categoryId: input.categoryId, month: input.month, amount: input.amount, currency: input.currency ?? null },
+      { categoryId: input.categoryId, month: input.month, categoryName: input.categoryName ?? null, categoryGroup: input.categoryGroup ?? null },
+    ),
+  );
+}
+
+/** Queues an edit of an existing server budget (amount and/or currency). `row` = the server row the edit was made against. */
+export function queueOfflineBudgetEdit(row: BudgetQueueRow, patch: { amount?: number; currency?: string | null }): Promise<boolean> {
+  const current: Record<string, unknown> = { amount: row.amount, currency: row.currency ?? null };
+  const p: Record<string, string | number | null> = {};
+  if (patch.amount !== undefined) p.amount = patch.amount;
+  if (patch.currency !== undefined) p.currency = patch.currency;
+  return enqueue((q) => q.enqueueEntityEdit("budget", row.id, p, current as Record<string, string | number | null>, budgetIdentity(row)));
+}
+
+/** Queues a delete of a server budget (the DELETE request failed with a network error). */
+export function queueOfflineBudgetDelete(row: BudgetQueueRow): Promise<boolean> {
+  return enqueue((q) =>
+    q.enqueueEntityDelete(
+      "budget",
+      row.id,
+      { amount: row.amount, currency: row.currency ?? null, updatedAt: row.updatedAt ?? null },
+      budgetIdentity(row),
+    ),
+  );
+}
+
+/**
+ * Save of a budget set for one category and month (the form's upsert). Merges into a queued create of the same
+ * category and month; else edits the server row when one is known (`serverRow`, the conflict baseline); else creates.
+ */
+export function queueOfflineBudgetSet(
+  input: { categoryId: number; month: string; amount: number; currency: string; categoryName?: string; categoryGroup?: string },
+  serverRow: BudgetQueueRow | undefined,
+): Promise<boolean> {
+  return enqueue(async (q) => {
+    const queued = (await q.store.list()).find(
+      (e) => e.kind === "create" && e.status === "pending" && entityOf(e) === "budget" && e.ref?.categoryId === input.categoryId && e.ref?.month === input.month,
+    );
+    if (queued) return q.enqueueEditLocal(queued.rowId, { amount: input.amount, currency: input.currency });
+    if (serverRow) {
+      return q.enqueueEntityEdit("budget", serverRow.id, { amount: input.amount, currency: input.currency }, { amount: serverRow.amount, currency: serverRow.currency ?? null }, budgetIdentity(serverRow));
+    }
+    return q.enqueueEntityCreate(
+      "budget",
+      { categoryId: input.categoryId, month: input.month, amount: input.amount, currency: input.currency },
+      { categoryId: input.categoryId, month: input.month, categoryName: input.categoryName ?? null, categoryGroup: input.categoryGroup ?? null },
+    );
+  });
+}
+
+/**
+ * Live queue state for the budgets list. Always the shared EMPTY_PENDING_BUDGETS (and nothing opened) while the flag is
+ * off. `onSettled` runs when a queued budget leaves the outbox (synced, or discarded): the caller reloads the list.
+ */
+export function usePendingBudgets(onSettled?: () => void): PendingBudgetView {
+  const [view, setView] = useState<PendingBudgetView>(EMPTY_PENDING_BUDGETS);
+  const settledRef = useRef(onSettled);
+  useEffect(() => {
+    settledRef.current = onSettled;
+  });
+  useEffect(() => {
+    if (!isLocalWriteQueueEnabled()) return;
+    let alive = true;
+    let last = "";
+    let lastCount = -1;
+    const refresh = () => {
+      const r = running;
+      if (!r || !isLocalWriteQueueEnabled()) {
+        if (last !== "") {
+          last = "";
+          if (alive) setView(EMPTY_PENDING_BUDGETS);
+        }
+        return;
+      }
+      void r.queue.store
+        .list()
+        .then((l) => {
+          if (!alive) return;
+          const count = l.filter((e) => entityOf(e) === "budget").length;
+          if (lastCount > count) settledRef.current?.();
+          lastCount = count;
+          const next = toPendingBudgetView(l);
+          const key = JSON.stringify(next);
+          if (key === last) return;
+          last = key;
+          setView(isPendingBudgetsEmpty(next) ? EMPTY_PENDING_BUDGETS : next);
+        })
+        .catch(() => undefined);
+    };
+    listeners.add(refresh);
+    refresh();
+    const t = setInterval(refresh, 15_000);
+    return () => {
+      alive = false;
+      listeners.delete(refresh);
+      clearInterval(t);
+    };
+  }, []);
+  return view;
+}
+
+/** Generic queue entry points for goals, rules, accounts and categories (same rules as the budget ones). False = not queued. */
+export function queueOfflineEntityCreate(entity: EntityKind, fields: Record<string, string | number | null>, ref?: Record<string, string | number | null>): Promise<boolean> {
+  return enqueue((q) => q.enqueueEntityCreate(entity, fields, ref));
+}
+
+export function queueOfflineEntityEdit(
+  entity: EntityKind,
+  serverId: number,
+  patch: Record<string, string | number | null>,
+  current: Record<string, string | number | null>,
+  ref?: Record<string, string | number | null>,
+): Promise<boolean> {
+  return enqueue((q) => q.enqueueEntityEdit(entity, serverId, patch, current, ref));
+}
+
+export function queueOfflineEntityDelete(entity: EntityKind, serverId: number, current: Record<string, string | number | null | undefined>, ref?: Record<string, string | number | null>): Promise<boolean> {
+  return enqueue((q) => q.enqueueEntityDelete(entity, serverId, current as Record<string, string | number | null>, ref));
+}
+
+/**
+ * Live queue state for one entity list (goals, rules, accounts, categories). The shared EMPTY_ENTITY_VIEW and nothing
+ * opened while the flag is off. `onSettled` runs when a queued change of this entity leaves the outbox (synced).
+ */
+export function usePendingEntity(entity: EntityKind, onSettled?: () => void): EntityPendingView {
+  const [view, setView] = useState<EntityPendingView>(EMPTY_ENTITY_VIEW);
+  const settledRef = useRef(onSettled);
+  useEffect(() => {
+    settledRef.current = onSettled;
+  });
+  useEffect(() => {
+    if (!isLocalWriteQueueEnabled()) return;
+    let alive = true;
+    let last = "";
+    let lastCount = -1;
+    const refresh = () => {
+      const r = running;
+      if (!r || !isLocalWriteQueueEnabled()) {
+        if (last !== "") {
+          last = "";
+          if (alive) setView(EMPTY_ENTITY_VIEW);
+        }
+        return;
+      }
+      void r.queue.store
+        .list()
+        .then((l) => {
+          if (!alive) return;
+          const count = l.filter((e) => entityOf(e) === entity).length;
+          if (lastCount > count) settledRef.current?.();
+          lastCount = count;
+          const next = toEntityPendingView(l, entity);
+          const key = JSON.stringify(next);
+          if (key === last) return;
+          last = key;
+          setView(isEntityViewEmpty(next) ? EMPTY_ENTITY_VIEW : next);
+        })
+        .catch(() => undefined);
+    };
+    listeners.add(refresh);
+    refresh();
+    const t = setInterval(refresh, 15_000);
+    return () => {
+      alive = false;
+      listeners.delete(refresh);
+      clearInterval(t);
+    };
+  }, [entity]);
+  return view;
+}
+
 export interface PendingSyncItem {
   opId: string;
+  entity: EntityKind;
   kind: "create" | "edit" | "delete";
   status: "pending" | "failed";
   failReason: string | null;
@@ -188,15 +393,23 @@ export interface PendingSyncItem {
 }
 
 const toItem = (e: OutboxEntry): PendingSyncItem => {
+  const entity = entityOf(e);
   const f = e.kind === "delete" ? e.base : e.fields;
+  const parts =
+    entity === "budget"
+      ? [e.ref?.categoryName ?? (e.ref?.categoryId !== undefined ? `Category #${e.ref.categoryId}` : null), e.ref?.month ?? f.month, f.amount]
+      : entity === "transaction"
+        ? [f.date, f.payee, f.enteredAmount ?? f.amount]
+        : [f.name ?? f.alias ?? (e.serverId !== null ? `${entity} #${e.serverId}` : null), f.type ?? null, f.targetAmount ?? null];
   return {
     opId: e.opId,
+    entity,
     kind: e.kind,
     status: e.status,
     failReason: e.failReason,
     attempts: e.attempts,
     createdAt: e.createdAt,
-    summary: [f.date, f.payee, f.enteredAmount ?? f.amount].filter((v) => v !== undefined && v !== null && v !== "").join(" · "),
+    summary: parts.filter((v) => v !== undefined && v !== null && v !== "").join(" · "),
   };
 };
 
@@ -256,6 +469,7 @@ export function usePendingSync(): { items: PendingSyncItem[]; enabled: boolean }
 export function toPendingTxView(entries: OutboxEntry[]): PendingTxView {
   const view: PendingTxView = { creates: [], edits: {}, deletes: {} };
   for (const e of entries) {
+    if (entityOf(e) !== "transaction") continue; // budgets and other entities have their own views
     const base = { opId: e.opId, status: e.status, failReason: e.failReason };
     if (e.kind === "create") view.creates.push({ ...base, createdAt: e.createdAt, fields: { ...e.fields } });
     else if (e.serverId === null) continue;

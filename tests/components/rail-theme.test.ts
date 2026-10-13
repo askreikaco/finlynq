@@ -28,14 +28,20 @@ describe("rail (sidebar tokens) follows the theme", () => {
     expect(lightness(root, "--sidebar-foreground")).toBeLessThan(0.3);
   });
 
-  it("dark .dark sidebar is dark (L < 0.2)", () => {
-    expect(lightness(dark, "--sidebar")).toBeLessThan(0.2);
+  it("dark .dark sidebar is the card colour #252728 (L ~ 0.271), so the rail matches cards", () => {
+    expect(lightness(dark, "--sidebar")).toBeCloseTo(0.2711, 3);
     expect(lightness(dark, "--sidebar-foreground")).toBeGreaterThan(0.8);
+  });
+
+  it("light rail is the card colour #ffffff (sidebar token equals card token)", () => {
+    expect(root).toMatch(/--sidebar:\s*oklch\(1 0 0\)/);
+    expect(root).toMatch(/--card:\s*oklch\(1 0 0\)/);
   });
 
   it("the rail uses the sidebar token, not a hardcoded dark fill", () => {
     const nav = readFileSync(join(__dirname, "../../src/components/nav.tsx"), "utf8");
-    expect(nav).toContain("bg-sidebar/90");
+    expect(nav).toContain("bg-sidebar/80");
+    expect(nav).toContain("backdrop-blur-[var(--glass-card-blur)]");
     expect(nav).not.toMatch(/bg-(black|zinc-9|neutral-9|slate-9)/);
   });
 });

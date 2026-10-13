@@ -52,7 +52,14 @@ const DYN_NONLITERAL_RE = /\bimport\s*\(\s*(?!["'`][^"'`$]*["'`]\s*\))/;
 const NETWORK_ALLOWED: Record<string, string> = {
   "src/lib/local-first/read-cache/hydrate.ts": "GET /api/accounts, /api/categories, /api/transactions via injected fetchImpl (L2a)",
   "src/lib/local-first/read-cache/use-local-balances.ts": "browser fetch passed to hydrate (L2a)",
-  "src/lib/local-first/write-path/drain.ts": "GET/POST/PUT /api/transactions via injected fetchImpl (L3 outbox drain)",
+  "src/lib/local-first/write-path/drain.ts": "GET/POST/PUT/DELETE via injected fetchImpl (L3 outbox drain); URLs come from the adapters",
+  // Entity adapters (L3): pure request descriptors (url, method, body). They never call fetch; drain.ts performs them.
+  "src/lib/local-first/write-path/entities/transaction.ts": "adapter request descriptors for /api/transactions (no fetch)",
+  "src/lib/local-first/write-path/entities/budget.ts": "adapter request descriptors for /api/budgets (no fetch)",
+  "src/lib/local-first/write-path/entities/goal.ts": "adapter request descriptors for /api/goals (no fetch)",
+  "src/lib/local-first/write-path/entities/rule.ts": "adapter request descriptors for /api/rules (no fetch)",
+  "src/lib/local-first/write-path/entities/account.ts": "adapter request descriptors for /api/accounts (no fetch)",
+  "src/lib/local-first/write-path/entities/category.ts": "adapter request descriptors for /api/categories (no fetch)",
 };
 const FORBIDDEN_PKG_RE = /^(pg|postgres|axios|undici|node:https?|https?)$|^drizzle-orm\/(node-postgres|postgres-js)/;
 const NETWORK_RE = /\bfetch\s*\(|\b(?:globalThis|window|self)\s*\.\s*fetch\b|\bXMLHttpRequest\b|\bWebSocket\b|\bEventSource\b|\bsendBeacon\b|["'`][^"'`\n]*\/api\/[^"'`\n]*["'`]/;
@@ -131,13 +138,20 @@ const files = walk(LOCAL_FIRST).filter((f) => !f.startsWith(SERVER_DIR + "/"));
     expect(hook).not.toMatch(/\/api\//);
     // drain.ts: /api/ routes only through the injected fetchImpl, never a direct fetch call.
     const drainCode = stripComments(readFileSync(join(LOCAL_FIRST, "write-path/drain.ts"), "utf8"));
-    expect(drainCode.match(/\/api\//g)?.length ?? 0).toBeGreaterThan(0);
+    // URLs come from the entity adapters (request descriptors), so drain must call through them.
+    expect(drainCode).toMatch(/adapter\.(basePath|fetchRequest|editRequest|serialize)/);
     expect(drainCode).not.toMatch(/(?<![.\w])fetch\s*\(/);
     expect(drainCode).not.toMatch(/\b(?:globalThis|window|self)\s*\.\s*fetch\b/);
     expect(Object.keys(NETWORK_ALLOWED).sort()).toEqual([
       "src/lib/local-first/read-cache/hydrate.ts",
       "src/lib/local-first/read-cache/use-local-balances.ts",
       "src/lib/local-first/write-path/drain.ts",
+      "src/lib/local-first/write-path/entities/account.ts",
+      "src/lib/local-first/write-path/entities/budget.ts",
+      "src/lib/local-first/write-path/entities/category.ts",
+      "src/lib/local-first/write-path/entities/goal.ts",
+      "src/lib/local-first/write-path/entities/rule.ts",
+      "src/lib/local-first/write-path/entities/transaction.ts",
     ]);
   });
 

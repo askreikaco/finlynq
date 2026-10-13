@@ -74,9 +74,9 @@ describe("glass material (globals.css)", () => {
     expect(body).toContain("0 8px 32px oklch(0 0 0 / 35%)");
   });
 
-  it("dark mode: fill oklch(0.16 0.008 245 / 78%) and rim oklch(1 0 0 / 14%)", () => {
+  it("dark mode: fill card #252728 at 80% (oklch(0.2711 0.0035 228.92 / 80%)) and rim oklch(1 0 0 / 14%)", () => {
     const body = resolvedDecls(css, ".mobile-glass-bar", "dark");
-    expect(body).toMatch(/background:\s*oklch\(0\.16 0\.008 245 \/ 78%\)/);
+    expect(body).toMatch(/background:\s*oklch\(0\.2711 0\.0035 228\.92 \/ 80%\)/);
     expect(body).toMatch(/border:\s*1px solid oklch\(1 0 0 \/ 14%\)/);
   });
 
