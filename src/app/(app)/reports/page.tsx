@@ -20,7 +20,7 @@ import { todayISO } from "@/lib/utils/date";
 import { MetricRangeSelect } from "@/components/metric-range-select";
 import { MetricCard } from "@/components/metric-card";
 import { useMetricRange } from "@/lib/metrics/use-metric-range";
-import { compareCaption, monthsBetween, seriesWindow, shiftMonth, resolvePeriod, type Period as MetricPeriod } from "@/lib/metrics/period";
+import { compareCaption, monthsBetween, seriesWindow, shiftMonth, resolvePeriod } from "@/lib/metrics/period";
 import { cardProps, makeCardResolver, monthEndBalances, resolveRatioCard, sumByMonth } from "@/lib/metrics/series";
 import { getPresetRange } from "@/lib/reports/preset-range";
 import { AccountFilter } from "./_components/account-filter";
@@ -250,12 +250,6 @@ export default function ReportsPage() {
   // The report range itself (Net Savings block): compared with the preceding period of the same number of months when it starts on a 1st.
   const reportMonths = useMemo(() => monthsBetween(startDate, endDate), [startDate, endDate]);
   const reportAligned = startDate.endsWith("-01") && reportMonths.length > 0;
-  const reportPrevFrom = reportAligned ? shiftMonth(reportMonths[0], -reportMonths.length) : reportMonths[0];
-  const reportRes = useCacheFirstJson<TrendsData>(
-    currencyLoading || !reportAligned ? null : `/api/reports/trends?startDate=${reportPrevFrom}-01&endDate=${endDate}&period=monthly&groupBy=category&metrics=1${biz}${acctParam}&currency=${curr}`,
-    { keepPrevious: true },
-  );
-  const reportMonthly = reportRes.data && typeof reportRes.data === "object" && Array.isArray(reportRes.data.timeseries) ? reportRes.data.timeseries : null;
   // Balance-sheet net worth: month-end history of the account balances (not available per account selection).
   const nwHistoryRes = useCacheFirstJson<{ series?: Array<{ date: string; value: number }> }>(
     currencyLoading || accountIds.length > 0 ? null : "/api/net-worth-history?period=all",
@@ -401,17 +395,6 @@ export default function ReportsPage() {
       ]
     : [];
 
-  // Net Savings block (income tab): the report range against the preceding period of the same number of months.
-  const reportPeriod: MetricPeriod | null = reportAligned
-    ? { start: startDate, end: endDate, months: reportMonths, monthAligned: true }
-    : null;
-  const reportNet = (() => {
-    if (!reportPeriod || !reportMonthly || !trendsData) return null;
-    const inc = sumByMonth(reportMonthly, (p) => p.period, (p) => p.income, reportMonths[reportMonths.length - 1], reportPrevFrom);
-    const exp = sumByMonth(reportMonthly, (p) => p.period, (p) => p.expenses, reportMonths[reportMonths.length - 1], reportPrevFrom);
-    const net = inc.map((p, i) => ({ month: p.month, value: p.value - (exp[i]?.value ?? 0) }));
-    return makeCardResolver({ selection: { range: "custom", from: startDate, to: endDate }, explicit: false, period: reportPeriod }, displayCurrency)(net, "sum", trendsData.netSavings);
-  })();
   // Balance-sheet net worth: month-end balance of the as-of month vs the month before.
   const balanceNet = (() => {
     if (!balanceSheet) return null;
@@ -789,48 +772,36 @@ export default function ReportsPage() {
                 </CardContent>
               </Card>
 
-              {/* Net summary */}
-              <MetricCard
-                label="Net Savings"
-                icon={DollarSign}
-                tone="indigo"
-                value={trendsData.netSavings}
-                currency={displayCurrency}
-                valueClassName={trendsData.netSavings >= 0 ? "text-pos" : "text-destructive"}
-                sparkColor="#6366f1"
-                {...(reportNet ? cardProps(reportNet) : {})}
-                note={<>Savings Rate: <span className="font-semibold">{trendsData.savingsRate}%</span></>}
-              />
-
               {/* ── Unrealized gains / losses ── */}
               {unrealizedData && (unrealizedData.accounts.length > 0 || Math.abs(unrealizedData.totals.totalGL) > 0.005) && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Unrealized gains / losses (period change)</CardTitle>
-                    <CardDescription>
-                      How asset valuations and FX translation moved during the
-                      selected period. Computed as snapshot at period end −
-                      snapshot at period start, so the totals match what you&apos;d
-                      get reporting monthly, quarterly, or annually.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {/* Totals row */}
-                    <MetricGrid
-                      columns={3}
-                      metrics={[
-                        { icon: TrendingUp, label: "Valuation G/L", value: unrealizedData.totals.valuationGL, currency: displayCurrency, tone: "auto" },
-                        { icon: TrendingUp, label: "FX G/L", value: unrealizedData.totals.fxGL, currency: displayCurrency, tone: "auto" },
-                        { icon: Layers, label: "Total unrealized", value: unrealizedData.totals.totalGL, currency: displayCurrency, tone: "auto" },
-                      ]}
-                    />
-
-                    {/* Per-account drilldown */}
-                    {unrealizedData.accounts.length > 0 && (
-                      <UnrealizedStatementRows rows={unrealizedData.accounts} displayCurrency={displayCurrency} />
-                    )}
-                  </CardContent>
-                </Card>
+                <>
+                  {/* Totals: standard MetricCards in the standard grid */}
+                  <MetricGrid
+                    columns={3}
+                    metrics={[
+                      { icon: TrendingUp, label: "Valuation G/L", value: unrealizedData.totals.valuationGL, currency: displayCurrency, tone: "auto", sub: "Asset price moves, period change" },
+                      { icon: TrendingUp, label: "FX G/L", value: unrealizedData.totals.fxGL, currency: displayCurrency, tone: "auto", sub: "Currency translation, period change" },
+                      { icon: Layers, label: "Total unrealized", value: unrealizedData.totals.totalGL, currency: displayCurrency, tone: "auto", sub: "Valuation + FX" },
+                    ]}
+                  />
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Unrealized gains / losses (period change)</CardTitle>
+                      <CardDescription>
+                        How asset valuations and FX translation moved during the
+                        selected period. Computed as snapshot at period end −
+                        snapshot at period start, so the totals match what you&apos;d
+                        get reporting monthly, quarterly, or annually.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {/* Per-account drilldown */}
+                      {unrealizedData.accounts.length > 0 && (
+                        <UnrealizedStatementRows rows={unrealizedData.accounts} displayCurrency={displayCurrency} />
+                      )}
+                    </CardContent>
+                  </Card>
+                </>
               )}
             </div>
           )}

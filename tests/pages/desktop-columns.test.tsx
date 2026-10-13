@@ -116,6 +116,13 @@ describe("desktop columns: card grids", () => {
     expect(src).toMatch(/income-expense-chart" minHeight=\{300\} className="[^"]*wide:col-span-2/);
   });
 
+  it("accounts: Assets / Liabilities headings are SectionCard labels inside the card; group headers are not monospace", () => {
+    const src = code(`${APP}/accounts/page.tsx`);
+    expect(src).toMatch(/<SectionCard\s+label=\{/);
+    expect(src).not.toMatch(/font-mono/);
+    expect(src).not.toMatch(/<h2 className="text-xl font-semibold">/);
+  });
+
   it("family, tax, fire, scenarios, admin, import, utility pages", () => {
     expect(code(`${APP}/family/_components/overview-tab.tsx`)).toMatch(/data-slot="household-charts"[^>]*wide:grid-cols-2/);
     expect(code(`${APP}/tax/page.tsx`)).toMatch(/data-slot="tax-cards" className=\{TW\.grid3\}/);

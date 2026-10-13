@@ -5,6 +5,7 @@ import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
+import { SectionCard } from "@/components/mobile/section-card";
 import { Badge } from "@/components/ui/badge";
 import { InvisibleMark } from "@/components/invisible-mark";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -216,7 +217,7 @@ export default function AccountsPage() {
   const groupTitle = (group: string, accts: AccountBalance[]) => (
     <span className="flex items-center justify-between gap-3">
       <span className="flex min-w-0 items-center gap-2">
-        <span className="min-w-0 truncate" data-testid="group-name">{group}</span>
+        <span className="min-w-0 truncate font-sans text-xs font-bold uppercase tracking-normal text-muted-foreground" data-testid="group-name">{group}</span>
         <span
           className="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-muted px-1.5 text-xs font-medium text-muted-foreground"
           aria-label={`${accts.length} accounts`}
@@ -225,7 +226,7 @@ export default function AccountsPage() {
           {accts.length}
         </span>
       </span>
-      <span className="shrink-0 font-mono font-semibold tabular-nums" data-testid="group-total">
+      <span className="shrink-0 font-sans text-sm font-semibold tabular-nums" data-testid="group-total">
         {formatCurrency(groupTotal(accts), displayCurrency)}
       </span>
     </span>
@@ -237,16 +238,20 @@ export default function AccountsPage() {
     color: string,
     SectionIcon: typeof TrendingUp,
   ) => (
-    <div className="space-y-2">
-      <div className="flex items-center gap-2">
-        <SectionIcon className={`h-5 w-5 ${color}`} />
-        <h2 className="text-xl font-semibold">{title}</h2>
-      </div>
+    <SectionCard
+      label={
+        <span className="inline-flex items-center gap-2">
+          <SectionIcon className={`h-4 w-4 ${color}`} />
+          {title}
+        </span>
+      }
+      className="px-3"
+    >
       {/* Each group is its own accordion, expanded by default (toggled independently): header = name, count, total. */}
       <div className="flex flex-col gap-2">
         {groups(list).map(([group, accts]) => (
           <Accordion key={group} defaultValue={group}>
-          <AccordionItem value={group} title={groupTitle(group, accts)}>
+          <AccordionItem value={group} title={groupTitle(group, accts)} className="bg-transparent shadow-none">
             <div className="divide-y divide-border/50">
             {accts.map((a) => (
               <ListRow
@@ -277,7 +282,7 @@ export default function AccountsPage() {
           </Accordion>
         ))}
       </div>
-    </div>
+    </SectionCard>
   );
 
   // Totals are aggregations across all currencies — sum the API-provided

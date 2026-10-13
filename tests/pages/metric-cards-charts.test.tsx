@@ -946,11 +946,10 @@ describe("/reports summary cards", () => {
     expect(income.textContent).not.toMatch(/vs (last month|previous period)/);
   });
 
-  it("the Net Savings block and the balance-sheet Net Worth are MetricCards too (no hand-rolled KPI)", async () => {
+  it("the Net Savings tile is not duplicated and the balance-sheet Net Worth is a MetricCard (no hand-rolled KPI)", async () => {
     await renderReports(SERIES, { balance: true });
-    const nsBlock = screen.getAllByText("Net Savings").map((e) => e.closest(".gradient-border")).filter(Boolean);
-    expect(nsBlock.length).toBeGreaterThanOrEqual(2); // summary tile + the income-tab block
-    expect(nsBlock[nsBlock.length - 1]!.textContent).toContain("Savings Rate: 40%");
+    // exactly one Net Savings tile (the top one): no duplicate hero card at the bottom of the income tab
+    expect(screen.getAllByText("Net Savings").filter((e) => e.closest(".gradient-border")).length).toBe(1);
     const { fireEvent } = await import("@testing-library/react");
     fireEvent.click(screen.getByRole("tab", { name: /Balance Sheet/i }));
     await waitFor(() => expect(screen.getAllByText("Net Worth").some((e) => e.closest(".gradient-border"))).toBe(true));
