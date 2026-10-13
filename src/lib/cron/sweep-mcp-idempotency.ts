@@ -13,6 +13,7 @@
 
 import { db, schema } from "@/db";
 import { sql, lt } from "drizzle-orm";
+import { sweepRequestIdempotency } from "@/lib/idempotency";
 
 export type SweepResult = { deleted: number };
 
@@ -45,6 +46,9 @@ export function startMcpIdempotencySweepTimer(): void {
   if (timer) return;
   const ONE_DAY = 24 * 60 * 60 * 1000;
   timer = setInterval(() => {
+    sweepRequestIdempotency().catch((err) => {
+      console.error("[sweep-request-idempotency] sweep failed:", err);
+    });
     sweepMcpIdempotencyKeys().catch((err) => {
 
       console.error("[sweep-mcp-idempotency] sweep failed:", err);

@@ -86,7 +86,7 @@ export async function createAccount(userId: string, data: AccountWrite) {
 export async function updateAccount(
   id: number,
   userId: string,
-  data: Partial<AccountWrite & { archived: boolean; isInvestment: boolean; invisible: boolean }>,
+  data: Partial<AccountWrite & { archived: boolean; isInvestment: boolean; invisible: boolean; updatedAt: Date }>,
 ) {
   // Apply the same default when the caller supplies `group` explicitly. We
   // only touch it when `group` is in the payload — leaving an unset group
@@ -122,6 +122,8 @@ export async function getCategoryById(id: number, userId: string) {
 type CategoryWrite = {
   type: string;
   group: string;
+  /** Offline write queue (local-first L3): server clock. */
+  updatedAt?: Date;
   note?: string;
   // Stream D Phase 4 — caller supplies encrypted name fields via
   // buildNameFields() with a DEK.
@@ -873,6 +875,7 @@ export async function getBudgets(userId: string, month?: string) {
       month: budgets.month,
       amount: budgets.amount,
       currency: budgets.currency,
+      updatedAt: budgets.updatedAt,
     })
     .from(budgets)
     .leftJoin(categories, eq(budgets.categoryId, categories.id))
@@ -889,7 +892,8 @@ export async function upsertBudget(userId: string, data: { categoryId: number; m
     .get();
 
   if (existing) {
-    const update: { amount: number; currency?: string } = { amount: data.amount };
+    // updatedAt: the server clock the offline write queue compares against (local-first L3).
+    const update: { amount: number; currency?: string; updatedAt: Date } = { amount: data.amount, updatedAt: new Date() };
     if (data.currency) update.currency = data.currency;
     return db.update(budgets).set(update).where(eq(budgets.id, existing.id)).returning().get();
   }

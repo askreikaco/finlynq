@@ -9,6 +9,10 @@ export type Budget = {
   amount: number;
   currency?: string;
   rolloverAmount?: number;
+  /** Server clock (budgets.updated_at): the baseline for a queued delete. */
+  updatedAt?: string | null;
+  /** Set on rows that exist only in the offline queue (or have a queued change). Never sent to the server. */
+  pendingSync?: { kind: "create" | "edit" | "delete"; status: "pending" | "failed"; opId: string; failReason: string | null };
 };
 
 export type Category = { id: number; name: string; type: string; group: string };

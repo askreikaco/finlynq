@@ -7,6 +7,7 @@ import { getRateMap, convertWithRateMap, getDisplayCurrency } from "@/lib/fx-ser
 import { verifyOwnership, OwnershipError } from "@/lib/verify-ownership";
 import { decryptName } from "@/lib/crypto/encrypted-columns";
 import { safeName } from "@/lib/safe-name";
+import { withIdempotency } from "@/lib/idempotency";
 
 const postSchema = z.object({
   categoryId: z.number(),
@@ -86,6 +87,12 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const auth = await requireAuth(request); if (!auth.authenticated) return auth.response;
+  // Offline write queue (local-first L3): an Idempotency-Key header makes a retried POST replay the first response.
+  // Without the header this is exactly the plain save below.
+  return withIdempotency(request, auth.context.userId, "budget", () => saveBudget(request, auth.context.userId));
+}
+
+async function saveBudget(request: NextRequest, userId: string): Promise<NextResponse> {
   try {
     const body = await request.json();
     const parsed = validateBody(body, postSchema);
@@ -93,16 +100,16 @@ export async function POST(request: NextRequest) {
     // Cross-tenant FK guard (H-1) — `categoryId` is the only client-supplied
     // FK on this route. Without verification, a budget for user B's category
     // would land under user A's user_id and skew A's "spent vs budget" view.
-    await verifyOwnership(auth.context.userId, {
+    await verifyOwnership(userId, {
       categoryIds: [parsed.data.categoryId],
     });
-    const budget = await upsertBudget(auth.context.userId, parsed.data);
+    const budget = await upsertBudget(userId, parsed.data);
     return NextResponse.json(budget, { status: 201 });
   } catch (error: unknown) {
     if (error instanceof OwnershipError) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
-    await logApiError("POST", "/api/budgets", error, auth.context.userId);
+    await logApiError("POST", "/api/budgets", error, userId);
     return NextResponse.json({ error: safeErrorMessage(error, "Failed to save budget") }, { status: 500 });
   }
 }
