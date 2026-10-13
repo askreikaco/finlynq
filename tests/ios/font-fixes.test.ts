@@ -14,8 +14,7 @@ const TOUCHED = [
   "src/components/nav.tsx",
   "src/components/portfolio/lot-allocation-matrix.tsx",
   "src/app/(app)/transactions/_components/transaction-split-form.tsx",
-  "src/app/(app)/portfolio/_components/holdings-by-account.tsx",
-  "src/app/(app)/portfolio/_components/holdings-table.tsx",
+  "src/app/(app)/portfolio/_components/holding-account-groups.tsx",
   "src/app/(app)/portfolio/realized-gains/page.tsx",
   "src/components/metric-card.tsx",
 ];
@@ -97,16 +96,8 @@ describe("4. fixed-size boxes grown for 12px text", () => {
     expect(src).toContain("<FormRow");
   });
 
-  it("holdings badges with text-xs are h-5, not h-4", () => {
-    for (const f of [
-      "src/app/(app)/portfolio/_components/holdings-by-account.tsx",
-      "src/app/(app)/portfolio/_components/holdings-table.tsx",
-      "src/app/(app)/portfolio/realized-gains/page.tsx",
-    ]) {
-      const src = read(f);
-      expect(src, f).not.toMatch(/text-xs h-4\b/);
-      expect(src, f).toMatch(/text-xs h-5\b/);
-    }
+  it("the realized-gains list has no text-xs h-4 badge (its table badges are gone; the list rows carry no badge)", () => {
+    expect(read("src/app/(app)/portfolio/realized-gains/page.tsx")).not.toMatch(/text-xs h-4\b/);
   });
 
   it("metric card number steps text-2xl at the 13rem container (no 30px step inside 13rem)", () => {

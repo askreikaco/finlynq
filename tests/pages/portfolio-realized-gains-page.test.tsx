@@ -124,7 +124,7 @@ describe("Realized gains page (report page, not a dialog)", () => {
   it("a tax-year chip refetches with taxYear set (filters drive the same API call)", async () => {
     size.cls = "regular";
     render(<RealizedGainsPage />);
-    await screen.findByRole("table");
+    await screen.findByRole("button", { name: "AAPL, closed 2026-03-10" });
     const yearGroup = screen.getByRole("group", { name: "Tax year" });
     fireEvent.click(within(yearGroup).getByRole("button", { name: "2025" }));
     await waitFor(() => expect(fetchUrls.some((u) => u.includes("taxYear=2025"))).toBe(true));
@@ -139,15 +139,12 @@ describe("Realized gains page (report page, not a dialog)", () => {
     expect(link.getAttribute("href")).toBe("/portfolio/new?op=sell");
   });
 
-  it("md+ table has a sticky header inside its own scroll box", async () => {
+  it("one list at every size class: no table, no sticky header or max-height box", async () => {
     size.cls = "regular";
-    render(<RealizedGainsPage />);
-    await screen.findByRole("table");
-    const head = document.querySelector("thead") as HTMLElement;
-    expect(head.className).toContain("sticky");
-    expect(head.className).toContain("top-0");
-    const container = head.closest("[data-slot=table-container]") as HTMLElement;
-    expect(container.className).toContain("overflow-y-auto");
-    expect(container.className).toMatch(/max-h-\[70dvh\]/);
+    const { container } = render(<RealizedGainsPage />);
+    await screen.findByRole("button", { name: "AAPL, closed 2026-03-10" });
+    expect(container.querySelector("table")).toBeNull();
+    expect(container.querySelector("thead")).toBeNull();
+    expect(container.querySelector("[data-slot=table-container]")).toBeNull();
   });
 });

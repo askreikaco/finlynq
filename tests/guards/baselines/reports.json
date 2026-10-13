@@ -3,7 +3,6 @@
   "unmigrated": [
     "src/app/(app)/dashboard/page.tsx",
     "src/app/(app)/fire/page.tsx",
-    "src/app/(app)/reports/page.tsx",
     "src/app/(app)/scenarios/page.tsx"
   ],
   "chrome": {
@@ -20,9 +19,7 @@
       "title-prop": 1
     },
     "src/app/(app)/reports/page.tsx": {
-      "rounded-2xl": 1,
-      "title-prop": 2,
-      "subtitle-prop": 1
+      "rounded-2xl": 1
     },
     "src/app/(app)/scenarios/page.tsx": {
       "title-prop": 2,

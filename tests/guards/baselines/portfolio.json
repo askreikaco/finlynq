@@ -1,7 +1,6 @@
 {
   "family": "portfolio",
   "unmigrated": [
-    "src/app/(app)/portfolio/page.tsx",
     "src/app/(app)/portfolio/new/[op]/page.tsx"
   ],
   "chrome": {
@@ -15,9 +14,7 @@
     },
     "src/app/(app)/portfolio/page.tsx": {
       "min-h": 1,
-      "rounded-2xl": 1,
-      "title-prop": 2,
-      "subtitle-prop": 1
+      "rounded-2xl": 1
     }
   }
 }

@@ -14,23 +14,23 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { OnboardingTips } from "@/components/onboarding-tips";
 import { Badge } from "@/components/ui/badge";
-import { Plus, PanelRight, ChevronDown, Receipt, Search, X, AlertTriangle, ArrowRightLeft, Columns3, TrendingUp, Download, ShoppingCart, Banknote, Repeat, Send, HandCoins, CircleDollarSign, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuGroup, DropdownMenuLabel, DropdownMenuCheckboxItem, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Plus, PanelRight, ChevronDown, Receipt, Search, X, AlertTriangle, ArrowRightLeft, ArrowDownUp, ListChecks, TrendingUp, Download, ShoppingCart, Banknote, Repeat, Send, HandCoins, CircleDollarSign, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuGroup, DropdownMenuLabel, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { portfolioEditHref, transactionEditHref, transactionSplitHref } from "@/lib/transactions/edit-flow";
 import { MobileTxList } from "@/components/transactions/mobile-tx-list";
 import { type TransactionSource, labelForSource } from "@/lib/tx-source";
 import { buildPrefill, writePrefill, canDuplicate } from "@/lib/transactions/prefill";
 import {
   COLUMN_LABELS as SHARED_COLUMN_LABELS,
-  TOGGLEABLE_COLUMN_IDS as SHARED_TOGGLEABLE_COLUMN_IDS,
-  type ColumnId as SharedColumnId,
+  SORTABLE_COLUMN_IDS,
+  type SortableColumnId,
 } from "@/lib/transactions/columns";
 import type {
   Transaction,
 } from "../_types";
-import { useLookups, useTxColumnPrefs, useTxSortPref, useTxFilterPrefs } from "../_hooks/use-tx-prefs";
+import { useLookups, useTxSortPref, useTxFilterPrefs } from "../_hooks/use-tx-prefs";
 import { useTransactions } from "../_hooks/use-transactions";
-import { TransactionTable } from "./transaction-table";
+import { TransactionSheet } from "./transaction-sheet";
 import { buildTransactionQuery } from "@/lib/transactions/build-query";
 import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
 import { exportCsv, type CsvColumn } from "@/lib/csv-export";
@@ -38,11 +38,11 @@ import { todayISO } from "@/lib/utils/date";
 import { LotReallocationNotice } from "@/components/portfolio/lot-reallocation-notice";
 import type { LotReallocationPreview } from "@/lib/portfolio/lots/types";
 import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
-import { DataView, ViewModeToggle, useViewMode, useAppSizeClass } from "@/components/adaptive";
+import { useAppSizeClass } from "@/components/adaptive";
+import { EmptyState } from "@/components/empty-state";
 import { useSplitView } from "@/lib/transactions/split-view";
 import { TransactionDetailPane } from "./transaction-detail-pane";
 import { useTransferPeers } from "../_hooks/use-transfer-peers";
-import { cn } from "@/lib/utils";
 import { PendingSyncBadge } from "@/components/transactions/pending-sync-badge";
 import { applyPendingToTransactions, countPendingDeletes } from "@/lib/transactions/pending-overlay";
 import { canQueueOfflineDelete, isNetworkFailure } from "@/lib/transactions/entry-mode";
@@ -122,9 +122,7 @@ export function TransactionsWorkspace({
   });
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  type ColumnId = SharedColumnId;
   const COLUMN_LABELS = SHARED_COLUMN_LABELS;
-  const TOGGLEABLE_COLUMNS = new Set<ColumnId>(SHARED_TOGGLEABLE_COLUMN_IDS);
 
   // Set up setPage to reset the page slice via resetPageRef
   const resetPageRef = useRef<() => void>(() => {});
@@ -175,14 +173,11 @@ export function TransactionsWorkspace({
     setPage(0);
   }, [urlParams, locked, lockedAccountId]);
 
-  // Per-user table column layout (visibility + order), header sort, and
-  // per-column filters — all extracted to hooks (FINLYNQ-111 Phase 2). Each
-  // hook owns the same load-on-mount + debounced-PUT-on-change effects + the
-  // legacy localStorage migration. `cycleSort` / `setColFilter` reset the page
-  // to 0 via the onChange callback (verbatim with the old inline setPage(0)).
-  const { columnPrefs, setColumnPrefs, resetColPrefs } = useTxColumnPrefs();
-  const { sortPref, setSortPref, cycleSort } = useTxSortPref(() => setPage(0));
-  const { colFilters, setColFilters, findColFilter, setColFilter } = useTxFilterPrefs(() => setPage(0));
+  // Header sort and per-column filters (the list has no columns; both are set from the compact
+  // sort control and the active-filter chips). Each hook owns the load-on-mount + debounced-PUT
+  // effects. `setColFilter` resets the page to 0 via the onChange callback.
+  const { sortPref, setSortPref } = useTxSortPref(() => setPage(0));
+  const { colFilters, setColFilters, setColFilter } = useTxFilterPrefs(() => setPage(0));
 
   // Main list (txns / total / loading) + loadTxns + infinite scroll loadNextPage
   const { txns: serverTxns, total, loading, limit, loadTxns, loadNextPage, resetPage, hasMore, loadError, loadMoreError, isLoadingMore } = useTransactions(
@@ -243,34 +238,6 @@ export function TransactionsWorkspace({
     onDataChange?.();
   }, [loadTxns, onDataChange]);
 
-  // Native HTML5 drag state — id of the column currently being dragged. The
-  // ondragover handler reorders in place, so we only need to track the source.
-  const [draggingCol, setDraggingCol] = useState<ColumnId | null>(null);
-  const onColDragStart = (id: ColumnId) => (e: React.DragEvent<HTMLTableCellElement>) => {
-    setDraggingCol(id);
-    e.dataTransfer.effectAllowed = "move";
-    try { e.dataTransfer.setData("text/plain", id); } catch { /* ignore */ }
-  };
-  const onColDragOver = (id: ColumnId) => (e: React.DragEvent<HTMLTableCellElement>) => {
-    if (!draggingCol || draggingCol === id) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    setColumnPrefs((prev) => {
-      const fromIdx = prev.findIndex((c) => c.id === draggingCol);
-      const toIdx = prev.findIndex((c) => c.id === id);
-      if (fromIdx < 0 || toIdx < 0 || fromIdx === toIdx) return prev;
-      const next = prev.slice();
-      const [moved] = next.splice(fromIdx, 1);
-      next.splice(toIdx, 0, moved);
-      return next;
-    });
-  };
-  const onColDragEnd = () => setDraggingCol(null);
-
-  const toggleCol = (id: ColumnId, value: boolean) => {
-    setColumnPrefs((prev) => prev.map((c) => (c.id === id ? { ...c, visible: value } : c)));
-  };
-
   // Delete confirmation
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   // Phase 2 portfolio-ops refactor: server returns 409 with this shape when
@@ -293,19 +260,21 @@ export function TransactionsWorkspace({
 
   // Bulk selection
   const [selected, setSelected] = useState<Set<number>>(new Set());
-  // Cards / List for this view (one shared store; ViewModeToggle and DataView agree).
-  const [viewMode] = useViewMode("transactions");
   const sizeClass = useAppSizeClass();
   // Optional split view (list | details) on wide screens only; off unless the user turns it on.
   const [splitPref, setSplitPref] = useSplitView();
   const splitView = splitPref && sizeClass === "wide";
   const [splitSelectedId, setSplitSelectedId] = useState<number | null>(null);
-  // Other leg of each transfer row, so rows can show "From … To …" in both views.
+  // Other leg of each transfer row, so rows can show "From … To …".
   const transferPeers = useTransferPeers(txns);
-  // Bulk selection exists only in List mode: leaving List drops the selection.
-  useEffect(() => {
-    if (viewMode === "cards") setSelected((prev) => (prev.size === 0 ? prev : new Set()));
-  }, [viewMode]);
+  // Bulk select is a mode of the one list: "Select" shows row checkboxes; leaving it drops the selection.
+  const [selectMode, setSelectMode] = useState(false);
+  // Row detail sheet (a row tap on a narrow or regular screen, or split view off).
+  const [sheetTx, setSheetTx] = useState<Transaction | null>(null);
+  function toggleSelectMode() {
+    if (selectMode) setSelected(new Set());
+    setSelectMode(!selectMode);
+  }
   const [bulkAction, setBulkAction] = useState("");
   const [bulkCategoryId, setBulkCategoryId] = useState("");
   const [bulkAccountId, setBulkAccountId] = useState("");
@@ -339,6 +308,19 @@ export function TransactionsWorkspace({
     filters.categoryId,
     locked ? "" : filters.accountId,
   ].filter(Boolean).length;
+
+  /** Compact sort control: pick a column (default direction desc), or "Default order" to clear. */
+  function chooseSort(v: string | null) {
+    if (!v || v === "none") setSortPref({ columnId: null, direction: null });
+    else setSortPref({ columnId: v as SortableColumnId, direction: sortPref.columnId === v && sortPref.direction ? sortPref.direction : "desc" });
+    setPage(0);
+  }
+
+  function toggleSortDirection() {
+    if (!sortPref.columnId) return;
+    setSortPref({ columnId: sortPref.columnId, direction: sortPref.direction === "asc" ? "desc" : "asc" });
+    setPage(0);
+  }
 
   function clearFilters() {
     setSearchInput("");
@@ -413,6 +395,15 @@ export function TransactionsWorkspace({
       return;
     }
     openEditPage(t);
+  }
+
+  /** Row tap: split view selects the row into the detail pane; otherwise the row's detail sheet opens (queued rows too). */
+  function handleOpenRow(t: Transaction) {
+    if (splitView) {
+      startEdit(t);
+      return;
+    }
+    setSheetTx(t);
   }
 
   /** Full edit page: portfolio rows go to their op page, everything else to /transactions/[id]/edit. */
@@ -742,7 +733,7 @@ export function TransactionsWorkspace({
           <OnboardingTips page="transactions" />
         </>
       )}
-      {/* One toolbar at every size and in both views: Search and filter (opens the search page) + filter count + toggles. */}
+      {/* One toolbar at every size: Search and filter (opens the search page), filter count, split view. */}
       <div className="flex gap-2 items-center">
         <Link
           href={`/transactions/search?${mobileSearchQuery}`}
@@ -777,47 +768,44 @@ export function TransactionsWorkspace({
             <PanelRight className="mr-1.5 h-4 w-4" /> Split view
           </Button>
         )}
-        <ViewModeToggle viewKey="transactions" className={sizeClass === "wide" ? undefined : "ml-auto"} />
       </div>
 
-      {/* Columns, clear-all, export and active-filter chips. Search and filtering itself is the "Search and filter" link above (both views). */}
-      <Card className={cn("bg-muted/30 border-dashed", viewMode === "cards" && "max-regular:hidden")}>
+      {/* Sort, bulk select, export and the active-filter chips. The list has no columns to show or hide. */}
+      <Card className="bg-muted/30 border-dashed">
         <CardContent className="pt-4 space-y-3">
           <div className="flex flex-wrap gap-2 items-center">
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5">
-                    <Columns3 className="h-3.5 w-3.5" />
-                    Columns
-                  </Button>
-                }
-              />
-              <DropdownMenuContent align="start" className="min-w-56 max-h-96 overflow-y-auto">
-                <DropdownMenuGroup>
-                  <DropdownMenuLabel>Visible columns</DropdownMenuLabel>
-                  {columnPrefs
-                    .filter((c) => TOGGLEABLE_COLUMNS.has(c.id))
-                    .map((c) => (
-                      <DropdownMenuCheckboxItem
-                        key={c.id}
-                        checked={c.visible}
-                        onCheckedChange={(v) => toggleCol(c.id, !!v)}
-                        closeOnClick={false}
-                      >
-                        {COLUMN_LABELS[c.id]}
-                      </DropdownMenuCheckboxItem>
-                    ))}
-                  <button
-                    type="button"
-                    onClick={resetColPrefs}
-                    className="w-full text-left px-2 py-1.5 text-xs text-muted-foreground hover:bg-muted/50 transition-colors mt-1 border-t"
-                  >
-                    Reset to default
-                  </button>
-                </DropdownMenuGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Select value={sortPref.columnId ?? "none"} onValueChange={(v) => chooseSort(v)}>
+              <SelectTrigger className="h-8 w-44 text-xs" aria-label="Sort by" data-testid="tx-sort-select">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Default order</SelectItem>
+                {SORTABLE_COLUMN_IDS.map((id) => (
+                  <SelectItem key={id} value={id}>{COLUMN_LABELS[id]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8"
+              onClick={toggleSortDirection}
+              disabled={!sortPref.columnId}
+              aria-label={sortPref.direction === "asc" ? "Sorted ascending. Sort descending" : "Sorted descending. Sort ascending"}
+              title={sortPref.direction === "asc" ? "Ascending" : "Descending"}
+            >
+              <ArrowDownUp className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              variant={selectMode ? "secondary" : "outline"}
+              size="sm"
+              className="h-8 text-xs gap-1.5"
+              aria-pressed={selectMode}
+              onClick={toggleSelectMode}
+            >
+              <ListChecks className="h-3.5 w-3.5" />
+              {selectMode ? "Done selecting" : "Select"}
+            </Button>
             {(filters.id || filters.startDate || filters.endDate || (!locked && filters.accountId) || filters.categoryId || filters.search || filters.portfolioHolding || filters.tag || colFilters.length > 0 || sortPref.columnId) && (
               <button onClick={clearFilters} className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors ml-1">
                 <X className="h-3 w-3" /> Clear all
@@ -834,25 +822,10 @@ export function TransactionsWorkspace({
               {exporting ? "Exporting…" : "Export CSV"}
             </Button>
           </div>
-          {/* Issue #59 — per-column filter chips. Each chip drops just its
-              own filter when clicked; "Clear all" above wipes the lot. */}
-          {(colFilters.length > 0 || sortPref.columnId) && (
+          {/* Active column-filter chips (set from Search and filter). Each chip drops just its own filter. */}
+          {colFilters.length > 0 && (
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs text-muted-foreground">Column filters:</span>
-              {sortPref.columnId && sortPref.direction && (
-                <Badge variant="outline" className="h-7 gap-1.5 pr-1 border-primary/30 bg-primary/5 text-primary">
-                  <span className="font-medium text-xs">
-                    Sort: {COLUMN_LABELS[sortPref.columnId]} {sortPref.direction === "asc" ? "↑" : "↓"}
-                  </span>
-                  <button
-                    onClick={() => setSortPref({ columnId: null, direction: null })}
-                    className="p-0.5 rounded hover:bg-primary/10 transition-colors"
-                    aria-label="Clear sort"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              )}
+              <span className="text-xs text-muted-foreground">Filters:</span>
               {colFilters.map((f) => {
                 const label = COLUMN_LABELS[f.columnId];
                 let summary: string;
@@ -952,149 +925,141 @@ export function TransactionsWorkspace({
       )}
 
       <div className={splitView ? "grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] items-start gap-6" : undefined}>
-        {/* One DataView: Cards (phone rows, paged) or List (bulk select, column filters). Only one is mounted. */}
-        <DataView
-          viewKey="transactions"
-          className="space-y-6"
-          cards={() => (
-            <MobileTxList
-              transactions={txns}
-              isLoading={loading && txns.length === 0}
-              isLoadingMore={isLoadingMore}
-              onEdit={startEdit}
-              showAccountName={!locked}
-              transferPeers={transferPeers}
-            />
-          )}
-          list={() => (
-            <>
-              {/* Bulk selection exists only in List mode. */}
-              {someSelected && (
-                <div className="flex flex-wrap items-center gap-3 px-4 py-2.5 bg-primary/5 border border-primary/20 rounded-lg text-sm">
-                  <span className="font-medium text-primary">{selected.size} selected</span>
-                  <div className="flex items-center gap-2 flex-1 flex-wrap">
-                    <Select value={bulkAction} onValueChange={(v) => { setBulkAction(v ?? ""); resetBulkFields(); }}>
-                      <SelectTrigger className="w-44 h-7 text-xs"><SelectValue placeholder="Choose action…" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="update_category">Change category</SelectItem>
-                        <SelectItem value="update_account">Change account</SelectItem>
-                        <SelectItem value="update_date">Change date</SelectItem>
-                        <SelectItem value="update_payee">Change payee</SelectItem>
-                        <SelectItem value="update_note">Change note</SelectItem>
-                        <SelectItem value="update_tags">Change tags</SelectItem>
-                        <SelectItem value="delete">Delete selected</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {bulkAction === "update_category" && (
-                      <Combobox
-                        value={bulkCategoryId}
-                        onValueChange={(v) => setBulkCategoryId(v)}
-                        items={sortCategory(
-                          categories.map((c): ComboboxItemShape => ({ value: String(c.id), label: `${c.group} — ${c.name}` })),
-                          (c) => Number(c.value),
-                          (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
-                        )}
-                        placeholder="Select category"
-                        searchPlaceholder="Search categories…"
-                        emptyMessage="No matches"
+        {/* The one transactions list at every width: date-grouped mobile rows. Select mode adds checkboxes. */}
+        <div className="min-w-0 space-y-6">
+                {/* Bulk actions for the selected rows (Select mode). */}
+                {someSelected && (
+                  <div className="flex flex-wrap items-center gap-3 px-4 py-2.5 bg-primary/5 border border-primary/20 rounded-lg text-sm">
+                    <span className="font-medium text-primary">{selected.size} selected</span>
+                    <div className="flex items-center gap-2 flex-1 flex-wrap">
+                      <Select value={bulkAction} onValueChange={(v) => { setBulkAction(v ?? ""); resetBulkFields(); }}>
+                        <SelectTrigger className="w-44 h-7 text-xs"><SelectValue placeholder="Choose action…" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="update_category">Change category</SelectItem>
+                          <SelectItem value="update_account">Change account</SelectItem>
+                          <SelectItem value="update_date">Change date</SelectItem>
+                          <SelectItem value="update_payee">Change payee</SelectItem>
+                          <SelectItem value="update_note">Change note</SelectItem>
+                          <SelectItem value="update_tags">Change tags</SelectItem>
+                          <SelectItem value="delete">Delete selected</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {bulkAction === "update_category" && (
+                        <Combobox
+                          value={bulkCategoryId}
+                          onValueChange={(v) => setBulkCategoryId(v)}
+                          items={sortCategory(
+                            categories.map((c): ComboboxItemShape => ({ value: String(c.id), label: `${c.group} — ${c.name}` })),
+                            (c) => Number(c.value),
+                            (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
+                          )}
+                          placeholder="Select category"
+                          searchPlaceholder="Search categories…"
+                          emptyMessage="No matches"
+                          size="sm"
+                          className="h-7 w-44 text-xs"
+                        />
+                      )}
+                      {bulkAction === "update_account" && (
+                        <Combobox
+                          value={bulkAccountId}
+                          onValueChange={(v) => setBulkAccountId(v)}
+                          // Bulk "move to account" DESTINATION — archived accounts are
+                          // excluded: this writes new rows into whatever you pick, and an
+                          // archived account is one you've said you're done using.
+                          items={sortAccount(
+                            accounts
+                              .filter((a) => a.archived !== true)
+                              .map((a): ComboboxItemShape => ({ value: String(a.id), label: a.name })),
+                            (a) => Number(a.value),
+                            (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
+                          )}
+                          placeholder="Select account"
+                          searchPlaceholder="Search accounts…"
+                          emptyMessage="No matches"
+                          size="sm"
+                          className="h-7 w-44 text-xs"
+                        />
+                      )}
+                      {bulkAction === "update_date" && (
+                        <Input type="date" className="h-7 text-xs w-36" value={bulkDate} onChange={(e) => setBulkDate(e.target.value)} />
+                      )}
+                      {bulkAction === "update_payee" && (
+                        <Input className="h-7 text-xs w-44" placeholder="New payee" value={bulkPayee} onChange={(e) => setBulkPayee(e.target.value)} />
+                      )}
+                      {bulkAction === "update_note" && (
+                        <Input className="h-7 text-xs w-44" placeholder="New note" value={bulkNote} onChange={(e) => setBulkNote(e.target.value)} />
+                      )}
+                      {bulkAction === "update_tags" && (
+                        <Input className="h-7 text-xs w-44" placeholder="New tags" value={bulkTags} onChange={(e) => setBulkTags(e.target.value)} />
+                      )}
+                      <Button
                         size="sm"
-                        className="h-7 w-44 text-xs"
-                      />
-                    )}
-                    {bulkAction === "update_account" && (
-                      <Combobox
-                        value={bulkAccountId}
-                        onValueChange={(v) => setBulkAccountId(v)}
-                        // Bulk "move to account" DESTINATION — archived accounts are
-                        // excluded: this writes new rows into whatever you pick, and an
-                        // archived account is one you've said you're done using.
-                        items={sortAccount(
-                          accounts
-                            .filter((a) => a.archived !== true)
-                            .map((a): ComboboxItemShape => ({ value: String(a.id), label: a.name })),
-                          (a) => Number(a.value),
-                          (a, z) => (a.label ?? "").localeCompare(z.label ?? ""),
-                        )}
-                        placeholder="Select account"
-                        searchPlaceholder="Search accounts…"
-                        emptyMessage="No matches"
-                        size="sm"
-                        className="h-7 w-44 text-xs"
-                      />
-                    )}
-                    {bulkAction === "update_date" && (
-                      <Input type="date" className="h-7 text-xs w-36" value={bulkDate} onChange={(e) => setBulkDate(e.target.value)} />
-                    )}
-                    {bulkAction === "update_payee" && (
-                      <Input className="h-7 text-xs w-44" placeholder="New payee" value={bulkPayee} onChange={(e) => setBulkPayee(e.target.value)} />
-                    )}
-                    {bulkAction === "update_note" && (
-                      <Input className="h-7 text-xs w-44" placeholder="New note" value={bulkNote} onChange={(e) => setBulkNote(e.target.value)} />
-                    )}
-                    {bulkAction === "update_tags" && (
-                      <Input className="h-7 text-xs w-44" placeholder="New tags" value={bulkTags} onChange={(e) => setBulkTags(e.target.value)} />
-                    )}
-                    <Button
-                      size="sm"
-                      className="h-7 text-xs"
-                      onClick={executeBulkAction}
-                      disabled={isBulkApplyDisabled}
-                      variant={bulkAction === "delete" ? "destructive" : "default"}
-                    >
-                      {bulkProcessing ? "Processing…" : "Apply"}
-                    </Button>
+                        className="h-7 text-xs"
+                        onClick={executeBulkAction}
+                        disabled={isBulkApplyDisabled}
+                        variant={bulkAction === "delete" ? "destructive" : "default"}
+                      >
+                        {bulkProcessing ? "Processing…" : "Apply"}
+                      </Button>
+                    </div>
+                    <button aria-label="Clear selection" onClick={() => setSelected(new Set())} className="text-muted-foreground hover:text-foreground transition-colors">
+                      <X className="h-4 w-4" />
+                    </button>
                   </div>
-                  <button aria-label="Clear selection" onClick={() => setSelected(new Set())} className="text-muted-foreground hover:text-foreground transition-colors">
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              )}
-
-              <Card>
-                <CardContent className="p-0">
-                  {/* Table: extracted to <TransactionTable> (FINLYNQ-111 Phase 2). */}
-                  <TransactionTable
-                    loading={loading}
-                    txns={txns}
-                    columnPrefs={columnPrefs}
-                    accounts={accounts}
-                    categories={categories}
-                    selected={selected}
-                    allSelected={allSelected}
-                    draggingCol={draggingCol}
-                    sortPref={sortPref}
-                    filters={filters}
-                    setFilters={(f) => setFilters(f as typeof filters)}
-                    setPage={setPage}
-                    toggleAll={toggleAll}
-                    toggleOne={toggleOne}
-                    cycleSort={cycleSort}
-                    findColFilter={findColFilter}
-                    setColFilter={setColFilter}
-                    onColDragStart={onColDragStart}
-                    onColDragOver={onColDragOver}
-                    onColDragEnd={onColDragEnd}
-                    startEdit={startEdit}
-                    transferPeers={transferPeers}
-                    openSplitDialog={openSplitDialog}
-                    confirmDelete={confirmDelete}
-                    startDuplicate={startDuplicate}
-                  />
-                </CardContent>
-              </Card>
-            </>
+                )}
+          {selectMode && txns.length > 0 && (
+            <label className="flex h-11 items-center gap-2 px-1 text-sm">
+              <input
+                type="checkbox"
+                title="Select all"
+                checked={allSelected}
+                onChange={toggleAll}
+                className="h-4 w-4 rounded border-input cursor-pointer"
+              />
+              <span>Select all</span>
+            </label>
           )}
-        />
-        {splitView && (
-          <div className="sticky top-4">
-            <TransactionDetailPane
-              transaction={txns.find((x) => x.id === splitSelectedId) ?? null}
-              onEdit={openEditPage}
-              onClose={() => setSplitSelectedId(null)}
-            />
-          </div>
-        )}
+          <MobileTxList
+            transactions={txns}
+            isLoading={loading && txns.length === 0}
+            isLoadingMore={isLoadingMore}
+            onOpen={handleOpenRow}
+            showAccountName={!locked}
+            transferPeers={transferPeers}
+            emptyState={
+              <EmptyState
+                icon={Receipt}
+                title="No transactions yet"
+                description="Add your first transaction or import bank statements to get started."
+                action={{ label: "Import data", href: "/import" }}
+              />
+            }
+            selection={selectMode ? { selected, onToggle: toggleOne } : undefined}
+          />
+        </div>
+          {splitView && (
+            <div className="sticky top-4">
+              <TransactionDetailPane
+                transaction={txns.find((x) => x.id === splitSelectedId) ?? null}
+                onEdit={openEditPage}
+                onClose={() => setSplitSelectedId(null)}
+              />
+            </div>
+          )}
       </div>
+
+      {sheetTx && (
+        <TransactionSheet
+          tx={sheetTx}
+          peer={transferPeers.get(sheetTx.id) ?? null}
+          onClose={() => setSheetTx(null)}
+          onEdit={startEdit}
+          onDuplicate={startDuplicate}
+          onSplit={openSplitDialog}
+          onDelete={confirmDelete}
+        />
+      )}
 
       {/* Infinite scroll trigger sentinel at the bottom of the table */}
       <div

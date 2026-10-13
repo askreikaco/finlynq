@@ -6,14 +6,11 @@ import { readFileSync } from "fs";
 const PALETTE = /\b(bg|text|border|ring|from|to|via|fill|stroke|outline|divide|ring-offset|shadow|decoration|accent|caret|placeholder|border-[trblxy]|border-[se])-(slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-[0-9]{2,3}\b/g;
 const FILES: string[] = [
   "src/app/(app)/transactions/page.tsx",
-  "src/app/(app)/transactions/_components/transaction-table.tsx",
+  "src/app/(app)/transactions/_components/transaction-sheet.tsx",
   "src/app/(app)/transactions/_components/transactions-workspace.tsx",
   "src/app/(app)/transactions/_components/transaction-split-form.tsx",
 ];
 const ARIA: [string, string, number][] = [
-  ["src/app/(app)/transactions/_components/transaction-table.tsx", "aria-label=\"Edit\"", 1],
-  ["src/app/(app)/transactions/_components/transaction-table.tsx", "aria-label=\"Split\"", 1],
-  ["src/app/(app)/transactions/_components/transaction-table.tsx", "aria-label=\"Delete\"", 1],
   ["src/app/(app)/transactions/_components/transactions-workspace.tsx", "aria-label=\"Clear selection\"", 1],
 ];
 // Split form (S-INT): rows are driven by the Splits count, so there is no per-row Remove control.
@@ -22,7 +19,6 @@ const SPLIT_FORM = "src/app/(app)/transactions/_components/transaction-split-for
 const SPLIT_COUNT = "src/components/transactions/split-rows/split-count-row.tsx";
 const SKELETON: [string, string, number][] = [
   ["src/app/(app)/transactions/page.tsx", "bg-muted animate-pulse", 7],
-  ["src/app/(app)/transactions/_components/transaction-table.tsx", "bg-muted animate-pulse", 7],
 ];
 
 describe("W6-07 design-system sweep", () => {

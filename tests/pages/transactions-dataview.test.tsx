@@ -1,14 +1,15 @@
 /**
  * @vitest-environment jsdom
  */
-// Transactions workspace on one adaptive UI (G2-09): one toolbar, one DataView.
-// Cards = phone rows (paged, edit on tap). List = TransactionTable (bulk select, column filters).
-// Only the selected view is mounted. Size class and session are controlled per test.
+// Transactions: one list at every width (batch 3). The list is date-grouped mobile ListRows, never a
+// <table>. Row tap opens the row's detail sheet (Edit / Duplicate / Split / Delete). Select mode adds
+// bulk checkboxes. Sort is a compact control, not column headers. Only the split-view detail pane is
+// wide-only, and it is opt-in.
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import * as React from "react";
 import * as fs from "fs";
 import * as path from "path";
-import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent, waitFor, within } from "@testing-library/react";
 import type { SizeClass } from "@/components/ui/size-class";
 
 const H = vi.hoisted(() => {
@@ -18,6 +19,7 @@ const H = vi.hoisted(() => {
     push: vi.fn(),
     IDENT: (items: any) => items,
     SORT: { columnId: "date", direction: "desc" },
+    SET_SORT: vi.fn(),
     LK: { accounts: [{ id: 1, name: "A", currency: "USD", type: "A", group: "g", archived: false }], categories: [{ id: 4, name: "C", type: "E", group: "g" }], holdings: [] as any[] },
     RES: { txns: TXNS, total: 3, loading: false, limit: 50, loadTxns: () => {}, loadNextPage: () => {}, resetPage: () => {}, page: 1, hasMore: false, isLoadingMore: false, loadMoreError: false, loadError: false },
     IO: { cbs: [] as Array<(e: any[]) => void> },
@@ -44,23 +46,20 @@ vi.mock("@/components/dropdown-order-provider", () => ({ useDropdownOrder: () =>
 vi.mock("@/components/onboarding-tips", () => ({ OnboardingTips: () => null }));
 const ACTIVE = ["USD"];
 vi.mock("@/lib/hooks/useActiveCurrencies", () => ({ useActiveCurrencies: () => ACTIVE }));
-vi.mock("@/app/(app)/transactions/_hooks/use-tx-prefs", async () => {
-  const cols = (await import("@/lib/transactions/columns")).DEFAULT_COLUMNS;
-  const colPrefs = { columnPrefs: cols, setColumnPrefs: () => {}, resetColPrefs: () => {} };
-  const sortv = { sortPref: H.SORT, setSortPref: () => {}, cycleSort: () => {} };
+vi.mock("@/app/(app)/transactions/_hooks/use-tx-prefs", () => {
+  const sortv = { sortPref: H.SORT, setSortPref: H.SET_SORT, cycleSort: () => {} };
   const filt = { colFilters: [], setColFilters: () => {}, findColFilter: () => undefined, setColFilter: () => {} };
-  return { useLookups: () => H.LK, useTxColumnPrefs: () => colPrefs, useTxSortPref: () => sortv, useTxFilterPrefs: () => filt };
+  return { useLookups: () => H.LK, useTxSortPref: () => sortv, useTxFilterPrefs: () => filt };
 });
 vi.mock("@/app/(app)/transactions/_hooks/use-transactions", () => ({ useTransactions: () => H.RES }));
 
 import { TransactionsWorkspace } from "@/app/(app)/transactions/_components/transactions-workspace";
-import { VIEW_MODE_STORAGE_KEY } from "@/components/adaptive/view-mode";
 
 const SRC_DIR = path.resolve(__dirname, "../../src");
 const read = (rel: string) => fs.readFileSync(path.join(SRC_DIR, rel), "utf-8");
 const WORKSPACE = "app/(app)/transactions/_components/transactions-workspace.tsx";
-const TABLE = "app/(app)/transactions/_components/transaction-table.tsx";
-const CARDS = "components/transactions/mobile-tx-list.tsx";
+const SHEET = "app/(app)/transactions/_components/transaction-sheet.tsx";
+const LIST = "components/transactions/mobile-tx-list.tsx";
 
 class FakeIntersectionObserver {
   constructor(cb: (e: any[]) => void) { H.IO.cbs.push(cb); }
@@ -76,6 +75,7 @@ beforeEach(() => {
   session.userId = `txn-dataview-user-${uid}`;
   size.current = "compact";
   H.push.mockClear();
+  H.SET_SORT.mockClear();
   H.IO.cbs.length = 0;
   Object.assign(H.RES, { hasMore: false, loadNextPage: () => {}, loading: false, isLoadingMore: false, loadMoreError: false, txns: H.RES.txns });
   vi.stubGlobal("IntersectionObserver", FakeIntersectionObserver);
@@ -91,160 +91,150 @@ afterEach(() => {
   try { localStorage.clear(); } catch { /* storage may be unavailable */ }
 });
 
-function mountedViews(): string[] {
-  return Array.from(document.querySelectorAll("[data-view]")).map((el) => el.getAttribute("data-view") ?? "");
-}
-function storedPrefs(): Record<string, string> {
-  const raw = localStorage.getItem(`${VIEW_MODE_STORAGE_KEY}:${session.userId}`);
-  return raw ? JSON.parse(raw) : {};
-}
-function toggle(name: "Cards" | "List") {
-  fireEvent.click(screen.getByRole("radio", { name: new RegExp(name) }));
+/** The mobile list rows (ListRow buttons or checkbox rows), not the sheet or other buttons. */
+function listRows(): HTMLElement[] {
+  return Array.from(document.querySelectorAll<HTMLElement>('[data-slot="list-row"]'));
 }
 
-describe("Transactions: one DataView, one toolbar", () => {
-  it("compact defaults to Cards: exactly one [data-view=cards] mounted, no table", () => {
-    size.current = "compact";
-    render(<TransactionsWorkspace />);
-    expect(mountedViews()).toEqual(["cards"]);
-    expect(screen.queryByTitle("Select all")).toBeNull();
-  });
-
-  it("regular and wide default to List: exactly one [data-view=list] mounted", () => {
-    for (const s of ["regular", "wide"] as const) {
-      cleanup();
+describe("Transactions: one list at every width", () => {
+  for (const s of ["compact", "regular", "wide"] as const) {
+    it(`${s}: renders the date-grouped mobile rows, no table, no Cards/List toggle`, () => {
       size.current = s;
-      render(<TransactionsWorkspace />);
-      expect(mountedViews()).toEqual(["list"]);
-      expect(screen.getByTitle("Select all")).toBeTruthy();
-      cleanup();
-    }
-  });
+      const { container } = render(<TransactionsWorkspace />);
+      expect(container.querySelector("table")).toBeNull();
+      expect(screen.queryAllByRole("radiogroup", { name: "View" })).toHaveLength(0);
+      expect(container.querySelectorAll("[data-view]")).toHaveLength(0);
+      expect(listRows()).toHaveLength(3);
+      expect(container.querySelectorAll('[data-slot="section-card"]').length).toBeGreaterThan(0);
+    });
+  }
 
-  it("the page has one Cards/List control and the toggle switches the mounted view both ways", async () => {
-    size.current = "compact";
-    render(<TransactionsWorkspace />);
-    expect(screen.getAllByRole("radiogroup", { name: "View" })).toHaveLength(1);
-    expect(screen.getAllByRole("radio")).toHaveLength(2);
-
-    toggle("List");
-    await waitFor(() => expect(mountedViews()).toEqual(["list"]));
-    expect(screen.getByRole("radio", { name: /List/ }).getAttribute("aria-checked")).toBe("true");
-
-    toggle("Cards");
-    await waitFor(() => expect(mountedViews()).toEqual(["cards"]));
-  });
-
-  it("the choice persists per user and per size class: a List choice on compact does not change wide", async () => {
-    size.current = "compact";
-    render(<TransactionsWorkspace />);
-    toggle("List");
-    await waitFor(() => expect(storedPrefs()).toEqual({ "transactions:compact": "list" }));
-    cleanup();
-
+  it("no column headers, column menu or per-column filter popovers at any width", () => {
     size.current = "wide";
     render(<TransactionsWorkspace />);
-    expect(mountedViews()).toEqual(["list"]);
-    toggle("Cards");
-    await waitFor(() => expect(storedPrefs()["transactions:wide"]).toBe("cards"));
-    expect(storedPrefs()["transactions:compact"]).toBe("list");
-    cleanup();
+    expect(screen.queryByRole("button", { name: /Columns/ })).toBeNull();
+    expect(screen.queryByText("Visible columns")).toBeNull();
+    expect(screen.queryByTitle("Click to sort")).toBeNull();
+  });
 
+  it("the compact sort control sets the sort column and the direction toggle flips it", () => {
     size.current = "compact";
     render(<TransactionsWorkspace />);
-    expect(mountedViews()).toEqual(["list"]);
+    expect(screen.getByTestId("tx-sort-select")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Sorted descending. Sort ascending" }));
+    expect(H.SET_SORT).toHaveBeenLastCalledWith({ columnId: "date", direction: "asc" });
   });
 });
 
-describe("Transactions: bulk selection and paging per view", () => {
-  it("bulk select (row checkboxes) exists only in List; leaving List clears the selection", async () => {
+describe("Transactions: row tap opens the detail sheet", () => {
+  it("compact: a row tap opens the sheet with the row's actions, and Edit opens the edit page with returnTo", () => {
+    size.current = "compact";
+    render(<TransactionsWorkspace />);
+    fireEvent.click(listRows()[0]);
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    expect(H.push).toHaveBeenCalledWith(expect.stringMatching(/^\/transactions\/\d+\/edit\?returnTo=/));
+  });
+
+  it("regular: the same sheet, with Delete wired to the confirm flow (no direct navigation)", () => {
     size.current = "regular";
     render(<TransactionsWorkspace />);
+    fireEvent.click(listRows()[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+    expect(H.push).not.toHaveBeenCalled();
+  });
+});
+
+describe("Transactions: bulk selection is a mode of the one list", () => {
+  it("row checkboxes appear only while Select is on; Done selecting clears the selection", () => {
+    size.current = "regular";
+    render(<TransactionsWorkspace />);
+    expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
+
+    fireEvent.click(screen.getByRole("button", { name: "Select" }));
     const rowBoxes = screen.getAllByRole("checkbox").filter((el) => el.getAttribute("title") !== "Select all");
     expect(rowBoxes.length).toBe(3);
     fireEvent.click(rowBoxes[0]);
     expect(screen.getByText("1 selected")).toBeTruthy();
 
-    toggle("Cards");
-    await waitFor(() => expect(mountedViews()).toEqual(["cards"]));
+    fireEvent.click(screen.getByRole("button", { name: "Done selecting" }));
     expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
     expect(screen.queryByText("1 selected")).toBeNull();
-
-    toggle("List");
-    await waitFor(() => expect(mountedViews()).toEqual(["list"]));
-    expect(screen.queryByText("1 selected")).toBeNull();
   });
 
-  it("Cards has no bulk selection controls at all", () => {
+  it("Select all selects every row; the bulk bar offers the bulk actions", () => {
     size.current = "compact";
     render(<TransactionsWorkspace />);
-    expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
+    fireEvent.click(screen.getByRole("button", { name: "Select" }));
+    fireEvent.click(screen.getByTitle("Select all"));
+    expect(screen.getByText("3 selected")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Apply" })).toBeTruthy();
   });
 
-  it("load-more: the one sentinel loads the next page in Cards and in List", async () => {
-    const loadNextPage = vi.fn();
-    Object.assign(H.RES, { hasMore: true, loadNextPage });
-    size.current = "compact";
-    const { unmount } = render(<TransactionsWorkspace />);
-    H.IO.cbs[H.IO.cbs.length - 1]([{ isIntersecting: true }]);
-    expect(loadNextPage).toHaveBeenCalledTimes(1);
-    unmount();
-    cleanup();
-
-    size.current = "regular";
-    render(<TransactionsWorkspace />);
-    expect(mountedViews()).toEqual(["list"]);
-    H.IO.cbs[H.IO.cbs.length - 1]([{ isIntersecting: true }]);
-    expect(loadNextPage).toHaveBeenCalledTimes(2);
-  });
-
-  it("the load-more sentinel sits outside the DataView, so paging does not depend on the view", () => {
-    for (const s of ["compact", "regular"] as const) {
+  it("Select mode is off by default and in every size class (no checkbox on load)", () => {
+    for (const s of ["compact", "regular", "wide"] as const) {
       cleanup();
       size.current = s;
       render(<TransactionsWorkspace />);
-      const sentinel = screen.getByTestId("infinite-scroll-trigger");
-      expect(sentinel.closest("[data-view]")).toBeNull();
-      expect(mountedViews()).toHaveLength(1);
+      expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
+      cleanup();
     }
   });
 });
 
-describe("Transactions: edit navigation in both views", () => {
-  it("tapping a Cards row opens the edit page with returnTo", () => {
+describe("Transactions: paging and split view", () => {
+  it("the one load-more sentinel sits outside the list, and loads the next page", () => {
+    const loadNextPage = vi.fn();
+    Object.assign(H.RES, { hasMore: true, loadNextPage });
     size.current = "compact";
     render(<TransactionsWorkspace />);
-    fireEvent.click(screen.getAllByRole("button", { name: /^Edit / })[0]);
-    expect(H.push).toHaveBeenCalledWith(expect.stringMatching(/^\/transactions\/\d+\/edit\?returnTo=/));
-    expect(screen.queryByRole("dialog")).toBeNull();
+    const sentinel = screen.getByTestId("infinite-scroll-trigger");
+    expect(sentinel.closest('[data-slot="section-card"]')).toBeNull();
+    H.IO.cbs[H.IO.cbs.length - 1]([{ isIntersecting: true }]);
+    expect(loadNextPage).toHaveBeenCalledTimes(1);
   });
 
-  it("the List row Edit control opens the same edit page", () => {
-    size.current = "regular";
+  it("split view is wide-only and opt-in; the Split view toggle is absent on narrow screens", () => {
+    size.current = "compact";
+    const { unmount } = render(<TransactionsWorkspace />);
+    expect(screen.queryByTestId("tx-split-toggle")).toBeNull();
+    unmount();
+    cleanup();
+    size.current = "wide";
     render(<TransactionsWorkspace />);
-    fireEvent.click(screen.getAllByTitle("Edit")[0]);
-    expect(H.push).toHaveBeenCalledWith(expect.stringMatching(/^\/transactions\/\d+\/edit\?returnTo=/));
+    expect(screen.getByTestId("tx-split-toggle").getAttribute("aria-pressed")).toBe("false");
   });
 });
 
-describe("Transactions: no size-class wrappers, no viewport tokens in the views", () => {
+describe("Transactions: static guards for the one-layout rule", () => {
   const TOKEN = /(?<![\w-])(max-)?(sm|md|lg|xl|2xl):/;
 
-  it("the workspace has no CompactOnly/FromMd wrappers and one DataView and one toggle", () => {
+  it("the workspace mounts no DataView, no ViewModeToggle, no table and no size-class wrappers", () => {
     const src = read(WORKSPACE);
     expect(src.match(/<(CompactOnly|FromMd)\b/g) ?? []).toEqual([]);
-    expect(src.match(/<DataView\b/g)).toHaveLength(1);
-    expect(src.match(/<ViewModeToggle\b/g)).toHaveLength(1);
-    expect(src).toContain('viewKey="transactions"');
+    expect(src).not.toMatch(/<DataView\b/);
+    expect(src).not.toMatch(/<ViewModeToggle\b/);
+    expect(src).not.toMatch(/<Table\b/);
+    expect(src).not.toContain("transaction-table");
   });
 
-  it("the List view, the table and the Cards list carry no breakpoint tokens", () => {
-    for (const rel of [WORKSPACE, TABLE, CARDS]) {
+  it("the old table file is gone; the list and the sheet are the only row components", () => {
+    expect(fs.existsSync(path.join(SRC_DIR, "app/(app)/transactions/_components/transaction-table.tsx"))).toBe(false);
+    expect(read(LIST)).toContain("<SectionCard");
+    expect(read(SHEET)).toContain("<DetailSheet");
+  });
+
+  it("the list, the sheet and the workspace carry no breakpoint tokens", () => {
+    for (const rel of [WORKSPACE, SHEET, LIST]) {
       expect(read(rel).match(new RegExp(TOKEN.source, "g")) ?? [], rel).toEqual([]);
     }
   });
 
-  it("the table keeps its own horizontal scroller (no page-level overflow)", () => {
-    expect(read(TABLE)).toContain('containerClassName="overflow-x-auto"');
+  it("the list keeps the offline Waiting-to-sync badge and the Search and filter link", async () => {
+    expect(read(LIST)).toContain("<PendingSyncBadge mark={t.pendingSync} />");
+    size.current = "compact";
+    render(<TransactionsWorkspace />);
+    await waitFor(() => expect(screen.getByText("Search and filter").closest("a")).toBeTruthy());
+    expect(within(document.body).getByText("Export CSV")).toBeTruthy();
   });
 });

@@ -1,22 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatCurrency, formatDate } from "@/lib/currency";
+import { Amount, DetailSheet, ListRow, SectionCard, SectionLabel } from "@/components/mobile";
 import type { Transaction } from "@/app/(app)/transactions/_types";
 
 const PAGE_SIZE = 50;
 
 /**
- * Investment transactions (scope=investment) on the Investment page.
- * Compact table: date, account, holding, type / quantity, amount.
+ * Investment transactions (scope=investment) on the Investment page, as native rows (no table at any width).
+ * Each row: holding | account · type, and the amount; a tap opens the row's detail sheet.
  * `refreshKey` re-fetches when the parent reloads its holdings data.
  */
 export function InvestmentTransactions({ refreshKey }: { refreshKey?: unknown }) {
   const [rows, setRows] = useState<Transaction[] | null>(null);
   const [total, setTotal] = useState(0);
   const [error, setError] = useState(false);
+  const [open, setOpen] = useState<Transaction | null>(null);
 
   useEffect(() => {
     const ctrl = new AbortController();
@@ -39,51 +39,49 @@ export function InvestmentTransactions({ refreshKey }: { refreshKey?: unknown })
   }, [refreshKey]);
 
   return (
-    <Card data-slot="investment-transactions">
-      <CardHeader>
-        <CardTitle>Transactions</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {rows === null ? (
-          <p className="text-sm text-muted-foreground">Loading…</p>
-        ) : error ? (
-          <p className="text-sm text-muted-foreground">Couldn&apos;t load investment transactions.</p>
-        ) : rows.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No investment transactions yet.</p>
-        ) : (
-          <>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Account</TableHead>
-                  <TableHead>Holding</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead className="text-right">Quantity</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map((t) => (
-                  <TableRow key={t.id}>
-                    <TableCell className="whitespace-nowrap">{formatDate(t.date)}</TableCell>
-                    <TableCell>{t.accountAlias || t.accountName}</TableCell>
-                    <TableCell>{t.portfolioHolding ?? "—"}</TableCell>
-                    <TableCell>{t.kind ?? t.categoryName ?? "—"}</TableCell>
-                    <TableCell className="text-right tabular-nums">{t.quantity ?? "—"}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatCurrency(t.amount, t.currency)}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            {total > rows.length && (
-              <p className="mt-2 text-xs text-muted-foreground">
-                Showing {rows.length} of {total}.
-              </p>
-            )}
-          </>
-        )}
-      </CardContent>
-    </Card>
+    <section data-slot="investment-transactions" className="space-y-2">
+      <SectionLabel>Transactions</SectionLabel>
+      {rows === null ? (
+        <p className="text-sm text-muted-foreground">Loading…</p>
+      ) : error ? (
+        <p className="text-sm text-muted-foreground">Couldn&apos;t load investment transactions.</p>
+      ) : rows.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No investment transactions yet.</p>
+      ) : (
+        <>
+          <SectionCard padded={false} className="divide-y divide-border/50 px-3">
+            {rows.map((t) => (
+              <ListRow
+                key={t.id}
+                title={t.portfolioHolding ?? t.kind ?? t.categoryName ?? "—"}
+                subtitle={`${formatDate(t.date)} · ${t.accountAlias || t.accountName} · ${t.kind ?? t.categoryName ?? "—"}`}
+                value={<Amount value={t.amount} currency={t.currency} size="md" tone="none" />}
+                onPress={() => setOpen(t)}
+              />
+            ))}
+          </SectionCard>
+          {total > rows.length && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Showing {rows.length} of {total}.
+            </p>
+          )}
+        </>
+      )}
+      {open && (
+        <DetailSheet
+          open
+          onOpenChange={(o) => { if (!o) setOpen(null); }}
+          title={open.portfolioHolding ?? open.kind ?? open.categoryName ?? "Transaction"}
+          description={formatDate(open.date)}
+          items={[
+            { label: "Account", value: open.accountAlias || open.accountName },
+            { label: "Type", value: open.kind ?? open.categoryName ?? "—" },
+            { label: "Quantity", value: open.quantity != null ? String(open.quantity) : "—" },
+            { label: "Amount", value: formatCurrency(open.amount, open.currency) },
+            { label: "Note", value: open.note || "—" },
+          ]}
+        />
+      )}
+    </section>
   );
 }

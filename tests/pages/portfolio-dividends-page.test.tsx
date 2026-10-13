@@ -100,15 +100,16 @@ describe("Dividend income page (report page, not a dialog)", () => {
     expect(within(dlg).getByLabelText("Tax year")).toBeTruthy();
   });
 
-  it("renders one structure per size class: no table and no toolbar on compact, no ListRow on regular", async () => {
+  it("one list at every size class: no table on compact or regular; the group-by control is always there", async () => {
     render(<DividendsPage />);
     await screen.findByRole("button", { name: "2026, 3 dividend rows" });
     expect(document.querySelector("table")).toBeNull();
     cleanup();
     size.cls = "regular";
     render(<DividendsPage />);
-    await screen.findByRole("table");
-    expect(document.querySelector("[data-slot=list-row]")).toBeNull();
+    await screen.findByRole("button", { name: "2026, 3 dividend rows" });
+    expect(document.querySelector("table")).toBeNull();
+    expect(document.querySelector("[data-slot=list-row]")).not.toBeNull();
     expect(screen.queryByRole("button", { name: "Filters" })).toBeNull();
     expect(screen.getAllByRole("group", { name: "Group by" })).toHaveLength(1);
   });
@@ -116,7 +117,7 @@ describe("Dividend income page (report page, not a dialog)", () => {
   it("a group-by chip refetches with the new groupBy and keeps the native pivot", async () => {
     size.cls = "regular";
     render(<DividendsPage />);
-    await screen.findByRole("table");
+    await screen.findByRole("button", { name: "2026, 3 dividend rows" });
     const groupBy = screen.getByRole("group", { name: "Group by" });
     fireEvent.click(within(groupBy).getByRole("button", { name: "Holding" }));
     await waitFor(() => expect(urls.some((u) => u.includes("groupBy=holding") && u.includes("pivot=1"))).toBe(true));
@@ -130,14 +131,11 @@ describe("Dividend income page (report page, not a dialog)", () => {
     expect(screen.getByRole("link", { name: "Record a dividend" }).getAttribute("href")).toBe("/portfolio/new?op=income-expense");
   });
 
-  it("md+ table keeps a sticky header in a scroll box", async () => {
+  it("the list scrolls with the page: no sticky table header or max-height box at any width", async () => {
     size.cls = "regular";
-    render(<DividendsPage />);
-    await screen.findByRole("table");
-    const head = document.querySelector("thead") as HTMLElement;
-    expect(head.className).toContain("sticky");
-    const container = head.closest("[data-slot=table-container]") as HTMLElement;
-    expect(container.className).toMatch(/max-h-\[70dvh\]/);
-    expect(container.className).toContain("overflow-y-auto");
+    const { container } = render(<DividendsPage />);
+    await screen.findByRole("button", { name: "2026, 3 dividend rows" });
+    expect(container.querySelector("thead")).toBeNull();
+    expect(container.querySelector("[data-slot=table-container]")).toBeNull();
   });
 });

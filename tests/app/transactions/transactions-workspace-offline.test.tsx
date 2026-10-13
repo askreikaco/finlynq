@@ -69,6 +69,11 @@ beforeEach(() => {
   (window as any).matchMedia ??= () => ({ matches: false, addListener(){}, removeListener(){}, addEventListener(){}, removeEventListener(){} });
 });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
+/** Taps a list row (opens its detail sheet), then the sheet action. The list has no table or per-row buttons. */
+function openRowAction(index: number, action: string) {
+  fireEvent.click(document.querySelectorAll<HTMLElement>('[data-slot="list-row"]')[index]);
+  fireEvent.click(screen.getByRole("button", { name: action }));
+}
 class FakeIntersectionObserver {
   constructor(cb: (e: any[]) => void) { H.IO.cbs.push(cb); }
   observe() {} unobserve() {} disconnect() {} takeRecords() { return []; }
@@ -82,7 +87,7 @@ describe("flag off", () => {
     expect(screen.queryByTestId("tx-waiting-sync")).toBeNull();
     expect(screen.queryByTestId("tx-sync-failed")).toBeNull();
     expect(screen.queryByTestId("tx-pending-deletes")).toBeNull();
-    fireEvent.click(screen.getAllByTitle("Delete")[0]);
+    openRowAction(0, "Delete");
     const dlg = await screen.findByRole("dialog");
     fireEvent.click(within(dlg).getByRole("button", { name: "Delete" }));
     expect((await within(dlg).findByRole("alert")).textContent).toContain("boom");
@@ -99,7 +104,7 @@ describe("queued rows in the list", () => {
       deletes: { 2: { opId: "d1", ...entry } },
     });
     render(<TransactionsWorkspace />);
-    const rows = screen.getAllByRole("row").slice(1);
+    const rows = Array.from(document.querySelectorAll<HTMLElement>('[data-slot="list-row"]'));
     expect(rows).toHaveLength(2);
     expect(within(rows[0]).getByText("Queued cafe")).toBeTruthy();
     expect(within(rows[0]).getByTestId("tx-waiting-sync").textContent).toBe("Waiting to sync");
@@ -107,9 +112,11 @@ describe("queued rows in the list", () => {
     expect(within(rows[1]).getByTestId("tx-waiting-sync")).toBeTruthy();
     expect(screen.queryByText("Linked")).toBeNull();
     expect(screen.getByTestId("tx-pending-deletes").textContent).toContain("1 deleted transaction is hidden until it syncs.");
-    // queued rows cannot be bulk-selected or split
-    expect(within(rows[0]).queryByRole("checkbox")).toBeNull();
-    expect(within(rows[0]).queryByLabelText("Split")).toBeNull();
+    // queued rows cannot be bulk-selected or split: the sheet has Edit and Delete only
+    expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
+    fireEvent.click(rows[0]);
+    expect(screen.queryByRole("button", { name: "Split" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Delete" })).toBeTruthy();
   });
 
   it("List view: a failed entry shows Sync failed linking to Settings > Data", () => {
@@ -122,7 +129,7 @@ describe("queued rows in the list", () => {
     expect(screen.getByText("Plain")).toBeTruthy(); // server value kept
   });
 
-  it("Cards view: the same rows and badges from the same list", () => {
+  it("Row view (compact and regular): the same rows and badges from the same list", () => {
     SIZE.current = "compact";
     H.ACTIVE = true;
     H.PEND = pend({
@@ -136,17 +143,17 @@ describe("queued rows in the list", () => {
     expect(screen.queryByText("Linked")).toBeNull();
     expect(screen.getAllByTestId("tx-waiting-sync")).toHaveLength(3); // create + edit + the delete notice
     // tapping a queued create reopens the entry screen from the outbox; a failed one goes to Settings > Data
-    fireEvent.click(screen.getByLabelText("Edit Queued cafe"));
+    openRowAction(0, "Edit");
     expect(push).toHaveBeenCalledWith("/transactions/new?queued=op1");
   });
 
-  it("Cards view: tapping a failed row opens Settings > Data", () => {
+  it("a failed row: its sheet's Edit opens Settings > Data", () => {
     SIZE.current = "compact";
     H.ACTIVE = true;
     H.PEND = pend({ deletes: { 1: { opId: "d1", status: "failed", failReason: "Row changed on the server" } } });
     render(<TransactionsWorkspace />);
     expect(screen.getAllByTestId("tx-sync-failed")).toHaveLength(1);
-    fireEvent.click(screen.getByLabelText("Edit Plain"));
+    openRowAction(0, "Edit");
     expect(push).toHaveBeenCalledWith("/settings/data");
   });
 });
@@ -167,7 +174,7 @@ describe("offline delete", () => {
     H.ACTIVE = true;
     vi.stubGlobal("fetch", networkDown());
     render(<TransactionsWorkspace />);
-    fireEvent.click(screen.getAllByTitle("Delete")[0]);
+    openRowAction(0, "Delete");
     await screen.findByRole("dialog");
     await new Promise((r) => setTimeout(r, 0)); // splits prefetch settles
     await confirm();
@@ -180,14 +187,14 @@ describe("offline delete", () => {
   it("the confirm dialog opens a splits check only while the queue is active", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => [] })));
     render(<TransactionsWorkspace />);
-    fireEvent.click(screen.getAllByTitle("Delete")[0]);
+    openRowAction(0, "Delete");
     await screen.findByRole("dialog");
     const idle = (fetch as any).mock.calls.filter((c: any[]) => String(c[0]).includes("splits?transactionId=1")).length;
     cleanup();
     H.ACTIVE = true;
     (fetch as any).mockClear();
     render(<TransactionsWorkspace />);
-    fireEvent.click(screen.getAllByTitle("Delete")[0]);
+    openRowAction(0, "Delete");
     await screen.findByRole("dialog");
     const active = (fetch as any).mock.calls.filter((c: any[]) => String(c[0]).includes("splits?transactionId=1")).length;
     expect(active).toBeGreaterThan(idle); // the extra request is the prefetch
@@ -199,8 +206,7 @@ describe("offline delete", () => {
     const f = vi.fn(async () => ({ ok: true, json: async () => ({ data: [] }) }));
     vi.stubGlobal("fetch", f);
     render(<TransactionsWorkspace />);
-    const row = screen.getAllByRole("row")[1];
-    fireEvent.click(within(row).getByTitle("Delete"));
+    openRowAction(0, "Delete");
     await confirm();
     await waitFor(() => expect(H.discard).toHaveBeenCalledWith("op1"));
     expect(f.mock.calls.some((c: any[]) => (c[1] as any)?.method === "DELETE")).toBe(false);

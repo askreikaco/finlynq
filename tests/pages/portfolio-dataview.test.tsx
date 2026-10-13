@@ -8,8 +8,8 @@ import * as path from "path";
 import { render, screen, cleanup, fireEvent, within } from "@testing-library/react";
 import type { SizeClass } from "@/components/ui/size-class";
 
-// One page, one adaptive UI (G2-11): exactly one DataView (Cards | List) mounted, charts shown at
-// every size, and no viewport-hidden wrappers or CompactOnly/FromMd around sections.
+// One page, one adaptive UI: holdings are one per-account list at every size (no Cards/List toggle, no
+// table), charts shown at every size, and no viewport-hidden wrappers or CompactOnly/FromMd around sections.
 
 const size: { current: SizeClass } = { current: "compact" };
 const session: { userId: string | null; ready: boolean } = { userId: null, ready: true };
@@ -35,9 +35,6 @@ vi.mock("@/components/portfolio/lot-inspector-dialog", () => ({ LotInspectorDial
 vi.mock("@/components/holdings/holding-edit-form", () => ({ HoldingEditForm: () => null }));
 vi.mock("@/app/(app)/portfolio/_components/allocation-charts", () => ({
   AllocationCharts: () => <div data-testid="allocation-charts" />,
-}));
-vi.mock("@/app/(app)/portfolio/_components/holdings-by-account", () => ({
-  HoldingsByAccount: () => <div data-testid="by-account" />,
 }));
 
 const overview = vi.hoisted(() => ({ current: null as unknown }));
@@ -92,73 +89,27 @@ beforeEach(() => {
 });
 afterEach(() => cleanup());
 
-const viewOf = () => document.querySelectorAll("[data-view]");
-const mountedView = () => {
-  const views = viewOf();
-  expect(views).toHaveLength(1);
-  return views[0].getAttribute("data-view");
-};
-const radio = (name: "Cards" | "List") => screen.getByRole("radio", { name });
+/** The holdings, grouped per account: the one holdings list at every size. */
+const accountGroups = () => document.querySelectorAll("[data-slot=holdings-by-account]");
 
 // A viewport-hidden or size-gated class in a class attribute: `md:x`, `max-md:x`, `lg:x`, `sm:x`, `xl:x`, `2xl:x`.
 const VIEWPORT_TOKEN = /(^|\s)(max-)?(sm|md|lg|xl|2xl):/;
 
-describe("portfolio: one DataView (Cards | List) at every size", () => {
-  it.each([
-    ["compact", "cards"],
-    ["regular", "cards"],
-    ["wide", "list"],
-  ] as const)("mounts exactly one view at %s (default %s)", (sz, expected) => {
+describe("portfolio: one holdings layout at every size", () => {
+  it.each(["compact", "regular", "wide"] as const)("holdings are one per-account list at %s: no table, no Cards/List toggle", (sz) => {
     size.current = sz;
-    render(<PortfolioPage />);
-    expect(mountedView()).toBe(expected);
+    const { container } = render(<PortfolioPage />);
+    expect(accountGroups()).toHaveLength(1);
+    expect(container.querySelector("table")).toBeNull();
+    expect(screen.queryAllByRole("radiogroup", { name: "View" })).toHaveLength(0);
+    expect(container.querySelectorAll("[data-view]")).toHaveLength(0);
   });
 
-  it("the toggle swaps the one mounted view; the table is only mounted in List", () => {
-    size.current = "regular";
-    render(<PortfolioPage />);
-    expect(mountedView()).toBe("cards");
-    expect(document.querySelector("table")).toBeNull();
-
-    fireEvent.click(radio("List"));
-    expect(mountedView()).toBe("list");
-    expect(document.querySelector("table")).not.toBeNull();
-    expect(within(viewOf()[0] as HTMLElement).getByText("All Holdings")).toBeTruthy();
-
-    fireEvent.click(radio("Cards"));
-    expect(mountedView()).toBe("cards");
-    expect(document.querySelector("table")).toBeNull();
-  });
-
-  it("the Cards/List choice is kept per size class: a choice at compact does not change regular or wide", () => {
-    const { rerender } = render(<PortfolioPage />);
-    // compact: choose List
-    fireEvent.click(radio("List"));
-    expect(mountedView()).toBe("list");
-
-    // regular: the compact choice does not apply here (regular default is Cards)
-    size.current = "regular";
-    rerender(<PortfolioPage />);
-    expect(mountedView()).toBe("cards");
-
-    // regular: choose List, then back to compact: the compact choice is still List
-    fireEvent.click(radio("List"));
-    size.current = "compact";
-    rerender(<PortfolioPage />);
-    expect(mountedView()).toBe("list");
-
-    // wide default is List even though nothing was chosen at wide
+  it("the page has no separate per-account tree: the account groups are the holdings list", () => {
     size.current = "wide";
-    rerender(<PortfolioPage />);
-    expect(mountedView()).toBe("list");
-    fireEvent.click(radio("Cards"));
-    expect(mountedView()).toBe("cards");
-
-    // the stored choice survives a remount at the same size class
-    cleanup();
-    size.current = "compact";
     render(<PortfolioPage />);
-    expect(mountedView()).toBe("list");
+    expect(accountGroups()).toHaveLength(1);
+    expect(screen.getByText("TCBS")).toBeTruthy();
   });
 });
 
@@ -175,14 +126,6 @@ describe("portfolio: charts show at every size, mounted once", () => {
     }
   });
 
-  it("the per-account panel is part of the List view (not a separate tree)", () => {
-    size.current = "compact";
-    render(<PortfolioPage />);
-    expect(screen.queryByTestId("by-account")).toBeNull();
-    fireEvent.click(radio("List"));
-    expect(document.querySelectorAll("[data-testid=by-account]")).toHaveLength(1);
-    expect(viewOf()[0].contains(screen.getByTestId("by-account"))).toBe(true);
-  });
 });
 
 describe("portfolio: no viewport-hidden trees or CompactOnly/FromMd around sections", () => {
@@ -196,7 +139,7 @@ describe("portfolio: no viewport-hidden trees or CompactOnly/FromMd around secti
       const roots = [
         document.querySelector("[data-slot=portfolio-summary]"),
         document.querySelector("[data-slot=portfolio-toolbar]"),
-        document.querySelector("[data-slot=portfolio-holding-cards]"),
+        document.querySelector("[data-slot=holdings-by-account]"),
       ].filter((r): r is Element => r !== null);
       expect(roots.length).toBeGreaterThanOrEqual(2);
       return roots

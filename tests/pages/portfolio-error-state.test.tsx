@@ -17,7 +17,6 @@ vi.mock("@/components/portfolio/PerformanceChart", () => ({ PerformanceChart: ()
 vi.mock("@/components/portfolio/lot-inspector-dialog", () => ({ LotInspectorDialog: () => null }));
 vi.mock("@/components/holdings/holding-edit-form", () => ({ HoldingEditForm: () => null }));
 vi.mock("@/app/(app)/portfolio/_components/allocation-charts", () => ({ AllocationCharts: () => null }));
-vi.mock("@/app/(app)/portfolio/_components/holdings-by-account", () => ({ HoldingsByAccount: () => <div data-testid="by-account" /> }));
 
 const overview = vi.hoisted(() => ({ current: null as unknown }));
 const reloadFn = vi.hoisted(() => vi.fn());

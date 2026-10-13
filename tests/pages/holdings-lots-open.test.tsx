@@ -15,9 +15,8 @@ vi.mock("@/components/currency-provider", () => ({ useDisplayCurrency: () => ({ 
 vi.mock("@/components/portfolio/PerformanceChart", () => ({ PerformanceChart: () => <div data-testid="perf-chart" /> }));
 vi.mock("@/components/holdings/holding-edit-form", () => ({ HoldingEditForm: () => null }));
 vi.mock("@/app/(app)/portfolio/_components/allocation-charts", () => ({ AllocationCharts: () => null }));
-vi.mock("@/app/(app)/portfolio/_components/holdings-by-account", () => ({ HoldingsByAccount: () => <div data-testid="by-account" /> }));
 
-// Records what the holdings table hands the lot inspector; renders only while open.
+// Records what the holdings sheet hands the lot inspector; renders only while open.
 const inspector = vi.hoisted(() => ({ calls: [] as Array<{ open: boolean; holdingId: number | null; accountId: number | null; holdingName?: string; accountName?: string }> }));
 vi.mock("@/components/portfolio/lot-inspector-dialog", () => ({
   LotInspectorDialog: (p: { open: boolean; holdingId: number | null; accountId: number | null; holdingName?: string; accountName?: string }) => {
@@ -77,19 +76,14 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-describe("holdings table: Lots action", () => {
-  it("clicking Lots on a per-account row opens the lot inspector for that holding and account", () => {
+describe("holdings rows: Lots action from the holding's sheet", () => {
+  it("tapping a holding opens its sheet; Lots opens the lot inspector for that holding and account", () => {
     render(<PortfolioPage />);
-    // The table lives in the List view (Cards is the default at compact). Switch to it.
-    fireEvent.click(screen.getByRole("radio", { name: "List" }));
-    // Expand the table row for AAPL (rows toggle on click).
-    const table = document.querySelector("table") as HTMLElement;
-    const aaplRow = within(table).getAllByRole("row").find((r) => r.textContent?.includes("AAPL") && !r.textContent.includes("Account")) as HTMLElement;
-    fireEvent.click(aaplRow);
-
-    const lotsButton = within(table).getByRole("button", { name: /Lots/ });
+    // One layout at every width: the holding is a HoldingRow under its account; the sheet carries the actions.
+    fireEvent.click(screen.getByRole("button", { name: "AAPL" }));
+    const sheet = screen.getByRole("dialog", { name: /AAPL/ });
     expect(screen.queryByRole("dialog", { name: "Lots" })).toBeNull();
-    fireEvent.click(lotsButton);
+    fireEvent.click(within(sheet).getByRole("button", { name: "Lots" }));
 
     const opened = inspector.calls.filter((c) => c.open);
     expect(opened.length).toBeGreaterThan(0);

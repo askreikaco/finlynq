@@ -59,6 +59,11 @@ beforeEach(() => { sessionStorage.clear(); push.mockClear(); H.IO.cbs.length = 0
   (Element.prototype as any).scrollIntoView ??= () => {}; (Element.prototype as any).hasPointerCapture ??= () => false;
   (window as any).matchMedia ??= () => ({ matches: false, addListener(){}, removeListener(){}, addEventListener(){}, removeEventListener(){} }); });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
+/** Taps a list row (opens its detail sheet), then the sheet action. The list has no table or per-row buttons. */
+function openRowAction(index: number, action: string) {
+  fireEvent.click(document.querySelectorAll<HTMLElement>('[data-slot="list-row"]')[index]);
+  fireEvent.click(screen.getByRole("button", { name: action }));
+}
 describe("workspace", () => {
   it("guard: PageHeader element appears before OnboardingTips element in source", () => {
     const srcPath = path.resolve(__dirname, "../../../src/app/(app)/transactions/_components/transactions-workspace.tsx");
@@ -69,25 +74,23 @@ describe("workspace", () => {
     expect(onboardingTipsIndex).toBeGreaterThan(-1);
     expect(pageHeaderIndex).toBeLessThan(onboardingTipsIndex);
   });
-  it("W1 table Duplicate -> writes prefill + pushes ?prefill=1", () => {
+  it("W1 sheet Duplicate -> writes prefill + pushes ?prefill=1", () => {
     render(<TransactionsWorkspace />);
-    const dups = screen.getAllByLabelText("Duplicate transaction");
-    expect(dups.length).toBe(1);
-    fireEvent.click(dups[0]);
+    openRowAction(0, "Duplicate");
     expect(push).toHaveBeenCalledWith("/transactions/new?prefill=1");
     const d = JSON.parse(sessionStorage.getItem(KEY)!);
     expect(d).toMatchObject({ v: 1, amount: "50", accountId: "1", categoryId: "4", payee: "pp", note: "nn", tags: "t", isBusiness: true, txType: "Expense" });
   });
-  it("W2 Edit navigates to /transactions/<id>/edit with the current list as returnTo (no dialog)", () => {
+  it("W2 sheet Edit navigates to /transactions/<id>/edit with the current list as returnTo (no dialog)", () => {
     render(<TransactionsWorkspace />);
-    fireEvent.click(screen.getAllByTitle("Edit")[0]);
+    openRowAction(0, "Edit");
     expect(push).toHaveBeenCalledWith(expect.stringMatching(/^\/transactions\/\d+\/edit\?returnTo=/));
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(sessionStorage.getItem(KEY)).toBeNull();
   });
   it("W3 Edit on a transfer row also navigates; the edit page decides transfer mode (no dialog)", () => {
     render(<TransactionsWorkspace />);
-    fireEvent.click(screen.getAllByTitle("Edit")[1]);
+    openRowAction(1, "Edit");
     expect(push).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole("dialog")).toBeNull();
   });
@@ -116,7 +119,7 @@ describe("workspace", () => {
     const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
     try {
       render(<TransactionsWorkspace />);
-      fireEvent.click(screen.getAllByTitle("Delete")[0]);
+      openRowAction(0, "Delete");
       const dlg = await screen.findByRole("dialog");
       fireEvent.click(within(dlg).getByRole("button", { name: "Delete" }));
       const alertEl = await within(dlg).findByRole("alert");

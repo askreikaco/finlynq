@@ -9,6 +9,7 @@
  * the derived region/sector arrays are computed on the page and passed in.
  */
 
+import { useState } from "react";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
 } from "recharts";
@@ -16,17 +17,67 @@ import {
   BarChart3, Globe2, Building2, ChevronLeft, ChevronRight, Layers, Search, Download,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { DetailSheet, ListRow, SectionCard } from "@/components/mobile";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/currency";
 import { ColorDot, CspSafeColorBar } from "@/components/csp-safe-bar";
 import { ExposurePieTooltip } from "./portfolio-ui";
 import { exportStocksToCSV } from "./csv";
-import { SECTOR_COLORS, type EtfXrayTab, type OverviewData } from "../_types";
+import { type EtfXrayTab, type OverviewData } from "../_types";
 import { formatPercent, getDisplayLocale } from "@/lib/locale";
 
 type ExposureRow = { name: string; pct: number; color: string };
+
+/** Aggregated look-through stocks as native rows (one page at a time). A tap opens the stock's sheet. */
+type EtfStock = {
+  ticker: string;
+  name: string;
+  sector: string;
+  country: string;
+  effectiveWeight: number;
+  effectiveValueDisplay: number;
+  contributingEtfs: { symbol: string; weight: number }[];
+};
+
+function EtfStockRows({ rows, startIndex, displayCurrency }: { rows: EtfStock[]; startIndex: number; displayCurrency: string }) {
+  const [open, setOpen] = useState<{ stock: EtfStock; index: number } | null>(null);
+  return (
+    <>
+      <SectionCard padded={false} className="divide-y divide-border/50 px-3">
+        {rows.map((s, i) => (
+          <ListRow
+            key={s.ticker}
+            title={s.name}
+            subtitle={[s.ticker !== "OTHER" ? s.ticker : null, s.sector, s.country].filter(Boolean).join(" · ")}
+            value={<span className="tabular-nums text-sm font-semibold">{formatPercent(s.effectiveWeight, 1)}</span>}
+            secondary={formatCurrency(s.effectiveValueDisplay, displayCurrency)}
+            onPress={() => setOpen({ stock: s, index: startIndex + i })}
+          />
+        ))}
+      </SectionCard>
+      {open && (
+        <DetailSheet
+          open
+          onOpenChange={(o) => { if (!o) setOpen(null); }}
+          title={open.stock.name}
+          description={`#${open.index + 1}${open.stock.ticker !== "OTHER" ? ` · ${open.stock.ticker}` : ""}`}
+          items={[
+            { label: "Sector", value: open.stock.sector },
+            { label: "Country", value: open.stock.country || "—" },
+            { label: "Weight", value: formatPercent(open.stock.effectiveWeight, 1) },
+            { label: "Value", value: formatCurrency(open.stock.effectiveValueDisplay, displayCurrency) },
+            {
+              label: "Via ETFs",
+              value: open.stock.contributingEtfs.length
+                ? open.stock.contributingEtfs.map((e) => `${e.symbol} ${e.weight}%`).join(", ")
+                : "—",
+            },
+          ]}
+        />
+      )}
+    </>
+  );
+}
 
 export function EtfXrayCard({
   etfXray,
@@ -91,80 +142,11 @@ export function EtfXrayCard({
             <p className="text-xs text-muted-foreground">
               Your effective stock exposure across all ETFs, weighted by each ETF&apos;s portfolio allocation.
             </p>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-8">#</TableHead>
-                    <TableHead>Stock</TableHead>
-                    <TableHead>Ticker</TableHead>
-                    <TableHead>Sector</TableHead>
-                    <TableHead>Country</TableHead>
-                    <TableHead className="text-right">Weight</TableHead>
-                    <TableHead className="text-right">Value (CAD)</TableHead>
-                    <TableHead className="w-28">Exposure</TableHead>
-                    <TableHead>Via ETFs</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {etfXray.aggregatedStocks
-                    .slice((stocksPage - 1) * STOCKS_PER_PAGE, stocksPage * STOCKS_PER_PAGE)
-                    .map((s, i) => {
-                      const globalIdx = (stocksPage - 1) * STOCKS_PER_PAGE + i;
-                      return (
-                        <TableRow key={s.ticker} className={`hover:bg-muted/30 transition-colors ${s.ticker === "OTHER" ? "bg-muted/20 border-t" : ""}`}>
-                          <TableCell className="text-xs text-muted-foreground font-mono">{globalIdx + 1}</TableCell>
-                          <TableCell className={`text-sm ${s.ticker === "OTHER" ? "italic text-muted-foreground" : "font-medium"}`}>{s.name}</TableCell>
-                          <TableCell>
-                            {s.ticker !== "OTHER" && <Badge variant="secondary" className="font-mono text-xs">{s.ticker}</Badge>}
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant="outline"
-                              className="text-xs"
-                              ref={(el: HTMLElement | null) => {
-                                if (el) {
-                                  const c = SECTOR_COLORS[s.sector] ?? "#64748b";
-                                  el.style.borderColor = c;
-                                  el.style.color = c;
-                                }
-                              }}
-                            >
-                              {s.sector}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-xs text-muted-foreground">{s.country}</TableCell>
-                          <TableCell className="text-right">
-                            <span className="text-sm font-mono font-semibold">{formatPercent(s.effectiveWeight, 1)}</span>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <span className="text-sm font-mono text-muted-foreground">{formatCurrency(s.effectiveValueDisplay, displayCurrency)}</span>
-                          </TableCell>
-                          <TableCell>
-                            <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
-                              <div
-                                className="h-full rounded-full bg-primary"
-                                ref={(el) => {
-                                  if (el) el.style.width = `${Math.min(s.effectiveWeight * 10, 100)}%`;
-                                }}
-                              />
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-1 flex-wrap">
-                              {s.contributingEtfs.map((e, ei) => (
-                                <span key={`${e.symbol}-${ei}`} className="text-xs font-mono text-muted-foreground bg-muted px-1 py-0.5 rounded">
-                                  {e.symbol} {e.weight}%
-                                </span>
-                              ))}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                </TableBody>
-              </Table>
-            </div>
+            <EtfStockRows
+              rows={etfXray.aggregatedStocks.slice((stocksPage - 1) * STOCKS_PER_PAGE, stocksPage * STOCKS_PER_PAGE)}
+              startIndex={(stocksPage - 1) * STOCKS_PER_PAGE}
+              displayCurrency={displayCurrency}
+            />
             {etfXray.aggregatedStocks.length > 0 && (() => {
               const totalPages = Math.ceil(etfXray.aggregatedStocks.length / STOCKS_PER_PAGE);
               const totalWeight = etfXray.aggregatedStocks.reduce((s, x) => s + x.effectiveWeight, 0);
@@ -317,47 +299,17 @@ export function EtfXrayCard({
             <p className="text-xs text-muted-foreground">
               Your ETF holdings and their weight in the ETF portfolio.
             </p>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ETF</TableHead>
-                  <TableHead>Fund Name</TableHead>
-                  <TableHead>Account</TableHead>
-                  <TableHead className="text-right">Holdings</TableHead>
-                  <TableHead className="text-right">Portfolio Weight</TableHead>
-                  <TableHead className="w-24"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {etfXray.etfs.map(etf => (
-                  <TableRow key={`${etf.symbol}-${etf.account}`} className="hover:bg-muted/30 transition-colors">
-                    <TableCell>
-                      <Badge variant="secondary" className="font-mono text-xs">{etf.symbol}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm font-medium">{etf.fullName}</span>
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{etf.account}</TableCell>
-                    <TableCell className="text-right text-sm font-mono text-muted-foreground">
-                      {etf.totalHoldings.toLocaleString(getDisplayLocale())}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <span className="text-sm font-mono font-semibold">{etf.weightPct}%</span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-primary"
-                          ref={(el) => {
-                            if (el) el.style.width = `${Math.min(etf.weightPct, 100)}%`;
-                          }}
-                        />
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <SectionCard padded={false} className="divide-y divide-border/50 px-3">
+              {etfXray.etfs.map((etf) => (
+                <ListRow
+                  key={`${etf.symbol}-${etf.account}`}
+                  title={etf.symbol}
+                  subtitle={`${etf.fullName} · ${etf.account} · ${etf.totalHoldings.toLocaleString(getDisplayLocale())} holdings`}
+                  value={<span className="tabular-nums text-sm font-semibold">{etf.weightPct}%</span>}
+                  secondary="of portfolio"
+                />
+              ))}
+            </SectionCard>
           </div>
         )}
       </CardContent>
