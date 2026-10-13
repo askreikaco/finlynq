@@ -12,6 +12,7 @@
  * after the network refresh (source "network").
  * Not wired into any list screen yet; the dev panel is the only consumer.
  */
+import { DATA_SCHEMA_VERSION } from "@/lib/local-first/data-schema-version";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getSessionInfo, onSessionInfo } from "@/lib/data/session-info";
 import { fetchTrustedDeviceId } from "@/lib/data/trusted-device";
@@ -38,7 +39,8 @@ export interface LocalAccountBalances {
 /** Browser fetch with the session cookie (same-origin). */
 const browserFetch: FetchLike = (url) => fetch(url, { credentials: "same-origin", headers: { accept: "application/json" } });
 
-const BUILD = process.env.NEXT_PUBLIC_APP_BUILD ?? "dev";
+// Device cache binding: the data schema version, NOT the deploy build id (see data-schema-version.ts).
+const BUILD = DATA_SCHEMA_VERSION;
 const NETWORK_ONLY: ReadCacheDeps = { createStore: createMemoryStore, fetchImpl: browserFetch };
 
 /** Network-only deps unless opted in, signed in and on a trusted device. Then persistence is allowed live. */

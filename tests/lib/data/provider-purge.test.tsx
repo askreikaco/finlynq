@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { DATA_SCHEMA_VERSION } from "@/lib/local-first/data-schema-version";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import React from "react";
 import { render, waitFor } from "@testing-library/react";
@@ -63,8 +64,8 @@ describe("DataProvider: purgeDisallowed integration (M7a)", () => {
 
     // Verify the call arguments
     expect(mockPurgeDisallowed.mock.calls[0][0]).toBe("u");
-    // BUILD is from provider.tsx: process.env.NEXT_PUBLIC_APP_BUILD ?? "dev"
-    expect(mockPurgeDisallowed.mock.calls[0][1]).toBe("dev");
+    // The cache binding is the data schema version, not the deploy build id.
+    expect(mockPurgeDisallowed.mock.calls[0][1]).toBe(DATA_SCHEMA_VERSION);
 
     unmount();
   });
