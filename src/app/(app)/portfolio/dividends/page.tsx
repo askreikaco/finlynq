@@ -44,6 +44,7 @@ import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import { MetricRangeSelect } from "@/components/metric-range-select";
 import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { cardProps, countByMonth, makeCardResolver, sumByMonth } from "@/lib/metrics/series";
+import { NO_HISTORY_CAPTION } from "@/lib/metrics/delta";
 import { formatCurrency } from "@/lib/currency";
 import { localDateISO } from "@/lib/utils/date";
 
@@ -174,7 +175,7 @@ export default function DividendsPage() {
     const moneyItem = (label: string, ccy: string, total: number, points: ReturnType<typeof sumByMonth>): MetricItem => {
       const c = card(ccy)(points, "sum");
       return { icon: Wallet,
-        label, value: c.value ?? total, currency: ccy, tone: "auto", showSign: true, ...cardProps(c),
+        label, value: c.value ?? total, currency: ccy, tone: "auto", showSign: true, ...cardProps(c), sub: c.delta ?? NO_HISTORY_CAPTION,
         ...(c.value != null ? { note: `Total in view: ${formatCurrency(total, ccy)}` } : {}),
       };
     };
@@ -189,7 +190,7 @@ export default function DividendsPage() {
     }
     const rowsCard = makeCardResolver(rangeArg)(divRows && divRows.length > 0 ? countByMonth(divRows, (r) => r.date, through) : [], "sum", undefined, "count");
     items.push({
-      icon: Receipt, label: "Dividend rows", value: rowsCard.value ?? data.totals.rowCount, ...cardProps(rowsCard),
+      icon: Receipt, label: "Dividend rows", value: rowsCard.value ?? data.totals.rowCount, ...cardProps(rowsCard), sub: rowsCard.delta ?? NO_HISTORY_CAPTION,
       ...(rowsCard.value != null ? { note: `Total in view: ${data.totals.rowCount}` } : {}),
     });
     return items;

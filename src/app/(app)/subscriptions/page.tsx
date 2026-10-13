@@ -368,8 +368,8 @@ function SubscriptionsPageContent() {
     >
       <MetricGrid
         metrics={[
-          { icon: CalendarClock, label: "Per month", value: totals.monthly, currency: displayCurrency },
-          { icon: CalendarRange, label: "Per year", value: totals.annual, currency: displayCurrency },
+          { icon: CalendarClock, label: "Per month", value: totals.monthly, currency: displayCurrency, sub: `${totals.activeCount} active subscription${totals.activeCount === 1 ? "" : "s"}` },
+          { icon: CalendarRange, label: "Per year", value: totals.annual, currency: displayCurrency, sub: "Annualised" },
           { icon: CalendarClock,
             label: `Due in next ${DUE_SOON_DAYS} days`,
             value: totals.dueSoonAmount,

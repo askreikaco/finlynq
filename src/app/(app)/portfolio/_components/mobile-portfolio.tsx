@@ -18,6 +18,7 @@ import { Coins, Landmark, Layers, Percent, PiggyBank, TrendingUp, Wallet } from 
 import { MetricRangeSelect } from "@/components/metric-range-select";
 import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { cardProps, makeCardResolver } from "@/lib/metrics/series";
+import { NO_HISTORY_CAPTION } from "@/lib/metrics/delta";
 import { buildPortfolioSeries } from "@/lib/metrics/portfolio-series";
 import { usePortfolioMetricSources } from "../_hooks/use-portfolio-metric-sources";
 import { localDateISO } from "@/lib/utils/date";
@@ -57,9 +58,10 @@ export function PortfolioSummary({ summary, currency }: { summary: OverviewData[
   const realizedCard = card(series.realized, "last", summary.totalRealizedGainDisplay);
   const dividendsCard = card(series.dividends, "last", summary.totalDividendsDisplay);
   const returnCard = card(series.totalReturn, "last", summary.totalReturnDisplay);
-  const metrics: SummaryMetric[] = [
-    { icon: Layers, label: "Holdings", value: summary.totalHoldings },
-    { icon: Landmark, label: "Accounts", value: summary.totalAccounts },
+  const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+  const rawMetrics: SummaryMetric[] = [
+    { icon: Layers, label: "Holdings", value: summary.totalHoldings, sub: `Across ${plural(summary.totalAccounts, "account", "accounts")}` },
+    { icon: Landmark, label: "Accounts", value: summary.totalAccounts, sub: `${summary.totalAccounts} with holdings` },
     ...(hasBasis
       ? ([
           { icon: Wallet, label: "Cost basis", value: costCard.value ?? summary.totalCostBasisDisplay, currency, ...cardProps(costCard) },
@@ -70,6 +72,8 @@ export function PortfolioSummary({ summary, currency }: { summary: OverviewData[
         ] as SummaryMetric[])
       : [{ icon: PiggyBank, label: "Dividends", value: dividendsCard.value ?? summary.totalDividendsDisplay, currency, tone: "pos", showSign: true, ...cardProps(dividendsCard) } as SummaryMetric]),
   ];
+  // Every tile carries a sub-line: its delta when there is history, a muted caption otherwise (never an invented number).
+  const metrics = rawMetrics.map((m) => (m.sub ? m : { ...m, sub: NO_HISTORY_CAPTION }));
   return (
     <div data-slot="portfolio-summary" className="space-y-3">
       <MetricRangeSelect value={metricRange.selection} onChange={metricRange.setSelection} />

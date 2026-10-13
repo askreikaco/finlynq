@@ -43,6 +43,7 @@ import { ChipGroup, ReportFilterSheet, monthLabel, signedPercent } from "../_com
 import { MetricRangeSelect } from "@/components/metric-range-select";
 import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { cardProps, countByMonth, makeCardResolver, sumByMonth } from "@/lib/metrics/series";
+import { NO_HISTORY_CAPTION } from "@/lib/metrics/delta";
 import { localDateISO } from "@/lib/utils/date";
 
 // Phase 3 follow-up (2026-05-26): short_close = a Buy that covered a short
@@ -325,7 +326,7 @@ export default function RealizedGainsPage() {
     const money = (label: string, ccy: string, total: number, rows: ApiRow[], valueOf: (r: ApiRow) => number): MetricItem => {
       const c = makeCardResolver(rangeArg, ccy)(rows.length > 0 ? sumByMonth(rows, (r) => r.closeDate, valueOf, through, from) : [], "sum");
       return { icon: Wallet,
-        label, value: c.value ?? total, currency: ccy, tone: "auto", showSign: true, ...cardProps(c),
+        label, value: c.value ?? total, currency: ccy, tone: "auto", showSign: true, ...cardProps(c), sub: c.delta ?? NO_HISTORY_CAPTION,
         ...(c.value != null ? { note: `Total in view: ${formatCurrency(total, ccy)}` } : {}),
       };
     };
@@ -339,7 +340,7 @@ export default function RealizedGainsPage() {
     }
     const lots = makeCardResolver(rangeArg)(visibleRows.length > 0 ? countByMonth(visibleRows, (r) => r.closeDate, through, from) : [], "sum", undefined, "count");
     items.push({
-      icon: Receipt, label: "Closed lots", value: lots.value ?? visibleRows.length, ...cardProps(lots),
+      icon: Receipt, label: "Closed lots", value: lots.value ?? visibleRows.length, ...cardProps(lots), sub: lots.delta ?? NO_HISTORY_CAPTION,
       ...(lots.value != null ? { note: `Total in view: ${visibleRows.length}` } : {}),
     });
     return items;

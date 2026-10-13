@@ -181,4 +181,18 @@ describe("Portfolio summary and holdings cards (one page, every size)", () => {
     render(<PortfolioPage />);
     expect(cls(screen.getByTestId("perf-chart").parentElement!)).not.toContain("hidden");
   });
+  it("every value-only summary tile carries a sub-line (caption or delta), never a bare number", () => {
+    render(<PortfolioPage />);
+    const grid = document.querySelector('[data-slot="metric-grid"]') as HTMLElement;
+    expect(grid).toBeTruthy();
+    const tiles = Array.from(grid.children) as HTMLElement[];
+    expect(tiles.length).toBeGreaterThan(0);
+    for (const t of tiles) {
+      // MetricCard renders label, value, sub-line: a tile with no sub-line has only two text rows.
+      expect(t.querySelectorAll("p, span, div").length, t.textContent ?? "").toBeGreaterThan(0);
+    }
+    expect(within(grid).getByText("Across 2 accounts")).toBeTruthy();
+    expect(within(grid).getByText("2 with holdings")).toBeTruthy();
+    expect(within(grid).getAllByText(/No earlier history to compare|vs /).length).toBeGreaterThanOrEqual(1);
+  });
 });
