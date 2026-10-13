@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 // Hook-level persistence (local-first L2b, WP4b): snapshot-first status, trust and lock gating, account switch.
+import { DATA_SCHEMA_VERSION } from "@/lib/local-first/data-schema-version";
 import "fake-indexeddb/auto";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, waitFor, act, cleanup } from "@testing-library/react";
@@ -65,13 +66,13 @@ function stubFetch(trustedId: string | null, gate: Promise<void> = Promise.resol
   return spy;
 }
 
-/** Writes a real snapshot for `userId` on the device `dev-1` (build "dev", the hook's build). */
+/** Writes a real snapshot for `userId` on the device `dev-1` (build = the hook's DATA_SCHEMA_VERSION). */
 async function seedSnapshot(userId: string): Promise<void> {
   const api = fakeApi();
   const deps: ReadCacheDeps = {
     createStore: createMemoryStore,
     fetchImpl: api.fetchImpl,
-    persist: { userId, deviceId: "dev-1", build: "dev", debounceMs: 0, allowPersist: () => true },
+    persist: { userId, deviceId: "dev-1", build: DATA_SCHEMA_VERSION, debounceMs: 0, allowPersist: () => true },
   };
   await hydrateReadCache(deps);
   const end = Date.now() + 3000;

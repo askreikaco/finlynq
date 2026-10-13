@@ -151,16 +151,12 @@ const serwist = new Serwist({
 
 serwist.addEventListeners();
 
-// Drop page caches written by previous builds.
-// Installs from before versioned caches have unsuffixed page caches AND page code with no
-// reload-on-update handler, so they would keep showing the old UI until the next manual
-// navigation. Reload those open windows once, right after the upgrade.
-const LEGACY_PAGE_CACHES = ["pages-html-cache", "pages-rsc-cache"];
-
+// Drop page caches written by previous builds. No window is force-navigated here: that
+// could lose typed form input. The page picks up new code on its next in-app navigation
+// (see components/pwa-register.tsx).
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then(async (keys) => {
-      const upgradedFromLegacy = keys.some((key) => LEGACY_PAGE_CACHES.includes(key));
       await Promise.all(
         keys
           .filter(
@@ -170,16 +166,6 @@ self.addEventListener("activate", (event) => {
           )
           .map((key) => caches.delete(key)),
       );
-      if (!upgradedFromLegacy) return;
-      const clients = (
-        self as unknown as {
-          clients: {
-            matchAll(o: { type: "window" }): Promise<{ url: string; navigate?: (u: string) => Promise<unknown> }[]>;
-          };
-        }
-      ).clients;
-      const windows = await clients.matchAll({ type: "window" });
-      await Promise.all(windows.map((w) => w.navigate?.(w.url).catch(() => undefined)));
     }),
   );
 });
