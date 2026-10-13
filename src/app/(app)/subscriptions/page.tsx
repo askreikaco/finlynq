@@ -70,6 +70,9 @@ import {
   Sparkles,
   Trash2,
   XCircle,
+  CalendarClock,
+  CalendarRange,
+  CheckCircle2,
 } from "lucide-react";
 
 type SortField = "nextDate" | "name" | "cost";
@@ -364,15 +367,15 @@ function SubscriptionsPageContent() {
     >
       <MetricGrid
         metrics={[
-          { label: "Per month", value: totals.monthly, currency: displayCurrency },
-          { label: "Per year", value: totals.annual, currency: displayCurrency },
-          {
+          { icon: CalendarClock, label: "Per month", value: totals.monthly, currency: displayCurrency },
+          { icon: CalendarRange, label: "Per year", value: totals.annual, currency: displayCurrency },
+          { icon: CalendarClock,
             label: `Due in next ${DUE_SOON_DAYS} days`,
             value: totals.dueSoonAmount,
             currency: displayCurrency,
             sub: `${totals.dueSoonCount} payment${totals.dueSoonCount === 1 ? "" : "s"}`,
           },
-          { label: "Active", value: String(totals.activeCount), sub: `of ${subs.length} tracked` },
+          { icon: CheckCircle2, label: "Active", value: String(totals.activeCount), sub: `of ${subs.length} tracked` },
         ]}
       />
 

@@ -14,7 +14,7 @@ import { formatCurrency } from "@/lib/currency";
 import { formatPercent } from "@/lib/locale";
 import { MetricItemCard, type MetricItem } from "@/components/mobile";
 import { MetricCard } from "@/components/metric-card";
-import { Landmark } from "lucide-react";
+import { Coins, Landmark, Layers, Percent, PiggyBank, TrendingUp, Wallet } from "lucide-react";
 import { MetricRangeSelect } from "@/components/metric-range-select";
 import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { cardProps, makeCardResolver } from "@/lib/metrics/series";
@@ -58,17 +58,17 @@ export function PortfolioSummary({ summary, currency }: { summary: OverviewData[
   const dividendsCard = card(series.dividends, "last", summary.totalDividendsDisplay);
   const returnCard = card(series.totalReturn, "last", summary.totalReturnDisplay);
   const metrics: SummaryMetric[] = [
-    { label: "Holdings", value: summary.totalHoldings },
-    { label: "Accounts", value: summary.totalAccounts },
+    { icon: Layers, label: "Holdings", value: summary.totalHoldings },
+    { icon: Landmark, label: "Accounts", value: summary.totalAccounts },
     ...(hasBasis
       ? ([
-          { label: "Cost basis", value: costCard.value ?? summary.totalCostBasisDisplay, currency, ...cardProps(costCard) },
-          { label: "Unrealized G/L", value: unrealizedCard.value ?? summary.totalUnrealizedGainDisplay, currency, tone: "auto", showSign: true, ...cardProps(unrealizedCard) },
-          { label: "Realized G/L", value: realizedCard.value ?? summary.totalRealizedGainDisplay, currency, tone: "auto", showSign: true, ...cardProps(realizedCard) },
-          { label: "Dividends", value: dividendsCard.value ?? summary.totalDividendsDisplay, currency, tone: "pos", showSign: true, ...cardProps(dividendsCard) },
-          { label: "Total return", value: returnCard.value ?? summary.totalReturnDisplay, currency, tone: "auto", showSign: true, regularOnly: true, ...cardProps(returnCard) },
+          { icon: Wallet, label: "Cost basis", value: costCard.value ?? summary.totalCostBasisDisplay, currency, ...cardProps(costCard) },
+          { icon: TrendingUp, label: "Unrealized G/L", value: unrealizedCard.value ?? summary.totalUnrealizedGainDisplay, currency, tone: "auto", showSign: true, ...cardProps(unrealizedCard) },
+          { icon: Coins, label: "Realized G/L", value: realizedCard.value ?? summary.totalRealizedGainDisplay, currency, tone: "auto", showSign: true, ...cardProps(realizedCard) },
+          { icon: PiggyBank, label: "Dividends", value: dividendsCard.value ?? summary.totalDividendsDisplay, currency, tone: "pos", showSign: true, ...cardProps(dividendsCard) },
+          { icon: Percent, label: "Total return", value: returnCard.value ?? summary.totalReturnDisplay, currency, tone: "auto", showSign: true, regularOnly: true, ...cardProps(returnCard) },
         ] as SummaryMetric[])
-      : [{ label: "Dividends", value: dividendsCard.value ?? summary.totalDividendsDisplay, currency, tone: "pos", showSign: true, ...cardProps(dividendsCard) } as SummaryMetric]),
+      : [{ icon: PiggyBank, label: "Dividends", value: dividendsCard.value ?? summary.totalDividendsDisplay, currency, tone: "pos", showSign: true, ...cardProps(dividendsCard) } as SummaryMetric]),
   ];
   return (
     <div data-slot="portfolio-summary" className="space-y-3">

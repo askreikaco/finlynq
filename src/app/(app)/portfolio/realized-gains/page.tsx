@@ -19,7 +19,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Download, ArrowDownLeft, ArrowUpLeft, RefreshCw, Coins, SlidersHorizontal } from "lucide-react";
+import { Download, ArrowDownLeft, ArrowUpLeft, RefreshCw, Coins, SlidersHorizontal, Receipt, Wallet } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { exportCsv, type CsvColumn } from "@/lib/csv-export";
@@ -324,7 +324,7 @@ export default function RealizedGainsPage() {
     const from = taxYear ? `${taxYear}-01` : undefined;
     const money = (label: string, ccy: string, total: number, rows: ApiRow[], valueOf: (r: ApiRow) => number): MetricItem => {
       const c = makeCardResolver(rangeArg, ccy)(rows.length > 0 ? sumByMonth(rows, (r) => r.closeDate, valueOf, through, from) : [], "sum");
-      return {
+      return { icon: Wallet,
         label, value: c.value ?? total, currency: ccy, tone: "auto", showSign: true, ...cardProps(c),
         ...(c.value != null ? { note: `Total in view: ${formatCurrency(total, ccy)}` } : {}),
       };
@@ -339,7 +339,7 @@ export default function RealizedGainsPage() {
     }
     const lots = makeCardResolver(rangeArg)(visibleRows.length > 0 ? countByMonth(visibleRows, (r) => r.closeDate, through, from) : [], "sum", undefined, "count");
     items.push({
-      label: "Closed lots", value: lots.value ?? visibleRows.length, ...cardProps(lots),
+      icon: Receipt, label: "Closed lots", value: lots.value ?? visibleRows.length, ...cardProps(lots),
       ...(lots.value != null ? { note: `Total in view: ${visibleRows.length}` } : {}),
     });
     return items;

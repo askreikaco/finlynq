@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Activity, Shield, Mail, KeyRound } from "lucide-react";
+import { Users, Activity, Shield, Mail, KeyRound, Layers, Receipt, UserPlus, ShieldCheck } from "lucide-react";
 import { motion } from "framer-motion";
 import { DORMANT_DAYS, isDormant } from "@/lib/auth/dormancy";
 import {
@@ -434,7 +434,7 @@ export default function AdminPage() {
             <MetricRangeSelect value={metricRange.selection} onChange={metricRange.setSelection} />
             <MetricGrid
               metrics={[
-                {
+                { icon: Users,
                   label: "Total Users",
                   value: stats.totalUsers,
                   // Running total of signups by month (users that still exist), this month vs last month by default.
@@ -444,15 +444,15 @@ export default function AdminPage() {
                     return cardProps(c);
                   })(),
                 },
-                { label: "Transactions", value: stats.totalTransactions.toLocaleString() },
-                {
+                { icon: Receipt, label: "Transactions", value: stats.totalTransactions.toLocaleString() },
+                { icon: UserPlus,
                   label: "New (7d)",
                   value: stats.registrationsLast7Days,
                   // Fixed 7-day window: the 7 days before it.
                   badgePct: stats.registrationsPrevious7Days != null ? pctChange(stats.registrationsLast7Days, stats.registrationsPrevious7Days) : null,
                   sub: formatDelta({ cur: stats.registrationsLast7Days, prev: stats.registrationsPrevious7Days, kind: "count", caption: "vs previous 7 days" }) ?? undefined,
                 },
-                { label: "MFA Enabled", value: stats.mfaEnabledUsers },
+                { icon: ShieldCheck, label: "MFA Enabled", value: stats.mfaEnabledUsers },
               ]}
             />
           </div>
@@ -482,9 +482,9 @@ export default function AdminPage() {
             </div>
             <MetricGrid
               metrics={[
-                { label: "Active now (15 min)", value: stats.activeUsersLast15Min ?? 0 },
-                { label: "Active (last hour)", value: stats.activeUsersLast60Min ?? 0 },
-                { label: "Active (last 24h)", value: stats.activeUsersLast24Hours ?? 0 },
+                { icon: Activity, label: "Active now (15 min)", value: stats.activeUsersLast15Min ?? 0 },
+                { icon: Activity, label: "Active (last hour)", value: stats.activeUsersLast60Min ?? 0 },
+                { icon: Activity, label: "Active (last 24h)", value: stats.activeUsersLast24Hours ?? 0 },
               ]}
             />
             <p className="text-xs text-muted-foreground mt-2">
@@ -529,6 +529,7 @@ export default function AdminPage() {
               metrics={Object.entries(stats.planBreakdown).map(([plan, count]) => ({
                 label: plan.charAt(0).toUpperCase() + plan.slice(1),
                 value: count,
+                icon: Layers,
               }))}
             />
           </motion.div>

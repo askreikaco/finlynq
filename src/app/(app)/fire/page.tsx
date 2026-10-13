@@ -14,7 +14,7 @@ import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
   ReferenceLine, Legend,
 } from "recharts";
-import { Flame, Dice5 } from "lucide-react";
+import { CalendarClock, Coins, Dice5, Flame, Hourglass, Percent, Scale, TrendingDown, TrendingUp } from "lucide-react";
 import { AmountInput } from "@/components/amount-input";
 import { ListRow, MetricGrid, SectionCard } from "@/components/mobile";
 import { SectionPage } from "@/components/templates/section-page";
@@ -252,12 +252,12 @@ function FirePageContent() {
         <>
           <MetricGrid
             metrics={[
-              { label: "FIRE Number", value: result.fireNumber, currency: displayCurrency },
-              { label: "Years to FIRE", value: `${result.yearsToFire} years` },
-              { label: "FIRE Age", value: `Age ${result.fireAge}` },
-              { label: "Projected FIRE Date", value: result.fireDate },
-              { label: "Coast FIRE Number", value: result.coastFireNumber, currency: displayCurrency },
-              { label: "Coast FIRE Age", value: `Age ${result.coastFireAge}` },
+              { icon: Flame, label: "FIRE Number", value: result.fireNumber, currency: displayCurrency },
+              { icon: Hourglass, label: "Years to FIRE", value: `${result.yearsToFire} years` },
+              { icon: CalendarClock, label: "FIRE Age", value: `Age ${result.fireAge}` },
+              { icon: CalendarClock, label: "Projected FIRE Date", value: result.fireDate },
+              { icon: Flame, label: "Coast FIRE Number", value: result.coastFireNumber, currency: displayCurrency },
+              { icon: CalendarClock, label: "Coast FIRE Age", value: `Age ${result.coastFireAge}` },
             ]}
           />
 
@@ -447,11 +447,11 @@ function FirePageContent() {
                   {/* Final value percentiles */}
                   <MetricGrid
                     metrics={[
-                      { label: "Worst case (P10)", value: fmtMoney(mcResult.finalValues.p10) },
-                      { label: "P25", value: fmtMoney(mcResult.finalValues.p25) },
-                      { label: "Median (P50)", value: fmtMoney(mcResult.finalValues.p50) },
-                      { label: "P75", value: fmtMoney(mcResult.finalValues.p75) },
-                      { label: "Best case (P90)", value: fmtMoney(mcResult.finalValues.p90) },
+                      { icon: TrendingDown, label: "Worst case (P10)", value: fmtMoney(mcResult.finalValues.p10) },
+                      { icon: Percent, label: "P25", value: fmtMoney(mcResult.finalValues.p25) },
+                      { icon: Scale, label: "Median (P50)", value: fmtMoney(mcResult.finalValues.p50) },
+                      { icon: Percent, label: "P75", value: fmtMoney(mcResult.finalValues.p75) },
+                      { icon: TrendingUp, label: "Best case (P90)", value: fmtMoney(mcResult.finalValues.p90) },
                     ]}
                   />
                 </>

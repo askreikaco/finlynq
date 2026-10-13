@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
-import { Hash } from "lucide-react";
 import { MetricCard, type MetricTone } from "@/components/metric-card";
 import { type AmountTone } from "./amount";
 import { formatCurrency } from "@/lib/currency";
@@ -21,7 +20,8 @@ export interface MetricItem {
   /** Stable id -> data-testid="metric-<id>" on the card wrapper. */
   id?: string;
   ariaLabel?: string;
-  icon?: LucideIcon;
+  /** REQUIRED: every metric card carries a meaningful icon tile (no placeholder). */
+  icon: LucideIcon;
   /** Icon tile colour. */
   iconTone?: MetricTone;
   valueClassName?: string;
@@ -85,7 +85,7 @@ export function MetricItemCard({ m }: { m: MetricItem }) {
   const card = (
     <MetricCard
       label={m.label}
-      icon={m.icon ?? Hash}
+      icon={m.icon}
       tone={m.iconTone}
       value={value}
       currency={money ? m.currency : undefined}

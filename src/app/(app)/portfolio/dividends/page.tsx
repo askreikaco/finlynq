@@ -21,7 +21,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Download, SlidersHorizontal, Coins } from "lucide-react";
+import { Download, SlidersHorizontal, Coins, Receipt, Wallet } from "lucide-react";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import {
   HEADER_CELL,
@@ -173,7 +173,7 @@ export default function DividendsPage() {
     // Period figure (this month by default) with the page's total in the note: the big value, badge and delta share one basis.
     const moneyItem = (label: string, ccy: string, total: number, points: ReturnType<typeof sumByMonth>): MetricItem => {
       const c = card(ccy)(points, "sum");
-      return {
+      return { icon: Wallet,
         label, value: c.value ?? total, currency: ccy, tone: "auto", showSign: true, ...cardProps(c),
         ...(c.value != null ? { note: `Total in view: ${formatCurrency(total, ccy)}` } : {}),
       };
@@ -189,7 +189,7 @@ export default function DividendsPage() {
     }
     const rowsCard = makeCardResolver(rangeArg)(divRows && divRows.length > 0 ? countByMonth(divRows, (r) => r.date, through) : [], "sum", undefined, "count");
     items.push({
-      label: "Dividend rows", value: rowsCard.value ?? data.totals.rowCount, ...cardProps(rowsCard),
+      icon: Receipt, label: "Dividend rows", value: rowsCard.value ?? data.totals.rowCount, ...cardProps(rowsCard),
       ...(rowsCard.value != null ? { note: `Total in view: ${data.totals.rowCount}` } : {}),
     });
     return items;

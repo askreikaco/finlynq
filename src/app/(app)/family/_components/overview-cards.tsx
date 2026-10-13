@@ -7,6 +7,7 @@
  * the allow-listed overview DTO, so the figures and the look match those pages.
  */
 import { useMemo } from "react";
+import { TrendingDown, TrendingUp } from "lucide-react";
 import { ResponsiveContainer } from "recharts";
 import { formatCurrency, formatDate } from "@/lib/currency";
 import { prepareTimeSeries } from "@/lib/chart-series";
@@ -164,11 +165,12 @@ export function HeadlineCards(d: HeadlineData) {
         columns={2}
         metrics={[
           {
-            label: incomeLabel, value: d.flows.income, currency,
+            icon: TrendingUp, label: incomeLabel, value: d.flows.income, currency,
             ...(incomeCard ? cardProps(incomeCard) : {}),
             ...(incomeCard?.delta ? { note: caption } : { sub: caption }),
           },
           {
+            icon: TrendingDown,
             label: expensesLabel,
             value: d.flows.expenses,
             currency,

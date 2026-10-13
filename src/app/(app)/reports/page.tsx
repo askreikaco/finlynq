@@ -43,6 +43,7 @@ import {
   Calendar,
   Layers,
   Wallet,
+  Coins,
 } from "lucide-react";
 import {
   BarChart,
@@ -818,9 +819,9 @@ export default function ReportsPage() {
                     <MetricGrid
                       columns={3}
                       metrics={[
-                        { label: "Valuation G/L", value: unrealizedData.totals.valuationGL, currency: displayCurrency, tone: "auto" },
-                        { label: "FX G/L", value: unrealizedData.totals.fxGL, currency: displayCurrency, tone: "auto" },
-                        { label: "Total unrealized", value: unrealizedData.totals.totalGL, currency: displayCurrency, tone: "auto" },
+                        { icon: TrendingUp, label: "Valuation G/L", value: unrealizedData.totals.valuationGL, currency: displayCurrency, tone: "auto" },
+                        { icon: TrendingUp, label: "FX G/L", value: unrealizedData.totals.fxGL, currency: displayCurrency, tone: "auto" },
+                        { icon: Layers, label: "Total unrealized", value: unrealizedData.totals.totalGL, currency: displayCurrency, tone: "auto" },
                       ]}
                     />
 

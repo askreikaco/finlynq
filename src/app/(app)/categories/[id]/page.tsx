@@ -40,7 +40,7 @@ import { CHART_COLORS } from "@/lib/chart-colors";
 import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
 import { todayISO } from "@/lib/utils/date";
 import { CATEGORY_WINDOWS, type CategoryDetail } from "@/lib/reports/category-detail";
-import { Receipt, Store } from "lucide-react";
+import { CalendarClock, Percent, Receipt, Scale, Store, Wallet } from "lucide-react";
 import {
   Amount, CustomizeCardsSheet, HEADER_DESKTOP_ONLY, ListRow, MetricGrid, PageHeader, SectionCard,
   useCardLayout, usePageCustomize, type MetricItem,
@@ -201,7 +201,7 @@ function CategoryPageContent() {
     : "This month so far";
   const countCard = resolveCard({ points: countPts, period: metricRange.period, mode: "sum", isDefault: false, kind: "count", caption });
   const summaryMetrics: MetricItem[] = [
-    {
+    { icon: Wallet,
       label: rangeTitle,
       value: metricRange.explicit ? (thisCard.value ?? 0) : stats.thisMonth,
       currency: cur,
@@ -211,7 +211,7 @@ function CategoryPageContent() {
         ? `of ${formatCurrency(currentMonth.budget, cur)} budget`
         : `${countCard.value ?? currentMonth?.count ?? 0} transaction${(countCard.value ?? currentMonth?.count) === 1 ? "" : "s"}`,
     },
-    {
+    { icon: Wallet,
       label: `Last month (${monthLabel(data.months[data.months.length - 2]?.month ?? "", "short")})`,
       value: stats.lastMonth,
       currency: cur,
@@ -219,19 +219,19 @@ function CategoryPageContent() {
       invertTone: !isIncome,
       note: lastVsAvg ? `${lastVsAvg.text} vs average` : undefined,
     },
-    {
+    { icon: Scale,
       label: "Monthly average",
       value: stats.averageMonthly != null ? stats.averageMonthly : "—",
       currency: stats.averageMonthly != null ? cur : undefined,
       sub: stats.medianMonthly != null ? `median ${formatCurrency(stats.medianMonthly, cur)}` : "needs a full month",
     },
-    {
+    { icon: CalendarClock,
       label: `${monthLabel(currentMonth?.month ?? "", "long").split(" ")[0]} last year`,
       value: stats.sameMonthLastYear,
       currency: cur,
       sub: "same month, a year ago",
     },
-    { label: `Share of ${noun}`, value: pct(stats.shareOfType), sub: `of all ${noun}, last ${months} months` },
+    { icon: Percent, label: `Share of ${noun}`, value: pct(stats.shareOfType), sub: `of all ${noun}, last ${months} months` },
   ];
 
   const nodes: Record<string, ReactNode> = {
