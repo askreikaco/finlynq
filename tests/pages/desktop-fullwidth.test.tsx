@@ -49,7 +49,7 @@ describe("desktop: extra width becomes columns", () => {
   });
 
   it("/portfolio: holdings account groups in 2 columns at wide", () => {
-    expect(code("src/app/(app)/portfolio/_components/holding-account-groups.tsx")).toMatch(/grid-cols-1[^"]*wide:grid-cols-2/);
+    expect(code("src/app/(app)/portfolio/_components/holding-account-groups.tsx")).toMatch(/grid-cols-1[^`]*groups\.length > 1 \? " wide:grid-cols-2"/);
   });
 
   it("/reports: summary tiles in one row, charts in a 2-column grid at wide", () => {
