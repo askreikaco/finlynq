@@ -51,37 +51,27 @@ describe("MetricCard layout and sizing", () => {
     expect(container).toBeTruthy();
   });
 
-  it("caps the wide column with correct classes at @[36rem]", () => {
-    const sparkData = [100, 120, 110, 130, 125];
+  const wideColumnOf = (size: "hero" | "default") => {
     const { container } = render(
-      <MetricCard
-        label="Net Worth"
-        icon={DollarSign}
-        value={14116.68}
-        size="hero"
-        sparkData={sparkData}
-        sparkColor="#6366f1"
-      />
+      <MetricCard label="Net Worth" icon={DollarSign} value={14116.68} size={size} sparkData={[100, 120, 110, 130, 125]} sparkColor="#6366f1" />,
     );
+    return Array.from(container.querySelectorAll("div")).find(
+      (d) => d.className.includes("hidden @[36rem]:block") && d.className.includes("@[36rem]:self-center"),
+    );
+  };
 
-    // Find the wide column div by looking for the class that contains the expected strings
-    const allDivs = container.querySelectorAll("div");
-    let wideColumn = null;
-    for (const div of allDivs) {
-      if (
-        div.className.includes("@[36rem]:w-[40%]") &&
-        div.className.includes("@[36rem]:max-w-[18rem]") &&
-        div.className.includes("@[36rem]:self-center")
-      ) {
-        wideColumn = div;
-        break;
-      }
-    }
+  it("caps the wide sparkline column at @[36rem] on a default card", () => {
+    const col = wideColumnOf("default");
+    expect(col).toBeTruthy();
+    expect(col?.className).toContain("@[36rem]:w-[40%]");
+    expect(col?.className).toContain("@[36rem]:max-w-[18rem]");
+  });
 
-    expect(wideColumn).toBeTruthy();
-    expect(wideColumn?.className).toContain("@[36rem]:w-[40%]");
-    expect(wideColumn?.className).toContain("@[36rem]:max-w-[18rem]");
-    expect(wideColumn?.className).toContain("@[36rem]:self-center");
+  it("hero card: the sparkline column fills the free width (no empty gap between value and chart)", () => {
+    const col = wideColumnOf("hero");
+    expect(col).toBeTruthy();
+    expect(col?.className).toContain("@[36rem]:flex-1");
+    expect(col?.className).not.toContain("@[36rem]:max-w-[18rem]");
   });
 
   it("sets narrow strip to 44px height on non-wide screens", () => {
