@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+
+import { Fragment, useState, useMemo, useCallback, type ReactNode } from "react";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import Link from "next/link";
 import { useDevMode } from "@/hooks/use-dev-mode";
@@ -52,7 +53,8 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { PageHeader } from "@/components/mobile";
+import { PageHeader, CustomizeCardsSheet, metricGridClass, useCardLayout, usePageCustomize } from "@/components/mobile";
+import type { PageCard } from "@/lib/card-layout";
 import { IncomeExpenseTrendCard } from "@/components/reports/income-expense-trend-card";
 
 // ── Types ──
@@ -144,6 +146,12 @@ function localDateStr(y: number, mo: number, d: number): string {
 
 
 // ── Component ──
+
+/** Customizable cards of the reports page (between the filters and the detail tabs), default order. */
+const REPORT_CARDS: readonly PageCard[] = [
+  { id: "summary", title: "Totals" },
+  { id: "trend", title: "Trend" },
+];
 
 export default function ReportsPage() {
   const currentYear = new Date().getFullYear();
@@ -301,6 +309,10 @@ export default function ReportsPage() {
 
   // Hold the first paint until trends resolves so the charts never flash blank
   // axes against null data.
+  const cardLayout = useCardLayout("reports", REPORT_CARDS);
+  const [customizeOpen, setCustomizeOpen] = useState(false);
+  usePageCustomize(trendsData ? { onOpen: () => setCustomizeOpen(true) } : null);
+
   if (loading && !trendsData) {
     return <PageSkeleton variant="cards" rows={6} />;
   }
@@ -314,6 +326,82 @@ export default function ReportsPage() {
       />
     );
   }
+
+  // Summary metrics and trend chart, keyed by REPORT_CARDS ids; rendered in the user's saved order.
+  const cardNodes: Record<string, ReactNode> = {
+    summary: (
+      <>
+      {trendsData && (
+        <div className={metricGridClass(4, "gap-4")}>
+          <Card className="card-hover">
+            <CardContent className="pt-4 pb-4">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-pos/10 text-pos">
+                  <TrendingUp className="h-3.5 w-3.5" />
+                </div>
+                <span className="text-xs text-muted-foreground font-medium">Total Income</span>
+              </div>
+              <p className="text-xl font-bold font-mono hero-number text-pos">
+                {formatCurrency(trendsData.totalIncome, displayCurrency)}
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="card-hover">
+            <CardContent className="pt-4 pb-4">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-destructive/10 text-destructive">
+                  <TrendingDown className="h-3.5 w-3.5" />
+                </div>
+                <span className="text-xs text-muted-foreground font-medium">Total Expenses</span>
+              </div>
+              <p className="text-xl font-bold font-mono hero-number text-destructive">
+                {formatCurrency(trendsData.totalExpenses, displayCurrency)}
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="card-hover">
+            <CardContent className="pt-4 pb-4">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <DollarSign className="h-3.5 w-3.5" />
+                </div>
+                <span className="text-xs text-muted-foreground font-medium">Net Savings</span>
+              </div>
+              <p className={`text-xl font-bold font-mono hero-number ${trendsData.netSavings >= 0 ? "text-pos" : "text-destructive"}`}>
+                {formatCurrency(trendsData.netSavings, displayCurrency)}
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="card-hover">
+            <CardContent className="pt-4 pb-4">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-chart-5/10 text-chart-5">
+                  <PiggyBank className="h-3.5 w-3.5" />
+                </div>
+                <span className="text-xs text-muted-foreground font-medium">Savings Rate</span>
+              </div>
+              <p className={`text-xl font-bold font-mono hero-number ${trendsData.savingsRate >= 0 ? "text-pos" : "text-destructive"}`}>
+                {trendsData.savingsRate}%
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+      </>
+    ),
+    trend: (
+      <>
+      {trendsData && trendsData.timeseries.length > 0 && (
+        <IncomeExpenseTrendCard
+          timeseries={trendsData.timeseries}
+          currency={displayCurrency}
+          description={`${periodLabels[period]} trend · ${startDate} to ${endDate}`}
+          daily={period === "daily"}
+        />
+      )}
+      </>
+    ),
+  };
 
   return (
     <div className="space-y-6">
@@ -438,73 +526,22 @@ export default function ReportsPage() {
         </CardContent>
       </Card>
 
-      {/* ── Summary Cards ── */}
-      {trendsData && (
-        <div className="grid grid-cols-2 regular:grid-cols-4 gap-4">
-          <Card className="card-hover">
-            <CardContent className="pt-4 pb-4">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-pos/10 text-pos">
-                  <TrendingUp className="h-3.5 w-3.5" />
-                </div>
-                <span className="text-xs text-muted-foreground font-medium">Total Income</span>
-              </div>
-              <p className="text-xl font-bold font-mono hero-number text-pos">
-                {formatCurrency(trendsData.totalIncome, displayCurrency)}
-              </p>
-            </CardContent>
-          </Card>
-          <Card className="card-hover">
-            <CardContent className="pt-4 pb-4">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-destructive/10 text-destructive">
-                  <TrendingDown className="h-3.5 w-3.5" />
-                </div>
-                <span className="text-xs text-muted-foreground font-medium">Total Expenses</span>
-              </div>
-              <p className="text-xl font-bold font-mono hero-number text-destructive">
-                {formatCurrency(trendsData.totalExpenses, displayCurrency)}
-              </p>
-            </CardContent>
-          </Card>
-          <Card className="card-hover">
-            <CardContent className="pt-4 pb-4">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <DollarSign className="h-3.5 w-3.5" />
-                </div>
-                <span className="text-xs text-muted-foreground font-medium">Net Savings</span>
-              </div>
-              <p className={`text-xl font-bold font-mono hero-number ${trendsData.netSavings >= 0 ? "text-pos" : "text-destructive"}`}>
-                {formatCurrency(trendsData.netSavings, displayCurrency)}
-              </p>
-            </CardContent>
-          </Card>
-          <Card className="card-hover">
-            <CardContent className="pt-4 pb-4">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-chart-5/10 text-chart-5">
-                  <PiggyBank className="h-3.5 w-3.5" />
-                </div>
-                <span className="text-xs text-muted-foreground font-medium">Savings Rate</span>
-              </div>
-              <p className={`text-xl font-bold font-mono hero-number ${trendsData.savingsRate >= 0 ? "text-pos" : "text-destructive"}`}>
-                {trendsData.savingsRate}%
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      {cardLayout.layout.order
+        .filter((id) => !cardLayout.layout.hidden.includes(id))
+        .map((id) => (
+          <Fragment key={id}>{cardNodes[id]}</Fragment>
+        ))}
 
-      {/* ── Trend Chart ── */}
-      {trendsData && trendsData.timeseries.length > 0 && (
-        <IncomeExpenseTrendCard
-          timeseries={trendsData.timeseries}
-          currency={displayCurrency}
-          description={`${periodLabels[period]} trend · ${startDate} to ${endDate}`}
-          daily={period === "daily"}
-        />
-      )}
+      <CustomizeCardsSheet
+        open={customizeOpen}
+        onOpenChange={setCustomizeOpen}
+        title="Customize reports"
+        description="Show, hide and reorder the summary and trend cards."
+        cards={REPORT_CARDS}
+        layout={cardLayout.layout}
+        onSave={cardLayout.save}
+        onReset={cardLayout.reset}
+      />
 
       {/* ── Tabs ── */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -726,7 +763,7 @@ export default function ReportsPage() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {/* Totals row */}
-                    <div className="grid grid-cols-1 regular:grid-cols-3 gap-3">
+                    <div className={metricGridClass(3)}>
                       <div className="rounded-lg border bg-muted/30 p-3">
                         <p className="text-xs text-muted-foreground">Valuation G/L</p>
                         <p

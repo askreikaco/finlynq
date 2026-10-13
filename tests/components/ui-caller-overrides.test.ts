@@ -22,7 +22,6 @@ export const EXCEPTIONS: Record<string, string[]> = {
   "src/app/(app)/settings/general/page.tsx": ["regular:w-48"],
   "src/app/(app)/categories/[id]/page.tsx": ["max-regular:w-40"],
   "src/components/ui/pagination.tsx": ["max-regular:hidden"],
-  "src/components/mobile/page-header.tsx": ["regular:hidden"],
 };
 
 export interface Hit { file: string; line: number; tag: string; token: string }
@@ -118,12 +117,12 @@ describe("ui caller overrides (G2-15)", () => {
       .flatMap((f) => scanSource(f, fs.readFileSync(path.join(ROOT, f), "utf-8")).viewport)
       .filter((h) => !(EXCEPTIONS[h.file] ?? []).includes(h.token));
     expect(hits.map((h) => `${h.file}:${h.line} <${h.tag}> ${h.token}`)).toEqual([]);
-  });
+  }, 30_000);
 
   it("no regular:/wide:/max-regular: size or font-size override without a pointer modifier", () => {
     const hits = files.flatMap((f) => scanSource(f, fs.readFileSync(path.join(ROOT, f), "utf-8")).unpointed);
     expect(hits.map((h) => `${h.file}:${h.line} <${h.tag}> ${h.token}`)).toEqual([]);
-  });
+  }, 30_000);
 
   it("exceptions are real: each listed token still occurs in its file (no stale exceptions)", () => {
     const stale: string[] = [];

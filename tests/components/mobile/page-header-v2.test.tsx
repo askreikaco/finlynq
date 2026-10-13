@@ -119,7 +119,7 @@ describe("PageHeader v2: source hygiene", () => {
     expect(SOURCE).not.toContain("desktopClasses");
   });
 
-  it("the overflow trigger is hidden from regular up (only the phone menu)", () => {
-    expect(SOURCE).toContain('className="regular:hidden"');
+  it("the overflow trigger (More) is shown at every size: it is the header group's first button", () => {
+    expect(SOURCE).not.toContain('className="regular:hidden"');
   });
 });

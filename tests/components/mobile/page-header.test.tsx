@@ -122,7 +122,8 @@ describe("PageHeader: overflow menu (Accounts-style)", () => {
       />,
     );
     const trigger = screen.getByRole("button", { name: "More actions" });
-    expect(cls(trigger)).toContain("regular:hidden");
+    // More is the header group's first button at every size (not phone-only)
+    expect(cls(trigger)).not.toContain("regular:hidden");
     expect(cls(trigger)).toContain("pointer-coarse:size-11");
     expect(cls(screen.getByText("Manage groups", { selector: "button" }))).toContain("max-regular:hidden");
     expect(cls(screen.getByText("Add"))).not.toContain("max-regular:hidden");
