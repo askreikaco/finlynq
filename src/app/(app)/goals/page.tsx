@@ -1,16 +1,19 @@
 "use client";
 
+import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
-import { Plus, Trash2, Target, CheckCircle2, TrendingUp, Calendar, Pencil } from "lucide-react";
-import { PHONE_PRIMARY_CLASS } from "@/components/mobile";
-import { DataView, ViewModeToggle } from "@/components/adaptive";
+import { Plus, Target, CheckCircle2, Pencil, Trash2 } from "lucide-react";
+import {
+  CustomizeCardsSheet, DetailSheet, ListRow, MetricGrid, PHONE_PRIMARY_CLASS, SectionCard,
+  useCardLayout, usePageCustomize, type DetailItem, type MetricItem, type MetricTextItem,
+} from "@/components/mobile";
+import type { PageCard } from "@/lib/card-layout";
 import { ListPage, type ListPageContext } from "@/components/templates";
 import type { Goal } from "./_components/goal-form";
 import { useGoalsLoad } from "./_components/use-goals-load";
@@ -18,12 +21,19 @@ import { SyncMarkBadge } from "@/components/offline/sync-mark-badge";
 import { isLocalWriteQueueActive, queueOfflineEntityDelete } from "@/lib/data/local-write-queue";
 import { isNetworkFailure } from "@/lib/transactions/entry-mode";
 
-const goalTypeConfig: Record<string, { label: string; badgeClass: string; borderClass: string }> = {
-  savings: { label: "Savings", badgeClass: "bg-pos/10 text-pos border-pos/30", borderClass: "border-l-pos" },
-  debt_payoff: { label: "Debt Payoff", badgeClass: "bg-destructive/10 text-destructive border-destructive/30", borderClass: "border-l-destructive" },
-  investment: { label: "Investment", badgeClass: "bg-primary/10 text-primary border-primary/30", borderClass: "border-l-primary" },
-  emergency_fund: { label: "Emergency Fund", badgeClass: "bg-warning/10 text-warning border-warning/30", borderClass: "border-l-warning" },
+const goalTypeConfig: Record<string, { label: string }> = {
+  savings: { label: "Savings" },
+  debt_payoff: { label: "Debt Payoff" },
+  investment: { label: "Investment" },
+  emergency_fund: { label: "Emergency Fund" },
 };
+
+/** Cards of the goals page, default order (Customize). */
+const GOAL_CARDS: readonly PageCard[] = [
+  { id: "summary", title: "Summary" },
+  { id: "active", title: "Active goals" },
+  { id: "completed", title: "Completed goals" },
+];
 
 function progressColorClass(progress: number): string {
   if (progress < 33) return "[&_[data-slot=progress-indicator]]:bg-destructive";
@@ -52,7 +62,7 @@ async function toggleStatus(goal: Goal, reload: () => void) {
   reload();
 }
 
-/** Empty state: no goals at all (both views show it). */
+/** Empty state: no goals at all. */
 const emptyGoals = (
   <Card className="border-dashed">
     <CardContent className="py-16 flex flex-col items-center text-center">
@@ -78,314 +88,211 @@ const emptyGoals = (
   </Card>
 );
 
-/** Summary tiles: totals over the active goals, in the display currency. */
-function goalSummary(goals: Goal[], displayCurrency: string) {
-  const active = goals.filter((g) => g.status === "active");
-  const completed = goals.filter((g) => g.status === "completed");
-  const totalTarget = active.reduce((s, g) => s + (g.targetAmountDisplay ?? g.targetAmount), 0);
-  const totalCurrent = active.reduce((s, g) => s + (g.currentAmountDisplay ?? g.currentAmount), 0);
-  const hasForeignGoal = active.some((g) => g.currency && g.currency !== displayCurrency);
-  return (
-    <div className="grid grid-cols-1 regular:grid-cols-3 gap-4">
-      <Card>
-        <CardContent className="flex items-center gap-4 pt-6">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-            <Target className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Total Target</p>
-            <p className="text-2xl font-bold">{formatCurrency(totalTarget, displayCurrency)}</p>
-            {hasForeignGoal && <p className="text-xs text-muted-foreground mt-1">converted at today&apos;s rates</p>}
-          </div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent className="flex items-center gap-4 pt-6">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-pos/10">
-            <TrendingUp className="h-5 w-5 text-pos" />
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Current Progress</p>
-            <p className="text-2xl font-bold text-pos">{formatCurrency(totalCurrent, displayCurrency)}</p>
-            {hasForeignGoal && <p className="text-xs text-muted-foreground mt-1">converted at today&apos;s rates</p>}
-          </div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent className="flex items-center gap-4 pt-6">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-chart-5/10">
-            <CheckCircle2 className="h-5 w-5 text-chart-5" />
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Completed</p>
-            <p className="text-2xl font-bold">{completed.length} <span className="text-base font-normal text-muted-foreground">/ {goals.length}</span></p>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-// Cards view: the goal cards (the phone layout).
-function goalCards({ records: goals, reload, openDelete }: GoalCtx, displayCurrency: string) {
-  const active = goals.filter((g) => g.status === "active");
-  const completed = goals.filter((g) => g.status === "completed");
-  return (
-    <div className="space-y-6">
-      {/* Empty state — no goals at all */}
-      {goals.length === 0 && emptyGoals}
-
-      {/* Empty state — has completed goals but no active */}
-      {goals.length > 0 && active.length === 0 && (
-        <Card>
-          <CardContent className="py-10 flex flex-col items-center text-center">
-            <CheckCircle2 className="h-10 w-10 text-pos mb-3" />
-            <h3 className="text-base font-semibold mb-1">All goals completed!</h3>
-            <p className="text-sm text-muted-foreground">Add a new goal to keep building momentum.</p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Active goals */}
-      {active.map((g) => {
-        const config = goalTypeConfig[g.type] ?? goalTypeConfig.savings;
-        return (
-          <Card key={g.id} className={`border-l-4 ${config.borderClass}`}>
-            <CardContent className="pt-6">
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Target className="h-5 w-5 text-primary" />
-                  <div>
-                    <h3 className="font-semibold">{g.name}</h3>
-                    {g.pendingSync && <SyncMarkBadge mark={g.pendingSync} />}
-                    <div className="flex flex-wrap gap-2 mt-1">
-                      <Badge className={config.badgeClass}>{config.label}</Badge>
-                      {g.currency && g.currency !== displayCurrency && (
-                        <Badge variant="outline">{g.currency}</Badge>
-                      )}
-                      {/* Issue #130 — render every linked account as its own chip. */}
-                      {(g.accounts ?? []).filter((n) => n).map((name, i) => (
-                        <Badge key={`${g.accountIds[i] ?? i}`} variant="secondary">{name}</Badge>
-                      ))}
-                      {g.deadline && (
-                        <Badge variant="outline" className="gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {g.deadline}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex gap-1">
-                  <Button variant="ghost" size="icon" className="h-8 w-8" render={<Link href={`/goals/${g.id}/edit`} />} title="Edit" aria-label={`Edit goal ${g.name}`}>
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleStatus(g, reload)} title="Mark complete" aria-label={`Mark goal ${g.name} complete`}>
-                    <CheckCircle2 className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => openDelete(g)} title="Delete" aria-label={`Delete goal ${g.name}`}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>{formatCurrency(g.currentAmount, g.currency || displayCurrency)} of {formatCurrency(g.targetAmount, g.currency || displayCurrency)}</span>
-                  <span className={`font-bold ${progressTextClass(g.progress)}`}>{g.progress}%</span>
-                </div>
-                <Progress value={g.progress} className={`h-3 ${progressColorClass(g.progress)}`} />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Remaining: <span className="font-medium text-foreground">{formatCurrency(g.remaining, g.currency || displayCurrency)}</span></span>
-                  {g.monthlyNeeded > 0 && (
-                    <span className="inline-flex items-center rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary ring-1 ring-inset ring-primary/30">
-                      {formatCurrency(g.monthlyNeeded, g.currency || displayCurrency)}/mo needed
-                    </span>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })}
-
-      {/* Completed goals */}
-      {completed.length > 0 && (
-        <div className="space-y-3">
-          <h2 className="text-lg font-semibold text-muted-foreground flex items-center gap-2">
-            <CheckCircle2 className="h-5 w-5 text-pos" />
-            Completed Goals
-          </h2>
-          {completed.map((g) => (
-            <Card key={g.id} className="border-l-4 border-l-pos/30 bg-pos/10">
-              <CardContent className="py-3 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-pos shrink-0" />
-                  <div>
-                    <span className="line-through text-muted-foreground">{g.name}</span>
-                    <Badge className="ml-2 bg-pos/10 text-pos border-pos/30">{formatCurrency(g.targetAmount, g.currency || displayCurrency)}</Badge>
-                  </div>
-                </div>
-                <div className="flex gap-1">
-                  <Button variant="ghost" size="icon" className="h-7 w-7" render={<Link href={`/goals/${g.id}/edit`} />} title="Edit" aria-label={`Edit goal ${g.name}`}>
-                    <Pencil className="h-3 w-3" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => toggleStatus(g, reload)} title="Reactivate" aria-label={`Reactivate goal ${g.name}`}>
-                    <Target className="h-3 w-3" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => openDelete(g)} title="Delete" aria-label={`Delete goal ${g.name}`}>
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// List view: one table of every goal (active first, then completed). Row opens the edit page.
-function goalList({ records: goals, reload, openDelete }: GoalCtx, displayCurrency: string) {
-  const active = goals.filter((g) => g.status === "active");
-  const completed = goals.filter((g) => g.status === "completed");
-  return goals.length === 0 ? emptyGoals : (
-    <Table containerClassName="rounded-xl border bg-card">
-      <TableHeader>
-        <TableRow>
-          <TableHead>Goal</TableHead>
-          <TableHead className="text-right">Target</TableHead>
-          <TableHead className="text-right">Saved</TableHead>
-          <TableHead className="w-44">Progress</TableHead>
-          <TableHead>Deadline</TableHead>
-          <TableHead><span className="sr-only">Actions</span></TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {[...active, ...completed].map((g) => {
-          const currency = g.currency || displayCurrency;
-          const done = g.status === "completed";
-          return (
-            <TableRow key={g.id} className="relative">
-              <TableCell className="font-medium">
-                <div className="flex items-center gap-2">
-                  <Link href={`/goals/${g.id}/edit`} className="after:absolute after:inset-0 hover:underline">
-                    {g.name}
-                    {g.pendingSync && <span className="ml-2 align-middle"><SyncMarkBadge mark={g.pendingSync} /></span>}
-                  </Link>
-                  {done && <Badge className="bg-pos/10 text-pos border-pos/30">Completed</Badge>}
-                </div>
-              </TableCell>
-              <TableCell className="text-right font-mono tabular-nums">{formatCurrency(g.targetAmount, currency)}</TableCell>
-              <TableCell className="text-right font-mono tabular-nums">{formatCurrency(g.currentAmount, currency)}</TableCell>
-              <TableCell>
-                <div className="flex items-center gap-2">
-                  <Progress value={g.progress} className={`h-2 w-24 ${progressColorClass(g.progress)}`} />
-                  <span className={`text-xs font-bold tabular-nums ${progressTextClass(g.progress)}`}>{g.progress}%</span>
-                </div>
-              </TableCell>
-              <TableCell className="tabular-nums">{g.deadline ?? "—"}</TableCell>
-              <TableCell className="text-right">
-                <div className="relative z-10 flex items-center justify-end gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={() => toggleStatus(g, reload)}
-                    title={done ? "Reactivate" : "Mark complete"}
-                    aria-label={done ? `Reactivate goal ${g.name}` : `Mark goal ${g.name} complete`}
-                  >
-                    <CheckCircle2 className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-destructive"
-                    onClick={() => openDelete(g)}
-                    title="Delete"
-                    aria-label={`Delete goal ${g.name}`}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          );
-        })}
-      </TableBody>
-    </Table>
-  );
+/** One goal's detail sheet items: every field a row leaves out. */
+function goalDetailItems(g: Goal, displayCurrency: string): DetailItem[] {
+  const currency = g.currency || displayCurrency;
+  const items: DetailItem[] = [
+    { label: "Type", value: goalTypeConfig[g.type]?.label ?? "Savings" },
+    { label: "Target", value: formatCurrency(g.targetAmount, currency) },
+    { label: "Saved", value: formatCurrency(g.currentAmount, currency) },
+    { label: "Remaining", value: formatCurrency(g.remaining, currency) },
+  ];
+  if (g.monthlyNeeded > 0) items.push({ label: "Needed per month", value: formatCurrency(g.monthlyNeeded, currency) });
+  items.push({ label: "Deadline", value: g.deadline ?? "—" });
+  const accounts = (g.accounts ?? []).filter((n) => n);
+  if (accounts.length > 0) items.push({ label: "Accounts", value: accounts.join(", ") });
+  if (g.currency && g.currency !== displayCurrency) items.push({ label: "Currency", value: g.currency });
+  return items;
 }
 
 /**
- * The toggle and the views, as today's markup. Used as `body` (goals exist) and `emptySlot`
- * (no goals, the toggle stays visible above the empty state). The list template's own toolbar is off.
+ * The centred body under the ListPage header: summary tiles, the active and completed goals as ListRows, and the
+ * row detail sheet (edit, mark complete / reactivate, delete). Mounted only when goals exist (ListPage renders the
+ * empty state otherwise), so the Customize registration lives here.
  */
-function goalViews(ctx: GoalCtx, displayCurrency: string) {
+function GoalsBody({ ctx, displayCurrency }: { ctx: GoalCtx; displayCurrency: string }) {
+  const { records: goals, reload, openDelete } = ctx;
+  const cardLayout = useCardLayout("goals", GOAL_CARDS);
+  const [customizeOpen, setCustomizeOpen] = useState(false);
+  const [detailId, setDetailId] = useState<number | null>(null);
+  usePageCustomize({ onOpen: () => setCustomizeOpen(true) });
+
+  const active = goals.filter((g) => g.status === "active");
+  const completed = goals.filter((g) => g.status === "completed");
+  const detail = goals.find((g) => g.id === detailId) ?? null;
+  const totalTarget = active.reduce((s, g) => s + (g.targetAmountDisplay ?? g.targetAmount), 0);
+  const totalCurrent = active.reduce((s, g) => s + (g.currentAmountDisplay ?? g.currentAmount), 0);
+  const hasForeignGoal = active.some((g) => g.currency && g.currency !== displayCurrency);
+  const caveat = hasForeignGoal ? "converted at today's rates" : undefined;
+
+  const summaryMetrics: Array<MetricItem | MetricTextItem> = [
+    { label: "Total Target", value: totalTarget, currency: displayCurrency, sub: caveat },
+    { label: "Current Progress", value: totalCurrent, currency: displayCurrency, tone: "pos", sub: caveat },
+    { label: "Completed", text: `${completed.length} / ${goals.length}` },
+  ];
+
+  const nodes: Record<string, ReactNode> = {
+    summary: <MetricGrid metrics={summaryMetrics} />,
+    active: active.length > 0 ? (
+      <SectionCard label="Active" padded={false} className="divide-y divide-border/50 px-3">
+        {active.map((g) => {
+          const currency = g.currency || displayCurrency;
+          return (
+            <ListRow
+              key={g.id}
+              title={
+                <span className="inline-flex max-w-full items-center gap-2 align-middle">
+                  <span className="truncate">{g.name}</span>
+                  {g.pendingSync && <SyncMarkBadge mark={g.pendingSync} />}
+                </span>
+              }
+              subtitle={`${formatCurrency(g.currentAmount, currency)} of ${formatCurrency(g.targetAmount, currency)}`}
+              value={<span className={`tabular-nums text-sm font-bold ${progressTextClass(g.progress)}`}>{g.progress}%</span>}
+              secondary={g.deadline ?? undefined}
+              onPress={() => setDetailId(g.id)}
+            />
+          );
+        })}
+      </SectionCard>
+    ) : (
+      <Card>
+        <CardContent className="py-10 flex flex-col items-center text-center">
+          <CheckCircle2 className="h-10 w-10 text-pos mb-3" />
+          <h3 className="text-base font-semibold mb-1">All goals completed!</h3>
+          <p className="text-sm text-muted-foreground">Add a new goal to keep building momentum.</p>
+        </CardContent>
+      </Card>
+    ),
+    completed: completed.length > 0 ? (
+      <SectionCard label="Completed" padded={false} className="divide-y divide-border/50 px-3">
+        {completed.map((g) => (
+          <ListRow
+            key={g.id}
+            title={<span className="truncate line-through text-muted-foreground">{g.name}</span>}
+            subtitle={formatCurrency(g.targetAmount, g.currency || displayCurrency)}
+            value={<Badge className="bg-pos/10 text-pos border-pos/30">Completed</Badge>}
+            onPress={() => setDetailId(g.id)}
+          />
+        ))}
+      </SectionCard>
+    ) : null,
+  };
+
+  const shown = cardLayout.layout.order.filter((id) => !cardLayout.layout.hidden.includes(id));
+
   return (
-    <>
-      <div className="flex justify-end">
-        <ViewModeToggle viewKey="goals" />
-      </div>
-      {/* Goals: Cards (default on phones) or List (table rows). Only the selected view is mounted. */}
-      <DataView viewKey="goals" cards={() => goalCards(ctx, displayCurrency)} list={() => goalList(ctx, displayCurrency)} />
-    </>
+    <div className="space-y-6">
+      {shown.map((id) => (nodes[id] ? <div key={id}>{nodes[id]}</div> : null))}
+
+      <DetailSheet
+        open={detail !== null}
+        onOpenChange={(o) => { if (!o) setDetailId(null); }}
+        title={detail?.name ?? "Goal"}
+        description={detail ? (goalTypeConfig[detail.type]?.label ?? "Savings") : undefined}
+        items={detail ? goalDetailItems(detail, displayCurrency) : []}
+      >
+        {detail && (
+          <>
+            <div className="space-y-1">
+              <div className="flex justify-between text-sm">
+                <span>{formatCurrency(detail.currentAmount, detail.currency || displayCurrency)} saved</span>
+                <span className={`font-bold ${progressTextClass(detail.progress)}`}>{detail.progress}%</span>
+              </div>
+              <Progress value={detail.progress} className={`h-3 ${progressColorClass(detail.progress)}`} />
+            </div>
+            <Button variant="outline" render={<Link href={`/goals/${detail.id}/edit`} />} aria-label={`Edit goal ${detail.name}`}>
+              <Pencil className="h-4 w-4 mr-1" /> Edit
+            </Button>
+            <Button
+              variant="outline"
+              aria-label={detail.status === "completed" ? `Reactivate goal ${detail.name}` : `Mark goal ${detail.name} complete`}
+              onClick={() => { const g = detail; setDetailId(null); void toggleStatus(g, reload); }}
+            >
+              <CheckCircle2 className="h-4 w-4 mr-1" /> {detail.status === "completed" ? "Reactivate" : "Mark complete"}
+            </Button>
+            <Button
+              variant="outline"
+              className="text-destructive"
+              aria-label={`Delete goal ${detail.name}`}
+              onClick={() => { const g = detail; setDetailId(null); openDelete(g); }}
+            >
+              <Trash2 className="h-4 w-4 mr-1" /> Delete
+            </Button>
+          </>
+        )}
+      </DetailSheet>
+
+      <CustomizeCardsSheet
+        open={customizeOpen}
+        onOpenChange={setCustomizeOpen}
+        title="Customize goals"
+        description="Show, hide and reorder the cards on your goals page."
+        cards={GOAL_CARDS}
+        layout={cardLayout.layout}
+        onSave={cardLayout.save}
+        onReset={cardLayout.reset}
+      />
+    </div>
   );
 }
 
 export default function GoalsPage() {
   const { displayCurrency } = useDisplayCurrency();
+  // One body for every view: the ListPage has no Cards / List toggle any more (ListRows at every width).
+  const goalsBody = (ctx: GoalCtx) => <GoalsBody ctx={ctx} displayCurrency={displayCurrency} />;
   return (
-    <ListPage<Goal>
-      id="goals"
-      title="Goals"
-      subtitle="Track your savings targets and measure progress over time"
-      viewKey="goals"
-      useLoad={useGoalsLoad}
-      empty={{
-        title: "Set your first financial goal",
-        body: "Goals help you stay focused and measure real progress. Start with an emergency fund, debt payoff target, or a savings milestone.",
-      }}
-      cards={(ctx) => goalCards(ctx, displayCurrency)}
-      list={(ctx) => goalList(ctx, displayCurrency)}
-      summarySlot={(goals) => goalSummary(goals, displayCurrency)}
-      toolbarPlacement="none"
-      body={(ctx) => goalViews(ctx, displayCurrency)}
-      emptySlot={(ctx) => goalViews(ctx, displayCurrency)}
-      states={{ loading: { chrome: false }, error: { chrome: false } }}
-      error={{ title: "Couldn't load goals", message: "We couldn't load your goals. Please try again." }}
-      header={{
-        actions: (
-          <Button className={PHONE_PRIMARY_CLASS} aria-label="Add Goal" render={<Link href="/goals/new" />}>
-            <Plus className="h-4 w-4 mr-1" /> Add Goal
-          </Button>
-        ),
-      }}
-      deleteFlow={{
-        label: "Delete goal",
-        confirmTitle: "Delete goal",
-        describe: (goal) => (
-          <>Are you sure you want to delete <strong>{goal.name ?? "this goal"}</strong>? This cannot be undone.</>
-        ),
-        request: async (goal) => {
-          try {
-            return await fetch(`/api/goals?id=${goal.id}`, { method: "DELETE" });
-          } catch (netErr) {
-            // Offline queue (local-first L3): a network failure keeps the delete on this device. Flag off = rethrow.
-            if (isLocalWriteQueueActive() && isNetworkFailure(netErr)) {
-              const g = goal as unknown as Record<string, string | number | null | undefined>;
-              const queued = await queueOfflineEntityDelete(
-                "goal",
-                goal.id,
-                { name: g.name ?? null, type: g.type ?? null, targetAmount: g.targetAmount ?? null, currency: g.currency ?? null, deadline: g.deadline ?? null, priority: g.priority ?? null, note: g.note ?? null, updatedAt: (g.updatedAt as string | undefined) ?? null },
-              );
-              if (queued) return new Response(null, { status: 200 });
+    // The whole page (header and body) sits in the centred report column at every width.
+    <div className="mx-auto w-full max-w-report">
+      <ListPage<Goal>
+        id="goals"
+        title="Goals"
+        subtitle="Track your savings targets and measure progress over time"
+        viewKey="goals"
+        useLoad={useGoalsLoad}
+        empty={{
+          title: "Set your first financial goal",
+          body: "Goals help you stay focused and measure real progress. Start with an emergency fund, debt payoff target, or a savings milestone.",
+        }}
+        toolbarPlacement="none"
+        cards={goalsBody}
+        list={goalsBody}
+        body={goalsBody}
+        emptySlot={() => emptyGoals}
+        states={{ loading: { chrome: false }, error: { chrome: false } }}
+        error={{ title: "Couldn't load goals", message: "We couldn't load your goals. Please try again." }}
+        header={{
+          actions: (
+            <Button className={PHONE_PRIMARY_CLASS} aria-label="Add Goal" render={<Link href="/goals/new" />}>
+              <Plus className="h-4 w-4 mr-1" /> Add Goal
+            </Button>
+          ),
+        }}
+        deleteFlow={{
+          label: "Delete goal",
+          confirmTitle: "Delete goal",
+          describe: (goal) => (
+            <>Are you sure you want to delete <strong>{goal.name ?? "this goal"}</strong>? This cannot be undone.</>
+          ),
+          request: async (goal) => {
+            try {
+              return await fetch(`/api/goals?id=${goal.id}`, { method: "DELETE" });
+            } catch (netErr) {
+              // Offline queue (local-first L3): a network failure keeps the delete on this device. Flag off = rethrow.
+              if (isLocalWriteQueueActive() && isNetworkFailure(netErr)) {
+                const g = goal as unknown as Record<string, string | number | null | undefined>;
+                const queued = await queueOfflineEntityDelete(
+                  "goal",
+                  goal.id,
+                  { name: g.name ?? null, type: g.type ?? null, targetAmount: g.targetAmount ?? null, currency: g.currency ?? null, deadline: g.deadline ?? null, priority: g.priority ?? null, note: g.note ?? null, updatedAt: (g.updatedAt as string | undefined) ?? null },
+                );
+                if (queued) return new Response(null, { status: 200 });
+              }
+              throw netErr;
             }
-            throw netErr;
-          }
-        },
-        ignoreStatus: true,
-      }}
-    />
+          },
+          ignoreStatus: true,
+        }}
+      />
+    </div>
   );
 }
