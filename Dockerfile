@@ -24,7 +24,9 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # compile; the capped builder is 5 GB. The .next/cache mount keeps webpack's
 # persistent cache in the BuildKit cache between builds (not in the layer).
 ENV NODE_OPTIONS="--max-old-space-size=3072"
-RUN --mount=type=cache,target=/app/.next/cache npm run build
+# SKIP_NEXT_TYPECHECK=1 is scoped to this step only (not an image ENV). The
+# gate is .github/workflows/typecheck.yml (tsc --noEmit on custom).
+RUN --mount=type=cache,target=/app/.next/cache SKIP_NEXT_TYPECHECK=1 npm run build
 
 # ── Stage 2: Production image ─────────────────────────────────────────────────
 # TODO(security): pin node:22-alpine to a digest — same base as the builder stage.

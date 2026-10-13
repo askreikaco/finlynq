@@ -60,8 +60,9 @@ const nextConfig: NextConfig = {
   output: "standalone",
   typescript: {
     // Strict typecheck enforced on production build (FINLYNQ-11, 2026-05-17).
-    // CI also runs `tsc --noEmit`; this is defense in depth.
-    ignoreBuildErrors: false,
+    // Image builds set SKIP_NEXT_TYPECHECK=1 (Dockerfile builder stage) and rely
+    // on the `typecheck` workflow (`tsc --noEmit`) as the gate instead.
+    ignoreBuildErrors: process.env.SKIP_NEXT_TYPECHECK === "1",
   },
   serverExternalPackages: ["pg", "pdf-parse", "@napi-rs/canvas"],
   // Compile .ts workspace packages directly (they ship source, not dist).
