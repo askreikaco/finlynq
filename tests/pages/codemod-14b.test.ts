@@ -58,11 +58,13 @@ describe("codemod-14b: family folders", () => {
     expect(dialog).toContain('className="regular:max-w-md"');
 
     const cards = read("src/app/(app)/family/_components/overview-cards.tsx");
-    expect(cards).toContain("regular:grid-cols-2 wide:grid-cols-4");
+    // Batch 5: the headline cards stack in one column at every width (no regular/wide grid).
+    expect(cards).not.toContain("wide:grid-cols-4");
+    expect(cards).not.toContain("regular:grid-cols-2");
 
     const overview = read("src/app/(app)/family/_components/overview-tab.tsx");
     expect(overview).toContain("max-regular:top-[calc(var(--sat)+var(--phone-header-h))] regular:static");
     expect(overview).toContain("pointer-coarse:w-11 pointer-coarse:h-11");
-    expect(overview).toContain("wide:grid-cols-2");
+    expect(overview).not.toContain("wide:grid-cols-2");
   });
 });

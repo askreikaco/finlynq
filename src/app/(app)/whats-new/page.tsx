@@ -13,7 +13,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { Announcement } from "@shared/types";
 import { formatDateTimeLocal } from "@/lib/currency";
-import { PageHeader } from "@/components/mobile";
+import { SectionPage } from "@/components/templates/section-page";
 import { ErrorState } from "@/components/error-state";
 
 function fmtDate(iso: string | null): string {
@@ -53,13 +53,7 @@ export default function WhatsNewPage() {
   }, [reloadKey]);
 
   return (
-    <div className="mx-auto max-w-section">
-      <div className="contents">
-        <PageHeader title="What's new" titleClassName="text-2xl font-bold tracking-tight" />
-        <p className="mb-6 mt-1 text-sm text-muted-foreground">
-          Product news, updates, and announcements.
-        </p>
-      </div>
+    <SectionPage id="whats-new" title="What's new" subtitle="Product news, updates, and announcements." width="report" center>
 
       {error && (
         <ErrorState
@@ -111,6 +105,6 @@ export default function WhatsNewPage() {
           );
         })}
       </div>
-    </div>
+    </SectionPage>
   );
 }

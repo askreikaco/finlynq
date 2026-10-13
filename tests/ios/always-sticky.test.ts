@@ -144,15 +144,12 @@ describe("admin pages", () => {
   /** Admin pages whose PageHeader (or the shared `Heading` element) must pin to a tall container. */
   const PAGES: Array<{ file: string; anchor: string }> = [
     { file: `${ADMIN}/email-inbox/page.tsx`, anchor: "<PageHeader" },
-    { file: `${ADMIN}/feedback/page.tsx`, anchor: "<PageHeader" },
     { file: `${ADMIN}/(env)/api-log/page.tsx`, anchor: "<PageHeader" },
     { file: `${ADMIN}/(env)/system/page.tsx`, anchor: "<PageHeader" },
     { file: `${ADMIN}/(env)/price-cache/page.tsx`, anchor: "<PageHeader" },
     { file: `${ADMIN}/(env)/diagnostics/page.tsx`, anchor: "<PageHeader" },
-    { file: `${ADMIN}/announcements/page.tsx`, anchor: "<PageHeader" },
     { file: `${ADMIN}/inbox/page.tsx`, anchor: "<PageHeader" },
     { file: `${ADMIN}/page.tsx`, anchor: "<PageHeader" },
-    { file: `${ADMIN}/(env)/integrations/page.tsx`, anchor: "{Heading}" },
   ];
 
   /** Every occurrence of `anchor` in `src`, as indices. */
@@ -262,12 +259,20 @@ describe("non-admin pages", () => {
     "src/app/(app)/portfolio/dividends/page.tsx",
     "src/app/(app)/settings/backfill/[runId]/page.tsx",
     "src/app/(app)/feedback/page.tsx",
+    "src/app/(app)/admin/feedback/page.tsx",
+    "src/app/(app)/admin/announcements/page.tsx",
+    "src/app/(app)/admin/(env)/integrations/page.tsx",
     "src/app/(app)/import/pending/_components/staged-list-view.tsx",
   ];
 
   /** Pages that call SectionPage: the header is rendered by the template, as the first child of its root (no wrapper). */
   const SECTION_PAGE_FILES = new Set([
     "src/app/(app)/api-docs/page.tsx",
+    "src/app/(app)/whats-new/page.tsx",
+    "src/app/(app)/feedback/page.tsx",
+    "src/app/(app)/admin/feedback/page.tsx",
+    "src/app/(app)/admin/announcements/page.tsx",
+    "src/app/(app)/admin/(env)/integrations/page.tsx",
     "src/app/(app)/settings/backfill/[runId]/page.tsx",
     "src/app/(app)/fire/page.tsx",
     "src/app/(app)/transactions/audit/page.tsx",

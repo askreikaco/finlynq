@@ -2,9 +2,8 @@
 
 /**
  * "More" screen (/more) at every size, iOS grouped-list style: PageHeader, an Account card, then
- * inset groups (src/components/mobile/inset-group.tsx). Narrow: one column. Wide (> 64rem): the
- * groups sit in two columns. Every entry is registry-driven (surface "more"); the rail and bottom
- * bar link here.
+ * inset groups (src/components/mobile/inset-group.tsx), always one column in a phone-width centred
+ * column. Every entry is registry-driven (surface "more"); the rail and bottom bar link here.
  */
 
 import { useEffect, useRef, useState, useMemo, memo } from "react";
@@ -223,7 +222,7 @@ export const MoreMenu = memo(function MoreMenu({ instanceAdminEnabled = false, c
 
   return (
     // Bottom padding clears the floating tab bar (compact only; the rail takes its place from regular up).
-    <div className="mx-auto max-w-xl space-y-6 pb-[var(--mobile-bar-clearance)] regular:pb-8 wide:max-w-3xl" data-testid="more-menu">
+    <div className="mx-auto max-w-xl space-y-6 pb-[var(--mobile-bar-clearance)] regular:pb-8" data-testid="more-menu">
       <PageHeader title="More" />
 
       <section data-testid="more-account" className="space-y-2">
@@ -234,7 +233,7 @@ export const MoreMenu = memo(function MoreMenu({ instanceAdminEnabled = false, c
         </InsetGroup>
       </section>
 
-      <div className="space-y-6 wide:grid wide:grid-cols-2 wide:items-start wide:gap-6 wide:space-y-0">
+      <div className="space-y-6">
         {groups.map((g) => (
           <section key={g.id} data-testid={`more-group-${g.id}`} className="space-y-2">
             {g.header && <InsetSectionHeader>{g.header}</InsetSectionHeader>}

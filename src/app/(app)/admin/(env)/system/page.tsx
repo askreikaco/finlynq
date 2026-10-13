@@ -18,7 +18,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -36,7 +35,7 @@ import {
   History,
   Gauge,
 } from "lucide-react";
-import { HEADER_DESKTOP_ONLY } from "@/components/mobile";
+import { HEADER_DESKTOP_ONLY, MetricGrid, SectionCard } from "@/components/mobile";
 
 interface SysSample {
   at: number;
@@ -118,11 +117,6 @@ interface ApiResponse {
 
 const POLL_MS = 5000;
 
-function pctColor(p: number): string {
-  if (p >= 85) return "text-destructive";
-  if (p >= 60) return "text-warning";
-  return "text-pos";
-}
 function barColor(p: number): string {
   if (p >= 85) return "bg-destructive";
   if (p >= 60) return "bg-warning";
@@ -445,114 +439,98 @@ export default function AdminSystemPage() {
       </p>
 
       {error && (
-        <Card className="border-destructive/30 bg-destructive/10">
-          <CardContent className="py-3 text-sm text-destructive">{error}</CardContent>
-        </Card>
+        <SectionCard className="border-destructive/30 bg-destructive/10 py-3 text-sm text-destructive">{error}</SectionCard>
       )}
 
       {sys && (
         <>
           {/* System health */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
+          <SectionCard
+            label={
+              <span className="flex flex-wrap items-center gap-2 normal-case tracking-normal">
                 <Cpu className="h-4 w-4 text-primary" /> System
                 <Badge variant="outline" className="text-xs font-normal">
                   whole VPS
                 </Badge>
-                <span className="ml-1 text-xs font-normal text-muted-foreground">
-                  {sys.hostname} · {sys.cores} cores · node {sys.nodeVersion} · up{" "}
-                  {fmtUptime(sys.osUptimeS)}
-                </span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="grid gap-5 regular:grid-cols-2 wide:grid-cols-4">
-                <div>
-                  <div className="text-xs uppercase tracking-wider text-muted-foreground">
-                    Load avg (1 / 5 / 15m)
-                  </div>
-                  <div className="mt-0.5 font-mono text-lg tabular-nums">
-                    <span className={pctColor((sys.loadavg[0] / sys.cores) * 100)}>
-                      {sys.loadavg[0].toFixed(2)}
-                    </span>{" "}
-                    / {sys.loadavg[1].toFixed(2)} / {sys.loadavg[2].toFixed(2)}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {((sys.loadavg[0] / sys.cores) * 100).toFixed(0)}% of {sys.cores} cores
-                  </div>
-                  <div className="mt-2">
-                    <MiniSpark values={loadHistory} max={sys.cores} stroke="#6366f1" />
-                  </div>
-                </div>
+              </span>
+            }
+            className="space-y-5"
+          >
+            <p className="text-xs text-muted-foreground">
+              {sys.hostname} · {sys.cores} cores · node {sys.nodeVersion} · up {fmtUptime(sys.osUptimeS)}
+            </p>
+            <MetricGrid
+              columns={2}
+              metrics={[
+                {
+                  label: "Load avg (1 / 5 / 15m)",
+                  text: `${sys.loadavg[0].toFixed(2)} / ${sys.loadavg[1].toFixed(2)} / ${sys.loadavg[2].toFixed(2)}`,
+                  sub: `${((sys.loadavg[0] / sys.cores) * 100).toFixed(0)}% of ${sys.cores} cores`,
+                },
+                { label: "System CPU", text: `${sys.cpuPct.toFixed(0)}%` },
+                {
+                  label: "App process CPU",
+                  text: `${sys.procCpuPct.toFixed(0)}%`,
+                  sub: `RSS ${(sys.rssMb / 1024).toFixed(2)} GB · % of one core`,
+                },
+              ]}
+            />
 
-                <div>
-                  <div className="text-xs uppercase tracking-wider text-muted-foreground">
-                    System CPU
-                  </div>
-                  <div className={`mt-0.5 text-2xl font-bold tabular-nums ${pctColor(sys.cpuPct)}`}>
-                    {sys.cpuPct.toFixed(0)}%
-                  </div>
-                  <div className="mt-2">
-                    <MiniSpark values={cpuHistory} max={100} stroke="#ef4444" />
-                  </div>
-                </div>
-
-                <div>
-                  <div className="text-xs uppercase tracking-wider text-muted-foreground">
-                    App process CPU
-                  </div>
-                  <div className="mt-0.5 text-2xl font-bold tabular-nums">
-                    {sys.procCpuPct.toFixed(0)}%
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    RSS {(sys.rssMb / 1024).toFixed(2)} GB · % of one core
-                  </div>
-                  <div className="mt-2">
-                    <MiniSpark values={procHistory} max={100} stroke="#f59e0b" />
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <Bar
-                    pct={sys.memTotalMb > 0 ? (sys.memUsedMb / sys.memTotalMb) * 100 : 0}
-                    label="Memory"
-                    value={`${(sys.memUsedMb / 1024).toFixed(1)} / ${(sys.memTotalMb / 1024).toFixed(1)} GB`}
-                  />
-                  {sys.disk && (
-                    <Bar
-                      pct={sys.disk.usedPct}
-                      label="Disk"
-                      value={`${sys.disk.usedGb} / ${sys.disk.totalGb} GB (${sys.disk.usedPct}%)`}
-                    />
-                  )}
-                </div>
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <div className="text-xs uppercase tracking-wider text-muted-foreground">Load trend</div>
+                <MiniSpark values={loadHistory} max={sys.cores} stroke="#6366f1" />
               </div>
-
-              {/* Durable 24h CPU history (survives restarts) */}
-              <div>
-                <div className="mb-1 flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
-                  <History className="h-3.5 w-3.5" /> System CPU · last 24h (whole VPS)
-                </div>
-                <History24Chart points={data?.history24h ?? []} />
+              <div className="space-y-1">
+                <div className="text-xs uppercase tracking-wider text-muted-foreground">System CPU trend</div>
+                <MiniSpark values={cpuHistory} max={100} stroke="#ef4444" />
               </div>
-            </CardContent>
-          </Card>
+              <div className="space-y-1">
+                <div className="text-xs uppercase tracking-wider text-muted-foreground">App process CPU trend</div>
+                <MiniSpark values={procHistory} max={100} stroke="#f59e0b" />
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <Bar
+                pct={sys.memTotalMb > 0 ? (sys.memUsedMb / sys.memTotalMb) * 100 : 0}
+                label="Memory"
+                value={`${(sys.memUsedMb / 1024).toFixed(1)} / ${(sys.memTotalMb / 1024).toFixed(1)} GB`}
+              />
+              {sys.disk && (
+                <Bar
+                  pct={sys.disk.usedPct}
+                  label="Disk"
+                  value={`${sys.disk.usedGb} / ${sys.disk.totalGb} GB (${sys.disk.usedPct}%)`}
+                />
+              )}
+            </div>
+
+            {/* Durable 24h CPU history (survives restarts) */}
+            <div>
+              <div className="mb-1 flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
+                <History className="h-3.5 w-3.5" /> System CPU · last 24h (whole VPS)
+              </div>
+              <History24Chart points={data?.history24h ?? []} />
+            </div>
+          </SectionCard>
 
           {/* Top operations (24h) — where time goes / where to focus */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-base">
+          <SectionCard
+            padded={false}
+            label={
+              <span className="flex flex-wrap items-center gap-2 normal-case tracking-normal">
                 <Gauge className="h-4 w-4 text-primary" /> Top operations · last 24h
                 <Badge variant="outline" className="text-xs font-normal">
                   this env
                 </Badge>
-                <span className="ml-1 text-xs font-normal text-muted-foreground">
+                <span className="text-xs font-normal text-muted-foreground">
                   what consumed time — routes, rebuilds, jobs (ranked by total wall-clock)
                 </span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-2">
+              </span>
+            }
+          >
+            <div className="p-2">
               <ColumnList<TopOp>
                 columns={topOpColumns}
                 rows={data?.topOps ?? []}
@@ -565,26 +543,28 @@ export default function AdminSystemPage() {
                   </p>
                 }
               />
-            </CardContent>
-          </Card>
+            </div>
+          </SectionCard>
 
           {/* Active DB queries */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-base">
+          <SectionCard
+            padded={false}
+            label={
+              <span className="flex flex-wrap items-center gap-2 normal-case tracking-normal">
                 <Database className="h-4 w-4 text-primary" /> Active database queries
                 <Badge variant="outline" className="text-xs font-normal">
                   this env
                 </Badge>
-                <span className="ml-1 text-xs font-normal text-muted-foreground">
+                <span className="text-xs font-normal text-muted-foreground">
                   {data?.db.activeQueries.length ?? 0} active
                   {data?.db.connCounts.length
                     ? ` · ${data.db.connCounts.map((c) => `${c.count} ${c.state}`).join(", ")}`
                     : ""}
                 </span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-2">
+              </span>
+            }
+          >
+            <div className="p-2">
               <ColumnList<ActiveQuery>
                 columns={queryColumns}
                 rows={data?.db.activeQueries ?? []}
@@ -595,150 +575,148 @@ export default function AdminSystemPage() {
                   </p>
                 }
               />
-            </CardContent>
-          </Card>
+            </div>
+          </SectionCard>
 
           {/* Snapshot rebuild activity */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-base">
+          <SectionCard
+            className="space-y-4 text-sm"
+            label={
+              <span className="flex flex-wrap items-center gap-2 normal-case tracking-normal">
                 <History className="h-4 w-4 text-primary" /> Snapshot rebuild activity
                 <Badge variant="outline" className="text-xs font-normal">
                   this env
                 </Badge>
-                <span className="ml-1 text-xs font-normal text-muted-foreground">
+                <span className="text-xs font-normal text-muted-foreground">
                   {data?.snapshots.total.toLocaleString() ?? 0} rows (
                   {data?.snapshots.cash.toLocaleString() ?? 0} cash ·{" "}
                   {data?.snapshots.inv.toLocaleString() ?? 0} investment)
                 </span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 text-sm">
-              {/* In-flight / recent rebuilds */}
-              <div>
-                <div className="mb-1.5 text-xs uppercase tracking-wider text-muted-foreground">
-                  Rebuilds (this server process)
-                </div>
-                {data && data.rebuilds.length === 0 && data.cashRebuildsInFlight.length === 0 ? (
-                  <p className="text-muted-foreground">No rebuilds have run since the last restart.</p>
-                ) : (
-                  <div className="space-y-1.5">
-                    {data?.rebuilds.map((r) => (
-                      <div
-                        key={r.userId}
-                        className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border px-3 py-1.5"
-                      >
-                        {r.running ? (
-                          <Badge className="bg-warning/15 text-warning">running</Badge>
-                        ) : r.error ? (
-                          <Badge className="bg-destructive/15 text-destructive">error</Badge>
-                        ) : (
-                          <Badge variant="outline">done</Badge>
-                        )}
-                        <span className="font-mono text-xs" title={r.userId}>
-                          {userLabel(r.username, r.userId)}
-                        </span>
-                        {r.running ? (
-                          <span className="tabular-nums text-muted-foreground">
-                            day {r.daysProcessed}/{r.totalDays || "?"}
-                          </span>
-                        ) : r.lastResult ? (
-                          <span className="text-muted-foreground">
-                            rebuilt {r.lastResult.daysProcessed} days
-                          </span>
-                        ) : null}
-                        {r.error && <span className="text-destructive">{r.error}</span>}
-                      </div>
-                    ))}
-                    {data?.cashRebuildsInFlight.map((u) => (
-                      <div
-                        key={`cash-${u.userId}`}
-                        className="flex items-center gap-3 rounded-md border px-3 py-1.5"
-                      >
-                        <Badge className="bg-warning/15 text-warning">cash running</Badge>
-                        <span className="font-mono text-xs" title={u.userId}>
-                          {userLabel(u.username, u.userId)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
+              </span>
+            }
+          >
+            {/* In-flight / recent rebuilds */}
+            <div>
+              <div className="mb-1.5 text-xs uppercase tracking-wider text-muted-foreground">
+                Rebuilds (this server process)
               </div>
-
-              {/* Stale dirty markers */}
-              {data && data.snapshots.dirtyMarkers.length > 0 && (
-                <div>
-                  <div className="mb-1.5 flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted-foreground">
-                    <AlertTriangle className="h-3.5 w-3.5" /> Dirty markers (trigger a rebuild on next
-                    chart load)
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {data.snapshots.dirtyMarkers.map((m) => (
-                      <Badge
-                        key={m.userId}
-                        variant="outline"
-                        className={m.ageMs > 86400000 ? "border-warning/30 text-warning" : ""}
-                        title={`${m.userId} · marked ${m.markedAt}`}
-                      >
-                        {userLabel(m.username, m.userId)} · {fmtDuration(m.ageMs)} old
-                      </Badge>
-                    ))}
-                  </div>
+              {data && data.rebuilds.length === 0 && data.cashRebuildsInFlight.length === 0 ? (
+                <p className="text-muted-foreground">No rebuilds have run since the last restart.</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {data?.rebuilds.map((r) => (
+                    <div
+                      key={r.userId}
+                      className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border px-3 py-1.5"
+                    >
+                      {r.running ? (
+                        <Badge className="bg-warning/15 text-warning">running</Badge>
+                      ) : r.error ? (
+                        <Badge className="bg-destructive/15 text-destructive">error</Badge>
+                      ) : (
+                        <Badge variant="outline">done</Badge>
+                      )}
+                      <span className="font-mono text-xs" title={r.userId}>
+                        {userLabel(r.username, r.userId)}
+                      </span>
+                      {r.running ? (
+                        <span className="tabular-nums text-muted-foreground">
+                          day {r.daysProcessed}/{r.totalDays || "?"}
+                        </span>
+                      ) : r.lastResult ? (
+                        <span className="text-muted-foreground">
+                          rebuilt {r.lastResult.daysProcessed} days
+                        </span>
+                      ) : null}
+                      {r.error && <span className="text-destructive">{r.error}</span>}
+                    </div>
+                  ))}
+                  {data?.cashRebuildsInFlight.map((u) => (
+                    <div
+                      key={`cash-${u.userId}`}
+                      className="flex items-center gap-3 rounded-md border px-3 py-1.5"
+                    >
+                      <Badge className="bg-warning/15 text-warning">cash running</Badge>
+                      <span className="font-mono text-xs" title={u.userId}>
+                        {userLabel(u.username, u.userId)}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               )}
+            </div>
 
-              {/* Heaviest users */}
-              {data && data.snapshots.topUsers.length > 0 && (
-                <div>
-                  <div className="mb-1.5 flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted-foreground">
-                    <Clock className="h-3.5 w-3.5" /> Heaviest users by snapshot rows (cost of a
-                    rebuild)
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {data.snapshots.topUsers.map((u) => (
-                      <Badge key={u.userId} variant="outline" title={u.userId}>
-                        {userLabel(u.username, u.userId)} · {u.rows.toLocaleString()}
-                      </Badge>
-                    ))}
-                  </div>
+            {/* Stale dirty markers */}
+            {data && data.snapshots.dirtyMarkers.length > 0 && (
+              <div>
+                <div className="mb-1.5 flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted-foreground">
+                  <AlertTriangle className="h-3.5 w-3.5" /> Dirty markers (trigger a rebuild on next
+                  chart load)
                 </div>
-              )}
-            </CardContent>
-          </Card>
+                <div className="flex flex-wrap gap-1.5">
+                  {data.snapshots.dirtyMarkers.map((m) => (
+                    <Badge
+                      key={m.userId}
+                      variant="outline"
+                      className={m.ageMs > 86400000 ? "border-warning/30 text-warning" : ""}
+                      title={`${m.userId} · marked ${m.markedAt}`}
+                    >
+                      {userLabel(m.username, m.userId)} · {fmtDuration(m.ageMs)} old
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Heaviest users */}
+            {data && data.snapshots.topUsers.length > 0 && (
+              <div>
+                <div className="mb-1.5 flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted-foreground">
+                  <Clock className="h-3.5 w-3.5" /> Heaviest users by snapshot rows (cost of a
+                  rebuild)
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {data.snapshots.topUsers.map((u) => (
+                    <Badge key={u.userId} variant="outline" title={u.userId}>
+                      {userLabel(u.username, u.userId)} · {u.rows.toLocaleString()}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </SectionCard>
 
           {/* Outbound API summary */}
-          <Card>
-            <CardContent className="flex flex-wrap items-center gap-x-6 gap-y-2 py-4 text-sm">
-              <div className="flex items-center gap-2">
-                <Activity className="h-4 w-4 text-primary" />
-                <span className="font-medium">Outbound market-data API</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xs uppercase tracking-wider text-muted-foreground">
-                  Buffered
-                </span>
-                <span className="font-semibold tabular-nums">
-                  {data?.api.count.toLocaleString() ?? 0} / {data?.api.cap.toLocaleString() ?? 0}
-                </span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xs uppercase tracking-wider text-muted-foreground">
-                  Errors / timeouts
-                </span>
-                <span
-                  className={`font-semibold tabular-nums ${(data?.api.errors ?? 0) > 0 ? "text-destructive" : ""}`}
-                >
-                  {data?.api.errors.toLocaleString() ?? 0}
-                </span>
-              </div>
-              <Link
-                href="/admin/api-log"
-                className="ml-auto inline-flex items-center gap-1.5 text-primary hover:underline"
+          <SectionCard className="flex flex-col gap-4 py-4 text-sm">
+            <div className="flex items-center gap-2">
+              <Activity className="h-4 w-4 text-primary" />
+              <span className="font-medium">Outbound market-data API</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-xs uppercase tracking-wider text-muted-foreground">
+                Buffered
+              </span>
+              <span className="font-semibold tabular-nums">
+                {data?.api.count.toLocaleString() ?? 0} / {data?.api.cap.toLocaleString() ?? 0}
+              </span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-xs uppercase tracking-wider text-muted-foreground">
+                Errors / timeouts
+              </span>
+              <span
+                className={`font-semibold tabular-nums ${(data?.api.errors ?? 0) > 0 ? "text-destructive" : ""}`}
               >
-                Full API log <ExternalLink className="h-3.5 w-3.5" />
-              </Link>
-            </CardContent>
-          </Card>
+                {data?.api.errors.toLocaleString() ?? 0}
+              </span>
+            </div>
+            <Link
+              href="/admin/api-log"
+              className="inline-flex items-center gap-1.5 text-primary hover:underline"
+            >
+              Full API log <ExternalLink className="h-3.5 w-3.5" />
+            </Link>
+          </SectionCard>
         </>
       )}
     </SectionPage>

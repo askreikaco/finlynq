@@ -359,7 +359,7 @@ function HouseholdBlock({ data, chartData, period }: { data: OverviewResponse; c
       />
 
       {(chartTotals.included > 0 || chartFlows.included > 0) && (
-        <div className="grid grid-cols-1 wide:grid-cols-2 gap-4">
+        <div className="space-y-4">
           {chartTotals.included > 0 && (
             <NetWorthOverTimeCard
               history={chartTotals.history}

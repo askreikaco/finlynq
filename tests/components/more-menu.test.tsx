@@ -336,15 +336,15 @@ describe("More renders at every size (no redirect, no breakpoint wrapper)", () =
     expect(replace).not.toHaveBeenCalled();
   });
 
-  it("the root is a plain centred column; groups sit in two columns from wide up (no CompactOnly)", () => {
+  it("the root is a plain centred column; groups stack in one column at every width (no two-column grid)", () => {
     render(<MoreMenu />);
     const root = screen.getByTestId("more-menu");
     expect(root.className).toContain("max-w-xl");
-    expect(root.className).toContain("wide:max-w-3xl");
+    expect(root.className).not.toContain("wide:max-w-3xl");
     expect(root.className).not.toMatch(/(^|\s)(max-)?md:/);
-    const grid = root.querySelector(".wide\\:grid-cols-2");
-    expect(grid).not.toBeNull();
-    expect(grid!.querySelector('[data-testid="more-group-main"]')).not.toBeNull();
+    expect(root.querySelector(".wide\\:grid-cols-2")).toBeNull();
+    expect(root.querySelector(".wide\\:grid")).toBeNull();
+    expect(root.querySelector('[data-testid="more-group-main"]')).not.toBeNull();
   });
 
   it("the source has no matchMedia, no router redirect and no breakpoint classes", () => {

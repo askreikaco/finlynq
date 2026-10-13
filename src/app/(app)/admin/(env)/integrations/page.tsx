@@ -8,14 +8,14 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SectionPage } from "@/components/templates/section-page";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Plug, CheckCircle2, AlertCircle } from "lucide-react";
 import { getPasskeyStepUp } from "@/lib/client/passkey-stepup";
-import { PageHeader } from "@/components/mobile";
+import { ListRow, SectionCard } from "@/components/mobile";
 
 type Source = "db" | "env" | "none";
 type SecretField = "brevoApiKey" | "resendApiKey" | "smtpUser" | "smtpPass";
@@ -242,19 +242,13 @@ export default function AdminIntegrationsPage() {
     }
   };
 
-  const Heading = (
-    <PageHeader title={<><Plug className="w-8 h-8" />
-      Integrations</>} />
-  );
-
   if (loading) {
     return (
-      <div className="p-6">
-        {Heading}
-        <Card className="mt-6">
-          <CardContent className="pt-6">Loading...</CardContent>
-        </Card>
-      </div>
+      <SectionPage id="admin-integrations" title={<><Plug className="w-8 h-8" />Integrations</>} width="report" center>
+        <SectionCard>
+          <p className="text-sm">Loading...</p>
+        </SectionCard>
+      </SectionPage>
     );
   }
 
@@ -271,245 +265,226 @@ export default function AdminIntegrationsPage() {
   );
 
   return (
-    <div className="p-6 max-w-4xl">
-      {Heading}
+    <SectionPage id="admin-integrations" title={<><Plug className="w-8 h-8" />Integrations</>} width="report" center>
+      {error && (
+        <SectionCard>
+          <div className="flex items-start gap-3 text-destructive">
+            <AlertCircle className="w-5 h-5 mt-0.5 shrink-0" />
+            <div>{error}</div>
+          </div>
+        </SectionCard>
+      )}
 
-      <div className="mt-6 mb-8">
-        <h2 className="text-2xl font-semibold mb-4">Email</h2>
-
-        {error && (
-          <Card className="mb-6">
-            <CardContent className="pt-6">
-              <div className="flex items-start gap-3 text-destructive">
-                <AlertCircle className="w-5 h-5 mt-0.5 shrink-0" />
-                <div>{error}</div>
+      {!error && status && (
+        <>
+          <SectionCard label="Email Transport Status" className="space-y-4">
+            <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-primary" />
+                <span className="font-medium">Active provider</span>
               </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {!error && status && (
-          <>
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle>Email Transport Status</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-primary" />
-                    <span className="font-medium">Active provider</span>
-                  </div>
-                  <Badge className={providerColor(status.provider)}>{providerLabel(status.provider)}</Badge>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs font-semibold text-muted-foreground">From address</Label>
-                  <div className="p-3 bg-muted/50 rounded-lg font-mono text-sm">
-                    {status.from.name} &lt;{status.from.address}&gt;
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs font-semibold text-muted-foreground">Configured providers</Label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {(["resend", "brevo", "smtp"] as const).map((p) => (
-                      <div key={p} className="flex items-center gap-2 p-2 bg-muted/50 rounded">
-                        {status.configured[p] ? (
-                          <CheckCircle2 className="w-4 h-4 text-pos" aria-label={`${providerLabel(p)} configured`} />
+              <Badge className={providerColor(status.provider)}>{providerLabel(status.provider)}</Badge>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-muted-foreground">From address</Label>
+              <div className="p-3 bg-muted/50 rounded-lg font-mono text-sm break-all">
+                {status.from.name} &lt;{status.from.address}&gt;
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-muted-foreground">Configured providers</Label>
+              <ul className="divide-y divide-border/50">
+                {(["resend", "brevo", "smtp"] as const).map((p) => (
+                  <li key={p}>
+                    <ListRow
+                      aria-label={`${providerLabel(p)} ${status.configured[p] ? "configured" : "not configured"}`}
+                      leading={
+                        status.configured[p] ? (
+                          <CheckCircle2 className="w-4 h-4 text-pos" aria-hidden />
                         ) : (
-                          <div className="w-4 h-4 rounded-full border border-muted-foreground" aria-label={`${providerLabel(p)} not configured`} />
-                        )}
-                        <span className="text-sm">{providerLabel(p)}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                          <span aria-hidden className="w-4 h-4 rounded-full border border-muted-foreground" />
+                        )
+                      }
+                      title={providerLabel(p)}
+                      value={<span className="text-xs text-muted-foreground">{status.configured[p] ? "Configured" : "Not configured"}</span>}
+                    />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </SectionCard>
 
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle className="text-base">Settings</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Values saved here override the server environment. Secrets are write-only: leave a field empty to keep it.
-                </p>
-                <div className="grid gap-4 regular:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="email-provider">Provider</Label>
-                    <select
-                      id="email-provider"
-                      value={provider}
-                      onChange={(e) => setProvider(e.target.value)}
-                      className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
-                    >
-                      <option value="auto">Auto (Resend, then Brevo, then SMTP)</option>
-                      <option value="resend">Resend</option>
-                      <option value="brevo">Brevo</option>
-                      <option value="smtp">SMTP</option>
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email-from">From</Label>
-                    <Input id="email-from" value={from} onChange={(e) => setFrom(e.target.value)} placeholder="Finlynq <noreply@finlynq.com>" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email-smtp-host">SMTP host</Label>
-                    <Input id="email-smtp-host" value={smtpHost} onChange={(e) => setSmtpHost(e.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email-smtp-port">SMTP port</Label>
-                    <Input id="email-smtp-port" inputMode="numeric" value={smtpPort} onChange={(e) => setSmtpPort(e.target.value)} />
-                  </div>
-                  {SECRETS.map(({ field, label }) => {
-                    const src = status.sources[field] as Source | undefined;
-                    const saved = src === "db" || src === "env";
-                    return (
-                      <div key={field} className="space-y-2">
-                        <Label htmlFor={`email-${field}`}>{label}</Label>
-                        <Input
-                          id={`email-${field}`}
-                          type="password"
-                          autoComplete="new-password"
-                          value={secretInput[field]}
-                          placeholder={cleared[field] ? "Will be cleared on save" : ""}
-                          onChange={(e) => {
-                            setSecretInput((s) => ({ ...s, [field]: e.target.value }));
-                            setCleared((c) => ({ ...c, [field]: false }));
+          <SectionCard label="Settings" className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Values saved here override the server environment. Secrets are write-only: leave a field empty to keep it.
+            </p>
+            <div className="grid gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="email-provider">Provider</Label>
+                <select
+                  id="email-provider"
+                  value={provider}
+                  onChange={(e) => setProvider(e.target.value)}
+                  className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
+                >
+                  <option value="auto">Auto (Resend, then Brevo, then SMTP)</option>
+                  <option value="resend">Resend</option>
+                  <option value="brevo">Brevo</option>
+                  <option value="smtp">SMTP</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email-from">From</Label>
+                <Input id="email-from" value={from} onChange={(e) => setFrom(e.target.value)} placeholder="Finlynq <noreply@finlynq.com>" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email-smtp-host">SMTP host</Label>
+                <Input id="email-smtp-host" value={smtpHost} onChange={(e) => setSmtpHost(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email-smtp-port">SMTP port</Label>
+                <Input id="email-smtp-port" inputMode="numeric" value={smtpPort} onChange={(e) => setSmtpPort(e.target.value)} />
+              </div>
+              {SECRETS.map(({ field, label }) => {
+                const src = status.sources[field] as Source | undefined;
+                const saved = src === "db" || src === "env";
+                return (
+                  <div key={field} className="space-y-2">
+                    <Label htmlFor={`email-${field}`}>{label}</Label>
+                    <Input
+                      id={`email-${field}`}
+                      type="password"
+                      autoComplete="new-password"
+                      value={secretInput[field]}
+                      placeholder={cleared[field] ? "Will be cleared on save" : ""}
+                      onChange={(e) => {
+                        setSecretInput((s) => ({ ...s, [field]: e.target.value }));
+                        setCleared((c) => ({ ...c, [field]: false }));
+                      }}
+                    />
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      {saved && !cleared[field] && <span>Saved ✓ ({sourceLabel(src!)})</span>}
+                      {src === "db" && !cleared[field] && (
+                        <button
+                          type="button"
+                          className="underline"
+                          onClick={() => {
+                            setSecretInput((s) => ({ ...s, [field]: "" }));
+                            setCleared((c) => ({ ...c, [field]: true }));
                           }}
-                        />
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          {saved && !cleared[field] && <span>Saved ✓ ({sourceLabel(src!)})</span>}
-                          {src === "db" && !cleared[field] && (
-                            <button
-                              type="button"
-                              className="underline"
-                              onClick={() => {
-                                setSecretInput((s) => ({ ...s, [field]: "" }));
-                                setCleared((c) => ({ ...c, [field]: true }));
-                              }}
-                              aria-label={`Clear ${label}`}
-                            >
-                              Clear
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {saveNotice && noticeBox(saveNotice)}
-                {saveTestResult && noticeBox(saveTestResult)}
-
-                {stepOpen ? (
-                  <div className="space-y-3 rounded-lg border p-4" role="group" aria-label="Confirm">
-                    {status.stepUp === "passkey" ? (
-                      <p className="text-sm">You will be asked to confirm with your passkey.</p>
-                    ) : (
-                      <>
-                        <Label htmlFor="email-step-up">
-                          {status.stepUp === "password" ? "Confirm with your password" : "Confirm with your 6-digit authenticator code"}
-                        </Label>
-                        <Input
-                          id="email-step-up"
-                          type={status.stepUp === "password" ? "password" : "text"}
-                          inputMode={status.stepUp === "password" ? undefined : "numeric"}
-                          autoComplete="one-time-code"
-                          value={stepValue}
-                          onChange={(e) => setStepValue(e.target.value)}
-                        />
-                      </>
-                    )}
-                    {stepOpen === "save" && (
-                      <div className="space-y-2">
-                        <Label htmlFor="email-save-test-to">Send test to (optional)</Label>
-                        <Input id="email-save-test-to" type="email" value={saveTestTo} onChange={(e) => setSaveTestTo(e.target.value)} />
-                      </div>
-                    )}
-                    <div className="flex gap-2">
-                      {stepOpen === "save" ? (
-                        <>
-                          <Button type="button" disabled={busy || !stepReady} onClick={() => submitSave(false)}>
-                            Confirm save
-                          </Button>
-                          <Button type="button" variant="secondary" disabled={busy || !stepReady || !saveTestTo.trim()} onClick={() => submitSave(true)}>
-                            Save &amp; send test
-                          </Button>
-                        </>
-                      ) : (
-                        <Button type="button" disabled={busy || !stepReady} onClick={submitRevert}>
-                          Confirm revert
-                        </Button>
+                          aria-label={`Clear ${label}`}
+                        >
+                          Clear
+                        </button>
                       )}
-                      <Button type="button" variant="ghost" disabled={busy} onClick={() => { setStepOpen(null); setStepValue(""); }}>
-                        Cancel
-                      </Button>
                     </div>
                   </div>
+                );
+              })}
+            </div>
+
+            {saveNotice && noticeBox(saveNotice)}
+            {saveTestResult && noticeBox(saveTestResult)}
+
+            {stepOpen ? (
+              <div className="space-y-3 rounded-lg border p-4" role="group" aria-label="Confirm">
+                {status.stepUp === "passkey" ? (
+                  <p className="text-sm">You will be asked to confirm with your passkey.</p>
                 ) : (
-                  <div className="flex gap-2">
-                    <Button type="button" onClick={() => { setSaveNotice(null); setStepOpen("save"); }}>
-                      Save
-                    </Button>
-                    {status.canRevert && (
-                      <Button type="button" variant="outline" onClick={() => { setSaveNotice(null); setStepOpen("revert"); }}>
-                        Revert
-                      </Button>
-                    )}
+                  <>
+                    <Label htmlFor="email-step-up">
+                      {status.stepUp === "password" ? "Confirm with your password" : "Confirm with your 6-digit authenticator code"}
+                    </Label>
+                    <Input
+                      id="email-step-up"
+                      type={status.stepUp === "password" ? "password" : "text"}
+                      inputMode={status.stepUp === "password" ? undefined : "numeric"}
+                      autoComplete="one-time-code"
+                      value={stepValue}
+                      onChange={(e) => setStepValue(e.target.value)}
+                    />
+                  </>
+                )}
+                {stepOpen === "save" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="email-save-test-to">Send test to (optional)</Label>
+                    <Input id="email-save-test-to" type="email" value={saveTestTo} onChange={(e) => setSaveTestTo(e.target.value)} />
                   </div>
                 )}
-              </CardContent>
-            </Card>
-
-            {status.provider !== "none" ? (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Send a test email</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={sendTest} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="test-to" className="text-sm">To</Label>
-                      <Input
-                        id="test-to"
-                        type="email"
-                        placeholder="Enter email address"
-                        value={testTo}
-                        onChange={(e) => setTestTo(e.target.value)}
-                        disabled={sending}
-                      />
-                    </div>
-                    {result && (
-                      <div
-                        role={result.ok ? "status" : "alert"}
-                        className={`p-3 rounded-lg text-sm ${
-                          result.ok ? "bg-pos/15 text-pos" : "bg-destructive/15 text-destructive"
-                        }`}
-                      >
-                        {result.message}
-                        {result.provider && <div className="text-xs mt-1 opacity-75">Sent via {providerLabel(result.provider)}</div>}
-                      </div>
-                    )}
-                    <Button type="submit" disabled={sending || !testTo.trim()} className="w-full">
-                      {sending ? "Sending..." : "Send"}
+                <div className="flex flex-wrap gap-2">
+                  {stepOpen === "save" ? (
+                    <>
+                      <Button type="button" disabled={busy || !stepReady} onClick={() => submitSave(false)}>
+                        Confirm save
+                      </Button>
+                      <Button type="button" variant="secondary" disabled={busy || !stepReady || !saveTestTo.trim()} onClick={() => submitSave(true)}>
+                        Save &amp; send test
+                      </Button>
+                    </>
+                  ) : (
+                    <Button type="button" disabled={busy || !stepReady} onClick={submitRevert}>
+                      Confirm revert
                     </Button>
-                  </form>
-                </CardContent>
-              </Card>
+                  )}
+                  <Button type="button" variant="ghost" disabled={busy} onClick={() => { setStepOpen(null); setStepValue(""); }}>
+                    Cancel
+                  </Button>
+                </div>
+              </div>
             ) : (
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="flex items-start gap-3 text-muted-foreground">
-                    <AlertCircle className="w-5 h-5 mt-0.5 shrink-0" />
-                    <div>No email provider configured</div>
-                  </div>
-                </CardContent>
-              </Card>
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" onClick={() => { setSaveNotice(null); setStepOpen("save"); }}>
+                  Save
+                </Button>
+                {status.canRevert && (
+                  <Button type="button" variant="outline" onClick={() => { setSaveNotice(null); setStepOpen("revert"); }}>
+                    Revert
+                  </Button>
+                )}
+              </div>
             )}
-          </>
-        )}
-      </div>
-    </div>
+          </SectionCard>
+
+          {status.provider !== "none" ? (
+            <SectionCard label="Send a test email">
+              <form onSubmit={sendTest} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="test-to" className="text-sm">To</Label>
+                  <Input
+                    id="test-to"
+                    type="email"
+                    placeholder="Enter email address"
+                    value={testTo}
+                    onChange={(e) => setTestTo(e.target.value)}
+                    disabled={sending}
+                  />
+                </div>
+                {result && (
+                  <div
+                    role={result.ok ? "status" : "alert"}
+                    className={`p-3 rounded-lg text-sm ${
+                      result.ok ? "bg-pos/15 text-pos" : "bg-destructive/15 text-destructive"
+                    }`}
+                  >
+                    {result.message}
+                    {result.provider && <div className="text-xs mt-1 opacity-75">Sent via {providerLabel(result.provider)}</div>}
+                  </div>
+                )}
+                <Button type="submit" disabled={sending || !testTo.trim()} className="w-full">
+                  {sending ? "Sending..." : "Send"}
+                </Button>
+              </form>
+            </SectionCard>
+          ) : (
+            <SectionCard>
+              <div className="flex items-start gap-3 text-muted-foreground">
+                <AlertCircle className="w-5 h-5 mt-0.5 shrink-0" />
+                <div>No email provider configured</div>
+              </div>
+            </SectionCard>
+          )}
+        </>
+      )}
+    </SectionPage>
   );
 }

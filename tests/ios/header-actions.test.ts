@@ -193,10 +193,12 @@ describe("PageHeader call sites (phone bar)", () => {
     const withActionsOrLead = sites.filter(
       (s) => getAttr(s.el, "actions") || getAttr(s.el, "lead"),
     ).length;
-    expect(sites.length).toBeGreaterThanOrEqual(48);
+    // 45 (was 48): batch 5 moved whats-new, feedback, admin feedback, announcements and integrations onto SectionPage.
+    expect(sites.length).toBeGreaterThanOrEqual(45);
     // 18 (was 25): admin env pages, email inbox and /import moved their actions into the SectionPage header
     // (the same single PageHeader, rendered by the template), so they are no longer direct PageHeader call sites.
-    expect(withActionsOrLead).toBeGreaterThanOrEqual(18);
+    // 16 (was 18): feedback's Send action and the lead icons of announcements and admin feedback are now SectionPage props (batch 5).
+    expect(withActionsOrLead).toBeGreaterThanOrEqual(16);
   });
 
   it("at most one phone-visible text action per header, and it is the last visible one (secondaries icon-only)", () => {

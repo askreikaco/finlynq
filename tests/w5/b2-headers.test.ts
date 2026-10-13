@@ -5,11 +5,9 @@ import path from "node:path";
 // W5-6: page headers must share one title/subtitle treatment.
 const ROOT = process.cwd();
 // fire/page.tsx moved onto SectionPage (the template owns the header title class), so it is not checked here.
-const FILES = [
-  "src/app/(app)/whats-new/page.tsx",
-  "src/app/(app)/feedback/page.tsx",
-  "src/app/(app)/categories/[id]/page.tsx",
-];
+// whats-new and feedback moved onto SectionPage in batch 5: the template owns the title, so they pass no override.
+const SECTION_PAGE_FILES = ["src/app/(app)/whats-new/page.tsx", "src/app/(app)/feedback/page.tsx"];
+const FILES = [...SECTION_PAGE_FILES, "src/app/(app)/categories/[id]/page.tsx"];
 
 const TITLE_TARGET_RE = /^text-2xl font-bold tracking-tight( truncate| flex items-center gap-2)?$/;
 const SUBTITLE_TARGET = "text-sm text-muted-foreground mt-0.5";
@@ -39,6 +37,11 @@ describe("W5-6 page headers", () => {
 
       it("every titleClassName matches the header target", () => {
         const titles = values(src, "titleClassName");
+        if (SECTION_PAGE_FILES.includes(rel)) {
+          expect(src).toMatch(/<SectionPage\b/);
+          expect(titles).toEqual([]);
+          return;
+        }
         expect(titles.length).toBeGreaterThan(0);
         for (const v of titles) {
           expect(v).toMatch(TITLE_TARGET_RE);

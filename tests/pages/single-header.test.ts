@@ -33,6 +33,7 @@ const EXPECTED_MULTI: Record<string, { count: number; reason: string }> = {
   "categories/new/page.tsx": { count: 3, reason: "FormPage header (1) + CategoryForm literals: load-error branch (rename only, unreachable on create) and form branch (chrome=false: not rendered)" },
   "categories/[id]/edit/page.tsx": { count: 2, reason: "CategoryForm: load-error branch and form branch (exclusive)" },
   "admin/page.tsx": { count: 3, reason: "loading, error and main branches (exclusive), each a SectionPage call (batch 4)" },
+  "admin/(env)/integrations/page.tsx": { count: 2, reason: "loading and ready branches (exclusive), each a SectionPage call (batch 5)" },
   "settings/investments/page.tsx": { count: 3, reason: "loading, error and ready branches (exclusive), each a SectionPage call (batch 4)" },
   "import/page.tsx": { count: 6, reason: "loading, no-accounts, pick-account and main branches (exclusive, each a SectionPage call) + 2 route-only headers in staged-review delegates (not rendered when embedded, which /import uses)" },
   "import/pending/page.tsx": { count: 2, reason: "StagedListView (list) or ReconcileHeader (detail), never both" },

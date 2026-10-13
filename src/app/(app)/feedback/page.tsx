@@ -28,7 +28,7 @@ import type {
   FeedbackThread,
   FeedbackThreadSummary,
 } from "@shared/types";
-import { PageHeader } from "@/components/mobile";
+import { SectionPage } from "@/components/templates/section-page";
 import { usePageFab } from "@/components/mobile/page-fab";
 
 function fmtBytes(n: number): string {
@@ -348,21 +348,23 @@ export default function FeedbackPage() {
   usePageFab("feedback.send", () => setSendOpen(true));
 
   return (
-    <div className="mx-auto max-w-section">
-      <PageHeader
-        className="flex items-start justify-between gap-3"
-        title="Feedback"
-        titleClassName="text-2xl font-bold tracking-tight"
-        subtitle="Track your reports and follow up on replies from the team."
-        subtitleClassName="text-sm text-muted-foreground mt-0.5"
-        actions={
+    <SectionPage
+      id="feedback"
+      title="Feedback"
+      subtitle="Track your reports and follow up on replies from the team."
+      width="report"
+      center
+      header={{
+        className: "flex items-start justify-between gap-3",
+        actions: (
           <Button onClick={() => setSendOpen(true)}>
-            <Send className="hidden size-4 max-regular:block" aria-hidden />
+            <Send className="size-4" aria-hidden />
             Send feedback
           </Button>
-        }
-      />
-      <div className="mt-6">
+        ),
+      }}
+    >
+      <div>
       {error && <p className="mb-4 text-sm text-destructive">{error}</p>}
 
       {items && items.length === 0 && !error && (
@@ -418,6 +420,6 @@ export default function FeedbackPage() {
           if (!v) load();
         }}
       />
-    </div>
+    </SectionPage>
   );
 }
