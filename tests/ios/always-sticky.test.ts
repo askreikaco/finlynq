@@ -43,9 +43,9 @@ describe("PHONE_BAR is sticky at every breakpoint", () => {
     expect(tokens.filter((t) => /^(max-|md:|sm:|lg:)sticky$/.test(t))).toEqual([]);
   });
 
-  it("pins at the safe-area inset below regular and at 0 from regular (640px)", () => {
+  it("pins at the safe-area inset at every width (no regular:top-0 override)", () => {
     expect(tokens).toContain("top-[var(--sat,0px)]");
-    expect(tokens).toContain("regular:top-0");
+    expect(tokens).not.toContain("regular:top-0");
     expect(tokens).not.toContain("max-regular:top-0");
   });
 

@@ -423,7 +423,7 @@ function FormPageBody<T, R, V, X>({
       backHref={dirtyGuard ? undefined : (header?.backHref ?? returnTo)}
       onBack={dirtyGuard ? () => leave(returnTo) : undefined}
       backLabel={header?.backLabel ?? "Back"}
-      className={header?.className ?? "flex items-center justify-between"}
+      className={header?.className}
       belowTitle={header?.belowTitle}
       overflow={overflowItems.length > 0 ? overflowItems : undefined}
       actions={headerActions}

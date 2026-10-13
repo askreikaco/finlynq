@@ -8,9 +8,6 @@
   "chrome": {
     "src/app/(app)/categories/[id]/edit/page.tsx": {
       "suspense-null": 1
-    },
-    "src/app/(app)/categories/[id]/page.tsx": {
-      "title-prop": 1
     }
   }
 }

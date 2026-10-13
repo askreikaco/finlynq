@@ -418,7 +418,6 @@ export default function AdminSystemPage() {
       header={{
         className: "flex flex-wrap items-center justify-between gap-3",
         overflow: [{ label: auto ? "Auto-refresh: on" : "Auto-refresh: off", onSelect: () => setAuto(!auto) }],
-        actionsClassName: "flex flex-wrap items-center gap-2",
         actions: (<>
             <label className={`${HEADER_DESKTOP_ONLY} flex items-center gap-2 text-xs text-muted-foreground`}>
               Auto-refresh

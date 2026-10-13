@@ -29,9 +29,11 @@ function block(marker: string): string {
   return css.slice(i, end);
 }
 
-describe("glass-bar material (globals.css, phones only)", () => {
-  it("is scoped to max-width 40rem (below regular) like the other glass", () => {
-    expect(css.indexOf(".glass-bar {")).toBeGreaterThan(css.indexOf("@media (width < 40rem) {"));
+describe("glass-bar material (globals.css, every width)", () => {
+  it("is NOT media-gated: the same glass bar at every width", () => {
+    const i = css.indexOf("\n.glass-bar {");
+    expect(i).toBeGreaterThan(css.indexOf("iOS 26-style liquid glass, every width"));
+    expect(css.slice(css.lastIndexOf("@media", i), i)).not.toMatch(/@media \(width < 40rem\) \{\s*$/);
   });
 
   it("has a translucent tint and backdrop blur with saturate, with the -webkit- prefix", () => {
@@ -48,15 +50,15 @@ describe("glass-bar material (globals.css, phones only)", () => {
 
   it("dark fallbacks exist in the @supports-not block (light and dark)", () => {
     const sup = block("@supports not ((backdrop-filter: blur(1px))");
-    expect(sup).toContain(".glass-bar,\n    .dark .glass-bar {");
+    expect(sup).toContain(".glass-bar,\n  .dark .glass-bar {");
     expect(sup).toContain("background: var(--background);");
-    expect(sup).toMatch(/\.glass-bar,\n {4}\.dark \.glass-bar \{[\s\S]*?backdrop-filter:\s*none;/);
+    expect(sup).toMatch(/\.glass-bar,\n {2}\.dark \.glass-bar \{[\s\S]*?backdrop-filter:\s*none;/);
   });
 
   it("dark fallbacks exist in the prefers-reduced-transparency block (light and dark)", () => {
-    const rt = block("@media (prefers-reduced-transparency: reduce) {\n    .glass-bar");
-    expect(rt).toContain(".glass-bar,\n    .dark .glass-bar {");
-    expect(rt).toMatch(/\.glass-bar,\n {4}\.dark \.glass-bar \{[\s\S]*?backdrop-filter:\s*none;/);
+    const rt = block("@media (prefers-reduced-transparency: reduce) {\n  .glass-bar");
+    expect(rt).toContain(".glass-bar,\n  .dark .glass-bar {");
+    expect(rt).toMatch(/\.glass-bar,\n {2}\.dark \.glass-bar \{[\s\S]*?backdrop-filter:\s*none;/);
   });
 
   it("uses tokens and oklch only (no raw palette colours, no color-mix)", () => {
@@ -72,15 +74,15 @@ describe("PageHeader phone bar (render)", () => {
     const { container } = render(h(PageHeader, { title: "Accounts" }));
     const h1 = screen.getByRole("heading", { level: 1, name: "Accounts" });
     const block = h1.parentElement as HTMLElement;
-    expect(cls(block)).toEqual(expect.arrayContaining(["max-regular:col-start-2", "max-regular:row-start-1", "max-regular:min-w-0", "max-regular:text-left", "max-regular:pointer-events-none"]));
-    expect(cls(block)).not.toContain("max-regular:absolute");
+    expect(cls(block)).toEqual(expect.arrayContaining(["col-start-2", "row-start-1", "min-w-0", "text-left", "pointer-events-none"]));
+    expect(cls(block)).not.toContain("absolute");
     expect(container.querySelector('[data-slot="page-header"]')).not.toBeNull();
   });
 
   it("shows the subtitle on phones as a muted second line", () => {
     render(h(PageHeader, { title: "Budgets", subtitle: "Set limits" }));
     const sub = screen.getByText("Set limits");
-    expect(cls(sub)).toEqual(expect.arrayContaining(["block", "max-regular:text-xs", "max-regular:truncate"]));
+    expect(cls(sub)).toEqual(expect.arrayContaining(["block", "text-xs", "truncate"]));
     expect(cls(sub)).not.toContain("hidden");
   });
 
@@ -95,7 +97,7 @@ describe("PageHeader phone bar (render)", () => {
   it("left slot is a round 44px glass back button when backHref is set", () => {
     render(h(PageHeader, { title: "Currency Review", backHref: "/transactions", backLabel: "Back to Transactions" }));
     const back = screen.getByRole("link", { name: "Back to Transactions" });
-    expect(cls(back)).toEqual(expect.arrayContaining(["glass-capsule", "max-regular:size-11", "max-regular:rounded-full"]));
+    expect(cls(back)).toEqual(expect.arrayContaining(["glass-capsule", "size-11", "rounded-full"]));
   });
 
   it("right capsule exists only when the page has icon cells; a lone action stands alone beside it", () => {
@@ -104,14 +106,14 @@ describe("PageHeader phone bar (render)", () => {
     rerender(h(PageHeader, { title: "Acts", actions: [h("button", { key: "r", type: "button", "aria-label": "Refresh" }, "R"), h("button", { key: "a", type: "button", "aria-label": "Add" }, "+")] }));
     const capsule = container.querySelector('[data-slot="header-capsule"]');
     expect(capsule).not.toBeNull();
-    expect(cls(capsule)).toEqual(expect.arrayContaining(["glass-capsule", "max-regular:rounded-full", "max-regular:h-11"]));
+    expect(cls(capsule)).toEqual(expect.arrayContaining(["glass-capsule", "rounded-full", "h-11"]));
     expect(capsule?.querySelector('[aria-label="Refresh"]')).not.toBeNull();
     // the primary is NOT in the capsule: it is its own control, last child of the actions group (far right)
     expect(capsule?.querySelector('[aria-label="Add"]')).toBeNull();
     const group = container.querySelector('[data-slot="page-header-actions"]') as HTMLElement;
     expect(group.lastElementChild?.getAttribute("aria-label")).toBe("Add");
     expect(group.children.length).toBe(2);
-    expect(cls(group)).toContain("max-regular:gap-2");
+    expect(cls(group)).toContain("gap-2");
     expect(container.querySelector('[data-slot="header-primary"]')).toBeNull();
   });
 
@@ -125,7 +127,7 @@ describe("PageHeader phone bar (render)", () => {
     expect(css).toContain('[data-slot="page-header-actions"] > :is(.header-save, .phone-icon-action) {');
     expect(container.querySelector('[data-slot="header-primary"]')).toBeNull();
     // the see-through reset is scoped to non-default buttons only
-    expect(css).toContain('[data-slot="header-capsule"] > :is(button, a):not([data-variant="default"]) {\n    background: transparent;');
+    expect(css).toContain('[data-slot="header-capsule"] > :is(button, a):not([data-variant="default"]) {\n  background: transparent;');
   });
 
   it("no capsule or glass around the title (title block and h1 carry no glass classes)", () => {

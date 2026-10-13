@@ -438,11 +438,12 @@ describe("FormPage variants: states", () => {
 });
 
 describe("FormPage variants: header", () => {
-  it("header.className replaces the default header class", () => {
+  it("header.className is added to the bar; the bar grid is the only layout", () => {
     loaded();
-    renderPage({ header: { className: "flex items-start gap-2" } });
-    const bar = screen.getByRole("heading", { level: 1 }).closest(".flex.items-start.gap-2");
+    renderPage({ header: { className: "my-form-header" } });
+    const bar = screen.getByRole("heading", { level: 1 }).closest(".my-form-header");
     expect(bar).toBeTruthy();
+    expect(bar?.className).toContain("grid");
     expect(document.querySelector(".flex.items-center.justify-between")).toBeNull();
   });
 

@@ -6,9 +6,9 @@ import { ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getNavDepth } from "@/lib/nav/history-depth";
 
-/** Shared class list: the round glass circle below regular (640px), a plain 44px target above. */
+/** Shared class list: the round 44px glass circle at every width. */
 const BACK_BUTTON_CLASS =
-  "inline-flex items-center justify-center min-h-11 min-w-11 rounded-md hover:bg-accent transition-colors glass-capsule max-regular:size-11 max-regular:rounded-full";
+  "inline-flex size-11 shrink-0 items-center justify-center rounded-full hover:bg-accent transition-colors glass-capsule";
 
 /** Back control: a link when `href` is given, otherwise a button calling `onClick` (same look). */
 export function BackButton({

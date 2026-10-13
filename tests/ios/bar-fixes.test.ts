@@ -37,13 +37,13 @@ const cls = (el: Element | null | undefined) => (el?.getAttribute("class") ?? ""
 
 afterEach(() => cleanup());
 
-/** Body of the phone block: every rule inside @media (width < 40rem). */
+/** Body of the top bar glass/capsule block: top-level rules (no media gate since the one-bar change), up to the bleed rule. */
 function phoneBlock(): string {
-  const marker = css.indexOf("iOS 26-style liquid glass, phones only");
+  const marker = css.indexOf("iOS 26-style liquid glass, every width");
   expect(marker).toBeGreaterThan(-1);
-  const i = css.indexOf("@media (width < 40rem) {", marker);
-  expect(i).toBeGreaterThan(-1);
-  return css.slice(i, css.indexOf("\n}\n", i));
+  const end = css.indexOf("/* Page header bar bleed", marker);
+  expect(end).toBeGreaterThan(marker);
+  return css.slice(marker, end);
 }
 
 /** Declarations of the first rule whose selector line matches `selector` (inside `scope`). */
@@ -111,7 +111,7 @@ describe("1. phone primary action is an icon-only 44pt filled circle (below regu
     expect(cls(screen.getByRole("button", { name: "Export" }))).not.toContain(PHONE_PRIMARY_CLASS);
   });
 
-  it("the phone rule sits inside the phone media block only (below regular), with size, icon-only text and token fill", () => {
+  it("the primary rule is unconditional (no media gate, every width), with size, icon-only text and token fill", () => {
     const phone = phoneBlock();
     const rule = body(phone, '[data-slot="header-capsule"] > :is(button, a).phone-icon-action');
     expect(rule).toMatch(/background:\s*transparent;/);
@@ -122,7 +122,7 @@ describe("1. phone primary action is an icon-only 44pt filled circle (below regu
     // the cell geometry comes from the shared capsule cell rule (44px, round)
     expect(phone).toMatch(/\[data-slot="header-capsule"\] > :is\(button, a\) \{\s*width: 2\.75rem;/);
     expect(rule).not.toMatch(/backdrop-filter:\s*blur/);
-    expect(css.slice(0, css.indexOf("iOS 26-style liquid glass, phones only"))).not.toContain(".phone-icon-action");
+    expect(css.slice(0, css.indexOf("iOS 26-style liquid glass, every width"))).not.toContain(".phone-icon-action");
   });
 
   it("the primary cell is neutral: its icon is --foreground on the glass capsule (no accent fill to check)", () => {
@@ -132,7 +132,7 @@ describe("1. phone primary action is an icon-only 44pt filled circle (below regu
   });
 
   it("the tab-bar and bar pieces the render relies on are in the source (no text-[Npx] in the bar code)", () => {
-    expect(PHONE_BAR).toContain("max-regular:grid");
+    expect(PHONE_BAR).toContain("grid");
     expect(pageHeaderSrc).not.toMatch(/text-\[\d/);
     expect(navBar).not.toMatch(/text-\[\d/);
   });
@@ -140,25 +140,25 @@ describe("1. phone primary action is an icon-only 44pt filled circle (below regu
 
 describe("2. title block insets equal the measured left slot and right capsule", () => {
   it("the bar is a three-column grid: side tracks min 2.75rem (44pt) and auto, title in the 1fr middle", () => {
-    expect(PHONE_BAR).toContain("max-regular:grid-cols-[auto_minmax(0,1fr)_auto]");
-    expect(PHONE_BAR).toContain("max-regular:items-center");
-    expect(PHONE_BAR).toContain("max-regular:min-h-[var(--phone-header-h)]");
+    expect(PHONE_BAR).toContain("grid-cols-[auto_minmax(0,1fr)_auto]");
+    expect(PHONE_BAR).toContain("items-center");
+    expect(PHONE_BAR).toContain("min-h-[var(--phone-header-h)]");
   });
 
   it("the title block is the middle column, min-w-0, not an absolute overlay", () => {
-    expect(PHONE_BAR_CENTER).toContain("max-regular:col-start-2");
-    expect(PHONE_BAR_CENTER).toContain("max-regular:min-w-0");
-    expect(PHONE_BAR_CENTER).toContain("max-regular:pointer-events-none");
-    expect(PHONE_BAR_CENTER).not.toContain("max-regular:absolute");
+    expect(PHONE_BAR_CENTER).toContain("col-start-2");
+    expect(PHONE_BAR_CENTER).toContain("min-w-0");
+    expect(PHONE_BAR_CENTER).toContain("pointer-events-none");
+    expect(PHONE_BAR_CENTER).not.toContain("absolute");
     expect(PHONE_BAR_CENTER).not.toMatch(/inset-x-\[/);
   });
 
   it("the capsule is the third column, one 44px slot per item, capped at 11rem and never scrolling", () => {
-    expect(PHONE_BAR_RIGHT).toContain("max-regular:col-start-3");
-    expect(PHONE_BAR_RIGHT).toContain("max-regular:justify-self-end");
+    expect(PHONE_BAR_RIGHT).toContain("col-start-3");
+    expect(PHONE_BAR_RIGHT).toContain("justify-self-end");
     expect(PHONE_BAR_RIGHT).not.toContain("gap-2.5"); // one capsule child group; the primary sits inside it
-    expect(PHONE_CAPSULE).toContain("max-regular:max-w-[11rem]");
-    expect(PHONE_CAPSULE).toContain("max-regular:gap-0");
+    expect(PHONE_CAPSULE).toContain("max-w-[11rem]");
+    expect(PHONE_CAPSULE).toContain("gap-0");
     expect(PHONE_CAPSULE).not.toContain("overflow-x-auto");
     expect(PHONE_BAR_RIGHT).not.toContain("overflow-x-auto");
     expect(PHONE_BAR_RIGHT).not.toContain("9.5rem");
@@ -168,9 +168,9 @@ describe("2. title block insets equal the measured left slot and right capsule",
   });
 
   it("the title and subtitle truncate with ellipsis (one line each)", () => {
-    expect(PHONE_BAR_TITLE).toContain("max-regular:truncate");
-    expect(PHONE_BAR_SUBTITLE).toContain("max-regular:truncate");
-    expect(PHONE_BAR_SUBTITLE).toContain("max-regular:text-xs");
+    expect(PHONE_BAR_TITLE).toContain("truncate");
+    expect(PHONE_BAR_SUBTITLE).toContain("truncate");
+    expect(PHONE_BAR_SUBTITLE).toContain("text-xs");
   });
 
   it("render: title block in the middle column, capsule in the third, subtitle visible", () => {
@@ -183,11 +183,11 @@ describe("2. title block insets equal the measured left slot and right capsule",
       }),
     );
     const block = container.querySelector('[data-slot="page-header-title-block"]');
-    expect(cls(block)).toContain("max-regular:col-start-2");
+    expect(cls(block)).toContain("col-start-2");
     const capsule = container.querySelector('[data-slot="header-capsule"]');
-    expect(cls(capsule)).toEqual(expect.arrayContaining(["glass-capsule", "max-regular:max-w-[11rem]"]));
-    expect(cls(capsule?.parentElement ?? null)).toContain("max-regular:col-start-3");
-    expect(cls(screen.getByText("Every account you track, in one list"))).toContain("max-regular:truncate");
+    expect(cls(capsule)).toEqual(expect.arrayContaining(["glass-capsule", "max-w-[11rem]"]));
+    expect(cls(capsule?.parentElement ?? null)).toContain("col-start-3");
+    expect(cls(screen.getByText("Every account you track, in one list"))).toContain("truncate");
   });
 
   it("the bar keeps the sticky glass material and the fixed min height (one row, 60px)", () => {
@@ -307,8 +307,8 @@ describe("5. More page: PageHeader title and bottom clearance", () => {
 describe("6. back circle is centred in the 60px bar (shared bar and new-transaction header)", () => {
   it("the shared bar is 3.75rem (60px) with items-center, so a 44px circle leaves 8px clear above and below", () => {
     // Arithmetic: (60 - 44) / 2 = 8px.
-    expect(PHONE_BAR).toContain("max-regular:min-h-[var(--phone-header-h)]");
-    expect(PHONE_BAR).toContain("max-regular:items-center");
+    expect(PHONE_BAR).toContain("min-h-[var(--phone-header-h)]");
+    expect(PHONE_BAR).toContain("items-center");
     expect((60 - 44) / 2).toBe(8);
   });
 

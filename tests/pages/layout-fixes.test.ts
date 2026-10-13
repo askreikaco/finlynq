@@ -117,9 +117,11 @@ describe("portfolio performance controls at 390", () => {
 describe("accounts/[id] at 390", () => {
   it("header actions capsule is not 100% wide (it ran off the right edge)", () => {
     const src = read(ACCOUNT_DETAIL);
-    const actions = src.match(/actionsClassName="([^"]*)"/)?.[1] ?? "";
-    expect(actions).not.toMatch(/(^|\s)w-full(\s|$)/);
-    expect(actions).toContain("min-w-0");
+    // The right group is the fixed bar layout (PHONE_BAR_RIGHT: col 3, min-w-0, shrink-0); the page passes no override.
+    expect(src).not.toMatch(/actionsClassName=/);
+    const bar = read("src/components/mobile/page-header.tsx");
+    expect(bar).toMatch(/PHONE_BAR_RIGHT =\s*"[^"]*min-w-0/);
+    expect(bar).not.toMatch(/PHONE_BAR_RIGHT =\s*"[^"]*\bw-full/);
   });
 
   it("type / currency badge row can wrap inside the header and is capped to the viewport", () => {

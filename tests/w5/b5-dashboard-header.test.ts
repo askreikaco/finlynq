@@ -7,24 +7,17 @@ const DASHBOARD = resolve(__dirname, "../../src/app/(app)/dashboard/page.tsx");
 const src = readFileSync(DASHBOARD, "utf8");
 
 const TITLE_TARGET = "text-2xl font-bold tracking-tight";
-const SUBTITLE_TARGET = "text-sm text-muted-foreground mt-0.5";
 
 describe("dashboard page header (W5-9)", () => {
-  it("titleClassName matches the header target", () => {
+  it("passes no titleClassName (the one bar owns the title)", () => {
     const values = [...src.matchAll(/(?<![A-Za-z])titleClassName="([^"]*)"/g)].map((m) => m[1]);
-    expect(values.length).toBeGreaterThan(0);
-    for (const v of values) {
-      expect(v).toMatch(/^text-2xl font-bold tracking-tight( truncate| flex items-center gap-2)?$/);
-    }
-    expect(src).toContain(`titleClassName="${TITLE_TARGET}"`);
+    expect(values).toEqual([]);
+    expect(src).not.toContain(`titleClassName="${TITLE_TARGET}"`);
   });
 
-  it("subtitleClassName equals the header target where present", () => {
+  it("passes no subtitleClassName", () => {
     const values = [...src.matchAll(/subtitleClassName="([^"]*)"/g)].map((m) => m[1]);
-    expect(values.length).toBeGreaterThan(0);
-    for (const v of values) {
-      expect(v).toBe(SUBTITLE_TARGET);
-    }
+    expect(values).toEqual([]);
   });
 
   it("old header strings are absent", () => {

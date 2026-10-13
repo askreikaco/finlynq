@@ -93,10 +93,8 @@ export function StagedListView({
           backHref="/import"
           backLabel="Back to Import"
           title="Pending Imports"
-          titleClassName="text-2xl font-bold tracking-tight"
           subtitle={<>Transactions from email forwards or file uploads (CSV / OFX /
           QFX), waiting for your review. Rows auto-expire after 60 days.</>}
-          subtitleClassName="text-sm text-muted-foreground mt-0.5"
           actions={
             <Button variant="outline" size="sm" onClick={loadList} disabled={loading} className={HEADER_DESKTOP_ONLY}>
               <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? "animate-spin" : ""}`} />

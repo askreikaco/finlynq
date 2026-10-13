@@ -15,55 +15,47 @@ import { PageHeader, HEADER_SECONDARY, HEADER_DESKTOP_ONLY } from "@/components/
 import {
   PHONE_BAR,
   PHONE_BAR_STICKY,
-  PHONE_BAR_RIGHT,
   PHONE_CAPSULE,
   PHONE_BAR_TITLE,
   PHONE_BAR_SUBTITLE,
-  HEADER_TITLE_CLASS,
-  HEADER_SUBTITLE_CLASS,
 } from "@/components/mobile/page-header";
 
 afterEach(cleanup);
 const cls = (el: Element) => el.className.toString().split(/\s+/);
 const SOURCE = fs.readFileSync(path.join(process.cwd(), "src/components/mobile/page-header.tsx"), "utf-8");
 
-describe("PageHeader v2: classes below and at regular", () => {
-  it("the phone bar classes are max-regular (below 640px), never max-md", () => {
-    expect(PHONE_BAR).toContain("max-regular:grid");
-    expect(PHONE_BAR).toContain("max-regular:min-h-[var(--phone-header-h)]");
-    expect(PHONE_BAR).toContain("max-regular:px-4");
-    expect(PHONE_BAR).not.toMatch(/max-md:/);
-    expect(PHONE_CAPSULE).toContain("max-regular:max-w-[11rem]");
-    expect(PHONE_BAR_TITLE).toContain("max-regular:text-base");
-    expect(PHONE_BAR_SUBTITLE).toContain("max-regular:text-xs");
+describe("PageHeader v2: one bar at every width", () => {
+  it("the bar classes are unconditional (no max-regular / regular / max-md variants)", () => {
+    expect(PHONE_BAR).toContain(" grid ");
+    expect(PHONE_BAR).toContain("min-h-[var(--phone-header-h)]");
+    expect(PHONE_BAR).toContain("page-header-bleed");
+    expect(PHONE_BAR).not.toMatch(/(max-)?(regular|wide|md):/);
+    expect(PHONE_CAPSULE).toContain("max-w-[11rem]");
+    expect(PHONE_CAPSULE).not.toMatch(/(max-)?regular:/);
+    expect(PHONE_BAR_TITLE).toContain("text-base");
+    expect(PHONE_BAR_SUBTITLE).toContain("text-xs");
   });
 
-  it("the regular layer is opaque (no glass) and the bar is sticky at every size", () => {
-    expect(PHONE_BAR_STICKY.split(/\s+/)).toContain("regular:top-0");
-    expect(PHONE_BAR_STICKY).toContain("regular:bg-background/90");
-    expect(PHONE_BAR_STICKY).toContain("regular:backdrop-blur-sm");
-    expect(PHONE_BAR_STICKY).toContain("sticky");
+  it("the bar is glass and sticky at every size, pinned at the safe-area inset", () => {
+    expect(PHONE_BAR_STICKY.split(/\s+/)).toEqual(expect.arrayContaining(["glass-bar", "sticky", "top-[var(--sat,0px)]"]));
+    expect(PHONE_BAR_STICKY).not.toMatch(/regular:/);
     expect(PHONE_BAR_STICKY.split(/\s+/)).not.toContain("max-regular:sticky");
-      });
-
-  it("title is text-3xl/9 extrabold from regular up; subtitle is text-sm from regular up", () => {
-    expect(HEADER_TITLE_CLASS).toBe("text-3xl/9 font-extrabold tracking-tight");
-    expect(HEADER_SUBTITLE_CLASS).toContain("text-sm");
-    expect(HEADER_SUBTITLE_CLASS).toContain("block");
   });
 
-  it("the rendered title block and h1 carry both layers", () => {
+  it("the rendered title block and h1 carry the one style", () => {
     render(<PageHeader title="Dashboard" subtitle="Today" />);
     const h1 = screen.getByRole("heading", { level: 1 });
-    expect(cls(h1)).toEqual(expect.arrayContaining(["text-3xl/9", "font-extrabold", "max-regular:text-base"]));
+    expect(cls(h1)).toEqual(expect.arrayContaining(["text-base", "font-semibold"]));
+    expect(cls(h1)).not.toContain("font-extrabold");
     const sub = screen.getByText("Today");
-    expect(cls(sub)).toEqual(expect.arrayContaining(["text-sm", "max-regular:text-xs"]));
+    expect(cls(sub)).toEqual(expect.arrayContaining(["text-xs"]));
+    expect(cls(sub)).not.toContain("text-sm");
   });
 });
 
 describe("PageHeader v2: secondary actions", () => {
-  it("HEADER_SECONDARY is hidden below regular and only that (no max-md, no display override)", () => {
-    expect(HEADER_SECONDARY).toBe("max-regular:hidden");
+  it("HEADER_SECONDARY is hidden at every width (marker token + hidden, no breakpoint variant)", () => {
+    expect(HEADER_SECONDARY).toBe("header-secondary hidden");
   });
 
   it("HEADER_DESKTOP_ONLY is an alias: same value, so existing callers keep the same behaviour", () => {
@@ -83,7 +75,7 @@ describe("PageHeader v2: secondary actions", () => {
         }
       />,
     );
-    expect(cls(screen.getByText("Export", { selector: "button" }))).toContain("max-regular:hidden");
+    expect(cls(screen.getByText("Export", { selector: "button" }))).toContain("hidden");
     expect(cls(screen.getByText("Add"))).toContain("phone-icon-action");
   });
 });
@@ -96,7 +88,7 @@ describe("PageHeader v2: deprecated props are accepted and ignored", () => {
     expect(h1).not.toContain("md:text-4xl");
     const sub = cls(screen.getByText("sub"));
     expect(sub).not.toContain("text-lg");
-    expect(sub).toContain("text-sm");
+    expect(sub).toContain("text-xs");
   });
 
   it("the deprecated props are typed @deprecated in page-header.tsx", () => {

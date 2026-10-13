@@ -347,7 +347,6 @@ export default function PortfolioPage() {
       width="report"
       center
       header={{
-        actionsClassName: "flex flex-wrap items-center gap-2",
         overflow: [
           { label: "Realized gains", icon: TrendingUp, href: "/portfolio/realized-gains" },
           { label: "Dividends", icon: Coins, href: "/portfolio/dividends" },

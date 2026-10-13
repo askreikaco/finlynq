@@ -16,7 +16,6 @@ vi.mock("@/components/dropdown-order-provider", () => ({
 vi.mock("@/components/onboarding-tips", () => ({ OnboardingTips: () => null }));
 
 import AccountsPage from "@/app/(app)/accounts/page";
-import { HEADER_SECONDARY } from "@/components/mobile";
 
 const balances = [
   { accountId: 1, accountName: "TCB", accountType: "A", accountGroup: "Cash", currency: "VND", balance: 100, convertedBalance: 100 },
@@ -34,17 +33,17 @@ afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 const cls = (el: Element) => el.className.toString().split(/\s+/);
 
 describe("Accounts header on mobile", () => {
-  it("secondary actions are inline from regular up (HEADER_SECONDARY); the primary pill stays; overflow lists them", async () => {
+  it("secondary actions are hidden from the bar at every width (HEADER_SECONDARY); the primary stays; overflow lists them", async () => {
     render(<AccountsPage />);
     await screen.findByRole("heading", { level: 1, name: "Accounts" });
 
     const manageInline = screen.getByTitle("Rename, reorder, or merge account groups");
     const archivedInline = screen.getByTitle("Show archived accounts");
-    expect(cls(manageInline)).toContain(HEADER_SECONDARY);
-    expect(cls(archivedInline)).toContain(HEADER_SECONDARY);
+    expect(cls(manageInline)).toContain("header-secondary");
+    expect(cls(archivedInline)).toContain("header-secondary");
 
     const primary = screen.getByRole("link", { name: /Create Account|Add/ });
-    expect(cls(primary)).not.toContain(HEADER_SECONDARY);
+    expect(cls(primary)).not.toContain("header-secondary");
 
     fireEvent.click(screen.getByRole("button", { name: "More actions" }));
     const menu = await screen.findByRole("menu", undefined, { timeout: 5000 });
@@ -65,15 +64,16 @@ describe("Accounts header on mobile", () => {
     await waitFor(() => expect(screen.getByTitle("Hide archived accounts")).toBeTruthy());
   });
 
-  it("title is the one system style from regular up (text-3xl/9 extrabold); the caller's titleClassName is ignored", async () => {
+  it("title is the one bar style at every width (text-base semibold); no desktop title override", async () => {
     render(<AccountsPage />);
     const h1 = await screen.findByRole("heading", { level: 1, name: "Accounts" });
-    expect(cls(h1)).toEqual(expect.arrayContaining(["text-3xl/9", "font-extrabold"]));
+    expect(cls(h1)).toEqual(expect.arrayContaining(["text-base", "font-semibold"]));
     expect(cls(h1)).not.toContain("md:text-2xl");
-    // Subtitle is shown at every size: a phone caption below regular, text-sm from regular.
+    expect(cls(h1)).not.toContain("text-3xl/9");
+    // Subtitle is shown at every size: a truncated text-xs caption.
     const sub = screen.getByText("Overview of your assets, liabilities, and net worth");
-    expect(cls(sub)).toEqual(expect.arrayContaining(["block", "max-regular:text-xs", "max-regular:truncate"]));
+    expect(cls(sub)).toEqual(expect.arrayContaining(["block", "text-xs", "truncate"]));
     expect(cls(sub)).not.toContain("hidden");
-    expect(cls(sub)).not.toContain(HEADER_SECONDARY);
+    expect(cls(sub)).not.toContain("header-secondary");
   });
 });

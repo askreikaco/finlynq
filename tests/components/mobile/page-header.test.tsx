@@ -15,17 +15,18 @@ afterEach(cleanup);
 const cls = (el: HTMLElement) => el.className.split(/\s+/);
 
 describe("PageHeader: one title for every size", () => {
-  it("below regular the title is the system headline (text-base semibold)", () => {
+  it("the title is the system headline (text-base semibold) at every width", () => {
     render(<PageHeader title="Accounts" />);
     const c = cls(screen.getByRole("heading", { level: 1, name: "Accounts" }));
-    expect(c).toEqual(expect.arrayContaining(["max-regular:text-base", "max-regular:font-semibold", "max-regular:truncate"]));
+    expect(c).toEqual(expect.arrayContaining(["text-base", "font-semibold", "truncate"]));
   });
 
-  it("from regular the title is text-3xl/9 extrabold (28/800 by D4, no arbitrary size)", () => {
+  it("there is no separate desktop title style (no text-3xl / extrabold, no arbitrary size)", () => {
     render(<PageHeader title="Portfolio" />);
     const c = cls(screen.getByRole("heading", { level: 1, name: "Portfolio" }));
-    expect(c).toEqual(expect.arrayContaining(["text-3xl/9", "font-extrabold", "tracking-tight"]));
-    expect(c.some((t) => /^text-\[/.test(t))).toBe(false);
+    expect(c).not.toContain("text-3xl/9");
+    expect(c).not.toContain("font-extrabold");
+    expect(c.some((t) => /^text-\[/.test(t) || t.includes("regular:"))).toBe(false);
     expect(c).not.toContain("font-bold");
   });
 
@@ -34,26 +35,31 @@ describe("PageHeader: one title for every size", () => {
     const c = cls(screen.getByRole("heading", { level: 1 }));
     expect(c).not.toContain("text-xl");
     expect(c).not.toContain("tracking-wide");
-    expect(c).toContain("text-3xl/9");
+    expect(c).toContain("text-base");
   });
 
-  it("shows the subtitle at every size: a phone caption below regular, text-sm from regular", () => {
+  it("shows the subtitle at every size: a truncated text-xs caption", () => {
     render(<PageHeader title="Budgets" subtitle="Set limits" subtitleClassName="text-lg italic" />);
     const sub = screen.getByText("Set limits");
-    expect(cls(sub)).toEqual(expect.arrayContaining(["block", "text-sm", "text-muted-foreground", "max-regular:text-xs", "max-regular:truncate"]));
+    expect(cls(sub)).toEqual(expect.arrayContaining(["block", "text-xs", "text-muted-foreground", "truncate"]));
     expect(cls(sub)).not.toContain("hidden");
     expect(cls(sub)).not.toContain("italic");
   });
 });
 
-describe("PageHeader: layout at regular and up", () => {
-  it("applies the page's wrapper and actions classes verbatim at every size", () => {
+describe("PageHeader: layout (same at every width)", () => {
+  it("the bar grid wins over a page's conflicting wrapper classes; actionsClassName is ignored", () => {
     const { container } = render(
-      <PageHeader title="T" className="flex flex-wrap items-center justify-between gap-3" actionsClassName="flex gap-2" actions={<button>Go</button>} />,
+      <PageHeader title="T" className="flex flex-wrap items-start justify-between" actionsClassName="flex gap-5 regular:w-auto" actions={<button>Go</button>} />,
     );
     const wrap = container.firstElementChild as HTMLElement;
-    expect(cls(wrap)).toEqual(expect.arrayContaining(["flex", "flex-wrap", "items-center", "justify-between", "gap-3"]));
-    expect(cls(wrap.querySelector("[data-slot=page-header-actions]") as HTMLElement)).toEqual(expect.arrayContaining(["flex", "gap-2"]));
+    expect(cls(wrap)).toEqual(expect.arrayContaining(["grid", "items-center"]));
+    expect(cls(wrap)).not.toContain("flex");
+    expect(cls(wrap)).not.toContain("items-start");
+    const actions = wrap.querySelector("[data-slot=page-header-actions]") as HTMLElement;
+    expect(cls(actions)).toContain("col-start-3");
+    expect(cls(actions)).not.toContain("gap-5");
+    expect(cls(actions)).not.toContain("regular:w-auto");
   });
 
   it("title only: one sticky bar at every size, empty left spacer, title in the middle column", () => {
@@ -68,10 +74,11 @@ describe("PageHeader: layout at regular and up", () => {
     expect(cls(wrap)).toEqual(expect.arrayContaining(["sticky", "z-30"]));
     expect(cls(wrap)).not.toContain("max-regular:sticky");
     expect(cls(wrap)).not.toContain("regular:sticky");
-    // below regular: the grid bar; from regular: opaque, no glass
-    expect(cls(wrap)).toEqual(expect.arrayContaining(["max-regular:-mx-4", "max-regular:grid", "regular:bg-background/90"]));
+    // the same grid glass bar at every width
+    expect(cls(wrap)).toEqual(expect.arrayContaining(["page-header-bleed", "grid", "glass-bar"]));
+    expect(cls(wrap).some((t) => t.includes("regular:"))).toBe(false);
     const block = wrap.querySelector('[data-slot="page-header-title-block"]') as HTMLElement;
-    expect(cls(block)).toEqual(expect.arrayContaining(["max-regular:col-start-2", "max-regular:min-w-0", "max-regular:pointer-events-none"]));
+    expect(cls(block)).toEqual(expect.arrayContaining(["col-start-2", "min-w-0", "pointer-events-none"]));
     expect(block.firstElementChild?.tagName).toBe("H1");
   });
 
@@ -79,15 +86,14 @@ describe("PageHeader: layout at regular and up", () => {
     const { container } = render(<PageHeader title="Edit" backHref="/accounts" />);
     const back = container.querySelector('[data-slot="back-button"]') as HTMLElement;
     expect(back.getAttribute("href")).toBe("/accounts");
-    expect(cls(back)).toEqual(expect.arrayContaining(["min-h-11", "min-w-11"]));
+    expect(cls(back)).toEqual(expect.arrayContaining(["size-11", "rounded-full"]));
     expect(cls(back).some((t) => t === "hidden" || t.endsWith(":hidden"))).toBe(false);
-    expect(cls(back)).toEqual(expect.arrayContaining(["max-regular:size-11", "max-regular:rounded-full"]));
   });
 });
 
 describe("PageHeader: secondary actions (HEADER_SECONDARY)", () => {
-  it("HEADER_SECONDARY hides below regular and is visible from regular up", () => {
-    expect(HEADER_SECONDARY).toBe("max-regular:hidden");
+  it("HEADER_SECONDARY hides at every width (it is reachable in the overflow menu)", () => {
+    expect(HEADER_SECONDARY).toBe("header-secondary hidden");
   });
 
   it("HEADER_DESKTOP_ONLY is an alias with the same value", () => {
@@ -108,7 +114,7 @@ describe("PageHeader: overflow menu (Accounts-style)", () => {
     { label: "Show archived", onSelect: onArchived },
   ];
 
-  it("shows a 44px, labelled ⋯ trigger below regular, keeps the primary visible, hides secondaries below regular", () => {
+  it("shows a 44px, labelled ⋯ trigger below regular, keeps the primary visible, hides secondaries at every width", () => {
     render(
       <PageHeader
         title="Accounts"
@@ -125,8 +131,8 @@ describe("PageHeader: overflow menu (Accounts-style)", () => {
     // More is the header group's first button at every size (not phone-only)
     expect(cls(trigger)).not.toContain("regular:hidden");
     expect(cls(trigger)).toContain("pointer-coarse:size-11");
-    expect(cls(screen.getByText("Manage groups", { selector: "button" }))).toContain("max-regular:hidden");
-    expect(cls(screen.getByText("Add"))).not.toContain("max-regular:hidden");
+    expect(cls(screen.getByText("Manage groups", { selector: "button" }))).toContain("hidden");
+    expect(cls(screen.getByText("Add"))).not.toContain("hidden");
   });
 
   it("the primary is the last child that is not a secondary action", () => {

@@ -72,13 +72,13 @@ afterEach(() => {
 });
 
 describe("ListPage variants: defaults unchanged", () => {
-  it("root class is space-y-6 and header classes are today's literals", () => {
+  it("root class is space-y-6 and header classes are the one bar grid", () => {
     api.data = GOALS;
     const { container } = render(<ListPage<Goal, Goal[], { tag: string }> {...baseProps()} />);
     expect(screen.getByTestId("goals-root").className).toBe("space-y-6");
-    const headerRow = container.querySelector("h1")?.closest("div[class*='justify-between']");
-    expect(headerRow?.className).toContain("flex flex-wrap items-center justify-between gap-3");
-    expect(container.querySelector("[class*='contents']")).toBeTruthy();
+    const headerRow = container.querySelector("[data-slot=page-header]");
+    expect(headerRow?.className).toContain("grid");
+    expect(headerRow?.className).not.toContain("flex-wrap");
     expect(screen.getByTestId("view-toggle")).toBeTruthy();
     expect(apiKeys).toEqual(["/api/goals"]);
   });
@@ -285,13 +285,13 @@ describe("ListPage variants: header, stack", () => {
     expect(screen.queryByRole("link", { name: "Add Goal" })).toBeNull();
   });
 
-  it("header.className and actionsClassName override the defaults", () => {
+  it("header.className is applied to the bar (the actions group layout is fixed)", () => {
     api.data = GOALS;
     const { container } = render(
-      <ListPage<Goal, Goal[], { tag: string }> {...baseProps()} header={{ className: "my-header", actionsClassName: "my-actions" }} />,
+      <ListPage<Goal, Goal[], { tag: string }> {...baseProps()} header={{ className: "my-header" }} />,
     );
     expect(container.querySelector(".my-header")).toBeTruthy();
-    expect(container.querySelector(".my-actions")).toBeTruthy();
+    expect(container.querySelector("[data-slot=page-header-actions]")).toBeTruthy();
   });
 
   it("stack 5 and 4 set the root gap class", () => {

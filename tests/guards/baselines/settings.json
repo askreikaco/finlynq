@@ -4,9 +4,6 @@
     "src/app/(app)/settings/import/reconcile-visibility/page.tsx"
   ],
   "chrome": {
-    "src/app/(app)/settings/import/reconcile-visibility/page.tsx": {
-      "title-prop": 1
-    },
     "src/app/(app)/settings/general/page.tsx": {
       "min-h": 1
     }

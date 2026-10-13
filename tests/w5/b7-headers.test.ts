@@ -44,10 +44,8 @@ describe("W5-21 page headers tail", () => {
           expect(read("src/components/templates/section-page.tsx")).not.toMatch(/titleClassName/);
           return;
         }
-        expect(titles.length).toBeGreaterThan(0);
-        for (const t of titles) {
-          expect(t).toMatch(TITLE_ALLOWED);
-        }
+        // One top bar at every width: no page passes a title override any more.
+        expect(titles).toEqual([]);
       });
 
       it("every subtitleClassName equals the standard subtitle class where present", () => {

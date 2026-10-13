@@ -19,7 +19,7 @@ export type SectionPageStack = "6" | "5" | "4";
 /** Page-header passthrough (PageHeader props the section chrome forwards). */
 export type SectionPageHeader = Pick<
   React.ComponentProps<typeof PageHeader>,
-  "actions" | "overflow" | "className" | "actionsClassName" | "belowTitle"
+  "actions" | "overflow" | "className" | "belowTitle"
 >;
 
 export interface SectionPageProps {
@@ -48,7 +48,7 @@ export interface SectionPageProps {
   center?: boolean;
   /** Vertical rhythm between the header and body (`space-y-<n>`). Default "6". */
   stack?: SectionPageStack;
-  /** Passthrough to PageHeader (actions, overflow, className, actionsClassName, belowTitle). */
+  /** Passthrough to PageHeader (actions, overflow, className, belowTitle). */
   header?: SectionPageHeader;
   /** Appended last to the root className (escape hatch, e.g. `p-6`). */
   className?: string;
@@ -115,7 +115,6 @@ export function SectionPage({
         actions={header?.actions}
         overflow={header?.overflow}
         className={header?.className}
-        actionsClassName={header?.actionsClassName}
         belowTitle={header?.belowTitle}
       />
       {body}

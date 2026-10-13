@@ -8,9 +8,7 @@
       "backdrop-blur": 2
     },
     "src/app/(app)/dashboard/page.tsx": {
-      "rounded-2xl": 5,
-      "title-prop": 2,
-      "subtitle-prop": 1
+      "rounded-2xl": 5
     },
     "src/app/(app)/reports/page.tsx": {
       "rounded-2xl": 1

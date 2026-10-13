@@ -640,9 +640,6 @@ export function TransactionsWorkspace({
             className="flex flex-wrap items-center justify-between gap-3"
             title="Transactions"
             subtitle="Manage and track all your financial transactions"
-            titleClassName="text-2xl font-bold tracking-tight"
-            subtitleClassName="text-sm text-muted-foreground mt-0.5"
-            actionsClassName="flex flex-wrap items-center gap-1.5"
             overflow={[
           { label: "Transfer", icon: ArrowRightLeft, onSelect: () => router.push("/transactions/new?kind=transfer") },
           { label: "Buy", icon: ShoppingCart, onSelect: () => router.push("/portfolio/new/buy") },

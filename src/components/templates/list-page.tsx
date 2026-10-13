@@ -104,7 +104,6 @@ export interface ListPageProps<T, D = T[], X = unknown> {
   /** Header overrides. `actions` replaces the Add button (null hides it). */
   header?: {
     className?: string;
-    actionsClassName?: string;
     actions?: ReactNode;
     overflow?: OverflowAction[];
   };
@@ -281,10 +280,9 @@ export function ListPage<T, D = T[], X = unknown>({
     <Suspense fallback={loadingNode ?? <PageSkeleton variant={skeleton} rows={suspenseRows} />}>
       <div data-testid={`${id}-root`} className={STACK_CLASS[stack]}>
         <PageHeader
-          className={header?.className ?? "flex flex-wrap items-center justify-between gap-3"}
+          className={header?.className}
           title={title}
           subtitle={subtitle}
-          actionsClassName={header?.actionsClassName ?? "contents"}
           actions={header?.actions !== undefined ? header.actions : addNode}
           overflow={header?.overflow}
         />
