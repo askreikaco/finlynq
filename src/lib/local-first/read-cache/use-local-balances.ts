@@ -18,6 +18,7 @@ import { fetchTrustedDeviceId } from "@/lib/data/trusted-device";
 import type { BalanceRow } from "../store/types";
 import type { HydrateResult, FetchLike } from "./hydrate";
 import { isLocalReadCacheEnabled } from "./optin";
+import { onPasskeyUnlocked, passkeyLockedNow } from "../crypto/passkey-unlock";
 import { createMemoryStore, disposeReadCache, hydrateReadCache, readLocalBalances, type ReadCacheDeps } from "./session";
 
 export type LocalBalancesStatus = "off" | "loading" | "ready" | "error";
@@ -55,7 +56,7 @@ async function depsForSession(): Promise<ReadCacheDeps> {
       build: BUILD,
       allowPersist: () => {
         const now = getSessionInfo();
-        return isLocalReadCacheEnabled() && !!now && !now.locked && now.userId === userId;
+        return isLocalReadCacheEnabled() && !!now && !now.locked && now.userId === userId && !passkeyLockedNow(userId);
       },
     },
   };
@@ -145,6 +146,9 @@ export function useLocalAccountBalances(): LocalAccountBalances {
       }
     });
   }, []);
+
+  // Passkey unlock on this page: the snapshot can be read again, so refill from the device copy and the network.
+  useEffect(() => onPasskeyUnlocked(() => void run(false)), [run]);
 
   const refresh = useCallback(() => run(true), [run]);
 

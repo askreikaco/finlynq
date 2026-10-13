@@ -22,9 +22,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
+import { type DataTableColumn } from "@/components/ui/data-table";
+import { ColumnList } from "@/components/mobile/column-list";
+import { SectionPage } from "@/components/templates";
 import {
-  Server,
   Cpu,
   Database,
   Activity,
@@ -35,7 +36,7 @@ import {
   History,
   Gauge,
 } from "lucide-react";
-import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
+import { HEADER_DESKTOP_ONLY } from "@/components/mobile";
 
 interface SysSample {
   at: number;
@@ -408,25 +409,23 @@ export default function AdminSystemPage() {
   );
 
   return (
-    <div className="max-w-7xl space-y-6">
-      <PageHeader
-        className="flex flex-wrap items-center justify-between gap-3"
-        lead={<Server className={`h-5 w-5 text-primary ${HEADER_DESKTOP_ONLY}`} />}
-        leadClassName="flex items-center gap-2"
-        title={
-          <>
+    <SectionPage
+      id="admin-system"
+      title={<>
             System
             {data?.env && (
               <Badge variant="outline" className="ml-1 uppercase">
                 {data.env}
               </Badge>
             )}
-          </>
-        }
-        overflow={[{ label: auto ? "Auto-refresh: on" : "Auto-refresh: off", onSelect: () => setAuto(!auto) }]}
-        actionsClassName="flex flex-wrap items-center gap-2"
-        actions={
-          <>
+          </>}
+      width="report"
+      center
+      header={{
+        className: "flex flex-wrap items-center justify-between gap-3",
+        overflow: [{ label: auto ? "Auto-refresh: on" : "Auto-refresh: off", onSelect: () => setAuto(!auto) }],
+        actionsClassName: "flex flex-wrap items-center gap-2",
+        actions: (<>
             <label className={`${HEADER_DESKTOP_ONLY} flex items-center gap-2 text-xs text-muted-foreground`}>
               Auto-refresh
               <Switch checked={auto} onCheckedChange={setAuto} />
@@ -435,9 +434,9 @@ export default function AdminSystemPage() {
               <RefreshCw className={`mr-1.5 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
               Refresh
             </Button>
-          </>
-        }
-      />
+          </>),
+      }}
+    >
       <p className="mt-0.5 text-sm text-muted-foreground">
         Live CPU / memory / disk, active database queries, and snapshot-rebuild activity. CPU /
         memory / disk are <span className="font-medium text-foreground">the whole VPS</span> (prod
@@ -553,8 +552,8 @@ export default function AdminSystemPage() {
                 </span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="overflow-x-auto p-2">
-              <DataTable<TopOp>
+            <CardContent className="p-2">
+              <ColumnList<TopOp>
                 columns={topOpColumns}
                 rows={data?.topOps ?? []}
                 rowKey={(r) => r.op}
@@ -585,8 +584,8 @@ export default function AdminSystemPage() {
                 </span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="overflow-x-auto p-2">
-              <DataTable<ActiveQuery>
+            <CardContent className="p-2">
+              <ColumnList<ActiveQuery>
                 columns={queryColumns}
                 rows={data?.db.activeQueries ?? []}
                 rowKey={(r) => r.pid}
@@ -742,6 +741,6 @@ export default function AdminSystemPage() {
           </Card>
         </>
       )}
-    </div>
+    </SectionPage>
   );
 }

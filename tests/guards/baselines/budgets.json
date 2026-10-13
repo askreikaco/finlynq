@@ -1,8 +1,6 @@
 {
   "family": "budgets",
-  "unmigrated": [
-    "src/app/(app)/budgets/page.tsx"
-  ],
+  "unmigrated": [],
   "chrome": {
     "src/app/(app)/budgets/move-money/page.tsx": {
       "suspense-null": 1

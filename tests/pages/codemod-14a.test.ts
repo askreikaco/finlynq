@@ -62,8 +62,9 @@ describe("codemod-14a: import, reconcile and staging folders", () => {
   });
 
   it("spot checks: mapped classes are in place (sm->regular, md->regular, lg->wide)", () => {
-    expect(read("src/components/import/reconcile/two-pane-layout.tsx")).toContain("wide:grid-cols-[2fr_3fr]");
-    expect(read("src/components/import/reconcile/two-pane-layout.tsx")).toContain("wide:grid-cols-2");
+    // One column at every width: the reconcile panes stack (no side-by-side wide grid).
+    expect(read("src/components/import/reconcile/two-pane-layout.tsx")).toContain("grid grid-cols-1 gap-4");
+    expect(read("src/components/import/reconcile/two-pane-layout.tsx")).not.toContain("wide:grid-cols-2");
     expect(read("src/app/(app)/import/components/connector-mapping-dialog.tsx")).toContain("grid-cols-1 regular:grid-cols-2");
     expect(read("src/components/reconcile/bulk-link-action-bar.tsx")).toContain("regular:bottom-4");
     expect(read("src/components/staging/reconciliation-callout.tsx")).toContain('"regular:grid-cols-3" : "regular:grid-cols-2"');
@@ -72,7 +73,7 @@ describe("codemod-14a: import, reconcile and staging folders", () => {
 
   it("the phone (base) classes on the spot-checked lines are unchanged", () => {
     expect(read("src/components/reconcile/balance-summary-card.tsx")).toContain("grid grid-cols-1 regular:grid-cols-3 gap-4");
-    expect(read("src/components/import/staged-review-surface.tsx")).toContain("flex flex-col gap-4 regular:h-[calc(100dvh-8rem)]");
+    expect(read("src/components/import/staged-review-surface.tsx")).toContain("mx-auto flex w-full max-w-report flex-col gap-4");
   });
 
   it("countMatches sanity: the breakpoint pattern would catch a reintroduced token", () => {

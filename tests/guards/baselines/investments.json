@@ -1,8 +1,6 @@
 {
   "family": "investments",
-  "unmigrated": [
-    "src/app/(app)/settings/investments/page.tsx"
-  ],
+  "unmigrated": [],
   "chrome": {
     "src/app/(app)/settings/investments/_components/add-security-form.tsx": {
       "min-h": 1
@@ -17,8 +15,6 @@
       "sab-pad": 1
     },
     "src/app/(app)/settings/investments/page.tsx": {
-      "title-prop": 2,
-      "subtitle-prop": 1,
       "suspense-null": 1
     }
   }

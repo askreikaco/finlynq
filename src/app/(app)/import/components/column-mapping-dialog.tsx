@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { ListRow, SectionCard } from "@/components/mobile";
 import {
   Select,
   SelectContent,
@@ -558,45 +559,22 @@ export function ColumnMappingDialog({
           {mappedSample.length > 0 && (
             <div className="space-y-1.5">
               <Label className="text-sm">Sample (first {mappedSample.length} rows)</Label>
-              <div className="rounded-lg border overflow-x-auto">
-                <table className="w-full text-xs">
-                  <thead className="bg-muted/50">
-                    <tr>
-                      <th className="text-left px-2 py-1.5 font-medium whitespace-nowrap">Date</th>
-                      <th className="text-left px-2 py-1.5 font-medium">Account</th>
-                      <th className="text-left px-2 py-1.5 font-medium">Payee</th>
-                      <th className="text-left px-2 py-1.5 font-medium">Note</th>
-                      {isInvestment && (
-                        <>
-                          <th className="text-left px-2 py-1.5 font-medium whitespace-nowrap">Ticker</th>
-                          <th className="text-left px-2 py-1.5 font-medium whitespace-nowrap">Security</th>
-                          <th className="text-right px-2 py-1.5 font-medium whitespace-nowrap">Qty</th>
-                        </>
-                      )}
-                      <th className="text-left px-2 py-1.5 font-medium whitespace-nowrap">Currency</th>
-                      <th className="text-right px-2 py-1.5 font-medium whitespace-nowrap">Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {mappedSample.map((r, i) => (
-                      <tr key={i}>
-                        <td className="px-2 py-1 font-mono whitespace-nowrap">{r.date || "—"}</td>
-                        <td className="px-2 py-1">{r.account || "—"}</td>
-                        <td className="px-2 py-1 truncate max-w-[200px]" title={r.payee}>{r.payee || "—"}</td>
-                        <td className="px-2 py-1 truncate max-w-[160px] text-muted-foreground" title={r.note}>{r.note || "—"}</td>
-                        {isInvestment && (
-                          <>
-                            <td className="px-2 py-1 font-mono whitespace-nowrap">{r.ticker || "—"}</td>
-                            <td className="px-2 py-1 truncate max-w-[160px]" title={r.security}>{r.security || "—"}</td>
-                            <td className="px-2 py-1 text-right font-mono whitespace-nowrap">{r.quantity || "—"}</td>
-                          </>
-                        )}
-                        <td className="px-2 py-1 whitespace-nowrap text-muted-foreground">{r.currency || "—"}</td>
-                        <td className="px-2 py-1 text-right font-mono whitespace-nowrap">{r.amount || "—"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="max-h-64 overflow-y-auto">
+                <SectionCard padded={false} className="divide-y divide-border/50 px-3">
+                  {mappedSample.map((r, i) => {
+                    const invParts = isInvestment ? [r.ticker, r.security, r.quantity ? `qty ${r.quantity}` : null] : [];
+                    const subtitle = [r.date || "—", r.account || null, r.note || null, ...invParts].filter(Boolean).join(" · ");
+                    return (
+                      <ListRow
+                        key={i}
+                        title={r.payee || r.account || "—"}
+                        subtitle={subtitle}
+                        value={<span className="font-mono text-sm">{r.amount || "—"}</span>}
+                        secondary={r.currency || undefined}
+                      />
+                    );
+                  })}
+                </SectionCard>
               </div>
             </div>
           )}

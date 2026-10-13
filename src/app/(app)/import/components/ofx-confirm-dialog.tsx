@@ -28,6 +28,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { ListRow, SectionCard } from "@/components/mobile";
 import { FileText } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 
@@ -176,35 +177,17 @@ export function OfxConfirmDialog({
                 (first {Math.min(previewRows.length, 50)} of {rowCount})
               </span>
             </div>
-            <div className="rounded-lg border overflow-auto max-h-[42dvh]">
-              <table className="w-full text-xs">
-                <thead className="bg-muted/50 sticky top-0">
-                  <tr>
-                    <th className="text-left px-2 py-1.5 font-medium whitespace-nowrap">Date</th>
-                    <th className="text-left px-2 py-1.5 font-medium">Payee</th>
-                    <th className="text-left px-2 py-1.5 font-medium">Note</th>
-                    <th className="text-left px-2 py-1.5 font-medium whitespace-nowrap">Type</th>
-                    <th className="text-right px-2 py-1.5 font-medium whitespace-nowrap">Amount</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {previewRows.slice(0, 50).map((r) => (
-                    <tr key={r.fitId}>
-                      <td className="px-2 py-1 font-mono whitespace-nowrap">{r.date}</td>
-                      <td className="px-2 py-1 max-w-[260px] truncate" title={r.payee}>
-                        {r.payee || <span className="text-muted-foreground">—</span>}
-                      </td>
-                      <td className="px-2 py-1 max-w-[220px] truncate text-muted-foreground" title={r.note}>
-                        {r.note || "—"}
-                      </td>
-                      <td className="px-2 py-1 whitespace-nowrap text-muted-foreground">{r.type || "—"}</td>
-                      <td className="px-2 py-1 text-right font-mono whitespace-nowrap">
-                        {formatCurrency(r.amount, currency)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="max-h-[42dvh] overflow-auto">
+              <SectionCard padded={false} className="divide-y divide-border/50 px-3">
+                {previewRows.slice(0, 50).map((r) => (
+                  <ListRow
+                    key={r.fitId}
+                    title={r.payee || "—"}
+                    subtitle={[r.date, r.note || null, r.type || null].filter(Boolean).join(" · ")}
+                    value={<span className="font-mono text-sm">{formatCurrency(r.amount, currency)}</span>}
+                  />
+                ))}
+              </SectionCard>
             </div>
             {rowCount > 50 && (
               <p className="text-xs text-muted-foreground">

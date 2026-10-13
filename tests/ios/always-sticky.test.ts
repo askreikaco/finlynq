@@ -113,11 +113,12 @@ describe("no ancestor breaks sticky (scroll container and containing block)", ()
     expect(dashboard).not.toMatch(/max-md:contents">\s*<PageHeader/);
   });
 
-  it("settings investments header wrapper is display:contents (parent spans the page)", () => {
-    expect(investments).toMatch(/<div className="contents">\{header\}<\/div>/);
-    expect(investments).toMatch(/const header = \(\s*<PageHeader/);
-    // one header element, used by the loading, error and ready states (the top bar is there in every state)
-    expect(investments.match(/\{header\}/g)?.length).toBe(3);
+  it("settings investments renders in the SectionPage template (one PageHeader, centred report column)", () => {
+    // The loading, error and ready states all render through SectionPage, which owns the single PageHeader.
+    expect(investments).toMatch(/<SectionPage\b/);
+    expect(investments).toMatch(/width: "report" as const/);
+    expect(investments).toMatch(/center: true/);
+    expect(investments).not.toMatch(/max-w-5xl/);
   });
 
   it("family filter toolbar is static from regular (640px) so it cannot overlap the sticky PageHeader", () => {
@@ -253,7 +254,6 @@ describe("non-admin pages", () => {
   const FIXED_PAGES = [
     "src/app/(app)/fire/page.tsx",
     "src/app/(app)/whats-new/page.tsx",
-    "src/app/(app)/api-docs/page.tsx",
     "src/app/(app)/settings/import/reconcile-visibility/page.tsx",
     "src/app/(app)/transactions/audit/page.tsx",
     "src/app/(app)/categories/[id]/page.tsx",
@@ -267,6 +267,8 @@ describe("non-admin pages", () => {
 
   /** Pages that call SectionPage: the header is rendered by the template, as the first child of its root (no wrapper). */
   const SECTION_PAGE_FILES = new Set([
+    "src/app/(app)/api-docs/page.tsx",
+    "src/app/(app)/settings/backfill/[runId]/page.tsx",
     "src/app/(app)/fire/page.tsx",
     "src/app/(app)/transactions/audit/page.tsx",
     "src/app/(app)/portfolio/new/page.tsx",
@@ -298,7 +300,7 @@ describe("non-admin pages", () => {
     expect(header).toMatch(/return \(\s*<>\s*<PageHeader\b/);
     expect(header).toMatch(/if \(embedded\) \{[\s\S]*?<h2 /);
     const surface = read("src/components/import/staged-review-surface.tsx");
-    expect(surface).toMatch(/<div className="flex flex-col gap-4 regular:h-\[calc\(100dvh-8rem\)\]">\s*<ReconcileHeader/);
+    expect(surface).toMatch(/<div className="mx-auto flex w-full max-w-report flex-col gap-4">\s*<ReconcileHeader/);
   });
 
   it("no header-only wrapper: no page or component in (app) holds a PageHeader in a justify-between row or a bare div", () => {

@@ -1,14 +1,13 @@
 "use client";
 
-import { Suspense, useCallback, useMemo, useState } from "react";
+import { Suspense, useCallback, useMemo, useState, type ReactNode } from "react";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ErrorState } from "@/components/error-state";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { OnboardingTips } from "@/components/onboarding-tips";
@@ -17,23 +16,37 @@ import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
 import { parseSaveError } from "@/lib/save-error";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import {
-  Plus, ChevronLeft, ChevronRight, Trash2, PiggyBank, TrendingDown,
-  Wallet, LayoutGrid, Save, FileDown, ArrowRightLeft, Clock,
-  AlertTriangle, ArrowDownRight, Copy,
+  Plus, ChevronLeft, ChevronRight, Trash2, AlertTriangle, Copy,
+  Save, FileDown, ArrowRightLeft, Pencil, Receipt, Wallet, LayoutGrid,
 } from "lucide-react";
-import { PageHeader, HEADER_DESKTOP_ONLY, PHONE_PRIMARY_CLASS, type OverflowAction } from "@/components/mobile";
-import { DataView, ViewModeToggle } from "@/components/adaptive";
+import {
+  Amount, CustomizeCardsSheet, DetailSheet, ListRow, MetricGrid, PHONE_PRIMARY_CLASS, SectionCard,
+  useCardLayout, usePageCustomize, type DetailItem, type MetricItem, type MetricTextItem, type OverflowAction,
+} from "@/components/mobile";
+import { SectionPage } from "@/components/templates/section-page";
 import { cn } from "@/lib/utils";
+import type { PageCard } from "@/lib/card-layout";
 import { type Budget, type SpendingRow, type BudgetTemplate, type AgeOfMoney, type BudgetMode, parseMonthParam } from "./_components/budget-types";
 import { applyPendingBudgets, type BudgetSyncMark } from "@/lib/budgets/pending-overlay";
 import { discardQueuedCreate, isLocalWriteQueueActive, queueOfflineBudgetDelete, usePendingBudgets } from "@/lib/data/local-write-queue";
 import { isNetworkFailure } from "@/lib/transactions/entry-mode";
 
+/** Cards of the budgets page, default order (Customize). */
+const BUDGET_CARDS: readonly PageCard[] = [
+  { id: "summary", title: "Summary" },
+  { id: "budgets", title: "Budgets by category" },
+];
+
 /** "Waiting to sync" / "Sync failed" badge on a budget row queued on this device. */
 function SyncBadge({ mark }: { mark: BudgetSyncMark }) {
   if (mark.status === "failed") {
     return (
-      <Link href="/settings/data" className="shrink-0 text-xs font-medium px-1.5 py-0.5 rounded-full bg-destructive/10 text-destructive hover:underline" title={mark.failReason ?? "Sync failed"}>
+      <Link
+        href="/settings/data"
+        onClick={(e) => e.stopPropagation()}
+        className="shrink-0 text-xs font-medium px-1.5 py-0.5 rounded-full bg-destructive/10 text-destructive hover:underline"
+        title={mark.failReason ?? "Sync failed"}
+      >
         Sync failed
       </Link>
     );
@@ -52,11 +65,12 @@ function BudgetsPageContent() {
   const [month, setMonth] = useState(() => parseMonthParam(searchParams.get("month"), getCurrentMonth()));
   const [mode, setMode] = useState<BudgetMode>(() => (searchParams.get("mode") === "envelope" ? "envelope" : "traditional"));
   const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [detailId, setDetailId] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [copying, setCopying] = useState(false);
   const [copyError, setCopyError] = useState("");
   const [actionError, setActionError] = useState("");
-
+  const [customizeOpen, setCustomizeOpen] = useState(false);
 
   // Reads are cache-first when the local read cache is on (Settings > Data > Offline mode); plain fetches otherwise.
   const budgetsRes = useCacheFirstJson<Budget[]>(
@@ -102,6 +116,10 @@ function BudgetsPageContent() {
     budgetsReload();
     monthReload();
   }, [budgetsReload, monthReload]);
+
+  // Customize: the summary tiles and the category list are the page's cards (hidden cards are not rendered).
+  const cardLayout = useCardLayout("budgets", BUDGET_CARDS);
+  usePageCustomize(!loading && !loadError ? { onOpen: () => setCustomizeOpen(true) } : null);
 
   // Keep the address bar in step with month/mode so a reload or browser back returns to this view.
   function syncUrl(nextMonth: string, nextMode: BudgetMode) {
@@ -153,12 +171,6 @@ function BudgetsPageContent() {
   // Copy the previous month's budget rows into the currently-selected month.
   // Reuses the upserting POST /api/budgets (no API change) — posts each prior
   // row's native amount + currency so values clone exactly.
-  function prevMonthOf(m: string): string {
-    const [y, mm] = m.split("-").map(Number);
-    const d = new Date(y, mm - 2, 1);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-  }
-
   async function handleCopyFromPrevMonth() {
     setCopyError("");
     setCopying(true);
@@ -199,6 +211,7 @@ function BudgetsPageContent() {
   }
 
   const deletingBudget = budgets.find((b) => b.id === deleteId) ?? null;
+  const detailBudget = budgets.find((b) => b.id === detailId) ?? null;
   /** Server row of a budget (no overlay fields) as the queue's baseline. */
   function serverRowOf(b: Budget) {
     return { id: b.id, categoryId: b.categoryId, month: b.month, amount: b.amount, currency: b.currency ?? null, updatedAt: b.updatedAt ?? null, categoryName: b.categoryName, categoryGroup: b.categoryGroup };
@@ -257,7 +270,7 @@ function BudgetsPageContent() {
     return "[&_[data-slot=progress-indicator]]:bg-primary";
   }
 
-  // One budget row's numbers. Shared by the Cards and List views so both show the same figures.
+  // One budget row's numbers, shared by the row and its detail sheet.
   function budgetRowValues(b: Budget) {
     const spent = spendingMap.get(b.categoryId) ?? 0;
     const rollover = b.rolloverAmount ?? 0;
@@ -278,23 +291,28 @@ function BudgetsPageContent() {
     };
   }
 
-  if (loading) return <PageSkeleton variant="list" rows={5} />;
-  if (loadError) return <ErrorState title="Couldn't load budgets" message="We couldn't load your budgets. Please try again." onRetry={loadData} />;
+  const formHref = `/budgets/new?${formQuery}`;
+  const drillHref = (b: Budget) => buildTxDrillUrl({ categoryId: String(b.categoryId), startDate: budgetMonthStart, endDate: budgetMonthEnd });
 
-  const overflow: OverflowAction[] = [
-    mode === "traditional"
-      ? { label: "Switch to Envelope mode", icon: Wallet, onSelect: () => changeMode("envelope") }
-      : { label: "Switch to Traditional mode", icon: LayoutGrid, onSelect: () => changeMode("traditional") },
-    ...(budgets.length > 0 ? [{ label: "Save Template", icon: Save, href: `/budgets/templates/new?${formQuery}` }] : []),
-    ...(templateNames.length > 0 ? [{ label: "Apply Template", icon: FileDown, href: `/budgets/templates/apply?${formQuery}` }] : []),
-    ...(mode === "envelope" && budgets.length >= 2 ? [{ label: "Move Money", icon: ArrowRightLeft, href: `/budgets/move-money?${formQuery}` }] : []),
-  ];
+  // Row detail: every number the row leaves out, plus the actions (edit, drill-through, delete).
+  function detailItems(b: Budget): DetailItem[] {
+    const v = budgetRowValues(b);
+    const items: DetailItem[] = [
+      { label: "Group", value: b.categoryGroup || "Other" },
+      { label: mode === "envelope" ? "Envelope" : "Budgeted", value: formatCurrency(v.effectiveBudget, displayCurrency) },
+      { label: "Spent", value: formatCurrency(v.spent, displayCurrency) },
+      { label: mode === "envelope" ? "Left" : "Remaining", value: formatCurrency(mode === "envelope" ? v.envelopeAvailable : v.remaining, displayCurrency) },
+      { label: "Used", value: `${Math.round(v.rawPct)}%` },
+    ];
+    if (v.rollover > 0) items.push({ label: "Rolled over", value: formatCurrency(v.rollover, displayCurrency) });
+    return items;
+  }
 
   const emptyBudgets = (
     <Card>
       <CardContent className="flex flex-col items-center justify-center py-14 text-center">
         <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary/10 mb-4">
-          <LayoutGrid className="h-7 w-7 text-primary" />
+          <Wallet className="h-7 w-7 text-primary" />
         </div>
         <p className="text-base font-semibold mb-1">No budgets for {getMonthLabel(month)}</p>
         <p className="text-sm text-muted-foreground max-w-xs mb-5">
@@ -315,335 +333,67 @@ function BudgetsPageContent() {
     </Card>
   );
 
-  // Cards view: one card per category group, one row per budget (the phone layout).
-  const budgetCards = (
+  // Category list: one inset SectionCard per category group, one ListRow per budget (every width).
+  const budgetGroups = (
     <div className="space-y-6">
       {Array.from(groupMap.entries()).map(([group, items]) => (
-        <Card key={group} className="gap-1">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">{group}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-1">
-            {items.map((b) => {
-              const { spent, rollover, effectiveBudget, rawPct, pct, over, envelopeAvailable } = budgetRowValues(b);
-
-              return (
-                <div
-                  key={b.id}
-                  className="rounded-lg px-3 py-3 -mx-3 transition-colors hover:bg-muted/50"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-y-1 mb-1.5">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Link
-                        href={`/categories/${b.categoryId}`}
-                        className="text-sm font-medium truncate hover:underline"
-                        title={b.categoryName ? `${b.categoryName}: trends, average, top payees` : "Category view"}
-                      >
-                        {b.categoryName}
-                      </Link>
-                      {b.pendingSync && <SyncBadge mark={b.pendingSync} />}
-                      <span className={`shrink-0 text-xs font-medium tabular-nums px-1.5 py-0.5 rounded-full ${
-                        over
-                          ? "bg-destructive/10 text-destructive"
-                          : rawPct >= 75
-                            ? "bg-warning/10 text-warning"
-                            : "bg-primary/10 text-primary"
-                      }`}>
-                        {Math.round(rawPct)}%
-                      </span>
-                      {rollover > 0 && (
-                        <span
-                          className="text-xs font-medium tabular-nums px-1.5 py-0.5 rounded-full bg-warning/10 text-warning flex items-center gap-0.5"
-                          title={`${formatCurrency(rollover, displayCurrency)} rolled over from last month`}
-                        >
-                          <Clock className="h-3 w-3" />
-                          {formatCurrency(rollover, displayCurrency)}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {mode === "envelope" ? (
-                        <Link
-                          href={buildTxDrillUrl({ categoryId: String(b.categoryId), startDate: budgetMonthStart, endDate: budgetMonthEnd })}
-                          className={`text-sm font-mono tabular-nums hover:underline ${envelopeAvailable < 0 ? "text-destructive" : ""}`}
-                          title={b.categoryName ? `View ${b.categoryName} transactions for ${getMonthLabel(month)}` : `View transactions for ${getMonthLabel(month)}`}
-                        >
-                          {formatCurrency(envelopeAvailable, displayCurrency)} left
-                        </Link>
-                      ) : (
-                        <Link
-                          href={buildTxDrillUrl({ categoryId: String(b.categoryId), startDate: budgetMonthStart, endDate: budgetMonthEnd })}
-                          className={`text-sm font-mono tabular-nums hover:underline ${over ? "text-destructive" : ""}`}
-                          title={b.categoryName ? `View ${b.categoryName} transactions for ${getMonthLabel(month)}` : `View transactions for ${getMonthLabel(month)}`}
-                        >
-                          {formatCurrency(spent, displayCurrency)} / {formatCurrency(effectiveBudget, displayCurrency)}
-                        </Link>
-                      )}
-                      <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground" aria-label={`Delete budget for ${b.categoryName}`} onClick={() => setDeleteId(b.id)}>
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                  <Progress
-                    value={pct}
-                    className={`[&_[data-slot=progress-track]]:h-2.5 ${progressColorClass(spent, effectiveBudget)}`}
-                  />
-                </div>
-              );
-            })}
-          </CardContent>
-        </Card>
+        <SectionCard key={group} label={group} padded={false} className="divide-y divide-border/50 px-3">
+          {items.map((b) => {
+            const { spent, rollover, effectiveBudget, rawPct, over, envelopeAvailable, remaining } = budgetRowValues(b);
+            const left = mode === "envelope" ? envelopeAvailable : remaining;
+            return (
+              <ListRow
+                key={b.id}
+                title={
+                  <span className="inline-flex max-w-full items-center gap-2 align-middle">
+                    <span className="truncate">{b.categoryName}</span>
+                    {b.pendingSync && <SyncBadge mark={b.pendingSync} />}
+                  </span>
+                }
+                subtitle={`${formatCurrency(spent, displayCurrency)} of ${formatCurrency(effectiveBudget, displayCurrency)}${rollover > 0 ? ` · ${formatCurrency(rollover, displayCurrency)} rolled over` : ""}`}
+                value={<Amount value={left} currency={displayCurrency} size="md" tone="auto" />}
+                secondary={`${mode === "envelope" ? "left · " : ""}${Math.round(rawPct)}%`}
+                secondaryTone={over ? "neg" : "muted"}
+                onPress={() => setDetailId(b.id)}
+                aria-label={`${b.categoryName}: ${Math.round(rawPct)}% used`}
+              />
+            );
+          })}
+        </SectionCard>
       ))}
     </div>
   );
 
-  // List view: one table, a group header row per category group, one row per budget.
-  // The row opens the set-budget form for this month. The form does not preselect a category yet.
-  const budgetList = (
-    <Table containerClassName="rounded-xl border bg-card">
-      <TableHeader>
-        <TableRow>
-          <TableHead>Category</TableHead>
-          <TableHead className="text-right">Budgeted</TableHead>
-          <TableHead className="text-right">Spent</TableHead>
-          <TableHead className="text-right">Remaining</TableHead>
-          <TableHead className="w-44">Progress</TableHead>
-          <TableHead><span className="sr-only">Actions</span></TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {Array.from(groupMap.entries()).flatMap(([group, items]) => [
-          <TableRow key={`group-${group}`} className="hover:bg-transparent">
-            <TableCell colSpan={6} className="pt-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              {group}
-            </TableCell>
-          </TableRow>,
-          ...items.map((b) => {
-            const { spent, effectiveBudget, remaining, rawPct, pct, over } = budgetRowValues(b);
-            return (
-              <TableRow key={b.id} className="relative">
-                <TableCell className="font-medium">
-                  <Link href={`/budgets/new?${formQuery}`} className="after:absolute after:inset-0 hover:underline">
-                    {b.categoryName}
-                  </Link>
-                  {b.pendingSync && <span className="ml-2 align-middle"><SyncBadge mark={b.pendingSync} /></span>}
-                </TableCell>
-                <TableCell className="text-right font-mono tabular-nums">{formatCurrency(effectiveBudget, displayCurrency)}</TableCell>
-                <TableCell className={`text-right font-mono tabular-nums ${over ? "text-destructive" : ""}`}>{formatCurrency(spent, displayCurrency)}</TableCell>
-                <TableCell className={`text-right font-mono tabular-nums ${remaining < 0 ? "text-destructive" : "text-pos"}`}>{formatCurrency(remaining, displayCurrency)}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Progress value={pct} className={`h-2 w-24 ${progressColorClass(spent, effectiveBudget)}`} />
-                    <span className="text-xs font-medium tabular-nums">{Math.round(rawPct)}%</span>
-                  </div>
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="relative z-10 h-7 w-7 text-muted-foreground"
-                    aria-label={`Delete budget for ${b.categoryName}`}
-                    onClick={() => setDeleteId(b.id)}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            );
-          }),
-        ])}
-      </TableBody>
-    </Table>
-  );
+  // Summary tiles in the shared metric grid (2 / 3 / 4 columns by width).
+  const summaryMetrics: Array<MetricItem | MetricTextItem> = [
+    {
+      label: "Total Budget",
+      value: totalBudget,
+      currency: displayCurrency,
+      sub: totalRollover > 0 ? `${formatCurrency(totalRollover, displayCurrency)} rolled over` : undefined,
+    },
+    { label: "Total Spent", value: totalSpent, currency: displayCurrency, tone: totalSpent > totalBudget ? "neg" : "pos" },
+    { label: "Remaining", value: totalRemaining, currency: displayCurrency, tone: totalRemaining >= 0 ? "pos" : "neg" },
+  ];
+  if (mode === "envelope") {
+    summaryMetrics.push({
+      label: "Available to Budget",
+      value: availableToBudget,
+      currency: displayCurrency,
+      tone: availableToBudget >= 0 ? "pos" : "neg",
+      sub: availableToBudget < 0 ? "Over-budgeted! Reduce or move funds." : undefined,
+    });
+  } else if (ageOfMoney) {
+    summaryMetrics.push({
+      label: "Age of Money",
+      text: `${ageOfMoney.ageInDays} days`,
+      sub: ageOfMoney.trend !== 0 ? `${ageOfMoney.trend > 0 ? "+" : ""}${ageOfMoney.trend}d vs previous period` : undefined,
+    });
+  }
 
-  return (
-    <div className="space-y-6">
-      {actionError && <p className="text-sm text-destructive">{actionError}</p>}
-      {/* Header */}
-      <PageHeader
-        className="flex flex-col gap-3 regular:flex-row regular:items-start regular:justify-between"
-        title="Budgets"
-        subtitle="Set spending limits and track how you're doing each month."
-        actionsClassName="flex flex-wrap items-center gap-2"
-        overflow={overflow}
-        actions={
-        <>
-          {/* Mode toggle */}
-          <div className={cn(HEADER_DESKTOP_ONLY, "inline-flex items-center rounded-lg border bg-background p-0.5 shadow-sm")}>
-            <button
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-150 flex items-center gap-1.5 ${
-                mode === "traditional"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-              onClick={() => changeMode("traditional")}
-              title="Monthly budget limits per category"
-            >
-              <LayoutGrid className="h-3 w-3" />
-              <span className="max-regular:hidden">Traditional</span>
-            </button>
-            <button
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-150 flex items-center gap-1.5 ${
-                mode === "envelope"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-              onClick={() => changeMode("envelope")}
-              title="Zero-based envelope budgeting"
-            >
-              <Wallet className="h-3 w-3" />
-              <span className="max-regular:hidden">Envelope</span>
-            </button>
-          </div>
-
-          {/* Template and move-money pages (desktop buttons; phones use the overflow menu) */}
-          {budgets.length > 0 && (
-            <Link
-              href={`/budgets/templates/new?${formQuery}`}
-              className={cn(buttonVariants({ variant: "outline", size: "sm" }), HEADER_DESKTOP_ONLY)}
-            >
-              <Save className="h-4 w-4 mr-1" /> Save Template
-            </Link>
-          )}
-
-          {templateNames.length > 0 && (
-            <Link
-              href={`/budgets/templates/apply?${formQuery}`}
-              className={cn(buttonVariants({ variant: "outline", size: "sm" }), HEADER_DESKTOP_ONLY)}
-            >
-              <FileDown className="h-4 w-4 mr-1" /> Apply Template
-            </Link>
-          )}
-
-          {mode === "envelope" && budgets.length >= 2 && (
-            <Link
-              href={`/budgets/move-money?${formQuery}`}
-              className={cn(buttonVariants({ variant: "outline", size: "sm" }), HEADER_DESKTOP_ONLY)}
-            >
-              <ArrowRightLeft className="h-4 w-4 mr-1" /> Move Money
-            </Link>
-          )}
-
-          <Button className={PHONE_PRIMARY_CLASS} aria-label="Add Budget" render={<Link href={`/budgets/new?${formQuery}`} />}>
-            <Plus className="h-4 w-4 mr-1" /> Add Budget
-          </Button>
-        </>
-        }
-      />
-
-      <OnboardingTips page="budgets" />
-
-      {/* Toolbar: month nav and the Cards / List view switch */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex items-center gap-2 rounded-xl bg-muted/50 px-2 py-1.5">
-          <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Previous month" onClick={() => changeMonth(-1)}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <h2 className="text-sm font-semibold min-w-28 text-center">{getMonthLabel(month)}</h2>
-          <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Next month" onClick={() => changeMonth(1)}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-        <ViewModeToggle viewKey="budgets" />
-      </div>
-
-      {/* Summary Cards */}
-      <div className={`grid grid-cols-2 gap-3 ${mode === "envelope" || ageOfMoney ? "regular:grid-cols-2 wide:grid-cols-4" : "regular:grid-cols-3"}`}>
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm text-muted-foreground">Total Budget</CardTitle>
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                <PiggyBank className="h-5 w-5 text-primary" />
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="min-w-0 whitespace-nowrap text-xl font-bold tabular-nums wide:text-2xl">{formatCurrency(totalBudget, displayCurrency)}</p>
-            {totalRollover > 0 && (
-              <p className="text-xs text-warning mt-1 flex items-center gap-1">
-                <ArrowDownRight className="h-3 w-3" />
-                {formatCurrency(totalRollover, displayCurrency)} rolled over
-              </p>
-            )}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm text-muted-foreground">Total Spent</CardTitle>
-              <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${totalSpent > totalBudget ? "bg-destructive/10" : "bg-pos/10"}`}>
-                <TrendingDown className={`h-5 w-5 ${totalSpent > totalBudget ? "text-destructive" : "text-pos"}`} />
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className={`min-w-0 whitespace-nowrap text-xl font-bold tabular-nums wide:text-2xl ${totalSpent > totalBudget ? "text-destructive" : "text-pos"}`}>
-              {formatCurrency(totalSpent, displayCurrency)}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm text-muted-foreground">Remaining</CardTitle>
-              <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${totalRemaining >= 0 ? "bg-pos/10" : "bg-destructive/10"}`}>
-                <Wallet className={`h-5 w-5 ${totalRemaining >= 0 ? "text-pos" : "text-destructive"}`} />
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className={`min-w-0 whitespace-nowrap text-xl font-bold tabular-nums wide:text-2xl ${totalRemaining >= 0 ? "text-pos" : "text-destructive"}`}>
-              {formatCurrency(totalRemaining, displayCurrency)}
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Age of Money / Available to Budget card */}
-        {mode === "envelope" ? (
-          <Card>
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm text-muted-foreground">Available to Budget</CardTitle>
-                <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${availableToBudget >= 0 ? "bg-pos/10" : "bg-destructive/10"}`}>
-                  <Wallet className={`h-5 w-5 ${availableToBudget >= 0 ? "text-pos" : "text-destructive"}`} />
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className={`min-w-0 whitespace-nowrap text-xl font-bold tabular-nums wide:text-2xl ${availableToBudget >= 0 ? "text-pos" : "text-destructive"}`}>
-                {formatCurrency(availableToBudget, displayCurrency)}
-              </p>
-              {availableToBudget < 0 && (
-                <p className="text-xs text-destructive mt-1 flex items-center gap-1">
-                  <AlertTriangle className="h-3 w-3" />
-                  Over-budgeted! Reduce or move funds.
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        ) : ageOfMoney ? (
-          <Card>
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm text-muted-foreground">Age of Money</CardTitle>
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-chart-5/10">
-                  <Clock className="h-5 w-5 text-chart-5" />
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="min-w-0 whitespace-nowrap text-xl font-bold tabular-nums wide:text-2xl">{ageOfMoney.ageInDays} days</p>
-              {ageOfMoney.trend !== 0 && (
-                <p className={`text-xs mt-1 ${ageOfMoney.trend > 0 ? "text-pos" : "text-destructive"}`}>
-                  {ageOfMoney.trend > 0 ? "+" : ""}{ageOfMoney.trend}d vs previous period
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        ) : null}
-      </div>
-
+  const summaryNode = (
+    <div className="space-y-3">
+      <MetricGrid metrics={summaryMetrics} />
       {/* Envelope mode: zero-sum warning */}
       {mode === "envelope" && availableToBudget < 0 && budgets.length > 0 && (
         <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
@@ -654,13 +404,138 @@ function BudgetsPageContent() {
           </span>
         </div>
       )}
+    </div>
+  );
 
-      {/* Budget items: Cards (default on phones) or List (table rows). Only the selected view is mounted. */}
-      <DataView
-        viewKey="budgets"
-        cards={() => (budgets.length === 0 ? emptyBudgets : budgetCards)}
-        list={() => (budgets.length === 0 ? emptyBudgets : budgetList)}
+  const overflow: OverflowAction[] = [
+    mode === "traditional"
+      ? { label: "Switch to Envelope mode", icon: Wallet, onSelect: () => changeMode("envelope") }
+      : { label: "Switch to Traditional mode", icon: LayoutGrid, onSelect: () => changeMode("traditional") },
+    ...(budgets.length > 0 ? [{ label: "Save Template", icon: Save, href: `/budgets/templates/new?${formQuery}` }] : []),
+    ...(templateNames.length > 0 ? [{ label: "Apply Template", icon: FileDown, href: `/budgets/templates/apply?${formQuery}` }] : []),
+    ...(mode === "envelope" && budgets.length >= 2 ? [{ label: "Move Money", icon: ArrowRightLeft, href: `/budgets/move-money?${formQuery}` }] : []),
+  ];
+
+  const shell = (body: ReactNode) => (
+    <SectionPage
+      id="budgets"
+      title="Budgets"
+      subtitle="Set spending limits and track how you're doing each month."
+      width="report"
+      center
+      header={{
+        overflow,
+        actions: (
+          <Button className={PHONE_PRIMARY_CLASS} aria-label="Add Budget" render={<Link href={formHref} />}>
+            <Plus className="h-4 w-4 mr-1" /> Add Budget
+          </Button>
+        ),
+      }}
+    >
+      {actionError && <p className="text-sm text-destructive">{actionError}</p>}
+      <OnboardingTips page="budgets" />
+      {body}
+      <CustomizeCardsSheet
+        open={customizeOpen}
+        onOpenChange={setCustomizeOpen}
+        title="Customize budgets"
+        description="Show, hide and reorder the cards on your budgets page."
+        cards={BUDGET_CARDS}
+        layout={cardLayout.layout}
+        onSave={cardLayout.save}
+        onReset={cardLayout.reset}
       />
+    </SectionPage>
+  );
+
+  if (loading) return shell(<PageSkeleton variant="list" rows={5} />);
+  if (loadError) return shell(<ErrorState title="Couldn't load budgets" message="We couldn't load your budgets. Please try again." onRetry={loadData} />);
+
+  const shown = cardLayout.layout.order.filter((id) => !cardLayout.layout.hidden.includes(id));
+  const nodes: Record<string, ReactNode> = { summary: summaryNode, budgets: budgetGroups };
+
+  return shell(
+    <>
+      {/* Toolbar: month nav and the Traditional / Envelope mode, at every width */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="inline-flex items-center gap-2 rounded-xl bg-muted/50 px-2 py-1.5">
+          <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Previous month" onClick={() => changeMonth(-1)}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <h2 className="text-sm font-semibold min-w-28 text-center">{getMonthLabel(month)}</h2>
+          <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Next month" onClick={() => changeMonth(1)}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+        <div role="group" aria-label="Budget mode" className="inline-flex items-center rounded-lg border bg-background p-0.5">
+          <button
+            type="button"
+            aria-pressed={mode === "traditional"}
+            className={cn(
+              "px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-150 flex items-center gap-1.5",
+              mode === "traditional" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+            )}
+            onClick={() => changeMode("traditional")}
+            title="Monthly budget limits per category"
+          >
+            <LayoutGrid className="h-3 w-3" />
+            Traditional
+          </button>
+          <button
+            type="button"
+            aria-pressed={mode === "envelope"}
+            className={cn(
+              "px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-150 flex items-center gap-1.5",
+              mode === "envelope" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+            )}
+            onClick={() => changeMode("envelope")}
+            title="Zero-based envelope budgeting"
+          >
+            <Wallet className="h-3 w-3" />
+            Envelope
+          </button>
+        </div>
+      </div>
+
+      {budgets.length === 0 ? (
+        <>
+          {summaryNode}
+          {emptyBudgets}
+        </>
+      ) : (
+        shown.map((id) => <div key={id}>{nodes[id]}</div>)
+      )}
+
+      <DetailSheet
+        open={detailBudget !== null}
+        onOpenChange={(o) => { if (!o) setDetailId(null); }}
+        title={detailBudget?.categoryName ?? "Budget"}
+        description={detailBudget ? `${getMonthLabel(month)} · ${detailBudget.categoryGroup || "Other"}` : undefined}
+        items={detailBudget ? detailItems(detailBudget) : []}
+      >
+        {detailBudget && (() => {
+          const v = budgetRowValues(detailBudget);
+          return (
+            <>
+              <Progress value={v.pct} className={`h-2.5 ${progressColorClass(v.spent, v.effectiveBudget)}`} />
+              <Button variant="outline" render={<Link href={drillHref(detailBudget)} />}>
+                <Receipt className="h-4 w-4 mr-1" /> View transactions
+              </Button>
+              <Button variant="outline" render={<Link href={formHref} />}>
+                <Pencil className="h-4 w-4 mr-1" /> Edit budget
+              </Button>
+              <Button
+                variant="outline"
+                className="text-destructive"
+                aria-label={`Delete budget for ${detailBudget.categoryName}`}
+                onClick={() => { setDetailId(null); setDeleteId(detailBudget.id); }}
+              >
+                <Trash2 className="h-4 w-4 mr-1" /> Delete
+              </Button>
+            </>
+          );
+        })()}
+      </DetailSheet>
 
       <ConfirmDialog
         open={deleteId !== null}
@@ -671,7 +546,7 @@ function BudgetsPageContent() {
         busy={deleting}
         onConfirm={handleDelete}
       />
-    </div>
+    </>,
   );
 }
 

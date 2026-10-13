@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ListRow, SectionCard } from "@/components/mobile";
 import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 
@@ -131,58 +131,48 @@ export function ConnectorReconciliationDialog({ open, onOpenChange }: ConnectorR
 
         {result && (
           <div className="space-y-3">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Account</TableHead>
-                  <TableHead className="text-right">WP balance</TableHead>
-                  <TableHead className="text-right">Finlynq sum</TableHead>
-                  <TableHead className="text-right">Diff</TableHead>
-                  <TableHead></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {result.rows.map((row) => (
-                  <TableRow key={row.finlynqAccountId}>
-                    <TableCell className="font-medium">
-                      {row.accountName}
-                      <span className="text-muted-foreground ml-1">({row.currency})</span>
-                    </TableCell>
-                    <TableCell className="text-right font-mono">{formatCurrency(row.wpBalance, row.currency)}</TableCell>
-                    <TableCell className="text-right font-mono">{formatCurrency(row.pfBalance, row.currency)}</TableCell>
-                    <TableCell
-                      className={`text-right font-mono ${
-                        row.matches ? "text-pos" : "text-warning"
-                      }`}
-                    >
-                      {row.matches ? (
-                        <span className="inline-flex items-center gap-1">
-                          <CheckCircle2 className="h-3 w-3" /> {formatCurrency(0, row.currency)}
-                        </span>
-                      ) : (
-                        formatCurrency(row.diff, row.currency)
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {!row.matches && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => addAdjustment(row)}
-                          disabled={adjustingId === row.finlynqAccountId}
-                        >
-                          {adjustingId === row.finlynqAccountId ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            "Add opening balance"
-                          )}
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <SectionCard padded={false} className="divide-y divide-border/50 px-3">
+              {result.rows.map((row) => (
+                <div key={row.finlynqAccountId} className="py-1">
+                  <ListRow
+                    title={
+                      <>
+                        {row.accountName}
+                        <span className="text-muted-foreground ml-1">({row.currency})</span>
+                      </>
+                    }
+                    subtitle={`WP ${formatCurrency(row.wpBalance, row.currency)} · Finlynq ${formatCurrency(row.pfBalance, row.currency)}`}
+                    value={
+                      <span className={`font-mono text-sm ${row.matches ? "text-pos" : "text-warning"}`}>
+                        {row.matches ? (
+                          <span className="inline-flex items-center gap-1">
+                            <CheckCircle2 className="h-3 w-3" /> {formatCurrency(0, row.currency)}
+                          </span>
+                        ) : (
+                          formatCurrency(row.diff, row.currency)
+                        )}
+                      </span>
+                    }
+                  />
+                  {!row.matches && (
+                    <div className="flex justify-end px-1 pb-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => addAdjustment(row)}
+                        disabled={adjustingId === row.finlynqAccountId}
+                      >
+                        {adjustingId === row.finlynqAccountId ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          "Add opening balance"
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </SectionCard>
             {result.unmatchedExternal.length > 0 && (
               <div className="text-xs text-muted-foreground">
                 {result.unmatchedExternal.length} external account{result.unmatchedExternal.length === 1 ? "" : "s"}{" "}

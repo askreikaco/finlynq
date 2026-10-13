@@ -10,7 +10,7 @@
  * the Budgets page; the switcher in the header moves between categories.
  */
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -25,7 +25,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -38,8 +38,20 @@ import { CHART_COLORS } from "@/lib/chart-colors";
 import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
 import { todayISO } from "@/lib/utils/date";
 import { CATEGORY_WINDOWS, type CategoryDetail } from "@/lib/reports/category-detail";
-import { ArrowDownRight, ArrowUpRight, Receipt, Store } from "lucide-react";
-import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
+import { Receipt, Store } from "lucide-react";
+import {
+  Amount, CustomizeCardsSheet, HEADER_DESKTOP_ONLY, ListRow, MetricGrid, PageHeader, SectionCard,
+  useCardLayout, usePageCustomize, type MetricTextItem,
+} from "@/components/mobile";
+import type { PageCard } from "@/lib/card-layout";
+
+/** Cards of the category page, default order (Customize). The period selector and the header are not cards. */
+const CATEGORY_DETAIL_CARDS: readonly PageCard[] = [
+  { id: "summary", title: "Summary" },
+  { id: "chart", title: "Monthly chart" },
+  { id: "payees", title: "Top payees" },
+  { id: "recent", title: "Recent transactions" },
+];
 
 type CategoryResponse = CategoryDetail & {
   category: { id: number; name: string | null; type: "E" | "I" | "R"; group: string };
@@ -92,6 +104,9 @@ function CategoryPageContent() {
   const [error, setError] = useState<"not_found" | "failed" | null>(null);
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const sortCategory = useDropdownOrder("category");
+  const cardLayout = useCardLayout("category-detail", CATEGORY_DETAIL_CARDS);
+  const [customizeOpen, setCustomizeOpen] = useState(false);
+  usePageCustomize(data && !error ? { onOpen: () => setCustomizeOpen(true) } : null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -159,8 +174,135 @@ function CategoryPageContent() {
   const hasData = stats.transactionCount > 0;
 
   const categoriesBackHref = `/categories${category.type === "I" ? "?type=I" : ""}`;
+
+  const summaryMetrics: MetricTextItem[] = [
+    {
+      label: "This month so far",
+      text: formatCurrency(stats.thisMonth, cur),
+      sub: currentMonth?.budget != null
+        ? `of ${formatCurrency(currentMonth.budget, cur)} budget`
+        : `${currentMonth?.count ?? 0} transaction${currentMonth?.count === 1 ? "" : "s"}`,
+    },
+    {
+      label: `Last month (${monthLabel(data.months[data.months.length - 2]?.month ?? "", "short")})`,
+      text: formatCurrency(stats.lastMonth, cur),
+      sub: lastVsAvg ? `${lastVsAvg.text} vs average` : undefined,
+    },
+    {
+      label: "Monthly average",
+      text: stats.averageMonthly != null ? formatCurrency(stats.averageMonthly, cur) : "—",
+      sub: stats.medianMonthly != null ? `median ${formatCurrency(stats.medianMonthly, cur)}` : "needs a full month",
+    },
+    {
+      label: `${monthLabel(currentMonth?.month ?? "", "long").split(" ")[0]} last year`,
+      text: formatCurrency(stats.sameMonthLastYear, cur),
+      sub: "same month, a year ago",
+    },
+    { label: `Share of ${noun}`, text: pct(stats.shareOfType), sub: `of all ${noun}, last ${months} months` },
+  ];
+
+  const nodes: Record<string, ReactNode> = {
+    summary: <MetricGrid metrics={summaryMetrics} />,
+    chart: hasData ? (
+      <SectionCard label={`Monthly ${noun}`}>
+        <p className="mb-3 text-xs text-muted-foreground">
+          Last {months} months in {cur}
+          {stats.averageMonthly != null && ` · average ${formatCurrency(stats.averageMonthly, cur)}`}
+          {data.hasBudget && " · budget in amber"}
+          {" · this month is still running"}
+        </p>
+        <ResponsiveContainer width="100%" height={280}>
+          <ComposedChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: -6 }}>
+            <CartesianGrid vertical={false} stroke="var(--color-border)" strokeDasharray="3 3" />
+            <XAxis dataKey="label" fontSize={11} tickLine={false} axisLine={false} tick={{ fill: "var(--color-muted-foreground)" }} interval="preserveStartEnd" />
+            <YAxis fontSize={11} tickLine={false} axisLine={false} tick={{ fill: "var(--color-muted-foreground)" }} tickFormatter={(v) => formatCompactNumber(Number(v))} />
+            <Tooltip
+              cursor={{ fill: "var(--color-muted)", opacity: 0.4 }}
+              content={({ active, payload }) => {
+                if (!active || !payload?.length) return null;
+                const m = payload[0].payload as (typeof chartData)[number];
+                return (
+                  <div className="rounded-lg border bg-popover px-3 py-2 text-xs shadow-md">
+                    <p className="font-semibold">{monthLabel(m.month, "long")}{m.partial ? " (so far)" : ""}</p>
+                    <p className="tabular-nums">{formatCurrency(m.amount, cur)} · {m.count} transaction{m.count === 1 ? "" : "s"}</p>
+                    {m.budget != null && <p className="text-muted-foreground tabular-nums">Budget {formatCurrency(m.budget, cur)}</p>}
+                  </div>
+                );
+              }}
+            />
+            <Bar dataKey="amount" radius={[4, 4, 0, 0]} maxBarSize={44} isAnimationActive={false}>
+              {chartData.map((m) => (
+                <Cell key={m.month} fill={barColor} fillOpacity={m.partial ? 0.45 : 0.85} />
+              ))}
+            </Bar>
+            {data.hasBudget && (
+              <Line
+                type="stepAfter"
+                dataKey="budget"
+                stroke={CHART_COLORS.categories[1]}
+                strokeWidth={2}
+                strokeDasharray="5 4"
+                // Dots too: a budget set for a single month is one point, which a line alone never draws.
+                dot={{ r: 3, fill: CHART_COLORS.categories[1], strokeWidth: 0 }}
+                connectNulls
+                isAnimationActive={false}
+              />
+            )}
+            {stats.averageMonthly != null && (
+              <ReferenceLine y={stats.averageMonthly} stroke="var(--color-muted-foreground)" strokeDasharray="4 4" />
+            )}
+          </ComposedChart>
+        </ResponsiveContainer>
+      </SectionCard>
+    ) : null,
+    payees: hasData ? (
+      <SectionCard label="Top payees" padded={false} className="divide-y divide-border/50 px-3">
+        <p className="px-1 py-3 text-xs text-muted-foreground"><Store className="mr-1 inline h-3.5 w-3.5" />Where this {noun} went, last {months} months</p>
+        {data.payeesLocked ? (
+          <p className="px-1 py-3 text-sm text-muted-foreground">Unlock your data to see payees.</p>
+        ) : data.topPayees.length === 0 ? (
+          <p className="px-1 py-3 text-sm text-muted-foreground">No payees recorded.</p>
+        ) : (
+          data.topPayees.map((p) => (
+            <ListRow
+              key={p.payee}
+              href={buildTxDrillUrl({ categoryId: String(categoryId), search: p.payee === "(no payee)" ? "" : p.payee, startDate: windowStart, endDate: today })}
+              title={p.payee}
+              subtitle={`${p.count}× · ${pct(p.share)} of ${noun}`}
+              value={<Amount value={p.amount} currency={cur} size="md" tone="none" />}
+            />
+          ))
+        )}
+      </SectionCard>
+    ) : null,
+    recent: hasData ? (
+      <SectionCard label="Recent transactions" padded={false} className="divide-y divide-border/50 px-3">
+        <p className="px-1 py-3 text-xs text-muted-foreground"><Receipt className="mr-1 inline h-3.5 w-3.5" />{stats.transactionCount} in the last {months} months{stats.averageTransaction != null && ` · average ${formatCurrency(stats.averageTransaction, cur)}`}</p>
+        {data.recent.map((t) => (
+          <ListRow
+            key={t.id}
+            href={buildTxDrillUrl({ id: String(t.id) })}
+            title={t.payee || "(no payee)"}
+            subtitle={`${formatDate(t.date)}${t.accountName ? ` · ${t.accountName}` : ""}`}
+            value={<Amount value={t.amount} currency={t.currency} size="md" tone="auto" />}
+          />
+        ))}
+        <div className="px-1 py-3">
+          <Link
+            href={buildTxDrillUrl({ categoryId: String(categoryId), startDate: windowStart, endDate: today })}
+            className="inline-block text-sm font-medium text-primary hover:underline"
+          >
+            View all {stats.transactionCount} transactions
+          </Link>
+        </div>
+      </SectionCard>
+    ) : null,
+  };
+
+  const shown = cardLayout.layout.order.filter((id) => !cardLayout.layout.hidden.includes(id));
+
   return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-report space-y-6">
       {/* Header */}
       <PageHeader
         className="flex flex-wrap items-start justify-between gap-3"
@@ -170,9 +312,8 @@ function CategoryPageContent() {
         backHref={categoriesBackHref}
         backLabel="Back to Categories"
         actions={
-          <>
+          switcherItems.length > 0 ? (
             <span className={HEADER_DESKTOP_ONLY}>
-            {switcherItems.length > 0 && (
               <Combobox
                 value={String(categoryId)}
                 onValueChange={(v) => {
@@ -184,18 +325,8 @@ function CategoryPageContent() {
                 emptyMessage="No matches"
                 className="w-56 max-regular:w-40"
               />
-            )}
             </span>
-            <span className={HEADER_DESKTOP_ONLY}>
-              <Tabs value={String(months)} onValueChange={(v) => setMonths(Number(v) || 12)}>
-                <TabsList>
-                  {CATEGORY_WINDOWS.map((m) => (
-                    <TabsTrigger key={m} value={String(m)} className="px-3">{m}M</TabsTrigger>
-                  ))}
-                </TabsList>
-              </Tabs>
-            </span>
-          </>
+          ) : undefined
         }
         overflow={[
           ...CATEGORY_WINDOWS.map((m) => ({
@@ -206,226 +337,50 @@ function CategoryPageContent() {
           { label: "All categories", href: "/categories" },
         ]}
       />
-      <div className="flex flex-wrap items-center gap-1.5 mt-1">
-        <Badge variant="outline">{isIncome ? "Income" : category.type === "R" ? "Transfer" : "Expense"}</Badge>
-        {category.group && <Badge variant="secondary">{category.group}</Badge>}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Badge variant="outline">{isIncome ? "Income" : category.type === "R" ? "Transfer" : "Expense"}</Badge>
+          {category.group && <Badge variant="secondary">{category.group}</Badge>}
+        </div>
+        {/* Period selector: the same compact control at every width. */}
+        <Tabs value={String(months)} onValueChange={(v) => setMonths(Number(v) || 12)}>
+          <TabsList>
+            {CATEGORY_WINDOWS.map((m) => (
+              <TabsTrigger key={m} value={String(m)} className="px-3">{m}M</TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
       </div>
 
-      {/* Stat tiles */}
-      <div className="grid grid-cols-2 wide:grid-cols-5 gap-3">
-        <StatTile
-          label="This month so far"
-          value={formatCurrency(stats.thisMonth, cur)}
-          sub={
-            currentMonth?.budget != null
-              ? `of ${formatCurrency(currentMonth.budget, cur)} budget`
-              : `${currentMonth?.count ?? 0} transaction${currentMonth?.count === 1 ? "" : "s"}`
-          }
-        />
-        <StatTile
-          label={`Last month (${monthLabel(data.months[data.months.length - 2]?.month ?? "", "short")})`}
-          value={formatCurrency(stats.lastMonth, cur)}
-          sub={lastVsAvg ? `${lastVsAvg.text} vs average` : undefined}
-          trend={lastVsAvg ? (lastVsAvg.up ? "up" : "down") : undefined}
-          goodWhenUp={isIncome}
-        />
-        <StatTile
-          label="Monthly average"
-          value={stats.averageMonthly != null ? formatCurrency(stats.averageMonthly, cur) : "—"}
-          sub={stats.medianMonthly != null ? `median ${formatCurrency(stats.medianMonthly, cur)}` : "needs a full month"}
-        />
-        <StatTile
-          label={`${monthLabel(currentMonth?.month ?? "", "long").split(" ")[0]} last year`}
-          value={formatCurrency(stats.sameMonthLastYear, cur)}
-          sub="same month, a year ago"
-        />
-        <StatTile
-          label={`Share of ${noun}`}
-          value={pct(stats.shareOfType)}
-          sub={`of all ${noun}, last ${months} months`}
-        />
-      </div>
+      {shown.map((id) => (nodes[id] ? <div key={id}>{nodes[id]}</div> : null))}
 
-      {!hasData ? (
+      {!hasData && (
         <Card>
           <CardContent className="py-12 text-center">
             <p className="font-semibold">No transactions in this category in the last {months} months</p>
             <p className="text-sm text-muted-foreground mt-1">Try a longer range, or pick another category above.</p>
           </CardContent>
         </Card>
-      ) : (
-        <>
-          {/* Monthly chart */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Monthly {noun}</CardTitle>
-              <CardDescription>
-                Last {months} months in {cur}
-                {stats.averageMonthly != null && ` · average ${formatCurrency(stats.averageMonthly, cur)}`}
-                {data.hasBudget && " · budget in amber"}
-                {" · this month is still running"}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={280}>
-                <ComposedChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: -6 }}>
-                  <CartesianGrid vertical={false} stroke="var(--color-border)" strokeDasharray="3 3" />
-                  <XAxis dataKey="label" fontSize={11} tickLine={false} axisLine={false} tick={{ fill: "var(--color-muted-foreground)" }} interval="preserveStartEnd" />
-                  <YAxis fontSize={11} tickLine={false} axisLine={false} tick={{ fill: "var(--color-muted-foreground)" }} tickFormatter={(v) => formatCompactNumber(Number(v))} />
-                  <Tooltip
-                    cursor={{ fill: "var(--color-muted)", opacity: 0.4 }}
-                    content={({ active, payload }) => {
-                      if (!active || !payload?.length) return null;
-                      const m = payload[0].payload as (typeof chartData)[number];
-                      return (
-                        <div className="rounded-lg border bg-popover px-3 py-2 text-xs shadow-md">
-                          <p className="font-semibold">{monthLabel(m.month, "long")}{m.partial ? " (so far)" : ""}</p>
-                          <p className="tabular-nums">{formatCurrency(m.amount, cur)} · {m.count} transaction{m.count === 1 ? "" : "s"}</p>
-                          {m.budget != null && <p className="text-muted-foreground tabular-nums">Budget {formatCurrency(m.budget, cur)}</p>}
-                        </div>
-                      );
-                    }}
-                  />
-                  <Bar dataKey="amount" radius={[4, 4, 0, 0]} maxBarSize={44} isAnimationActive={false}>
-                    {chartData.map((m) => (
-                      <Cell key={m.month} fill={barColor} fillOpacity={m.partial ? 0.45 : 0.85} />
-                    ))}
-                  </Bar>
-                  {data.hasBudget && (
-                    <Line
-                      type="stepAfter"
-                      dataKey="budget"
-                      stroke={CHART_COLORS.categories[1]}
-                      strokeWidth={2}
-                      strokeDasharray="5 4"
-                      // Dots too: a budget set for a single month is one point, which a line alone never draws.
-                      dot={{ r: 3, fill: CHART_COLORS.categories[1], strokeWidth: 0 }}
-                      connectNulls
-                      isAnimationActive={false}
-                    />
-                  )}
-                  {stats.averageMonthly != null && (
-                    <ReferenceLine y={stats.averageMonthly} stroke="var(--color-muted-foreground)" strokeDasharray="4 4" />
-                  )}
-                </ComposedChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          <div className="grid grid-cols-1 wide:grid-cols-2 gap-4">
-            {/* Top payees */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2"><Store className="h-4 w-4" /> Top payees</CardTitle>
-                <CardDescription>Where this {noun} went, last {months} months</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {data.payeesLocked ? (
-                  <p className="text-sm text-muted-foreground">Unlock your data to see payees.</p>
-                ) : data.topPayees.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No payees recorded.</p>
-                ) : (
-                  <ul className="space-y-3">
-                    {data.topPayees.map((p) => (
-                      <li key={p.payee}>
-                        <Link
-                          href={buildTxDrillUrl({ categoryId: String(categoryId), search: p.payee === "(no payee)" ? "" : p.payee, startDate: windowStart, endDate: today })}
-                          className="group block"
-                          title={`View ${p.payee} transactions`}
-                        >
-                          <div className="flex items-baseline justify-between gap-3 text-sm">
-                            <span className="truncate group-hover:underline">{p.payee}</span>
-                            <span className="shrink-0 tabular-nums font-medium">
-                              {formatCurrency(p.amount, cur)}
-                              <span className="text-xs text-muted-foreground font-normal"> · {p.count}×</span>
-                            </span>
-                          </div>
-                          <div className="mt-1 h-1.5 rounded-full bg-muted overflow-hidden">
-                            <div className="h-full rounded-full" style={{ width: `${Math.max(2, Math.min(100, p.share * 100))}%`, backgroundColor: barColor, opacity: 0.8 }} />
-                          </div>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Recent transactions */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2"><Receipt className="h-4 w-4" /> Recent transactions</CardTitle>
-                <CardDescription>
-                  {stats.transactionCount} in the last {months} months
-                  {stats.averageTransaction != null && ` · average ${formatCurrency(stats.averageTransaction, cur)}`}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ul className="divide-y">
-                  {data.recent.map((t) => (
-                    <li key={t.id} className="flex items-center justify-between gap-3 py-2 text-sm">
-                      <div className="min-w-0">
-                        <Link href={buildTxDrillUrl({ id: String(t.id) })} className="truncate block hover:underline">
-                          {t.payee || "(no payee)"}
-                        </Link>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {formatDate(t.date)}{t.accountName ? ` · ${t.accountName}` : ""}
-                        </p>
-                      </div>
-                      <span className={`shrink-0 tabular-nums font-medium ${t.amount < 0 ? "text-destructive" : "text-pos"}`}>
-                        {formatCurrency(t.amount, t.currency)}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  href={buildTxDrillUrl({ categoryId: String(categoryId), startDate: windowStart, endDate: today })}
-                  className="inline-block mt-3 text-sm font-medium text-primary hover:underline"
-                >
-                  View all {stats.transactionCount} transactions
-                </Link>
-              </CardContent>
-            </Card>
-          </div>
-
-          <p className="text-xs text-muted-foreground">
-            Last {months} months: {formatCurrency(stats.total, cur)} in total
-            {stats.highestMonth && ` · highest month ${monthLabel(stats.highestMonth.month, "long")} (${formatCurrency(stats.highestMonth.amount, cur)})`}
-            . Amounts are in {cur}, converted at each transaction&apos;s historical rate.
-          </p>
-        </>
       )}
-    </div>
-  );
-}
 
-function StatTile({
-  label,
-  value,
-  sub,
-  trend,
-  goodWhenUp = false,
-}: {
-  label: string;
-  value: string;
-  sub?: string;
-  trend?: "up" | "down";
-  goodWhenUp?: boolean;
-}) {
-  const good = trend ? (trend === "up") === goodWhenUp : null;
-  return (
-    <Card>
-      <CardContent className="pt-4 pb-4">
-        <p className="text-xs text-muted-foreground break-words leading-tight">{label}</p>
-        <p className="text-xl font-bold mt-1 tabular-nums truncate">{value}</p>
-        {sub && (
-          <p className={`text-xs mt-0.5 flex items-center gap-0.5 ${good == null ? "text-muted-foreground" : good ? "text-pos" : "text-destructive"}`}>
-            {trend === "up" && <ArrowUpRight className="h-3 w-3" />}
-            {trend === "down" && <ArrowDownRight className="h-3 w-3" />}
-            {sub}
-          </p>
-        )}
-      </CardContent>
-    </Card>
+      {hasData && (
+        <p className="text-xs text-muted-foreground">
+          Last {months} months: {formatCurrency(stats.total, cur)} in total
+          {stats.highestMonth && ` · highest month ${monthLabel(stats.highestMonth.month, "long")} (${formatCurrency(stats.highestMonth.amount, cur)})`}
+          . Amounts are in {cur}, converted at each transaction&apos;s historical rate.
+        </p>
+      )}
+
+      <CustomizeCardsSheet
+        open={customizeOpen}
+        onOpenChange={setCustomizeOpen}
+        title="Customize category"
+        description="Show, hide and reorder the cards on this category."
+        cards={CATEGORY_DETAIL_CARDS}
+        layout={cardLayout.layout}
+        onSave={cardLayout.save}
+        onReset={cardLayout.reset}
+      />
+    </div>
   );
 }

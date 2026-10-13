@@ -1,7 +1,6 @@
 {
   "family": "family-import",
   "unmigrated": [
-    "src/app/(app)/import/page.tsx",
     "src/app/(app)/import/pending/page.tsx",
     "src/app/(app)/manage-accounts/page.tsx"
   ],
@@ -10,8 +9,6 @@
       "backdrop-blur": 1
     },
     "src/app/(app)/import/page.tsx": {
-      "title-prop": 4,
-      "subtitle-prop": 1,
       "suspense-null": 1
     },
     "src/app/(app)/import/pending/_components/reconcile-header.tsx": {

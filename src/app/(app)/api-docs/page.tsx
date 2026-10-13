@@ -3,7 +3,8 @@
 import { DevModeGuard } from "@/components/dev-mode-guard";
 
 import { useState } from "react";
-import { PageHeader } from "@/components/mobile";
+import { ListRow } from "@/components/mobile";
+import { SectionPage } from "@/components/templates";
 
 // ============ API ROUTE DEFINITIONS ============
 
@@ -413,27 +414,16 @@ function ParamTable({ params, label }: { params: ApiParam[]; label: string }) {
   return (
     <div className="mt-3">
       <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
-      <div className="overflow-x-auto rounded-lg border border-border">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border bg-muted">
-              <th className="px-3 py-2 text-left font-medium text-muted-foreground">Name</th>
-              <th className="px-3 py-2 text-left font-medium text-muted-foreground">Type</th>
-              <th className="px-3 py-2 text-left font-medium text-muted-foreground">Required</th>
-              <th className="px-3 py-2 text-left font-medium text-muted-foreground">Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            {params.map((p) => (
-              <tr key={p.name} className="border-b border-border last:border-0">
-                <td className="px-3 py-2 font-mono text-xs text-primary">{p.name}</td>
-                <td className="px-3 py-2 text-xs text-muted-foreground">{p.type}</td>
-                <td className="px-3 py-2 text-xs">{p.required ? <span className="text-destructive">yes</span> : <span className="text-muted-foreground">no</span>}</td>
-                <td className="px-3 py-2 text-xs text-muted-foreground">{p.description}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="divide-y divide-border/50 rounded-xl border border-border/50 bg-card px-3">
+        {params.map((p) => (
+          <ListRow
+            key={p.name}
+            title={<span className="font-mono text-xs text-primary">{p.name}</span>}
+            subtitle={`${p.type} · ${p.required ? "required" : "optional"}${p.description ? ` · ${p.description}` : ""}`}
+            secondary={p.required ? "yes" : "no"}
+            secondaryTone={p.required ? "neg" : "muted"}
+          />
+        ))}
       </div>
     </div>
   );
@@ -563,15 +553,15 @@ function ApiDocsPageContent() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-4xl px-6 py-12">
-        {/* Header */}
-        <div className="contents">
-          <PageHeader title="API Docs" titleClassName="text-2xl font-bold tracking-tight" />
-          <p className="mb-8 mt-2 text-muted-foreground">
-            PF exposes both a REST API (Next.js routes) and an MCP server for AI assistant integration.
-            All data is local — no external services required.
-          </p>
-        </div>
+      <SectionPage
+        id="api-docs"
+        title="API Docs"
+        subtitle="PF exposes both a REST API (Next.js routes) and an MCP server for AI assistant integration. All data is local — no external services required."
+        width="report"
+        center
+        padBottom="max"
+        className="px-4 py-12"
+      >
 
         {/* Auth Notice */}
         <div className="mb-8 rounded-lg border border-warning/30 bg-warning/10 p-4">
@@ -678,23 +668,14 @@ npx tsx mcp-server/index.ts
               <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
                 Read Tools ({MCP_TOOLS.filter((t) => t.type === "read").length})
               </h3>
-              <div className="overflow-x-auto rounded-lg border border-border">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border bg-muted">
-                      <th className="px-4 py-2 text-left font-medium text-muted-foreground">Tool</th>
-                      <th className="px-4 py-2 text-left font-medium text-muted-foreground">Description</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {MCP_TOOLS.filter((t) => t.type === "read").map((tool) => (
-                      <tr key={tool.name} className="border-b border-border last:border-0">
-                        <td className="px-4 py-2 font-mono text-xs text-pos">{tool.name}</td>
-                        <td className="px-4 py-2 text-xs text-muted-foreground">{tool.description}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="divide-y divide-border/50 rounded-xl border border-border/50 bg-card px-3">
+                {MCP_TOOLS.filter((t) => t.type === "read").map((tool) => (
+                  <ListRow
+                    key={tool.name}
+                    title={<span className="font-mono text-xs text-pos">{tool.name}</span>}
+                    subtitle={tool.description}
+                  />
+                ))}
               </div>
             </div>
 
@@ -702,23 +683,14 @@ npx tsx mcp-server/index.ts
               <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
                 Write Tools ({MCP_TOOLS.filter((t) => t.type === "write").length})
               </h3>
-              <div className="overflow-x-auto rounded-lg border border-border">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border bg-muted">
-                      <th className="px-4 py-2 text-left font-medium text-muted-foreground">Tool</th>
-                      <th className="px-4 py-2 text-left font-medium text-muted-foreground">Description</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {MCP_TOOLS.filter((t) => t.type === "write").map((tool) => (
-                      <tr key={tool.name} className="border-b border-border last:border-0">
-                        <td className="px-4 py-2 font-mono text-xs text-primary">{tool.name}</td>
-                        <td className="px-4 py-2 text-xs text-muted-foreground">{tool.description}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="divide-y divide-border/50 rounded-xl border border-border/50 bg-card px-3">
+                {MCP_TOOLS.filter((t) => t.type === "write").map((tool) => (
+                  <ListRow
+                    key={tool.name}
+                    title={<span className="font-mono text-xs text-primary">{tool.name}</span>}
+                    subtitle={tool.description}
+                  />
+                ))}
               </div>
             </div>
 
@@ -739,7 +711,7 @@ npx tsx mcp-server/index.ts
         <div className="mt-12 border-t border-border pt-6 text-center text-xs text-muted-foreground">
           Finlynq v2.3 &mdash; Local-first personal finance. Track your money here, analyze it anywhere.
         </div>
-      </div>
+      </SectionPage>
     </div>
   );
 }

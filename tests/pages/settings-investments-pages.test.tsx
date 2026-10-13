@@ -285,6 +285,8 @@ describe("/settings/investments list navigates to the full pages", () => {
 
   it("Prices on a manual security opens its prices page", async () => {
     render(<InvestmentsListRoute />);
+    // Securities are ListRows: tapping the row opens the detail sheet, whose Prices action goes to the prices page.
+    fireEvent.click(await screen.findByRole("button", { name: /PRIV/ }));
     fireEvent.click(await screen.findByRole("button", { name: /Prices/ }));
     expect(nav.push.mock.calls[0][0]).toMatch(/^\/settings\/investments\/securities\/8\/prices\?returnTo=/);
   });

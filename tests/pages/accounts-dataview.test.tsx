@@ -103,7 +103,7 @@ describe("Accounts page: no size-class wrappers around sections", () => {
     expect(i).toBeGreaterThan(-1);
     const list = SRC.slice(i, SRC.indexOf(">", i));
     expect(list).not.toMatch(/(^|[\s"'`])(max-)?(sm|md|lg|xl|2xl):/);
-    expect(list).toContain("grid-cols-1");
-    expect(list).toContain("wide:grid-cols-2");
+    expect(list).toContain("space-y-6");
+    expect(list).not.toMatch(/grid-cols-/);
   });
 });
