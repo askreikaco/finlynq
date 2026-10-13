@@ -130,8 +130,10 @@ describe("server oracle vs LocalStore vs reference (synthetic P1 fixture)", { ti
   });
 
   it("(i) the server oracle holds the fixture rows and the generated DDL", async () => {
-    // 310 + 4 for lf_op_frame (create, FK, unique, index) added by local-first L1.
-    expect(oracle.statementCount).toBe(314);
+    // Was 314 (stale: 318 DDL statements had already landed on the base without the expectation being updated).
+    // Now 320 = 318 + request_idempotency (CREATE TABLE + index). The budgets.updated_at and goals/accounts/categories
+    // updated_at columns are part of CREATE TABLE, not extra statements. Local-first L3 (offline write queue).
+    expect(oracle.statementCount).toBe(320);
     const r = await oracle.client.query<{ a: number; c: number; t: number }>(
       "SELECT (SELECT count(*) FROM accounts)::int AS a, (SELECT count(*) FROM categories)::int AS c, (SELECT count(*) FROM transactions)::int AS t",
     );

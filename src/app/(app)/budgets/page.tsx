@@ -25,6 +25,25 @@ import { PageHeader, HEADER_DESKTOP_ONLY, PHONE_PRIMARY_CLASS, type OverflowActi
 import { DataView, ViewModeToggle } from "@/components/adaptive";
 import { cn } from "@/lib/utils";
 import { type Budget, type SpendingRow, type BudgetTemplate, type AgeOfMoney, type BudgetMode, parseMonthParam } from "./_components/budget-types";
+import { applyPendingBudgets, type BudgetSyncMark } from "@/lib/budgets/pending-overlay";
+import { discardQueuedCreate, isLocalWriteQueueActive, queueOfflineBudgetDelete, usePendingBudgets } from "@/lib/data/local-write-queue";
+import { isNetworkFailure } from "@/lib/transactions/entry-mode";
+
+/** "Waiting to sync" / "Sync failed" badge on a budget row queued on this device. */
+function SyncBadge({ mark }: { mark: BudgetSyncMark }) {
+  if (mark.status === "failed") {
+    return (
+      <Link href="/settings/data" className="shrink-0 text-xs font-medium px-1.5 py-0.5 rounded-full bg-destructive/10 text-destructive hover:underline" title={mark.failReason ?? "Sync failed"}>
+        Sync failed
+      </Link>
+    );
+  }
+  return (
+    <span className="shrink-0 text-xs font-medium px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground" title="Saved on this device; it syncs when you are online">
+      Waiting to sync
+    </span>
+  );
+}
 
 function BudgetsPageContent() {
   const { displayCurrency, isLoading: currencyLoading } = useDisplayCurrency();
@@ -36,6 +55,7 @@ function BudgetsPageContent() {
   const [deleting, setDeleting] = useState(false);
   const [copying, setCopying] = useState(false);
   const [copyError, setCopyError] = useState("");
+  const [actionError, setActionError] = useState("");
 
 
   // Reads are cache-first when the local read cache is on (Settings > Data > Offline mode); plain fetches otherwise.
@@ -43,9 +63,13 @@ function BudgetsPageContent() {
     currencyLoading ? null : `/api/budgets?month=${month}&rollover=1&currency=${encodeURIComponent(displayCurrency)}`,
     { keepPrevious: true },
   );
-  const budgets = useMemo(() => (Array.isArray(budgetsRes.data) ? budgetsRes.data : []), [budgetsRes.data]);
+  const serverBudgets = useMemo(() => (Array.isArray(budgetsRes.data) ? budgetsRes.data : []), [budgetsRes.data]);
   const loading = budgetsRes.loading;
   const loadError = budgetsRes.error;
+  // Offline queue (local-first L3, flag off = no change): queued budget changes over the server rows. A queued change
+  // leaving the outbox (synced) reloads the list.
+  const pendingBudgets = usePendingBudgets(() => budgetsRes.reload());
+  const budgets = useMemo(() => applyPendingBudgets(serverBudgets, pendingBudgets, month), [serverBudgets, pendingBudgets, month]);
 
   const startDate = `${month}-01`;
   const [y, m] = month.split("-").map(Number);
@@ -90,9 +114,35 @@ function BudgetsPageContent() {
 
   async function handleDelete() {
     if (deleteId == null) return;
+    const row = budgets.find((b) => b.id === deleteId);
     setDeleting(true);
     try {
-      await fetch(`/api/budgets?id=${deleteId}`, { method: "DELETE" });
+      // A budget queued on this device and not yet synced: drop the queued create, nothing goes to the server.
+      if (row?.pendingSync?.kind === "create") {
+        const dropped = await discardQueuedCreate(row.pendingSync.opId);
+        if (!dropped) {
+          setActionError("This budget is being sent right now. Try again in a moment.");
+          return;
+        }
+        setActionError("");
+        setDeleteId(null);
+        return;
+      }
+      try {
+        await fetch(`/api/budgets?id=${deleteId}`, { method: "DELETE" });
+      } catch (netErr) {
+        // Flag off / not eligible / online: nothing is queued and the error path is unchanged.
+        // The baseline is the server row, not the overlay (a queued edit would otherwise look like a server change).
+        const serverRow = serverBudgets.find((b) => b.id === deleteId) ?? row;
+        if (serverRow && isLocalWriteQueueActive() && isNetworkFailure(netErr)) {
+          const queued = await queueOfflineBudgetDelete(serverRowOf(serverRow));
+          if (queued) {
+            setDeleteId(null);
+            return;
+          }
+        }
+        throw netErr;
+      }
       setDeleteId(null);
       loadData();
     } finally {
@@ -149,6 +199,10 @@ function BudgetsPageContent() {
   }
 
   const deletingBudget = budgets.find((b) => b.id === deleteId) ?? null;
+  /** Server row of a budget (no overlay fields) as the queue's baseline. */
+  function serverRowOf(b: Budget) {
+    return { id: b.id, categoryId: b.categoryId, month: b.month, amount: b.amount, currency: b.currency ?? null, updatedAt: b.updatedAt ?? null, categoryName: b.categoryName, categoryGroup: b.categoryGroup };
+  }
 
   function changeMonth(delta: number) {
     const [y, m] = month.split("-").map(Number);
@@ -287,6 +341,7 @@ function BudgetsPageContent() {
                       >
                         {b.categoryName}
                       </Link>
+                      {b.pendingSync && <SyncBadge mark={b.pendingSync} />}
                       <span className={`shrink-0 text-xs font-medium tabular-nums px-1.5 py-0.5 rounded-full ${
                         over
                           ? "bg-destructive/10 text-destructive"
@@ -371,6 +426,7 @@ function BudgetsPageContent() {
                   <Link href={`/budgets/new?${formQuery}`} className="after:absolute after:inset-0 hover:underline">
                     {b.categoryName}
                   </Link>
+                  {b.pendingSync && <span className="ml-2 align-middle"><SyncBadge mark={b.pendingSync} /></span>}
                 </TableCell>
                 <TableCell className="text-right font-mono tabular-nums">{formatCurrency(effectiveBudget, displayCurrency)}</TableCell>
                 <TableCell className={`text-right font-mono tabular-nums ${over ? "text-destructive" : ""}`}>{formatCurrency(spent, displayCurrency)}</TableCell>
@@ -402,6 +458,7 @@ function BudgetsPageContent() {
 
   return (
     <div className="space-y-6">
+      {actionError && <p className="text-sm text-destructive">{actionError}</p>}
       {/* Header */}
       <PageHeader
         className="flex flex-col gap-3 regular:flex-row regular:items-start regular:justify-between"

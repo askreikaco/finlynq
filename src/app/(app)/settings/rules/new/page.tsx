@@ -1,3 +1,6 @@
+import { isLocalWriteQueueActive, queueOfflineEntityCreate } from "@/lib/data/local-write-queue";
+import { isNetworkFailure } from "@/lib/transactions/entry-mode";
+import { ruleFields, type RuleLike } from "@/lib/rules/offline-fields";
 "use client";
 
 import { Suspense, useEffect, useMemo, useState } from "react";
@@ -82,6 +85,11 @@ function NewRuleForm() {
       }
       return { ok: true };
     } catch (e) {
+      // Offline queue (local-first L3): a network failure keeps the new rule on this device. Staged-import rules stay online.
+      if (!stagedImportId && isLocalWriteQueueActive() && isNetworkFailure(e)) {
+        const queued = await queueOfflineEntityCreate("rule", ruleFields(payload as RuleLike));
+        if (queued) return { ok: true };
+      }
       return { ok: false, error: e instanceof Error ? e.message : String(e) };
     }
   }

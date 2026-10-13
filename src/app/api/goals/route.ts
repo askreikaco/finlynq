@@ -10,6 +10,7 @@ import { buildNameFields, decryptNamedRows, encryptOptional, decryptOptional } f
 import { computeGoalProgress } from "@/lib/goals-progress";
 import { getDisplayCurrency, getRateMap, convertWithRateMap } from "@/lib/fx-service";
 import { pickRecordCurrency } from "@/lib/fx/record-currency";
+import { withIdempotency } from "@/lib/idempotency";
 
 const postSchema = z.object({
   name: z.string(),
@@ -92,6 +93,7 @@ export async function GET(request: NextRequest) {
       priority: schema.goals.priority,
       status: schema.goals.status,
       note: schema.goals.note,
+      updatedAt: schema.goals.updatedAt,
     })
     .from(schema.goals)
     .where(eq(schema.goals.userId, userId))
@@ -218,6 +220,8 @@ export async function POST(request: NextRequest) {
   // write persisted a permanently nameless row (review 2026-07-30 #7).
   const auth = await requireEncryption(request); if (!auth.ok) return auth.response;
   const { userId, dek } = auth;
+  // Offline write queue (local-first L3): an Idempotency-Key header makes a retried POST replay the first response.
+  return withIdempotency(request, userId, "goal", async () => {
   try {
     const body = await request.json();
     const parsed = validateBody(body, postSchema);
@@ -289,6 +293,7 @@ export async function POST(request: NextRequest) {
   } catch (error: unknown) {
     return NextResponse.json({ error: safeErrorMessage(error, "Failed") }, { status: 500 });
   }
+  });
 }
 
 export async function PUT(request: NextRequest) {
@@ -321,7 +326,7 @@ export async function PUT(request: NextRequest) {
     // Stream D Phase 4 — plaintext `name` dropped; only encrypted siblings persist.
     // Build the UPDATE set including the legacy `accountId` mirror only when
     // `accountIds` was supplied (issue #130 — keep first id as legacy fallback).
-    const updatePayload: Record<string, unknown> = { ...data, ...enc };
+    const updatePayload: Record<string, unknown> = { ...data, ...enc, updatedAt: new Date() };
     // Encrypt the free-text note when present (2026-06-01 plaintext-gap closure).
     if (data.note !== undefined) {
       updatePayload.note = encryptOptional(dek, data.note);

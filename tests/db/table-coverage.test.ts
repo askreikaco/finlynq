@@ -25,6 +25,7 @@ const DOCUMENTED_EXCLUSIONS: Record<string, string> = {
   announcement_reads: "user acknowledgment log; data versioning unnecessary",
   backfill_proposals: "temporary proposal state during backfill process",
   mcp_idempotency_keys: "transient idempotency tracking for MCP operations",
+  request_idempotency: "transient idempotency tracking for offline-queue POSTs (budgets); expires after 72h",
   oauth_access_tokens: "OAuth token cache; regenerated on demand",
   oauth_authorization_codes: "transient OAuth auth code (single use)",
   password_reset_tokens: "transient reset token (single use)",

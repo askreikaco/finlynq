@@ -6,12 +6,19 @@ import { useDisplayCurrency } from "@/components/currency-provider";
 import { getCurrentMonth, getMonthLabel } from "@/lib/currency";
 import { FormPage } from "@/components/templates";
 import { SetBudgetForm } from "../_components/set-budget-form";
-import { parseMonthParam } from "../_components/budget-types";
+import { parseMonthParam, type Budget } from "../_components/budget-types";
+import { useCacheFirstJson } from "@/lib/data/use-cache-first";
+import { isLocalWriteQueueOn } from "@/lib/data/local-write-queue";
 
 function NewBudgetPage() {
   const searchParams = useSearchParams();
   const month = parseMonthParam(searchParams.get("month"), getCurrentMonth());
-  const { displayCurrency } = useDisplayCurrency();
+  const { displayCurrency, isLoading: currencyLoading } = useDisplayCurrency();
+  // The month's server budgets, only for the offline queue (edit baseline). Same url as the list: shares its cache.
+  // Flag off: no request at all.
+  const existingRes = useCacheFirstJson<Budget[]>(
+    currencyLoading || !isLocalWriteQueueOn() ? null : `/api/budgets?month=${month}&rollover=1&currency=${encodeURIComponent(displayCurrency)}`,
+  );
 
   return (
     <FormPage
@@ -25,6 +32,7 @@ function NewBudgetPage() {
         <SetBudgetForm
           month={month}
           displayCurrency={displayCurrency}
+          existing={Array.isArray(existingRes.data) ? existingRes.data : undefined}
           onSaved={() => ctx.router.push(ctx.returnTo)}
         />
       )}

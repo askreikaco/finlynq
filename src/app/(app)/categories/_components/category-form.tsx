@@ -10,6 +10,8 @@
  */
 
 import { useEffect, useState } from "react";
+import { isLocalWriteQueueActive, queueOfflineEntityEdit } from "@/lib/data/local-write-queue";
+import { isNetworkFailure } from "@/lib/transactions/entry-mode";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/mobile";
 import { Button } from "@/components/ui/button";
@@ -107,7 +109,13 @@ export function CategoryForm({
         return;
       }
       router.push(returnTo);
-    } catch {
+    } catch (netErr) {
+      // Offline queue (local-first L3): a rename is kept on this device. A create stays online (queued transactions reference category ids).
+      const base = isRename ? categories.find((c) => c.id === categoryId) : undefined;
+      if (base && isLocalWriteQueueActive() && isNetworkFailure(netErr) && name.trim() !== base.name && (await queueOfflineEntityEdit("category", base.id, { name: name.trim() }, { name: base.name }))) {
+        router.push(returnTo);
+        return;
+      }
       setFormError(isRename ? "Failed to update category" : "Failed to create category");
     } finally {
       setSubmitting(false);

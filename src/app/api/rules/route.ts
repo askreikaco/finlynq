@@ -34,6 +34,7 @@ import {
   type Action as ActionType,
 } from "@/lib/rules/schema";
 import { encryptRuleFields, decryptRuleFields } from "@/lib/rules/crypto";
+import { withIdempotency } from "@/lib/idempotency";
 
 /**
  * Reject a filled but semantically-invalid `record_investment_op` action
@@ -164,6 +165,8 @@ export async function GET(request: NextRequest) {
 export async function POST(req: NextRequest) {
   const auth = await requireAuth(req);
   if (!auth.authenticated) return auth.response;
+  // Offline write queue (local-first L3): an Idempotency-Key header makes a retried POST replay the first response.
+  return withIdempotency(req, auth.context.userId, "rule", async () => {
   try {
     const body = await req.json();
     const parsed = validateBody(body, postSchema);
@@ -236,6 +239,7 @@ export async function POST(req: NextRequest) {
     }
     return NextResponse.json({ error: safeErrorMessage(error, "Failed to create rule") }, { status: 500 });
   }
+  });
 }
 
 // PUT — update an existing rule.

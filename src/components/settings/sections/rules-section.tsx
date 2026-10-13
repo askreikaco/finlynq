@@ -7,7 +7,20 @@
  * editor, live preview, active toggle / edit / delete.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { SyncMarkBadge } from "@/components/offline/sync-mark-badge";
+import { isNetworkFailure } from "@/lib/transactions/entry-mode";
+import { overlayRows, usePendingEntity, isLocalWriteQueueActive, queueOfflineEntityDelete, queueOfflineEntityEdit } from "@/lib/data/local-write-queue";
+import { ruleChangedFields } from "@/lib/rules/offline-fields";
+
+/** Queued rule edits over the server row (scalar fields; conditions and actions come back as canonical JSON text). */
+function rulePatch(f: Record<string, string | number | null>): Partial<RuleRow> {
+  const p: Record<string, unknown> = {};
+  if (f.name !== undefined && f.name !== null) p.name = String(f.name);
+  if (f.priority !== undefined && f.priority !== null) p.priority = Number(f.priority);
+  if (f.isActive !== undefined && f.isActive !== null) p.isActive = f.isActive === "true";
+  return p as Partial<RuleRow>;
+}
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -133,6 +146,10 @@ export function RulesSection() {
 
   useEffect(() => { load(); }, []);
 
+  // Offline queue (local-first L3): queued rule changes over the server rows. Flag off = the rows as they are.
+  const pending = usePendingEntity("rule", load);
+  const shownRules = useMemo(() => overlayRows(rules, pending, { patchOf: rulePatch }), [rules, pending]);
+
   async function handleToggle(rule: RuleRow) {
     try {
       const res = await fetch("/api/rules", {
@@ -147,6 +164,11 @@ export function RulesSection() {
       }
       load();
     } catch (e) {
+      // Offline (local-first L3): the toggle is kept on this device. Flag off / online errors keep the old path.
+      if (isLocalWriteQueueActive() && isNetworkFailure(e)) {
+        const { patch, current } = ruleChangedFields({ isActive: !rule.isActive }, { isActive: rule.isActive });
+        if (await queueOfflineEntityEdit("rule", rule.id, patch, current)) return;
+      }
       setError(String(e));
     }
   }
@@ -157,6 +179,10 @@ export function RulesSection() {
       await fetch(`/api/rules?id=${rule.id}`, { method: "DELETE" });
       load();
     } catch (e) {
+      if (isLocalWriteQueueActive() && isNetworkFailure(e)) {
+        const r = rule as unknown as Record<string, unknown>;
+        if (await queueOfflineEntityDelete("rule", rule.id, { name: rule.name, priority: rule.priority, isActive: rule.isActive ? "true" : "false", updatedAt: (r.updatedAt as string | undefined) ?? null })) return;
+      }
       setError(String(e));
     }
   }
@@ -198,7 +224,7 @@ export function RulesSection() {
             <p className="text-sm text-muted-foreground text-center py-6">No rules yet. Add a rule to auto-categorize transactions.</p>
           )}
 
-          {rules.map((rule) => (
+          {shownRules.map((rule) => (
             <div
               key={rule.id}
               className={`rounded-lg border p-3 space-y-1 ${!rule.isActive ? "opacity-60" : ""}`}
@@ -207,6 +233,7 @@ export function RulesSection() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-medium text-sm truncate">{rule.name}</span>
+                    {rule.pendingSync && <SyncMarkBadge mark={rule.pendingSync} />}
                     {rule.priority > 0 && <Badge variant="secondary" className="text-xs">P{rule.priority}</Badge>}
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5">

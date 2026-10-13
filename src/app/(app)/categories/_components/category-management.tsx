@@ -7,7 +7,9 @@
  * `returnTo` is where the create/rename pages send the user back to.
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { usePendingEntity } from "@/lib/data/local-write-queue";
+import { overlayRows } from "@/lib/data/local-write-queue";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Tag, Plus, AlertTriangle, Pencil, Trash2 } from "lucide-react";
@@ -19,18 +21,25 @@ const TYPE_ORDER = ["E", "I", "R"] as const;
 type Category = { id: number; type: string; group: string; name: string; note: string };
 
 export function CategoryManagement({ returnTo }: { returnTo: string }) {
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [serverCategories, setServerCategories] = useState<Category[]>([]);
   const [catError, setCatError] = useState("");
 
   const loadCategories = useCallback(() => {
     fetch("/api/categories")
       .then((r) => (r.ok ? r.json() : []))
-      .then((d) => setCategories(Array.isArray(d) ? d : []))
+      .then((d) => setServerCategories(Array.isArray(d) ? d : []))
       .catch(() => {
-        setCategories([]);
+        setServerCategories([]);
         setCatError("Failed to load categories");
       });
   }, []);
+
+  // Offline queue (local-first L3): queued category renames over the server rows. Flag off = the rows as they are.
+  const pending = usePendingEntity("category", loadCategories);
+  const categories = useMemo(
+    () => overlayRows(serverCategories, pending, { patchOf: (f) => ({ ...(f.name != null ? { name: String(f.name) } : {}) }) as Partial<Category> }),
+    [serverCategories, pending],
+  );
 
   useEffect(() => {
     loadCategories();

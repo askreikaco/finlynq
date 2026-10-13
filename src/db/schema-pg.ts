@@ -58,6 +58,8 @@ export const accounts = pgTable("accounts", {
   // (which deliberately stays IN net worth). `getAccountBalances` excludes
   // invisible rows by default. See 20261007_reika_account_invisible.sql.
   invisible: boolean("invisible").notNull().default(false),
+  // Offline write queue (local-first L3): server clock for per-field conflict resolution.
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   // Reconcile v4 Phase 1 (2026-05-27) — per-account pipeline policy.
   // 'auto' = rules fire at upload, rows land directly in ledger.
   // 'approve' = bank-write automatic, ledger commit needs one click.
@@ -105,6 +107,8 @@ export const categories = pgTable("categories", {
   note: text("note").default(""),
   nameCt: text("name_ct"),
   nameLookup: text("name_lookup"),
+  // Offline write queue (local-first L3): server clock for per-field conflict resolution.
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
   uniqueIndex("categories_user_name_lookup_uniq").on(t.userId, t.nameLookup),
   index("idx_categories_user_id").on(t.userId),
@@ -465,6 +469,8 @@ export const budgets = pgTable("budgets", {
   month: text("month").notNull(),
   amount: doublePrecision("amount").notNull().default(0),
   currency: text("currency").notNull().default("CAD"),
+  // Offline write queue (local-first L3): the server clock for per-field conflict resolution. Bumped by upsertBudget.
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
   uniqueIndex("budgets_user_category_month_unique").on(t.userId, t.categoryId, t.month),
   index("idx_budgets_user_id").on(t.userId),
@@ -538,6 +544,8 @@ export const goals = pgTable("goals", {
   // Stream D (2026-04-24) — dual-write.
   nameCt: text("name_ct"),
   nameLookup: text("name_lookup"),
+  // Offline write queue (local-first L3): server clock for per-field conflict resolution.
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
   uniqueIndex("goals_user_name_lookup_uniq").on(t.userId, t.nameLookup),
   index("idx_goals_user_id").on(t.userId),
@@ -2172,6 +2180,24 @@ export const mcpIdempotencyKeys = pgTable("mcp_idempotency_keys", {
   // Sweep support: the expiry cron deletes by age.
   createdAtIdx: index("mcp_idempotency_keys_created_at_idx").on(t.createdAt),
 }));
+
+// ─── Request idempotency for non-transaction POSTs (local-first L3, offline write queue) ─────
+//
+// First POST with `Idempotency-Key: K` for (user_id, K) claims the row (response_status 0 = in progress), runs the
+// handler, then stores the status + JSON body. A retry with the same key replays the stored response; a concurrent
+// retry waits on the primary key until the first one finishes. Scoped per user. Rows expire after 72h (lazy delete on
+// claim + the daily sweep in src/lib/idempotency.ts). Transactions keep their own key (transactions.idempotency_key).
+export const requestIdempotency = pgTable("request_idempotency", {
+  userId: text("user_id").notNull(),
+  idempotencyKey: text("idempotency_key").notNull(),
+  entity: text("entity").notNull(),
+  responseStatus: integer("response_status").notNull(),
+  responseBody: jsonb("response_body").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.userId, t.idempotencyKey] }),
+  index("request_idempotency_created_at_idx").on(t.createdAt),
+]);
 
 // ─── Admin Audit Log (Finding #16) ──────────────────────────────────────────
 //

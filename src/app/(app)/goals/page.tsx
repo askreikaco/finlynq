@@ -14,6 +14,9 @@ import { DataView, ViewModeToggle } from "@/components/adaptive";
 import { ListPage, type ListPageContext } from "@/components/templates";
 import type { Goal } from "./_components/goal-form";
 import { useGoalsLoad } from "./_components/use-goals-load";
+import { SyncMarkBadge } from "@/components/offline/sync-mark-badge";
+import { isLocalWriteQueueActive, queueOfflineEntityDelete } from "@/lib/data/local-write-queue";
+import { isNetworkFailure } from "@/lib/transactions/entry-mode";
 
 const goalTypeConfig: Record<string, { label: string; badgeClass: string; borderClass: string }> = {
   savings: { label: "Savings", badgeClass: "bg-pos/10 text-pos border-pos/30", borderClass: "border-l-pos" },
@@ -154,6 +157,7 @@ function goalCards({ records: goals, reload, openDelete }: GoalCtx, displayCurre
                   <Target className="h-5 w-5 text-primary" />
                   <div>
                     <h3 className="font-semibold">{g.name}</h3>
+                    {g.pendingSync && <SyncMarkBadge mark={g.pendingSync} />}
                     <div className="flex flex-wrap gap-2 mt-1">
                       <Badge className={config.badgeClass}>{config.label}</Badge>
                       {g.currency && g.currency !== displayCurrency && (
@@ -267,6 +271,7 @@ function goalList({ records: goals, reload, openDelete }: GoalCtx, displayCurren
                 <div className="flex items-center gap-2">
                   <Link href={`/goals/${g.id}/edit`} className="after:absolute after:inset-0 hover:underline">
                     {g.name}
+                    {g.pendingSync && <span className="ml-2 align-middle"><SyncMarkBadge mark={g.pendingSync} /></span>}
                   </Link>
                   {done && <Badge className="bg-pos/10 text-pos border-pos/30">Completed</Badge>}
                 </div>
@@ -362,7 +367,23 @@ export default function GoalsPage() {
         describe: (goal) => (
           <>Are you sure you want to delete <strong>{goal.name ?? "this goal"}</strong>? This cannot be undone.</>
         ),
-        request: (goal) => fetch(`/api/goals?id=${goal.id}`, { method: "DELETE" }),
+        request: async (goal) => {
+          try {
+            return await fetch(`/api/goals?id=${goal.id}`, { method: "DELETE" });
+          } catch (netErr) {
+            // Offline queue (local-first L3): a network failure keeps the delete on this device. Flag off = rethrow.
+            if (isLocalWriteQueueActive() && isNetworkFailure(netErr)) {
+              const g = goal as unknown as Record<string, string | number | null | undefined>;
+              const queued = await queueOfflineEntityDelete(
+                "goal",
+                goal.id,
+                { name: g.name ?? null, type: g.type ?? null, targetAmount: g.targetAmount ?? null, currency: g.currency ?? null, deadline: g.deadline ?? null, priority: g.priority ?? null, note: g.note ?? null, updatedAt: (g.updatedAt as string | undefined) ?? null },
+              );
+              if (queued) return new Response(null, { status: 200 });
+            }
+            throw netErr;
+          }
+        },
         ignoreStatus: true,
       }}
     />
