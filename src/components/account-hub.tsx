@@ -4,6 +4,7 @@
 
 import { getEntriesBySurface } from "@/lib/nav-config";
 import { ListRow } from "@/components/mobile/list-row";
+import { TW } from "@/lib/design/tokens";
 import { SectionCard } from "@/components/mobile/section-card";
 
 /**
@@ -30,7 +31,7 @@ export function AccountHub() {
   }
 
   return (
-    <div className="space-y-4 px-4 py-6">
+    <div data-slot="account-hub" className={`${TW.grid3} px-4 py-6`}>
       <SectionCard label="Account">
         <div className="divide-y divide-border/50">
           {orderedEntries.map((entry) => (

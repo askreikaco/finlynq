@@ -19,6 +19,7 @@ import { EditUserModal } from "@/components/admin/edit-user-modal";
 import { Pagination } from "@/components/ui/pagination";
 import { DetailSheet, ListRow, METRIC_GRID_CLASS, MetricGrid, SectionCard } from "@/components/mobile";
 import { SectionPage } from "@/components/templates";
+import { TW } from "@/lib/design/tokens";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -655,7 +656,7 @@ export default function AdminPage() {
               />
             </TabsContent>
 
-            <TabsContent value="activity" className="mt-4 space-y-4">
+            <TabsContent value="activity" className={`mt-4 ${TW.grid3}`}>
               <Card>
                 <CardContent className="p-6">
                   {stats && (

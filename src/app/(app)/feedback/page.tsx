@@ -28,6 +28,7 @@ import type {
   FeedbackThread,
   FeedbackThreadSummary,
 } from "@shared/types";
+import { TW } from "@/lib/design/tokens";
 import { SectionPage } from "@/components/templates/section-page";
 import { usePageFab } from "@/components/mobile/page-fab";
 
@@ -376,7 +377,7 @@ export default function FeedbackPage() {
         </Card>
       )}
 
-      <div className="space-y-3">
+      <div data-slot="feedback-cards" className={TW.grid3}>
         {items?.map((t) => (
           <Card
             key={t.id}

@@ -93,7 +93,7 @@ function HomePurchaseTab() {
   }
 
   return (
-    <div className="space-y-4">
+    <div data-slot="scenario-tab" className="grid grid-cols-1 items-start gap-4 wide:grid-cols-3">
       <SectionCard label="Purchase details">
         <div className="space-y-4">
           <div className={FORM_GRID}>
@@ -110,6 +110,7 @@ function HomePurchaseTab() {
         </div>
       </SectionCard>
 
+      <div className="space-y-4 wide:col-span-2">
       {result ? (
         <>
           <MetricGrid
@@ -143,6 +144,7 @@ function HomePurchaseTab() {
       ) : (
         <Placeholder text="Enter purchase details and click Calculate" />
       )}
+      </div>
     </div>
   );
 }
@@ -170,7 +172,7 @@ function ExtraSavingsTab() {
   }
 
   return (
-    <div className="space-y-4">
+    <div data-slot="scenario-tab" className="grid grid-cols-1 items-start gap-4 wide:grid-cols-3">
       <SectionCard label="Savings details">
         <div className="space-y-4">
           <div className={FORM_GRID}>
@@ -184,6 +186,7 @@ function ExtraSavingsTab() {
         </div>
       </SectionCard>
 
+      <div className="space-y-4 wide:col-span-2">
       {result ? (
         <>
           <MetricGrid
@@ -209,6 +212,7 @@ function ExtraSavingsTab() {
       ) : (
         <Placeholder text="Enter savings details and click Calculate" />
       )}
+      </div>
     </div>
   );
 }
@@ -292,7 +296,7 @@ function DebtPayoffTab() {
   })() : [];
 
   return (
-    <div className="space-y-4">
+    <div data-slot="scenario-tab" className="grid grid-cols-1 items-start gap-4 wide:grid-cols-3">
       <SectionCard label="Your debts">
         {loansLoading ? (
           <div className="space-y-2">
@@ -325,6 +329,7 @@ function DebtPayoffTab() {
         )}
       </SectionCard>
 
+      <div className="space-y-4 wide:col-span-2">
       {result ? (
         <>
           <StrategyCard title="Avalanche" hint="Highest rate first" data={result.avalanche} currency={displayCurrency} />
@@ -356,6 +361,7 @@ function DebtPayoffTab() {
       ) : (
         loans.length > 0 && <Placeholder text="Click Compare Strategies to see results" />
       )}
+      </div>
     </div>
   );
 }
@@ -399,7 +405,7 @@ function IncomeChangeTab() {
   }
 
   return (
-    <div className="space-y-4">
+    <div data-slot="scenario-tab" className="grid grid-cols-1 items-start gap-4 wide:grid-cols-3">
       <SectionCard label="Income details">
         <div className="space-y-4">
           <div className={FORM_GRID}>
@@ -413,6 +419,7 @@ function IncomeChangeTab() {
         </div>
       </SectionCard>
 
+      <div className="space-y-4 wide:col-span-2">
       {result ? (
         <>
           <IncomeSide label="Current" data={result.current} currency={displayCurrency} />
@@ -431,6 +438,7 @@ function IncomeChangeTab() {
       ) : (
         <Placeholder text="Enter income details and click Calculate Impact" />
       )}
+      </div>
     </div>
   );
 }

@@ -24,6 +24,7 @@ import { ColumnList } from "@/components/mobile/column-list";
 import { METRIC_GRID_CLASS } from "@/components/mobile";
 import { cn } from "@/lib/utils";
 import { SectionPage } from "@/components/templates";
+import { TW } from "@/lib/design/tokens";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { RefreshCw, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 
@@ -302,7 +303,7 @@ export default function AdminPriceCachePage() {
           </Button>),
       }}
     >
-      <p className="text-sm text-muted-foreground mt-0.5">
+      <p className={`text-sm text-muted-foreground mt-0.5 ${TW.prose}`}>
         Read-only view of the server-side <code className="text-xs">price_cache</code> and{" "}
         <code className="text-xs">fx_rates</code> tables. Today-dated rows past the 30-min TTL show as{" "}
         <span className="text-warning">Stale</span> (re-fetched on next read); historical rows are{" "}

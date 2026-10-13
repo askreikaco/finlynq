@@ -375,6 +375,7 @@ function ImportPageInner() {
         </div>
       )}
 
+      <div data-slot="import-top" className="grid grid-cols-1 items-start gap-6 wide:has-[>:nth-child(2)]:grid-cols-2">
       <div className="rounded-xl border bg-card p-4">
         <div className="flex items-center gap-4 flex-wrap">
           <div className="flex items-center gap-2">
@@ -433,6 +434,7 @@ function ImportPageInner() {
         onOpenAccount={(id) => switchAccount(id)}
         reloadKey={reloadKey}
       />
+      </div>
 
       <Tabs
         value={tab}

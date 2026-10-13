@@ -11,6 +11,7 @@ import { useDisplayCurrency } from "@/components/currency-provider";
 import { Lightbulb } from "lucide-react";
 import { AmountInput } from "@/components/amount-input";
 import { DetailSheet, ListRow, MetricGrid, SectionCard } from "@/components/mobile";
+import { TW } from "@/lib/design/tokens";
 import { SectionPage } from "@/components/templates/section-page";
 import { ErrorState } from "@/components/error-state";
 import { PageSkeleton } from "@/components/page-skeleton";
@@ -82,6 +83,7 @@ function TaxPageContent() {
         ]}
       />
 
+      <div data-slot="tax-cards" className={TW.grid3}>
       <SectionCard label="TFSA" padded={false} className="px-3">
         <div className="space-y-3 pt-3">
           <div className="px-1">
@@ -155,6 +157,7 @@ function TaxPageContent() {
           ))}
         </SectionCard>
       )}
+      </div>
 
       {advice && (
         <DetailSheet

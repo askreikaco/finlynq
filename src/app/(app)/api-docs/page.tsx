@@ -5,6 +5,7 @@ import { DevModeGuard } from "@/components/dev-mode-guard";
 import { useState } from "react";
 import { ListRow } from "@/components/mobile";
 import { SectionPage } from "@/components/templates";
+import { TW } from "@/lib/design/tokens";
 
 // ============ API ROUTE DEFINITIONS ============
 
@@ -566,7 +567,7 @@ function ApiDocsPageContent() {
         {/* Auth Notice */}
         <div className="mb-8 rounded-lg border border-warning/30 bg-warning/10 p-4">
           <h3 className="text-sm font-semibold text-warning">Authentication (Optional)</h3>
-          <p className="mt-1 text-sm text-warning">
+          <p className={`mt-1 text-sm text-warning ${TW.prose}`}>
             Routes can optionally require an API key via the <code className="rounded bg-warning/10 px-1 py-0.5 text-xs">X-API-Key</code> header.
             Generate your key from Settings. The MCP server runs locally on stdio and does not require authentication.
           </p>
@@ -615,7 +616,8 @@ function ApiDocsPageContent() {
 { "success": false, "error": "Descriptive error message" }`}</CodeBlock>
             </div>
 
-            {/* Route Groups */}
+            {/* Route Groups: independent cards, 2 / 3 columns on desktop */}
+            <div data-slot="api-route-groups" className={TW.grid3}>
             {API_GROUPS.map((group) => (
               <div key={group.name}>
                 <h2 className="mb-1 text-xl font-bold text-foreground">{group.name}</h2>
@@ -627,6 +629,7 @@ function ApiDocsPageContent() {
                 </div>
               </div>
             ))}
+            </div>
           </div>
         )}
 
@@ -664,6 +667,7 @@ npx tsx mcp-server/index.ts
             </div>
 
             {/* Tools */}
+            <div data-slot="mcp-tool-lists" className="grid grid-cols-1 items-start gap-6 regular:grid-cols-2">
             <div>
               <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
                 Read Tools ({MCP_TOOLS.filter((t) => t.type === "read").length})
@@ -692,6 +696,7 @@ npx tsx mcp-server/index.ts
                   />
                 ))}
               </div>
+            </div>
             </div>
 
             {/* Security Model */}

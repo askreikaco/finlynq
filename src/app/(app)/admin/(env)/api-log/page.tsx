@@ -16,6 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { type DataTableColumn } from "@/components/ui/data-table";
 import { ColumnList } from "@/components/mobile/column-list";
 import { SectionPage } from "@/components/templates";
+import { TW } from "@/lib/design/tokens";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { RefreshCw, Trash2 } from "lucide-react";
 import { HEADER_DESKTOP_ONLY } from "@/components/mobile";
@@ -226,7 +227,7 @@ export default function AdminApiLogPage() {
           </>),
       }}
     >
-      <p className="mt-0.5 text-sm text-muted-foreground">
+      <p className={`mt-0.5 text-sm text-muted-foreground ${TW.prose}`}>
         Every outbound market-data call (Yahoo / CoinGecko) made by the server, newest first.
         In-memory (last {data?.meta.cap ?? 1000}, cleared on restart). To diagnose an operation:{" "}
         <span className="text-foreground">Clear</span>, reproduce it (e.g. rebuild balances),

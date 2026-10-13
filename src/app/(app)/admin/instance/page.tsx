@@ -16,6 +16,7 @@
 import { useEffect, useState } from "react";
 import { ListRow, SectionCard } from "@/components/mobile";
 import { SectionPage } from "@/components/templates/section-page";
+import { TW } from "@/lib/design/tokens";
 import { Badge } from "@/components/ui/badge";
 import type { EffectiveConfig } from "@/lib/admin/effective-config";
 
@@ -137,7 +138,7 @@ export default function InstanceAdminPage() {
       )}
 
       {config && (
-        <>
+        <div data-slot="instance-sections" className={TW.grid3}>
           {/* Google OAuth Section */}
           <ConfigSection
             title={SECTIONS[0].label}
@@ -209,14 +210,14 @@ export default function InstanceAdminPage() {
           </ConfigSection>
 
           {/* Info note */}
-          <div className="rounded-lg bg-info/10 p-4 text-info">
+          <div className="col-span-full rounded-lg bg-info/10 p-4 text-info">
             <p className="text-sm font-medium">Configuration precedence</p>
             <p className="text-sm mt-1">
               Environment variables override database settings, which override built-in defaults.
               Secrets are masked above for security.
             </p>
           </div>
-        </>
+        </div>
       )}
     </SectionPage>
   );

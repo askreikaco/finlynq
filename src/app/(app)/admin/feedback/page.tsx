@@ -24,6 +24,7 @@ import { FeedbackAttachmentView } from "@/components/feedback/attachment-view";
 import { validateFeedbackAttachment } from "@/lib/feedback/attachment";
 import type { FeedbackMessage, FeedbackThread } from "@shared/types";
 import { SectionPage } from "@/components/templates/section-page";
+import { TW } from "@/lib/design/tokens";
 
 function fmtBytes(n: number): string {
   if (n < 1024) return `${n} B`;
@@ -411,7 +412,7 @@ export default function AdminFeedbackPage() {
         <p className="text-sm text-muted-foreground">No feedback in this view.</p>
       )}
 
-      <div className="space-y-3">
+      <div data-slot="feedback-cards" className={TW.grid3}>
         {rows?.map((r) => (
           <Card key={r.id} className="p-4">
             <div className="flex flex-wrap items-center gap-2">
