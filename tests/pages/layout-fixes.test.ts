@@ -73,22 +73,19 @@ describe("settings/general at 390", () => {
 });
 
 describe("budgets at 390", () => {
-  it("summary values are text-xl nowrap with tabular figures and step up to text-2xl only at wide (regular stays text-xl: the 4-up tiles are too narrow)", () => {
+  it("summary tiles use the shared MetricGrid (2 / 3 / 4 columns by width) and the shared Amount value style, no hand-rolled grid", () => {
     const src = read(BUDGETS);
+    expect(src).toContain("<MetricGrid metrics={summaryMetrics} />");
+    expect(src).not.toMatch(/grid-cols-2 gap-3/);
     expect(src).not.toMatch(/(?<![:\w-])text-2xl font-bold/);
-    expect(src).not.toMatch(/break-words text-xl font-bold tabular-nums/);
-    expect(src.match(/min-w-0 whitespace-nowrap text-xl font-bold tabular-nums wide:text-2xl/g)?.length).toBe(5);
   });
 
-  it("four-up summary tiles are two columns at regular and four at wide (a 4-up 768 tile is ~117px of text)", () => {
+  it("category groups are inset SectionCards of ListRows (one layout at every width): no Card per group, no table", () => {
     const src = read(BUDGETS);
-    expect(src).toContain('"regular:grid-cols-2 wide:grid-cols-4" : "regular:grid-cols-3"');
-    expect(src).not.toContain('"regular:grid-cols-4"');
-  });
-
-  it("essentials (group) cards use gap-1 so the header is not 16px + padding away from the first row", () => {
-    const src = read(BUDGETS);
-    expect(src).toContain('<Card key={group} className="gap-1">');
+    expect(src).toContain('<SectionCard key={group} label={group} padded={false}');
+    expect(src).toContain("<ListRow");
+    expect(src).not.toContain("<Table");
+    expect(src).not.toContain('<Card key={group} className="gap-1">');
   });
 
   it("month label goes through getMonthLabel and the shared locale helper (no hardcoded locale in the page)", () => {

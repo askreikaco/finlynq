@@ -3,8 +3,7 @@
   "unmigrated": [
     "src/app/(app)/accounts/[id]/edit/page.tsx",
     "src/app/(app)/accounts/[id]/page.tsx",
-    "src/app/(app)/accounts/groups/page.tsx",
-    "src/app/(app)/accounts/page.tsx"
+    "src/app/(app)/accounts/groups/page.tsx"
   ],
   "chrome": {
     "src/app/(app)/accounts/[id]/edit/page.tsx": {

@@ -115,8 +115,9 @@ describe("Accounts page: single list layout (phone-first)", () => {
     expect(cls(count)).toEqual(expect.arrayContaining(["rounded-full", "bg-muted"]));
   });
 
-  it("the grid is one column on a phone and two from the wide size class", async () => {
+  it("the sections stack in one centred column at every width (no 2-up grid)", async () => {
     const grid = await list();
-    expect(cls(grid)).toEqual(expect.arrayContaining(["grid", "grid-cols-1", "wide:grid-cols-2", "gap-4"]));
+    expect(cls(grid)).toEqual(expect.arrayContaining(["space-y-6"]));
+    expect(cls(grid)).not.toContain("wide:grid-cols-2");
   });
 });

@@ -92,7 +92,9 @@ describe("budgets page with the offline queue", () => {
     vi.stubGlobal("fetch", vi.fn(async () => { throw new TypeError("network"); }));
     vi.mocked(queueOfflineBudgetDelete).mockResolvedValueOnce(true);
     render(<BudgetsPage />);
-    fireEvent.click(screen.getAllByLabelText("Delete budget for Food")[0]);
+    // Row tap opens the detail sheet; its Delete action opens the confirm.
+    fireEvent.click(screen.getByRole("button", { name: /Food/ }));
+    fireEvent.click(await screen.findByRole("button", { name: "Delete budget for Food" }));
     fireEvent.click(await screen.findByRole("button", { name: "Delete budget" }));
     await waitFor(() => expect(queueOfflineBudgetDelete).toHaveBeenCalledTimes(1));
     expect(vi.mocked(queueOfflineBudgetDelete).mock.calls[0][0]).toMatchObject({ id: 1, amount: 300, currency: "CAD" });

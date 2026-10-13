@@ -3,10 +3,9 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Inbox, FileCog, Coins, Plus, Trash2, Wallet } from "lucide-react";
-import { PageHeader, type OverflowAction } from "@/components/mobile";
+import { PageHeader, ListRow, type OverflowAction } from "@/components/mobile";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ModePicker } from "@/components/inbox/mode-picker";
@@ -341,48 +340,41 @@ function EditAccountPage() {
                 No cash sleeves yet. Add one to start recording trades.
               </p>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-xs">Currency</TableHead>
-                    <TableHead className="text-xs">Name</TableHead>
-                    <TableHead className="text-xs text-right">Transactions</TableHead>
-                    <TableHead className="text-xs text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sleeves.map((s) => (
-                    <TableRow key={s.id} className="hover:bg-muted/30">
-                      <TableCell>
-                        <Badge variant="outline" className="text-xs font-mono">
+              <div className="divide-y divide-border/50 rounded-xl border border-border/50 bg-card px-3">
+                {sleeves.map((s) => (
+                  <ListRow
+                    key={s.id}
+                    title={
+                      <span className="inline-flex max-w-full items-center gap-2 align-middle">
+                        <Badge variant="outline" className="text-xs font-mono shrink-0">
                           {s.currency}
                         </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm">{s.name ?? `Cash ${s.currency}`}</TableCell>
-                      <TableCell className="text-right text-sm tabular-nums">{s.txCount ?? 0}</TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          aria-label="Delete sleeve"
-                          size="sm"
-                          variant="ghost"
-                          disabled={(s.txCount ?? 0) > 0}
-                          title={
-                            (s.txCount ?? 0) > 0
-                              ? "Sleeve has transactions — delete or reassign them first"
-                              : "Delete sleeve"
-                          }
-                          onClick={() => {
-                            setDeleteSleeveError("");
-                            setDeleteSleeveId(s.id);
-                          }}
-                        >
-                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                        <span className="truncate">{s.name ?? `Cash ${s.currency}`}</span>
+                      </span>
+                    }
+                    subtitle={`${s.txCount ?? 0} transaction${(s.txCount ?? 0) === 1 ? "" : "s"}`}
+                    value={
+                      <Button
+                        aria-label="Delete sleeve"
+                        size="sm"
+                        variant="ghost"
+                        disabled={(s.txCount ?? 0) > 0}
+                        title={
+                          (s.txCount ?? 0) > 0
+                            ? "Sleeve has transactions — delete or reassign them first"
+                            : "Delete sleeve"
+                        }
+                        onClick={() => {
+                          setDeleteSleeveError("");
+                          setDeleteSleeveId(s.id);
+                        }}
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                      </Button>
+                    }
+                  />
+                ))}
+              </div>
             )}
           </TabsContent>
         </Tabs>

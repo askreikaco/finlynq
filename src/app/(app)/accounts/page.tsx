@@ -32,7 +32,8 @@ import {
   Archive,
   FolderCog,
 } from "lucide-react";
-import { PageHeader, HEADER_DESKTOP_ONLY, CustomizeCardsSheet, METRIC_GRID_CLASS, metricGridClass, useCardLayout, usePageCustomize } from "@/components/mobile";
+import { HEADER_DESKTOP_ONLY, CustomizeCardsSheet, Amount, ListRow, METRIC_GRID_CLASS, metricGridClass, useCardLayout, usePageCustomize } from "@/components/mobile";
+import { SectionPage } from "@/components/templates/section-page";
 import type { PageCard } from "@/lib/card-layout";
 import { StatCard } from "@/app/(app)/dashboard/_components/stat-card";
 import { NetWorthHeroCard } from "@/app/(app)/dashboard/_components/net-worth-hero-card";
@@ -240,42 +241,30 @@ export default function AccountsPage() {
         {groups(list).map(([group, accts]) => (
           <Accordion key={group} defaultValue={group}>
           <AccordionItem value={group} title={groupTitle(group, accts)}>
-            <div className="-mx-2 -my-2 space-y-1">
+            <div className="divide-y divide-border/50">
             {accts.map((a) => (
-              <div key={a.accountId} className={`flex items-center gap-1 rounded-lg hover:bg-muted/50 transition-colors group ${a.archived ? "opacity-60" : ""}`}>
-                <Link
-                  href={`/accounts/${a.accountId}`}
-                  className="flex items-center justify-between flex-1 py-1.5 px-3 gap-2 min-w-0"
-                >
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <p className="font-medium text-sm truncate">
-                        {a.accountName}
-                        {a.alias && <span className="ml-1.5 text-xs text-muted-foreground font-normal">({a.alias})</span>}
-                      </p>
-                      <Badge variant="outline" className="text-xs shrink-0">{a.currency}</Badge>
-                      {a.archived && <Badge variant="secondary" className="text-xs shrink-0">Archived</Badge>}
-                      {a.invisible && <InvisibleMark />}
-                    </div>
-                  </div>
-                  {/* FINLYNQ-303 — both bases per row: the account's own
-                      currency is the primary figure, with the display-currency
-                      equivalent beneath it when they differ. The totals below
-                      remain reporting-only (a cross-currency sum has no native
-                      basis). */}
-                  <span className="shrink-0 mr-2 text-right">
-                    <span className={`font-mono text-sm font-semibold block ${a.balance >= 0 ? color : "text-destructive"}`}>
-                      {formatCurrency(a.balance, a.currency)}
+              <ListRow
+                key={a.accountId}
+                href={`/accounts/${a.accountId}`}
+                className={a.archived ? "opacity-60" : undefined}
+                title={
+                  <span className="inline-flex max-w-full items-center gap-2 align-middle">
+                    <span className="truncate">
+                      {a.accountName}
+                      {a.alias && <span className="ml-1.5 text-xs text-muted-foreground font-normal">({a.alias})</span>}
                     </span>
-                    {a.convertedBalance != null &&
-                      a.currency.toUpperCase() !== displayCurrency.toUpperCase() && (
-                        <span className="font-mono text-xs text-muted-foreground block">
-                          {formatCurrency(a.convertedBalance, displayCurrency)}
-                        </span>
-                      )}
+                    <Badge variant="outline" className="text-xs shrink-0">{a.currency}</Badge>
+                    {a.archived && <Badge variant="secondary" className="text-xs shrink-0">Archived</Badge>}
+                    {a.invisible && <InvisibleMark />}
                   </span>
-                </Link>
-              </div>
+                }
+                value={<Amount value={a.balance} currency={a.currency} size="md" tone={a.balance < 0 ? "neg" : "none"} />}
+                secondary={
+                  a.convertedBalance != null && a.currency.toUpperCase() !== displayCurrency.toUpperCase()
+                    ? formatCurrency(a.convertedBalance, displayCurrency)
+                    : undefined
+                }
+              />
             ))}
             </div>
           </AccordionItem>
@@ -309,22 +298,26 @@ export default function AccountsPage() {
   const [customizeOpen, setCustomizeOpen] = useState(false);
   usePageCustomize(accounts.length > 0 && !loading && !error ? { onOpen: () => setCustomizeOpen(true) } : null);
 
-  if (loading) return <SummarySkeleton />;
+  if (loading) return <div className="mx-auto w-full max-w-report"><SummarySkeleton /></div>;
 
   if (error) {
-    return <ErrorState title="Couldn't load accounts" message="We had trouble loading your account data." onRetry={loadAccounts} />;
+    return (
+      <div className="mx-auto w-full max-w-report">
+        <ErrorState title="Couldn't load accounts" message="We had trouble loading your account data." onRetry={loadAccounts} />
+      </div>
+    );
   }
 
   if (accounts.length === 0) {
     return (
-      <div className="space-y-4">
-        <PageHeader
-          className="flex flex-wrap items-center justify-between gap-3"
-          title="Accounts"
-          subtitle="Overview of your assets, liabilities, and net worth"
-          actions={createAccountLink}
-          actionsClassName="contents"
-        />
+      <SectionPage
+        id="accounts"
+        title="Accounts"
+        subtitle="Overview of your assets, liabilities, and net worth"
+        width="report"
+        center
+        header={{ actions: createAccountLink, actionsClassName: "contents" }}
+      >
         <OnboardingTips page="accounts" />
         <EmptyState
           icon={Wallet}
@@ -332,21 +325,24 @@ export default function AccountsPage() {
           description="Create your first account or import bank data to start tracking your net worth."
           action={{ label: "Import data", href: "/import" }}
         />
-      </div>
+      </SectionPage>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <PageHeader
-        className="flex items-center justify-between"
-        title="Accounts"
-        subtitle="Overview of your assets, liabilities, and net worth"
-        overflow={[
+    <SectionPage
+      id="accounts"
+      title="Accounts"
+      subtitle="Overview of your assets, liabilities, and net worth"
+      width="report"
+      center
+      header={{
+        className: "flex items-center justify-between",
+        overflow: [
           { label: "Manage groups", icon: FolderCog, href: "/accounts/groups" },
           { label: showArchived ? "Hide archived" : "Show archived", icon: Archive, onSelect: () => setShowArchived((v) => !v) },
-        ]}
-        actions={
+        ],
+        actions: (
           <>
             <Button
               variant="outline"
@@ -370,9 +366,9 @@ export default function AccountsPage() {
             </Button>
             {createAccountLink}
           </>
-        }
-      />
-
+        ),
+      }}
+    >
       <OnboardingTips page="accounts" />
 
       {(() => {
@@ -432,7 +428,7 @@ export default function AccountsPage() {
           const run: string[] = [];
           while (i < shown.length && LIST_CARD_IDS.has(shown[i])) run.push(shown[i++]);
           blocks.push(
-            <div key={run.join("+")} data-slot="accounts-list" className="grid grid-cols-1 wide:grid-cols-2 gap-4">
+            <div key={run.join("+")} data-slot="accounts-list" className="space-y-6">
               {run.map((r) => (
                 <Fragment key={r}>{nodes[r]}</Fragment>
               ))}
@@ -452,6 +448,6 @@ export default function AccountsPage() {
         onSave={cardLayout.save}
         onReset={cardLayout.reset}
       />
-    </div>
+    </SectionPage>
   );
 }
