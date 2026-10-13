@@ -81,6 +81,7 @@ describe("static guard: no card title rendered outside its card", () => {
   it("no page renders <SectionLabel> directly followed by a single <SectionCard>", () => {
     const bad: string[] = [];
     for (const f of files) {
+      if (f.includes("/dev/gallery/")) continue; // gallery headings label groups of many demo cards
       const src = readFileSync(f, "utf8");
       if (/<SectionLabel[^>]*>[^<]*(?:<[^/][^>]*>[^<]*<\/[^>]+>[^<]*)*<\/SectionLabel>\s*<SectionCard\b/.test(src)) bad.push(f);
     }
