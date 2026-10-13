@@ -10,7 +10,6 @@ import { LanguageProvider } from "@/components/language-provider";
 import { FontProvider } from "@/components/font-provider";
 import { AnimationProvider } from "@/components/animation-provider";
 import { ReportingRecomputeIndicator } from "@/components/reporting-recompute-indicator";
-import { VersionGate } from "@/components/version-gate";
 import { DataProvider } from "@/lib/data";
 import { WebVitals } from "@/components/web-vitals";
 import { PageFabProvider } from "@/components/mobile/page-fab";
@@ -21,7 +20,6 @@ import { AppMainBarFlag } from "@/components/app-main-bar-flag";
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
-    <VersionGate />
     <WebVitals />
     <KeyboardInsetObserver />
     <UnlockGate>

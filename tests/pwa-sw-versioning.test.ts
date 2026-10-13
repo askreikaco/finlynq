@@ -24,10 +24,11 @@ describe("sw.ts per-build page cache versioning", () => {
     expect(src).toContain('cacheName: "static-media-cache"');
   });
 
-  it("reloads open windows once when upgrading from the legacy unversioned page caches", () => {
-    expect(src).toContain('LEGACY_PAGE_CACHES = ["pages-html-cache", "pages-rsc-cache"]');
-    expect(src).toContain("upgradedFromLegacy");
-    expect(src).toContain("w.navigate?.(w.url)");
+  it("never force-navigates open windows on activate, keeps skipWaiting + clientsClaim", () => {
+    expect(src).not.toContain(".navigate");
+    expect(src).not.toContain("matchAll");
+    expect(src).toContain("skipWaiting: true");
+    expect(src).toContain("clientsClaim: true");
   });
 
   it("activate handler deletes stale pages-* caches only", () => {
