@@ -12,7 +12,7 @@
 
 import { PER_USER_STORAGE_KEYS, userStorageKey, dropLegacyUnscopedKeys } from "@/lib/client/user-storage";
 import { persistSupported, wipeUser } from "@/lib/data/persist";
-import { dropLocalUserCache } from "@/lib/data/local-read-cache-wipe";
+import { dropLocalUserCache, dropPasskeyUnlockFor } from "@/lib/data/local-read-cache-wipe";
 
 export { PER_USER_STORAGE_KEYS };
 
@@ -31,6 +31,7 @@ export function clearPerUserStorage(userId: string): void {
   }
   dropLegacyUnscopedKeys();
   void dropLocalUserCache(userId);
+  void dropPasskeyUnlockFor(userId);
 }
 
 /** Navigate with a full page load (default: reload the current path). */
