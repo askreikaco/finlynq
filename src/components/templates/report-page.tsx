@@ -84,7 +84,7 @@ export interface ReportPageProps<TRaw, T> {
 const identity = <TRaw, T>(raw: TRaw) => raw as unknown as T;
 
 const WIDTH: Record<ReportWidth, string | undefined> = {
-  report: TW.report,
+  report: "", // full width on desktop
   doc: TW.doc,
   none: undefined,
 };
@@ -175,7 +175,7 @@ export function ReportPage<TRaw, T>({
   return (
     <div
       data-testid={`${id}-root`}
-      className={cn(center && "mx-auto", "w-full", STACK[stack], WIDTH[width], padBottom && TW.formPad)}
+      className={cn(center && width !== "report" && "mx-auto", "w-full", STACK[stack], WIDTH[width], padBottom && TW.formPad)}
     >
       <PageHeader
         title={title}

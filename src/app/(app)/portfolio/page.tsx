@@ -345,7 +345,6 @@ export default function PortfolioPage() {
       title="Investment"
       subtitle={`${summary.totalHoldings} holdings across ${summary.totalAccounts} accounts`}
       width="report"
-      center
       header={{
         overflow: [
           { label: "Realized gains", icon: TrendingUp, href: "/portfolio/realized-gains" },

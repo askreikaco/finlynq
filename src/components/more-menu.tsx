@@ -2,8 +2,7 @@
 
 /**
  * "More" screen (/more) at every size, iOS grouped-list style: PageHeader, an Account card, then
- * inset groups (src/components/mobile/inset-group.tsx), always one column in a phone-width centred
- * column. Every entry is registry-driven (surface "more"); the rail and bottom bar link here.
+ * inset groups (src/components/mobile/inset-group.tsx), one column on phone, a full-width grid of group cards (2 cols regular, 3 wide) on desktop. Every entry is registry-driven (surface "more"); the rail and bottom bar link here.
  */
 
 import { useEffect, useRef, useState, useMemo, memo } from "react";
@@ -222,9 +221,11 @@ export const MoreMenu = memo(function MoreMenu({ instanceAdminEnabled = false, c
 
   return (
     // Bottom padding clears the floating tab bar (compact only; the rail takes its place from regular up).
-    <div className="mx-auto max-w-xl space-y-6 pb-[var(--mobile-bar-clearance)] regular:pb-8" data-testid="more-menu">
+    <div className="w-full space-y-6 pb-[var(--mobile-bar-clearance)] regular:pb-8" data-testid="more-menu">
       <PageHeader title="More" />
 
+      {/* Card groups: one column on phone, 2 at regular, 3 at wide; each group is one grid cell (never split). */}
+      <div className="grid grid-cols-1 items-start gap-6 regular:grid-cols-2 wide:grid-cols-3" data-testid="more-grid">
       <section data-testid="more-account" className="space-y-2">
         <InsetSectionHeader>Account</InsetSectionHeader>
         {/* Current account (taps to /account), other accounts, Add account, Manage accounts. */}
@@ -233,7 +234,6 @@ export const MoreMenu = memo(function MoreMenu({ instanceAdminEnabled = false, c
         </InsetGroup>
       </section>
 
-      <div className="space-y-6">
         {groups.map((g) => (
           <section key={g.id} data-testid={`more-group-${g.id}`} className="space-y-2">
             {g.header && <InsetSectionHeader>{g.header}</InsetSectionHeader>}
@@ -258,13 +258,13 @@ export const MoreMenu = memo(function MoreMenu({ instanceAdminEnabled = false, c
             <ThemePicker value={current} onChange={(v) => setTheme(v)} />
           </InsetGroup>
         </section>
-      </div>
 
       <section data-testid="more-group-session" className="space-y-2">
         <InsetGroup>
           <InsetRow destructive icon={LogOut} label="Log out" onClick={signOut} data-testid="more-signout" />
         </InsetGroup>
       </section>
+      </div>
     </div>
   );
 });

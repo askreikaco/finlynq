@@ -49,7 +49,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { CustomizeCardsSheet, MetricGrid, metricGridClass, useCardLayout, usePageCustomize } from "@/components/mobile";
+import { CustomizeCardsSheet, MetricGrid, useCardLayout, usePageCustomize } from "@/components/mobile";
 import { SectionPage } from "@/components/templates/section-page";
 import {
   GroupedStatementRows,
@@ -336,7 +336,7 @@ export default function ReportsPage() {
     summary: (
       <>
       {trendsData && (
-        <div className={metricGridClass(4, "gap-4")}>
+        <div className="grid grid-cols-2 gap-4 regular:grid-cols-4">
           <Card className="card-hover">
             <CardContent className="pt-4 pb-4">
               <div className="flex items-center gap-2 mb-1">
@@ -413,7 +413,6 @@ export default function ReportsPage() {
       title="Reports"
       subtitle="Analyze income, expenses, cash flow, and trends across any time period"
       width="report"
-      center
     >
 
       {/* ── Filters Bar ── */}
@@ -922,6 +921,8 @@ export default function ReportsPage() {
 
             {yoyData && (
               <>
+                {/* Two charts side by side at wide, stacked below. */}
+                <div className="grid grid-cols-1 gap-6 wide:grid-cols-2">
                 <Card>
                   <CardHeader>
                     <div className="flex items-center gap-3">
@@ -1010,6 +1011,7 @@ export default function ReportsPage() {
                     </div>
                   </CardContent>
                 </Card>
+                </div>
 
                 <Card>
                   <CardHeader>

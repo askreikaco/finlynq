@@ -35,7 +35,7 @@ export interface SectionPageProps {
   /** Back control label (PageHeader backLabel). */
   backLabel?: string;
   /**
-   * Width token. "section" = max-w-section (settings forms), "report" = max-w-report (wide admin tables),
+   * Width token. "section" = max-w-section (settings forms), "report" = full width (data pages, no cap),
    * "form" = max-w-form, "doc" = max-w-doc, "console" = max-w-console, "none" = no width cap.
    * Default "section".
    */
@@ -59,7 +59,7 @@ export interface SectionPageProps {
 
 const WIDTH_CLASS: Record<SectionPageWidth, string> = {
   section: TW.section,
-  report: TW.report,
+  report: "", // data pages are full width on desktop (owner 2026-10-13); TW.report stays the token
   form: TW.form,
   doc: TW.doc,
   console: TW.console,
@@ -103,7 +103,7 @@ export function SectionPage({
         STACK_CLASS[stack],
         WIDTH_CLASS[width],
         PAD_CLASS[padBottom],
-        center && "mx-auto",
+        center && width !== "report" && width !== "none" && "mx-auto",
         className,
       )}
     >

@@ -210,18 +210,12 @@ describe("SettingsHub", () => {
     expect(document.querySelector('aside[aria-label="Settings sections"]')).toBeNull();
   });
 
-  it("hub is a centred column (max-w-form = 36rem, wide:max-w-report = 48rem) with two group columns from wide", () => {
+  it("hub is full width (no max-w cap, no mx-auto) with group columns: 2 at regular, 3 at wide", () => {
     const { container } = render(<SettingsHub />);
     const root = container.firstElementChild as HTMLElement;
-    expect(root.className).toEqual(expect.stringContaining("max-w-form"));
-    expect(root.className).toEqual(expect.stringContaining("wide:max-w-report"));
-    // the tokens resolve to the same widths the old max-w-xl (36rem) / max-w-3xl (48rem) classes gave
-    const globals = readFileSync(join(__dirname, "../src/app/globals.css"), "utf8");
-    // --container-* live in @theme (not :root), so read them directly
-    const tokenValue = (name: string) => globals.match(new RegExp(name + ":\\s*([^;]+);"))?.[1]?.trim();
-    expect(tokenValue("--container-form")).toBe("36rem");
-    expect(tokenValue("--container-report")).toBe("48rem");
+    expect(root.className).not.toMatch(/max-w-|mx-auto/);
     const grid = container.querySelector('[data-slot="settings-hub-group"]')?.parentElement as HTMLElement;
-    expect(grid.className).toEqual(expect.stringContaining("wide:grid-cols-2"));
+    expect(grid.className).toEqual(expect.stringContaining("regular:grid-cols-2"));
+    expect(grid.className).toEqual(expect.stringContaining("wide:grid-cols-3"));
   });
 });

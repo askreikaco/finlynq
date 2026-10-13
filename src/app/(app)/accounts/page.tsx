@@ -32,7 +32,7 @@ import {
   Archive,
   FolderCog,
 } from "lucide-react";
-import { HEADER_DESKTOP_ONLY, CustomizeCardsSheet, Amount, ListRow, METRIC_GRID_CLASS, metricGridClass, useCardLayout, usePageCustomize } from "@/components/mobile";
+import { HEADER_DESKTOP_ONLY, CustomizeCardsSheet, Amount, ListRow, metricGridClass, useCardLayout, usePageCustomize } from "@/components/mobile";
 import { SectionPage } from "@/components/templates/section-page";
 import type { PageCard } from "@/lib/card-layout";
 import { StatCard } from "@/app/(app)/dashboard/_components/stat-card";
@@ -61,8 +61,8 @@ function SummarySkeleton() {
         <div className="h-8 w-40 animate-shimmer rounded-lg" />
         <div className="h-4 w-64 animate-shimmer rounded-lg mt-2" />
       </div>
-      <div className={METRIC_GRID_CLASS}>
-        {Array.from({ length: 4 }).map((_, i) => (
+      <div className="grid grid-cols-1 gap-3 regular:grid-cols-3">
+        {Array.from({ length: 3 }).map((_, i) => (
           <Card key={i}>
             <CardHeader className="pb-2">
               <div className="flex items-center gap-3">
@@ -76,7 +76,7 @@ function SummarySkeleton() {
           </Card>
         ))}
       </div>
-      <div className="grid grid-cols-1 wide:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 regular:grid-cols-2 gap-8">
         {Array.from({ length: 2 }).map((_, i) => (
           <div key={i} className="space-y-4">
             <div className="h-6 w-28 animate-shimmer rounded" />
@@ -110,6 +110,7 @@ const ACCOUNT_CARDS: readonly PageCard[] = [
   { id: "assets", title: "Assets" },
   { id: "liabilities", title: "Liabilities" },
 ];
+const METRIC_CARD_IDS = new Set(["net-worth", "summary"]);
 const LIST_CARD_IDS = new Set(["assets", "liabilities"]);
 
 export default function AccountsPage() {
@@ -298,11 +299,11 @@ export default function AccountsPage() {
   const [customizeOpen, setCustomizeOpen] = useState(false);
   usePageCustomize(accounts.length > 0 && !loading && !error ? { onOpen: () => setCustomizeOpen(true) } : null);
 
-  if (loading) return <div className="mx-auto w-full max-w-report"><SummarySkeleton /></div>;
+  if (loading) return <div className="w-full"><SummarySkeleton /></div>;
 
   if (error) {
     return (
-      <div className="mx-auto w-full max-w-report">
+      <div className="w-full">
         <ErrorState title="Couldn't load accounts" message="We had trouble loading your account data." onRetry={loadAccounts} />
       </div>
     );
@@ -315,7 +316,6 @@ export default function AccountsPage() {
         title="Accounts"
         subtitle="Overview of your assets, liabilities, and net worth"
         width="report"
-        center
         header={{ actions: createAccountLink }}
       >
         <OnboardingTips page="accounts" />
@@ -335,7 +335,6 @@ export default function AccountsPage() {
       title="Accounts"
       subtitle="Overview of your assets, liabilities, and net worth"
       width="report"
-      center
       header={{
         className: "flex items-center justify-between",
         overflow: [
@@ -387,7 +386,7 @@ export default function AccountsPage() {
             />
           ),
           summary: (
-            <div data-slot="accounts-summary" className={metricGridClass(2)}>
+            <div data-slot="accounts-summary" className={`${metricGridClass(2)} regular:contents`}>
               <StatCard
                 label="Total Assets"
                 value={totalAssetsConverted}
@@ -420,6 +419,19 @@ export default function AccountsPage() {
         const blocks: ReactNode[] = [];
         for (let i = 0; i < shown.length; ) {
           const id = shown[i];
+          if (METRIC_CARD_IDS.has(id)) {
+            // Net worth + assets + liabilities tiles: stacked on phone, ONE row of 3 at regular+.
+            const run: string[] = [];
+            while (i < shown.length && METRIC_CARD_IDS.has(shown[i])) run.push(shown[i++]);
+            blocks.push(
+              <div key={run.join("+")} data-slot="accounts-metrics" className="flex flex-col gap-6 regular:grid regular:grid-cols-3 regular:gap-3">
+                {run.map((r) => (
+                  <Fragment key={r}>{nodes[r]}</Fragment>
+                ))}
+              </div>,
+            );
+            continue;
+          }
           if (!LIST_CARD_IDS.has(id)) {
             blocks.push(<Fragment key={id}>{nodes[id]}</Fragment>);
             i++;
@@ -428,7 +440,8 @@ export default function AccountsPage() {
           const run: string[] = [];
           while (i < shown.length && LIST_CARD_IDS.has(shown[i])) run.push(shown[i++]);
           blocks.push(
-            <div key={run.join("+")} data-slot="accounts-list" className="space-y-6">
+            // Assets / Liabilities: one column on phone, side by side (2 independent stacks) at regular+.
+            <div key={run.join("+")} data-slot="accounts-list" className="flex flex-col gap-6 regular:grid regular:grid-cols-2 regular:items-start">
               {run.map((r) => (
                 <Fragment key={r}>{nodes[r]}</Fragment>
               ))}
