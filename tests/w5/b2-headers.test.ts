@@ -4,8 +4,8 @@ import path from "node:path";
 
 // W5-6: page headers must share one title/subtitle treatment.
 const ROOT = process.cwd();
+// fire/page.tsx moved onto SectionPage (the template owns the header title class), so it is not checked here.
 const FILES = [
-  "src/app/(app)/fire/page.tsx",
   "src/app/(app)/whats-new/page.tsx",
   "src/app/(app)/feedback/page.tsx",
   "src/app/(app)/categories/[id]/page.tsx",

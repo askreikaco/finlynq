@@ -267,6 +267,7 @@ describe("non-admin pages", () => {
 
   /** Pages that call SectionPage: the header is rendered by the template, as the first child of its root (no wrapper). */
   const SECTION_PAGE_FILES = new Set([
+    "src/app/(app)/fire/page.tsx",
     "src/app/(app)/transactions/audit/page.tsx",
     "src/app/(app)/portfolio/new/page.tsx",
     "src/app/(app)/portfolio/realized-gains/page.tsx",
