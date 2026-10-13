@@ -24,11 +24,12 @@ vi.mock("@/lib/data/persist", () => ({
 
 vi.mock("@/lib/data/local-read-cache-wipe", () => ({
   dropLocalUserCache: vi.fn(() => Promise.resolve()),
+  dropLocalDisposableCaches: vi.fn(() => Promise.resolve()),
   dropAllLocalCaches: vi.fn(() => Promise.resolve()),
 }));
 
 import { getSessionInfo } from "@/lib/data/session-info";
-import { dropLocalUserCache } from "@/lib/data/local-read-cache-wipe";
+import { dropLocalDisposableCaches, dropLocalUserCache } from "@/lib/data/local-read-cache-wipe";
 
 const trusted = (id: string | null) =>
   vi.fn(async () => ({ ok: true, json: async () => ({ id }) }) as Response);
@@ -43,7 +44,8 @@ describe("DataProvider: local-first read-cache wipes", () => {
     vi.mocked(getSessionInfo).mockReturnValue({ userId: "u", locked: true });
     global.fetch = trusted("d1");
     const { unmount } = render(<DataProvider><div>x</div></DataProvider>);
-    await waitFor(() => expect(dropLocalUserCache).toHaveBeenCalledWith("u"));
+    await waitFor(() => expect(dropLocalDisposableCaches).toHaveBeenCalledWith("u"));
+    expect(dropLocalUserCache).not.toHaveBeenCalled(); // a lock keeps the outbox
     unmount();
   });
 
@@ -66,12 +68,15 @@ describe("DataProvider: local-first read-cache wipes", () => {
     unmount();
   });
 
-  it("lock or sign-out (session listener) wipes the user's on-device read cache", async () => {
+  it("lock (session listener) drops only the disposable copies; sign-out drops the outbox too", async () => {
     vi.mocked(getSessionInfo).mockReturnValue({ userId: "u", locked: false });
     global.fetch = trusted("d1");
     const { unmount } = render(<DataProvider><div>x</div></DataProvider>);
     await waitFor(() => expect(sessionListener).not.toBeNull());
     sessionListener!({ userId: "u", locked: true });
+    expect(dropLocalDisposableCaches).toHaveBeenCalledWith("u");
+    expect(dropLocalUserCache).not.toHaveBeenCalled();
+    sessionListener!(null);
     expect(dropLocalUserCache).toHaveBeenCalledWith("u");
     unmount();
   });

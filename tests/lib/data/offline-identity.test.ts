@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import "fake-indexeddb/auto"; // Offline mode needs IndexedDB + WebCrypto to be ON (device support check)
 import { describe, it, expect, beforeEach } from "vitest";
 import {
   OFFLINE_IDENTITY_KEY,
@@ -18,7 +19,9 @@ const on = () => {
 beforeEach(() => window.localStorage.clear());
 
 describe("offline identity", () => {
-  it("does nothing while Offline mode is off: nothing stored, nothing read", () => {
+  it("does nothing while Offline mode is off ('0'): nothing stored, nothing read", () => {
+    window.localStorage.setItem(LOCAL_READ_CACHE_KEY, "0");
+    window.localStorage.setItem(LOCAL_WRITE_QUEUE_KEY, "0");
     rememberOfflineIdentity({ userId: "u1", deviceId: "d1" });
     expect(window.localStorage.getItem(OFFLINE_IDENTITY_KEY)).toBeNull();
     window.localStorage.setItem(OFFLINE_IDENTITY_KEY, JSON.stringify({ userId: "u1", deviceId: "d1", at: Date.now() }));

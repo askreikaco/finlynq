@@ -51,7 +51,7 @@ const seedRow = (server: FakeServer) =>
 
 describe("flag off", () => {
   it("enqueueDelete / dequeueCreate do nothing and open no IndexedDB", async () => {
-    window.localStorage.clear();
+    window.localStorage.setItem(LOCAL_WRITE_QUEUE_KEY, "0");
     const open = vi.spyOn(indexedDB, "open");
     const q = createWriteQueue({ userId: uid, deviceId: "d1" });
     expect(await q.enqueueDelete(5, rowOf(5, null))).toBeNull();

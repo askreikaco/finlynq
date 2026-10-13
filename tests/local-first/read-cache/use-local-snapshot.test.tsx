@@ -101,8 +101,8 @@ afterEach(async () => {
 });
 
 describe("useLocalAccountBalances persistence", () => {
-  it("opt-in off: no IndexedDB, no device check, no fetch", async () => {
-    window.localStorage.removeItem(LOCAL_READ_CACHE_KEY);
+  it("opt-out ('0'): no IndexedDB, no device check, no fetch", async () => {
+    window.localStorage.setItem(LOCAL_READ_CACHE_KEY, "0");
     const fetchSpy = stubFetch("dev-1");
     const openSpy = vi.spyOn(indexedDB, "open");
     const { result } = renderHook(() => useLocalAccountBalances());
