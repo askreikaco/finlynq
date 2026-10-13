@@ -9,12 +9,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from "recharts";
-import { Plus, Landmark, CheckCircle2 } from "lucide-react";
+import { Plus, Landmark, CheckCircle2, CalendarClock, ListChecks } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { ErrorState } from "@/components/error-state";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CspSafeBar } from "@/components/csp-safe-bar";
-import { Amount, DetailSheet, ListRow, MetricGrid, SectionCard, type DetailItem } from "@/components/mobile";
+import { Amount, MetricGrid, DetailSheet, ListRow, SectionCard, type MetricItem, type DetailItem } from "@/components/mobile";
+import { MetricRangeSelect } from "@/components/metric-range-select";
+import { useMetricRange } from "@/lib/metrics/use-metric-range";
+import { compareCaption, monthsBetween, seriesWindow } from "@/lib/metrics/period";
+import { resolveCard } from "@/lib/metrics/delta";
+import { buildLoanSeries } from "@/lib/metrics/loan-series";
 import { CARD_ROW_GRID } from "@/components/mobile/section-card";
 import { SectionPage } from "@/components/templates/section-page";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
@@ -197,6 +202,37 @@ function LoansPageContent() {
   const today = localDateISO();
   const caveat = hasForeignLoan ? "converted at today's rates" : undefined;
 
+  // Metric cards: current value for the selected period, % + signed difference vs the previous period, and the
+  // monthly series from each loan's own amortization schedule (computed from the same /api/loans rows, so offline too).
+  const { selection, explicit, period, setSelection } = useMetricRange();
+  const win = seriesWindow(period);
+  const loanSeries = useMemo(
+    () => buildLoanSeries(loans, monthsBetween(`${win.from}-01`, `${win.to}-01`), displayCurrency),
+    [loans, win.from, win.to, displayCurrency],
+  );
+  const caption = compareCaption(selection);
+  const common = { period, isDefault: !explicit, currency: displayCurrency, caption } as const;
+  const debtCard = resolveCard({ ...common, points: loanSeries?.balance, mode: "last", pageValue: totalDebt, kind: "money" });
+  const payCard = resolveCard({ ...common, points: loanSeries?.payment, mode: "last", pageValue: totalMonthly, kind: "money" });
+  const activeCard = resolveCard({ ...common, points: loanSeries?.active, mode: "last", pageValue: activeLoans.length, kind: "count" });
+  const metrics: MetricItem[] = [
+    {
+      id: "total-debt", label: "Total debt", icon: Landmark, iconTone: "rose", value: debtCard.value ?? totalDebt, currency: displayCurrency,
+      sub: debtCard.delta ?? undefined, note: caveat, badgePct: debtCard.badgePct, invertTone: true,
+      sparkData: debtCard.sparkData, sparkLabels: debtCard.sparkLabels, sparkColor: "#f43f5e",
+    },
+    {
+      id: "monthly-payments", label: "Monthly payments", icon: CalendarClock, iconTone: "amber", value: payCard.value ?? totalMonthly, currency: displayCurrency,
+      sub: payCard.delta ?? undefined, note: caveat, badgePct: payCard.badgePct, invertTone: true,
+      sparkData: payCard.sparkData, sparkLabels: payCard.sparkLabels, sparkColor: "#f59e0b",
+    },
+    {
+      id: "active-loans", label: "Active loans", icon: ListChecks, iconTone: "indigo", value: <span>{Math.round(activeCard.value ?? activeLoans.length)}</span>,
+      sub: activeCard.delta ?? undefined, badgePct: activeCard.badgePct, invertTone: true,
+      sparkData: activeCard.sparkData, sparkLabels: activeCard.sparkLabels, sparkColor: "#6366f1",
+    },
+  ];
+
   if (loading) return <LoansSkeleton />;
   if (loadError) return <ErrorState title="Couldn't load loans" message="We couldn't load your loans. Please try again." onRetry={load} />;
 
@@ -217,13 +253,8 @@ function LoansPageContent() {
         ),
       }}
     >
-      <MetricGrid
-        metrics={[
-          { label: "Total debt", value: totalDebt, currency: displayCurrency, tone: "neg", sub: caveat },
-          { label: "Monthly payments", value: totalMonthly, currency: displayCurrency, sub: caveat },
-          { label: "Active loans", value: activeLoans.length },
-        ]}
-      />
+      <MetricRangeSelect value={selection} onChange={setSelection} />
+      <MetricGrid metrics={metrics} />
 
       {loans.length === 0 && (
         <EmptyState

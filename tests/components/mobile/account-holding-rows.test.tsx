@@ -75,8 +75,8 @@ describe("NetWorthHero + MetricGrid", () => {
   it("net worth = assets + liabilities; tiles use pos/neg tokens, no raw colors", () => {
     render(<NetWorthHero totalAssets={100} totalLiabilities={-40} currency="USD" />);
     expect(screen.getByText("$60.00")).toBeTruthy();
-    expect(cls(screen.getByText("$100.00"))).toContain("text-pos");
-    expect(cls(screen.getByText("-$40.00"))).toContain("text-neg");
+    expect(screen.getByText("$100.00").closest(".text-pos")).toBeTruthy();
+    expect(screen.getByText("-$40.00").closest(".text-neg")).toBeTruthy();
     expect(document.querySelector("[data-slot=net-worth-hero]")!.innerHTML).not.toMatch(/emerald|rose-/);
   });
 

@@ -463,13 +463,13 @@ export default function AdminSystemPage() {
               metrics={[
                 {
                   label: "Load avg (1 / 5 / 15m)",
-                  text: `${sys.loadavg[0].toFixed(2)} / ${sys.loadavg[1].toFixed(2)} / ${sys.loadavg[2].toFixed(2)}`,
+                  value: `${sys.loadavg[0].toFixed(2)} / ${sys.loadavg[1].toFixed(2)} / ${sys.loadavg[2].toFixed(2)}`,
                   sub: `${((sys.loadavg[0] / sys.cores) * 100).toFixed(0)}% of ${sys.cores} cores`,
                 },
-                { label: "System CPU", text: `${sys.cpuPct.toFixed(0)}%` },
+                { label: "System CPU", value: `${sys.cpuPct.toFixed(0)}%` },
                 {
                   label: "App process CPU",
-                  text: `${sys.procCpuPct.toFixed(0)}%`,
+                  value: `${sys.procCpuPct.toFixed(0)}%`,
                   sub: `RSS ${(sys.rssMb / 1024).toFixed(2)} GB · % of one core`,
                 },
               ]}

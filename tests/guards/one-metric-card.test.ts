@@ -1,0 +1,58 @@
+// One metric card: src/components/metric-card.tsx (the Net Worth design) is the ONLY metric / KPI card. StatTile,
+// MetricTextItem and the dashboard StatCard are gone; MetricGrid is only the layout wrapper that renders MetricCards.
+import { describe, it, expect } from "vitest";
+import * as fs from "fs";
+import * as path from "path";
+
+const SRC = path.join(process.cwd(), "src");
+
+function walk(dir: string, out: string[] = []): string[] {
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    const p = path.join(dir, e.name);
+    if (e.isDirectory()) walk(p, out);
+    else if (/\.(ts|tsx)$/.test(e.name)) out.push(p);
+  }
+  return out;
+}
+const FILES = walk(SRC).map((f) => ({ rel: path.relative(process.cwd(), f).split(path.sep).join("/"), src: fs.readFileSync(f, "utf8") }));
+
+describe("one metric card", () => {
+  it("no file under src imports or defines StatTile / MetricTextItem / StatCard", () => {
+    const hits = FILES.filter((f) => /\b(StatTile|MetricTextItem|StatCard)\b/.test(f.src)).map((f) => f.rel);
+    expect(hits).toEqual([]);
+  });
+
+  it("the old component files are deleted", () => {
+    for (const f of [
+      "src/components/mobile/stat-tile.tsx",
+      "src/components/mobile/chart-metric-grid.tsx",
+      "src/app/(app)/dashboard/_components/stat-card.tsx",
+    ]) {
+      expect(fs.existsSync(path.join(process.cwd(), f)), f).toBe(false);
+    }
+  });
+
+  it("MetricCard is the only component with a badgePct prop (MetricItem is just its config for MetricGrid)", () => {
+    const declares = FILES.filter((f) => /\bbadgePct\??\s*:\s*(number|null)/.test(f.src) || /\bbadgePct\?:/.test(f.src)).map((f) => f.rel).sort();
+    // Data shapes (not components) that carry the same number to a MetricCard: ResolvedCard, SavingsTrend.
+    expect(declares).toEqual([
+      "src/app/(app)/dashboard/_components/key-metrics.tsx",
+      "src/components/metric-card.tsx",
+      "src/components/mobile/metric-grid.tsx",
+      "src/lib/metrics/delta.ts",
+    ]);
+    const card = FILES.find((f) => f.rel === "src/components/metric-card.tsx")!;
+    expect(card.src).toMatch(/export function MetricCard\(/);
+  });
+
+  it("MetricGrid renders MetricCards (no other tile markup)", () => {
+    const grid = FILES.find((f) => f.rel === "src/components/mobile/metric-grid.tsx")!;
+    expect(grid.src).toMatch(/<MetricCard\b/);
+    expect(grid.src).not.toMatch(/from "\.\/stat-tile"/);
+  });
+
+  it("no hand-rolled KPI block in an app page (text-2xl font-bold values outside MetricCard)", () => {
+    const hits = FILES.filter((f) => f.rel.startsWith("src/app/(app)/") && /text-2xl font-(bold|semibold)[^"`]*(tabular-nums|hero-number)/.test(f.src)).map((f) => f.rel);
+    expect(hits).toEqual(["src/app/(app)/reports/page.tsx"]);
+  });
+});

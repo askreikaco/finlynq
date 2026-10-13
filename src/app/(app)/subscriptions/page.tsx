@@ -371,7 +371,7 @@ function SubscriptionsPageContent() {
             currency: displayCurrency,
             sub: `${totals.dueSoonCount} payment${totals.dueSoonCount === 1 ? "" : "s"}`,
           },
-          { label: "Active", text: String(totals.activeCount), sub: `of ${subs.length} tracked` },
+          { label: "Active", value: String(totals.activeCount), sub: `of ${subs.length} tracked` },
         ]}
       />
 

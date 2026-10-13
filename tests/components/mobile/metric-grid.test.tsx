@@ -72,7 +72,7 @@ describe("MetricGrid", () => {
       <MetricGrid
         metrics={[
           { label: "Total debt", value: 1234.5, currency: "USD", tone: "neg" },
-          { label: "FIRE age", text: "Age 65" },
+          { label: "FIRE age", value: "Age 65" },
         ]}
       />,
     );

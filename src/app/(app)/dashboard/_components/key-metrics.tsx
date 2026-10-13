@@ -30,7 +30,20 @@ function toneForDti(pct: number): string {
  */
 export type KeyMetricsData = Pick<HealthData, "savingsRatePct" | "dti">;
 
+/** Savings-rate history derived from the monthly income / expense series (see the dashboard page). */
+export type SavingsTrend = {
+  badgePct: number | null;
+  /** Signed difference line ("+2.5 pp vs last month"); null = previous period not derivable. */
+  delta: string | null;
+  sparkData?: number[];
+  sparkLabels?: string[];
+  /** Replaces the health payload's 3-month figure when a custom range is selected. */
+  value?: number | null;
+};
+
 export interface KeyMetricsProps {
+  /** Savings Rate badge / delta / sparkline. DTI has no monthly series, so it stays value-only. */
+  savingsTrend?: SavingsTrend;
   health: KeyMetricsData | null;
   /** Window caption of the savings rate (dashboard: "last 3 months"). */
   savingsWindow?: string;
@@ -51,11 +64,12 @@ export function KeyMetrics({
   savingsWindow = "last 3 months",
   unavailable,
   tiles = false,
+  savingsTrend,
 }: KeyMetricsProps) {
   const loading = health === null;
   const savings = unavailable?.savings
     ? null
-    : (health?.savingsRatePct ?? null);
+    : (savingsTrend?.value !== undefined ? savingsTrend.value : (health?.savingsRatePct ?? null));
   const dtiPct = unavailable?.dti ? null : (health?.dti?.pct ?? null);
   const dtiReliable = health?.dti?.reliable ?? true;
 
@@ -105,7 +119,12 @@ export function KeyMetrics({
       tone={c.key === "savings" ? "emerald" : "amber"}
       value={c.value}
       valueClassName={c.tone}
-      sub={c.sub}
+      sub={c.key === "savings" && savingsTrend?.delta ? savingsTrend.delta : c.sub}
+      note={c.key === "savings" && savingsTrend?.delta ? c.sub : undefined}
+      badgePct={c.key === "savings" ? savingsTrend?.badgePct : undefined}
+      sparkData={c.key === "savings" ? savingsTrend?.sparkData : undefined}
+      sparkLabels={c.key === "savings" ? savingsTrend?.sparkLabels : undefined}
+      sparkColor="#10b981"
       loading={loading}
     />
   ));

@@ -1,6 +1,7 @@
 import { SectionCard } from "./section-card";
 import { Amount } from "./amount";
-import { StatTile } from "./stat-tile";
+import { MetricCard } from "@/components/metric-card";
+import { Landmark, Wallet } from "lucide-react";
 
 /**
  * Net worth hero: total + Assets / Liabilities tiles. `totalLiabilities` is the signed
@@ -22,8 +23,8 @@ export function NetWorthHero({
         <Amount value={netWorth} currency={currency} size="hero" tone="none" className="block" />
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <StatTile label="Assets" value={<Amount value={totalAssets} currency={currency} size="lg" tone="pos" />} />
-        <StatTile label="Liabilities" value={<Amount value={totalLiabilities} currency={currency} size="lg" tone={totalLiabilities < 0 ? "neg" : "muted"} />} />
+        <MetricCard label="Assets" icon={Wallet} tone="emerald" value={totalAssets} currency={currency} valueClassName="text-pos" />
+        <MetricCard label="Liabilities" icon={Landmark} tone="rose" value={totalLiabilities} currency={currency} valueClassName={totalLiabilities < 0 ? "text-neg" : "text-muted-foreground"} />
       </div>
     </SectionCard>
   );

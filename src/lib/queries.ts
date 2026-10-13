@@ -1236,6 +1236,22 @@ export async function getSpendingByCategoryWithReporting(userId: string, startDa
     .all();
 }
 
+/** Per (account, month) SUM(transactions.amount) for the given accounts, all history (callers accumulate). Numbers only. */
+export async function getMonthlyAccountDeltas(userId: string, accountIds: number[]) {
+  if (!accountIds.length) return [] as Array<{ accountId: number | null; month: string; total: number }>;
+  return db
+    .select({
+      accountId: transactions.accountId,
+      month: monthExpr(transactions.date),
+      total: sql<number>`COALESCE(SUM(${transactions.amount}), 0)`,
+    })
+    .from(transactions)
+    .where(and(eq(transactions.userId, userId), inArray(transactions.accountId, accountIds)))
+    .groupBy(transactions.accountId, monthExpr(transactions.date))
+    .orderBy(monthExpr(transactions.date))
+    .all();
+}
+
 export async function getNetWorthOverTime(userId: string) {
   return db
     .select({

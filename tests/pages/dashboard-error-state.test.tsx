@@ -34,9 +34,19 @@ vi.mock("@/app/(app)/dashboard/_components/insights-section", () => ({ InsightsS
 vi.mock("@/app/(app)/dashboard/_components/animated-number", () => ({
   AnimatedNumber: ({ value }: { value: number }) => <span>{value}</span>,
 }));
-vi.mock("@/app/(app)/dashboard/_components/stat-card", () => ({
-  StatCard: ({ label }: { label: string }) => <div data-testid={`stat-${label}`}>{label}</div>,
-}));
+vi.mock("@/components/metric-card", async (orig) => {
+  const m = await orig<typeof import("@/components/metric-card")>();
+  // The three monthly summary cards become markers; every other card (net worth hero, tiles) stays real.
+  return {
+    ...m,
+    MetricCard: (p: React.ComponentProps<typeof m.MetricCard>) =>
+      ["Monthly Income", "Monthly Expenses", "Budgets"].includes(String(p.label)) ? (
+        <div data-testid={`stat-${String(p.label)}`} data-badge={p.badgePct ?? ""} data-invert={p.invertTone ? "1" : ""}>{p.label}</div>
+      ) : (
+        <m.MetricCard {...p} />
+      ),
+  };
+});
 
 import DashboardPage from "@/app/(app)/dashboard/page";
 
