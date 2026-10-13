@@ -94,13 +94,13 @@ describe("theme tokens: page and card colours", () => {
 });
 
 describe("theme tokens: one card shadow", () => {
-  const SHADOW = "0 12px 28px 0 rgb(0 0 0 / 0.2), 0 2px 4px 0 rgb(0 0 0 / 0.1)";
+  const SHADOW = "0 2px 4px 0 rgb(0 0 0 / 0.1)";
 
-  it.each(["light", "dark"] as Theme[])("--shadow-card is exactly the two owner layers in %s", (theme) => {
+  it.each(["light", "dark"] as Theme[])("--shadow-card is exactly the owner shadow in %s", (theme) => {
     const v = resolvedToken(CSS, "--shadow-card", theme);
     expect(v).toBeDefined();
     expect(v!.replace(/\s+/g, " ").trim()).toBe(SHADOW);
-    expect(v!.split(/,(?![^(]*\))/)).toHaveLength(2);
+    expect(v!.split(/,(?![^(]*\))/)).toHaveLength(1);
   });
 
   it("card glass shadow reads the shared token (no per-surface shadow left)", () => {

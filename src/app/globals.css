@@ -222,7 +222,7 @@ html {
   --glass-glow: oklch(1 0 0 / 24%);
   --glass-edge: inset 0 1px 0 var(--glass-edge-top), inset 0 -1px 0 var(--glass-edge-bottom), 0 0 14px var(--glass-glow);
   /* ONE card shadow for every top-level surface (cards, sections, neutral buttons), both themes. */
-  --shadow-card: 0 12px 28px 0 rgb(0 0 0 / 0.2), 0 2px 4px 0 rgb(0 0 0 / 0.1);
+  --shadow-card: 0 2px 4px 0 rgb(0 0 0 / 0.1);
   /* Liquid glass card: card colour at 72%, light blur. Opaque --card when blur is unsupported or reduced. */
   --glass-card-bg: oklch(1 0 0 / 72%);
   --glass-card-blur: 14px;
@@ -425,11 +425,6 @@ html {
       -webkit-backdrop-filter: none;
       backdrop-filter: none;
     }
-  }
-  /* Shadow budget: the large --shadow-card is for top-level surfaces only. Cards, sections and buttons
-     nested in a card or section keep none (inputs, badges, table cells and list rows never get it). */
-  :is([data-slot="card"], [data-slot="section-card-body"]) :is([data-slot="card"], [data-slot="section-card-body"], [data-slot="button"]) {
-    box-shadow: none;
   }
 }
 
