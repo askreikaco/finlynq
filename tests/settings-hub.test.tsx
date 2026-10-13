@@ -215,7 +215,16 @@ describe("SettingsHub", () => {
     const root = container.firstElementChild as HTMLElement;
     expect(root.className).not.toMatch(/max-w-|mx-auto/);
     const grid = container.querySelector('[data-slot="settings-hub-group"]')?.parentElement as HTMLElement;
-    expect(grid.className).toEqual(expect.stringContaining("regular:grid-cols-2"));
-    expect(grid.className).toEqual(expect.stringContaining("wide:grid-cols-3"));
+    // columns follow the group count: 1 -> 1, 2 -> 2, 3+ -> 3 (cards always fill the width)
+    const n = container.querySelectorAll('[data-slot="settings-hub-group"]').length;
+    if (n >= 3) {
+      expect(grid.className).toEqual(expect.stringContaining("regular:grid-cols-2"));
+      expect(grid.className).toEqual(expect.stringContaining("wide:grid-cols-3"));
+    } else if (n === 2) {
+      expect(grid.className).toEqual(expect.stringContaining("regular:grid-cols-2"));
+      expect(grid.className).not.toContain("wide:grid-cols-3");
+    } else {
+      expect(grid.className).not.toContain("regular:grid-cols-2");
+    }
   });
 });

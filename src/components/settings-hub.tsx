@@ -2,6 +2,7 @@
  * Settings hub page (level 1, every size): grouped inset lists of all settings sections.
  */
 
+import { cn } from "@/lib/utils";
 import { getEntriesBySurface } from "@/lib/nav-config";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
@@ -43,7 +44,15 @@ export function SettingsHub() {
   return (
     <div className="w-full space-y-6">
       <PageHeader title="Settings" />
-      <div className="grid grid-cols-1 items-start gap-6 regular:grid-cols-2 wide:grid-cols-3">
+      <div
+        data-slot="settings-hub-columns"
+        className={cn(
+          "grid grid-cols-1 items-start gap-6",
+          // columns follow the group count (1 -> 1, 2 -> 2, 3+ -> 3) so the cards always fill the width
+          groups.length === 2 && "regular:grid-cols-2",
+          groups.length >= 3 && "regular:grid-cols-2 wide:grid-cols-3",
+        )}
+      >
         {groups.map((group) => (
           <section key={group.title} data-slot="settings-hub-group" className="space-y-2">
             <div className="divide-y divide-border/50 overflow-hidden rounded-2xl bg-card">

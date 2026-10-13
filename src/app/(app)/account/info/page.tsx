@@ -303,7 +303,7 @@ export default function InfoPage() {
   }
 
   return (
-    <div className={TW.grid3}>
+    <div data-slot="account-info-grid" className={`${TW.grid3} [&>*]:min-w-0`}>
       {/* Avatar */}
       <Card>
         <CardHeader>

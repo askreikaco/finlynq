@@ -55,7 +55,11 @@ export function HoldingAccountGroups({
   const ccyOf = (h: EnrichedHolding) => (showNative ? nativeCcyOf(h) : displayCurrency);
 
   return (
-    <div className="grid grid-cols-1 items-start gap-6 wide:grid-cols-2" data-slot="holdings-by-account">
+    <div
+      // a single account fills the whole row; two or more share 2 columns at wide
+      className={`grid grid-cols-1 items-start gap-6${groups.length > 1 ? " wide:grid-cols-2" : ""}`}
+      data-slot="holdings-by-account"
+    >
       {groups.map((g) => (
         <SectionCard key={g.accountName} label={g.accountName} padded={false} className="divide-y divide-border/50 px-3">
           {g.holdings.map((h) => (
