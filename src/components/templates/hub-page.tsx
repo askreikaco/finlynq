@@ -249,8 +249,6 @@ function HubPageBody(props: HubPageProps) {
     className,
     look = "inset",
     sectionLabel = "inset",
-    columns = 1,
-    width = "section",
     padBottom = true,
     back,
     iconSize = "4",
@@ -266,7 +264,7 @@ function HubPageBody(props: HubPageProps) {
 
   if (redirected) return null;
 
-  const rootWidth = width === "form-report" ? `${TW.form} wide:${TW.report}` : TW.section;
+  // Full width on desktop (owner 2026-10-13); `width` is kept for call sites.
   const cardOpts: CardRowOptions = { id, iconSize, chevronSize, activeBg, rowSlot, iconSlot, chevronSlot };
 
   const groupNodes = groups.map((group) => (
@@ -316,18 +314,14 @@ function HubPageBody(props: HubPageProps) {
     <div
       data-testid={`${id}-root`}
       data-slot="hub-page"
-      className={cn("mx-auto w-full space-y-6", rootWidth, padBottom ? TW.formPad : undefined, className)}
+      className={cn("w-full space-y-6", padBottom ? TW.formPad : undefined, className)}
     >
       <PageHeader title={title} backHref={back?.href} backLabel={back?.label} />
       <React.Suspense fallback={null}>
         {header ? <div data-slot="hub-header">{header}</div> : null}
-        {columns === "wide-2" ? (
-          <div data-slot="hub-columns" className="grid gap-6 wide:grid-cols-2">
-            {groupNodes}
-          </div>
-        ) : (
-          groupNodes
-        )}
+        <div data-slot="hub-columns" className={TW.grid3}>
+          {groupNodes}
+        </div>
         {!hasRows && empty ? <div data-slot="hub-empty">{empty}</div> : null}
         {footer ? <div data-slot="hub-footer">{footer}</div> : null}
       </React.Suspense>

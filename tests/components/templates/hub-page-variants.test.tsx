@@ -40,7 +40,7 @@ describe("HubPage variants: defaults", () => {
   it("default root className is the literal today's string", () => {
     render(<HubPage id="more" title="More" groups={groups} />);
     expect(screen.getByTestId("more-root").className).toBe(
-      "mx-auto w-full space-y-6 max-w-section pb-[var(--form-bottom-pad)]",
+      "w-full space-y-6 pb-[var(--form-bottom-pad)]",
     );
   });
 
@@ -50,7 +50,7 @@ describe("HubPage variants: defaults", () => {
     expect(main.querySelector('[data-slot="inset-group"]')).not.toBeNull();
     expect(main.querySelector(".divide-y")).toBeNull();
     expect(main.getAttribute("data-slot")).toBe("hub-group");
-    expect(screen.getByTestId("more-root").querySelector('[data-slot="hub-columns"]')).toBeNull();
+    expect(screen.getByTestId("more-root").querySelector('[data-slot="hub-columns"]')).toHaveClass("grid", "grid-cols-1", "regular:grid-cols-2", "wide:grid-cols-3", "items-start");
   });
 
   it("default section label is the inset header", () => {
@@ -204,18 +204,17 @@ describe("HubPage variants: section labels", () => {
 });
 
 describe("HubPage variants: layout", () => {
-  it("columns wide-2 wraps the groups in a two-column grid", () => {
+  it("groups sit in the 1 / 2 / 3 column grid (regular / wide), whatever `columns` says", () => {
     render(<HubPage id="p" title="P" columns="wide-2" groups={groups} />);
     const cols = screen.getByTestId("p-root").querySelector('[data-slot="hub-columns"]');
-    expect(cols).toHaveClass("grid", "gap-6", "wide:grid-cols-2");
+    expect(cols).toHaveClass("grid", "gap-6", "regular:grid-cols-2", "wide:grid-cols-3");
     expect(cols?.querySelectorAll('[data-slot="hub-group"]')).toHaveLength(2);
   });
 
-  it("width form-report sets max-w-form and wide:max-w-report, not max-w-section", () => {
+  it("width form-report no longer caps the root (full width on desktop)", () => {
     render(<HubPage id="p" title="P" width="form-report" padBottom={false} groups={groups} />);
     const root = screen.getByTestId("p-root");
-    expect(root).toHaveClass("max-w-form", "wide:max-w-report");
-    expect(root).not.toHaveClass("max-w-section");
+    expect(root.className).not.toMatch(/max-w-/);
   });
 
   it("padBottom false removes the form bottom pad", () => {
@@ -225,7 +224,7 @@ describe("HubPage variants: layout", () => {
 
   it("className is appended to the root", () => {
     render(<HubPage id="p" title="P" className="regular:p-6" groups={groups} />);
-    expect(screen.getByTestId("p-root")).toHaveClass("regular:p-6", "max-w-section");
+    expect(screen.getByTestId("p-root")).toHaveClass("regular:p-6");
   });
 
   it("back renders a back link to back.href", () => {

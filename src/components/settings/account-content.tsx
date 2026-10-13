@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Key, RefreshCw, Eye, EyeOff, FileText, Check, Shield, Lock, Mail, Download, Upload, AlertTriangle } from "lucide-react";
+import { TW } from "@/lib/design/tokens";
 import { TwoFactor } from "@/app/(app)/settings/account/_components/two-factor";
 import { SignInMethods } from "@/app/(app)/settings/account/_components/sign-in-methods";
 import { TrustedDevices } from "@/app/(app)/settings/account/_components/trusted-devices";
@@ -268,12 +269,13 @@ export function AccountContent({
   }
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="w-full space-y-6">
       {!hideHeader && <PageHeader
           title="Account"
           subtitle={<>Login, API key, privacy, and backup / restore</>}
         />}
 
+      <div className={TW.grid3}>
       {/* Security Section */}
       <TwoFactor />
       <Suspense fallback={null}>
@@ -567,6 +569,7 @@ export function AccountContent({
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

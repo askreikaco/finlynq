@@ -127,7 +127,7 @@ export function CategoryForm({
 
   if (!loading && isRename && loadError) {
     return (
-      <div className={`mx-auto w-full ${TW.form}`}>
+      <div className={"w-full"}>
         <PageHeader title={title} backHref={returnTo} backLabel="Back" className="flex items-center justify-between" />
         <p className="mt-6 text-sm text-destructive">{loadError}</p>
       </div>
@@ -135,7 +135,7 @@ export function CategoryForm({
   }
 
   const formNode = (
-    <form onSubmit={handleSubmit} noValidate className={`mt-3 space-y-4 ${TW.formPad}`}>
+    <form onSubmit={handleSubmit} noValidate className={`mt-3 space-y-4 ${TW.form} ${TW.formPad}`}>
       {formError && (
         <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-lg">
           <AlertTriangle className="h-4 w-4 shrink-0" />
@@ -204,7 +204,7 @@ export function CategoryForm({
   if (!chrome) return formNode;
 
   return (
-    <div data-testid="category-form-root" className={`mx-auto w-full ${TW.form}`}>
+    <div data-testid="category-form-root" className={"w-full"}>
       <PageHeader title={title} backHref={returnTo} backLabel="Back" className="flex items-center justify-between" />
       {formNode}
     </div>

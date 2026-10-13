@@ -215,7 +215,7 @@ export function TransactionSplitForm({
   return (
     <div
       data-testid="tx-split-root"
-      className={cn("mx-auto w-full", TW.form, padRowId !== null && "pointer-coarse:pb-[209px]")}
+      className={cn("w-full", padRowId !== null && "pointer-coarse:pb-[209px]")}
     >
       <PageHeader
         title="Split transaction"
@@ -235,7 +235,7 @@ export function TransactionSplitForm({
         }
       />
 
-      <div className={`mt-3 space-y-3 px-4 ${TW.formPad}`}>
+      <div className={`mt-3 space-y-3 px-4 ${TW.form} ${TW.formPad}`}>
         <ListCard>
           <FormRow variant="custom" label="Total amount" labelWidth="narrow" height="tall">
             <span className="font-mono font-semibold text-foreground">{formatCurrency(parentAbs, currency)}</span>

@@ -35,7 +35,7 @@ import { FormPage, type FormPageProps, type FormPageStateContext } from "@/compo
 type Goal = { id: number; name: string };
 type Values = { name: string };
 
-const ROOT_DEFAULT_BAR = "mx-auto w-full max-w-form pb-[var(--form-bottom-pad)]";
+const ROOT_DEFAULT_BAR = "w-full pb-[var(--form-bottom-pad)]";
 
 const loadCfg = {
   load: { key: "/api/goals", select: (list: Goal[], id: string) => list.find((g) => g.id === Number(id)) },

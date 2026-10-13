@@ -65,6 +65,7 @@ export default function DeveloperSettingsPage() {
       padBottom="none"
       minW0={false}
       suspense={false}
+      grid
     >
 
       <Card>
@@ -107,6 +108,7 @@ export default function DeveloperSettingsPage() {
         </CardContent>
       </Card>
 
+      <div className="col-span-full">
       <Accordion value={tab} onValueChange={setTab}>
         <AccordionItem
           value="data"
@@ -119,6 +121,7 @@ export default function DeveloperSettingsPage() {
           </div>
         </AccordionItem>
       </Accordion>
+      </div>
     </SectionPage>
   );
 }

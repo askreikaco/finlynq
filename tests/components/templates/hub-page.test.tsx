@@ -40,7 +40,7 @@ describe("HubPage", () => {
   it("renders the root testid, the global header title and the wrapper tokens", () => {
     render(<HubPage id="more" title="More" groups={groups} />);
     const root = screen.getByTestId("more-root");
-    expect(root).toHaveClass("max-w-section");
+    expect(root).not.toHaveClass("max-w-section");
     expect(root).toHaveClass("pb-[var(--form-bottom-pad)]");
     expect(within(root).getByRole("heading", { name: "More" })).toBeInTheDocument();
   });

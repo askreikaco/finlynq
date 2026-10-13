@@ -33,6 +33,10 @@ export const TW = {
   report: "max-w-report",
   doc: "max-w-doc",
   console: "max-w-console",
+  /** Independent cards on desktop: 1 col phone, 2 at regular, 3 at wide. A full-row card adds col-span-full. */
+  grid3: "grid grid-cols-1 items-start gap-6 regular:grid-cols-2 wide:grid-cols-3",
+  /** Prose line length for text-heavy doc pages (the prose element only, never the page root). */
+  prose: "max-w-prose",
   formPad: "pb-[var(--form-bottom-pad)]",
   formPadMax: "pb-[var(--form-bottom-pad-max)]",
   blurSoft: "blur-soft",

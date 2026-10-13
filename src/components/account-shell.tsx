@@ -40,7 +40,7 @@ export function AccountShell({ children }: { children: React.ReactNode }) {
   const showBackButton = !isHub;
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="w-full space-y-6">
       {/* Header */}
       <PageHeader
         title="Account"

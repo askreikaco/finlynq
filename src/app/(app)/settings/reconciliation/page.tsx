@@ -149,6 +149,7 @@ export default function ReconciliationSettingsPage() {
       padBottom="none"
       minW0={false}
       suspense={false}
+      grid
     >
 
       <Card>
@@ -254,9 +255,11 @@ export default function ReconciliationSettingsPage() {
         </CardContent>
       </Card>
 
+      <div className="col-span-full">
       <Accordion value={tab} onValueChange={setTab}>
         <ImportTemplatesItem />
       </Accordion>
+      </div>
     </SectionPage>
   );
 }

@@ -78,7 +78,7 @@ function EditLoanPage() {
   }
 
   return (
-    <div data-testid="loan-edit-root" className={`mx-auto w-full ${TW.form}`}>
+    <div data-testid="loan-edit-root" className="w-full">
       <PageHeader
         title="Edit loan"
         backHref={returnTo}
@@ -86,7 +86,7 @@ function EditLoanPage() {
         className="flex items-center justify-between"
         overflow={[{ label: "Delete loan", icon: Trash2, destructive: true, onSelect: () => setConfirmDelete(true) }]}
       />
-      <div className={`mt-3 ${TW.formPad} space-y-3`}>
+      <div className={`mt-3 ${TW.form} ${TW.formPad} space-y-3`}>
         {deleteError && <p role="alert" className="text-sm text-destructive">{deleteError}</p>}
         <LoanForm
           key={loan.id}
