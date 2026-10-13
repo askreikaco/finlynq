@@ -423,7 +423,7 @@ export default function AdminPage() {
           <MetricGrid
             metrics={[
               { label: "Total Users", value: stats.totalUsers },
-              { label: "Transactions", text: stats.totalTransactions.toLocaleString() },
+              { label: "Transactions", value: stats.totalTransactions.toLocaleString() },
               { label: "New (7d)", value: stats.registrationsLast7Days },
               { label: "MFA Enabled", value: stats.mfaEnabledUsers },
             ]}

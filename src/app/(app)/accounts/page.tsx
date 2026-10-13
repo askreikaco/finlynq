@@ -35,7 +35,7 @@ import {
 import { HEADER_DESKTOP_ONLY, CustomizeCardsSheet, Amount, ListRow, metricGridClass, useCardLayout, usePageCustomize } from "@/components/mobile";
 import { SectionPage } from "@/components/templates/section-page";
 import type { PageCard } from "@/lib/card-layout";
-import { StatCard } from "@/app/(app)/dashboard/_components/stat-card";
+import { MetricCard } from "@/components/metric-card";
 import { NetWorthHeroCard } from "@/app/(app)/dashboard/_components/net-worth-hero-card";
 import { deriveSeriesChange, type SeriesPoint } from "@/lib/dashboard/series-change";
 
@@ -387,24 +387,24 @@ export default function AccountsPage() {
           ),
           summary: (
             <div data-slot="accounts-summary" className={`${metricGridClass(2)} regular:contents`}>
-              <StatCard
+              <MetricCard
                 label="Total Assets"
                 value={totalAssetsConverted}
                 currency={displayCurrency}
                 icon={TrendingUp}
-                iconBg="bg-pos/10 text-pos"
+                tone="bg-pos/10 text-pos"
                 sparkColor="#10b981"
                 sparkData={assetsSeries.sparkData}
                 sparkLabels={assetsSeries.sparkLabels}
                 badgePct={assetsSeries.change != null ? assetsSeries.changePct : null}
                 sub={assetsSeries.change != null ? "vs last month" : ""}
               />
-              <StatCard
+              <MetricCard
                 label="Total Liabilities"
                 value={totalLiabilitiesConverted}
                 currency={displayCurrency}
                 icon={TrendingDown}
-                iconBg="bg-destructive/10 text-destructive"
+                tone="bg-destructive/10 text-destructive"
                 sparkColor="#f43f5e"
                 sparkData={liabilitiesSeries.sparkData}
                 sparkLabels={liabilitiesSeries.sparkLabels}

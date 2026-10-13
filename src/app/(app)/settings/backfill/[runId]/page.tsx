@@ -1841,21 +1841,21 @@ function CoverageDashboard({ coverage, proposals }: { coverage: Coverage; propos
     <SectionCard label="Canonicalization coverage">
       <MetricGrid
         metrics={[
-          { label: "Investment accounts", text: String(coverage.accountCount) },
-          { label: "Total transactions", text: String(coverage.totalTxs) },
+          { label: "Investment accounts", value: String(coverage.accountCount) },
+          { label: "Total transactions", value: String(coverage.totalTxs) },
           {
             label: "Canonical (kind set + paired)",
-            text: `${coverage.canonicalTxs} / ${coverage.totalTxs}`,
+            value: `${coverage.canonicalTxs} / ${coverage.totalTxs}`,
             sub: `${coverage.canonicalPct}%`,
           },
           {
             label: "Pending (needs backfill)",
-            text: String(coverage.nonCanonicalTxs),
+            value: String(coverage.nonCanonicalTxs),
             sub: coverage.totalTxs > 0 ? `${100 - coverage.canonicalPct}%` : undefined,
           },
           {
             label: "Not investment txs (no holding)",
-            text: String(coverage.nonInvestmentRows ?? 0),
+            value: String(coverage.nonInvestmentRows ?? 0),
             sub: (coverage.nonInvestmentRows ?? 0) > 0 ? "review & move/delete" : undefined,
           },
         ]}

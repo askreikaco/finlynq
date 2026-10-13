@@ -221,7 +221,7 @@ function StrategyCard({ title, hint, data, currency }: { title: string; hint: st
         <MetricGrid
           metrics={[
             { label: "Total Interest", value: data.totalInterest, currency, tone: "neg" },
-            { label: "Months to Debt-Free", text: String(data.totalMonths) },
+            { label: "Months to Debt-Free", value: String(data.totalMonths) },
           ]}
         />
         <div className="divide-y divide-border/50">
@@ -369,7 +369,7 @@ function IncomeSide({ label, data, currency }: { label: string; data: IncomeChan
           { label: "Annual Income", value: data.annualIncome, currency },
           { label: "Monthly Take-Home", value: data.monthlyNet, currency },
           { label: "Monthly Savings", value: data.monthlySavings, currency },
-          { label: "Savings Rate", text: `${data.savingsRate}%` },
+          { label: "Savings Rate", value: `${data.savingsRate}%` },
         ]}
       />
     </SectionCard>
