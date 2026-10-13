@@ -1,5 +1,11 @@
 import type { MonthPoint } from "./period";
-import { cumulate, monthEndBalances, sumByMonth, valueAt } from "./series";
+import { cumulate, monthEndBalances, shiftMonth, sumByMonth, valueAt } from "./series";
+
+/** A lifetime total is 0 before its first row: add that real zero point so the first month has a previous month. */
+function lifetime(flow: MonthPoint[]): MonthPoint[] {
+  const cum = cumulate(flow);
+  return cum.length > 0 ? [{ month: shiftMonth(cum[0].month, -1), value: 0 }, ...cum] : cum;
+}
 
 export type PerfSeries = { currency: string; series: ReadonlyArray<{ date: string; marketValue: number; costBasis: number }> };
 export type DividendSeriesRow = { date: string; reportingAmount: number | null; reportingCurrency: string | null };
@@ -40,10 +46,10 @@ export function buildPortfolioSeries(input: {
 
   const divOk = dividends != null && dividends.every((r) => r.reportingAmount != null && (r.reportingCurrency ?? ccy).toUpperCase() === ccy);
   const divFlow = divOk ? sumByMonth(dividends, (r) => r.date, (r) => r.reportingAmount ?? 0, throughMonth) : [];
-  const dividendsCum = cumulate(divFlow);
+  const dividendsCum = lifetime(divFlow);
   const gainOk = gains != null && gains.every((r) => r.realizedGainInBase != null);
   const gainFlow = gainOk ? sumByMonth(gains, (r) => r.closeDate, (r) => r.realizedGainInBase ?? 0, throughMonth) : [];
-  const realizedCum = cumulate(gainFlow);
+  const realizedCum = lifetime(gainFlow);
 
   const totalReturn =
     usable && divOk && gainOk

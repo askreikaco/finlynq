@@ -55,6 +55,22 @@ import { isCashGroup } from "./accounts/groups";
 import { applyInvestmentMarketOverlay } from "./accounts/investment-balance-overlay";
 import { getHoldingsValueByAccount, verifyHoldingDecryptHealth } from "./holdings-value";
 import {
+  buildCandidates,
+  buildHealthSeries,
+  composeHealthScore,
+  gradeFor,
+  scoreAgeOfMoney,
+  scoreBudgetAdherence,
+  scoreDti,
+  scoreEmergencyFund,
+  scoreNetWorthTrend,
+  scoreSavingsRate,
+  type HealthComponent,
+  type HealthExclusion,
+  type HealthMonthPoint,
+} from "./health/score";
+import { loadHealthMonthInputs } from "./health/history";
+import {
   computeDebtService,
   type DebtServiceLoan,
   type UntrackedLiabilityAccount,
@@ -95,37 +111,9 @@ function asRows(result: unknown): Array<Record<string, unknown>> {
 // truth, reused by the cash-flow forecast + chat balance summary. Extend the
 // list THERE rather than reverting to a local copy or substring matching.
 
-// Canonical weights (must sum to 1.0).
-export const HEALTH_WEIGHTS = {
-  savingsRate: 0.25,
-  dti: 0.2,
-  emergencyFund: 0.15,
-  netWorthTrend: 0.15,
-  budgetAdherence: 0.15,
-  ageOfMoney: 0.1,
-} as const;
-
-export type NetWorthTrendDetail = {
-  direction: "up" | "down" | "flat";
-  magnitudePct: number;
-  descriptor: string;
-};
-
-export type HealthComponent = {
-  name: string;
-  score: number;
-  weight: number;
-  weighted: number;
-  detail: string;
-  /** Structured detail (only Net Worth Trend today). MCP-surface field. */
-  detailRich?: NetWorthTrendDetail;
-};
-
-export type HealthExclusion = {
-  name: string;
-  reason: string;
-  detail: string;
-};
+// Scoring formulas, weights and the shared types live in the pure ./health/score (also used for the monthly series).
+export { HEALTH_WEIGHTS } from "./health/score";
+export type { NetWorthTrendDetail, HealthComponent, HealthExclusion } from "./health/score";
 
 export type HealthTotals = {
   totalIncome3m: TaggedAmount;
@@ -171,6 +159,11 @@ export type HealthPayload = {
    */
   netWorthBasis: "market" | "ledger";
   netWorthNote?: string;
+  /**
+   * Month-by-month score, savings rate and DTI (oldest first; the last point is the current month and equals the
+   * figures above). Only present when `historyMonths` was requested.
+   */
+  history?: HealthMonthPoint[];
 };
 
 export type CalculateFinancialHealthArgs = {
@@ -186,11 +179,12 @@ export type CalculateFinancialHealthArgs = {
    */
   dek: Buffer | null;
   reportingCurrency: string;
+  /**
+   * Also evaluate the score at each of this many previous month ends (0 / omitted = off, the default: MCP and every
+   * other caller are unchanged). The result carries `history` (oldest first, ending with the current month).
+   */
+  historyMonths?: number;
 };
-
-function gradeFor(score: number): HealthPayload["grade"] {
-  return score >= 80 ? "Excellent" : score >= 60 ? "Good" : score >= 40 ? "Fair" : "Needs Work";
-}
 
 /**
  * Compute the 6-component financial health score for `userId`.
@@ -205,7 +199,7 @@ function gradeFor(score: number): HealthPayload["grade"] {
 export async function calculateFinancialHealth(
   args: CalculateFinancialHealthArgs,
 ): Promise<HealthPayload> {
-  const { db, userId, dek, reportingCurrency } = args;
+  const { db, userId, dek, reportingCurrency, historyMonths = 0 } = args;
   const reporting = reportingCurrency.toUpperCase();
 
   const now = new Date();
@@ -248,14 +242,7 @@ export async function calculateFinancialHealth(
     if (r.cat_type === "I") totalIncome += converted;
     if (r.cat_type === "E") totalExpenses += Math.abs(converted);
   }
-  const savingsRateScore =
-    totalIncome > 0
-      ? Math.min(100, Math.max(0, ((totalIncome - totalExpenses) / totalIncome) * 500))
-      : 0;
-  const savingsRateDetail =
-    totalIncome > 0
-      ? `${Math.round(((totalIncome - totalExpenses) / totalIncome) * 100)}% savings rate`
-      : "No income data";
+  const savings = scoreSavingsRate(totalIncome, totalExpenses);
 
   // ── 2. Debt-to-Income (trailing 12 months) ─────────────────────────────
   // Issue #235: annualizing 3-month income distorts in months with skewed
@@ -334,14 +321,6 @@ export async function calculateFinancialHealth(
   });
 
   const debtPayments12m = debtService.total;
-  const dtiRatio = income12m > 0 ? debtPayments12m / income12m : null;
-  const dtiScore =
-    dtiRatio !== null
-      ? Math.min(100, Math.max(0, (1 - dtiRatio) * 100))
-      : debtPayments12m === 0
-        ? 100
-        : 0;
-
   // The old 1.2×-liabilities anomaly backstop is GONE. It existed to catch a
   // numerator that could exceed everything the user owed, which was a symptom
   // of the mis-signed predicate above — measured firing on our own demo data.
@@ -351,13 +330,7 @@ export async function calculateFinancialHealth(
   // now carries a MEANINGFUL caveat instead: false when at least one revolving
   // account hit the pay-in-full cap, i.e. we ESTIMATED its debt service from
   // the balance it carries rather than measuring it from payments.
-  const dtiReliable = debtService.reliable;
-  const dtiDetail =
-    dtiRatio !== null
-      ? `${Math.round(dtiRatio * 100)}% debt-to-income (12m)`
-      : debtPayments12m === 0
-        ? "No debt payments (12m)"
-        : "No income data (12m)";
+  const dti = scoreDti(income12m, debtPayments12m, debtService.reliable);
 
   // ── 3. Emergency Fund + 4. Net Worth Trend (account-balance roll-up) ──
   //
@@ -425,16 +398,7 @@ export async function calculateFinancialHealth(
   // way; `dtiReliable` carries the meaningful caveat now.)
 
   const avgMonthlyExpenses = totalExpenses / 3;
-  const emergencyScore =
-    avgMonthlyExpenses > 0
-      ? Math.min(100, Math.max(0, (liquidAssets / avgMonthlyExpenses / 6) * 100))
-      : liquidAssets > 0
-        ? 50
-        : 0;
-  const emergencyDetail =
-    avgMonthlyExpenses > 0
-      ? `${(liquidAssets / avgMonthlyExpenses).toFixed(1)} months covered`
-      : "No expense data";
+  const emergency = scoreEmergencyFund(liquidAssets, avgMonthlyExpenses);
 
   // ── 4. Net Worth Trend (3-month delta) ─────────────────────────────────
   const ninetyDaysAgo = new Date(now.getTime() - 90 * 86400000);
@@ -488,23 +452,7 @@ export async function calculateFinancialHealth(
     : 0;
   const insufficientHistory = !oldestStr || oldestAgeDays < 60;
 
-  const nwAbsBase = Math.max(Math.abs(nwToday), Math.abs(nwPast), 1);
-  const nwDelta = nwToday - nwPast;
-  const nwMagnitudePct = insufficientHistory ? 0 : Math.round((nwDelta / nwAbsBase) * 1000) / 10;
-  const nwDirection: NetWorthTrendDetail["direction"] = insufficientHistory
-    ? "flat"
-    : Math.abs(nwMagnitudePct) < 0.5
-      ? "flat"
-      : nwMagnitudePct > 0
-        ? "up"
-        : "down";
-  const nwDescriptor = insufficientHistory
-    ? "Not enough history"
-    : nwDirection === "flat"
-      ? "Flat over the last 3 months"
-      : `${nwDirection === "up" ? "Up" : "Down"} ${Math.abs(nwMagnitudePct).toFixed(1)}% over the last 3 months`;
-  // Score: -10% magnitude → 0, +10% → 100, flat → 50.
-  const nwScore = insufficientHistory ? 0 : Math.min(100, Math.max(0, 50 + nwMagnitudePct * 5));
+  const netWorthTrend = scoreNetWorthTrend(nwToday, nwPast, insufficientHistory);
 
   // ── 5. Budget Adherence (current month) ────────────────────────────────
   const budgetsData = asRows(await db.execute(sql`
@@ -520,138 +468,50 @@ export async function calculateFinancialHealth(
   const budgetOnTrackCount = budgetsData.filter(
     (b) => Number(b.spent) <= Math.abs(Number(b.budget)),
   ).length;
-  const budgetScore = budgetsData.length > 0 ? (budgetOnTrackCount / budgetsData.length) * 100 : 0;
-  const budgetDetail =
-    budgetsData.length > 0 ? `${budgetOnTrackCount}/${budgetsData.length} on track` : "No budgets set";
+  const budget = scoreBudgetAdherence(budgetOnTrackCount, budgetsData.length);
 
   // ── 6. Age of Money (FIFO income-to-expense matching) ──────────────────
-  let aomScore = 50;
-  let aomDetail = "Insufficient data";
   let aomAgeDays = 0;
   let aomTrend = 0;
   try {
     const aom = await calculateAgeOfMoney(userId);
     aomAgeDays = aom.ageInDays;
     aomTrend = aom.trend;
-    if (aom.ageInDays > 0) {
-      aomScore = Math.min(100, Math.max(0, (aom.ageInDays / 30) * 100));
-      aomDetail = `${aom.ageInDays} days`;
-      if (aom.trend > 0) aomDetail += ` (+${aom.trend}d trend)`;
-      else if (aom.trend < 0) aomDetail += ` (${aom.trend}d trend)`;
-    }
   } catch {
     // Keep defaults (50/insufficient) on calculator failure.
   }
-  const aomExcluded = aomAgeDays <= 0;
+  const ageOfMoney = scoreAgeOfMoney(aomAgeDays, aomTrend);
 
   // ── Compose + renormalize ─────────────────────────────────────────────
-  type Candidate = {
-    name: string;
-    scoreRaw: number;
-    weightCanonical: number;
-    detail: string;
-    detailRich?: NetWorthTrendDetail;
-    excluded: boolean;
-    excludeReason?: string;
-  };
-
-  const candidates: Candidate[] = [
-    {
-      name: "Savings Rate",
-      scoreRaw: savingsRateScore,
-      weightCanonical: HEALTH_WEIGHTS.savingsRate,
-      detail: savingsRateDetail,
-      excluded: false,
-    },
-    {
-      name: "Debt-to-Income",
-      scoreRaw: dtiScore,
-      weightCanonical: HEALTH_WEIGHTS.dti,
-      detail: !dtiReliable
-        ? `${dtiDetail} — card payments above the balance carried are counted as spending, not debt service`
-        : dtiDetail,
-      excluded: false,
-      excludeReason: undefined,
-    },
-    {
-      name: "Emergency Fund",
-      scoreRaw: emergencyScore,
-      weightCanonical: HEALTH_WEIGHTS.emergencyFund,
-      detail: emergencyDetail,
-      excluded: false,
-    },
-    {
-      name: "Net Worth Trend",
-      scoreRaw: nwScore,
-      weightCanonical: HEALTH_WEIGHTS.netWorthTrend,
-      detail: nwDescriptor,
-      detailRich: { direction: nwDirection, magnitudePct: nwMagnitudePct, descriptor: nwDescriptor },
-      excluded: insufficientHistory,
-      excludeReason: insufficientHistory ? "insufficient_history" : undefined,
-    },
-    {
-      name: "Budget Adherence",
-      scoreRaw: budgetScore,
-      weightCanonical: HEALTH_WEIGHTS.budgetAdherence,
-      detail: budgetDetail,
-      excluded: budgetsData.length === 0,
-      excludeReason: budgetsData.length === 0 ? "no_budgets" : undefined,
-    },
-    {
-      name: "Age of Money",
-      scoreRaw: aomScore,
-      weightCanonical: HEALTH_WEIGHTS.ageOfMoney,
-      detail: aomDetail,
-      excluded: aomExcluded,
-      excludeReason: aomExcluded ? "insufficient_data" : undefined,
-    },
-  ];
-
-  const keptWeightSum = candidates
-    .filter((c) => !c.excluded)
-    .reduce((s, c) => s + c.weightCanonical, 0);
-
-  type ComponentWithRaw = HealthComponent & { weightedRaw: number };
-  const kept: ComponentWithRaw[] = candidates
-    .filter((c) => !c.excluded)
-    .map((c) => {
-      const weight = keptWeightSum > 0 ? c.weightCanonical / keptWeightSum : 0;
-      const weightedRaw = c.scoreRaw * weight;
-      const out: ComponentWithRaw = {
-        name: c.name,
-        score: Math.round(c.scoreRaw),
-        weight: Math.round(weight * 1000) / 1000,
-        weighted: Math.round(weightedRaw),
-        detail: c.detail,
-        weightedRaw,
-      };
-      if (c.detailRich) out.detailRich = c.detailRich;
-      return out;
-    });
-
-  const totalScoreRaw = kept.reduce((s, c) => s + c.weightedRaw, 0);
-  const totalScore = Math.round(Math.min(100, Math.max(0, totalScoreRaw)));
-
-  const excludedComponents: HealthExclusion[] = candidates
-    .filter((c) => c.excluded)
-    .map((c) => ({
-      name: c.name,
-      reason: c.excludeReason ?? "excluded",
-      detail: c.detail,
-    }));
-
-  const components: HealthComponent[] = kept.map(({ weightedRaw: _wr, ...rest }) => rest);
+  const { score: totalScore, components, excludedComponents } = composeHealthScore(
+    buildCandidates({ savings, dti, emergency, netWorth: netWorthTrend, budget, ageOfMoney }),
+  );
 
   // FINLYNQ-291 — standalone headline percentages for the dashboard metrics strip.
   // Savings rate reuses the 3-month income/expense window (same basis as the
   // Savings Rate component); DTI reuses the trailing-12m ratio. `dti.reliable`
   // is the negation of the anomaly backstop so the UI can present a caveated
   // figure instead of a suspect number when payments exceed outstanding debt.
-  const savingsRatePct =
-    totalIncome > 0
-      ? Math.round(((totalIncome - totalExpenses) / totalIncome) * 100)
-      : null;
-  const dtiPct = dtiRatio !== null ? Math.round(dtiRatio * 100) : null;
+  const savingsRatePct = savings.ratePct;
+  const dtiPct = dti.pct;
+
+  let history: HealthMonthPoint[] | undefined;
+  if (historyMonths > 0) {
+    try {
+      const inputs = await loadHealthMonthInputs({
+        db, userId, reporting, fxFor, loans: debtLoans, marketApplied: marked.marketApplied, today, months: historyMonths,
+        loadUntracked: (from, to) => loadUntrackedLiabilities(db, userId, from, to, { boundPaymentsAtEnd: true }),
+      });
+      history = [
+        ...buildHealthSeries(inputs),
+        // The current month IS the live figures, so the last point always ties to the card's value.
+        { month: currentMonth, score: totalScore, savingsRatePct, dtiPct },
+      ];
+    } catch (e) {
+      // The series is an enhancement: never take the score down with it.
+      console.warn("[financial-health] history failed:", e instanceof Error ? e.message : e);
+    }
+  }
 
   return {
     score: totalScore,
@@ -660,7 +520,7 @@ export async function calculateFinancialHealth(
     excludedComponents,
     reportingCurrency: reporting,
     savingsRatePct,
-    dti: { pct: dtiPct, reliable: dtiReliable },
+    dti: { pct: dtiPct, reliable: dti.reliable },
     netWorthBasis,
     netWorthNote: marked.note,
     totals: {
@@ -676,6 +536,7 @@ export async function calculateFinancialHealth(
       ageOfMoneyDays: aomAgeDays,
       ageOfMoneyTrendDays: aomTrend,
     },
+    ...(history ? { history } : {}),
   };
 }
 
@@ -692,7 +553,10 @@ export async function loadUntrackedLiabilities(
   userId: string,
   twelveStart: string,
   today: string,
+  /** Also bound the realized payments at `today` (a past window end). The live call leaves it off. */
+  opts: { boundPaymentsAtEnd?: boolean } = {},
 ): Promise<UntrackedLiabilityAccount[]> {
+  const paymentsUpperBound = opts.boundPaymentsAtEnd ? sql`AND t.date <= ${today}` : sql``;
   // Built from the exported const so the rule has ONE definition (the test
   // pins it). `t.kind IS NULL` must be spelled out: `NULL NOT IN (...)` is NULL,
   // not true, and would silently drop every ordinary un-kinded transaction.
@@ -739,6 +603,7 @@ export async function loadUntrackedLiabilities(
       AND a.type = 'L'
       AND a.invisible = false
       AND t.amount > 0
+      ${paymentsUpperBound}
       AND (t.kind IS NULL OR t.kind NOT IN (${nonDebtServiceKinds}))
       AND NOT EXISTS (
         SELECT 1 FROM loans l

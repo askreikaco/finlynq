@@ -6,6 +6,7 @@ import { Activity } from "lucide-react";
 import { MetricCard } from "@/components/metric-card";
 import type { HealthData } from "./types";
 import { HealthInfoDialog } from "./health-info-dialog";
+import type { MetricTrend } from "./key-metrics";
 
 const itemVariants = {
   hidden: { opacity: 0, y: 16 },
@@ -18,7 +19,8 @@ const itemVariants = {
  * skips its own request. When the prop is omitted the card self-fetches, keeping
  * it usable standalone.
  */
-export function HealthScoreCard({ health: healthProp }: { health?: HealthData | null } = {}) {
+
+export function HealthScoreCard({ health: healthProp, trend }: { health?: HealthData | null; trend?: MetricTrend } = {}) {
   const [healthState, setHealthState] = useState<HealthData | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const health = healthProp !== undefined ? healthProp : healthState;
@@ -56,7 +58,18 @@ export function HealthScoreCard({ health: healthProp }: { health?: HealthData | 
           tone={toneName}
           value={health ? <span>{Math.round(health.score)}</span> : <span className="inline-block h-7 w-24 animate-shimmer rounded-md align-middle" />}
           valueClassName={health ? (health.score > 70 ? "text-pos" : health.score >= 40 ? "text-warning" : "text-destructive") : ""}
-          sub={health ? <span>{health.grade} ⓘ</span> : <span className="inline-block h-4 w-16 animate-shimmer rounded-md" />}
+          sub={
+            health
+              ? trend?.delta
+                ? <span>{trend.delta}</span>
+                : <span>{health.grade} ⓘ</span>
+              : <span className="inline-block h-4 w-16 animate-shimmer rounded-md" />
+          }
+          note={health && trend?.delta ? <span>{health.grade} ⓘ</span> : undefined}
+          badgePct={health ? trend?.badgePct : undefined}
+          sparkData={health ? trend?.sparkData : undefined}
+          sparkLabels={health ? trend?.sparkLabels : undefined}
+          sparkColor="#6366f1"
         />
       </div>
       {health ? (
