@@ -16,6 +16,25 @@ const FONT_FOUC_SCRIPT = `(function(){try{var k=localStorage.getItem("pf-font");
  *  DensityProvider syncs state after mount. storageKey must match DENSITY_STORAGE_KEY. */
 const DENSITY_FOUC_SCRIPT = `(function(){try{var k=localStorage.getItem("pf-density");if(k==="compact"){document.documentElement.setAttribute("data-density",k)}}catch(e){}})();`;
 
+/** iOS launch images (solid #1c1c1d, 512 icon centred). Media queries match the device
+ *  CSS size and DPR; a device with no match falls back to the plain background colour. */
+const APPLE_STARTUP_IMAGES: { url: string; media: string }[] = [
+  // iPhone SE (2nd/3rd gen), 8, 7, 6s
+  { url: "/splash/splash-750x1334.png", media: "(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" },
+  // iPhone 11, XR
+  { url: "/splash/splash-828x1792.png", media: "(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" },
+  // iPhone 12, 13, 14
+  { url: "/splash/splash-1170x2532.png", media: "(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" },
+  // iPhone 14 Pro, 15, 15 Pro, 16
+  { url: "/splash/splash-1179x2556.png", media: "(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" },
+  // iPhone 12 Pro Max, 13 Pro Max
+  { url: "/splash/splash-1284x2778.png", media: "(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" },
+  // iPhone 14 Plus, 15 Plus, 15 Pro Max
+  { url: "/splash/splash-1290x2796.png", media: "(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" },
+  // iPhone 16 Plus, 16 Pro Max
+  { url: "/splash/splash-1320x2868.png", media: "(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" },
+];
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: "Finlynq: open-source personal finance with a first-party MCP server",
@@ -34,7 +53,7 @@ export const metadata: Metadata = {
   ],
   icons: {
     icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
-    apple: "/apple-touch-icon.png",
+    apple: [{ url: "/icons/apple-touch-icon-180.png", sizes: "180x180", type: "image/png" }],
   },
   manifest: "/manifest.webmanifest",
   formatDetection: {
@@ -42,8 +61,11 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
+    // Opaque status bar (not the translucent variant): scrolled content passes under the
+    // status bar because body padding only covers the at-rest position. See tests/ios/statusbar.test.ts.
     statusBarStyle: "black",
     title: "Finlynq",
+    startupImage: APPLE_STARTUP_IMAGES,
   },
   openGraph: {
     type: "website",
@@ -72,8 +94,8 @@ export const viewport: Viewport = {
   // Chrome Android honours this (Safari ignores it); the keyboard inset hook covers iOS.
   interactiveWidget: "resizes-content",
   themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#0b0e11" },
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: light)", color: "#f2f4f7" },
+    { media: "(prefers-color-scheme: dark)", color: "#1c1c1d" },
   ],
 };
 
