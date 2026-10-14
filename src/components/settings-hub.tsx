@@ -2,7 +2,8 @@
  * Settings hub page (level 1, every size): grouped inset lists of all settings sections.
  */
 
-import { CardLabel, groupLabelIcon } from "@/components/mobile/card-label";
+import { CardLabel } from "@/components/mobile/card-label";
+import { groupLabelIcon } from "@/components/mobile/group-label-icon";
 import { cn } from "@/lib/utils";
 import { getEntriesBySurface } from "@/lib/nav-config";
 import Link from "next/link";

@@ -55,7 +55,7 @@ function PortfolioNewInner() {
         return (
           <section key={group.key}>
             <div className="@container [&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-hidden rounded-2xl bg-card">
-              <CardLabel as="h2" icon={Layers} tone="indigo">{group.label}</CardLabel>
+              <CardLabel as="h2" slot="section-label" icon={Layers} tone="indigo">{group.label}</CardLabel>
               {ops.map((o) => {
                 const Icon = o.icon;
                 return (

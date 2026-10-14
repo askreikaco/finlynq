@@ -25,7 +25,8 @@ import { cn } from "@/lib/utils";
 import { TW } from "@/lib/design/tokens";
 import { PageHeader } from "@/components/mobile/page-header";
 import { InsetGroup, InsetRow } from "@/components/mobile/inset-group";
-import { CardLabel, groupLabelIcon } from "@/components/mobile/card-label";
+import { CardLabel } from "@/components/mobile/card-label";
+import { groupLabelIcon } from "@/components/mobile/group-label-icon";
 
 export interface HubRow {
   id: string;

@@ -17,7 +17,8 @@ import Link from "next/link";
 import { ChevronRight, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
-import { CardLabel, groupLabelIcon, type MetricTone } from "./card-label";
+import { CardLabel, type MetricTone } from "./card-label";
+import { groupLabelIcon } from "./group-label-icon";
 
 /* ---------- section header ---------- */
 

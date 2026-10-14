@@ -189,7 +189,7 @@ describe("ListCard", () => {
       </ListCard>,
     );
     const card = screen.getByTestId("card");
-    expectClass(card, "rounded-2xl", "border", "border-border", "bg-card", "divide-y", "divide-border", "overflow-hidden");
+    expectClass(card, "rounded-2xl", "border", "border-border", "bg-card", "[&>*:not(:last-child)]:shadow-[var(--list-divider)]", "overflow-hidden");
     expect(card.textContent).toContain("row");
   });
 
