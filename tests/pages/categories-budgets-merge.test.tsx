@@ -10,6 +10,13 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, cleanup, fireEvent, waitFor, within } from "@testing-library/react";
 
 const H = vi.hoisted(() => ({
+  SIZE: { v: "regular" as string },
+  SELECT: undefined as unknown as ReturnType<typeof import("vitest").vi.fn>,
+  FETCHED: [] as string[],
+  INCOME: {
+    month: "2026-10", partial: true, windowMonths: ["2026-08", "2026-09", "2026-10"], total: 900, averageTotal: null, displayCurrency: "USD", type: "I",
+    categories: [{ id: 7, name: "Salary", group: "", amount: 900, share: 1, average: null, change: null, budget: null, trend: [900, 900, 900] }],
+  } as unknown,
   REPORT: {
     month: "2026-10", partial: true, windowMonths: ["2026-08", "2026-09", "2026-10"], total: 530, averageTotal: null, displayCurrency: "USD", type: "E",
     categories: [
@@ -32,7 +39,14 @@ vi.mock("next/navigation", () => ({
 vi.mock("next/link", () => ({ default: ({ children, href, ...p }: React.PropsWithChildren<{ href: string }>) => React.createElement("a", { href, ...p }, children) }));
 vi.mock("@/components/adaptive/size-class-context", async (orig) => ({
   ...(await orig<typeof import("@/components/adaptive/size-class-context")>()),
-  useAppSizeClass: () => "regular",
+  useAppSizeClass: () => H.SIZE.v,
+}));
+vi.mock("@/components/mobile/list-detail-layout", async (orig) => ({
+  ...(await orig<typeof import("@/components/mobile/list-detail-layout")>()),
+  useListDetail: () => ({
+    split: H.SIZE.v === "wide", sel: { kind: "none" }, selectedId: null, isNew: false,
+    select: H.SELECT, selectNew: vi.fn(), clear: vi.fn(), replaceWith: vi.fn(),
+  }),
 }));
 vi.mock("@/lib/client/user-storage", async (orig) => ({
   ...(await orig<typeof import("@/lib/client/user-storage")>()),
@@ -48,7 +62,8 @@ vi.mock("@/lib/utils/date", async (orig) => ({ ...(await orig<typeof import("@/l
 vi.mock("@/lib/data/use-cache-first", () => ({
   useCacheFirstJson: (url: string | null) => {
     if (!url) return { data: undefined, loading: false, error: false, reload: () => {} };
-    if (url.startsWith("/api/reports/categories")) return { data: { data: H.REPORT }, loading: false, error: false, reload: () => {} };
+    H.FETCHED.push(url);
+    if (url.startsWith("/api/reports/categories")) return url.includes("type=I") ? { data: { data: H.INCOME }, loading: false, error: false, reload: () => {} } : { data: { data: H.REPORT }, loading: false, error: false, reload: () => {} };
     if (url.startsWith("/api/budgets/series")) {
       return { data: { series: [{ month: "2026-09", budget: 450, spent: 330 }, { month: "2026-10", budget: 500, spent: 400 }] }, loading: false, error: false, reload: () => {} };
     }
@@ -70,7 +85,8 @@ const ROOT = process.cwd();
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), "utf-8");
 const PAGE = "src/app/(app)/categories/_page-content.tsx";
 
-afterEach(() => cleanup());
+H.SELECT = vi.fn();
+afterEach(() => { cleanup(); H.SIZE.v = "regular"; H.FETCHED.length = 0; H.SELECT.mockClear(); });
 
 describe("shared CategoryRow", () => {
   it("source: group header and category both render through CategoryRow; the old bespoke row/header are gone", () => {
@@ -201,7 +217,7 @@ describe("budget tools in More", () => {
     const src = read(PAGE);
     expect(src).not.toContain("budget-tools");
     expect(src).not.toContain("{budgetTools}");
-    expect(src).toContain("overflow={isIncome ? undefined : overflow}");
+    expect(src).toContain("overflow={isIncome && !twoCol ? undefined : overflow}");
   });
 });
 
@@ -247,5 +263,63 @@ describe("/budgets is merged into /categories", () => {
     const budgets = NAV_REGISTRY.filter((e) => e.path === "/budgets");
     expect(budgets.every((e) => e.surfaces.length === 0 && !e.rail)).toBe(true);
     expect(NAV_REGISTRY.filter((e) => e.surfaces.length > 0).map((e) => e.label)).not.toContain("Budgets");
+  });
+});
+
+describe("Spending + Income in two columns (regular+), tabs on phones", () => {
+  it("regular: Spending left and Income right, each with its heading, pie card and list; no Spending / Income toggle", () => {
+    render(<CategoriesPageContent />);
+    const cols = Array.from(document.querySelectorAll('[data-slot="categories-column"]'));
+    expect(cols.map((c) => c.getAttribute("data-type"))).toEqual(["E", "I"]);
+    const [sp, inc] = cols;
+    expect(within(sp as HTMLElement).getByText("Spending")).toBeTruthy();
+    expect(sp.querySelector('[data-slot="categories-column-label"]')!.textContent).toContain("$530.00");
+    expect(inc.querySelector('[data-slot="categories-column-label"]')!.textContent).toContain("Income");
+    expect(inc.querySelector('[data-slot="categories-column-label"]')!.textContent).toContain("$900.00");
+    expect(within(sp as HTMLElement).getByText("Coffee")).toBeTruthy();
+    expect(within(inc as HTMLElement).getByText("Salary")).toBeTruthy();
+    expect(within(inc as HTMLElement).queryByText("Coffee")).toBeNull();
+    expect(sp.querySelectorAll('[data-slot="section-card"]')).toHaveLength(2); // share + categories
+    expect(inc.querySelectorAll('[data-slot="section-card"]')).toHaveLength(2);
+    expect(screen.queryByRole("tab", { name: "Spending" })).toBeNull();
+    expect(screen.queryByRole("tab", { name: "Income" })).toBeNull();
+    // metric cards stay the three spending cards, full width above the columns
+    expect(Array.from(document.querySelectorAll('[data-testid^="metric-"]'))).toHaveLength(3);
+    expect(document.querySelector('[data-slot="categories-columns"]')!.className).toContain("grid-cols-2");
+  });
+
+  it("both types are fetched through the cache-first hook at once (no extra fetch on switching)", () => {
+    render(<CategoriesPageContent />);
+    expect(H.FETCHED.some((u) => u.includes("/api/reports/categories") && u.includes("type=E"))).toBe(true);
+    expect(H.FETCHED.some((u) => u.includes("/api/reports/categories") && u.includes("type=I"))).toBe(true);
+  });
+
+  it("compact (phone): the Spending / Income tabs stay and ONE list shows; both types are still loaded", () => {
+    H.SIZE.v = "compact";
+    render(<CategoriesPageContent />);
+    expect(screen.getByRole("tab", { name: "Spending" })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: "Income" })).toBeTruthy();
+    expect(document.querySelectorAll('[data-slot="categories-column"]')).toHaveLength(0);
+    expect(screen.getAllByText("Coffee").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Salary")).toBeNull();
+    expect(H.FETCHED.some((u) => u.includes("type=I"))).toBe(true);
+  });
+
+  it("wide: the split pane is a third column; a row tap selects into it (no navigation) and ?edit= is not a sheet", () => {
+    H.SIZE.v = "wide";
+    render(<CategoriesPageContent />);
+    expect(document.querySelector('[data-slot="list-detail"]')).toBeTruthy();
+    expect(screen.getByTestId("list-detail-pane")).toBeTruthy();
+    expect(document.querySelectorAll('[data-slot="categories-column"]')).toHaveLength(2);
+    fireEvent.click(screen.getByRole("link", { name: /Coffee/ }));
+    expect(H.SELECT).toHaveBeenCalledWith(3);
+    expect(screen.getByRole("link", { name: "Add" })).toBeTruthy();
+  });
+
+  it("source: pane wiring is one block (paneBody) using the shared CategoryBudgetForm", () => {
+    const src = read(PAGE);
+    expect(src).toContain("ListDetailLayout");
+    expect(src.match(/pane=\{paneBody\}/g)).toHaveLength(1);
+    expect(src.match(/<CategoryBudgetForm\b/g)).toHaveLength(2); // pane + below-wide sheet
   });
 });

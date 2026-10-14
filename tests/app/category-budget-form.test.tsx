@@ -98,10 +98,10 @@ describe("CategoryBudgetForm", () => {
 describe("one form, one page", () => {
   const page = fs.readFileSync(path.join(ROOT, "src/app/(app)/categories/_page-content.tsx"), "utf-8");
 
-  it("the page renders the shared form once and has a topbar Add that opens it", () => {
-    expect(page.match(/<CategoryBudgetForm\b/g)).toHaveLength(1);
+  it("the page renders the shared form in the wide pane and the below-wide sheet, and has a topbar Add that opens it", () => {
+    expect(page.match(/<CategoryBudgetForm\b/g)).toHaveLength(2);
     expect(page).toContain('href="/categories?edit=new"');
-    expect(page).toMatch(/aria-label="Add"/);
+    expect(page).toMatch(/<ListDetailNewButton href="\/categories\?edit=new" label="Add"/);
     expect(page).toContain("setEdit(c.id)");
   });
 
