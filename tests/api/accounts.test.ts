@@ -4,6 +4,28 @@ vi.mock("@/lib/auth/require-auth", () => ({
   requireAuth: vi.fn(async () => ({ authenticated: true, context: { userId: "default", method: "passphrase" as const, mfaVerified: false, dek: Buffer.alloc(32, 0xaa), sessionId: "test-session-jti" } })),
 }));
 
+// The route reaches the DB only through data-version (ETag + version bump),
+// withDbTransaction and the family sweep. Replace those seams; checkETag keeps
+// its real contract (auth first, 401 passthrough, authContext out).
+vi.mock("@/db", () => ({
+  db: {},
+  schema: {},
+  withDbTransaction: async <T,>(fn: () => Promise<T>) => fn(),
+}));
+vi.mock("@/lib/data-version", async () => {
+  const { requireAuth } = await import("@/lib/auth/require-auth");
+  return {
+    checkETag: vi.fn(async (request: unknown) => {
+      const auth = await requireAuth(request as never);
+      if (!auth.authenticated) return { response: auth.response };
+      return { authContext: auth.context, etag: undefined, dataVersion: 1 };
+    }),
+    withEtagHeaders: (r: unknown) => r,
+    incrementDataVersion: vi.fn(async () => undefined),
+  };
+});
+vi.mock("@/lib/family/sweep", () => ({ enqueueFamilySweep: vi.fn() }));
+
 const mockGetAccounts = vi.fn();
 const mockCreateAccount = vi.fn();
 vi.mock("@/lib/queries", () => ({

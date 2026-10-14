@@ -26,6 +26,10 @@ vi.mock("@/db", () => ({
   db: new Proxy({}, {
     get: (_t, prop) => mockDbChain[prop as string] ?? vi.fn().mockReturnValue(mockDbChain),
   }),
+  // Real signature: runs fn inside one PG transaction. The chain mock has no
+  // transaction, so passthrough keeps the callback semantics (fn result returned,
+  // throw propagates) that the route relies on.
+  withDbTransaction: async <T,>(fn: () => Promise<T>) => fn(),
   schema: {
     transactionRules: {
       id: "id", name: "name", conditions: "conditions", actions: "actions",
@@ -37,6 +41,21 @@ vi.mock("@/db", () => ({
     portfolioHoldings: { id: "id", nameCt: "nameCt", userId: "userId" },
   },
 }));
+
+// checkETag/incrementDataVersion normally hit users.data_version; keep the
+// checkETag contract (auth first, 401 passthrough) without the DB read.
+vi.mock("@/lib/data-version", async () => {
+  const { requireAuth } = await import("@/lib/auth/require-auth");
+  return {
+    checkETag: vi.fn(async (request: unknown) => {
+      const auth = await requireAuth(request as never);
+      if (!auth.authenticated) return { response: auth.response };
+      return { authContext: auth.context, etag: undefined, dataVersion: 1 };
+    }),
+    withEtagHeaders: (r: unknown) => r,
+    incrementDataVersion: vi.fn(async () => undefined),
+  };
+});
 
 vi.mock("@/lib/crypto/encrypted-columns", () => ({
   decryptName: () => null,
