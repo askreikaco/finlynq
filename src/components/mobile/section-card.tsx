@@ -16,6 +16,7 @@ export function SectionCard({
   tone,
   action,
   cardClassName,
+  labelPlacement = "inside",
   className,
   children,
   padded = true,
@@ -32,6 +33,8 @@ export function SectionCard({
   action?: React.ReactNode;
   /** Classes for the outer card element when a label is present (tints, borders); `className` styles the content area. */
   cardClassName?: string;
+  /** "inside" (default): the label is the card's first row. "outside": a small heading above the card box (like InsetGroup `headerPlacement`). */
+  labelPlacement?: "inside" | "outside";
   padded?: boolean;
   children?: React.ReactNode;
 }) {
@@ -39,6 +42,19 @@ export function SectionCard({
     return (
       <section data-slot="section-card" {...props}>
         <div data-slot="section-card-body" className={cn(CARD_SURFACE, padded && "p-4", className)}>
+          {children}
+        </div>
+      </section>
+    );
+  }
+  if (labelPlacement === "outside") {
+    return (
+      <section data-slot="section-card" data-label-placement="outside" {...props}>
+        <h2 data-slot="section-card-label-outside" className="mb-2 flex items-center justify-between gap-2 px-4 text-sm font-medium text-muted-foreground">
+          <span className="min-w-0 truncate">{label}</span>
+          {action}
+        </h2>
+        <div data-slot="section-card-body" className={cn(CARD_SURFACE, "@container", cardClassName, padded && "p-4", className)}>
           {children}
         </div>
       </section>
