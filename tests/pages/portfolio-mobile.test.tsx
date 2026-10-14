@@ -94,7 +94,7 @@ describe("Portfolio summary and holdings cards (one page, every size)", () => {
     expect(summary).toBeTruthy();
     expect(summary.querySelector("[class*='md:hidden']")).toBeNull();
     // The Total value hero is the ONE MetricCard (hero size); the range control sits above it.
-    expect(summary.querySelector("[data-slot=metric-range]")).toBeTruthy();
+    expect(document.querySelector("[data-slot=metric-range]")).toBeTruthy();
     const hero = summary.querySelector("[data-testid=metric-total-value]") as HTMLElement;
     expect(within(hero).getByText(formatCurrency(65500000, "VND"))).toBeTruthy();
     expect(within(hero).getByText(/\+.*100,000.*\(\+0\.15%\)/)).toBeTruthy();
@@ -154,10 +154,10 @@ describe("Portfolio summary and holdings cards (one page, every size)", () => {
     expect(within(dlg).getByRole("link", { name: "View transactions" }).getAttribute("href")).toContain("/transactions?");
   });
 
-  it("the type chips in the page toolbar filter the holding rows", () => {
+  it("the toolbar search filters the holding rows", () => {
     render(<PortfolioPage />);
-    const group = screen.getByRole("group", { name: "Filter holdings by type" });
-    fireEvent.click(within(group).getByRole("button", { name: /^Cash/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "cash" } });
     expect(allRows().map((r) => r.getAttribute("aria-label"))).toEqual(["Cash · VND"]);
   });
 

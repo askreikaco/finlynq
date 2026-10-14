@@ -15,7 +15,7 @@ import { formatPercent } from "@/lib/locale";
 import { MetricItemCard, type MetricItem } from "@/components/mobile";
 import { MetricCard } from "@/components/metric-card";
 import { Coins, Landmark, Layers, Percent, PiggyBank, TrendingUp, Wallet } from "lucide-react";
-import { MetricRangeSelect } from "@/components/metric-range-select";
+import { PageToolbar } from "@/components/page-toolbar";
 import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { cardProps, makeCardResolver } from "@/lib/metrics/series";
 import { NO_HISTORY_CAPTION } from "@/lib/metrics/delta";
@@ -39,11 +39,13 @@ type SummaryMetric = MetricItem & {
   regularOnly?: boolean;
 };
 
-export function PortfolioSummary({ summary, currency }: { summary: OverviewData["summary"]; currency: string }) {
+export function PortfolioSummary({ summary, currency, range }: { summary: OverviewData["summary"]; currency: string; range?: ReturnType<typeof useMetricRange> }) {
   const sources = usePortfolioMetricSources(currency);
   const hasBasis = summary.hasQuantityData && summary.totalCostBasisDisplay > 0;
   // Every card: this month vs last month by default, or the selected range vs the one before (src/lib/metrics).
-  const metricRange = useMetricRange();
+  // The page owns the range (and renders the PageToolbar) so its toolbar is one row; standalone, the summary brings its own.
+  const ownRange = useMetricRange();
+  const metricRange = range ?? ownRange;
   const card = makeCardResolver(metricRange, currency);
   const series = buildPortfolioSeries({
     perf: sources.perf,
@@ -76,7 +78,7 @@ export function PortfolioSummary({ summary, currency }: { summary: OverviewData[
   const metrics = rawMetrics.map((m) => (m.sub ? m : { ...m, sub: NO_HISTORY_CAPTION }));
   return (
     <div data-slot="portfolio-summary" className="space-y-3">
-      <MetricRangeSelect value={metricRange.selection} onChange={metricRange.setSelection} />
+      {!range && <PageToolbar range={{ selection: metricRange.selection, onChange: metricRange.setSelection }} />}
       <div data-testid="metric-total-value" className="min-w-0">
         <MetricCard
           label="Total value"

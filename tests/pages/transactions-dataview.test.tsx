@@ -116,12 +116,12 @@ describe("Transactions: one list at every width", () => {
     expect(screen.queryByTitle("Click to sort")).toBeNull();
   });
 
-  it("the compact sort control sets the sort column and the direction toggle flips it", () => {
+  it("sort lives on the filter page: no inline sort control, the toolbar has range, search and (via the top bar) Filter", () => {
     size.current = "compact";
     render(<TransactionsWorkspace />);
-    expect(screen.getByTestId("tx-sort-select")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Sorted descending. Sort ascending" }));
-    expect(H.SET_SORT).toHaveBeenLastCalledWith({ columnId: "date", direction: "asc" });
+    expect(screen.queryByTestId("tx-sort-select")).toBeNull();
+    expect(screen.getByLabelText("Time range")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Search" })).toBeTruthy();
   });
 });
 
@@ -153,18 +153,18 @@ describe("Transactions: row tap opens the detail sheet", () => {
 });
 
 describe("Transactions: bulk selection is a mode of the one list", () => {
-  it("row checkboxes appear only while Select is on; Done selecting clears the selection", () => {
+  it("row checkboxes appear only while Select is on; toggling Edit list off clears the selection", () => {
     size.current = "regular";
     render(<TransactionsWorkspace />);
     expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
 
-    fireEvent.click(screen.getByRole("button", { name: "Select" }));
+    fireEvent.click(screen.getByRole("button", { name: "Edit list" }));
     const rowBoxes = screen.getAllByRole("checkbox").filter((el) => el.getAttribute("title") !== "Select all");
     expect(rowBoxes.length).toBe(3);
     fireEvent.click(rowBoxes[0]);
     expect(screen.getByText("1 selected")).toBeTruthy();
 
-    fireEvent.click(screen.getByRole("button", { name: "Done selecting" }));
+    fireEvent.click(screen.getByRole("button", { name: "Edit list" }));
     expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
     expect(screen.queryByText("1 selected")).toBeNull();
   });
@@ -172,7 +172,7 @@ describe("Transactions: bulk selection is a mode of the one list", () => {
   it("Select all selects every row; the bulk bar offers the bulk actions", () => {
     size.current = "compact";
     render(<TransactionsWorkspace />);
-    fireEvent.click(screen.getByRole("button", { name: "Select" }));
+    fireEvent.click(screen.getByRole("button", { name: "Edit list" }));
     fireEvent.click(screen.getByTitle("Select all"));
     expect(screen.getByText("3 selected")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Apply" })).toBeTruthy();
@@ -254,11 +254,11 @@ describe("Transactions: static guards for the one-layout rule", () => {
     }
   });
 
-  it("the list keeps the offline Waiting-to-sync badge and the Search and filter link", async () => {
+  it("the list keeps the offline Waiting-to-sync badge and the PageToolbar", async () => {
     expect(read(LIST)).toContain("<PendingSyncBadge mark={t.pendingSync} />");
     size.current = "compact";
     render(<TransactionsWorkspace />);
-    await waitFor(() => expect(screen.getByText("Search and filter").closest("a")).toBeTruthy());
+    await waitFor(() => expect(screen.getByLabelText("Time range")).toBeTruthy());
     expect(within(document.body).getByText("Export CSV")).toBeTruthy();
   });
 });

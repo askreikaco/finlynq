@@ -2,7 +2,8 @@
   "family": "misc",
   "unmigrated": [
     "src/app/(app)/chat/page.tsx",
-    "src/app/(app)/dev/gallery/page.tsx"
+    "src/app/(app)/dev/gallery/page.tsx",
+    "src/app/(app)/filter/[list]/page.tsx"
   ],
   "chrome": {
     "src/app/(app)/chat/page.tsx": {

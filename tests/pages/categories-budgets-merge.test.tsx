@@ -7,7 +7,7 @@ import * as React from "react";
 import * as fs from "fs";
 import * as path from "path";
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, cleanup, fireEvent, within } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent, waitFor, within } from "@testing-library/react";
 
 const H = vi.hoisted(() => ({
   REPORT: {
@@ -98,7 +98,8 @@ describe("shared CategoryRow", () => {
       expect(r.querySelector('[data-slot="category-delta"]')).toBeTruthy();
       expect(r.querySelector('[role="progressbar"]')).toBeTruthy();
     }
-    const [group, rent, power, coffee] = rows;
+    // Name A-Z is the default sort: Coffee, then the Housing group, whose children are Power, Rent
+    const [coffee, group, power, rent] = rows;
     // group = rollup of its children: 300 + 100 spent, 400 + 100 budget -> $100 left, +$50 (last month 350)
     expect(group.textContent).toContain("Housing");
     expect(group.querySelector('[data-slot="category-amount"]')!.textContent).toBe("$400.00");
@@ -115,9 +116,9 @@ describe("Edit mode and column alignment", () => {
   it("no row has an edit icon; the topbar Edit toggle makes category rows open the shared form (?edit=<id>)", () => {
     render(<CategoriesPageContent />);
     expect(screen.queryAllByRole("button", { name: /^Edit: / })).toHaveLength(0);
-    expect(document.querySelectorAll("svg.lucide-pencil").length).toBe(1); // only the topbar Edit button
-    const toggle = screen.getByRole("button", { name: "Edit" });
-    expect(toggle.closest('[data-slot="header-capsule"]')).toBeTruthy(); // same group as the customize button
+    expect(document.querySelectorAll("svg.lucide-pencil").length).toBe(0); // no pencil anywhere
+    const toggle = screen.getByRole("button", { name: "Edit list" }); // the shared PageHeader bulkEdit button
+    expect(toggle.closest('[data-slot="header-capsule"]')).toBeTruthy();
     expect(screen.getByRole("link", { name: "Add" }).getAttribute("href")).toBe("/categories?edit=new");
     fireEvent.click(toggle);
     expect(toggle.getAttribute("aria-pressed")).toBe("true");
@@ -131,6 +132,39 @@ describe("Edit mode and column alignment", () => {
     expect(src).toContain('py-3 pl-4 pr-11'); // = group trigger px-4 + chevron slot
     expect(src).not.toMatch(/ROW_LINK\} pl-8/);
     expect(read("src/app/(app)/categories/_components/category-row.tsx")).toContain('indent ? " pl-5"');
+  });
+});
+
+describe("toolbar wiring", () => {
+  it("range + month are ONE PageToolbar row with search; the Filter icon is in the top bar with the Edit list toggle and yellow Add", () => {
+    render(<CategoriesPageContent />);
+    const bar = document.querySelector('[data-slot="page-header"]')!;
+    expect(bar.querySelector('[aria-label="Filter"]')).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Edit list/i })).toBeTruthy();
+    expect(screen.getByLabelText("Time range")).toBeTruthy();
+    expect(screen.getByTestId("month-label")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Search" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "More actions" })).toBeNull(); // no 3-dot menu
+    // the page's own range / month row is gone: the old toolbar's month buttons do not exist
+    expect(screen.queryByRole("button", { name: "Previous month" })).toBeTruthy(); // PageToolbar's MonthSwitcher
+  });
+
+  it("search narrows the list (the pie and totals stay the whole month)", async () => {
+    render(<CategoriesPageContent />);
+    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+    fireEvent.change(screen.getByLabelText("Search"), { target: { value: "coff" } });
+    await waitFor(() => expect(screen.queryByText("Housing")).toBeNull());
+    expect(screen.getAllByText("Coffee").length).toBeGreaterThan(0);
+    expect(screen.getByTestId("metric-total-budget").textContent).toContain("$500.00");
+  });
+
+  it("the categories filter config: Name (default A-Z) and Amount sorts, budget status filter", async () => {
+    const { FILTER_CONFIGS, CATEGORY_SORTS, CATEGORY_FILTER_KEYS } = await import("@/lib/toolbar/list-configs");
+    expect(CATEGORY_SORTS.map((o) => o.key)).toEqual(["name", "amount"]);
+    expect(CATEGORY_FILTER_KEYS).toEqual(["budget"]);
+    const f = FILTER_CONFIGS.categories.fields[0];
+    expect(f.kind === "segment" && f.options.map((o) => o.value)).toEqual(["", "with", "none", "over"]);
+    expect(FILTER_CONFIGS.categories.fallbackReturnTo).toBe("/categories");
   });
 });
 

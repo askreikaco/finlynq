@@ -4,6 +4,8 @@ import React, { useEffect, useRef, useState } from "react";
 import { DevModeGuard } from "@/components/dev-mode-guard";
 import { useSizeClass } from "@/components/ui/size-class";
 import { PageHeader } from "@/components/mobile/page-header";
+import { PageToolbar } from "@/components/page-toolbar";
+import type { RangeSelection } from "@/lib/metrics/period";
 import { SectionCard } from "@/components/mobile/section-card";
 import { CARD_ROW_GRID } from "@/components/mobile/section-card";
 import { SectionLabel } from "@/components/mobile/section-label";
@@ -323,6 +325,14 @@ function GalleryContent() {
             <p className="px-1 text-[11px] text-muted-foreground">Live PageHeader: top of this page.</p>
           </Group>
 
+          <Group id="toolbar" title="Page toolbar" file="page-toolbar.tsx · mobile/page-header.tsx actions" span>
+            <ToolbarDemo />
+            <p className="px-1 text-[11px] text-muted-foreground">
+              Toolbar: range, month, search, filter. Top bar actions, right to left: primary (Add / Edit), then at most 2 of
+              [bulk edit or Filter] and [More]; with bulk edit, Filter moves inside More. Customize cards is a More item.
+            </p>
+          </Group>
+
           <Group id="pages" title="Page patterns" file="components/templates/*.tsx">
             <SectionCard label="Templates">
               <ul className="space-y-1 text-sm">
@@ -471,6 +481,18 @@ function GalleryContent() {
  * Dev gallery: review catalogue of the global components and styles.
  * Hidden unless the user enables dev mode (DevModeGuard).
  */
+function ToolbarDemo() {
+  const [sel, setSel] = useState<RangeSelection>({ range: "this_month" });
+  const [q, setQ] = useState("");
+  return (
+    <PageToolbar
+      range={{ selection: sel, onChange: setSel }}
+      search={{ value: q, onChange: setQ }}
+      filter={{ href: "/filter/goals?returnTo=%2Fdev%2Fgallery", activeCount: 2 }}
+    />
+  );
+}
+
 export default function GalleryPage() {
   return (
     <DevModeGuard>

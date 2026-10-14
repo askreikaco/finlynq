@@ -47,7 +47,7 @@ import {
   useCardLayout, usePageCustomize, type MetricItem,
 } from "@/components/mobile";
 import type { PageCard } from "@/lib/card-layout";
-import { MetricRangeSelect } from "@/components/metric-range-select";
+import { PageToolbar } from "@/components/page-toolbar";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { compareCaption, resolvePeriod, RANGE_LABELS } from "@/lib/metrics/period";
@@ -223,7 +223,7 @@ function CategoryPageContent() {
   const nodes: Record<string, ReactNode> = {
     summary: (
       <div className="space-y-3">
-        <MetricRangeSelect value={metricRange.selection} onChange={metricRange.setSelection} />
+        <PageToolbar range={{ selection: metricRange.selection, onChange: metricRange.setSelection }} />
         <MetricGrid metrics={summaryMetrics} />
       </div>
     ),

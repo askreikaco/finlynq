@@ -7,6 +7,7 @@ export const GALLERY_SECTIONS = [
   { id: "forms", label: "Inputs / Select / Combobox" },
   { id: "overlays", label: "Dialogs / Sheets" },
   { id: "topbar", label: "Top bar" },
+  { id: "toolbar", label: "Page toolbar" },
   { id: "pages", label: "Page patterns" },
   { id: "charts", label: "Sparkline / Progress" },
   { id: "states", label: "Empty / Error / Alert" },

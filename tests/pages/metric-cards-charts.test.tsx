@@ -911,6 +911,8 @@ describe("/reports summary cards", () => {
       if (u.includes("/api/net-worth-history")) return json({ series: [{ date: "2026-08-31", value: 500 }, { date: "2026-09-30", value: 700 }, { date: "2026-10-08", value: 800 }] });
       return { ok: false, status: 404, json: async () => null };
     }));
+    // Reports default to this year; these tiles are about the month-vs-last-month default, so ask for it.
+    if (!H.search) H.search = "range=this_month";
     const { default: ReportsPage } = await import("@/app/(app)/reports/page");
     render(<ReportsPage />);
     await screen.findAllByText("Total Income");
@@ -923,7 +925,7 @@ describe("/reports summary cards", () => {
     await waitFor(() => expect(tileOf("Total Income").textContent).toMatch(/\+\$200\.00 vs last month/));
     const income = tileOf("Total Income");
     expect(income.textContent).toContain("+20.0%");
-    expect(income.textContent).toMatch(/\d{4}-01-01 to \d{4}-\d{2}-\d{2}: \$50,000/);
+    expect(income.textContent).toMatch(/\d{4}-\d{2}-01 to \d{4}-\d{2}-\d{2}: \$50,000/);
     expect(income.querySelectorAll("[data-spark]").length).toBeGreaterThan(0);
     // spending down = green (inverted)
     expect(tileOf("Total Expenses").textContent).toMatch(/-\$100\.00 vs last month/);

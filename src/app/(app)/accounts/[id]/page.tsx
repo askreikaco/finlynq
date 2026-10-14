@@ -34,12 +34,12 @@ import type { Mode } from "@/components/inbox/modes";
 import { NetWorthHistoryChart } from "@/components/net-worth-history-chart";
 import { MetricCard } from "@/components/metric-card";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
-import { MetricRangeSelect } from "@/components/metric-range-select";
-import { useMetricRange } from "@/lib/metrics/use-metric-range";
+import { PageToolbar } from "@/components/page-toolbar";
 import { cardProps, makeCardResolver, monthEndBalances } from "@/lib/metrics/series";
 import { localDateISO } from "@/lib/utils/date";
 import type { BalancePoint } from "@/lib/accounts/balance-series";
 import { TransactionsWorkspace } from "../../transactions/_components/transactions-workspace";
+import { useTransactionsToolbar } from "../../transactions/_hooks/use-transactions-toolbar";
 import {
   PageHeader, HEADER_DESKTOP_ONLY, CustomizeCardsSheet, ListRow, SectionCard, useCardLayout, usePageCustomize,
 } from "@/components/mobile";
@@ -118,7 +118,9 @@ export default function AccountDetailPage() {
   // Month-end balance history (native currency), cache-first so it also paints offline; a range reaches back past a year.
   const balanceHistory = useCacheFirstJson<{ series?: BalancePoint[] }>(`/api/net-worth-history?period=all&accountId=${id}&basis=native`);
   const balanceSeries = Array.isArray(balanceHistory.data?.series) ? balanceHistory.data.series : null;
-  const metricRange = useMetricRange();
+  // One toolbar for the cards and the embedded transaction list (range, search, filter).
+  const txToolbar = useTransactionsToolbar();
+  const metricRange = txToolbar.range;
 
   // Actions sheet (mobile) / dropdown (desktop)
   const [actionsSheetOpen, setActionsSheetOpen] = useState(false);
@@ -394,6 +396,7 @@ export default function AccountDetailPage() {
       {/* The back control is PageHeader's automatic back (level 2 under /accounts). */}
       <PageHeader
         className="flex flex-wrap items-center justify-between gap-3"
+        filter={{ href: txToolbar.list.filterHref, activeCount: txToolbar.list.activeCount }}
         title={account.name}
         lead={
           <div className={`${HEADER_DESKTOP_ONLY} h-10 w-10 shrink-0 rounded-xl flex items-center justify-center text-sm font-bold ${account.type === "A" ? "bg-pos/10 text-pos" : "bg-destructive/10 text-destructive"}`}>
@@ -480,7 +483,10 @@ export default function AccountDetailPage() {
         busy={deletingAccount}
       />
 
-      <MetricRangeSelect value={metricRange.selection} onChange={metricRange.setSelection} />
+      <PageToolbar
+        range={{ selection: metricRange.selection, onChange: metricRange.setSelection }}
+        search={{ value: txToolbar.list.q, onChange: txToolbar.list.setQ, placeholder: "Payee or note" }}
+      />
 
       {(() => {
         const shown = cardLayout.layout.order.filter((id) => !cardLayout.layout.hidden.includes(id));
@@ -621,6 +627,7 @@ export default function AccountDetailPage() {
             <Suspense fallback={<div className="h-40 animate-shimmer rounded-xl" />}>
         <TransactionsWorkspace
           lockedAccountId={account.id}
+          toolbar={txToolbar}
           showHeader={false}
           onDataChange={refreshBalanceAndTxns}
         />

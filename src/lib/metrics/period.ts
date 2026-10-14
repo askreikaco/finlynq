@@ -7,19 +7,33 @@
  * period touches (flows are summed, stocks take the last month).
  */
 
-export const RANGE_KEYS = ["this_month", "last_month", "last_3_months", "last_6_months", "ytd", "custom"] as const;
+export const RANGE_KEYS = ["this_month", "this_quarter", "this_year", "last_month", "last_3_months", "last_6_months", "ytd", "custom"] as const;
 export type RangeKey = (typeof RANGE_KEYS)[number];
 
 export const RANGE_LABELS: Record<RangeKey, string> = {
   this_month: "This month",
+  this_quarter: "This quarter",
+  this_year: "This year",
   last_month: "Last month",
   last_3_months: "Last 3 months",
   last_6_months: "Last 6 months",
   ytd: "Year to date",
-  custom: "Custom range",
+  custom: "Custom",
 };
 
-export type RangeSelection = { range: RangeKey; from?: string; to?: string };
+/** The four options of the page toolbar's range dropdown, in order. Every other key stays valid in the URL. */
+export const TOOLBAR_RANGE_KEYS = ["this_month", "this_quarter", "this_year", "custom"] as const satisfies readonly RangeKey[];
+
+/** Ranges the month switcher steps through, and how many months one step moves. */
+export const UNIT_MONTHS: Partial<Record<RangeKey, number>> = { this_month: 1, this_quarter: 3, this_year: 12 };
+
+export type RangeSelection = {
+  range: RangeKey;
+  from?: string;
+  to?: string;
+  /** Anchor month "YYYY-MM" for this_month / this_quarter / this_year (set by the month switcher; absent = today). */
+  month?: string;
+};
 
 export type Period = {
   /** Inclusive "YYYY-MM-DD". */
@@ -81,8 +95,10 @@ function monthPeriod(first: string, last: string): Period {
 /** Read ?range=&from=&to= (anything invalid falls back to "this_month"). */
 export function parseRangeSelection(get: (key: string) => string | null | undefined): RangeSelection {
   const range = get("range");
-  if (!range || !(RANGE_KEYS as readonly string[]).includes(range)) return { range: "this_month" };
-  if (range !== "custom") return { range: range as RangeKey };
+  const rawMonth = get("month");
+  const month = rawMonth && /^\d{4}-(0[1-9]|1[0-2])$/.test(rawMonth) ? rawMonth : undefined;
+  if (!range || !(RANGE_KEYS as readonly string[]).includes(range)) return month ? { range: "this_month", month } : { range: "this_month" };
+  if (range !== "custom") return UNIT_MONTHS[range as RangeKey] && month ? { range: range as RangeKey, month } : { range: range as RangeKey };
   const from = get("from") ?? "";
   const to = get("to") ?? "";
   if (!parseDay(from) || !parseDay(to) || from > to) return { range: "this_month" };
@@ -91,9 +107,10 @@ export function parseRangeSelection(get: (key: string) => string | null | undefi
 
 /** The query string for a selection ("" for the default), without a leading "?". */
 export function rangeToParams(sel: RangeSelection): Record<string, string> {
-  if (sel.range === "this_month") return {};
+  const month: Record<string, string> = UNIT_MONTHS[sel.range] && sel.month && ISO_MONTH.test(sel.month) ? { month: sel.month } : {};
+  if (sel.range === "this_month") return month;
   if (sel.range === "custom" && sel.from && sel.to) return { range: "custom", from: sel.from, to: sel.to };
-  return { range: sel.range };
+  return { range: sel.range, ...month };
 }
 
 /**
@@ -101,8 +118,15 @@ export function rangeToParams(sel: RangeSelection): Record<string, string> {
  * anchor for "this month" (the budgets page month navigator); the other presets anchor on it as well.
  */
 export function resolvePeriod(sel: RangeSelection, today: string, baseMonth?: string): Period {
-  const base = baseMonth && ISO_MONTH.test(baseMonth) ? baseMonth : today.slice(0, 7);
+  const anchor = UNIT_MONTHS[sel.range] && sel.month && ISO_MONTH.test(sel.month) ? sel.month : undefined;
+  const base = anchor ?? (baseMonth && ISO_MONTH.test(baseMonth) ? baseMonth : today.slice(0, 7));
   switch (sel.range) {
+    case "this_quarter": {
+      const first = quarterStart(base);
+      return monthPeriod(first, shiftMonth(first, 2));
+    }
+    case "this_year":
+      return monthPeriod(`${base.slice(0, 4)}-01`, `${base.slice(0, 4)}-12`);
     case "last_month":
       return monthPeriod(shiftMonth(base, -1), shiftMonth(base, -1));
     case "last_3_months":
@@ -121,6 +145,54 @@ export function resolvePeriod(sel: RangeSelection, today: string, baseMonth?: st
     default:
       return monthPeriod(base, base);
   }
+}
+
+/** First month ("YYYY-MM") of the calendar quarter holding `month`. */
+export function quarterStart(month: string): string {
+  const m = Number(month.slice(5, 7));
+  return `${month.slice(0, 4)}-${pad(Math.floor((m - 1) / 3) * 3 + 1)}`;
+}
+
+/** First month of the this_month / this_quarter / this_year period holding `month`. */
+function unitStart(range: RangeKey, month: string): string {
+  if (range === "this_quarter") return quarterStart(month);
+  if (range === "this_year") return `${month.slice(0, 4)}-01`;
+  return month;
+}
+
+/** True when the month switcher can step this selection (month, quarter or year). */
+export function isSteppable(sel: RangeSelection): boolean {
+  return UNIT_MONTHS[sel.range] !== undefined;
+}
+
+/** The anchor month of a steppable selection ("YYYY-MM"). */
+export function selectionMonth(sel: RangeSelection, today: string): string {
+  return isSteppable(sel) && sel.month ? sel.month : today.slice(0, 7);
+}
+
+/** Month switcher label: "Oct 2026", "Q4 2026" or "2026". */
+export function periodLabel(sel: RangeSelection, today: string): string {
+  const month = selectionMonth(sel, today);
+  if (sel.range === "this_year") return month.slice(0, 4);
+  if (sel.range === "this_quarter") return `Q${Math.floor((Number(month.slice(5, 7)) - 1) / 3) + 1} ${month.slice(0, 4)}`;
+  const names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  return `${names[Number(month.slice(5, 7)) - 1]} ${month.slice(0, 4)}`;
+}
+
+/** False when stepping forward would leave the current month / quarter / year. */
+export function canStepNext(sel: RangeSelection, today: string): boolean {
+  if (!isSteppable(sel)) return false;
+  const next = shiftMonth(selectionMonth(sel, today), UNIT_MONTHS[sel.range]!);
+  return unitStart(sel.range, next) <= unitStart(sel.range, today.slice(0, 7));
+}
+
+/** One step back (-1) or forward (+1) by the active unit. Landing on the current period drops the anchor. */
+export function stepSelection(sel: RangeSelection, dir: -1 | 1, today: string): RangeSelection {
+  if (!isSteppable(sel)) return sel;
+  if (dir === 1 && !canStepNext(sel, today)) return sel;
+  const next = shiftMonth(selectionMonth(sel, today), dir * UNIT_MONTHS[sel.range]!);
+  const current = unitStart(sel.range, next) === unitStart(sel.range, today.slice(0, 7));
+  return current ? { range: sel.range } : { range: sel.range, month: next };
 }
 
 /** The immediately preceding period of the same length (previous month for a single month). */

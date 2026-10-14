@@ -28,14 +28,16 @@ import type { CategoryOverview, OverviewCategory } from "@/lib/reports/category-
 import { buildGroupRows, findRow, pieSlices, subLabel, type OverviewRow } from "@/lib/categories/group-overview";
 import { useAnimations } from "@/hooks/use-animations";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
-import { ArrowRightLeft, ChartPie, Check, ChevronLeft, ChevronRight, Copy, FileDown, ListChecks, PiggyBank, Pencil, Plus, Receipt, Save, Tags, Wallet } from "lucide-react";
+import { ArrowRightLeft, ChartPie, Copy, FileDown, ListChecks, PiggyBank, Plus, Receipt, Save, Tags, Wallet } from "lucide-react";
 import { CategoryBudgetForm, type FormCategory } from "./_components/category-budget-form";
 import { CategoryRow } from "./_components/category-row";
 import {
   CustomizeCardsSheet, MetricGrid, PageHeader, PHONE_PRIMARY_CLASS, SectionCard, useCardLayout, usePageCustomize,
   type MetricItem, type OverflowAction,
 } from "@/components/mobile";
-import { MetricRangeSelect } from "@/components/metric-range-select";
+import { PageToolbar } from "@/components/page-toolbar";
+import { useListToolbar } from "@/lib/toolbar/use-list-toolbar";
+import { CATEGORY_FILTER_KEYS, CATEGORY_SORTS } from "@/lib/toolbar/list-configs";
 import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { compareCaption, seriesWindow, type MonthPoint } from "@/lib/metrics/period";
 import { NO_HISTORY_CAPTION, resolveCard } from "@/lib/metrics/delta";
@@ -59,6 +61,14 @@ const CATEGORY_CARDS: readonly PageCard[] = [
   { id: "summary", title: "Share" },
   { id: "by-category", title: "Categories" },
 ];
+
+/** Sort the group rows and each group's categories: Name (A-Z default) or Amount (biggest first). */
+function sortRows(rows: OverviewRow[], sort: string, dir: "asc" | "desc"): OverviewRow[] {
+  const sign = dir === "asc" ? 1 : -1;
+  const by = (a: { label?: string; name?: string | null; amount: number }, b: { label?: string; name?: string | null; amount: number }) =>
+    sort === "amount" ? sign * (a.amount - b.amount) : sign * (a.label ?? a.name ?? "").localeCompare(b.label ?? b.name ?? "");
+  return [...rows].sort(by).map((r) => ({ ...r, categories: [...r.categories].sort(by) }));
+}
 
 /** Previous month's amount of a series whose last point is the selected month. */
 function prevOf(trend: number[] | null): number | null {
@@ -110,8 +120,11 @@ function CategoriesOverview() {
   const [actionError, setActionError] = useState("");
   const [editMode, setEditMode] = useState(false);
   const currentMonth = localDateISO().slice(0, 7);
-  const monthParam = searchParams.get("month");
-  const month = monthParam && MONTH_RE.test(monthParam) && monthParam <= currentMonth ? monthParam : currentMonth;
+  // Range + month come from the shared PageToolbar (?range=&month=); the list shows the period's last month.
+  const { selection, explicit, period, setSelection } = useMetricRange();
+  const periodEnd = period.months[period.months.length - 1] ?? currentMonth;
+  const month = MONTH_RE.test(periodEnd) && periodEnd <= currentMonth ? periodEnd : currentMonth;
+  const tb = useListToolbar({ filterPath: "/filter/categories", sorts: CATEGORY_SORTS, filterKeys: CATEGORY_FILTER_KEYS });
   const type: "E" | "I" = searchParams.get("type") === "I" ? "I" : "E";
   const isIncome = type === "I";
 
@@ -138,7 +151,6 @@ function CategoriesOverview() {
   const budgets = useMemo(() => applyPendingBudgets(serverBudgets, pendingBudgets, month), [serverBudgets, pendingBudgets, month]);
 
   // Metric cards: month vs previous month by default (?range=&from=&to= overrides).
-  const { selection, explicit, period, setSelection } = useMetricRange(month);
   const win = seriesWindow(period);
   const seriesRes = useCacheFirstJson<{ series: Array<{ month: string; budget: number; spent: number }> }>(
     currencyLoading || isIncome ? null : `/api/budgets/series?from=${win.from}&to=${win.to}&currency=${encodeURIComponent(displayCurrency)}`,
@@ -166,14 +178,11 @@ function CategoriesOverview() {
     router.replace(`/categories${qs.toString() ? `?${qs}` : ""}`, { scroll: false });
   }
 
-  function go(next: { month?: string; type?: "E" | "I" }) {
-    setOpenKeys(new Set()); // a new type or month starts with every group collapsed
-    const m = next.month ?? month;
-    const t = next.type ?? type;
-    const qs = new URLSearchParams(searchParams.toString());
-    if (m !== currentMonth) qs.set("month", m);
-    else qs.delete("month");
-    if (t === "I") qs.set("type", "I");
+  function go(next: { type: "E" | "I" }) {
+    setOpenKeys(new Set()); // a new type starts with every group collapsed
+    // Read the live address: range / search / filter params are written with replaceState, which useSearchParams misses.
+    const qs = new URLSearchParams(typeof window === "undefined" ? searchParams.toString() : window.location.search);
+    if (next.type === "I") qs.set("type", "I");
     else qs.delete("type");
     router.replace(`/categories${qs.toString() ? `?${qs}` : ""}`, { scroll: false });
   }
@@ -222,8 +231,19 @@ function CategoriesOverview() {
   const noun = isIncome ? "income" : "spending";
   const sparkLabels = data.windowMonths;
 
-  const rows = buildGroupRows(cats, data.total);
-  const { slices, other } = pieSlices(rows, PIE_SEGMENTS);
+  // Search + budget filter apply to the list only; the pie and totals stay the whole month.
+  const needle = tb.q.trim().toLowerCase();
+  const budgetFilter = tb.filters.budget ?? "";
+  const visibleCats = cats.filter((c) => {
+    if (needle && !`${c.name ?? ""} ${c.group}`.toLowerCase().includes(needle)) return false;
+    if (budgetFilter === "with") return c.budget != null;
+    if (budgetFilter === "none") return c.budget == null;
+    if (budgetFilter === "over") return c.budget != null && c.amount > c.budget;
+    return true;
+  });
+  const allRows = buildGroupRows(cats, data.total);
+  const rows = sortRows(buildGroupRows(visibleCats, data.total), tb.sort.sort, tb.sort.dir);
+  const { slices, other } = pieSlices(allRows, PIE_SEGMENTS);
   const sliceIndex = new Map(slices.map((r, i) => [r.key, i]));
   const colorOf = (key: string) => {
     const i = sliceIndex.get(key);
@@ -248,7 +268,7 @@ function CategoriesOverview() {
   // Pie slice / legend item: a group expands and scrolls into view; a category opens its detail page; "Other" does nothing.
   function openPieKey(key: string) {
     if (key === OTHER_KEY) return;
-    const row = findRow(rows, key);
+    const row = findRow(allRows, key);
     if (!row) return;
     if (row.kind === "category") {
       router.push(`/categories/${row.categories[0].id}`);
@@ -417,25 +437,8 @@ function CategoriesOverview() {
           <TabsTrigger value="I" className="px-3">Income</TabsTrigger>
         </TabsList>
       </Tabs>
-      {/* ONE row: range dropdown, then the month switcher */}
-      <div data-slot="categories-filters" className="flex flex-wrap items-center gap-3">
-        {!isIncome && <MetricRangeSelect value={selection} onChange={setSelection} />}
-        <div className="flex items-center gap-1">
-          <Button variant="outline" size="icon" aria-label="Previous month" onClick={() => go({ month: shiftMonth(month, -1) })}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="min-w-32 text-center text-sm font-medium">{getMonthLabel(month)}</span>
-          <Button
-            variant="outline"
-            size="icon"
-            aria-label="Next month"
-            disabled={month >= currentMonth}
-            onClick={() => go({ month: shiftMonth(month, 1) })}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+      {/* Range + month on ONE row, then search (the Filter icon is in the top bar) */}
+      <PageToolbar range={{ selection, onChange: setSelection }} search={{ value: tb.q, onChange: tb.setQ, placeholder: "Search categories" }} />
     </div>
   );
 
@@ -566,34 +569,19 @@ function CategoriesOverview() {
     ),
   };
 
-  // ---- TOP BAR: the ONLY place the page's header actions are defined (swap point for the shared toolbar API) --------
-  // claude/toolbar's PageHeader takes: actions (primary yellow), bulkEdit={{ onToggle, active }}, filter={{ href }},
-  // overflow (More, also holds Customize). On merge: replace `trailingCells` with
-  // `bulkEdit: { onToggle: () => setEditMode((v) => !v), active: editMode }` and delete the Edit button below.
-  const topBarProps = {
-    actions: (
-      <Button className={PHONE_PRIMARY_CLASS} aria-label="Add" render={<Link href="/categories?edit=new" />}>
-        <Plus className="mr-1 h-4 w-4" /> Add
-      </Button>
-    ),
-    trailingCells: (
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        className="size-11 shrink-0 rounded-full"
-        aria-label="Edit"
-        aria-pressed={editMode}
-        onClick={() => setEditMode((v) => !v)}
-      >
-        {editMode ? <Check className="size-4" /> : <Pencil className="size-4" />}
-      </Button>
-    ),
-  };
-
   return (
     <div className="space-y-6">
-      <PageHeader title="Categories" {...topBarProps} />
+      <PageHeader
+        title="Categories"
+        actions={
+          <Button className={PHONE_PRIMARY_CLASS} aria-label="Add" render={<Link href="/categories?edit=new" />}>
+            <Plus className="mr-1 h-4 w-4" /> Add
+          </Button>
+        }
+        filter={{ href: tb.filterHref, activeCount: tb.activeCount }}
+        bulkEdit={{ onToggle: () => setEditMode((v) => !v), active: editMode, label: "Edit list" }}
+        hideMore
+      />
       {toolbar}
       {actionError && <p className="text-sm text-destructive">{actionError}</p>}
 
