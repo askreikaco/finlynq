@@ -115,7 +115,8 @@ describe("archived accounts reach the surfaces that show money", () => {
     // forever — and since Unarchive lives only in that page's Edit dialog,
     // archiving was a one-way door in the web UI.
     const page = read("src/app/(app)/accounts/[id]/page.tsx");
-    const fetches = page.match(/fetch\("\/api\/accounts[^"]*"\)/g) ?? [];
+    // Plain fetches and the cache-first hook (useCacheFirstJson / useApi) both count.
+    const fetches = page.match(/(?:fetch|useCacheFirstJson(?:<[^>]*>)?)\("\/api\/accounts[^"]*"\)/g) ?? [];
     expect(fetches.length).toBeGreaterThan(0);
     for (const f of fetches) expect(f).toContain("includeArchived=1");
   });

@@ -57,7 +57,7 @@ afterEach(() => {
 
 describe("CategoriesPage (real component)", () => {
   // The Manage tab is gone (everything lives on this page); the merged flag no longer changes the page.
-  it.each([undefined, "1"])("one page, no tabs, overview fetched once (FINLYNQ_CATEGORIES_MERGED=%s)", async (flag) => {
+  it.each([undefined, "1"])("one page, no tabs, overview fetched once per type (FINLYNQ_CATEGORIES_MERGED=%s)", async (flag) => {
     if (flag === undefined) delete process.env.FINLYNQ_CATEGORIES_MERGED;
     else process.env.FINLYNQ_CATEGORIES_MERGED = flag;
     try {
@@ -67,7 +67,9 @@ describe("CategoriesPage (real component)", () => {
       expect(screen.queryByRole("tab", { name: "Overview" })).toBeNull();
       expect(screen.queryByRole("tab", { name: "Manage" })).toBeNull();
       expect(screen.getByRole("link", { name: "Add" }).getAttribute("href")).toBe("/categories?edit=new");
-      expect(fetchMock.mock.calls.filter((c) => c[0]?.includes("/api/reports/categories")).length).toBe(1);
+      // Spending and Income load at once (cache-first, one request per type) so the two-column desktop layout and the
+      // phone tab need no extra fetch on switching.
+      expect(fetchMock.mock.calls.filter((c) => c[0]?.includes("/api/reports/categories")).length).toBe(2);
     } finally {
       delete process.env.FINLYNQ_CATEGORIES_MERGED;
     }
