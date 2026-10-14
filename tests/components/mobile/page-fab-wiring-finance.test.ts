@@ -62,11 +62,10 @@ describe("finance pages wire usePageFab", () => {
 // Loans, subscriptions, budgets and goals create through their own form pages
 // (route entries, not a usePageFab handler): the list pages must not register a
 // create handler, and their FAB links to the create page.
-describe("create FABs are routes to the create page (loans, subscriptions, budgets, goals)", () => {
+describe("create FABs are routes to the create page (loans, subscriptions, goals)", () => {
   const LIST_PAGES = [
     { file: `${APP}/loans/page.tsx`, route: "/loans", href: "/loans/new" },
     { file: `${APP}/subscriptions/page.tsx`, route: "/subscriptions", href: "/subscriptions/new" },
-    { file: `${APP}/budgets/page.tsx`, route: "/budgets", href: "/budgets/new" },
     { file: `${APP}/goals/page.tsx`, route: "/goals", href: "/goals/new" },
   ] as const;
 

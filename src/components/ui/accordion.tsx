@@ -48,11 +48,17 @@ function AccordionItem({
   description,
   children,
   className,
+  triggerClassName,
+  panelClassName,
   ...props
 }: Omit<AccordionPrimitive.Item.Props, "title"> & {
   icon?: React.ReactNode
   title: React.ReactNode
   description?: React.ReactNode
+  /** Extra classes for the header button (e.g. a denser row). */
+  triggerClassName?: string
+  /** Extra classes for the open panel. */
+  panelClassName?: string
 }) {
   return (
     <AccordionPrimitive.Item
@@ -63,7 +69,10 @@ function AccordionItem({
       <AccordionPrimitive.Header className="m-0 text-base font-normal">
         <AccordionPrimitive.Trigger
           data-slot="accordion-trigger"
-          className="group flex min-h-row w-full cursor-pointer items-center gap-3 rounded-xl px-4 py-2 text-left outline-none transition-colors hover:bg-muted/40 focus-visible:ring-3 focus-visible:ring-ring/50"
+          className={cn(
+            "group flex min-h-row w-full cursor-pointer items-center gap-3 rounded-xl px-4 py-2 text-left outline-none transition-colors hover:bg-muted/40 focus-visible:ring-3 focus-visible:ring-ring/50",
+            triggerClassName
+          )}
         >
           {icon ? (
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
@@ -86,7 +95,7 @@ function AccordionItem({
       </AccordionPrimitive.Header>
       <AccordionPrimitive.Panel
         data-slot="accordion-panel"
-        className="border-t px-4 py-4"
+        className={cn("border-t px-4 py-4", panelClassName)}
       >
         {children}
       </AccordionPrimitive.Panel>

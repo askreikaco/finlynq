@@ -46,7 +46,7 @@ function NewTemplatePage() {
       id="template-new"
       title="Save as template"
       subtitle={getMonthLabel(month)}
-      fallbackReturn={`/budgets?month=${month}`}
+      fallbackReturn={`/categories?month=${month}`}
       form="external"
       useLoad={useTemplateBudgets}
       header={{ actions: null }}

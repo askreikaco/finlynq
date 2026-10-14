@@ -71,7 +71,7 @@ beforeEach(() => {
     vi.fn(async (url: string, init?: RequestInit) => {
       calls.push({ url, init });
       const method = init?.method ?? "GET";
-      if (url.startsWith("/api/budgets?month=2026-10&rollover=1")) return json(budgetRows);
+      if (url.startsWith("/api/budgets?month=2026-10")) return json(budgetRows);
       if (url.startsWith("/api/dashboard")) {
         return json({
           spendingByCategory: [{ categoryId: 10, categoryName: "Food", categoryGroup: "Living", categoryType: "E", total: -120 }],
@@ -115,7 +115,7 @@ describe("Set budget page (/budgets/new)", () => {
     fireEvent.change(screen.getByLabelText("Select category"), { target: { value: "10" } });
     fireEvent.change(container.querySelector('input[type="number"]') as HTMLInputElement, { target: { value: "500" } });
     fireEvent.click(screen.getByRole("button", { name: "Save Budget" }));
-    await waitFor(() => expect(H.push).toHaveBeenCalledWith("/budgets?month=2026-10"));
+    await waitFor(() => expect(H.push).toHaveBeenCalledWith("/categories?month=2026-10"));
     expect(bodies("/api/budgets")).toEqual([{ categoryId: 10, month: "2026-10", amount: 500, currency: "USD" }]);
   });
 
@@ -137,7 +137,7 @@ describe("Save template page (/budgets/templates/new)", () => {
     expect((save as HTMLButtonElement).disabled).toBe(true);
     fireEvent.change(screen.getByPlaceholderText("e.g. Monthly Essentials"), { target: { value: " Essentials " } });
     fireEvent.click(save);
-    await waitFor(() => expect(H.push).toHaveBeenCalledWith("/budgets?month=2026-10"));
+    await waitFor(() => expect(H.push).toHaveBeenCalledWith("/categories?month=2026-10"));
     const posts = postsTo("/api/budget-templates");
     expect(posts).toHaveLength(2);
     expect(JSON.parse(String(posts[0].init?.body))).toEqual({ name: "Essentials", categoryId: 10, amount: 300 });
@@ -156,7 +156,7 @@ describe("Apply template page (/budgets/templates/apply)", () => {
   it("lists template names and applies each row to the month", async () => {
     render(<ApplyTemplateRoute />);
     fireEvent.click(await screen.findByRole("button", { name: "Apply" }));
-    await waitFor(() => expect(H.push).toHaveBeenCalledWith("/budgets?month=2026-10"));
+    await waitFor(() => expect(H.push).toHaveBeenCalledWith("/categories?month=2026-10"));
     expect(bodies("/api/budgets")).toEqual([
       { categoryId: 10, month: "2026-10", amount: 300, currency: "USD" },
       { categoryId: 11, month: "2026-10", amount: 100, currency: "USD" },
@@ -196,7 +196,7 @@ describe("Move money page (/budgets/move-money)", () => {
     fireEvent.change(pickers[1], { target: { value: "11" } });
     fireEvent.change(document.querySelector('input[placeholder="50.00"]') as HTMLInputElement, { target: { value: "50" } });
     fireEvent.click(screen.getByRole("button", { name: "Move Funds" }));
-    await waitFor(() => expect(H.push).toHaveBeenCalledWith("/budgets?month=2026-10"));
+    await waitFor(() => expect(H.push).toHaveBeenCalledWith("/categories?month=2026-10"));
     expect(bodies("/api/budgets")).toEqual([
       { categoryId: 10, month: "2026-10", amount: 250, currency: "USD" },
       { categoryId: 11, month: "2026-10", amount: 150, currency: "USD" },
@@ -240,7 +240,7 @@ describe("Budget form pages: returnTo validation", () => {
       (bad) => {
         H.search = `month=2026-10&returnTo=${encodeURIComponent(bad)}`;
         render(<Page />);
-        expect(screen.getByRole("link", { name: "Back" }).getAttribute("href")).toBe("/budgets?month=2026-10");
+        expect(screen.getByRole("link", { name: "Back" }).getAttribute("href")).toBe("/categories?month=2026-10");
       },
     );
   }

@@ -11,7 +11,8 @@ import { resolve } from "node:path";
 const APP = "src/app/(app)";
 const read = (rel: string) => readFileSync(resolve(process.cwd(), rel), "utf8");
 
-const BUDGETS = read(`${APP}/budgets/page.tsx`);
+// The budgets list lives in /categories now (/budgets redirects there).
+const BUDGETS = read(`${APP}/categories/_page-content.tsx`);
 const GOALS = read(`${APP}/goals/page.tsx`);
 
 describe("budgets list: openers navigate, no create/edit dialog", () => {

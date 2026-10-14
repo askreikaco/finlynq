@@ -82,7 +82,6 @@ describe("More screen", () => {
     render(<MoreMenu />);
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("More");
     expect(rows("main")).toEqual([
-      ["Budgets", "/budgets"],
       ["Goals", "/goals"],
       ["Reports", "/reports"],
       ["Spending by category", "/categories"],

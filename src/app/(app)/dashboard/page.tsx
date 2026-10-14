@@ -397,7 +397,7 @@ export default function DashboardPage() {
       sparkColor: "#f59e0b",
       sparkData: budgetSpark.length >= 2 ? budgetSpark.map((r) => Math.round((r.spent / r.budget) * 1000) / 10) : undefined,
       sparkLabels: budgetSpark.length >= 2 ? budgetSpark.map((r) => r.month) : undefined,
-      href: "/budgets",
+      href: "/categories",
     },
   ];
 

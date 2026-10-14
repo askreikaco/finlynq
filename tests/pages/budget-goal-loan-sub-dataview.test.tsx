@@ -38,7 +38,6 @@ vi.mock("@/lib/utils/date", async (orig) => ({
   localDateISO: () => "2026-10-09",
 }));
 
-import BudgetsPage from "@/app/(app)/budgets/page";
 import GoalsPage from "@/app/(app)/goals/page";
 import LoansPage from "@/app/(app)/loans/page";
 import SubscriptionsPage from "@/app/(app)/subscriptions/page";
@@ -46,7 +45,6 @@ import { loanNextDue } from "@/app/(app)/loans/_components/loan-next-due";
 
 const ROOT = process.cwd();
 const PAGES = {
-  budgets: "src/app/(app)/budgets/page.tsx",
   goals: "src/app/(app)/goals/page.tsx",
   loans: "src/app/(app)/loans/page.tsx",
   subscriptions: "src/app/(app)/subscriptions/page.tsx",
@@ -116,31 +114,13 @@ afterEach(() => {
 });
 
 // Budgets and goals: one inset ListRow layout at every size (no Cards / List toggle, no table).
-describe("budgets and goals: one ListRow layout at every size", () => {
-  it("budgets renders its rows as ListRows and no table or data view", async () => {
-    H.search = "month=2026-10";
-    const { container } = render(<BudgetsPage />);
-    const name = await screen.findByText("Groceries");
-    expect(name.closest("[data-slot=list-row]")).toBeTruthy();
-    expect(container.querySelector("[data-view]")).toBeNull();
-    expect(container.querySelector("table")).toBeNull();
-  });
-
+describe("goals: one ListRow layout at every size", () => {
   it("goals renders its rows as ListRows and no table or data view", async () => {
     const { container } = render(<GoalsPage />);
     const name = await screen.findByText("Emergency fund");
     expect(name.closest("[data-slot=list-row]")).toBeTruthy();
     expect(container.querySelector("[data-view]")).toBeNull();
     expect(container.querySelector("table")).toBeNull();
-  });
-
-  it("a budget row opens the detail sheet with the edit and transactions actions", async () => {
-    H.search = "month=2026-10";
-    render(<BudgetsPage />);
-    fireEvent.click(await screen.findByRole("button", { name: /Groceries/ }));
-    expect((await screen.findByRole("link", { name: "Edit budget" })).getAttribute("href")).toMatch(/^\/budgets\/new\?month=2026-10/);
-    expect(screen.getByRole("link", { name: "View transactions" }).getAttribute("href")).toMatch(/categoryId=10/);
-    expect(screen.getByRole("button", { name: "Delete budget for Groceries" })).toBeTruthy();
   });
 
   it("a goal row opens the detail sheet with Edit, Mark complete and Delete", async () => {

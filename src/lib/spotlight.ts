@@ -126,7 +126,7 @@ async function getOverspentBudgets(
         severity: pctOver > 20 ? "critical" : "warning",
         title: `${categoryName ?? "Unknown"} over budget`,
         description: `Spent ${formatCurrency(agg.spent, fx.displayCurrency)} of ${formatCurrency(agg.budgetAmount, fx.displayCurrency)} budget (${pctOver}% over)`,
-        actionUrl: "/budgets",
+        actionUrl: "/categories",
         amount: agg.spent - agg.budgetAmount,
         currency: fx.displayCurrency,
       });

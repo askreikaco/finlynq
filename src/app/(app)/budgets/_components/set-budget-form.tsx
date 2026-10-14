@@ -21,14 +21,17 @@ export function SetBudgetForm({
   displayCurrency,
   onSaved,
   existing,
+  initialCategoryId,
 }: {
   month: string;
+  /** Preselected category (the edit / set action of a row on /categories). */
+  initialCategoryId?: string;
   displayCurrency: string;
   onSaved: () => void;
   existing?: Budget[];
 }) {
   const [categories, setCategories] = useState<Category[]>([]);
-  const [form, setForm] = useState({ categoryId: "", amount: "" });
+  const [form, setForm] = useState({ categoryId: initialCategoryId ?? "", amount: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState("");
   const [submitting, setSubmitting] = useState(false);

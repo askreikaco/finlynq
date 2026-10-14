@@ -11,7 +11,8 @@ const ROOT = process.cwd();
 const read = (rel: string) => readFileSync(join(ROOT, rel), "utf-8");
 
 const SETTINGS_GENERAL = "src/app/(app)/settings/general/page.tsx";
-const BUDGETS = "src/app/(app)/budgets/page.tsx";
+// Budgets were merged into /categories (2026-10); /budgets redirects there.
+const BUDGETS = "src/app/(app)/categories/_page-content.tsx";
 const PERF_CHART = "src/components/portfolio/PerformanceChart.tsx";
 const ACCOUNT_DETAIL = "src/app/(app)/accounts/[id]/page.tsx";
 const HOLDINGS_TABLE = "src/app/(app)/portfolio/_components/holding-account-groups.tsx";
@@ -72,20 +73,20 @@ describe("settings/general at 390", () => {
   });
 });
 
-describe("budgets at 390", () => {
+describe("categories (with budgets) at 390", () => {
   it("summary tiles use the shared MetricGrid (2 / 3 / 4 columns by width) and the shared Amount value style, no hand-rolled grid", () => {
     const src = read(BUDGETS);
-    expect(src).toContain("<MetricGrid metrics={summaryMetrics} />");
+    expect(src).toContain("<MetricGrid metrics={metrics} columns={3} />");
     expect(src).not.toMatch(/grid-cols-2 gap-3/);
     expect(src).not.toMatch(/(?<![:\w-])text-2xl font-bold/);
   });
 
-  it("category groups are inset SectionCards of ListRows (one layout at every width): no Card per group, no table", () => {
+  it("the category list is one inset SectionCard of shared CategoryRows (one layout at every width): no Card per group, no table", () => {
     const src = read(BUDGETS);
-    expect(src).toContain('<SectionCard key={group} label={group} padded={false}');
-    expect(src).toContain("<ListRow");
+    expect(src).toContain('label="Categories"');
+    expect(src).toContain("padded={false}");
+    expect(src).toContain("<CategoryRow");
     expect(src).not.toContain("<Table");
-    expect(src).not.toContain('<Card key={group} className="gap-1">');
   });
 
   it("month label goes through getMonthLabel and the shared locale helper (no hardcoded locale in the page)", () => {

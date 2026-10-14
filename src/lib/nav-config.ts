@@ -129,6 +129,8 @@ export const NAV_REGISTRY: NavPageEntry[] = [
     surfaces: ["sidebar", "mobileBar", "more"],
     tab: { order: 4 },
   },
+  // Budgets live in /categories (2026-10). /budgets itself redirects (REDIRECTS); this surface-less entry only
+  // keeps the back target of /budgets/new and the other budget form pages (they return via returnTo).
   {
     id: "budgets",
     path: "/budgets",
@@ -137,8 +139,7 @@ export const NAV_REGISTRY: NavPageEntry[] = [
     icon: PiggyBank,
     group: "Tracking",
     mode: "prod",
-    surfaces: ["sidebar", "more"],
-    rail: { order: 5 },
+    surfaces: [],
   },
   {
     id: "goals",
@@ -662,6 +663,8 @@ export const REDIRECTS: RedirectEntry[] = [
   // Subscriptions + Bill Calendar merged into one page (2026-10); the
   // calendar is now a view of /subscriptions.
   { source: "/calendar", destination: "/subscriptions?view=calendar", permanent: false },
+  // Budgets merged into Categories (2026-10); the query string (?month=) is kept by the redirect.
+  { source: "/budgets", destination: "/categories", permanent: false },
   // Former redirect pages (C-36). permanent:false keeps the 307 that the deleted page redirect() calls sent.
   { source: "/admin/env", destination: "/admin/system", permanent: false },
   { source: "/settings/holding-accounts", destination: "/settings/investments", permanent: false },

@@ -1,39 +1,53 @@
 "use client";
 
 /**
- * Categories hub — merged overview + management page (WP8).
+ * Categories hub — spending / income by category with the month's budgets (budgets are merged in here; /budgets
+ * redirects to /categories).
  *
- * When FINLYNQ_CATEGORIES_MERGED is enabled:
- * - Shows tabbed interface with Overview and Management tabs
- * - Overview: category spending/income report with trends
- * - Management: add/edit/delete categories and link to rules
+ * When FINLYNQ_CATEGORIES_MERGED is enabled the page has Overview and Manage tabs (Manage = add / edit / delete
+ * categories); otherwise it shows only the overview.
  *
- * When disabled (default): Shows only overview (backward compatible)
+ * Overview: metric cards (Total Budget / Total Spent / Remaining, spending only), the share pie and the By category
+ * list. A group header and a category are the SAME row (CategoryRow); a group shows the rollup of its children.
  */
 
-import { Fragment, Suspense, useState, type ReactNode } from "react";
+import { Fragment, Suspense, useCallback, useMemo, useState, type ReactNode } from "react";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Cell, Pie, PieChart } from "recharts";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/error-state";
 import { PageSkeleton } from "@/components/page-skeleton";
-import { Sparkline } from "@/components/sparkline";
-import { formatCurrency } from "@/lib/currency";
+import { formatCurrency, getMonthLabel } from "@/lib/currency";
 import { CHART_COLORS } from "@/lib/chart-colors";
 import { localDateISO } from "@/lib/utils/date";
+import { parseSaveError } from "@/lib/save-error";
 import { shiftMonth } from "@/lib/reports/category-detail";
 import type { CategoryOverview, OverviewCategory } from "@/lib/reports/category-overview";
 import { buildGroupRows, findRow, pieSlices, subLabel, type OverviewRow } from "@/lib/categories/group-overview";
 import { useAnimations } from "@/hooks/use-animations";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowRightLeft, ChevronLeft, ChevronRight, Copy, FileDown, PiggyBank, Pencil, Plus, Receipt, Save, Trash2, Wallet } from "lucide-react";
 import { CategoryManagement } from "./_components/category-management";
-import { PageHeader, CustomizeCardsSheet, useCardLayout, usePageCustomize } from "@/components/mobile";
+import { CategoryRow } from "./_components/category-row";
+import {
+  CustomizeCardsSheet, MetricGrid, OverflowMenu, PageHeader, SectionCard, useCardLayout, usePageCustomize,
+  type MetricItem, type OverflowAction,
+} from "@/components/mobile";
+import { CARD_ROW_GRID } from "@/components/mobile/section-card";
+import { MetricRangeSelect } from "@/components/metric-range-select";
+import { useMetricRange } from "@/lib/metrics/use-metric-range";
+import { compareCaption, seriesWindow, type MonthPoint } from "@/lib/metrics/period";
+import { NO_HISTORY_CAPTION, resolveCard } from "@/lib/metrics/delta";
+import { useDisplayCurrency } from "@/components/currency-provider";
 import type { PageCard } from "@/lib/card-layout";
+import type { Budget } from "../budgets/_components/budget-types";
+import { applyPendingBudgets, type BudgetSyncMark } from "@/lib/budgets/pending-overlay";
+import { discardQueuedCreate, isLocalWriteQueueActive, queueOfflineBudgetDelete, usePendingBudgets } from "@/lib/data/local-write-queue";
+import { isNetworkFailure } from "@/lib/transactions/entry-mode";
 
 type OverviewResponse = CategoryOverview & { type: "E" | "I"; displayCurrency: string };
 
@@ -44,28 +58,14 @@ const OTHER_COLOR = CHART_COLORS.categories[11];
 const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 /** Cards of the categories overview, default order. */
 const CATEGORY_CARDS: readonly PageCard[] = [
-  { id: "summary", title: "Month summary" },
-  { id: "by-category", title: "By category" },
+  { id: "metrics", title: "Totals" },
+  { id: "summary", title: "Share" },
+  { id: "by-category", title: "Categories" },
 ];
 
-function monthName(key: string, style: "long" | "short" = "long"): string {
-  const [y, m] = key.split("-").map(Number);
-  return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString(undefined, {
-    month: style,
-    year: style === "long" ? "numeric" : "2-digit",
-    timeZone: "UTC",
-  });
-}
-
-function changeLabel(change: number | null): string | null {
-  if (change == null || !Number.isFinite(change)) return null;
-  const pct = Math.round(change * 100);
-  return `${pct >= 0 ? "+" : ""}${pct}%`;
-}
-
-/** Up is bad for spending, good for income. */
-function toneClass(change: number | null, isIncome: boolean): string {
-  return change == null ? "text-muted-foreground" : (change > 0) === isIncome ? "text-pos" : "text-destructive";
+/** Previous month's amount of a series whose last point is the selected month. */
+function prevOf(trend: number[] | null): number | null {
+  return trend && trend.length >= 2 ? trend[trend.length - 2] : null;
 }
 
 interface CategoriesPageProps {
@@ -84,10 +84,7 @@ export default function CategoriesPageContent({ isMerged }: CategoriesPageProps)
   // Merged UI: show tabs
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Categories"
-        subtitle="View spending patterns and manage your categories."
-      />
+      <PageHeader title="Categories" />
 
       <Suspense fallback={<PageSkeleton variant="list" rows={6} />}>
         <MergedHubTabs />
@@ -127,99 +124,28 @@ interface CategoriesOverviewProps {
   embedded?: boolean;
 }
 
-/** Usual-month text for a row; "new this period" when there is no average. */
-function usualText(average: number | null, budget: number | null, cur: string): string {
-  const usual = average != null ? `usually ${formatCurrency(average, cur)}` : "new this period";
-  return budget != null ? `${usual} · budget ${formatCurrency(budget, cur)}` : usual;
-}
-
-interface RowBodyProps {
-  label: string;
-  sub: string;
-  dot: string;
-  amount: number;
-  share: number;
-  trend: number[] | null;
-  change: number | null;
-  cur: string;
-  isIncome: boolean;
-  partial: boolean;
-  sparkLabels: string[];
-  shortMonth: string;
-  chevron?: boolean;
-}
-
-/** One row of the By category card: name, sparkline, share bar, amount and vs usual. Used for groups and categories. */
-function RowBody({ label, sub, dot, amount, share, trend, change, cur, isIncome, partial, sparkLabels, shortMonth, chevron }: RowBodyProps) {
-  // Nothing yet this month reads as "none", not a green "-100%".
-  const none = amount === 0;
-  const ch = none ? (partial ? "none yet" : "none") : changeLabel(change);
-  return (
-    <>
-      <div className="min-w-0 flex items-center gap-2.5">
-        <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: dot }} />
-        <div className="min-w-0">
-          <p className="font-medium truncate">{label}</p>
-          <p className="text-xs text-muted-foreground truncate">{sub}</p>
-        </div>
-      </div>
-      <div className="hidden @xl:block">
-        {trend ? (
-          <Sparkline data={trend} color={isIncome ? CHART_COLORS.positive : CHART_COLORS.negative} labels={sparkLabels} currency={cur} />
-        ) : null}
-      </div>
-      <div className="hidden @xl:block">
-        <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-          <div className="h-full rounded-full" style={{ width: `${Math.min(100, share * 100)}%`, backgroundColor: dot }} />
-        </div>
-        <p className="text-xs text-muted-foreground mt-1">{Math.round(share * 100)}% of {shortMonth}</p>
-      </div>
-      <div className="flex items-center gap-2 justify-end">
-        <div className="text-right">
-          <p className="font-semibold tabular-nums">{formatCurrency(amount, cur)}</p>
-          {ch && (
-            <p className={`text-xs font-medium tabular-nums ${none ? "text-muted-foreground" : toneClass(change, isIncome)}`}>
-              {none ? ch : `${ch} vs usual`}
-            </p>
-          )}
-        </div>
-        {chevron && <ChevronRight className="h-4 w-4 text-muted-foreground/60" aria-hidden />}
-      </div>
-    </>
-  );
-}
-
-const ROW_BASE =
-  "grid grid-cols-[minmax(0,1fr)_auto] @xl:grid-cols-[minmax(0,1.4fr)_7rem_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 text-left hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
-/** A category row inside an open group. */
-const ROW_CLASS = `${ROW_BASE} rounded-lg px-2 py-3`;
-/** A top-level ungrouped category row, styled like a collapsed group header card. */
-const CARD_ROW = `${ROW_BASE} rounded-xl border bg-card px-4 py-3`;
-
 /** DOM id of a group's row wrapper (scroll target for pie / legend clicks). */
 function groupDomId(key: string): string {
   return `cat-group-${key.replace(/[^A-Za-z0-9_-]/g, "_")}`;
 }
 
-/** Collapsible group header: name, category count, share of month and total on the right, vs usual under it. */
-function groupHeader(row: OverviewRow, cur: string, isIncome: boolean) {
-  const n = row.categories.length;
-  const ch = changeLabel(row.change);
+/** Previous calendar month as YYYY-MM. */
+function prevMonthOf(m: string): string {
+  return shiftMonth(m, -1);
+}
+
+/** "Waiting" / "Failed" badge on a budget queued on this device. */
+function SyncBadge({ mark }: { mark: BudgetSyncMark }) {
+  if (mark.status === "failed") {
+    return (
+      <span className="shrink-0 rounded-full bg-destructive/10 px-1.5 py-0.5 text-xs font-medium text-destructive" title={mark.failReason ?? "Sync failed"}>
+        Sync failed
+      </span>
+    );
+  }
   return (
-    <span className="flex min-w-0 flex-1 items-center justify-between gap-3">
-      <span className="flex min-w-0 items-center gap-2">
-        <span className="min-w-0 truncate">{row.label}</span>
-        <span className="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-muted px-1.5 text-xs font-medium text-muted-foreground">
-          {n}
-        </span>
-      </span>
-      <span className="shrink-0 text-right">
-        <span className="block font-mono font-semibold tabular-nums">{formatCurrency(row.amount, cur)}</span>
-        <span className="block text-xs font-normal text-muted-foreground tabular-nums">
-          {Math.round(row.share * 100)}% of month
-          {ch && <span className={`ml-1.5 font-medium ${toneClass(row.change, isIncome)}`}>{ch} vs usual</span>}
-        </span>
-      </span>
+    <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground" title="Saved on this device; syncs when online">
+      Waiting to sync
     </span>
   );
 }
@@ -228,27 +154,63 @@ function CategoriesOverview({ embedded = false }: CategoriesOverviewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const animationsEnabled = useAnimations();
+  const { displayCurrency, isLoading: currencyLoading } = useDisplayCurrency();
   // Expanded top-level groups (several may be open). Empty = all collapsed.
   const [openKeys, setOpenKeys] = useState<Set<string>>(() => new Set());
+  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [copying, setCopying] = useState(false);
+  const [actionError, setActionError] = useState("");
   const currentMonth = localDateISO().slice(0, 7);
   const monthParam = searchParams.get("month");
   const month = monthParam && MONTH_RE.test(monthParam) && monthParam <= currentMonth ? monthParam : currentMonth;
   const type: "E" | "I" = searchParams.get("type") === "I" ? "I" : "E";
+  const isIncome = type === "I";
 
   // Cache-first when the local read cache is on (Settings > Data > Offline mode); a plain fetch otherwise.
   const overview = useCacheFirstJson<{ data: OverviewResponse }>(`/api/reports/categories?month=${month}&type=${type}&months=12`);
   const data: OverviewResponse | null = overview.data?.data ?? null;
   const loading = overview.loading;
   const failed = overview.error;
-  const load = overview.reload;
+  const overviewReload = overview.reload;
+
+  // The month's budgets (spending only), with the offline queue overlaid.
+  const budgetsRes = useCacheFirstJson<Budget[]>(
+    currencyLoading || isIncome ? null : `/api/budgets?month=${month}&currency=${encodeURIComponent(displayCurrency)}`,
+    { keepPrevious: true },
+  );
+  const budgetsReload = budgetsRes.reload;
+  const serverBudgets = useMemo(() => (Array.isArray(budgetsRes.data) ? budgetsRes.data : []), [budgetsRes.data]);
+  const budgetsKnown = !isIncome && Array.isArray(budgetsRes.data);
+  const pendingBudgets = usePendingBudgets(() => budgetsReload());
+  const budgets = useMemo(() => applyPendingBudgets(serverBudgets, pendingBudgets, month), [serverBudgets, pendingBudgets, month]);
+
+  // Metric cards: month vs previous month by default (?range=&from=&to= overrides).
+  const { selection, explicit, period, setSelection } = useMetricRange(month);
+  const win = seriesWindow(period);
+  const seriesRes = useCacheFirstJson<{ series: Array<{ month: string; budget: number; spent: number }> }>(
+    currencyLoading || isIncome ? null : `/api/budgets/series?from=${win.from}&to=${win.to}&currency=${encodeURIComponent(displayCurrency)}`,
+    { keepPrevious: true },
+  );
+  const seriesRows = useMemo(
+    () => (seriesRes.data && !Array.isArray(seriesRes.data) && Array.isArray(seriesRes.data.series) ? seriesRes.data.series : []),
+    [seriesRes.data],
+  );
+
+  const reloadAll = useCallback(() => {
+    overviewReload();
+    budgetsReload();
+  }, [overviewReload, budgetsReload]);
 
   function go(next: { month?: string; type?: "E" | "I" }) {
     setOpenKeys(new Set()); // a new type or month starts with every group collapsed
     const m = next.month ?? month;
     const t = next.type ?? type;
-    const qs = new URLSearchParams();
+    const qs = new URLSearchParams(searchParams.toString());
     if (m !== currentMonth) qs.set("month", m);
+    else qs.delete("month");
     if (t === "I") qs.set("type", "I");
+    else qs.delete("type");
     router.replace(`/categories${qs.toString() ? `?${qs}` : ""}`, { scroll: false });
   }
 
@@ -256,19 +218,35 @@ function CategoriesOverview({ embedded = false }: CategoriesOverviewProps) {
   const [customizeOpen, setCustomizeOpen] = useState(false);
   usePageCustomize(data && !failed ? { onOpen: () => setCustomizeOpen(true) } : null);
 
+  // Overview categories with the live budgets merged in (and queued-create budgets of categories not in the report).
+  const cats: OverviewCategory[] = useMemo(() => {
+    if (!data) return [];
+    if (!budgetsKnown) return data.categories.map((c) => (isIncome ? { ...c, budget: null } : c));
+    const byCat = new Map(budgets.map((b) => [b.categoryId, b]));
+    const merged = data.categories.map((c) => ({ ...c, budget: byCat.get(c.id)?.amount ?? null }));
+    const seen = new Set(data.categories.map((c) => c.id));
+    for (const b of budgets) {
+      if (seen.has(b.categoryId)) continue;
+      merged.push({
+        id: b.categoryId, name: b.categoryName, group: b.categoryGroup ?? "", amount: 0, share: 0,
+        average: null, change: null, budget: b.amount, trend: data.windowMonths.map(() => 0),
+      });
+    }
+    return merged;
+  }, [data, budgets, budgetsKnown, isIncome]);
+
+  const marks = useMemo(() => new Map(budgets.filter((b) => b.pendingSync).map((b) => [b.categoryId, b])), [budgets]);
+
   if (loading && !data) return <PageSkeleton variant="list" rows={6} />;
   if (failed || !data) {
-    return <ErrorState title="Couldn't load categories" message="Please try again." onRetry={load} />;
+    return <ErrorState title="Couldn't load" message="Try again." onRetry={overviewReload} />;
   }
 
   const cur = data.displayCurrency;
-  const isIncome = type === "I";
   const noun = isIncome ? "income" : "spending";
-  const totalChange = data.averageTotal ? (data.total - data.averageTotal) / data.averageTotal : null;
-  const sparkLabels = data.windowMonths.map((m) => monthName(m, "short"));
-  const shortMonth = monthName(month, "short");
+  const sparkLabels = data.windowMonths;
 
-  const rows = buildGroupRows(data.categories, data.total);
+  const rows = buildGroupRows(cats, data.total);
   const { slices, other } = pieSlices(rows, PIE_SEGMENTS);
   const sliceIndex = new Map(slices.map((r, i) => [r.key, i]));
   const colorOf = (key: string) => {
@@ -307,188 +285,345 @@ function CategoriesOverview({ embedded = false }: CategoriesOverviewProps) {
   }
 
   const pieLabel = topRow
-    ? `${isIncome ? "Income" : "Spending"} in ${monthName(month)}: ${formatCurrency(data.total, cur)}, largest ${topRow.label} ${pct(topRow.amount)}%`
+    ? `${isIncome ? "Income" : "Spent"} ${getMonthLabel(month)}: ${formatCurrency(data.total, cur)}, top ${topRow.label} ${pct(topRow.amount)}%`
     : undefined;
 
-  const categoryRowBody = (c: OverviewCategory, group: string) => (
-    <RowBody
-      label={subLabel(c.name, group)}
-      sub={usualText(c.average, c.budget, cur)}
-      dot={colorOf(`c:${c.id}`)}
-      amount={c.amount}
-      share={c.share}
-      trend={c.trend}
-      change={c.change}
+  // ---- budgets: totals, form links, delete, copy ------------------------------------------------------------------
+  const listUrl = `/categories${month !== currentMonth ? `?month=${month}` : ""}`;
+  const formQuery = `month=${month}&returnTo=${encodeURIComponent(listUrl)}`;
+  const addHref = `/budgets/new?${formQuery}`;
+  const budgeted = cats.filter((c) => c.budget != null);
+  const totalBudget = budgeted.reduce((s, c) => s + (c.budget ?? 0), 0);
+  const totalSpent = budgeted.reduce((s, c) => s + c.amount, 0);
+  const totalLeft = totalBudget - totalSpent;
+
+  const caption = compareCaption(selection);
+  const pointsOf = (pick: (r: { budget: number; spent: number }) => number): MonthPoint[] =>
+    seriesRows.map((r) => ({ month: r.month, value: pick(r) }));
+  const common = { period, isDefault: !explicit, currency: cur, caption, kind: "money" } as const;
+  const budgetCard = resolveCard({ ...common, points: pointsOf((r) => r.budget), mode: "sum", pageValue: totalBudget });
+  const spentCard = resolveCard({ ...common, points: pointsOf((r) => r.spent), mode: "sum", pageValue: totalSpent });
+  const leftCard = resolveCard({ ...common, points: pointsOf((r) => r.budget - r.spent), mode: "sum", pageValue: totalLeft });
+  // Exactly these three cards.
+  const metrics: MetricItem[] = [
+    {
+      id: "total-budget", label: "Total Budget", icon: Wallet, iconTone: "indigo", value: budgetCard.value ?? totalBudget, currency: cur,
+      sub: budgetCard.delta ?? NO_HISTORY_CAPTION, badgePct: budgetCard.badgePct,
+      sparkData: budgetCard.sparkData, sparkLabels: budgetCard.sparkLabels, sparkColor: "#6366f1",
+    },
+    {
+      id: "total-spent", label: "Total Spent", icon: Receipt, iconTone: "rose", value: spentCard.value ?? totalSpent, currency: cur,
+      valueClassName: totalSpent > totalBudget ? "text-destructive" : "text-pos",
+      sub: spentCard.delta ?? NO_HISTORY_CAPTION, badgePct: spentCard.badgePct, invertTone: true,
+      sparkData: spentCard.sparkData, sparkLabels: spentCard.sparkLabels, sparkColor: "#f43f5e",
+    },
+    {
+      id: "remaining", label: "Remaining", icon: PiggyBank, iconTone: "emerald", value: leftCard.value ?? totalLeft, currency: cur,
+      valueClassName: totalLeft >= 0 ? "text-pos" : "text-destructive",
+      sub: leftCard.delta ?? NO_HISTORY_CAPTION, badgePct: leftCard.badgePct,
+      sparkData: leftCard.sparkData, sparkLabels: leftCard.sparkLabels, sparkColor: "#10b981",
+    },
+  ];
+
+  /** Server row of a budget (no overlay fields) as the offline queue's baseline. */
+  function serverRowOf(b: Budget) {
+    return { id: b.id, categoryId: b.categoryId, month: b.month, amount: b.amount, currency: b.currency ?? null, updatedAt: b.updatedAt ?? null, categoryName: b.categoryName, categoryGroup: b.categoryGroup };
+  }
+  const deletingBudget = budgets.find((b) => b.id === deleteId) ?? null;
+
+  async function handleDelete() {
+    if (deleteId == null) return;
+    const row = budgets.find((b) => b.id === deleteId);
+    setDeleting(true);
+    try {
+      // A budget queued on this device and not yet synced: drop the queued create, nothing goes to the server.
+      if (row?.pendingSync?.kind === "create") {
+        const dropped = await discardQueuedCreate(row.pendingSync.opId);
+        if (!dropped) {
+          setActionError("Being sent now. Try again.");
+          return;
+        }
+        setActionError("");
+        setDeleteId(null);
+        return;
+      }
+      try {
+        await fetch(`/api/budgets?id=${deleteId}`, { method: "DELETE" });
+      } catch (netErr) {
+        // The baseline is the server row, not the overlay (a queued edit would otherwise look like a server change).
+        const serverRow = serverBudgets.find((b) => b.id === deleteId) ?? row;
+        if (serverRow && isLocalWriteQueueActive() && isNetworkFailure(netErr)) {
+          const queued = await queueOfflineBudgetDelete(serverRowOf(serverRow));
+          if (queued) {
+            setDeleteId(null);
+            return;
+          }
+        }
+        throw netErr;
+      }
+      setDeleteId(null);
+      reloadAll();
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  // Copy last month's budgets into the selected month (the upserting POST /api/budgets, native amount + currency).
+  async function handleCopyFromPrevMonth() {
+    setActionError("");
+    setCopying(true);
+    try {
+      const res = await fetch(`/api/budgets?month=${prevMonthOf(month)}`);
+      if (!res.ok) {
+        setActionError(await parseSaveError(res, "Couldn't load last month"));
+        return;
+      }
+      const prevRows = await res.json();
+      if (!Array.isArray(prevRows) || prevRows.length === 0) {
+        setActionError("No budgets last month.");
+        return;
+      }
+      for (const b of prevRows as Array<{ categoryId: number; amount: number; currency?: string }>) {
+        const post = await fetch("/api/budgets", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ categoryId: b.categoryId, month, amount: b.amount, ...(b.currency ? { currency: b.currency } : {}) }),
+        });
+        if (!post.ok) {
+          setActionError(await parseSaveError(post, "Couldn't copy"));
+          return;
+        }
+      }
+      reloadAll();
+    } catch {
+      setActionError("Network error.");
+    } finally {
+      setCopying(false);
+    }
+  }
+
+  const overflow: OverflowAction[] = [
+    { label: copying ? "Copying…" : "Copy last month", icon: Copy, disabled: copying, onSelect: handleCopyFromPrevMonth },
+    ...(budgets.length > 0 ? [{ label: "Save template", icon: Save, href: `/budgets/templates/new?${formQuery}` }] : []),
+    { label: "Apply template", icon: FileDown, href: `/budgets/templates/apply?${formQuery}` },
+    ...(budgets.length >= 2 ? [{ label: "Move money", icon: ArrowRightLeft, href: `/budgets/move-money?${formQuery}` }] : []),
+  ];
+
+  // ---- rows ---------------------------------------------------------------------------------------------------------
+  const iconBtn = "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+
+  /** Set / edit / delete the budget of ONE category (not offered on a group: its budget is the rollup). */
+  function budgetActions(c: OverviewCategory) {
+    if (isIncome) return null;
+    const b = budgets.find((x) => x.categoryId === c.id);
+    const name = subLabel(c.name, c.group);
+    const editHref = `/budgets/new?${formQuery}&categoryId=${c.id}`;
+    return (
+      <span className="flex shrink-0 items-center pr-2">
+        {b ? (
+          <>
+            <Link href={editHref} className={iconBtn} aria-label={`Edit budget: ${name}`}><Pencil className="h-4 w-4" /></Link>
+            <button type="button" className={iconBtn} aria-label={`Delete budget: ${name}`} onClick={() => setDeleteId(b.id)}>
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </>
+        ) : (
+          <Link href={editHref} className={iconBtn} aria-label={`Set budget: ${name}`}><Plus className="h-4 w-4" /></Link>
+        )}
+      </span>
+    );
+  }
+
+  /** The shared row for one OverviewRow (group = rollup of its children) or a single category. */
+  const rowFor = (r: { label: string; amount: number; trend: number[] | null; share: number; budget: number | null; count?: number; badge?: ReactNode; dot: string }) => (
+    <CategoryRow
+      label={r.label}
+      dot={r.dot}
+      amount={r.amount}
+      prev={prevOf(r.trend)}
+      budget={r.budget}
+      trend={r.trend}
+      share={r.share}
       cur={cur}
       isIncome={isIncome}
-      partial={data.partial}
       sparkLabels={sparkLabels}
-      shortMonth={shortMonth}
+      count={r.count}
+      badge={r.badge}
     />
   );
 
-  const embeddedHeader = (
-    <div className={embedded ? "flex flex-wrap items-center justify-end gap-2" : "flex flex-wrap items-center gap-2"}>
-      <Tabs value={type} onValueChange={(v) => go({ type: v === "I" ? "I" : "E" })}>
-        <TabsList>
-          <TabsTrigger value="E" className="px-3">Spending</TabsTrigger>
-          <TabsTrigger value="I" className="px-3">Income</TabsTrigger>
-        </TabsList>
-      </Tabs>
-      <div className="flex items-center gap-1">
-        <Button variant="outline" size="icon" aria-label="Previous month" onClick={() => go({ month: shiftMonth(month, -1) })}>
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <span className="min-w-32 text-center text-sm font-medium">{monthName(month)}</span>
-        <Button
-          variant="outline"
-          size="icon"
-          aria-label="Next month"
-          disabled={month >= currentMonth}
-          onClick={() => go({ month: shiftMonth(month, 1) })}
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
+  const categoryRow = (c: OverviewCategory, group: string, dot: string) =>
+    rowFor({
+      label: subLabel(c.name, group), amount: c.amount, trend: c.trend, share: c.share, budget: c.budget, dot,
+      badge: marks.get(c.id)?.pendingSync ? <SyncBadge mark={marks.get(c.id)!.pendingSync!} /> : undefined,
+    });
+
+  const groupRow = (row: OverviewRow) =>
+    rowFor({ label: row.label, amount: row.amount, trend: row.trend, share: row.share, budget: row.budget, count: row.categories.length, dot: colorOf(row.key) });
+
+  const ROW_LINK = "block min-w-0 flex-1 px-4 py-3 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+
+  const toolbar = (
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <Tabs value={type} onValueChange={(v) => go({ type: v === "I" ? "I" : "E" })}>
+          <TabsList>
+            <TabsTrigger value="E" className="px-3">Spending</TabsTrigger>
+            <TabsTrigger value="I" className="px-3">Income</TabsTrigger>
+          </TabsList>
+        </Tabs>
+        <div className="flex items-center gap-1">
+          <Button variant="outline" size="icon" aria-label="Previous month" onClick={() => go({ month: shiftMonth(month, -1) })}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <span className="min-w-32 text-center text-sm font-medium">{getMonthLabel(month)}</span>
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label="Next month"
+            disabled={month >= currentMonth}
+            onClick={() => go({ month: shiftMonth(month, 1) })}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
+      {!isIncome && (
+        <div className="flex items-center gap-2">
+          <Button variant="outline" aria-label="Add budget" render={<Link href={addHref} />}>
+            <Plus className="mr-1 h-4 w-4" /> Budget
+          </Button>
+          <OverflowMenu items={overflow} />
+        </div>
+      )}
     </div>
   );
 
-  // The two cards, keyed by their CATEGORY_CARDS id; rendered in the user's saved order (see below).
+  // The cards, keyed by their CATEGORY_CARDS id; rendered in the user's saved order (see below).
   const cardNodes: Record<string, ReactNode> = {
+    metrics: isIncome ? null : (
+      <div className="space-y-3">
+        <MetricRangeSelect value={selection} onChange={setSelection} />
+        <MetricGrid metrics={metrics} columns={3} />
+      </div>
+    ),
     summary: (
-      <>
-      <Card>
-        <CardContent className="pt-5 space-y-4">
-          <div className="flex flex-col regular:flex-row regular:items-center gap-5">
-            {slices.length > 0 && (
-              <div role="img" aria-label={pieLabel} className="mx-auto shrink-0 regular:mx-0">
-                <PieChart width={160} height={160}>
-                  <Pie
-                    data={pieData}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={48}
-                    outerRadius={80}
-                    stroke="none"
-                    isAnimationActive={animationsEnabled}
-                    onClick={(_, index) => openPieKey(pieData[index]?.key ?? OTHER_KEY)}
-                    style={{ cursor: "pointer" }}
-                  >
-                    {pieData.map((d) => (
-                      <Cell key={d.key} fill={d.color} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </div>
-            )}
-
-            <div className="min-w-0 flex-1 space-y-3">
-              <div className="flex flex-wrap items-end justify-between gap-3">
-                <div>
-                  <p className="text-sm text-muted-foreground">
-                    {isIncome ? "Income" : "Spending"} in {monthName(month)}{data.partial ? " so far" : ""}
-                  </p>
-                  <p className="text-3xl font-bold tabular-nums">{formatCurrency(data.total, cur)}</p>
-                </div>
-                {data.averageTotal != null && (
-                  <p className="text-sm text-muted-foreground">
-                    Usual month {formatCurrency(data.averageTotal, cur)}
-                    {changeLabel(totalChange) && (
-                      <span className={`ml-1.5 font-medium ${toneClass(totalChange, isIncome)}`}>{changeLabel(totalChange)}</span>
-                    )}
-                  </p>
-                )}
-              </div>
-              {slices.length > 0 ? (
-                <ul className="flex flex-col gap-1 text-xs text-muted-foreground">
-                  {pieData.map((d) => {
-                    const isOther = d.key === OTHER_KEY;
-                    const share = isOther ? Math.round((other / data.total) * 100) : pct(d.value);
-                    return (
-                      <li key={d.key}>
-                        <button
-                          type="button"
-                          disabled={isOther}
-                          onClick={() => openPieKey(d.key)}
-                          className="flex w-full items-center gap-1.5 rounded px-1 py-0.5 text-left hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default disabled:hover:bg-transparent"
-                        >
-                          <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ backgroundColor: d.color }} aria-hidden />
-                          <span className="truncate">{d.name} {share}%</span>
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              ) : (
-                <p className="text-sm text-muted-foreground">No {noun} recorded in {monthName(month)} yet.</p>
-              )}
+      <SectionCard label={isIncome ? "Income" : "Spent"}>
+        <div className="flex flex-col regular:flex-row regular:items-center gap-5">
+          {slices.length > 0 && (
+            <div role="img" aria-label={pieLabel} className="mx-auto shrink-0 regular:mx-0">
+              <PieChart width={160} height={160}>
+                <Pie
+                  data={pieData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={48}
+                  outerRadius={80}
+                  stroke="none"
+                  isAnimationActive={animationsEnabled}
+                  onClick={(_, index) => openPieKey(pieData[index]?.key ?? OTHER_KEY)}
+                  style={{ cursor: "pointer" }}
+                >
+                  {pieData.map((d) => (
+                    <Cell key={d.key} fill={d.color} />
+                  ))}
+                </Pie>
+              </PieChart>
             </div>
+          )}
+
+          <div className="min-w-0 flex-1 space-y-3">
+            <div>
+              <p className="text-sm text-muted-foreground">
+                {getMonthLabel(month)}{data.partial ? " · so far" : ""}
+              </p>
+              <p className="text-3xl font-bold tabular-nums">{formatCurrency(data.total, cur)}</p>
+            </div>
+            {slices.length > 0 ? (
+              <ul className="flex flex-col gap-1 text-xs text-muted-foreground">
+                {pieData.map((d) => {
+                  const isOther = d.key === OTHER_KEY;
+                  const share = isOther ? Math.round((other / data.total) * 100) : pct(d.value);
+                  return (
+                    <li key={d.key}>
+                      <button
+                        type="button"
+                        disabled={isOther}
+                        onClick={() => openPieKey(d.key)}
+                        className="flex w-full items-center gap-1.5 rounded px-1 py-0.5 text-left hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default disabled:hover:bg-transparent"
+                      >
+                        <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ backgroundColor: d.color }} aria-hidden />
+                        <span className="truncate">{d.name} {share}%</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground">No {noun}.</p>
+            )}
           </div>
-        </CardContent>
-      </Card>
-      </>
+        </div>
+      </SectionCard>
     ),
     "by-category": (
-      <>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">By category</CardTitle>
-          <CardDescription>
-            Compared with each category&apos;s average over the previous complete months (up to 11) · {cur}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="px-2 regular:px-6">
-          {data.categories.length === 0 ? (
-            <p className="text-sm text-muted-foreground px-2">No categories with {noun} in the last 12 months.</p>
-          ) : (
-            <ul data-slot="category-group-cards" className="grid grid-cols-1 items-start gap-2 regular:grid-cols-2 regular:gap-3 wide:grid-cols-3">
-              {rows.map((row) =>
-                row.kind === "group" ? (
-                  <li key={row.key} id={groupDomId(row.key)} className="@container min-w-0">
-                    <Accordion
-                      value={openKeys.has(row.key) ? row.key : null}
-                      onValueChange={(v) => setOpen(row.key, v === row.key)}
-                    >
-                      <AccordionItem value={row.key} title={groupHeader(row, cur, isIncome)}>
-                        <ul className="-mx-2 -my-2 divide-y">
-                          {row.categories.map((c) => (
-                            <li key={c.id}>
-                              <Link href={`/categories/${c.id}`} className={ROW_CLASS}>
-                                {categoryRowBody(c, row.group)}
-                              </Link>
-                            </li>
-                          ))}
-                        </ul>
-                      </AccordionItem>
-                    </Accordion>
-                  </li>
-                ) : (
-                  <li key={row.key} className="@container min-w-0">
-                    <Link href={`/categories/${row.categories[0].id}`} className={CARD_ROW}>
-                      {categoryRowBody(row.categories[0], "")}
-                    </Link>
-                  </li>
-                ),
-              )}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
-      </>
+      <SectionCard
+        label="Categories"
+        padded={false}
+        className={`divide-y divide-border/50 px-1 [&>*]:min-w-0 ${CARD_ROW_GRID}`}
+      >
+        {rows.length === 0 ? (
+          <p className="px-4 py-6 text-sm text-muted-foreground regular:col-span-full">No {noun}.</p>
+        ) : (
+          rows.map((row) =>
+            row.kind === "group" ? (
+              <div key={row.key} id={groupDomId(row.key)} data-slot="category-group">
+                <Accordion
+                  value={openKeys.has(row.key) ? row.key : null}
+                  onValueChange={(v) => setOpen(row.key, v === row.key)}
+                  className="gap-0"
+                >
+                  <AccordionItem
+                    value={row.key}
+                    title={groupRow(row)}
+                    className="rounded-none border-0 bg-transparent"
+                    triggerClassName="rounded-none px-4 py-3"
+                    panelClassName="border-t border-border/50 p-0"
+                  >
+                    <ul className="divide-y divide-border/50">
+                      {row.categories.map((c) => (
+                        <li key={c.id} className="flex items-center">
+                          <Link href={`/categories/${c.id}`} className={`${ROW_LINK} pl-8`}>
+                            {categoryRow(c, row.group, colorOf(row.key))}
+                          </Link>
+                          {budgetActions(c)}
+                        </li>
+                      ))}
+                    </ul>
+                  </AccordionItem>
+                </Accordion>
+              </div>
+            ) : (
+              <div key={row.key} data-slot="category-single" className="flex items-center">
+                <Link href={`/categories/${row.categories[0].id}`} className={ROW_LINK}>
+                  {categoryRow(row.categories[0], "", colorOf(row.key))}
+                </Link>
+                {budgetActions(row.categories[0])}
+              </div>
+            ),
+          )
+        )}
+      </SectionCard>
     ),
   };
 
   return (
     <div className="space-y-6">
-      {!embedded && (
-        <PageHeader
-          title="Spending by category"
-          subtitle="Where your money goes, and how each category compares with a usual month."
-        />
-      )}
-      {embeddedHeader}
+      {!embedded && <PageHeader title="Categories" />}
+      {toolbar}
+      {actionError && <p className="text-sm text-destructive">{actionError}</p>}
 
       {cardLayout.layout.order
         .filter((id) => !cardLayout.layout.hidden.includes(id))
@@ -499,17 +634,27 @@ function CategoriesOverview({ embedded = false }: CategoriesOverviewProps) {
       <CustomizeCardsSheet
         open={customizeOpen}
         onOpenChange={setCustomizeOpen}
-        title="Customize categories"
-        description="Show, hide and reorder the cards on the categories overview."
+        title="Customize"
+        description="Show, hide, reorder cards."
         cards={CATEGORY_CARDS}
         layout={cardLayout.layout}
         onSave={cardLayout.save}
         onReset={cardLayout.reset}
       />
 
+      <ConfirmDialog
+        open={deleteId !== null}
+        onOpenChange={(open) => { if (!open) setDeleteId(null); }}
+        title="Delete budget"
+        description={<>Delete the budget for <strong>{deletingBudget?.categoryName ?? "this category"}</strong>?</>}
+        confirmLabel="Delete"
+        busy={deleting}
+        onConfirm={handleDelete}
+      />
+
       {data.partial && (
         <p className="text-xs text-muted-foreground">
-          {monthName(month)} is still running, so its amounts are month-to-date. Amounts are in {cur}, converted at each transaction&apos;s historical rate.
+          {getMonthLabel(month)} to date · {cur}
         </p>
       )}
     </div>

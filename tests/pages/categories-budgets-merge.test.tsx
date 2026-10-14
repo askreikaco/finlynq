@@ -1,0 +1,157 @@
+/**
+ * @vitest-environment jsdom
+ */
+// Budgets merged into /categories: ONE row component for a group header and a category (rollup for the group), exactly
+// the three budget metric cards (no Age of Money / Available to Budget / rollover), and /budgets redirects.
+import * as React from "react";
+import * as fs from "fs";
+import * as path from "path";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { render, screen, cleanup, fireEvent, within } from "@testing-library/react";
+
+const H = vi.hoisted(() => ({
+  REPORT: {
+    month: "2026-10", partial: true, windowMonths: ["2026-08", "2026-09", "2026-10"], total: 530, averageTotal: null, displayCurrency: "USD", type: "E",
+    categories: [
+      { id: 1, name: "Housing - Rent", group: "Housing", amount: 300, share: 0.566, average: null, change: null, budget: 400, trend: [250, 250, 300] },
+      { id: 2, name: "Housing - Power", group: "Housing", amount: 100, share: 0.189, average: null, change: null, budget: 100, trend: [80, 100, 100] },
+      { id: 3, name: "Coffee", group: "", amount: 130, share: 0.245, average: null, change: null, budget: null, trend: [100, 100, 130] },
+    ],
+  } as unknown,
+  BUDGETS: [
+    { id: 11, categoryId: 1, categoryName: "Housing - Rent", categoryGroup: "Housing", month: "2026-10", amount: 400, currency: "USD", rolloverAmount: 50 },
+    { id: 12, categoryId: 2, categoryName: "Housing - Power", categoryGroup: "Housing", month: "2026-10", amount: 100, currency: "USD" },
+  ] as unknown[],
+}));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }),
+  useSearchParams: () => new URLSearchParams("month=2026-10"),
+  usePathname: () => "/categories",
+}));
+vi.mock("next/link", () => ({ default: ({ children, href, ...p }: React.PropsWithChildren<{ href: string }>) => React.createElement("a", { href, ...p }, children) }));
+vi.mock("@/components/adaptive/size-class-context", async (orig) => ({
+  ...(await orig<typeof import("@/components/adaptive/size-class-context")>()),
+  useAppSizeClass: () => "regular",
+}));
+vi.mock("@/lib/client/user-storage", async (orig) => ({
+  ...(await orig<typeof import("@/lib/client/user-storage")>()),
+  useSessionUserId: () => ({ userId: "merge-test-user", ready: true }),
+}));
+vi.mock("recharts", () => {
+  const Leaf = () => null;
+  const Wrap = ({ children }: { children?: React.ReactNode }) => React.createElement("div", null, children);
+  return { PieChart: Wrap, Pie: Wrap, Cell: Leaf, ResponsiveContainer: Wrap, AreaChart: Wrap, Area: Leaf, Tooltip: Leaf, YAxis: Leaf };
+});
+vi.mock("@/components/currency-provider", () => ({ useDisplayCurrency: () => ({ displayCurrency: "USD", isLoading: false }) }));
+vi.mock("@/lib/utils/date", async (orig) => ({ ...(await orig<typeof import("@/lib/utils/date")>()), localDateISO: () => "2026-10-14" }));
+vi.mock("@/lib/data/use-cache-first", () => ({
+  useCacheFirstJson: (url: string | null) => {
+    if (!url) return { data: undefined, loading: false, error: false, reload: () => {} };
+    if (url.startsWith("/api/reports/categories")) return { data: { data: H.REPORT }, loading: false, error: false, reload: () => {} };
+    if (url.startsWith("/api/budgets/series")) {
+      return { data: { series: [{ month: "2026-09", budget: 450, spent: 330 }, { month: "2026-10", budget: 500, spent: 400 }] }, loading: false, error: false, reload: () => {} };
+    }
+    if (url.startsWith("/api/budgets")) return { data: H.BUDGETS, loading: false, error: false, reload: () => {} };
+    return { data: undefined, loading: false, error: false, reload: () => {} };
+  },
+}));
+vi.mock("@/lib/data/local-write-queue", () => ({
+  usePendingBudgets: () => ({ creates: [], edits: {}, deletes: {} }),
+  isLocalWriteQueueActive: () => false,
+  queueOfflineBudgetDelete: vi.fn(async () => false),
+  discardQueuedCreate: vi.fn(async () => false),
+}));
+
+import CategoriesPageContent from "@/app/(app)/categories/_page-content";
+import { REDIRECTS, NAV_REGISTRY } from "@/lib/nav-config";
+
+const ROOT = process.cwd();
+const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), "utf-8");
+const PAGE = "src/app/(app)/categories/_page-content.tsx";
+
+afterEach(() => cleanup());
+
+describe("shared CategoryRow", () => {
+  it("source: group header and category both render through CategoryRow; the old bespoke row/header are gone", () => {
+    const src = read(PAGE);
+    expect(src).toContain('import { CategoryRow } from "./_components/category-row"');
+    expect(src.match(/<CategoryRow\b/g)).toHaveLength(1); // one component, fed by rowFor for both kinds
+    expect(src).toContain("rowFor({");
+    expect(src).toMatch(/const groupRow[\s\S]*rowFor\(/);
+    expect(src).toMatch(/const categoryRow[\s\S]*rowFor\(/);
+    expect(src).not.toMatch(/function RowBody|function groupHeader/);
+  });
+
+  it("a group row and a category row both show dot, label, amount, change vs last month, chart and budget progress", () => {
+    render(<CategoriesPageContent isMerged={false} />);
+    const list = document.querySelector('[data-slot="category-list"], [data-slot="section-card-body"] [data-slot="category-group"]')!.closest("section")!;
+    // closed group (Housing) + ungrouped (Coffee) = 2 rows; open the group for its 2 children
+    expect(within(list).getAllByText("Housing").length).toBeGreaterThan(0);
+    fireEvent.click(within(list).getByText("Housing"));
+    const rows = Array.from(list.querySelectorAll('[data-slot="category-row"]'));
+    expect(rows).toHaveLength(4);
+    for (const r of rows) {
+      for (const slot of ["category-dot", "category-label", "category-amount", "category-chart", "category-budget"]) {
+        expect(r.querySelector(`[data-slot="${slot}"]`), slot).toBeTruthy();
+      }
+      expect(r.querySelector('[data-slot="category-delta"]')).toBeTruthy();
+      expect(r.querySelector('[role="progressbar"]')).toBeTruthy();
+    }
+    const [group, rent, power, coffee] = rows;
+    // group = rollup of its children: 300 + 100 spent, 400 + 100 budget -> $100 left, +$50 (last month 350)
+    expect(group.textContent).toContain("Housing");
+    expect(group.querySelector('[data-slot="category-amount"]')!.textContent).toBe("$400.00");
+    expect(group.querySelector('[data-slot="category-delta"]')!.textContent).toContain("+$50.00 (+14%)");
+    expect(group.querySelector('[data-slot="category-budget"]')!.textContent).toContain("Left $100.00");
+    expect(rent.textContent).toContain("Rent");
+    expect(rent.querySelector('[data-slot="category-budget"]')!.textContent).toContain("Left $100.00");
+    expect(power.querySelector('[data-slot="category-budget"]')!.textContent).toContain("Left $0.00");
+    expect(coffee.querySelector('[data-slot="category-budget"]')!.textContent).toContain("No budget");
+  });
+});
+
+describe("metric cards", () => {
+  it("are exactly Total Budget, Total Spent and Remaining; no Age of Money, Available to Budget or rollover anywhere", () => {
+    render(<CategoriesPageContent isMerged={false} />);
+    const ids = Array.from(document.querySelectorAll('[data-testid^="metric-"]')).map((e) => e.getAttribute("data-testid"));
+    expect(ids).toEqual(["metric-total-budget", "metric-total-spent", "metric-remaining"]);
+    const text = document.body.textContent ?? "";
+    expect(text).toContain("Total Budget");
+    expect(text).toContain("Total Spent");
+    expect(text).toContain("Remaining");
+    expect(text).not.toMatch(/Age of Money|Available to Budget|rolled over|rollover/i);
+    // totals come from the budgeted categories: 500 budget, 400 spent, 100 left
+    expect(screen.getByTestId("metric-total-budget").textContent).toContain("$500.00");
+    expect(screen.getByTestId("metric-total-spent").textContent).toContain("$400.00");
+    expect(screen.getByTestId("metric-remaining").textContent).toContain("$100.00");
+    expect(screen.getByLabelText("Time range")).toBeTruthy();
+  });
+
+  it("source: no Age of Money / Available to Budget / rollover / envelope in the page", () => {
+    expect(read(PAGE)).not.toMatch(/Age of Money|age-of-money|Available to Budget|availableToBudget|rollover|Rolled over|envelope/i);
+  });
+
+  it("the card grid is the shared MetricGrid, 3 columns max", () => {
+    expect(read(PAGE)).toContain("<MetricGrid metrics={metrics} columns={3} />");
+  });
+});
+
+describe("/budgets is merged into /categories", () => {
+  it("/budgets redirects to /categories (the redirect keeps the query string) and there is no budgets list page", () => {
+    expect(REDIRECTS).toContainEqual({ source: "/budgets", destination: "/categories", permanent: false });
+    expect(fs.existsSync(path.join(ROOT, "src/app/(app)/budgets/page.tsx"))).toBe(false);
+  });
+
+  it("the form pages stay: /budgets/new, templates and move-money", () => {
+    for (const p of ["new", "templates/new", "templates/apply", "move-money"]) {
+      expect(fs.existsSync(path.join(ROOT, `src/app/(app)/budgets/${p}/page.tsx`)), p).toBe(true);
+    }
+  });
+
+  it("no nav surface (sidebar, More, tab bar, rail) lists Budgets", () => {
+    const budgets = NAV_REGISTRY.filter((e) => e.path === "/budgets");
+    expect(budgets.every((e) => e.surfaces.length === 0 && !e.rail)).toBe(true);
+    expect(NAV_REGISTRY.filter((e) => e.surfaces.length > 0).map((e) => e.label)).not.toContain("Budgets");
+  });
+});

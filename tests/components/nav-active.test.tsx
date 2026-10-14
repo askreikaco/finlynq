@@ -148,7 +148,7 @@ describe("AppTabs active tab: longest-match rule, both layouts", () => {
     ["/admin", "/more", "/more"],
     ["/settings/general", "/more", "/more"],
     ["/account/info", "/more", "/more"],
-    ["/budgets", "/more", "/budgets"],
+    ["/budgets", "/more", "/more"],
     ["/fire", "/more", "/more"],
     ["/tax", "/more", "/more"],
     ["/dashboard", "/dashboard", "/dashboard"],

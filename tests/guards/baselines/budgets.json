@@ -8,9 +8,6 @@
     "src/app/(app)/budgets/new/page.tsx": {
       "suspense-null": 1
     },
-    "src/app/(app)/budgets/page.tsx": {
-      "rounded-2xl": 1
-    },
     "src/app/(app)/budgets/templates/apply/page.tsx": {
       "suspense-null": 1
     },

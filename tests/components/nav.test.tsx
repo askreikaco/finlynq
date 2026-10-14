@@ -166,7 +166,7 @@ describe("What's New Visibility", () => {
   it("should have correct items in Tracking group with correct hrefs in order", () => {
     const trackingGroup = navGroups.find((g) => g.label === "Tracking");
     const hrefs = trackingGroup?.items.map((i) => i.href) ?? [];
-    expect(hrefs).toEqual(["/transactions", "/budgets", "/goals", "/subscriptions"]);
+    expect(hrefs).toEqual(["/transactions", "/goals", "/subscriptions"]);
   });
 
   it("should have correct items in Wealth group with correct hrefs in order", () => {

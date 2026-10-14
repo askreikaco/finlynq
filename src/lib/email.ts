@@ -462,7 +462,7 @@ export function budgetAlertEmail(
     : `Budget warning: ${categoryName}`;
   const safeCategory = escapeHtml(categoryName);
   const safeCurrency = escapeHtml(currency);
-  const budgetsUrl = `${APP_URL()}/budgets`;
+  const budgetsUrl = `${APP_URL()}/categories`;
   const html = baseLayout(
     title,
     `<p style="color:#3f3f46;line-height:1.6">

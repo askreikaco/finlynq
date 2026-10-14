@@ -48,9 +48,8 @@ export function buildMoreGroups(f: MoreFlags): MoreGroup[] {
   const tools: MoreRow[] = [];
   const admin: MoreRow[] = [];
 
-  // Main group: Tracking (Budgets, Goals) + Analysis (Reports, Categories) + Settings (Categorization) + Import + Reconcile
+  // Main group: Tracking (Goals) + Analysis (Reports, Categories) + Settings (Categorization) + Import + Reconcile
   const mainPaths = [
-    "/budgets",
     "/goals",
     "/reports",
     "/categories",

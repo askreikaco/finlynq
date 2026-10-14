@@ -26,8 +26,8 @@ describe("metric icons", () => {
 
 describe("no-history cards stay captioned, never invented", () => {
   it("goals / loans / budgets / dashboard budgets fall back to NO_HISTORY_CAPTION when no delta is derivable", () => {
-    for (const p of ["goals", "loans", "budgets", "dashboard"]) {
-      const src = read(`src/app/(app)/${p}/page.tsx`);
+    for (const p of ["goals/page", "loans/page", "categories/_page-content", "dashboard/page"]) {
+      const src = read(`src/app/(app)/${p}.tsx`);
       expect(src, p).toContain("NO_HISTORY_CAPTION");
     }
     expect(read("src/lib/metrics/delta.ts")).toContain('NO_HISTORY_CAPTION = "No earlier history to compare"');

@@ -13,7 +13,6 @@ const APP = "src/app/(app)";
 describe("desktop columns: the app pages are full width", () => {
   const PAGES = [
     `${APP}/transactions/page.tsx`,
-    `${APP}/budgets/page.tsx`,
     `${APP}/categories/_page-content.tsx`,
     `${APP}/categories/[id]/page.tsx`,
     `${APP}/subscriptions/page.tsx`,
@@ -74,17 +73,10 @@ describe("desktop columns: card grids", () => {
     expect(code("src/lib/design/tokens.ts")).toMatch(GRID3);
   });
 
-  it("budgets: category group cards span the full row, their rows in the inner 2 / 3-column grid", () => {
-    const src = code(`${APP}/budgets/page.tsx`);
-    expect(src).toMatch(/data-slot="budget-groups" className="grid grid-cols-1 gap-6"/);
-    expect(src).toMatch(/col-span-full[^`]*\$\{CARD_ROW_GRID\}/);
-  });
-
-  it("categories: group cards are 2 / 3 columns and rows reflow with a container query", () => {
+  it("categories: ONE SectionCard whose rows (groups and categories) use the shared 2 / 3-column row grid; metric cards max 3", () => {
     const src = code(`${APP}/categories/_page-content.tsx`);
-    expect(src).toMatch(/data-slot="category-group-cards"[^>]*regular:grid-cols-2[^>]*wide:grid-cols-3/);
-    expect(src).toContain("@container");
-    expect(src).toMatch(/@xl:grid-cols-\[/);
+    expect(src).toMatch(/label="Categories"[\s\S]*\$\{CARD_ROW_GRID\}/);
+    expect(src).toContain("<MetricGrid metrics={metrics} columns={3} />");
     expect(code(`${APP}/categories/_components/category-management.tsx`)).toMatch(
       /data-slot="category-manage-groups"[^>]*regular:grid-cols-2[^>]*wide:grid-cols-3/,
     );

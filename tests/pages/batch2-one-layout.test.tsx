@@ -1,7 +1,7 @@
 /**
  * @vitest-environment jsdom
  */
-// Batch 2 mobile-design pages (budgets, goals, accounts, account detail, category detail, account hub): one layout at
+// Batch 2 mobile-design pages (goals, accounts, account detail, category detail, account hub): one layout at
 // every size. Each page renders the shared header (PageHeader, or SectionPage which owns it), inset ListRows, no
 // <table>, and registers its cards with the Customize button (usePageCustomize) where the page has cards.
 import * as React from "react";
@@ -41,7 +41,6 @@ vi.mock("recharts", () => {
   };
 });
 
-import BudgetsPage from "@/app/(app)/budgets/page";
 import GoalsPage from "@/app/(app)/goals/page";
 import AccountsPage from "@/app/(app)/accounts/page";
 import AccountDetailPage from "@/app/(app)/accounts/[id]/page";
@@ -127,31 +126,6 @@ function expectOneLayout(container: HTMLElement, title: string) {
   expect(header!.querySelector("h1")?.textContent?.trim()).toBe(title);
   expect(container.querySelectorAll('[data-slot="list-row"]').length).toBeGreaterThan(0);
 }
-
-describe("Budgets: one layout at every size", () => {
-  it("shared header with Add Budget, categories as ListRows in SectionCards, no table, Customize registered", async () => {
-    const { container } = render(<><BudgetsPage /><CustomizeProbe /></>);
-    await screen.findByRole("button", { name: /Groceries/ });
-    expectOneLayout(container, "Budgets");
-    expect(screen.getByRole("link", { name: "Add Budget" })).toBeTruthy();
-    expect(screen.getByText("Food").closest('[data-slot="section-card"]')).toBeTruthy();
-    await waitFor(() => expect(screen.getByTestId("customize-probe").textContent).toBe("Customize"));
-  });
-
-  it("a row opens the detail sheet with the budget's actions", async () => {
-    render(<BudgetsPage />);
-    fireEvent.click(await screen.findByRole("button", { name: /Groceries/ }));
-    expect(await screen.findByRole("link", { name: "Edit budget" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: "View transactions" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Delete budget for Groceries" })).toBeTruthy();
-  });
-
-  it("the summary tiles are the shared metric grid", async () => {
-    const { container } = render(<BudgetsPage />);
-    await screen.findByRole("button", { name: /Groceries/ });
-    expect(container.querySelector('[data-slot="metric-grid"]')).toBeTruthy();
-  });
-});
 
 describe("Goals: one layout at every size", () => {
   it("shared header with Add Goal, goals as ListRows, no table, Customize registered", async () => {

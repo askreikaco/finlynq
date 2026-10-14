@@ -620,7 +620,7 @@ describe("nav-config", () => {
   });
 
   describe("Redirects table", () => {
-    it("should have complete REDIRECTS array with all 11 entries in exact form", () => {
+    it("should have complete REDIRECTS array with all 12 entries in exact form", () => {
       const expectedRedirects = [
         { source: "/mcp", destination: "/api/mcp", permanent: true },
         { source: "/mcp/:path*", destination: "/api/mcp/:path*", permanent: true },
@@ -629,6 +629,7 @@ describe("nav-config", () => {
         { source: "/import/reconcile", destination: "/import?tab=reconcile", permanent: false },
         { source: "/import/classic", destination: "/import", permanent: false },
         { source: "/calendar", destination: "/subscriptions?view=calendar", permanent: false },
+        { source: "/budgets", destination: "/categories", permanent: false },
         { source: "/admin/env", destination: "/admin/system", permanent: false },
         { source: "/settings/holding-accounts", destination: "/settings/investments", permanent: false },
         { source: "/settings/securities", destination: "/settings/investments", permanent: false },
@@ -649,7 +650,7 @@ describe("nav-config", () => {
       const cfg = (await import("../../next.config")).default;
       const result = await cfg.redirects!();
 
-      // Expected 11 entries (full table)
+      // Expected 12 entries (full table)
       const expectedRedirects = [
         { source: "/mcp", destination: "/api/mcp", permanent: true },
         { source: "/mcp/:path*", destination: "/api/mcp/:path*", permanent: true },
@@ -658,6 +659,7 @@ describe("nav-config", () => {
         { source: "/import/reconcile", destination: "/import?tab=reconcile", permanent: false },
         { source: "/import/classic", destination: "/import", permanent: false },
         { source: "/calendar", destination: "/subscriptions?view=calendar", permanent: false },
+        { source: "/budgets", destination: "/categories", permanent: false },
         { source: "/admin/env", destination: "/admin/system", permanent: false },
         { source: "/settings/holding-accounts", destination: "/settings/investments", permanent: false },
         { source: "/settings/securities", destination: "/settings/investments", permanent: false },
