@@ -6,13 +6,17 @@ import { readFileSync } from "fs";
 import { resolve } from "path";
 import SettingsLayout from "@/app/(app)/settings/layout";
 import { SettingsShell } from "@/components/settings-shell";
+import { ColumnShell } from "@/components/mobile/column-nav";
 
 describe("Settings Layout (FINLYNQ_NAV_V2 retired)", () => {
   it("always renders SettingsShell with no hubBackHref prop: the hub is the back target at every size", () => {
     const el = SettingsLayout({ children: "test content" });
 
-    expect(el.type).toBe(SettingsShell);
-    expect(el.props).not.toHaveProperty("hubBackHref");
+    // The layout is ColumnShell (cascading columns at wide) around the SettingsShell leaf.
+    expect(el.type).toBe(ColumnShell);
+    const shell = el.props.children;
+    expect(shell.type).toBe(SettingsShell);
+    expect(shell.props).not.toHaveProperty("hubBackHref");
   });
 
   it("does not have 'use client' directive at the top", () => {

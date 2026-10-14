@@ -80,9 +80,9 @@ describe("Batch 5: one column at every width (no wide: / regular: column switche
     expect(src).toMatch(/<Sheet\b/);
   });
 
-  it("more-menu is full width: groups one column on phone, 2 at regular, 3 at wide", () => {
+  it("more-menu: groups one column on phone, 2 at regular, 1 at wide (column 1 of the cascading columns)", () => {
     const src = read("src/components/more-menu.tsx");
-    expect(src).toMatch(/grid-cols-1[^"]*regular:grid-cols-2[^"]*wide:grid-cols-3/);
+    expect(src).toMatch(/grid-cols-1[^"]*regular:grid-cols-2[^"]*wide:grid-cols-1/);
     expect(src).not.toMatch(/wide:max-w-3xl|max-w-xl|mx-auto/);
   });
 

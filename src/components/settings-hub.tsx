@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * Settings hub page (level 1, every size): grouped inset lists of all settings sections.
  */
@@ -9,6 +11,7 @@ import { getEntriesBySurface } from "@/lib/nav-config";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/mobile/page-header";
+import { isCurrentRoute, useColumnCurrent } from "@/components/mobile/column-context";
 
 /** iOS-style groups: each group is one inset rounded list. Order is fixed; entries come from the registry. */
 const GROUPS: Array<{ title: string; paths: string[] }> = [
@@ -27,6 +30,7 @@ const GROUPS: Array<{ title: string; paths: string[] }> = [
  * column (max-w-xl); from wide, two columns when there are groups.
  */
 export function SettingsHub() {
+  const columnCurrent = useColumnCurrent();
   const entries = getEntriesBySurface("settings");
   const groups = GROUPS.map((g) => ({
     title: g.title,
@@ -51,8 +55,9 @@ export function SettingsHub() {
         className={cn(
           "grid grid-cols-1 items-start gap-6",
           // columns follow the group count (1 -> 1, 2 -> 2, 3+ -> 3) so the cards always fill the width
-          groups.length === 2 && "regular:grid-cols-2",
-          groups.length >= 3 && "regular:grid-cols-2 wide:grid-cols-3",
+          // wide: column 2 of the cascading columns (column-nav.tsx), always one list column
+          groups.length === 2 && "regular:grid-cols-2 wide:grid-cols-1",
+          groups.length >= 3 && "regular:grid-cols-2 wide:grid-cols-1",
         )}
       >
         {groups.map((group) => (
@@ -68,7 +73,8 @@ export function SettingsHub() {
                     key={entry.path}
                     href={entry.path}
                     data-slot="settings-hub-row"
-                    className="flex min-h-14 items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                    aria-current={isCurrentRoute(columnCurrent, entry.path) ? "true" : undefined}
+                    className="flex min-h-14 aria-[current=true]:bg-primary/10 aria-[current=true]:hover:bg-primary/10 items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                   >
                     <span
                       data-slot="settings-hub-icon"

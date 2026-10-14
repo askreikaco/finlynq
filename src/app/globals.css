@@ -588,6 +588,16 @@ html {
   .page-header-bleed { --header-pad: 2rem; }
 }
 
+/* Cascading columns (components/mobile/column-nav.tsx, wide only): each column carries its own top bar, so the bar spans the
+   column (not the whole main area) and a back button that only leads to the column on its left is hidden. */
+@media (width > 64rem) {
+  [data-column-shell] [data-column-pane] .page-header-bleed { margin-inline: -1rem; --header-pad: 1rem; }
+  [data-column-shell] [data-column-pane="col3"] .page-header-bleed { margin-inline: -1.5rem; --header-pad: 1.5rem; }
+  [data-column-shell] .column-auto-back { display: none; }
+  /* Column 3 is one stack: the template card grids (grid3: 2 / 3 columns by viewport) become a single column, never squeezed cards. */
+  [data-column-shell] [data-column-pane="col3"] :is([data-slot="section-grid"], [data-slot="detail-grid"], [data-slot="hub-columns"], .card-row-grid, [data-split-grid]) { grid-template-columns: minmax(0, 1fr); }
+}
+
 /* Split view (ListDetailLayout, wide only): the list column is 2/3 of the page, so a row/card grid inside it drops from
    3 columns to 2. Grids opt in with the card-row-grid class or the data-split-grid attribute. */
 @media (width >= 64rem) {

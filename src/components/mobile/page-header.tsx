@@ -343,7 +343,12 @@ export function PageHeader({
       {hasLeft ? (
         <div className="contents">
           {effectiveBackHref ? (
-            <BackButton href={effectiveBackHref} label={backLabel} className="justify-self-start" />
+            <BackButton
+              href={effectiveBackHref}
+              label={backLabel}
+              // Hidden by CSS at wide inside the cascading columns (column-nav.tsx) when it only leads to a visible column.
+              className={cn("justify-self-start", effectiveBackHref === "/more" || effectiveBackHref === "/settings" ? "column-auto-back" : null)}
+            />
           ) : onBack ? (
             <BackButton onClick={onBack} label={backLabel} className="justify-self-start" />
           ) : null}
