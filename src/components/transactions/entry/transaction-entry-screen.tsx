@@ -458,7 +458,7 @@ export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; em
       const ordered = sortAccount(
         activeAccounts,
         (a) => Number(a.id),
-        (a, z) => a.name.localeCompare(z.name),
+        (a, z) => (a.name ?? "").localeCompare(z.name ?? ""),
       );
       setAccountId(String((match ?? lastMatch ?? ordered[0] ?? activeAccounts[0]).id));
     }
@@ -1689,6 +1689,8 @@ export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; em
       {/* Numpad dock: pinned to the safe-area bottom (the tab bar is hidden here). Touch only:
           pointer-coarse, never a JS device check, so a desktop never shows it. */}
       <NumpadDock
+        // Pane (touch at wide): the dock sits under the 1/3 pane column, not across the list too.
+        className={embedded ? "wide:left-auto wide:right-8 wide:w-[calc((100vw-5rem-var(--sal,0px)-4rem-1.5rem)/3)]" : undefined}
         activeId={padTarget}
         activeValue={
           padTarget === MAIN_PAD ? amount : (splitRows.find((r) => r.id === padTarget)?.amount ?? "")
