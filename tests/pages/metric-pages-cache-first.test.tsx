@@ -70,8 +70,6 @@ describe("useCacheFirstJson errorStatus", () => {
 });
 
 describe("category detail page is cache-first", () => {
-  const url = "/api/reports/category?categoryId=7&months=12";
-
   it("404 still shows 'Category not found'", async () => {
     fetchMock.mockImplementation(async (u: string) => (String(u).startsWith("/api/reports/category") ? res(404) : res(200, [])));
     render(<CategoryDetailPage />, { wrapper: withCache(new Map()) });
@@ -84,15 +82,17 @@ describe("category detail page is cache-first", () => {
     expect(await screen.findByText("Couldn't load this category")).toBeTruthy();
   });
 
-  it("cold: skeleton while loading; a cached entry skips it (key includes categoryId + months)", () => {
+  it("cold: skeleton while loading; a cached entry skips it (key = categoryId + the toolbar period, no months)", async () => {
     fetchMock.mockImplementation(() => new Promise(() => {}));
     const cold = render(<CategoryDetailPage />, { wrapper: withCache(new Map()) });
     const coldText = cold.container.textContent;
+    const requested = String(fetchMock.mock.calls.find((c) => String(c[0]).startsWith("/api/reports/category"))?.[0]);
     cold.unmount();
-    // A different months window is a different key: seeding it must not satisfy this page's request.
-    const other = new Map<string, unknown>([["/api/reports/category?categoryId=7&months=6", { data: { category: { id: 7, name: "X" } } }]]);
+    expect(requested).toMatch(/^\/api\/reports\/category\?categoryId=7&from=\d{4}-\d{2}-01&to=\d{4}-\d{2}-\d{2}$/);
+    expect(requested).not.toContain("months=");
+    // A different period is a different key: seeding it must not satisfy this page's request.
+    const other = new Map<string, unknown>([["/api/reports/category?categoryId=7&from=2020-01-01&to=2020-01-31", { data: { category: { id: 7, name: "X" } } }]]);
     const miss = render(<CategoryDetailPage />, { wrapper: withCache(other) });
     expect(miss.container.textContent).toBe(coldText);
-    expect(url).toContain("months=12");
   });
 });

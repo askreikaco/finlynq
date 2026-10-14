@@ -192,12 +192,12 @@ describe("Category detail: one layout at every size", () => {
     await waitFor(() => expect(screen.getByTestId("customize-probe").textContent).toBe("Customize"));
   });
 
-  it("the period selector is visible at every width (not a desktop-only control)", async () => {
+  it("the time range is the shared toolbar control (no 6M/12M/24M tabs), visible at every width", async () => {
     H.params = { id: "10" };
     render(<CategoryPage />);
     await screen.findByText("Top payees");
-    const tab = screen.getByRole("tab", { name: "12M" });
-    expect(tab.closest(".hidden")).toBeNull();
+    expect(screen.queryByRole("tab", { name: "12M" })).toBeNull();
+    expect(screen.getByLabelText("Time range").closest(".hidden")).toBeNull();
   });
 });
 

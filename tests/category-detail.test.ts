@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   buildCategoryDetail,
   categoryWindow,
+  rangeWindow,
   shiftMonth,
   type CategoryTxRow,
 } from "@/lib/reports/category-detail";
@@ -162,5 +163,66 @@ describe("buildCategoryDetail", () => {
     });
     expect(d.stats.thisMonth).toBe(0);
     expect(d.stats.transactionCount).toBe(0);
+  });
+});
+
+describe("selected period (toolbar range) window", () => {
+  const today = "2026-10-12";
+
+  it("rangeWindow: this month still shows 12 months of context ending at the period's month", () => {
+    const w = rangeWindow(today, "2026-10-01", "2026-10-31");
+    expect(w.periodEnd).toBe(today); // capped to today
+    expect(w.windowStartMonth).toBe("2025-11");
+    expect(w.queryStart).toBe("2025-10-01"); // 12 months back for same-month-last-year
+  });
+
+  it("rangeWindow: a span longer than 12 months shows the whole span", () => {
+    const w = rangeWindow(today, "2024-03-05", "2026-02-10");
+    expect(w.periodEnd).toBe("2026-02-10");
+    expect(w.windowStartMonth).toBe("2024-03");
+  });
+
+  it("stats, payees and recent follow the period; earlier months only add chart context", () => {
+    const d = buildCategoryDetail({
+      type: "E",
+      rows: [tx("2026-06-10", -40, "Old"), tx("2026-08-02", -100, "A"), tx("2026-08-20", -50, "B"), tx("2026-09-01", -999, "Later")],
+      budgets: new Map(),
+      today,
+      months: 12,
+      range: { from: "2026-08-01", to: "2026-08-31" },
+      toDisplay: native,
+      typeTotal: 300,
+    });
+    expect(d.months.at(-1)?.month).toBe("2026-08"); // ends at the selected period
+    expect(d.months.length).toBe(12);
+    expect(d.months.at(-1)?.partial).toBe(false); // whole past month
+    expect(d.stats.total).toBe(150);
+    expect(d.stats.transactionCount).toBe(2);
+    expect(d.stats.shareOfType).toBeCloseTo(0.5, 10);
+    expect(d.topPayees.map((p) => p.payee)).toEqual(["A", "B"]);
+    expect(d.recent.map((r) => r.payee)).toEqual(["B", "A"]);
+    expect(d.stats.thisMonth).toBe(150); // end month
+    expect(d.months.find((m) => m.month === "2026-06")?.amount).toBe(40); // context month kept in the chart
+  });
+
+  it("a custom mid-month range ending today is partial and excludes days outside it", () => {
+    const d = buildCategoryDetail({
+      type: "I",
+      rows: [tx("2026-10-02", 10), tx("2026-10-08", 25), tx("2026-10-11", 5)],
+      budgets: new Map(),
+      today,
+      months: 12,
+      range: { from: "2026-10-05", to: "2026-10-31" },
+      toDisplay: native,
+      typeTotal: 100,
+    });
+    expect(d.stats.total).toBe(30);
+    expect(d.months.at(-1)?.partial).toBe(true);
+  });
+
+  it("no range = unchanged months behaviour", () => {
+    const d = buildCategoryDetail({ type: "E", rows: [tx("2026-09-03", -100)], budgets: new Map(), today, months: 6, toDisplay: native, typeTotal: 100 });
+    expect(d.months.length).toBe(6);
+    expect(d.stats.total).toBe(100);
   });
 });
