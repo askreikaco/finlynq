@@ -5,13 +5,10 @@ import { ArrowDownRight, ArrowUpRight, ArrowLeftRight, type LucideIcon } from "l
 import { transferEnds, type TransferPeer } from "@/lib/transactions/transfer-ends";
 import { formatDate } from "@/lib/currency";
 import { todayISO, localDateISO } from "@/lib/utils/date";
-import { Amount, ListRow, SectionCard } from "@/components/mobile";
+import { SectionCard, TxRow, type TxRowTile } from "@/components/mobile";
 import type { Transaction } from "@/app/(app)/transactions/_types";
 import { cn } from "@/lib/utils";
 import { PendingSyncBadge } from "./pending-sync-badge";
-
-/** Pressed and hover feedback for a tappable transaction row (ListRow adds the focus ring). */
-const ROW_PRESS = "hover:bg-muted/50 active:bg-muted/60";
 
 /** Bulk selection for the list: rows show a checkbox and a tap toggles the row. Pending rows are never selectable. */
 export interface TxListSelection {
@@ -164,12 +161,12 @@ function groupTransactionsByDate(
   return groups;
 }
 
-function getTransactionIcon(transaction: Transaction): { Icon: LucideIcon; bgClass: string } {
+function getTransactionIcon(transaction: Transaction): { Icon: LucideIcon; tile: TxRowTile } {
   // Transfer: check for linkId (indicates a transfer pair)
   if (transaction.linkId) {
     return {
       Icon: ArrowLeftRight,
-      bgClass: "bg-muted text-muted-foreground dark:text-foreground",
+      tile: "muted",
     };
   }
 
@@ -177,14 +174,14 @@ function getTransactionIcon(transaction: Transaction): { Icon: LucideIcon; bgCla
   if (transaction.amount > 0) {
     return {
       Icon: ArrowUpRight,
-      bgClass: "bg-pos/10 text-pos",
+      tile: "pos",
     };
   }
 
   // Money out: amount < 0
   return {
     Icon: ArrowDownRight,
-    bgClass: "bg-destructive/10 text-destructive",
+    tile: "neg",
   };
 }
 
@@ -203,7 +200,7 @@ function TransactionRow({
   peer: TransferPeer | null;
   selection?: TxListSelection;
 }) {
-  const { Icon, bgClass } = getTransactionIcon(t);
+  const { Icon, tile } = getTransactionIcon(t);
   const payee = t.payee || t.categoryName || "—";
   const ends = transferEnds(t, peer);
   const subtitle = ends
@@ -212,19 +209,11 @@ function TransactionRow({
       ? [t.categoryName, t.accountAlias || t.accountName].filter(Boolean).join(" · ")
       : t.categoryName;
 
-  const tile = (
-    <span className={cn("flex size-9 shrink-0 items-center justify-center rounded-full", bgClass)}>
-      <Icon className="size-4" aria-hidden />
-    </span>
-  );
   const title = (
     <span className="flex min-w-0 items-center gap-2">
       <span className="block min-w-0 truncate">{payee}</span>
       <PendingSyncBadge mark={t.pendingSync} />
     </span>
-  );
-  const value = (
-    <Amount value={t.amount} currency={t.currency} size="md" tone={t.amount > 0 ? "pos" : "none"} showSign />
   );
 
   if (selection && t.id > 0 && !t.pendingSync) {
@@ -244,11 +233,11 @@ function TransactionRow({
           className="ml-1 h-4 w-4 shrink-0 cursor-pointer rounded border-input"
         />
         <div className="min-w-0 flex-1">
-          <ListRow title={title} subtitle={subtitle} value={value} leading={tile} chevron={false} />
+          <TxRow title={title} subtitle={subtitle} amount={t.amount} currency={t.currency} amountTone={t.amount > 0 ? "pos" : "none"} showSign icon={Icon} tile={tile} chevron={false} />
         </div>
       </div>
     );
   }
 
-  return <ListRow title={title} subtitle={subtitle} value={value} leading={tile} selected={selected} onPress={() => onOpen(t)} className={ROW_PRESS} />;
+  return <TxRow title={title} subtitle={subtitle} amount={t.amount} currency={t.currency} amountTone={t.amount > 0 ? "pos" : "none"} showSign icon={Icon} tile={tile} selected={selected} onPress={() => onOpen(t)} />;
 }

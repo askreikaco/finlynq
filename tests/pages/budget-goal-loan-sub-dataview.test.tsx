@@ -220,10 +220,11 @@ describe("Repeat + Installment phase 2a: Subscriptions page Post now / Skip", ()
     );
   });
 
-  it("an ended subscription is listed under Ended with a badge", async () => {
+  it("an ended subscription stays in its frequency group (Monthly) with an Ended badge", async () => {
     DATA.subs = [{ ...SUB, id: 11, name: "Old plan", status: "ended", dueCount: 0, overdue: [] }];
     render(<SubscriptionsPage />);
-    expect(await screen.findByText("Ended (1)")).toBeTruthy();
+    expect(await screen.findByText(/^Monthly \(1\)/)).toBeTruthy();
+    expect(screen.queryByText(/^Ended \(/)).toBeNull();
     expect(screen.getByText("Ended", { selector: "[data-slot=badge], span, div" })).toBeTruthy();
   });
 });

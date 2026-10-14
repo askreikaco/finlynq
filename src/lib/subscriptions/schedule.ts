@@ -537,3 +537,19 @@ export function firstOccurrenceAfter(date: string, frequency: string | null | un
   if (!parseIso(date)) return null;
   return nextOnOrAfter(date, frequency, addDays(date, 1));
 }
+
+/** The list groups of the Subscriptions page, in display order. */
+export const FREQUENCY_GROUPS = [
+  { key: "daily", title: "Daily", frequencies: ["daily", "weekdays", "weekend"] },
+  { key: "weekly", title: "Weekly", frequencies: ["weekly", "biweekly", "every4weeks"] },
+  { key: "monthly", title: "Monthly", frequencies: ["monthly", "monthly_eom", "bimonthly"] },
+  { key: "quarterly", title: "Quarterly", frequencies: ["quarterly"] },
+  { key: "yearly", title: "Yearly", frequencies: ["semiannual", "annual"] },
+  { key: "custom", title: "Custom", frequencies: ["every_n_days"] },
+] as const;
+
+/** Which FREQUENCY_GROUPS entry a stored frequency belongs to (unknown cadences fall back to monthly, like pricing). */
+export function frequencyGroupKey(raw: string | null | undefined): (typeof FREQUENCY_GROUPS)[number]["key"] {
+  const f = frequencyOrMonthly(raw);
+  return (FREQUENCY_GROUPS.find((g) => (g.frequencies as readonly string[]).includes(f)) ?? FREQUENCY_GROUPS[2]).key;
+}
