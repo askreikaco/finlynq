@@ -54,8 +54,9 @@ describe.skipIf(!enabled)("transactions scope: investment vs daily (real Postgre
       portfolioHoldingId: holding,
     });
     // Unflagged accounts in the Investment group (case/space variants).
-    for (const group of ["Investment", "investment", " Investment "]) {
-      const acc = await createAccount({ userId, name: `Grp ${group}`, currency: "CAD", isInvestment: false, group });
+    // Names must differ after lookup normalisation (case/trim-insensitive unique index), so index them.
+    for (const [i, group] of ["Investment", "investment", " Investment "].entries()) {
+      const acc = await createAccount({ userId, name: `Grp ${i}`, currency: "CAD", isInvestment: false, group });
       groupRowIds.push(await recordTransaction({ userId, accountId: acc, currency: "CAD", amount: -5 }));
     }
     // Transfer legs: personal<->investment-group (personal leg stays), investment<->investment (both hidden).
