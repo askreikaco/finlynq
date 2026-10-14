@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { OnboardingTips } from "@/components/onboarding-tips";
 import { Badge } from "@/components/ui/badge";
-import { Plus, PanelRight, ChevronDown, Receipt, X, AlertTriangle, ArrowRightLeft, ListChecks, TrendingUp, Download, ShoppingCart, Banknote, Repeat, Send, HandCoins, CircleDollarSign, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
+import { Plus, ChevronDown, Receipt, Search, X, AlertTriangle, ArrowRightLeft, ArrowDownUp, ListChecks, TrendingUp, Download, ShoppingCart, Banknote, Repeat, Send, HandCoins, CircleDollarSign, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuGroup, DropdownMenuLabel, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { portfolioEditHref, transactionEditHref, transactionSplitHref } from "@/lib/transactions/edit-flow";
 import { MobileTxList } from "@/components/transactions/mobile-tx-list";
@@ -38,11 +38,10 @@ import type { RangeSelection } from "@/lib/metrics/period";
 import type { SortPref } from "../_types";
 import { LotReallocationNotice } from "@/components/portfolio/lot-reallocation-notice";
 import type { LotReallocationPreview } from "@/lib/portfolio/lots/types";
-import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
-import { useAppSizeClass } from "@/components/adaptive";
+import { PageHeader, HEADER_DESKTOP_ONLY, ListDetailLayout, useListDetail } from "@/components/mobile";
+import { TransactionFormScreen } from "./transaction-form-screen";
+import { withSel } from "@/lib/list-detail/selection";
 import { EmptyState } from "@/components/empty-state";
-import { useSplitView } from "@/lib/transactions/split-view";
-import { TransactionDetailPane } from "./transaction-detail-pane";
 import { useTransferPeers } from "../_hooks/use-transfer-peers";
 import { PendingSyncBadge } from "@/components/transactions/pending-sync-badge";
 import { applyPendingToTransactions, countPendingDeletes } from "@/lib/transactions/pending-overlay";
@@ -142,6 +141,12 @@ export function TransactionsWorkspace({
   // the page index and the controlled search input so a drill fully REPLACES
   // any prior filter state rather than merging into it. Skipped when `locked`
   // (the account-scoped embed keeps its forced accountId and ignores the URL).
+  const filterKey = useMemo(() => {
+    const q = new URLSearchParams(urlParams.toString());
+    q.delete("sel");
+    q.delete("prefill");
+    return q.toString();
+  }, [urlParams]);
   useEffect(() => {
     if (locked) {
       // Account-scoped embed: the account stays forced, but the mobile search
@@ -176,7 +181,10 @@ export function TransactionsWorkspace({
       maxAmount: urlParams.get("maxAmount") ?? "",
     });
     setPage(0);
-  }, [urlParams, locked, lockedAccountId]);
+    // The split view keeps its selection in ?sel (and a Duplicate hands its prefill over in ?prefill): neither is a
+    // filter, so a selection change must not reset the filters or the page (filterKey ignores them).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterKey, locked, lockedAccountId]);
 
   // Header sort and per-column filters (the list has no columns; both are set from the compact
   // sort control and the active-filter chips). Each hook owns the load-on-mount + debounced-PUT
@@ -302,11 +310,9 @@ export function TransactionsWorkspace({
 
   // Bulk selection
   const [selected, setSelected] = useState<Set<number>>(new Set());
-  const sizeClass = useAppSizeClass();
-  // Optional split view (list | details) on wide screens only; off unless the user turns it on.
-  const [splitPref, setSplitPref] = useSplitView();
-  const splitView = splitPref && sizeClass === "wide";
-  const [splitSelectedId, setSplitSelectedId] = useState<number | null>(null);
+  // Split view (list 2/3 | the entry form 1/3) from regular up, selection in ?sel. Off in the account-scoped embed.
+  const listDetail = useListDetail();
+  const splitView = listDetail.split && !locked;
   // Other leg of each transfer row, so rows can show "From … To …".
   const transferPeers = useTransferPeers(txns);
   // Bulk select is a mode of the one list: "Select" shows row checkboxes; leaving it drops the selection.
@@ -397,17 +403,18 @@ export function TransactionsWorkspace({
       else if (t.pendingSync.kind === "create") router.push(`/transactions/new?queued=${encodeURIComponent(t.pendingSync.opId)}`);
       return;
     }
-    if (splitView) {
-      setSplitSelectedId(t.id);
-      return;
-    }
     openEditPage(t);
   }
 
   /** Row tap: split view selects the row into the detail pane; otherwise the row's detail sheet opens (queued rows too). */
   function handleOpenRow(t: Transaction) {
     if (splitView) {
-      startEdit(t);
+      // Queued rows and investment rows keep their own editors; every other row opens in the pane.
+      if (t.pendingSync || portfolioEditHref(t.kind, t.id)) {
+        startEdit(t);
+        return;
+      }
+      listDetail.select(t.id);
       return;
     }
     setSheetTx(t);
@@ -668,7 +675,7 @@ export function TransactionsWorkspace({
                   Phase 2 portfolio-ops UX (2026-05-25). */}
               <Button
                 className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-sm"
-                onClick={() => router.push("/transactions/new")}
+                onClick={() => (splitView ? listDetail.selectNew() : router.push("/transactions/new"))}
                 aria-label="Add Transaction"
               >
                 <Plus className="h-4 w-4 mr-1" /> Add<span className="max-regular:sr-only"> Transaction</span>
@@ -748,19 +755,6 @@ export function TransactionsWorkspace({
             monthSwitcher={!legacyDates && !drill}
             search={{ value: tb.list.q, onChange: tb.list.setQ, placeholder: "Payee or note" }}
           />
-        )}
-        {sizeClass === "wide" && (
-          <Button
-            type="button"
-            variant={splitView ? "secondary" : "outline"}
-            size="sm"
-            className="ml-auto"
-            aria-pressed={splitView}
-            data-testid="tx-split-toggle"
-            onClick={() => { setSplitPref(!splitPref); setSplitSelectedId(null); }}
-          >
-            <PanelRight className="mr-1.5 h-4 w-4" /> Split view
-          </Button>
         )}
       </div>
 
@@ -898,9 +892,27 @@ export function TransactionsWorkspace({
         </div>
       )}
 
-      <div className={splitView ? "grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] items-start gap-6" : undefined}>
-        {/* The one transactions list at every width: date-grouped mobile rows. Select mode adds checkboxes. */}
+      <ListDetailLayout
+        entity="transaction"
+        newLabel="Add Transaction"
+        enabled={!locked}
+        pane={(api) => (
+          <TransactionFormScreen
+            mode={api.isNew ? "create" : "edit"}
+            id={api.selectedId ?? undefined}
+            returnTo={currentReturnTo()}
+            embedded={{
+              onSaved: () => { void loadTxns(); api.afterSaved(); },
+              onCancel: api.clear,
+              onDeleted: () => { void loadTxns(); api.afterDeleted(); },
+              // Duplicate wrote its prefill: open a create pane, which reads it (?prefill=1) once on mount.
+              onDuplicate: () => router.push(`${pathname}${withSel(urlParams.toString(), "new")}&prefill=1`, { scroll: false }),
+            }}
+          />
+        )}
+        list={
         <div className="min-w-0 space-y-6">
+        {/* The one transactions list at every width: date-grouped mobile rows. Select mode adds checkboxes. */}
                 {/* Bulk actions for the selected rows (Select mode). */}
                 {someSelected && (
                   <div className="flex flex-wrap items-center gap-3 px-4 py-2.5 bg-primary/5 border border-primary/20 rounded-lg text-sm">
@@ -1000,7 +1012,7 @@ export function TransactionsWorkspace({
             isLoadingMore={isLoadingMore}
             onOpen={handleOpenRow}
             showAccountName={!locked}
-            singleColumn={splitView}
+            selectedId={splitView ? listDetail.selectedId === null ? null : Number(listDetail.selectedId) : null}
             transferPeers={transferPeers}
             emptyState={
               <EmptyState
@@ -1013,16 +1025,8 @@ export function TransactionsWorkspace({
             selection={selectMode ? { selected, onToggle: toggleOne } : undefined}
           />
         </div>
-          {splitView && (
-            <div className="sticky top-4">
-              <TransactionDetailPane
-                transaction={txns.find((x) => x.id === splitSelectedId) ?? null}
-                onEdit={openEditPage}
-                onClose={() => setSplitSelectedId(null)}
-              />
-            </div>
-          )}
-      </div>
+        }
+      />
 
       {sheetTx && (
         <TransactionSheet

@@ -37,7 +37,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { Check, Trash2 } from "lucide-react";
+import { Check, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/error-state";
@@ -89,8 +89,28 @@ export interface FormPageDelete<R> {
   errorMessage?: string;
 }
 
+/**
+ * Split-view pane mode. The SAME FormPage config renders in the pane: no PageHeader (a compact title row with Delete
+ * instead), no navigation (the callbacks run after save / cancel / delete), the record id comes from here, not the route.
+ */
+export interface FormPageEmbedded {
+  /** The record id for an edit pane (replaces the route's `[id]`). Omit for create. */
+  id?: string;
+  onSaved?: (res?: Response | null) => void;
+  onCancel?: () => void;
+  onDeleted?: () => void;
+  /** Extra header controls (e.g. a Delete that the host page confirms itself). */
+  actions?: React.ReactNode;
+}
+
 export interface FormPageContext<R, V, X = unknown> {
   record: R | undefined;
+  /** True in the split-view pane. */
+  embedded: boolean;
+  /** Save finished: the pane callback, or navigate to returnTo on the page. */
+  finish: () => void;
+  /** Cancel: the pane callback, or navigate to returnTo on the page. */
+  cancel: () => void;
   /** Extra data from `useLoad` (undefined without it). */
   extra: X | undefined;
   returnTo: string;
@@ -165,6 +185,10 @@ export interface FormPageHeaderOptions<R> {
 
 export interface FormPageProps<T, R, V, X = unknown> {
   id: string;
+  /** Entity key, rendered as `data-form="<entity>"` on the root (page and pane alike). */
+  entity?: string;
+  /** Render as the split-view pane (see FormPageEmbedded). */
+  embedded?: FormPageEmbedded;
   /** Testid of the root element. Default `${id}-root`. */
   rootTestId?: string;
   title: React.ReactNode;
@@ -242,11 +266,13 @@ function wrapState(
 
 function FormPageBody<T, R, V, X>({
   id,
+  entity,
+  embedded,
   rootTestId,
   title,
   subtitle,
   fallbackReturn,
-  savePlacement = "bar",
+  savePlacement: savePlacementProp = "bar",
   saveLabel = "Save",
   cancel,
   form = "owned",
@@ -265,10 +291,13 @@ function FormPageBody<T, R, V, X>({
   children,
 }: FormPageProps<T, R, V, X>) {
   const router = useRouter();
-  const params = (useParams<RouteParams>() ?? {}) as RouteParams;
+  const routeParams = (useParams<RouteParams>() ?? {}) as RouteParams;
+  const params: RouteParams = embedded ? { ...routeParams, id: embedded.id } : routeParams;
   const routeId = params.id ?? "";
   const fallback = typeof fallbackReturn === "function" ? fallbackReturn(params) : fallbackReturn;
   const returnTo = useReturnTo(fallback);
+  // The pane has no top bar to hold Save: it always uses the bottom footer.
+  const savePlacement = embedded ? "bottom" : savePlacementProp;
   const formId = `${id}-form`;
   const external = form === "external";
   const showCancel = cancel ?? savePlacement === "bottom";
@@ -321,11 +350,12 @@ function FormPageBody<T, R, V, X>({
       const res = await submitState.run(async () => handler(values));
       if (res) {
         setDirty(false);
-        router.push(returnTo);
+        if (embedded) embedded.onSaved?.(res);
+        else router.push(returnTo);
       }
       return res;
     },
-    [submitState.run, onSubmit, router, returnTo], // eslint-disable-line react-hooks/exhaustive-deps
+    [submitState.run, onSubmit, router, returnTo, embedded], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -346,13 +376,18 @@ function FormPageBody<T, R, V, X>({
 
   const leave = (href: string) => {
     if (dirtyGuard && dirty && !window.confirm(FORM_DIRTY_MESSAGE)) return;
-    router.push(href);
+    if (embedded) embedded.onCancel?.();
+    else router.push(href);
   };
 
   // Delete.
   const del = useDeleteFlow<R>({
     request: (rec) => (deleteCfg ? deleteCfg.request(rec) : Promise.reject(new Error("No delete configured"))),
     onDeleted: () => {
+      if (embedded) {
+        embedded.onDeleted?.();
+        return;
+      }
       const after = deleteCfg?.after;
       router.push(!after || after === "returnTo" ? returnTo : after);
     },
@@ -371,6 +406,12 @@ function FormPageBody<T, R, V, X>({
 
   const ctx: FormPageContext<R, V, X> = {
     record,
+    embedded: !!embedded,
+    finish: () => {
+      if (embedded) embedded.onSaved?.(null);
+      else router.push(returnTo);
+    },
+    cancel: () => leave(returnTo),
     extra,
     returnTo,
     router,
@@ -424,7 +465,28 @@ function FormPageBody<T, R, V, X>({
     );
 
   const subtitleNode = typeof subtitle === "function" ? subtitle(record) : subtitle;
-  const headerNode = (
+  const embeddedHeader = (
+    <div data-slot="form-pane-header" className="flex items-start justify-between gap-2 pb-3">
+      <div className="min-w-0">
+        <h2 className="truncate text-base font-semibold text-foreground">{title}</h2>
+        {subtitleNode ? <div className="text-xs text-muted-foreground">{subtitleNode}</div> : null}
+      </div>
+      <div className="flex shrink-0 items-center gap-1">
+        {embedded?.actions}
+        {deleteCfg && openDelete ? (
+          <Button type="button" variant="outline" size="sm" className="text-destructive" onClick={openDelete}>
+            <Trash2 className="mr-1 h-4 w-4" aria-hidden /> {deleteCfg.headerLabel ?? deleteCfg.label}
+          </Button>
+        ) : null}
+        {embedded?.onCancel ? (
+          <Button type="button" variant="ghost" size="icon" aria-label="Close" data-slot="form-pane-close" onClick={embedded.onCancel}>
+            <X className="h-4 w-4" aria-hidden />
+          </Button>
+        ) : null}
+      </div>
+    </div>
+  );
+  const headerNode = embedded ? embeddedHeader : (
     <PageHeader
       title={title}
       subtitle={subtitleNode}
@@ -502,7 +564,7 @@ function FormPageBody<T, R, V, X>({
       chrome: cfg?.chrome !== false,
     };
   }
-  if (piece && !piece.chrome) return <>{piece.node}</>;
+  if (piece && !piece.chrome && !embedded) return <>{piece.node}</>;
 
   const delError = del.error ? (
     deleteCfg?.errorStyle === "inline" ? (
@@ -532,7 +594,7 @@ function FormPageBody<T, R, V, X>({
   } else if (external) {
     body = (
       <div
-        className={cn("mt-3", BODY_WIDTH_CLASS[width], padValue, bodyClassName)}
+        className={cn(embedded ? "mt-0" : "mt-3", !embedded && BODY_WIDTH_CLASS[width], !embedded && padValue, bodyClassName)}
         onChange={dirtyGuard ? () => setDirty(true) : undefined}
       >
         {delError}
@@ -543,7 +605,7 @@ function FormPageBody<T, R, V, X>({
     body = (
       <form
         id={formId}
-        className={cn("mt-3 space-y-3", BODY_WIDTH_CLASS[width], bodyClassName)}
+        className={cn(embedded ? "space-y-3" : "mt-3 space-y-3", !embedded && BODY_WIDTH_CLASS[width], bodyClassName)}
         noValidate
         onSubmit={handleFormSubmit}
         onChange={dirtyGuard ? () => setDirty(true) : undefined}
@@ -576,7 +638,9 @@ function FormPageBody<T, R, V, X>({
   return (
     <div
       data-testid={rootTestId ?? `${id}-root`}
-      className={cn("w-full", WIDTH_CLASS[width], !external && padValue)}
+      data-form={entity}
+      data-embedded={embedded ? "true" : undefined}
+      className={cn("w-full", WIDTH_CLASS[width], !external && !embedded && padValue)}
     >
       {headerNode}
       {body}

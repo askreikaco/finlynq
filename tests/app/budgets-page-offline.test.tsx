@@ -13,17 +13,20 @@ const H = vi.hoisted(() => ({
   ] as unknown[],
   PEND: { creates: [], edits: {}, deletes: {} } as unknown,
   ACTIVE: false,
+  SIZE: { current: "compact" as "compact" | "regular" | "wide" },
+  SEARCH: { current: "month=2026-10" },
 }));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }),
-  useSearchParams: () => new URLSearchParams("month=2026-10"),
+  useSearchParams: () => new URLSearchParams(H.SEARCH.current),
   usePathname: () => "/budgets",
+  useParams: () => ({}),
 }));
 vi.mock("next/link", () => ({ default: ({ children, href }: { children: React.ReactNode; href: string }) => React.createElement("a", { href }, children) }));
 vi.mock("@/components/adaptive/size-class-context", async (orig) => ({
   ...(await orig<typeof import("@/components/adaptive/size-class-context")>()),
-  useAppSizeClass: () => "regular",
+  useAppSizeClass: () => H.SIZE.current,
 }));
 vi.mock("@/lib/client/user-storage", async (orig) => ({
   ...(await orig<typeof import("@/lib/client/user-storage")>()),
@@ -41,6 +44,8 @@ vi.mock("@/lib/data/use-cache-first", () => ({
 vi.mock("@/lib/data/local-write-queue", () => ({
   usePendingBudgets: () => H.PEND,
   isLocalWriteQueueActive: () => H.ACTIVE,
+  isLocalWriteQueueOn: () => H.ACTIVE,
+  queueOfflineBudgetSet: vi.fn(async () => false),
   queueOfflineBudgetDelete: vi.fn(async () => false),
   discardQueuedCreate: vi.fn(async () => false),
 }));
@@ -50,6 +55,8 @@ import BudgetsPage from "@/app/(app)/budgets/page";
 
 afterEach(() => {
   cleanup();
+  H.SIZE.current = "compact";
+  H.SEARCH.current = "month=2026-10";
   H.BUDGETS = [{ id: 1, categoryId: 10, categoryName: "Food", categoryGroup: "Living", month: "2026-10", amount: 300, currency: "CAD", rolloverAmount: 0 }];
   H.PEND = { creates: [], edits: {}, deletes: {} };
 });
@@ -92,12 +99,29 @@ describe("budgets page with the offline queue", () => {
     vi.stubGlobal("fetch", vi.fn(async () => { throw new TypeError("network"); }));
     vi.mocked(queueOfflineBudgetDelete).mockResolvedValueOnce(true);
     render(<BudgetsPage />);
-    // Row tap opens the detail sheet; its Delete action opens the confirm.
+    // Phones: a row tap opens the detail sheet; its Delete action opens the confirm.
     fireEvent.click(screen.getByRole("button", { name: /Food/ }));
     fireEvent.click(await screen.findByRole("button", { name: "Delete budget for Food" }));
     fireEvent.click(await screen.findByRole("button", { name: "Delete budget" }));
     await waitFor(() => expect(queueOfflineBudgetDelete).toHaveBeenCalledTimes(1));
     expect(vi.mocked(queueOfflineBudgetDelete).mock.calls[0][0]).toMatchObject({ id: 1, amount: 300, currency: "CAD" });
+    vi.unstubAllGlobals();
+    H.ACTIVE = false;
+  });
+  it("wide: the pane's Delete (header) opens the SAME confirm and queues the delete with the server row baseline", async () => {
+    H.ACTIVE = true;
+    H.SIZE.current = "wide";
+    H.SEARCH.current = "month=2026-10&sel=1";
+    H.PEND = { creates: [], edits: { 1: { opId: "e9", status: "pending", failReason: null, fields: { amount: 450 }, ref: { categoryId: 10, month: "2026-10" } } }, deletes: {} };
+    vi.stubGlobal("fetch", vi.fn(async () => { throw new TypeError("network"); }));
+    vi.mocked(queueOfflineBudgetDelete).mockResolvedValueOnce(true);
+    render(<BudgetsPage />);
+    expect(screen.getByTestId("list-detail-pane")).toBeTruthy();
+    expect(screen.getByTestId("budget-category-fixed").textContent).toContain("Food");
+    fireEvent.click(screen.getByRole("button", { name: "Delete budget for Food" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Delete budget" }));
+    await waitFor(() => expect(queueOfflineBudgetDelete).toHaveBeenCalled());
+    expect(vi.mocked(queueOfflineBudgetDelete).mock.calls.at(-1)![0]).toMatchObject({ id: 1, amount: 300, currency: "CAD" });
     vi.unstubAllGlobals();
     H.ACTIVE = false;
   });

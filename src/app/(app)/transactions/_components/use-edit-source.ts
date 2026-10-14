@@ -34,6 +34,8 @@ export type EditInitialState = Extract<
 
 export type EditSource =
   | { status: "loading" }
+  /** Pane only (`opts.redirect === "report"`): the row belongs on another editor; the host decides (the page navigates itself). */
+  | { status: "redirect"; href: string; transferLinkId?: string; transactionId?: number }
   | { status: "missing"; message: string }
   | {
       status: "ready";
@@ -83,11 +85,17 @@ async function loadSplits(transactionId: number): Promise<EditSplit[] | null> {
   }
 }
 
-export function useEditSource(target: EditTarget): EditSource {
+export interface EditSourceOptions {
+  /** "navigate" (default, the pages): router.replace to the right editor. "report" (the split pane): return a `redirect` source instead. */
+  redirect?: "navigate" | "report";
+}
+
+export function useEditSource(target: EditTarget, opts: EditSourceOptions = {}): EditSource {
   const router = useRouter();
   // The router object is read through a ref so a new object per render cannot re-run the load.
   const routerRef = useRef(router);
   routerRef.current = router;
+  const reportRedirect = opts.redirect === "report";
   const [source, setSource] = useState<EditSource>({ status: "loading" });
   const key = target.kind === "transaction" ? `tx:${target.id}` : `tf:${target.linkId}`;
   const returnTo = target.returnTo;
@@ -110,6 +118,10 @@ export function useEditSource(target: EditTarget): EditSource {
           }
           const portfolioHref = portfolioEditHref(tx.kind, tx.id);
           if (portfolioHref) {
+            if (reportRedirect) {
+              if (!cancelled) setSource({ status: "redirect", href: portfolioHref });
+              return;
+            }
             routerRef.current.replace(portfolioHref);
             return;
           }
@@ -120,6 +132,10 @@ export function useEditSource(target: EditTarget): EditSource {
             ).catch(() => ({ data: [] as DialogLinkedSibling[] }));
             siblings = Array.isArray(d.data) ? d.data : [];
             if (isCleanTransferPair(tx, siblings)) {
+              if (reportRedirect) {
+                if (!cancelled) setSource({ status: "redirect", href: transferEditHref(tx.linkId, returnTo), transferLinkId: tx.linkId });
+                return;
+              }
               routerRef.current.replace(transferEditHref(tx.linkId, returnTo));
               return;
             }
@@ -147,6 +163,10 @@ export function useEditSource(target: EditTarget): EditSource {
         }
         if (legs.length !== 2 || legs[0].accountId === legs[1].accountId) {
           // Not a clean pair: edit the first leg as an ordinary transaction.
+          if (reportRedirect) {
+            if (!cancelled) setSource({ status: "redirect", href: transactionEditHref(legs[0].id, returnTo), transactionId: legs[0].id });
+            return;
+          }
           routerRef.current.replace(transactionEditHref(legs[0].id, returnTo));
           return;
         }

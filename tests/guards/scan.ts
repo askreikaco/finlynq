@@ -99,10 +99,15 @@ export const CHROME_RULES: readonly ChromeRule[] = [
 ];
 
 const TEMPLATES_IMPORT = /from\s+["']@\/components\/templates(?:\/[^"']*)?["']/;
+/**
+ * A route page may render its template through the entity's shared form panel (`_components/<entity>-form-panel`):
+ * the panel is the FormPage (split view: the same panel, `embedded`), so the page is on a template by delegation.
+ */
+const FORM_PANEL_IMPORT = /from\s+["'][^"']*\/[a-z-]+-form-panel["']/;
 
 /** True when a page source imports from @/components/templates. Pure. */
 export function importsTemplates(src: string): boolean {
-  return TEMPLATES_IMPORT.test(src);
+  return TEMPLATES_IMPORT.test(src) || FORM_PANEL_IMPORT.test(src);
 }
 
 /** Files a rule scans, from a file list. Pure. */

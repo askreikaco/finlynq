@@ -581,6 +581,12 @@ html {
   .page-header-bleed { --header-pad: 2rem; }
 }
 
+/* Split view (ListDetailLayout, wide only): the list column is 2/3 of the page, so a row/card grid inside it drops from
+   3 columns to 2. Grids opt in with the card-row-grid class or the data-split-grid attribute. */
+@media (width >= 64rem) {
+  [data-slot="list-detail-list"] :is(.card-row-grid, [data-split-grid]) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 /* Sheet close (ui/sheet.tsx): the iOS round glass X, a 44px circle with a 20px glyph below regular (640px). */
 @media (width < 40rem) {
   [data-slot="sheet-close"] {
