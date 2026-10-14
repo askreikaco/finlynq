@@ -52,7 +52,7 @@ class FakeIntersectionObserver {
   disconnect() {}
   takeRecords() { return []; }
 }
-beforeEach(() => { sessionStorage.clear(); push.mockClear(); H.IO.cbs.length = 0; SIZE.current = "regular";
+beforeEach(() => { sessionStorage.clear(); push.mockClear(); H.IO.cbs.length = 0; SIZE.current = "compact"; // phone: the row sheet path (wide opens the split pane, see transactions-dataview)
   vi.stubGlobal("IntersectionObserver", FakeIntersectionObserver);
   vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => ({ data: [] }) })));
   (globalThis as any).ResizeObserver ??= class { observe(){} unobserve(){} disconnect(){} };

@@ -1,14 +1,14 @@
 "use client";
 
 
-import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
+import { Fragment, Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
 import { SectionCard } from "@/components/mobile/section-card";
 import { Badge } from "@/components/ui/badge";
 import { InvisibleMark } from "@/components/invisible-mark";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
@@ -33,7 +33,8 @@ import {
   Archive,
   FolderCog,
 } from "lucide-react";
-import { HEADER_DESKTOP_ONLY, CustomizeCardsSheet, Amount, ListRow, metricGridClass, useCardLayout, usePageCustomize } from "@/components/mobile";
+import { HEADER_DESKTOP_ONLY, CustomizeCardsSheet, Amount, ListRow, ListDetailLayout, ListDetailNewButton, useListDetail, metricGridClass, useCardLayout, usePageCustomize } from "@/components/mobile";
+import { AccountFormPanel } from "./_components/account-form-panel";
 import { SectionPage } from "@/components/templates/section-page";
 import type { PageCard } from "@/lib/card-layout";
 import { MetricCard } from "@/components/metric-card";
@@ -118,8 +119,10 @@ const ACCOUNT_CARDS: readonly PageCard[] = [
 const METRIC_CARD_IDS = new Set(["net-worth", "summary"]);
 const LIST_CARD_IDS = new Set(["assets", "liabilities"]);
 
-export default function AccountsPage() {
+function AccountsPage() {
   const { displayCurrency, isLoading: currencyLoading } = useDisplayCurrency();
+  // Split view (regular+): a row selects the account into the edit pane (?sel=<id>); phones keep the link to the account page.
+  const detail = useListDetail();
 
   // Show-archived toggle (persists archived accounts in the list with a badge)
   const [showArchived, setShowArchived] = useState(false);
@@ -253,7 +256,8 @@ export default function AccountsPage() {
             {accts.map((a) => (
               <ListRow
                 key={a.accountId}
-                href={`/accounts/${a.accountId}`}
+                {...(detail.split ? { onPress: () => detail.select(a.accountId) } : { href: `/accounts/${a.accountId}` })}
+                selected={detail.selectedId === String(a.accountId)}
                 className={a.archived ? "opacity-60" : undefined}
                 title={
                   <span className="inline-flex max-w-full items-center gap-2 align-middle">
@@ -296,13 +300,14 @@ export default function AccountsPage() {
 
   // Create account is its own page (/accounts/new), not a dialog.
   const createAccountLink = (
-    <Link
+    <ListDetailNewButton
       href="/accounts/new"
-      aria-label="Create Account"
-      className={buttonVariants({ size: "sm", className: "bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-sm" })}
+      label="Create Account"
+      size="sm"
+      className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-sm"
     >
       <Plus className="h-4 w-4 mr-1.5" /> Add<span className="max-regular:sr-only"> account</span>
-    </Link>
+    </ListDetailNewButton>
   );
 
   const cardLayout = useCardLayout("accounts", ACCOUNT_CARDS);
@@ -447,12 +452,30 @@ export default function AccountsPage() {
           const run: string[] = [];
           while (i < shown.length && LIST_CARD_IDS.has(shown[i])) run.push(shown[i++]);
           blocks.push(
-            // Assets / Liabilities: one column on phone, side by side (2 independent stacks) at regular+.
-            <div key={run.join("+")} data-slot="accounts-list" className="flex flex-col gap-6 regular:grid regular:grid-cols-2 regular:items-start">
-              {run.map((r) => (
-                <Fragment key={r}>{nodes[r]}</Fragment>
-              ))}
-            </div>,
+            // Assets / Liabilities: one column on phone, side by side (2 independent stacks) at regular+. In the split
+            // view the list column is 2/3 wide, so the stacks drop a step (data-split-grid: 1 column at regular, 2 at wide).
+            <ListDetailLayout
+              key={run.join("+")}
+              entity="account"
+              newLabel="Create Account"
+              list={
+                <div data-slot="accounts-list" data-split-grid className="flex flex-col gap-6 regular:grid regular:grid-cols-2 regular:items-start">
+                  {run.map((r) => (
+                    <Fragment key={r}>{nodes[r]}</Fragment>
+                  ))}
+                </div>
+              }
+              pane={(api) => (
+                <AccountFormPanel
+                  embedded
+                  mode={api.isNew ? "create" : "edit"}
+                  id={api.selectedId ?? undefined}
+                  onSaved={(id) => { loadAccounts(); api.afterSaved(id); }}
+                  onCancel={api.clear}
+                  onDeleted={() => { loadAccounts(); api.afterDeleted(); }}
+                />
+              )}
+            />,
           );
         }
         return blocks;
@@ -469,5 +492,13 @@ export default function AccountsPage() {
         onReset={cardLayout.reset}
       />
     </SectionPage>
+  );
+}
+
+export default function AccountsRoute() {
+  return (
+    <Suspense fallback={<div className="w-full"><SummarySkeleton /></div>}>
+      <AccountsPage />
+    </Suspense>
   );
 }

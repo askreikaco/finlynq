@@ -1,5 +1,5 @@
-import { TransactionEntryScreen } from "@/components/transactions/entry/transaction-entry-screen";
+import { TransactionFormScreen } from "../_components/transaction-form-screen";
 
 export default function MobileTransactionPage() {
-  return <TransactionEntryScreen mode={{ kind: "create" }} />;
+  return <TransactionFormScreen mode="create" />;
 }

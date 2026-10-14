@@ -3,8 +3,7 @@
  */
 // Transactions: one list at every width (batch 3). The list is date-grouped mobile ListRows, never a
 // <table>. Row tap opens the row's detail sheet (Edit / Duplicate / Split / Delete). Select mode adds
-// bulk checkboxes. Sort is a compact control, not column headers. Only the split-view detail pane is
-// wide-only, and it is opt-in.
+// bulk checkboxes. Sort is a compact control, not column headers. The split view (list 2/3 | the shared entry form 1/3, ?sel) is on by default from regular up.
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import * as React from "react";
 import * as fs from "fs";
@@ -136,12 +135,20 @@ describe("Transactions: row tap opens the detail sheet", () => {
     expect(H.push).toHaveBeenCalledWith(expect.stringMatching(/^\/transactions\/\d+\/edit\?returnTo=/));
   });
 
-  it("regular: the same sheet, with Delete wired to the confirm flow (no direct navigation)", () => {
-    size.current = "regular";
+  it("compact: the sheet's Delete is wired to the confirm flow (no direct navigation)", () => {
+    size.current = "compact";
     render(<TransactionsWorkspace />);
     fireEvent.click(listRows()[0]);
     fireEvent.click(screen.getByRole("button", { name: "Delete" }));
     expect(H.push).not.toHaveBeenCalled();
+  });
+
+  it("wide: a row tap opens the row in the pane (?sel), not the sheet", () => {
+    size.current = "wide";
+    render(<TransactionsWorkspace />);
+    fireEvent.click(listRows()[0]);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(H.push).toHaveBeenCalledWith(expect.stringMatching(/^\/transactions\?sel=\d+$/), { scroll: false });
   });
 });
 
@@ -194,15 +201,32 @@ describe("Transactions: paging and split view", () => {
     expect(loadNextPage).toHaveBeenCalledTimes(1);
   });
 
-  it("split view is wide-only and opt-in; the Split view toggle is absent on narrow screens", () => {
-    size.current = "compact";
-    const { unmount } = render(<TransactionsWorkspace />);
-    expect(screen.queryByTestId("tx-split-toggle")).toBeNull();
-    unmount();
-    cleanup();
+  it("split view is the default at wide (pane beside the list, nothing selected = prompt) and absent below it", () => {
+    for (const s of ["compact", "regular"] as const) {
+      size.current = s;
+      render(<TransactionsWorkspace />);
+      expect(screen.queryByTestId("list-detail-pane")).toBeNull();
+      expect(screen.queryByTestId("tx-split-toggle")).toBeNull();
+      cleanup();
+    }
     size.current = "wide";
     render(<TransactionsWorkspace />);
-    expect(screen.getByTestId("tx-split-toggle").getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getByTestId("list-detail-pane").className).toContain("sticky");
+    expect(screen.getByTestId("list-detail-empty").textContent).toContain("Select an item to edit, or create a new one");
+    expect(screen.queryByTestId("tx-split-toggle")).toBeNull();
+  });
+
+  it("a row tap selects it into the pane (?sel) instead of opening the sheet when split, and opens the sheet below wide", () => {
+    size.current = "wide";
+    render(<TransactionsWorkspace />);
+    fireEvent.click(screen.getAllByText("pp")[0]);
+    expect(H.push).toHaveBeenCalledWith("/transactions?sel=1", { scroll: false });
+    cleanup();
+    H.push.mockClear();
+    size.current = "compact";
+    render(<TransactionsWorkspace />);
+    fireEvent.click(screen.getAllByText("pp")[0]);
+    expect(H.push).not.toHaveBeenCalled();
   });
 });
 

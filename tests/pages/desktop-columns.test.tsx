@@ -60,10 +60,12 @@ describe("desktop columns: transactions", () => {
     expect(src).not.toMatch(/regular:grid-cols-2/);
   });
 
-  it("the opt-in split view keeps a single-column list beside the detail pane", () => {
+  it("the split view is list 2fr | pane 1fr (ListDetailLayout) and the workspace no longer carries the old 3fr/2fr opt-in", () => {
     const ws = code(`${APP}/transactions/_components/transactions-workspace.tsx`);
-    expect(ws).toContain("singleColumn={splitView}");
-    expect(ws).toMatch(/splitView \? "grid grid-cols-\[minmax\(0,3fr\)_minmax\(0,2fr\)\]/);
+    expect(ws).toContain("<ListDetailLayout");
+    expect(ws).not.toContain("singleColumn={splitView}");
+    expect(ws).not.toContain("minmax(0,3fr)");
+    expect(code("src/lib/list-detail/selection.ts")).toContain("grid-cols-[minmax(0,2fr)_minmax(0,1fr)]");
     expect(code("src/components/transactions/mobile-tx-list.tsx")).not.toMatch(/wide:grid-cols-2/);
   });
 });

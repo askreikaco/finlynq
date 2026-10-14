@@ -61,4 +61,4 @@ export function SectionCard({
  * regular+ lays the rows out as a 2-column (3 at wide) grid so a list of independent items uses the width.
  */
 export const CARD_ROW_GRID =
-  "regular:grid regular:grid-cols-2 wide:grid-cols-3 regular:gap-x-6 regular:[&>*]:shadow-[var(--list-divider)]";
+  "card-row-grid regular:grid regular:grid-cols-2 wide:grid-cols-3 regular:gap-x-6 regular:[&>*]:shadow-[var(--list-divider)]";

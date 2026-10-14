@@ -23,7 +23,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DetailSheet, ListRow, MetricGrid, SectionCard, type DetailItem } from "@/components/mobile";
+import { DetailSheet, ListRow, MetricGrid, SectionCard, ListDetailLayout, useListDetail, type DetailItem } from "@/components/mobile";
+import { SubscriptionFormPanel } from "./_components/subscription-form-panel";
 import { SectionPage } from "@/components/templates/section-page";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { EmptyState } from "@/components/empty-state";
@@ -124,6 +125,8 @@ export default function SubscriptionsPage() {
 function SubscriptionsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  // Split view (regular+): a row opens the edit form in the pane (?sel=<id>); phones keep the sheet / edit route.
+  const detail = useListDetail();
   const view: View = searchParams.get("view") === "calendar" ? "calendar" : "list";
   const { displayCurrency: ctxCurrency } = useDisplayCurrency();
 
@@ -209,10 +212,15 @@ function SubscriptionsPageContent() {
   // ── navigation (create / edit are full pages, not dialogs) ─────────────────
   const LIST_HREF = "/subscriptions";
   function openAdd() {
-    router.push("/subscriptions/new");
+    if (detail.split) detail.selectNew();
+    else router.push("/subscriptions/new");
   }
 
   function openEditById(id: number) {
+    if (detail.split) {
+      detail.select(id);
+      return;
+    }
     router.push(`/subscriptions/${id}/edit?returnTo=${encodeURIComponent(view === "calendar" ? "/subscriptions?view=calendar" : LIST_HREF)}`);
   }
 
@@ -334,6 +342,40 @@ function SubscriptionsPageContent() {
   const openSub = subs.find((s) => s.id === openSubId) ?? null;
   const closeSheet = () => setOpenSubId(null);
 
+  /** Reminder / pause / cancel / resume buttons for one subscription (the phone sheet and the split pane share them). */
+  function statusActions(sub: Subscription, before: () => void) {
+    const openSub = sub;
+    const closeSheet = before;
+    return (
+      <>
+        {openSub.status === "active" && (
+            <>
+              <Button variant="outline" disabled={busyKey !== null} onClick={() => { closeSheet(); toggleReminder(openSub); }}>
+              {openSub.cancelReminderDate ? <><BellOff className="h-4 w-4" /> Remove cancel reminder</> : <><Bell className="h-4 w-4" /> Remind me to cancel</>}
+              </Button>
+              <Button variant="outline" disabled={busyKey !== null} onClick={() => { closeSheet(); changeStatus(openSub, "paused"); }}>
+                <Pause className="h-4 w-4" /> Pause
+              </Button>
+              <Button variant="outline" disabled={busyKey !== null} onClick={() => { closeSheet(); changeStatus(openSub, "cancelled"); }}>
+                <XCircle className="h-4 w-4" /> Mark cancelled
+              </Button>
+            </>
+          )}
+        {openSub.status === "paused" && (
+            <Button variant="outline" disabled={busyKey !== null} onClick={() => { closeSheet(); changeStatus(openSub, "active"); }}>
+              <Play className="h-4 w-4" /> Resume
+            </Button>
+          )}
+          {(openSub.status === "cancelled" || openSub.status === "ended") && (
+            <Button variant="outline" disabled={busyKey !== null} onClick={() => { closeSheet(); changeStatus(openSub, "active"); }}>
+              <RotateCcw className="h-4 w-4" /> Reactivate
+            </Button>
+          )}
+      </>
+    );
+  }
+
+
   return (
     <SectionPage
       id="subscriptions"
@@ -394,85 +436,114 @@ function SubscriptionsPageContent() {
         )}
       </div>
 
-      {view === "calendar" ? (
-        <SubscriptionsCalendar
-          subs={subs}
-          recurring={recurring}
-          displayCurrency={displayCurrency}
-          onEdit={openEditById}
-          onTrack={trackDetected}
-        />
-      ) : (
-        <div data-slot="subscription-groups" className="grid grid-cols-1 gap-6">
-          {/* Detected from transactions */}
-          {suggestions.length > 0 && (
-            <SectionCard label="Found in your transactions" icon={Search} tone="cyan" padded={false} className="col-span-full px-3">
-              <p className="px-1 pt-3 pb-1 text-sm text-muted-foreground">
-                {suggestions.length === 1
-                  ? "1 payment repeats on a schedule but isn't tracked yet."
-                  : `${suggestions.length} payments repeat on a schedule but aren't tracked yet.`}
-              </p>
-              <div className={`[&>*:not(:last-child)]:shadow-[var(--list-divider)] ${CARD_ROW_GRID}`}>
-                {visibleSuggestions.map((r) => {
-                  const key = `track:${r.payee}|${r.currency}`;
-                  const freq = frequencyOrMonthly(r.frequency);
-                  return (
-                    <div key={`${r.payee}|${r.currency}`}>
-                      <ListRow
-                        icon={Sparkles}
-                        title={r.payee}
-                        subtitle={`${formatCurrency(Math.abs(r.avgAmount), r.currency)} / ${FREQUENCY_SUFFIX[freq]} · seen ${r.count}× · last ${formatDate(r.lastDate)}`}
-                        chevron={false}
-                      />
-                      <div className="flex items-center gap-1.5 pb-3 pl-12">
-                        <Button variant="ghost" size="sm" onClick={() => reviewDetected(r)}>Review</Button>
-                        <Button size="sm" onClick={() => trackDetected(r)} disabled={busyKey !== null}>
-                          <Plus className="h-3.5 w-3.5 mr-1" />
-                          {busyKey === key ? "Adding…" : "Track"}
-                        </Button>
+      <ListDetailLayout
+        entity="subscription"
+        newLabel="Add subscription"
+        list={
+          <>
+              {view === "calendar" ? (
+                <SubscriptionsCalendar
+                  subs={subs}
+                  recurring={recurring}
+                  displayCurrency={displayCurrency}
+                  onEdit={openEditById}
+                  onTrack={trackDetected}
+                />
+              ) : (
+                <div data-slot="subscription-groups" className="grid grid-cols-1 gap-6">
+                  {/* Detected from transactions */}
+                  {suggestions.length > 0 && (
+                    <SectionCard label="Found in your transactions" icon={Search} tone="cyan" padded={false} className="col-span-full px-3">
+                      <p className="px-1 pt-3 pb-1 text-sm text-muted-foreground">
+                        {suggestions.length === 1
+                          ? "1 payment repeats on a schedule but isn't tracked yet."
+                          : `${suggestions.length} payments repeat on a schedule but aren't tracked yet.`}
+                      </p>
+                      <div className={`[&>*:not(:last-child)]:shadow-[var(--list-divider)] ${CARD_ROW_GRID}`}>
+                        {visibleSuggestions.map((r) => {
+                          const key = `track:${r.payee}|${r.currency}`;
+                          const freq = frequencyOrMonthly(r.frequency);
+                          return (
+                            <div key={`${r.payee}|${r.currency}`}>
+                              <ListRow
+                                icon={Sparkles}
+                                title={r.payee}
+                                subtitle={`${formatCurrency(Math.abs(r.avgAmount), r.currency)} / ${FREQUENCY_SUFFIX[freq]} · seen ${r.count}× · last ${formatDate(r.lastDate)}`}
+                                chevron={false}
+                              />
+                              <div className="flex items-center gap-1.5 pb-3 pl-12">
+                                <Button variant="ghost" size="sm" onClick={() => reviewDetected(r)}>Review</Button>
+                                <Button size="sm" onClick={() => trackDetected(r)} disabled={busyKey !== null}>
+                                  <Plus className="h-3.5 w-3.5 mr-1" />
+                                  {busyKey === key ? "Adding…" : "Track"}
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-              {suggestions.length > SUGGESTIONS_PREVIEW && (
-                <Button variant="link" size="sm" className="px-1 pb-3" onClick={() => setShowAllSuggestions((v) => !v)}>
-                  {showAllSuggestions ? "Show fewer" : `Show all ${suggestions.length}`}
-                </Button>
+                      {suggestions.length > SUGGESTIONS_PREVIEW && (
+                        <Button variant="link" size="sm" className="px-1 pb-3" onClick={() => setShowAllSuggestions((v) => !v)}>
+                          {showAllSuggestions ? "Show fewer" : `Show all ${suggestions.length}`}
+                        </Button>
+                      )}
+                    </SectionCard>
+                  )}
+
+                  {subs.length === 0 && (
+                    <Card className="col-span-full"><CardContent className="p-0"><EmptyState
+                      icon={CreditCard}
+                      title="No subscriptions tracked yet"
+                      description="Add streaming services, insurance, memberships and other repeating bills (weekly to annual) to see what they cost you and when each one is due."
+                      action={{ label: "Add subscription", onClick: openAdd }}
+                    /></CardContent></Card>
+                  )}
+
+                  {/* One inset list per status group, in the sort order chosen above. */}
+                  {groups.map((g) =>
+                    g.rows.length === 0 ? null : (
+                      <SectionCard key={g.key} label={`${g.title} (${g.rows.length})`} icon={Repeat} tone="indigo" padded={false} className={`col-span-full [&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3 ${CARD_ROW_GRID}`}>
+                        {g.rows.map((sub) => (
+                          <SubscriptionRow
+                            key={sub.id}
+                            sub={sub}
+                            today={today}
+                            displayCurrency={displayCurrency}
+                            busy={busyKey !== null}
+                            selected={detail.selectedId === String(sub.id)}
+                            onOpen={() => (detail.split ? detail.select(sub.id) : setOpenSubId(sub.id))}
+                            onPost={() => postNow(sub)}
+                            onSkip={() => skipDue(sub)}
+                          />
+                        ))}
+                      </SectionCard>
+                    ),
+                  )}
+                </div>
               )}
-            </SectionCard>
-          )}
-
-          {subs.length === 0 && (
-            <Card className="col-span-full"><CardContent className="p-0"><EmptyState
-              icon={CreditCard}
-              title="No subscriptions tracked yet"
-              description="Add streaming services, insurance, memberships and other repeating bills (weekly to annual) to see what they cost you and when each one is due."
-              action={{ label: "Add subscription", onClick: openAdd }}
-            /></CardContent></Card>
-          )}
-
-          {/* One inset list per status group, in the sort order chosen above. */}
-          {groups.map((g) =>
-            g.rows.length === 0 ? null : (
-              <SectionCard key={g.key} label={`${g.title} (${g.rows.length})`} icon={Repeat} tone="indigo" padded={false} className={`col-span-full [&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3 ${CARD_ROW_GRID}`}>
-                {g.rows.map((sub) => (
-                  <SubscriptionRow
-                    key={sub.id}
-                    sub={sub}
-                    today={today}
-                    displayCurrency={displayCurrency}
-                    busy={busyKey !== null}
-                    onOpen={() => setOpenSubId(sub.id)}
-                    onPost={() => postNow(sub)}
-                    onSkip={() => skipDue(sub)}
-                  />
-                ))}
-              </SectionCard>
-            ),
-          )}
-        </div>
-      )}
+          </>
+        }
+        pane={(api) => {
+          const open = subs.find((x) => String(x.id) === api.selectedId) ?? null;
+          return (
+            <div className="space-y-3">
+              {open && (
+                <div className="flex flex-wrap gap-2" data-slot="subscription-status-actions">
+                  {statusActions(open, () => undefined)}
+                </div>
+              )}
+              <SubscriptionFormPanel
+                embedded
+                mode={api.isNew ? "create" : "edit"}
+                id={api.selectedId ?? undefined}
+                onSaved={() => { loadSubs(); api.afterSaved(); }}
+                onCancel={api.clear}
+                onDeleted={() => { loadSubs(); api.afterDeleted(); }}
+              />
+            </div>
+          );
+        }}
+      />
 
       {openSub && (
         <DetailSheet
@@ -485,29 +556,7 @@ function SubscriptionsPageContent() {
           <Button variant="outline" onClick={() => { closeSheet(); openEditById(openSub.id); }}>
             <Pencil className="h-4 w-4" /> Edit
           </Button>
-          {openSub.status === "active" && (
-            <>
-              <Button variant="outline" disabled={busyKey !== null} onClick={() => { closeSheet(); toggleReminder(openSub); }}>
-                {openSub.cancelReminderDate ? <><BellOff className="h-4 w-4" /> Remove cancel reminder</> : <><Bell className="h-4 w-4" /> Remind me to cancel</>}
-              </Button>
-              <Button variant="outline" disabled={busyKey !== null} onClick={() => { closeSheet(); changeStatus(openSub, "paused"); }}>
-                <Pause className="h-4 w-4" /> Pause
-              </Button>
-              <Button variant="outline" disabled={busyKey !== null} onClick={() => { closeSheet(); changeStatus(openSub, "cancelled"); }}>
-                <XCircle className="h-4 w-4" /> Mark cancelled
-              </Button>
-            </>
-          )}
-          {openSub.status === "paused" && (
-            <Button variant="outline" disabled={busyKey !== null} onClick={() => { closeSheet(); changeStatus(openSub, "active"); }}>
-              <Play className="h-4 w-4" /> Resume
-            </Button>
-          )}
-          {(openSub.status === "cancelled" || openSub.status === "ended") && (
-            <Button variant="outline" disabled={busyKey !== null} onClick={() => { closeSheet(); changeStatus(openSub, "active"); }}>
-              <RotateCcw className="h-4 w-4" /> Reactivate
-            </Button>
-          )}
+          {statusActions(openSub, closeSheet)}
           <Button variant="outline" className="text-destructive" onClick={() => { closeSheet(); setDeleteId(openSub.id); }}>
             <Trash2 className="h-4 w-4" /> Delete
           </Button>
@@ -558,7 +607,9 @@ function SubscriptionRow({
   onOpen,
   onPost,
   onSkip,
+  selected,
 }: {
+  selected?: boolean;
   sub: Subscription;
   today: string;
   displayCurrency: string;
@@ -604,6 +655,7 @@ function SubscriptionRow({
           </span>
         }
         secondary={showMonthly ? `≈ ${formatCurrency(monthly, displayCurrency)} / mo` : undefined}
+        selected={selected}
         onPress={onOpen}
       />
       {due && (

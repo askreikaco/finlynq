@@ -34,7 +34,8 @@ describe("account create entry points", () => {
   });
 
   it("the Edit account page renders no dialog for the form (confirmations only)", () => {
-    const src = read("src/app/(app)/accounts/[id]/edit/page.tsx");
+    const src = read("src/app/(app)/accounts/_components/account-form-panel.tsx");
+    expect(read("src/app/(app)/accounts/[id]/edit/page.tsx")).toContain("<AccountFormPanel");
     expect(src).toContain("AccountForm");
     expect(src).toContain('mode="edit"');
     expect(src).not.toMatch(/<Dialog\b/);
@@ -42,7 +43,8 @@ describe("account create entry points", () => {
   });
 
   it("the New account page is the only create surface and reuses the shared form", () => {
-    const page = read("src/app/(app)/accounts/new/page.tsx");
+    const page = read("src/app/(app)/accounts/_components/account-form-panel.tsx");
+    expect(read("src/app/(app)/accounts/new/page.tsx")).toContain("<AccountFormPanel");
     expect(page).toContain("AccountForm");
     expect(page).toContain('mode="create"');
   });

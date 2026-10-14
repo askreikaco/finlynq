@@ -27,10 +27,23 @@ const EXEMPTIONS: Record<string, string> = {
  * under a prop (showHeader={false}, embedded). Any change to these counts fails here: re-review the branch first.
  */
 const EXPECTED_MULTI: Record<string, { count: number; reason: string }> = {
-  "accounts/[id]/page.tsx": { count: 4, reason: "not-found, loading and main branches (exclusive) + TransactionsWorkspace header (rendered only with showHeader; the page passes false)" },
-  "accounts/page.tsx": { count: 2, reason: "empty-state and list branches (exclusive)" },
-  "categories/new/page.tsx": { count: 3, reason: "FormPage header (1) + CategoryForm literals: load-error branch (rename only, unreachable on create) and form branch (chrome=false: not rendered)" },
-  "categories/[id]/edit/page.tsx": { count: 2, reason: "CategoryForm: load-error branch and form branch (exclusive)" },
+  "transactions/page.tsx": { count: 5, reason: "workspace header (showHeader) + the split pane's TransactionFormScreen branches, rendered embedded (compact pane header instead of the page bar)" },
+  "transactions/new/page.tsx": { count: 4, reason: "TransactionFormScreen: loading, Missing, shared entry screen and legacy form fallback branches (exclusive; the create mode renders only the entry screen)" },
+  "subscriptions/page.tsx": { count: 3, reason: "SectionPage header (1) + the split pane's SubscriptionFormPanel create and edit FormPage branches, rendered embedded (compact pane header)" },
+  "subscriptions/new/page.tsx": { count: 2, reason: "SubscriptionFormPanel: create and edit FormPage branches (exclusive, mode picks one)" },
+  "subscriptions/[id]/edit/page.tsx": { count: 2, reason: "SubscriptionFormPanel: create and edit FormPage branches (exclusive, mode picks one)" },
+  "loans/page.tsx": { count: 3, reason: "SectionPage header (1) + the split pane's LoanFormPanel create and edit FormPage branches, rendered embedded (compact pane header)" },
+  "loans/new/page.tsx": { count: 2, reason: "LoanFormPanel: create and edit FormPage branches (exclusive, mode picks one)" },
+  "loans/[id]/edit/page.tsx": { count: 2, reason: "LoanFormPanel: create and edit FormPage branches (exclusive, mode picks one)" },
+  "goals/page.tsx": { count: 3, reason: "ListPage header (1) + the split pane's GoalFormPanel create and edit FormPage branches, rendered embedded (compact pane header)" },
+  "goals/new/page.tsx": { count: 2, reason: "GoalFormPanel: create and edit FormPage branches (exclusive, mode picks one)" },
+  "goals/[id]/edit/page.tsx": { count: 2, reason: "GoalFormPanel: create and edit FormPage branches (exclusive, mode picks one)" },
+  "accounts/new/page.tsx": { count: 2, reason: "AccountFormPanel create branch (FormPage, 1) + the edit view header; exclusive (mode picks one)" },
+  "accounts/[id]/edit/page.tsx": { count: 2, reason: "AccountFormPanel: the create branch (FormPage, 1) and the edit view header (page only; the pane renders its own compact header), exclusive" },
+  "accounts/[id]/page.tsx": { count: 8, reason: "not-found, loading and main branches (exclusive) + TransactionsWorkspace header (showHeader=false here) + the 4 exclusive branches of the workspace pane's TransactionFormScreen (the pane is off for the locked workspace)" },
+  "accounts/page.tsx": { count: 4, reason: "empty-state and list branches (exclusive) + the split pane's AccountFormPanel (create FormPage + edit view header), which render a compact pane header, not the page bar" },
+  "categories/new/page.tsx": { count: 4, reason: "CategoryFormPanel: create and rename FormPage branches (exclusive, mode picks one) + CategoryForm literals (chrome=false: not rendered)" },
+  "categories/[id]/edit/page.tsx": { count: 4, reason: "CategoryFormPanel: create and rename FormPage branches (exclusive) + CategoryForm literals (load-error and form branches, chrome=false: not rendered)" },
   "admin/page.tsx": { count: 3, reason: "loading, error and main branches (exclusive), each a SectionPage call (batch 4)" },
   "admin/(env)/integrations/page.tsx": { count: 2, reason: "loading and ready branches (exclusive), each a SectionPage call (batch 5)" },
   "settings/investments/page.tsx": { count: 3, reason: "loading, error and ready branches (exclusive), each a SectionPage call (batch 4)" },
@@ -38,7 +51,7 @@ const EXPECTED_MULTI: Record<string, { count: number; reason: string }> = {
   "import/pending/page.tsx": { count: 2, reason: "StagedListView (list) or ReconcileHeader (detail), never both" },
   "transactions/[id]/edit/page.tsx": { count: 4, reason: "loading, Missing, shared entry screen and legacy form fallback branches (exclusive)" },
   "transactions/[id]/split/page.tsx": { count: 3, reason: "loading, missing and form branches (exclusive)" },
-  "transactions/transfer/[linkId]/edit/page.tsx": { count: 5, reason: "invalid-link, loading, missing branches (exclusive) + the shared entry screen header + the TransactionEditForm header (legacy fallback), exclusive" },
+  "transactions/transfer/[linkId]/edit/page.tsx": { count: 4, reason: "TransactionFormScreen: Missing, loading, shared entry screen and TransactionEditForm (legacy fallback) branches, exclusive" },
 };
 
 /**
