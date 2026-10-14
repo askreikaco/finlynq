@@ -415,7 +415,7 @@ export default function RealizedGainsPage() {
       }}
     >
 
-      <PageToolbar
+      <PageToolbar refresh
         range={{ selection: metricRange.selection, onChange: metricRange.setSelection }}
       />
 

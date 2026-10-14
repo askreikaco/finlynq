@@ -418,7 +418,7 @@ export default function ReportsPage() {
       header={{ filter: { href: tb.filterHref, activeCount: tb.activeCount } }}
     >
 
-      <PageToolbar
+      <PageToolbar refresh
         range={{ selection: metricRange.selection, onChange: metricRange.setSelection }}
       />
 

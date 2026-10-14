@@ -78,7 +78,7 @@ export function PortfolioSummary({ summary, currency, range }: { summary: Overvi
   const metrics = rawMetrics.map((m) => (m.sub ? m : { ...m, sub: NO_HISTORY_CAPTION }));
   return (
     <div data-slot="portfolio-summary" className="space-y-3">
-      {!range && <PageToolbar range={{ selection: metricRange.selection, onChange: metricRange.setSelection }} />}
+      {!range && <PageToolbar refresh range={{ selection: metricRange.selection, onChange: metricRange.setSelection }} />}
       <div data-testid="metric-total-value" className="min-w-0">
         <MetricCard
           label="Total value"

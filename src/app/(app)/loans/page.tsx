@@ -273,7 +273,7 @@ function LoansPageContent() {
         ),
       }}
     >
-      <PageToolbar
+      <PageToolbar refresh
         range={{ selection, onChange: setSelection }}
         search={{ value: tb.q, onChange: tb.setQ, placeholder: "Search loans" }}
       />

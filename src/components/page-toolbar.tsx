@@ -7,13 +7,16 @@
  *                 Custom or a legacy range. Next is disabled on the current period.
  *   3. Search     icon button that expands an input in place (Esc clears and collapses, blur while empty collapses)
  *   4. Filter     funnel icon only (aria-label "Filter"), dot + count when filters are active; opens the filter + sort page
+ *   5. Trailing   optional, after Filter: `refresh` = the icon-only Refresh button (revalidates the page's cached cards / charts);
+ *                 `trailing` = any other node
  * A page passes only the slots that apply to it ("where applicable"): no `range` = no dates, no `search` = no text.
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Filter, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { RefreshButton } from "@/components/refresh-button";
 import { MetricRangeSelect } from "@/components/metric-range-select";
 import { cn } from "@/lib/utils";
 import { localDateISO } from "@/lib/utils/date";
@@ -31,6 +34,10 @@ export interface PageToolbarProps {
   search?: { value: string; onChange: (next: string) => void; placeholder?: string };
   /** Slot 4. `href` may be a function evaluated at click time (so the current URL is carried). */
   filter?: { href: string | (() => string); activeCount?: number };
+  /** Slot 5: icon-only Refresh button (aria-label "Refresh") for pages with cached cards / charts. */
+  refresh?: boolean;
+  /** Slot 5: extra trailing node, rendered after Refresh. */
+  trailing?: ReactNode;
   className?: string;
 }
 
@@ -169,8 +176,8 @@ export function FilterButton({ href, activeCount = 0, variant = "ghost" }: NonNu
   );
 }
 
-export function PageToolbar({ range, monthSwitcher = true, search, filter, className }: PageToolbarProps) {
-  if (!range && !search && !filter) return null;
+export function PageToolbar({ range, monthSwitcher = true, search, filter, refresh, trailing, className }: PageToolbarProps) {
+  if (!range && !search && !filter && !refresh && !trailing) return null;
   return (
     <div data-slot="page-toolbar" data-testid="page-toolbar" role="toolbar" aria-label="Page controls" className={cn("flex w-full flex-wrap items-center gap-x-2 gap-y-1", className)}>
       {range && (
@@ -183,6 +190,12 @@ export function PageToolbar({ range, monthSwitcher = true, search, filter, class
       {filter && (
         <div className={cn(!search && "ml-auto")}>
           <FilterButton {...filter} />
+        </div>
+      )}
+      {(refresh || trailing) && (
+        <div data-slot="toolbar-trailing" className={cn("flex items-center gap-1", !filter && "ml-auto")}>
+          {refresh && <RefreshButton />}
+          {trailing}
         </div>
       )}
     </div>

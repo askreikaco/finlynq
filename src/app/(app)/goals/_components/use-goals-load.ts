@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import type { LoadState, LoadStatus } from "@/lib/forms/load-state";
 import type { Goal } from "./goal-form";
 import { usePendingEntity } from "@/lib/data/local-write-queue";
@@ -42,36 +43,17 @@ function goalOfCreate(c: { fields: Record<string, string | number | null> }, id:
   };
 }
 
-/** Goals list data. Error retry shows the skeleton again; a plain reload (status toggle, delete) refetches in place. */
+/** Goals list data, cache-first. A reload (retry, status toggle, delete) refetches in place. */
 export function useGoalsLoad(): LoadState<Goal[]> {
-  const [goals, setGoals] = useState<Goal[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(false);
-
-  const load = useCallback(() => {
-    setLoadError(false);
-    fetch("/api/goals")
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("Failed to load goals"))))
-      .then((data) => setGoals(Array.isArray(data) ? data : []))
-      .catch(() => setLoadError(true))
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+  // Cache-first: a revisit paints the last goals at once and revalidates in the background.
+  const res = useCacheFirstJson<Goal[]>("/api/goals");
+  const goals = useMemo<Goal[]>(() => (Array.isArray(res.data) ? res.data : []), [res.data]);
+  const load = res.reload;
 
   // Offline queue (local-first L3): queued goal changes over the server rows. Flag off = the rows as they are.
   const pending = usePendingEntity("goal", load);
   const record = useMemo(() => overlayRows(goals, pending, { patchOf: goalPatch, rowOfCreate: goalOfCreate }), [goals, pending]);
 
-  const status: LoadStatus = loading ? "loading" : loadError ? "error" : "ready";
-  return {
-    status,
-    record,
-    retry: () => {
-      if (loadError) setLoading(true);
-      load();
-    },
-  };
+  const status: LoadStatus = res.loading ? "loading" : res.error ? "error" : "ready";
+  return { status, record, retry: load };
 }

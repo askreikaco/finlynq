@@ -622,7 +622,7 @@ export default function DashboardPage() {
 
       {/* One period control for every metric card on the page (?range=&from=&to=; default = month vs last month) */}
       <motion.div variants={itemVariants} className="flex justify-end -mb-2 wide:-mb-3" data-slot="dashboard-range">
-        <PageToolbar range={{ selection, onChange: setSelection }} />
+        <PageToolbar refresh range={{ selection, onChange: setSelection }} />
       </motion.div>
 
       {/* Currency audit banner — shown only when there are unresolved cross-currency rows */}

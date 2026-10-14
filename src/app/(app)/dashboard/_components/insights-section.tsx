@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { SectionCard } from "@/components/mobile/section-card";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { AlertTriangle, RefreshCw, Store, TrendingUp, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { motion } from "framer-motion";
 import type { MetricTone } from "@/components/mobile/card-label";
+import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import type { InsightsData, RecurringData } from "./types";
 
 const containerVariants = {
@@ -45,31 +45,9 @@ function InsightCard({
 export function InsightsSection({ currency }: { currency?: string }) {
   const { displayCurrency: userDisplayCurrency } = useDisplayCurrency();
   const resolvedCurrency = currency?.trim() ? currency : userDisplayCurrency;
-  const [insights, setInsights] = useState<InsightsData | null>(null);
-  const [recurring, setRecurring] = useState<RecurringData | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/insights")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (!cancelled && d && typeof d === "object") setInsights(d as InsightsData);
-      })
-      .catch(() => {
-        /* cards self-hide when data is absent */
-      });
-    fetch("/api/recurring")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (!cancelled && d && typeof d === "object") setRecurring(d as RecurringData);
-      })
-      .catch(() => {
-        /* cards self-hide when data is absent */
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  // Cache-first (same SWR keys as everywhere else): painted at once on revisit, revalidated in the background.
+  const insights = (useCacheFirstJson<InsightsData>("/api/insights").data ?? null) as InsightsData | null;
+  const recurring = (useCacheFirstJson<RecurringData>("/api/recurring").data ?? null) as RecurringData | null;
 
   return (
     <motion.div

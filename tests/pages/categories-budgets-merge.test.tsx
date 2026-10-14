@@ -144,8 +144,20 @@ describe("toolbar wiring", () => {
     expect(screen.getByRole("button", { name: /Edit list/i })).toBeTruthy();
     fireEvent.click(within(bar as HTMLElement).getByRole("button", { name: "More actions" }));
     const items = (await screen.findAllByRole("menuitem")).map((i) => i.textContent?.trim());
-    expect(items[0]).toBe("Filter");
-    expect(items).toContain("Customize cards");
+    // Filter first, then the budget tools, then Customize cards.
+    expect(items).toEqual(["Filter", "Copy last month", "Save template", "Apply template", "Rules", "Move money", "Customize cards"]);
+    const menu = await screen.findAllByRole("menuitem");
+    const href = (label: string) => menu.find((i) => i.textContent?.trim() === label)?.closest("a")?.getAttribute("href");
+    expect(href("Save template")).toContain("/budgets/templates/new?month=2026-10");
+    expect(href("Apply template")).toContain("/budgets/templates/apply?month=2026-10");
+    expect(href("Rules")).toBe("/settings/rules");
+    expect(href("Move money")).toContain("/budgets/move-money?month=2026-10");
+    // the small buttons row under the metric cards is gone
+    expect(document.querySelector('[data-slot="budget-tools"]')).toBeNull();
+    expect(screen.queryByRole("button", { name: "Copy last month" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Move money" })).toBeNull();
+    // the cached cards have an icon-only Refresh in the page toolbar
+    expect(within(screen.getByTestId("page-toolbar")).getByRole("button", { name: "Refresh" })).toBeTruthy();
     expect(screen.getByLabelText("Time range")).toBeTruthy();
     expect(screen.getByTestId("month-label")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Search" })).toBeTruthy();
@@ -169,6 +181,27 @@ describe("toolbar wiring", () => {
     const f = FILTER_CONFIGS.categories.fields[0];
     expect(f.kind === "segment" && f.options.map((o) => o.value)).toEqual(["", "with", "none", "over"]);
     expect(FILTER_CONFIGS.categories.fallbackReturnTo).toBe("/categories");
+  });
+});
+
+describe("budget tools in More", () => {
+  it("Copy last month is a More item that runs the copy; Save template and Move money need budgets", async () => {
+    const fetchMock = vi.fn(async () => ({ ok: true, status: 200, json: async () => [] }) as Response);
+    vi.stubGlobal("fetch", fetchMock);
+    render(<CategoriesPageContent />);
+    const bar = document.querySelector('[data-slot="page-header"]')!;
+    fireEvent.click(within(bar as HTMLElement).getByRole("button", { name: "More actions" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: /Copy last month/ }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/budgets?month=2026-09"));
+    await waitFor(() => expect(screen.getByText("No budgets last month.")).toBeTruthy());
+    vi.unstubAllGlobals();
+  });
+
+  it("source: the tools row under the cards is deleted; the page hands the items to PageHeader overflow", () => {
+    const src = read(PAGE);
+    expect(src).not.toContain("budget-tools");
+    expect(src).not.toContain("{budgetTools}");
+    expect(src).toContain("overflow={isIncome ? undefined : overflow}");
   });
 });
 

@@ -6,6 +6,7 @@ import { SectionCard } from "@/components/mobile/section-card";
 import { AlertTriangle, Bell, CheckCircle2, ChevronRight, ListChecks, Shield, X } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { motion, AnimatePresence } from "framer-motion";
+import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import type { SpotlightItem } from "./types";
 import { useSessionUserId, readUserItem, writeUserItem } from "@/lib/client/user-storage";
 
@@ -24,7 +25,6 @@ const MAX_VISIBLE = 3;
 const DISMISSED_KEY_BASE = "pf-spotlight-dismissed";
 
 export function ActionCenter() {
-  const [items, setItems] = useState<SpotlightItem[] | null>(null);
   const [showAll, setShowAll] = useState(false);
   const { userId, ready } = useSessionUserId();
   const [dismissed, setDismissed] = useState<Set<string>>(() => new Set());
@@ -41,21 +41,8 @@ export function ActionCenter() {
     }
   }, [ready, userId]);
 
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/spotlight")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (cancelled) return;
-        setItems(d && Array.isArray(d.items) ? d.items : []);
-      })
-      .catch(() => {
-        if (!cancelled) setItems([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const spotlight = useCacheFirstJson<{ items?: SpotlightItem[] }>("/api/spotlight");
+  const items = spotlight.data ? (Array.isArray(spotlight.data.items) ? spotlight.data.items : []) : spotlight.error ? [] : null;
 
   const dismiss = (id: string) => {
     const next = new Set(dismissed);

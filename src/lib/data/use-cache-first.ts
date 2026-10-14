@@ -12,6 +12,7 @@
  */
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { useApi } from "./use-api";
+import { useLegacyFetchActivity } from "./fetch-activity";
 import { isLocalReadCacheEnabled, LOCAL_READ_CACHE_KEY } from "@/lib/local-first/read-cache/optin";
 
 export interface CacheFirstJson<T> {
@@ -23,6 +24,8 @@ export interface CacheFirstJson<T> {
   /** HTTP status of the failed request (e.g. 404) when `error` is true; null for a network error or no error. */
   errorStatus: number | null;
   reload: () => void;
+  /** Replace the data in place (optimistic write / server echo) without refetching. */
+  setData: (next: T) => void;
 }
 
 function subscribe(cb: () => void): () => void {
@@ -44,9 +47,11 @@ export function useCacheFirstJson<T>(url: string | null, opts: { keepPrevious?: 
 
   const [legacy, setLegacy] = useState<Legacy<T> | null>(null);
   const [tick, setTick] = useState(0);
+  const [legacyBusy, setLegacyBusy] = useState(false);
   useEffect(() => {
     if (on || !url) return;
     let alive = true;
+    setLegacyBusy(true);
     fetch(url)
       .then((r) => {
         if (!r.ok) throw Object.assign(new Error(`GET ${url} ${r.status}`), { status: r.status });
@@ -58,6 +63,9 @@ export function useCacheFirstJson<T>(url: string | null, opts: { keepPrevious?: 
       .catch((e: unknown) => {
         const st = (e as { status?: unknown } | null)?.status;
         if (alive) setLegacy({ url, failed: true, status: typeof st === "number" ? st : null });
+      })
+      .finally(() => {
+        if (alive) setLegacyBusy(false);
       });
     return () => {
       alive = false;
@@ -68,20 +76,30 @@ export function useCacheFirstJson<T>(url: string | null, opts: { keepPrevious?: 
   const reload = useCallback(() => {
     if (on) void swrMutate();
     else {
-      setLegacy(null);
+      // A refresh keeps the data on screen; only a retry after a failure goes back to the loading state.
+      setLegacy((cur) => (cur?.failed ? null : cur));
       setTick((t) => t + 1);
     }
   }, [on, swrMutate]);
+  useLegacyFetchActivity(!on && !!url, legacyBusy, reload);
 
-  if (!url) return { data: undefined, loading: false, error: false, errorStatus: null, reload };
+  const setData = useCallback(
+    (next: T) => {
+      if (on) void swrMutate(next, { revalidate: false });
+      else if (url) setLegacy({ url, data: next, failed: false });
+    },
+    [on, swrMutate, url],
+  );
+
+  if (!url) return { data: undefined, loading: false, error: false, errorStatus: null, reload, setData };
   if (on) {
     const has = swr.data !== undefined;
     const st = (swr.error as { status?: unknown } | undefined)?.status;
     const failed = !has && !!swr.error;
-    return { data: swr.data, loading: !has && !swr.error, error: failed, errorStatus: failed && typeof st === "number" ? st : null, reload };
+    return { data: swr.data, loading: !has && !swr.error, error: failed, errorStatus: failed && typeof st === "number" ? st : null, reload, setData };
   }
   if (opts.keepPrevious && legacy && legacy.url !== url && legacy.data !== undefined) {
-    return { data: legacy.data, loading: false, error: false, errorStatus: null, reload };
+    return { data: legacy.data, loading: false, error: false, errorStatus: null, reload, setData };
   }
   const mine = legacy && legacy.url === url ? legacy : null;
   return {
@@ -90,5 +108,6 @@ export function useCacheFirstJson<T>(url: string | null, opts: { keepPrevious?: 
     error: !!mine?.failed,
     errorStatus: mine?.failed ? (mine.status ?? null) : null,
     reload,
+    setData,
   };
 }

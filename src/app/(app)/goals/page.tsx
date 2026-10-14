@@ -234,7 +234,7 @@ function GoalsBody({ ctx, displayCurrency, tb }: { ctx: GoalCtx; displayCurrency
 
   return (
     <div className="space-y-6">
-      <PageToolbar
+      <PageToolbar refresh
         range={{ selection, onChange: setSelection }}
         search={{ value: tb.q, onChange: tb.setQ, placeholder: "Search goals" }}
       />

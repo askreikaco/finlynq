@@ -14,6 +14,7 @@
 
 import { TrendingUp } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import {
   LineChart,
   Line,
@@ -93,34 +94,23 @@ export interface PerformanceChartProps {
 export function PerformanceChart({ accountId }: PerformanceChartProps) {
   const { displayCurrency } = useDisplayCurrency();
   const [period, setPeriod] = useState<Period>("1y");
-  const [data, setData] = useState<ApiResponse["data"] | null>(null);
-  const [loading, setLoading] = useState(true);
   // FINLYNQ-129/172 — component-only stacked grouping toggle (resets on reload).
   // "holding" = per-holding bands, "account" = per-account bands; both pull from
   // the SAME lazily-fetched endpoint (prices+FX per holding per grid day) via the
   // groupBy param, so only load it once the user opts into a stacked mode.
   const [groupMode, setGroupMode] = useState<GroupMode>("off");
-  const [holdings, setHoldings] = useState<{ currency: string; points: HoldingsPoint[] } | null>(null);
-  const [holdingsLoading, setHoldingsLoading] = useState(false);
   // "By account" is meaningless when the chart is already scoped to one account
   // (it'd be a single band) — only offer it for the whole-portfolio aggregate (tc-4).
   const canGroupByAccount = accountId == null;
   const animationsEnabled = useAnimations();
 
-  useEffect(() => {
-    const params = new URLSearchParams();
-    params.set("period", period);
-    if (accountId != null) params.set("accountId", String(accountId));
-    setLoading(true);
-    fetch(`/api/portfolio/performance?${params.toString()}`)
-      .then((r) => r.json())
-      .then((json: ApiResponse) => {
-        if (json.success) setData(json.data);
-        else setData(null);
-      })
-      .catch(() => setData(null))
-      .finally(() => setLoading(false));
-  }, [period, accountId]);
+  // Cache-first: a remounted page paints the last chart at once and revalidates in the background.
+  const perfParams = new URLSearchParams();
+  perfParams.set("period", period);
+  if (accountId != null) perfParams.set("accountId", String(accountId));
+  const perfRes = useCacheFirstJson<ApiResponse>(`/api/portfolio/performance?${perfParams.toString()}`);
+  const data: ApiResponse["data"] | null = perfRes.data?.success ? perfRes.data.data : null;
+  const loading = perfRes.loading;
 
   // If the chart re-scopes to a single account while "By account" is active,
   // that mode no longer makes sense (one band) — fall back to "off" (tc-4).
@@ -131,22 +121,16 @@ export function PerformanceChart({ accountId }: PerformanceChartProps) {
   // Lazy member fetch — only when a stacked mode is on. Re-fetches on
   // mode/period/account change so the stack re-ranks (and re-groups) for the
   // new window. groupBy selects per-holding vs per-account bands (FINLYNQ-172).
-  useEffect(() => {
-    if (groupMode === "off") return;
-    const params = new URLSearchParams();
-    params.set("period", period);
-    params.set("groupBy", groupMode);
-    if (accountId != null) params.set("accountId", String(accountId));
-    setHoldingsLoading(true);
-    fetch(`/api/portfolio/performance/holdings?${params.toString()}`)
-      .then((r) => r.json())
-      .then((json: HoldingsApiResponse) => {
-        if (json.success && json.data) setHoldings(json.data);
-        else setHoldings(null);
-      })
-      .catch(() => setHoldings(null))
-      .finally(() => setHoldingsLoading(false));
-  }, [groupMode, period, accountId]);
+  const holdParams = new URLSearchParams();
+  holdParams.set("period", period);
+  holdParams.set("groupBy", groupMode);
+  if (accountId != null) holdParams.set("accountId", String(accountId));
+  const holdRes = useCacheFirstJson<HoldingsApiResponse>(
+    groupMode === "off" ? null : `/api/portfolio/performance/holdings?${holdParams.toString()}`,
+  );
+  const holdings: { currency: string; points: HoldingsPoint[] } | null =
+    groupMode !== "off" && holdRes.data?.success && holdRes.data.data ? holdRes.data.data : null;
+  const holdingsLoading = holdRes.loading;
 
   const rawChartData = useMemo(() => data?.series ?? [], [data]);
   const { data: chartData, domain, spansZero } = useMemo(

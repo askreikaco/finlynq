@@ -377,6 +377,7 @@ function CategoriesOverview() {
     }
   }
 
+  /** Budget tools: Copy last month, Save template, Apply template, Rules, Move money (top bar More). */
   const overflow: OverflowAction[] = [
     { label: copying ? "Copying…" : "Copy last month", icon: Copy, disabled: copying, onSelect: handleCopyFromPrevMonth },
     ...(budgets.length > 0 ? [{ label: "Save template", icon: Save, href: `/budgets/templates/new?${formQuery}` }] : []),
@@ -438,22 +439,7 @@ function CategoriesOverview() {
         </TabsList>
       </Tabs>
       {/* Range + month on ONE row, then search (the Filter icon is in the top bar) */}
-      <PageToolbar range={{ selection, onChange: setSelection }} search={{ value: tb.q, onChange: tb.setQ, placeholder: "Search categories" }} />
-    </div>
-  );
-
-  /** Budget tools (formerly the 3-dot menu): visible, small buttons under the metric cards. */
-  const budgetTools = (
-    <div data-slot="budget-tools" className="flex flex-wrap items-center gap-2">
-      {overflow.map((it) => {
-        const Icon = it.icon;
-        const inner = (<>{Icon ? <Icon className="mr-1 h-3.5 w-3.5" aria-hidden /> : null}{it.label}</>);
-        return it.href ? (
-          <Button key={it.label} variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground" render={<Link href={it.href} />}>{inner}</Button>
-        ) : (
-          <Button key={it.label} variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground" disabled={it.disabled} onClick={it.onSelect}>{inner}</Button>
-        );
-      })}
+      <PageToolbar refresh range={{ selection, onChange: setSelection }} search={{ value: tb.q, onChange: tb.setQ, placeholder: "Search categories" }} />
     </div>
   );
 
@@ -462,7 +448,6 @@ function CategoriesOverview() {
     metrics: isIncome ? null : (
       <div className="space-y-3">
         <MetricGrid metrics={metrics} columns={3} />
-        {budgetTools}
       </div>
     ),
     summary: (
@@ -579,6 +564,8 @@ function CategoriesOverview() {
           </Button>
         }
         filter={{ href: tb.filterHref, activeCount: tb.activeCount }}
+        // Budget tools live in the top bar More menu (after Filter, before Customize cards); budgets are a Spending-tab concept.
+        overflow={isIncome ? undefined : overflow}
         bulkEdit={{ onToggle: () => setEditMode((v) => !v), active: editMode, label: "Edit list" }}
       />
       {toolbar}

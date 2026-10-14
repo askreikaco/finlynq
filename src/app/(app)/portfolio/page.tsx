@@ -358,7 +358,7 @@ export default function PortfolioPage() {
         </div>
       )}
 
-      <PageToolbar
+      <PageToolbar refresh
         range={{ selection: metricRange.selection, onChange: metricRange.setSelection }}
         search={{ value: tb.q, onChange: tb.setQ, placeholder: "Search holdings" }}
       />

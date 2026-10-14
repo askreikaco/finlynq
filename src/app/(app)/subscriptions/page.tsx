@@ -17,7 +17,8 @@
  * a row opens a DetailSheet with the fields and the actions.
  */
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
+import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -132,10 +133,18 @@ function SubscriptionsPageContent() {
   const view: View = searchParams.get("view") === "calendar" ? "calendar" : "list";
   const { displayCurrency: ctxCurrency } = useDisplayCurrency();
 
-  const [subs, setSubs] = useState<Subscription[]>([]);
-  const [recurring, setRecurring] = useState<RecurringRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(false);
+  // Cache-first: a revisit paints the last list / cards at once and revalidates in the background.
+  const subsRes = useCacheFirstJson<Subscription[]>("/api/subscriptions");
+  // Detection is a nice-to-have on top of the tracked list: a failure here
+  // just means no suggestions / no projected income, never a page error.
+  const recurringRes = useCacheFirstJson<{ recurring?: RecurringRow[] }>("/api/recurring");
+  const subs = useMemo<Subscription[]>(() => (Array.isArray(subsRes.data) ? subsRes.data : []), [subsRes.data]);
+  const recurring = useMemo<RecurringRow[]>(
+    () => (Array.isArray(recurringRes.data?.recurring) ? recurringRes.data.recurring : []),
+    [recurringRes.data],
+  );
+  const loading = subsRes.loading;
+  const loadError = subsRes.error;
 
   // Toolbar: search, filter page (status) and sort (next payment, name, monthly cost).
   const tb = useListToolbar({ filterPath: "/filter/subscriptions", sorts: SUBSCRIPTION_SORTS, filterKeys: SUBSCRIPTION_FILTER_KEYS });
@@ -148,37 +157,8 @@ function SubscriptionsPageContent() {
 
   const today = localDateISO();
 
-  const loadSubs = useCallback(async () => {
-    setLoadError(false);
-    try {
-      const res = await fetch("/api/subscriptions");
-      if (!res.ok) throw new Error("load failed");
-      const data = await res.json();
-      setSubs(Array.isArray(data) ? data : []);
-    } catch {
-      setLoadError(true);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Detection is a nice-to-have on top of the tracked list: a failure here
-  // just means no suggestions / no projected income, never a page error.
-  const loadRecurring = useCallback(async () => {
-    try {
-      const res = await fetch("/api/recurring");
-      if (!res.ok) return;
-      const data = await res.json();
-      setRecurring(Array.isArray(data?.recurring) ? data.recurring : []);
-    } catch {
-      /* non-fatal */
-    }
-  }, []);
-
-  useEffect(() => {
-    loadSubs();
-    loadRecurring();
-  }, [loadSubs, loadRecurring]);
+  const loadSubs = subsRes.reload;
+  const loadRecurring = recurringRes.reload;
 
   function setView(next: View) {
     router.replace(next === "calendar" ? "/subscriptions?view=calendar" : "/subscriptions", { scroll: false });
@@ -253,7 +233,7 @@ function SubscriptionsPageContent() {
         setActionError(await parseSaveError(res, fallback));
         return false;
       }
-      await loadSubs();
+      loadSubs();
       return true;
     } catch {
       setActionError("Network error. Please try again.");
@@ -333,7 +313,7 @@ function SubscriptionsPageContent() {
       <ErrorState
         title="Couldn't load subscriptions"
         message="We couldn't load your subscriptions. Please try again."
-        onRetry={() => { setLoading(true); loadSubs(); loadRecurring(); }}
+        onRetry={() => { loadSubs(); loadRecurring(); }}
       />
     );
   }
@@ -420,12 +400,11 @@ function SubscriptionsPageContent() {
             <TabsTrigger value="calendar" className="px-3"><CalendarDays className="h-4 w-4" /> Calendar</TabsTrigger>
           </TabsList>
         </Tabs>
-        {view === "list" && subs.length > 1 && (
-          <PageToolbar
-            className="w-auto flex-1 justify-end"
-            search={{ value: tb.q, onChange: tb.setQ, placeholder: "Search subscriptions" }}
-          />
-        )}
+        <PageToolbar
+          refresh
+          className="w-auto flex-1 justify-end"
+          search={view === "list" && subs.length > 1 ? { value: tb.q, onChange: tb.setQ, placeholder: "Search subscriptions" } : undefined}
+        />
       </div>
 
       <ListDetailLayout

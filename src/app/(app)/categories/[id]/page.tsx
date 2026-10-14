@@ -117,20 +117,14 @@ function CategoryPageContent() {
     ? (catRes.errorStatus === 404 || catRes.errorStatus === 400 ? "not_found" : "failed")
     : null;
   const load = catRes.reload;
-  const [categories, setCategories] = useState<CategoryOption[]>([]);
+  const categoriesRes = useCacheFirstJson<CategoryOption[]>("/api/categories");
+  const categories = useMemo<CategoryOption[]>(() => (Array.isArray(categoriesRes.data) ? categoriesRes.data : []), [categoriesRes.data]);
   const sortCategory = useDropdownOrder("category");
   const cardLayout = useCardLayout("category-detail", CATEGORY_DETAIL_CARDS);
   const [customizeOpen, setCustomizeOpen] = useState(false);
   usePageCustomize(data && !error ? { onOpen: () => setCustomizeOpen(true) } : null);
 
 
-
-  useEffect(() => {
-    fetch("/api/categories")
-      .then((r) => (r.ok ? r.json() : []))
-      .then((rows) => setCategories(Array.isArray(rows) ? rows : []))
-      .catch(() => {});
-  }, []);
 
   const switcherItems = useMemo(
     () =>
@@ -223,7 +217,7 @@ function CategoryPageContent() {
   const nodes: Record<string, ReactNode> = {
     summary: (
       <div className="space-y-3">
-        <PageToolbar range={{ selection: metricRange.selection, onChange: metricRange.setSelection }} />
+        <PageToolbar refresh range={{ selection: metricRange.selection, onChange: metricRange.setSelection }} />
         <MetricGrid metrics={summaryMetrics} />
       </div>
     ),

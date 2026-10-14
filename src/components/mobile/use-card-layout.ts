@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import { defaultCardLayout, normalizeCardLayout, type CardLayout, type PageCard } from "@/lib/card-layout";
 
 /**
@@ -16,34 +17,35 @@ export function useCardLayout(pageId: string, cards: readonly PageCard[], option
     cardsRef.current = cards;
   }, [cards]);
   const defaults = useMemo(() => defaultCardLayout(cards), [cards]);
-  const [layout, setLayout] = useState<CardLayout>(defaults);
-  const [ready, setReady] = useState(false);
+  // Read through the cache-first hook: a page that remounts paints the saved layout at once (no skeleton) and the
+  // layout is revalidated in the background. `override` holds an optimistic save until the server answers.
+  const res = useCacheFirstJson<unknown>(endpoint);
+  const { setData } = res;
+  const fetched = useMemo(
+    () => (res.data ? normalizeCardLayout(res.data, cardsRef.current) : defaults),
+    [res.data, defaults],
+  );
+  const [override, setOverride] = useState<CardLayout | null>(null);
+  useEffect(() => {
+    setOverride(null); // a newer server copy wins over the last local save
+  }, [res.data]);
+  const layout = override ?? fetched;
   const current = useRef(layout);
   useEffect(() => {
     current.current = layout;
   }, [layout]);
-
+  const settled = !res.loading;
+  const [everReady, setEverReady] = useState(settled);
   useEffect(() => {
-    let alive = true;
-    fetch(endpoint)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (alive && d) setLayout(normalizeCardLayout(d, cardsRef.current));
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (alive) setReady(true);
-      });
-    return () => {
-      alive = false;
-    };
-  }, [endpoint]);
+    if (settled) setEverReady(true);
+  }, [settled]);
+  const ready = everReady || settled;
 
   const save = useCallback(
     async (next: CardLayout) => {
       const previous = current.current;
       const optimistic = normalizeCardLayout(next, cardsRef.current);
-      setLayout(optimistic);
+      setOverride(optimistic);
       try {
         const res = await fetch(endpoint, {
           method: "PUT",
@@ -51,13 +53,15 @@ export function useCardLayout(pageId: string, cards: readonly PageCard[], option
           body: JSON.stringify({ order: optimistic.order, hidden: optimistic.hidden }),
         });
         if (!res.ok) throw new Error(`save failed (${res.status})`);
-        setLayout(normalizeCardLayout(await res.json(), cardsRef.current));
+        const saved: unknown = await res.json();
+        setOverride(normalizeCardLayout(saved, cardsRef.current));
+        setData(saved); // keep the cache (and the persisted copy) on the saved layout
       } catch (e) {
-        setLayout(previous);
+        setOverride(previous);
         throw e;
       }
     },
-    [endpoint],
+    [endpoint, setData],
   );
 
   const reset = useCallback(() => save(defaultCardLayout(cardsRef.current)), [save]);

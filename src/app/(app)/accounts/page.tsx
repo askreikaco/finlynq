@@ -1,7 +1,7 @@
 "use client";
 
 
-import { Fragment, Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
+import { Fragment, Suspense, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
@@ -140,18 +140,11 @@ function AccountsPage() {
   // FINLYNQ-179: user-customizable account groups. The saved per-type display
   // order is a settings key/value (no migration); the management surface
   // (rename / reorder / merge-into-Other) is the /accounts/groups page.
-  const [groupOrder, setGroupOrder] = useState<AccountGroupOrder>({ A: [], L: [] });
-
-  function loadGroupOrder() {
-    fetch("/api/settings/account-group-order")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (d?.order) setGroupOrder(parseGroupOrder(JSON.stringify(d.order)));
-      })
-      .catch(() => {});
-  }
-
-  useEffect(() => { loadGroupOrder(); }, []);
+  const groupOrderRes = useCacheFirstJson<{ order?: unknown }>("/api/settings/account-group-order");
+  const groupOrder = useMemo<AccountGroupOrder>(
+    () => (groupOrderRes.data?.order ? parseGroupOrder(JSON.stringify(groupOrderRes.data.order)) : { A: [], L: [] }),
+    [groupOrderRes.data],
+  );
 
   // Always fetch EVERY account, archived included — /api/dashboard returns them
   // unconditionally now, and the totals below need them to match the dashboard
@@ -388,7 +381,7 @@ function AccountsPage() {
     >
       <OnboardingTips page="accounts" />
 
-      <PageToolbar
+      <PageToolbar refresh
         range={{ selection: metricRange.selection, onChange: metricRange.setSelection }}
         search={{ value: tb.q, onChange: tb.setQ, placeholder: "Search accounts" }}
       />

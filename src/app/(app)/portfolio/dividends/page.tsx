@@ -223,7 +223,7 @@ export default function DividendsPage() {
       }}
     >
 
-      <PageToolbar
+      <PageToolbar refresh
         range={{ selection: metricRange.selection, onChange: metricRange.setSelection }}
       />
 
