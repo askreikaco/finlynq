@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Globe, Plus, X, Check, AlertTriangle, Loader2 } from "lucide-react";
@@ -153,15 +154,15 @@ export function ActiveCurrenciesSection() {
             <Globe className="h-5 w-5" />
           </div>
           <div>
-            <CardTitle className="text-base">Currencies you use</CardTitle>
-            <CardDescription>
-              These are the only currencies offered in the app&apos;s dropdowns
-              (transaction form, account form, FX rates). {source === "derived" ? (
-                <span className="block mt-1 text-warning text-xs">
-                  This list was derived from your existing data — add or remove a currency to lock it in.
-                </span>
-              ) : null}
-            </CardDescription>
+            <CardTitle className="flex items-center gap-1 text-base">
+              Currencies
+              <InfoTip label="About currencies" text="Only these currencies appear in dropdowns (transactions, accounts, FX rates)." />
+            </CardTitle>
+            {source === "derived" ? (
+              <span className="mt-1 block text-xs text-warning">
+                Taken from your data. Add or remove one to lock it in.
+              </span>
+            ) : null}
           </div>
         </div>
       </CardHeader>
@@ -169,13 +170,13 @@ export function ActiveCurrenciesSection() {
         {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
         {loading ? (
-          <p className="text-xs text-muted-foreground">Loading…</p>
+          <p className="text-xs text-muted-foreground" data-keep="status">Loading…</p>
         ) : (
           <>
             {/* Active chips */}
             <div className="flex flex-wrap gap-1.5">
               {active.length === 0 ? (
-                <p className="text-xs text-muted-foreground">No currencies selected.</p>
+                <p className="text-xs text-muted-foreground" data-keep="status">No currencies selected.</p>
               ) : null}
               {active.map((c) => (
                 <button
@@ -183,7 +184,7 @@ export function ActiveCurrenciesSection() {
                   onClick={() => removeCode(c)}
                   disabled={saving}
                   className="group inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 py-1 text-xs hover:border-destructive/50 hover:bg-destructive/10 transition-colors"
-                  title={`${currencyLabel(c)}${isSupportedCurrency(c) ? "" : " (custom — needs a custom rate)"}`}
+                  title={`${currencyLabel(c)}${isSupportedCurrency(c) ? "" : " (custom, needs a rate)"}`}
                 >
                   <span className="font-mono font-semibold">{c}</span>
                   <span className="text-muted-foreground">{currencyLabel(c)}</span>
@@ -196,11 +197,10 @@ export function ActiveCurrenciesSection() {
             {showPicker ? (
               <div className="rounded-md border border-border/50 p-3 space-y-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-medium">Add a currency</label>
-                  <p className="text-xs text-muted-foreground">
-                    Type any 3-4 letter code. We&apos;ll check whether it has a live
-                    market rate (Yahoo / CoinGecko / metals) or needs a custom rate.
-                  </p>
+                  <div className="flex items-center gap-1">
+                    <label className="text-xs font-medium">Add currency</label>
+                    <InfoTip label="About adding a currency" text="Type a 3-4 letter code. We check for a live rate (Yahoo, CoinGecko, metals) or ask for a custom one." />
+                  </div>
                   <Input
                     placeholder="e.g. EUR, AED, JPY, BTC, XAU…"
                     value={query}
@@ -217,13 +217,13 @@ export function ActiveCurrenciesSection() {
 
                 {/* Live lookup result */}
                 {lookup.status === "invalid" ? (
-                  <p className="text-xs text-muted-foreground">Enter a 3-4 letter currency code.</p>
+                  <p className="text-xs text-muted-foreground" data-keep="status">Enter a 3-4 letter code.</p>
                 ) : lookup.status === "already" ? (
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground" data-keep="status">
                     <span className="font-mono font-semibold">{lookup.code}</span> is already in your list.
                   </p>
                 ) : lookup.status === "loading" ? (
-                  <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <p className="flex items-center gap-1.5 text-xs text-muted-foreground" data-keep="status">
                     <Loader2 className="h-3.5 w-3.5 animate-spin" /> Checking <span className="font-mono font-semibold">{lookup.code}</span>…
                   </p>
                 ) : lookup.status === "supported" ? (
@@ -250,14 +250,14 @@ export function ActiveCurrenciesSection() {
                       </span>
                       <span className="ml-2 font-mono font-semibold">{lookup.code}</span>
                       <span className="block text-muted-foreground mt-0.5">
-                        No market rate found. You can add it, then set a custom exchange rate below for it to convert.
+                        No market rate. Add it, then set a custom rate below.
                       </span>
                     </div>
                     <Button size="sm" variant="outline" onClick={() => addCode(lookup.code)} disabled={saving}>Add anyway</Button>
                   </div>
                 ) : lookup.status === "error" ? (
-                  <p className="text-xs text-muted-foreground">
-                    Couldn&apos;t check <span className="font-mono font-semibold">{lookup.code}</span> right now — you can still add it as a custom currency.
+                  <p className="text-xs text-muted-foreground" data-keep="status">
+                    Check failed for <span className="font-mono font-semibold">{lookup.code}</span> — add as custom.
                     <Button size="sm" variant="ghost" className="ml-1 h-6 px-2 text-xs" onClick={() => addCode(lookup.code)} disabled={saving}>Add anyway</Button>
                   </p>
                 ) : null}
@@ -265,7 +265,7 @@ export function ActiveCurrenciesSection() {
                 {/* Common quick-picks */}
                 {commonQuickPicks.length > 0 ? (
                   <div className="border-t border-border/50 pt-3 space-y-1.5">
-                    <label className="text-xs font-medium block">Common</label>
+                    <label className="block text-xs font-medium">Common</label>
                     <div className="flex flex-wrap gap-1.5">
                       {commonQuickPicks.map((c) => (
                         <button

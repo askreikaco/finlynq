@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -137,11 +138,10 @@ export function FxOverridesSection() {
             <RefreshCw className="h-5 w-5" />
           </div>
           <div>
-            <CardTitle className="text-base">Custom exchange rates</CardTitle>
-            <CardDescription>
-              Pin your own FX rate when the market rate doesn&apos;t match what your bank charged,
-              or for currencies we don&apos;t auto-fetch. Stored as <code>1 USD = N currency</code>.
-            </CardDescription>
+            <CardTitle className="flex items-center gap-1 text-base">
+              Custom rates
+              <InfoTip label="About custom rates" text="Pin your own FX rate when the market rate differs from your bank's, or for currencies we don't fetch. Stored as 1 USD = N currency." />
+            </CardTitle>
           </div>
         </div>
       </CardHeader>
@@ -149,9 +149,9 @@ export function FxOverridesSection() {
         {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
         {loading ? (
-          <p className="text-xs text-muted-foreground">Loading…</p>
+          <p className="text-xs text-muted-foreground" data-keep="status">Loading…</p>
         ) : overrides.length === 0 ? (
-          <p className="text-xs text-muted-foreground">No custom rates yet. Add one below.</p>
+          <p className="text-xs text-muted-foreground" data-keep="status">No custom rates.</p>
         ) : (
           <div className="space-y-1.5">
             {overrides.map((o) => (
@@ -216,8 +216,8 @@ export function FxOverridesSection() {
                   />
                 )}
                 {customCode ? (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    For unsupported currencies (e.g. XAU for gold). The code will be added to your active list automatically.
+                  <p className="mt-1 text-xs text-muted-foreground" data-keep="status">
+                    Added to your currencies automatically.
                   </p>
                 ) : null}
               </div>

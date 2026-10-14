@@ -17,7 +17,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -275,10 +276,6 @@ export function BankFeedsSection() {
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-muted-foreground">
-        Pull transactions automatically from your bank via SimpleFIN
-      </p>
-
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
@@ -288,17 +285,17 @@ export function BankFeedsSection() {
             <div className="min-w-0">
               <CardTitle className="text-base flex items-center gap-2">
                 SimpleFIN
+                <InfoTip
+                  label="About SimpleFIN"
+                  text="Pulls bank transactions via SimpleFIN. Link banks at simplefin.org ($15/yr, paid to them) and paste the setup token here. Synced rows go to import review; Finlynq never sees your bank login."
+                />
                 {status?.connected && (
                   <Badge variant="outline" className="text-xs text-pos border-pos/40">
                     <CheckCircle2 className="h-3 w-3 mr-1" /> Connected
                   </Badge>
                 )}
               </CardTitle>
-              <CardDescription>
-                An open bank-feed protocol. You link your banks at simplefin.org ($15/yr, paid
-                directly to SimpleFIN) and paste a one-time setup token here. Synced transactions go
-                to your import review queue for approval — Finlynq never sees your bank login.
-              </CardDescription>
+
             </div>
           </div>
         </CardHeader>
@@ -319,10 +316,10 @@ export function BankFeedsSection() {
             <div className="space-y-4">
               {/* ── Header row: last sync + actions ── */}
               <div className="flex items-center justify-between gap-3">
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground" data-keep="status">
                   {status.lastSyncAt
                     ? `Last synced ${formatDateTime(status.lastSyncAt)}`
-                    : "Not synced yet"}
+                    : "Never synced"}
                 </p>
                 <div className="flex items-center gap-2">
                   {!preview && (
@@ -386,14 +383,14 @@ export function BankFeedsSection() {
               {preview && (
                 <div className="rounded-xl border divide-y">
                   <div className="px-4 py-2.5 text-sm font-medium bg-muted/30">
-                    Detected accounts — choose how each maps to Finlynq
+                    Accounts found
                   </div>
                   {preview.accounts.map((a) => (
                     <div key={a.externalId} className="px-4 py-3 space-y-2">
                       <div className="flex items-center justify-between gap-3">
                         <div className="min-w-0">
                           <p className="text-sm font-medium truncate">{a.name}</p>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-xs text-muted-foreground" data-keep="status">
                             {a.currency} · {a.txCount} transaction{a.txCount === 1 ? "" : "s"}
                           </p>
                         </div>
@@ -483,7 +480,7 @@ export function BankFeedsSection() {
               {stageResult && (
                 <div className="rounded-xl border bg-muted/30 p-4 space-y-2">
                   <p className="text-sm font-medium">Ready for review</p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground" data-keep="status">
                     {stageResult.staged.reduce((n, s) => n + s.rowCount, 0)} transaction
                     {stageResult.staged.reduce((n, s) => n + s.rowCount, 0) === 1 ? "" : "s"} staged
                     across {stageResult.staged.length} account
@@ -498,7 +495,7 @@ export function BankFeedsSection() {
                   </p>
                   {stageResult.skippedNoChoice.length > 0 && (
                     <p className="text-xs text-warning">
-                      Skipped (no choice made):{" "}
+                      Skipped:{" "}
                       {stageResult.skippedNoChoice.map((s) => s.name).join(", ")}
                     </p>
                   )}
@@ -506,7 +503,7 @@ export function BankFeedsSection() {
                     href="/import/pending"
                     className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
                   >
-                    Review &amp; approve in Import <ExternalLink className="h-3.5 w-3.5" />
+                    Review in Import <ExternalLink className="h-3.5 w-3.5" />
                   </Link>
                 </div>
               )}
@@ -522,7 +519,7 @@ export function BankFeedsSection() {
                 value={token}
                 onChange={(e) => setToken(e.target.value)}
                 rows={3}
-                placeholder="Paste your SimpleFIN setup token…"
+                placeholder="Paste setup token"
                 className={cn(
                   "w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm font-mono transition-colors outline-none",
                   "placeholder:text-muted-foreground placeholder:font-sans focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
@@ -538,7 +535,7 @@ export function BankFeedsSection() {
                   rel="noreferrer noopener"
                   className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
                 >
-                  Where do I get a token? <ExternalLink className="h-3 w-3" />
+                  Get a token <ExternalLink className="h-3 w-3" />
                 </a>
                 <Button size="sm" onClick={handleConnect} disabled={connecting || !token.trim()}>
                   {connecting ? (
@@ -564,12 +561,10 @@ export function BankFeedsSection() {
                 <Clock className="h-5 w-5" />
               </div>
               <div className="min-w-0">
-                <CardTitle className="text-base">Pending charges</CardTitle>
-                <CardDescription>
-                  Holds and not-yet-posted charges from your bank. These are volatile (a hold
-                  clears and re-posts as a distinct charge) so they are NOT added to your ledger —
-                  shown here for visibility only.
-                </CardDescription>
+                <CardTitle className="flex items-center gap-1 text-base">
+                  Pending charges
+                  <InfoTip label="About pending charges" text="Bank holds not yet posted. Shown for visibility only; not added to your ledger." />
+                </CardTitle>
               </div>
             </div>
           </CardHeader>
@@ -580,7 +575,7 @@ export function BankFeedsSection() {
                 <Loader2 className="h-4 w-4 animate-spin" /> Loading…
               </div>
             ) : pending.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No pending charges.</p>
+              <p className="text-sm text-muted-foreground" data-keep="empty">No pending charges.</p>
             ) : (
               <div className="rounded-xl border divide-y">
                 {pending.map((p) => (
@@ -592,7 +587,7 @@ export function BankFeedsSection() {
                       <p className="text-sm font-medium truncate">
                         {safeName(p.payee, "charge", 0)}
                       </p>
-                      <p className="text-xs text-muted-foreground truncate">
+                      <p className="text-xs text-muted-foreground truncate" data-keep="status">
                         {p.date} · {p.accountName}
                       </p>
                     </div>
@@ -613,9 +608,7 @@ export function BankFeedsSection() {
         title="Disconnect SimpleFIN"
         description={
           <>
-            Disconnect SimpleFIN? Your stored access is removed and no more transactions will be
-            pulled. Already-imported transactions are kept — you can reconnect later with a new setup
-            token.
+            Removes stored access and stops syncing. Imported transactions are kept; reconnect later with a new token.
           </>
         }
         confirmLabel="Disconnect"

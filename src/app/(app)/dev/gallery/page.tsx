@@ -12,6 +12,7 @@ import { Amount } from "@/components/mobile/amount";
 import { PillButton } from "@/components/mobile/pill-button";
 import { MetricCard } from "@/components/metric-card";
 import { Button } from "@/components/ui/button";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   DollarSign,
@@ -102,6 +103,16 @@ function GalleryContent() {
                   <Amount value={0} />
                   <Amount value={5000000} currency="EUR" />
                 </div>
+              </div>
+            </SectionCard>
+
+            {/* InfoTip: the one (i) help icon (replaces visible descriptions) */}
+            <SectionCard>
+              <div className="space-y-2 p-4">
+                <h3 className="flex items-center gap-1 text-sm font-semibold">
+                  InfoTip
+                  <InfoTip label="About InfoTip" text="Tap, click or focus the icon to read the help text." />
+                </h3>
               </div>
             </SectionCard>
 

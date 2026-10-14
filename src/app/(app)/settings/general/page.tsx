@@ -10,7 +10,8 @@
  */
 
 import { useState, useCallback } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -101,7 +102,6 @@ export default function GeneralSettingsPage() {
     <SectionPage
       id="settings-general"
       title="General"
-      subtitle="Display preferences and currencies"
       padBottom="none"
       minW0={false}
       suspense={false}
@@ -116,19 +116,20 @@ export default function GeneralSettingsPage() {
               <Settings2 className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle className="text-base">Display Preferences</CardTitle>
-              <CardDescription>Customize how data is displayed</CardDescription>
+              <CardTitle className="flex items-center gap-1 text-base">
+                Display
+                <InfoTip label="About display" text="Customize how data is displayed." />
+              </CardTitle>
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex flex-col gap-2 regular:flex-row regular:items-center regular:justify-between regular:gap-4">
             <div className="min-w-0 regular:flex-1">
-              <Label>Display Currency</Label>
-              <p className="text-xs text-muted-foreground">
-                Totals and aggregations across the app are converted to this currency.
-                Per-row amounts (transactions, holdings) keep their entered currency.
-              </p>
+              <div className="flex items-center gap-1">
+                <Label>Currency</Label>
+                <InfoTip label="About currency" text="Totals are converted to this currency. Row amounts keep their own currency." />
+              </div>
             </div>
             {/* Shared `useDisplayCurrencyOptions` rather than the bare built-in
                 list: it also offers any currency the user has a custom rate
@@ -149,10 +150,10 @@ export default function GeneralSettingsPage() {
 
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <Label>UI Font</Label>
-              <p className="text-xs text-muted-foreground">
-                Applies to this browser only. Numeric figures use tabular numerals.
-              </p>
+              <div className="flex items-center gap-1">
+                <Label>Font</Label>
+                <InfoTip label="About font" text="This browser only." />
+              </div>
             </div>
             <Select value={font} onValueChange={(v) => setFont(v as FontKey)}>
               <SelectTrigger className="w-44 shrink-0 regular:w-48"><SelectValue /></SelectTrigger>
@@ -168,10 +169,7 @@ export default function GeneralSettingsPage() {
 
           <div className="flex flex-col gap-2 regular:flex-row regular:items-center regular:justify-between regular:gap-3">
             <div className="min-w-0 regular:flex-1">
-              <Label id="appearance-label">Appearance</Label>
-              <p className="text-xs text-muted-foreground">
-                System, light, or dark.
-              </p>
+              <Label id="appearance-label">Theme</Label>
             </div>
             <div
               role="radiogroup"
@@ -207,16 +205,16 @@ export default function GeneralSettingsPage() {
 
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <Label htmlFor="animation-toggle">Enable Chart &amp; Counter Animations</Label>
-              <p className="text-xs text-muted-foreground">
-                Smooth transitions for numbers and charts. Off by default for faster rendering.
-              </p>
+              <div className="flex items-center gap-1">
+                <Label htmlFor="animation-toggle">Animations</Label>
+                <InfoTip label="About animations" text="Smooth number and chart transitions. Off is faster." />
+              </div>
             </div>
             <Switch
               id="animation-toggle"
               checked={animationsEnabled}
               onCheckedChange={setAnimationsEnabled}
-              aria-label="Enable Chart & Counter Animations"
+              aria-label="Animations"
             />
           </div>
 
@@ -252,11 +250,8 @@ export default function GeneralSettingsPage() {
               {/* The explicit {" "} is required: JSX DROPS whitespace that
                   contains a newline when it sits between an expression and the
                   next line's text, so this rendered as "into AEDusing each". */}
-              This recalculates all your reports into {pendingCurrency}{" "}
-              using each transaction&apos;s historical exchange rate. Your
-              realized gains and
-              tax figures will also re-base to {pendingCurrency}. It runs in the
-              background; your reports stay usable while it finishes.
+              Recalculates all reports, gains and tax figures into {pendingCurrency}{" "}
+              at historical rates. Runs in the background.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

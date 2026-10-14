@@ -60,8 +60,8 @@ export function DisplaySection() {
       <AccordionItem
         value="dropdown-order"
         icon={<ListOrdered className="h-4 w-4" />}
-        title="Dropdown ordering"
-        description="Pin frequently-used items to the top of category, account, holding, and currency pickers"
+        title="Dropdown order"
+        info="Pin frequent items to the top of pickers."
       >
         <div id="dropdown-order">
           <DropdownOrderSection />
@@ -71,7 +71,7 @@ export function DisplaySection() {
         value="density"
         icon={<Rows3 className="h-4 w-4" />}
         title="Density"
-        description="Comfortable is the default. Compact shortens list rows on this device only."
+        info="Compact shortens list rows. This device only."
       >
         <div id="density">
           <DensityRow />

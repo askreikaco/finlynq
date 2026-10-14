@@ -22,6 +22,7 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -269,7 +270,7 @@ export function RuleEditorForm({
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <Label>Rule name</Label>
+            <Label>Name</Label>
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Grocery stores" />
           </div>
           <div>
@@ -285,9 +286,12 @@ export function RuleEditorForm({
         {/* Conditions */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label>Conditions (AND — all must match)</Label>
-            <Button size="sm" variant="outline" onClick={() => setConditions([...conditions, blankCondition()])}>
-              <Plus className="h-3 w-3 mr-1" /> Add condition
+            <span className="flex items-center gap-1">
+              <Label>Conditions</Label>
+              <InfoTip label="About conditions" text="All conditions must match (AND)." />
+            </span>
+            <Button size="sm" variant="outline" aria-label="Add condition" onClick={() => setConditions([...conditions, blankCondition()])}>
+              <Plus className="h-3 w-3 mr-1" /> Add
             </Button>
           </div>
           {conditions.map((cond, i) => (
@@ -304,9 +308,12 @@ export function RuleEditorForm({
         {/* Actions */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label>Actions (applied in order)</Label>
-            <Button size="sm" variant="outline" onClick={() => setActions([...actions, blankAction()])}>
-              <Plus className="h-3 w-3 mr-1" /> Add action
+            <span className="flex items-center gap-1">
+              <Label>Actions</Label>
+              <InfoTip label="About actions" text="Applied in order." />
+            </span>
+            <Button size="sm" variant="outline" aria-label="Add action" onClick={() => setActions([...actions, blankAction()])}>
+              <Plus className="h-3 w-3 mr-1" /> Add
             </Button>
           </div>
           {actions.map((act, i) => (
@@ -326,15 +333,17 @@ export function RuleEditorForm({
 
         {/* Live preview */}
         <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
-          <Label className="text-xs uppercase tracking-wide text-muted-foreground">Live preview (pure actions only)</Label>
+          <span className="flex items-center gap-1">
+            <Label className="text-xs uppercase tracking-wide text-muted-foreground">Preview</Label>
+            <InfoTip label="About preview" text="Pure actions only. Side-effect actions (set account, transfer, investment transaction) run only on staging-approve or reconcile, so they are not in the patch." />
+          </span>
           <div className="grid grid-cols-2 gap-2">
             <Input value={samplePayee} onChange={(e) => setSamplePayee(e.target.value)} placeholder="Sample payee" />
             <AmountInput  value={sampleAmount} onValueChange={(nv) => setSampleAmount(parseFloat(nv) || 0)} placeholder="Sample amount" />
           </div>
           <div className="text-xs space-y-0.5 text-muted-foreground">
-            <p>Sample: <span className="font-mono">{samplePayee || "(empty)"}</span> @ ${sampleAmount}</p>
-            <p>Action patch: <span className="font-mono">{JSON.stringify(livePatch)}</span></p>
-            <p className="italic">Side-effect actions (set_account, create_transfer, record investment transaction) only fire from the staging-approve / reconcile materialize paths; they don&apos;t appear in the patch.</p>
+            <p data-keep="data">Sample: <span className="font-mono">{samplePayee || "(empty)"}</span> @ ${sampleAmount}</p>
+            <p data-keep="data">Action patch: <span className="font-mono">{JSON.stringify(livePatch)}</span></p>
           </div>
         </div>
       </div>
@@ -818,12 +827,12 @@ function InvestmentOpFields({
           )}
           {!isTrade && !isShares && action.useRowTicker && (
             <span className="text-xs text-muted-foreground italic">
-              optional — attributes the {op} to the row&apos;s security
+              optional
             </span>
           )}
           {isShares && (
             <span className="text-xs text-muted-foreground italic">
-              required — the reinvested shares land on this holding
+              required
             </span>
           )}
         </div>
@@ -834,11 +843,12 @@ function InvestmentOpFields({
           <VarBindingRow label="Quantity" value={action.qty} onChange={(qty) => onChange({ qty } as Partial<Action>)} />
           <VarBindingRow label={isShares ? "Dollar value" : "Total amount"} value={action.total} onChange={(total) => onChange({ total } as Partial<Action>)} />
           <VarBindingRow label="Price/unit" value={action.price} onChange={(price) => onChange({ price } as Partial<Action>)} optional />
-          <p className="text-xs text-muted-foreground italic">
-            {isShares
-              ? "Bind any two of quantity / value / price; the third is computed. The income is recorded as shares (a lot opens at value ÷ quantity) — no cash sleeve is touched."
-              : "Bind any two of quantity / total / price; the third is computed. Lots are matched FIFO automatically."}
-          </p>
+          <InfoTip
+            label="About bindings"
+            text={isShares
+              ? "Bind any two of quantity, value and price; the third is computed. Recorded as shares; no cash sleeve is touched."
+              : "Bind any two of quantity, total and price; the third is computed. Lots match FIFO."}
+          />
         </>
       ) : (
         <VarBindingRow label="Amount" value={action.total} onChange={(total) => onChange({ total } as Partial<Action>)} />

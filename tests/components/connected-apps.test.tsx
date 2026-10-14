@@ -27,6 +27,7 @@ vi.mock("@/components/ui/confirm-dialog", () => ({
 vi.mock("lucide-react", () => ({
   Plug: () => <div>Plug Icon</div>,
   Loader2: () => <div>Loader Icon</div>,
+  Info: () => <div>Info Icon</div>,
 }));
 
 import { ConnectedApps } from "@/app/(app)/settings/integrations/connected-apps";
@@ -58,8 +59,8 @@ describe("ConnectedApps component", () => {
     const mcpRow = await screen.findByText("MCP client (API key)");
     expect(mcpRow).toBeTruthy();
 
-    // Check for the "Manage API key" button
-    const manageButton = await screen.findByText("Manage API key");
+    // Check for the "API key" button
+    const manageButton = await screen.findByText("API key");
     expect(manageButton).toBeTruthy();
     expect(manageButton.closest("a")?.getAttribute("href")).toBe("/settings/developer");
 
@@ -123,8 +124,8 @@ describe("ConnectedApps component", () => {
 
     await screen.findByText("MCP client (API key)");
 
-    // Check that there's a "Manage API key" button but NO "Revoke" button for the MCP row
-    const manageButton = screen.getByText("Manage API key");
+    // Check that there's a "API key" button but NO "Revoke" button for the MCP row
+    const manageButton = screen.getByText("API key");
     expect(manageButton).toBeTruthy();
 
     // Get all Revoke buttons (there should be none since there are no OAuth apps)

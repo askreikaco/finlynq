@@ -21,7 +21,8 @@ function rulePatch(f: Record<string, string | number | null>): Partial<RuleRow> 
   if (f.isActive !== undefined && f.isActive !== null) p.isActive = f.isActive === "true";
   return p as Partial<RuleRow>;
 }
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -189,11 +190,6 @@ export function RulesSection() {
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-muted-foreground">
-        Auto-categorize and transform transactions with multi-condition rules.
-        See <a href="/docs/transaction-rules-v2" className="underline hover:text-foreground">the docs</a> for the full action list.
-      </p>
-
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -202,12 +198,14 @@ export function RulesSection() {
                 <Zap className="h-5 w-5" />
               </div>
               <div>
-                <CardTitle className="text-base">Transaction Rules</CardTitle>
-                <CardDescription>Sorted by priority DESC. First match wins.</CardDescription>
+                <CardTitle className="flex items-center gap-1 text-base">
+                  Rules
+                  <InfoTip label="About rules" text={<>Auto-categorize and transform transactions. Highest priority first; first match wins. <a href="/docs/transaction-rules-v2" className="underline">Docs</a></>} />
+                </CardTitle>
               </div>
             </div>
             <Link href={`/settings/rules/new?returnTo=${encodeURIComponent(RULES_RETURN_TO)}`} className={buttonVariants({ variant: "outline", size: "sm" })}>
-              <Plus className="h-4 w-4 mr-1" /> Add Rule
+              <Plus className="h-4 w-4 mr-1" /> Add
             </Link>
           </div>
         </CardHeader>
@@ -221,7 +219,7 @@ export function RulesSection() {
           )}
 
           {rules.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-6">No rules yet. Add a rule to auto-categorize transactions.</p>
+            <p className="text-sm text-muted-foreground text-center py-6" data-keep="empty">No rules.</p>
           )}
 
           {shownRules.map((rule) => (
@@ -236,10 +234,10 @@ export function RulesSection() {
                     {rule.pendingSync && <SyncMarkBadge mark={rule.pendingSync} />}
                     {rule.priority > 0 && <Badge variant="secondary" className="text-xs">P{rule.priority}</Badge>}
                   </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-0.5" data-keep="data">
                     <strong>When:</strong> {summarizeConditions(rule.conditions ?? { all: [] }, rule.actionFKNames)}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground" data-keep="data">
                     <strong>Then:</strong> {summarizeActions(rule.actions ?? [], rule.actionFKNames)}
                   </p>
                 </div>

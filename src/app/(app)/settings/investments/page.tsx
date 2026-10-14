@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { InfoTip } from "@/components/ui/info-tip";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { ErrorState } from "@/components/error-state";
@@ -303,7 +304,6 @@ function InvestmentsSettingsPage() {
   const pageProps = {
     id: "settings-investments",
     title: "Investments",
-    subtitle: "Your securities, and how they map to your accounts.",
     width: "report" as const,
     center: true,
   };
@@ -371,18 +371,27 @@ function InvestmentsSettingsPage() {
       )}
 
       <Tabs value={tab} onValueChange={(v) => setTab(parseTab(String(v)))} className="w-full">
-        <TabsList>
-          <TabsTrigger value="securities">Securities</TabsTrigger>
-          <TabsTrigger value="by-security">By security</TabsTrigger>
-          <TabsTrigger value="by-account">By account</TabsTrigger>
-        </TabsList>
+        <div className="flex items-center gap-1">
+          <TabsList>
+            <TabsTrigger value="securities">Securities</TabsTrigger>
+            <TabsTrigger value="by-security">By security</TabsTrigger>
+            <TabsTrigger value="by-account">By account</TabsTrigger>
+          </TabsList>
+          <InfoTip
+            label="About this tab"
+            text={
+              tab === "by-security"
+                ? "Expand a security to see and change which accounts hold it."
+                : tab === "by-account"
+                  ? "Expand an account to see and change which securities it holds."
+                  : "Every security you hold or track appears once. Filter by any column. Link securities to accounts under By security or By account."
+            }
+          />
+        </div>
 
         {/* ── Tab 1: Securities catalog ─────────────────────────────────── */}
         <TabsContent value="securities" className="space-y-4">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-sm text-muted-foreground">
-              Every security you hold or track appears once. Filter by any column.
-            </p>
+          <div className="flex items-center justify-end gap-3">
             <Button onClick={openAdd} size="sm">
               <Plus className="h-4 w-4 mr-1.5" /> Add security
             </Button>
@@ -452,9 +461,8 @@ function InvestmentsSettingsPage() {
                       );
                     })}
                   </ul>
-                  <p className="text-xs text-warning/80">
-                    Until this is resolved these holdings have no market price, so they don&apos;t
-                    contribute to your portfolio value.
+                  <p className="text-xs text-warning/80" data-keep="warning">
+                    No market price until resolved; these holdings are excluded from portfolio value.
                   </p>
                 </CardContent>
               </Card>
@@ -465,7 +473,7 @@ function InvestmentsSettingsPage() {
             <EmptyState
               icon={Briefcase}
               title="No securities yet"
-              description="Add a security (a ticker, cash, or crypto), then link it to your accounts under “By security” or “By account”."
+              description="Add one, then link it to accounts."
               action={{ label: "Add security", onClick: openAdd }}
             />
           ) : (
@@ -484,8 +492,8 @@ function InvestmentsSettingsPage() {
               </div>
               <SectionCard padded={false} className="divide-y divide-border/50 px-3">
                 {rows.length === 0 ? (
-                  <p className="py-8 text-center text-sm text-muted-foreground">
-                    {hasActiveFilter ? "No securities match the current filters." : "No securities."}
+                  <p className="py-8 text-center text-sm text-muted-foreground" data-keep="empty">
+                    {hasActiveFilter ? "No matches." : "No securities."}
                   </p>
                 ) : (
                   rows.map((r) => {
@@ -513,7 +521,7 @@ function InvestmentsSettingsPage() {
             </div>
           )}
           {allSecurities.length > 0 && (
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground" data-keep="status">
               {rows.length} of {allSecurities.length} securities
               {hasActiveFilter ? " (filtered)" : ""}.
             </p>
@@ -522,14 +530,11 @@ function InvestmentsSettingsPage() {
 
         {/* ── Tab 2: By security → accounts ─────────────────────────────── */}
         <TabsContent value="by-security" className="space-y-2">
-          <p className="text-sm text-muted-foreground">
-            Expand a security to see (and change) which accounts hold it.
-          </p>
           {allSecurities.length === 0 ? (
             <EmptyState
               icon={Briefcase}
               title="No securities yet"
-              description="Add a security on the Securities tab first."
+              description="Add one on the Securities tab."
             />
           ) : (
             <div className="divide-y divide-border/50 overflow-hidden rounded-xl border border-border/50 bg-card">
@@ -560,7 +565,7 @@ function InvestmentsSettingsPage() {
                     {open && (
                       <div className="px-3 pb-3 pl-9 space-y-1.5">
                         {s.accounts.length === 0 ? (
-                          <p className="text-xs text-muted-foreground">Not in any account yet.</p>
+                          <p className="text-xs text-muted-foreground" data-keep="empty">Not in any account.</p>
                         ) : (
                           s.accounts.map((a) => (
                             <div
@@ -599,14 +604,11 @@ function InvestmentsSettingsPage() {
 
         {/* ── Tab 3: By account → securities ────────────────────────────── */}
         <TabsContent value="by-account" className="space-y-2">
-          <p className="text-sm text-muted-foreground">
-            Expand an account to see (and change) which securities it holds.
-          </p>
           {byAccount.length === 0 ? (
             <EmptyState
               icon={Briefcase}
               title="No investment accounts"
-              description="Create an investment account first, then add securities to it here."
+              description="Create an investment account first."
             />
           ) : (
             <div className="divide-y divide-border/50 overflow-hidden rounded-xl border border-border/50 bg-card">
@@ -637,7 +639,7 @@ function InvestmentsSettingsPage() {
                     {open && (
                       <div className="px-3 pb-3 pl-9 space-y-1.5">
                         {items.length === 0 ? (
-                          <p className="text-xs text-muted-foreground">No securities in this account yet.</p>
+                          <p className="text-xs text-muted-foreground" data-keep="empty">No securities.</p>
                         ) : (
                           items.map(({ security, positionId, isCash }) => (
                             <div

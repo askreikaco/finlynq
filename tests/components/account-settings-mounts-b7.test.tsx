@@ -51,8 +51,8 @@ describe("B7 mounts", () => {
     render(<AccountSettingsPage />);
     expect(await screen.findByText("Passkeys")).toBeInTheDocument();
     expect(await screen.findByText("Recovery codes")).toBeInTheDocument();
-    expect(await screen.findByRole("button", { name: /add a passkey/i })).toBeInTheDocument();
-    expect(await screen.findByRole("button", { name: /^generate recovery codes$/i })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: /add passkey/i })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: /^generate codes$/i })).toBeInTheDocument();
     expect(screen.queryByText(/coming soon/i)).toBeNull();
   });
 

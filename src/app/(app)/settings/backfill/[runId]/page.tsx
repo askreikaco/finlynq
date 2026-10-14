@@ -17,6 +17,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { InfoTip } from "@/components/ui/info-tip";
 import { AlertTriangle, CalendarClock, CheckCircle2, Layers, Landmark, Receipt, Wallet, Loader2, RefreshCw, Undo2 } from "lucide-react";
 import { HEADER_DESKTOP_ONLY, ListRow, MetricGrid, SectionCard } from "@/components/mobile";
 import { SectionPage } from "@/components/templates";
@@ -305,7 +306,6 @@ export default function BackfillReviewPage({ params }: { params: Promise<{ runId
     <SectionPage
       id="settings-backfill-run"
       title="Backfill review"
-      subtitle={`${proposals.length} proposal(s) · ${approvedCount} approved · ${appliedCount} applied`}
       width="report"
       center
       header={{
@@ -332,8 +332,8 @@ export default function BackfillReviewPage({ params }: { params: Promise<{ runId
 
       {!loading && proposals.length === 0 && (
         <SectionCard>
-          <p className="py-8 text-center text-sm text-muted-foreground">
-            No proposals — your ledger appears already canonical. Great!
+          <p className="py-8 text-center text-sm text-muted-foreground" data-keep="empty">
+            No proposals. Ledger is already canonical.
           </p>
         </SectionCard>
       )}
@@ -341,7 +341,7 @@ export default function BackfillReviewPage({ params }: { params: Promise<{ runId
       {!loading && proposals.length > 0 && (
         <SectionCard padded={false} className="px-3">
           <div className="flex items-center justify-between gap-2 pt-3 pb-2 text-xs">
-            <span className="text-muted-foreground">{sortedProposals.length} proposal(s)</span>
+            <span className="text-muted-foreground" data-keep="status">{sortedProposals.length} proposal(s) · {approvedCount} approved · {appliedCount} applied</span>
             <div className="flex items-center gap-1">
               <span className="text-muted-foreground">Sort:</span>
               <button
@@ -610,14 +610,13 @@ function ProposalDetail({
 
         {isDripReinvest && (
           <div className="space-y-3">
-            <div className="font-medium">How is this dividend recorded?</div>
-            <p className="text-xs text-muted-foreground">
-              The qty field equals the dollar amount — that can mean either:
-              a cash dividend on the underlying (the typical case for stocks
-              like VUN.TO), or a share reinvestment at $1/share (the typical
-              case for crypto / sub-dollar units). Pick the variant that
-              matches reality, then confirm the underlying holding.
-            </p>
+            <div className="flex items-center gap-1 font-medium">
+              How is this dividend recorded?
+              <InfoTip
+                label="About dividend variants"
+                text="Qty equals the dollar amount: either a cash dividend on the underlying (typical for stocks like VUN.TO) or a reinvestment at $1/share (typical for crypto and sub-dollar units). Pick the one that matches reality, then confirm the holding."
+              />
+            </div>
             <DividendVariantPicker
               proposal={proposal}
               onChange={onDividendVariantChange}
@@ -683,10 +682,10 @@ function DisplacedRowsTable({
   return (
     <div className="space-y-1.5">
       <SectionCard label="Existing rows being displaced" padded={false} className="divide-y divide-border/50 px-3">
-        {ids.length === 0 && <p className="py-3 text-sm text-muted-foreground">none</p>}
+        {ids.length === 0 && <p className="py-3 text-sm text-muted-foreground" data-keep="data">none</p>}
         {ids.map((id) => {
           const r = displacedRows[id];
-          if (!r) return <p key={id} className="py-3 text-sm text-muted-foreground">Tx #{id} (row not found)</p>;
+          if (!r) return <p key={id} className="py-3 text-sm text-muted-foreground" data-keep="data">Tx #{id} (row not found)</p>;
           return (
             <div key={id}>
               <ListRow
@@ -811,7 +810,7 @@ function ReplacementPreviewTable({
             ))}
           </SectionCard>
           {synth[0]?.synthReason && (
-            <p className="px-1 text-xs text-muted-foreground italic">{synth[0].synthReason}</p>
+            <p className="px-1 text-xs text-muted-foreground italic" data-keep="data">{synth[0].synthReason}</p>
           )}
         </div>
       )}
@@ -1119,7 +1118,13 @@ function KindOverridePicker({
   return (
     <div className="space-y-3 border-t pt-3">
       <div className="flex items-center justify-between">
-        <div className="font-medium text-sm">Or apply with a hand-picked kind</div>
+        <div className="flex items-center gap-1 text-sm font-medium">
+          Pick a kind
+          <InfoTip
+            label="About picking a kind"
+            text="Pair-less kinds apply directly to this row. Buy and Sell can synthesize the matching cash leg or link an existing one. Brokerage, FX and Transfer pair the orphan with an existing row in the other account or currency."
+          />
+        </div>
         <button
           type="button"
           onClick={() => setOpen(false)}
@@ -1128,19 +1133,18 @@ function KindOverridePicker({
           Hide
         </button>
       </div>
-      <p className="text-xs text-muted-foreground">
-        Pair-less kinds apply directly to this row. Buy / Sell can synthesize the matching cash leg or link an
-        existing one. Brokerage / FX / Transfer pair the orphan with an existing row in the other account or
-        currency.
-      </p>
-
       <div className="grid grid-cols-1 gap-1.5">
         {OVERRIDE_KIND_OPTIONS.map((opt) => {
           const enabled = isOverrideKindEnabled(opt.kind);
           const isSelected = selectedId === opt.id;
           return (
+            <div key={opt.id} className="relative">
+            <InfoTip
+              label={`About ${opt.label}`}
+              text={enabled ? opt.explanation : "Not wired yet: its converter and counterpart picker ship in a later phase. Use Buy, Sell or a pair-less kind for now."}
+              className="absolute right-1 top-1 z-10"
+            />
             <button
-              key={opt.id}
               type="button"
               disabled={!enabled}
               onClick={() => {
@@ -1159,12 +1163,7 @@ function KindOverridePicker({
                   !opt.keepHoldingPairless;
                 if (!attributes) setChosenRelatedHoldingId(null);
               }}
-              title={
-                enabled
-                  ? opt.explanation
-                  : "This paired kind isn't wired yet — its converter + counterpart picker ship in a later phase. Use Buy / Sell or a pair-less kind for now."
-              }
-              className={`text-left rounded border p-2 text-xs ${
+              className={`w-full text-left rounded border p-2 text-xs ${
                 isSelected
                   ? "border-primary bg-primary/5"
                   : "border-border hover:border-primary/50"
@@ -1181,17 +1180,23 @@ function KindOverridePicker({
                     {opt.label}
                     {!enabled && <span className="ml-1 opacity-60">(soon)</span>}
                   </div>
-                  <div className="text-muted-foreground mt-0.5">{opt.explanation}</div>
                 </div>
               </div>
             </button>
+            </div>
           );
         })}
       </div>
 
       {isPaired && (
         <div className="space-y-1.5 rounded border border-border p-2">
-          <div className="text-xs font-medium">Counterpart leg</div>
+          <div className="flex items-center gap-1 text-xs font-medium">
+            Counterpart leg
+            <InfoTip
+              label="About counterpart leg"
+              text={`New cash leg: ${supportsSynth ? `creates the matching ${chosenKind === "sell" ? "credit" : "debit"} on the account's cash sleeve` : "not available for cross-account kinds; link an existing row instead"}. Link existing row: pairs the orphan with an unmatched row ${supportsSynth ? "already in this account" : "in the other account or currency"}.`}
+            />
+          </div>
           <label className={`flex items-start gap-2 text-xs ${supportsSynth ? "cursor-pointer" : "opacity-40 cursor-not-allowed"}`}>
             <input
               type="radio"
@@ -1202,12 +1207,8 @@ function KindOverridePicker({
               onChange={() => { if (supportsSynth) { setChosenCounterpartMode("synth_new"); setCounterpartTxId(null); } }}
             />
             <span>
-              <span className="font-medium">Synthesize a new cash leg</span>
-              <span className="text-muted-foreground">
-                {supportsSynth
-                  ? ` — creates the matching ${chosenKind === "sell" ? "credit" : "debit"} on the account's cash sleeve.`
-                  : " — not available for cross-account kinds; link an existing row instead."}
-              </span>
+              <span className="font-medium">New cash leg</span>
+              {!supportsSynth && <span className="text-muted-foreground"> (n/a)</span>}
             </span>
           </label>
           <label className="flex items-start gap-2 text-xs cursor-pointer">
@@ -1219,8 +1220,7 @@ function KindOverridePicker({
               onChange={() => setChosenCounterpartMode("link_existing")}
             />
             <span>
-              <span className="font-medium">Link an existing row</span>
-              <span className="text-muted-foreground"> — pair the orphan with an unmatched row {supportsSynth ? "already in this account" : "in the other account / currency"}.</span>
+              <span className="font-medium">Link existing row</span>
             </span>
           </label>
 
@@ -1284,7 +1284,15 @@ function KindOverridePicker({
 
       {showsCategory && (
         <div className="space-y-1">
-          <div className="text-xs font-medium">Category</div>
+          <div className="flex items-center gap-1 text-xs font-medium">
+            Category
+            {autoCategoryName && chosenCategoryId == null && (
+              <InfoTip
+                label="About category"
+                text={`Blank tags the row as ${autoCategoryName} so it shows in the dividend/income report. Pick another category to override.`}
+              />
+            )}
+          </div>
           <select
             className="w-full rounded border border-border bg-background px-2 py-1 text-xs"
             value={chosenCategoryId ?? ""}
@@ -1301,12 +1309,6 @@ function KindOverridePicker({
               </option>
             ))}
           </select>
-          {autoCategoryName && chosenCategoryId == null && (
-            <p className="text-xs text-muted-foreground">
-              Leaving this blank tags the row as <span className="font-medium">{autoCategoryName}</span> so it
-              shows in the dividend / income report. Pick a different category to override.
-            </p>
-          )}
         </div>
       )}
 
@@ -1566,8 +1568,8 @@ function DividendReinvestmentPreview({
   if (!existing) return null;
   if (!preview) {
     return (
-      <p className="text-xs text-muted-foreground italic">
-        Pick a variant + the underlying stock to see what this row will look like after apply.
+      <p className="text-xs text-muted-foreground italic" data-keep="status">
+        Pick a variant and stock to preview.
       </p>
     );
   }
@@ -1678,7 +1680,7 @@ function WillBecomeTable({
         <RowDetailsLine row={willBecome} holdingMap={holdingMap} categoryMap={categoryMap} highlight={secondaryHi} />
       </SectionCard>
       {existing.kind !== willBecome.kind && (
-        <p className="text-xs text-muted-foreground mt-1">
+        <p className="mt-1 text-xs text-muted-foreground" data-keep="data">
           Existing kind: <span className="font-mono">{existing.kind ?? "—"}</span> → new: <span className="font-mono font-semibold">{willBecome.kind}</span>
         </p>
       )}
@@ -1805,21 +1807,25 @@ const OVERRIDE_KIND_OPTIONS: readonly OverrideKindOption[] = [
 
 function VariantOption({ label, explanation, selected, onSelect }: { label: string; explanation: string; selected: boolean; onSelect: () => void }) {
   return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={`w-full text-left rounded border p-2 ${
-        selected ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
-      }`}
-    >
-      <div className="flex items-start gap-2">
-        <div className={`mt-1 size-3 rounded-full ${selected ? "bg-primary" : "border border-border"}`} />
-        <div>
-          <div className="font-medium text-xs">{label}</div>
-          <div className="text-xs text-muted-foreground mt-0.5">{explanation}</div>
+    <div className="relative">
+      {explanation ? (
+        <InfoTip label={`About ${label}`} text={explanation} className="absolute right-1 top-1 z-10" />
+      ) : null}
+      <button
+        type="button"
+        onClick={onSelect}
+        className={`w-full text-left rounded border p-2 ${
+          selected ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+        }`}
+      >
+        <div className="flex items-start gap-2">
+          <div className={`mt-1 size-3 rounded-full ${selected ? "bg-primary" : "border border-border"}`} />
+          <div className="pr-6">
+            <div className="font-medium text-xs">{label}</div>
+          </div>
         </div>
-      </div>
-    </button>
+      </button>
+    </div>
   );
 }
 

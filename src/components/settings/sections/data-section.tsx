@@ -7,8 +7,8 @@
  */
 
 import { useState, useCallback } from "react";
-import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -366,8 +366,10 @@ export function DataSection() {
               <Upload className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle className="text-base">Import Data</CardTitle>
-              <CardDescription>Import accounts, categories, or portfolio holdings from CSV</CardDescription>
+              <CardTitle className="flex items-center gap-1 text-base">
+                Import
+                <InfoTip label="About import" text="Import accounts, categories or holdings from CSV." />
+              </CardTitle>
             </div>
           </div>
         </CardHeader>
@@ -375,15 +377,15 @@ export function DataSection() {
           {/* Import type buttons */}
           <div className="grid grid-cols-1 regular:grid-cols-3 gap-3">
             {([
-              { key: "accounts" as const, label: "Accounts", icon: Wallet, color: "text-chart-5", hint: "Columns: name, type, group, currency, note" },
-              { key: "categories" as const, label: "Categories", icon: Tag, color: "text-pos", hint: "Columns: name, type, group, note" },
-              { key: "portfolio" as const, label: "Portfolio", icon: Briefcase, color: "text-info", hint: "Columns: symbol, name, quantity, currency, note" },
+              { key: "accounts" as const, label: "Accounts", icon: Wallet, color: "text-chart-5", hint: "Columns: name, type, group, currency, note." },
+              { key: "categories" as const, label: "Categories", icon: Tag, color: "text-pos", hint: "Columns: name, type, group, note." },
+              { key: "portfolio" as const, label: "Portfolio", icon: Briefcase, color: "text-info", hint: "Columns: symbol, name, quantity, currency, note." },
             ] as const).map(({ key, label, icon: Icon, color, hint }) => (
-              <div key={key} className="space-y-1">
+              <div key={key} className="relative space-y-1">
+                <InfoTip label={`${label} CSV columns`} text={hint} className="absolute right-1 top-1 z-10" />
                 <label className={`flex flex-col items-center gap-2 border rounded-lg p-3 cursor-pointer hover:bg-muted/50 transition-colors text-center ${importSection === key ? "border-primary bg-primary/5" : ""}`}>
                   <Icon className={`h-5 w-5 ${color}`} />
                   <span className="text-sm font-medium">{label}</span>
-                  <span className="text-xs text-muted-foreground">{hint}</span>
                   <input
                     type="file"
                     accept=".csv"
@@ -412,7 +414,7 @@ export function DataSection() {
                   />
                 ))}
               </SectionCard>
-              <p className="text-xs text-muted-foreground">Showing first {importPreview.length} rows. Full file will be imported on confirm.</p>
+              <p className="text-xs text-muted-foreground" data-keep="status">First {importPreview.length} rows shown. The full file imports on confirm.</p>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={() => { setImportPreview([]); setImportSection(null); setImportFileName(""); setImportStatus(""); }}>
                   Cancel
@@ -425,7 +427,7 @@ export function DataSection() {
           )}
 
           {importStatus && (
-            <p className={`text-xs flex items-center gap-1 ${importStatus.includes("fail") || importStatus.includes("error") ? "text-destructive" : "text-muted-foreground"}`}>
+            <p data-keep="status" className={`text-xs flex items-center gap-1 ${importStatus.includes("fail") || importStatus.includes("error") ? "text-destructive" : "text-muted-foreground"}`}>
               <Upload className="h-3 w-3" /> {importStatus}
             </p>
           )}
@@ -440,8 +442,10 @@ export function DataSection() {
               <Database className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle className="text-base">Data Export</CardTitle>
-              <CardDescription>Export your data as CSV files</CardDescription>
+              <CardTitle className="flex items-center gap-1 text-base">
+                Export
+                <InfoTip label="About export" text="Export your data as CSV files." />
+              </CardTitle>
             </div>
           </div>
         </CardHeader>
@@ -452,13 +456,13 @@ export function DataSection() {
                 <item.icon className={`h-4 w-4 mr-2 ${item.iconColor}`} />
                 <div className="text-left">
                   <p className="text-sm font-medium">{item.label}</p>
-                  <p className="text-xs text-muted-foreground">Download CSV</p>
+                  
                 </div>
               </Button>
             ))}
           </div>
           {exportStatus && (
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
+            <p className="text-xs text-muted-foreground flex items-center gap-1" data-keep="status">
               <Download className="h-3 w-3" /> {exportStatus}
             </p>
           )}
@@ -473,18 +477,17 @@ export function DataSection() {
               <ArrowLeftRight className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle className="text-base">Backfill transactions</CardTitle>
-              <CardDescription>Canonicalize legacy or imported transactions so realized gains and lot tracking work</CardDescription>
+              <CardTitle className="flex items-center gap-1 text-base">
+                Backfill
+                <InfoTip label="About backfill" text="Fixes legacy or imported transactions so realized gains and lot tracking work. Reviews proposals first; balances unchanged." />
+              </CardTitle>
             </div>
           </div>
         </CardHeader>
         <CardContent>
           <Button variant="outline" onClick={() => { window.location.href = "/settings/backfill"; }}>
-            Open backfill wizard
+            Open wizard
           </Button>
-          <p className="text-xs text-muted-foreground mt-2">
-            Reviews proposals before applying. Won&apos;t change account balances. <Link href="/settings/backfill" className="underline">Learn more</Link>.
-          </p>
         </CardContent>
       </Card>
 
@@ -496,13 +499,10 @@ export function DataSection() {
               <History className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle className="text-base">Rebuild balance history</CardTitle>
-              <CardDescription>
-                Recompute daily balance snapshots — cash and investments — from your
-                first transaction to today. Run this if the &ldquo;Net Worth Over
-                Time&rdquo; chart looks stale after a back-dated edit or after
-                deleting transactions.
-              </CardDescription>
+              <CardTitle className="flex items-center gap-1 text-base">
+                Balance history
+                <InfoTip label="About balance history" text="Recomputes daily balances from your first transaction. Run it if Net Worth Over Time looks stale after back-dated edits or deletes." />
+              </CardTitle>
             </div>
           </div>
         </CardHeader>
@@ -519,8 +519,7 @@ export function DataSection() {
               <AlertTriangle className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle className="text-base">Data Management</CardTitle>
-              <CardDescription>Danger zone - destructive actions</CardDescription>
+              <CardTitle className="flex items-center gap-1 text-base">Danger zone</CardTitle>
             </div>
           </div>
         </CardHeader>
@@ -572,7 +571,7 @@ export function DataSection() {
                   <Trash2 className="h-4 w-4 mr-2" />
                   Delete Account
                 </Button>
-                <p className="text-xs text-muted-foreground">Permanently deletes your account, login, and all data.</p>
+                <p className="text-xs text-muted-foreground" data-keep="warning">Permanently deletes your account and all data.</p>
               </div>
             )}
 

@@ -7,6 +7,7 @@
  */
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Switch } from "@/components/ui/switch";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Button } from "@/components/ui/button";
@@ -38,16 +39,13 @@ export function OfflineModeCard() {
       <CardHeader>
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
-            <CardTitle>Offline mode (beta)</CardTitle>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Save new and edited transactions on this device when you are offline and sync them when you are back online. Home and Accounts also open from the last saved data. Trusted devices only.
-            </p>
-            <p className="mt-1 text-sm text-muted-foreground" data-testid="offline-mode-encryption">
-              Offline copies are encrypted on this device and wiped when you sign out. On a shared computer, turn this off.
-            </p>
-            <p className="mt-1 text-sm text-muted-foreground" data-testid="offline-mode-unsynced-note">
-              If you are signed out unexpectedly, unsent changes stay encrypted on this device until you sign in again.
-            </p>
+            <CardTitle className="flex items-center gap-1">
+              Offline mode (beta)
+              <InfoTip
+                label="About offline mode"
+                text="Saves edits on this device while offline and syncs them later. Home and Accounts open from saved data. Trusted devices only. Copies are encrypted and wiped on sign-out; turn off on shared computers. Unsent changes survive an unexpected sign-out."
+              />
+            </CardTitle>
           </div>
           <div className="flex shrink-0 items-center gap-3">
             <span className="text-sm text-muted-foreground" data-testid="offline-mode-status">{status}</span>
@@ -55,7 +53,7 @@ export function OfflineModeCard() {
               checked={on}
               onCheckedChange={(v) => void onChange(v)}
               disabled={trusted !== true}
-              aria-label="Offline mode (beta)"
+              aria-label="Offline mode"
             />
           </div>
         </div>
@@ -63,25 +61,25 @@ export function OfflineModeCard() {
       {enabled && trusted === true && (
         <CardContent data-testid="offline-key-section" className="space-y-2">
           <p className="text-sm font-medium">On-device key</p>
-          <p className="text-xs text-muted-foreground" data-testid="offline-key-age">
+          <p className="text-xs text-muted-foreground" data-keep="status" data-testid="offline-key-age">
             {key.info
-              ? `Created ${daysAgo(key.info.createdAt)}${key.info.rotatedAt ? `, last rotated ${daysAgo(key.info.rotatedAt)}` : ""}. It rotates by itself every 90 days when nothing is waiting to sync.`
-              : "Created when you first save something offline."}
+              ? `Created ${daysAgo(key.info.createdAt)}${key.info.rotatedAt ? `, last rotated ${daysAgo(key.info.rotatedAt)}` : ""}. Auto-rotates every 90 days.`
+              : "Created on first offline save."}
           </p>
           <Button variant="outline" size="sm" disabled={key.busy} onClick={() => void key.rotate()} data-testid="offline-key-rotate">
-            {key.busy ? "Rotating…" : "Rotate key now"}
+            {key.busy ? "Rotating…" : "Rotate key"}
           </Button>
           {key.last === "ok" && (
-            <p className="text-xs text-muted-foreground" data-testid="offline-key-ok">Key rotated. Waiting changes were kept; saved copies will refill.</p>
+            <p className="text-xs text-muted-foreground" data-keep="status" data-testid="offline-key-ok">Key rotated. Pending changes kept.</p>
           )}
           {key.last === "failed" && (
-            <p className="text-xs text-destructive" data-testid="offline-key-failed">Could not rotate the key. Nothing was lost; try again.</p>
+            <p className="text-xs text-destructive" data-testid="offline-key-failed">Rotation failed. Nothing lost; retry.</p>
           )}
         </CardContent>
       )}
       {untrusted && (
         <CardContent>
-          <p className="text-xs text-muted-foreground" data-testid="offline-mode-untrusted">Only on trusted devices</p>
+          <p className="text-xs text-muted-foreground" data-keep="status" data-testid="offline-mode-untrusted">Trusted devices only</p>
         </CardContent>
       )}
       <ConfirmDialog

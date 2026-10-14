@@ -25,9 +25,13 @@ describe("OfflineModeCard", () => {
     const open = vi.spyOn(indexedDB, "open");
     render(<OfflineModeCard />);
     expect(screen.getByText("Offline mode (beta)", { selector: "[data-slot=card-title], h3, div" })).toBeTruthy();
-    expect(screen.getByText(/Save new and edited transactions on this device when you are offline and sync them when you are back online\. Home and Accounts also open from the last saved data\. Trusted devices only\./)).toBeTruthy();
-    expect(screen.getByTestId("offline-mode-encryption").textContent).toBe("Offline copies are encrypted on this device and wiped when you sign out. On a shared computer, turn this off.");
-    expect(screen.getByTestId("offline-mode-unsynced-note").textContent).toBe("If you are signed out unexpectedly, unsent changes stay encrypted on this device until you sign in again.");
+    // help lives in the (i) tip, not in visible paragraphs
+    expect(screen.queryByText(/Saves edits on this device while offline/)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "About offline mode" }));
+    const tip = await screen.findByText(/Saves edits on this device while offline and syncs them later/);
+    expect(tip.textContent).toMatch(/Trusted devices only/);
+    expect(tip.textContent).toMatch(/encrypted and wiped on sign-out; turn off on shared computers/);
+    expect(tip.textContent).toMatch(/Unsent changes survive an unexpected sign-out/);
     await waitFor(() => expect(sw().getAttribute("aria-checked")).toBe("true"));
     expect(status()).toBe("On (default)");
     expect(open).not.toHaveBeenCalled();
@@ -52,7 +56,7 @@ describe("OfflineModeCard", () => {
   it("untrusted device: disabled with explanation, shows Off, no toggle", async () => {
     h.trusted = null;
     render(<OfflineModeCard />);
-    await screen.findByText("Only on trusted devices");
+    await screen.findByText("Trusted devices only");
     expect(sw().hasAttribute("disabled") || sw().getAttribute("aria-disabled") === "true" || sw().hasAttribute("data-disabled")).toBe(true);
     expect(status()).toBe("Off");
     fireEvent.click(sw());
@@ -110,7 +114,7 @@ describe("OfflineModeCard", () => {
     expect(screen.queryByTestId("offline-key-section")).toBeNull();
     fireEvent.click(sw());
     await screen.findByTestId("offline-key-section");
-    expect(screen.getByTestId("offline-key-age").textContent).toMatch(/Created when you first save something offline|Created (today|\d+ days? ago)/);
+    expect(screen.getByTestId("offline-key-age").textContent).toMatch(/Created on first offline save|Created (today|\d+ days? ago)/);
     // No key exists yet: rotating is a harmless no-op that reports "not done".
     fireEvent.click(screen.getByTestId("offline-key-rotate"));
     await screen.findByTestId("offline-key-failed");

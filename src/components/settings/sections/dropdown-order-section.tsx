@@ -21,7 +21,8 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -38,10 +39,10 @@ import { SUPPORTED_FIAT_CURRENCIES, currencyLabel } from "@/lib/fx/supported-cur
 type Item = { key: DropdownOrderEntry; label: string; subLabel?: string };
 
 const KIND_OPTIONS: ReadonlyArray<{ value: DropdownKind; label: string; description: string }> = [
-  { value: "category", label: "Category", description: "Used in transaction + budget pickers." },
-  { value: "account", label: "Account", description: "Used in transaction + transfer pickers." },
-  { value: "holding", label: "Holding", description: "Used in the Add Transaction holding picker." },
-  { value: "currency", label: "Currency", description: "Used in transaction + account currency pickers." },
+  { value: "category", label: "Category", description: "Transaction and budget pickers." },
+  { value: "account", label: "Account", description: "Transaction and transfer pickers." },
+  { value: "holding", label: "Holding", description: "Add-transaction holding picker." },
+  { value: "currency", label: "Currency", description: "Transaction and account currency pickers." },
 ];
 
 const KIND_LABELS: Record<DropdownKind, string> = Object.fromEntries(
@@ -246,12 +247,8 @@ export function DropdownOrderSection() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <p className="text-sm text-muted-foreground">
-          Pin frequently-used items to the top of each Combobox. The
-          rest fall back to alphabetical order. New items added later
-          appear unpinned automatically.
-        </p>
+      <div className="flex items-center justify-end gap-2">
+        <InfoTip label="About dropdown order" text="Pinned items come first; the rest are alphabetical. New items start unpinned." />
         <Button variant="outline" size="sm" onClick={reload} disabled={loading || saving}>
           <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? "animate-spin" : ""}`} />
           Refresh
@@ -272,8 +269,10 @@ export function DropdownOrderSection() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Which dropdown</CardTitle>
-          <CardDescription>{KIND_OPTIONS.find((o) => o.value === kind)?.description}</CardDescription>
+          <CardTitle className="flex items-center gap-1 text-base">
+            Dropdown
+            <InfoTip label="About this dropdown" text={KIND_OPTIONS.find((o) => o.value === kind)?.description} />
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <Select value={kind} onValueChange={(v) => setKind(((v ?? "category") as DropdownKind))}>
@@ -291,12 +290,10 @@ export function DropdownOrderSection() {
         <CardHeader>
           <div className="flex items-start justify-between gap-3">
             <div>
-              <CardTitle className="text-base">Pinned</CardTitle>
-              <CardDescription>
-                {pinnedItems.length === 0
-                  ? "Nothing pinned. Items below will fall back to alphabetical order."
-                  : `Drag the grip handle, or use the arrow buttons, to reorder.`}
-              </CardDescription>
+              <CardTitle className="flex items-center gap-1 text-base">
+                Pinned
+                <InfoTip label="About pinned" text="Drag the grip or use the arrows to reorder. Unpinned items stay alphabetical." />
+              </CardTitle>
             </div>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={resetCurrent} disabled={pinnedItems.length === 0 || saving}>
@@ -312,11 +309,11 @@ export function DropdownOrderSection() {
         </CardHeader>
         <CardContent>
           {loading && pinnedItems.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-4">Loading…</p>
+            <p className="text-sm text-muted-foreground text-center py-4" data-keep="empty">Loading…</p>
           )}
           {!loading && pinnedItems.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              No pinned items yet. Pin one from the list below.
+            <p className="text-sm text-muted-foreground text-center py-4" data-keep="empty">
+              No pins.
             </p>
           )}
           {pinnedItems.length > 0 && (
@@ -360,13 +357,16 @@ export function DropdownOrderSection() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Unpinned ({unpinnedItems.length})</CardTitle>
-          <CardDescription>Click an item to pin it to the bottom of the list above.</CardDescription>
+          <CardTitle className="flex items-center gap-1 text-base">
+            Unpinned ({unpinnedItems.length})
+            <InfoTip label="About unpinned" text="Click an item to pin it to the end of the list above." />
+          </CardTitle>
+
         </CardHeader>
         <CardContent>
           {!loading && unpinnedItems.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              All items are already pinned.
+            <p className="text-sm text-muted-foreground text-center py-4" data-keep="empty">
+              All pinned.
             </p>
           )}
           {unpinnedItems.length > 0 && (
