@@ -74,7 +74,7 @@ describe("bars that must use the sticky bar", () => {
   it("no page or shell defines its own glass bar literal (only page-header and the two users above)", () => {
     const files = walk(join(ROOT, "src/app/(app)")).concat(walk(join(ROOT, "src/components")));
     const offenders = files
-      .filter((f) => !f.endsWith("components/mobile/page-header.tsx"))
+      .filter((f) => !f.endsWith("components/mobile/page-header.tsx") && !f.endsWith("dev/gallery/page.tsx")) // the gallery documents the literal
       .filter((f) => /className=["'`][^"'`]*(?<![\w-])glass-bar(?![\w-])/.test(readFileSync(f, "utf8")))
       .map((f) => relative(ROOT, f));
     expect(offenders).toEqual([]);

@@ -906,6 +906,8 @@ describe("/reports summary cards", () => {
       if (u.includes("/api/net-worth-history")) return json({ series: [{ date: "2026-08-31", value: 500 }, { date: "2026-09-30", value: 700 }, { date: "2026-10-08", value: 800 }] });
       return { ok: false, status: 404, json: async () => null };
     }));
+    // Reports default to this year; these tiles are about the month-vs-last-month default, so ask for it.
+    if (!H.search) H.search = "range=this_month";
     const { default: ReportsPage } = await import("@/app/(app)/reports/page");
     render(<ReportsPage />);
     await screen.findAllByText("Total Income");
