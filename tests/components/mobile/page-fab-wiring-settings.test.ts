@@ -7,8 +7,7 @@ import { FAB_ROUTES, resolveFab } from "@/components/mobile/fab-registry";
 // and the create/edit pages themselves are hidden from the FAB.
 
 const ROUTE_FABS = [
-  { route: "/settings/categorization", href: "/categories/new", label: "Add category" },
-  { route: "/categories", href: "/categories/new", label: "Add category" },
+  { route: "/categories", href: "/categories?edit=new", label: "Add category" },
   { route: "/settings/rules", href: "/settings/rules/new", label: "Add rule" },
 ] as const;
 
@@ -37,8 +36,8 @@ describe("create/edit pages are hidden from the FAB", () => {
 
 describe("converted screens no longer register the old handler keys", () => {
   const files = [
-    "src/app/(app)/settings/categorization/page.tsx",
-    "src/app/(app)/categories/_components/category-management.tsx",
+    "src/app/(app)/categories/_page-content.tsx",
+    "src/app/(app)/categories/_components/category-budget-form.tsx",
     "src/components/settings/sections/rules-section.tsx",
   ];
   it.each(files)("%s does not call usePageFab for create", (file) => {

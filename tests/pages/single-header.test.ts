@@ -29,7 +29,6 @@ const EXEMPTIONS: Record<string, string> = {
 const EXPECTED_MULTI: Record<string, { count: number; reason: string }> = {
   "accounts/[id]/page.tsx": { count: 4, reason: "not-found, loading and main branches (exclusive) + TransactionsWorkspace header (rendered only with showHeader; the page passes false)" },
   "accounts/page.tsx": { count: 2, reason: "empty-state and list branches (exclusive)" },
-  "categories/page.tsx": { count: 2, reason: "merged hub and overview branches (exclusive, by isMerged)" },
   "categories/new/page.tsx": { count: 3, reason: "FormPage header (1) + CategoryForm literals: load-error branch (rename only, unreachable on create) and form branch (chrome=false: not rendered)" },
   "categories/[id]/edit/page.tsx": { count: 2, reason: "CategoryForm: load-error branch and form branch (exclusive)" },
   "admin/page.tsx": { count: 3, reason: "loading, error and main branches (exclusive), each a SectionPage call (batch 4)" },

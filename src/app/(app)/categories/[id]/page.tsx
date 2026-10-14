@@ -40,9 +40,10 @@ import { CHART_COLORS } from "@/lib/chart-colors";
 import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
 import { todayISO } from "@/lib/utils/date";
 import { CATEGORY_WINDOWS, type CategoryDetail } from "@/lib/reports/category-detail";
-import { CalendarClock, Percent, Receipt, Scale, Store, Wallet } from "lucide-react";
+import { CalendarClock, Pencil, Percent, Receipt, Scale, Store, Wallet } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
-  Amount, CustomizeCardsSheet, HEADER_DESKTOP_ONLY, ListRow, MetricGrid, PageHeader, SectionCard,
+  Amount, CustomizeCardsSheet, HEADER_DESKTOP_ONLY, ListRow, PHONE_PRIMARY_CLASS, MetricGrid, PageHeader, SectionCard,
   useCardLayout, usePageCustomize, type MetricItem,
 } from "@/components/mobile";
 import type { PageCard } from "@/lib/card-layout";
@@ -348,7 +349,8 @@ function CategoryPageContent() {
         backHref={categoriesBackHref}
         backLabel="Back to Categories"
         actions={
-          switcherItems.length > 0 ? (
+          <>
+          {switcherItems.length > 0 ? (
             <span className={HEADER_DESKTOP_ONLY}>
               <Combobox
                 value={String(categoryId)}
@@ -362,7 +364,12 @@ function CategoryPageContent() {
                 className="w-56 max-regular:w-40"
               />
             </span>
-          ) : undefined
+          ) : null}
+          {/* Edit: the one shared category + budget form on /categories (slot for the toolbar's Filter button stays in the capsule) */}
+          <Button className={PHONE_PRIMARY_CLASS} aria-label="Edit" render={<Link href={`/categories?edit=${categoryId}`} />}>
+            <Pencil className="mr-1 h-4 w-4" /> Edit
+          </Button>
+          </>
         }
         overflow={[
           ...CATEGORY_WINDOWS.map((m) => ({

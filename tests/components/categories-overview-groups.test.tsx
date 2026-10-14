@@ -86,7 +86,7 @@ describe("By category: collapsible groups (accordion)", () => {
     await renderPage();
     const housing = header(/^Housing/);
     expect(housing.textContent).toContain("$800");
-    expect(housing.textContent).toContain("53%");
+    expect(housing.textContent).toContain("2"); // category count
   });
 
   it("expanding a group shows its categories with the group prefix removed; several may be open", async () => {
@@ -119,7 +119,7 @@ describe("By category: collapsible groups (accordion)", () => {
 describe("hero: pie instead of progress bar", () => {
   it("renders a labelled pie and no stacked progress bar", async () => {
     await renderPage();
-    const pie = screen.getByRole("img", { name: /largest Housing 53%/ });
+    const pie = screen.getByRole("img", { name: /top Housing 53%/ });
     expect(pie.querySelector("svg")).toBeTruthy();
     expect(screen.queryByLabelText(/Where your .* went/)).toBeNull();
   });

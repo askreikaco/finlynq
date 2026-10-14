@@ -25,7 +25,6 @@ describe("SettingsHub", () => {
 
     const expectedLabels = [
       "General",
-      "Categories",
       "Reconciliation",
       "Investments",
       "Integrations",
@@ -44,7 +43,6 @@ describe("SettingsHub", () => {
 
     const expectedOrder = [
       "General",
-      "Categories",
       "Reconciliation",
       "Investments",
       "Integrations",
@@ -59,7 +57,7 @@ describe("SettingsHub", () => {
     });
 
     const actualLabels = settingsLinks
-      .slice(0, 7)
+      .slice(0, 6)
       .map((l) => {
         // Row label is the truncating span (size token changed from text-[17px] to text-base).
         const titleSpan = l.querySelector("span.truncate");
@@ -87,7 +85,6 @@ describe("SettingsHub", () => {
 
     const expectedPaths = [
       "/settings/general",
-      "/settings/categorization",
       "/settings/reconciliation",
       "/settings/investments",
       "/settings/integrations",
@@ -114,7 +111,7 @@ describe("SettingsHub", () => {
         return href?.startsWith("/settings/");
       });
 
-    expect(settingsLinks.length).toBeGreaterThanOrEqual(7);
+    expect(settingsLinks.length).toBeGreaterThanOrEqual(6);
 
     settingsLinks.forEach((link) => {
       const tileSvg = link.querySelector('[data-slot="settings-hub-icon"] svg');
@@ -154,14 +151,14 @@ describe("SettingsHub", () => {
     render(<SettingsHub />);
 
     const listRowContainers = document.querySelectorAll('[data-slot="settings-hub-row"]');
-    expect(listRowContainers.length).toBeGreaterThanOrEqual(7);
+    expect(listRowContainers.length).toBeGreaterThanOrEqual(6);
   });
 
   it("renders each row with chevron-right for navigation", () => {
     render(<SettingsHub />);
 
     const chevrons = document.querySelectorAll('[data-slot="settings-hub-chevron"]');
-    expect(chevrons.length).toBeGreaterThanOrEqual(7);
+    expect(chevrons.length).toBeGreaterThanOrEqual(6);
   });
 
   it("verifies all entries have hrefs to their paths", () => {

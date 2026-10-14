@@ -237,6 +237,7 @@ export function PageHeader({
   subtitle,
   actions,
   overflow,
+  trailingCells,
   className,
   lead,
   belowTitle,
@@ -248,6 +249,8 @@ export function PageHeader({
   subtitle?: React.ReactNode;
   actions?: React.ReactNode;
   overflow?: OverflowAction[];
+  /** Extra 44px cells at the END of the capsule, after More and Customize (e.g. a page Edit toggle). */
+  trailingCells?: React.ReactNode;
   /** Page layout classes for the bar; the bar's grid layout always wins over conflicting ones. */
   className?: string;
   /**
@@ -284,7 +287,7 @@ export function PageHeader({
   const { save, rest: otherActions } = splitHeaderSave(actions);
   // Set by a page with cards (usePageCustomize): the Customize button joins the More group, right after More.
   const customize = usePageCustomizeRegistration();
-  const hasRight = !!actions || (overflow?.length ?? 0) > 0 || !!customize;
+  const hasRight = !!actions || (overflow?.length ?? 0) > 0 || !!customize || !!trailingCells;
   const h1 = (
     <h1 data-slot="page-header-title" className={PHONE_BAR_TITLE}>
       {title}
@@ -308,7 +311,7 @@ export function PageHeader({
   const primaryOwn = !save && !!primary;
   const capsulePrimary = save ? primary : null;
   const hasCapsule =
-    (overflow?.length ?? 0) > 0 || !!capsulePrimary || !!customize || cells.some((c) => !isSecondaryNode(c));
+    (overflow?.length ?? 0) > 0 || !!capsulePrimary || !!customize || !!trailingCells || cells.some((c) => !isSecondaryNode(c));
   return (
     <div data-slot="page-header" className={cn(className, PHONE_BAR)}>
       {hasLeft ? (
@@ -335,6 +338,7 @@ export function PageHeader({
               {capsulePrimary}
               {overflow && overflow.length > 0 ? <OverflowMenu items={overflow} /> : null}
               {customize ? <CustomizeButton onOpen={customize.onOpen} title={customize.title} /> : null}
+              {trailingCells}
             </div>
           ) : (
             // Only secondary actions (hidden at every width): no capsule, so no empty glass pill.

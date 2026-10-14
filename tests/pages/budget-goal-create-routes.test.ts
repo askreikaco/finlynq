@@ -23,15 +23,14 @@ describe("budgets list: openers navigate, no create/edit dialog", () => {
   });
 
   it("links to each form page and passes the list URL as returnTo", () => {
-    expect(BUDGETS).toContain("/budgets/new?");
     expect(BUDGETS).toContain("/budgets/templates/new?");
     expect(BUDGETS).toContain("/budgets/templates/apply?");
     expect(BUDGETS).toContain("/budgets/move-money?");
     expect(BUDGETS).toMatch(/returnTo=\$\{encodeURIComponent\(listUrl\)\}/);
   });
 
-  it("keeps the delete confirmation as a dialog", () => {
-    expect(BUDGETS).toContain("<ConfirmDialog");
+  it("keeps the category delete confirmation as a dialog (inside the shared form)", () => {
+    expect(read(`${APP}/categories/_components/category-budget-form.tsx`)).toContain("<ConfirmDialog");
   });
 });
 
@@ -55,7 +54,6 @@ describe("goals list: openers navigate, no create/edit dialog", () => {
 
 describe("route pages render the shared form components", () => {
   const WIRING: [string, string, string][] = [
-    [`${APP}/budgets/new/page.tsx`, "SetBudgetForm", "../_components/set-budget-form"],
     [`${APP}/budgets/templates/new/page.tsx`, "SaveTemplateForm", "../../_components/save-template-form"],
     [`${APP}/budgets/templates/apply/page.tsx`, "ApplyTemplateForm", "../../_components/apply-template-form"],
     [`${APP}/budgets/move-money/page.tsx`, "MoveMoneyForm", "../_components/move-money-form"],
@@ -73,7 +71,6 @@ describe("route pages render the shared form components", () => {
   it("every form-page back/return target is validated with safeReturnTo (in FormPage's useReturnTo)", () => {
     expect(read("src/lib/forms/use-return-to.ts")).toMatch(/safeReturnTo\(searchParams\.get\("returnTo"\)/);
     for (const f of [
-      `${APP}/budgets/new/page.tsx`,
       `${APP}/budgets/templates/new/page.tsx`,
       `${APP}/budgets/templates/apply/page.tsx`,
       `${APP}/budgets/move-money/page.tsx`,

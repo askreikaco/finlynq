@@ -86,7 +86,6 @@ describe("dynamic and nested routes resolve by longest registry prefix", () => {
     ["/settings/rules/new", { href: "/settings", level: 3 }],
     ["/settings/rules/4/edit", { href: "/settings", level: 3 }],
     ["/settings/investments/securities/8/prices", { href: "/settings/investments", level: 4 }],
-    ["/settings/categorization", { href: "/settings", level: 3 }],
     ["/settings/general", { href: "/settings", level: 3 }],
     ["/account/info", { href: "/account", level: 3 }],
     ["/admin/system", { href: "/admin/env", level: 3 }],

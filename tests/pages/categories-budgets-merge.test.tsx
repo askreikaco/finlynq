@@ -111,6 +111,29 @@ describe("shared CategoryRow", () => {
   });
 });
 
+describe("Edit mode and column alignment", () => {
+  it("no row has an edit icon; the topbar Edit toggle makes category rows open the shared form (?edit=<id>)", () => {
+    render(<CategoriesPageContent />);
+    expect(screen.queryAllByRole("button", { name: /^Edit: / })).toHaveLength(0);
+    expect(document.querySelectorAll("svg.lucide-pencil").length).toBe(1); // only the topbar Edit button
+    const toggle = screen.getByRole("button", { name: "Edit" });
+    expect(toggle.closest('[data-slot="header-capsule"]')).toBeTruthy(); // same group as the customize button
+    expect(screen.getByRole("link", { name: "Add" }).getAttribute("href")).toBe("/categories?edit=new");
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute("aria-pressed")).toBe("true");
+    const coffee = screen.getByRole("button", { name: "Edit: Coffee" });
+    expect(coffee.hasAttribute("data-edit-row")).toBe(true);
+    expect(screen.queryByRole("link", { name: /Coffee/ })).toBeNull();
+  });
+
+  it("child rows indent the name only: group and category rows share the right-hand value columns", () => {
+    const src = read(PAGE);
+    expect(src).toContain('py-3 pl-4 pr-11'); // = group trigger px-4 + chevron slot
+    expect(src).not.toMatch(/ROW_LINK\} pl-8/);
+    expect(read("src/app/(app)/categories/_components/category-row.tsx")).toContain('indent ? " pl-5"');
+  });
+});
+
 describe("metric cards", () => {
   it("are exactly Total Budget, Total Spent and Remaining; no Age of Money, Available to Budget or rollover anywhere", () => {
     render(<CategoriesPageContent />);
@@ -143,8 +166,8 @@ describe("/budgets is merged into /categories", () => {
     expect(fs.existsSync(path.join(ROOT, "src/app/(app)/budgets/page.tsx"))).toBe(false);
   });
 
-  it("the form pages stay: /budgets/new, templates and move-money", () => {
-    for (const p of ["new", "templates/new", "templates/apply", "move-money"]) {
+  it("the template and move-money form pages stay (their own forms); the budget form is the shared category form", () => {
+    for (const p of ["templates/new", "templates/apply", "move-money"]) {
       expect(fs.existsSync(path.join(ROOT, `src/app/(app)/budgets/${p}/page.tsx`)), p).toBe(true);
     }
   });

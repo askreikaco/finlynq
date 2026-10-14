@@ -38,8 +38,8 @@ describe("rule openers use navigation", () => {
 
 describe("category openers use navigation", () => {
   const files = [
-    "src/app/(app)/categories/_components/category-management.tsx",
-    "src/app/(app)/settings/categorization/page.tsx",
+    "src/app/(app)/categories/_page-content.tsx",
+    "src/app/(app)/categories/_components/category-budget-form.tsx",
   ];
   it.each(files)("%s has no inline add or rename form", (file) => {
     const src = read(file);
@@ -47,14 +47,9 @@ describe("category openers use navigation", () => {
     expect(src).not.toMatch(/aria-label="Save category name"/);
   });
 
-  it.each(files)("%s links to /categories/new and /categories/[id]/edit", (file) => {
-    const src = read(file);
-    if (file.endsWith("settings/categorization/page.tsx")) {
-      // the legacy screen renders the shared list (which owns the links)
-      expect(src).toMatch(/CategoryManagement/);
-    } else {
-      expect(src).toMatch(/\/categories\/new\?returnTo=/);
-      expect(src).toMatch(/\/categories\/\$\{cat\.id\}\/edit\?returnTo=/);
-    }
+  it("the categories page opens the one shared form via ?edit= (no separate add / rename pages)", () => {
+    const src = read("src/app/(app)/categories/_page-content.tsx");
+    expect(src).toContain("/categories?edit=new");
+    expect(src).toContain("setEdit(c.id)");
   });
 });

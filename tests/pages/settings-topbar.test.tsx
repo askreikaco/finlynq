@@ -12,7 +12,7 @@ const read = (f: string) => readFileSync(join(root, f), "utf8");
 const code = (f: string) => read(f).replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
 
 const PAGES = [
-  "general", "display", "categorization", "data", "developer", "integrations", "reconciliation", "rules",
+  "general", "display", "data", "developer", "integrations", "reconciliation", "rules",
   "import", "about", "bank-feeds", "backfill", "dropdown-order", "investments",
 ];
 
@@ -81,7 +81,7 @@ describe("nothing caps, clips or hides the header", () => {
   });
 
   it("settings pages do not wrap the header in a capped, non-centred element", () => {
-    for (const p of ["general", "developer", "integrations", "reconciliation", "about", "categorization"]) {
+    for (const p of ["general", "developer", "integrations", "reconciliation", "about"]) {
       const src = code(`src/app/(app)/settings/${p}/page.tsx`);
       expect(src, p).not.toMatch(/width="(form|section|doc|console)"/);
       expect(src, p).not.toMatch(/max-w-(report|section|form|doc|console|[2-7]?xl)\b/);

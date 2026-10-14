@@ -62,8 +62,8 @@ describe("maskable icons", () => {
 
 describe("shortcuts", () => {
   const shortcuts = m.shortcuts ?? [];
-  it("has Add transaction, Accounts and Budgets", () => {
-    expect(shortcuts.map((s) => s.name)).toEqual(["Add transaction", "Accounts", "Budgets"]);
+  it("has Add transaction, Accounts and Categories", () => {
+    expect(shortcuts.map((s) => s.name)).toEqual(["Add transaction", "Accounts", "Categories"]);
   });
   it("every shortcut url maps to an existing app route page", () => {
     for (const s of shortcuts) {

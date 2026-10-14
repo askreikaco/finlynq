@@ -28,11 +28,11 @@ import type { CategoryOverview, OverviewCategory } from "@/lib/reports/category-
 import { buildGroupRows, findRow, pieSlices, subLabel, type OverviewRow } from "@/lib/categories/group-overview";
 import { useAnimations } from "@/hooks/use-animations";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
-import { ArrowRightLeft, ChevronLeft, ChevronRight, Copy, FileDown, ListChecks, PiggyBank, Pencil, Plus, Receipt, Save, Wallet } from "lucide-react";
+import { ArrowRightLeft, Check, ChevronLeft, ChevronRight, Copy, FileDown, ListChecks, PiggyBank, Pencil, Plus, Receipt, Save, Wallet } from "lucide-react";
 import { CategoryBudgetForm, type FormCategory } from "./_components/category-budget-form";
 import { CategoryRow } from "./_components/category-row";
 import {
-  CustomizeCardsSheet, MetricGrid, OverflowMenu, PageHeader, PHONE_PRIMARY_CLASS, SectionCard, useCardLayout, usePageCustomize,
+  CustomizeCardsSheet, MetricGrid, PageHeader, PHONE_PRIMARY_CLASS, SectionCard, useCardLayout, usePageCustomize,
   type MetricItem, type OverflowAction,
 } from "@/components/mobile";
 import { MetricRangeSelect } from "@/components/metric-range-select";
@@ -108,6 +108,7 @@ function CategoriesOverview() {
   const [openKeys, setOpenKeys] = useState<Set<string>>(() => new Set());
   const [copying, setCopying] = useState(false);
   const [actionError, setActionError] = useState("");
+  const [editMode, setEditMode] = useState(false);
   const currentMonth = localDateISO().slice(0, 7);
   const monthParam = searchParams.get("month");
   const month = monthParam && MONTH_RE.test(monthParam) && monthParam <= currentMonth ? monthParam : currentMonth;
@@ -202,7 +203,6 @@ function CategoriesOverview() {
     for (const b of budgets) {
       if (seen.has(b.categoryId)) continue;
       seen.add(b.categoryId);
-      if (seen.has(b.categoryId)) continue;
       merged.push({
         id: b.categoryId, name: b.categoryName, group: b.categoryGroup ?? "", amount: 0, share: 0,
         average: null, change: null, budget: b.amount, trend: data.windowMonths.map(() => 0),
@@ -366,22 +366,21 @@ function CategoriesOverview() {
   ];
 
   // ---- rows ---------------------------------------------------------------------------------------------------------
-  const iconBtn = "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
-  /** Edit: opens the shared form for ONE category (not offered on a group: its budget is the rollup). */
-  function budgetActions(c: OverviewCategory) {
-    const name = subLabel(c.name, c.group);
-    return (
-      <span className="flex shrink-0 items-center pr-2">
-        <button type="button" className={iconBtn} aria-label={`Edit: ${name}`} onClick={() => setEdit(c.id)}>
-          <Pencil className="h-4 w-4" />
-        </button>
-      </span>
+  /** A category row: a link to its detail page, or (Edit mode) a button that opens the shared form prefilled. */
+  function categoryLink(c: OverviewCategory, group: string, dot: string, className: string, indent = false) {
+    const body = categoryRow(c, group, dot, indent);
+    return editMode ? (
+      <button type="button" data-edit-row="" aria-label={`Edit: ${subLabel(c.name, group)}`} onClick={() => setEdit(c.id)} className={`${className} bg-primary/5 text-left`}>
+        {body}
+      </button>
+    ) : (
+      <Link href={`/categories/${c.id}`} className={className}>{body}</Link>
     );
   }
 
   /** The shared row for one OverviewRow (group = rollup of its children) or a single category. */
-  const rowFor = (r: { label: string; amount: number; trend: number[] | null; budget: number | null; count?: number; badge?: ReactNode; dot: string }) => (
+  const rowFor = (r: { label: string; amount: number; trend: number[] | null; budget: number | null; count?: number; badge?: ReactNode; dot: string; indent?: boolean }) => (
     <CategoryRow
       label={r.label}
       dot={r.dot}
@@ -394,11 +393,13 @@ function CategoriesOverview() {
       sparkLabels={sparkLabels}
       count={r.count}
       badge={r.badge}
+      indent={r.indent}
     />
   );
 
-  const categoryRow = (c: OverviewCategory, group: string, dot: string) =>
+  const categoryRow = (c: OverviewCategory, group: string, dot: string, indent = false) =>
     rowFor({
+      indent,
       label: subLabel(c.name, group), amount: c.amount, trend: c.trend, budget: c.budget, dot,
       badge: marks.get(c.id)?.pendingSync ? <SyncBadge mark={marks.get(c.id)!.pendingSync!} /> : undefined,
     });
@@ -406,17 +407,19 @@ function CategoriesOverview() {
   const groupRow = (row: OverviewRow) =>
     rowFor({ label: row.label, amount: row.amount, trend: row.trend, budget: row.budget, count: row.categories.length, dot: colorOf(row.key) });
 
-  const ROW_LINK = "block min-w-0 flex-1 px-4 py-3 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+  const ROW_LINK = "block min-w-0 w-full py-3 pl-4 pr-11 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
   const toolbar = (
-    <div className="flex flex-wrap items-center justify-between gap-2">
-      <div className="flex flex-wrap items-center gap-2">
-        <Tabs value={type} onValueChange={(v) => go({ type: v === "I" ? "I" : "E" })}>
-          <TabsList>
-            <TabsTrigger value="E" className="px-3">Spending</TabsTrigger>
-            <TabsTrigger value="I" className="px-3">Income</TabsTrigger>
-          </TabsList>
-        </Tabs>
+    <div data-slot="categories-toolbar" className="space-y-3">
+      <Tabs value={type} onValueChange={(v) => go({ type: v === "I" ? "I" : "E" })}>
+        <TabsList>
+          <TabsTrigger value="E" className="px-3">Spending</TabsTrigger>
+          <TabsTrigger value="I" className="px-3">Income</TabsTrigger>
+        </TabsList>
+      </Tabs>
+      {/* ONE row: range dropdown, then the month switcher */}
+      <div data-slot="categories-filters" className="flex flex-wrap items-center gap-3">
+        {!isIncome && <MetricRangeSelect value={selection} onChange={setSelection} />}
         <div className="flex items-center gap-1">
           <Button variant="outline" size="icon" aria-label="Previous month" onClick={() => go({ month: shiftMonth(month, -1) })}>
             <ChevronLeft className="h-4 w-4" />
@@ -433,7 +436,21 @@ function CategoriesOverview() {
           </Button>
         </div>
       </div>
-      {!isIncome && <OverflowMenu items={overflow} />}
+    </div>
+  );
+
+  /** Budget tools (formerly the 3-dot menu): visible, small buttons under the metric cards. */
+  const budgetTools = (
+    <div data-slot="budget-tools" className="flex flex-wrap items-center gap-2">
+      {overflow.map((it) => {
+        const Icon = it.icon;
+        const inner = (<>{Icon ? <Icon className="mr-1 h-3.5 w-3.5" aria-hidden /> : null}{it.label}</>);
+        return it.href ? (
+          <Button key={it.label} variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground" render={<Link href={it.href} />}>{inner}</Button>
+        ) : (
+          <Button key={it.label} variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground" disabled={it.disabled} onClick={it.onSelect}>{inner}</Button>
+        );
+      })}
     </div>
   );
 
@@ -441,8 +458,8 @@ function CategoriesOverview() {
   const cardNodes: Record<string, ReactNode> = {
     metrics: isIncome ? null : (
       <div className="space-y-3">
-        <MetricRangeSelect value={selection} onChange={setSelection} />
         <MetricGrid metrics={metrics} columns={3} />
+        {budgetTools}
       </div>
     ),
     summary: (
@@ -532,24 +549,14 @@ function CategoriesOverview() {
                   >
                     <ul className="divide-y divide-border/50">
                       {row.categories.map((c) => (
-                        <li key={c.id} className="flex items-center">
-                          <Link href={`/categories/${c.id}`} className={`${ROW_LINK} pl-8`}>
-                            {categoryRow(c, row.group, colorOf(row.key))}
-                          </Link>
-                          {budgetActions(c)}
-                        </li>
+                        <li key={c.id}>{categoryLink(c, row.group, colorOf(row.key), ROW_LINK, true)}</li>
                       ))}
                     </ul>
                   </AccordionItem>
                 </Accordion>
               </div>
             ) : (
-              <div key={row.key} data-slot="category-single" className="flex items-center">
-                <Link href={`/categories/${row.categories[0].id}`} className={ROW_LINK}>
-                  {categoryRow(row.categories[0], "", colorOf(row.key))}
-                </Link>
-                {budgetActions(row.categories[0])}
-              </div>
+              <div key={row.key} data-slot="category-single">{categoryLink(row.categories[0], "", colorOf(row.key), ROW_LINK)}</div>
             ),
           )
         )}
@@ -564,6 +571,19 @@ function CategoriesOverview() {
         actions={
           <Button className={PHONE_PRIMARY_CLASS} aria-label="Add" render={<Link href="/categories?edit=new" />}>
             <Plus className="mr-1 h-4 w-4" /> Add
+          </Button>
+        }
+        trailingCells={
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-11 shrink-0 rounded-full"
+            aria-label="Edit"
+            aria-pressed={editMode}
+            onClick={() => setEditMode((v) => !v)}
+          >
+            {editMode ? <Check className="size-4" /> : <Pencil className="size-4" />}
           </Button>
         }
       />
@@ -588,13 +608,13 @@ function CategoriesOverview() {
       />
 
       <Sheet open={formOpen} onOpenChange={(o) => { if (!o) setEdit(null); }}>
-        <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-md">
+        <SheetContent side="right" className="w-full overflow-y-auto regular:max-w-md">
           <SheetHeader>
             <SheetTitle>{editId != null ? "Edit" : "Add"}</SheetTitle>
           </SheetHeader>
           {formOpen && (editParam === "new" || allCategories.some((c) => c.id === editId)) && (
             <CategoryBudgetForm
-              key={editParam}
+              key={`${editParam}-${budgetsKnown}-${allCategories.length}`}
               category={editId != null ? (allCategories.find((c) => c.id === editId) ?? null) : null}
               categories={allCategories}
               budgets={budgets}

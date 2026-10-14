@@ -41,7 +41,7 @@ describe("Settings iOS multi-level menu: hub (level 1)", () => {
     }
 
     const rows = container.querySelectorAll('[data-slot="settings-hub-row"]');
-    expect(rows.length).toBe(7);
+    expect(rows.length).toBe(6);
     rows.forEach((row) => {
       expect(row.querySelector('[data-slot="settings-hub-icon"] svg')).not.toBeNull();
       expect(cls(row.querySelector('[data-slot="settings-hub-chevron"]'))).toContain("text-muted-foreground");

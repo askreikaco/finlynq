@@ -5,9 +5,6 @@
     "src/app/(app)/budgets/move-money/page.tsx": {
       "suspense-null": 1
     },
-    "src/app/(app)/budgets/new/page.tsx": {
-      "suspense-null": 1
-    },
     "src/app/(app)/budgets/templates/apply/page.tsx": {
       "suspense-null": 1
     },

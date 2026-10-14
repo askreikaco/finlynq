@@ -13,6 +13,7 @@ const H = vi.hoisted(() => ({
   ] as unknown[],
   PEND: { creates: [], edits: {}, deletes: {} } as unknown,
   ACTIVE: false,
+  EDIT: "",
   // Ungrouped categories, so every row is visible without opening an accordion.
   REPORT: {
     month: "2026-10", partial: true, windowMonths: ["2026-09", "2026-10"], total: 80, averageTotal: null, displayCurrency: "CAD", type: "E",
@@ -22,7 +23,7 @@ const H = vi.hoisted(() => ({
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }),
-  useSearchParams: () => new URLSearchParams("month=2026-10"),
+  useSearchParams: () => new URLSearchParams(`month=2026-10${H.EDIT ? `&edit=${H.EDIT}` : ""}`),
   usePathname: () => "/categories",
 }));
 vi.mock("next/link", () => ({ default: ({ children, href }: { children: React.ReactNode; href: string }) => React.createElement("a", { href }, children) }));
@@ -43,6 +44,7 @@ vi.mock("@/components/currency-provider", () => ({ useDisplayCurrency: () => ({ 
 vi.mock("@/lib/data/use-cache-first", () => ({
   useCacheFirstJson: (url: string | null) => {
     if (!url) return { data: undefined, loading: false, error: false, reload: () => {} };
+    if (url === "/api/categories") return { data: [{ id: 10, type: "E", group: "", name: "Food" }], loading: false, error: false, reload: () => {} };
     if (url.startsWith("/api/reports/categories")) return { data: { data: H.REPORT }, loading: false, error: false, reload: () => {} };
     if (url.startsWith("/api/budgets")) return { data: H.BUDGETS, loading: false, error: false, reload: () => {} };
     return { data: undefined, loading: false, error: false, reload: () => {} };
@@ -64,6 +66,7 @@ afterEach(() => {
   cleanup();
   H.BUDGETS = [{ id: 1, categoryId: 10, categoryName: "Food", categoryGroup: "", month: "2026-10", amount: 300, currency: "CAD", rolloverAmount: 0 }];
   H.PEND = { creates: [], edits: {}, deletes: {} };
+  H.EDIT = "";
 });
 
 describe("categories page budgets with the offline queue", () => {
@@ -105,10 +108,12 @@ describe("categories page budgets with the offline queue", () => {
     H.PEND = { creates: [], edits: { 1: { opId: "e9", status: "pending", failReason: null, fields: { amount: 450 }, ref: { categoryId: 10, month: "2026-10" } } }, deletes: {} };
     vi.stubGlobal("fetch", vi.fn(async () => { throw new TypeError("network"); }));
     vi.mocked(queueOfflineBudgetDelete).mockResolvedValueOnce(true);
+    // The shared form (?edit=10) is prefilled with the (overlaid) budget; a blank budget removes it.
+    H.EDIT = "10";
     render(<BudgetsPage />);
-    // The row's delete action opens the confirm.
-    fireEvent.click(await screen.findByRole("button", { name: "Delete budget: Food" }));
-    fireEvent.click(await screen.findByRole("button", { name: "Delete" }));
+    expect((await screen.findByLabelText("Budget") as HTMLInputElement).value).toBe("450");
+    fireEvent.change(screen.getByLabelText("Budget"), { target: { value: "" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(queueOfflineBudgetDelete).toHaveBeenCalledTimes(1));
     expect(vi.mocked(queueOfflineBudgetDelete).mock.calls[0][0]).toMatchObject({ id: 1, amount: 300, currency: "CAD" });
     vi.unstubAllGlobals();

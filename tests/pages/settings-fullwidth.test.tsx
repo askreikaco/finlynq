@@ -13,7 +13,7 @@ const GRID_PAGES = [
   "general", "developer", "integrations", "reconciliation", "about",
 ];
 const NO_CAP_FILES = [
-  ...["general", "developer", "integrations", "reconciliation", "about", "categorization", "backfill", "investments"].map(
+  ...["general", "developer", "integrations", "reconciliation", "about", "backfill", "investments"].map(
     (p) => `src/app/(app)/settings/${p}/page.tsx`,
   ),
   "src/app/(app)/settings/import/reconcile-visibility/page.tsx",

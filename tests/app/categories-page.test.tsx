@@ -2,7 +2,7 @@
  * @vitest-environment jsdom
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
@@ -51,66 +51,27 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  cleanup();
   vi.unstubAllGlobals();
 });
 
 describe("CategoriesPage (real component)", () => {
-  describe("flag OFF (unset)", () => {
-    it("fetches overview data exactly once, no flag fetch", async () => {
-      const originalEnv = process.env.FINLYNQ_CATEGORIES_MERGED;
-      delete process.env.FINLYNQ_CATEGORIES_MERGED;
-
-      try {
-        const CategoriesPage = (await import("@/app/(app)/categories/page")).default;
-        render(<CategoriesPage />);
-
-        await waitFor(() => {
-          expect(screen.getByText("Spending by category")).toBeTruthy();
-        }, { timeout: 5000 });
-
-        // Should fetch overview exactly once, no flag fetch
-        const overviewCalls = fetchMock.mock.calls.filter((c) => c[0]?.includes("/api/reports/categories"));
-        const flagCalls = fetchMock.mock.calls.filter((c) => c[0]?.includes("/api/flags"));
-
-        expect(overviewCalls.length).toBe(1);
-        expect(flagCalls.length).toBe(0);
-      } finally {
-        if (originalEnv !== undefined) {
-          process.env.FINLYNQ_CATEGORIES_MERGED = originalEnv;
-        }
-      }
-    });
-
-    it("no tabs rendered when flag unset", async () => {
-      delete process.env.FINLYNQ_CATEGORIES_MERGED;
-
+  // The Manage tab is gone (everything lives on this page); the merged flag no longer changes the page.
+  it.each([undefined, "1"])("one page, no tabs, overview fetched once (FINLYNQ_CATEGORIES_MERGED=%s)", async (flag) => {
+    if (flag === undefined) delete process.env.FINLYNQ_CATEGORIES_MERGED;
+    else process.env.FINLYNQ_CATEGORIES_MERGED = flag;
+    try {
       const CategoriesPage = (await import("@/app/(app)/categories/page")).default;
       render(<CategoriesPage />);
-
-      await waitFor(() => {
-        expect(screen.queryByRole("tab", { name: "Overview" })).toBeFalsy();
-        expect(screen.queryByRole("tab", { name: "Manage" })).toBeFalsy();
-      });
-    });
-  });
-
-  describe("flag ON (set to 1)", () => {
-    it("renders tabs when flag enabled", async () => {
-      process.env.FINLYNQ_CATEGORIES_MERGED = "1";
-
-      try {
-        const CategoriesPage = (await import("@/app/(app)/categories/page")).default;
-        render(<CategoriesPage />);
-
-        await waitFor(() => {
-          expect(screen.getByRole("tab", { name: "Overview" })).toBeTruthy();
-          expect(screen.getByRole("tab", { name: "Manage" })).toBeTruthy();
-        }, { timeout: 5000 });
-      } finally {
-        delete process.env.FINLYNQ_CATEGORIES_MERGED;
-      }
-    });
-  });
+      await waitFor(() => expect(screen.getByRole("heading", { level: 1, name: "Categories" })).toBeTruthy(), { timeout: 15000 });
+      expect(screen.queryByRole("tab", { name: "Overview" })).toBeNull();
+      expect(screen.queryByRole("tab", { name: "Manage" })).toBeNull();
+      expect(screen.getByRole("link", { name: "Add" }).getAttribute("href")).toBe("/categories?edit=new");
+      expect(fetchMock.mock.calls.filter((c) => c[0]?.includes("/api/reports/categories")).length).toBe(1);
+    } finally {
+      delete process.env.FINLYNQ_CATEGORIES_MERGED;
+    }
+  }, 30000);
 });
 
 describe("isCategoriesMergedEnabled default env", () => {

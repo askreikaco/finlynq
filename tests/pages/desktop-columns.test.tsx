@@ -73,13 +73,11 @@ describe("desktop columns: card grids", () => {
     expect(code("src/lib/design/tokens.ts")).toMatch(GRID3);
   });
 
-  it("categories: ONE SectionCard whose rows (groups and categories) use the shared 2 / 3-column row grid; metric cards max 3", () => {
+  it("categories: ONE full-width SectionCard list (single column, rows reflow by container width); metric cards max 3 columns", () => {
     const src = code(`${APP}/categories/_page-content.tsx`);
-    expect(src).toMatch(/label="Categories"[\s\S]*\$\{CARD_ROW_GRID\}/);
+    expect(src).toMatch(/label="Categories"[\s\S]*divide-y/);
     expect(src).toContain("<MetricGrid metrics={metrics} columns={3} />");
-    expect(code(`${APP}/categories/_components/category-management.tsx`)).toMatch(
-      /data-slot="category-manage-groups"[^>]*regular:grid-cols-2[^>]*wide:grid-cols-3/,
-    );
+    expect(code(`${APP}/categories/_components/category-row.tsx`)).toContain("@container");
   });
 
   it("categories/[id]: summary and recent span the row, chart spans 2", () => {

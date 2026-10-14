@@ -31,7 +31,6 @@ vi.mock("@/components/ui/combobox", () => ({
 }));
 
 import { getMonthLabel } from "@/lib/currency";
-import NewBudgetRoute from "@/app/(app)/budgets/new/page";
 import NewTemplateRoute from "@/app/(app)/budgets/templates/new/page";
 import ApplyTemplateRoute from "@/app/(app)/budgets/templates/apply/page";
 import MoveMoneyRoute from "@/app/(app)/budgets/move-money/page";
@@ -97,38 +96,6 @@ afterEach(() => {
 
 const postsTo = (url: string) => calls.filter((c) => c.url === url && c.init?.method === "POST");
 const bodies = (url: string) => postsTo(url).map((c) => JSON.parse(String(c.init?.body)));
-
-describe("Set budget page (/budgets/new)", () => {
-  it("renders the heading for the month, the category/amount fields and a disabled Save", () => {
-    render(<NewBudgetRoute />);
-    expect(screen.getByRole("heading", { level: 1, name: `Set budget for ${getMonthLabel("2026-10")}` })).toBeTruthy();
-    expect((screen.getByRole("button", { name: "Save Budget" }) as HTMLButtonElement).disabled).toBe(true);
-  });
-
-  it("loads the categories the picker offers", async () => {
-    render(<NewBudgetRoute />);
-    await waitFor(() => expect(calls.some((c) => c.url === "/api/categories")).toBe(true));
-  });
-
-  it("POSTs the same payload as the old dialog, then returns to the month's list", async () => {
-    const { container } = render(<NewBudgetRoute />);
-    fireEvent.change(screen.getByLabelText("Select category"), { target: { value: "10" } });
-    fireEvent.change(container.querySelector('input[type="number"]') as HTMLInputElement, { target: { value: "500" } });
-    fireEvent.click(screen.getByRole("button", { name: "Save Budget" }));
-    await waitFor(() => expect(H.push).toHaveBeenCalledWith("/categories?month=2026-10"));
-    expect(bodies("/api/budgets")).toEqual([{ categoryId: 10, month: "2026-10", amount: 500, currency: "USD" }]);
-  });
-
-  it("shows the server error and stays put when the save fails", async () => {
-    postStatus = 409;
-    const { container } = render(<NewBudgetRoute />);
-    fireEvent.change(screen.getByLabelText("Select category"), { target: { value: "10" } });
-    fireEvent.change(container.querySelector('input[type="number"]') as HTMLInputElement, { target: { value: "500" } });
-    fireEvent.click(screen.getByRole("button", { name: "Save Budget" }));
-    expect(await screen.findByText("Budget locked")).toBeTruthy();
-    expect(H.push).not.toHaveBeenCalled();
-  });
-});
 
 describe("Save template page (/budgets/templates/new)", () => {
   it("saves one template row per budget, then returns to the list", async () => {
@@ -228,7 +195,6 @@ describe("Move money page (/budgets/move-money)", () => {
 
 describe("Budget form pages: returnTo validation", () => {
   const pages = [
-    ["/budgets/new", NewBudgetRoute],
     ["/budgets/templates/apply", ApplyTemplateRoute],
     ["/budgets/templates/new", NewTemplateRoute],
     ["/budgets/move-money", MoveMoneyRoute],
@@ -244,16 +210,4 @@ describe("Budget form pages: returnTo validation", () => {
       },
     );
   }
-
-  it("accepts a same-app returnTo (the list URL with its mode) for Back", () => {
-    H.search = `month=2026-10&returnTo=${encodeURIComponent("/budgets?month=2026-10&mode=envelope")}`;
-    render(<NewBudgetRoute />);
-    expect(screen.getByRole("link", { name: "Back" }).getAttribute("href")).toBe("/budgets?month=2026-10&mode=envelope");
-  });
-
-  it("ignores a malformed month and uses the current month in the heading", () => {
-    H.search = "month=2026-13";
-    render(<NewBudgetRoute />);
-    expect(screen.getByRole("link", { name: "Back" }).getAttribute("href")).not.toContain("2026-13");
-  });
 });

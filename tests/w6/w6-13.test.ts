@@ -7,7 +7,6 @@ const PALETTE = /\b(bg|text|border|ring|from|to|via|fill|stroke|outline|divide|r
 const FILES: string[] = [
   "src/app/(app)/categories/_components/category-row.tsx",
   "src/app/(app)/categories/[id]/page.tsx",
-  "src/app/(app)/categories/_components/category-management.tsx",
   "src/app/(app)/categories/_page-content.tsx",
 ];
 const ARIA: [string, string, number][] = [

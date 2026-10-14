@@ -32,6 +32,8 @@ export interface CategoryRowProps {
   count?: number;
   /** Trailing badge (e.g. sync state). */
   badge?: ReactNode;
+  /** Indent the name only (a category inside a group); the value columns stay aligned with the group row. */
+  indent?: boolean;
 }
 
 /** Change vs last month: signed value and % (null % when last month was 0 or unknown). */
@@ -51,7 +53,7 @@ function signed(n: number, cur: string): string {
   return `${n > 0 ? "+" : n < 0 ? "-" : ""}${formatCurrency(Math.abs(n), cur)}`;
 }
 
-export function CategoryRow({ label, dot, amount, prev, budget, trend, cur, isIncome, sparkLabels, count, badge }: CategoryRowProps) {
+export function CategoryRow({ label, dot, amount, prev, budget, trend, cur, isIncome, sparkLabels, count, badge, indent }: CategoryRowProps) {
   const delta = monthDelta(amount, prev);
   const progress = budgetProgress(amount, budget);
   // Up is bad for spending, good for income.
@@ -62,7 +64,7 @@ export function CategoryRow({ label, dot, amount, prev, budget, trend, cur, isIn
   return (
     <span data-slot="category-row" className="@container block w-full min-w-0 font-sans">
       <span className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 @xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_7.5rem_6.5rem]">
-        <span className="flex min-w-0 items-center gap-2.5">
+        <span className={`flex min-w-0 items-center gap-2.5${indent ? " pl-5" : ""}`}>
           <span data-slot="category-dot" className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: dot }} aria-hidden />
           <span data-slot="category-label" className="truncate text-sm font-medium">{label}</span>
           {count != null && (
