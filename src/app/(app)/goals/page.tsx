@@ -12,9 +12,10 @@ import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { CheckCircle2, Pencil, PiggyBank, Plus, Target, Trash2 } from "lucide-react";
 import {
-  MetricGrid, CustomizeCardsSheet, DetailSheet, ListRow, PHONE_PRIMARY_CLASS, SectionCard,
-  useCardLayout, usePageCustomize, type MetricItem, type DetailItem,
+  MetricGrid, CustomizeCardsSheet, DetailSheet, ListRow, SectionCard,
+  useCardLayout, usePageCustomize, ListDetailLayout, ListDetailNewButton, useListDetail, type MetricItem, type DetailItem,
 } from "@/components/mobile";
+import { GoalFormPanel } from "./_components/goal-form-panel";
 import { MetricRangeSelect } from "@/components/metric-range-select";
 import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { compareCaption, seriesWindow, type MonthPoint } from "@/lib/metrics/period";
@@ -121,6 +122,9 @@ function GoalsBody({ ctx, displayCurrency }: { ctx: GoalCtx; displayCurrency: st
   const cardLayout = useCardLayout("goals", GOAL_CARDS);
   const [customizeOpen, setCustomizeOpen] = useState(false);
   const [detailId, setDetailId] = useState<number | null>(null);
+  // Split view (regular+): a row selects it into the pane (?sel=<id>) instead of opening the sheet.
+  const detailApi = useListDetail();
+  const openGoal = (id: number) => (detailApi.split ? detailApi.select(id) : setDetailId(id));
   usePageCustomize({ onOpen: () => setCustomizeOpen(true) });
 
   const active = goals.filter((g) => g.status === "active");
@@ -176,7 +180,8 @@ function GoalsBody({ ctx, displayCurrency }: { ctx: GoalCtx; displayCurrency: st
               subtitle={`${formatCurrency(g.currentAmount, currency)} of ${formatCurrency(g.targetAmount, currency)}`}
               value={<span className={`tabular-nums text-sm font-bold ${progressTextClass(g.progress)}`}>{g.progress}%</span>}
               secondary={g.deadline ?? undefined}
-              onPress={() => setDetailId(g.id)}
+              selected={detailApi.selectedId === String(g.id)}
+              onPress={() => openGoal(g.id)}
             />
           );
         })}
@@ -198,7 +203,8 @@ function GoalsBody({ ctx, displayCurrency }: { ctx: GoalCtx; displayCurrency: st
             title={<span className="truncate line-through text-muted-foreground">{g.name}</span>}
             subtitle={formatCurrency(g.targetAmount, g.currency || displayCurrency)}
             value={<Badge className="bg-pos/10 text-pos border-pos/30">Completed</Badge>}
-            onPress={() => setDetailId(g.id)}
+            selected={detailApi.selectedId === String(g.id)}
+            onPress={() => openGoal(g.id)}
           />
         ))}
       </SectionCard>
@@ -210,7 +216,23 @@ function GoalsBody({ ctx, displayCurrency }: { ctx: GoalCtx; displayCurrency: st
   return (
     <div className="space-y-6">
       <MetricRangeSelect value={selection} onChange={setSelection} />
-      {shown.map((id) => (nodes[id] ? <div key={id}>{nodes[id]}</div> : null))}
+      {/* Metric cards stay full width above the split; the list cards share the 2/3 column. */}
+      {shown.filter((id) => id === "summary").map((id) => (nodes[id] ? <div key={id}>{nodes[id]}</div> : null))}
+      <ListDetailLayout
+        entity="goal"
+        newLabel="Add Goal"
+        list={<div className="space-y-6">{shown.filter((id) => id !== "summary").map((id) => (nodes[id] ? <div key={id}>{nodes[id]}</div> : null))}</div>}
+        pane={(api) => (
+          <GoalFormPanel
+            embedded
+            mode={api.isNew ? "create" : "edit"}
+            id={api.selectedId ?? undefined}
+            onSaved={() => { reload(); api.afterSaved(); }}
+            onCancel={api.clear}
+            onDeleted={() => { reload(); api.afterDeleted(); }}
+          />
+        )}
+      />
 
       <DetailSheet
         open={detail !== null}
@@ -290,9 +312,7 @@ export default function GoalsPage() {
         error={{ title: "Couldn't load goals", message: "We couldn't load your goals. Please try again." }}
         header={{
           actions: (
-            <Button className={PHONE_PRIMARY_CLASS} aria-label="Add Goal" render={<Link href="/goals/new" />}>
-              <Plus className="h-4 w-4 mr-1" /> Add Goal
-            </Button>
+            <ListDetailNewButton href="/goals/new" label="Add Goal" />
           ),
         }}
         deleteFlow={{

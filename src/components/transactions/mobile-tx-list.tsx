@@ -34,6 +34,8 @@ interface MobileTxListProps {
   emptyState?: React.ReactNode;
   /** Set while bulk-select mode is on. */
   selection?: TxListSelection;
+  /** Split view: the row open in the detail pane gets the selected style. */
+  selectedId?: number | null;
   /** Force one column at every width (the split-view list pane is already narrow). */
   singleColumn?: boolean;
 }
@@ -56,6 +58,7 @@ export function MobileTxList({
   emptyState,
   selection,
   singleColumn = false,
+  selectedId = null,
 }: MobileTxListProps) {
   const today = todayISO();
   const yesterday = new Date();
@@ -96,6 +99,7 @@ export function MobileTxList({
               showAccountName={showAccountName}
               peer={transferPeers?.get(t.id) ?? null}
               selection={selection}
+              selected={selectedId === t.id}
             />
           ))}
         </SectionCard>
@@ -191,7 +195,9 @@ function TransactionRow({
   showAccountName,
   peer,
   selection,
+  selected = false,
 }: {
+  selected?: boolean;
   transaction: Transaction;
   onOpen: (t: Transaction) => void;
   showAccountName: boolean;
@@ -245,5 +251,5 @@ function TransactionRow({
     );
   }
 
-  return <ListRow title={title} subtitle={subtitle} value={value} leading={tile} onPress={() => onOpen(t)} className={ROW_PRESS} />;
+  return <ListRow title={title} subtitle={subtitle} value={value} leading={tile} selected={selected} onPress={() => onOpen(t)} className={ROW_PRESS} />;
 }

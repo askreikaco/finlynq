@@ -58,8 +58,10 @@ describe("route pages render the shared form components", () => {
     [`${APP}/budgets/templates/new/page.tsx`, "SaveTemplateForm", "../../_components/save-template-form"],
     [`${APP}/budgets/templates/apply/page.tsx`, "ApplyTemplateForm", "../../_components/apply-template-form"],
     [`${APP}/budgets/move-money/page.tsx`, "MoveMoneyForm", "../_components/move-money-form"],
-    [`${APP}/goals/new/page.tsx`, "GoalForm", "../_components/goal-form"],
-    [`${APP}/goals/[id]/edit/page.tsx`, "GoalForm", "../../_components/goal-form"],
+    // Goals: the route renders the shared GoalFormPanel (FormPage + GoalForm), the same one the /goals split pane renders.
+    [`${APP}/goals/new/page.tsx`, "GoalFormPanel", "../_components/goal-form-panel"],
+    [`${APP}/goals/[id]/edit/page.tsx`, "GoalFormPanel", "../../_components/goal-form-panel"],
+    [`${APP}/goals/_components/goal-form-panel.tsx`, "GoalForm", "./goal-form"],
   ];
   for (const [file, component, from] of WIRING) {
     it(`${file} renders <${component}> from ${from}`, () => {
@@ -76,8 +78,7 @@ describe("route pages render the shared form components", () => {
       `${APP}/budgets/templates/new/page.tsx`,
       `${APP}/budgets/templates/apply/page.tsx`,
       `${APP}/budgets/move-money/page.tsx`,
-      `${APP}/goals/new/page.tsx`,
-      `${APP}/goals/[id]/edit/page.tsx`,
+      `${APP}/goals/_components/goal-form-panel.tsx`,
     ]) {
       expect(read(f), f).toMatch(/from "@\/components\/templates"/);
       expect(read(f), f).toMatch(/<FormPage\b/);
@@ -85,7 +86,7 @@ describe("route pages render the shared form components", () => {
   });
 
   it("the goal edit page keeps Delete in the overflow menu and behind a confirm dialog (FormPage delete config)", () => {
-    const src = read(`${APP}/goals/[id]/edit/page.tsx`);
+    const src = read(`${APP}/goals/_components/goal-form-panel.tsx`);
     expect(src).toMatch(/delete=\{\{\s*label: "Delete goal"/);
     expect(read("src/components/templates/form-page.tsx")).toMatch(/destructive: true/);
     expect(read("src/components/templates/form-page.tsx")).toContain("<ConfirmDialog");
