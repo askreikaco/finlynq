@@ -83,7 +83,7 @@ describe("categories (with budgets) at 390", () => {
 
   it("the category list is one inset SectionCard of shared CategoryRows (one layout at every width): no Card per group, no table", () => {
     const src = read(BUDGETS);
-    expect(src).toContain('label="Categories" icon={Tags} tone="indigo"');
+    expect(src).toMatch(/label="Categories"\s+icon=\{Tags\}\s+tone="indigo"/);
     expect(src).toContain("padded={false}");
     expect(src).toContain("<CategoryRow");
     expect(src).not.toContain("<Table");

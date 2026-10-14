@@ -75,7 +75,7 @@ describe("desktop columns: card grids", () => {
 
   it("categories: ONE full-width SectionCard list (single column, rows reflow by container width); metric cards max 3 columns", () => {
     const src = code(`${APP}/categories/_page-content.tsx`);
-    expect(src).toMatch(/label="Categories"[\s\S]*divide-y/);
+    expect(src).toMatch(/label="Categories"[\s\S]*shadow-\[var\(--list-divider\)\]/);
     expect(src).toContain("<MetricGrid metrics={metrics} columns={3} />");
     expect(code(`${APP}/categories/_components/category-row.tsx`)).toContain("@container");
   });
