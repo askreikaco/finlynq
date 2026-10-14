@@ -598,10 +598,20 @@ html {
   [data-column-shell] [data-column-pane="col3"] :is([data-slot="section-grid"], [data-slot="detail-grid"], [data-slot="hub-columns"], .card-row-grid, [data-split-grid]) { grid-template-columns: minmax(0, 1fr); }
 }
 
-/* Split view (ListDetailLayout, wide only): the list column is 2/3 of the page, so a row/card grid inside it drops from
-   3 columns to 2. Grids opt in with the card-row-grid class or the data-split-grid attribute. */
+/* Split view (ListDetailLayout, wide only): the page body (toolbar, cards, charts, lists) is the left 2/3 column, so every
+   grid inside it sizes by THAT column's width (a size container named "split"), not by the viewport. Row/card grids
+   (card-row-grid, data-split-grid) are 2 columns, 1 when the column is narrow; metric grids that would be 4 across at
+   wide (the wide:grid-cols-4 class of metricGridClass / METRIC_GRID_CLASS) are 4 only while the column fits them, else 2. */
 @media (width >= 64rem) {
-  [data-slot="list-detail-list"] :is(.card-row-grid, [data-split-grid]) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  [data-slot="list-detail-main"] { container: split / inline-size; }
+  [data-slot="list-detail-main"] :is(.card-row-grid, [data-split-grid], [data-slot="section-grid"], [data-slot="detail-grid"]) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  [data-slot="list-detail-main"] [class~="wide:grid-cols-4"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@container split (width < 40rem) {
+  [data-slot="list-detail-main"] :is(.card-row-grid, [data-split-grid], [data-slot="section-grid"], [data-slot="detail-grid"]) { grid-template-columns: minmax(0, 1fr); }
+}
+@container split (width >= 52rem) {
+  [data-slot="list-detail-main"] [class~="wide:grid-cols-4"] { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
 /* Sheet close (ui/sheet.tsx): the iOS round glass X, a 44px circle with a 20px glyph below regular (640px). */

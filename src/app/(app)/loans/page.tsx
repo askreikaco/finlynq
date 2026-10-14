@@ -302,16 +302,36 @@ function LoansPageContent() {
         ),
       }}
     >
+      <ListDetailLayout
+          entity="loan"
+          newLabel="Add Loan"
+          pane={(api) => {
+            const open = loans.find((l) => String(l.id) === api.selectedId) ?? null;
+            return (
+              <div className="space-y-3">
+                {open && (
+                  <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => void viewAmortization(open)}>
+                    <Table2 className="mr-1 h-4 w-4" /> View schedule
+                  </Button>
+                )}
+                <LoanFormPanel
+                  embedded
+                  mode={api.isNew ? "create" : "edit"}
+                  id={api.selectedId ?? undefined}
+                  onSaved={() => { load(); api.afterSaved(); }}
+                  onCancel={api.clear}
+                  onDeleted={() => { load(); api.afterDeleted(); }}
+                />
+              </div>
+            );
+          }}
+      >
       <PageToolbar refresh
         range={{ selection, onChange: setSelection }}
         search={{ value: tb.q, onChange: tb.setQ, placeholder: "Search loans" }}
       />
       <MetricGrid metrics={metrics} />
 
-      <ListDetailLayout
-          entity="loan"
-          newLabel="Add Loan"
-          list={
             <div className="space-y-6">
               {loans.length === 0 && (
                 <EmptyState
@@ -424,28 +444,7 @@ function LoansPageContent() {
             </SectionCard>
           )}
             </div>
-          }
-          pane={(api) => {
-            const open = loans.find((l) => String(l.id) === api.selectedId) ?? null;
-            return (
-              <div className="space-y-3">
-                {open && (
-                  <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => void viewAmortization(open)}>
-                    <Table2 className="mr-1 h-4 w-4" /> View schedule
-                  </Button>
-                )}
-                <LoanFormPanel
-                  embedded
-                  mode={api.isNew ? "create" : "edit"}
-                  id={api.selectedId ?? undefined}
-                  onSaved={() => { load(); api.afterSaved(); }}
-                  onCancel={api.clear}
-                  onDeleted={() => { load(); api.afterDeleted(); }}
-                />
-              </div>
-            );
-          }}
-        />
+      </ListDetailLayout>
 
       {detailLoan && (
         <DetailSheet

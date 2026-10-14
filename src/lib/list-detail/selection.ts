@@ -30,14 +30,15 @@ export function withSel(search: string | URLSearchParams, sel: string | number |
 }
 
 /**
- * Pane placement. The top bar (PageHeader) is sticky at `top: var(--sat)` and is `--phone-header-h` (3.75rem) tall,
- * so the pane sticks that far down plus a 1rem margin and never sits under it. Its max height is the viewport minus the
- * same offset minus 1rem bottom margin; the pane scrolls inside itself.
+ * Pane placement. The pane is a column of the ENTIRE PAGE HEIGHT (a sibling of the whole page body, not of one section).
+ * The top bar (PageHeader) is sticky at `top: var(--sat)` and is `--phone-header-h` (3.75rem) tall, so the pane sticks that
+ * far down plus a 1rem margin and never sits under it. Its height is the viewport minus the same offset minus 1rem bottom
+ * margin (a full-height column even when empty); the pane scrolls inside itself.
  */
 export const PANE_TOP_OFFSET = "calc(var(--phone-header-h,3.75rem)+var(--sat,0px)+1rem)";
-export const PANE_MAX_HEIGHT = "calc(100dvh-var(--phone-header-h,3.75rem)-var(--sat,0px)-2rem)";
+export const PANE_HEIGHT = "calc(100dvh-var(--phone-header-h,3.75rem)-var(--sat,0px)-2rem)";
 // Literal class strings (Tailwind only generates classes it can read verbatim from source).
 export const PANE_CLASS =
-  "sticky top-[calc(var(--phone-header-h,3.75rem)+var(--sat,0px)+1rem)] max-h-[calc(100dvh-var(--phone-header-h,3.75rem)-var(--sat,0px)-2rem)] overflow-y-auto";
-/** List 2/3, pane 1/3. */
+  "sticky top-[calc(var(--phone-header-h,3.75rem)+var(--sat,0px)+1rem)] h-[calc(100dvh-var(--phone-header-h,3.75rem)-var(--sat,0px)-2rem)] overflow-y-auto";
+/** Page body 2/3, pane 1/3. */
 export const SPLIT_GRID_CLASS = "grid grid-cols-[minmax(0,2fr)_minmax(0,1fr)] items-start gap-6";

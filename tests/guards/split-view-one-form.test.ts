@@ -99,6 +99,37 @@ describe("split view: shared layout", () => {
     expect(sel).toContain("top-[calc(var(--phone-header-h,3.75rem)+var(--sat,0px)+1rem)]");
   });
 
+  it("the pane is a column of the ENTIRE page: every split page wraps its toolbar and cards inside ListDetailLayout (no list= prop)", () => {
+    const layout = code(read("src/components/mobile/list-detail-layout.tsx"));
+    expect(layout).not.toMatch(/\blist: React\.ReactNode/);
+    expect(layout).toContain('data-slot="list-detail-main"');
+    const pages = [
+      { f: `${APP}/transactions/_components/transactions-workspace.tsx`, first: "<PageToolbar" },
+      { f: `${APP}/accounts/page.tsx`, first: "<PageToolbar" },
+      { f: `${APP}/goals/page.tsx`, first: "<PageToolbar" },
+      { f: `${APP}/loans/page.tsx`, first: "<PageToolbar" },
+      { f: `${APP}/subscriptions/page.tsx`, first: "<MetricGrid" },
+      { f: `${APP}/categories/_page-content.tsx`, first: "{toolbar}" },
+    ];
+    for (const { f, first } of pages) {
+      const src = code(read(f));
+      const open = src.indexOf("<ListDetailLayout");
+      expect(src.slice(open, src.indexOf("pane=", open)), f).not.toMatch(/\blist=\{/);
+      const close = src.indexOf("</ListDetailLayout>");
+      expect(open, f).toBeGreaterThan(-1);
+      expect(close, f).toBeGreaterThan(open);
+      const inner = src.slice(open, close);
+      expect(inner, `${f}: toolbar/cards must be inside the layout`).toContain(first);
+    }
+  });
+
+  it("globals.css sizes the grids inside the split main column by that column (size container 'split'), not the viewport", () => {
+    const css = read("src/app/globals.css");
+    expect(css).toContain('[data-slot="list-detail-main"] { container: split / inline-size; }');
+    expect(css).toContain("@container split (width < 40rem)");
+    expect(css).toContain("@container split (width >= 52rem)");
+  });
+
   it("the old opt-in transactions detail pane and its localStorage toggle are gone", () => {
     expect(fs.existsSync(path.join(ROOT, `${APP}/transactions/_components/transaction-detail-pane.tsx`))).toBe(false);
     expect(fs.existsSync(path.join(ROOT, "src/lib/transactions/split-view.ts"))).toBe(false);

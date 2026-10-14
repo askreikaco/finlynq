@@ -245,16 +245,9 @@ function GoalsBody({ ctx, displayCurrency, tb }: { ctx: GoalCtx; displayCurrency
 
   return (
     <div className="space-y-6">
-      <PageToolbar refresh
-        range={{ selection, onChange: setSelection }}
-        search={{ value: tb.q, onChange: tb.setQ, placeholder: "Search goals" }}
-      />
-      {/* Metric cards stay full width above the split; the list cards share the 2/3 column. */}
-      {shown.filter((id) => id === "summary").map((id) => (nodes[id] ? <div key={id}>{nodes[id]}</div> : null))}
       <ListDetailLayout
         entity="goal"
         newLabel="Add Goal"
-        list={<div className="space-y-6">{shown.filter((id) => id !== "summary").map((id) => (nodes[id] ? <div key={id}>{nodes[id]}</div> : null))}</div>}
         pane={(api) => (
           <GoalFormPanel
             embedded
@@ -265,7 +258,13 @@ function GoalsBody({ ctx, displayCurrency, tb }: { ctx: GoalCtx; displayCurrency
             onDeleted={() => { reload(); api.afterDeleted(); }}
           />
         )}
+      >
+      <PageToolbar refresh
+        range={{ selection, onChange: setSelection }}
+        search={{ value: tb.q, onChange: tb.setQ, placeholder: "Search goals" }}
       />
+      {shown.map((id) => (nodes[id] ? <div key={id}>{nodes[id]}</div> : null))}
+      </ListDetailLayout>
 
       <DetailSheet
         open={detail !== null}

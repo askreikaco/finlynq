@@ -414,6 +414,30 @@ function SubscriptionsPageContent() {
         ),
       }}
     >
+      <ListDetailLayout
+        entity="subscription"
+        newLabel="Add subscription"
+        pane={(api) => {
+          const open = subs.find((x) => String(x.id) === api.selectedId) ?? null;
+          return (
+            <div className="space-y-3">
+              {open && (
+                <div className="flex flex-wrap gap-2" data-slot="subscription-status-actions">
+                  {statusActions(open, () => undefined)}
+                </div>
+              )}
+              <SubscriptionFormPanel
+                embedded
+                mode={api.isNew ? "create" : "edit"}
+                id={api.selectedId ?? undefined}
+                onSaved={() => { loadSubs(); api.afterSaved(); }}
+                onCancel={api.clear}
+                onDeleted={() => { loadSubs(); api.afterDeleted(); }}
+              />
+            </div>
+          );
+        }}
+      >
       <MetricGrid metrics={summaryMetrics} />
 
       {actionError && (
@@ -438,10 +462,6 @@ function SubscriptionsPageContent() {
         />
       </div>
 
-      <ListDetailLayout
-        entity="subscription"
-        newLabel="Add subscription"
-        list={
           <>
               {view === "calendar" ? (
                 <SubscriptionsCalendar
@@ -524,28 +544,7 @@ function SubscriptionsPageContent() {
                 </div>
               )}
           </>
-        }
-        pane={(api) => {
-          const open = subs.find((x) => String(x.id) === api.selectedId) ?? null;
-          return (
-            <div className="space-y-3">
-              {open && (
-                <div className="flex flex-wrap gap-2" data-slot="subscription-status-actions">
-                  {statusActions(open, () => undefined)}
-                </div>
-              )}
-              <SubscriptionFormPanel
-                embedded
-                mode={api.isNew ? "create" : "edit"}
-                id={api.selectedId ?? undefined}
-                onSaved={() => { loadSubs(); api.afterSaved(); }}
-                onCancel={api.clear}
-                onDeleted={() => { loadSubs(); api.afterDeleted(); }}
-              />
-            </div>
-          );
-        }}
-      />
+      </ListDetailLayout>
 
       {openSub && (
         <DetailSheet
