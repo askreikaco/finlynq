@@ -35,9 +35,6 @@ import { LoanFormPanel } from "@/app/(app)/loans/_components/loan-form-panel";
 import NewSubscriptionRoute from "@/app/(app)/subscriptions/new/page";
 import EditSubscriptionRoute from "@/app/(app)/subscriptions/[id]/edit/page";
 import { SubscriptionFormPanel } from "@/app/(app)/subscriptions/_components/subscription-form-panel";
-import NewCategoryRoute from "@/app/(app)/categories/new/page";
-import EditCategoryRoute from "@/app/(app)/categories/[id]/edit/page";
-import { CategoryFormPanel } from "@/app/(app)/categories/_components/category-form-panel";
 import NewAccountRoute from "@/app/(app)/accounts/new/page";
 import EditAccountRoute from "@/app/(app)/accounts/[id]/edit/page";
 import { AccountFormPanel } from "@/app/(app)/accounts/_components/account-form-panel";
@@ -103,13 +100,6 @@ const CASES: { entity: string; surfaces: Surface[] }[] = [
     surfaces: [
       { name: "create", page: <NewSubscriptionRoute />, pane: <SubscriptionFormPanel mode="create" embedded onSaved={noop} onCancel={noop} /> },
       { name: "edit", page: <EditSubscriptionRoute />, pane: <SubscriptionFormPanel mode="edit" id="7" embedded onSaved={noop} onCancel={noop} onDeleted={noop} /> },
-    ],
-  },
-  {
-    entity: "category",
-    surfaces: [
-      { name: "create", page: <NewCategoryRoute />, pane: <CategoryFormPanel mode="create" embedded onSaved={noop} onCancel={noop} /> },
-      { name: "rename", page: <EditCategoryRoute />, pane: <CategoryFormPanel mode="edit" id="7" embedded onSaved={noop} onCancel={noop} onDeleted={noop} /> },
     ],
   },
   {

@@ -566,29 +566,34 @@ function CategoriesOverview() {
     ),
   };
 
+  // ---- TOP BAR: the ONLY place the page's header actions are defined (swap point for the shared toolbar API) --------
+  // claude/toolbar's PageHeader takes: actions (primary yellow), bulkEdit={{ onToggle, active }}, filter={{ href }},
+  // overflow (More, also holds Customize). On merge: replace `trailingCells` with
+  // `bulkEdit: { onToggle: () => setEditMode((v) => !v), active: editMode }` and delete the Edit button below.
+  const topBarProps = {
+    actions: (
+      <Button className={PHONE_PRIMARY_CLASS} aria-label="Add" render={<Link href="/categories?edit=new" />}>
+        <Plus className="mr-1 h-4 w-4" /> Add
+      </Button>
+    ),
+    trailingCells: (
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="size-11 shrink-0 rounded-full"
+        aria-label="Edit"
+        aria-pressed={editMode}
+        onClick={() => setEditMode((v) => !v)}
+      >
+        {editMode ? <Check className="size-4" /> : <Pencil className="size-4" />}
+      </Button>
+    ),
+  };
+
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Categories"
-        actions={
-          <Button className={PHONE_PRIMARY_CLASS} aria-label="Add" render={<Link href="/categories?edit=new" />}>
-            <Plus className="mr-1 h-4 w-4" /> Add
-          </Button>
-        }
-        trailingCells={
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="size-11 shrink-0 rounded-full"
-            aria-label="Edit"
-            aria-pressed={editMode}
-            onClick={() => setEditMode((v) => !v)}
-          >
-            {editMode ? <Check className="size-4" /> : <Pencil className="size-4" />}
-          </Button>
-        }
-      />
+      <PageHeader title="Categories" {...topBarProps} />
       {toolbar}
       {actionError && <p className="text-sm text-destructive">{actionError}</p>}
 

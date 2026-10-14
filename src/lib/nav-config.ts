@@ -657,6 +657,9 @@ export const REDIRECTS: RedirectEntry[] = [
   // The single category + budget form is /categories?edit=new; the category manage page is /categories itself.
   { source: "/budgets/new", destination: "/categories?edit=new", permanent: false },
   { source: "/settings/categorization", destination: "/categories", permanent: false },
+  // One category form: the sheet on /categories (the old create / rename pages are gone).
+  { source: "/categories/new", destination: "/categories?edit=new", permanent: false },
+  { source: "/categories/:id(\\d+)/edit", destination: "/categories?edit=:id", permanent: false },
   // Former redirect pages (C-36). permanent:false keeps the 307 that the deleted page redirect() calls sent.
   { source: "/admin/env", destination: "/admin/system", permanent: false },
   { source: "/settings/holding-accounts", destination: "/settings/investments", permanent: false },

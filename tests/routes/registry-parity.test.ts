@@ -100,16 +100,8 @@ const SNAPSHOT = {
       "href": "/categories?edit=new",
       "icon": "LucideTag"
     },
-    "/categories/new": {
-      "kind": "hidden",
-      "reason": "is the create flow"
-    },
     "/categories/[id]": {
       "kind": "fallback"
-    },
-    "/categories/[id]/edit": {
-      "kind": "hidden",
-      "reason": "is the rename flow"
     },
     "/chat": {
       "kind": "hidden",
@@ -399,8 +391,6 @@ const SNAPSHOT = {
     "/budgets/templates/new": true,
     "/categories": false,
     "/categories/7": false,
-    "/categories/7/edit": true,
-    "/categories/new": true,
     "/chat": false,
     "/connect": false,
     "/dashboard": false,
@@ -505,8 +495,6 @@ const SNAPSHOT = {
     "/budgets/templates/new": "/budgets/templates/new",
     "/categories": "/categories",
     "/categories/7": "/categories/[id]",
-    "/categories/7/edit": "/categories/[id]/edit",
-    "/categories/new": "/categories/new",
     "/chat": "/chat",
     "/connect": "/connect",
     "/dashboard": "/dashboard",

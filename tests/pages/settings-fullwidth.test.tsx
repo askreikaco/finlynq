@@ -85,7 +85,6 @@ describe("form pages: root full width, fields keep a readable column", () => {
     "src/app/(app)/loans/[id]/edit/page.tsx",
     "src/app/(app)/subscriptions/new/page.tsx",
     "src/app/(app)/subscriptions/[id]/edit/page.tsx",
-    "src/app/(app)/categories/_components/category-form.tsx",
     "src/app/(app)/transactions/_components/transaction-edit-form.tsx",
     "src/app/(app)/transactions/_components/transaction-split-form.tsx",
     "src/app/(app)/accounts/[id]/edit/page.tsx",

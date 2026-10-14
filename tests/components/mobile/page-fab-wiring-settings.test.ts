@@ -25,8 +25,6 @@ describe.each(ROUTE_FABS)("FAB route: $route", ({ route, href, label }) => {
 
 describe("create/edit pages are hidden from the FAB", () => {
   it.each([
-    "/categories/new",
-    "/categories/[id]/edit",
     "/settings/rules/new",
     "/settings/rules/[id]/edit",
   ])("%s is a hidden entry", (pattern) => {

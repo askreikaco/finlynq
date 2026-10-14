@@ -42,8 +42,6 @@ const EXPECTED_MULTI: Record<string, { count: number; reason: string }> = {
   "accounts/[id]/edit/page.tsx": { count: 2, reason: "AccountFormPanel: the create branch (FormPage, 1) and the edit view header (page only; the pane renders its own compact header), exclusive" },
   "accounts/[id]/page.tsx": { count: 8, reason: "not-found, loading and main branches (exclusive) + TransactionsWorkspace header (showHeader=false here) + the 4 exclusive branches of the workspace pane's TransactionFormScreen (the pane is off for the locked workspace)" },
   "accounts/page.tsx": { count: 4, reason: "empty-state and list branches (exclusive) + the split pane's AccountFormPanel (create FormPage + edit view header), which render a compact pane header, not the page bar" },
-  "categories/new/page.tsx": { count: 4, reason: "CategoryFormPanel: create and rename FormPage branches (exclusive, mode picks one) + CategoryForm literals (chrome=false: not rendered)" },
-  "categories/[id]/edit/page.tsx": { count: 4, reason: "CategoryFormPanel: create and rename FormPage branches (exclusive) + CategoryForm literals (load-error and form branches, chrome=false: not rendered)" },
   "admin/page.tsx": { count: 3, reason: "loading, error and main branches (exclusive), each a SectionPage call (batch 4)" },
   "admin/(env)/integrations/page.tsx": { count: 2, reason: "loading and ready branches (exclusive), each a SectionPage call (batch 5)" },
   "settings/investments/page.tsx": { count: 3, reason: "loading, error and ready branches (exclusive), each a SectionPage call (batch 4)" },
@@ -157,7 +155,7 @@ function headersIn(src: string): number {
 
 describe("single global PageHeader per (app) page", () => {
   it("scans a meaningful set of pages", () => {
-    expect(pages.length).toBeGreaterThan(60);
+    expect(pages.length).toBeGreaterThan(55);
   });
 
   it("every template file renders exactly the PageHeader count its call sites are credited with", () => {

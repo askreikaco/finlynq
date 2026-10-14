@@ -197,7 +197,7 @@ describe("PageHeader call sites (phone bar)", () => {
     // pages into shared form panels (FormPage or the compact pane header), so those routes have no direct PageHeader.
     // 44 (was 45): batch 6 moved admin/instance onto SectionPage (its header is the template's, no direct PageHeader).
     // 45 (was 48): batch 5 moved whats-new, feedback, admin feedback, announcements and integrations onto SectionPage.
-    expect(sites.length).toBeGreaterThanOrEqual(37);
+    expect(sites.length).toBeGreaterThanOrEqual(35);
     // 18 (was 25): admin env pages, email inbox and /import moved their actions into the SectionPage header
     // (the same single PageHeader, rendered by the template), so they are no longer direct PageHeader call sites.
     // 16 (was 18): feedback's Send action and the lead icons of announcements and admin feedback are now SectionPage props (batch 5).

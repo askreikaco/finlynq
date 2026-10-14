@@ -58,8 +58,6 @@ Pages with PageSkeleton: `/categories/[id]`, `/categories`, `/goals`, `/reports`
 | `/budgets/templates/apply` | `src/app/(app)/budgets/templates/apply/page.tsx` | app | yes (page.tsx:21) | no | no | - |
 | `/budgets/templates/new` | `src/app/(app)/budgets/templates/new/page.tsx` | app | yes (page.tsx:36) | no | yes (page.tsx:45) | - |
 | `/categories/[id]` | `src/app/(app)/categories/[id]/page.tsx` | app | yes (page.tsx:167); backHref + backLabel | yes (page.tsx:76) | yes (page.tsx:144) | - |
-| `/categories/[id]/edit` | `src/app/(app)/categories/[id]/edit/page.tsx` | app | no | no | no | - |
-| `/categories/new` | `src/app/(app)/categories/new/page.tsx` | app | no | no | no | - |
 | `/settings/rules/[id]/edit` | `src/app/(app)/settings/rules/[id]/edit/page.tsx` | app | no | no | no | - |
 | `/settings/rules/new` | `src/app/(app)/settings/rules/new/page.tsx` | app | no | no | no | - |
 | `/categories` | `src/app/(app)/categories/page.tsx` | app | no | via import (categories/_page-content.tsx:58) | via import (categories/_page-content.tsx:139) | ErrorState/PageSkeleton from categories/_page-content.tsx (reachable); no PageHeader in depth-3 imports |
