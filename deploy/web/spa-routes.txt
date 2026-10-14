@@ -1,0 +1,17 @@
+# Routes served by the static SPA (nginx), everything else stays on Next (127.0.0.1:3010).
+# One entry per line. Blank lines and # comments ignored.
+#   /more          PREFIX: /more and everything below it (/more, /more/, /more/x/y)
+#   =/settings     EXACT : only /settings and /settings/ (sub-pages are NOT included)
+# Segment boundary is respected: /more does not match /moreover.
+# Add a route = add a line here, run gen-routes.sh --apply. Remove = delete the line.
+# Denied (gen-routes.sh refuses): /api /.well-known /oauth /web /sw.js /try-demo and /
+
+# wave 0
+/settings/about
+/more
+=/settings
+
+# wave 1 (not live yet)
+#/dashboard
+#/transactions
+#/accounts
