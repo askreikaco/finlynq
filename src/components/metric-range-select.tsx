@@ -27,7 +27,11 @@ export function MetricRangeSelect({
   className?: string;
 }) {
   const options = keys.includes(value.range) ? keys : [value.range, ...keys];
-  const h = touch ? "h-11" : "h-8";
+  // The Select base sets its height through data-[size=default]:h-8 (more specific than a plain h-*), so the toolbar
+  // height is set on the same selectors; otherwise the trigger is shorter than the 44px month switcher beside it.
+  const h = touch
+    ? "h-11 data-[size=default]:h-11 pointer-coarse:data-[size=default]:h-11 dense:pointer-fine:data-[size=default]:h-11"
+    : "h-8";
   const pick = (range: RangeKey) => {
     if (range === "custom") {
       const to = localDateISO();

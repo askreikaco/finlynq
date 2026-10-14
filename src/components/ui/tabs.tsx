@@ -30,7 +30,8 @@ const tabsListVariants = cva(
     variants: {
       variant: {
         default: "bg-muted",
-        segmented: `rounded-full ${CONTROL_SURFACE}`,
+        // Same 44px height as the other toolbar controls (range dropdown, month switcher, search, round buttons).
+        segmented: `rounded-full group-data-horizontal/tabs:h-11 dense:pointer-fine:group-data-horizontal/tabs:h-11 ${CONTROL_SURFACE}`,
         line: "gap-1 bg-transparent",
       },
     },
