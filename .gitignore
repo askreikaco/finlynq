@@ -91,3 +91,4 @@ pf-server.log
 # De-tracked + gitignored so the conflict can't happen; the file is rebuilt
 # fresh from source on every build (CI + deploy).
 /src/app/mcp-guide/tools/tools.generated.ts
+dist-web

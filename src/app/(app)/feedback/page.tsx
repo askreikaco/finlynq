@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
 import { Paperclip, Send, X } from "lucide-react";
 import { FeedbackDialog } from "@/components/feedback-dialog";
 import { FeedbackAttachmentView } from "@/components/feedback/attachment-view";
-import { validateFeedbackAttachment } from "@/lib/feedback/attachment";
+import { validateFeedbackAttachment } from "@/lib/feedback/attachment-policy";
 import type {
   FeedbackMessage,
   FeedbackThread,

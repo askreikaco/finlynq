@@ -141,7 +141,13 @@ export function useSessionUserId(): { userId: string | null; ready: boolean } {
     return known ? { userId: known.userId, ready: true } : { userId: null, ready: false };
   });
   useEffect(() => {
-    if (peekSessionUserId()) return;
+    // The answer may have landed between this component's render and its effect (a render that is committed later,
+    // as under a router transition / Suspense): adopt it, or `ready` would stay false for good.
+    const known = peekSessionUserId();
+    if (known) {
+      setState((prev) => (prev.ready && prev.userId === known.userId ? prev : { userId: known.userId, ready: true }));
+      return;
+    }
     let cancelled = false;
     void loadSessionUserId().then((userId) => {
       if (cancelled) return;
