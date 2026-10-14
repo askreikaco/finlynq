@@ -140,6 +140,7 @@ export default defineConfig({
       { find: /^next\/dynamic$/, replacement: path.join(shims, "next-dynamic.tsx") },
       { find: /^next\/script$/, replacement: path.join(shims, "next-script.tsx") },
       { find: /^next\/font(\/.*)?$/, replacement: path.join(shims, "next-font.ts") },
+      { find: /^next\/web-vitals$/, replacement: path.join(shims, "next-web-vitals.ts") },
       { find: /^next\/headers$/, replacement: path.join(shims, "next-headers.ts") },
       { find: /^@\//, replacement: src + "/" },
     ],
