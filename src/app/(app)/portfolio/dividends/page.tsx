@@ -19,12 +19,10 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Coins, Download, Receipt, SlidersHorizontal, Wallet } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
+import { Coins, Download, Receipt, Wallet } from "lucide-react";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import {
-  HEADER_CELL,
   HEADER_DESKTOP_ONLY,
   Amount,
   DetailSheet,
@@ -34,14 +32,14 @@ import {
   type DetailItem,
   type MetricItem,
 } from "@/components/mobile";
-import { useAppSizeClass } from "@/components/adaptive";
 import { SectionPage } from "@/components/templates/section-page";
 import { ErrorState } from "@/components/error-state";
 import { EmptyState } from "@/components/empty-state";
 import { PageSkeleton } from "@/components/page-skeleton";
-import { ChipGroup, ReportFilterSheet } from "../_components/report-controls";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
-import { MetricRangeSelect } from "@/components/metric-range-select";
+import { PageToolbar } from "@/components/page-toolbar";
+import { useListToolbar } from "@/lib/toolbar/use-list-toolbar";
+import { DIVIDEND_FILTER_KEYS } from "@/lib/toolbar/list-configs";
 import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { cardProps, countByMonth, makeCardResolver, sumByMonth } from "@/lib/metrics/series";
 import { NO_HISTORY_CAPTION } from "@/lib/metrics/delta";
@@ -85,19 +83,17 @@ interface ApiResponse {
 type GroupBy = "quarter" | "year" | "holding";
 
 const CURRENT_YEAR = new Date().getFullYear();
-// Tax-year choices: this year back through ~10 years.
-const TAX_YEARS = Array.from({ length: 11 }, (_, i) => CURRENT_YEAR - i);
 
 export default function DividendsPage() {
   const { displayCurrency } = useDisplayCurrency();
-  const [groupBy, setGroupBy] = useState<GroupBy>("year");
-  const [reporting, setReporting] = useState(false);
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
-  const [taxYear, setTaxYear] = useState<string>("");
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  // One list at every size class (no table). The toolbar layout still follows the size class.
-  const regular = useAppSizeClass() !== "compact";
+  // Filters live in the URL and are set on the filter page; the toolbar's range feeds the metric cards.
+  const tb = useListToolbar({ filterPath: "/filter/dividends", filterKeys: DIVIDEND_FILTER_KEYS });
+  const groupBy: GroupBy = (["year", "quarter", "holding"] as const).find((g) => g === tb.filters.groupBy) ?? "year";
+  const reporting = tb.filters.reporting === "1";
+  const taxYear = tb.filters.taxYear ?? "";
+  // A tax-year selection supersedes any explicit range.
+  const from = taxYear ? "" : (tb.filters.from ?? "");
+  const to = taxYear ? "" : (tb.filters.to ?? "");
   const [openGroup, setOpenGroup] = useState<GroupRow | null>(null);
   // Cards: this month vs last month by default (or the selected range vs the one before), from every dividend row.
   const metricRange = useMetricRange();
@@ -148,13 +144,7 @@ export default function DividendsPage() {
 
   const reportingCcy = data?.reportingCurrency ?? displayCurrency;
   const firstHeader = groupBy === "holding" ? "Holding" : "Period";
-  const hasFilters = Boolean(from || to || taxYear);
-
-  function clearFilters() {
-    setFrom("");
-    setTo("");
-    setTaxYear("");
-  }
+  const hasFilters = Boolean(from || to);
 
   const summaryMetrics = useMemo<MetricItem[]>(() => {
     if (!data) return [];
@@ -205,83 +195,6 @@ export default function DividendsPage() {
       })
     );
 
-  // idp keeps element ids unique: the fields render twice (md+ toolbar and the mobile sheet).
-  const filterFields = (idp: string) => (
-    <>
-      <ChipGroup
-        label="Group by"
-        options={(["year", "quarter", "holding"] as const).map((g) => ({ value: g, label: g[0].toUpperCase() + g.slice(1) }))}
-        value={groupBy}
-        onChange={(v) => setGroupBy(v)}
-      />
-      <ChipGroup
-        label="Show in"
-        options={[
-          { value: "native", label: "Native currency" },
-          { value: "reporting", label: "Reporting currency" },
-        ]}
-        value={reporting ? "reporting" : "native"}
-        onChange={(v) => setReporting(v === "reporting")}
-      />
-      <div className="flex flex-wrap items-end gap-3">
-        <div className="flex flex-col gap-1">
-          <label htmlFor={`${idp}-tax-year`} className="text-xs font-semibold text-muted-foreground">Tax year</label>
-          <select
-            id={`${idp}-tax-year`}
-            value={taxYear}
-            onChange={(e) => {
-              setTaxYear(e.target.value);
-              // A tax-year selection supersedes any explicit range.
-              if (e.target.value) {
-                setFrom("");
-                setTo("");
-              }
-            }}
-            className="h-11 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30 regular:pointer-fine:h-8 regular:pointer-fine:text-sm"
-          >
-            <option value="">All years</option>
-            {TAX_YEARS.map((y) => (
-              <option key={y} value={String(y)}>
-                {y}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor={`${idp}-from`} className="text-xs font-semibold text-muted-foreground">From</label>
-          <Input
-            id={`${idp}-from`}
-            type="date"
-            value={from}
-            onChange={(e) => {
-              setFrom(e.target.value);
-              if (e.target.value) setTaxYear("");
-            }}
-            className="w-[9.5rem]"
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor={`${idp}-to`} className="text-xs font-semibold text-muted-foreground">To</label>
-          <Input
-            id={`${idp}-to`}
-            type="date"
-            value={to}
-            onChange={(e) => {
-              setTo(e.target.value);
-              if (e.target.value) setTaxYear("");
-            }}
-            className="w-[9.5rem]"
-          />
-        </div>
-        {hasFilters && (
-          <Button size="sm" variant="ghost" onClick={clearFilters}>
-            Clear
-          </Button>
-        )}
-      </div>
-    </>
-  );
-
   return (
     <SectionPage
       id="dividends"
@@ -297,17 +210,6 @@ export default function DividendsPage() {
       header={{
         actions: (
           <>
-            {!regular && (
-              <Button
-                variant="outline"
-                size="icon"
-                aria-label="Filters"
-                className={HEADER_CELL}
-                onClick={() => setFiltersOpen(true)}
-              >
-                <SlidersHorizontal className="size-4" />
-              </Button>
-            )}
             <a
               href={csvHref}
               className={`${buttonVariants({ variant: "outline", size: "sm" })} ${HEADER_DESKTOP_ONLY}`}
@@ -317,23 +219,16 @@ export default function DividendsPage() {
           </>
         ),
         overflow: [{ label: "Export CSV", icon: Download, onSelect: () => window.location.assign(csvHref) }],
+        filter: { href: tb.filterHref, activeCount: tb.activeCount },
       }}
     >
 
-      {/* md+ filter toolbar (below md the same fields live in ReportFilterSheet). */}
-      {regular ? (
-        <div className="flex flex-wrap gap-x-8 gap-y-4 rounded-xl border border-border/50 bg-card p-4">
-          {filterFields("toolbar")}
-        </div>
-      ) : (
-        <ReportFilterSheet open={filtersOpen} onOpenChange={setFiltersOpen} title="Filter dividends">
-          {filterFields("sheet")}
-        </ReportFilterSheet>
-      )}
+      <PageToolbar
+        range={{ selection: metricRange.selection, onChange: metricRange.setSelection }}
+      />
 
       {!loading && data && data.totals.rowCount > 0 && (
         <>
-          <MetricRangeSelect value={metricRange.selection} onChange={metricRange.setSelection} />
           <MetricGrid metrics={summaryMetrics} />
         </>
       )}

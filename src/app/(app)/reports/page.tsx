@@ -10,25 +10,24 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { formatCurrency } from "@/lib/currency";
 import { formatCompactNumber } from "@/lib/utils/number";
 import { exportCsv } from "@/lib/csv-export";
 import { CHART_COLORS } from "@/lib/chart-colors";
 import { todayISO } from "@/lib/utils/date";
-import { MetricRangeSelect } from "@/components/metric-range-select";
+import { PageToolbar } from "@/components/page-toolbar";
+import { useListToolbar } from "@/lib/toolbar/use-list-toolbar";
+import { REPORT_FILTER_KEYS } from "@/lib/toolbar/list-configs";
 import { MetricCard } from "@/components/metric-card";
 import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { compareCaption, monthsBetween, seriesWindow, shiftMonth, resolvePeriod } from "@/lib/metrics/period";
 import { cardProps, makeCardResolver, monthEndBalances, resolveRatioCard, sumByMonth } from "@/lib/metrics/series";
-import { getPresetRange } from "@/lib/reports/preset-range";
-import { AccountFilter } from "./_components/account-filter";
-import { serializeAccountIds } from "@/lib/reports/account-filter";
+import { parseAccountIdsParam, serializeAccountIds } from "@/lib/reports/account-filter";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { ErrorState } from "@/components/error-state";
 import { SankeyChart } from "@/components/sankey-chart";
-import { ArrowDownRight, ArrowLeftRight, ArrowUpRight, BarChart3, Calendar, Coins, DollarSign, Download, FileText, GitCompareArrows, Layers, PiggyBank, Scale, Tags, TrendingDown, TrendingUp, Wallet, Workflow } from "lucide-react";
+import { ArrowDownRight, ArrowLeftRight, ArrowUpRight, BarChart3, Coins, DollarSign, Download, FileText, GitCompareArrows, Layers, PiggyBank, Scale, Tags, TrendingDown, TrendingUp, Wallet, Workflow } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -151,15 +150,18 @@ export default function ReportsPage() {
   const currentYear = new Date().getFullYear();
   const { displayCurrency, isLoading: currencyLoading } = useDisplayCurrency();
 
-  // Shared filters
-  const [startDate, setStartDate] = useState(`${currentYear}-01-01`);
-  const [endDate, setEndDate] = useState(todayISO());
-  const [isBusiness, setIsBusiness] = useState(false);
-  const [period, setPeriod] = useState<Period>("monthly");
-  const [groupBy, setGroupBy] = useState<GroupByOption>("category");
-  const [datePreset, setDatePreset] = useState<string>("ytd");
+  // Shared filters. The date range is the toolbar's (default: this month; the end is capped at today); granularity,
+  // group-by, business-only and account scoping live in the URL and are set on the filter page.
+  // Reports default to this year (year to date) unless ?range= says otherwise.
+  const metricRange = useMetricRange(undefined, "this_year");
+  const tb = useListToolbar({ filterPath: "/filter/reports", filterKeys: REPORT_FILTER_KEYS });
+  const startDate = metricRange.period.start;
+  const endDate = metricRange.period.end > todayISO() ? todayISO() : metricRange.period.end;
+  const isBusiness = tb.filters.business === "1";
+  const period: Period = (["daily", "weekly", "monthly", "quarterly"] as const).find((p) => p === tb.filters.period) ?? "monthly";
+  const groupBy: GroupByOption = tb.filters.groupBy === "group" ? "group" : "category";
   // Account scoping — empty = every account (see lib/reports/account-filter.ts).
-  const [accountIds, setAccountIds] = useState<number[]>([]);
+  const accountIds = useMemo(() => parseAccountIdsParam(tb.filters.accountIds) ?? [], [tb.filters.accountIds]);
 
   // Data states
   const [yoyYear1, setYoyYear1] = useState(currentYear - 1);
@@ -180,14 +182,6 @@ export default function ReportsPage() {
 
   // Active tab
   const [activeTab, setActiveTab] = useState("income");
-
-  // Preset handler
-  const handlePreset = useCallback((preset: string) => {
-    setDatePreset(preset);
-    const { start, end } = getPresetRange(preset);
-    setStartDate(start);
-    setEndDate(end);
-  }, []);
 
   // Reads are cache-first when the local read cache is on (Settings > Data > Offline mode); plain fetches otherwise.
   const curr = encodeURIComponent(displayCurrency);
@@ -223,7 +217,6 @@ export default function ReportsPage() {
 
   // Metric cards: the ONE MetricCard design. A monthly income / expense history (a second read of the trends endpoint,
   // same filters) feeds them: the selected metric range (default this month) against the period before it.
-  const metricRange = useMetricRange();
   const metricWin = useMemo(() => seriesWindow(metricRange.period), [metricRange.period]);
   const lastDayOf = (m: string) => `${m}-${String(new Date(Number(m.slice(0, 4)), Number(m.slice(5, 7)), 0).getDate()).padStart(2, "0")}`;
   const monthlyRes = useCacheFirstJson<TrendsData>(
@@ -395,7 +388,6 @@ export default function ReportsPage() {
       <>
       {trendsData && (
         <>
-          <MetricRangeSelect value={metricRange.selection} onChange={metricRange.setSelection} />
           <div className="grid grid-cols-2 gap-4 regular:grid-cols-4">
             {summaryMetrics.map((m) => <MetricItemCard key={m.id ?? m.label} m={m} />)}
           </div>
@@ -423,120 +415,12 @@ export default function ReportsPage() {
       title="Reports"
       subtitle="Analyze income, expenses, cash flow, and trends across any time period"
       width="report"
+      header={{ filter: { href: tb.filterHref, activeCount: tb.activeCount } }}
     >
 
-      {/* ── Filters Bar ── */}
-      <Card className="bg-muted/30 border-dashed">
-        <CardContent className="pt-4 pb-4">
-          <div className="flex items-end gap-3 flex-wrap">
-            {/* Date presets */}
-            <div>
-              <Label className="text-xs text-muted-foreground mb-1 block">Range</Label>
-              <Select value={datePreset} onValueChange={(v) => handlePreset(v ?? "ytd")}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="mtd">Month to Date</SelectItem>
-                  <SelectItem value="qtd">Quarter to Date</SelectItem>
-                  <SelectItem value="ytd">Year to Date</SelectItem>
-                  <SelectItem value="last-month">Last Month</SelectItem>
-                  <SelectItem value="last-quarter">Last Quarter</SelectItem>
-                  <SelectItem value="last-year">Last Year</SelectItem>
-                  <SelectItem value="last-12">Last 12 Months</SelectItem>
-                  <SelectItem value="custom">Custom</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Custom dates */}
-            <div>
-              <Label className="text-xs text-muted-foreground mb-1 block">Start</Label>
-              <Input
-                type="date"
-                value={startDate}
-                onChange={(e) => {
-                  setStartDate(e.target.value);
-                  setDatePreset("custom");
-                }}
-                className="w-36"
-              />
-            </div>
-            <div>
-              <Label className="text-xs text-muted-foreground mb-1 block">End</Label>
-              <Input
-                type="date"
-                value={endDate}
-                onChange={(e) => {
-                  setEndDate(e.target.value);
-                  setDatePreset("custom");
-                }}
-                className="w-36"
-              />
-            </div>
-
-            <Separator orientation="vertical" className="h-8 mx-1" />
-
-            {/* Period granularity */}
-            <div>
-              <Label className="text-xs text-muted-foreground mb-1 block">
-                <Calendar className="inline h-3 w-3 mr-1" />
-                Period
-              </Label>
-              <Select value={period} onValueChange={(v) => setPeriod((v ?? "monthly") as Period)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="daily">Daily</SelectItem>
-                  <SelectItem value="weekly">Weekly</SelectItem>
-                  <SelectItem value="monthly">Monthly</SelectItem>
-                  <SelectItem value="quarterly">Quarterly</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Group by */}
-            <div>
-              <Label className="text-xs text-muted-foreground mb-1 block">
-                <Layers className="inline h-3 w-3 mr-1" />
-                Group By
-              </Label>
-              <Select value={groupBy} onValueChange={(v) => setGroupBy((v ?? "category") as GroupByOption)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="category">Category</SelectItem>
-                  <SelectItem value="group">Category Group</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <Separator orientation="vertical" className="h-8 mx-1" />
-
-            {/* Account scoping — applies to every report on this page. */}
-            <div>
-              <Label className="text-xs text-muted-foreground mb-1 block">
-                <Wallet className="inline h-3 w-3 mr-1" />
-                Accounts
-              </Label>
-              <AccountFilter selected={accountIds} onChange={setAccountIds} />
-            </div>
-
-            <Separator orientation="vertical" className="h-8 mx-1" />
-
-            <Button
-              variant={isBusiness ? "default" : "outline"}
-              size="sm"
-              onClick={() => setIsBusiness(!isBusiness)}
-              className="h-8"
-            >
-              {isBusiness ? "Business Only" : "All Transactions"}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <PageToolbar
+        range={{ selection: metricRange.selection, onChange: metricRange.setSelection }}
+      />
 
       {cardLayout.layout.order
         .filter((id) => !cardLayout.layout.hidden.includes(id))

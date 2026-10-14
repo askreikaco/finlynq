@@ -141,7 +141,7 @@ describe("dashboard one tree: mount", () => {
     const capsule = group.querySelector('[data-slot="header-capsule"]') as HTMLElement;
     expect(capsule.contains(add)).toBe(false);
     expect(capsule.querySelector('[data-slot="overflow-trigger"]')).not.toBeNull();
-    expect(capsule.querySelector('[data-slot="customize-trigger"]')).not.toBeNull();
+    expect(capsule.querySelector('[data-slot="customize-trigger"]')).toBeNull();
     expect(group.firstElementChild).toBe(capsule);
   });
 });

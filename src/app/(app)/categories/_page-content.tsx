@@ -28,7 +28,7 @@ import type { CategoryOverview, OverviewCategory } from "@/lib/reports/category-
 import { buildGroupRows, findRow, pieSlices, subLabel, type OverviewRow } from "@/lib/categories/group-overview";
 import { useAnimations } from "@/hooks/use-animations";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
-import { ArrowRightLeft, ChartPie, Check, ChevronLeft, ChevronRight, Copy, FileDown, ListChecks, PiggyBank, Pencil, Plus, Receipt, Save, Tags, Wallet } from "lucide-react";
+import { ArrowRightLeft, ChartPie, ChevronLeft, ChevronRight, Copy, FileDown, ListChecks, PiggyBank, Plus, Receipt, Save, Tags, Wallet } from "lucide-react";
 import { CategoryBudgetForm, type FormCategory } from "./_components/category-budget-form";
 import { CategoryRow } from "./_components/category-row";
 import {
@@ -575,19 +575,8 @@ function CategoriesOverview() {
             <Plus className="mr-1 h-4 w-4" /> Add
           </Button>
         }
-        trailingCells={
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="size-11 shrink-0 rounded-full"
-            aria-label="Edit"
-            aria-pressed={editMode}
-            onClick={() => setEditMode((v) => !v)}
-          >
-            {editMode ? <Check className="size-4" /> : <Pencil className="size-4" />}
-          </Button>
-        }
+        bulkEdit={{ onToggle: () => setEditMode((v) => !v), active: editMode, label: "Edit list" }}
+        hideMore
       />
       {toolbar}
       {actionError && <p className="text-sm text-destructive">{actionError}</p>}

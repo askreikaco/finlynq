@@ -6,7 +6,7 @@ const root = join(__dirname, "..", "..");
 const read = (p: string) => readFileSync(join(root, p), "utf8");
 
 const css = read("src/app/globals.css");
-const search = read("src/app/(app)/transactions/search/page.tsx");
+const search = read("src/components/filter-sort-page.tsx");
 const newTx = read("src/components/transactions/entry/transaction-entry-screen.tsx");
 const banner = read("src/components/announcement-banner.tsx");
 const toast = read("src/components/inbox/lens-toast.tsx");
@@ -20,8 +20,7 @@ describe("iOS dvh min-height", () => {
     expect(vh).toBeGreaterThan(-1);
     expect(dvh).toBeGreaterThan(vh);
   });
-  it("search loading view uses h-dvh, not h-screen", () => {
-    expect(search).toContain("justify-center h-dvh");
+  it("filter page has no h-screen (min-h-screen carries the dvh fallback)", () => {
     expect(search).not.toMatch(/(^|[\s"'])h-screen/);
   });
 });

@@ -22,7 +22,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { PageToolbar } from "@/components/page-toolbar";
+import { useListToolbar } from "@/lib/toolbar/use-list-toolbar";
+import { SUBSCRIPTION_FILTER_KEYS, SUBSCRIPTION_SORTS } from "@/lib/toolbar/list-configs";
+import { sortRecords } from "@/lib/toolbar/sort";
 import { DetailSheet, ListRow, MetricGrid, SectionCard, ListDetailLayout, useListDetail, type DetailItem } from "@/components/mobile";
 import { SubscriptionFormPanel } from "./_components/subscription-form-panel";
 import { SectionPage } from "@/components/templates/section-page";
@@ -60,7 +63,6 @@ import { SubscriptionsCalendar } from "./_components/subscriptions-calendar";
 import type { Subscription } from "./_components/types";
 import { Bell, BellOff, CalendarClock, CalendarDays, CalendarRange, CheckCircle2, CreditCard, List, Pause, Pencil, Play, Plus, Repeat, RotateCcw, Search, Sparkles, Trash2, XCircle } from "lucide-react";
 
-type SortField = "nextDate" | "name" | "cost";
 type View = "list" | "calendar";
 
 const SUGGESTIONS_PREVIEW = 3;
@@ -135,7 +137,8 @@ function SubscriptionsPageContent() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
 
-  const [sortField, setSortField] = useState<SortField>("nextDate");
+  // Toolbar: search, filter page (status) and sort (next payment, name, monthly cost).
+  const tb = useListToolbar({ filterPath: "/filter/subscriptions", sorts: SUBSCRIPTION_SORTS, filterKeys: SUBSCRIPTION_FILTER_KEYS });
   const [showAllSuggestions, setShowAllSuggestions] = useState(false);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [actionError, setActionError] = useState("");
@@ -191,16 +194,13 @@ function SubscriptionsPageContent() {
 
   const sorted = useMemo(() => {
     const monthlyCost = (s: Subscription) => monthlyEquivalent(Math.abs(subDisplayAmount(s)), s.frequency, s.intervalDays);
-    return [...subs].sort((a, b) => {
-      if (sortField === "cost") return monthlyCost(b) - monthlyCost(a);
-      if (sortField === "nextDate") {
-        const an = effectiveNextDate(a, today) ?? "9999-12-31";
-        const bn = effectiveNextDate(b, today) ?? "9999-12-31";
-        if (an !== bn) return an.localeCompare(bn);
-      }
-      return (a.name ?? "").localeCompare(b.name ?? "");
-    });
-  }, [subs, sortField, today]);
+    const needle = tb.q.trim().toLowerCase();
+    return sortRecords(
+      subs.filter((s) => (!tb.filters.status || s.status === tb.filters.status) && (!needle || (s.name ?? "").toLowerCase().includes(needle))),
+      tb.sort,
+      { date: (s) => effectiveNextDate(s, today) ?? "9999-12-31", name: (s) => s.name, amount: monthlyCost },
+    );
+  }, [subs, tb.q, tb.filters, tb.sort, today]);
 
   const groups: { key: string; title: string; rows: Subscription[] }[] = [
     { key: "active", title: "Active", rows: sorted.filter((s) => s.status === "active") },
@@ -384,6 +384,7 @@ function SubscriptionsPageContent() {
       width="report"
       center
       header={{
+        filter: view === "list" ? { href: tb.filterHref, activeCount: tb.activeCount } : undefined,
         actions: (
           <Button onClick={openAdd}>
             <Plus className="h-4 w-4 mr-1" /> Add subscription
@@ -420,19 +421,10 @@ function SubscriptionsPageContent() {
           </TabsList>
         </Tabs>
         {view === "list" && subs.length > 1 && (
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Sort by</span>
-            <Select value={sortField} onValueChange={(v) => setSortField((v as SortField) ?? "nextDate")}>
-              <SelectTrigger className="w-40">
-                <SelectValue>{(v: unknown) => (v === "name" ? "Name" : v === "cost" ? "Monthly cost" : "Next payment")}</SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="nextDate">Next payment</SelectItem>
-                <SelectItem value="cost">Monthly cost</SelectItem>
-                <SelectItem value="name">Name</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <PageToolbar
+            className="w-auto flex-1 justify-end"
+            search={{ value: tb.q, onChange: tb.setQ, placeholder: "Search subscriptions" }}
+          />
         )}
       </div>
 

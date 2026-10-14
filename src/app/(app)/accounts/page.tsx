@@ -30,7 +30,6 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Plus,
-  Archive,
   FolderCog,
 } from "lucide-react";
 import { HEADER_DESKTOP_ONLY, CustomizeCardsSheet, Amount, ListRow, ListDetailLayout, ListDetailNewButton, useListDetail, metricGridClass, useCardLayout, usePageCustomize } from "@/components/mobile";
@@ -40,7 +39,10 @@ import type { PageCard } from "@/lib/card-layout";
 import { MetricCard } from "@/components/metric-card";
 import { NetWorthHeroCard } from "@/app/(app)/dashboard/_components/net-worth-hero-card";
 import type { SeriesPoint } from "@/lib/dashboard/series-change";
-import { MetricRangeSelect } from "@/components/metric-range-select";
+import { PageToolbar } from "@/components/page-toolbar";
+import { useListToolbar } from "@/lib/toolbar/use-list-toolbar";
+import { ACCOUNT_FILTER_KEYS, ACCOUNT_SORTS } from "@/lib/toolbar/list-configs";
+import { sortRecords } from "@/lib/toolbar/sort";
 import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { cardProps, makeCardResolver, runningTotal } from "@/lib/metrics/series";
 import { localDateISO } from "@/lib/utils/date";
@@ -124,8 +126,9 @@ function AccountsPage() {
   // Split view (regular+): a row selects the account into the edit pane (?sel=<id>); phones keep the link to the account page.
   const detail = useListDetail();
 
-  // Show-archived toggle (persists archived accounts in the list with a badge)
-  const [showArchived, setShowArchived] = useState(false);
+  // Toolbar: search, and the filter page (type, archived) + sort. Archived accounts stay in the list with a badge.
+  const tb = useListToolbar({ filterPath: "/filter/accounts", sorts: ACCOUNT_SORTS, filterKeys: ACCOUNT_FILTER_KEYS });
+  const showArchived = tb.filters.archived === "1";
   // FINLYNQ-148: the Settings → Dropdown Ordering "account" list is the user's
   // configured account sort order. The /accounts list must honour it (it was
   // ignoring the setting and rendering in raw API order). Pinned accounts lead
@@ -173,7 +176,13 @@ function AccountsPage() {
   );
 
   // The toggle hides archived rows from the LIST only.
-  const visible = showArchived ? accounts : accounts.filter((a) => !a.archived);
+  const needle = tb.q.trim().toLowerCase();
+  const visible = accounts.filter(
+    (a) =>
+      (showArchived || !a.archived) &&
+      (!tb.filters.type || a.accountType === tb.filters.type) &&
+      (!needle || `${a.accountName ?? ""} ${a.alias ?? ""} ${a.accountGroup ?? ""}`.toLowerCase().includes(needle)),
+  );
   const assets = visible.filter((a) => a.accountType === "A");
   const liabilities = visible.filter((a) => a.accountType === "L");
   // Totals INCLUDE archived regardless of the toggle — an archived account's
@@ -203,11 +212,17 @@ function AccountsPage() {
       (group) =>
         [
           group,
-          sortAccountOrder(
-            map.get(group) ?? [],
-            (a) => a.accountId,
-            (a, b) => (a.accountName ?? "").localeCompare(b.accountName ?? ""),
-          ),
+          // An explicit ?sort= from the filter page wins; otherwise the configured account order.
+          tb.sortExplicit
+            ? sortRecords(map.get(group) ?? [], tb.sort, {
+                name: (a) => a.accountName,
+                amount: (a) => a.convertedBalance ?? a.balance,
+              })
+            : sortAccountOrder(
+                map.get(group) ?? [],
+                (a) => a.accountId,
+                (a, b) => (a.accountName ?? "").localeCompare(b.accountName ?? ""),
+              ),
         ] as const,
     );
   };
@@ -352,10 +367,8 @@ function AccountsPage() {
       width="report"
       header={{
         className: "flex items-center justify-between",
-        overflow: [
-          { label: "Manage groups", icon: FolderCog, href: "/accounts/groups" },
-          { label: showArchived ? "Hide archived" : "Show archived", icon: Archive, onSelect: () => setShowArchived((v) => !v) },
-        ],
+        overflow: [{ label: "Manage groups", icon: FolderCog, href: "/accounts/groups" }],
+        filter: { href: tb.filterHref, activeCount: tb.activeCount },
         actions: (
           <>
             <Button
@@ -368,16 +381,6 @@ function AccountsPage() {
               <FolderCog className="h-4 w-4 mr-1.5" />
               Manage groups
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className={HEADER_DESKTOP_ONLY}
-              onClick={() => setShowArchived((v) => !v)}
-              title={showArchived ? "Hide archived accounts" : "Show archived accounts"}
-            >
-              <Archive className="h-4 w-4 mr-1.5" />
-              {showArchived ? "Hide archived" : "Show archived"}
-            </Button>
             {createAccountLink}
           </>
         ),
@@ -385,7 +388,10 @@ function AccountsPage() {
     >
       <OnboardingTips page="accounts" />
 
-      <MetricRangeSelect value={metricRange.selection} onChange={metricRange.setSelection} />
+      <PageToolbar
+        range={{ selection: metricRange.selection, onChange: metricRange.setSelection }}
+        search={{ value: tb.q, onChange: tb.setQ, placeholder: "Search accounts" }}
+      />
 
       {(() => {
         const shown = cardLayout.layout.order.filter((id) => !cardLayout.layout.hidden.includes(id));

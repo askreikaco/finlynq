@@ -115,9 +115,9 @@ describe("Edit mode and column alignment", () => {
   it("no row has an edit icon; the topbar Edit toggle makes category rows open the shared form (?edit=<id>)", () => {
     render(<CategoriesPageContent />);
     expect(screen.queryAllByRole("button", { name: /^Edit: / })).toHaveLength(0);
-    expect(document.querySelectorAll("svg.lucide-pencil").length).toBe(1); // only the topbar Edit button
-    const toggle = screen.getByRole("button", { name: "Edit" });
-    expect(toggle.closest('[data-slot="header-capsule"]')).toBeTruthy(); // same group as the customize button
+    expect(document.querySelectorAll("svg.lucide-pencil").length).toBe(0); // no pencil anywhere
+    const toggle = screen.getByRole("button", { name: "Edit list" }); // the shared PageHeader bulkEdit button
+    expect(toggle.closest('[data-slot="header-capsule"]')).toBeTruthy();
     expect(screen.getByRole("link", { name: "Add" }).getAttribute("href")).toBe("/categories?edit=new");
     fireEvent.click(toggle);
     expect(toggle.getAttribute("aria-pressed")).toBe("true");

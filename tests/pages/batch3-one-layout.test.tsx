@@ -143,7 +143,7 @@ describe("Transactions: one layout at every size", () => {
       // The header action; at wide the split pane's empty prompt repeats it as a second New button.
       expect(screen.getAllByRole("button", { name: "Add Transaction" }).length).toBe(size === "wide" ? 2 : 1);
       expect(rows(container).length).toBe(3);
-      expect(screen.getByText("Search and filter").closest("a")!.getAttribute("href")).toContain("/transactions/search?");
+      expect(screen.getByRole("button", { name: "Edit list" })).toBeTruthy();
     });
   }
 
@@ -255,7 +255,7 @@ describe("Investment: one layout at every size", () => {
     expect(screen.getByText("IBKR")).toBeTruthy();
     expect(container.querySelector('[data-slot="holdings-by-account"]')).toBeTruthy();
     expect(rows(container).length).toBe(2);
-    expect(screen.getByTestId("holding-sort-select")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Filter" }).getAttribute("href")).toContain("/filter/holdings");
   });
 
   it("a holding tap opens the sheet; Edit opens the holding editor", async () => {

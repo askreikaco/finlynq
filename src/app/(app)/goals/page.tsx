@@ -15,8 +15,11 @@ import {
   MetricGrid, CustomizeCardsSheet, DetailSheet, ListRow, SectionCard,
   useCardLayout, usePageCustomize, ListDetailLayout, ListDetailNewButton, useListDetail, type MetricItem, type DetailItem,
 } from "@/components/mobile";
+import { PageToolbar } from "@/components/page-toolbar";
+import { useListToolbar, type ListToolbarState } from "@/lib/toolbar/use-list-toolbar";
+import { GOAL_FILTER_KEYS, GOAL_SORTS } from "@/lib/toolbar/list-configs";
+import { sortRecords } from "@/lib/toolbar/sort";
 import { GoalFormPanel } from "./_components/goal-form-panel";
-import { MetricRangeSelect } from "@/components/metric-range-select";
 import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { compareCaption, seriesWindow, type MonthPoint } from "@/lib/metrics/period";
 import { NO_HISTORY_CAPTION, resolveCard } from "@/lib/metrics/delta";
@@ -117,7 +120,7 @@ function goalDetailItems(g: Goal, displayCurrency: string): DetailItem[] {
  * row detail sheet (edit, mark complete / reactivate, delete). Mounted only when goals exist (ListPage renders the
  * empty state otherwise), so the Customize registration lives here.
  */
-function GoalsBody({ ctx, displayCurrency }: { ctx: GoalCtx; displayCurrency: string }) {
+function GoalsBody({ ctx, displayCurrency, tb }: { ctx: GoalCtx; displayCurrency: string; tb: ListToolbarState }) {
   const { records: goals, reload, openDelete } = ctx;
   const cardLayout = useCardLayout("goals", GOAL_CARDS);
   const [customizeOpen, setCustomizeOpen] = useState(false);
@@ -129,6 +132,20 @@ function GoalsBody({ ctx, displayCurrency }: { ctx: GoalCtx; displayCurrency: st
 
   const active = goals.filter((g) => g.status === "active");
   const completed = goals.filter((g) => g.status === "completed");
+  // Toolbar: search, filter page (status, type) and sort apply to the lists only; the cards cover every goal.
+  const needle = tb.q.trim().toLowerCase();
+  const shownGoals = sortRecords(
+    goals.filter(
+      (g) =>
+        (!tb.filters.status || g.status === tb.filters.status) &&
+        (!tb.filters.type || g.type === tb.filters.type) &&
+        (!needle || (g.name ?? "").toLowerCase().includes(needle)),
+    ),
+    tb.sort,
+    { date: (g) => g.deadline, name: (g) => g.name, amount: (g) => g.targetAmountDisplay ?? g.targetAmount },
+  );
+  const activeList = shownGoals.filter((g) => g.status === "active");
+  const completedList = shownGoals.filter((g) => g.status === "completed");
   const detail = goals.find((g) => g.id === detailId) ?? null;
   const totalTarget = active.reduce((s, g) => s + (g.targetAmountDisplay ?? g.targetAmount), 0);
   const totalCurrent = active.reduce((s, g) => s + (g.currentAmountDisplay ?? g.currentAmount), 0);
@@ -164,9 +181,9 @@ function GoalsBody({ ctx, displayCurrency }: { ctx: GoalCtx; displayCurrency: st
 
   const nodes: Record<string, ReactNode> = {
     summary: <MetricGrid metrics={summaryMetrics} />,
-    active: active.length > 0 ? (
+    active: activeList.length > 0 ? (
       <SectionCard label="Active" icon={Target} tone="indigo" padded={false} className={`[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3 ${CARD_ROW_GRID}`}>
-        {active.map((g) => {
+        {activeList.map((g) => {
           const currency = g.currency || displayCurrency;
           return (
             <ListRow
@@ -186,6 +203,8 @@ function GoalsBody({ ctx, displayCurrency }: { ctx: GoalCtx; displayCurrency: st
           );
         })}
       </SectionCard>
+    ) : tb.activeCount > 0 || needle ? (
+      <p className="py-6 text-center text-sm text-muted-foreground">No active goals match.</p>
     ) : (
       <Card>
         <CardContent className="py-10 flex flex-col items-center text-center">
@@ -195,9 +214,9 @@ function GoalsBody({ ctx, displayCurrency }: { ctx: GoalCtx; displayCurrency: st
         </CardContent>
       </Card>
     ),
-    completed: completed.length > 0 ? (
+    completed: completedList.length > 0 ? (
       <SectionCard label="Completed" icon={CheckCircle2} tone="emerald" padded={false} className={`[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3 ${CARD_ROW_GRID}`}>
-        {completed.map((g) => (
+        {completedList.map((g) => (
           <ListRow
             key={g.id}
             title={<span className="truncate line-through text-muted-foreground">{g.name}</span>}
@@ -215,7 +234,10 @@ function GoalsBody({ ctx, displayCurrency }: { ctx: GoalCtx; displayCurrency: st
 
   return (
     <div className="space-y-6">
-      <MetricRangeSelect value={selection} onChange={setSelection} />
+      <PageToolbar
+        range={{ selection, onChange: setSelection }}
+        search={{ value: tb.q, onChange: tb.setQ, placeholder: "Search goals" }}
+      />
       {/* Metric cards stay full width above the split; the list cards share the 2/3 column. */}
       {shown.filter((id) => id === "summary").map((id) => (nodes[id] ? <div key={id}>{nodes[id]}</div> : null))}
       <ListDetailLayout
@@ -289,7 +311,8 @@ function GoalsBody({ ctx, displayCurrency }: { ctx: GoalCtx; displayCurrency: st
 export default function GoalsPage() {
   const { displayCurrency } = useDisplayCurrency();
   // One body for every view: the ListPage has no Cards / List toggle any more (ListRows at every width).
-  const goalsBody = (ctx: GoalCtx) => <GoalsBody ctx={ctx} displayCurrency={displayCurrency} />;
+  const tb = useListToolbar({ filterPath: "/filter/goals", sorts: GOAL_SORTS, filterKeys: GOAL_FILTER_KEYS });
+  const goalsBody = (ctx: GoalCtx) => <GoalsBody ctx={ctx} displayCurrency={displayCurrency} tb={tb} />;
   return (
     // The whole page (header and body) is full width on desktop.
     <div className="w-full">
@@ -311,6 +334,7 @@ export default function GoalsPage() {
         states={{ loading: { chrome: false }, error: { chrome: false } }}
         error={{ title: "Couldn't load goals", message: "We couldn't load your goals. Please try again." }}
         header={{
+          filter: { href: tb.filterHref, activeCount: tb.activeCount },
           actions: (
             <ListDetailNewButton href="/goals/new" label="Add Goal" />
           ),
