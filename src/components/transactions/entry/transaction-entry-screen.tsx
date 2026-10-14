@@ -1198,9 +1198,9 @@ export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; em
       data-form="transaction"
       data-embedded={embedded ? "true" : undefined}
       className={cn(
-        "flex flex-col bg-background text-foreground",
-        // Pane: fills the 1/3 column; the pane (aside) scrolls, so the root just grows.
-        embedded && "relative w-full",
+        "flex flex-col text-foreground",
+        // Pane: fills the 1/3 column on the pane's own card background; the pane (aside) scrolls, so the root just grows.
+        embedded ? "relative w-full" : "bg-background",
         !embedded && "max-regular:fixed max-regular:inset-x-0 max-regular:top-[var(--sat)] max-regular:bottom-[var(--sab,0px)]",
         // No page gutter on this root: stop the bar bleeding (-mx-4) past the screen edge so it keeps its own 16px side padding.
         !embedded && "max-regular:[&>[data-slot=page-header]]:mx-0",
