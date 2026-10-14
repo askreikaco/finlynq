@@ -42,6 +42,8 @@ export interface InsetGroupProps {
   /** Icon tile before the header (defaults from the title: Account, Explore, Tools, ...). */
   headerIcon?: LucideIcon;
   headerTone?: MetricTone | (string & {});
+  /** "inside" (default): header is the card's first row. "outside": small heading above the card. */
+  headerPlacement?: "inside" | "outside";
   "data-testid"?: string;
   "aria-label"?: string;
 }
@@ -51,21 +53,29 @@ const INSET_SEP: Record<NonNullable<InsetGroupProps["inset"]>, string> = {
   avatar: "4rem",
 };
 
-export function InsetGroup({ children, className, inset = "icon", header, headerIcon, headerTone, ...rest }: InsetGroupProps) {
+export function InsetGroup({ children, className, inset = "icon", header, headerIcon, headerTone, headerPlacement = "inside", ...rest }: InsetGroupProps) {
   const fallback = groupLabelIcon(header);
-  return (
+  const outside = headerPlacement === "outside" && !!header;
+  const card = (
     <div
       data-slot="inset-group"
       className={cn("@container overflow-hidden rounded-3xl bg-card", className)}
       style={{ ["--inset-sep" as string]: INSET_SEP[inset] } as React.CSSProperties}
       {...rest}
     >
-      {header ? (
+      {header && !outside ? (
         <CardLabel as="h2" slot="inset-section-header" icon={headerIcon ?? fallback.icon} tone={headerTone ?? fallback.tone}>
           {header}
         </CardLabel>
       ) : null}
       {children}
+    </div>
+  );
+  if (!outside) return card;
+  return (
+    <div data-slot="inset-group-outside" className="flex flex-col gap-2">
+      <InsetSectionHeader>{header}</InsetSectionHeader>
+      {card}
     </div>
   );
 }
