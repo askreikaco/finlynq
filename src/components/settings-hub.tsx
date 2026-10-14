@@ -12,7 +12,7 @@ import { PageHeader } from "@/components/mobile/page-header";
 const GROUPS: Array<{ title: string; paths: string[] }> = [
   {
     title: "Preferences",
-    paths: ["/settings/general", "/settings/categorization", "/settings/reconciliation", "/settings/investments"],
+    paths: ["/settings/general", "/settings/reconciliation", "/settings/investments"],
   },
   {
     title: "Connections and system",

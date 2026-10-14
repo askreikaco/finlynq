@@ -24,8 +24,6 @@ export interface CategoryRowProps {
   budget: number | null;
   /** Monthly series, oldest first. */
   trend: number[] | null;
-  /** Share of the month total (0..1). */
-  share: number;
   cur: string;
   /** Income: up is good. Spending: up is bad. */
   isIncome: boolean;
@@ -53,70 +51,57 @@ function signed(n: number, cur: string): string {
   return `${n > 0 ? "+" : n < 0 ? "-" : ""}${formatCurrency(Math.abs(n), cur)}`;
 }
 
-export function CategoryRow({ label, dot, amount, prev, budget, trend, share, cur, isIncome, sparkLabels, count, badge }: CategoryRowProps) {
+export function CategoryRow({ label, dot, amount, prev, budget, trend, cur, isIncome, sparkLabels, count, badge }: CategoryRowProps) {
   const delta = monthDelta(amount, prev);
   const progress = budgetProgress(amount, budget);
   // Up is bad for spending, good for income.
   const deltaTone = !delta || delta.diff === 0 ? "text-muted-foreground" : (delta.diff > 0) === isIncome ? "text-pos" : "text-destructive";
   const barTone = !progress ? "" : progress.ratio > 1 ? "bg-destructive" : progress.ratio >= 0.75 ? "bg-warning" : "bg-primary";
   const usedPct = progress ? Math.round(Number.isFinite(progress.ratio) ? progress.ratio * 100 : 999) : 0;
+  // Narrow: line 1 = name | amount, line 2 = chart + mini budget bar | change. Wide (container >= 36rem): one line.
   return (
-    <span data-slot="category-row" className="block w-full min-w-0 space-y-2">
-      <span className="flex min-w-0 items-center justify-between gap-3">
+    <span data-slot="category-row" className="@container block w-full min-w-0 font-sans">
+      <span className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 @xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_7.5rem_6.5rem]">
         <span className="flex min-w-0 items-center gap-2.5">
           <span data-slot="category-dot" className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: dot }} aria-hidden />
-          <span className="min-w-0">
-            <span className="flex min-w-0 items-center gap-2">
-              <span data-slot="category-label" className="truncate text-sm font-medium">{label}</span>
-              {count != null && (
-                <span className="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-muted px-1.5 text-xs font-medium text-muted-foreground">
-                  {count}
-                </span>
-              )}
-              {badge}
-            </span>
-            <span className="block text-xs text-muted-foreground tabular-nums">{Math.round(share * 100)}%</span>
-          </span>
-        </span>
-        <span className="shrink-0 text-right">
-          <span data-slot="category-amount" className="block text-sm font-semibold tabular-nums">{formatCurrency(amount, cur)}</span>
-          {delta && (
-            <span data-slot="category-delta" title="vs last month" className={`block text-xs font-medium tabular-nums ${deltaTone}`}>
-              {signed(delta.diff, cur)}
-              {delta.pct != null && ` (${delta.pct >= 0 ? "+" : ""}${Math.round(delta.pct * 100)}%)`}
+          <span data-slot="category-label" className="truncate text-sm font-medium">{label}</span>
+          {count != null && (
+            <span className="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-muted px-1.5 text-xs font-medium text-muted-foreground">
+              {count}
             </span>
           )}
+          {badge}
         </span>
-      </span>
-      <span className="flex min-w-0 items-center gap-3">
-        <span data-slot="category-chart" className="block h-6 w-20 shrink-0">
-          {trend && trend.length > 1 ? (
-            <Sparkline data={trend} color={dot} labels={sparkLabels} currency={cur} height="100%" className="h-full w-full" />
+        <span data-slot="category-amount" className="text-right text-sm font-semibold tabular-nums @xl:order-4">{formatCurrency(amount, cur)}</span>
+        <span className="flex min-w-0 items-center gap-2 @xl:order-2 @xl:gap-3">
+          <span data-slot="category-chart" className="block h-5 w-12 shrink-0 @xl:w-16">
+            {trend && trend.length > 1 ? (
+              <Sparkline data={trend} color={dot} labels={sparkLabels} currency={cur} height="100%" className="h-full w-full" />
+            ) : null}
+          </span>
+          <span data-slot="category-budget" className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+            <span
+              role="progressbar"
+              aria-label="Budget used"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={progress ? Math.min(100, usedPct) : 0}
+              className="block h-1.5 w-[10cqw] min-w-10 max-w-24 @xl:min-w-14 shrink-0 overflow-hidden rounded-full bg-muted"
+            >
+              {progress && <span className={`block h-full rounded-full ${barTone}`} style={{ width: `${Math.min(100, Math.max(0, usedPct))}%` }} />}
+            </span>
+            <span className={`whitespace-nowrap ${progress && progress.left < 0 ? "text-destructive" : ""}`}>
+              {progress ? `${progress.left < 0 ? "Over" : "Left"} ${formatCurrency(Math.abs(progress.left), cur)}` : "No budget"}
+            </span>
+          </span>
+        </span>
+        <span data-slot="category-delta" title="vs last month" className={`whitespace-nowrap text-right text-xs font-medium @xl:order-3 ${deltaTone}`}>
+          {delta ? (
+            <>
+              {signed(delta.diff, cur)}
+              {delta.pct != null && ` (${delta.pct >= 0 ? "+" : ""}${Math.round(delta.pct * 100)}%)`}
+            </>
           ) : null}
-        </span>
-        <span data-slot="category-budget" className="block min-w-0 flex-1">
-          <span
-            role="progressbar"
-            aria-label="Budget used"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={progress ? Math.min(100, usedPct) : 0}
-            className="block h-1.5 overflow-hidden rounded-full bg-muted"
-          >
-            {progress && <span className={`block h-full rounded-full ${barTone}`} style={{ width: `${Math.min(100, Math.max(0, usedPct))}%` }} />}
-          </span>
-          <span className="mt-1 flex justify-between gap-2 text-xs text-muted-foreground tabular-nums">
-            {progress ? (
-              <>
-                <span>{usedPct}%</span>
-                <span className={progress.left < 0 ? "text-destructive" : undefined}>
-                  {progress.left < 0 ? "Over" : "Left"} {formatCurrency(Math.abs(progress.left), cur)}
-                </span>
-              </>
-            ) : (
-              <span>No budget</span>
-            )}
-          </span>
         </span>
       </span>
     </span>

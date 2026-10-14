@@ -71,7 +71,7 @@ vi.mock("recharts", () => {
 
 import CategoriesPageContent from "@/app/(app)/categories/_page-content";
 
-const BudgetsPage = () => <CategoriesPageContent isMerged={false} />;
+const BudgetsPage = () => <CategoriesPageContent />;
 import GoalsPage from "@/app/(app)/goals/page";
 import LoansPage from "@/app/(app)/loans/page";
 

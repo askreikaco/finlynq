@@ -1,13 +1,11 @@
 "use client";
 
 /**
- * Categories hub — spending / income by category with the month's budgets (budgets are merged in here; /budgets
- * redirects to /categories).
+ * Categories hub: spending / income by category with the month's budgets. Everything lives here: the topbar Add
+ * button and each row's Edit open the ONE shared CategoryBudgetForm (?edit=new | ?edit=<id>). /budgets and
+ * /settings/categorization redirect to /categories.
  *
- * When FINLYNQ_CATEGORIES_MERGED is enabled the page has Overview and Manage tabs (Manage = add / edit / delete
- * categories); otherwise it shows only the overview.
- *
- * Overview: metric cards (Total Budget / Total Spent / Remaining, spending only), the share pie and the By category
+ * Overview: metric cards (Total Budget / Total Spent / Remaining, spending only), the share pie and the Categories
  * list. A group header and a category are the SAME row (CategoryRow); a group shows the rollup of its children.
  */
 
@@ -17,8 +15,8 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Cell, Pie, PieChart } from "recharts";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ErrorState } from "@/components/error-state";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { formatCurrency, getMonthLabel } from "@/lib/currency";
@@ -30,14 +28,13 @@ import type { CategoryOverview, OverviewCategory } from "@/lib/reports/category-
 import { buildGroupRows, findRow, pieSlices, subLabel, type OverviewRow } from "@/lib/categories/group-overview";
 import { useAnimations } from "@/hooks/use-animations";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
-import { ArrowRightLeft, ChevronLeft, ChevronRight, Copy, FileDown, PiggyBank, Pencil, Plus, Receipt, Save, Trash2, Wallet } from "lucide-react";
-import { CategoryManagement } from "./_components/category-management";
+import { ArrowRightLeft, ChevronLeft, ChevronRight, Copy, FileDown, ListChecks, PiggyBank, Pencil, Plus, Receipt, Save, Wallet } from "lucide-react";
+import { CategoryBudgetForm, type FormCategory } from "./_components/category-budget-form";
 import { CategoryRow } from "./_components/category-row";
 import {
-  CustomizeCardsSheet, MetricGrid, OverflowMenu, PageHeader, SectionCard, useCardLayout, usePageCustomize,
+  CustomizeCardsSheet, MetricGrid, OverflowMenu, PageHeader, PHONE_PRIMARY_CLASS, SectionCard, useCardLayout, usePageCustomize,
   type MetricItem, type OverflowAction,
 } from "@/components/mobile";
-import { CARD_ROW_GRID } from "@/components/mobile/section-card";
 import { MetricRangeSelect } from "@/components/metric-range-select";
 import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { compareCaption, seriesWindow, type MonthPoint } from "@/lib/metrics/period";
@@ -68,60 +65,12 @@ function prevOf(trend: number[] | null): number | null {
   return trend && trend.length >= 2 ? trend[trend.length - 2] : null;
 }
 
-interface CategoriesPageProps {
-  isMerged: boolean;
-}
-
-export default function CategoriesPageContent({ isMerged }: CategoriesPageProps) {
-  if (!isMerged) {
-    return (
-      <Suspense fallback={<PageSkeleton variant="list" rows={6} />}>
-        <CategoriesOverview />
-      </Suspense>
-    );
-  }
-
-  // Merged UI: show tabs
+export default function CategoriesPageContent() {
   return (
-    <div className="space-y-6">
-      <PageHeader title="Categories" />
-
-      <Suspense fallback={<PageSkeleton variant="list" rows={6} />}>
-        <MergedHubTabs />
-      </Suspense>
-    </div>
+    <Suspense fallback={<PageSkeleton variant="list" rows={6} />}>
+      <CategoriesOverview />
+    </Suspense>
   );
-}
-
-/**
- * Hub tabs. `?tab=manage` opens the Manage tab, so the create/rename pages
- * (/categories/new, /categories/[id]/edit) can return the user to it.
- */
-function MergedHubTabs() {
-  const searchParams = useSearchParams();
-  const initialTab = searchParams.get("tab") === "manage" ? "manage" : "overview";
-  return (
-    <Tabs defaultValue={initialTab} className="w-full">
-      <TabsList className="grid w-full grid-cols-2">
-        <TabsTrigger value="overview">Overview</TabsTrigger>
-        <TabsTrigger value="manage">Manage</TabsTrigger>
-      </TabsList>
-
-      <TabsContent value="overview" className="space-y-6 mt-6">
-        <Suspense fallback={<PageSkeleton variant="list" rows={6} />}>
-          <CategoriesOverview embedded />
-        </Suspense>
-      </TabsContent>
-
-      <TabsContent value="manage" className="space-y-6 mt-6">
-        <CategoryManagement returnTo="/categories?tab=manage" />
-      </TabsContent>
-    </Tabs>
-  );
-}
-
-interface CategoriesOverviewProps {
-  embedded?: boolean;
 }
 
 /** DOM id of a group's row wrapper (scroll target for pie / legend clicks). */
@@ -150,15 +99,13 @@ function SyncBadge({ mark }: { mark: BudgetSyncMark }) {
   );
 }
 
-function CategoriesOverview({ embedded = false }: CategoriesOverviewProps) {
+function CategoriesOverview() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const animationsEnabled = useAnimations();
   const { displayCurrency, isLoading: currencyLoading } = useDisplayCurrency();
   // Expanded top-level groups (several may be open). Empty = all collapsed.
   const [openKeys, setOpenKeys] = useState<Set<string>>(() => new Set());
-  const [deleteId, setDeleteId] = useState<number | null>(null);
-  const [deleting, setDeleting] = useState(false);
   const [copying, setCopying] = useState(false);
   const [actionError, setActionError] = useState("");
   const currentMonth = localDateISO().slice(0, 7);
@@ -179,6 +126,10 @@ function CategoriesOverview({ embedded = false }: CategoriesOverviewProps) {
     currencyLoading || isIncome ? null : `/api/budgets?month=${month}&currency=${encodeURIComponent(displayCurrency)}`,
     { keepPrevious: true },
   );
+  // Every category (also those with no activity in the window), for the list's completeness and the form.
+  const catsRes = useCacheFirstJson<FormCategory[]>("/api/categories");
+  const catsReload = catsRes.reload;
+  const allCategories = useMemo(() => (Array.isArray(catsRes.data) ? catsRes.data : []), [catsRes.data]);
   const budgetsReload = budgetsRes.reload;
   const serverBudgets = useMemo(() => (Array.isArray(budgetsRes.data) ? budgetsRes.data : []), [budgetsRes.data]);
   const budgetsKnown = !isIncome && Array.isArray(budgetsRes.data);
@@ -200,7 +151,19 @@ function CategoriesOverview({ embedded = false }: CategoriesOverviewProps) {
   const reloadAll = useCallback(() => {
     overviewReload();
     budgetsReload();
-  }, [overviewReload, budgetsReload]);
+    catsReload();
+  }, [overviewReload, budgetsReload, catsReload]);
+
+  // ?edit=new | ?edit=<id> opens the shared category + budget form.
+  const editParam = searchParams.get("edit");
+  const editId = editParam && /^\d+$/.test(editParam) ? Number(editParam) : null;
+  const formOpen = editParam === "new" || editId != null;
+  function setEdit(next: "new" | number | null) {
+    const qs = new URLSearchParams(searchParams.toString());
+    if (next == null) qs.delete("edit");
+    else qs.set("edit", String(next));
+    router.replace(`/categories${qs.toString() ? `?${qs}` : ""}`, { scroll: false });
+  }
 
   function go(next: { month?: string; type?: "E" | "I" }) {
     setOpenKeys(new Set()); // a new type or month starts with every group collapsed
@@ -221,11 +184,24 @@ function CategoriesOverview({ embedded = false }: CategoriesOverviewProps) {
   // Overview categories with the live budgets merged in (and queued-create budgets of categories not in the report).
   const cats: OverviewCategory[] = useMemo(() => {
     if (!data) return [];
-    if (!budgetsKnown) return data.categories.map((c) => (isIncome ? { ...c, budget: null } : c));
     const byCat = new Map(budgets.map((b) => [b.categoryId, b]));
-    const merged = data.categories.map((c) => ({ ...c, budget: byCat.get(c.id)?.amount ?? null }));
+    const merged: OverviewCategory[] = data.categories.map((c) =>
+      isIncome ? { ...c, budget: null } : budgetsKnown ? { ...c, budget: byCat.get(c.id)?.amount ?? null } : c,
+    );
     const seen = new Set(data.categories.map((c) => c.id));
+    // Categories with no activity in the window still belong in the list (so they can be edited / deleted).
+    for (const c of allCategories) {
+      if (seen.has(c.id) || c.type !== type) continue;
+      seen.add(c.id);
+      merged.push({
+        id: c.id, name: c.name, group: c.group ?? "", amount: 0, share: 0, average: null, change: null,
+        budget: !isIncome && budgetsKnown ? (byCat.get(c.id)?.amount ?? null) : null, trend: data.windowMonths.map(() => 0),
+      });
+    }
+    if (isIncome || !budgetsKnown) return merged;
     for (const b of budgets) {
+      if (seen.has(b.categoryId)) continue;
+      seen.add(b.categoryId);
       if (seen.has(b.categoryId)) continue;
       merged.push({
         id: b.categoryId, name: b.categoryName, group: b.categoryGroup ?? "", amount: 0, share: 0,
@@ -233,7 +209,7 @@ function CategoriesOverview({ embedded = false }: CategoriesOverviewProps) {
       });
     }
     return merged;
-  }, [data, budgets, budgetsKnown, isIncome]);
+  }, [data, budgets, budgetsKnown, isIncome, allCategories, type]);
 
   const marks = useMemo(() => new Map(budgets.filter((b) => b.pendingSync).map((b) => [b.categoryId, b])), [budgets]);
 
@@ -291,7 +267,6 @@ function CategoriesOverview({ embedded = false }: CategoriesOverviewProps) {
   // ---- budgets: totals, form links, delete, copy ------------------------------------------------------------------
   const listUrl = `/categories${month !== currentMonth ? `?month=${month}` : ""}`;
   const formQuery = `month=${month}&returnTo=${encodeURIComponent(listUrl)}`;
-  const addHref = `/budgets/new?${formQuery}`;
   const budgeted = cats.filter((c) => c.budget != null);
   const totalBudget = budgeted.reduce((s, c) => s + (c.budget ?? 0), 0);
   const totalSpent = budgeted.reduce((s, c) => s + c.amount, 0);
@@ -329,42 +304,22 @@ function CategoriesOverview({ embedded = false }: CategoriesOverviewProps) {
   function serverRowOf(b: Budget) {
     return { id: b.id, categoryId: b.categoryId, month: b.month, amount: b.amount, currency: b.currency ?? null, updatedAt: b.updatedAt ?? null, categoryName: b.categoryName, categoryGroup: b.categoryGroup };
   }
-  const deletingBudget = budgets.find((b) => b.id === deleteId) ?? null;
 
-  async function handleDelete() {
-    if (deleteId == null) return;
-    const row = budgets.find((b) => b.id === deleteId);
-    setDeleting(true);
+  /** Remove a budget (server or queued on this device). False = failed (the reason is in actionError). */
+  async function clearBudget(b: Budget): Promise<boolean> {
+    // A budget queued on this device and not yet synced: drop the queued create, nothing goes to the server.
+    if (b.pendingSync?.kind === "create") {
+      const dropped = await discardQueuedCreate(b.pendingSync.opId);
+      if (!dropped) setActionError("Being sent now. Try again.");
+      return dropped;
+    }
     try {
-      // A budget queued on this device and not yet synced: drop the queued create, nothing goes to the server.
-      if (row?.pendingSync?.kind === "create") {
-        const dropped = await discardQueuedCreate(row.pendingSync.opId);
-        if (!dropped) {
-          setActionError("Being sent now. Try again.");
-          return;
-        }
-        setActionError("");
-        setDeleteId(null);
-        return;
-      }
-      try {
-        await fetch(`/api/budgets?id=${deleteId}`, { method: "DELETE" });
-      } catch (netErr) {
-        // The baseline is the server row, not the overlay (a queued edit would otherwise look like a server change).
-        const serverRow = serverBudgets.find((b) => b.id === deleteId) ?? row;
-        if (serverRow && isLocalWriteQueueActive() && isNetworkFailure(netErr)) {
-          const queued = await queueOfflineBudgetDelete(serverRowOf(serverRow));
-          if (queued) {
-            setDeleteId(null);
-            return;
-          }
-        }
-        throw netErr;
-      }
-      setDeleteId(null);
-      reloadAll();
-    } finally {
-      setDeleting(false);
+      const res = await fetch(`/api/budgets?id=${b.id}`, { method: "DELETE" });
+      return res.ok;
+    } catch (netErr) {
+      // The baseline is the server row, not the overlay (a queued edit would otherwise look like a server change).
+      const serverRow = serverBudgets.find((x) => x.id === b.id) ?? b;
+      return isLocalWriteQueueActive() && isNetworkFailure(netErr) ? await queueOfflineBudgetDelete(serverRowOf(serverRow)) : false;
     }
   }
 
@@ -406,36 +361,27 @@ function CategoriesOverview({ embedded = false }: CategoriesOverviewProps) {
     { label: copying ? "Copying…" : "Copy last month", icon: Copy, disabled: copying, onSelect: handleCopyFromPrevMonth },
     ...(budgets.length > 0 ? [{ label: "Save template", icon: Save, href: `/budgets/templates/new?${formQuery}` }] : []),
     { label: "Apply template", icon: FileDown, href: `/budgets/templates/apply?${formQuery}` },
+    { label: "Rules", icon: ListChecks, href: "/settings/rules" },
     ...(budgets.length >= 2 ? [{ label: "Move money", icon: ArrowRightLeft, href: `/budgets/move-money?${formQuery}` }] : []),
   ];
 
   // ---- rows ---------------------------------------------------------------------------------------------------------
   const iconBtn = "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
-  /** Set / edit / delete the budget of ONE category (not offered on a group: its budget is the rollup). */
+  /** Edit: opens the shared form for ONE category (not offered on a group: its budget is the rollup). */
   function budgetActions(c: OverviewCategory) {
-    if (isIncome) return null;
-    const b = budgets.find((x) => x.categoryId === c.id);
     const name = subLabel(c.name, c.group);
-    const editHref = `/budgets/new?${formQuery}&categoryId=${c.id}`;
     return (
       <span className="flex shrink-0 items-center pr-2">
-        {b ? (
-          <>
-            <Link href={editHref} className={iconBtn} aria-label={`Edit budget: ${name}`}><Pencil className="h-4 w-4" /></Link>
-            <button type="button" className={iconBtn} aria-label={`Delete budget: ${name}`} onClick={() => setDeleteId(b.id)}>
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </>
-        ) : (
-          <Link href={editHref} className={iconBtn} aria-label={`Set budget: ${name}`}><Plus className="h-4 w-4" /></Link>
-        )}
+        <button type="button" className={iconBtn} aria-label={`Edit: ${name}`} onClick={() => setEdit(c.id)}>
+          <Pencil className="h-4 w-4" />
+        </button>
       </span>
     );
   }
 
   /** The shared row for one OverviewRow (group = rollup of its children) or a single category. */
-  const rowFor = (r: { label: string; amount: number; trend: number[] | null; share: number; budget: number | null; count?: number; badge?: ReactNode; dot: string }) => (
+  const rowFor = (r: { label: string; amount: number; trend: number[] | null; budget: number | null; count?: number; badge?: ReactNode; dot: string }) => (
     <CategoryRow
       label={r.label}
       dot={r.dot}
@@ -443,7 +389,6 @@ function CategoriesOverview({ embedded = false }: CategoriesOverviewProps) {
       prev={prevOf(r.trend)}
       budget={r.budget}
       trend={r.trend}
-      share={r.share}
       cur={cur}
       isIncome={isIncome}
       sparkLabels={sparkLabels}
@@ -454,12 +399,12 @@ function CategoriesOverview({ embedded = false }: CategoriesOverviewProps) {
 
   const categoryRow = (c: OverviewCategory, group: string, dot: string) =>
     rowFor({
-      label: subLabel(c.name, group), amount: c.amount, trend: c.trend, share: c.share, budget: c.budget, dot,
+      label: subLabel(c.name, group), amount: c.amount, trend: c.trend, budget: c.budget, dot,
       badge: marks.get(c.id)?.pendingSync ? <SyncBadge mark={marks.get(c.id)!.pendingSync!} /> : undefined,
     });
 
   const groupRow = (row: OverviewRow) =>
-    rowFor({ label: row.label, amount: row.amount, trend: row.trend, share: row.share, budget: row.budget, count: row.categories.length, dot: colorOf(row.key) });
+    rowFor({ label: row.label, amount: row.amount, trend: row.trend, budget: row.budget, count: row.categories.length, dot: colorOf(row.key) });
 
   const ROW_LINK = "block min-w-0 flex-1 px-4 py-3 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
@@ -488,14 +433,7 @@ function CategoriesOverview({ embedded = false }: CategoriesOverviewProps) {
           </Button>
         </div>
       </div>
-      {!isIncome && (
-        <div className="flex items-center gap-2">
-          <Button variant="outline" aria-label="Add budget" render={<Link href={addHref} />}>
-            <Plus className="mr-1 h-4 w-4" /> Budget
-          </Button>
-          <OverflowMenu items={overflow} />
-        </div>
-      )}
+      {!isIncome && <OverflowMenu items={overflow} />}
     </div>
   );
 
@@ -572,7 +510,7 @@ function CategoriesOverview({ embedded = false }: CategoriesOverviewProps) {
       <SectionCard
         label="Categories"
         padded={false}
-        className={`divide-y divide-border/50 px-1 [&>*]:min-w-0 ${CARD_ROW_GRID}`}
+        className="divide-y divide-border/50 [&>*]:min-w-0"
       >
         {rows.length === 0 ? (
           <p className="px-4 py-6 text-sm text-muted-foreground regular:col-span-full">No {noun}.</p>
@@ -621,7 +559,14 @@ function CategoriesOverview({ embedded = false }: CategoriesOverviewProps) {
 
   return (
     <div className="space-y-6">
-      {!embedded && <PageHeader title="Categories" />}
+      <PageHeader
+        title="Categories"
+        actions={
+          <Button className={PHONE_PRIMARY_CLASS} aria-label="Add" render={<Link href="/categories?edit=new" />}>
+            <Plus className="mr-1 h-4 w-4" /> Add
+          </Button>
+        }
+      />
       {toolbar}
       {actionError && <p className="text-sm text-destructive">{actionError}</p>}
 
@@ -642,15 +587,28 @@ function CategoriesOverview({ embedded = false }: CategoriesOverviewProps) {
         onReset={cardLayout.reset}
       />
 
-      <ConfirmDialog
-        open={deleteId !== null}
-        onOpenChange={(open) => { if (!open) setDeleteId(null); }}
-        title="Delete budget"
-        description={<>Delete the budget for <strong>{deletingBudget?.categoryName ?? "this category"}</strong>?</>}
-        confirmLabel="Delete"
-        busy={deleting}
-        onConfirm={handleDelete}
-      />
+      <Sheet open={formOpen} onOpenChange={(o) => { if (!o) setEdit(null); }}>
+        <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle>{editId != null ? "Edit" : "Add"}</SheetTitle>
+          </SheetHeader>
+          {formOpen && (editParam === "new" || allCategories.some((c) => c.id === editId)) && (
+            <CategoryBudgetForm
+              key={editParam}
+              category={editId != null ? (allCategories.find((c) => c.id === editId) ?? null) : null}
+              categories={allCategories}
+              budgets={budgets}
+              month={month}
+              currency={displayCurrency}
+              defaultType={type}
+              onSaved={(warning) => { setActionError(warning ? `Budget: ${warning}` : ""); reloadAll(); setEdit(null); }}
+              onCancel={() => setEdit(null)}
+              onDeleted={() => { reloadAll(); setEdit(null); }}
+              onClearBudget={async (b) => { const ok = await clearBudget(b); if (!ok) setActionError("Couldn't remove budget"); return ok; }}
+            />
+          )}
+        </SheetContent>
+      </Sheet>
 
       {data.partial && (
         <p className="text-xs text-muted-foreground">

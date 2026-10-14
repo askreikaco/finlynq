@@ -10,13 +10,6 @@ export const ROUTES: RouteDef[] = [
     fullScreen: true,
   },
   {
-    pattern: "/budgets/new",
-    family: "budgets",
-    kind: "form",
-    fab: { kind: "hidden", reason: "is the create flow" },
-    fullScreen: true,
-  },
-  {
     pattern: "/budgets/templates/apply",
     family: "budgets",
     kind: "form",

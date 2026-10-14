@@ -43,7 +43,6 @@ import {
   MessageCircle,
   Server,
   Users,
-  Tag,
   Briefcase,
   Wrench,
   Link2,
@@ -364,16 +363,6 @@ export const NAV_REGISTRY: NavPageEntry[] = [
     parent: "/settings",
   },
   {
-    id: "settings-categorization",
-    path: "/settings/categorization",
-    label: "Categories",
-    icon: Tag,
-    group: "Settings",
-    mode: "prod",
-    surfaces: ["settings", "more"],
-    parent: "/settings",
-  },
-  {
     id: "settings-reconciliation",
     path: "/settings/reconciliation",
     label: "Reconciliation",
@@ -665,6 +654,9 @@ export const REDIRECTS: RedirectEntry[] = [
   { source: "/calendar", destination: "/subscriptions?view=calendar", permanent: false },
   // Budgets merged into Categories (2026-10); the query string (?month=) is kept by the redirect.
   { source: "/budgets", destination: "/categories", permanent: false },
+  // The single category + budget form is /categories?edit=new; the category manage page is /categories itself.
+  { source: "/budgets/new", destination: "/categories?edit=new", permanent: false },
+  { source: "/settings/categorization", destination: "/categories", permanent: false },
   // Former redirect pages (C-36). permanent:false keeps the 307 that the deleted page redirect() calls sent.
   { source: "/admin/env", destination: "/admin/system", permanent: false },
   { source: "/settings/holding-accounts", destination: "/settings/investments", permanent: false },

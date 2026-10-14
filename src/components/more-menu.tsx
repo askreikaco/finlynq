@@ -55,15 +55,10 @@ export function buildMoreGroups(f: MoreFlags): MoreGroup[] {
     "/categories",
     ...(f.familyEnabled ? ["/family"] : []),
     "/import?tab=reconcile",
-    "/settings/categorization",
     "/import",
   ];
 
   for (const path of mainPaths) {
-    // Skip settings/categorization when categories are merged into the hub
-    if (f.categoriesMerged && path === "/settings/categorization") {
-      continue;
-    }
     const entry = entryMap.get(path);
     if (entry && (entry.mode !== "dev" || f.devMode)) {
       const displayLabel = navLabel(entry.path, entry.label, { categoriesMerged: f.categoriesMerged });

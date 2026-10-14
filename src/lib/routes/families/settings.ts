@@ -1,4 +1,4 @@
-import { RefreshCw, Tag } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import type { RouteDef } from "../types";
 
 /** Routes of the settings family. FAB and full-screen facts moved here unchanged from fab-registry / nav.tsx. */
@@ -20,12 +20,6 @@ export const ROUTES: RouteDef[] = [
     family: "settings",
     kind: "detail",
     fab: { kind: "route", label: "New run", icon: RefreshCw, href: "/settings/backfill" },
-  },
-  {
-    pattern: "/settings/categorization",
-    family: "settings",
-    kind: "list",
-    fab: { kind: "route", label: "Add category", icon: Tag, href: "/categories/new" },
   },
   {
     pattern: "/settings/developer",

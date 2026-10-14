@@ -84,7 +84,7 @@ describe("shared CategoryRow", () => {
   });
 
   it("a group row and a category row both show dot, label, amount, change vs last month, chart and budget progress", () => {
-    render(<CategoriesPageContent isMerged={false} />);
+    render(<CategoriesPageContent />);
     const list = document.querySelector('[data-slot="category-list"], [data-slot="section-card-body"] [data-slot="category-group"]')!.closest("section")!;
     // closed group (Housing) + ungrouped (Coffee) = 2 rows; open the group for its 2 children
     expect(within(list).getAllByText("Housing").length).toBeGreaterThan(0);
@@ -113,7 +113,7 @@ describe("shared CategoryRow", () => {
 
 describe("metric cards", () => {
   it("are exactly Total Budget, Total Spent and Remaining; no Age of Money, Available to Budget or rollover anywhere", () => {
-    render(<CategoriesPageContent isMerged={false} />);
+    render(<CategoriesPageContent />);
     const ids = Array.from(document.querySelectorAll('[data-testid^="metric-"]')).map((e) => e.getAttribute("data-testid"));
     expect(ids).toEqual(["metric-total-budget", "metric-total-spent", "metric-remaining"]);
     const text = document.body.textContent ?? "";

@@ -58,7 +58,7 @@ afterEach(() => {
 import CategoriesPageContent from "@/app/(app)/categories/_page-content";
 
 async function renderPage() {
-  render(<CategoriesPageContent isMerged={false} />);
+  render(<CategoriesPageContent />);
   await waitFor(() => expect(header(/^Housing/)).toBeTruthy(), { timeout: 5000 });
 }
 

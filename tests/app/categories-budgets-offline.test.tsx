@@ -58,7 +58,7 @@ vi.mock("@/lib/data/local-write-queue", () => ({
 import { queueOfflineBudgetDelete } from "@/lib/data/local-write-queue";
 import CategoriesPageContent from "@/app/(app)/categories/_page-content";
 
-const BudgetsPage = () => <CategoriesPageContent isMerged={false} />;
+const BudgetsPage = () => <CategoriesPageContent />;
 
 afterEach(() => {
   cleanup();
