@@ -140,7 +140,8 @@ describe("Transactions: one layout at every size", () => {
       const { container } = render(<TransactionsWorkspace />);
       expect(container.querySelector("table")).toBeNull();
       expect(container.querySelector('[data-slot="page-header"] h1')?.textContent?.trim()).toBe("Transactions");
-      expect(screen.getByRole("button", { name: "Add Transaction" })).toBeTruthy();
+      // The header action; from regular up the split pane's empty prompt repeats it as a second New button.
+      expect(screen.getAllByRole("button", { name: "Add Transaction" }).length).toBe(size === "compact" ? 1 : 2);
       expect(rows(container).length).toBe(3);
       expect(screen.getByText("Search and filter").closest("a")!.getAttribute("href")).toContain("/transactions/search?");
     });

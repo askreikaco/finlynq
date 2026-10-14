@@ -152,3 +152,20 @@ describe("ListDetailNewButton", () => {
     expect(H.push).not.toHaveBeenCalled();
   });
 });
+
+describe("ListRow selected", () => {
+  it("marks the open row (style + aria-current + data-selected) and leaves others alone", async () => {
+    const { ListRow } = await import("@/components/mobile/list-row");
+    render(
+      <div>
+        <ListRow title="A" onPress={() => {}} selected />
+        <ListRow title="B" onPress={() => {}} />
+      </div>,
+    );
+    const [a, b] = screen.getAllByRole("button");
+    expect(a.getAttribute("data-selected")).toBe("true");
+    expect(a.getAttribute("aria-current")).toBe("true");
+    expect(a.className).toContain("bg-muted");
+    expect(b.getAttribute("data-selected")).toBeNull();
+  });
+});
