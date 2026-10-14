@@ -25,6 +25,11 @@ const SCAN_ROOTS = [
 // Files where hardcoded form-only defaults are genuinely acceptable
 // Format: { file: "path/to/file.tsx", line: "exact trimmed line", count: 1, reason: "..." }
 const ALLOW_LIST = [
+  // Dev gallery: labelled specimens with fixed sample currencies (dev-mode page, not user data).
+  { file: "src/app/(app)/dev/gallery/page.tsx", line: `{ id: "g1", label: "Net worth", icon: Wallet, value: 125000, currency: "USD", iconTone: "indigo" as const, sub: "+$1,200 vs last month", badgePct: 1.9, sparkData: SPARK, sparkColor: "#6366f1" },`, count: 1, reason: "dev gallery sample specimen (dev-mode page)" },
+  { file: "src/app/(app)/dev/gallery/page.tsx", line: `{ id: "g2", label: "Income", icon: TrendingUp, value: 5200, currency: "USD", iconTone: "emerald" as const, tone: "pos" as const },`, count: 1, reason: "dev gallery sample specimen (dev-mode page)" },
+  { file: "src/app/(app)/dev/gallery/page.tsx", line: `{ id: "g3", label: "Spent", icon: DollarSign, value: 3100, currency: "USD", iconTone: "rose" as const, badgePct: 4.2, invertTone: true },`, count: 1, reason: "dev gallery sample specimen (dev-mode page)" },
+  { file: "src/app/(app)/dev/gallery/page.tsx", line: `<Sparkline data={SPARK} labels={SPARK_LABELS} color="#6366f1" currency="USD" />`, count: 2, reason: "dev gallery sample specimen (dev-mode page)" },
   // OUT OF SCOPE: Mobile, portfolio, chat, and other advanced features
   {
     file: "src/app/(app)/chat/page.tsx",

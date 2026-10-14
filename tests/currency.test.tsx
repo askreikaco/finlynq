@@ -41,6 +41,8 @@ vi.mock("lucide-react", () => ({
   TrendingUp: () => <span>📈</span>,
   ArrowUpRight: () => <span>↗️</span>,
   ArrowDownRight: () => <span>↘️</span>,
+  PieChart: () => <span>🥧</span>,
+  ArrowLeftRight: () => <span>⇄</span>,
 }));
 
 vi.mock("@/hooks/use-animations", () => ({

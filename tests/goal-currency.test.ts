@@ -97,8 +97,10 @@ describe("wiring: new goals never fall through to a CAD default", () => {
 describe("wiring: the goals page shows each goal in its own currency", () => {
   it("per-goal amounts use the goal's currency, never the display currency alone", () => {
     const code = codeOnly(GOALS_PAGE);
-    expect(code).toContain("formatCurrency(g.currentAmount, g.currency || displayCurrency)");
-    expect(code).toContain("formatCurrency(g.targetAmount, g.currency || displayCurrency)");
+    // The row computes the goal's own currency once (`g.currency || displayCurrency`) and formats both amounts with it.
+    expect(code).toContain("const currency = g.currency || displayCurrency");
+    expect(code).toContain("formatCurrency(g.currentAmount, currency)");
+    expect(code).toContain("formatCurrency(g.targetAmount, currency)");
     // The old bug, verbatim: native amounts rendered under the display symbol.
     expect(code).not.toContain("formatCurrency(g.currentAmount, displayCurrency)");
     expect(code).not.toContain("formatCurrency(g.targetAmount, displayCurrency)");
