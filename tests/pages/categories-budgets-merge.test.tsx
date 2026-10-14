@@ -136,15 +136,19 @@ describe("Edit mode and column alignment", () => {
 });
 
 describe("toolbar wiring", () => {
-  it("range + month are ONE PageToolbar row with search; the Filter icon is in the top bar with the Edit list toggle and yellow Add", () => {
+  it("range + month are ONE PageToolbar row with search; More (Filter inside) + Edit list + yellow Add are in the top bar", async () => {
     render(<CategoriesPageContent />);
     const bar = document.querySelector('[data-slot="page-header"]')!;
-    expect(bar.querySelector('[aria-label="Filter"]')).toBeTruthy();
+    // Order: [More][Edit list][yellow Add]; Filter is INSIDE More (bulk edit wins the slot), with Customize cards.
+    expect(bar.querySelector('[aria-label="Filter"]')).toBeNull();
     expect(screen.getByRole("button", { name: /Edit list/i })).toBeTruthy();
+    fireEvent.click(within(bar as HTMLElement).getByRole("button", { name: "More actions" }));
+    const items = (await screen.findAllByRole("menuitem")).map((i) => i.textContent?.trim());
+    expect(items[0]).toBe("Filter");
+    expect(items).toContain("Customize cards");
     expect(screen.getByLabelText("Time range")).toBeTruthy();
     expect(screen.getByTestId("month-label")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Search" })).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "More actions" })).toBeNull(); // no 3-dot menu
     // the page's own range / month row is gone: the old toolbar's month buttons do not exist
     expect(screen.queryByRole("button", { name: "Previous month" })).toBeTruthy(); // PageToolbar's MonthSwitcher
   });

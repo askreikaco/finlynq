@@ -64,6 +64,12 @@ function openRowAction(index: number, action: string) {
   fireEvent.click(document.querySelectorAll<HTMLElement>('[data-slot="list-row"]')[index]);
   fireEvent.click(screen.getByRole("button", { name: action }));
 }
+async function exportItem() {
+  fireEvent.click(screen.getByRole("button", { name: "More actions" }));
+  return (await screen.findByRole("menuitem", { name: /Export CSV/ })) as HTMLElement;
+}
+const isDisabled = (el: HTMLElement) => el.hasAttribute("data-disabled") || el.getAttribute("aria-disabled") === "true";
+
 describe("workspace", () => {
   it("guard: PageHeader element appears before OnboardingTips element in source", () => {
     const srcPath = path.resolve(__dirname, "../../../src/app/(app)/transactions/_components/transactions-workspace.tsx");
@@ -204,17 +210,17 @@ describe("workspace", () => {
     }
   });
 
-  it("export is enabled whenever the list has rows, even under a text search; disabled at zero", () => {
+  it("export (a More menu item) is enabled whenever the list has rows, even under a text search; disabled at zero", async () => {
     const savedSP = H.SP;
     const saved = { ...H.RES };
     try {
       H.SP = new URLSearchParams("search=coffee");
       render(<TransactionsWorkspace />);
-      expect((screen.getByRole("button", { name: /Export CSV/ }) as HTMLButtonElement).disabled).toBe(false);
+      expect(isDisabled(await exportItem())).toBe(false);
       cleanup();
       Object.assign(H.RES, { total: 0, txns: [] });
       render(<TransactionsWorkspace />);
-      expect((screen.getByRole("button", { name: /Export CSV/ }) as HTMLButtonElement).disabled).toBe(true);
+      expect(isDisabled(await exportItem())).toBe(true);
     } finally {
       H.SP = savedSP;
       for (const k of Object.keys(H.RES)) delete (H.RES as any)[k];

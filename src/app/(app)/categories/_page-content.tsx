@@ -580,7 +580,6 @@ function CategoriesOverview() {
         }
         filter={{ href: tb.filterHref, activeCount: tb.activeCount }}
         bulkEdit={{ onToggle: () => setEditMode((v) => !v), active: editMode, label: "Edit list" }}
-        hideMore
       />
       {toolbar}
       {actionError && <p className="text-sm text-destructive">{actionError}</p>}

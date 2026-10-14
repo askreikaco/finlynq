@@ -240,7 +240,6 @@ export function PageHeader({
   overflow,
   filter,
   bulkEdit,
-  hideMore,
   className,
   lead,
   belowTitle,
@@ -261,8 +260,6 @@ export function PageHeader({
   filter?: { href: string | (() => string); activeCount?: number };
   /** Bulk-edit / select-mode toggle for lists (icon button, aria-label `label`, default "Edit list"). */
   bulkEdit?: { onToggle: () => void; active?: boolean; label?: string };
-  /** Render no More button at all (e.g. /categories). Also skips Customize cards. With `hideMore`, `bulkEdit` and `filter` both render (bulk edit, then Filter) since that still keeps the group at 2 buttons. */
-  hideMore?: boolean;
   /** Page layout classes for the bar; the bar's grid layout always wins over conflicting ones. */
   className?: string;
   /**
@@ -300,7 +297,7 @@ export function PageHeader({
   // Set by a page with cards (usePageCustomize): the Customize button joins the More group, right after More.
   const customize = usePageCustomizeRegistration();
   // More menu: Filter (only when bulk edit took its slot), the page's own items, then Customize cards.
-  const moreItems: OverflowAction[] = hideMore ? [] : [
+  const moreItems: OverflowAction[] = [
     ...(bulkEdit && filter
       ? [{ label: "Filter", icon: Filter, href: typeof filter.href === "function" ? filter.href() : filter.href }]
       : []),
@@ -372,8 +369,6 @@ export function PageHeader({
               ) : filter ? (
                 <FilterButton {...filter} variant="outline" />
               ) : null}
-              {/* No More button (hideMore): bulk edit and Filter are then the two secondary buttons. */}
-              {hideMore && bulkEdit && filter ? <FilterButton {...filter} variant="outline" /> : null}
             </div>
           ) : (
             // Only secondary actions (hidden at every width): no capsule, so no empty glass pill.

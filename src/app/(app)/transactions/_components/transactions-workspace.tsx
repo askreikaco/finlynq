@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -639,6 +638,12 @@ export function TransactionsWorkspace({
   // admin users table could reuse it instead of forking a third copy.
 
   // Split allocated total for inline split editor
+  // Chips / clear-all / embedded Select+Export row; with the page header, an otherwise-empty row is not rendered.
+  const hasToolsRow =
+    !showHeader ||
+    !!(filters.id || filters.startDate || filters.endDate || (!locked && filters.accountId) || filters.categoryId || filters.search || filters.portfolioHolding || filters.tag) ||
+    colFilters.length > 0 ||
+    tb.list.activeCount > 0;
   if (loadError) return <ErrorState title="Couldn't load transactions" message="We couldn't load your transactions. Please try again." onRetry={() => { void loadTxns(); }} />;
 
   return (
@@ -667,6 +672,7 @@ export function TransactionsWorkspace({
           { label: "Brokerage deposit", icon: ArrowDownToLine, onSelect: () => router.push("/portfolio/new/deposit") },
           { label: "Brokerage withdrawal", icon: ArrowUpFromLine, onSelect: () => router.push("/portfolio/new/withdrawal") },
           { label: "Investment Transactions", icon: TrendingUp, onSelect: () => router.push("/portfolio/new") },
+          { label: exporting ? "Exporting…" : "Export CSV", icon: Download, onSelect: handleExport, disabled: exporting || total === 0 },
             ]}
             actions={
             <>
@@ -759,8 +765,8 @@ export function TransactionsWorkspace({
       </div>
 
       {/* Sort, bulk select, export and the active-filter chips. The list has no columns to show or hide. */}
-      <Card className="bg-muted/30 border-dashed">
-        <CardContent className="pt-4 space-y-3">
+      {hasToolsRow && (
+        <div className="space-y-3">
           <div className="flex flex-wrap gap-2 items-center">
             {!showHeader && (
             <Button
@@ -779,6 +785,7 @@ export function TransactionsWorkspace({
                 <X className="h-3 w-3" /> Clear all
               </button>
             )}
+            {!showHeader && (
             <Button
               variant="outline"
               size="sm"
@@ -789,6 +796,7 @@ export function TransactionsWorkspace({
               <Download className="h-3.5 w-3.5" />
               {exporting ? "Exporting…" : "Export CSV"}
             </Button>
+            )}
           </div>
           {/* Active column-filter chips (set from the filter page). Each chip drops just its own filter. */}
           {colFilters.length > 0 && (
@@ -882,8 +890,8 @@ export function TransactionsWorkspace({
               </Badge>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      )}
 
       {pendingDeleteCount > 0 && (
         <div data-testid="tx-pending-deletes" className="flex items-center gap-2 text-sm text-muted-foreground">

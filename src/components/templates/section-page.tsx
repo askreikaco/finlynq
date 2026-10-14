@@ -19,7 +19,7 @@ export type SectionPageStack = "6" | "5" | "4";
 /** Page-header passthrough (PageHeader props the section chrome forwards). */
 export type SectionPageHeader = Pick<
   React.ComponentProps<typeof PageHeader>,
-  "actions" | "overflow" | "filter" | "bulkEdit" | "hideMore" | "className" | "belowTitle"
+  "actions" | "overflow" | "filter" | "bulkEdit" | "className" | "belowTitle"
 >;
 
 export interface SectionPageProps {
@@ -125,7 +125,6 @@ export function SectionPage({
         overflow={header?.overflow}
         filter={header?.filter}
         bulkEdit={header?.bulkEdit}
-        hideMore={header?.hideMore}
         className={header?.className}
         belowTitle={header?.belowTitle}
       />

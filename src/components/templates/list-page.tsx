@@ -108,7 +108,6 @@ export interface ListPageProps<T, D = T[], X = unknown> {
     overflow?: OverflowAction[];
     filter?: React.ComponentProps<typeof PageHeader>["filter"];
     bulkEdit?: React.ComponentProps<typeof PageHeader>["bulkEdit"];
-    hideMore?: boolean;
   };
   /** Vertical gap between the root children. Default "6". */
   stack?: "6" | "5" | "4";
@@ -290,7 +289,6 @@ export function ListPage<T, D = T[], X = unknown>({
           overflow={header?.overflow}
           filter={header?.filter}
           bulkEdit={header?.bulkEdit}
-          hideMore={header?.hideMore}
         />
 
         {bodyNode}

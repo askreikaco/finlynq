@@ -349,20 +349,22 @@ describe("TransactionsWorkspace partial-state rendering (canned hook result)", (
     expect(screen.getAllByText("No transactions yet").length).toBeGreaterThan(0);
   });
 
-  it("(b) export is enabled whenever total > 0, even while partial", () => {
+  it("(b) export is enabled whenever total > 0, even while partial", async () => {
     H.SP = new URLSearchParams("");
     H.RES = canned({ isPartial: true, total: 200 });
     render(<TransactionsWorkspace />);
-    const btn = screen.getByRole("button", { name: /Export CSV/ }) as HTMLButtonElement;
-    expect(btn.disabled).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: "More actions" }));
+    const btn = await screen.findByRole("menuitem", { name: /Export CSV/ });
+    expect(btn.hasAttribute("data-disabled") || btn.getAttribute("aria-disabled") === "true").toBe(false);
   });
 
-  it("(b) export is disabled once the list has zero rows", () => {
+  it("(b) export is disabled once the list has zero rows", async () => {
     H.SP = new URLSearchParams("");
     H.RES = canned({ isPartial: false, total: 0, hasMore: false });
     render(<TransactionsWorkspace />);
-    const btn = screen.getByRole("button", { name: /Export CSV/ }) as HTMLButtonElement;
-    expect(btn.disabled).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "More actions" }));
+    const btn = await screen.findByRole("menuitem", { name: /Export CSV/ });
+    expect(btn.hasAttribute("data-disabled") || btn.getAttribute("aria-disabled") === "true").toBe(true);
   });
 
   it("(d) Retry after a later-page error calls loadTxns", () => {
