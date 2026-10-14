@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Activity } from "lucide-react";
 import { MetricCard } from "@/components/metric-card";
+import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import type { HealthData } from "./types";
 import { HealthInfoDialog } from "./health-info-dialog";
 import type { MetricTrend } from "./key-metrics";
@@ -21,16 +22,10 @@ const itemVariants = {
  */
 
 export function HealthScoreCard({ health: healthProp, trend }: { health?: HealthData | null; trend?: MetricTrend } = {}) {
-  const [healthState, setHealthState] = useState<HealthData | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const health = healthProp !== undefined ? healthProp : healthState;
-
-  useEffect(() => {
-    if (healthProp !== undefined) return; // parent supplies the data
-    fetch("/api/health-score")
-      .then((r) => { if (r.ok) return r.json(); })
-      .then((d) => { if (d) setHealthState(d); });
-  }, [healthProp]);
+  // Standalone use: cache-first (painted from the on-device copy, revalidated in the background). Skipped when the parent supplies data.
+  const standalone = useCacheFirstJson<HealthData>(healthProp !== undefined ? null : "/api/health-score");
+  const health = healthProp !== undefined ? healthProp : standalone.data ?? null;
 
   const toneName = health ? (health.score > 70 ? "emerald" : health.score >= 40 ? "amber" : "rose") : "muted";
   const open = () => setDialogOpen(true);

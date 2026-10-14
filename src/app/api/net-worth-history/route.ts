@@ -13,6 +13,7 @@
  * plan/net-worth-over-time.md Part A.
  */
 
+import { withPrivateSwr } from "@/lib/http/private-swr";
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth/require-auth";
 import {
@@ -477,7 +478,7 @@ async function handleGet(request: NextRequest) {
       /* cash staleness check is best-effort */
     }
 
-    return NextResponse.json({
+    return withPrivateSwr(NextResponse.json({
       displayCurrency,
       period,
       accountId,
@@ -491,7 +492,7 @@ async function handleGet(request: NextRequest) {
       // stays in the payload for back-compat with callers that read it.
       basisUsed,
       seriesCurrency,
-    });
+    }));
   } catch (error: unknown) {
     await logApiError("GET", "/api/net-worth-history", error, userId);
     const message =
