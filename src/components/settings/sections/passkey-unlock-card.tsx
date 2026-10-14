@@ -9,6 +9,7 @@
 import { KeyRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { getSessionInfo } from "@/lib/data/session-info";
@@ -110,22 +111,23 @@ export function PasskeyUnlockCard() {
   return (
     <Card data-testid="passkey-unlock-card">
       <CardHeader>
-        <CardTitle icon={KeyRound} tone="violet">Passkey unlock (beta)</CardTitle>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Protect the saved copy on this device with Face ID, Touch ID or Windows Hello. Once it is on, the offline copy can be
-          read only after you use the passkey, and only in this browser tab until you reload. It stays on this device, is never sent to the
-          server, and does not replace your password or unlock your server data.
-        </p>
+        <CardTitle icon={KeyRound} tone="violet">
+          Passkey unlock (beta)
+          <InfoTip
+            label="About passkey unlock"
+            text="Protects the offline copy with Face ID, Touch ID or Windows Hello. It opens only after the passkey, in this tab until reload. Stays on this device; does not replace your password."
+          />
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         {supported === false && (
-          <p className="text-sm text-muted-foreground" data-testid="passkey-unlock-unsupported">
-            Not supported on this device or browser.
+          <p className="text-sm text-muted-foreground" data-keep="status" data-testid="passkey-unlock-unsupported">
+            Not supported here.
           </p>
         )}
         {supported === true && !enabled && (
           <Button size="sm" disabled={busy} onClick={() => void run(() => enablePasskeyUnlock(userId))} data-testid="passkey-unlock-enable">
-            {busy ? "Waiting for passkey…" : "Turn on passkey unlock"}
+            {busy ? "Waiting for passkey…" : "Turn on"}
           </Button>
         )}
         {supported === true && enabled && (
@@ -142,23 +144,23 @@ export function PasskeyUnlockCard() {
               onClick={() => void run(() => unlockWithPasskey(userId))}
               data-testid="passkey-unlock-test"
             >
-              Test passkey unlock
+              Test
             </Button>
             <Button variant="outline" size="sm" disabled={busy} onClick={() => void onDisable()} data-testid="passkey-unlock-disable">
               Turn off
             </Button>
             <Button variant="outline" size="sm" disabled={busy} onClick={() => void onForget()} data-testid="passkey-unlock-forget">
-              Forget passkey and discard offline copies
+              Forget passkey
             </Button>
             {passkey.locked ? (
-              <span className="text-xs text-muted-foreground" data-testid="passkey-unlock-locked">Locked: unlock with passkey</span>
+              <span className="text-xs text-muted-foreground" data-keep="status" data-testid="passkey-unlock-locked">Locked</span>
             ) : (
-              hasPasskeyUnlockedSession(userId) && <span className="text-xs text-muted-foreground">Verified this session.</span>
+              hasPasskeyUnlockedSession(userId) && <span className="text-xs text-muted-foreground">Verified.</span>
             )}
           </div>
         )}
         {message && (
-          <p role="status" className={message.tone === "error" ? "text-xs text-destructive" : "text-xs text-muted-foreground"} data-testid="passkey-unlock-message">
+          <p role="status" data-keep="status" className={message.tone === "error" ? "text-xs text-destructive" : "text-xs text-muted-foreground"} data-testid="passkey-unlock-message">
             {message.text}
           </p>
         )}

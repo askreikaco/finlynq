@@ -48,7 +48,7 @@ afterEach(() => {
 });
 
 describe("BackButton adoption: ReconcileVisibility page", () => {
-  it("renders with back button href=/settings/import and aria-label='Back to Import settings'", async () => {
+  it("renders with back button href=/settings/import and aria-label='Back'", async () => {
     const { useParams } = await import("next/navigation");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.mocked(useParams).mockReturnValue({} as any);
@@ -60,14 +60,13 @@ describe("BackButton adoption: ReconcileVisibility page", () => {
 
     render(<ReconcileVisibilityPage />);
 
-    const backButton = screen.queryByRole("link", { name: "Back to Import settings" });
+    const backButton = screen.queryByRole("link", { name: "Back" });
     expect(backButton).toBeTruthy();
     expect(backButton?.getAttribute("href")).toBe("/settings/import");
     expect(backButton?.getAttribute("data-slot")).toBe("back-button");
 
     // Check page content is present
-    expect(screen.queryByText(/Reconcile dropdown visibility/i)).toBeTruthy();
-    expect(screen.queryByText(/Choose which accounts appear/i)).toBeTruthy();
+    expect(screen.queryByText(/Reconcile picker/i)).toBeTruthy();
   });
 });
 

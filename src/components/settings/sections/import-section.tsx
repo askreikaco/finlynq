@@ -17,12 +17,12 @@ import { useEffect, useState } from "react";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AccordionItem } from "@/components/ui/accordion";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -101,17 +101,15 @@ export function ImportSettingsCard() {
   return (
     <Card id="import-settings" className="scroll-mt-6">
       <CardHeader>
-        <CardTitle icon={Sliders} tone="indigo">Import settings</CardTitle>
-        <CardDescription>CSV mapping confirmation, account visibility</CardDescription>
+        <CardTitle icon={Sliders} tone="indigo">
+          <Sliders className="h-4 w-4" />
+          Import settings
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-          <p className="text-sm text-muted-foreground">
-            To upload a bank statement, use the{" "}
-            <a href="/import" className="underline hover:text-foreground">
-              Import page
-            </a>
-            .
-          </p>
+          <a href="/import" className="text-sm underline hover:text-foreground">
+            Go to Import
+          </a>
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
@@ -124,13 +122,12 @@ export function ImportSettingsCard() {
             </div>
             <div>
               <CardTitle icon={FileCheck} tone="cyan">
-                Confirm field mapping before importing
+                Confirm mapping
+                <InfoTip
+                  label="About confirm mapping"
+                  text="When on, CSV and OFX/QFX uploads show the detected field mapping for review before rows are staged. Per-account choices in the import preview still apply."
+                />
               </CardTitle>
-              <CardDescription>
-                When on, CSV uploads show the auto-detected column mapping and
-                OFX/QFX uploads show a field-mapping preview (Name vs Memo) for
-                your review before any rows are staged.
-              </CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -138,21 +135,14 @@ export function ImportSettingsCard() {
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-sm font-medium">
-                {confirmCsvMapping
-                  ? "Confirmation is ON"
-                  : "Confirmation is OFF"}
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {confirmCsvMapping
-                  ? "Accounts ask you to confirm before staging. Per-account overrides (the “Ask me first / Apply automatically” choice in the import preview) still apply."
-                  : "Accounts import silently using the detected mapping. Pick “Ask me to confirm first” in an account’s import preview to turn confirmation back on for it."}
+                {confirmCsvMapping ? "On" : "Off"}
               </p>
             </div>
             <Switch
               checked={confirmCsvMapping}
               onCheckedChange={() => void toggleConfirmCsvMapping()}
               disabled={confirmCsvLoading}
-              aria-label="Confirm field mapping before importing"
+              aria-label="Confirm mapping"
             />
           </div>
         </CardContent>
@@ -167,14 +157,10 @@ export function ImportSettingsCard() {
               <EyeOff className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle icon={Eye} tone="cyan">Reconcile dropdown visibility</CardTitle>
-              <CardDescription>
-                Choose which accounts appear in the account picker on the{" "}
-                <Link href="/import" className="underline hover:text-foreground">
-                  Import
-                </Link>{" "}
-                page. Hidden accounts stay fully accessible via direct links.
-              </CardDescription>
+              <CardTitle icon={Eye} tone="cyan">
+                Reconcile picker
+                <InfoTip label="About reconcile picker" text="Choose which accounts appear in the Import page account picker. Hidden accounts stay reachable by direct link." />
+              </CardTitle>
             </div>
           </div>
         </CardHeader>
@@ -184,7 +170,7 @@ export function ImportSettingsCard() {
             className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors"
           >
             <EyeOff className="h-4 w-4 text-muted-foreground" />
-            Manage account visibility
+            Manage visibility
             {hiddenAccountCount !== null && hiddenAccountCount > 0 && (
               <span className="ml-1 rounded-full bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">
                 {hiddenAccountCount} hidden
@@ -226,16 +212,10 @@ export function ImportTemplatesItem() {
         <AccordionItem
           value="templates"
           icon={<BookTemplate className="h-4 w-4" />}
-          title="Import Templates"
-          description="Saved CSV column mappings per bank"
+          title="Templates"
+          info="Saved CSV column mappings per bank."
         >
           <div className="space-y-4" id="templates">
-            <p className="text-sm text-muted-foreground">
-              Templates save your CSV column mappings so future uploads from the
-              same bank are automatically recognized. Upload a CSV and click{" "}
-              <span className="font-medium">Save as Template</span> in the
-              preview dialog to create one.
-            </p>
             <TemplateManager
               templates={templates}
               accounts={accountNames}
@@ -346,17 +326,20 @@ export function ImportEmailItem() {
         <AccordionItem
           value="email"
           icon={<Mail className="h-4 w-4" />}
-          title="Import via Email"
-          description="Your import address, retention and email rules"
+          title="Email import"
+          info="Your import address, retention and email rules."
         >
           <div className="space-y-4" id="email">
             <Card>
               <CardHeader>
-                <CardTitle icon={Mail} tone="cyan">Import via Email</CardTitle>
-                <CardDescription>
-                  Forward bank statements and transaction files to your unique
-                  import email address.
-                </CardDescription>
+                <CardTitle icon={Mail} tone="cyan">
+                  <Mail className="h-5 w-5 text-info" />
+                  Address
+                  <InfoTip
+                    label="How email import works"
+                    text="Forward statements or CSVs to this address. CSVs match your saved templates. Transactions in the email body are parsed too (Import, Email tab); add an email rule to auto-record a known sender. Duplicates are skipped. Parsed imports expire after 14 days; raw emails are deleted after your retention window."
+                  />
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {importEmail ? (
@@ -379,7 +362,7 @@ export function ImportEmailItem() {
                       <RefreshCw
                         className={`h-3.5 w-3.5 mr-1.5 ${emailLoading ? "animate-spin" : ""}`}
                       />
-                      Regenerate Address
+                      Regenerate
                     </Button>
                   </>
                 ) : (
@@ -387,45 +370,9 @@ export function ImportEmailItem() {
                     <Mail className="h-4 w-4 mr-2" />
                     {emailLoading
                       ? "Generating..."
-                      : "Generate Import Email Address"}
+                      : "Generate address"}
                   </Button>
                 )}
-
-                <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
-                  <p className="text-sm font-medium">How it works</p>
-                  <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
-                    <li>
-                      Forward your bank statement email (or attach a CSV file) to
-                      the address above.
-                    </li>
-                    <li>
-                      CSV attachments are matched against your saved import
-                      templates automatically.
-                    </li>
-                    <li>
-                      A transaction in the email <span className="font-medium">body</span>{" "}
-                      (a bank &quot;you spent $X&quot; alert) is parsed too and
-                      shows up in the{" "}
-                      <a href="/import?tab=email" className="underline hover:no-underline">
-                        Email tab
-                      </a>{" "}
-                      of Import.
-                    </li>
-                    <li>
-                      Set up an <span className="font-medium">email rule</span>{" "}
-                      below to auto-record body emails from a known sender.
-                    </li>
-                    <li>
-                      Duplicate transactions are flagged and skipped on approve.
-                    </li>
-                    <li>
-                      Pending parsed imports auto-expire after 14 days. The raw
-                      forwarded emails are kept for your{" "}
-                      <span className="font-medium">retention window</span>{" "}
-                      (below), then permanently deleted.
-                    </li>
-                  </ol>
-                </div>
               </CardContent>
             </Card>
 
@@ -433,23 +380,14 @@ export function ImportEmailItem() {
             <Card>
               <CardHeader>
                 <CardTitle icon={Clock} tone="amber">
-                  Imported-email retention
+                  Retention
+                  <InfoTip label="About retention" text="How long raw forwarded emails are kept before permanent deletion. Applies to existing emails at the next cleanup. Recorded transactions are unaffected." />
                 </CardTitle>
-                <CardDescription>
-                  How long Finlynq keeps the raw emails you forward to your
-                  import address before permanently deleting them. The cleanup
-                  sweep applies this to all existing imported emails the next
-                  time it runs.
-                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between gap-4">
                   <div>
-                    <p className="text-sm font-medium">Keep raw emails for</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Parsed transactions you&apos;ve recorded are unaffected —
-                      only the original email content is deleted.
-                    </p>
+                    <p className="text-sm font-medium">Keep emails for</p>
                   </div>
                   <Select
                     value={String(retentionDays)}
@@ -496,69 +434,58 @@ export function ImportMigrateItem() {
         <AccordionItem
           value="migrate"
           icon={<LinkIcon className="h-4 w-4" />}
-          title="Import via another app"
-          description="One-time move of your full ledger"
+          title="Other apps"
+          info="One-time move of your full ledger from another app. For a bank statement use the Import page."
         >
           <div className="space-y-4" id="migrate">
             {provider === null ? (
               <>
-                <p className="text-sm text-muted-foreground">
-                  Migrate your full history from another personal-finance app.
-                  This is a one-time bulk move of your whole ledger — to import a
-                  bank statement instead, use the{" "}
-                  <a href="/import" className="underline hover:text-foreground">
-                    Import page
-                  </a>
-                  . Pick an app to start.
-                </p>
                 <div className="grid gap-3 regular:grid-cols-2">
+                  <div className="relative">
+                  <InfoTip label="About WealthPosition" text="Import a WealthPosition export ZIP, with optional balance reconciliation." className="absolute right-2 top-2" />
                   <button
                     type="button"
                     onClick={() => setProvider("wealthposition")}
-                    className="flex items-start gap-3 rounded-lg border p-4 text-left transition-colors hover:bg-muted/40"
+                    className="flex w-full items-center gap-3 rounded-lg border p-4 text-left transition-colors hover:bg-muted/40"
                   >
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                       <LinkIcon className="h-5 w-5" />
                     </div>
                     <div>
                       <div className="text-sm font-medium">WealthPosition</div>
-                      <div className="mt-0.5 text-xs text-muted-foreground">
-                        Import a WealthPosition export ZIP, with optional balance
-                        reconciliation.
-                      </div>
                     </div>
                   </button>
+                  </div>
+                  <div className="relative">
+                  <InfoTip label="About Money Pro" text="Import a Money Pro Transactions report exported as CSV." className="absolute right-2 top-2" />
                   <button
                     type="button"
                     onClick={() => setProvider("moneypro")}
-                    className="flex items-start gap-3 rounded-lg border p-4 text-left transition-colors hover:bg-muted/40"
+                    className="flex w-full items-center gap-3 rounded-lg border p-4 text-left transition-colors hover:bg-muted/40"
                   >
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-pos/10 text-pos">
                       <FileSpreadsheet className="h-5 w-5" />
                     </div>
                     <div>
                       <div className="text-sm font-medium">Money Pro</div>
-                      <div className="mt-0.5 text-xs text-muted-foreground">
-                        Import a Money Pro Transactions report exported as CSV.
-                      </div>
                     </div>
                   </button>
+                  </div>
+                  <div className="relative">
+                  <InfoTip label="About Generic CSV" text="Any multi-account CSV: date, amount, account, plus optional currency, category and transfers." className="absolute right-2 top-2" />
                   <button
                     type="button"
                     onClick={() => setProvider("generic-csv")}
-                    className="flex items-start gap-3 rounded-lg border p-4 text-left transition-colors hover:bg-muted/40"
+                    className="flex w-full items-center gap-3 rounded-lg border p-4 text-left transition-colors hover:bg-muted/40"
                   >
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-info/10 text-info">
                       <FileSpreadsheet className="h-5 w-5" />
                     </div>
                     <div>
-                      <div className="text-sm font-medium">Generic CSV (full ledger)</div>
-                      <div className="mt-0.5 text-xs text-muted-foreground">
-                        Import any multi-account CSV (date, amount, account, plus
-                        optional currency, category and transfers).
-                      </div>
+                      <div className="text-sm font-medium">Generic CSV</div>
                     </div>
                   </button>
+                  </div>
                 </div>
               </>
             ) : (
@@ -568,7 +495,7 @@ export function ImportMigrateItem() {
                   size="sm"
                   onClick={() => setProvider(null)}
                 >
-                  ← Back to providers
+                  ← Back
                 </Button>
                 {provider === "wealthposition" ? (
                   <ConnectorTab />
@@ -590,8 +517,8 @@ export function ImportStatementsItem() {
         <AccordionItem
           value="statements"
           icon={<Landmark className="h-4 w-4" />}
-          title="Import Investment Statement"
-          description="IBKR XML or multi-account OFX/QFX"
+          title="Investment statement"
+          info="IBKR XML or multi-account OFX/QFX."
         >
           <div id="statements">
             <InvestmentStatementImporter />

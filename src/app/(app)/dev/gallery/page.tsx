@@ -20,6 +20,7 @@ import { PageSkeleton } from "@/components/page-skeleton";
 import { TW } from "@/lib/design/tokens";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -189,19 +190,16 @@ function GalleryContent() {
             <SectionCard>
               <p className="text-sm">No label (padded body only).</p>
             </SectionCard>
-            <SectionCard label="ListRow (divide-y)" padded={false} className="divide-y divide-border/50 px-4">
+            <SectionCard label="ListRow (list-divider)" padded={false} className="px-4 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
               <ListRow title="Checking" value={<Amount value={2500} />} icon={Wallet} href="/accounts" />
               <ListRow title="Savings" subtitle="Primary" value={<Amount value={10000} />} secondary="+1.2%" secondaryTone="pos" icon={PiggyBank} href="/accounts" />
               <ListRow title="Card" value={<Amount value={-420.5} />} secondary="due" secondaryTone="neg" initials="CC" onPress={() => setDetail(true)} />
             </SectionCard>
-            <SectionCard label="CARD_ROW_GRID" padded={false} className={cn("divide-y divide-border/50 px-4", CARD_ROW_GRID)}>
+            <SectionCard label="CARD_ROW_GRID" padded={false} className={cn("px-4 [&>*:not(:last-child)]:shadow-[var(--list-divider)]", CARD_ROW_GRID)}>
               {["A", "B", "C", "D"].map((n) => (
                 <ListRow key={n} title={`Row ${n}`} value={<Amount value={100} />} initials={n} />
               ))}
             </SectionCard>
-            <p className="px-1 text-[11px] text-muted-foreground">
-              Pending (unmerged lab2): CardLabel and --list-divider inset-shadow separators. Rows above use divide-y border/50.
-            </p>
             <Item name="Amount / PillButton">
               <div className="flex flex-wrap items-center gap-3">
                 <Amount value={1234.56} />
@@ -376,6 +374,15 @@ function GalleryContent() {
             </Accordion>
           </Group>
 
+          <Group id="info-tip" title="InfoTip" file="ui/info-tip.tsx">
+            <SectionCard>
+              <div className="flex items-center gap-1 p-4 text-sm font-semibold">
+                Label
+                <InfoTip label="About label" text="Tap, click or focus the icon to read the help text." />
+              </div>
+            </SectionCard>
+          </Group>
+
           <Group id="skeleton" title="Skeleton / Shimmer" file="page-skeleton.tsx · .animate-shimmer">
             <div className="h-6 w-2/3 animate-shimmer rounded-md" />
             <div className="h-16 w-full animate-shimmer rounded-xl" />
@@ -404,7 +411,7 @@ function GalleryContent() {
           <Group id="scale" title="Spacing / Radius / Shadow" file="globals.css --radius-* · --spacing-row* · --shadow-card">
             <Item name="Radius">
               <div className="flex flex-wrap gap-2">
-                {["rounded-sm", "rounded-md", "rounded-lg", "rounded-xl", "rounded-2xl", "rounded-3xl", "rounded-group"].map((r) => (
+                {["rounded-sm", "rounded-md", "rounded-lg", "rounded-xl", "rounded-3xl", "rounded-group"].map((r) => (
                   <div key={r} className={cn("flex size-16 items-center justify-center border border-border bg-muted text-[9px]", r)}>{r.replace("rounded-", "")}</div>
                 ))}
               </div>

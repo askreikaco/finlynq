@@ -54,21 +54,21 @@ describe("settings/import (Reconciliation) and the Import sections on Integratio
   it("Import settings and Rules are cards; Import Templates is the only accordion item", async () => {
     render(<ImportSettingsPage />);
     expect(screen.queryByRole("tablist")).toBeNull();
-    expect(await screen.findByRole("switch", { name: /Confirm field mapping/ })).toBeTruthy();
+    expect(await screen.findByRole("switch", { name: /Confirm mapping/ })).toBeTruthy();
     expect(screen.getByText("tx-rules-body")).toBeTruthy();
     expect(screen.queryByRole("button", { name: /^Import settings/ })).toBeNull();
-    expect(section(/Import Templates/).getAttribute("aria-expanded")).toBe("false");
-    for (const n of [/Import via Email/, /Import via another app/, /Import Investment Statement/]) {
+    expect(section(/Templates/).getAttribute("aria-expanded")).toBe("false");
+    for (const n of [/Email import/, /Other apps/, /Investment statement/]) {
       expect(screen.queryByRole("button", { name: n })).toBeNull();
     }
-    fireEvent.click(section(/Import Templates/));
+    fireEvent.click(section(/Templates/));
     expect(await screen.findByText("templates-body")).toBeTruthy();
   });
 
   it("#templates opens Import Templates", async () => {
     window.history.replaceState({}, "", "/settings/import#templates");
     render(<ImportSettingsPage />);
-    await waitFor(() => expect(section(/Import Templates/).getAttribute("aria-expanded")).toBe("true"));
+    await waitFor(() => expect(section(/Templates/).getAttribute("aria-expanded")).toBe("true"));
     expect(replace).not.toHaveBeenCalled();
   });
 
@@ -87,21 +87,21 @@ describe("settings/import (Reconciliation) and the Import sections on Integratio
     mockPath = "/settings/integrations";
     window.history.replaceState({}, "", "/settings/integrations");
     render(<IntegrationsPage />);
-    for (const n of [/Import via Email/, /Import via another app/, /Import Investment Statement/]) {
+    for (const n of [/Email import/, /Other apps/, /Investment statement/]) {
       expect(section(n).getAttribute("aria-expanded")).toBe("false");
     }
-    fireEvent.click(section(/Import via Email/));
+    fireEvent.click(section(/Email import/));
     expect(await screen.findByText("x@import.test")).toBeTruthy();
-    fireEvent.click(section(/Import Investment Statement/));
+    fireEvent.click(section(/Investment statement/));
     expect(await screen.findByText("statements-body")).toBeTruthy();
-    expect(section(/Import via Email/).getAttribute("aria-expanded")).toBe("false");
+    expect(section(/Email import/).getAttribute("aria-expanded")).toBe("false");
   });
 
   it.each([
-    ["?tab=email", /Import via Email/],
-    ["?tab=migrate", /Import via another app/],
-    ["?tab=statements", /Import Investment Statement/],
-    ["?provider=moneypro", /Import via another app/],
+    ["?tab=email", /Email import/],
+    ["?tab=migrate", /Other apps/],
+    ["?tab=statements", /Investment statement/],
+    ["?provider=moneypro", /Other apps/],
   ])("Integrations deep link %s opens the right section", async (suffix, name) => {
     mockPath = "/settings/integrations";
     window.history.replaceState({}, "", "/settings/integrations" + suffix);
@@ -119,13 +119,13 @@ describe("settings/import (Reconciliation) and the Import sections on Integratio
   it("confirm-mapping uses a switch (no Disable/Enable button) and PUTs the flipped value", async () => {
     render(<ImportSettingsPage />);
     expect(screen.queryByRole("button", { name: /^(Disable|Enable)$/ })).toBeNull();
-    const sw = await screen.findByRole("switch", { name: /Confirm field mapping/ });
-    expect(screen.getByText("Confirmation is ON")).toBeTruthy();
+    const sw = await screen.findByRole("switch", { name: /Confirm mapping/ });
+    expect(screen.getByText("On")).toBeTruthy();
     fireEvent.click(sw);
     await waitFor(() => {
       const put = calls.find((c) => c.url === "/api/settings/confirm-csv-mapping" && c.init?.method === "PUT");
       expect(put && JSON.parse(String(put.init!.body))).toEqual({ confirmCsvMapping: false });
     });
-    expect(await screen.findByText("Confirmation is OFF")).toBeTruthy();
+    expect(await screen.findByText("Off")).toBeTruthy();
   });
 });

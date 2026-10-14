@@ -5,6 +5,7 @@ import { Accordion as AccordionPrimitive } from "@base-ui/react/accordion"
 import { ChevronDownIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { InfoTip } from "@/components/ui/info-tip"
 
 /**
  * Single-open accordion (base-ui). `value` is the open item's value or null
@@ -46,6 +47,7 @@ function AccordionItem({
   icon,
   title,
   description,
+  info,
   children,
   className,
   ...props
@@ -53,6 +55,8 @@ function AccordionItem({
   icon?: React.ReactNode
   title: React.ReactNode
   description?: React.ReactNode
+  /** Help text for an (i) InfoTip beside the chevron. Prefer this over `description` on settings pages. */
+  info?: string
 }) {
   return (
     <AccordionPrimitive.Item
@@ -60,10 +64,13 @@ function AccordionItem({
       className={cn("rounded-xl border bg-card text-card-foreground", className)}
       {...props}
     >
-      <AccordionPrimitive.Header className="m-0 text-base font-normal">
+      <AccordionPrimitive.Header className="relative m-0 text-base font-normal">
         <AccordionPrimitive.Trigger
           data-slot="accordion-trigger"
-          className="group flex min-h-row w-full cursor-pointer items-center gap-3 rounded-xl px-4 py-2 text-left outline-none transition-colors hover:bg-muted/40 focus-visible:ring-3 focus-visible:ring-ring/50"
+          className={cn(
+            "group flex min-h-row w-full cursor-pointer items-center gap-3 rounded-xl px-4 py-2 text-left outline-none transition-colors hover:bg-muted/40 focus-visible:ring-3 focus-visible:ring-ring/50",
+            info && "pr-16"
+          )}
         >
           {icon ? (
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
@@ -83,6 +90,13 @@ function AccordionItem({
             className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[panel-open]:rotate-180"
           />
         </AccordionPrimitive.Trigger>
+        {info ? (
+          <InfoTip
+            label={typeof title === "string" ? `About ${title.toLowerCase()}` : undefined}
+            text={info}
+            className="absolute right-9 top-1/2 -translate-y-1/2"
+          />
+        ) : null}
       </AccordionPrimitive.Header>
       <AccordionPrimitive.Panel
         data-slot="accordion-panel"
