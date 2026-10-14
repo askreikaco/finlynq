@@ -13,7 +13,7 @@ import { useState } from "react";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
 } from "recharts";
-import { BarChart3, Building2, ChevronLeft, ChevronRight, Download, Globe2, Layers, Search } from "lucide-react";
+import { BarChart3, Building2, ChevronLeft, ChevronRight, Download, Globe2, Layers } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DetailSheet, ListRow, SectionCard } from "@/components/mobile";
 import { Button } from "@/components/ui/button";
@@ -104,10 +104,7 @@ export function EtfXrayCard({
       <CardHeader className="pb-2">
         <div className="flex flex-col regular:flex-row regular:items-center justify-between gap-3">
           <div>
-            <div className="flex items-center gap-2">
-              <Search className="h-4 w-4 text-primary" />
-              <CardTitle icon={Layers} tone="violet">ETF X-Ray</CardTitle>
-            </div>
+            <CardTitle icon={Layers} tone="violet">ETF X-Ray</CardTitle>
             <p className="text-xs text-muted-foreground mt-0.5">
               Effective exposure across {etfXray.etfCount} ETF{etfXray.etfCount !== 1 ? "s" : ""} in your portfolio
             </p>

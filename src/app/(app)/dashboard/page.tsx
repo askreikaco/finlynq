@@ -621,7 +621,7 @@ export default function DashboardPage() {
       </motion.div>
 
       {/* One period control for every metric card on the page (?range=&from=&to=; default = month vs last month) */}
-      <motion.div variants={itemVariants} className="flex justify-end -mb-2 wide:-mb-3" data-slot="dashboard-range">
+      <motion.div variants={itemVariants} className="mt-6">
         <PageToolbar range={{ selection, onChange: setSelection }} />
       </motion.div>
 

@@ -19,7 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { MessageCircle, Paperclip, X } from "lucide-react";
+import { Paperclip, X } from "lucide-react";
 import { FeedbackAttachmentView } from "@/components/feedback/attachment-view";
 import { validateFeedbackAttachment } from "@/lib/feedback/attachment-policy";
 import type { FeedbackMessage, FeedbackThread } from "@shared/types";
@@ -386,7 +386,7 @@ export default function AdminFeedbackPage() {
   return (
     <SectionPage
       id="admin-feedback"
-      title={<><MessageCircle className="h-5 w-5 text-primary" />User feedback</>}
+      title="User feedback"
       width="report"
       center
     >
