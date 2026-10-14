@@ -48,10 +48,10 @@ describe("settings/general at 390", () => {
     expect(read("src/components/templates/section-page.tsx")).not.toMatch(/\blead=/);
   });
 
-  it("Display Currency row is a column below regular and a row from regular (control full width below regular)", () => {
+  it("Display Currency row is a column below regular and a row from wide (control full width below regular)", () => {
     const src = read(SETTINGS_GENERAL);
-    expect(src).toContain('<div className="flex flex-col gap-2 regular:flex-row regular:items-center regular:justify-between regular:gap-4">');
-    expect(src).toContain('<div className="w-full regular:w-56 regular:shrink-0">');
+    expect(src).toContain('<div className="flex flex-col gap-2 wide:flex-row wide:items-center wide:justify-between wide:gap-4">');
+    expect(src).toContain('<div className="w-full wide:w-56 wide:shrink-0">');
     expect(src).not.toContain('<div className="w-56">');
   });
 
@@ -62,10 +62,10 @@ describe("settings/general at 390", () => {
     expect(src).toContain('<SelectTrigger className="w-44 shrink-0 regular:w-48">');
   });
 
-  it("Appearance row stacks below regular; segmented control is not forced to full width", () => {
+  it("Appearance row stacks below wide; segmented control is not forced to full width", () => {
     const src = read(SETTINGS_GENERAL);
-    expect(src).toContain('<div className="flex flex-col gap-2 regular:flex-row regular:items-center regular:justify-between regular:gap-3">');
-    expect(src).toContain('self-start rounded-lg border p-0.5 regular:self-auto');
+    expect(src).toContain('<div className="flex flex-col gap-2 wide:flex-row wide:items-center wide:justify-between wide:gap-3">');
+    expect(src).toContain('self-start rounded-lg border p-0.5 wide:self-auto');
   });
 
   it("general page has no hidden lead node (the settings shell bar that needed it is gone)", () => {

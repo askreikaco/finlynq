@@ -1269,7 +1269,7 @@ export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; em
       <main
         className={cn(
           "mt-3 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain px-4 pb-3",
-          showNumpad && (showCurrencyChips ? "pointer-coarse:pb-[315px]" : "pointer-coarse:pb-[259px]"),
+          showNumpad && !embedded && (showCurrencyChips ? "pointer-coarse:pb-[315px]" : "pointer-coarse:pb-[259px]"),
         )}
       >
         {/* Notice banners */}
@@ -1689,8 +1689,8 @@ export function TransactionEntryScreen({ mode, embedded }: { mode: EntryMode; em
       {/* Numpad dock: pinned to the safe-area bottom (the tab bar is hidden here). Touch only:
           pointer-coarse, never a JS device check, so a desktop never shows it. */}
       <NumpadDock
-        // Pane (touch at wide): the dock is part of the pane flow (static, below the form) so it never covers the form fields.
-        className={embedded ? "wide:static wide:inset-auto wide:z-auto wide:mt-3 wide:w-full wide:animate-none wide:rounded-xl wide:border wide:border-border" : undefined}
+        // Pane (touch at wide): the dock is sticky at the bottom of the scrolling pane (in the pane flow, no reserve needed), so the top of the form stays visible and it never covers the list.
+        className={embedded ? "wide:sticky wide:inset-auto wide:bottom-0 wide:z-10 wide:mt-3 wide:w-full wide:bg-card wide:animate-none wide:rounded-xl wide:border wide:border-border" : undefined}
         activeId={padTarget}
         activeValue={
           padTarget === MAIN_PAD ? amount : (splitRows.find((r) => r.id === padTarget)?.amount ?? "")

@@ -124,8 +124,8 @@ export default function GeneralSettingsPage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex flex-col gap-2 regular:flex-row regular:items-center regular:justify-between regular:gap-4">
-            <div className="min-w-0 regular:flex-1">
+          <div className="flex flex-col gap-2 wide:flex-row wide:items-center wide:justify-between wide:gap-4">
+            <div className="min-w-0 wide:flex-1">
               <div className="flex items-center gap-1">
                 <Label>Currency</Label>
                 <InfoTip label="About currency" text="Totals are converted to this currency. Row amounts keep their own currency." />
@@ -136,7 +136,7 @@ export default function GeneralSettingsPage() {
                 for. Without that, the PUT route's own rejection message ("Add a
                 custom rate via Settings → Custom exchange rates first") was a
                 dead end — after adding the rate, no picker listed the currency. */}
-            <div className="w-full regular:w-56 regular:shrink-0">
+            <div className="w-full wide:w-56 wide:shrink-0">
               <Combobox
                 value={displayCurrency}
                 onValueChange={handleCurrencySelect}
@@ -167,14 +167,14 @@ export default function GeneralSettingsPage() {
             </Select>
           </div>
 
-          <div className="flex flex-col gap-2 regular:flex-row regular:items-center regular:justify-between regular:gap-3">
-            <div className="min-w-0 regular:flex-1">
+          <div className="flex flex-col gap-2 wide:flex-row wide:items-center wide:justify-between wide:gap-3">
+            <div className="min-w-0 wide:flex-1">
               <Label id="appearance-label">Theme</Label>
             </div>
             <div
               role="radiogroup"
               aria-labelledby="appearance-label"
-              className="inline-flex max-w-full self-start rounded-lg border p-0.5 regular:self-auto"
+              className="inline-flex max-w-full self-start rounded-lg border p-0.5 wide:self-auto"
             >
               {([
                 { value: "system", label: "System", icon: Monitor },

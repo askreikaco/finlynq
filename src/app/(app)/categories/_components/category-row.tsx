@@ -63,7 +63,7 @@ export function CategoryRow({ label, dot, amount, prev, budget, trend, cur, isIn
   // Narrow: line 1 = name | amount, line 2 = chart + mini budget bar | change. Wide (container >= 36rem): one line.
   return (
     <span data-slot="category-row" className="@container block w-full min-w-0 font-sans">
-      <span className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 @xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_7.5rem_6.5rem]">
+      <span className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 @3xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_7.5rem_6.5rem]">
         <span className={`flex min-w-0 items-center gap-2.5${indent ? " pl-5" : ""}`}>
           <span data-slot="category-dot" className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: dot }} aria-hidden />
           <span data-slot="category-label" className="truncate text-sm font-medium">{label}</span>
@@ -74,9 +74,9 @@ export function CategoryRow({ label, dot, amount, prev, budget, trend, cur, isIn
           )}
           {badge}
         </span>
-        <span data-slot="category-amount" className="text-right text-sm font-semibold tabular-nums @xl:order-4">{formatCurrency(amount, cur)}</span>
-        <span className="flex min-w-0 items-center gap-2 @xl:order-2 @xl:gap-3">
-          <span data-slot="category-chart" className="block h-5 w-12 shrink-0 @xl:w-16">
+        <span data-slot="category-amount" className="text-right text-sm font-semibold tabular-nums @3xl:order-4">{formatCurrency(amount, cur)}</span>
+        <span className="flex min-w-0 items-center gap-2 @3xl:order-2 @3xl:gap-3">
+          <span data-slot="category-chart" className="block h-5 w-12 shrink-0 @3xl:w-16">
             {trend && trend.length > 1 ? (
               <Sparkline data={trend} color={dot} labels={sparkLabels} currency={cur} height="100%" className="h-full w-full" />
             ) : null}
@@ -88,7 +88,7 @@ export function CategoryRow({ label, dot, amount, prev, budget, trend, cur, isIn
               aria-valuemin={0}
               aria-valuemax={100}
               aria-valuenow={progress ? Math.min(100, usedPct) : 0}
-              className="block h-1.5 w-[10cqw] min-w-10 max-w-24 @xl:min-w-14 shrink-0 overflow-hidden rounded-full bg-muted"
+              className="block h-1.5 w-[10cqw] min-w-10 max-w-24 @3xl:min-w-14 shrink-0 overflow-hidden rounded-full bg-muted"
             >
               {progress && <span className={`block h-full rounded-full ${barTone}`} style={{ width: `${Math.min(100, Math.max(0, usedPct))}%` }} />}
             </span>
@@ -97,7 +97,7 @@ export function CategoryRow({ label, dot, amount, prev, budget, trend, cur, isIn
             </span>
           </span>
         </span>
-        <span data-slot="category-delta" title="vs last month" className={`whitespace-nowrap text-right text-xs font-medium @xl:order-3 ${deltaTone}`}>
+        <span data-slot="category-delta" title="vs last month" className={`whitespace-nowrap text-right text-xs font-medium @3xl:order-3 ${deltaTone}`}>
           {delta ? (
             <>
               {signed(delta.diff, cur)}

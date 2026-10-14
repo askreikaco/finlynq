@@ -217,9 +217,9 @@ describe("embedded pane chrome", () => {
 });
 
 describe("embedded pane: dock and null names", () => {
-  it("the numpad dock is part of the pane flow at wide (never covers the form)", () => {
+  it("the numpad dock is sticky at the bottom of the pane at wide (never covers the list or the form top)", () => {
     const src = require("node:fs").readFileSync("src/components/transactions/entry/transaction-entry-screen.tsx", "utf8");
-    expect(src).toMatch(/className=\{embedded \? "wide:static wide:inset-auto/);
+    expect(src).toMatch(/className=\{embedded \? "wide:sticky wide:inset-auto/);
   });
   it("account sort tolerates null names (locked session)", () => {
     const src = require("node:fs").readFileSync("src/components/transactions/entry/transaction-entry-screen.tsx", "utf8");
