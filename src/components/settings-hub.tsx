@@ -56,7 +56,7 @@ export function SettingsHub() {
       >
         {groups.map((group) => (
           <section key={group.title} data-slot="settings-hub-group" className="space-y-2">
-            <div className="@container divide-y divide-border/50 overflow-hidden rounded-2xl bg-card">
+            <div className="@container [&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-hidden rounded-2xl bg-card">
               <CardLabel as="h2" icon={groupLabelIcon(group.title).icon} tone={groupLabelIcon(group.title).tone}>
                 {group.title}
               </CardLabel>

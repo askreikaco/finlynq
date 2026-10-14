@@ -192,7 +192,7 @@ export function RecentUploadsPanel({
             </div>
           )}
           {batches.length > 0 && (
-            <ul className="divide-y">
+            <ul className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
               {batches.map((b) => {
                 const dt = new Date(b.uploadedAt);
                 const dateLabel = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")} ${String(dt.getHours()).padStart(2, "0")}:${String(dt.getMinutes()).padStart(2, "0")}`;

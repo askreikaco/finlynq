@@ -52,7 +52,7 @@ export function TemplateManager({ templates, accounts, onDeleted, onUpdated }: T
           <CardTitle icon={FileText} tone="muted">Saved Templates ({templates.length})</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="divide-y">
+          <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
             {templates.map((t) => (
               <div key={t.id} className="flex items-center gap-3 px-4 py-3">
                 <div className="flex-1 min-w-0">

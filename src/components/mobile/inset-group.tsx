@@ -3,8 +3,8 @@
 /**
  * iOS-style grouped (inset) lists. Pieces:
  *  - InsetSectionHeader: small grey heading above a group.
- *  - InsetGroup: one rounded container (rounded-3xl, bg-card, no border). Hairlines between its rows
- *    start after the leading icon (or avatar) and never follow the last row.
+ *  - InsetGroup: one rounded container (rounded-3xl, bg-card, no border). Divider (--list-divider inset shadow)
+ *    between its rows, never after the last row.
  *  - InsetRow: 56px row with optional outline icon, label, muted value, badge, chevron, or a switch.
  *    Variants: default, accent (primary text), destructive, toggle.
  *  - AccountCard: an avatar row for the signed-in account and the account list.
@@ -71,9 +71,8 @@ export function InsetGroup({ children, className, inset = "icon", header, header
 
 /* ---------- row ---------- */
 
-/** Hairline above every row except the first child of its group, starting at the inset. */
-const DIVIDER =
-  "before:absolute before:top-0 before:right-0 before:h-px before:bg-border before:left-[var(--inset-sep,3.125rem)] first:before:hidden";
+/** Divider shadow under every row except the last of its group (the --list-divider token, light + dark). */
+const DIVIDER = "not-last:shadow-[var(--list-divider)]";
 
 const ROW_BASE =
   "relative flex w-full min-h-14 items-center gap-3 px-4 py-3 text-left text-base outline-none transition-colors " +

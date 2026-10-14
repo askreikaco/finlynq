@@ -277,7 +277,7 @@ export function ManageGroupsPanel({
         {list.length === 0 ? (
           <p className="px-4 py-3 text-sm text-muted-foreground">No groups in use yet.</p>
         ) : (
-          <ul className="divide-y divide-border/50">
+          <ul className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
             {list.map((g) => renderRow(type, g, movable))}
           </ul>
         )}

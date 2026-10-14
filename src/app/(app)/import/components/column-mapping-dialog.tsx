@@ -469,7 +469,7 @@ export function ColumnMappingDialog({
           {/* Mapping table */}
           <div className="space-y-2">
             <Label className="text-sm font-medium">Column Mapping</Label>
-            <div className="rounded-lg border divide-y">
+            <div className="rounded-lg border [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
               {MAPPING_FIELDS.map((field) => (
                 <div key={field} className="flex items-center gap-3 px-3 py-2">
                   <span className="w-36 text-xs text-muted-foreground shrink-0">
@@ -509,7 +509,7 @@ export function ColumnMappingDialog({
                 brokerage export. These are captured with the imported rows for
                 now; they aren&apos;t yet turned into buy/sell positions.
               </p>
-              <div className="rounded-lg border divide-y">
+              <div className="rounded-lg border [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                 {INVESTMENT_FIELDS.map((field) => (
                   <div key={field} className="flex items-center gap-3 px-3 py-2">
                     <span className="w-36 text-xs text-muted-foreground shrink-0">
@@ -560,7 +560,7 @@ export function ColumnMappingDialog({
             <div className="space-y-1.5">
               <Label className="text-sm">Sample (first {mappedSample.length} rows)</Label>
               <div className="max-h-64 overflow-y-auto">
-                <SectionCard padded={false} className="divide-y divide-border/50 px-3">
+                <SectionCard padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
                   {mappedSample.map((r, i) => {
                     const invParts = isInvestment ? [r.ticker, r.security, r.quantity ? `qty ${r.quantity}` : null] : [];
                     const subtitle = [r.date || "—", r.account || null, r.note || null, ...invParts].filter(Boolean).join(" · ");

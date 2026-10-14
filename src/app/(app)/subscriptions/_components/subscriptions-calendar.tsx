@@ -209,7 +209,7 @@ export function SubscriptionsCalendar({
             {selectedEvents.length === 0 ? (
               <p className="text-sm text-muted-foreground">Nothing expected on this day.</p>
             ) : (
-              <div className="divide-y">
+              <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                 {selectedEvents.map((ev, idx) => {
                   const tone = eventTone(ev);
                   return (

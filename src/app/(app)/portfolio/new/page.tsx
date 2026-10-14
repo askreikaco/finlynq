@@ -54,7 +54,7 @@ function PortfolioNewInner() {
         const ops = OPS.filter((o) => o.group === group.key);
         return (
           <section key={group.key}>
-            <div className="@container divide-y divide-border/50 overflow-hidden rounded-2xl bg-card">
+            <div className="@container [&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-hidden rounded-2xl bg-card">
               <CardLabel as="h2" icon={Layers} tone="indigo">{group.label}</CardLabel>
               {ops.map((o) => {
                 const Icon = o.icon;

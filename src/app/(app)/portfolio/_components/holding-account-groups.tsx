@@ -62,7 +62,7 @@ export function HoldingAccountGroups({
       data-slot="holdings-by-account"
     >
       {groups.map((g) => (
-        <SectionCard key={g.accountName} label={g.accountName} icon={Landmark} tone="indigo" padded={false} className="divide-y divide-border/50 px-3">
+        <SectionCard key={g.accountName} label={g.accountName} icon={Landmark} tone="indigo" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
           {g.holdings.map((h) => (
             <HoldingRow
               key={h.id}

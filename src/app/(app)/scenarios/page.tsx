@@ -228,7 +228,7 @@ function StrategyCard({ title, hint, data, currency }: { title: string; hint: st
             { icon: CalendarClock, label: "Months to Debt-Free", value: String(data.totalMonths) },
           ]}
         />
-        <div className="divide-y divide-border/50">
+        <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
           {data.order.map((o, i) => (
             <ListRow key={`${o.name}-${i}`} title={`${i + 1}. ${o.name}`} subtitle={`Paid off in month ${o.paidOffMonth}`} />
           ))}
@@ -308,7 +308,7 @@ function DebtPayoffTab() {
           <p className="text-sm text-muted-foreground">No loans found. Add loans on the Loans page first.</p>
         ) : (
           <div className="space-y-4">
-            <div className="divide-y divide-border/50">
+            <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
               {loans.map((l) => (
                 <ListRow
                   key={l.id}

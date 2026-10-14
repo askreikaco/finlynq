@@ -360,7 +360,7 @@ export default function BackfillReviewPage({ params }: { params: Promise<{ runId
               </button>
             </div>
           </div>
-          <div className="max-h-[70dvh] divide-y divide-border/50 overflow-y-auto">
+          <div className="max-h-[70dvh] [&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-y-auto">
             {sortedProposals.map((p) => (
               <ProposalCard
                 key={p.id}
@@ -682,7 +682,7 @@ function DisplacedRowsTable({
 }) {
   return (
     <div className="space-y-1.5">
-      <SectionCard label="Existing rows being displaced" icon={Database} tone="rose" padded={false} className="divide-y divide-border/50 px-3">
+      <SectionCard label="Existing rows being displaced" icon={Database} tone="rose" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
         {ids.length === 0 && <p className="py-3 text-sm text-muted-foreground">none</p>}
         {ids.map((id) => {
           const r = displacedRows[id];
@@ -784,7 +784,7 @@ function ReplacementPreviewTable({
     <div className="space-y-3">
       {rows.length > 0 && (
         <div className="space-y-1.5">
-          <SectionCard label="Will become (UPDATE in place)" icon={PlusCircle} tone="emerald" padded={false} className="divide-y divide-border/50 px-3">
+          <SectionCard label="Will become (UPDATE in place)" icon={PlusCircle} tone="emerald" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
             {rows.map((r) => (
               <ListRow
                 key={r.txId}
@@ -799,7 +799,7 @@ function ReplacementPreviewTable({
       )}
       {synth.length > 0 && (
         <div className="space-y-1.5">
-          <SectionCard label="New rows (synthesized — tagged source=&apos;backfill_synth&apos;)" icon={PlusCircle} tone="emerald" padded={false} className="divide-y divide-border/50 px-3" cardClassName="border-warning/40 bg-warning/5">
+          <SectionCard label="New rows (synthesized — tagged source=&apos;backfill_synth&apos;)" icon={PlusCircle} tone="emerald" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3" cardClassName="border-warning/40 bg-warning/5">
             {synth.map((r, i) => (
               <ListRow
                 key={i}
@@ -1237,7 +1237,7 @@ function KindOverridePicker({
                 </div>
               )}
               {!loadingCandidates && candidates && candidates.length > 0 && (
-                <div className="max-h-48 overflow-y-auto rounded border border-border divide-y">
+                <div className="max-h-48 overflow-y-auto rounded border border-border [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                   {candidates.map((c) => {
                     const sel = counterpartTxId === c.id;
                     return (
@@ -1882,7 +1882,7 @@ function CoverageDashboard({ coverage, proposals }: { coverage: Coverage; propos
       {/* Per-account breakdown */}
       {coverage.perAccount.length > 0 && (
         <div className="mt-4 space-y-1.5">
-          <SectionCard label="Per-account breakdown" icon={Landmark} tone="indigo" padded={false} className="divide-y divide-border/50 px-3">
+          <SectionCard label="Per-account breakdown" icon={Landmark} tone="indigo" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
             {coverage.perAccount.map((a) => (
               <ListRow
                 key={a.accountId}

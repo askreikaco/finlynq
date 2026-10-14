@@ -164,7 +164,7 @@ export default function AdminEmailInboxPage() {
       <SectionCard
         label="By user" icon={Users} tone="indigo"
         padded={false}
-        className="divide-y divide-border/50 px-3"
+        className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3"
       >
         <p className="px-1 pt-3 text-xs text-muted-foreground">
           Counts honor the action / source / date filters (not the selected user).
@@ -255,7 +255,7 @@ export default function AdminEmailInboxPage() {
       </div>
 
       {/* ─── Rows ─────────────────────────────────────────────────────────── */}
-      <SectionCard label="Rows" icon={List} tone="muted" padded={false} className="divide-y divide-border/50 px-3">
+      <SectionCard label="Rows" icon={List} tone="muted" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
         {loading && !data && (
           <p className="p-6 text-sm text-muted-foreground text-center">Loading…</p>
         )}

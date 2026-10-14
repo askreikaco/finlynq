@@ -412,7 +412,7 @@ function SubscriptionsPageContent() {
                   ? "1 payment repeats on a schedule but isn't tracked yet."
                   : `${suggestions.length} payments repeat on a schedule but aren't tracked yet.`}
               </p>
-              <div className={`divide-y divide-border/50 ${CARD_ROW_GRID}`}>
+              <div className={`[&>*:not(:last-child)]:shadow-[var(--list-divider)] ${CARD_ROW_GRID}`}>
                 {visibleSuggestions.map((r) => {
                   const key = `track:${r.payee}|${r.currency}`;
                   const freq = frequencyOrMonthly(r.frequency);
@@ -455,7 +455,7 @@ function SubscriptionsPageContent() {
           {/* One inset list per status group, in the sort order chosen above. */}
           {groups.map((g) =>
             g.rows.length === 0 ? null : (
-              <SectionCard key={g.key} label={`${g.title} (${g.rows.length})`} icon={Repeat} tone="indigo" padded={false} className={`col-span-full divide-y divide-border/50 px-3 ${CARD_ROW_GRID}`}>
+              <SectionCard key={g.key} label={`${g.title} (${g.rows.length})`} icon={Repeat} tone="indigo" padded={false} className={`col-span-full [&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3 ${CARD_ROW_GRID}`}>
                 {g.rows.map((sub) => (
                   <SubscriptionRow
                     key={sub.id}

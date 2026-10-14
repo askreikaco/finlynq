@@ -92,7 +92,7 @@ export function ActionCenter() {
               </div>
             </div>
           ) : (
-            <div className="divide-y divide-border/50">
+            <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
               <AnimatePresence mode="popLayout">
                 {displayItems.map((item, i) => {
                   const config = SEVERITY_ICON[item.severity];

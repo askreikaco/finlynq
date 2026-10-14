@@ -161,7 +161,7 @@ function GoalsBody({ ctx, displayCurrency }: { ctx: GoalCtx; displayCurrency: st
   const nodes: Record<string, ReactNode> = {
     summary: <MetricGrid metrics={summaryMetrics} />,
     active: active.length > 0 ? (
-      <SectionCard label="Active" icon={Target} tone="indigo" padded={false} className={`divide-y divide-border/50 px-3 ${CARD_ROW_GRID}`}>
+      <SectionCard label="Active" icon={Target} tone="indigo" padded={false} className={`[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3 ${CARD_ROW_GRID}`}>
         {active.map((g) => {
           const currency = g.currency || displayCurrency;
           return (
@@ -191,7 +191,7 @@ function GoalsBody({ ctx, displayCurrency }: { ctx: GoalCtx; displayCurrency: st
       </Card>
     ),
     completed: completed.length > 0 ? (
-      <SectionCard label="Completed" icon={CheckCircle2} tone="emerald" padded={false} className={`divide-y divide-border/50 px-3 ${CARD_ROW_GRID}`}>
+      <SectionCard label="Completed" icon={CheckCircle2} tone="emerald" padded={false} className={`[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3 ${CARD_ROW_GRID}`}>
         {completed.map((g) => (
           <ListRow
             key={g.id}

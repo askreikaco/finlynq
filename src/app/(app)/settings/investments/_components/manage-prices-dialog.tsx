@@ -111,7 +111,7 @@ export function ManagePricesPanel({
       </p>
 
       {/* Existing marks */}
-      <div className="max-h-[50vh] divide-y overflow-y-auto rounded-xl border bg-card">
+      <div className="max-h-[50vh] [&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-y-auto rounded-xl border bg-card">
         {loading ? (
           <div className="flex items-center gap-2 px-4 py-4 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" /> Loading…

@@ -370,7 +370,7 @@ export default function DividendsPage() {
           />
         ) : (
           <>
-              <SectionCard label={firstHeader} icon={Coins} tone="emerald" padded={false} className="divide-y divide-border/50 px-3">
+              <SectionCard label={firstHeader} icon={Coins} tone="emerald" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
                 {data.groups.map((g) => (
                   <ListRow
                     key={g.bucket}

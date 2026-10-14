@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 
 /** Label-left form card for the investments create/edit pages (compact rows). */
 export function FormCard({ children }: { children: ReactNode }) {
-  return <div className="divide-y rounded-xl border bg-card">{children}</div>;
+  return <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] rounded-xl border bg-card">{children}</div>;
 }
 
 export function FormRow({

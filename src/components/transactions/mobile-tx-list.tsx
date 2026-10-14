@@ -86,7 +86,7 @@ export function MobileTxList({
           label={dateLabel}
           /* The date label sticks under the page header while its group scrolls. */
           labelClassName="sticky top-[calc(var(--sat,0px)+var(--header-h))] z-10 rounded-t-xl bg-card/90 backdrop-blur-sm"
-          padded={false} className="divide-y divide-border/50 px-3"
+          padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3"
         >
           {txns.map((t) => (
             <TransactionRow

@@ -127,7 +127,7 @@ export function ReconcileHideAccountsCard() {
         ) : accounts.length === 0 ? (
           <p className="text-sm text-muted-foreground">No accounts yet.</p>
         ) : (
-          <ul className="divide-y">
+          <ul className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
             {accounts.map((a) => {
               const isHidden = hiddenIds.includes(a.id);
               return (

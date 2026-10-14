@@ -294,7 +294,7 @@ function CategoryPageContent() {
       </SectionCard>
     ) : null,
     payees: hasData ? (
-      <SectionCard label="Top payees" icon={Users} tone="violet" padded={false} className="divide-y divide-border/50 px-3">
+      <SectionCard label="Top payees" icon={Users} tone="violet" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
         <p className="px-1 py-3 text-xs text-muted-foreground"><Store className="mr-1 inline h-3.5 w-3.5" />Where this {noun} went, last {months} months</p>
         {data.payeesLocked ? (
           <p className="px-1 py-3 text-sm text-muted-foreground">Unlock your data to see payees.</p>
@@ -314,7 +314,7 @@ function CategoryPageContent() {
       </SectionCard>
     ) : null,
     recent: hasData ? (
-      <SectionCard label="Recent transactions" icon={ArrowLeftRight} tone="cyan" padded={false} className="divide-y divide-border/50 px-3">
+      <SectionCard label="Recent transactions" icon={ArrowLeftRight} tone="cyan" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
         <p className="px-1 py-3 text-xs text-muted-foreground"><Receipt className="mr-1 inline h-3.5 w-3.5" />{stats.transactionCount} in the last {months} months{stats.averageTransaction != null && ` · average ${formatCurrency(stats.averageTransaction, cur)}`}</p>
         {data.recent.map((t) => (
           <ListRow

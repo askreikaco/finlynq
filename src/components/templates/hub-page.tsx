@@ -273,7 +273,7 @@ function HubPageBody(props: HubPageProps) {
       className="space-y-2"
     >
       {look === "card" ? (
-        <div className="@container divide-y divide-border/50 overflow-hidden rounded-group bg-card">
+        <div className="@container [&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-hidden rounded-group bg-card">
           {group.title ? renderSectionLabel(group.title, sectionLabel) : null}
           {group.rows.map((row) => renderCardRow(row, cardOpts))}
         </div>

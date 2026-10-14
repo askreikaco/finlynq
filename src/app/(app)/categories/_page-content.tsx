@@ -452,7 +452,7 @@ function CategoriesOverview({ embedded = false }: CategoriesOverviewProps) {
                       onValueChange={(v) => setOpen(row.key, v === row.key)}
                     >
                       <AccordionItem value={row.key} title={groupHeader(row, cur, isIncome)}>
-                        <ul className="-mx-2 -my-2 divide-y">
+                        <ul className="-mx-2 -my-2 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                           {row.categories.map((c) => (
                             <li key={c.id}>
                               <Link href={`/categories/${c.id}`} className={ROW_CLASS}>

@@ -384,7 +384,7 @@ export function BankFeedsSection() {
 
               {/* ── Detected accounts: create/link mapping ── */}
               {preview && (
-                <div className="rounded-xl border divide-y">
+                <div className="rounded-xl border [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                   <div className="px-4 py-2.5 text-sm font-medium bg-muted/30">
                     Detected accounts — choose how each maps to Finlynq
                   </div>
@@ -582,7 +582,7 @@ export function BankFeedsSection() {
             ) : pending.length === 0 ? (
               <p className="text-sm text-muted-foreground">No pending charges.</p>
             ) : (
-              <div className="rounded-xl border divide-y">
+              <div className="rounded-xl border [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                 {pending.map((p) => (
                   <div
                     key={`${p.accountId ?? "x"}-${p.fitId}`}

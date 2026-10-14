@@ -156,7 +156,7 @@ export function SubscriptionForm({ mode, editing, initial, categories, accounts,
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
+      <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-hidden rounded-2xl border border-border bg-card">
         <Row label="Name" htmlFor="sub-name">
           <Input
             id="sub-name"

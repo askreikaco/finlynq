@@ -437,7 +437,7 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
                     </span>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium mb-2">Fill in the connector details</p>
-                      <div className="rounded-lg border border-border bg-muted/40 divide-y divide-border/50 text-xs overflow-hidden">
+                      <div className="rounded-lg border border-border bg-muted/40 [&>*:not(:last-child)]:shadow-[var(--list-divider)] text-xs overflow-hidden">
                         <div className="flex items-center gap-3 px-3 py-2">
                           <span className="w-28 shrink-0 text-muted-foreground">Name</span>
                           <code className="text-foreground font-mono">Finlynq</code>
@@ -666,7 +666,7 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
                     </span>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium mb-2">Fill in the app details</p>
-                      <div className="rounded-lg border border-border bg-muted/40 divide-y divide-border/50 text-xs overflow-hidden">
+                      <div className="rounded-lg border border-border bg-muted/40 [&>*:not(:last-child)]:shadow-[var(--list-divider)] text-xs overflow-hidden">
                         <div className="flex items-center gap-3 px-3 py-2">
                           <span className="w-28 shrink-0 text-muted-foreground">Name</span>
                           <code className="text-foreground font-mono">Finlynq</code>
@@ -1039,7 +1039,7 @@ export function McpGuide({ embedded = false }: { embedded?: boolean }) {
           <p className="mb-4 text-sm text-muted-foreground">
             Common issues and fixes when connecting an AI assistant to Finlynq. Click any item to expand.
           </p>
-          <div className="rounded-xl border border-border bg-card divide-y divide-border">
+          <div className="rounded-xl border border-border bg-card [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
             <details className="group">
               <summary className="cursor-pointer list-none px-5 py-4 text-sm font-medium text-foreground hover:bg-muted/30 transition-colors flex items-center justify-between gap-3">
                 <span>&ldquo;Failed to connect&rdquo; or OAuth flow stuck</span>

@@ -483,7 +483,7 @@ function FirePageContent() {
                   </SelectContent>
                 </Select>
               )}
-              <div className="divide-y divide-border/50">
+              <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                 {returnRates.map((rr) => {
                   const entry = result.sensitivityTable.find((e) => e.returnRate === rr && e.savings === selectedSavings);
                   const years = entry?.yearsToFire ?? -1;

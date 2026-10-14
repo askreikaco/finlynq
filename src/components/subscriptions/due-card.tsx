@@ -64,7 +64,7 @@ export function DueCard({ limit = DUE_CARD_LIMIT, returnTo = "/transactions" }: 
             </Link>
           )}
         </div>
-        <ul className="divide-y rounded-lg border bg-background">
+        <ul className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] rounded-lg border bg-background">
           {shown.map((sub) => {
             const more = dueSummary(sub);
             return (

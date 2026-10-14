@@ -80,7 +80,7 @@ export function OpPage({
 /** Inset grouped list (iOS Settings style): rounded card, hairline dividers, optional UPPERCASE label. */
 export function OpGroup({ label, children }: { label?: string; children: React.ReactNode }) {
   return (
-    <section className="@container divide-y divide-border/50 overflow-hidden rounded-2xl bg-card">
+    <section className="@container [&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-hidden rounded-2xl bg-card">
       {label ? <CardLabel as="h2" icon={ClipboardList} tone="indigo">{label}</CardLabel> : null}
       {children}
     </section>

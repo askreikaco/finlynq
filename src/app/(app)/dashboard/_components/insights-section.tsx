@@ -121,7 +121,7 @@ export function InsightsSection({ currency }: { currency?: string }) {
           title={`Recurring (${recurring.count})`}
           subtitle={`${formatCurrency(recurring.monthlyRecurringTotal, recurring.displayCurrency || resolvedCurrency)}/month`}
         >
-          <div className="divide-y divide-border/40">
+          <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
             {recurring.recurring.slice(0, 8).map((r, i) => (
               <div key={i} className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
                 <div className="min-w-0">
@@ -145,7 +145,7 @@ export function InsightsSection({ currency }: { currency?: string }) {
           title="Top Merchants"
           subtitle="Last 6 months spending"
         >
-          <div className="divide-y divide-border/40">
+          <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
             {insights.topMerchants.slice(0, 8).map((m, i) => (
               <div key={i} className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
                 <div className="min-w-0">
@@ -169,7 +169,7 @@ export function InsightsSection({ currency }: { currency?: string }) {
           title="Category Trends"
           subtitle="Spending direction by category"
         >
-          <div className="divide-y divide-border/40">
+          <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
             {insights.trends.slice(0, 8).map((t, i) => (
               <div key={i} className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
                 <p className="text-sm">{t.category}</p>

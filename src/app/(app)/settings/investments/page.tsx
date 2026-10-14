@@ -482,7 +482,7 @@ function InvestmentsSettingsPage() {
                 {filterInput("type", "Type")}
                 {filterInput("currency", "Currency")}
               </div>
-              <SectionCard padded={false} className="divide-y divide-border/50 px-3">
+              <SectionCard padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
                 {rows.length === 0 ? (
                   <p className="py-8 text-center text-sm text-muted-foreground">
                     {hasActiveFilter ? "No securities match the current filters." : "No securities."}
@@ -532,7 +532,7 @@ function InvestmentsSettingsPage() {
               description="Add a security on the Securities tab first."
             />
           ) : (
-            <div className="divide-y divide-border/50 overflow-hidden rounded-xl border border-border/50 bg-card">
+            <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-hidden rounded-xl border border-border/50 bg-card">
               {allSecurities.map((s) => {
                 const open = expandedSecurities.has(s.id);
                 return (
@@ -609,7 +609,7 @@ function InvestmentsSettingsPage() {
               description="Create an investment account first, then add securities to it here."
             />
           ) : (
-            <div className="divide-y divide-border/50 overflow-hidden rounded-xl border border-border/50 bg-card">
+            <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-hidden rounded-xl border border-border/50 bg-card">
               {byAccount.map(({ account, items }) => {
                 const open = expandedAccounts.has(account.id);
                 return (

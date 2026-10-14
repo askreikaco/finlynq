@@ -580,7 +580,7 @@ export default function AccountDetailPage() {
           data-slot="account-information"
           label="Information" icon={Info} tone="cyan"
           padded={false}
-          className="divide-y divide-border/50 px-3"
+          className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3"
           action={
         <Button
           size="sm"

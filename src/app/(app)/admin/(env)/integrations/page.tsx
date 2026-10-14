@@ -294,7 +294,7 @@ export default function AdminIntegrationsPage() {
             </div>
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-muted-foreground">Configured providers</Label>
-              <ul className="divide-y divide-border/50">
+              <ul className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                 {(["resend", "brevo", "smtp"] as const).map((p) => (
                   <li key={p}>
                     <ListRow

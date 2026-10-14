@@ -138,7 +138,7 @@ export function DbPane({
     <div className="flex flex-col h-full">
       {header}
       {/* One native list row per bank-ledger entry (no table). Balances sit on a second line. */}
-      <div className="flex-1 overflow-auto divide-y divide-border/50">
+      <div className="flex-1 overflow-auto [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
         {rows.map((r) => {
           const dimmed = r.linkedStagedRowId != null ? "opacity-70" : "";
           // Calculated column — first row of the day shows the value

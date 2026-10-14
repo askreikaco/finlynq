@@ -146,7 +146,7 @@ export function ConnectedApps() {
             access your data over OAuth, it will appear here so you can revoke it any time.
           </p>
         ) : (
-          <ul className="divide-y divide-border rounded-xl border">
+          <ul className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] rounded-xl border">
             {mcpApiKeyLastUsedAt && (
               <li key="mcp-api-key" className="flex items-center justify-between gap-3 px-4 py-3">
                 <div className="min-w-0">

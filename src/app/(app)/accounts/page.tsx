@@ -249,7 +249,7 @@ export default function AccountsPage() {
         {groups(list).map(([group, accts]) => (
           <Accordion key={group} defaultValue={group}>
           <AccordionItem value={group} title={groupTitle(group, accts)} className="bg-transparent shadow-none">
-            <div className="divide-y divide-border/50">
+            <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
             {accts.map((a) => (
               <ListRow
                 key={a.accountId}

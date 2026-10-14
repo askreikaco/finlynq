@@ -352,7 +352,7 @@ function BudgetsPageContent() {
   const budgetGroups = (
     <div data-slot="budget-groups" className="grid grid-cols-1 gap-6">
       {Array.from(groupMap.entries()).map(([group, items]) => (
-        <SectionCard key={group} label={group} icon={Wallet} tone="indigo" padded={false} className={`col-span-full divide-y divide-border/50 px-3 ${CARD_ROW_GRID}`}>
+        <SectionCard key={group} label={group} icon={Wallet} tone="indigo" padded={false} className={`col-span-full [&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3 ${CARD_ROW_GRID}`}>
           {items.map((b) => {
             const { spent, rollover, effectiveBudget, rawPct, over, envelopeAvailable, remaining } = budgetRowValues(b);
             const left = mode === "envelope" ? envelopeAvailable : remaining;

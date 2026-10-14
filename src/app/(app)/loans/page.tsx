@@ -266,7 +266,7 @@ function LoansPageContent() {
       )}
 
       {activeLoans.length > 0 && (
-        <SectionCard label="Active" icon={Landmark} tone="indigo" padded={false} className={`divide-y divide-border/50 px-3 ${CARD_ROW_GRID}`}>
+        <SectionCard label="Active" icon={Landmark} tone="indigo" padded={false} className={`[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3 ${CARD_ROW_GRID}`}>
           {activeLoans.map((loan) => (
             <LoanRow key={loan.id} loan={loan} paidOff={false} displayCurrency={displayCurrency} onOpen={() => setDetailId(loan.id)} />
           ))}
@@ -282,7 +282,7 @@ function LoansPageContent() {
             title={`Completed (${completedLoans.length})`}
             description="Paid-off loans"
           >
-            <div className="divide-y divide-border/50 px-3">
+            <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
               {completedLoans.map((loan) => (
                 <LoanRow key={loan.id} loan={loan} paidOff displayCurrency={displayCurrency} onOpen={() => setDetailId(loan.id)} />
               ))}
@@ -317,7 +317,7 @@ function LoansPageContent() {
               </ResponsiveContainer>
             </TabsContent>
             <TabsContent value="table">
-              <div className="max-h-[60dvh] overflow-y-auto divide-y divide-border/50">
+              <div className="max-h-[60dvh] overflow-y-auto [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                 {amort.schedule.map((r) => (
                   <ListRow
                     key={r.period}
@@ -331,7 +331,7 @@ function LoansPageContent() {
             </TabsContent>
             <TabsContent value="monthly">
               <p className="text-sm text-muted-foreground mb-4">Interest accrued per calendar month — the reportable figure, day-weighted when payments straddle month boundaries.</p>
-              <div className="max-h-[60dvh] overflow-y-auto divide-y divide-border/50">
+              <div className="max-h-[60dvh] overflow-y-auto [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                 {(amort.monthlyAccrual ?? []).map((m) => (
                   <ListRow
                     key={m.month}
@@ -343,7 +343,7 @@ function LoansPageContent() {
             </TabsContent>
             <TabsContent value="whatif">
               <p className="text-sm text-muted-foreground mb-4">What if you added extra monthly payments? Amounts are in {selectedLoan.currency}.</p>
-              <div className="divide-y divide-border/50">
+              <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                 {whatIf.map((w) => (
                   <ListRow
                     key={w.extraPayment}
