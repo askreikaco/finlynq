@@ -52,6 +52,7 @@ function AccordionItem({
   className,
   triggerClassName,
   panelClassName,
+  headerClassName,
   ...props
 }: Omit<AccordionPrimitive.Item.Props, "title"> & {
   icon?: React.ReactNode
@@ -61,6 +62,8 @@ function AccordionItem({
   triggerClassName?: string
   /** Extra classes for the open panel. */
   panelClassName?: string
+  /** Extra classes for the header wrapper (e.g. drop the open-state divider). */
+  headerClassName?: string
   /** Help text for an (i) InfoTip beside the chevron. Prefer this over `description` on settings pages. */
   info?: string
 }) {
@@ -70,7 +73,7 @@ function AccordionItem({
       className={cn("rounded-xl bg-card text-card-foreground", className)}
       {...props}
     >
-      <AccordionPrimitive.Header className="relative m-0 text-base font-normal has-[[data-panel-open]]:shadow-[var(--list-divider)]">
+      <AccordionPrimitive.Header className={cn("relative m-0 text-base font-normal has-[[data-panel-open]]:shadow-[var(--list-divider)]", headerClassName)}>
         <AccordionPrimitive.Trigger
           data-slot="accordion-trigger"
           className={cn(

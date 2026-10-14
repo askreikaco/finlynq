@@ -253,20 +253,29 @@ function AccountsPage() {
       label={title}
       icon={SectionIcon}
       tone={tone}
-      className="px-3"
+      labelPlacement="outside"
+      bare
+      labelClassName="px-1"
     >
       {/* Each group is its own accordion, expanded by default (toggled independently): header = name, count, total. */}
       <div className="flex flex-col gap-2">
         {groups(list).map(([group, accts]) => (
           <Accordion key={group} defaultValue={group}>
-          <AccordionItem value={group} title={groupTitle(group, accts)} className="bg-transparent">
+          <AccordionItem
+            value={group}
+            title={groupTitle(group, accts)}
+            className="bg-transparent"
+            headerClassName="has-[[data-panel-open]]:shadow-none"
+            triggerClassName="rounded-md px-1 min-h-9"
+            panelClassName="surface-card overflow-hidden rounded-xl border border-border/50 p-0"
+          >
             <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
             {accts.map((a) => (
               <ListRow
                 key={a.accountId}
                 {...(detail.split ? { onPress: () => detail.select(a.accountId) } : { href: `/accounts/${a.accountId}` })}
                 selected={detail.selectedId === String(a.accountId)}
-                className={a.archived ? "opacity-60" : undefined}
+                className={a.archived ? "px-4 opacity-60" : "px-4"}
                 title={
                   <span className="inline-flex max-w-full items-center gap-2 align-middle">
                     <span className="truncate">
