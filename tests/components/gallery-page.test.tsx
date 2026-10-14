@@ -5,6 +5,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import GalleryPage from "@/app/(app)/dev/gallery/page";
+import { GALLERY_SECTIONS } from "@/app/(app)/dev/gallery/sections";
 
 const mockReplace = vi.fn();
 vi.mock("next/navigation", () => ({
@@ -79,6 +80,19 @@ describe("GalleryPage", () => {
     await waitFor(() => {
       expect(screen.getByText("Component Gallery")).toBeInTheDocument();
     });
+  });
+
+  it("renders without throwing and lists every catalogue section in the index", async () => {
+    const { container } = render(<GalleryPage />);
+    await waitFor(() => {
+      expect(screen.getByText("Component Gallery")).toBeInTheDocument();
+    });
+    const index = screen.getByTestId("gallery-index");
+    for (const s of GALLERY_SECTIONS) {
+      expect(index.querySelector(`a[href="#${s.id}"]`)).not.toBeNull();
+      expect(container.querySelector(`section[data-gallery-section="${s.id}"]`)).not.toBeNull();
+    }
+    expect(GALLERY_SECTIONS.length).toBeGreaterThanOrEqual(15);
   });
 
   it("redirects to /dashboard and renders no gallery content when devMode is false", async () => {

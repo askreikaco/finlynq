@@ -28,8 +28,8 @@ import { useDisplayCurrency } from "@/components/currency-provider";
 import { CardLabel, CARD_PAD_T, CARD_PAD_X, METRIC_TONES, type MetricTone } from "@/components/mobile/card-label";
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 16 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" as const } },
+  hidden: { opacity: 1, y: 0 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0 } },
 };
 
 const noAnimationVariants = {

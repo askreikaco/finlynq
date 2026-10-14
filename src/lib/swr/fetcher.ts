@@ -21,6 +21,8 @@
  * used by the lookups + pref GETs).
  */
 
+import { fetchInitAfterWrite } from "./http-freshness";
+
 export class FetchError extends Error {
   status: number;
   constructor(message: string, status: number) {
@@ -36,7 +38,8 @@ export class FetchError extends Error {
  * did an unconditional `.then(r => r.json())` (the transactions list).
  */
 export async function jsonFetcher<T = unknown>(url: string): Promise<T> {
-  const res = await fetch(url);
+  const init = fetchInitAfterWrite();
+  const res = init ? await fetch(url, init) : await fetch(url);
   if (!res.ok) {
     throw new FetchError(`Request failed: ${res.status} ${url}`, res.status);
   }
@@ -53,7 +56,8 @@ export async function jsonFetcher<T = unknown>(url: string): Promise<T> {
 export function softJsonFetcher<T>(fallback: T) {
   return async (url: string): Promise<T> => {
     try {
-      const res = await fetch(url);
+      const init = fetchInitAfterWrite();
+      const res = init ? await fetch(url, init) : await fetch(url);
       if (!res.ok) return fallback;
       return (await res.json()) as T;
     } catch {

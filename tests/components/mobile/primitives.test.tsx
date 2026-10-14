@@ -124,7 +124,7 @@ describe("SectionCard / SectionLabel / MetricCard", () => {
     expect(cls(card)).toEqual(expect.arrayContaining(["rounded-xl", "surface-card", "border-border/50"]));
     expect(card.contains(screen.getByRole("heading", { name: "Net worth" }))).toBe(true);
     const body = container.querySelector("[data-slot=section-card-body]")!;
-    expect(cls(body)).toEqual(expect.arrayContaining(["px-4", "pb-4"]));
+    expect(cls(body)).toEqual(expect.arrayContaining(["px-3", "@[11rem]:px-5", "pb-4"]));
     expect(body.textContent).toBe("body");
   });
 

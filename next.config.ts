@@ -69,7 +69,8 @@ const nextConfig: NextConfig = {
   output: "standalone",
   typescript: {
     // Strict typecheck enforced on production build (FINLYNQ-11, 2026-05-17).
-    // CI also runs `tsc --noEmit`; this is defense in depth.
+    // The Docker build sets SKIP_NEXT_TYPECHECK=1; `tsc --noEmit` is the
+    // required "Typecheck (custom)" check on PRs to custom (npm run typecheck).
     ignoreBuildErrors: process.env.SKIP_NEXT_TYPECHECK === "1", // off unless explicitly set
   },
   // Turbopack is the default bundler for `next build` when USE_TURBOPACK=1

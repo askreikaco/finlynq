@@ -36,7 +36,7 @@ interface MobileTxListProps {
   selection?: TxListSelection;
   /** Split view: the row open in the detail pane gets the selected style. */
   selectedId?: number | null;
-  /** Force one column at every width (the split-view list pane is already narrow). */
+  /** Kept for callers; the list is one column at every width, so this is a no-op. */
   singleColumn?: boolean;
 }
 
@@ -57,7 +57,6 @@ export function MobileTxList({
   transferPeers,
   emptyState,
   selection,
-  singleColumn = false,
   selectedId = null,
 }: MobileTxListProps) {
   const today = todayISO();
@@ -78,10 +77,10 @@ export function MobileTxList({
 
   return (
     <div className="space-y-6">
-      {/* Date cards: 1 column up to regular, 2 at wide (each card unbroken, items-start). */}
+      {/* Date cards: ONE column at every width (owner request). */}
       <div
         data-slot="tx-date-groups"
-        className={cn("grid grid-cols-1 items-start gap-6", !singleColumn && "wide:grid-cols-2")}
+        className="grid grid-cols-1 items-start gap-6"
       >
       {Object.entries(grouped).map(([dateLabel, txns]) => (
         <SectionCard

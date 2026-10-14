@@ -81,7 +81,7 @@ export function OpPage({
 export function OpGroup({ label, children }: { label?: string; children: React.ReactNode }) {
   return (
     <section className="@container [&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-hidden rounded-2xl bg-card">
-      {label ? <CardLabel as="h2" icon={ClipboardList} tone="indigo">{label}</CardLabel> : null}
+      {label ? <CardLabel as="h2" slot="section-label" icon={ClipboardList} tone="indigo">{label}</CardLabel> : null}
       {children}
     </section>
   );

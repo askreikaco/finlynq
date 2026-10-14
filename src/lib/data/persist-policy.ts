@@ -24,6 +24,7 @@ export const PERSIST_ALLOWED = new Set([
   "/api/goals",
   "/api/health-score",
   "/api/loans",
+  "/api/net-worth-history", // metric sparklines (dashboard / reports / account hub)
   "/api/portfolio",
   "/api/recurring",
   "/api/reports",

@@ -64,7 +64,7 @@ describe("compact new-transaction layout", () => {
     seedPrefill();
     render(<Page />);
     const list = screen.getByTestId("txnew-list");
-    expect(list.className).toContain("divide-y");
+    expect(list.className).toContain("shadow-[var(--list-divider)]");
     expect(rowIds()).toEqual([
       "txnew-row-date",
       "txnew-row-amount",

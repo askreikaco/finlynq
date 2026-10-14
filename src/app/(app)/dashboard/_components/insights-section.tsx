@@ -10,16 +10,13 @@ import type { MetricTone } from "@/components/mobile/card-label";
 import type { InsightsData, RecurringData } from "./types";
 
 const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.08, delayChildren: 0.1 },
-  },
+  hidden: { opacity: 1 },
+  visible: { opacity: 1, transition: { duration: 0 } },
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 16 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" as const } },
+  hidden: { opacity: 1, y: 0 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0 } },
 };
 
 function InsightCard({
