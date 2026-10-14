@@ -13,10 +13,13 @@
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
 import { Serwist, NetworkOnly, CacheFirst, ExpirationPlugin, NavigationRoute } from "serwist";
 
-declare const self: ServiceWorkerGlobalScope & SerwistGlobalConfig;
+declare global {
+  interface WorkerGlobalScope extends SerwistGlobalConfig {}
+}
+
+declare const self: WorkerGlobalScope;
 declare const __SW_MANIFEST__: (PrecacheEntry | string)[];
 declare const __SPA_PATTERNS__: string[];
-declare const __BUILD__: string;
 declare const __BASE__: string;
 
 /** react-router style pattern ("/accounts/:id", "/files/*") -> RegExp. */
@@ -67,8 +70,3 @@ serwist.registerRoute(
 );
 
 serwist.addEventListeners();
-
-// Build marker, handy when inspecting registrations.
-self.addEventListener("message", (e) => {
-  if ((e.data as { type?: string } | null)?.type === "GET_BUILD") e.ports[0]?.postMessage(__BUILD__);
-});

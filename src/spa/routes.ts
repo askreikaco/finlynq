@@ -53,7 +53,7 @@ function pageRoute(loader: Loader): Pick<RouteObject, "lazy"> {
       const m = (await loader()) as Mod;
       const Page = m.default;
       const title = titleOf(m);
-      return { Component: () => createElement(Titled, { title }, createElement(Page)) };
+      return { Component: () => createElement(Titled, { title, children: createElement(Page) }) };
     },
   };
 }
