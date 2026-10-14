@@ -19,8 +19,13 @@ vi.mock("@/lib/family/overview/assemble", () => ({
   },
 }));
 vi.mock("@/db", () => {
-  const chain = { select: () => chain, from: () => chain, where: async () => [] };
-  return { db: chain };
+  // where() is awaited by the route (familyShares rows -> []) and also chained
+  // with .get() by getDataVersion (users row -> undefined => version 1).
+  const rows = Object.assign(Promise.resolve([] as unknown[]), { get: async () => undefined });
+  const chain = { select: () => chain, from: () => chain, where: () => rows };
+  // getDataVersion (src/lib/data-version.ts) reads schema.users.dataVersion off @/db.
+  // The chain resolves to [] so it falls back to version 1.
+  return { db: chain, schema: { users: { id: "id", dataVersion: "dataVersion" } } };
 });
 
 import { GET } from "@/app/api/family/overview/route";

@@ -85,10 +85,13 @@ describe("read-only data layer and builders", () => {
     expect(code).not.toMatch(/\b(nameCt|aliasCt|symbolCt|accountNameCt|categoryNameCt|payee|tags|noteCt)\b/);
   });
 
-  it("builders import only the read-only barrel, sections registry, fx context and dto types", () => {
+  it("builders import only the read-only barrel, sections registry, fx context, dto types and the import-free shared-reads cache", () => {
     const code = read("src/lib/family/overview/builders.ts");
     const specs = [...code.matchAll(/from\s+["']([^"']+)["']/g)].map((m) => m[1]);
-    expect(specs.sort()).toEqual(["../read-queries", "../sections", "./dto", "./fx"].sort());
+    // ./shared-reads is a pure in-process promise cache (no imports, no db, no key material);
+    // the db/decrypt/dek assertions below still bind builders.ts itself.
+    expect(specs.sort()).toEqual(["../read-queries", "../sections", "./dto", "./fx", "./shared-reads"].sort());
+    expect(readFileSync(path.join(ROOT, "src/lib/family/overview/shared-reads.ts"), "utf8")).not.toMatch(/^\s*import\b/m);
     expect(code).not.toMatch(/@\/db|drizzle|decrypt|Dek|\bdek\b|encrypted-columns|envelope|family-crypto|\.(insert|update|delete|execute|transaction)\s*\(/);
     expect(code).not.toMatch(/\b(nameCt|aliasCt|symbolCt)\b/);
   });

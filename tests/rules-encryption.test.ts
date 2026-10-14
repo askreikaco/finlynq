@@ -35,10 +35,28 @@ chain.run = vi.fn();
 
 vi.mock("@/db", () => ({
   db: new Proxy({}, { get: (_t, prop) => chain[prop as string] }),
+  // Passthrough: the chain mock has no real transaction; callback result/throw
+  // semantics are what the route depends on.
+  withDbTransaction: async <T,>(fn: () => Promise<T>) => fn(),
   schema: new Proxy({}, {
     get: () => new Proxy({}, { get: (_t2, col) => ({ name: String(col), userId: "userId", id: "id", nameCt: "nameCt" }) }),
   }),
 }));
+
+// incrementDataVersion would UPDATE users.data_version; not under test here.
+vi.mock("@/lib/data-version", async () => {
+  const { requireAuth } = await import("@/lib/auth/require-auth");
+  return {
+    incrementDataVersion: vi.fn(async () => undefined),
+    // checkETag keeps its contract (auth first) without the users.data_version read.
+    checkETag: vi.fn(async (request: unknown) => {
+      const auth = await requireAuth(request as never);
+      if (!auth.authenticated) return { response: auth.response };
+      return { authContext: auth.context, etag: undefined, dataVersion: 1 };
+    }),
+    withEtagHeaders: (r: unknown) => r,
+  };
+});
 
 vi.mock("drizzle-orm", () => ({
   eq: vi.fn(), and: vi.fn(), desc: vi.fn(), asc: vi.fn(), sql: vi.fn(), inArray: vi.fn(),
