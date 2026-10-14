@@ -446,9 +446,11 @@ export default function AdminSystemPage() {
         <div data-slot="system-cards" className={TW.grid3}>
           {/* System health */}
           <SectionCard
+            icon={Cpu}
+            tone="indigo"
             label={
               <span className="flex flex-wrap items-center gap-2 normal-case tracking-normal">
-                <Cpu className="h-4 w-4 text-primary" /> System
+                System
                 <Badge variant="outline" className="text-xs font-normal">
                   whole VPS
                 </Badge>
@@ -518,10 +520,12 @@ export default function AdminSystemPage() {
           <div className="col-span-full">
           {/* Top operations (24h) — where time goes / where to focus */}
           <SectionCard
+            icon={Gauge}
+            tone="amber"
             padded={false}
             label={
               <span className="flex flex-wrap items-center gap-2 normal-case tracking-normal">
-                <Gauge className="h-4 w-4 text-primary" /> Top operations · last 24h
+                Top operations · last 24h
                 <Badge variant="outline" className="text-xs font-normal">
                   this env
                 </Badge>
@@ -551,10 +555,12 @@ export default function AdminSystemPage() {
           <div className="col-span-full">
           {/* Active DB queries */}
           <SectionCard
+            icon={Database}
+            tone="cyan"
             padded={false}
             label={
               <span className="flex flex-wrap items-center gap-2 normal-case tracking-normal">
-                <Database className="h-4 w-4 text-primary" /> Active database queries
+                Active database queries
                 <Badge variant="outline" className="text-xs font-normal">
                   this env
                 </Badge>
@@ -584,10 +590,12 @@ export default function AdminSystemPage() {
 
           {/* Snapshot rebuild activity */}
           <SectionCard
+            icon={History}
+            tone="violet"
             className="space-y-4 text-sm"
             label={
               <span className="flex flex-wrap items-center gap-2 normal-case tracking-normal">
-                <History className="h-4 w-4 text-primary" /> Snapshot rebuild activity
+                Snapshot rebuild activity
                 <Badge variant="outline" className="text-xs font-normal">
                   this env
                 </Badge>

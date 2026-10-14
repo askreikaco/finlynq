@@ -12,6 +12,7 @@
  * run / backfill not done) from "no data in this range".
  */
 
+import { TrendingUp } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
   LineChart,
@@ -178,7 +179,7 @@ export function PerformanceChart({ accountId }: PerformanceChartProps) {
     <Card>
       <CardHeader>
         <div className="flex min-w-0 flex-col gap-2 regular:flex-row regular:items-center regular:justify-between regular:gap-3">
-          <CardTitle>Performance</CardTitle>
+          <CardTitle icon={TrendingUp} tone="emerald">Performance</CardTitle>
           {/* One chip row. Phones: horizontal scroll inside the card (overscroll-x-contain keeps the
               page from scrolling sideways); md+: wraps like before. Chips are 44px tall on phones. */}
           <div

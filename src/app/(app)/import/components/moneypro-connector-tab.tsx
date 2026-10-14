@@ -268,8 +268,7 @@ export function MoneyProConnectorTab() {
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileSpreadsheet className="h-4 w-4" />
+          <CardTitle icon={FileSpreadsheet} tone="violet">
             Money Pro
           </CardTitle>
           <CardDescription>
@@ -346,7 +345,7 @@ export function MoneyProConnectorTab() {
                   Each Money Pro account becomes a Finlynq account. Matched names
                   are linked automatically; the rest are created new.
                 </p>
-                <div className="rounded-md border divide-y">
+                <div className="rounded-md border [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                   {summary.accounts.map((p) => {
                     const sel = target[p.sourceName] ?? "new";
                     return (

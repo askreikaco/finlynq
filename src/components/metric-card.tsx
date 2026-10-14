@@ -25,10 +25,11 @@ import { formatPercent } from "@/lib/locale";
 import { LazyView } from "@/components/ui/lazy-view";
 import { useAnimations } from "@/hooks/use-animations";
 import { useDisplayCurrency } from "@/components/currency-provider";
+import { CardLabel, CARD_PAD_T, CARD_PAD_X, METRIC_TONES, type MetricTone } from "@/components/mobile/card-label";
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 16 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" as const } },
+  hidden: { opacity: 1, y: 0 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0 } },
 };
 
 const noAnimationVariants = {
@@ -36,17 +37,8 @@ const noAnimationVariants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0 } },
 };
 
-/** Icon tile colours, so pages pick a name instead of hand-writing classes. */
-export const METRIC_TONES = {
-  indigo: "bg-primary/10 text-primary",
-  emerald: "bg-pos/10 text-pos",
-  rose: "bg-destructive/10 text-destructive",
-  amber: "bg-warning/10 text-warning",
-  cyan: "bg-info/10 text-info",
-  violet: "bg-chart-5/10 text-chart-5",
-  muted: "bg-muted text-muted-foreground",
-} as const;
-export type MetricTone = keyof typeof METRIC_TONES;
+export { METRIC_TONES };
+export type { MetricTone };
 
 export type MetricCardProps = {
   label: ReactNode;
@@ -113,22 +105,16 @@ export function MetricCard({
   // Sized by the card's own width so a narrow card (2-up grid on a phone) never clips the number.
   // Hero: 5xl only once the number column (card minus the 40% sparkline column) fits "808.924.476 ₫" at 48px (@[42rem]).
   const numberSize = size === "hero" ? "text-3xl @[24rem]:text-4xl @[42rem]:text-5xl" : "text-lg @[11rem]:text-xl @[13rem]:text-2xl @[18rem]:text-3xl";
-  const toneClasses = tone in METRIC_TONES ? METRIC_TONES[tone as MetricTone] : tone;
   const card = (
     <Card
       className={`@container relative overflow-hidden group card-hover gradient-border hover:scale-[1.005] transition-transform duration-300 h-full${href ? " cursor-pointer" : ""} ${className}`}
       onMouseMove={onMouseMove}
     >
       <div className="@[36rem]:flex @[36rem]:items-stretch @[36rem]:gap-6 h-full">
-        <CardContent className={`pt-4 px-3 @[11rem]:px-5 min-w-0 ${size === "hero" ? "@[36rem]:flex-none @[36rem]:min-w-[16rem]" : "@[36rem]:flex-1"} ${hasSpark ? "pb-0 @[36rem]:pb-4" : "pb-0"}`}>
-          <div className="flex items-center gap-2.5 mb-3">
-            <div
-              className={`flex h-8 w-8 items-center justify-center rounded-lg shrink-0 transition-transform duration-300 group-hover:scale-110 ${toneClasses}`}
-            >
-              <Icon className="h-4 w-4" aria-hidden="true" />
-            </div>
-            <p className="min-w-0 text-xs font-medium text-muted-foreground tracking-wide uppercase leading-tight break-words">{label}</p>
-          </div>
+        <CardContent className={`${CARD_PAD_T} ${CARD_PAD_X} min-w-0 ${size === "hero" ? "@[36rem]:flex-none @[36rem]:min-w-[16rem]" : "@[36rem]:flex-1"} ${hasSpark ? "pb-0 @[36rem]:pb-4" : "pb-0"}`}>
+          <CardLabel inset icon={Icon} tone={tone} tileClassName="transition-transform duration-300 group-hover:scale-110">
+            {label}
+          </CardLabel>
 
           {loading ? (
             <span className="inline-block h-7 w-24 animate-shimmer rounded-md align-middle" />
@@ -211,7 +197,7 @@ export function MetricCardSkeleton({
 }) {
   return (
     <Card className={`@container relative overflow-hidden h-full ${className}`}>
-      <CardContent className="pt-4 px-5 pb-4 min-w-0">
+      <CardContent className={`${CARD_PAD_T} ${CARD_PAD_X} pb-4 min-w-0`}>
         <div className="flex items-center gap-2.5 mb-3">
           <div className="h-8 w-8 rounded-lg animate-shimmer shrink-0" />
           <div className="h-3 w-20 animate-shimmer rounded" />

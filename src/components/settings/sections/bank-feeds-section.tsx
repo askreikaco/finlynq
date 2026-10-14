@@ -25,7 +25,7 @@ import { parseSaveError } from "@/lib/save-error";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/currency";
 import { safeName } from "@/lib/safe-name";
-import { Landmark, Loader2, RefreshCw, CheckCircle2, ExternalLink, Link2, Plus, Clock, AlertTriangle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock, ExternalLink, Landmark, Link2, Loader2, Plus, RefreshCw } from "lucide-react";
 
 /** Mirrors SimplefinSyncStatus (src/lib/external-import/simplefin-sync-status.ts). */
 interface SyncStatus {
@@ -286,7 +286,7 @@ export function BankFeedsSection() {
               <Landmark className="h-5 w-5" />
             </div>
             <div className="min-w-0">
-              <CardTitle className="text-base flex items-center gap-2">
+              <CardTitle icon={Landmark} tone="indigo" className="flex items-center gap-2">
                 SimpleFIN
                 {status?.connected && (
                   <Badge variant="outline" className="text-xs text-pos border-pos/40">
@@ -384,7 +384,7 @@ export function BankFeedsSection() {
 
               {/* ── Detected accounts: create/link mapping ── */}
               {preview && (
-                <div className="rounded-xl border divide-y">
+                <div className="rounded-xl border [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                   <div className="px-4 py-2.5 text-sm font-medium bg-muted/30">
                     Detected accounts — choose how each maps to Finlynq
                   </div>
@@ -564,7 +564,7 @@ export function BankFeedsSection() {
                 <Clock className="h-5 w-5" />
               </div>
               <div className="min-w-0">
-                <CardTitle className="text-base">Pending charges</CardTitle>
+                <CardTitle icon={Clock} tone="amber">Pending charges</CardTitle>
                 <CardDescription>
                   Holds and not-yet-posted charges from your bank. These are volatile (a hold
                   clears and re-posts as a distinct charge) so they are NOT added to your ledger —
@@ -582,7 +582,7 @@ export function BankFeedsSection() {
             ) : pending.length === 0 ? (
               <p className="text-sm text-muted-foreground">No pending charges.</p>
             ) : (
-              <div className="rounded-xl border divide-y">
+              <div className="rounded-xl border [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                 {pending.map((p) => (
                   <div
                     key={`${p.accountId ?? "x"}-${p.fitId}`}

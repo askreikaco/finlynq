@@ -20,6 +20,8 @@ export interface CacheFirstJson<T> {
   loading: boolean;
   /** True only when the request failed AND there is no data to show. */
   error: boolean;
+  /** HTTP status of the failed request (e.g. 404) when `error` is true; null for a network error or no error. */
+  errorStatus: number | null;
   reload: () => void;
 }
 
@@ -32,7 +34,7 @@ function subscribe(cb: () => void): () => void {
   return () => window.removeEventListener("storage", onStorage);
 }
 
-type Legacy<T> = { url: string; data?: T; failed: boolean };
+type Legacy<T> = { url: string; data?: T; failed: boolean; status?: number | null };
 
 export function useCacheFirstJson<T>(url: string | null, opts: { keepPrevious?: boolean } = {}): CacheFirstJson<T> {
   // Server snapshot is always OFF, so server and first client render agree.
@@ -47,14 +49,15 @@ export function useCacheFirstJson<T>(url: string | null, opts: { keepPrevious?: 
     let alive = true;
     fetch(url)
       .then((r) => {
-        if (!r.ok) throw new Error(`GET ${url} ${r.status}`);
+        if (!r.ok) throw Object.assign(new Error(`GET ${url} ${r.status}`), { status: r.status });
         return r.json() as Promise<T>;
       })
       .then((d) => {
         if (alive) setLegacy({ url, data: d, failed: false });
       })
-      .catch(() => {
-        if (alive) setLegacy({ url, failed: true });
+      .catch((e: unknown) => {
+        const st = (e as { status?: unknown } | null)?.status;
+        if (alive) setLegacy({ url, failed: true, status: typeof st === "number" ? st : null });
       });
     return () => {
       alive = false;
@@ -70,19 +73,22 @@ export function useCacheFirstJson<T>(url: string | null, opts: { keepPrevious?: 
     }
   }, [on, swrMutate]);
 
-  if (!url) return { data: undefined, loading: false, error: false, reload };
+  if (!url) return { data: undefined, loading: false, error: false, errorStatus: null, reload };
   if (on) {
     const has = swr.data !== undefined;
-    return { data: swr.data, loading: !has && !swr.error, error: !has && !!swr.error, reload };
+    const st = (swr.error as { status?: unknown } | undefined)?.status;
+    const failed = !has && !!swr.error;
+    return { data: swr.data, loading: !has && !swr.error, error: failed, errorStatus: failed && typeof st === "number" ? st : null, reload };
   }
   if (opts.keepPrevious && legacy && legacy.url !== url && legacy.data !== undefined) {
-    return { data: legacy.data, loading: false, error: false, reload };
+    return { data: legacy.data, loading: false, error: false, errorStatus: null, reload };
   }
   const mine = legacy && legacy.url === url ? legacy : null;
   return {
     data: mine?.data,
     loading: !mine,
     error: !!mine?.failed,
+    errorStatus: mine?.failed ? (mine.status ?? null) : null,
     reload,
   };
 }

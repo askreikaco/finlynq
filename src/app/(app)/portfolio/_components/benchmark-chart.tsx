@@ -10,6 +10,7 @@
  * date-merge helper.
  */
 
+import { BarChart3 } from "lucide-react";
 import { metricGridClass } from "@/components/mobile/metric-grid";
 import { LineChart, Line, XAxis, YAxis, Legend, ResponsiveContainer, Tooltip } from "recharts";
 import { formatDate } from "@/lib/currency";
@@ -67,7 +68,7 @@ export function BenchmarkChart({
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-base">Performance vs Benchmarks</CardTitle>
+            <CardTitle icon={BarChart3} tone="violet">Performance vs Benchmarks</CardTitle>
             <p className="text-xs text-muted-foreground mt-0.5">
               Compare major indices over time (% change)
             </p>

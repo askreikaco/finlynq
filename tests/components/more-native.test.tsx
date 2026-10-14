@@ -108,7 +108,7 @@ describe("More section headers and groups", () => {
     await waitFor(() => expect(screen.getByTestId("more-group-admin")).toBeTruthy());
     const headers = screen
       .getByTestId("more-menu")
-      .querySelectorAll("[data-slot='inset-group'] > h2");
+      .querySelectorAll("[data-slot='inset-group'] [data-slot='inset-section-header']");
     expect(Array.from(headers).map((h) => h.textContent)).toEqual([
       "Account",
       "Explore",

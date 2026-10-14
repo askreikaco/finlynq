@@ -217,17 +217,22 @@ export type TxSortFilter = {
   ids?: number[];
   // Kind substring/pattern, ILIKE.
   kindLike?: string;
-  // Investment split. "investment" = account.is_investment OR portfolio_holding_id
-  // set; "daily" = the complement; "all"/undefined = no filter. Applied only when
+  // Investment split. "investment" = account.is_investment OR account group 'Investment' OR
+  // portfolio_holding_id set; "daily" = the complement; "all"/undefined = no filter. Applied only when
   // set, so every caller that omits it (balances, insights, text-filter) is unchanged.
   scope?: TxScope;
 };
 
 export type TxScope = "daily" | "investment" | "all";
 
-/** Investment predicate shared by scope=investment|daily. */
-function investmentTxPredicate(): SQL {
-  return sql`(${transactions.portfolioHoldingId} IS NOT NULL OR EXISTS (SELECT 1 FROM ${accounts} WHERE ${accounts.id} = ${transactions.accountId} AND ${accounts.isInvestment} = true))`;
+/**
+ * Investment predicate shared by scope=investment|daily (single source of truth).
+ * Investment = holding-linked row OR account.is_investment OR account in the
+ * "Investment" account group (accounts.group, plaintext; trimmed, case-insensitive).
+ * Scope/list split only; valuation keeps using accounts.is_investment alone.
+ */
+export function investmentTxPredicate(): SQL {
+  return sql`(${transactions.portfolioHoldingId} IS NOT NULL OR EXISTS (SELECT 1 FROM ${accounts} WHERE ${accounts.id} = ${transactions.accountId} AND (${accounts.isInvestment} = true OR lower(btrim(${accounts.group})) = 'investment')))`;
 }
 
 export function buildTxFilterConditions(userId: string, filters?: TxSortFilter) {

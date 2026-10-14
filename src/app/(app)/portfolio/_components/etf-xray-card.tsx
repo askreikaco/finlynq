@@ -13,9 +13,7 @@ import { useState } from "react";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
 } from "recharts";
-import {
-  BarChart3, Globe2, Building2, ChevronLeft, ChevronRight, Layers, Search, Download,
-} from "lucide-react";
+import { BarChart3, Building2, ChevronLeft, ChevronRight, Download, Globe2, Layers, Search } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DetailSheet, ListRow, SectionCard } from "@/components/mobile";
 import { Button } from "@/components/ui/button";
@@ -43,7 +41,7 @@ function EtfStockRows({ rows, startIndex, displayCurrency }: { rows: EtfStock[];
   const [open, setOpen] = useState<{ stock: EtfStock; index: number } | null>(null);
   return (
     <>
-      <SectionCard padded={false} className="divide-y divide-border/50 px-3">
+      <SectionCard padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
         {rows.map((s, i) => (
           <ListRow
             key={s.ticker}
@@ -108,7 +106,7 @@ export function EtfXrayCard({
           <div>
             <div className="flex items-center gap-2">
               <Search className="h-4 w-4 text-primary" />
-              <CardTitle className="text-base">ETF X-Ray</CardTitle>
+              <CardTitle icon={Layers} tone="violet">ETF X-Ray</CardTitle>
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
               Effective exposure across {etfXray.etfCount} ETF{etfXray.etfCount !== 1 ? "s" : ""} in your portfolio
@@ -299,7 +297,7 @@ export function EtfXrayCard({
             <p className="text-xs text-muted-foreground">
               Your ETF holdings and their weight in the ETF portfolio.
             </p>
-            <SectionCard padded={false} className="divide-y divide-border/50 px-3">
+            <SectionCard padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
               {etfXray.etfs.map((etf) => (
                 <ListRow
                   key={`${etf.symbol}-${etf.account}`}

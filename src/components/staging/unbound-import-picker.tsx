@@ -106,8 +106,7 @@ export function UnboundImportPicker({
   return (
     <Card className="border-warning/30 bg-warning/10">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base flex items-center gap-2">
-          <AlertCircle className="h-4 w-4 text-warning" />
+        <CardTitle icon={AlertCircle} tone="amber">
           This email import didn&apos;t match any saved template
         </CardTitle>
         <p className="text-xs text-muted-foreground mt-1.5">

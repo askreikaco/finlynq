@@ -28,7 +28,7 @@ import type { CategoryOverview, OverviewCategory } from "@/lib/reports/category-
 import { buildGroupRows, findRow, pieSlices, subLabel, type OverviewRow } from "@/lib/categories/group-overview";
 import { useAnimations } from "@/hooks/use-animations";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
-import { ArrowRightLeft, Check, ChevronLeft, ChevronRight, Copy, FileDown, ListChecks, PiggyBank, Pencil, Plus, Receipt, Save, Wallet } from "lucide-react";
+import { ArrowRightLeft, ChartPie, Check, ChevronLeft, ChevronRight, Copy, FileDown, ListChecks, PiggyBank, Pencil, Plus, Receipt, Save, Tags, Wallet } from "lucide-react";
 import { CategoryBudgetForm, type FormCategory } from "./_components/category-budget-form";
 import { CategoryRow } from "./_components/category-row";
 import {
@@ -463,7 +463,7 @@ function CategoriesOverview() {
       </div>
     ),
     summary: (
-      <SectionCard label={isIncome ? "Income" : "Spent"}>
+      <SectionCard label={isIncome ? "Income" : "Spent"} icon={ChartPie} tone="amber">
         <div className="flex flex-col regular:flex-row regular:items-center gap-5">
           {slices.length > 0 && (
             <div role="img" aria-label={pieLabel} className="mx-auto shrink-0 regular:mx-0">
@@ -526,8 +526,10 @@ function CategoriesOverview() {
     "by-category": (
       <SectionCard
         label="Categories"
+        icon={Tags}
+        tone="indigo"
         padded={false}
-        className="divide-y divide-border/50 [&>*]:min-w-0"
+        className="[&>*]:min-w-0 [&>*:not(:last-child)]:shadow-[var(--list-divider)]"
       >
         {rows.length === 0 ? (
           <p className="px-4 py-6 text-sm text-muted-foreground regular:col-span-full">No {noun}.</p>
@@ -547,7 +549,7 @@ function CategoriesOverview() {
                     triggerClassName="rounded-none px-4 py-3"
                     panelClassName="border-t border-border/50 p-0"
                   >
-                    <ul className="divide-y divide-border/50">
+                    <ul className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                       {row.categories.map((c) => (
                         <li key={c.id}>{categoryLink(c, row.group, colorOf(row.key), ROW_LINK, true)}</li>
                       ))}

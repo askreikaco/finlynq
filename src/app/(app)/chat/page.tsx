@@ -228,7 +228,7 @@ function InlineTable({ data }: { data: Record<string, unknown>[] }) {
 
   // One list row per result row (no table): the first column is the title, the rest read as a subtitle.
   return (
-    <div className="divide-y divide-border/50 overflow-hidden rounded-xl border border-border/50 bg-card px-3">
+    <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-hidden rounded-xl border border-border/50 bg-card px-3">
       {data.map((row, i) => (
         <ListRow
           key={i}

@@ -1,5 +1,6 @@
 "use client";
 
+import { Landmark } from "lucide-react";
 import { useId } from "react";
 import { Badge } from "@/components/ui/badge";
 import { ListRow, SectionCard } from "@/components/mobile";
@@ -193,7 +194,7 @@ export function MemberCard({
             )}
 
             {s.loans && (
-              <SectionCard label={FAMILY_STRINGS.overview_loans_title}>
+              <SectionCard label={FAMILY_STRINGS.overview_loans_title} icon={Landmark} tone="rose">
                 {s.loans.loans.length === 0 ? (
                   <p className="text-sm text-muted-foreground">{NONE}</p>
                 ) : (

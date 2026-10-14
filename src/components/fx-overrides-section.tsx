@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Combobox, type ComboboxItemShape } from "@/components/ui/combobox";
 import { useDropdownOrder } from "@/components/dropdown-order-provider";
-import { Plus, Trash2, RefreshCw } from "lucide-react";
+import { ArrowLeftRight, Plus, RefreshCw, Trash2 } from "lucide-react";
 import {
   currencyLabel,
   isSupportedCurrency,
@@ -137,7 +137,7 @@ export function FxOverridesSection() {
             <RefreshCw className="h-5 w-5" />
           </div>
           <div>
-            <CardTitle className="text-base">Custom exchange rates</CardTitle>
+            <CardTitle icon={ArrowLeftRight} tone="cyan">Custom exchange rates</CardTitle>
             <CardDescription>
               Pin your own FX rate when the market rate doesn&apos;t match what your bank charged,
               or for currencies we don&apos;t auto-fetch. Stored as <code>1 USD = N currency</code>.

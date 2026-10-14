@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { SmartphoneIcon, Check } from "lucide-react";
+import { Check, Smartphone, SmartphoneIcon } from "lucide-react";
 import { formatDateTimeLocal } from "@/lib/currency";
 
 const STRINGS = {
@@ -159,7 +159,7 @@ export function TrustedDevices() {
             <SmartphoneIcon className="h-5 w-5" />
           </div>
           <div>
-            <CardTitle className="text-base">{STRINGS.title}</CardTitle>
+            <CardTitle icon={Smartphone} tone="cyan">{STRINGS.title}</CardTitle>
             <CardDescription>{STRINGS.description}</CardDescription>
           </div>
         </div>

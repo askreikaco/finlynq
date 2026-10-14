@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ListRow, SectionCard } from "@/components/mobile";
-import { Upload, FileText, Wallet, Tag, Briefcase, ArrowLeftRight, Database, Download, AlertTriangle, Trash2, History } from "lucide-react";
+import { AlertTriangle, ArrowLeftRight, Briefcase, Database, Download, Eye, FileText, History, RefreshCw, Tag, Trash2, Upload, Wallet } from "lucide-react";
 import { RebuildSnapshotsButton } from "@/components/portfolio/rebuild-snapshots-button";
 import { getPasskeyStepUp } from "@/lib/client/passkey-stepup";
 import { getSessionInfo } from "@/lib/data/session-info";
@@ -366,7 +366,7 @@ export function DataSection() {
               <Upload className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle className="text-base">Import Data</CardTitle>
+              <CardTitle icon={Upload} tone="cyan">Import Data</CardTitle>
               <CardDescription>Import accounts, categories, or portfolio holdings from CSV</CardDescription>
             </div>
           </div>
@@ -403,7 +403,7 @@ export function DataSection() {
                 <span className="font-medium truncate">{importFileName}</span>
                 <Badge variant="outline" className="text-xs">Preview</Badge>
               </div>
-              <SectionCard label="Preview" padded={false} className="divide-y divide-border/50 px-3">
+              <SectionCard label="Preview" icon={Eye} tone="muted" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
                 {importPreview.map((row, i) => (
                   <ListRow
                     key={i}
@@ -440,7 +440,7 @@ export function DataSection() {
               <Database className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle className="text-base">Data Export</CardTitle>
+              <CardTitle icon={Download} tone="emerald">Data Export</CardTitle>
               <CardDescription>Export your data as CSV files</CardDescription>
             </div>
           </div>
@@ -473,7 +473,7 @@ export function DataSection() {
               <ArrowLeftRight className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle className="text-base">Backfill transactions</CardTitle>
+              <CardTitle icon={History} tone="amber">Backfill transactions</CardTitle>
               <CardDescription>Canonicalize legacy or imported transactions so realized gains and lot tracking work</CardDescription>
             </div>
           </div>
@@ -496,7 +496,7 @@ export function DataSection() {
               <History className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle className="text-base">Rebuild balance history</CardTitle>
+              <CardTitle icon={RefreshCw} tone="violet">Rebuild balance history</CardTitle>
               <CardDescription>
                 Recompute daily balance snapshots — cash and investments — from your
                 first transaction to today. Run this if the &ldquo;Net Worth Over
@@ -519,7 +519,7 @@ export function DataSection() {
               <AlertTriangle className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle className="text-base">Data Management</CardTitle>
+              <CardTitle icon={Database} tone="indigo">Data Management</CardTitle>
               <CardDescription>Danger zone - destructive actions</CardDescription>
             </div>
           </div>

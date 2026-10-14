@@ -415,7 +415,7 @@ function ParamTable({ params, label }: { params: ApiParam[]; label: string }) {
   return (
     <div className="mt-3">
       <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
-      <div className="divide-y divide-border/50 rounded-xl border border-border/50 bg-card px-3">
+      <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] rounded-xl border border-border/50 bg-card px-3">
         {params.map((p) => (
           <ListRow
             key={p.name}
@@ -672,7 +672,7 @@ npx tsx mcp-server/index.ts
               <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
                 Read Tools ({MCP_TOOLS.filter((t) => t.type === "read").length})
               </h3>
-              <div className="divide-y divide-border/50 rounded-xl border border-border/50 bg-card px-3">
+              <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] rounded-xl border border-border/50 bg-card px-3">
                 {MCP_TOOLS.filter((t) => t.type === "read").map((tool) => (
                   <ListRow
                     key={tool.name}
@@ -687,7 +687,7 @@ npx tsx mcp-server/index.ts
               <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
                 Write Tools ({MCP_TOOLS.filter((t) => t.type === "write").length})
               </h3>
-              <div className="divide-y divide-border/50 rounded-xl border border-border/50 bg-card px-3">
+              <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] rounded-xl border border-border/50 bg-card px-3">
                 {MCP_TOOLS.filter((t) => t.type === "write").map((tool) => (
                   <ListRow
                     key={tool.name}

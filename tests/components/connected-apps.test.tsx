@@ -26,6 +26,7 @@ vi.mock("@/components/ui/confirm-dialog", () => ({
 
 vi.mock("lucide-react", () => ({
   Plug: () => <div>Plug Icon</div>,
+  Link2: () => <div>Link Icon</div>,
   Loader2: () => <div>Loader Icon</div>,
 }));
 

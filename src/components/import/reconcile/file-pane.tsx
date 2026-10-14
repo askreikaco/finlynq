@@ -139,7 +139,7 @@ export function FilePane({
           />
           Select all sendable
         </label>
-        <div className="divide-y divide-border/50">
+        <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
           {rows.map((r) => {
             const isExpanded = expanded.has(r.id);
             // Pushed to the bank ledger on a prior "Send" — kept visible,

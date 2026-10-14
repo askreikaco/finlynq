@@ -2,6 +2,8 @@
  * Settings hub page (level 1, every size): grouped inset lists of all settings sections.
  */
 
+import { CardLabel } from "@/components/mobile/card-label";
+import { groupLabelIcon } from "@/components/mobile/group-label-icon";
 import { cn } from "@/lib/utils";
 import { getEntriesBySurface } from "@/lib/nav-config";
 import Link from "next/link";
@@ -55,10 +57,10 @@ export function SettingsHub() {
       >
         {groups.map((group) => (
           <section key={group.title} data-slot="settings-hub-group" className="space-y-2">
-            <div className="divide-y divide-border/50 overflow-hidden rounded-2xl bg-card">
-              <h2 className="px-4 pb-1 pt-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <div className="@container [&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-hidden rounded-2xl bg-card">
+              <CardLabel as="h2" icon={groupLabelIcon(group.title).icon} tone={groupLabelIcon(group.title).tone}>
                 {group.title}
-              </h2>
+              </CardLabel>
               {group.entries.map((entry) => {
                 const Icon = entry.icon;
                 return (

@@ -9,7 +9,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
-import { ToggleLeft, ToggleRight, Database } from "lucide-react";
+import { Code, Database, ToggleLeft, ToggleRight } from "lucide-react";
 import { useOpenSection } from "@/components/settings/use-open-section";
 import { DataSection } from "@/components/settings/sections/data-section";
 
@@ -75,7 +75,7 @@ export default function DeveloperSettingsPage() {
               {devMode ? <ToggleRight className="h-5 w-5" /> : <ToggleLeft className="h-5 w-5" />}
             </div>
             <div>
-              <CardTitle className="text-base">Dev Mode</CardTitle>
+              <CardTitle icon={Code} tone="violet">Dev Mode</CardTitle>
               <CardDescription>Show advanced and experimental features in the navigation</CardDescription>
             </div>
           </div>

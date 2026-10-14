@@ -15,7 +15,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, ArrowRight, Loader2 } from "lucide-react";
+import { AlertTriangle, ArrowRight, Coins, Loader2, SlidersHorizontal, Target } from "lucide-react";
 import { SectionPage } from "@/components/templates";
 
 type Mode = "refuse_orphans" | "synthesize_orphans";
@@ -128,7 +128,7 @@ export default function BackfillWizardPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Step 1 — Mode</CardTitle>
+          <CardTitle icon={SlidersHorizontal} tone="indigo">Step 1 — Mode</CardTitle>
           <CardDescription>
             How should the backfill handle stock-leg transactions that have no matching cash-leg row?
           </CardDescription>
@@ -152,7 +152,7 @@ export default function BackfillWizardPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Step 2 — Scope</CardTitle>
+          <CardTitle icon={Target} tone="cyan">Step 2 — Scope</CardTitle>
           <CardDescription>Narrow which transactions the planner looks at.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -293,7 +293,7 @@ function CashSleeveSymbolFix() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Step 0 — Cash-sleeve symbols</CardTitle>
+        <CardTitle icon={Coins} tone="amber">Step 0 — Cash-sleeve symbols</CardTitle>
         <CardDescription>
           Cash sleeves often ship without a Symbol set. Click to auto-fill
           symbol = currency (e.g., CAD cash sleeve gets symbol=&quot;CAD&quot;).

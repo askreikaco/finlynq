@@ -347,8 +347,7 @@ export function GenericCsvConnectorTab() {
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileSpreadsheet className="h-4 w-4" />
+          <CardTitle icon={FileSpreadsheet} tone="emerald">
             Generic CSV (full ledger)
           </CardTitle>
           <CardDescription>
@@ -460,7 +459,7 @@ export function GenericCsvConnectorTab() {
                     First {sampleRows.length} rows
                   </h4>
                   <div className="max-h-64 overflow-y-auto">
-                    <SectionCard padded={false} className="divide-y divide-border/50 px-3">
+                    <SectionCard padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
                       {sampleRows.map((row, i) => (
                         <ListRow
                           key={i}
@@ -526,7 +525,7 @@ export function GenericCsvConnectorTab() {
                       Each source account becomes a Finlynq account. Matched names
                       are linked automatically; the rest are created new.
                     </p>
-                    <div className="rounded-md border divide-y">
+                    <div className="rounded-md border [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                       {summary.accounts.map((p) => {
                         const sel = target[p.sourceName] ?? "new";
                         return (

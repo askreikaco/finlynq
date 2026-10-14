@@ -1,6 +1,6 @@
 "use client";
 
-import { Flame, Snowflake } from "lucide-react";
+import { Flame, Snowflake, TrendingDown, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Mover } from "../_types";
 import { DayChange } from "./portfolio-ui";
@@ -27,7 +27,7 @@ export function TopMoversCard({
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
           <Icon className={`h-4 w-4 ${kind === "gainers" ? "text-pos" : "text-destructive"}`} />
-          <CardTitle className="text-sm font-medium">{kind === "gainers" ? "Top Gainers" : "Top Losers"}</CardTitle>
+          <CardTitle icon={kind === "gainers" ? TrendingUp : TrendingDown} tone={kind === "gainers" ? "emerald" : "rose"}>{kind === "gainers" ? "Top Gainers" : "Top Losers"}</CardTitle>
         </div>
       </CardHeader>
       <CardContent>

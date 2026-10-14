@@ -22,7 +22,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Accordion } from "@/components/ui/accordion";
-import { Link2 as Link2Icon, ExternalLink, Zap } from "lucide-react";
+import { ExternalLink, Link2 as Link2Icon, SlidersHorizontal, Zap } from "lucide-react";
 import { useOpenSection } from "@/components/settings/use-open-section";
 import { movedImportHref } from "@/components/settings/moved-import";
 import { AmountInput } from "@/components/amount-input";
@@ -154,7 +154,7 @@ export default function ReconciliationSettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Fuzzy-match thresholds</CardTitle>
+          <CardTitle icon={SlidersHorizontal} tone="indigo">Fuzzy-match thresholds</CardTitle>
           <CardDescription>
             The engine flags a (transaction, bank row) pair as a fuzzy match
             when their amount + date are within the windows below AND the
@@ -244,8 +244,7 @@ export default function ReconciliationSettingsPage() {
 
       <Card id="rules" className="scroll-mt-6">
         <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <Zap className="h-4 w-4" />
+          <CardTitle icon={Zap} tone="amber">
             Rules
           </CardTitle>
           <CardDescription>Auto-categorize and transform transactions</CardDescription>

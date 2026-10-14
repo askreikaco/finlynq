@@ -544,7 +544,7 @@ export function LotInspectorDialog({
                     </div>
                   </div>
                   {lotClosures.length > 0 ? (
-                    <ul className="divide-y divide-border/60 text-xs">
+                    <ul className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] text-xs">
                       {lotClosures.map((c) => (
                         <li
                           key={c.id}

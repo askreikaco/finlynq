@@ -24,7 +24,7 @@ describe("OfflineModeCard", () => {
   it("renders label, help and encryption line; a user who never chose is On (default); no IndexedDB opened", async () => {
     const open = vi.spyOn(indexedDB, "open");
     render(<OfflineModeCard />);
-    expect(screen.getByText("Offline mode (beta)", { selector: "[data-slot=card-title], h3, div" })).toBeTruthy();
+    expect(screen.getByText("Offline mode (beta)", { selector: "[data-slot=card-title], h3, div, span" })).toBeTruthy();
     expect(screen.getByText(/Save new and edited transactions on this device when you are offline and sync them when you are back online\. Home and Accounts also open from the last saved data\. Trusted devices only\./)).toBeTruthy();
     expect(screen.getByTestId("offline-mode-encryption").textContent).toBe("Offline copies are encrypted on this device and wiped when you sign out. On a shared computer, turn this off.");
     expect(screen.getByTestId("offline-mode-unsynced-note").textContent).toBe("If you are signed out unexpectedly, unsent changes stay encrypted on this device until you sign in again.");

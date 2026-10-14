@@ -189,7 +189,7 @@ export function InvestmentStatementPreview({
 
         {/* Row preview (first 100) */}
         <div className="overflow-auto flex-1 rounded-lg border">
-          <div className="divide-y">
+          <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
             {rows.slice(0, 100).map((row, i) => (
               <div
                 key={i}

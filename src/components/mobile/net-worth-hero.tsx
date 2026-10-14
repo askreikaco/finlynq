@@ -1,7 +1,7 @@
 import { SectionCard } from "./section-card";
 import { Amount } from "./amount";
 import { MetricCard } from "@/components/metric-card";
-import { Landmark, Wallet } from "lucide-react";
+import { Landmark, TrendingUp, Wallet } from "lucide-react";
 
 /**
  * Net worth hero: total + Assets / Liabilities tiles. `totalLiabilities` is the signed
@@ -18,7 +18,7 @@ export function NetWorthHero({
 }) {
   const netWorth = totalAssets + totalLiabilities;
   return (
-    <SectionCard data-slot="net-worth-hero" label="Net worth" className="space-y-4">
+    <SectionCard data-slot="net-worth-hero" label="Net worth" icon={TrendingUp} tone="indigo" className="space-y-4">
       <div>
         <Amount value={netWorth} currency={currency} size="hero" tone="none" className="block" />
       </div>

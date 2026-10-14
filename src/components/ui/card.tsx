@@ -1,6 +1,9 @@
 import * as React from "react"
 
+import type { LucideIcon } from "lucide-react"
+
 import { cn } from "@/lib/utils"
+import { CARD_ICON_TILE, CARD_LABEL_GAP, CARD_LABEL_TEXT, resolveTone, type MetricTone } from "@/components/mobile/card-label"
 
 function Card({
   className,
@@ -25,7 +28,7 @@ function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card-header"
       className={cn(
-        "group/card-header @container/card-header grid auto-rows-min items-start gap-1 rounded-t-xl px-4 group-data-[size=sm]/card:px-3 has-data-[slot=card-action]:grid-cols-[1fr_auto] has-data-[slot=card-description]:grid-rows-[auto_auto] [.border-b]:pb-4 dense:pointer-fine:[.border-b]:pb-3 group-data-[size=sm]/card:[.border-b]:pb-3",
+        "group/card-header @container/card-header grid auto-rows-min items-start gap-1 rounded-t-xl px-5 pt-4 group-data-[size=sm]/card:px-3 has-data-[slot=card-action]:grid-cols-[1fr_auto] has-data-[slot=card-description]:grid-rows-[auto_auto] [.border-b]:pb-4 dense:pointer-fine:[.border-b]:pb-3 group-data-[size=sm]/card:[.border-b]:pb-3",
         className
       )}
       {...props}
@@ -33,16 +36,26 @@ function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
-function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
+function CardTitle({
+  className,
+  icon: Icon,
+  tone = "muted",
+  children,
+  ...props
+}: React.ComponentProps<"div"> & { icon?: LucideIcon; tone?: MetricTone | (string & {}) }) {
   return (
     <div
       data-slot="card-title"
-      className={cn(
-        "text-base leading-snug font-medium group-data-[size=sm]/card:text-sm",
-        className
-      )}
+      className={cn(CARD_LABEL_TEXT, Icon && ["flex items-center", CARD_LABEL_GAP], className)}
       {...props}
-    />
+    >
+      {Icon && (
+        <span className={cn(CARD_ICON_TILE, resolveTone(tone))} data-slot="card-label-icon">
+          <Icon className="h-4 w-4" aria-hidden="true" />
+        </span>
+      )}
+      {Icon ? <span className="min-w-0 break-words">{children}</span> : children}
+    </div>
   )
 }
 
@@ -73,7 +86,7 @@ function CardContent({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-content"
-      className={cn("px-4 group-data-[size=sm]/card:px-3", className)}
+      className={cn("px-5 group-data-[size=sm]/card:px-3", className)}
       {...props}
     />
   )

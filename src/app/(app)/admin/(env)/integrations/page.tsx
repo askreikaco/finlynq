@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Plug, CheckCircle2, AlertCircle } from "lucide-react";
+import { AlertCircle, CheckCircle2, Mail, Plug, Send, Settings } from "lucide-react";
 import { getPasskeyStepUp } from "@/lib/client/passkey-stepup";
 import { ListRow, SectionCard } from "@/components/mobile";
 
@@ -278,7 +278,7 @@ export default function AdminIntegrationsPage() {
 
       {!error && status && (
         <div data-slot="integration-cards" className={TW.grid3}>
-          <SectionCard label="Email Transport Status" className="space-y-4">
+          <SectionCard label="Email Transport Status" icon={Mail} tone="cyan" className="space-y-4">
             <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5 text-primary" />
@@ -294,7 +294,7 @@ export default function AdminIntegrationsPage() {
             </div>
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-muted-foreground">Configured providers</Label>
-              <ul className="divide-y divide-border/50">
+              <ul className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                 {(["resend", "brevo", "smtp"] as const).map((p) => (
                   <li key={p}>
                     <ListRow
@@ -315,7 +315,7 @@ export default function AdminIntegrationsPage() {
             </div>
           </SectionCard>
 
-          <SectionCard label="Settings" className="space-y-4">
+          <SectionCard label="Settings" icon={Settings} tone="muted" className="space-y-4">
             <p className="text-sm text-muted-foreground">
               Values saved here override the server environment. Secrets are write-only: leave a field empty to keep it.
             </p>
@@ -447,7 +447,7 @@ export default function AdminIntegrationsPage() {
           </SectionCard>
 
           {status.provider !== "none" ? (
-            <SectionCard label="Send a test email">
+            <SectionCard label="Send a test email" icon={Send} tone="indigo">
               <form onSubmit={sendTest} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="test-to" className="text-sm">To</Label>
