@@ -9,7 +9,7 @@
  */
 
 import type { ReactNode } from "react";
-import { Sparkline } from "@/components/sparkline";
+import { ProgressRow } from "@/components/mobile/progress-row";
 import { formatCurrency } from "@/lib/currency";
 
 export interface CategoryRowProps {
@@ -58,54 +58,35 @@ export function CategoryRow({ label, dot, amount, prev, budget, trend, cur, isIn
   const progress = budgetProgress(amount, budget);
   // Up is bad for spending, good for income.
   const deltaTone = !delta || delta.diff === 0 ? "text-muted-foreground" : (delta.diff > 0) === isIncome ? "text-pos" : "text-destructive";
-  const barTone = !progress ? "" : progress.ratio > 1 ? "bg-destructive" : progress.ratio >= 0.75 ? "bg-warning" : "bg-primary";
-  const usedPct = progress ? Math.round(Number.isFinite(progress.ratio) ? progress.ratio * 100 : 999) : 0;
-  // Narrow: line 1 = name | amount, line 2 = chart + mini budget bar | change. Wide (container >= 36rem): one line.
+  const barTone = !progress ? undefined : progress.ratio > 1 ? "destructive" : progress.ratio >= 0.75 ? "warning" : "primary";
+  const usedPct = progress ? Math.round(Number.isFinite(progress.ratio) ? progress.ratio * 100 : 999) : null;
   return (
-    <span data-slot="category-row" className="@container block w-full min-w-0 font-sans">
-      <span className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 @3xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_7.5rem_6.5rem]">
-        <span className={`flex min-w-0 items-center gap-2.5${indent ? " pl-5" : ""}`}>
-          <span data-slot="category-dot" className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: dot }} aria-hidden />
-          <span data-slot="category-label" className="truncate text-sm font-medium">{label}</span>
-          {count != null && (
-            <span className="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-muted px-1.5 text-xs font-medium text-muted-foreground">
-              {count}
-            </span>
-          )}
-          {badge}
-        </span>
-        <span data-slot="category-amount" className="text-right text-sm font-semibold tabular-nums @3xl:order-4">{formatCurrency(amount, cur)}</span>
-        <span className="flex min-w-0 items-center gap-2 @3xl:order-2 @3xl:gap-3">
-          <span data-slot="category-chart" className="block h-5 w-12 shrink-0 @3xl:w-16">
-            {trend && trend.length > 1 ? (
-              <Sparkline data={trend} color={dot} labels={sparkLabels} currency={cur} height="100%" className="h-full w-full" />
-            ) : null}
-          </span>
-          <span data-slot="category-budget" className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
-            <span
-              role="progressbar"
-              aria-label="Budget used"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={progress ? Math.min(100, usedPct) : 0}
-              className="block h-1.5 w-[10cqw] min-w-10 max-w-24 @3xl:min-w-14 shrink-0 overflow-hidden rounded-full bg-muted"
-            >
-              {progress && <span className={`block h-full rounded-full ${barTone}`} style={{ width: `${Math.min(100, Math.max(0, usedPct))}%` }} />}
-            </span>
-            <span className={`whitespace-nowrap ${progress && progress.left < 0 ? "text-destructive" : ""}`}>
-              {progress ? `${progress.left < 0 ? "Over" : "Left"} ${formatCurrency(Math.abs(progress.left), cur)}` : "No budget"}
-            </span>
-          </span>
-        </span>
-        <span data-slot="category-delta" title="vs last month" className={`whitespace-nowrap text-right text-xs font-medium @3xl:order-3 ${deltaTone}`}>
-          {delta ? (
-            <>
-              {signed(delta.diff, cur)}
-              {delta.pct != null && ` (${delta.pct >= 0 ? "+" : ""}${Math.round(delta.pct * 100)}%)`}
-            </>
-          ) : null}
-        </span>
-      </span>
-    </span>
+    <ProgressRow
+      slot="category"
+      label={label}
+      dot={dot}
+      value={formatCurrency(amount, cur)}
+      trend={trend}
+      sparkLabels={sparkLabels}
+      cur={cur}
+      pct={usedPct}
+      barTone={barTone}
+      progressAria="Budget used"
+      progressLabel={progress ? `${progress.left < 0 ? "Over" : "Left"} ${formatCurrency(Math.abs(progress.left), cur)}` : "No budget"}
+      progressLabelClassName={progress && progress.left < 0 ? "text-destructive" : ""}
+      delta={
+        delta ? (
+          <>
+            {signed(delta.diff, cur)}
+            {delta.pct != null && ` (${delta.pct >= 0 ? "+" : ""}${Math.round(delta.pct * 100)}%)`}
+          </>
+        ) : null
+      }
+      deltaTone={deltaTone}
+      deltaTitle="vs last month"
+      count={count}
+      badge={badge}
+      indent={indent}
+    />
   );
 }

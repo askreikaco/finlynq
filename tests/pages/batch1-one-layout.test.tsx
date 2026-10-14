@@ -95,19 +95,19 @@ afterEach(() => {
 });
 
 /** Asserts the batch-1 contract: no table, the shared PageHeader with one h1, and at least one inset ListRow. */
-function expectOneLayout(container: HTMLElement, title: string, { rows = true } = {}) {
+function expectOneLayout(container: HTMLElement, title: string, { rows = true, rowSlot = "list-row" } = {}) {
   expect(container.querySelector("table")).toBeNull();
   const header = container.querySelector('[data-slot="page-header"]');
   expect(header).toBeTruthy();
   expect(header!.querySelector("h1")?.textContent?.trim()).toBe(title);
-  if (rows) expect(container.querySelectorAll('[data-slot="list-row"]').length).toBeGreaterThan(0);
+  if (rows) expect(container.querySelectorAll(`[data-slot="${rowSlot}"]`).length).toBeGreaterThan(0);
 }
 
 describe("Loans: one layout at every size", () => {
-  it("shared header with Add Loan, loans as ListRow buttons, no table", async () => {
+  it("shared header with Add Loan, loans as shared ProgressRow buttons, no table", async () => {
     const { container } = render(<LoansPage />);
     await screen.findByRole("button", { name: /Car loan/ });
-    expectOneLayout(container, "Loans & Debt");
+    expectOneLayout(container, "Loans & Debt", { rowSlot: "loan-row" });
     // A link to /loans/new on phones; at wide the same control sets ?sel=new (split view).
     expect(screen.getByRole("link", { name: /Add Loan/ })).toBeTruthy();
   });

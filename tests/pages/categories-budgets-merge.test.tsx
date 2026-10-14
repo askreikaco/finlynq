@@ -131,7 +131,7 @@ describe("Edit mode and column alignment", () => {
     const src = read(PAGE);
     expect(src).toContain('py-3 pl-4 pr-11'); // = group trigger px-4 + chevron slot
     expect(src).not.toMatch(/ROW_LINK\} pl-8/);
-    expect(read("src/app/(app)/categories/_components/category-row.tsx")).toContain('indent ? " pl-5"');
+    expect(read("src/components/mobile/progress-row.tsx")).toContain('indent && "pl-5"');
   });
 });
 

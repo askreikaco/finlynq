@@ -2,17 +2,18 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
-import { CARD_ROW_GRID } from "@/components/mobile/section-card";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
+import { STATUS_DOT, goalStatus } from "@/lib/status-colour";
+import { localDateISO } from "@/lib/utils/date";
+import type { ProgressTone } from "@/components/mobile/progress-row";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { CheckCircle2, Pencil, PiggyBank, Plus, Target, Trash2 } from "lucide-react";
 import {
-  MetricGrid, CustomizeCardsSheet, DetailSheet, ListRow, SectionCard,
+  MetricGrid, CustomizeCardsSheet, DetailSheet, SectionCard, ProgressRow, ProgressRowButton,
   useCardLayout, usePageCustomize, ListDetailLayout, ListDetailNewButton, useListDetail, type MetricItem, type DetailItem,
 } from "@/components/mobile";
 import { PageToolbar } from "@/components/page-toolbar";
@@ -49,6 +50,38 @@ function progressColorClass(progress: number): string {
   if (progress < 33) return "[&_[data-slot=progress-indicator]]:bg-destructive";
   if (progress <= 66) return "[&_[data-slot=progress-indicator]]:bg-warning";
   return "[&_[data-slot=progress-indicator]]:bg-pos";
+}
+
+function progressTone(progress: number): ProgressTone {
+  return progress < 33 ? "destructive" : progress <= 66 ? "warning" : "pos";
+}
+
+/** One goal row: status dot, name + deadline, saved / target progress. No per-goal history exists, so no chart. */
+function GoalRow({ g, displayCurrency, today, selected, onOpen }: { g: Goal; displayCurrency: string; today: string; selected: boolean; onOpen: () => void }) {
+  const currency = g.currency || displayCurrency;
+  const status = goalStatus(g, today);
+  const done = status === "completed";
+  return (
+    <ProgressRowButton onPress={onOpen} selected={selected}>
+      <ProgressRow
+        slot="goal"
+        label={g.name}
+        dot={STATUS_DOT[status]}
+        meta={g.deadline ? `Due ${g.deadline}` : "No deadline"}
+        value={formatCurrency(g.currentAmount, currency)}
+        delta={`of ${formatCurrency(g.targetAmount, currency)}`}
+        deltaTitle="Saved of target"
+        trend={null}
+        cur={currency}
+        pct={g.progress}
+        barTone={done ? "pos" : progressTone(g.progress)}
+        progressLabel={`${Math.max(0, g.progress)}%`}
+        progressAria={`Goal ${g.name} saved`}
+        badge={g.pendingSync ? <SyncMarkBadge mark={g.pendingSync} /> : undefined}
+        strike={done}
+      />
+    </ProgressRowButton>
+  );
 }
 
 function progressTextClass(progress: number): string {
@@ -130,6 +163,7 @@ function GoalsBody({ ctx, displayCurrency, tb }: { ctx: GoalCtx; displayCurrency
   const openGoal = (id: number) => (detailApi.split ? detailApi.select(id) : setDetailId(id));
   usePageCustomize({ onOpen: () => setCustomizeOpen(true) });
 
+  const today = localDateISO();
   const active = goals.filter((g) => g.status === "active");
   const completed = goals.filter((g) => g.status === "completed");
   // Toolbar: search, filter page (status, type) and sort apply to the lists only; the cards cover every goal.
@@ -182,26 +216,10 @@ function GoalsBody({ ctx, displayCurrency, tb }: { ctx: GoalCtx; displayCurrency
   const nodes: Record<string, ReactNode> = {
     summary: <MetricGrid metrics={summaryMetrics} />,
     active: activeList.length > 0 ? (
-      <SectionCard label="Active" icon={Target} tone="indigo" padded={false} className={`[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3 ${CARD_ROW_GRID}`}>
-        {activeList.map((g) => {
-          const currency = g.currency || displayCurrency;
-          return (
-            <ListRow
-              key={g.id}
-              title={
-                <span className="inline-flex max-w-full items-center gap-2 align-middle">
-                  <span className="truncate">{g.name}</span>
-                  {g.pendingSync && <SyncMarkBadge mark={g.pendingSync} />}
-                </span>
-              }
-              subtitle={`${formatCurrency(g.currentAmount, currency)} of ${formatCurrency(g.targetAmount, currency)}`}
-              value={<span className={`tabular-nums text-sm font-bold ${progressTextClass(g.progress)}`}>{g.progress}%</span>}
-              secondary={g.deadline ?? undefined}
-              selected={detailApi.selectedId === String(g.id)}
-              onPress={() => openGoal(g.id)}
-            />
-          );
-        })}
+      <SectionCard label="Active" icon={Target} tone="indigo" padded={false} className="[&>*]:min-w-0 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+        {activeList.map((g) => (
+          <GoalRow key={g.id} g={g} displayCurrency={displayCurrency} today={today} selected={detailApi.selectedId === String(g.id)} onOpen={() => openGoal(g.id)} />
+        ))}
       </SectionCard>
     ) : tb.activeCount > 0 || needle ? (
       <p className="py-6 text-center text-sm text-muted-foreground">No active goals match.</p>
@@ -215,16 +233,9 @@ function GoalsBody({ ctx, displayCurrency, tb }: { ctx: GoalCtx; displayCurrency
       </Card>
     ),
     completed: completedList.length > 0 ? (
-      <SectionCard label="Completed" icon={CheckCircle2} tone="emerald" padded={false} className={`[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3 ${CARD_ROW_GRID}`}>
+      <SectionCard label="Completed" icon={CheckCircle2} tone="emerald" padded={false} className="[&>*]:min-w-0 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
         {completedList.map((g) => (
-          <ListRow
-            key={g.id}
-            title={<span className="truncate line-through text-muted-foreground">{g.name}</span>}
-            subtitle={formatCurrency(g.targetAmount, g.currency || displayCurrency)}
-            value={<Badge className="bg-pos/10 text-pos border-pos/30">Completed</Badge>}
-            selected={detailApi.selectedId === String(g.id)}
-            onPress={() => openGoal(g.id)}
-          />
+          <GoalRow key={g.id} g={g} displayCurrency={displayCurrency} today={today} selected={detailApi.selectedId === String(g.id)} onOpen={() => openGoal(g.id)} />
         ))}
       </SectionCard>
     ) : null,
