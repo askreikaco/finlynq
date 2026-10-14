@@ -432,9 +432,9 @@ function CategoriesOverview() {
   const toolbar = (
     <div data-slot="categories-toolbar" className="space-y-3">
       <Tabs value={type} onValueChange={(v) => go({ type: v === "I" ? "I" : "E" })}>
-        <TabsList>
-          <TabsTrigger value="E" className="px-3">Spending</TabsTrigger>
-          <TabsTrigger value="I" className="px-3">Income</TabsTrigger>
+        <TabsList variant="segmented">
+          <TabsTrigger value="E" className="px-3 rounded-full">Spending</TabsTrigger>
+          <TabsTrigger value="I" className="px-3 rounded-full">Income</TabsTrigger>
         </TabsList>
       </Tabs>
       {/* Range + month on ONE row, then search (the Filter icon is in the top bar) */}

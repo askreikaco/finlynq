@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Megaphone, Pencil, Trash2, Plus } from "lucide-react";
+import { Pencil, Trash2, Plus } from "lucide-react";
 import { SectionPage } from "@/components/templates/section-page";
 import { usePageFab } from "@/components/mobile/page-fab";
 
@@ -158,7 +158,7 @@ export default function AdminAnnouncementsPage() {
   return (
     <SectionPage
       id="admin-announcements"
-      title={<><Megaphone className="h-5 w-5 text-primary" />Announcements</>}
+      title="Announcements"
       width="report"
       center
     >

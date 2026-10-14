@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { Filter, ListChecks, MoreHorizontal, Settings, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { RoundIconButton } from "@/components/ui/round-icon-button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -364,17 +364,15 @@ export function PageHeader({
               {capsulePrimary}
               {moreItems.length > 0 ? <OverflowMenu items={moreItems} /> : null}
               {bulkEdit ? (
-                <Button
+                <RoundIconButton
                   type="button"
-                  variant={bulkEdit.active ? "secondary" : "outline"}
-                  size="icon"
                   aria-label={bulkEdit.label ?? "Edit list"}
                   aria-pressed={bulkEdit.active ?? false}
                   data-slot="bulk-edit-trigger"
                   onClick={bulkEdit.onToggle}
                 >
                   <ListChecks className="size-4" aria-hidden />
-                </Button>
+                </RoundIconButton>
               ) : filter ? (
                 <FilterButton {...filter} variant="outline" />
               ) : null}
@@ -397,9 +395,7 @@ export function OverflowMenu({ items }: { items: OverflowAction[] }) {
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <Button
-            variant="outline"
-            size="icon"
+          <RoundIconButton
             aria-label="More actions"
             data-slot="overflow-trigger"
           />
