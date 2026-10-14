@@ -67,10 +67,10 @@ function AccordionItem({
   return (
     <AccordionPrimitive.Item
       data-slot="accordion-item"
-      className={cn("rounded-xl border bg-card text-card-foreground", className)}
+      className={cn("rounded-xl bg-card text-card-foreground", className)}
       {...props}
     >
-      <AccordionPrimitive.Header className="relative m-0 text-base font-normal">
+      <AccordionPrimitive.Header className="relative m-0 text-base font-normal has-[[data-panel-open]]:shadow-[var(--list-divider)]">
         <AccordionPrimitive.Trigger
           data-slot="accordion-trigger"
           className={cn(
@@ -107,7 +107,7 @@ function AccordionItem({
       </AccordionPrimitive.Header>
       <AccordionPrimitive.Panel
         data-slot="accordion-panel"
-        className={cn("border-t px-4 py-4", panelClassName)}
+        className={cn("px-4 py-4", panelClassName)}
       >
         {children}
       </AccordionPrimitive.Panel>

@@ -259,6 +259,8 @@ describe("Transactions: static guards for the one-layout rule", () => {
     size.current = "compact";
     render(<TransactionsWorkspace />);
     await waitFor(() => expect(screen.getByLabelText("Time range")).toBeTruthy());
-    expect(within(document.body).getByText("Export CSV")).toBeTruthy();
+    // Export CSV is a top-bar More item now (no dashed card above the list).
+    fireEvent.click(screen.getByRole("button", { name: "More actions" }));
+    expect(await screen.findByRole("menuitem", { name: /Export CSV/ })).toBeTruthy();
   });
 });

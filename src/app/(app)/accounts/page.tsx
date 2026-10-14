@@ -266,7 +266,7 @@ function AccountsPage() {
       <div className="flex flex-col gap-2">
         {groups(list).map(([group, accts]) => (
           <Accordion key={group} defaultValue={group}>
-          <AccordionItem value={group} title={groupTitle(group, accts)} className="bg-transparent shadow-none">
+          <AccordionItem value={group} title={groupTitle(group, accts)} className="bg-transparent">
             <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
             {accts.map((a) => (
               <ListRow
