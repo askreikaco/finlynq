@@ -9,7 +9,7 @@
  * list. A group header and a category are the SAME row (CategoryRow); a group shows the rollup of its children.
  */
 
-import { Fragment, Suspense, useCallback, useMemo, useState, type ReactNode } from "react";
+import { Fragment, Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -27,12 +27,13 @@ import { shiftMonth } from "@/lib/reports/category-detail";
 import type { CategoryOverview, OverviewCategory } from "@/lib/reports/category-overview";
 import { buildGroupRows, findRow, pieSlices, subLabel, type OverviewRow } from "@/lib/categories/group-overview";
 import { useAnimations } from "@/hooks/use-animations";
+import { useAppSizeClass } from "@/components/adaptive/size-class-context";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
 import { ArrowRightLeft, ChartPie, Copy, FileDown, ListChecks, PiggyBank, Plus, Receipt, Save, Tags, Wallet } from "lucide-react";
 import { CategoryBudgetForm, type FormCategory } from "./_components/category-budget-form";
 import { CategoryRow } from "./_components/category-row";
 import {
-  CustomizeCardsSheet, MetricGrid, PageHeader, PHONE_PRIMARY_CLASS, SectionCard, useCardLayout, usePageCustomize,
+  CustomizeCardsSheet, ListDetailLayout, ListDetailNewButton, MetricGrid, PageHeader, SectionCard, useCardLayout, useListDetail, usePageCustomize, type ListDetailPaneApi,
   type MetricItem, type OverflowAction,
 } from "@/components/mobile";
 import { PageToolbar } from "@/components/page-toolbar";
@@ -62,6 +63,45 @@ const CATEGORY_CARDS: readonly PageCard[] = [
   { id: "by-category", title: "Categories" },
 ];
 
+type CatType = "E" | "I";
+const TYPES: readonly CatType[] = ["E", "I"];
+const TYPE_TITLE: Record<CatType, string> = { E: "Spending", I: "Income" };
+
+/**
+ * One type's categories: the overview report's rows with the live budgets merged in (spending only) plus every category
+ * with no activity in the window and (spending) queued-create budgets of categories not in the report.
+ */
+function mergeCats(
+  data: OverviewResponse | null, type: CatType, budgets: Budget[], budgetsKnown: boolean, allCategories: FormCategory[],
+): OverviewCategory[] {
+  if (!data) return [];
+  const isIncome = type === "I";
+  const byCat = new Map(budgets.map((b) => [b.categoryId, b]));
+  const merged: OverviewCategory[] = data.categories.map((c) =>
+    isIncome ? { ...c, budget: null } : budgetsKnown ? { ...c, budget: byCat.get(c.id)?.amount ?? null } : c,
+  );
+  const seen = new Set(data.categories.map((c) => c.id));
+  // Categories with no activity in the window still belong in the list (so they can be edited / deleted).
+  for (const c of allCategories) {
+    if (seen.has(c.id) || c.type !== type) continue;
+    seen.add(c.id);
+    merged.push({
+      id: c.id, name: c.name, group: c.group ?? "", amount: 0, share: 0, average: null, change: null,
+      budget: !isIncome && budgetsKnown ? (byCat.get(c.id)?.amount ?? null) : null, trend: data.windowMonths.map(() => 0),
+    });
+  }
+  if (isIncome || !budgetsKnown) return merged;
+  for (const b of budgets) {
+    if (seen.has(b.categoryId)) continue;
+    seen.add(b.categoryId);
+    merged.push({
+      id: b.categoryId, name: b.categoryName, group: b.categoryGroup ?? "", amount: 0, share: 0,
+      average: null, change: null, budget: b.amount, trend: data.windowMonths.map(() => 0),
+    });
+  }
+  return merged;
+}
+
 /** Sort the group rows and each group's categories: Name (A-Z default) or Amount (biggest first). */
 function sortRows(rows: OverviewRow[], sort: string, dir: "asc" | "desc"): OverviewRow[] {
   const sign = dir === "asc" ? 1 : -1;
@@ -84,8 +124,8 @@ export default function CategoriesPageContent() {
 }
 
 /** DOM id of a group's row wrapper (scroll target for pie / legend clicks). */
-function groupDomId(key: string): string {
-  return `cat-group-${key.replace(/[^A-Za-z0-9_-]/g, "_")}`;
+function groupDomId(t: CatType, key: string): string {
+  return `cat-group-${t}-${key.replace(/[^A-Za-z0-9_-]/g, "_")}`;
 }
 
 /** Previous calendar month as YYYY-MM. */
@@ -114,8 +154,12 @@ function CategoriesOverview() {
   const searchParams = useSearchParams();
   const animationsEnabled = useAnimations();
   const { displayCurrency, isLoading: currencyLoading } = useDisplayCurrency();
-  // Expanded top-level groups (several may be open). Empty = all collapsed.
-  const [openKeys, setOpenKeys] = useState<Set<string>>(() => new Set());
+  // Expanded top-level groups per type (several may be open). Empty = all collapsed.
+  const [openByType, setOpenByType] = useState<Record<CatType, Set<string>>>(() => ({ E: new Set(), I: new Set() }));
+  // regular+ (tablet, desktop): Spending and Income side by side. compact (phone): the Spending / Income tabs.
+  const twoCol = useAppSizeClass() !== "compact";
+  // wide (>= 1024px): the split pane is a third column (?sel=<id>|new); below wide the ?edit= sheet stays.
+  const detail = useListDetail();
   const [copying, setCopying] = useState(false);
   const [actionError, setActionError] = useState("");
   const [editMode, setEditMode] = useState(false);
@@ -125,19 +169,27 @@ function CategoriesOverview() {
   const periodEnd = period.months[period.months.length - 1] ?? currentMonth;
   const month = MONTH_RE.test(periodEnd) && periodEnd <= currentMonth ? periodEnd : currentMonth;
   const tb = useListToolbar({ filterPath: "/filter/categories", sorts: CATEGORY_SORTS, filterKeys: CATEGORY_FILTER_KEYS });
-  const type: "E" | "I" = searchParams.get("type") === "I" ? "I" : "E";
+  const type: CatType = searchParams.get("type") === "I" ? "I" : "E";
   const isIncome = type === "I";
 
-  // Cache-first when the local read cache is on (Settings > Data > Offline mode); a plain fetch otherwise.
-  const overview = useCacheFirstJson<{ data: OverviewResponse }>(`/api/reports/categories?month=${month}&type=${type}&months=12`);
-  const data: OverviewResponse | null = overview.data?.data ?? null;
-  const loading = overview.loading;
-  const failed = overview.error;
-  const overviewReload = overview.reload;
+  // Both types load at once (cache-first when the local read cache is on: Settings > Data > Offline mode; a plain fetch
+  // otherwise), so switching the phone tab costs no fetch and both columns paint together.
+  const overviewE = useCacheFirstJson<{ data: OverviewResponse }>(`/api/reports/categories?month=${month}&type=E&months=12`);
+  const overviewI = useCacheFirstJson<{ data: OverviewResponse }>(`/api/reports/categories?month=${month}&type=I&months=12`);
+  const overviews = { E: overviewE, I: overviewI };
+  const dataE: OverviewResponse | null = overviewE.data?.data ?? null;
+  const dataI: OverviewResponse | null = overviewI.data?.data ?? null;
+  const dataOf = { E: dataE, I: dataI };
+  const shown: readonly CatType[] = twoCol ? TYPES : [type];
+  const loading = shown.some((t) => overviews[t].loading && !dataOf[t]);
+  const failed = shown.some((t) => overviews[t].error);
+  const overviewReloadE = overviewE.reload;
+  const overviewReloadI = overviewI.reload;
+  const overviewReload = useCallback(() => { overviewReloadE(); overviewReloadI(); }, [overviewReloadE, overviewReloadI]);
 
   // The month's budgets (spending only), with the offline queue overlaid.
   const budgetsRes = useCacheFirstJson<Budget[]>(
-    currencyLoading || isIncome ? null : `/api/budgets?month=${month}&currency=${encodeURIComponent(displayCurrency)}`,
+    currencyLoading ? null : `/api/budgets?month=${month}&currency=${encodeURIComponent(displayCurrency)}`,
     { keepPrevious: true },
   );
   // Every category (also those with no activity in the window), for the list's completeness and the form.
@@ -146,14 +198,14 @@ function CategoriesOverview() {
   const allCategories = useMemo(() => (Array.isArray(catsRes.data) ? catsRes.data : []), [catsRes.data]);
   const budgetsReload = budgetsRes.reload;
   const serverBudgets = useMemo(() => (Array.isArray(budgetsRes.data) ? budgetsRes.data : []), [budgetsRes.data]);
-  const budgetsKnown = !isIncome && Array.isArray(budgetsRes.data);
+  const budgetsKnown = Array.isArray(budgetsRes.data);
   const pendingBudgets = usePendingBudgets(() => budgetsReload());
   const budgets = useMemo(() => applyPendingBudgets(serverBudgets, pendingBudgets, month), [serverBudgets, pendingBudgets, month]);
 
   // Metric cards: month vs previous month by default (?range=&from=&to= overrides).
   const win = seriesWindow(period);
   const seriesRes = useCacheFirstJson<{ series: Array<{ month: string; budget: number; spent: number }> }>(
-    currencyLoading || isIncome ? null : `/api/budgets/series?from=${win.from}&to=${win.to}&currency=${encodeURIComponent(displayCurrency)}`,
+    currencyLoading ? null : `/api/budgets/series?from=${win.from}&to=${win.to}&currency=${encodeURIComponent(displayCurrency)}`,
     { keepPrevious: true },
   );
   const seriesRows = useMemo(
@@ -170,16 +222,30 @@ function CategoriesOverview() {
   // ?edit=new | ?edit=<id> opens the shared category + budget form.
   const editParam = searchParams.get("edit");
   const editId = editParam && /^\d+$/.test(editParam) ? Number(editParam) : null;
-  const formOpen = editParam === "new" || editId != null;
+  const formOpen = (editParam === "new" || editId != null) && !detail.split;
+  const { split: paneOn } = detail;
+  // ?edit= is a deep link: at wide it maps to the pane (?sel=), one address for the same form.
+  useEffect(() => {
+    if (!paneOn || !editParam || !(editParam === "new" || /^\d+$/.test(editParam))) return;
+    const qs = new URLSearchParams(window.location.search);
+    qs.delete("edit");
+    qs.set("sel", editParam);
+    router.replace(`/categories?${qs}`, { scroll: false });
+  }, [paneOn, editParam, router]);
   function setEdit(next: "new" | number | null) {
+    if (detail.split && next != null) {
+      if (next === "new") detail.selectNew();
+      else detail.select(next);
+      return;
+    }
     const qs = new URLSearchParams(searchParams.toString());
     if (next == null) qs.delete("edit");
     else qs.set("edit", String(next));
     router.replace(`/categories${qs.toString() ? `?${qs}` : ""}`, { scroll: false });
   }
 
-  function go(next: { type: "E" | "I" }) {
-    setOpenKeys(new Set()); // a new type starts with every group collapsed
+  function go(next: { type: CatType }) {
+    setOpenByType({ E: new Set(), I: new Set() }); // a new type starts with every group collapsed
     // Read the live address: range / search / filter params are written with replaceState, which useSearchParams misses.
     const qs = new URLSearchParams(typeof window === "undefined" ? searchParams.toString() : window.location.search);
     if (next.type === "I") qs.set("type", "I");
@@ -189,100 +255,35 @@ function CategoriesOverview() {
 
   const cardLayout = useCardLayout("categories", CATEGORY_CARDS);
   const [customizeOpen, setCustomizeOpen] = useState(false);
-  usePageCustomize(data && !failed ? { onOpen: () => setCustomizeOpen(true) } : null);
+  usePageCustomize(shown.every((t) => dataOf[t]) && !failed ? { onOpen: () => setCustomizeOpen(true) } : null);
 
   // Overview categories with the live budgets merged in (and queued-create budgets of categories not in the report).
-  const cats: OverviewCategory[] = useMemo(() => {
-    if (!data) return [];
-    const byCat = new Map(budgets.map((b) => [b.categoryId, b]));
-    const merged: OverviewCategory[] = data.categories.map((c) =>
-      isIncome ? { ...c, budget: null } : budgetsKnown ? { ...c, budget: byCat.get(c.id)?.amount ?? null } : c,
-    );
-    const seen = new Set(data.categories.map((c) => c.id));
-    // Categories with no activity in the window still belong in the list (so they can be edited / deleted).
-    for (const c of allCategories) {
-      if (seen.has(c.id) || c.type !== type) continue;
-      seen.add(c.id);
-      merged.push({
-        id: c.id, name: c.name, group: c.group ?? "", amount: 0, share: 0, average: null, change: null,
-        budget: !isIncome && budgetsKnown ? (byCat.get(c.id)?.amount ?? null) : null, trend: data.windowMonths.map(() => 0),
-      });
-    }
-    if (isIncome || !budgetsKnown) return merged;
-    for (const b of budgets) {
-      if (seen.has(b.categoryId)) continue;
-      seen.add(b.categoryId);
-      merged.push({
-        id: b.categoryId, name: b.categoryName, group: b.categoryGroup ?? "", amount: 0, share: 0,
-        average: null, change: null, budget: b.amount, trend: data.windowMonths.map(() => 0),
-      });
-    }
-    return merged;
-  }, [data, budgets, budgetsKnown, isIncome, allCategories, type]);
+  const catsE = useMemo(() => mergeCats(dataE, "E", budgets, budgetsKnown, allCategories), [dataE, budgets, budgetsKnown, allCategories]);
+  const catsI = useMemo(() => mergeCats(dataI, "I", budgets, budgetsKnown, allCategories), [dataI, budgets, budgetsKnown, allCategories]);
 
   const marks = useMemo(() => new Map(budgets.filter((b) => b.pendingSync).map((b) => [b.categoryId, b])), [budgets]);
 
-  if (loading && !data) return <PageSkeleton variant="list" rows={6} />;
-  if (failed || !data) {
+  if (loading) return <PageSkeleton variant="list" rows={6} />;
+  if (failed || shown.some((t) => !dataOf[t])) {
     return <ErrorState title="Couldn't load" message="Try again." onRetry={overviewReload} />;
   }
 
-  const cur = data.displayCurrency;
-  const noun = isIncome ? "income" : "spending";
-  const sparkLabels = data.windowMonths;
+  const cur = (dataOf[type] ?? dataE ?? dataI)!.displayCurrency;
+  const partial = shown.some((t) => dataOf[t]?.partial);
+  // Budgets and the metric cards are about spending: always the Spending categories.
+  const cats = catsE;
 
-  // Search + budget filter apply to the list only; the pie and totals stay the whole month.
   const needle = tb.q.trim().toLowerCase();
   const budgetFilter = tb.filters.budget ?? "";
-  const visibleCats = cats.filter((c) => {
-    if (needle && !`${c.name ?? ""} ${c.group}`.toLowerCase().includes(needle)) return false;
-    if (budgetFilter === "with") return c.budget != null;
-    if (budgetFilter === "none") return c.budget == null;
-    if (budgetFilter === "over") return c.budget != null && c.amount > c.budget;
-    return true;
-  });
-  const allRows = buildGroupRows(cats, data.total);
-  const rows = sortRows(buildGroupRows(visibleCats, data.total), tb.sort.sort, tb.sort.dir);
-  const { slices, other } = pieSlices(allRows, PIE_SEGMENTS);
-  const sliceIndex = new Map(slices.map((r, i) => [r.key, i]));
-  const colorOf = (key: string) => {
-    const i = sliceIndex.get(key);
-    return i == null ? OTHER_COLOR : CHART_COLORS.categories[i % CHART_COLORS.categories.length];
-  };
-  const pieData = [
-    ...slices.map((r) => ({ key: r.key, name: r.label, value: r.amount, color: colorOf(r.key) })),
-    ...(other > 0 ? [{ key: OTHER_KEY, name: "Other", value: other, color: OTHER_COLOR }] : []),
-  ];
-  const pct = (amount: number) => (data.total > 0 ? Math.round((amount / data.total) * 100) : 0);
-  const topRow = slices[0];
 
-  function setOpen(key: string, open: boolean) {
-    setOpenKeys((prev) => {
-      const next = new Set(prev);
+  function setOpen(t: CatType, key: string, open: boolean) {
+    setOpenByType((prev) => {
+      const next = new Set(prev[t]);
       if (open) next.add(key);
       else next.delete(key);
-      return next;
+      return { ...prev, [t]: next };
     });
   }
-
-  // Pie slice / legend item: a group expands and scrolls into view; a category opens its detail page; "Other" does nothing.
-  function openPieKey(key: string) {
-    if (key === OTHER_KEY) return;
-    const row = findRow(allRows, key);
-    if (!row) return;
-    if (row.kind === "category") {
-      router.push(`/categories/${row.categories[0].id}`);
-      return;
-    }
-    setOpen(key, true);
-    setTimeout(() => {
-      document.getElementById(groupDomId(key))?.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
-    }, 0);
-  }
-
-  const pieLabel = topRow
-    ? `${isIncome ? "Income" : "Spent"} ${getMonthLabel(month)}: ${formatCurrency(data.total, cur)}, top ${topRow.label} ${pct(topRow.amount)}%`
-    : undefined;
 
   // ---- budgets: totals, form links, delete, copy ------------------------------------------------------------------
   const listUrl = `/categories${month !== currentMonth ? `?month=${month}` : ""}`;
@@ -388,73 +389,114 @@ function CategoriesOverview() {
 
   // ---- rows ---------------------------------------------------------------------------------------------------------
 
-  /** A category row: a link to its detail page, or (Edit mode) a button that opens the shared form prefilled. */
-  function categoryLink(c: OverviewCategory, group: string, dot: string, className: string, indent = false) {
-    const body = categoryRow(c, group, dot, indent);
-    return editMode ? (
-      <button type="button" data-edit-row="" aria-label={`Edit: ${subLabel(c.name, group)}`} onClick={() => setEdit(c.id)} className={`${className} bg-primary/5 text-left`}>
-        {body}
-      </button>
-    ) : (
-      <Link href={`/categories/${c.id}`} className={className}>{body}</Link>
-    );
-  }
-
-  /** The shared row for one OverviewRow (group = rollup of its children) or a single category. */
-  const rowFor = (r: { label: string; amount: number; trend: number[] | null; budget: number | null; count?: number; badge?: ReactNode; dot: string; indent?: boolean }) => (
-    <CategoryRow
-      label={r.label}
-      dot={r.dot}
-      amount={r.amount}
-      prev={prevOf(r.trend)}
-      budget={r.budget}
-      trend={r.trend}
-      cur={cur}
-      isIncome={isIncome}
-      sparkLabels={sparkLabels}
-      count={r.count}
-      badge={r.badge}
-      indent={r.indent}
-    />
-  );
-
-  const categoryRow = (c: OverviewCategory, group: string, dot: string, indent = false) =>
-    rowFor({
-      indent,
-      label: subLabel(c.name, group), amount: c.amount, trend: c.trend, budget: c.budget, dot,
-      badge: marks.get(c.id)?.pendingSync ? <SyncBadge mark={marks.get(c.id)!.pendingSync!} /> : undefined,
-    });
-
-  const groupRow = (row: OverviewRow) =>
-    rowFor({ label: row.label, amount: row.amount, trend: row.trend, budget: row.budget, count: row.categories.length, dot: colorOf(row.key) });
-
   const ROW_LINK = "block min-w-0 w-full py-3 pl-4 pr-11 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
-  const toolbar = (
-    <div data-slot="categories-toolbar" className="space-y-3">
-      <Tabs value={type} onValueChange={(v) => go({ type: v === "I" ? "I" : "E" })}>
-        <TabsList variant="segmented">
-          <TabsTrigger value="E" className="px-3 rounded-full">Spending</TabsTrigger>
-          <TabsTrigger value="I" className="px-3 rounded-full">Income</TabsTrigger>
-        </TabsList>
-      </Tabs>
-      {/* Range + month on ONE row, then search (the Filter icon is in the top bar) */}
-      <PageToolbar refresh range={{ selection, onChange: setSelection }} search={{ value: tb.q, onChange: tb.setQ, placeholder: "Search categories" }} />
-    </div>
-  );
+  /** One type's pieces: heading total, the share (pie) card and the category list card. */
+  function panelFor(t: CatType) {
+    const data = dataOf[t]!;
+    const tCats = t === "E" ? catsE : catsI;
+    const isIncome = t === "I";
+    const noun = isIncome ? "income" : "spending";
+    const sparkLabels = data.windowMonths;
+    const openKeys = openByType[t];
 
-  // The cards, keyed by their CATEGORY_CARDS id; rendered in the user's saved order (see below).
-  const cardNodes: Record<string, ReactNode> = {
-    metrics: isIncome ? null : (
-      <div className="space-y-3">
-        <MetricGrid metrics={metrics} columns={3} />
-      </div>
-    ),
-    summary: (
+    // Search + budget filter apply to the list only; the pie and totals stay the whole month.
+    const visibleCats = tCats.filter((c) => {
+      if (needle && !`${c.name ?? ""} ${c.group}`.toLowerCase().includes(needle)) return false;
+      if (budgetFilter === "with") return c.budget != null;
+      if (budgetFilter === "none") return c.budget == null;
+      if (budgetFilter === "over") return c.budget != null && c.amount > c.budget;
+      return true;
+    });
+    const allRows = buildGroupRows(tCats, data.total);
+    const rows = sortRows(buildGroupRows(visibleCats, data.total), tb.sort.sort, tb.sort.dir);
+    const { slices, other } = pieSlices(allRows, PIE_SEGMENTS);
+    const sliceIndex = new Map(slices.map((r, i) => [r.key, i]));
+    const colorOf = (key: string) => {
+      const i = sliceIndex.get(key);
+      return i == null ? OTHER_COLOR : CHART_COLORS.categories[i % CHART_COLORS.categories.length];
+    };
+    const pieData = [
+      ...slices.map((r) => ({ key: r.key, name: r.label, value: r.amount, color: colorOf(r.key) })),
+      ...(other > 0 ? [{ key: OTHER_KEY, name: "Other", value: other, color: OTHER_COLOR }] : []),
+    ];
+    const pct = (amount: number) => (data.total > 0 ? Math.round((amount / data.total) * 100) : 0);
+    const topRow = slices[0];
+    const pieLabel = topRow
+      ? `${isIncome ? "Income" : "Spent"} ${getMonthLabel(month)}: ${formatCurrency(data.total, cur)}, top ${topRow.label} ${pct(topRow.amount)}%`
+      : undefined;
+
+    // Pie slice / legend item: a group expands and scrolls into view; a category opens its detail page; "Other" does nothing.
+    function openPieKey(key: string) {
+      if (key === OTHER_KEY) return;
+      const row = findRow(allRows, key);
+      if (!row) return;
+      if (row.kind === "category") {
+        router.push(`/categories/${row.categories[0].id}`);
+        return;
+      }
+      setOpen(t, key, true);
+      setTimeout(() => {
+        document.getElementById(groupDomId(t, key))?.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
+      }, 0);
+    }
+
+    /** The shared row for one OverviewRow (group = rollup of its children) or a single category. */
+    const rowFor = (r: { label: string; amount: number; trend: number[] | null; budget: number | null; count?: number; badge?: ReactNode; dot: string; indent?: boolean }) => (
+      <CategoryRow
+        label={r.label}
+        dot={r.dot}
+        amount={r.amount}
+        prev={prevOf(r.trend)}
+        budget={r.budget}
+        trend={r.trend}
+        cur={cur}
+        isIncome={isIncome}
+        sparkLabels={sparkLabels}
+        count={r.count}
+        badge={r.badge}
+        indent={r.indent}
+      />
+    );
+
+    const categoryRow = (c: OverviewCategory, group: string, dot: string, indent = false) =>
+      rowFor({
+        indent,
+        label: subLabel(c.name, group), amount: c.amount, trend: c.trend, budget: c.budget, dot,
+        badge: marks.get(c.id)?.pendingSync ? <SyncBadge mark={marks.get(c.id)!.pendingSync!} /> : undefined,
+      });
+
+    const groupRow = (row: OverviewRow) =>
+      rowFor({ label: row.label, amount: row.amount, trend: row.trend, budget: row.budget, count: row.categories.length, dot: colorOf(row.key) });
+
+    /** A category row: a link to its detail page, or (Edit mode) a button that opens the shared form prefilled. */
+    function categoryLink(c: OverviewCategory, group: string, dot: string, className: string, indent = false) {
+      const body = categoryRow(c, group, dot, indent);
+      return editMode ? (
+        <button type="button" data-edit-row="" aria-label={`Edit: ${subLabel(c.name, group)}`} onClick={() => setEdit(c.id)} className={`${className} bg-primary/5 text-left`}>
+          {body}
+        </button>
+      ) : (
+        <Link
+        href={`/categories/${c.id}`}
+        className={`${className}${detail.selectedId === String(c.id) ? " bg-primary/5" : ""}`}
+        aria-current={detail.selectedId === String(c.id) ? "true" : undefined}
+        onClick={(e) => {
+          if (!detail.split) return;
+          e.preventDefault();
+          detail.select(c.id); // wide: the row selects into the pane; the detail page stays one click away from the form
+        }}
+      >
+        {body}
+      </Link>
+      );
+    }
+
+    const summary = (
       <SectionCard label={isIncome ? "Income" : "Spent"} icon={ChartPie} tone="amber">
-        <div className="flex flex-col regular:flex-row regular:items-center gap-5">
+        <div className="flex flex-col @md:flex-row @md:items-center gap-5">
           {slices.length > 0 && (
-            <div role="img" aria-label={pieLabel} className="mx-auto shrink-0 regular:mx-0">
+            <div role="img" aria-label={pieLabel} className="mx-auto shrink-0 @md:mx-0">
               <PieChart width={160} height={160}>
                 <Pie
                   data={pieData}
@@ -510,8 +552,9 @@ function CategoriesOverview() {
           </div>
         </div>
       </SectionCard>
-    ),
-    "by-category": (
+    );
+
+    const byCategory = (
       <SectionCard
         label="Categories"
         icon={Tags}
@@ -520,14 +563,14 @@ function CategoriesOverview() {
         className="[&>*]:min-w-0 [&>*:not(:last-child)]:shadow-[var(--list-divider)]"
       >
         {rows.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-muted-foreground regular:col-span-full">No {noun}.</p>
+          <p className="px-4 py-6 text-sm text-muted-foreground">No {noun}.</p>
         ) : (
           rows.map((row) =>
             row.kind === "group" ? (
-              <div key={row.key} id={groupDomId(row.key)} data-slot="category-group">
+              <div key={row.key} id={groupDomId(t, row.key)} data-slot="category-group">
                 <Accordion
                   value={openKeys.has(row.key) ? row.key : null}
-                  onValueChange={(v) => setOpen(row.key, v === row.key)}
+                  onValueChange={(v) => setOpen(t, row.key, v === row.key)}
                   className="gap-0"
                 >
                   <AccordionItem
@@ -551,7 +594,85 @@ function CategoriesOverview() {
           )
         )}
       </SectionCard>
-    ),
+    );
+
+    return { total: data.total, summary, "by-category": byCategory } as Record<string, ReactNode> & { total: number };
+  }
+
+  const toolbar = (
+    <div data-slot="categories-toolbar" className="space-y-3">
+      {/* The Spending / Income tabs are phone only; regular+ shows both side by side. */}
+      {!twoCol && (
+        <Tabs value={type} onValueChange={(v) => go({ type: v === "I" ? "I" : "E" })}>
+          <TabsList variant="segmented">
+            <TabsTrigger value="E" className="px-3 rounded-full">Spending</TabsTrigger>
+            <TabsTrigger value="I" className="px-3 rounded-full">Income</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      )}
+      {/* Range + month on ONE row, then search (the Filter icon is in the top bar) */}
+      <PageToolbar refresh range={{ selection, onChange: setSelection }} search={{ value: tb.q, onChange: tb.setQ, placeholder: "Search categories" }} />
+    </div>
+  );
+
+  const panels = Object.fromEntries(shown.map((t) => [t, panelFor(t)])) as Record<CatType, ReturnType<typeof panelFor>>;
+  const metricsNode = (
+    <div className="space-y-3">
+      <MetricGrid metrics={metrics} columns={3} />
+    </div>
+  );
+  const visibleOrder = cardLayout.layout.order.filter((id) => !cardLayout.layout.hidden.includes(id));
+  const firstTypeCard = visibleOrder.find((id) => id !== "metrics");
+
+  /** One column: outside heading (type + period total), then the type's cards in the user's saved order. */
+  const column = (t: CatType) => (
+    <section key={t} data-slot="categories-column" data-type={t} aria-label={TYPE_TITLE[t]} className="min-w-0 space-y-6 self-start">
+      <h2 data-slot="categories-column-label" className="flex items-baseline justify-between gap-2 px-4 text-sm font-medium text-muted-foreground">
+        <span className="uppercase tracking-wide">{TYPE_TITLE[t]}</span>
+        <span className="tabular-nums">{formatCurrency(panels[t].total, cur)}</span>
+      </h2>
+      {visibleOrder.filter((id) => id !== "metrics").map((id) => (
+        <Fragment key={id}>{panels[t][id]}</Fragment>
+      ))}
+    </section>
+  );
+
+  // ---- split pane (wide): the ONE block that wires the third column; the sheet below is the below-wide twin ------------
+  const paneBody = (api: ListDetailPaneApi) => {
+    const id = api.selectedId != null && /^\d+$/.test(api.selectedId) ? Number(api.selectedId) : null;
+    const cat = id != null ? (allCategories.find((c) => c.id === id) ?? null) : null;
+    if (!api.isNew && !cat) return <p className="text-sm text-muted-foreground">Category not found.</p>;
+    return (
+      <CategoryBudgetForm
+        key={`${api.selectedId ?? "new"}-${budgetsKnown}-${allCategories.length}`}
+        category={cat}
+        categories={allCategories}
+        budgets={budgets}
+        month={month}
+        currency={displayCurrency}
+        defaultType="E"
+        onSaved={(warning) => { setActionError(warning ? `Budget: ${warning}` : ""); reloadAll(); api.afterSaved(cat?.id); }}
+        onCancel={api.clear}
+        onDeleted={() => { reloadAll(); api.afterDeleted(); }}
+        onClearBudget={async (b) => { const ok = await clearBudget(b); if (!ok) setActionError("Couldn't remove budget"); return ok; }}
+      />
+    );
+  };
+
+  /** What one card id renders: metrics are spending only (full width above the columns); the type cards are per column. */
+  const nodeFor = (id: string): ReactNode => {
+    if (id === "metrics") return isIncome && !twoCol ? null : metricsNode;
+    if (twoCol) {
+      return id === firstTypeCard ? (
+        <ListDetailLayout
+          entity="category"
+          newLabel="Add"
+          list={<div data-slot="categories-columns" className="grid grid-cols-2 items-start gap-x-6 gap-y-6">{TYPES.map(column)}</div>}
+          pane={paneBody}
+        />
+      ) : null;
+    }
+    return panels[type][id];
   };
 
   return (
@@ -559,23 +680,19 @@ function CategoriesOverview() {
       <PageHeader
         title="Categories"
         actions={
-          <Button className={PHONE_PRIMARY_CLASS} aria-label="Add" render={<Link href="/categories?edit=new" />}>
-            <Plus className="mr-1 h-4 w-4" /> Add
-          </Button>
+          <ListDetailNewButton href="/categories?edit=new" label="Add"><Plus className="mr-1 h-4 w-4" /> Add</ListDetailNewButton>
         }
         filter={{ href: tb.filterHref, activeCount: tb.activeCount }}
         // Budget tools live in the top bar More menu (after Filter, before Customize cards); budgets are a Spending-tab concept.
-        overflow={isIncome ? undefined : overflow}
+        overflow={isIncome && !twoCol ? undefined : overflow}
         bulkEdit={{ onToggle: () => setEditMode((v) => !v), active: editMode, label: "Edit list" }}
       />
       {toolbar}
       {actionError && <p className="text-sm text-destructive">{actionError}</p>}
 
-      {cardLayout.layout.order
-        .filter((id) => !cardLayout.layout.hidden.includes(id))
-        .map((id) => (
-          <Fragment key={id}>{cardNodes[id]}</Fragment>
-        ))}
+      {visibleOrder.map((id) => (
+        <Fragment key={id}>{nodeFor(id)}</Fragment>
+      ))}
 
       <CustomizeCardsSheet
         open={customizeOpen}
@@ -611,7 +728,7 @@ function CategoriesOverview() {
         </SheetContent>
       </Sheet>
 
-      {data.partial && (
+      {partial && (
         <p className="text-xs text-muted-foreground">
           {getMonthLabel(month)} to date · {cur}
         </p>
