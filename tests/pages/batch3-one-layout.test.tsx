@@ -142,7 +142,7 @@ describe("Transactions: one layout at every size", () => {
       expect(container.querySelector('[data-slot="page-header"] h1')?.textContent?.trim()).toBe("Transactions");
       expect(screen.getByRole("button", { name: "Add Transaction" })).toBeTruthy();
       expect(rows(container).length).toBe(3);
-      expect(screen.getByText("Search and filter").closest("a")!.getAttribute("href")).toContain("/transactions/search?");
+      expect(screen.getByRole("button", { name: "Edit list" })).toBeTruthy();
     });
   }
 
@@ -254,7 +254,7 @@ describe("Investment: one layout at every size", () => {
     expect(screen.getByText("IBKR")).toBeTruthy();
     expect(container.querySelector('[data-slot="holdings-by-account"]')).toBeTruthy();
     expect(rows(container).length).toBe(2);
-    expect(screen.getByTestId("holding-sort-select")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Filter" }).getAttribute("href")).toContain("/filter/holdings");
   });
 
   it("a holding tap opens the sheet; Edit opens the holding editor", async () => {

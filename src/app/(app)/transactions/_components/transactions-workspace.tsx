@@ -14,27 +14,28 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { OnboardingTips } from "@/components/onboarding-tips";
 import { Badge } from "@/components/ui/badge";
-import { Plus, PanelRight, ChevronDown, Receipt, Search, X, AlertTriangle, ArrowRightLeft, ArrowDownUp, ListChecks, TrendingUp, Download, ShoppingCart, Banknote, Repeat, Send, HandCoins, CircleDollarSign, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
+import { Plus, PanelRight, ChevronDown, Receipt, X, AlertTriangle, ArrowRightLeft, ListChecks, TrendingUp, Download, ShoppingCart, Banknote, Repeat, Send, HandCoins, CircleDollarSign, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuGroup, DropdownMenuLabel, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { portfolioEditHref, transactionEditHref, transactionSplitHref } from "@/lib/transactions/edit-flow";
 import { MobileTxList } from "@/components/transactions/mobile-tx-list";
 import { type TransactionSource, labelForSource } from "@/lib/tx-source";
 import { buildPrefill, writePrefill, canDuplicate } from "@/lib/transactions/prefill";
-import {
-  COLUMN_LABELS as SHARED_COLUMN_LABELS,
-  SORTABLE_COLUMN_IDS,
-  type SortableColumnId,
-} from "@/lib/transactions/columns";
+import { COLUMN_LABELS as SHARED_COLUMN_LABELS } from "@/lib/transactions/columns";
 import type {
   Transaction,
 } from "../_types";
-import { useLookups, useTxSortPref, useTxFilterPrefs } from "../_hooks/use-tx-prefs";
+import { useLookups, useTxFilterPrefs } from "../_hooks/use-tx-prefs";
 import { useTransactions } from "../_hooks/use-transactions";
 import { TransactionSheet } from "./transaction-sheet";
 import { buildTransactionQuery } from "@/lib/transactions/build-query";
 import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
 import { exportCsv, type CsvColumn } from "@/lib/csv-export";
 import { todayISO } from "@/lib/utils/date";
+import { PageToolbar } from "@/components/page-toolbar";
+import { useTransactionsToolbar, type TransactionsToolbarState } from "../_hooks/use-transactions-toolbar";
+import { TRANSACTION_FILTER_KEYS } from "@/lib/toolbar/list-configs";
+import type { RangeSelection } from "@/lib/metrics/period";
+import type { SortPref } from "../_types";
 import { LotReallocationNotice } from "@/components/portfolio/lot-reallocation-notice";
 import type { LotReallocationPreview } from "@/lib/portfolio/lots/types";
 import { PageHeader, HEADER_DESKTOP_ONLY } from "@/components/mobile";
@@ -75,12 +76,20 @@ export interface TransactionsWorkspaceProps {
   /** Called after any create / edit / delete / bulk mutation so an embedding
    *  page can refresh sibling data (e.g. the account balance header). */
   onDataChange?: () => void;
+  /** Toolbar state owned by the embedding page (it renders the PageToolbar itself, e.g. /accounts/[id] shares the
+   *  range with its metric cards). Omit on /transactions: the workspace owns both state and toolbar. */
+  toolbar?: TransactionsToolbarState;
 }
+
+/** URL params of a single-record drill (deep link / holding / tag): all dates unless a range was picked. */
+const DRILL_KEYS = ["id", "portfolioHolding", "tag"] as const;
+const OWNED_URL_KEYS = [...TRANSACTION_FILTER_KEYS, "search", "sort", "dir", "startDate", "endDate", ...DRILL_KEYS];
 
 export function TransactionsWorkspace({
   lockedAccountId,
   showHeader = true,
   onDataChange,
+  toolbar: toolbarProp,
 }: TransactionsWorkspaceProps = {}) {
   const locked = lockedAccountId != null;
   const urlParams = useSearchParams();
@@ -91,7 +100,6 @@ export function TransactionsWorkspace({
   const { accounts, categories } = useLookups();
   const sortAccount = useDropdownOrder("account");
   const sortCategory = useDropdownOrder("category");
-  const [searchInput, setSearchInput] = useState("");
   // Filter state is synced FROM the URL via the `useEffect` below (not a
   // `useState(urlParams.get(...))` initialiser). `useState` only runs on
   // mount, so client-side drill-through navigation while already on
@@ -120,7 +128,6 @@ export function TransactionsWorkspace({
     minAmount: "",
     maxAmount: "",
   });
-  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const COLUMN_LABELS = SHARED_COLUMN_LABELS;
 
@@ -150,7 +157,6 @@ export function TransactionsWorkspace({
         minAmount: urlParams.get("minAmount") ?? "",
         maxAmount: urlParams.get("maxAmount") ?? "",
       }));
-      setSearchInput(urlParams.get("search") ?? "");
       setPage(0);
       return;
     }
@@ -169,19 +175,55 @@ export function TransactionsWorkspace({
       minAmount: urlParams.get("minAmount") ?? "",
       maxAmount: urlParams.get("maxAmount") ?? "",
     });
-    setSearchInput(urlParams.get("search") ?? "");
     setPage(0);
   }, [urlParams, locked, lockedAccountId]);
 
   // Header sort and per-column filters (the list has no columns; both are set from the compact
   // sort control and the active-filter chips). Each hook owns the load-on-mount + debounced-PUT
   // effects. `setColFilter` resets the page to 0 via the onChange callback.
-  const { sortPref, setSortPref } = useTxSortPref(() => setPage(0));
   const { colFilters, setColFilters, setColFilter } = useTxFilterPrefs(() => setPage(0));
+
+  // Toolbar: range (dates), search and sort come from the toolbar state, the rest of the filters from the URL sync above.
+  const ownToolbar = useTransactionsToolbar();
+  const tb = toolbarProp ?? ownToolbar;
+  const [rangeTouched, setRangeTouched] = useState(false);
+  const legacyDates = !!(urlParams.get("startDate") || urlParams.get("endDate"));
+  const drill = !locked && !rangeTouched && !legacyDates && !urlParams.has("range") && DRILL_KEYS.some((k) => urlParams.get(k));
+  // What the dropdown shows: a link carrying startDate/endDate (or a record drill) reads as Custom, not "This month".
+  const toolbarSelection: RangeSelection = legacyDates
+    ? { range: "custom", from: urlParams.get("startDate") || undefined, to: urlParams.get("endDate") || undefined }
+    : drill ? { range: "custom" } : tb.range.selection;
+  const rangeStart = legacyDates ? (urlParams.get("startDate") ?? "") : drill ? "" : tb.range.period.start;
+  const rangeEnd = legacyDates ? (urlParams.get("endDate") ?? "") : drill ? "" : tb.range.period.end;
+  // "Date" and "Amount" sort server-side. Name is not offered: payee and note are encrypted at rest.
+  const sortPref = useMemo<SortPref>(
+    () => ({ columnId: tb.list.sort.sort === "amount" ? "amount" : "date", direction: tb.list.sort.dir }),
+    [tb.list.sort.sort, tb.list.sort.dir],
+  );
+  const [debouncedQ, setDebouncedQ] = useState(tb.list.q);
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQ(tb.list.q), 350);
+    return () => clearTimeout(t);
+  }, [tb.list.q]);
+  const rawFilters = filters;
+  const effFilters = useMemo(
+    () => ({ ...rawFilters, search: debouncedQ, startDate: rangeStart, endDate: rangeEnd }),
+    [rawFilters, debouncedQ, rangeStart, rangeEnd],
+  );
+  function changeRange(next: RangeSelection) {
+    setRangeTouched(true);
+    tb.range.setSelection(next);
+    if (legacyDates) {
+      const q = new URLSearchParams(urlParams.toString());
+      q.delete("startDate");
+      q.delete("endDate");
+      router.replace(`${pathname}${q.toString() ? `?${q.toString()}` : ""}`);
+    }
+  }
 
   // Main list (txns / total / loading) + loadTxns + infinite scroll loadNextPage
   const { txns: serverTxns, total, loading, limit, loadTxns, loadNextPage, resetPage, hasMore, loadError, loadMoreError, isLoadingMore } = useTransactions(
-    filters,
+    effFilters,
     sortPref,
     colFilters,
     accounts,
@@ -194,8 +236,8 @@ export function TransactionsWorkspace({
   // queued edits overlaid, queued deletes hidden. One list feeds both Cards and List.
   const pendingTx = usePendingTransactions();
   const txns = useMemo(
-    () => applyPendingToTransactions(serverTxns, pendingTx, { accounts, categories, filters, hasColFilters: colFilters.length > 0 }),
-    [serverTxns, pendingTx, accounts, categories, filters, colFilters],
+    () => applyPendingToTransactions(serverTxns, pendingTx, { accounts, categories, filters: effFilters, hasColFilters: colFilters.length > 0 }),
+    [serverTxns, pendingTx, accounts, categories, effFilters, colFilters],
   );
   const pendingDeleteCount = countPendingDeletes(pendingTx);
   // Assigned in an effect (not during render); setPage is only called from handlers and effects.
@@ -285,51 +327,16 @@ export function TransactionsWorkspace({
   const [bulkProcessing, setBulkProcessing] = useState(false);
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
 
-  function handleSearchChange(value: string) {
-    setSearchInput(value);
-    if (searchTimer.current) clearTimeout(searchTimer.current);
-    searchTimer.current = setTimeout(() => {
-      setFilters((f) => ({ ...f, search: value }));
-      setPage(0);
-    }, 350);
-  }
-
-  // Mobile search page link: carry the current URL params and come back here.
-  const mobileSearchQuery = (() => {
-    const q = new URLSearchParams(urlParams.toString());
-    q.set("returnTo", `${pathname}${urlParams.toString() ? `?${urlParams.toString()}` : ""}`);
-    return q.toString();
-  })();
-  const activeMobileFilters = [
-    filters.search,
-    filters.direction,
-    filters.minAmount || filters.maxAmount,
-    filters.startDate || filters.endDate,
-    filters.categoryId,
-    locked ? "" : filters.accountId,
-  ].filter(Boolean).length;
-
-  /** Compact sort control: pick a column (default direction desc), or "Default order" to clear. */
-  function chooseSort(v: string | null) {
-    if (!v || v === "none") setSortPref({ columnId: null, direction: null });
-    else setSortPref({ columnId: v as SortableColumnId, direction: sortPref.columnId === v && sortPref.direction ? sortPref.direction : "desc" });
-    setPage(0);
-  }
-
-  function toggleSortDirection() {
-    if (!sortPref.columnId) return;
-    setSortPref({ columnId: sortPref.columnId, direction: sortPref.direction === "asc" ? "desc" : "asc" });
-    setPage(0);
-  }
-
   function clearFilters() {
-    setSearchInput("");
     // When locked, keep the account scope — only the OTHER filters clear.
     setFilters({ id: "", startDate: "", endDate: "", accountId: locked ? String(lockedAccountId) : "", categoryId: "", search: "", portfolioHolding: "", tag: "", direction: "", minAmount: "", maxAmount: "" });
-    // Issue #59 — also wipe the per-column filters + sort. The chip row
-    // below the top-bar shows both, so "Clear all" should drop both.
+    tb.list.setQ("");
+    // The toolbar's filters and sort live in the URL: drop them there too (the range stays).
+    const q = new URLSearchParams(urlParams.toString());
+    for (const k of OWNED_URL_KEYS) q.delete(k);
+    router.replace(`${pathname}${q.toString() ? `?${q.toString()}` : ""}`);
+    // Issue #59 — also wipe the per-column filters.
     setColFilters([]);
-    setSortPref({ columnId: null, direction: null });
     setPage(0);
   }
 
@@ -361,7 +368,7 @@ export function TransactionsWorkspace({
       // daily on /transactions, everything in an account-locked embed.
       // Intentionally NO cursor: this is the legacy (non-cursor) mode, kept on
       // purpose for export. The paged list uses cursor mode; export does not.
-      const params = buildTransactionQuery({ ...filters, scope: locked ? "all" : "daily" }, sortPref, colFilters, accounts, {
+      const params = buildTransactionQuery({ ...effFilters, scope: locked ? "all" : "daily" }, sortPref, colFilters, accounts, {
         page: 0,
         limit: 100000,
       });
@@ -640,6 +647,8 @@ export function TransactionsWorkspace({
             className="flex flex-wrap items-center justify-between gap-3"
             title="Transactions"
             subtitle="Manage and track all your financial transactions"
+            filter={{ href: tb.list.filterHref, activeCount: tb.list.activeCount }}
+            bulkEdit={{ onToggle: toggleSelectMode, active: selectMode, label: "Edit list" }}
             overflow={[
           { label: "Transfer", icon: ArrowRightLeft, onSelect: () => router.push("/transactions/new?kind=transfer") },
           { label: "Buy", icon: ShoppingCart, onSelect: () => router.push("/portfolio/new/buy") },
@@ -730,27 +739,15 @@ export function TransactionsWorkspace({
           <OnboardingTips page="transactions" />
         </>
       )}
-      {/* One toolbar at every size: Search and filter (opens the search page), filter count, split view. */}
-      <div className="flex gap-2 items-center">
-        <Link
-          href={`/transactions/search?${mobileSearchQuery}`}
-          aria-label="Search and filter"
-          className="flex min-h-11 flex-1 items-center gap-2 px-3 py-2.5 bg-muted rounded-lg text-sm text-muted-foreground hover:bg-muted/80 transition-colors"
-        >
-          <Search className="h-4 w-4" />
-          <span>Search and filter</span>
-        </Link>
-        {activeMobileFilters > 0 && (
-          <button
-            type="button"
-            onClick={clearFilters}
-            className="flex min-h-11 items-center gap-1 rounded-full bg-muted px-3 text-xs font-medium"
-            aria-label={`Clear ${activeMobileFilters} filters`}
-            data-testid="mobile-filter-chip"
-          >
-            Filters ({activeMobileFilters})
-            <X className="h-3.5 w-3.5" />
-          </button>
+      {/* One toolbar at every size: range, month, search, filter (PageToolbar). Split view sits at the far right. */}
+      <div className="flex flex-wrap items-center gap-2">
+        {!toolbarProp && (
+          <PageToolbar
+            className="flex-1"
+            range={{ selection: toolbarSelection, onChange: changeRange }}
+            monthSwitcher={!legacyDates && !drill}
+            search={{ value: tb.list.q, onChange: tb.list.setQ, placeholder: "Payee or note" }}
+          />
         )}
         {sizeClass === "wide" && (
           <Button
@@ -771,28 +768,7 @@ export function TransactionsWorkspace({
       <Card className="bg-muted/30 border-dashed">
         <CardContent className="pt-4 space-y-3">
           <div className="flex flex-wrap gap-2 items-center">
-            <Select value={sortPref.columnId ?? "none"} onValueChange={(v) => chooseSort(v)}>
-              <SelectTrigger className="h-8 w-44 text-xs" aria-label="Sort by" data-testid="tx-sort-select">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Default order</SelectItem>
-                {SORTABLE_COLUMN_IDS.map((id) => (
-                  <SelectItem key={id} value={id}>{COLUMN_LABELS[id]}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-8 w-8"
-              onClick={toggleSortDirection}
-              disabled={!sortPref.columnId}
-              aria-label={sortPref.direction === "asc" ? "Sorted ascending. Sort descending" : "Sorted descending. Sort ascending"}
-              title={sortPref.direction === "asc" ? "Ascending" : "Descending"}
-            >
-              <ArrowDownUp className="h-3.5 w-3.5" />
-            </Button>
+            {!showHeader && (
             <Button
               variant={selectMode ? "secondary" : "outline"}
               size="sm"
@@ -803,7 +779,8 @@ export function TransactionsWorkspace({
               <ListChecks className="h-3.5 w-3.5" />
               {selectMode ? "Done selecting" : "Select"}
             </Button>
-            {(filters.id || filters.startDate || filters.endDate || (!locked && filters.accountId) || filters.categoryId || filters.search || filters.portfolioHolding || filters.tag || colFilters.length > 0 || sortPref.columnId) && (
+            )}
+            {(filters.id || filters.startDate || filters.endDate || (!locked && filters.accountId) || filters.categoryId || filters.search || filters.portfolioHolding || filters.tag || colFilters.length > 0 || tb.list.activeCount > 0) && (
               <button onClick={clearFilters} className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors ml-1">
                 <X className="h-3 w-3" /> Clear all
               </button>
@@ -819,7 +796,7 @@ export function TransactionsWorkspace({
               {exporting ? "Exporting…" : "Export CSV"}
             </Button>
           </div>
-          {/* Active column-filter chips (set from Search and filter). Each chip drops just its own filter. */}
+          {/* Active column-filter chips (set from the filter page). Each chip drops just its own filter. */}
           {colFilters.length > 0 && (
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs text-muted-foreground">Filters:</span>

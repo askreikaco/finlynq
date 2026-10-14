@@ -196,6 +196,7 @@ describe("nav-config", () => {
         "/transactions/audit",
         "/transactions/new",
         "/transactions/search",
+        "/filter/[list]", // shared filter + sort page opened from the PageToolbar funnel (no nav entry)
         "/settings/backfill",
         "/settings/investments/securities/new", // create-security page, opened from the investments list (no nav entry)
         "/settings/investments/cash-sleeves/new", // add-cash-sleeve page, opened from the investments list

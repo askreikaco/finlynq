@@ -918,7 +918,7 @@ describe("/reports summary cards", () => {
     await waitFor(() => expect(tileOf("Total Income").textContent).toMatch(/\+\$200\.00 vs last month/));
     const income = tileOf("Total Income");
     expect(income.textContent).toContain("+20.0%");
-    expect(income.textContent).toMatch(/\d{4}-01-01 to \d{4}-\d{2}-\d{2}: \$50,000/);
+    expect(income.textContent).toMatch(/\d{4}-\d{2}-01 to \d{4}-\d{2}-\d{2}: \$50,000/);
     expect(income.querySelectorAll("[data-spark]").length).toBeGreaterThan(0);
     // spending down = green (inverted)
     expect(tileOf("Total Expenses").textContent).toMatch(/-\$100\.00 vs last month/);

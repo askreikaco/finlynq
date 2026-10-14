@@ -9,6 +9,12 @@ import { formatCurrency } from "@/lib/currency";
 vi.mock("next/link", () => ({
   default: ({ children, href, ...p }: React.PropsWithChildren<{ href: string }>) => React.createElement("a", { href, ...p }, children),
 }));
+const nav = vi.hoisted(() => ({ query: "" }));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }),
+  useSearchParams: () => new URLSearchParams(nav.query),
+  usePathname: () => "/portfolio/dividends",
+}));
 const size = vi.hoisted(() => ({ cls: "compact" as "compact" | "regular" }));
 vi.mock("@/components/adaptive", async (orig) => ({ ...(await orig<typeof import("@/components/adaptive")>()), useAppSizeClass: () => size.cls }));
 vi.mock("@/components/currency-provider", () => ({ useDisplayCurrency: () => ({ displayCurrency: "VND", isLoading: false }) }));
@@ -48,6 +54,7 @@ beforeEach(() => {
 
 afterEach(() => {
   size.cls = "compact";
+  nav.query = "";
   cleanup();
   vi.unstubAllGlobals();
 });
@@ -90,17 +97,16 @@ describe("Dividend income page (report page, not a dialog)", () => {
     expect(get("Total (VND)")).toContain("1,500,000");
   });
 
-  it("filters open in a bottom sheet from the header Filters button", async () => {
+  it("filters live on the filter page: the top bar has an icon-only Filter link (no inline filter fields)", async () => {
     render(<DividendsPage />);
     await screen.findByRole("button", { name: "2026, 3 dividend rows" });
-    expect(screen.queryByRole("dialog")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Filters" }));
-    const dlg = screen.getByRole("dialog");
-    expect(within(dlg).getByText("Filter dividends")).toBeTruthy();
-    expect(within(dlg).getByLabelText("Tax year")).toBeTruthy();
+    const f = screen.getByRole("link", { name: "Filter" });
+    expect(f.getAttribute("href")).toMatch(/^\/filter\/dividends/);
+    expect(f.textContent).toBe("");
+    expect(screen.queryByLabelText("Tax year")).toBeNull();
   });
 
-  it("one list at every size class: no table on compact or regular; the group-by control is always there", async () => {
+  it("one list at every size class: no table on compact or regular; the Filter link is always there", async () => {
     render(<DividendsPage />);
     await screen.findByRole("button", { name: "2026, 3 dividend rows" });
     expect(document.querySelector("table")).toBeNull();
@@ -111,16 +117,20 @@ describe("Dividend income page (report page, not a dialog)", () => {
     expect(document.querySelector("table")).toBeNull();
     expect(document.querySelector("[data-slot=list-row]")).not.toBeNull();
     expect(screen.queryByRole("button", { name: "Filters" })).toBeNull();
-    expect(screen.getAllByRole("group", { name: "Group by" })).toHaveLength(1);
   });
 
-  it("a group-by chip refetches with the new groupBy and keeps the native pivot", async () => {
-    size.cls = "regular";
+  it("?groupBy=holding refetches with the new groupBy and keeps the native pivot", async () => {
+    nav.query = "groupBy=holding";
     render(<DividendsPage />);
     await screen.findByRole("button", { name: "2026, 3 dividend rows" });
-    const groupBy = screen.getByRole("group", { name: "Group by" });
-    fireEvent.click(within(groupBy).getByRole("button", { name: "Holding" }));
     await waitFor(() => expect(urls.some((u) => u.includes("groupBy=holding") && u.includes("pivot=1"))).toBe(true));
+  });
+
+  it("?taxYear= and ?reporting=1 drive the same API call (a tax year supersedes dates)", async () => {
+    nav.query = "taxYear=2025&reporting=1&from=2024-01-01";
+    render(<DividendsPage />);
+    await screen.findByRole("button", { name: "2026, 3 dividend rows" });
+    await waitFor(() => expect(urls.some((u) => u.includes("taxYear=2025") && u.includes("reportingCurrency=1") && !u.includes("from="))).toBe(true));
   });
 
   it("empty state explains the category rule and links to record a dividend", async () => {

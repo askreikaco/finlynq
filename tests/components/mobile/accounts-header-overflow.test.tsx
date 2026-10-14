@@ -38,19 +38,19 @@ describe("Accounts header on mobile", () => {
     await screen.findByRole("heading", { level: 1, name: "Accounts" });
 
     const manageInline = screen.getByTitle("Rename, reorder, or merge account groups");
-    const archivedInline = screen.getByTitle("Show archived accounts");
+    // Archived accounts are a filter now (funnel icon -> filter page), not a header action.
+    expect(screen.queryByTitle("Show archived accounts")).toBeNull();
     expect(cls(manageInline)).toContain("header-secondary");
-    expect(cls(archivedInline)).toContain("header-secondary");
 
     const primary = screen.getByRole("link", { name: /Create Account|Add/ });
     expect(cls(primary)).not.toContain("header-secondary");
 
     fireEvent.click(screen.getByRole("button", { name: "More actions" }));
     const menu = await screen.findByRole("menu", undefined, { timeout: 5000 });
-    expect(within(menu).getAllByRole("menuitem").map((i) => i.textContent)).toEqual(["Manage groups", "Show archived"]);
+    expect(within(menu).getAllByRole("menuitem").map((i) => i.textContent)).toEqual(["Manage groups", "Customize cards"]);
   });
 
-  it("Manage groups (inline and overflow) links to /accounts/groups; overflow Show archived still toggles", async () => {
+  it("Manage groups (inline and overflow) links to /accounts/groups", async () => {
     render(<AccountsPage />);
     await screen.findByRole("heading", { level: 1, name: "Accounts" });
     expect(screen.getByTitle("Rename, reorder, or merge account groups").closest("a")?.getAttribute("href")).toBe("/accounts/groups");
@@ -58,10 +58,6 @@ describe("Accounts header on mobile", () => {
     fireEvent.click(screen.getByRole("button", { name: "More actions" }));
     const menu = within(await screen.findByRole("menu", undefined, { timeout: 5000 }));
     expect(menu.getByText("Manage groups").closest("a")?.getAttribute("href")).toBe("/accounts/groups");
-
-    // "Show archived" toggles the label to "Hide archived"
-    fireEvent.click(menu.getByText("Show archived"));
-    await waitFor(() => expect(screen.getByTitle("Hide archived accounts")).toBeTruthy());
   });
 
   it("title is the one bar style at every width (text-base semibold); no desktop title override", async () => {

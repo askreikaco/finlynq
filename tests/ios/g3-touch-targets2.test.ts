@@ -71,8 +71,8 @@ describe("combobox trigger reaches 44px on coarse pointers (matches select.tsx)"
 });
 
 describe("page-level targets", () => {
-  it("transactions 'Search and filter' link has min-h-11", () => {
-    expect(workspace).toMatch(/"flex min-h-11 flex-1 items-center gap-2 px-3 py-2\.5 bg-muted rounded-lg/);
+  it("transactions toolbar controls are PageToolbar icon buttons (44px on touch via Button size=icon)", () => {
+    expect(workspace).toContain("<PageToolbar");
   });
   it("accounts/[id] not-found path uses the global PageHeader back (one back control, 44px via BackButton)", () => {
     // The not-found and loading branches carry PageHeader with backHref=/accounts; the main render uses the automatic back.

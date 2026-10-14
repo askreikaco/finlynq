@@ -42,7 +42,7 @@ const HOSTILE = [
 async function renderWith(returnTo: string) {
   query = `returnTo=${returnTo}`;
   render(<SearchPage />);
-  return screen.findByRole("button", { name: /^Search$/ });
+  return screen.findByRole("button", { name: /^Apply$/ });
 }
 
 describe("transactions/search returnTo: hostile values fall back to /transactions", () => {

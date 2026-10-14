@@ -15,7 +15,7 @@ const H = vi.hoisted(() => {
     LK: { accounts: [{ id: 1, name: "A", currency: "USD", type: "A", group: "g", archived: false }], categories: [{ id: 4, name: "C", type: "E", group: "g" }], holdings: [] as any[] },
     RES: { txns: TXNS, total: 3, loading: false, limit: 50, loadTxns: () => {}, loadNextPage: () => {}, resetPage: () => {}, page: 1, hasMore: false, isLoadingMore: false, loadMoreError: false, loadError: false },
     IO: { cbs: [] as Array<(e: any[]) => void> },
-    SP: new URLSearchParams(""), ACT: ["USD"],
+    SP: new URLSearchParams("range=custom&from=2000-01-01&to=2100-01-01"), ACT: ["USD"],
     PEND: null as any, ACTIVE: false, queueDel: null as any, discard: null as any,
   };
 });

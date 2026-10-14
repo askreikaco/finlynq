@@ -27,13 +27,13 @@ afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 async function renderPage(q: string) {
   query = q;
   render(<SearchPage />);
-  return screen.findByRole("button", { name: /^Search$/ });
+  return screen.findByRole("button", { name: /^Apply$/ });
 }
 
 describe("mobile transaction search page", () => {
   it("prefills from the URL and returns the filters to returnTo", async () => {
-    const searchBtn = await renderPage("returnTo=%2Ftransactions&search=coffee&direction=out");
-    expect((screen.getByPlaceholderText("Payee or note") as HTMLInputElement).value).toBe("coffee");
+    // Search is a toolbar slot now: it rides along in returnTo and survives Apply.
+    const searchBtn = await renderPage("returnTo=%2Ftransactions%3Fsearch%3Dcoffee%26range%3Dthis_year&direction=out");
     expect(screen.getByRole("radio", { name: "Outgoing" }).getAttribute("aria-checked")).toBe("true");
     fireEvent.click(screen.getByRole("radio", { name: "Incoming" }));
     fireEvent.click(searchBtn);
@@ -42,6 +42,19 @@ describe("mobile transaction search page", () => {
     expect(url.pathname).toBe("/transactions");
     expect(url.searchParams.get("search")).toBe("coffee");
     expect(url.searchParams.get("direction")).toBe("in");
+    expect(url.searchParams.get("range")).toBe("this_year");
+  });
+
+  it("offers Date and Amount sorts (Name is not server-sortable: payee is encrypted) and writes ?sort=&dir=", async () => {
+    const btn = await renderPage("returnTo=%2Ftransactions");
+    expect(screen.queryByRole("radio", { name: "Name" })).toBeNull();
+    expect(screen.getByRole("radio", { name: /^Date/ }).getAttribute("aria-checked")).toBe("true");
+    fireEvent.click(screen.getByRole("radio", { name: /^Amount/ }));
+    fireEvent.click(btn);
+    await waitFor(() => expect(push).toHaveBeenCalled());
+    const url = new URL(push.mock.calls[0][0], "https://x.test");
+    expect(url.searchParams.get("sort")).toBe("amount");
+    expect(url.searchParams.get("dir")).toBeNull();
   });
 
   it("never navigates off-site: absolute or protocol-relative returnTo falls back to /transactions", async () => {

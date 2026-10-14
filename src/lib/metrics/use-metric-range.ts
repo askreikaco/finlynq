@@ -27,13 +27,14 @@ export function useMetricRange(baseMonth?: string): {
     setSel(next);
     try {
       const url = new URL(window.location.href);
-      for (const k of ["range", "from", "to"]) url.searchParams.delete(k);
+      // A page that owns ?month= itself (budgets: baseMonth) keeps it; otherwise the selection owns it.
+      for (const k of baseMonth ? ["range", "from", "to"] : ["range", "from", "to", "month"]) url.searchParams.delete(k);
       for (const [k, v] of Object.entries(rangeToParams(next))) url.searchParams.set(k, v);
       window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
     } catch {
       /* URL sync is a convenience; the cards still follow the state. */
     }
-  }, []);
+  }, [baseMonth]);
   const today = localDateISO();
   const period = useMemo(() => resolvePeriod(selection, today, baseMonth), [selection, today, baseMonth]);
   const previous = useMemo(() => previousPeriod(period), [period]);

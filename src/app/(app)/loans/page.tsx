@@ -15,7 +15,10 @@ import { ErrorState } from "@/components/error-state";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CspSafeBar } from "@/components/csp-safe-bar";
 import { Amount, MetricGrid, DetailSheet, ListRow, SectionCard, type MetricItem, type DetailItem } from "@/components/mobile";
-import { MetricRangeSelect } from "@/components/metric-range-select";
+import { PageToolbar } from "@/components/page-toolbar";
+import { useListToolbar } from "@/lib/toolbar/use-list-toolbar";
+import { LOAN_FILTER_KEYS, LOAN_SORTS } from "@/lib/toolbar/list-configs";
+import { sortRecords } from "@/lib/toolbar/sort";
 import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { compareCaption, monthsBetween, seriesWindow } from "@/lib/metrics/period";
 import { NO_HISTORY_CAPTION, resolveCard } from "@/lib/metrics/delta";
@@ -193,7 +196,20 @@ function LoansPageContent() {
   const totalDebt = loans.reduce((s, l) => s + (l.remainingBalanceDisplay ?? 0), 0);
   // Paid-off loans sit in a collapsed "Completed" accordion and pay nothing.
   const activeLoans = loans.filter((l) => !isLoanCompleted(l));
-  const completedLoans = loans.filter(isLoanCompleted);
+  // Toolbar: search, filter page (status, type) and sort apply to the lists; the cards cover every loan.
+  const tb = useListToolbar({ filterPath: "/filter/loans", sorts: LOAN_SORTS, filterKeys: LOAN_FILTER_KEYS });
+  const needle = tb.q.trim().toLowerCase();
+  const shownLoans = sortRecords(
+    loans.filter(
+      (l) =>
+        (!tb.filters.type || l.type === tb.filters.type) &&
+        (!needle || `${l.name ?? ""} ${l.accountName ?? ""}`.toLowerCase().includes(needle)),
+    ),
+    tb.sort,
+    { date: (l) => l.payoffDate, name: (l) => l.name, amount: (l) => l.remainingBalanceDisplay ?? l.remainingBalance },
+  );
+  const activeList = tb.filters.status === "completed" ? [] : shownLoans.filter((l) => !isLoanCompleted(l));
+  const completedList = tb.filters.status === "active" ? [] : shownLoans.filter(isLoanCompleted);
   // Monthly-equivalent so weekly/quarterly/annual loans sum comparably.
   const totalMonthly = activeLoans.reduce((s, l) => s + (l.monthlyEquivalentPaymentDisplay ?? 0), 0);
   // Whether any loan is booked in something other than the display currency —
@@ -246,6 +262,7 @@ function LoansPageContent() {
       subtitle="Track balances, amortization schedules, and payoff strategies"
       width="report"
             header={{
+        filter: { href: tb.filterHref, activeCount: tb.activeCount },
         actions: (
           <Button id="add-loan-btn" onClick={() => router.push("/loans/new")}>
             <Plus className="h-4 w-4 mr-1" /> Add Loan
@@ -253,7 +270,10 @@ function LoansPageContent() {
         ),
       }}
     >
-      <MetricRangeSelect value={selection} onChange={setSelection} />
+      <PageToolbar
+        range={{ selection, onChange: setSelection }}
+        search={{ value: tb.q, onChange: tb.setQ, placeholder: "Search loans" }}
+      />
       <MetricGrid metrics={metrics} />
 
       {loans.length === 0 && (
@@ -265,25 +285,25 @@ function LoansPageContent() {
         />
       )}
 
-      {activeLoans.length > 0 && (
+      {activeList.length > 0 && (
         <SectionCard label="Active" padded={false} className={`divide-y divide-border/50 px-3 ${CARD_ROW_GRID}`}>
-          {activeLoans.map((loan) => (
+          {activeList.map((loan) => (
             <LoanRow key={loan.id} loan={loan} paidOff={false} displayCurrency={displayCurrency} onOpen={() => setDetailId(loan.id)} />
           ))}
         </SectionCard>
       )}
 
       {/* Paid-off loans: collapsed by default */}
-      {completedLoans.length > 0 && (
+      {completedList.length > 0 && (
         <Accordion defaultValue={null}>
           <AccordionItem
             value="completed"
             icon={<CheckCircle2 className="h-4 w-4" />}
-            title={`Completed (${completedLoans.length})`}
+            title={`Completed (${completedList.length})`}
             description="Paid-off loans"
           >
             <div className="divide-y divide-border/50 px-3">
-              {completedLoans.map((loan) => (
+              {completedList.map((loan) => (
                 <LoanRow key={loan.id} loan={loan} paidOff displayCurrency={displayCurrency} onOpen={() => setDetailId(loan.id)} />
               ))}
             </div>
