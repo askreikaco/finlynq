@@ -749,9 +749,28 @@ export function TransactionsWorkspace({
             </>
             }
           />
-          <OnboardingTips page="transactions" />
         </>
       )}
+      <ListDetailLayout
+        entity="transaction"
+        newLabel="Add Transaction"
+        enabled={!locked}
+        pane={(api) => (
+          <TransactionFormScreen
+            mode={api.isNew ? "create" : "edit"}
+            id={api.selectedId ?? undefined}
+            returnTo={currentReturnTo()}
+            embedded={{
+              onSaved: () => { void loadTxns(); api.afterSaved(); },
+              onCancel: api.clear,
+              onDeleted: () => { void loadTxns(); api.afterDeleted(); },
+              // Duplicate wrote its prefill: open a create pane, which reads it (?prefill=1) once on mount.
+              onDuplicate: () => router.push(`${pathname}${withSel(urlParams.toString(), "new")}&prefill=1`, { scroll: false }),
+            }}
+          />
+        )}
+      >
+      {showHeader && <OnboardingTips page="transactions" />}
       {/* One toolbar at every size: range, month, search, filter (PageToolbar). Split view sits at the far right. */}
       <div className="flex flex-wrap items-center gap-2">
         {!toolbarProp && (
@@ -900,25 +919,6 @@ export function TransactionsWorkspace({
         </div>
       )}
 
-      <ListDetailLayout
-        entity="transaction"
-        newLabel="Add Transaction"
-        enabled={!locked}
-        pane={(api) => (
-          <TransactionFormScreen
-            mode={api.isNew ? "create" : "edit"}
-            id={api.selectedId ?? undefined}
-            returnTo={currentReturnTo()}
-            embedded={{
-              onSaved: () => { void loadTxns(); api.afterSaved(); },
-              onCancel: api.clear,
-              onDeleted: () => { void loadTxns(); api.afterDeleted(); },
-              // Duplicate wrote its prefill: open a create pane, which reads it (?prefill=1) once on mount.
-              onDuplicate: () => router.push(`${pathname}${withSel(urlParams.toString(), "new")}&prefill=1`, { scroll: false }),
-            }}
-          />
-        )}
-        list={
         <div className="min-w-0 space-y-6">
         {/* The one transactions list at every width: date-grouped mobile rows. Select mode adds checkboxes. */}
                 {/* Bulk actions for the selected rows (Select mode). */}
@@ -1033,8 +1033,6 @@ export function TransactionsWorkspace({
             selection={selectMode ? { selected, onToggle: toggleOne } : undefined}
           />
         </div>
-        }
-      />
 
       {sheetTx && (
         <TransactionSheet
@@ -1075,6 +1073,8 @@ export function TransactionsWorkspace({
           <span>Showing all {total} transactions</span>
         ) : null}
       </div>
+
+      </ListDetailLayout>
 
       {/* Single delete confirmation dialog */}
       <Dialog open={deleteConfirmId !== null} onOpenChange={(open) => {

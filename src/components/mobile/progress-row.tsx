@@ -87,7 +87,7 @@ export function ProgressRow({
         </span>
         <span data-slot={`${slot}-amount`} className="text-right text-sm font-semibold tabular-nums @3xl:order-4">{value}</span>
         <span className="flex min-w-0 items-center gap-2 @3xl:order-2 @3xl:gap-3">
-          <span data-slot={`${slot}-chart`} className="block h-5 w-12 shrink-0 @3xl:w-16">
+          <span data-slot={`${slot}-chart`} className="block h-5 w-12 shrink-0 @max-[22rem]:hidden @3xl:w-16">
             {trend && trend.length > 1 ? (
               <Sparkline data={trend} color={chartColor ?? dot} labels={sparkLabels} currency={cur} height="100%" className="h-full w-full" />
             ) : null}

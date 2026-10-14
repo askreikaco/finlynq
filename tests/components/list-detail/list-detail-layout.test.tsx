@@ -33,14 +33,17 @@ const renderLayout = () =>
     <ListDetailLayout
       entity="goal"
       newLabel="Add Goal"
-      list={<div data-testid="the-list">rows</div>}
       pane={(api) => (
         <div data-testid="the-form" data-id={api.selectedId ?? ""} data-new={String(api.isNew)}>
           <button onClick={() => api.afterSaved()}>saved</button>
           <button onClick={api.afterDeleted}>deleted</button>
         </div>
       )}
-    />,
+    >
+      <div data-testid="the-toolbar">toolbar</div>
+      <div data-testid="the-cards">cards</div>
+      <section data-testid="the-list">rows</section>
+    </ListDetailLayout>,
   );
 
 describe("parseSel / withSel", () => {
@@ -67,10 +70,10 @@ describe("pane geometry", () => {
     expect(SPLIT_GRID_CLASS).toContain("grid-cols-[minmax(0,2fr)_minmax(0,1fr)]");
     expect(SPLIT_GRID_CLASS).toContain("items-start");
   });
-  it("the pane sticks below the top bar: header height + safe area + 1rem, and scrolls inside", () => {
+  it("the pane sticks below the top bar: header height + safe area + 1rem, is viewport-tall minus that offset, and scrolls inside", () => {
     expect(PANE_CLASS).toContain("sticky");
     expect(PANE_CLASS).toContain("top-[calc(var(--phone-header-h,3.75rem)+var(--sat,0px)+1rem)]");
-    expect(PANE_CLASS).toContain("max-h-[calc(100dvh-var(--phone-header-h,3.75rem)-var(--sat,0px)-2rem)]");
+    expect(PANE_CLASS).toContain(" h-[calc(100dvh-var(--phone-header-h,3.75rem)-var(--sat,0px)-2rem)]");
     expect(PANE_CLASS).toContain("overflow-y-auto");
   });
 });
@@ -84,6 +87,25 @@ describe("ListDetailLayout", () => {
     expect(pane.className).toContain("top-[calc(var(--phone-header-h,3.75rem)+var(--sat,0px)+1rem)]");
     expect(pane.closest("[data-slot=list-detail]")!.className).toContain("grid-cols-[minmax(0,2fr)_minmax(0,1fr)]");
     expect(screen.getByTestId("the-list")).toBeTruthy();
+  });
+
+  it("the pane is a sibling of the WHOLE page body (toolbar, cards, list), not of the list section", () => {
+    renderLayout();
+    const grid = document.querySelector("[data-slot=list-detail]")!;
+    const pane = screen.getByTestId("list-detail-pane");
+    const main = grid.querySelector("[data-slot=list-detail-main]")!;
+    expect(pane.parentElement).toBe(grid);
+    expect(main.parentElement).toBe(grid);
+    expect(grid.children).toHaveLength(2);
+    expect(grid.firstElementChild).toBe(main);
+    for (const id of ["the-toolbar", "the-cards", "the-list"]) expect(main.contains(screen.getByTestId(id))).toBe(true);
+    // the list section is NOT the pane's sibling: it is nested in the page body column
+    expect(screen.getByTestId("the-list").parentElement).toBe(main);
+    expect(screen.getByTestId("the-list").nextElementSibling).toBeNull();
+    expect(pane.contains(screen.getByTestId("the-toolbar"))).toBe(false);
+    // full page height column: h-[...] (not just max-h) + sticky + internal scroll
+    expect(pane.className).toMatch(/(^| )h-\[calc\(100dvh-/);
+    expect(pane.className).toContain("overflow-y-auto");
   });
 
   it("shows the prompt card with a New button when nothing is selected, and New sets ?sel=new", () => {
@@ -135,11 +157,15 @@ describe("ListDetailLayout", () => {
       expect(screen.queryByTestId("list-detail-pane")).toBeNull();
       expect(screen.queryByTestId("the-form")).toBeNull();
       expect(screen.getByTestId("the-list")).toBeTruthy();
+      // phone / regular unchanged: the page body renders bare (no grid, no main column wrapper)
+      expect(document.querySelector("[data-slot=list-detail]")).toBeNull();
+      expect(document.querySelector("[data-slot=list-detail-main]")).toBeNull();
+      expect(screen.getByTestId("the-toolbar")).toBeTruthy();
     }
   });
 
   it("enabled=false renders the list alone even at wide", () => {
-    render(<ListDetailLayout enabled={false} newLabel="x" list={<div data-testid="the-list" />} pane={() => <div />} />);
+    render(<ListDetailLayout enabled={false} newLabel="x" pane={() => <div />}><div data-testid="the-list" /></ListDetailLayout>);
     expect(screen.queryByTestId("list-detail-pane")).toBeNull();
   });
 });

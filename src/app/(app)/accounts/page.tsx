@@ -388,6 +388,20 @@ function AccountsPage() {
         ),
       }}
     >
+      <ListDetailLayout
+        entity="account"
+        newLabel="Create Account"
+        pane={(api) => (
+                <AccountFormPanel
+                  embedded
+                  mode={api.isNew ? "create" : "edit"}
+                  id={api.selectedId ?? undefined}
+                  onSaved={(id) => { loadAccounts(); api.afterSaved(id); }}
+                  onCancel={api.clear}
+                  onDeleted={() => { loadAccounts(); api.afterDeleted(); }}
+                />
+              )}
+      >
       <OnboardingTips page="accounts" />
 
       <PageToolbar refresh
@@ -462,32 +476,16 @@ function AccountsPage() {
           blocks.push(
             // Assets / Liabilities: one column on phone, side by side (2 independent stacks) at regular+. In the split
             // view the list column is 2/3 wide, so the stacks drop a step (data-split-grid: 1 column at regular, 2 at wide).
-            <ListDetailLayout
-              key={run.join("+")}
-              entity="account"
-              newLabel="Create Account"
-              list={
-                <div data-slot="accounts-list" data-split-grid className="flex flex-col gap-6 regular:grid regular:grid-cols-2 regular:items-start">
+            <div key={run.join("+")} data-slot="accounts-list" data-split-grid className="flex flex-col gap-6 regular:grid regular:grid-cols-2 regular:items-start">
                   {run.map((r) => (
                     <Fragment key={r}>{nodes[r]}</Fragment>
                   ))}
-                </div>
-              }
-              pane={(api) => (
-                <AccountFormPanel
-                  embedded
-                  mode={api.isNew ? "create" : "edit"}
-                  id={api.selectedId ?? undefined}
-                  onSaved={(id) => { loadAccounts(); api.afterSaved(id); }}
-                  onCancel={api.clear}
-                  onDeleted={() => { loadAccounts(); api.afterDeleted(); }}
-                />
-              )}
-            />,
+                </div>,
           );
         }
         return blocks;
       })()}
+      </ListDetailLayout>
 
       <CustomizeCardsSheet
         open={customizeOpen}

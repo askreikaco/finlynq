@@ -3,8 +3,10 @@
 /**
  * ListDetailLayout: the split view of every list page that has an edit/create form.
  *
- * wide (>= 1024px, desktop and tablet landscape): a two-column grid, list 2fr | pane 1fr. The pane is sticky below the
- * top bar (offset = header height + safe area + 1rem) and scrolls inside itself. The pane renders the SAME form component the
+ * It wraps the WHOLE page body (everything under the top bar: toolbar, metric cards, charts, lists), not just the list.
+ * wide (>= 1024px, desktop and tablet landscape): a two-column grid, page 2fr | pane 1fr. The pane is a column of the
+ * entire page height: sticky below the top bar (offset = header height + safe area + 1rem), as tall as the viewport minus
+ * that offset, scrolling inside itself, to the right of everything on the page. The pane renders the SAME form component the
  * /x/new and /x/[id]/edit routes render (`embedded`), selected by `?sel=<id>` / `?sel=new` in the URL.
  * Below wide (phones, portrait tablets): no pane, `list` only; a row tap keeps opening the sheet / edit route as before and ?sel is ignored.
  */
@@ -140,8 +142,8 @@ export interface ListDetailPaneApi extends ListDetailApi {
 }
 
 export interface ListDetailLayoutProps {
-  /** The list column (metric cards stay OUTSIDE, above the layout). */
-  list: React.ReactNode;
+  /** The whole page body under the top bar (toolbar, cards, lists). It becomes the left 2/3 column at wide. */
+  children: React.ReactNode;
   /** The pane body for a selection (rendered at wide only). Keyed by the selection so a new item remounts the form. */
   pane: (api: ListDetailPaneApi) => React.ReactNode;
   /** Label of the New button in the empty pane. */
@@ -152,10 +154,10 @@ export interface ListDetailLayoutProps {
   enabled?: boolean;
 }
 
-export function ListDetailLayout({ list, pane, newLabel, entity, className, enabled = true }: ListDetailLayoutProps) {
+export function ListDetailLayout({ children, pane, newLabel, entity, className, enabled = true }: ListDetailLayoutProps) {
   const api = useListDetail();
   const [rev, setRev] = React.useState(0);
-  if (!api.split || !enabled) return <>{list}</>;
+  if (!api.split || !enabled) return <>{children}</>;
   const paneApi: ListDetailPaneApi = {
     ...api,
     afterSaved: (id) => {
@@ -168,8 +170,8 @@ export function ListDetailLayout({ list, pane, newLabel, entity, className, enab
   };
   return (
     <div data-slot="list-detail" data-entity={entity} className={cn(SPLIT_GRID_CLASS, className)}>
-      <div data-slot="list-detail-list" className="min-w-0">
-        {list}
+      <div data-slot="list-detail-main" className="min-w-0 space-y-6">
+        {children}
       </div>
       <aside
         data-slot="list-detail-pane"

@@ -664,12 +664,7 @@ function CategoriesOverview() {
     if (id === "metrics") return isIncome && !twoCol ? null : metricsNode;
     if (twoCol) {
       return id === firstTypeCard ? (
-        <ListDetailLayout
-          entity="category"
-          newLabel="Add"
-          list={<div data-slot="categories-columns" className="grid grid-cols-2 items-start gap-x-6 gap-y-6">{TYPES.map(column)}</div>}
-          pane={paneBody}
-        />
+        <div data-slot="categories-columns" className="grid grid-cols-2 items-start gap-x-6 gap-y-6">{TYPES.map(column)}</div>
       ) : null;
     }
     return panels[type][id];
@@ -687,12 +682,15 @@ function CategoriesOverview() {
         overflow={isIncome && !twoCol ? undefined : overflow}
         bulkEdit={{ onToggle: () => setEditMode((v) => !v), active: editMode, label: "Edit list" }}
       />
-      {toolbar}
-      {actionError && <p className="text-sm text-destructive">{actionError}</p>}
+      {/* The split view wraps the whole page body: toolbar, cards and the Spending | Income columns are the left 2/3, the pane is the right 1/3 at full page height. */}
+      <ListDetailLayout entity="category" newLabel="Add" enabled={twoCol} pane={paneBody}>
+        {toolbar}
+        {actionError && <p className="text-sm text-destructive">{actionError}</p>}
 
-      {visibleOrder.map((id) => (
-        <Fragment key={id}>{nodeFor(id)}</Fragment>
-      ))}
+        {visibleOrder.map((id) => (
+          <Fragment key={id}>{nodeFor(id)}</Fragment>
+        ))}
+      </ListDetailLayout>
 
       <CustomizeCardsSheet
         open={customizeOpen}
