@@ -1,7 +1,7 @@
 /**
  * SPA service worker. Derived from src/app/sw.ts minus the Next-specific parts (RSC payload cache,
  * _next/static, HTML SWR, defaultCache). Built by the vite plugin in vite.config.ts (esbuild, iife);
- * the precache manifest + build id + SPA route patterns are injected as defines.
+ * the precache manifest + build id + SPA route matchers are injected as defines.
  *
  * - precache: index.html + every hashed asset of the build (revision = null for hashed files).
  * - navigations to SPA routes: the precached /web/index.html (app shell). Other navigations (Next SSR
@@ -19,18 +19,11 @@ declare global {
 
 declare const self: WorkerGlobalScope;
 declare const __SW_MANIFEST__: (PrecacheEntry | string)[];
-declare const __SPA_PATTERNS__: string[];
+declare const __SPA_MATCHERS__: string[];
 declare const __BASE__: string;
 
-/** react-router style pattern ("/accounts/:id", "/files/*") -> RegExp. */
-function toRegExp(p: string): RegExp {
-  const src = p
-    .split("/")
-    .map((s) => (s === "*" ? ".*" : s.startsWith(":") ? "[^/]+" : s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")))
-    .join("/");
-  return new RegExp(`^${src}/?(\\?.*)?$`);
-}
-const SPA_PATHS = __SPA_PATTERNS__.map(toRegExp);
+/** Regex sources from route-table.ts (same matchers as the in-page isSpaPath; they accept an optional ?query). */
+const SPA_PATHS = __SPA_MATCHERS__.map((src) => new RegExp(src));
 
 const NEVER_CACHE = ["/api/", "/auth", "/unlock", "/passkey", "/cloud", "/oauth"];
 

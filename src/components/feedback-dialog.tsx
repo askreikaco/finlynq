@@ -25,7 +25,7 @@ import {
   FEEDBACK_ATTACHMENT_MAX_BYTES,
   isSafeInlineImageMime,
   validateFeedbackAttachment,
-} from "@/lib/feedback/attachment";
+} from "@/lib/feedback/attachment-policy";
 import type { FeedbackType } from "@shared/types";
 
 function formatBytes(n: number): string {

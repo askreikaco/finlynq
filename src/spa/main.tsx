@@ -1,12 +1,14 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { createBrowserRouter, matchRoutes, RouterProvider, useRouteError, type RouteObject } from "react-router";
+import { createBrowserRouter, RouterProvider, useRouteError, type RouteObject } from "react-router";
 import { ThemeProvider } from "@/components/theme-provider";
 import { PwaRegister } from "@/components/pwa-register";
 import { DensityProvider } from "@/components/adaptive/density-provider";
 import "@/app/globals.css";
 import AppShell from "./AppShell";
-import { buildAppRoutes } from "./routes";
+import { buildAppRoutes, PAGE_ROUTES } from "./routes";
+import { SPA_ROUTES } from "./routes.config";
+import { makeIsSpaPath } from "./route-table";
 import { setNavigator } from "./nav-state";
 import { loadFlags } from "./flags";
 import { VersionWatch } from "./version-watch";
@@ -60,10 +62,16 @@ const routes: RouteObject[] = [
 const router = createBrowserRouter(routes);
 
 setNavigator({
-  navigate: (to, opts) => void router.navigate(to, { replace: opts?.replace }),
+  navigate: (to, opts) => {
+    const before = window.location.pathname;
+    // next/link + router.push scroll to the top when the path changes (not for query-only changes, not with scroll:false).
+    void router.navigate(to, { replace: opts?.replace }).then(() => {
+      if (opts?.scroll !== false && window.location.pathname !== before) window.scrollTo(0, 0);
+    });
+  },
   back: () => window.history.back(),
   forward: () => window.history.forward(),
-  isSpaPath: (pathname) => matchRoutes(routes, pathname) != null,
+  isSpaPath: makeIsSpaPath(SPA_ROUTES, PAGE_ROUTES),
 });
 
 createRoot(document.getElementById("root")!).render(

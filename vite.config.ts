@@ -11,9 +11,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig, type Plugin, type ProxyOptions } from "vite";
 import react from "@vitejs/plugin-react";
-import { matchPath } from "react-router";
 import { build as esbuild } from "esbuild";
 import { SPA_ROUTES, spaRoutePatterns } from "./src/spa/routes.config";
+import { makeIsSpaPath, routeMatchers } from "./src/spa/route-table";
+import { allAppPageRoutes } from "./src/spa/app-pages.node";
 
 const repo = path.dirname(fileURLToPath(import.meta.url));
 const src = path.join(repo, "src");
@@ -30,7 +31,9 @@ function gitSha(): string {
 }
 const BUILD = gitSha();
 const patterns = spaRoutePatterns();
-const isSpaPath = (p: string) => patterns.some((pat) => matchPath({ path: pat, end: true }, p));
+const pageRoutes = allAppPageRoutes(src);
+const matchers = routeMatchers(SPA_ROUTES, pageRoutes);
+const isSpaPath = makeIsSpaPath(SPA_ROUTES, pageRoutes);
 
 /** `GET /more` (document request for a SPA route) -> /web/index.html, like the nginx try_files rule. Dev + preview only. */
 function spaFallback(): Plugin {
@@ -94,7 +97,7 @@ function spaRelease(): Plugin {
         revision: f.startsWith("assets/") ? null : createHash("md5").update(readFileSync(path.join(outDir, f))).digest("hex").slice(0, 12),
       }));
       writeFileSync(path.join(outDir, "version.json"), JSON.stringify({ build: BUILD, builtAt }));
-      writeFileSync(path.join(outDir, "routes.json"), JSON.stringify({ build: BUILD, patterns }));
+      writeFileSync(path.join(outDir, "routes.json"), JSON.stringify({ build: BUILD, patterns, matchers }));
       rmSync(path.join(outDir, ".vite"), { recursive: true, force: true });
       await esbuild({
         entryPoints: [path.join(src, "spa/sw.ts")],
@@ -105,7 +108,7 @@ function spaRelease(): Plugin {
         target: "es2020",
         define: {
           __SW_MANIFEST__: JSON.stringify(manifest),
-          __SPA_PATTERNS__: JSON.stringify(patterns),
+          __SPA_MATCHERS__: JSON.stringify(matchers),
           __BUILD__: JSON.stringify(BUILD),
           __BASE__: JSON.stringify(BASE),
           "process.env.NODE_ENV": '"production"',

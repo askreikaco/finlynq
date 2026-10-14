@@ -1,10 +1,12 @@
 import { useSyncExternalStore } from "react";
 
 /** Runtime env flags from GET /api/config/flags (replaces props server wrapper pages/layouts passed down). */
-export type Flags = { categoriesMerged: boolean; instanceAdmin: boolean; apiBuild: string | null };
+export type Flags = { categoriesMerged: boolean; instanceAdmin: boolean; familyWealth: boolean; apiBuild: string | null };
 
 const STORAGE_KEY = "spa-flags";
-const DEFAULTS: Flags = { categoriesMerged: false, instanceAdmin: false, apiBuild: null };
+// familyWealth defaults ON like the server (lib/family/flag.ts); instanceAdmin defaults OFF (lib/admin/instance-flag.ts).
+export const FLAG_DEFAULTS: Flags = { categoriesMerged: false, instanceAdmin: false, familyWealth: true, apiBuild: null };
+const DEFAULTS = FLAG_DEFAULTS;
 
 function readStored(): Flags {
   try {
@@ -40,6 +42,18 @@ export function loadFlags(): Promise<void> {
       if (j) set({ ...DEFAULTS, ...j });
     })
     .catch(() => undefined);
+}
+
+/** True once /api/config/flags answered in this page load (stored values from a previous visit do not count). */
+export function useFlagsLoaded(): boolean {
+  return useSyncExternalStore(
+    (cb) => {
+      listeners.add(cb);
+      return () => listeners.delete(cb);
+    },
+    () => loaded,
+    () => false,
+  );
 }
 
 export function useFlags(): Flags {

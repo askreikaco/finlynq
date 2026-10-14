@@ -8,7 +8,7 @@
  */
 
 import { Paperclip } from "lucide-react";
-import { isSafeInlineImageMime } from "@/lib/feedback/attachment";
+import { isSafeInlineImageMime } from "@/lib/feedback/attachment-policy";
 import type { FeedbackAttachmentMeta } from "@shared/types";
 
 export function FeedbackAttachmentView({

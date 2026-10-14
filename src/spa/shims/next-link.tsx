@@ -26,7 +26,7 @@ function hrefToString(href: LinkProps["href"]): string {
  * <a> default (a full page load, so Next SSR serves it). Never intercepts modified clicks.
  */
 const Link = forwardRef<HTMLAnchorElement, LinkProps>(function Link(
-  { href, replace, scroll: _scroll, prefetch: _prefetch, shallow: _shallow, legacyBehavior: _lb, passHref: _ph, onClick, children, ...rest },
+  { href, replace, scroll, prefetch: _prefetch, shallow: _shallow, legacyBehavior: _lb, passHref: _ph, onClick, children, ...rest },
   ref,
 ) {
   const to = hrefToString(href);
@@ -41,7 +41,7 @@ const Link = forwardRef<HTMLAnchorElement, LinkProps>(function Link(
     const nav = getNavigator();
     if (!nav || isStale() || !nav.isSpaPath(url.pathname)) return; // browser does a full navigation
     e.preventDefault();
-    go(to, replace);
+    go(to, replace, scroll !== false);
   };
   return (
     <a ref={ref} href={to} onClick={handle} {...rest}>

@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 # Generate /etc/nginx/money-spa-routes.conf (+ empty /etc/nginx/money-spa-sw.conf) from spa-routes.txt.
+# spa-routes.txt is itself GENERATED from src/spa/routes.config.ts (node deploy/web/sync-routes.mjs): edit the .ts, not the txt.
+# Line syntax: [=]/seg/seg [!name ...]   "=" exact, none prefix; a seg may be [param] (one path segment); the optional
+# !name tokens list static sibling pages that [param] must not match (PCRE negative lookahead).
 #
 #   gen-routes.sh [--routes FILE] [--out FILE] [--sw-out FILE] [--web-root DIR] [--base /web]
 #                 [--enable-sw | --disable-sw] [--apply]
@@ -41,8 +44,9 @@ done
 SPA_CSP=${SPA_CSP:-}
 case "$SPA_CSP" in *\"*) echo "SPA_CSP must not contain double quotes" >&2; exit 1 ;; esac
 
+join_alt() { local IFS='|'; echo "$*"; }
 DENY_RE='^/(api|\.well-known|oauth|web|sw\.js|try-demo)(/|$)'
-SEG='[A-Za-z0-9._~-]+'
+SEG='([A-Za-z0-9._~-]+|\[[A-Za-z_][A-Za-z0-9_]*\])'
 prefixes=(); exacts=()
 n=0
 while IFS= read -r line || [ -n "$line" ]; do
@@ -50,16 +54,28 @@ while IFS= read -r line || [ -n "$line" ]; do
   line=${line%%#*}
   line=$(echo "$line" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')
   [ -n "$line" ] || continue
+  read -r first rest <<<"$line"
+  excl=()
+  for tok in $rest; do
+    if ! [[ "$tok" =~ ^![A-Za-z0-9._~-]+$ ]]; then echo "spa-routes.txt:$n: bad token '$tok' (want !name)" >&2; exit 1; fi
+    excl+=("${tok#!}")
+  done
+  line=$first
   kind=prefix; path=$line
   if [[ "$line" == =* ]]; then kind=exact; path=${line#=}; fi
   if ! [[ "$path" =~ ^(/$SEG)+$ ]]; then echo "spa-routes.txt:$n: invalid path '$line' (need /seg[/seg...], no trailing slash, no regex)" >&2; exit 1; fi
   if [[ "$path" =~ $DENY_RE ]]; then echo "spa-routes.txt:$n: '$path' is reserved for Next/nginx and cannot be an SPA route" >&2; exit 1; fi
   esc=${path//./\\.}
   esc=${esc:1}   # drop leading slash; the template regex adds ^/
+  if [[ "$esc" == *\[* ]]; then
+    la=""
+    if [ ${#excl[@]} -gt 0 ]; then la="(?!($(join_alt "${excl[@]}"))(/|\$))"; fi
+    esc=$(printf '%s' "$esc" | sed -E "s#\\[[A-Za-z_][A-Za-z0-9_]*\\]#${la//\\/\\\\}[^/]+#g")
+  elif [ ${#excl[@]} -gt 0 ]; then echo "spa-routes.txt:$n: !name tokens need a [param] segment" >&2; exit 1
+  fi
   if [ "$kind" = prefix ]; then prefixes+=("$esc"); else exacts+=("$esc"); fi
 done <"$ROUTES"
 
-join_alt() { local IFS='|'; echo "$*"; }
 headers='    add_header Cache-Control "no-cache";
     add_header X-Served-By web;
     add_header X-Content-Type-Options nosniff;

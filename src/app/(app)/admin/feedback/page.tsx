@@ -21,7 +21,7 @@ import {
 import { cn } from "@/lib/utils";
 import { MessageCircle, Paperclip, X } from "lucide-react";
 import { FeedbackAttachmentView } from "@/components/feedback/attachment-view";
-import { validateFeedbackAttachment } from "@/lib/feedback/attachment";
+import { validateFeedbackAttachment } from "@/lib/feedback/attachment-policy";
 import type { FeedbackMessage, FeedbackThread } from "@shared/types";
 import { SectionPage } from "@/components/templates/section-page";
 import { TW } from "@/lib/design/tokens";

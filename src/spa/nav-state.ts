@@ -3,7 +3,7 @@
  * and the route table can both import it without a cycle. main.tsx fills it in at boot.
  */
 export type SpaNavigator = {
-  navigate: (to: string, opts?: { replace?: boolean }) => void;
+  navigate: (to: string, opts?: { replace?: boolean; scroll?: boolean }) => void;
   back: () => void;
   forward: () => void;
   /** true when pathname is a route the SPA serves (everything else is a full page load into Next). */
@@ -38,12 +38,12 @@ export function parseHref(href: string): URL | null {
 }
 
 /** Navigate like next/navigation router.push: in-app when the SPA owns the path, full page load otherwise. */
-export function go(href: string, replace = false) {
+export function go(href: string, replace = false, scroll = true) {
   const url = parseHref(href);
   if (!url) return;
   const sameOrigin = url.origin === window.location.origin;
   if (nav && sameOrigin && !stale && nav.isSpaPath(url.pathname)) {
-    nav.navigate(url.pathname + url.search + url.hash, { replace });
+    nav.navigate(url.pathname + url.search + url.hash, { replace, scroll });
     return;
   }
   if (replace) window.location.replace(url.href);

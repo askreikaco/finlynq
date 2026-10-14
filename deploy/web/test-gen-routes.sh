@@ -42,6 +42,35 @@ for bad in '/api/x' '/api' '/.well-known/x' '/sw.js' '/web' '/oauth/authorize' '
   chk "reject '$bad'" bash -c "! '$HERE/gen-routes.sh' --routes '$T/bad.txt' --out '$T/bad.conf' --sw-out '$T/bad-sw.conf' >/dev/null 2>&1"
 done
 
+# [param] segments + !sibling exclusions (the format sync-routes.mjs writes)
+cat >"$T/dyn.txt" <<'R'
+=/more
+=/accounts
+=/accounts/new
+=/accounts/[id] !groups !new
+=/transactions/[id]/edit !audit !new !search !transfer
+=/filter/[list]
+R
+"$HERE/gen-routes.sh" --routes "$T/dyn.txt" --out "$T/r.conf" --sw-out "$T/sw.conf" >/dev/null
+expect /accounts spa;             expect /accounts/ spa;           expect /accounts/42 spa
+expect /accounts/new spa;         expect /accounts/groups next;    expect /accounts/groups/ next
+expect /accounts/42/edit next;    expect /accounts/42/x next;      expect /accountsx next
+expect /accounts/newer spa;       expect /accounts/grouped spa
+expect /transactions/9/edit spa;  expect /transactions/audit/edit next; expect /transactions/transfer/5/edit next
+expect /transactions/9 next;      expect /transactions/9/edit/x next; expect /transactions next
+expect /filter/goals spa;         expect /filter next;             expect /filter/a/b next
+expect /more/x next
+
+for bad in '=/a/[id' '=/a/[1x]' '=/a/x[id]' '=/a/[id] groups' '=/a/[id] !' '=/a/b !c' '=/a/[id]/(x)' '/[id] !x y'; do
+  printf '%s\n' "$bad" >"$T/bad.txt"
+  chk "reject '$bad'" bash -c "! '$HERE/gen-routes.sh' --routes '$T/bad.txt' --out '$T/bad.conf' --sw-out '$T/bad-sw.conf' >/dev/null 2>&1"
+done
+
+# ONE source: committed spa-routes.txt must equal what routes.config.ts yields (needs node >= 22.18 for the .ts import)
+if node -e 'const [a,b]=process.versions.node.split(".").map(Number);process.exit(a>22||(a===22&&b>=18)?0:1)' 2>/dev/null; then
+  chk "spa-routes.txt in sync with src/spa/routes.config.ts" node --no-warnings "$HERE/sync-routes.mjs" --check
+else echo "SKIP sync check (node < 22.18)"; fi
+
 printf '' >"$T/empty.txt"
 "$HERE/gen-routes.sh" --routes "$T/empty.txt" --out "$T/e.conf" --sw-out "$T/sw.conf" >/dev/null
 chk "empty list: no spa route locations" bash -c "! grep -q '^location ~' '$T/e.conf'"

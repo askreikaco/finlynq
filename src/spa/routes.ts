@@ -8,6 +8,7 @@
 import { createElement, useEffect, type ComponentType, type ReactNode } from "react";
 import { Outlet, type RouteObject } from "react-router";
 import { SPA_ROUTES } from "./routes.config";
+import { guarded } from "./guards";
 
 type Mod = { default: ComponentType<{ children?: ReactNode }>; metadata?: { title?: unknown } };
 type Loader = () => Promise<unknown>;
@@ -18,6 +19,9 @@ const layoutFiles = import.meta.glob(["../app/(app)/**/layout.tsx", "!../app/(ap
 const overrideFiles = import.meta.glob("./pages/**/*.tsx") as Record<string, Loader>;
 
 const APP_PREFIX = "../app/(app)/";
+
+/** Every page route of the app (enabled or not): needed to know which static siblings a dynamic route must not swallow. */
+export const PAGE_ROUTES: string[] = Object.keys(pageFiles).map((f) => fileToNextRoute(f));
 
 function segmentToPath(seg: string): string {
   if (/^\(.*\)$/.test(seg)) return "";
@@ -47,37 +51,38 @@ function Titled({ title, children }: { title: string | null; children: ReactNode
   return children;
 }
 
-function pageRoute(loader: Loader): Pick<RouteObject, "lazy"> {
+function pageRoute(loader: Loader, route: string): Pick<RouteObject, "lazy"> {
   return {
     lazy: async () => {
       const m = (await loader()) as Mod;
       const Page = m.default;
       const title = titleOf(m);
-      return { Component: () => createElement(Titled, { title, children: createElement(Page) }) };
+      return { Component: guarded(route, () => createElement(Titled, { title, children: createElement(Page) })) };
     },
   };
 }
 
-function layoutRoute(loader: Loader): Pick<RouteObject, "lazy"> {
+function layoutRoute(loader: Loader, route: string): Pick<RouteObject, "lazy"> {
   return {
     lazy: async () => {
       const m = (await loader()) as Mod;
       const Layout = m.default;
-      return { Component: () => createElement(Layout, null, createElement(Outlet)) };
+      return { Component: guarded(route, () => createElement(Layout, null, createElement(Outlet))) };
     },
   };
 }
 
-type Dir = { seg: string; page?: Loader; layout?: Loader; children: Map<string, Dir> };
+/** `path` = Next-form route of the directory ("/family/accept"), used for the kill-switch guards. */
+type Dir = { seg: string; path: string; page?: Loader; layout?: Loader; children: Map<string, Dir> };
 
 function buildDirs(): Dir {
-  const root: Dir = { seg: "", children: new Map() };
+  const root: Dir = { seg: "", path: "", children: new Map() };
   const enabled = new Set(SPA_ROUTES);
   const dirOf = (file: string) => {
     let d = root;
     const rel = file.slice(APP_PREFIX.length).split("/").slice(0, -1);
     for (const seg of rel) {
-      if (!d.children.has(seg)) d.children.set(seg, { seg, children: new Map() });
+      if (!d.children.has(seg)) d.children.set(seg, { seg, path: /^\(.*\)$/.test(seg) ? d.path : `${d.path}/${seg}`, children: new Map() });
       d = d.children.get(seg)!;
     }
     return d;
@@ -100,10 +105,10 @@ function hasPage(d: Dir): boolean {
 
 function build(d: Dir): RouteObject[] {
   const out: RouteObject[] = [];
-  if (d.page) out.push({ index: true, ...pageRoute(d.page) });
+  if (d.page) out.push({ index: true, ...pageRoute(d.page, d.path || "/") });
   for (const c of d.children.values()) if (hasPage(c)) out.push(...build(c));
   const seg = segmentToPath(d.seg);
-  if (d.layout) return [{ path: seg || undefined, ...layoutRoute(d.layout), children: out }];
+  if (d.layout) return [{ path: seg || undefined, ...layoutRoute(d.layout, d.path || "/"), children: out }];
   if (!seg) return out;
   // no layout: fold this segment into the children's paths
   return out.map((r) => {

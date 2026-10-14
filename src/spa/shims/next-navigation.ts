@@ -1,6 +1,10 @@
-import { useMemo } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import { useLocation, useParams as useRrParams } from "react-router";
+import { scheduleRevalidation } from "@/lib/data/write-revalidation";
 import { getNavigator, go } from "../nav-state";
+import { installHistorySync, subscribeLocation } from "../history-sync";
+
+installHistorySync();
 
 export type AppRouterInstance = {
   push: (href: string, opts?: { scroll?: boolean }) => void;
@@ -13,12 +17,15 @@ export type AppRouterInstance = {
 
 /** Stable singleton (consumers list `router` in effect deps). */
 const router: AppRouterInstance = {
-  push: (href) => go(href, false),
-  replace: (href) => go(href, true),
+  push: (href, opts) => go(href, false, opts?.scroll !== false),
+  replace: (href, opts) => go(href, true, opts?.scroll !== false),
   back: () => (getNavigator()?.back ?? (() => window.history.back()))(),
   forward: () => (getNavigator()?.forward ?? (() => window.history.forward()))(),
-  // RSC refresh has no SPA equivalent: pages that need fresh data refetch through the data layer.
+  // router.refresh() re-ran the RSC payload in Next. All SPA data is SWR-cached /api/* keys, so the equivalent is
+  // one revalidation of every mounted /api key (same coalesced path the write-revalidation layer uses). The
+  // "spa:refresh" event stays as a hook for non-SWR consumers.
   refresh: () => {
+    scheduleRevalidation(0);
     window.dispatchEvent(new CustomEvent("spa:refresh"));
   },
   prefetch: () => undefined,
@@ -34,8 +41,10 @@ export function usePathname(): string {
 
 export type ReadonlyURLSearchParams = URLSearchParams;
 
+/** Follows react-router navigations AND raw history.replaceState/pushState (see history-sync.ts), like Next. */
 export function useSearchParams(): ReadonlyURLSearchParams {
-  const { search } = useLocation();
+  const { search: routerSearch } = useLocation(); // re-render on every router navigation
+  const search = useSyncExternalStore(subscribeLocation, () => window.location.search, () => routerSearch);
   return useMemo(() => new URLSearchParams(search), [search]);
 }
 
