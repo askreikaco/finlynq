@@ -9,6 +9,7 @@ vi.mock("@/lib/auth", () => ({
     context: { userId: "u-period", method: "account", mfaVerified: true, dek: null, sessionId: "s" },
   }),
 }));
+vi.mock("@/lib/data-version", () => ({ getDataVersion: async () => 1 }));
 vi.mock("@/lib/family/overview/gate", () => ({ viewerPassesMfaGate: async () => true }));
 vi.mock("@/lib/fx-service", () => ({ getDisplayCurrency: async () => "USD" }));
 vi.mock("@/lib/family/share-dal", () => ({ updateLastViewed: async () => undefined }));

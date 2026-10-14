@@ -88,7 +88,7 @@ describe("read-only data layer and builders", () => {
   it("builders import only the read-only barrel, sections registry, fx context and dto types", () => {
     const code = read("src/lib/family/overview/builders.ts");
     const specs = [...code.matchAll(/from\s+["']([^"']+)["']/g)].map((m) => m[1]);
-    expect(specs.sort()).toEqual(["../read-queries", "../sections", "./dto", "./fx"].sort());
+    expect(specs.sort()).toEqual(["../read-queries", "../sections", "./dto", "./fx", "./shared-reads"].sort());
     expect(code).not.toMatch(/@\/db|drizzle|decrypt|Dek|\bdek\b|encrypted-columns|envelope|family-crypto|\.(insert|update|delete|execute|transaction)\s*\(/);
     expect(code).not.toMatch(/\b(nameCt|aliasCt|symbolCt)\b/);
   });
