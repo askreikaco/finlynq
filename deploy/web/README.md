@@ -80,6 +80,9 @@ Target: `web-deploy.sh` <= 5 s (build excluded). Timed internally: every line ha
 ## P0-4 skip image rebuild
 Patch inserts, after the "up to date" check: if `$STATE` exists, not `--force`, the old sha exists in the clone and `git diff --no-renames --name-only $OLD $SHA` lists only `tests/** e2e/** docs/** _ai/** *.md .github/** deploy/web/**`, log `skip: non-runtime diff ($SHA)`, write `$STATE`, exit 0. Old sha missing/git error -> builds. `--no-renames` so a rename out of runtime paths counts as runtime. Test: `bash deploy/web/test-skip-nonruntime.sh` (fake docker, scratch git).
 
+## Build time (wave 0 + wave 1, 4 vCPU sandbox, 2026-10-14)
+`npx vite build`: 5.2-5.7 s wall (cold and warm alike: no persistent transform cache is used; 276 asset files, 21 MB, precache 145 files / 0.65 MB gzip). For comparison the Next production build of the same tree (Turbopack, no tsc) compiles in ~114 s. `tsc --noEmit`: ~109 s.
+
 ## Browser smoke (`spa-smoke.mjs`)
 Opens every `SPA_ROUTES` entry (+ query-state variants: `?sel`, `?range`, `?q&sort&dir`, `?edit`) in the SPA origin and in the Next origin at 1440x900 and 390x844, light and dark; fails the SPA cell on console errors, page errors, failed requests or HTTP >= 400 that the Next page does not also have, on a different page size, or on a pixel diff above `--threshold` (default 0.5 %; Next vs Next baseline noise is ~0.43 % on /dashboard, a chart line). Also runs in-app navigation scenarios (no document reload, Back, `?q` sync, not-found). Writes `results.json`, `results.md` and next/spa/diff PNGs for failing cells.
 Fixture (local only, never prod): throwaway Postgres on a `*_test` database, `next start` of a production build on port A, `PORT=A SPA_CSP="..." npx vite preview --port B` (static `dist-web` + `/api` proxied to A; `SPA_CSP` is sent on every response to prove the strict policy), then
