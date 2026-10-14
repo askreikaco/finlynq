@@ -10,8 +10,8 @@ import type { SpotlightItem } from "./types";
 import { useSessionUserId, readUserItem, writeUserItem } from "@/lib/client/user-storage";
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 16 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" as const } },
+  hidden: { opacity: 1, y: 0 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0 } },
 };
 
 const SEVERITY_ICON = {
@@ -100,10 +100,10 @@ export function ActionCenter() {
                   return (
                     <motion.div
                       key={item.id}
-                      initial={{ opacity: 0, y: 8 }}
+                      initial={false}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, x: -80 }}
-                      transition={{ duration: 0.25, delay: i * 0.04 }}
+                      transition={{ duration: 0.15 }}
                       className="group flex items-center gap-3 py-3 first:pt-1"
                     >
                       {/* Severity dot */}
