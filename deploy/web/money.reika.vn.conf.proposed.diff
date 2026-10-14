@@ -1,0 +1,11 @@
+--- a/etc/nginx/sites-enabled/money.reika.vn.conf
++++ b/etc/nginx/sites-enabled/money.reika.vn.conf
+@@ -59,6 +59,8 @@
+ 
+   location ~ ^/try-demo { return 403; }
+ 
++  include /etc/nginx/money-spa-routes.conf;
++
+   location / {
+     try_files $uri @reverse_proxy;
+   }
