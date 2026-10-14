@@ -50,7 +50,7 @@ export function SectionCard({
   if (labelPlacement === "outside") {
     return (
       <section data-slot="section-card" data-label-placement="outside" {...props}>
-        <h2 data-slot="section-card-label-outside" className="mb-2 flex items-center justify-between gap-2 px-4 text-sm font-medium text-muted-foreground">
+        <h2 data-slot="section-card-label-outside" className={cn("mb-2 flex items-center justify-between gap-2 px-4 text-sm font-medium text-muted-foreground", labelClassName)}>
           <span className="min-w-0 truncate">{label}</span>
           {action}
         </h2>

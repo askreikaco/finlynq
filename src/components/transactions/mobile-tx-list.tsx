@@ -83,8 +83,9 @@ export function MobileTxList({
         <SectionCard
           key={dateLabel}
           label={dateLabel}
-          /* The date label sticks under the page header while its group scrolls. */
-          labelClassName="sticky top-[calc(var(--sat,0px)+var(--header-h))] z-10 rounded-t-xl bg-card/90 backdrop-blur-sm"
+          labelPlacement="outside"
+          /* The date label sits ABOVE the card group and sticks under the page header while its group scrolls. */
+          labelClassName="sticky top-[calc(var(--sat,0px)+var(--header-h))] z-10 -mx-1 bg-background/90 px-5 py-1.5 backdrop-blur-sm"
           padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3"
         >
           {txns.map((t) => (
