@@ -113,7 +113,7 @@ function NewRuleForm() {
       header={{ actions: null }}
       useLoad={() => loadState}
       states={{
-        loading: { node: <p className="mt-6 text-sm text-muted-foreground">Loading…</p> },
+        loading: { node: <p className="mt-6 text-sm text-muted-foreground" data-keep="status">Loading…</p> },
       }}
     >
       {() => (

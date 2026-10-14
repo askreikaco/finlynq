@@ -152,7 +152,7 @@ function EditRuleForm({ ruleId }: { ruleId: number | null }) {
       header={{ actions: null }}
       useLoad={() => loadState}
       states={{
-        loading: { node: <p className="mt-6 text-sm text-muted-foreground">Loading…</p> },
+        loading: { node: <p className="mt-6 text-sm text-muted-foreground" data-keep="status">Loading…</p> },
         error: { node: <p className="mt-6 text-sm text-destructive">{errorText}</p> },
         notFound: { node: <p className="mt-6 text-sm text-destructive">{errorText}</p> },
       }}

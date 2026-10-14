@@ -6,7 +6,8 @@
  */
 
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Languages } from "lucide-react";
 import { useDisplayCurrency } from "@/components/currency-provider";
@@ -22,7 +23,7 @@ import {
 } from "@/lib/locale";
 
 const OPTIONS: { value: LanguagePref; label: string }[] = [
-  { value: "auto", label: "Auto (from display currency)" },
+  { value: "auto", label: "Auto" },
   ...LANGUAGES.map((l) => ({ value: l.code as LanguagePref, label: l.label })),
 ];
 
@@ -60,8 +61,10 @@ export function LanguageCard() {
             <Languages className="h-5 w-5" />
           </div>
           <div>
-            <CardTitle icon={Languages} tone="cyan">Language</CardTitle>
-            <CardDescription>Number, date, month and weekday formats (labels are not translated)</CardDescription>
+            <CardTitle icon={Languages} tone="cyan">
+              Language
+              <InfoTip label="About language" text="Number and date formats. Labels are not translated." />
+            </CardTitle>
           </div>
         </div>
       </CardHeader>
@@ -83,7 +86,7 @@ export function LanguageCard() {
             ))}
           </SelectContent>
         </Select>
-        <p className="text-sm text-muted-foreground" data-testid="language-example">
+        <p className="text-sm text-muted-foreground" data-keep="preview" data-testid="language-example">
           Example: <span className="font-mono text-foreground">{example.number}</span>
           {" · "}
           <span className="font-mono text-foreground">{example.date}</span>

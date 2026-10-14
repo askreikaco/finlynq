@@ -6,7 +6,8 @@
  */
 
 import { Suspense, useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AlertTriangle, Check, Download, Eye, EyeOff, FileText, Key, KeyRound, Lock, Mail, RefreshCw, Shield, ShieldCheck, Upload } from "lucide-react";
@@ -272,7 +273,6 @@ export function AccountContent({
     <div className="w-full space-y-6">
       {!hideHeader && <PageHeader
           title="Account"
-          subtitle={<>Login, API key, privacy, and backup / restore</>}
         />}
 
       <div className={TW.grid3}>
@@ -294,8 +294,10 @@ export function AccountContent({
                 <Lock className="h-5 w-5" />
               </div>
               <div>
-                <CardTitle icon={Lock} tone="indigo">Change Password</CardTitle>
-                <CardDescription>Your encrypted data is re-encrypted under the new password, nothing is lost</CardDescription>
+                <CardTitle icon={Lock} tone="indigo">
+                  Password
+                  <InfoTip label="About password" text="Your data is re-encrypted under the new password. Nothing is lost." />
+                </CardTitle>
               </div>
             </div>
           </CardHeader>
@@ -308,16 +310,18 @@ export function AccountContent({
             <RevealForm open={pwOpen} onOpen={() => { setPwStatus(""); setPwOpen(true); }} buttonLabel="Change password">
             <form onSubmit={handleChangePassword} className="space-y-3 max-w-sm">
               <div>
-                <label className="text-xs font-medium text-muted-foreground">Current password</label>
+                <label className="text-xs font-medium text-muted-foreground">Current</label>
                 <Input type="password" autoComplete="current-password" value={curPw} onChange={(e) => setCurPw(e.target.value)} />
               </div>
               <div>
-                <label className="text-xs font-medium text-muted-foreground">New password</label>
+                <div className="flex items-center gap-1">
+                  <label className="text-xs font-medium text-muted-foreground">New</label>
+                  <InfoTip label="Password rule" text="At least 12 characters." />
+                </div>
                 <Input type="password" autoComplete="new-password" value={newPw} onChange={(e) => setNewPw(e.target.value)} />
-                <p className="text-xs text-muted-foreground mt-1">At least 12 characters.</p>
               </div>
               <div>
-                <label className="text-xs font-medium text-muted-foreground">Confirm new password</label>
+                <label className="text-xs font-medium text-muted-foreground">Confirm</label>
                 <Input type="password" autoComplete="new-password" value={confirmPw} onChange={(e) => setConfirmPw(e.target.value)} />
               </div>
               {pwError && <p className="text-sm text-destructive">{pwError}</p>}
@@ -344,13 +348,15 @@ export function AccountContent({
                 <Mail className="h-5 w-5" />
               </div>
               <div>
-                <CardTitle icon={Mail} tone="cyan">Change Email</CardTitle>
-                <CardDescription>Recovery email used to reset a forgotten password</CardDescription>
+                <CardTitle icon={Mail} tone="cyan">
+                  Email
+                  <InfoTip label="About email" text="Recovery email used to reset a forgotten password." />
+                </CardTitle>
               </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground" data-keep="status">
               Current: <span className="font-medium text-foreground">{me?.email || "none set"}</span>
             </p>
             {emailStatus && !emailOpen && (
@@ -365,7 +371,7 @@ export function AccountContent({
                 <Input type="email" autoComplete="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="you@example.com" />
               </div>
               <div>
-                <label className="text-xs font-medium text-muted-foreground">Current password</label>
+                <label className="text-xs font-medium text-muted-foreground">Current</label>
                 <Input type="password" autoComplete="current-password" value={emailPw} onChange={(e) => setEmailPw(e.target.value)} />
               </div>
               {emailError && <p className="text-sm text-destructive">{emailError}</p>}
@@ -391,8 +397,10 @@ export function AccountContent({
               <Key className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle icon={KeyRound} tone="violet">API Key</CardTitle>
-              <CardDescription>Connect AI assistants via MCP, or call the REST API from scripts</CardDescription>
+              <CardTitle icon={KeyRound} tone="violet">
+                API key
+                <InfoTip label="About api key" text="Connect AI assistants via MCP or call the REST API. The key is unscoped and never expires: full read/write until you regenerate it, which invalidates the old key." />
+              </CardTitle>
             </div>
           </div>
         </CardHeader>
@@ -430,12 +438,12 @@ export function AccountContent({
           </div>
           {apiKey && (
             <div className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
-              <strong>Save this key now.</strong> We store only a hash — once you leave this page we can&rsquo;t show it again.
+              <strong>Save this key now.</strong> It can&rsquo;t be shown again.
             </div>
           )}
           {apiKeyLoaded && !apiKey && (
-            <p className="text-xs text-muted-foreground">
-              A key is on file (stored as a hash). Regenerate if you don&rsquo;t have it saved.
+            <p className="text-xs text-muted-foreground" data-keep="status">
+              Key on file. Regenerate if unsaved.
             </p>
           )}
           <div className="flex items-center gap-3">
@@ -446,17 +454,12 @@ export function AccountContent({
               disabled={apiKeyRegenerating}
             >
               <RefreshCw className={`h-4 w-4 mr-1.5 ${apiKeyRegenerating ? "animate-spin" : ""}`} />
-              {apiKeyRegenerating ? "Regenerating…" : "Regenerate Key"}
+              {apiKeyRegenerating ? "Regenerating…" : "Regenerate"}
             </Button>
             {apiKeyStatus && (
-              <p className="text-xs text-muted-foreground">{apiKeyStatus}</p>
+              <p className="text-xs text-muted-foreground" data-keep="status">{apiKeyStatus}</p>
             )}
           </div>
-          <p className="text-xs text-muted-foreground">
-            This key is unscoped and never expires — it grants full read and write access to your
-            account until you regenerate it. Regenerating invalidates the current key; update any
-            connected MCP clients and scripts.
-          </p>
         </CardContent>
       </Card>
 
@@ -468,31 +471,26 @@ export function AccountContent({
               <Shield className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle icon={ShieldCheck} tone="emerald">Privacy &amp; Backup</CardTitle>
-              <CardDescription>Full backup and restore — your escape hatch if you lose your password</CardDescription>
+              <CardTitle icon={ShieldCheck} tone="emerald">
+                Backup
+                <InfoTip label="About backup" text="Full backup and restore, your way back in if you lose your password. Data is encrypted with AES-256; only you hold the key." />
+              </CardTitle>
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-5">
-          {/* AES-256 reminder */}
-          <div className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-primary flex items-start gap-2.5">
-            <Lock className="h-4 w-4 mt-0.5 shrink-0" />
-            <span>Your data is encrypted with AES-256. Only you hold the key — not even Finlynq can read it.</span>
-          </div>
-
           {/* Download backup */}
           <div>
-            <p className="text-sm font-medium text-foreground mb-1.5">Download Full Backup</p>
-            <p className="text-xs text-muted-foreground mb-3">
-              Exports all your data (accounts, transactions, budgets, portfolio, goals, and more) as a single JSON file.
-              Store it somewhere safe — this is how you recover if you ever need to reset your account.
-            </p>
+            <div className="mb-3 flex items-center gap-1">
+              <p className="text-sm font-medium text-foreground">Download backup</p>
+              <InfoTip label="About backup download" text="All your data (accounts, transactions, budgets, portfolio, goals, more) as one JSON file. Keep it safe: it is how you recover after a reset." />
+            </div>
             <Button variant="outline" onClick={handleDownloadBackup} className="gap-2">
               <Download className="h-4 w-4" />
-              Download Backup
+              Download
             </Button>
             {backupStatus && (
-              <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+              <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1" data-keep="status">
                 <Check className="h-3 w-3 text-pos" /> {backupStatus}
               </p>
             )}
@@ -502,13 +500,13 @@ export function AccountContent({
 
           {/* Restore from backup */}
           <div>
-            <p className="text-sm font-medium text-foreground mb-1.5">Restore From Backup</p>
-            <p className="text-xs text-muted-foreground mb-3">
-              Upload a Finlynq backup JSON file. You will see a preview before anything is changed.
-            </p>
+            <div className="mb-3 flex items-center gap-1">
+              <p className="text-sm font-medium text-foreground">Restore backup</p>
+              <InfoTip label="About restore" text="Upload a Finlynq backup JSON. You see a preview before anything changes." />
+            </div>
             <label className="inline-flex items-center gap-2 cursor-pointer rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors">
               <Upload className="h-4 w-4" />
-              Choose Backup File
+              Choose file
               <input
                 type="file"
                 accept=".json"
@@ -521,7 +519,7 @@ export function AccountContent({
             {/* Preview */}
             {restoreStep >= 1 && restorePreview && (
               <div className="mt-4 rounded-xl border border-border bg-muted/30 p-4 space-y-3">
-                <p className="text-sm font-medium text-foreground">Backup contents:</p>
+                <p className="text-sm font-medium text-foreground">Contents</p>
                 <div className="grid grid-cols-2 regular:grid-cols-3 gap-2">
                   {Object.entries(restorePreview)
                     .filter(([, v]) => v > 0)
@@ -535,7 +533,7 @@ export function AccountContent({
 
                 <div className="rounded-lg border border-warning/30 bg-warning/10 px-3 py-2.5 flex items-start gap-2 text-xs text-warning">
                   <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                  <span><strong>This will replace all your current data.</strong> This cannot be undone. Download a fresh backup first if you want to keep your current data.</span>
+                  <span><strong>Replaces all your current data. Cannot be undone.</strong> Download a backup first.</span>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -561,7 +559,7 @@ export function AccountContent({
             )}
 
             {restoreStatus && (
-              <p className={`text-xs mt-2 flex items-center gap-1 ${restoreStatus.startsWith("Restore complete") ? "text-pos" : "text-muted-foreground"}`}>
+              <p data-keep="status" className={`text-xs mt-2 flex items-center gap-1 ${restoreStatus.startsWith("Restore complete") ? "text-pos" : "text-muted-foreground"}`}>
                 {restoreStatus.startsWith("Restore complete") ? <Check className="h-3 w-3 text-pos" /> : <AlertTriangle className="h-3 w-3 text-warning" />}
                 {restoreStatus}
               </p>

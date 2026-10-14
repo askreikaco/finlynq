@@ -41,5 +41,8 @@
   "src/app/(app)/transactions/_components/transactions-workspace.tsx": {
     "reason": "Select-all checkbox in the transactions list Select mode (bulk selection).",
     "optional": true
+  },
+  "src/app/(app)/dev/gallery/page.tsx": {
+    "reason": "Dev gallery shows every global primitive, including Checkbox, for review."
   }
 }
