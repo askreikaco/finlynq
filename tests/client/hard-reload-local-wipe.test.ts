@@ -5,7 +5,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const dropLocalUserCache = vi.fn((_userId: string) => Promise.resolve());
-vi.mock("@/lib/data/local-read-cache-wipe", () => ({ dropLocalUserCache: (userId: string) => dropLocalUserCache(userId) }));
+vi.mock("@/lib/data/local-read-cache-wipe", () => ({
+  dropLocalUserCache: (userId: string) => dropLocalUserCache(userId),
+  dropPasskeyUnlockFor: () => Promise.resolve(),
+}));
 
 const store = new Map<string, string>();
 beforeEach(() => {

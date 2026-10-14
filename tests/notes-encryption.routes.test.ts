@@ -35,6 +35,7 @@ chain.run = vi.fn();
 
 vi.mock("@/db", () => ({
   db: new Proxy({}, { get: (_t, prop) => chain[prop as string] }),
+  withDbTransaction: async (fn: (tx: unknown) => unknown) => fn(new Proxy({}, { get: (_t, prop) => chain[prop as string] })),
   schema: new Proxy({}, {
     get: () => new Proxy({}, { get: (_t2, col) => ({ name: String(col) }) }),
   }),
