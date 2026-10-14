@@ -22,4 +22,7 @@ describe("toolbar controls share one height", () => {
     expect(tb).toContain('"h-11 rounded-full pl-10 pr-10 text-sm"');
     expect(read("src/components/ui/round-icon-button.tsx")).toContain('"size-11 pointer-coarse:size-11 dense:pointer-fine:size-11 rounded-full p-0"');
   });
+  it("the subscriptions List/Calendar switch beside the toolbar uses the segmented 44px tabs", () => {
+    expect(read("src/app/(app)/subscriptions/page.tsx")).toContain('<TabsList variant="segmented">');
+  });
 });

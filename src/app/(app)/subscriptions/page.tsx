@@ -425,7 +425,7 @@ function SubscriptionsPageContent() {
       {/* View switch + sort */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Tabs value={view} onValueChange={(v) => setView((v as View) ?? "list")}>
-          <TabsList>
+          <TabsList variant="segmented">
             <TabsTrigger value="list" className="px-3"><List className="h-4 w-4" /> List</TabsTrigger>
             <TabsTrigger value="calendar" className="px-3"><CalendarDays className="h-4 w-4" /> Calendar</TabsTrigger>
           </TabsList>
