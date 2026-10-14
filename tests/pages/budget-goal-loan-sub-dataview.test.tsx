@@ -118,7 +118,7 @@ describe("goals: one ListRow layout at every size", () => {
   it("goals renders its rows as ListRows and no table or data view", async () => {
     const { container } = render(<GoalsPage />);
     const name = await screen.findByText("Emergency fund");
-    expect(name.closest("[data-slot=list-row]")).toBeTruthy();
+    expect(name.closest("[data-slot=goal-row]")).toBeTruthy();
     expect(container.querySelector("[data-view]")).toBeNull();
     expect(container.querySelector("table")).toBeNull();
   });
@@ -137,7 +137,7 @@ describe("loans and subscriptions: one ListRow layout at every size", () => {
   it("loans renders its rows as ListRows and no table or data view", async () => {
     const { container } = render(<LoansPage />);
     const name = await screen.findByText("Car loan");
-    expect(name.closest("[data-slot=list-row]")).toBeTruthy();
+    expect(name.closest("[data-slot=loan-row]")).toBeTruthy();
     expect(container.querySelector("[data-view]")).toBeNull();
     expect(container.querySelector("table")).toBeNull();
   });

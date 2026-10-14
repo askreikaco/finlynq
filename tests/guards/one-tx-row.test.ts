@@ -1,4 +1,4 @@
-// One row for every money list: transactions, subscriptions and loans all render src/components/mobile/tx-row.tsx.
+// One row for every money list: transactions and subscriptions render src/components/mobile/tx-row.tsx.
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -9,11 +9,14 @@ describe("one transaction row", () => {
   it.each([
     "src/components/transactions/mobile-tx-list.tsx",
     "src/app/(app)/subscriptions/page.tsx",
-    "src/app/(app)/loans/page.tsx",
   ])("%s renders <TxRow> from the shared mobile components", (f) => {
     const src = read(f);
     expect(src).toMatch(/import \{[^}]*\bTxRow\b[^}]*\} from "@\/components\/mobile"/);
     expect(src).toContain("<TxRow");
+  });
+
+  it("loan amortization / payment rows (inside loan detail) still use TxRow", () => {
+    expect(read("src/app/(app)/loans/page.tsx")).toContain("<TxRow");
   });
 
   it("subscriptions and loans do not hand-roll a ListRow for their entity rows", () => {
