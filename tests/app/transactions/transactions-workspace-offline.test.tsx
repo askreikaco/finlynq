@@ -59,7 +59,7 @@ const pend = (o: object) => ({ creates: [], edits: {}, deletes: {}, ...o });
 const CREATE = { opId: "op1", ...entry, createdAt: 5, fields: { date: "2026-02-01", accountId: 1, categoryId: 4, enteredCurrency: "USD", enteredAmount: -9, payee: "Queued cafe" } };
 
 beforeEach(() => {
-  push.mockClear(); H.IO.cbs.length = 0; SIZE.current = "regular";
+  push.mockClear(); H.IO.cbs.length = 0; SIZE.current = "compact"; // phone: the row sheet path (regular+ opens the split pane)
   H.PEND = EMPTY_PENDING; H.ACTIVE = false;
   H.queueDel = vi.fn(async () => true); H.discard = vi.fn(async () => true);
   vi.stubGlobal("IntersectionObserver", FakeIntersectionObserver);

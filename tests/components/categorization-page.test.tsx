@@ -26,6 +26,13 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
+// The list reads the split-view selection (?sel) from the URL; phone size (no size-class provider) = links, no pane.
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }),
+  useSearchParams: () => new URLSearchParams(""),
+  usePathname: () => "/settings/categorization",
+}));
+
 import Page from "@/app/(app)/settings/categorization/page";
 
 describe("categorization page (legacy screen)", () => {
