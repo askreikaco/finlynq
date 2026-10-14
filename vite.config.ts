@@ -156,7 +156,8 @@ export default defineConfig({
     "process.env": "{}",
   },
   server: { port: 5173, proxy },
-  preview: { port: 5173, proxy },
+  // SPA_CSP (same env gen-routes.sh uses for nginx) is sent on every preview response, so the smoke run can prove the SPA works under the strict policy.
+  preview: { port: 5173, proxy, ...(process.env.SPA_CSP ? { headers: { "Content-Security-Policy": process.env.SPA_CSP } } : {}) },
   build: {
     outDir: path.join(repo, "dist-web"),
     emptyOutDir: true,
