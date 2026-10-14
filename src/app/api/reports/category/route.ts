@@ -9,6 +9,7 @@ import { todayISO } from "@/lib/utils/date";
 import {
   buildCategoryDetail,
   categoryWindow,
+  rangeWindow,
   CATEGORY_WINDOWS,
   type CategoryTxRow,
   type CategoryType,
@@ -16,6 +17,7 @@ import {
 
 /**
  * GET /api/reports/category?categoryId=&months=6|12|24[&currency=]
+ *   or ?categoryId=&from=YYYY-MM-DD&to=YYYY-MM-DD[&currency=]  (from/to wins over months)
  *
  * One category's detail for the `/categories/[id]` page: monthly series with
  * budget, average / median / comparisons, share of all spending (or income),
@@ -29,10 +31,25 @@ import {
  * name, payees and account names; without one, payees can't be grouped and
  * `payeesLocked` is set.
  */
+function isRealDay(s: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  const d = new Date(`${s}T00:00:00Z`);
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
+}
+
 export const GET = apiHandler({ auth: "auth" }, async ({ request, userId, dek }) => {
   const params = request.nextUrl.searchParams;
   const categoryId = Number(params.get("categoryId"));
   if (!Number.isInteger(categoryId) || categoryId <= 0) throw new AppError("categoryId is required", 400);
+  const from = params.get("from");
+  const to = params.get("to");
+  let range: { from: string; to: string } | undefined;
+  if (from != null || to != null) {
+    if (!from || !to || !isRealDay(from) || !isRealDay(to) || from > to) {
+      throw new AppError("from and to must both be valid YYYY-MM-DD dates with from <= to", 400);
+    }
+    range = { from, to };
+  }
   const requested = Number(params.get("months") ?? 12);
   const months = (CATEGORY_WINDOWS as readonly number[]).includes(requested) ? requested : 12;
 
@@ -54,7 +71,11 @@ export const GET = apiHandler({ auth: "auth" }, async ({ request, userId, dek })
   void selfHealReportingAmounts(userId, displayCurrency);
 
   const today = todayISO();
-  const { windowStart, windowStartMonth, queryStart } = categoryWindow(today, months);
+  const win = range ? rangeWindow(today, range.from, range.to) : categoryWindow(today, months);
+  const { windowStart, windowStartMonth, queryStart } = win;
+  // Stats / share cover the selected period (days) or the whole months window.
+  const typeStart = range ? range.from : windowStart;
+  const typeEnd = range ? (range.to < today ? range.to : today) : today;
 
   const rawRows = await db
     .select({
@@ -73,7 +94,7 @@ export const GET = apiHandler({ auth: "auth" }, async ({ request, userId, dek })
       eq(schema.transactions.userId, userId),
       eq(schema.transactions.categoryId, categoryId),
       gte(schema.transactions.date, queryStart),
-      lte(schema.transactions.date, today),
+      lte(schema.transactions.date, typeEnd),
     ))
     .all();
 
@@ -125,15 +146,15 @@ export const GET = apiHandler({ auth: "auth" }, async ({ request, userId, dek })
     .where(and(
       eq(schema.transactions.userId, userId),
       eq(schema.categories.type, cat.type),
-      gte(schema.transactions.date, windowStart),
-      lte(schema.transactions.date, today),
+      gte(schema.transactions.date, typeStart),
+      lte(schema.transactions.date, typeEnd),
     ))
     .groupBy(schema.transactions.currency, schema.transactions.reportingCurrency)
     .all();
   const sign = type === "I" ? 1 : -1;
   const typeTotal = sign * typeSlices.reduce((s, row) => s + convertReportingSlice(row, displayCurrency, rateMap), 0);
 
-  const detail = buildCategoryDetail({ type, rows, budgets, today, months, toDisplay, typeTotal });
+  const detail = buildCategoryDetail({ type, rows, budgets, today, months, range, toDisplay, typeTotal });
 
   return {
     category: {
@@ -143,6 +164,7 @@ export const GET = apiHandler({ auth: "auth" }, async ({ request, userId, dek })
       group: cat.group ?? "",
     },
     windowMonths: months,
+    ...(range ? { range: { from: range.from, to: range.to } } : {}),
     displayCurrency,
     payeesLocked: !dek,
     ...detail,

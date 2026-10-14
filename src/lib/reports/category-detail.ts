@@ -111,6 +111,38 @@ export function categoryWindow(today: string, months: number) {
   };
 }
 
+/** Last day ("YYYY-MM-DD") of a `YYYY-MM` month. */
+function monthEndDay(key: string): string {
+  const [y, m] = key.split("-").map(Number);
+  return new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
+}
+
+/** Months of trend context always shown, ending at the selected period's last month. */
+export const CATEGORY_CONTEXT_MONTHS = 12;
+
+/**
+ * Window for an explicit selected period `from`..`to` (inclusive days, e.g. the toolbar's This month / quarter /
+ * year / Custom). The period ends at `to` capped to today. The monthly chart shows at least CATEGORY_CONTEXT_MONTHS
+ * months ending at the period's last month, or the whole span when the period is longer. `queryStart` also reaches
+ * 12 months before the end month so the same-month-last-year comparison always has data.
+ */
+export function rangeWindow(today: string, from: string, to: string) {
+  const periodEnd = to < today ? to : today;
+  const currentMonth = monthKey(periodEnd);
+  const spanStart = monthKey(from);
+  const contextStart = shiftMonth(currentMonth, -(CATEGORY_CONTEXT_MONTHS - 1));
+  const windowStartMonth = spanStart < contextStart ? spanStart : contextStart;
+  const queryStartMonth = windowStartMonth < shiftMonth(currentMonth, -12) ? windowStartMonth : shiftMonth(currentMonth, -12);
+  return {
+    currentMonth,
+    periodStart: from,
+    periodEnd,
+    windowStartMonth,
+    windowStart: `${windowStartMonth}-01`,
+    queryStart: `${queryStartMonth}-01`,
+  };
+}
+
 function median(values: number[]): number | null {
   if (values.length === 0) return null;
   const s = [...values].sort((a, b) => a - b);
@@ -125,6 +157,8 @@ export function buildCategoryDetail(input: {
   budgets: Map<string, number>;
   today: string;
   months: number;
+  /** Selected period (inclusive days); when set it replaces the `months` window for stats, payees and recent. */
+  range?: { from: string; to: string };
   /** Row → display-currency signed amount (stored reporting amount, else current rate). */
   toDisplay: (row: CategoryTxRow) => number;
   /** Total of all categories of the same type over the window, positively oriented. */
@@ -134,11 +168,15 @@ export function buildCategoryDetail(input: {
 }): CategoryDetail {
   const { type, rows, budgets, today, months, toDisplay, typeTotal } = input;
   const sign = type === "I" ? 1 : -1;
-  const { currentMonth, windowStartMonth } = categoryWindow(today, months);
+  const w = input.range ? rangeWindow(today, input.range.from, input.range.to) : null;
+  const { currentMonth, windowStartMonth } = w ?? categoryWindow(today, months);
+  // Rows the stats / payees / recent list cover: the selected period, or (legacy) the whole `months` window.
+  const periodStartDay = w ? w.periodStart : `${windowStartMonth}-01`;
+  const periodEndDay = w ? w.periodEnd : today;
 
   const byMonth = new Map<string, { amount: number; count: number }>();
   for (const r of rows) {
-    if (r.date > today) continue;
+    if (r.date > periodEndDay) continue;
     const k = monthKey(r.date);
     const e = byMonth.get(k) ?? { amount: 0, count: 0 };
     e.amount += sign * toDisplay(r);
@@ -155,7 +193,7 @@ export function buildCategoryDetail(input: {
       amount: amountOf(k),
       count: byMonth.get(k)?.count ?? 0,
       budget: b != null ? round2(b) : null,
-      partial: k === currentMonth,
+      partial: w ? k === currentMonth && periodEndDay < monthEndDay(k) : k === currentMonth,
     });
   }
 
@@ -168,8 +206,11 @@ export function buildCategoryDetail(input: {
   const activeAmounts = active.map((m) => m.amount);
   const highest = active.reduce<CategoryMonth | null>((best, m) => (!best || m.amount > best.amount ? m : best), null);
 
-  const windowRows = rows.filter((r) => r.date <= today && monthKey(r.date) >= windowStartMonth);
-  const total = round2(series.reduce((s, m) => s + m.amount, 0));
+  const windowRows = rows.filter((r) => r.date <= periodEndDay && (w ? r.date >= periodStartDay : monthKey(r.date) >= windowStartMonth));
+  // Total covers the selected period only (the chart may show earlier months for context).
+  const total = w
+    ? round2(windowRows.reduce((s, r) => s + sign * toDisplay(r), 0))
+    : round2(series.reduce((s, m) => s + m.amount, 0));
   const transactionCount = windowRows.length;
 
   // Top payees over the window.
