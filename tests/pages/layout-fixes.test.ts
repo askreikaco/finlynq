@@ -56,8 +56,8 @@ describe("settings/general at 390", () => {
 
   it("UI Font and Animation rows keep label-left / control-right on phones (label takes the spare width)", () => {
     const src = read(SETTINGS_GENERAL);
-    expect(src).toContain('<div className="flex items-center justify-between gap-3">\n            <div className="min-w-0 flex-1">\n              <Label>UI Font</Label>');
-    expect(src).toContain('<div className="flex items-center justify-between gap-3">\n            <div className="min-w-0 flex-1">\n              <Label htmlFor="animation-toggle">');
+    expect(src).toContain('<div className="flex items-center justify-between gap-3">\n            <div className="min-w-0 flex-1">\n              <div className="flex items-center gap-1">\n                <Label>Font</Label>');
+    expect(src).toContain('<div className="flex items-center justify-between gap-3">\n            <div className="min-w-0 flex-1">\n              <div className="flex items-center gap-1">\n                <Label htmlFor="animation-toggle">');
     expect(src).toContain('<SelectTrigger className="w-44 shrink-0 regular:w-48">');
   });
 

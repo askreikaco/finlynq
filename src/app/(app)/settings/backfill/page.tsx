@@ -12,7 +12,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, ArrowRight, Coins, Loader2, SlidersHorizontal, Target } from "lucide-react";
@@ -116,9 +117,7 @@ export default function BackfillWizardPage() {
       width="report"
       center
       className="p-6"
-      title="Backfill transactions"
-      subtitle={<>One-time fix for imported transactions so realized gains and lot tracking work correctly.
-      Won&apos;t change your account balances.</>}
+      title="Backfill"
       padBottom="none"
       minW0={false}
       suspense={false}
@@ -128,22 +127,23 @@ export default function BackfillWizardPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle icon={SlidersHorizontal} tone="indigo">Step 1 — Mode</CardTitle>
-          <CardDescription>
-            How should the backfill handle stock-leg transactions that have no matching cash-leg row?
-          </CardDescription>
+          <CardTitle icon={SlidersHorizontal} tone="indigo">
+            1. Mode
+            <InfoTip
+              label="About mode"
+              text="One-time fix so realized gains and lot tracking work; account balances are unchanged. Choose how to handle stock legs with no matching cash leg: flag them for manual fixing, or fabricate a paired cash leg."
+            />
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <ModeCard
-            label="I also import this brokerage's cash transactions separately"
-            description="Orphan stock legs will be flagged for manual fixing; nothing is fabricated."
+            label="I import cash transactions separately"
             selected={mode === "refuse_orphans"}
             onSelect={() => setMode("refuse_orphans")}
           />
           <ModeCard
-            label="I only track investments for this account in Finlynq"
-            description="Orphans get a fabricated paired cash leg. Bank-side balance will diverge by exactly the synthesized amount."
-            warning
+            label="I only track investments here"
+            warning="Fabricates a paired cash leg; the bank-side balance will diverge by that amount."
             selected={mode === "synthesize_orphans"}
             onSelect={() => setMode("synthesize_orphans")}
           />
@@ -152,8 +152,10 @@ export default function BackfillWizardPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle icon={Target} tone="cyan">Step 2 — Scope</CardTitle>
-          <CardDescription>Narrow which transactions the planner looks at.</CardDescription>
+          <CardTitle icon={Target} tone="cyan">
+            2. Scope
+            <InfoTip label="About scope" text="Narrow which transactions the planner looks at." />
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-2 flex-wrap">
@@ -164,7 +166,7 @@ export default function BackfillWizardPage() {
 
           {scopeChoice === "accounts" && (
             <div className="space-y-1">
-              {accounts.length === 0 && <p className="text-sm text-muted-foreground">No investment accounts found.</p>}
+              {accounts.length === 0 && <p className="text-sm text-muted-foreground" data-keep="empty">No investment accounts.</p>}
               {accounts.map((a) => (
                 <label key={a.accountId} className="flex items-center gap-2 text-sm">
                   <input
@@ -199,7 +201,7 @@ export default function BackfillWizardPage() {
 
       <div className="flex justify-end">
         <Button onClick={handleSubmit} disabled={!mode || submitting}>
-          {submitting ? (<><Loader2 className="size-4 animate-spin mr-2" /> Computing proposals…</>) : (<>Compute proposals <ArrowRight className="size-4 ml-2" /></>)}
+          {submitting ? (<><Loader2 className="size-4 animate-spin mr-2" /> Computing…</>) : (<>Compute <ArrowRight className="size-4 ml-2" /></>)}
         </Button>
       </div>
     </SectionPage>
@@ -208,15 +210,14 @@ export default function BackfillWizardPage() {
 
 function ModeCard({
   label,
-  description,
   selected,
   warning,
   onSelect,
 }: {
   label: string;
-  description: string;
   selected: boolean;
-  warning?: boolean;
+  /** Visible warning shown under the label. */
+  warning?: string;
   onSelect: () => void;
 }) {
   return (
@@ -231,10 +232,12 @@ function ModeCard({
         <div className={`mt-1 size-3 rounded-full ${selected ? "bg-primary" : "border border-border"}`} />
         <div className="flex-1">
           <div className="font-medium text-sm">{label}</div>
-          <div className="text-xs text-muted-foreground mt-1 flex items-start gap-1">
-            {warning && <AlertTriangle className="size-3 text-warning mt-0.5 shrink-0" />}
-            <span>{description}</span>
-          </div>
+          {warning && (
+            <div className="text-xs text-warning mt-1 flex items-start gap-1">
+              <AlertTriangle className="size-3 mt-0.5 shrink-0" />
+              <span>{warning}</span>
+            </div>
+          )}
         </div>
       </div>
     </button>
@@ -293,21 +296,18 @@ function CashSleeveSymbolFix() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle icon={Coins} tone="amber">Step 0 — Cash-sleeve symbols</CardTitle>
-        <CardDescription>
-          Cash sleeves often ship without a Symbol set. Click to auto-fill
-          symbol = currency (e.g., CAD cash sleeve gets symbol=&quot;CAD&quot;).
-          Safe to run repeatedly — only touches sleeves with a missing symbol.
-        </CardDescription>
+        <CardTitle icon={Coins} tone="amber">
+          0. Cash symbols
+          <InfoTip label="About cash symbols" text='Sets symbol = currency on cash sleeves with no symbol (a CAD sleeve gets "CAD"). Safe to repeat; only touches missing symbols.' />
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <Button variant="outline" onClick={handleFix} disabled={busy}>
-          {busy ? <><Loader2 className="size-4 animate-spin mr-2" /> Fixing…</> : "Fix cash-sleeve symbols"}
+          {busy ? <><Loader2 className="size-4 animate-spin mr-2" /> Fixing…</> : "Fix symbols"}
         </Button>
         {result && (
-          <div className="text-xs text-muted-foreground mt-2">
-            Fixed {result.fixed} of {result.total} cash sleeves.
-            {result.fixed === 0 && result.total > 0 && " (all already have symbols set)"}
+          <div className="text-xs text-muted-foreground mt-2" data-keep="status">
+            Fixed {result.fixed} of {result.total}.
           </div>
         )}
         {error && (

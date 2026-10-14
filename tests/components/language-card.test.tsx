@@ -23,7 +23,7 @@ vi.mock("@/components/ui/select", () => ({
   SelectContent: ({ children }: any) => <div>{children}</div>,
   SelectItem: ({ children, value }: any) => <div data-testid="opt" data-v={value}>{children}</div>,
 }));
-vi.mock("lucide-react", () => ({ Languages: () => null }));
+vi.mock("lucide-react", () => ({ Languages: () => null, Info: () => null }));
 
 import { LanguageCard, languageExample } from "@/components/settings/language-card";
 
@@ -33,7 +33,7 @@ describe("LanguageCard", () => {
   it("lists auto + every language and shows an en example", () => {
     render(<LanguageCard />);
     expect(screen.getAllByTestId("opt").map((e) => e.textContent)).toEqual([
-      "Auto (from display currency)", "English", "Tiếng Việt", "日本語",
+      "Auto", "English", "Tiếng Việt", "日本語",
     ]);
     expect(screen.getByTestId("language-example").textContent).toContain("1,234,567.89");
     expect(screen.getByTestId("language-example").textContent).toContain("01/10/2026");

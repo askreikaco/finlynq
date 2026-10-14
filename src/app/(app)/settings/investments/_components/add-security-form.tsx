@@ -13,7 +13,6 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Loader2 } from "lucide-react";
 import { parseSaveError } from "@/lib/save-error";
-import { cn } from "@/lib/utils";
 import { FormCard, FormFooter, FormRow, SegmentedToggle } from "./form-rows";
 
 type PriceSource = "auto" | "manual";
@@ -146,7 +145,7 @@ export function AddSecurityForm({
           label="Ticker"
           htmlFor="sec-symbol"
           error={errors.symbol}
-          hint="We’ll try to fill the name + currency from the ticker; edit them if needed."
+          hint="Name and currency are filled from the ticker; edit if needed."
         >
           <div className="relative">
             <Input
@@ -165,7 +164,7 @@ export function AddSecurityForm({
             )}
           </div>
         </FormRow>
-        <FormRow label="Name" htmlFor="sec-name" hint="auto-filled from the ticker, or type it">
+        <FormRow label="Name" htmlFor="sec-name" hint="Auto-filled from the ticker, or type it.">
           <Input
             id="sec-name"
             value={name}
@@ -202,16 +201,13 @@ export function AddSecurityForm({
         </FormRow>
         <FormRow
           label="Pricing"
-          hint={
-            <span className={cn(priceSource === "manual" && "text-warning")}>
-              {priceSource === "manual"
-                ? "Custom holding — prices aren’t fetched. Add them under “Prices” after creating it."
-                : lookupFound === true
-                  ? "✓ A live price was found — it’ll update automatically."
-                  : lookupFound === false
-                    ? "No live price was found for this ticker — switch to Manual if it can’t be priced."
-                    : "Prices are fetched automatically from the market."}
-            </span>
+          hint="Auto fetches market prices. Manual is for custom holdings: add prices under Prices after creating it."
+          notice={
+            priceSource === "manual" ? undefined : lookupFound === true ? (
+              <span className="text-muted-foreground">✓ Live price found.</span>
+            ) : lookupFound === false ? (
+              <span className="text-warning">No live price found. Use Manual if it can’t be priced.</span>
+            ) : undefined
           }
         >
           <SegmentedToggle<PriceSource>

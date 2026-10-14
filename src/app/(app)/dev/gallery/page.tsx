@@ -20,6 +20,7 @@ import { PageSkeleton } from "@/components/page-skeleton";
 import { TW } from "@/lib/design/tokens";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -371,6 +372,15 @@ function GalleryContent() {
               <AccordionItem value="one" title="Accordion item">Content</AccordionItem>
               <AccordionItem value="two" title="Second item">More content</AccordionItem>
             </Accordion>
+          </Group>
+
+          <Group id="info-tip" title="InfoTip" file="ui/info-tip.tsx">
+            <SectionCard>
+              <div className="flex items-center gap-1 p-4 text-sm font-semibold">
+                Label
+                <InfoTip label="About label" text="Tap, click or focus the icon to read the help text." />
+              </div>
+            </SectionCard>
           </Group>
 
           <Group id="skeleton" title="Skeleton / Shimmer" file="page-skeleton.tsx · .animate-shimmer">

@@ -17,7 +17,7 @@ const GROUPS: Array<{ title: string; paths: string[] }> = [
     paths: ["/settings/general", "/settings/categorization", "/settings/reconciliation", "/settings/investments"],
   },
   {
-    title: "Connections and system",
+    title: "Connections",
     paths: ["/settings/integrations", "/settings/developer", "/settings/about"],
   },
 ];

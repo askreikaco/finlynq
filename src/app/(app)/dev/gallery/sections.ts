@@ -11,6 +11,7 @@ export const GALLERY_SECTIONS = [
   { id: "charts", label: "Sparkline / Progress" },
   { id: "states", label: "Empty / Error / Alert" },
   { id: "controls", label: "Tabs / Toggles / Accordion" },
+  { id: "info-tip", label: "InfoTip" },
   { id: "skeleton", label: "Skeleton / Shimmer" },
   { id: "colors", label: "Color tokens" },
   { id: "type", label: "Typography" },

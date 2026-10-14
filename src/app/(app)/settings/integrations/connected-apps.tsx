@@ -15,7 +15,8 @@
 
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -124,8 +125,10 @@ export function ConnectedApps() {
             <Plug className="h-5 w-5" />
           </div>
           <div>
-            <CardTitle icon={Link2} tone="cyan">Connected apps</CardTitle>
-            <CardDescription>AI assistants and other apps you&apos;ve authorized to access your data over OAuth. Connections you don&apos;t use are automatically removed after 60 days; you can also revoke them anytime.</CardDescription>
+            <CardTitle icon={Link2} tone="cyan">
+              Connected apps
+              <InfoTip label="About connected apps" text="AI assistants and apps you authorized over OAuth. Unused connections are removed after 60 days; revoke anytime." />
+            </CardTitle>
           </div>
         </div>
       </CardHeader>
@@ -141,10 +144,7 @@ export function ConnectedApps() {
             <Button variant="outline" size="sm" onClick={load}>Retry</Button>
           </div>
         ) : apps.length === 0 && !mcpApiKeyLastUsedAt ? (
-          <p className="text-sm text-muted-foreground">
-            No connected apps. When you authorize an AI assistant (like Claude or ChatGPT) to
-            access your data over OAuth, it will appear here so you can revoke it any time.
-          </p>
+          <p className="text-sm text-muted-foreground" data-keep="empty">No connected apps.</p>
         ) : (
           <ul className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] rounded-xl border">
             {mcpApiKeyLastUsedAt && (
@@ -163,7 +163,7 @@ export function ConnectedApps() {
                     size="sm"
                     className="shrink-0"
                   >
-                    Manage API key
+                    API key
                   </Button>
                 </Link>
               </li>
@@ -203,9 +203,8 @@ export function ConnectedApps() {
         title="Revoke access"
         description={
           <>
-            Revoke access for <span className="font-medium text-foreground">{revokeTarget?.clientName ?? "this app"}</span>?
-            It will no longer be able to read or change your data. Any active session is cut off immediately and
-            it would need to be re-authorized to reconnect.
+            Revoke <span className="font-medium text-foreground">{revokeTarget?.clientName ?? "this app"}</span>?
+            It loses access to your data immediately and must be re-authorized to reconnect.
           </>
         }
         confirmLabel="Revoke"
