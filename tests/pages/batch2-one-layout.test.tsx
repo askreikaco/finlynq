@@ -119,19 +119,19 @@ function CustomizeProbe() {
 }
 
 /** The batch-2 contract: no table, the shared header with one h1 (PageHeader or SectionPage), and inset ListRows. */
-function expectOneLayout(container: HTMLElement, title: string) {
+function expectOneLayout(container: HTMLElement, title: string, rowSlot = "list-row") {
   expect(container.querySelector("table")).toBeNull();
   const header = container.querySelector('[data-slot="page-header"]');
   expect(header).toBeTruthy();
   expect(header!.querySelector("h1")?.textContent?.trim()).toBe(title);
-  expect(container.querySelectorAll('[data-slot="list-row"]').length).toBeGreaterThan(0);
+  expect(container.querySelectorAll(`[data-slot="${rowSlot}"]`).length).toBeGreaterThan(0);
 }
 
 describe("Goals: one layout at every size", () => {
-  it("shared header with Add Goal, goals as ListRows, no table, Customize registered", async () => {
+  it("shared header with Add Goal, goals as shared ProgressRows, no table, Customize registered", async () => {
     const { container } = render(<><GoalsPage /><CustomizeProbe /></>);
     await screen.findByRole("button", { name: /Emergency fund/ });
-    expectOneLayout(container, "Goals");
+    expectOneLayout(container, "Goals", "goal-row");
     expect(screen.getByRole("link", { name: "Add Goal" })).toBeTruthy();
     await waitFor(() => expect(screen.getByTestId("customize-probe").textContent).toBe("Customize"));
   });
@@ -192,12 +192,12 @@ describe("Category detail: one layout at every size", () => {
     await waitFor(() => expect(screen.getByTestId("customize-probe").textContent).toBe("Customize"));
   });
 
-  it("the period selector is visible at every width (not a desktop-only control)", async () => {
+  it("the time range is the shared toolbar control (no 6M/12M/24M tabs), visible at every width", async () => {
     H.params = { id: "10" };
     render(<CategoryPage />);
     await screen.findByText("Top payees");
-    const tab = screen.getByRole("tab", { name: "12M" });
-    expect(tab.closest(".hidden")).toBeNull();
+    expect(screen.queryByRole("tab", { name: "12M" })).toBeNull();
+    expect(screen.getByLabelText("Time range").closest(".hidden")).toBeNull();
   });
 });
 
@@ -205,6 +205,6 @@ describe("Account hub: one layout at every size", () => {
   it("the account sections are SectionCards of ListRows, no table", () => {
     const { container } = render(<AccountHubPage />);
     expect(container.querySelector("table")).toBeNull();
-    expect(container.querySelectorAll('[data-slot="list-row"]').length).toBeGreaterThan(0);
+    expect(container.querySelectorAll(`[data-slot="list-row"]`).length).toBeGreaterThan(0);
   });
 });

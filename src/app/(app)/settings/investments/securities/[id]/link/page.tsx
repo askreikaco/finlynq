@@ -11,8 +11,7 @@ export default function LinkSecurityRoute() {
     <FormPage<unknown, Security, unknown, LinkExtra>
       rootTestId="investments-security-link"
       id="investments-security-link"
-      title="Add to an account"
-      subtitle={(security) => (security ? symbolLabel(security) : undefined)}
+      title={(security) => (security ? `Add to account: ${symbolLabel(security)}` : "Add to an account")}
       fallbackReturn={INVESTMENTS_HOME}
       form="external"
       width="form"

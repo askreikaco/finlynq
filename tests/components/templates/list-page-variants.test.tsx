@@ -86,7 +86,7 @@ describe("ListPage variants: defaults unchanged", () => {
 });
 
 describe("ListPage variants: title and subtitle as ReactNode", () => {
-  it("renders a ReactNode title and subtitle", () => {
+  it("renders a ReactNode title and a subtitle only inside the InfoTip", async () => {
     api.data = GOALS;
     const { container } = render(
       <ListPage<Goal, Goal[], { tag: string }>
@@ -96,7 +96,9 @@ describe("ListPage variants: title and subtitle as ReactNode", () => {
       />,
     );
     expect(container.querySelector("h1 [data-testid='fire-title']")).toBeTruthy();
-    expect(container.querySelector("em")?.textContent).toBe("Live");
+    expect(container.querySelector("em")).toBeNull();
+    fireEvent.click(container.querySelector("[data-slot=info-tip]")!);
+    expect((await screen.findByText("Live")).tagName).toBe("EM");
   });
 
   it("error default copy falls back to 'this list' for a non-string title", () => {

@@ -371,7 +371,7 @@ function ChatPageContent() {
       <PageHeader
         className="shrink-0"
         title="AI Chat"
-        subtitle="Ask about your finances"
+        info="Ask about your finances"
         actions={
           messages.length > 0 ? (
             <Button

@@ -98,11 +98,6 @@ export default function AccountDetailPage() {
   const { id } = useParams();
   const router = useRouter();
   const { displayCurrency } = useDisplayCurrency();
-  const [account, setAccount] = useState<Account | null>(null);
-  const [, setAccounts] = useState<Account[]>([]);
-  /** The account lookup finished and produced nothing (missing id, not yours,
-   *  or the request failed) — as opposed to "still in flight". */
-  const [loadFailed, setLoadFailed] = useState(false);
   // The list of transactions is rendered by the embedded <TransactionsWorkspace>
   // below (its own SWR fetch); we fetch the transaction count but don't display it anymore.
   // Computed balance from the dashboard payload, cache-first: a revisit paints the last balance at once and revalidates.
@@ -114,6 +109,12 @@ export default function AccountDetailPage() {
   // The account row (name, currency, flags), cache-first too. includeArchived=1 is load-bearing: this is the detail view
   // and the only place Unarchive lives (see the effect below).
   const accountsRes = useCacheFirstJson<Account[]>("/api/accounts?includeArchived=1");
+  // Derived (not copied into state in an effect): a remount with a cached list has the account on the first render.
+  const accountList = Array.isArray(accountsRes.data) ? accountsRes.data : null;
+  const account: Account | null = accountList?.find((a) => a.id === Number(id)) ?? null;
+  /** The account lookup finished and produced nothing (missing id, not yours,
+   *  or the request failed) — as opposed to "still in flight". */
+  const loadFailed = accountList ? !account : !!accountsRes.error;
   // Monthly balance history for the Balance card's chart + "vs last month" (native currency of the account).
   // Month-end balance history (native currency), cache-first so it also paints offline; a range reaches back past a year.
   const balanceHistory = useCacheFirstJson<{ series?: BalancePoint[] }>(`/api/net-worth-history?period=all&accountId=${id}&basis=native`);
@@ -198,15 +199,7 @@ export default function AccountDetailPage() {
   // archiving from this page's own Edit dialog re-runs this, and without it the
   // account the user just archived would vanish from under them.
   function reloadAccount() {
-    fetch("/api/accounts?includeArchived=1")
-      .then((r) => r.json())
-      .then((accts: Account[]) => {
-        if (!Array.isArray(accts)) return;
-        setAccounts(accts);
-        const found = accts.find((a) => a.id === Number(id));
-        if (found) setAccount(found);
-      })
-      .catch(() => {});
+    accountsRes.reload();
   }
 
   async function toggleArchived() {
@@ -272,19 +265,6 @@ export default function AccountDetailPage() {
       setSavingInvisible(false);
     }
   }
-
-  // Sync the cached/revalidated list into the page state (reloadAccount() still patches `account` after a save).
-  useEffect(() => {
-    const list = accountsRes.data;
-    if (Array.isArray(list)) {
-      setAccounts(list);
-      const found = list.find((a) => a.id === Number(id));
-      setAccount(found ?? null);
-      setLoadFailed(!found);
-    } else if (accountsRes.error) {
-      setLoadFailed(true);
-    }
-  }, [accountsRes.data, accountsRes.error, id]);
 
   useEffect(() => {
     // `includeArchived=1`: GET /api/accounts hides archived accounts by default
@@ -483,7 +463,7 @@ export default function AccountDetailPage() {
         busy={deletingAccount}
       />
 
-      <PageToolbar
+      <PageToolbar refresh
         range={{ selection: metricRange.selection, onChange: metricRange.setSelection }}
         search={{ value: txToolbar.list.q, onChange: txToolbar.list.setQ, placeholder: "Payee or note" }}
       />

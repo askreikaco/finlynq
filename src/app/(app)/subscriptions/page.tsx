@@ -4,7 +4,7 @@
  * Subscriptions — ONE page for recurring payments (2026-10).
  *
  * Merges the old dev-mode-only Subscriptions list and Bill Calendar pages:
- *   - List view: tracked subscriptions grouped by status, plus recurring
+ *   - List view: tracked subscriptions grouped by frequency, plus recurring
  *     payments detected in the user's transactions that aren't tracked yet
  *     (one-click "Track").
  *   - Calendar view: every projected payment for a month — tracked
@@ -17,7 +17,8 @@
  * a row opens a DetailSheet with the fields and the actions.
  */
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
+import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +27,10 @@ import { PageToolbar } from "@/components/page-toolbar";
 import { useListToolbar } from "@/lib/toolbar/use-list-toolbar";
 import { SUBSCRIPTION_FILTER_KEYS, SUBSCRIPTION_SORTS } from "@/lib/toolbar/list-configs";
 import { sortRecords } from "@/lib/toolbar/sort";
-import { DetailSheet, ListRow, MetricGrid, SectionCard, ListDetailLayout, useListDetail, type DetailItem } from "@/components/mobile";
+import { DetailSheet, ListRow, MetricGrid, SectionCard, TxRow, ListDetailLayout, useListDetail, type DetailItem, type MetricItem } from "@/components/mobile";
+import { useMetricRange } from "@/lib/metrics/use-metric-range";
+import { compareCaption, seriesWindow, type MonthPoint } from "@/lib/metrics/period";
+import { resolveCard, NO_HISTORY_CAPTION } from "@/lib/metrics/delta";
 import { SubscriptionFormPanel } from "./_components/subscription-form-panel";
 import { SectionPage } from "@/components/templates/section-page";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -48,6 +52,8 @@ import {
   frequencyOrMonthly,
   monthlyEquivalent,
   rollForwardNextDate,
+  FREQUENCY_GROUPS,
+  frequencyGroupKey,
 } from "@/lib/subscriptions/schedule";
 import {
   detectedSuggestions,
@@ -64,6 +70,7 @@ import type { Subscription } from "./_components/types";
 import { Bell, BellOff, CalendarClock, CalendarDays, CalendarRange, CheckCircle2, CreditCard, List, Pause, Pencil, Play, Plus, Repeat, RotateCcw, Search, Sparkles, Trash2, XCircle } from "lucide-react";
 
 type View = "list" | "calendar";
+type SeriesRow = { month: string; monthly: number; annual: number; active: number; dueSoon: number; dueSoonCount: number };
 
 const SUGGESTIONS_PREVIEW = 3;
 const DUE_SOON_DAYS = 30;
@@ -132,10 +139,16 @@ function SubscriptionsPageContent() {
   const view: View = searchParams.get("view") === "calendar" ? "calendar" : "list";
   const { displayCurrency: ctxCurrency } = useDisplayCurrency();
 
-  const [subs, setSubs] = useState<Subscription[]>([]);
-  const [recurring, setRecurring] = useState<RecurringRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(false);
+  // Cache-first (Settings > Data > Offline mode): the list paints from the local cache, then revalidates.
+  const { data: subsData, loading, error: loadError, reload: loadSubs } = useCacheFirstJson<Subscription[]>("/api/subscriptions");
+  const subs = useMemo(() => (Array.isArray(subsData) ? subsData : []), [subsData]);
+  // Detection is a nice-to-have on top of the tracked list: a failure here
+  // just means no suggestions / no projected income, never a page error.
+  const recurringRes = useCacheFirstJson<{ recurring?: RecurringRow[] }>("/api/recurring");
+  const recurring = useMemo<RecurringRow[]>(
+    () => (Array.isArray(recurringRes.data?.recurring) ? recurringRes.data.recurring : []),
+    [recurringRes.data],
+  );
 
   // Toolbar: search, filter page (status) and sort (next payment, name, monthly cost).
   const tb = useListToolbar({ filterPath: "/filter/subscriptions", sorts: SUBSCRIPTION_SORTS, filterKeys: SUBSCRIPTION_FILTER_KEYS });
@@ -148,37 +161,7 @@ function SubscriptionsPageContent() {
 
   const today = localDateISO();
 
-  const loadSubs = useCallback(async () => {
-    setLoadError(false);
-    try {
-      const res = await fetch("/api/subscriptions");
-      if (!res.ok) throw new Error("load failed");
-      const data = await res.json();
-      setSubs(Array.isArray(data) ? data : []);
-    } catch {
-      setLoadError(true);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Detection is a nice-to-have on top of the tracked list: a failure here
-  // just means no suggestions / no projected income, never a page error.
-  const loadRecurring = useCallback(async () => {
-    try {
-      const res = await fetch("/api/recurring");
-      if (!res.ok) return;
-      const data = await res.json();
-      setRecurring(Array.isArray(data?.recurring) ? data.recurring : []);
-    } catch {
-      /* non-fatal */
-    }
-  }, []);
-
-  useEffect(() => {
-    loadSubs();
-    loadRecurring();
-  }, [loadSubs, loadRecurring]);
+  const loadRecurring = recurringRes.reload;
 
   function setView(next: View) {
     router.replace(next === "calendar" ? "/subscriptions?view=calendar" : "/subscriptions", { scroll: false });
@@ -192,6 +175,43 @@ function SubscriptionsPageContent() {
   );
   const suggestions = useMemo(() => detectedSuggestions(recurring, subs), [recurring, subs]);
 
+  // Metric cards: each has a month-by-month history (GET /api/subscriptions/series: booked transactions, end dates and
+  // status now; lib/subscriptions/history.ts) so it shows the shared sparkline, % badge and "+$X vs last month".
+  const { selection, explicit, period, setSelection } = useMetricRange();
+  const win = seriesWindow(period);
+  const seriesRes = useCacheFirstJson<{ series: SeriesRow[] | null }>(
+    `/api/subscriptions/series?from=${win.from}&to=${win.to}&currency=${encodeURIComponent(displayCurrency)}`,
+    { keepPrevious: true },
+  );
+  const seriesRows = useMemo(() => {
+    const rows = seriesRes.data && !Array.isArray(seriesRes.data) ? seriesRes.data.series : null;
+    return Array.isArray(rows) ? rows : null;
+  }, [seriesRes.data]);
+  const summaryMetrics = useMemo<MetricItem[]>(() => {
+    const caption = compareCaption(selection);
+    const pts = (pick: (r: SeriesRow) => number): MonthPoint[] | null => (seriesRows ? seriesRows.map((r) => ({ month: r.month, value: pick(r) })) : null);
+    const card = (pick: (r: SeriesRow) => number, pageValue: number, kind: "money" | "count") =>
+      resolveCard({ points: pts(pick), period, mode: "last", isDefault: !explicit, pageValue, kind, currency: displayCurrency, caption });
+    const monthly = card((r) => r.monthly, totals.monthly, "money");
+    const annual = card((r) => r.annual, totals.annual, "money");
+    const due = card((r) => r.dueSoon, totals.dueSoonAmount, "money");
+    const active = card((r) => r.active, totals.activeCount, "count");
+    const shared = (c: ReturnType<typeof card>) => ({
+      sub: c.delta ?? NO_HISTORY_CAPTION, badgePct: c.badgePct,
+      sparkData: c.sparkData, sparkLabels: c.sparkLabels,
+    });
+    return [
+      { id: "monthly", icon: CalendarClock, iconTone: "indigo", label: "Per month", value: monthly.value ?? totals.monthly, currency: displayCurrency, invertTone: true, ...shared(monthly),
+        note: `${totals.activeCount} active subscription${totals.activeCount === 1 ? "" : "s"}` },
+      { id: "yearly", icon: CalendarRange, iconTone: "violet", label: "Per year", value: annual.value ?? totals.annual, currency: displayCurrency, invertTone: true, sparkColor: "#8b5cf6", ...shared(annual),
+        note: "Annualised" },
+      { id: "due-soon", icon: CalendarClock, iconTone: "amber", label: `Due in next ${DUE_SOON_DAYS} days`, value: due.value ?? totals.dueSoonAmount, currency: displayCurrency, invertTone: true, sparkColor: "#f59e0b", ...shared(due),
+        note: `${totals.dueSoonCount} payment${totals.dueSoonCount === 1 ? "" : "s"}` },
+      { id: "active", icon: CheckCircle2, iconTone: "emerald", label: "Active", value: <span>{Math.round(active.value ?? totals.activeCount)}</span>, sparkColor: "#10b981", ...shared(active),
+        note: `of ${subs.length} tracked` },
+    ];
+  }, [seriesRows, period, explicit, selection, totals, displayCurrency, subs.length]);
+
   const sorted = useMemo(() => {
     const monthlyCost = (s: Subscription) => monthlyEquivalent(Math.abs(subDisplayAmount(s)), s.frequency, s.intervalDays);
     const needle = tb.q.trim().toLowerCase();
@@ -202,12 +222,14 @@ function SubscriptionsPageContent() {
     );
   }, [subs, tb.q, tb.filters, tb.sort, today]);
 
-  const groups: { key: string; title: string; rows: Subscription[] }[] = [
-    { key: "active", title: "Active", rows: sorted.filter((s) => s.status === "active") },
-    { key: "paused", title: "Paused", rows: sorted.filter((s) => s.status === "paused") },
-    { key: "cancelled", title: "Cancelled", rows: sorted.filter((s) => s.status === "cancelled") },
-    { key: "ended", title: "Ended", rows: sorted.filter((s) => s.status === "ended") },
-  ];
+  // Grouped by cadence (fixed order); paused / cancelled / ended rows stay in their cadence group with a status badge.
+  const groups = FREQUENCY_GROUPS.map((g) => {
+    const rows = sorted.filter((s) => frequencyGroupKey(s.frequency) === g.key);
+    const monthly = rows
+      .filter((s) => s.status === "active")
+      .reduce((sum, s) => sum + monthlyEquivalent(Math.abs(subDisplayAmount(s)), s.frequency, s.intervalDays), 0);
+    return { key: g.key, title: g.title, rows, monthly };
+  });
 
   // ── navigation (create / edit are full pages, not dialogs) ─────────────────
   const LIST_HREF = "/subscriptions";
@@ -253,7 +275,7 @@ function SubscriptionsPageContent() {
         setActionError(await parseSaveError(res, fallback));
         return false;
       }
-      await loadSubs();
+      loadSubs();
       return true;
     } catch {
       setActionError("Network error. Please try again.");
@@ -333,7 +355,7 @@ function SubscriptionsPageContent() {
       <ErrorState
         title="Couldn't load subscriptions"
         message="We couldn't load your subscriptions. Please try again."
-        onRetry={() => { setLoading(true); loadSubs(); loadRecurring(); }}
+        onRetry={() => { loadSubs(); loadRecurring(); }}
       />
     );
   }
@@ -380,7 +402,7 @@ function SubscriptionsPageContent() {
     <SectionPage
       id="subscriptions"
       title="Subscriptions"
-      subtitle="Recurring bills and subscriptions: what they cost and when they're due."
+      info="Recurring bills and subscriptions: what they cost and when they're due."
       width="report"
       center
       header={{
@@ -392,19 +414,7 @@ function SubscriptionsPageContent() {
         ),
       }}
     >
-      <MetricGrid
-        metrics={[
-          { icon: CalendarClock, label: "Per month", value: totals.monthly, currency: displayCurrency, sub: `${totals.activeCount} active subscription${totals.activeCount === 1 ? "" : "s"}` },
-          { icon: CalendarRange, label: "Per year", value: totals.annual, currency: displayCurrency, sub: "Annualised" },
-          { icon: CalendarClock,
-            label: `Due in next ${DUE_SOON_DAYS} days`,
-            value: totals.dueSoonAmount,
-            currency: displayCurrency,
-            sub: `${totals.dueSoonCount} payment${totals.dueSoonCount === 1 ? "" : "s"}`,
-          },
-          { icon: CheckCircle2, label: "Active", value: String(totals.activeCount), sub: `of ${subs.length} tracked` },
-        ]}
-      />
+      <MetricGrid metrics={summaryMetrics} />
 
       {actionError && (
         <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
@@ -415,17 +425,17 @@ function SubscriptionsPageContent() {
       {/* View switch + sort */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Tabs value={view} onValueChange={(v) => setView((v as View) ?? "list")}>
-          <TabsList>
+          <TabsList variant="segmented">
             <TabsTrigger value="list" className="px-3"><List className="h-4 w-4" /> List</TabsTrigger>
             <TabsTrigger value="calendar" className="px-3"><CalendarDays className="h-4 w-4" /> Calendar</TabsTrigger>
           </TabsList>
         </Tabs>
-        {view === "list" && subs.length > 1 && (
-          <PageToolbar
-            className="w-auto flex-1 justify-end"
-            search={{ value: tb.q, onChange: tb.setQ, placeholder: "Search subscriptions" }}
-          />
-        )}
+        <PageToolbar
+          refresh
+          className="w-auto flex-1 justify-end"
+          range={{ selection, onChange: setSelection }}
+          search={view === "list" && subs.length > 1 ? { value: tb.q, onChange: tb.setQ, placeholder: "Search subscriptions" } : undefined}
+        />
       </div>
 
       <ListDetailLayout
@@ -491,10 +501,10 @@ function SubscriptionsPageContent() {
                     /></CardContent></Card>
                   )}
 
-                  {/* One inset list per status group, in the sort order chosen above. */}
+                  {/* One inset list per cadence group, rows in the sort order chosen above. */}
                   {groups.map((g) =>
                     g.rows.length === 0 ? null : (
-                      <SectionCard key={g.key} label={`${g.title} (${g.rows.length})`} icon={Repeat} tone="indigo" padded={false} className={`col-span-full [&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3 ${CARD_ROW_GRID}`}>
+                      <SectionCard key={g.key} labelPlacement="outside" label={`${g.title} (${g.rows.length}) · ${formatCurrency(g.monthly, displayCurrency)} / mo`} padded={false} className={`col-span-full [&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3 ${CARD_ROW_GRID}`}>
                         {g.rows.map((sub) => (
                           <SubscriptionRow
                             key={sub.id}
@@ -625,7 +635,7 @@ function SubscriptionRow({
 
   return (
     <div className={sub.status !== "active" ? "opacity-75" : undefined}>
-      <ListRow
+      <TxRow
         title={sub.name ?? "Subscription"}
         subtitle={
           <span className="inline-flex max-w-full items-center gap-1.5 align-middle">
@@ -640,13 +650,11 @@ function SubscriptionRow({
             {statusBadge && sub.status !== "active" && <Badge className={statusBadge.className}>{statusBadge.label}</Badge>}
           </span>
         }
-        value={
-          <span className="tabular-nums text-sm font-semibold">
-            {formatCurrency(sub.amount, sub.currency)}
-            <span className="text-xs font-normal text-muted-foreground"> / {frequencySuffix(sub.frequency, sub.intervalDays)}</span>
-          </span>
-        }
-        secondary={showMonthly ? `≈ ${formatCurrency(monthly, displayCurrency)} / mo` : undefined}
+        icon={Repeat}
+        tile={due ? "warn" : sub.status === "active" ? "neg" : "muted"}
+        amount={-Math.abs(sub.amount)}
+        currency={sub.currency}
+        meta={showMonthly ? `≈ ${formatCurrency(monthly, displayCurrency)} / mo` : `per ${frequencySuffix(sub.frequency, sub.intervalDays)}`}
         selected={selected}
         onPress={onOpen}
       />

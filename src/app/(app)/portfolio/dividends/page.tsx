@@ -199,7 +199,7 @@ export default function DividendsPage() {
     <SectionPage
       id="dividends"
       title="Dividend income"
-      subtitle={periodLabel}
+      info={periodLabel}
       backFallback="/portfolio"
       backLabel="Back to portfolio"
       width="none"
@@ -223,7 +223,7 @@ export default function DividendsPage() {
       }}
     >
 
-      <PageToolbar
+      <PageToolbar refresh
         range={{ selection: metricRange.selection, onChange: metricRange.setSelection }}
       />
 

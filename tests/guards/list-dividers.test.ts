@@ -51,6 +51,7 @@ const LIST_FILES = [
   "src/app/(app)/categories/[id]/page.tsx",
   "src/app/(app)/categories/_page-content.tsx",
   "src/app/(app)/categories/_components/category-row.tsx",
+  "src/components/mobile/progress-row.tsx",
   "src/app/(app)/goals/page.tsx",
   "src/app/(app)/loans/page.tsx",
   "src/app/(app)/subscriptions/page.tsx",

@@ -188,8 +188,6 @@ export default function DashboardPage() {
   if (!data || !layoutReady) return <DashboardSkeleton />;
 
   // --- Compute derived data ---
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
   // Sum the API's already-converted balances in the user's display currency.
   // The API converts every account's native balance via the rate map and
@@ -605,7 +603,7 @@ export default function DashboardPage() {
         <PageHeader
           className="flex flex-wrap items-center justify-between gap-3"
           title="Dashboard"
-          subtitle={`${greeting}. Here's your financial overview`}
+          info="Your financial overview"
           overflow={[{ label: "General settings", icon: Settings, href: "/settings/general" }]}
           actions={
             <Button
@@ -621,8 +619,8 @@ export default function DashboardPage() {
       </motion.div>
 
       {/* One period control for every metric card on the page (?range=&from=&to=; default = month vs last month) */}
-      <motion.div variants={itemVariants} className="flex justify-end -mb-2 wide:-mb-3" data-slot="dashboard-range">
-        <PageToolbar range={{ selection, onChange: setSelection }} />
+      <motion.div variants={itemVariants} className="mt-6">
+        <PageToolbar refresh range={{ selection, onChange: setSelection }} />
       </motion.div>
 
       {/* Currency audit banner — shown only when there are unresolved cross-currency rows */}

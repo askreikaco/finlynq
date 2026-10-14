@@ -91,7 +91,7 @@ describe("BackButton adoption: FamilyShare page", () => {
 
     // Check page content is present
     expect(screen.queryByText(FAMILY_STRINGS.share_page_title)).toBeTruthy();
-    expect(screen.queryByText(FAMILY_STRINGS.share_page_description)).toBeTruthy();
+    expect(screen.queryByText(FAMILY_STRINGS.share_page_description)).toBeNull();
   });
 });
 

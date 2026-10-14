@@ -11,8 +11,7 @@ export default function LinkAccountRoute() {
     <FormPage<unknown, Account, unknown, LinkExtra>
       rootTestId="investments-account-link"
       id="investments-account-link"
-      title="Add a security"
-      subtitle={(account) => account?.name}
+      title={(account) => (account?.name ? `Add a security: ${account.name}` : "Add a security")}
       fallbackReturn={INVESTMENTS_HOME}
       form="external"
       width="form"

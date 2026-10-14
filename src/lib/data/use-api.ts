@@ -16,6 +16,7 @@
  */
 import useSWR, { preload, type SWRConfiguration, type SWRResponse } from "swr";
 import { jsonFetcher, softJsonFetcher } from "@/lib/swr";
+import { useFetchActivity } from "./fetch-activity";
 
 export function useApi<T>(
   key: string | null,
@@ -23,7 +24,9 @@ export function useApi<T>(
 ): SWRResponse<T> {
   const { soft, ...config } = opts ?? {};
   const fetcher = soft !== undefined ? softJsonFetcher<T>(soft) : (jsonFetcher as (url: string) => Promise<T>);
-  return useSWR<T>(key, fetcher, config);
+  const res = useSWR<T>(key, fetcher, config);
+  useFetchActivity(key, res.isValidating, res.mutate);
+  return res;
 }
 
 /** Warm a key before navigation (hover / touchstart on a link). */

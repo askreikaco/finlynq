@@ -19,7 +19,8 @@
  * it — a discrepancy with no visible cause.
  */
 
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
+import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -48,22 +49,8 @@ export function AccountFilter({
   selected: number[];
   onChange: (ids: number[]) => void;
 }) {
-  const [accounts, setAccounts] = useState<AccountRow[]>([]);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/accounts?includeArchived=1")
-      .then((r) => (r.ok ? r.json() : []))
-      .then((d) => {
-        if (!cancelled) setAccounts(Array.isArray(d) ? (d as AccountRow[]) : []);
-      })
-      .catch(() => {
-        if (!cancelled) setAccounts([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const accountsRes = useCacheFirstJson<AccountRow[]>("/api/accounts?includeArchived=1");
+  const accounts = useMemo<AccountRow[]>(() => (Array.isArray(accountsRes.data) ? accountsRes.data : []), [accountsRes.data]);
 
   const toggle = (id: number, on: boolean) => {
     const next = on ? [...selected, id] : selected.filter((x) => x !== id);

@@ -351,11 +351,7 @@ function ImportPageInner() {
     <SectionPage
       id="import"
       title="Import"
-      subtitle={<>
-            One surface per account. Upload a statement, then review it the way
-            this account is set up — pick a lens to flip the view, or change
-            the account&apos;s policy via the gear in the chip.
-        </>}
+      info="Upload a statement per account, then review it with a lens. Change the account policy via the gear in the chip."
       width="report"
       center
       header={{

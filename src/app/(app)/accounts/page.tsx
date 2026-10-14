@@ -1,7 +1,7 @@
 "use client";
 
 
-import { Fragment, Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
+import { Fragment, Suspense, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
@@ -140,18 +140,11 @@ function AccountsPage() {
   // FINLYNQ-179: user-customizable account groups. The saved per-type display
   // order is a settings key/value (no migration); the management surface
   // (rename / reorder / merge-into-Other) is the /accounts/groups page.
-  const [groupOrder, setGroupOrder] = useState<AccountGroupOrder>({ A: [], L: [] });
-
-  function loadGroupOrder() {
-    fetch("/api/settings/account-group-order")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (d?.order) setGroupOrder(parseGroupOrder(JSON.stringify(d.order)));
-      })
-      .catch(() => {});
-  }
-
-  useEffect(() => { loadGroupOrder(); }, []);
+  const groupOrderRes = useCacheFirstJson<{ order?: unknown }>("/api/settings/account-group-order");
+  const groupOrder = useMemo<AccountGroupOrder>(
+    () => (groupOrderRes.data?.order ? parseGroupOrder(JSON.stringify(groupOrderRes.data.order)) : { A: [], L: [] }),
+    [groupOrderRes.data],
+  );
 
   // Always fetch EVERY account, archived included — /api/dashboard returns them
   // unconditionally now, and the totals below need them to match the dashboard
@@ -260,20 +253,29 @@ function AccountsPage() {
       label={title}
       icon={SectionIcon}
       tone={tone}
-      className="px-3"
+      labelPlacement="outside"
+      bare
+      labelClassName="px-1"
     >
       {/* Each group is its own accordion, expanded by default (toggled independently): header = name, count, total. */}
       <div className="flex flex-col gap-2">
         {groups(list).map(([group, accts]) => (
           <Accordion key={group} defaultValue={group}>
-          <AccordionItem value={group} title={groupTitle(group, accts)} className="bg-transparent">
+          <AccordionItem
+            value={group}
+            title={groupTitle(group, accts)}
+            className="bg-transparent"
+            headerClassName="has-[[data-panel-open]]:shadow-none"
+            triggerClassName="rounded-md px-1 min-h-9"
+            panelClassName="surface-card overflow-hidden rounded-xl border border-border/50 p-0"
+          >
             <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
             {accts.map((a) => (
               <ListRow
                 key={a.accountId}
                 {...(detail.split ? { onPress: () => detail.select(a.accountId) } : { href: `/accounts/${a.accountId}` })}
                 selected={detail.selectedId === String(a.accountId)}
-                className={a.archived ? "opacity-60" : undefined}
+                className={a.archived ? "px-4 opacity-60" : "px-4"}
                 title={
                   <span className="inline-flex max-w-full items-center gap-2 align-middle">
                     <span className="truncate">
@@ -344,7 +346,7 @@ function AccountsPage() {
       <SectionPage
         id="accounts"
         title="Accounts"
-        subtitle="Overview of your assets, liabilities, and net worth"
+        info="Overview of your assets, liabilities, and net worth"
         width="report"
         header={{ actions: createAccountLink }}
       >
@@ -363,7 +365,7 @@ function AccountsPage() {
     <SectionPage
       id="accounts"
       title="Accounts"
-      subtitle="Overview of your assets, liabilities, and net worth"
+      info="Overview of your assets, liabilities, and net worth"
       width="report"
       header={{
         className: "flex items-center justify-between",
@@ -388,7 +390,7 @@ function AccountsPage() {
     >
       <OnboardingTips page="accounts" />
 
-      <PageToolbar
+      <PageToolbar refresh
         range={{ selection: metricRange.selection, onChange: metricRange.setSelection }}
         search={{ value: tb.q, onChange: tb.setQ, placeholder: "Search accounts" }}
       />

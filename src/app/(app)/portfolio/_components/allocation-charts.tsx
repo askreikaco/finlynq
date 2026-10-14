@@ -10,7 +10,7 @@
  */
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
-import { Landmark, PieChart as PieChartIcon, Wallet } from "lucide-react";
+import { Landmark, PieChart as PieChartIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/currency";
 import { ColorDot } from "@/components/csp-safe-bar";
@@ -37,10 +37,7 @@ export function AllocationCharts({
       {/* By Asset Type */}
       <Card>
         <CardHeader className="pb-2">
-          <div className="flex items-center gap-2">
-            <PieChartIcon className="h-4 w-4 text-primary" />
-            <CardTitle icon={PieChartIcon} tone="amber">By Asset Type</CardTitle>
-          </div>
+          <CardTitle icon={PieChartIcon} tone="amber">By Asset Type</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-6">
@@ -83,10 +80,7 @@ export function AllocationCharts({
       {/* By Account */}
       <Card>
         <CardHeader className="pb-2">
-          <div className="flex items-center gap-2">
-            <Wallet className="h-4 w-4 text-chart-5" />
-            <CardTitle icon={Landmark} tone="indigo">By Account</CardTitle>
-          </div>
+          <CardTitle icon={Landmark} tone="indigo">By Account</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-6">

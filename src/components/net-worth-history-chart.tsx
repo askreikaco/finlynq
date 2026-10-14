@@ -14,7 +14,8 @@
  */
 
 import { TrendingUp } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import {
   AreaChart,
   Area,
@@ -234,38 +235,24 @@ export function NetWorthHistoryChart({
   const [basis, setBasis] = useState<Basis>(
     accountId != null ? "native" : "reporting",
   );
-  const [data, setData] = useState<ApiResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
   // FINLYNQ-129 — component-only stacked-member toggle (resets on reload). The
   // per-account "By account" stack is hidden for single-account (balance) charts.
   const [stacked, setStacked] = useState(false);
   const stackable = accountId == null;
   const animationsEnabled = useAnimations();
 
-  function load() {
-    const params = new URLSearchParams();
-    params.set("period", period);
-    if (accountId != null) params.set("accountId", String(accountId));
-    // Only ever ask for native on a single-account chart — the route rejects it
-    // otherwise, since a cross-account total has no native currency.
-    if (accountId != null && basis === "native") params.set("basis", "native");
-    setLoading(true);
-    setError(false);
-    fetch(`/api/net-worth-history?${params.toString()}`)
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("request failed"))))
-      .then((json: ApiResponse) => setData(json))
-      .catch(() => {
-        setData(null);
-        setError(true);
-      })
-      .finally(() => setLoading(false));
-  }
-
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [period, accountId, basis]);
+  // Cache-first (same SWR key as any other reader of this URL): a remounted page paints the last chart at once and
+  // revalidates in the background; the Refresh button revalidates it with the rest of the page.
+  const params = new URLSearchParams();
+  params.set("period", period);
+  if (accountId != null) params.set("accountId", String(accountId));
+  // Only ever ask for native on a single-account chart — the route rejects it
+  // otherwise, since a cross-account total has no native currency.
+  if (accountId != null && basis === "native") params.set("basis", "native");
+  const res = useCacheFirstJson<ApiResponse>(`/api/net-worth-history?${params.toString()}`);
+  const data: ApiResponse | null = res.data ?? null;
+  const loading = res.loading;
+  const error = res.error;
 
   // Label from what the API actually returned, never from the requested basis:
   // a native request silently downgrades when the stored rows predate the
@@ -377,7 +364,7 @@ export function NetWorthHistoryChart({
               {accountId != null ? " balance" : " net worth"} over time. If the
               chart looks stale or flat, rebuild your balance history.
             </p>
-            <RebuildSnapshotsButton onDone={load} />
+            <RebuildSnapshotsButton onDone={res.reload} />
           </div>
         ) : (
           <>

@@ -9,12 +9,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from "recharts";
-import { CalendarClock, CheckCircle2, Landmark, ListChecks, Plus, Table2 } from "lucide-react";
+import { CalendarClock, CheckCircle2, Landmark, ListChecks, Percent, Plus, Table2, TrendingDown } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { ErrorState } from "@/components/error-state";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CspSafeBar } from "@/components/csp-safe-bar";
-import { Amount, MetricGrid, DetailSheet, ListRow, SectionCard, ListDetailLayout, ListDetailNewButton, useListDetail, type MetricItem, type DetailItem } from "@/components/mobile";
+import { MetricGrid, DetailSheet, TxRow, SectionCard, ProgressRow, ProgressRowButton, ListDetailLayout, ListDetailNewButton, useListDetail, type MetricItem, type DetailItem } from "@/components/mobile";
 import { LoanFormPanel } from "./_components/loan-form-panel";
 import { PageToolbar } from "@/components/page-toolbar";
 import { useListToolbar } from "@/lib/toolbar/use-list-toolbar";
@@ -24,7 +24,7 @@ import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { compareCaption, monthsBetween, seriesWindow } from "@/lib/metrics/period";
 import { NO_HISTORY_CAPTION, resolveCard } from "@/lib/metrics/delta";
 import { buildLoanSeries } from "@/lib/metrics/loan-series";
-import { CARD_ROW_GRID } from "@/components/mobile/section-card";
+import { STATUS_DOT } from "@/lib/status-colour";
 import { SectionPage } from "@/components/templates/section-page";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
 import { isLoanCompleted } from "@/lib/loan-status";
@@ -118,20 +118,39 @@ function loanDetailItems(loan: Loan, displayCurrency: string, nextDue: string | 
   return items;
 }
 
-function LoanRow({ loan, paidOff, displayCurrency, onOpen, selected }: { loan: Loan; paidOff: boolean; displayCurrency: string; onOpen: () => void; selected?: boolean }) {
+/** Same rose as the Total debt card sparkline (a literal colour: SVG gradient stops cannot resolve var()). */
+const DEBT_CHART_COLOR = "#f43f5e";
+
+type LoanTrend = { values: number[]; labels: string[] };
+
+/** One loan row (the shared ProgressRow): status dot, name + rate/payment, balance chart, paid / principal bar, remaining balance. */
+function LoanRow({ loan, paidOff, displayCurrency, onOpen, selected, trend }: { loan: Loan; paidOff: boolean; displayCurrency: string; onOpen: () => void; selected?: boolean; trend?: LoanTrend | null }) {
   const payment = loan.paymentPerPeriod ?? loan.monthlyPayment;
   const freq = FREQUENCY_LABELS[loan.paymentFrequency];
   const shown = loan.remainingBalanceDisplay;
   const converted = loan.currency !== displayCurrency && shown != null;
+  const paidPct = loan.principal > 0 && loan.remainingBalance != null ? ((loan.principal - loan.remainingBalance) / loan.principal) * 100 : 0;
   return (
-    <ListRow
-      title={loan.name}
-      subtitle={`${loan.annualRate}% · ${formatCurrency(payment, loan.currency)}${freq ? ` ${freq.toLowerCase()}` : ""}`}
-      value={<Amount value={loan.remainingBalance} currency={loan.currency} size="md" tone="neg" />}
-      secondary={converted ? `≈ ${formatCurrency(shown, displayCurrency)}` : paidOff ? "Paid off" : undefined}
-      selected={selected}
-      onPress={onOpen}
-    />
+    <ProgressRowButton onPress={onOpen} selected={selected}>
+      <ProgressRow
+        slot="loan"
+        label={loan.name}
+        dot={STATUS_DOT[paidOff ? "completed" : "active"]}
+        chartColor={DEBT_CHART_COLOR}
+        meta={`${loan.annualRate}% · ${formatCurrency(payment, loan.currency)}${freq ? ` ${freq.toLowerCase()}` : ""}`}
+        value={loan.remainingBalance != null ? formatCurrency(loan.remainingBalance, loan.currency) : "—"}
+        delta={converted ? `≈ ${formatCurrency(shown, displayCurrency)}` : paidOff ? "Paid off" : `of ${formatCurrency(loan.principal, loan.currency)}`}
+        deltaTitle="Remaining balance"
+        trend={trend?.values ?? null}
+        sparkLabels={trend?.labels}
+        cur={displayCurrency}
+        pct={paidPct}
+        barTone={paidOff ? "pos" : "primary"}
+        progressLabel={`${Math.round(Math.min(100, Math.max(0, paidPct)))}%`}
+        progressAria={`Loan ${loan.name} paid`}
+        strike={paidOff}
+      />
+    </ProgressRowButton>
   );
 }
 
@@ -231,6 +250,16 @@ function LoansPageContent() {
     () => buildLoanSeries(loans, monthsBetween(`${win.from}-01`, `${win.to}-01`), displayCurrency),
     [loans, win.from, win.to, displayCurrency],
   );
+  // Per-loan balance history for the row chart (own schedule, display currency). No series = no chart, never fake data.
+  const trendOf = useMemo(() => {
+    const m = new Map<number, LoanTrend | null>();
+    const months = monthsBetween(`${win.from}-01`, `${win.to}-01`);
+    for (const l of loans) {
+      const pts = buildLoanSeries([l], months, displayCurrency)?.balance ?? null;
+      m.set(l.id, pts && pts.length > 1 ? { values: pts.map((p) => p.value), labels: pts.map((p) => p.month) } : null);
+    }
+    return m;
+  }, [loans, win.from, win.to, displayCurrency]);
   const caption = compareCaption(selection);
   const common = { period, isDefault: !explicit, currency: displayCurrency, caption } as const;
   const debtCard = resolveCard({ ...common, points: loanSeries?.balance, mode: "last", pageValue: totalDebt, kind: "money" });
@@ -264,7 +293,7 @@ function LoansPageContent() {
     <SectionPage
       id="loans"
       title="Loans & Debt"
-      subtitle="Track balances, amortization schedules, and payoff strategies"
+      info="Track balances, amortization schedules, and payoff strategies"
       width="report"
             header={{
         filter: { href: tb.filterHref, activeCount: tb.activeCount },
@@ -273,7 +302,7 @@ function LoansPageContent() {
         ),
       }}
     >
-      <PageToolbar
+      <PageToolbar refresh
         range={{ selection, onChange: setSelection }}
         search={{ value: tb.q, onChange: tb.setQ, placeholder: "Search loans" }}
       />
@@ -293,9 +322,9 @@ function LoansPageContent() {
                 />
               )}
           {activeList.length > 0 && (
-            <SectionCard label="Active" icon={Landmark} tone="indigo" padded={false} className={`[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3 ${CARD_ROW_GRID}`}>
+            <SectionCard label="Active" icon={Landmark} tone="indigo" padded={false} className="[&>*]:min-w-0 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
               {activeList.map((loan) => (
-                <LoanRow key={loan.id} loan={loan} paidOff={false} displayCurrency={displayCurrency} onOpen={() => openLoan(loan.id)} selected={detail.selectedId === String(loan.id)} />
+                <LoanRow key={loan.id} loan={loan} paidOff={false} displayCurrency={displayCurrency} onOpen={() => openLoan(loan.id)} selected={detail.selectedId === String(loan.id)} trend={trendOf.get(loan.id)} />
               ))}
             </SectionCard>
           )}
@@ -309,9 +338,9 @@ function LoansPageContent() {
                 title={`Completed (${completedList.length})`}
                 description="Paid-off loans"
               >
-                <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+                <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                   {completedList.map((loan) => (
-                    <LoanRow key={loan.id} loan={loan} paidOff displayCurrency={displayCurrency} onOpen={() => openLoan(loan.id)} selected={detail.selectedId === String(loan.id)} />
+                    <LoanRow key={loan.id} loan={loan} paidOff displayCurrency={displayCurrency} onOpen={() => openLoan(loan.id)} selected={detail.selectedId === String(loan.id)} trend={trendOf.get(loan.id)} />
                   ))}
                 </div>
               </AccordionItem>
@@ -346,12 +375,14 @@ function LoansPageContent() {
                 <TabsContent value="table">
                   <div className="max-h-[60dvh] overflow-y-auto [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                     {amort.schedule.map((r) => (
-                      <ListRow
+                      <TxRow
                         key={r.period}
+                        icon={CalendarClock}
                         title={`#${r.period} · ${r.date}`}
                         subtitle={`Principal ${formatCurrency(r.principal, selectedLoan.currency)} · Interest ${formatCurrency(r.interest, selectedLoan.currency)}`}
-                        value={<Amount value={r.payment} currency={selectedLoan.currency} size="md" tone="none" />}
-                        secondary={`Balance ${formatCurrency(r.balance, selectedLoan.currency)}`}
+                        amount={-r.payment}
+                        currency={selectedLoan.currency}
+                        meta={`Balance ${formatCurrency(r.balance, selectedLoan.currency)}`}
                       />
                     ))}
                   </div>
@@ -360,10 +391,14 @@ function LoansPageContent() {
                   <p className="text-sm text-muted-foreground mb-4">Interest accrued per calendar month — the reportable figure, day-weighted when payments straddle month boundaries.</p>
                   <div className="max-h-[60dvh] overflow-y-auto [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                     {(amort.monthlyAccrual ?? []).map((m) => (
-                      <ListRow
+                      <TxRow
                         key={m.month}
+                        icon={Percent}
+                        tile="neg"
                         title={m.month}
-                        value={<Amount value={m.interest} currency={selectedLoan.currency} size="md" tone="neg" />}
+                        amount={m.interest}
+                        currency={selectedLoan.currency}
+                        amountTone="neg"
                       />
                     ))}
                   </div>
@@ -372,13 +407,15 @@ function LoansPageContent() {
                   <p className="text-sm text-muted-foreground mb-4">What if you added extra monthly payments? Amounts are in {selectedLoan.currency}.</p>
                   <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                     {whatIf.map((w) => (
-                      <ListRow
+                      <TxRow
                         key={w.extraPayment}
+                        icon={TrendingDown}
+                        tile="pos"
                         title={`Extra ${formatCurrency(w.extraPayment, selectedLoan.currency)} / month`}
                         subtitle={`New payoff ${w.newPayoffDate}`}
                         value={<span className="tabular-nums text-sm font-semibold text-pos">{w.monthsSaved} months</span>}
-                        secondary={`Interest saved ${formatCurrency(w.interestSaved, selectedLoan.currency)}`}
-                        secondaryTone="pos"
+                        meta={`Interest saved ${formatCurrency(w.interestSaved, selectedLoan.currency)}`}
+                        metaTone="pos"
                       />
                     ))}
                   </div>

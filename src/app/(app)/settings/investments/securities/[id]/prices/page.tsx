@@ -14,8 +14,7 @@ export default function ManagePricesRoute() {
     <FormPage<unknown, Security, unknown, unknown>
       rootTestId="investments-security-prices"
       id="investments-security-prices"
-      title="Prices"
-      subtitle={(security) => (security ? symbolLabel(security) : undefined)}
+      title={(security) => (security ? `Prices: ${symbolLabel(security)}` : "Prices")}
       fallbackReturn={INVESTMENTS_HOME}
       form="external"
       width="form"

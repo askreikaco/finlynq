@@ -2,7 +2,7 @@
 
 /**
  * "More" screen (/more) at every size, iOS grouped-list style: PageHeader, an Account card, then
- * inset groups (src/components/mobile/inset-group.tsx), one column on phone, a full-width grid of group cards (2 cols regular, 3 wide) on desktop. Every entry is registry-driven (surface "more"); the rail and bottom bar link here.
+ * inset groups (src/components/mobile/inset-group.tsx), one column on phone, a grid of group cards (2 cols at regular) from regular up; at wide it is column 1 of the cascading columns (src/components/mobile/column-nav.tsx): one single-column list, current row marked. Every entry is registry-driven (surface "more"); the rail and bottom bar link here.
  */
 
 import { useEffect, useRef, useState, useMemo, memo } from "react";
@@ -17,6 +17,7 @@ import { getEntriesBySurface, navLabel } from "@/lib/nav-config";
 import { useNavUnread } from "@/components/nav-unread";
 import { PageHeader } from "@/components/mobile";
 import { InsetGroup, InsetRow, ThemePicker, type ThemeChoice } from "@/components/mobile/inset-group";
+import { isCurrentRoute, useColumnCurrent } from "@/components/mobile/column-context";
 
 export type MoreRow = { href: string; label: string; icon: LucideIcon; id: string };
 export type MoreGroup = { id: string; header?: string; rows: MoreRow[] };
@@ -142,6 +143,7 @@ export function buildMoreGroups(f: MoreFlags): MoreGroup[] {
 
 export const MoreMenu = memo(function MoreMenu({ instanceAdminEnabled = false, categoriesMerged = false }: { instanceAdminEnabled?: boolean; categoriesMerged?: boolean }) {
   const busy = useRef(false);
+  const columnCurrent = useColumnCurrent();
   const nav = useNavUnread();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -219,7 +221,7 @@ export const MoreMenu = memo(function MoreMenu({ instanceAdminEnabled = false, c
       <PageHeader title="More" />
 
       {/* Card groups: one column on phone, 2 at regular, 3 at wide; each group is one grid cell (never split). */}
-      <div className="grid grid-cols-1 items-start gap-6 regular:grid-cols-2 wide:grid-cols-3" data-testid="more-grid">
+      <div className="grid grid-cols-1 items-start gap-6 regular:grid-cols-2 wide:grid-cols-1" data-testid="more-grid">
       <section data-testid="more-account" className="space-y-2">
         {/* Current account (taps to /account), other accounts, Add account, Manage accounts. */}
         <InsetGroup header="Account" inset="avatar" data-testid="more-account-card">
@@ -237,6 +239,7 @@ export const MoreMenu = memo(function MoreMenu({ instanceAdminEnabled = false, c
                   label={r.label}
                   icon={r.icon}
                   badge={badges[r.href] ?? 0}
+                  current={isCurrentRoute(columnCurrent, r.href)}
                   data-testid="more-row"
                 />
               ))}

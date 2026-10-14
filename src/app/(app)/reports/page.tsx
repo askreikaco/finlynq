@@ -413,12 +413,12 @@ export default function ReportsPage() {
     <SectionPage
       id="reports"
       title="Reports"
-      subtitle="Analyze income, expenses, cash flow, and trends across any time period"
+      info="Analyze income, expenses, cash flow, and trends across any time period"
       width="report"
       header={{ filter: { href: tb.filterHref, activeCount: tb.activeCount } }}
     >
 
-      <PageToolbar
+      <PageToolbar refresh
         range={{ selection: metricRange.selection, onChange: metricRange.setSelection }}
       />
 

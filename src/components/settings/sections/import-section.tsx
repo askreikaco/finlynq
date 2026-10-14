@@ -102,7 +102,6 @@ export function ImportSettingsCard() {
     <Card id="import-settings" className="scroll-mt-6">
       <CardHeader>
         <CardTitle icon={Sliders} tone="indigo">
-          <Sliders className="h-4 w-4" />
           Import settings
         </CardTitle>
       </CardHeader>
@@ -333,7 +332,6 @@ export function ImportEmailItem() {
             <Card>
               <CardHeader>
                 <CardTitle icon={Mail} tone="cyan">
-                  <Mail className="h-5 w-5 text-info" />
                   Address
                   <InfoTip
                     label="How email import works"

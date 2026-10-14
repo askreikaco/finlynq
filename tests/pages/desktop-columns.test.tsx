@@ -79,7 +79,7 @@ describe("desktop columns: card grids", () => {
     const src = code(`${APP}/categories/_page-content.tsx`);
     expect(src).toMatch(/label="Categories"[\s\S]*shadow-\[var\(--list-divider\)\]/);
     expect(src).toContain("<MetricGrid metrics={metrics} columns={3} />");
-    expect(code(`${APP}/categories/_components/category-row.tsx`)).toContain("@container");
+    expect(code("src/components/mobile/progress-row.tsx")).toContain("@container");
   });
 
   it("categories/[id]: summary and recent span the row, chart spans 2", () => {

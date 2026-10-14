@@ -300,7 +300,7 @@ export default function PortfolioPage() {
     <SectionPage
       id="portfolio"
       title="Investment"
-      subtitle={`${summary.totalHoldings} holdings across ${summary.totalAccounts} accounts`}
+      info={`${summary.totalHoldings} holdings across ${summary.totalAccounts} accounts`}
       width="report"
       header={{
         overflow: [
@@ -358,7 +358,7 @@ export default function PortfolioPage() {
         </div>
       )}
 
-      <PageToolbar
+      <PageToolbar refresh
         range={{ selection: metricRange.selection, onChange: metricRange.setSelection }}
         search={{ value: tb.q, onChange: tb.setQ, placeholder: "Search holdings" }}
       />

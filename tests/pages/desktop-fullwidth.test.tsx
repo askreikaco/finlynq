@@ -58,13 +58,14 @@ describe("desktop: extra width becomes columns", () => {
     expect(src).toMatch(/grid-cols-1[^"]*wide:grid-cols-2/);
   });
 
-  it("/goals and /loans: card lists are a 2-column (3 at wide) grid from regular", () => {
-    expect(read("src/components/mobile/section-card.tsx")).toMatch(/regular:grid-cols-2 wide:grid-cols-3/);
-    expect(code("src/app/(app)/goals/page.tsx")).toContain("CARD_ROW_GRID");
-    expect(code("src/app/(app)/loans/page.tsx")).toContain("CARD_ROW_GRID");
+  it("/goals and /loans: single-column list of shared ProgressRows (same as /categories), no card grid", () => {
+    for (const f of ["src/app/(app)/goals/page.tsx", "src/app/(app)/loans/page.tsx"]) {
+      expect(code(f)).toContain("<ProgressRow");
+      expect(code(f)).not.toContain("CARD_ROW_GRID");
+    }
   });
 
-  it("/more: group cards in 1 column on phone, 2 at regular, 3 at wide", () => {
-    expect(code("src/components/more-menu.tsx")).toMatch(/grid-cols-1[^"]*regular:grid-cols-2[^"]*wide:grid-cols-3/);
+  it("/more: group cards in 1 column on phone, 2 at regular, 1 at wide (column 1 of the cascading columns)", () => {
+    expect(code("src/components/more-menu.tsx")).toMatch(/grid-cols-1[^"]*regular:grid-cols-2[^"]*wide:grid-cols-1/);
   });
 });

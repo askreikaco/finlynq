@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { SectionCard } from "@/components/mobile/section-card";
 import { metricGridClass } from "@/components/mobile/metric-grid";
 import { formatCurrency } from "@/lib/currency";
@@ -8,6 +8,7 @@ import { useDisplayCurrency } from "@/components/currency-provider";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { ArrowDownRight, ArrowUpRight, Calendar, CalendarDays, ChevronDown, ChevronUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import type { WeeklyRecapData } from "./types";
 import { CspSafeBar } from "@/components/csp-safe-bar";
 import { useAnimations } from "@/hooks/use-animations";
@@ -28,24 +29,9 @@ export function WeeklyRecap() {
   // LABELLING them "CAD" unconditionally, so a EUR/USD user read correct numbers
   // under a C$ symbol. The provider holds the same value the server resolved.
   const { displayCurrency } = useDisplayCurrency();
-  const [recap, setRecap] = useState<WeeklyRecapData | null>(null);
+  const recapRes = useCacheFirstJson<WeeklyRecapData>("/api/recap");
+  const recap = recapRes.data && typeof recapRes.data === "object" && recapRes.data.spending ? recapRes.data : null;
   const [expanded, setExpanded] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/recap")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (cancelled) return;
-        if (d && typeof d === "object" && d.spending) setRecap(d as WeeklyRecapData);
-      })
-      .catch(() => {
-        /* widget self-hides on failure */
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const animationsEnabled = useAnimations();
 

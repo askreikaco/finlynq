@@ -23,11 +23,14 @@ export const PERSIST_ALLOWED = new Set([
   "/api/forecast",
   "/api/goals",
   "/api/health-score",
+  "/api/insights", // dashboard insights cards
   "/api/loans",
   "/api/net-worth-history", // metric sparklines (dashboard / reports / account hub)
   "/api/portfolio",
+  "/api/recap", // dashboard weekly recap card + chart
   "/api/recurring",
   "/api/reports",
+  "/api/spotlight", // dashboard action center
   "/api/subscriptions",
   // /api/transactions intentionally absent: the whole ledger is too large to persist on every change.
   "/api/age-of-money",

@@ -5,10 +5,10 @@ import { join } from "node:path";
 const code = (p: string) => readFileSync(join(process.cwd(), p), "utf8");
 
 describe("every value-only metric tile has a sub-line (delta or muted caption)", () => {
-  it("subscriptions: Per month and Per year carry a caption", () => {
+  it("subscriptions: every card has a delta line or the muted no-history caption", () => {
     const src = code("src/app/(app)/subscriptions/page.tsx");
-    expect(src).toMatch(/label: "Per month"[^\n]*sub: /);
-    expect(src).toMatch(/label: "Per year"[^\n]*sub: "Annualised"/);
+    expect(src).toContain("c.delta ?? NO_HISTORY_CAPTION");
+    for (const label of ['"Per month"', '"Per year"', "Due in next", '"Active"']) expect(src).toContain(`label: ${label.startsWith('"') ? label : "`" + label}`);
   });
   it("portfolio summary: Holdings and Accounts captions; the rest fall back to NO_HISTORY_CAPTION", () => {
     const src = code("src/app/(app)/portfolio/_components/mobile-portfolio.tsx");

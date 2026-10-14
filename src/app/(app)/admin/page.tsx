@@ -130,7 +130,7 @@ const USER_SORT_OPTIONS: Array<{ key: UserSortKey; label: string }> = [
 const adminPageProps = {
   id: "admin",
   title: "Admin",
-  subtitle: "Manage users and monitor platform usage",
+  info: "Manage users and monitor platform usage",
   width: "report" as const,
   center: true,
 };

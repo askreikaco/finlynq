@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { formatCurrency } from "@/lib/currency";
 import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
-import { AlertTriangle, Check, History, RefreshCw, X } from "lucide-react";
+import { AlertTriangle, Check, RefreshCw, X } from "lucide-react";
 import { HEADER_DESKTOP_ONLY } from "@/components/mobile";
 import { SectionPage } from "@/components/templates/section-page";
 
@@ -165,13 +165,10 @@ export default function CurrencyAuditPage() {
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4 text-warning" />
-                    <CardTitle icon={History} tone="muted">
-                      Transaction #{row.transactionId}
-                      {row.txDate ? <span className="text-xs text-muted-foreground font-normal ml-2">{row.txDate}</span> : null}
-                    </CardTitle>
-                  </div>
+                  <CardTitle icon={AlertTriangle} tone="amber">
+                    Transaction #{row.transactionId}
+                    {row.txDate ? <span className="text-xs text-muted-foreground font-normal ml-2">{row.txDate}</span> : null}
+                  </CardTitle>
                   <CardDescription className="text-xs">
                     Recorded as <strong className="text-foreground">{formatCurrency(row.recordedAmount, row.recordedCurrency)}</strong>
                     {" "}in an account whose currency is <strong className="text-foreground">{row.accountCurrency}</strong>.

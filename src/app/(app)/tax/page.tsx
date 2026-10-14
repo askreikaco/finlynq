@@ -71,7 +71,7 @@ function TaxPageContent() {
     <SectionPage
       id="tax"
       title="Tax"
-      subtitle="Maximize your tax-advantaged accounts and minimize your tax bill"
+      info="Maximize your tax-advantaged accounts and minimize your tax bill"
       width="report"
       center
     >

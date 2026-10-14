@@ -60,7 +60,8 @@ describe("ReportPage", () => {
     );
     expect(screen.getByTestId("reports-root")).toBeTruthy();
     expect(screen.getByRole("heading", { level: 1, name: "Reports" })).toBeTruthy();
-    expect(screen.getByText("Income and expenses")).toBeTruthy();
+    expect(screen.queryByText("Income and expenses")).toBeNull();
+    expect(screen.getByRole("button", { name: "About Reports" })).toBeTruthy();
   });
 
   it("uses the report width token on the root", () => {

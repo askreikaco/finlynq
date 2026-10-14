@@ -176,7 +176,8 @@ export function InsetRow({
     );
   }
 
-  const cls = cn(ROW_BASE, DIVIDER, className);
+  // current: the selected row of a column list (column-nav.tsx): tinted background, accent icon.
+  const cls = cn(ROW_BASE, DIVIDER, current && "bg-primary/10 hover:bg-primary/10 [&>svg:first-child]:text-primary", className);
   const variant = destructive ? "destructive" : accent ? "accent" : "default";
 
   if (href) {

@@ -70,12 +70,13 @@ afterEach(() => {
 });
 
 describe("Realized gains page (report page, not a dialog)", () => {
-  it("renders a PageHeader page with a back link to /portfolio and the period subtitle", async () => {
+  it("renders a PageHeader page with a back link to /portfolio and the period in the InfoTip (no subtitle line)", async () => {
     render(<RealizedGainsPage />);
     await screen.findByRole("button", { name: "AAPL, closed 2026-03-10" });
     const title = document.querySelector("[data-slot=page-header-title]") as HTMLElement;
     expect(title.textContent).toBe("Realized gains");
-    expect(document.querySelector("[data-slot=page-header-subtitle]")!.textContent).toContain("All terms");
+    expect(document.querySelector("[data-slot=page-header-subtitle]")).toBeNull();
+    expect(document.querySelector("[data-slot=page-header] [data-slot=info-tip]")).not.toBeNull();
     const back = document.querySelector("[data-slot=back-button]") as HTMLAnchorElement;
     expect(back.getAttribute("href")).toBe("/portfolio");
   });

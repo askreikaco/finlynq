@@ -4,6 +4,7 @@ import { Tabs as TabsPrimitive } from "@base-ui/react/tabs"
 import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
+import { CONTROL_SURFACE } from "@/components/ui/control-surface"
 
 function Tabs({
   className,
@@ -29,6 +30,8 @@ const tabsListVariants = cva(
     variants: {
       variant: {
         default: "bg-muted",
+        // Same 44px height as the other toolbar controls (range dropdown, month switcher, search, round buttons).
+        segmented: `rounded-full group-data-horizontal/tabs:h-11 dense:pointer-fine:group-data-horizontal/tabs:h-11 ${CONTROL_SURFACE}`,
         line: "gap-1 bg-transparent",
       },
     },

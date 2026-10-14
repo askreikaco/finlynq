@@ -62,6 +62,9 @@ export interface ListPageProps<T, D = T[], X = unknown> {
   /** Root testid prefix: the root renders as `data-testid="<id>-root"`. */
   id: string;
   title: ReactNode;
+  /** Help text, shown only in the (i) InfoTip after the title. */
+  info?: ReactNode;
+  /** @deprecated Alias of `info`. */
   subtitle?: ReactNode;
   /** Primary Add action in the header (phone: PHONE_PRIMARY_CLASS). The page also feeds the FAB from its route entry. */
   add?: { label: string; href: string };
@@ -151,6 +154,7 @@ function noLoad<T, X>(): LoadState<T[], X> {
 export function ListPage<T, D = T[], X = unknown>({
   id,
   title,
+  info,
   subtitle,
   add,
   summary,
@@ -284,7 +288,7 @@ export function ListPage<T, D = T[], X = unknown>({
         <PageHeader
           className={header?.className}
           title={title}
-          subtitle={subtitle}
+          info={info ?? subtitle}
           actions={header?.actions !== undefined ? header.actions : addNode}
           overflow={header?.overflow}
           filter={header?.filter}
