@@ -143,8 +143,8 @@ describe("Transactions: row tap opens the detail sheet", () => {
     expect(H.push).not.toHaveBeenCalled();
   });
 
-  it("regular: a row tap opens the row in the pane (?sel), not the sheet", () => {
-    size.current = "regular";
+  it("wide: a row tap opens the row in the pane (?sel), not the sheet", () => {
+    size.current = "wide";
     render(<TransactionsWorkspace />);
     fireEvent.click(listRows()[0]);
     expect(screen.queryByRole("dialog")).toBeNull();
@@ -201,24 +201,22 @@ describe("Transactions: paging and split view", () => {
     expect(loadNextPage).toHaveBeenCalledTimes(1);
   });
 
-  it("split view is the default from regular up (pane beside the list, nothing selected = prompt) and absent on phones", () => {
-    size.current = "compact";
-    const { unmount } = render(<TransactionsWorkspace />);
-    expect(screen.queryByTestId("list-detail-pane")).toBeNull();
-    expect(screen.queryByTestId("tx-split-toggle")).toBeNull();
-    unmount();
-    cleanup();
-    for (const s of ["regular", "wide"] as const) {
+  it("split view is the default at wide (pane beside the list, nothing selected = prompt) and absent below it", () => {
+    for (const s of ["compact", "regular"] as const) {
       size.current = s;
       render(<TransactionsWorkspace />);
-      expect(screen.getByTestId("list-detail-pane").className).toContain("sticky");
-      expect(screen.getByTestId("list-detail-empty").textContent).toContain("Select an item to edit, or create a new one");
+      expect(screen.queryByTestId("list-detail-pane")).toBeNull();
       expect(screen.queryByTestId("tx-split-toggle")).toBeNull();
       cleanup();
     }
+    size.current = "wide";
+    render(<TransactionsWorkspace />);
+    expect(screen.getByTestId("list-detail-pane").className).toContain("sticky");
+    expect(screen.getByTestId("list-detail-empty").textContent).toContain("Select an item to edit, or create a new one");
+    expect(screen.queryByTestId("tx-split-toggle")).toBeNull();
   });
 
-  it("a row tap selects it into the pane (?sel) instead of opening the sheet when split, and opens the sheet on phones", () => {
+  it("a row tap selects it into the pane (?sel) instead of opening the sheet when split, and opens the sheet below wide", () => {
     size.current = "wide";
     render(<TransactionsWorkspace />);
     fireEvent.click(screen.getAllByText("pp")[0]);

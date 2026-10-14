@@ -76,8 +76,8 @@ describe("pane geometry", () => {
 });
 
 describe("ListDetailLayout", () => {
-  it("regular+: renders the grid, the list and the pane with the geometry classes", () => {
-    H.size = "regular";
+  it("wide: renders the grid, the list and the pane with the geometry classes", () => {
+    H.size = "wide";
     renderLayout();
     const pane = screen.getByTestId("list-detail-pane");
     expect(pane.className).toContain("sticky");
@@ -126,25 +126,33 @@ describe("ListDetailLayout", () => {
     expect(screen.getByTestId("the-form")).not.toBe(before);
   });
 
-  it("phones (compact): no pane, only the list, ?sel ignored", () => {
-    H.size = "compact";
-    H.search = "sel=7";
-    renderLayout();
+  it("below wide (phones, portrait tablets): no pane, only the list, ?sel ignored", () => {
+    for (const size of ["compact", "regular"] as const) {
+      cleanup();
+      H.size = size;
+      H.search = "sel=7";
+      renderLayout();
+      expect(screen.queryByTestId("list-detail-pane")).toBeNull();
+      expect(screen.queryByTestId("the-form")).toBeNull();
+      expect(screen.getByTestId("the-list")).toBeTruthy();
+    }
+  });
+
+  it("enabled=false renders the list alone even at wide", () => {
+    render(<ListDetailLayout enabled={false} newLabel="x" list={<div data-testid="the-list" />} pane={() => <div />} />);
     expect(screen.queryByTestId("list-detail-pane")).toBeNull();
-    expect(screen.queryByTestId("the-form")).toBeNull();
-    expect(screen.getByTestId("the-list")).toBeTruthy();
   });
 });
 
 describe("ListDetailNewButton", () => {
-  it("regular+: sets ?sel=new instead of navigating", () => {
+  it("wide: sets ?sel=new instead of navigating", () => {
     render(<ListDetailNewButton href="/goals/new" label="Add Goal" />);
     const ev = fireEvent.click(screen.getByRole("link", { name: "Add Goal" }));
     expect(ev).toBe(false); // default prevented
     expect(H.push).toHaveBeenCalledWith("/goals?sel=new", { scroll: false });
   });
-  it("phones: a plain link to the create route", () => {
-    H.size = "compact";
+  it("below wide: a plain link to the create route", () => {
+    H.size = "regular";
     render(<ListDetailNewButton href="/goals/new" label="Add Goal" />);
     const a = screen.getByRole("link", { name: "Add Goal" });
     expect(a.getAttribute("href")).toBe("/goals/new");

@@ -108,7 +108,7 @@ describe("Loans: one layout at every size", () => {
     const { container } = render(<LoansPage />);
     await screen.findByRole("button", { name: /Car loan/ });
     expectOneLayout(container, "Loans & Debt");
-    // A link to /loans/new on phones; from regular up the same control sets ?sel=new (split view).
+    // A link to /loans/new on phones; at wide the same control sets ?sel=new (split view).
     expect(screen.getByRole("link", { name: /Add Loan/ })).toBeTruthy();
   });
 

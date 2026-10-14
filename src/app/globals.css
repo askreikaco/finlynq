@@ -581,11 +581,8 @@ html {
   .page-header-bleed { --header-pad: 2rem; }
 }
 
-/* Split view (ListDetailLayout): the list column is 2/3 of the page, so a row/card grid inside it drops one step:
-   1 column at regular, at most 2 at wide. Grids opt in with the card-row-grid class or the data-split-grid attribute. */
-@media (width >= 40rem) {
-  [data-slot="list-detail-list"] :is(.card-row-grid, [data-split-grid]) { grid-template-columns: repeat(1, minmax(0, 1fr)); }
-}
+/* Split view (ListDetailLayout, wide only): the list column is 2/3 of the page, so a row/card grid inside it drops from
+   3 columns to 2. Grids opt in with the card-row-grid class or the data-split-grid attribute. */
 @media (width >= 64rem) {
   [data-slot="list-detail-list"] :is(.card-row-grid, [data-split-grid]) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

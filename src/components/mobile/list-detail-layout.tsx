@@ -3,10 +3,10 @@
 /**
  * ListDetailLayout: the split view of every list page that has an edit/create form.
  *
- * regular and wider (>= 640px): a two-column grid, list 2fr | pane 1fr. The pane is sticky below the top bar (offset =
- * header height + safe area + 1rem) and scrolls inside itself. The pane renders the SAME form component the
+ * wide (>= 1024px, desktop and tablet landscape): a two-column grid, list 2fr | pane 1fr. The pane is sticky below the
+ * top bar (offset = header height + safe area + 1rem) and scrolls inside itself. The pane renders the SAME form component the
  * /x/new and /x/[id]/edit routes render (`embedded`), selected by `?sel=<id>` / `?sel=new` in the URL.
- * Phones (compact): no pane, `list` only; a row tap keeps opening the sheet / edit route as before and ?sel is ignored.
+ * Below wide (phones, portrait tablets): no pane, `list` only; a row tap keeps opening the sheet / edit route as before and ?sel is ignored.
  */
 import * as React from "react";
 import Link from "next/link";
@@ -19,7 +19,7 @@ import { PHONE_PRIMARY_CLASS } from "./page-header";
 import { PANE_CLASS, SPLIT_GRID_CLASS, parseSel, withSel, type ListSelection } from "@/lib/list-detail/selection";
 
 export interface ListDetailApi {
-  /** True from the regular size class up: the pane exists and rows select instead of navigating. */
+  /** True from the wide size class up (>= 1024px: desktop, tablet landscape): the pane exists and rows select instead of navigating. */
   split: boolean;
   sel: ListSelection;
   /** The selected item id, or null (none / new). */
@@ -38,7 +38,8 @@ export function useListDetail(): ListDetailApi {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const split = sizeClass !== "compact";
+  // Wide (>= 1024px), not regular (>= 640px): a 1/3 column at 640-1023px is 190-290px, too narrow for a form.
+  const split = sizeClass === "wide";
   const sel = React.useMemo<ListSelection>(
     () => (split ? parseSel(searchParams?.get("sel")) : { kind: "none" }),
     [split, searchParams],
@@ -141,7 +142,7 @@ export interface ListDetailPaneApi extends ListDetailApi {
 export interface ListDetailLayoutProps {
   /** The list column (metric cards stay OUTSIDE, above the layout). */
   list: React.ReactNode;
-  /** The pane body for a selection (rendered at regular+ only). Keyed by the selection so a new item remounts the form. */
+  /** The pane body for a selection (rendered at wide only). Keyed by the selection so a new item remounts the form. */
   pane: (api: ListDetailPaneApi) => React.ReactNode;
   /** Label of the New button in the empty pane. */
   newLabel: string;

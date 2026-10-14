@@ -108,9 +108,9 @@ describe("budgets page with the offline queue", () => {
     vi.unstubAllGlobals();
     H.ACTIVE = false;
   });
-  it("regular+: the pane's Delete (header) opens the SAME confirm and queues the delete with the server row baseline", async () => {
+  it("wide: the pane's Delete (header) opens the SAME confirm and queues the delete with the server row baseline", async () => {
     H.ACTIVE = true;
-    H.SIZE.current = "regular";
+    H.SIZE.current = "wide";
     H.SEARCH.current = "month=2026-10&sel=1";
     H.PEND = { creates: [], edits: { 1: { opId: "e9", status: "pending", failReason: null, fields: { amount: 450 }, ref: { categoryId: 10, month: "2026-10" } } }, deletes: {} };
     vi.stubGlobal("fetch", vi.fn(async () => { throw new TypeError("network"); }));
