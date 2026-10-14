@@ -45,7 +45,7 @@ describe("AccountShell (FINLYNQ_NAV_V2 retired)", () => {
       );
 
       expect(screen.getByText("Account")).toBeTruthy();
-      expect(screen.getByText("Profile, login, API key, privacy, and backup / restore")).toBeTruthy();
+      expect(screen.queryByText("Profile, login, API key, privacy, and backup / restore")).toBeNull();
       expect(screen.getByText("Hub content")).toBeTruthy();
     });
 
@@ -74,7 +74,7 @@ describe("AccountShell (FINLYNQ_NAV_V2 retired)", () => {
       );
 
       expect(screen.getByText("Account")).toBeTruthy();
-      expect(screen.getByText("Profile, login, API key, privacy, and backup / restore")).toBeTruthy();
+      expect(screen.queryByText("Profile, login, API key, privacy, and backup / restore")).toBeNull();
 
       const tabs = screen.getAllByRole("tab");
       expect(tabs.length).toBe(2);

@@ -557,7 +557,7 @@ function ApiDocsPageContent() {
       <SectionPage
         id="api-docs"
         title="API Docs"
-        subtitle="PF exposes both a REST API (Next.js routes) and an MCP server for AI assistant integration. All data is local — no external services required."
+        info="REST API and MCP server for AI assistants. All data is local."
         width="report"
         center
         padBottom="max"

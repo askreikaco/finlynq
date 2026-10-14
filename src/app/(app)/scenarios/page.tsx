@@ -449,7 +449,7 @@ function ScenariosPageContent() {
     <SectionPage
       id="scenarios"
       title="Scenarios"
-      subtitle="Model financial decisions and see their long-term impact"
+      info="Model financial decisions and see their long-term impact"
       width="report"
       center
     >

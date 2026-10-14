@@ -55,6 +55,9 @@ export interface ReportPageProps<TRaw, T> {
   /** Page id. The root element gets `data-testid="<id>-root"`. */
   id: string;
   title: React.ReactNode;
+  /** Help text, shown only in the (i) InfoTip after the title. */
+  info?: React.ReactNode;
+  /** @deprecated Alias of `info` (rendered in the InfoTip, never as a visible line). */
   subtitle?: React.ReactNode;
   /** Period or account filters, rendered under the header. */
   filters?: React.ReactNode;
@@ -105,6 +108,7 @@ const noLoad = <R,>(): LoadState<R, unknown> => ({ status: "loading", retry: () 
 export function ReportPage<TRaw, T>({
   id,
   title,
+  info,
   subtitle,
   filters,
   load,
@@ -179,7 +183,7 @@ export function ReportPage<TRaw, T>({
     >
       <PageHeader
         title={title}
-        subtitle={subtitle}
+        info={info ?? subtitle}
         backHref={header?.backHref}
         backLabel={header?.backLabel}
         overflow={header?.overflow}

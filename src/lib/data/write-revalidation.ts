@@ -11,6 +11,7 @@
  */
 import { mutate } from "swr";
 import { noteWrite } from "@/lib/swr/http-freshness";
+import { revalidateMountedKeys } from "./fetch-activity";
 
 const NO_REVALIDATE: RegExp[] = [
   /^\/api\/auth\//,
@@ -42,6 +43,9 @@ export function scheduleRevalidation(delayMs = 60): void {
   if (timer) clearTimeout(timer);
   timer = setTimeout(() => {
     timer = null;
+    // The app's SWR cache is a custom provider (DataProvider): the global `mutate` only reaches the default cache, so
+    // revalidate through the mounted hooks' own (provider-bound) mutate. The global call stays for default-cache users.
+    void revalidateMountedKeys();
     void mutate(isApiKey);
   }, delayMs);
 }

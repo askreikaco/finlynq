@@ -34,13 +34,6 @@ const FILES = [
   ].map((f) => join(ROOT, f)),
 ];
 
-/** FormPage subtitles that name the record being edited (data, not help text). */
-const SUBTITLE_ALLOW = [
-  "investments/securities/[id]/link/page.tsx",
-  "investments/securities/[id]/prices/page.tsx",
-  "investments/accounts/[id]/link/page.tsx",
-];
-
 const rel = (f: string) => relative(ROOT, f);
 
 describe("settings pages carry no visible description text", () => {
@@ -77,10 +70,9 @@ describe("settings pages carry no visible description text", () => {
     expect(bad).toEqual([]);
   });
 
-  it("sets no page-header subtitle", () => {
+  it("sets no page-header subtitle (page help goes through `info` -> InfoTip; record identity goes in the title)", () => {
     const bad: string[] = [];
     for (const f of FILES) {
-      if (SUBTITLE_ALLOW.some((a) => f.endsWith(a))) continue;
       const src = readFileSync(f, "utf8");
       if (/<(PageHeader|SectionPage|FormPage)\b[^>]*\bsubtitle=/.test(src)) bad.push(`${rel(f)}: subtitle=`);
       if (/\bsubtitle:\s*["`]/.test(src)) bad.push(`${rel(f)}: subtitle:`);

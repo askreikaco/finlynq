@@ -26,6 +26,9 @@ export interface SectionPageProps {
   /** Stable page id; the root carries `data-testid="<id>-root"`. */
   id: string;
   title: React.ReactNode;
+  /** Help text, shown only in the (i) InfoTip after the title. */
+  info?: React.ReactNode;
+  /** @deprecated Alias of `info` (rendered in the InfoTip, never as a visible line). */
   subtitle?: React.ReactNode;
   /**
    * Route the back control goes to (PageHeader backHref). Omitted = no explicit backHref, so PageHeader
@@ -88,6 +91,7 @@ const STACK_CLASS: Record<SectionPageStack, string> = {
 export function SectionPage({
   id,
   title,
+  info,
   subtitle,
   backFallback,
   backLabel,
@@ -118,7 +122,7 @@ export function SectionPage({
     >
       <PageHeader
         title={title}
-        subtitle={subtitle}
+        info={info ?? subtitle}
         backHref={backFallback}
         backLabel={backLabel}
         actions={header?.actions}

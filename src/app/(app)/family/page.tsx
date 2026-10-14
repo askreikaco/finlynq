@@ -28,7 +28,7 @@ export default function FamilyPage() {
     <SectionPage
       id="family"
       title={FAMILY_STRINGS.page_title}
-      subtitle={FAMILY_STRINGS.page_description}
+      info={FAMILY_STRINGS.page_description}
       width="none"
       padBottom="none"
       minW0={false}

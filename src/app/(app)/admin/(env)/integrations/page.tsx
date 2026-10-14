@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, CheckCircle2, Mail, Plug, Send, Settings } from "lucide-react";
+import { AlertCircle, CheckCircle2, Mail, Send, Settings } from "lucide-react";
 import { getPasskeyStepUp } from "@/lib/client/passkey-stepup";
 import { ListRow, SectionCard } from "@/components/mobile";
 
@@ -245,7 +245,7 @@ export default function AdminIntegrationsPage() {
 
   if (loading) {
     return (
-      <SectionPage id="admin-integrations" title={<><Plug className="w-8 h-8" />Integrations</>} width="report" center>
+      <SectionPage id="admin-integrations" title="Integrations" width="report" center>
         <SectionCard>
           <p className="text-sm">Loading...</p>
         </SectionCard>
@@ -266,7 +266,7 @@ export default function AdminIntegrationsPage() {
   );
 
   return (
-    <SectionPage id="admin-integrations" title={<><Plug className="w-8 h-8" />Integrations</>} width="report" center>
+    <SectionPage id="admin-integrations" title="Integrations" width="report" center>
       {error && (
         <SectionCard>
           <div className="flex items-start gap-3 text-destructive">

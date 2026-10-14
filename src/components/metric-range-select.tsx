@@ -4,6 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { localDateISO } from "@/lib/utils/date";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { CONTROL_SURFACE } from "@/components/ui/control-surface";
 import { RANGE_KEYS, RANGE_LABELS, UNIT_MONTHS, type RangeKey, type RangeSelection } from "@/lib/metrics/period";
 
 /**
@@ -38,7 +39,7 @@ export function MetricRangeSelect({
   return (
     <div data-slot="metric-range" className={cn("flex flex-wrap items-center gap-2", className)}>
       <Select items={RANGE_LABELS} value={value.range} onValueChange={(v) => pick((v as RangeKey) ?? "this_month")}>
-        <SelectTrigger aria-label="Time range" className={cn(h, "w-auto min-w-36 text-xs")}>
+        <SelectTrigger aria-label="Time range" className={cn(h, "w-auto min-w-36 rounded-full pl-4 text-xs", CONTROL_SURFACE)}>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

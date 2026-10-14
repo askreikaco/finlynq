@@ -89,13 +89,15 @@ describe("ReportPage variants", () => {
       expect(screen.getByRole("heading", { level: 1 }).querySelector('[data-testid="icon-title"]')).toBeTruthy();
     });
 
-    it("renders a ReactNode subtitle", () => {
+    it("renders a ReactNode subtitle inside the InfoTip only", async () => {
       render(
         <ReportPage id="s" title="S" subtitle={<em>as of today</em>} load={{ key: "/k" }}>
           {() => <p>body</p>}
         </ReportPage>,
       );
-      expect(screen.getByText("as of today").tagName).toBe("EM");
+      expect(screen.queryByText("as of today")).toBeNull();
+      fireEvent.click(screen.getByRole("button", { name: "About S" }));
+      expect((await screen.findByText("as of today")).tagName).toBe("EM");
     });
   });
 

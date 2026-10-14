@@ -9,12 +9,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from "recharts";
-import { CalendarClock, CheckCircle2, Landmark, ListChecks, Plus, Table2 } from "lucide-react";
+import { CalendarClock, CheckCircle2, Landmark, ListChecks, Percent, Plus, Table2, TrendingDown } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { ErrorState } from "@/components/error-state";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CspSafeBar } from "@/components/csp-safe-bar";
-import { Amount, MetricGrid, DetailSheet, ListRow, SectionCard, ListDetailLayout, ListDetailNewButton, useListDetail, type MetricItem, type DetailItem } from "@/components/mobile";
+import { MetricGrid, DetailSheet, TxRow, SectionCard, ListDetailLayout, ListDetailNewButton, useListDetail, type MetricItem, type DetailItem } from "@/components/mobile";
 import { LoanFormPanel } from "./_components/loan-form-panel";
 import { PageToolbar } from "@/components/page-toolbar";
 import { useListToolbar } from "@/lib/toolbar/use-list-toolbar";
@@ -124,11 +124,15 @@ function LoanRow({ loan, paidOff, displayCurrency, onOpen, selected }: { loan: L
   const shown = loan.remainingBalanceDisplay;
   const converted = loan.currency !== displayCurrency && shown != null;
   return (
-    <ListRow
+    <TxRow
       title={loan.name}
       subtitle={`${loan.annualRate}% · ${formatCurrency(payment, loan.currency)}${freq ? ` ${freq.toLowerCase()}` : ""}`}
-      value={<Amount value={loan.remainingBalance} currency={loan.currency} size="md" tone="neg" />}
-      secondary={converted ? `≈ ${formatCurrency(shown, displayCurrency)}` : paidOff ? "Paid off" : undefined}
+      icon={Landmark}
+      tile={paidOff ? "pos" : "neg"}
+      amount={loan.remainingBalance}
+      currency={loan.currency}
+      amountTone="neg"
+      meta={converted ? `≈ ${formatCurrency(shown, displayCurrency)}` : paidOff ? "Paid off" : undefined}
       selected={selected}
       onPress={onOpen}
     />
@@ -264,7 +268,7 @@ function LoansPageContent() {
     <SectionPage
       id="loans"
       title="Loans & Debt"
-      subtitle="Track balances, amortization schedules, and payoff strategies"
+      info="Track balances, amortization schedules, and payoff strategies"
       width="report"
             header={{
         filter: { href: tb.filterHref, activeCount: tb.activeCount },
@@ -346,12 +350,14 @@ function LoansPageContent() {
                 <TabsContent value="table">
                   <div className="max-h-[60dvh] overflow-y-auto [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                     {amort.schedule.map((r) => (
-                      <ListRow
+                      <TxRow
                         key={r.period}
+                        icon={CalendarClock}
                         title={`#${r.period} · ${r.date}`}
                         subtitle={`Principal ${formatCurrency(r.principal, selectedLoan.currency)} · Interest ${formatCurrency(r.interest, selectedLoan.currency)}`}
-                        value={<Amount value={r.payment} currency={selectedLoan.currency} size="md" tone="none" />}
-                        secondary={`Balance ${formatCurrency(r.balance, selectedLoan.currency)}`}
+                        amount={-r.payment}
+                        currency={selectedLoan.currency}
+                        meta={`Balance ${formatCurrency(r.balance, selectedLoan.currency)}`}
                       />
                     ))}
                   </div>
@@ -360,10 +366,14 @@ function LoansPageContent() {
                   <p className="text-sm text-muted-foreground mb-4">Interest accrued per calendar month — the reportable figure, day-weighted when payments straddle month boundaries.</p>
                   <div className="max-h-[60dvh] overflow-y-auto [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                     {(amort.monthlyAccrual ?? []).map((m) => (
-                      <ListRow
+                      <TxRow
                         key={m.month}
+                        icon={Percent}
+                        tile="neg"
                         title={m.month}
-                        value={<Amount value={m.interest} currency={selectedLoan.currency} size="md" tone="neg" />}
+                        amount={m.interest}
+                        currency={selectedLoan.currency}
+                        amountTone="neg"
                       />
                     ))}
                   </div>
@@ -372,13 +382,15 @@ function LoansPageContent() {
                   <p className="text-sm text-muted-foreground mb-4">What if you added extra monthly payments? Amounts are in {selectedLoan.currency}.</p>
                   <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                     {whatIf.map((w) => (
-                      <ListRow
+                      <TxRow
                         key={w.extraPayment}
+                        icon={TrendingDown}
+                        tile="pos"
                         title={`Extra ${formatCurrency(w.extraPayment, selectedLoan.currency)} / month`}
                         subtitle={`New payoff ${w.newPayoffDate}`}
                         value={<span className="tabular-nums text-sm font-semibold text-pos">{w.monthsSaved} months</span>}
-                        secondary={`Interest saved ${formatCurrency(w.interestSaved, selectedLoan.currency)}`}
-                        secondaryTone="pos"
+                        meta={`Interest saved ${formatCurrency(w.interestSaved, selectedLoan.currency)}`}
+                        metaTone="pos"
                       />
                     ))}
                   </div>

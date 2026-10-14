@@ -66,10 +66,8 @@ describe("Accounts header on mobile", () => {
     expect(cls(h1)).toEqual(expect.arrayContaining(["text-base", "font-semibold"]));
     expect(cls(h1)).not.toContain("md:text-2xl");
     expect(cls(h1)).not.toContain("text-3xl/9");
-    // Subtitle is shown at every size: a truncated text-xs caption.
-    const sub = screen.getByText("Overview of your assets, liabilities, and net worth");
-    expect(cls(sub)).toEqual(expect.arrayContaining(["block", "text-xs", "truncate"]));
-    expect(cls(sub)).not.toContain("hidden");
-    expect(cls(sub)).not.toContain("header-secondary");
+    // No subtitle line: the help text is only in the (i) InfoTip.
+    expect(screen.queryByText("Overview of your assets, liabilities, and net worth")).toBeNull();
+    expect(screen.getByRole("button", { name: "About Accounts" })).toBeTruthy();
   });
 });

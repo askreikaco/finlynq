@@ -6,17 +6,15 @@
  * Mounted in the PageToolbar trailing slot (`<PageToolbar refresh />`).
  */
 import { RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { RoundIconButton } from "@/components/ui/round-icon-button";
 import { useRefreshAll } from "@/lib/data/fetch-activity";
 import { cn } from "@/lib/utils";
 
 export function RefreshButton({ className }: { className?: string }) {
   const { refresh, fetching } = useRefreshAll();
   return (
-    <Button
+    <RoundIconButton
       type="button"
-      variant="ghost"
-      size="icon"
       aria-label="Refresh"
       title="Refresh"
       data-slot="refresh-button"
@@ -28,6 +26,6 @@ export function RefreshButton({ className }: { className?: string }) {
       }}
     >
       <RefreshCw className={cn("h-4 w-4", fetching && "animate-spin")} aria-hidden />
-    </Button>
+    </RoundIconButton>
   );
 }

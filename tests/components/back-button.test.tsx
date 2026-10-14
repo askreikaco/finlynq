@@ -148,7 +148,8 @@ describe("PageHeader with backHref", () => {
     const h1 = screen.getByRole("heading", { level: 1 });
     const lead = screen.getByTestId("lead");
     const link = screen.getByRole("link");
-    const subtitle = screen.getByText("Subtitle text");
+    expect(screen.queryByText("Subtitle text")).toBeNull();
+    const subtitle = screen.getByRole("button", { name: "About Test Title" });
 
     expect(h1).toBeTruthy();
     expect(lead).toBeTruthy();

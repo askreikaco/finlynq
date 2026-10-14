@@ -38,12 +38,10 @@ describe("PageHeader: one title for every size", () => {
     expect(c).toContain("text-base");
   });
 
-  it("shows the subtitle at every size: a truncated text-xs caption", () => {
+  it("shows no subtitle line at any size (the text is only in the InfoTip)", () => {
     render(<PageHeader title="Budgets" subtitle="Set limits" subtitleClassName="text-lg italic" />);
-    const sub = screen.getByText("Set limits");
-    expect(cls(sub)).toEqual(expect.arrayContaining(["block", "text-xs", "text-muted-foreground", "truncate"]));
-    expect(cls(sub)).not.toContain("hidden");
-    expect(cls(sub)).not.toContain("italic");
+    expect(screen.queryByText("Set limits")).toBeNull();
+    expect(screen.getByRole("button", { name: "About Budgets" })).toBeTruthy();
   });
 });
 

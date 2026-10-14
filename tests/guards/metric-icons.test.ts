@@ -33,7 +33,10 @@ describe("no-history cards stay captioned, never invented", () => {
     expect(read("src/lib/metrics/delta.ts")).toContain('NO_HISTORY_CAPTION = "No earlier history to compare"');
   });
 
-  it("the dashboard range control is one slim right-aligned row", () => {
-    expect(read("src/app/(app)/dashboard/page.tsx")).toMatch(/data-slot="dashboard-range"/);
+  it("the dashboard uses the shared PageToolbar with no dashboard-specific range / month markup", () => {
+    const src = read("src/app/(app)/dashboard/page.tsx");
+    expect(src).toMatch(/<PageToolbar (refresh )?range=/);
+    expect(src).not.toMatch(/data-slot="dashboard-range"/);
+    expect(src).not.toMatch(/MetricRangeSelect|MonthSwitcher/);
   });
 });

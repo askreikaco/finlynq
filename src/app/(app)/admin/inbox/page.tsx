@@ -248,7 +248,7 @@ export default function AdminInboxPage() {
     <SectionPage
       id="admin-inbox"
       title="Admin Inbox"
-      subtitle={<>Non-import email routed to this app. Mailbox is kept indefinitely; trash auto-deletes after 24 hours.</>}
+      info="Non-import email routed to this app. Trash auto-deletes after 24 hours."
       width="report"
       center
       header={{

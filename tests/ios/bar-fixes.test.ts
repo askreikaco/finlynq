@@ -18,7 +18,6 @@ import {
   PHONE_CAPSULE,
   HEADER_MAX_PHONE_ACTIONS,
   PHONE_BAR_TITLE,
-  PHONE_BAR_SUBTITLE,
   PHONE_PRIMARY_CLASS,
   HEADER_DESKTOP_ONLY,
 } from "@/components/mobile/page-header";
@@ -167,13 +166,11 @@ describe("2. title block insets equal the measured left slot and right capsule",
     expect((HEADER_MAX_PHONE_ACTIONS + 1) * 44).toBeLessThanOrEqual(11 * 16);
   });
 
-  it("the title and subtitle truncate with ellipsis (one line each)", () => {
+  it("the title truncates with ellipsis (one line)", () => {
     expect(PHONE_BAR_TITLE).toContain("truncate");
-    expect(PHONE_BAR_SUBTITLE).toContain("truncate");
-    expect(PHONE_BAR_SUBTITLE).toContain("text-xs");
   });
 
-  it("render: title block in the middle column, capsule in the third, subtitle visible", () => {
+  it("render: title block in the middle column, capsule in the third, help text only in the InfoTip", () => {
     const { container } = render(
       h(PageHeader, {
         title: "Accounts",
@@ -187,7 +184,8 @@ describe("2. title block insets equal the measured left slot and right capsule",
     const capsule = container.querySelector('[data-slot="header-capsule"]');
     expect(cls(capsule)).toEqual(expect.arrayContaining(["glass-capsule", "max-w-[11rem]"]));
     expect(cls(capsule?.parentElement ?? null)).toContain("col-start-3");
-    expect(cls(screen.getByText("Every account you track, in one list"))).toContain("truncate");
+    expect(screen.queryByText("Every account you track, in one list")).toBeNull();
+    expect(container.querySelector('[data-slot="info-tip"]')).not.toBeNull();
   });
 
   it("the bar keeps the sticky glass material and the fixed min height (one row, 60px)", () => {

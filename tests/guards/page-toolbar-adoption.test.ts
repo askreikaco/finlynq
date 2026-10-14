@@ -76,3 +76,17 @@ describe("PageToolbar adoption", () => {
     expect(read("src/components/mobile/page-header.tsx")).not.toMatch(/customize-trigger|CustomizeButton/);
   });
 });
+
+describe("subscriptions metric range", () => {
+  it("the subscriptions page feeds its cards from /api/subscriptions/series and the shared range control", () => {
+    const src = read("src/app/(app)/subscriptions/page.tsx");
+    expect(src).toContain("/api/subscriptions/series");
+    expect(src).toContain("useMetricRange");
+    expect(src).toContain("range={{ selection, onChange: setSelection }}");
+  });
+  it("the series route is authenticated and served with the private SWR header", () => {
+    const route = read("src/app/api/subscriptions/series/route.ts");
+    expect(route).toContain("requireAuth");
+    expect(route).toContain("withPrivateSwr");
+  });
+});

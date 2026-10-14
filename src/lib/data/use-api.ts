@@ -25,7 +25,7 @@ export function useApi<T>(
   const { soft, ...config } = opts ?? {};
   const fetcher = soft !== undefined ? softJsonFetcher<T>(soft) : (jsonFetcher as (url: string) => Promise<T>);
   const res = useSWR<T>(key, fetcher, config);
-  useFetchActivity(key, res.isValidating);
+  useFetchActivity(key, res.isValidating, res.mutate);
   return res;
 }
 

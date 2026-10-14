@@ -79,11 +79,10 @@ describe("PageHeader phone bar (render)", () => {
     expect(container.querySelector('[data-slot="page-header"]')).not.toBeNull();
   });
 
-  it("shows the subtitle on phones as a muted second line", () => {
+  it("shows no subtitle line on phones (InfoTip only)", () => {
     render(h(PageHeader, { title: "Budgets", subtitle: "Set limits" }));
-    const sub = screen.getByText("Set limits");
-    expect(cls(sub)).toEqual(expect.arrayContaining(["block", "text-xs", "truncate"]));
-    expect(cls(sub)).not.toContain("hidden");
+    expect(screen.queryByText("Set limits")).toBeNull();
+    expect(screen.getByRole("button", { name: "About Budgets" })).toBeTruthy();
   });
 
   it("top-level pages have no left slot (the title sits at the left edge)", () => {
@@ -153,9 +152,12 @@ describe("one liquid-glass recipe (globals.css)", () => {
       expect(css).toMatch(new RegExp(`--glass-${name}-sat:\\s*var\\(--glass-sat\\)`));
     }
   });
-  it("the header bar and its capsule carry the shared top/bottom edge light and glow", () => {
+  it("the capsule carries the shared top/bottom edge light and glow; the header bar only the bottom edge (no top line)", () => {
     expect(css).toMatch(/--glass-edge:\s*inset 0 1px 0 var\(--glass-edge-top\), inset 0 -1px 0 var\(--glass-edge-bottom\), 0 0 14px var\(--glass-glow\)/);
-    expect(resolvedDecls(css, ".glass-bar", "light")).toContain("inset 0 1px 0 oklch(1 0 0 / 70%)");
+    const bar = resolvedDecls(css, ".glass-bar", "light");
+    expect(bar).toContain("inset 0 -1px 0 oklch(1 0 0 / 30%)");
+    expect(bar).not.toContain("inset 0 1px 0");
+    expect(bar).toContain("border-top: 0");
     expect(resolvedDecls(css, ".glass-capsule", "light")).toContain("inset 0 -1px 0 oklch(1 0 0 / 30%)");
   });
 });

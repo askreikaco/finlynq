@@ -300,7 +300,7 @@ export default function PortfolioPage() {
     <SectionPage
       id="portfolio"
       title="Investment"
-      subtitle={`${summary.totalHoldings} holdings across ${summary.totalAccounts} accounts`}
+      info={`${summary.totalHoldings} holdings across ${summary.totalAccounts} accounts`}
       width="report"
       header={{
         overflow: [

@@ -4,6 +4,7 @@ import { Tabs as TabsPrimitive } from "@base-ui/react/tabs"
 import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
+import { CONTROL_SURFACE } from "@/components/ui/control-surface"
 
 function Tabs({
   className,
@@ -29,6 +30,7 @@ const tabsListVariants = cva(
     variants: {
       variant: {
         default: "bg-muted",
+        segmented: `rounded-full ${CONTROL_SURFACE}`,
         line: "gap-1 bg-transparent",
       },
     },

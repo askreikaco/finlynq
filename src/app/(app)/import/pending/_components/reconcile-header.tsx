@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import type { StagedDetail } from "../_types";
 import { PageHeader, HEADER_DESKTOP_ONLY, OverflowMenu, type OverflowAction } from "@/components/mobile";
+import { InfoTip } from "@/components/ui/info-tip";
 
 export function ReconcileHeader({
   detail,
@@ -99,8 +100,8 @@ export function ReconcileHeader({
       </Button>
     </>
   );
-  const subtitle = detail ? (
-    <p className="text-xs text-muted-foreground mt-0.5">
+  const subtitleText = detail ? (
+    <>
       {detail.staged.source === "upload" && detail.staged.fileFormat
         ? `${detail.staged.fileFormat.toUpperCase()} upload`
         : `From ${detail.staged.fromAddress || "(unknown)"}`}
@@ -112,7 +113,7 @@ export function ReconcileHeader({
           {detail.staged.dateRangeStart} → {detail.staged.dateRangeEnd}
         </>
       )}
-    </p>
+    </>
   ) : null;
 
   // FINLYNQ-88 — Re-apply rules confirmation modal.
@@ -159,13 +160,13 @@ export function ReconcileHeader({
               <ArrowLeft className="size-4" aria-hidden />
             </Button>
             <h2 className="truncate text-lg font-semibold">{title}</h2>
+            {subtitleText ? <InfoTip text={subtitleText} label="About this batch" side="bottom" /> : null}
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <OverflowMenu items={overflow} />
             {actions}
           </div>
         </div>
-        {subtitle}
         {reapplyDialog}
       </>
     );
@@ -176,12 +177,12 @@ export function ReconcileHeader({
       <PageHeader
         className="flex flex-wrap items-center justify-between gap-3"
         title={title}
+        info={subtitleText}
         onBack={closeDetail}
         backLabel="Back to Pending Imports"
         actions={actions}
         overflow={overflow}
       />
-      {subtitle}
       {reapplyDialog}
     </>
   );
