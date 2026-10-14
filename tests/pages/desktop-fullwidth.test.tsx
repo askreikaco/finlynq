@@ -64,7 +64,7 @@ describe("desktop: extra width becomes columns", () => {
     expect(code("src/app/(app)/loans/page.tsx")).toContain("CARD_ROW_GRID");
   });
 
-  it("/more: group cards in 1 column on phone, 2 at regular, 3 at wide", () => {
-    expect(code("src/components/more-menu.tsx")).toMatch(/grid-cols-1[^"]*regular:grid-cols-2[^"]*wide:grid-cols-3/);
+  it("/more: group cards in 1 column on phone, 2 at regular, 1 at wide (column 1 of the cascading columns)", () => {
+    expect(code("src/components/more-menu.tsx")).toMatch(/grid-cols-1[^"]*regular:grid-cols-2[^"]*wide:grid-cols-1/);
   });
 });

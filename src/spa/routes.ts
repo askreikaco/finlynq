@@ -3,7 +3,7 @@
  * SPA reuses the same files. Conversion: [id] -> :id, route groups (x) removed, [...slug] -> *.
  * Only routes listed in routes.config.ts are registered (strangler); each page/layout is a lazy import,
  * so every page is its own chunk. src/spa/pages/<route>.tsx overrides a page file (client twin of a
- * server wrapper page); (app)/layout.tsx is replaced by AppShell.tsx.
+ * server wrapper page), <route>/layout.tsx a layout file; (app)/layout.tsx is replaced by AppShell.tsx.
  */
 import { createElement, useEffect, type ComponentType, type ReactNode } from "react";
 import { Outlet, type RouteObject } from "react-router";
@@ -95,7 +95,8 @@ function buildDirs(): Dir {
     dirOf(file).page = overrideFiles[ovKey] ?? overrideFiles[ovIdx] ?? loader;
   }
   // Layouts only for directories that lead to an enabled page (prune empty branches below).
-  for (const [file, loader] of Object.entries(layoutFiles)) dirOf(file).layout = loader;
+  // src/spa/pages/<route>/layout.tsx overrides a layout file (client twin of a server layout).
+  for (const [file, loader] of Object.entries(layoutFiles)) dirOf(file).layout = overrideFiles["./pages" + fileToNextRoute(file) + "/layout.tsx"] ?? loader;
   return root;
 }
 
