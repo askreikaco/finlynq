@@ -10,6 +10,7 @@
  * prefs) are excluded.
  */
 import { mutate } from "swr";
+import { noteWrite } from "@/lib/swr/http-freshness";
 
 const NO_REVALIDATE: RegExp[] = [
   /^\/api\/auth\//,
@@ -37,6 +38,7 @@ let timer: ReturnType<typeof setTimeout> | null = null;
 
 /** Coalesce a burst of writes (bulk edits, multi-step saves) into one refresh. */
 export function scheduleRevalidation(delayMs = 60): void {
+  noteWrite(); // the refetch below must bypass the browser HTTP cache (metric series are cached briefly)
   if (timer) clearTimeout(timer);
   timer = setTimeout(() => {
     timer = null;

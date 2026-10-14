@@ -180,7 +180,7 @@ export function GroupedStatementRows({
   return (
     <>
     <TruncationNotice truncated={truncated} total={periodCount} />
-    <div className="divide-y divide-border/50">
+    <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
       {groups.map((group) => {
         const isOpen = expanded.has(group.name);
         return (
@@ -245,7 +245,7 @@ export function FlatStatementRows({
   return (
     <>
     <TruncationNotice truncated={truncated} total={periodCount} />
-    <div className="divide-y divide-border/50">
+    <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
       {items.map((item, i) => (
         <ListRow
           key={`${item.name}-${i}`}
@@ -286,7 +286,7 @@ export function BalanceStatementRows({
   tone: "pos" | "neg";
 }) {
   return (
-    <div className="divide-y divide-border/50">
+    <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
       {rows.map((r, i) => (
         <ListRow
           key={`${r.accountName}-${i}`}
@@ -320,7 +320,7 @@ export interface UnrealizedRowData {
 export function UnrealizedStatementRows({ rows, displayCurrency }: { rows: UnrealizedRowData[]; displayCurrency: string }) {
   const [open, setOpen] = useState<UnrealizedRowData | null>(null);
   return (
-    <div className="divide-y divide-border/50">
+    <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
       {rows.map((a) => (
         <ListRow
           key={a.accountId}
@@ -364,7 +364,7 @@ export function YoYStatementRows({
   currency: string;
 }) {
   return (
-    <div className="divide-y divide-border/50">
+    <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
       {rows.map((cat, i) => (
         <ListRow
           key={`${cat.name}-${i}`}

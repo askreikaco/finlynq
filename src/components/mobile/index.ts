@@ -2,6 +2,7 @@ export { PageHeader, OverflowMenu, HeaderStatus, HEADER_DESKTOP_ONLY, HEADER_SEC
 export { BackButton } from "./back-button";
 export { SectionCard } from "./section-card";
 export { SectionLabel } from "./section-label";
+export { CardLabel, CARD_PAD_X, CARD_PAD_T, CARD_LABEL_TOP, METRIC_TONES, type MetricTone } from "./card-label";
 export { ListRow, type ListRowProps, type SecondaryTone } from "./list-row";
 export { Amount, amountToneClass, type AmountSize, type AmountTone } from "./amount";
 export { PillButton } from "./pill-button";

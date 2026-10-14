@@ -4,6 +4,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { requireAuth } from "@/lib/auth/require-auth";
 import { getMonthlyAccountDeltas } from "@/lib/queries";
 import { getRateMap, convertWithRateMap, getDisplayCurrency } from "@/lib/fx-service";
+import { withPrivateSwr } from "@/lib/http/private-swr";
 import { monthsBetween } from "@/lib/metrics/period";
 
 const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
@@ -37,9 +38,9 @@ export async function GET(request: NextRequest) {
     .select({ id: schema.goals.id, type: schema.goals.type })
     .from(schema.goals)
     .where(and(eq(schema.goals.userId, userId), eq(schema.goals.status, "active")));
-  if (active.length === 0) return NextResponse.json({ displayCurrency, series: null, reason: "no-active-goals" });
+  if (active.length === 0) return withPrivateSwr(NextResponse.json({ displayCurrency, series: null, reason: "no-active-goals" }));
   if (active.some((g) => g.type === "debt_payoff")) {
-    return NextResponse.json({ displayCurrency, series: null, reason: "debt-payoff-goal" });
+    return withPrivateSwr(NextResponse.json({ displayCurrency, series: null, reason: "debt-payoff-goal" }));
   }
   const links = await db
     .select({ accountId: schema.goalAccounts.accountId })
@@ -47,14 +48,14 @@ export async function GET(request: NextRequest) {
     .where(and(eq(schema.goalAccounts.userId, userId), inArray(schema.goalAccounts.goalId, active.map((g) => g.id))));
   // The same account linked to two goals counts once per goal in the page total; keep that multiplicity.
   const accountIds = Array.from(new Set(links.map((l) => l.accountId)));
-  if (accountIds.length === 0) return NextResponse.json({ displayCurrency, series: null, reason: "no-linked-accounts" });
+  if (accountIds.length === 0) return withPrivateSwr(NextResponse.json({ displayCurrency, series: null, reason: "no-linked-accounts" }));
 
   const accounts = await db
     .select({ id: schema.accounts.id, currency: schema.accounts.currency, isInvestment: schema.accounts.isInvestment, type: schema.accounts.type })
     .from(schema.accounts)
     .where(and(eq(schema.accounts.userId, userId), inArray(schema.accounts.id, accountIds)));
-  if (accounts.some((a) => a.isInvestment)) return NextResponse.json({ displayCurrency, series: null, reason: "investment-account" });
-  if (accounts.some((a) => a.type === "L")) return NextResponse.json({ displayCurrency, series: null, reason: "liability-account" });
+  if (accounts.some((a) => a.isInvestment)) return withPrivateSwr(NextResponse.json({ displayCurrency, series: null, reason: "investment-account" }));
+  if (accounts.some((a) => a.type === "L")) return withPrivateSwr(NextResponse.json({ displayCurrency, series: null, reason: "liability-account" }));
 
   const rateMap = await getRateMap(displayCurrency, userId);
   const currencyOf = new Map(accounts.map((a) => [a.id, a.currency]));
@@ -72,5 +73,5 @@ export async function GET(request: NextRequest) {
     }
     return { month, current: Math.round(total * 100) / 100 };
   });
-  return NextResponse.json({ displayCurrency, series });
+  return withPrivateSwr(NextResponse.json({ displayCurrency, series }));
 }

@@ -13,10 +13,11 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Fingerprint, Check, AlertTriangle } from "lucide-react";
+import { AlertTriangle, Check, Fingerprint } from "lucide-react";
 import { formatDateTimeLocal } from "@/lib/currency";
 import { enablePasskeyPrf, registerPasskey } from "@/lib/client/passkey-prf";
 import { setPasskeyHint } from "@/lib/client/passkey-auto";
@@ -24,12 +25,12 @@ import { getPasskeyStepUp } from "@/lib/client/passkey-stepup";
 
 const STRINGS = {
   title: "Passkeys",
-  description: "Sign in and verify with your fingerprint, face or a security key",
-  unsupported: "This browser does not support passkeys.",
+  description: "Sign in and verify with fingerprint, face or a security key.",
+  unsupported: "Passkeys not supported here.",
   none: "No passkeys yet.",
-  addButton: "Add a passkey",
-  passwordLabel: "Current password",
-  passwordNeeded: "Enter your password to continue.",
+  addButton: "Add passkey",
+  passwordLabel: "Password",
+  passwordNeeded: "Enter your password.",
   createButton: "Create passkey",
   working: "Working…",
   cancel: "Cancel",
@@ -38,26 +39,26 @@ const STRINGS = {
   neverUsed: "Never used",
   badgePrf: "Unlock without password",
   badge2fa: "2FA only",
-  enablePrf: "Enable password-free unlock",
+  enablePrf: "Enable password-free",
   enablePrfSubmit: "Enable",
   rename: "Rename",
   save: "Save",
   remove: "Remove",
   removeConfirmTitle: "Remove this passkey?",
-  removeConfirmBody: "Enter your password to remove it. You will no longer be able to use it to sign in.",
+  removeConfirmBody: "Enter your password. You will no longer be able to sign in with it.",
   removeSubmit: "Remove passkey",
   totpLabel: "Authenticator code (6 digits)",
   verifyRemove: "Verify and remove",
   usePasskeyInstead: "Use a passkey instead",
-  secondFactorNote: "This session has not passed two-factor verification. Verify to remove the passkey.",
-  added2fa: "Passkey added. It will be used for two-factor verification; it cannot unlock your data without your password on this device or browser.",
-  addedPrf: "Passkey added. It can also unlock your data without your password.",
+  secondFactorNote: "Two-factor not verified in this session. Verify to remove.",
+  added2fa: "Passkey added (two-factor only).",
+  addedPrf: "Passkey added. Also unlocks your data.",
   addedNeedPassword: "Passkey added. Enter your password to enable password-free unlock.",
   prfEnabled: "Password-free unlock enabled.",
-  prfUnavailable: "This passkey cannot unlock your data without a password (the authenticator does not support it).",
+  prfUnavailable: "This passkey cannot unlock without a password.",
   removed: "Passkey removed.",
   renamed: "Passkey renamed.",
-  cancelledMsg: "Passkey request was cancelled.",
+  cancelledMsg: "Cancelled.",
   genericError: "Something went wrong. Please try again.",
   loadError: "Could not load your passkeys.",
   passwordIncorrect: "Your password is incorrect.",
@@ -304,8 +305,10 @@ export function PasskeysCard() {
             <Fingerprint className="h-5 w-5" />
           </div>
           <div>
-            <CardTitle className="text-base">{STRINGS.title}</CardTitle>
-            <CardDescription>{STRINGS.description}</CardDescription>
+            <CardTitle icon={Fingerprint} tone="violet">
+              {STRINGS.title}
+              <InfoTip label="About passkeys" text={STRINGS.description} />
+            </CardTitle>
           </div>
         </div>
       </CardHeader>
@@ -327,7 +330,7 @@ export function PasskeysCard() {
 
         {loadFailed && <p className="text-sm text-destructive">{STRINGS.loadError}</p>}
 
-        {passkeys && passkeys.length === 0 && <p className="text-sm text-muted-foreground">{STRINGS.none}</p>}
+        {passkeys && passkeys.length === 0 && <p className="text-sm text-muted-foreground" data-keep="empty">{STRINGS.none}</p>}
 
         {passkeys && passkeys.length > 0 && (
           <ul className="space-y-2" aria-label="Your passkeys">
@@ -366,7 +369,7 @@ export function PasskeysCard() {
                           )}
                         </div>
                       )}
-                      <p className="mt-0.5 text-xs text-muted-foreground">
+                      <p className="mt-0.5 text-xs text-muted-foreground" data-keep="data">
                         {STRINGS.createdLabel} {formatDateTimeLocal(p.createdAt)} · {lastLabel(p)}
                       </p>
                     </div>
@@ -424,7 +427,7 @@ export function PasskeysCard() {
                   {removing?.id === p.id && (
                     <div className="mt-3 space-y-2" role="group" aria-label="Remove passkey">
                       <p className="text-sm font-medium text-foreground">{STRINGS.removeConfirmTitle}</p>
-                      <p className="text-xs text-muted-foreground">{STRINGS.removeConfirmBody}</p>
+                      <p className="text-xs text-muted-foreground" data-keep="warning">{STRINGS.removeConfirmBody}</p>
                       <label htmlFor={`rm-pw-${p.id}`} className="text-sm font-medium">
                         {STRINGS.passwordLabel}
                       </label>
@@ -483,7 +486,7 @@ export function PasskeysCard() {
           </ul>
         )}
 
-        {!supported && <p className="text-xs text-muted-foreground">{STRINGS.unsupported}</p>}
+        {!supported && <p className="text-xs text-muted-foreground" data-keep="status">{STRINGS.unsupported}</p>}
 
         {adding && addNeedsPassword ? (
           <div className="space-y-3 rounded-lg border border-border p-3" role="group" aria-label="Add a passkey">

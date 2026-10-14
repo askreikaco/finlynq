@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Activity, Shield, Mail, KeyRound, Layers, Receipt, UserPlus, ShieldCheck } from "lucide-react";
+import { Activity, KeyRound, Layers, Mail, MessageSquare, Receipt, Shield, ShieldCheck, UserPlus, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import { DORMANT_DAYS, isDormant } from "@/lib/auth/dormancy";
 import {
@@ -154,20 +154,13 @@ type UserSortKey =
 // ─── Animation ──────────────────────────────────────────────────────────────
 
 const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.06, delayChildren: 0.08 },
-  },
+  hidden: { opacity: 1 },
+  visible: { opacity: 1, transition: { duration: 0 } },
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 16 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.4, ease: "easeOut" as const },
-  },
+  hidden: { opacity: 1, y: 0 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0 } },
 };
 
 // ─── Main Page ──────────────────────────────────────────────────────────────
@@ -498,7 +491,7 @@ export default function AdminPage() {
         {/* FINLYNQ-301 — Decision-prompt completion (per prompt, current version) */}
         {stats && stats.promptAcks && stats.promptAcks.length > 0 && (
           <motion.div variants={itemVariants}>
-            <SectionCard label="Decision prompts" padded={false} className="divide-y divide-border/50 px-3">
+            <SectionCard label="Decision prompts" icon={MessageSquare} tone="violet" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
               {stats.promptAcks.map((p) => (
                 <ListRow
                   key={`${p.promptId}:${p.version}`}
@@ -642,7 +635,7 @@ export default function AdminPage() {
                 </div>
               )}
 
-              <SectionCard padded={false} className="divide-y divide-border/50 px-3">
+              <SectionCard padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
                 {users.length === 0 ? (
                   <p className="py-8 text-center text-sm text-muted-foreground">No users found.</p>
                 ) : (
@@ -689,7 +682,7 @@ export default function AdminPage() {
                 <CardContent className="p-6">
                   {stats && (
                     <div className="space-y-4">
-                      <div className="flex items-center justify-between py-3 border-b">
+                      <div className="flex items-center justify-between py-3 shadow-[var(--list-divider)]">
                         <span className="text-muted-foreground">
                           Registrations (last 30 days)
                         </span>
@@ -697,7 +690,7 @@ export default function AdminPage() {
                           {stats.registrationsLast30Days}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between py-3 border-b">
+                      <div className="flex items-center justify-between py-3 shadow-[var(--list-divider)]">
                         <span className="text-muted-foreground">
                           Email-verified users
                         </span>
@@ -706,7 +699,7 @@ export default function AdminPage() {
                           {stats.verifiedUsers} / {stats.totalUsers}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between py-3 border-b">
+                      <div className="flex items-center justify-between py-3 shadow-[var(--list-divider)]">
                         <span className="text-muted-foreground">
                           Total logins
                         </span>
@@ -714,7 +707,7 @@ export default function AdminPage() {
                           {stats.totalLogins.toLocaleString()}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between py-3 border-b">
+                      <div className="flex items-center justify-between py-3 shadow-[var(--list-divider)]">
                         <span className="text-muted-foreground">
                           Active users (last 7 days)
                         </span>
@@ -722,7 +715,7 @@ export default function AdminPage() {
                           {stats.activeUsersLast7Days}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between py-3 border-b">
+                      <div className="flex items-center justify-between py-3 shadow-[var(--list-divider)]">
                         <span className="text-muted-foreground">
                           Active users (last 30 days)
                         </span>
@@ -730,7 +723,7 @@ export default function AdminPage() {
                           {stats.activeUsersLast30Days}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between py-3 border-b">
+                      <div className="flex items-center justify-between py-3 shadow-[var(--list-divider)]">
                         <span className="text-muted-foreground">
                           Total accounts created
                         </span>
@@ -757,7 +750,7 @@ export default function AdminPage() {
                       Last 15 users who signed in, most recent first.
                     </p>
                   </div>
-                  <div className="divide-y divide-border/50">
+                  <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                     {(stats?.recentLogins ?? []).map((row) => (
                       <ListRow
                         key={row.id}
@@ -787,7 +780,7 @@ export default function AdminPage() {
                       when it has not been used in over {DORMANT_DAYS} days.
                     </p>
                   </div>
-                  <div className="divide-y divide-border/50">
+                  <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                     {grants.map((grant) => {
                       // FINLYNQ-166's pure dormancy predicate — reused here for
                       // last_used_at (null OR >DORMANT_DAYS ago = dormant).

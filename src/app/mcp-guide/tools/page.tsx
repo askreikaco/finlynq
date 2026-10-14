@@ -230,7 +230,7 @@ export default function ToolCatalogPage() {
                 </div>
               </div>
 
-              <ul className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
+              <ul className="rounded-xl border border-border bg-card [&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-hidden">
                 {tools.map((tool) => (
                   <ToolRow key={tool.name} tool={tool} categoryBadge={cat} />
                 ))}

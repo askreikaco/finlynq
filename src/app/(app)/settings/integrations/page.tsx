@@ -13,10 +13,11 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
-import { Zap, Landmark, Bot } from "lucide-react";
+import { Bot, Landmark, Plug, Zap } from "lucide-react";
 import { McpGuide } from "@/components/mcp-guide/mcp-guide";
 import { ConnectedApps } from "./connected-apps";
 import { BankFeedsSection } from "@/components/settings/sections/bank-feeds-section";
@@ -75,7 +76,6 @@ export default function IntegrationsSettingsPage() {
     <SectionPage
       id="settings-integrations"
       title="Integrations"
-      subtitle="External tools and bank connections"
       padBottom="none"
       minW0={false}
       suspense={false}
@@ -90,17 +90,17 @@ export default function IntegrationsSettingsPage() {
                 <Zap className="h-5 w-5" />
               </div>
               <div>
-                <CardTitle className="text-base">Set up MCP</CardTitle>
-                <CardDescription className="mt-1">
-                  Connect AI assistants like Claude, ChatGPT, or other MCP clients to securely access your financial data.
-                </CardDescription>
+                <CardTitle icon={Plug} tone="indigo">
+                  Set up MCP
+                  <InfoTip label="About MCP" text="Connect AI assistants like Claude, ChatGPT or other MCP clients to your financial data." />
+                </CardTitle>
               </div>
             </div>
           </CardHeader>
           <CardContent>
             <Link href="/connect" onClick={(e) => { e.preventDefault(); setTab("connect"); }}>
               <Button variant="outline" className="border-warning/30 hover:bg-warning/10">
-                View MCP Guide
+                MCP guide
               </Button>
             </Link>
           </CardContent>
@@ -114,8 +114,8 @@ export default function IntegrationsSettingsPage() {
         <AccordionItem
           value="connect"
           icon={<Bot className="h-4 w-4" />}
-          title="Connect your AI"
-          description="MCP setup guide for Claude, ChatGPT, Cursor and other clients"
+          title="Connect AI"
+          info="MCP setup guide for Claude, ChatGPT, Cursor and other clients."
         >
           <div id="connect">
             <McpGuide embedded />
@@ -125,7 +125,7 @@ export default function IntegrationsSettingsPage() {
           value="bank-feeds"
           icon={<Landmark className="h-4 w-4" />}
           title="Bank feeds"
-          description="SimpleFIN bank sync"
+          info="SimpleFIN bank sync."
         >
           <div id="bank-feeds">
             <BankFeedsSection />
@@ -144,7 +144,7 @@ export default function IntegrationsSettingsPage() {
             onClick={(e) => { e.preventDefault(); setTab("connect"); }}
             className="text-primary hover:underline"
           >
-            Show setup guide
+            Setup guide
           </Link>
         </div>
       )}

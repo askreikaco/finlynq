@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowLeftRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { SectionCard } from "@/components/mobile/section-card";
 import {
@@ -18,8 +19,8 @@ import type { MonthlyData } from "./types";
 import { useAnimations } from "@/hooks/use-animations";
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 16 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" as const } },
+  hidden: { opacity: 1, y: 0 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0 } },
 };
 
 const noAnimationVariants = {
@@ -131,7 +132,7 @@ export function IncomeExpenseChart({
 
   return (
     <motion.div variants={animationsEnabled ? itemVariants : noAnimationVariants}>
-      <SectionCard label="Income vs Expenses" cardClassName="card-hover">
+      <SectionCard label="Income vs Expenses" icon={ArrowLeftRight} tone="emerald" cardClassName="card-hover">
         <div className="flex items-center justify-between gap-3 mb-3">
           <p className="text-xs text-muted-foreground">Last 12 months</p>
           {stackable && (

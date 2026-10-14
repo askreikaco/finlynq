@@ -399,7 +399,7 @@ export function AccountForm({
     <form onSubmit={handleSave} className="space-y-4">
       <div
         className={cn(
-          v === "rows" && `divide-y divide-border overflow-hidden ${TW.group} border border-border bg-card`,
+          v === "rows" && `[&>*:not(:last-child)]:shadow-[var(--list-divider)] overflow-hidden ${TW.group} border border-border bg-card`,
           v === "stack" && "space-y-4",
         )}
       >

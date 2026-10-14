@@ -54,7 +54,7 @@ export function TransactionDetailPane({
           <X className="h-4 w-4" />
         </Button>
       </div>
-      <dl className="mt-3 divide-y divide-border/50">
+      <dl className="mt-3 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
         <Field label="Account" value={t.accountAlias || t.accountName} />
         <Field label="Category" value={t.categoryName} />
         <Field label="Entered as" value={entered} />

@@ -6,10 +6,11 @@
  */
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionItem } from "@/components/ui/accordion";
-import { ToggleLeft, ToggleRight, Database } from "lucide-react";
+import { Code, Database, ToggleLeft, ToggleRight } from "lucide-react";
 import { useOpenSection } from "@/components/settings/use-open-section";
 import { DataSection } from "@/components/settings/sections/data-section";
 
@@ -47,12 +48,12 @@ export default function DeveloperSettingsPage() {
       const data = await res.json();
       if (res.ok) {
         setDevMode(data.devMode);
-        setDevModeStatus(data.devMode ? "Dev mode enabled" : "Dev mode disabled");
+        setDevModeStatus(data.devMode ? "Enabled" : "Disabled");
       } else {
         setDevModeStatus(data.error || "Failed to update");
       }
     } catch {
-      setDevModeStatus("Failed to update dev mode");
+      setDevModeStatus("Update failed");
     }
     setDevModeLoading(false);
   }
@@ -61,7 +62,6 @@ export default function DeveloperSettingsPage() {
     <SectionPage
       id="settings-developer"
       title="Developer"
-      subtitle="Advanced and experimental features"
       padBottom="none"
       minW0={false}
       suspense={false}
@@ -75,8 +75,10 @@ export default function DeveloperSettingsPage() {
               {devMode ? <ToggleRight className="h-5 w-5" /> : <ToggleLeft className="h-5 w-5" />}
             </div>
             <div>
-              <CardTitle className="text-base">Dev Mode</CardTitle>
-              <CardDescription>Show advanced and experimental features in the navigation</CardDescription>
+              <CardTitle icon={Code} tone="violet">
+                Dev mode
+                <InfoTip label="About dev mode" text="Shows advanced and experimental features in the navigation. Off shows the production set only." />
+              </CardTitle>
             </div>
           </div>
         </CardHeader>
@@ -84,12 +86,7 @@ export default function DeveloperSettingsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium">
-                {devMode ? "Dev mode is ON" : "Dev mode is OFF"}
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {devMode
-                  ? "All 17 advanced features are visible in the nav. Toggle off to see the production view."
-                  : "Showing production feature set only (20 features). Toggle on to see all 17 additional features."}
+                {devMode ? "On" : "Off"}
               </p>
             </div>
             <Button
@@ -103,7 +100,7 @@ export default function DeveloperSettingsPage() {
             </Button>
           </div>
           {devModeStatus && (
-            <p className="text-xs text-muted-foreground">{devModeStatus}</p>
+            <p className="text-xs text-muted-foreground" data-keep="status">{devModeStatus}</p>
           )}
         </CardContent>
       </Card>
@@ -114,7 +111,7 @@ export default function DeveloperSettingsPage() {
           value="data"
           icon={<Database className="h-4 w-4" />}
           title="Data"
-          description="Import, export, and manage your data"
+          info="Import, export and manage your data."
         >
           <div id="data">
             <DataSection />

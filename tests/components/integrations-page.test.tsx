@@ -21,7 +21,7 @@ describe("Integrations MCP guide card", () => {
   it("shows when no app is connected and no API key has been used", async () => {
     stub({ ok: true, json: async () => ({ apps: [], mcpApiKeyLastUsedAt: null }) });
     render(<IntegrationsSettingsPage />);
-    expect(await screen.findByText("View MCP Guide")).toBeTruthy();
+    expect(await screen.findByText("MCP guide")).toBeTruthy();
   });
 
   it("hides when an OAuth app is connected", async () => {
@@ -30,14 +30,14 @@ describe("Integrations MCP guide card", () => {
     render(<IntegrationsSettingsPage />);
     await waitFor(() => expect(f).toHaveBeenCalled());
     await new Promise((r) => setTimeout(r, 10));
-    expect(screen.queryByText("View MCP Guide")).toBeNull();
+    expect(screen.queryByText("MCP guide")).toBeNull();
   });
 
   it("hides when API key has been used in the last 30 days", async () => {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     stub({ ok: true, json: async () => ({ apps: [], mcpApiKeyLastUsedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() }) });
     render(<IntegrationsSettingsPage />);
-    await waitFor(() => expect(screen.queryByText("View MCP Guide")).toBeNull());
+    await waitFor(() => expect(screen.queryByText("MCP guide")).toBeNull());
   });
 
   it("shows 'Show setup guide' link when connected and guide is hidden", async () => {
@@ -50,11 +50,11 @@ describe("Integrations MCP guide card", () => {
     stub({ ok: false, json: async () => ({}) });
     const { unmount } = render(<IntegrationsSettingsPage />);
     await new Promise((r) => setTimeout(r, 10));
-    expect(screen.queryByText("View MCP Guide")).toBeNull();
+    expect(screen.queryByText("MCP guide")).toBeNull();
     unmount();
     stub(new Error("net"));
     render(<IntegrationsSettingsPage />);
     await new Promise((r) => setTimeout(r, 10));
-    expect(screen.queryByText("View MCP Guide")).toBeNull();
+    expect(screen.queryByText("MCP guide")).toBeNull();
   });
 });

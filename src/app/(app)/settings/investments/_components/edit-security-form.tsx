@@ -122,12 +122,11 @@ export function EditSecurityForm({
             label="Ticker"
             htmlFor="edit-symbol"
             error={errors.symbol}
-            hint={
-              errors.symbol
-                ? undefined
-                : advisoryFor(security)
-                  ? "This ticker can't be priced. Correct it here, or switch Pricing to Manual below."
-                  : "Changing this re-points the holding and its history to the new ticker."
+            hint="Changing this re-points the holding and its history to the new ticker."
+            notice={
+              !errors.symbol && advisoryFor(security) ? (
+                <span className="text-warning">Can’t be priced. Fix the ticker or set Pricing to Manual.</span>
+              ) : undefined
             }
           >
             <Input
@@ -153,7 +152,7 @@ export function EditSecurityForm({
         {!isCash && !isCrypto && (
           <FormRow
             label="Asset type"
-            hint="Overrides the automatic classification (from Yahoo) for the badge."
+            hint="Overrides the automatic (Yahoo) classification for the badge."
           >
             <Select
               items={ASSET_TYPE_LABELS}
@@ -177,7 +176,7 @@ export function EditSecurityForm({
             label="Pricing"
             hint={
               priceSource === "manual"
-                ? "Not fetched from the market — set prices under “Prices”."
+                ? "Not fetched from the market. Set prices under Prices."
                 : "Prices are fetched automatically from Yahoo/CoinGecko."
             }
           >

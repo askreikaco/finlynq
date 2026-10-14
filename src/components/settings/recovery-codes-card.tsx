@@ -11,29 +11,29 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { LifeBuoy, Check, AlertTriangle } from "lucide-react";
+import { AlertTriangle, Check, LifeBuoy, ShieldCheck } from "lucide-react";
 import { formatDateTimeLocal } from "@/lib/currency";
 
 const STRINGS = {
   title: "Recovery codes",
-  description: "One-time codes to get back in if you lose your password, authenticator or passkey",
-  statusNone: "No recovery codes yet. Generate a set and keep it somewhere safe.",
+  description: "One-time codes to get back in if you lose your password, authenticator or passkey. Shown once; store them in a password manager or print them.",
+  statusNone: "No codes yet.",
   generated: "Generated",
-  generate: "Generate recovery codes",
-  regenerate: "Regenerate recovery codes",
+  generate: "Generate codes",
+  regenerate: "Regenerate codes",
   confirmGenerate: "Generate codes",
   confirmRegenerate: "Replace my codes",
-  regenerateWarning: "Your existing codes stop working the moment new ones are generated.",
-  generateIntro: "You will see the codes once. Store them somewhere safe (password manager or printed).",
-  passwordLabel: "Current password",
+  regenerateWarning: "Existing codes stop working once new ones are generated.",
+  passwordLabel: "Password",
   cancel: "Cancel",
   working: "Working…",
   codesTitle: "Your recovery codes",
-  codesWarning: "Save these now. They are shown only once and each works a single time.",
+  codesWarning: "Save these now. Shown once; each works once.",
   copyAll: "Copy all",
   copied: "Copied",
   copyFailed: "Could not copy. Select the codes and copy them manually.",
@@ -180,8 +180,10 @@ export function RecoveryCodesCard() {
             <LifeBuoy className="h-5 w-5" />
           </div>
           <div>
-            <CardTitle className="text-base">{STRINGS.title}</CardTitle>
-            <CardDescription>{STRINGS.description}</CardDescription>
+            <CardTitle icon={ShieldCheck} tone="amber">
+              {STRINGS.title}
+              <InfoTip label="About recovery codes" text={STRINGS.description} />
+            </CardTitle>
           </div>
         </div>
       </CardHeader>
@@ -239,7 +241,7 @@ export function RecoveryCodesCard() {
                     ) : null}
                   </p>
                 ) : (
-                  <p className="text-muted-foreground">{STRINGS.statusNone}</p>
+                  <p className="text-muted-foreground" data-keep="status">{STRINGS.statusNone}</p>
                 )}
                 {low && (
                   <p className="flex items-start gap-2 text-warning" role="alert">
@@ -252,7 +254,7 @@ export function RecoveryCodesCard() {
 
             {confirming ? (
               <form onSubmit={handleGenerate} className="space-y-3 rounded-lg border border-border p-3" aria-label="Generate recovery codes">
-                <p className="text-xs text-muted-foreground">{hasCodes ? STRINGS.regenerateWarning : STRINGS.generateIntro}</p>
+                {hasCodes && <p className="text-xs text-warning" data-keep="warning">{STRINGS.regenerateWarning}</p>}
                 <div className="space-y-1.5">
                   <label htmlFor="recovery-codes-password" className="text-sm font-medium">
                     {STRINGS.passwordLabel}

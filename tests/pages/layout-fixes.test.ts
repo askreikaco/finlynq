@@ -56,8 +56,8 @@ describe("settings/general at 390", () => {
 
   it("UI Font and Animation rows keep label-left / control-right on phones (label takes the spare width)", () => {
     const src = read(SETTINGS_GENERAL);
-    expect(src).toContain('<div className="flex items-center justify-between gap-3">\n            <div className="min-w-0 flex-1">\n              <Label>UI Font</Label>');
-    expect(src).toContain('<div className="flex items-center justify-between gap-3">\n            <div className="min-w-0 flex-1">\n              <Label htmlFor="animation-toggle">');
+    expect(src).toContain('<div className="flex items-center justify-between gap-3">\n            <div className="min-w-0 flex-1">\n              <div className="flex items-center gap-1">\n                <Label>Font</Label>');
+    expect(src).toContain('<div className="flex items-center justify-between gap-3">\n            <div className="min-w-0 flex-1">\n              <div className="flex items-center gap-1">\n                <Label htmlFor="animation-toggle">');
     expect(src).toContain('<SelectTrigger className="w-44 shrink-0 regular:w-48">');
   });
 
@@ -82,7 +82,7 @@ describe("budgets at 390", () => {
 
   it("category groups are inset SectionCards of ListRows (one layout at every width): no Card per group, no table", () => {
     const src = read(BUDGETS);
-    expect(src).toContain('<SectionCard key={group} label={group} padded={false}');
+    expect(src).toContain('<SectionCard key={group} label={group} icon={Wallet} tone="indigo" padded={false}');
     expect(src).toContain("<ListRow");
     expect(src).not.toContain("<Table");
     expect(src).not.toContain('<Card key={group} className="gap-1">');

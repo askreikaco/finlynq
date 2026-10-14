@@ -20,7 +20,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Download, ArrowDownLeft, ArrowUpLeft, RefreshCw, Coins, Receipt, Wallet } from "lucide-react";
+import { ArrowDownLeft, ArrowUpLeft, CalendarDays, Coins, Download, Landmark, Receipt, RefreshCw, Wallet } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { exportCsv, type CsvColumn } from "@/lib/csv-export";
@@ -42,6 +42,7 @@ import { monthLabel, signedPercent } from "../_components/report-controls";
 import { PageToolbar } from "@/components/page-toolbar";
 import { useListToolbar } from "@/lib/toolbar/use-list-toolbar";
 import { REALIZED_FILTER_KEYS } from "@/lib/toolbar/list-configs";
+import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { cardProps, countByMonth, makeCardResolver, sumByMonth } from "@/lib/metrics/series";
 import { NO_HISTORY_CAPTION } from "@/lib/metrics/delta";
@@ -224,10 +225,6 @@ export default function RealizedGainsPage() {
   const groupMode: GroupMode = showUnified
     ? ((["holding", "account", "holding_account"] as const).find((m) => m === tb.filters.groupMode) ?? "off")
     : "off";
-  const [data, setData] = useState<ApiResponse["data"] | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(false);
-  const [reloadKey, setReloadKey] = useState(0);
   const [openLot, setOpenLot] = useState<ApiRow | null>(null);
   const metricRange = useMetricRange();
   const rangeArg = useMemo(
@@ -235,22 +232,19 @@ export default function RealizedGainsPage() {
     [metricRange.selection, metricRange.explicit, metricRange.period],
   );
 
-  useEffect(() => {
+  // Cache-first: a revisit paints the last rows / metric cards at once and revalidates in the background.
+  const gainsUrl = useMemo(() => {
     const params = new URLSearchParams();
     if (taxYear) params.set("taxYear", String(taxYear));
     params.set("term", term);
     if (showUnified) params.set("unified", "1");
-    setLoading(true);
-    setLoadError(false);
-    fetch(`/api/portfolio/realized-gains?${params.toString()}`)
-      .then((r) => r.json())
-      .then((json: ApiResponse) => {
-        if (json.success) setData(json.data);
-        else { setData(null); setLoadError(true); }
-      })
-      .catch(() => { setData(null); setLoadError(true); })
-      .finally(() => setLoading(false));
-  }, [taxYear, term, showUnified, reloadKey]);
+    return `/api/portfolio/realized-gains?${params.toString()}`;
+  }, [taxYear, term, showUnified]);
+  const gainsRes = useCacheFirstJson<ApiResponse>(gainsUrl, { keepPrevious: true });
+  const data: ApiResponse["data"] | null = gainsRes.data?.success ? gainsRes.data.data : null;
+  const loading = gainsRes.loading;
+  const loadError = gainsRes.error || (gainsRes.data !== undefined && !gainsRes.data?.success);
+  const reloadGains = gainsRes.reload;
 
   // FINLYNQ-193 mixed-currency rule: group-by is UNIFIED-VIEW-ONLY (groupMode above is "off" in the native view).
 
@@ -435,7 +429,7 @@ export default function RealizedGainsPage() {
         {loading ? (
           <PageSkeleton variant="list" rows={3} />
         ) : loadError ? (
-          <ErrorState title="Couldn't load realized gains" message="We couldn't load your realized gains. Please try again." onRetry={() => setReloadKey((k) => k + 1)} />
+          <ErrorState title="Couldn't load realized gains" message="We couldn't load your realized gains. Please try again." onRetry={reloadGains} />
         ) : !data || data.rows.length === 0 ? (
           <EmptyState
             icon={Coins}
@@ -456,7 +450,7 @@ export default function RealizedGainsPage() {
           <>
               <>
               {grouped ? (
-                <SectionCard label={groupMode === "account" ? "By account" : groupMode === "holding" ? "By holding" : "By holding and account"} padded={false} className="divide-y divide-border/50 px-3">
+                <SectionCard label={groupMode === "account" ? "By account" : groupMode === "holding" ? "By holding" : "By holding and account"} icon={Landmark} tone="indigo" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
                   {groupRows.map((g) => (
                     <ListRow
                       key={g.key}
@@ -469,7 +463,7 @@ export default function RealizedGainsPage() {
               ) : (
                 Array.from(groupLotsByMonth(visibleRows)).map(([ym, lots]) => (
                   <section key={ym}>
-                    <SectionCard label={monthLabel(ym)} padded={false} className="divide-y divide-border/50 px-3">
+                    <SectionCard label={monthLabel(ym)} icon={CalendarDays} tone="muted" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
                       {lots.map((r) => {
                         const inBase = showUnified && r.realizedGainInBase != null && r.baseCurrency;
                         const amount = inBase ? r.realizedGainInBase! : r.realizedGain;

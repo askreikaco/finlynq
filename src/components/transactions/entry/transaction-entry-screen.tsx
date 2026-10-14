@@ -1357,8 +1357,8 @@ export function TransactionEntryScreen({ mode }: { mode: EntryMode }) {
             />
           )}
           {/* From and To share a relative wrapper so the Transfer swap button sits on their divider;
-              the wrapper repeats the group's hairline (divide-y) because the two rows are no longer its direct children. */}
-          <div className="relative divide-y divide-border">
+              the wrapper repeats the group's divider shadow because the two rows are no longer its direct children. */}
+          <div className="relative [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
             <FormRow
               variant="button"
               testId="txnew-row-account"

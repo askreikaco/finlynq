@@ -2,9 +2,10 @@
  * /settings/about — About Finlynq (moved out of General; last in the settings nav).
  */
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Database } from "lucide-react";
+import { Database, Info, Shield } from "lucide-react";
 import { SectionPage } from "@/components/templates";
 
 export default function AboutSettingsPage() {
@@ -25,15 +26,14 @@ export default function AboutSettingsPage() {
               <Shield className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle className="text-base">About</CardTitle>
-              <CardDescription>Finlynq</CardDescription>
+              <CardTitle icon={Info} tone="cyan">
+                Finlynq
+                <InfoTip label="About Finlynq" text="Track your money here, analyze it anywhere. All data is stored locally on your machine; nothing is sent to any server." />
+              </CardTitle>
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-2">
-          <p className="text-sm text-muted-foreground">
-            Track your money here, analyze it anywhere.
-          </p>
           <div className="flex items-center gap-2">
             <Badge variant="secondary" className="text-xs">
               <Shield className="h-3 w-3 mr-1" />
@@ -44,9 +44,6 @@ export default function AboutSettingsPage() {
               Local-first
             </Badge>
           </div>
-          <p className="text-xs text-muted-foreground">
-            All data is stored locally on your machine. No data is sent to any server.
-          </p>
         </CardContent>
       </Card>
     </SectionPage>

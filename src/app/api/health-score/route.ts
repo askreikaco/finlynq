@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { requireAuth } from "@/lib/auth/require-auth";
 import { calculateFinancialHealth } from "@/lib/financial-health";
+import { withPrivateSwr } from "@/lib/http/private-swr";
 import { getDisplayCurrency } from "@/lib/fx-service";
 
 /**
@@ -31,5 +32,5 @@ export async function GET(request: NextRequest) {
     historyMonths,
   });
 
-  return NextResponse.json(payload);
+  return withPrivateSwr(NextResponse.json(payload));
 }

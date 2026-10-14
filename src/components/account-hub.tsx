@@ -2,6 +2,7 @@
  * Account hub page: iOS grouped list showing all account sections (every size).
  */
 
+import { User } from "lucide-react";
 import { getEntriesBySurface } from "@/lib/nav-config";
 import { ListRow } from "@/components/mobile/list-row";
 import { TW } from "@/lib/design/tokens";
@@ -32,8 +33,8 @@ export function AccountHub() {
 
   return (
     <div data-slot="account-hub" className={`${TW.grid3} px-4 py-6`}>
-      <SectionCard label="Account">
-        <div className="divide-y divide-border/50">
+      <SectionCard label="Account" icon={User} tone="indigo">
+        <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
           {orderedEntries.map((entry) => (
             entry && (
               <ListRow

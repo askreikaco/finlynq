@@ -16,12 +16,7 @@ import { PageHeader } from "@/components/mobile";
 export default function ReconcileVisibilityPage() {
   return (
     <div className="w-full space-y-6">
-      <div className="contents">
-        <PageHeader title="Reconcile dropdown visibility" backHref="/settings/import" backLabel="Back to Import settings" />
-        <p className="text-sm text-muted-foreground mt-0.5">
-          Choose which accounts appear in the account picker on the Import page.
-        </p>
-      </div>
+      <PageHeader title="Reconcile picker" backHref="/settings/import" backLabel="Back" />
 
       <ReconcileHideAccountsCard />
     </div>

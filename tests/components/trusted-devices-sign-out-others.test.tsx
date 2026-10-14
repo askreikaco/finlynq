@@ -51,29 +51,29 @@ describe("Sign out other devices", () => {
     const user = userEvent.setup();
     render(<TrustedDevices />);
     await screen.findByText("Chrome");
-    await user.click(screen.getByRole("button", { name: /sign out other devices/i }));
+    await user.click(screen.getByRole("button", { name: /sign out others/i }));
     await waitFor(() => expect(deletes()).toHaveLength(2));
     expect(deletes().sort()).toEqual(["/api/settings/devices?id=d2", "/api/settings/devices?id=d3"]);
     expect(deletes().some((u) => u.includes("all=1"))).toBe(false);
-    expect(await screen.findByText(/other devices signed out/i)).toBeInTheDocument();
+    expect(await screen.findByText(/others signed out/i)).toBeInTheDocument();
     expect(screen.getByText("Chrome")).toBeInTheDocument();
     expect(screen.queryByText("Safari")).toBeNull();
     expect(screen.queryByText("Firefox")).toBeNull();
-    expect(screen.queryByRole("button", { name: /sign out other devices/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /sign out others/i })).toBeNull();
   });
 
   it("is hidden when this is the only device; asks for confirmation (cancel = no calls)", async () => {
     devices = [dev("d1", "Chrome")];
     render(<TrustedDevices />);
     await screen.findByText("Chrome");
-    expect(screen.queryByRole("button", { name: /sign out other devices/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /sign out others/i })).toBeNull();
     cleanup();
     devices = [dev("d1", "Chrome"), dev("d2", "Safari")];
     (window.confirm as unknown as ReturnType<typeof vi.fn>).mockReturnValue(false);
     const user = userEvent.setup();
     render(<TrustedDevices />);
     await screen.findByText("Chrome");
-    await user.click(screen.getByRole("button", { name: /sign out other devices/i }));
+    await user.click(screen.getByRole("button", { name: /sign out others/i }));
     expect(deletes()).toHaveLength(0);
   });
 
@@ -82,7 +82,7 @@ describe("Sign out other devices", () => {
     const user = userEvent.setup();
     render(<TrustedDevices />);
     await screen.findByText("Chrome");
-    await user.click(screen.getByRole("button", { name: /sign out other devices/i }));
+    await user.click(screen.getByRole("button", { name: /sign out others/i }));
     expect(await screen.findByText(/an error occurred/i)).toBeInTheDocument();
     expect(screen.queryByText("Safari")).toBeNull();
     expect(screen.getByText("Firefox")).toBeInTheDocument();

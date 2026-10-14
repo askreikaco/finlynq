@@ -353,7 +353,7 @@ export function SplitRows({
                 >
                   {`#${num}`}
                 </div>
-                <div className="min-w-0 flex-1 divide-y divide-border">
+                <div className="min-w-0 flex-1 [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
                   <SplitAmountField
                     id={`${idPrefix}-amount-${num}`}
                     ariaLabel={`Split ${num} amount`}

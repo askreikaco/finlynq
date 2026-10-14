@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { withPrivateSwr } from "@/lib/http/private-swr";
 import { getBudgets, getSpendingByCategoryAndCurrency } from "@/lib/queries";
 import { requireAuth } from "@/lib/auth/require-auth";
 import { getRateMap, convertWithRateMap, getDisplayCurrency } from "@/lib/fx-service";
@@ -52,5 +53,5 @@ export async function GET(request: NextRequest) {
     }),
   );
 
-  return NextResponse.json({ displayCurrency, series: points.filter((p): p is NonNullable<typeof p> => p !== null) });
+  return withPrivateSwr(NextResponse.json({ displayCurrency, series: points.filter((p): p is NonNullable<typeof p> => p !== null) }));
 }

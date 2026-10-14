@@ -60,24 +60,7 @@ import { dueSubscriptions, postNowHref, skipOccurrence } from "@/lib/subscriptio
 import { draftSearchParams } from "./_components/draft-params";
 import { SubscriptionsCalendar } from "./_components/subscriptions-calendar";
 import type { Subscription } from "./_components/types";
-import {
-  Bell,
-  BellOff,
-  CalendarDays,
-  CreditCard,
-  List,
-  Pause,
-  Pencil,
-  Play,
-  Plus,
-  RotateCcw,
-  Sparkles,
-  Trash2,
-  XCircle,
-  CalendarClock,
-  CalendarRange,
-  CheckCircle2,
-} from "lucide-react";
+import { Bell, BellOff, CalendarClock, CalendarDays, CalendarRange, CheckCircle2, CreditCard, List, Pause, Pencil, Play, Plus, Repeat, RotateCcw, Search, Sparkles, Trash2, XCircle } from "lucide-react";
 
 type View = "list" | "calendar";
 
@@ -415,13 +398,13 @@ function SubscriptionsPageContent() {
         <div data-slot="subscription-groups" className="grid grid-cols-1 gap-6">
           {/* Detected from transactions */}
           {suggestions.length > 0 && (
-            <SectionCard label="Found in your transactions" padded={false} className="col-span-full px-3">
+            <SectionCard label="Found in your transactions" icon={Search} tone="cyan" padded={false} className="col-span-full px-3">
               <p className="px-1 pt-3 pb-1 text-sm text-muted-foreground">
                 {suggestions.length === 1
                   ? "1 payment repeats on a schedule but isn't tracked yet."
                   : `${suggestions.length} payments repeat on a schedule but aren't tracked yet.`}
               </p>
-              <div className={`divide-y divide-border/50 ${CARD_ROW_GRID}`}>
+              <div className={`[&>*:not(:last-child)]:shadow-[var(--list-divider)] ${CARD_ROW_GRID}`}>
                 {visibleSuggestions.map((r) => {
                   const key = `track:${r.payee}|${r.currency}`;
                   const freq = frequencyOrMonthly(r.frequency);
@@ -464,7 +447,7 @@ function SubscriptionsPageContent() {
           {/* One inset list per status group, in the sort order chosen above. */}
           {groups.map((g) =>
             g.rows.length === 0 ? null : (
-              <SectionCard key={g.key} label={`${g.title} (${g.rows.length})`} padded={false} className={`col-span-full divide-y divide-border/50 px-3 ${CARD_ROW_GRID}`}>
+              <SectionCard key={g.key} label={`${g.title} (${g.rows.length})`} icon={Repeat} tone="indigo" padded={false} className={`col-span-full [&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3 ${CARD_ROW_GRID}`}>
                 {g.rows.map((sub) => (
                   <SubscriptionRow
                     key={sub.id}

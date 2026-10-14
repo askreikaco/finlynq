@@ -12,7 +12,7 @@
 
 import { cn } from "@/lib/utils";
 import { TW } from "@/lib/design/tokens";
-import { Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -40,13 +40,14 @@ import { CHART_COLORS } from "@/lib/chart-colors";
 import { buildTxDrillUrl } from "@/lib/transactions/drill-url";
 import { todayISO } from "@/lib/utils/date";
 import { CATEGORY_WINDOWS, type CategoryDetail } from "@/lib/reports/category-detail";
-import { CalendarClock, Percent, Receipt, Scale, Store, Wallet } from "lucide-react";
+import { ArrowLeftRight, BarChart3, CalendarClock, Percent, Receipt, Scale, Store, Users, Wallet } from "lucide-react";
 import {
   Amount, CustomizeCardsSheet, HEADER_DESKTOP_ONLY, ListRow, MetricGrid, PageHeader, SectionCard,
   useCardLayout, usePageCustomize, type MetricItem,
 } from "@/components/mobile";
 import type { PageCard } from "@/lib/card-layout";
 import { PageToolbar } from "@/components/page-toolbar";
+import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { compareCaption, resolvePeriod, RANGE_LABELS } from "@/lib/metrics/period";
 import { resolveCard } from "@/lib/metrics/delta";
@@ -107,37 +108,21 @@ function CategoryPageContent() {
   const months = (CATEGORY_WINDOWS as readonly number[]).includes(monthsParam) ? monthsParam : 12;
 
   const metricRange = useMetricRange();
-  const [data, setData] = useState<CategoryResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<"not_found" | "failed" | null>(null);
+  // Cache-first: a revisit paints the last cards / chart at once and revalidates in the background.
+  const catRes = useCacheFirstJson<{ data?: CategoryResponse }>(`/api/reports/category?categoryId=${categoryId}&months=${months}`);
+  const data: CategoryResponse | null = catRes.data?.data ?? null;
+  const loading = catRes.loading;
+  const error: "not_found" | "failed" | null = catRes.error
+    ? (catRes.errorStatus === 404 || catRes.errorStatus === 400 ? "not_found" : "failed")
+    : null;
+  const load = catRes.reload;
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const sortCategory = useDropdownOrder("category");
   const cardLayout = useCardLayout("category-detail", CATEGORY_DETAIL_CARDS);
   const [customizeOpen, setCustomizeOpen] = useState(false);
   usePageCustomize(data && !error ? { onOpen: () => setCustomizeOpen(true) } : null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/reports/category?categoryId=${categoryId}&months=${months}`);
-      if (res.status === 404 || res.status === 400) {
-        setError("not_found");
-        return;
-      }
-      if (!res.ok) throw new Error("load failed");
-      const json = await res.json();
-      setData(json.data as CategoryResponse);
-    } catch {
-      setError("failed");
-    } finally {
-      setLoading(false);
-    }
-  }, [categoryId, months]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
 
   useEffect(() => {
     fetch("/api/categories")
@@ -242,7 +227,7 @@ function CategoryPageContent() {
       </div>
     ),
     chart: hasData ? (
-      <SectionCard label={`Monthly ${noun}`}>
+      <SectionCard label={`Monthly ${noun}`} icon={BarChart3} tone="indigo">
         <p className="mb-3 text-xs text-muted-foreground">
           Last {months} months in {cur}
           {stats.averageMonthly != null && ` · average ${formatCurrency(stats.averageMonthly, cur)}`}
@@ -294,7 +279,7 @@ function CategoryPageContent() {
       </SectionCard>
     ) : null,
     payees: hasData ? (
-      <SectionCard label="Top payees" padded={false} className="divide-y divide-border/50 px-3">
+      <SectionCard label="Top payees" icon={Users} tone="violet" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
         <p className="px-1 py-3 text-xs text-muted-foreground"><Store className="mr-1 inline h-3.5 w-3.5" />Where this {noun} went, last {months} months</p>
         {data.payeesLocked ? (
           <p className="px-1 py-3 text-sm text-muted-foreground">Unlock your data to see payees.</p>
@@ -314,7 +299,7 @@ function CategoryPageContent() {
       </SectionCard>
     ) : null,
     recent: hasData ? (
-      <SectionCard label="Recent transactions" padded={false} className="divide-y divide-border/50 px-3">
+      <SectionCard label="Recent transactions" icon={ArrowLeftRight} tone="cyan" padded={false} className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
         <p className="px-1 py-3 text-xs text-muted-foreground"><Receipt className="mr-1 inline h-3.5 w-3.5" />{stats.transactionCount} in the last {months} months{stats.averageTransaction != null && ` · average ${formatCurrency(stats.averageTransaction, cur)}`}</p>
         {data.recent.map((t) => (
           <ListRow
