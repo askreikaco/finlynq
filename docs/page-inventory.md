@@ -266,7 +266,6 @@ Count: 59 of 69. No `<ErrorState` in the page file or in its import closure to d
 - `/settings/backfill/[runId]`  `src/app/(app)/settings/backfill/[runId]/page.tsx`
 - `/settings/backfill`  `src/app/(app)/settings/backfill/page.tsx`
 - `/settings/bank-feeds`  `src/app/(app)/settings/bank-feeds/page.tsx`
-- `/settings/categorization`  `src/app/(app)/settings/categorization/page.tsx`
 - `/settings/data`  `src/app/(app)/settings/data/page.tsx`
 - `/settings/developer`  `src/app/(app)/settings/developer/page.tsx`
 - `/settings/display`  `src/app/(app)/settings/display/page.tsx`
