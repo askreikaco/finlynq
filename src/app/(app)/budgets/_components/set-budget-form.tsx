@@ -21,14 +21,17 @@ export function SetBudgetForm({
   displayCurrency,
   onSaved,
   existing,
+  budget,
 }: {
   month: string;
   displayCurrency: string;
   onSaved: () => void;
   existing?: Budget[];
+  /** Edit: the budget being changed (category fixed, amount prefilled). Omit to set a new one. */
+  budget?: Budget | null;
 }) {
   const [categories, setCategories] = useState<Category[]>([]);
-  const [form, setForm] = useState({ categoryId: "", amount: "" });
+  const [form, setForm] = useState({ categoryId: budget ? String(budget.categoryId) : "", amount: budget ? String(budget.amount) : "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -108,6 +111,9 @@ export function SetBudgetForm({
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <Label>Category</Label>
+        {budget ? (
+          <p data-testid="budget-category-fixed" className="mt-1 text-sm font-medium">{budget.categoryGroup ? `${budget.categoryGroup} - ` : ""}{budget.categoryName}</p>
+        ) : (
         <Combobox
           value={form.categoryId}
           onValueChange={(v) => { setForm({ ...form, categoryId: v }); setErrors({ ...errors, categoryId: "" }); }}
@@ -121,6 +127,7 @@ export function SetBudgetForm({
           emptyMessage="No categories"
           className="w-full"
         />
+        )}
         {errors.categoryId && <p className="text-xs text-destructive mt-1">{errors.categoryId}</p>}
       </div>
       <div>

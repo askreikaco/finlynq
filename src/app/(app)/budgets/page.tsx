@@ -17,7 +17,7 @@ import { parseSaveError } from "@/lib/save-error";
 import { useDisplayCurrency } from "@/components/currency-provider";
 import { AlertTriangle, ArrowRightLeft, ChevronLeft, ChevronRight, Copy, FileDown, Hourglass, LayoutGrid, Pencil, PiggyBank, Plus, Receipt, Save, Scale, Trash2, Wallet } from "lucide-react";
 import {
-  Amount, MetricGrid, CustomizeCardsSheet, DetailSheet, ListRow, PHONE_PRIMARY_CLASS, SectionCard,
+  Amount, MetricGrid, CustomizeCardsSheet, DetailSheet, ListRow, SectionCard, ListDetailLayout, ListDetailNewButton, useListDetail,
   useCardLayout, usePageCustomize, type MetricItem, type DetailItem, type OverflowAction,
 } from "@/components/mobile";
 import { MetricRangeSelect } from "@/components/metric-range-select";
@@ -25,6 +25,7 @@ import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { compareCaption, seriesWindow, type MonthPoint } from "@/lib/metrics/period";
 import { NO_HISTORY_CAPTION, resolveCard } from "@/lib/metrics/delta";
 import { SectionPage } from "@/components/templates/section-page";
+import { BudgetFormPanel } from "./_components/budget-form-panel";
 import { cn } from "@/lib/utils";
 import { CARD_ROW_GRID } from "@/components/mobile/section-card";
 import type { PageCard } from "@/lib/card-layout";
@@ -63,6 +64,8 @@ function SyncBadge({ mark }: { mark: BudgetSyncMark }) {
 function BudgetsPageContent() {
   const { displayCurrency, isLoading: currencyLoading } = useDisplayCurrency();
   const searchParams = useSearchParams();
+  // Split view (regular+): a row opens the set-budget form in the pane (?sel=<id>); phones keep the detail sheet.
+  const detail = useListDetail();
   // Month and mode come from the URL so returning from a form page lands on the same view.
   const [month, setMonth] = useState(() => parseMonthParam(searchParams.get("month"), getCurrentMonth()));
   const [mode, setMode] = useState<BudgetMode>(() => (searchParams.get("mode") === "envelope" ? "envelope" : "traditional"));
@@ -147,6 +150,8 @@ function BudgetsPageContent() {
 
   async function handleDelete() {
     if (deleteId == null) return;
+    // The pane closes when the budget it shows is deleted.
+    const clearIfSelected = () => { if (detail.selectedId === String(deleteId)) detail.clear(); };
     const row = budgets.find((b) => b.id === deleteId);
     setDeleting(true);
     try {
@@ -158,7 +163,7 @@ function BudgetsPageContent() {
           return;
         }
         setActionError("");
-        setDeleteId(null);
+        clearIfSelected(); setDeleteId(null);
         return;
       }
       try {
@@ -170,13 +175,13 @@ function BudgetsPageContent() {
         if (serverRow && isLocalWriteQueueActive() && isNetworkFailure(netErr)) {
           const queued = await queueOfflineBudgetDelete(serverRowOf(serverRow));
           if (queued) {
-            setDeleteId(null);
+            clearIfSelected(); setDeleteId(null);
             return;
           }
         }
         throw netErr;
       }
-      setDeleteId(null);
+      clearIfSelected(); setDeleteId(null);
       loadData();
     } finally {
       setDeleting(false);
@@ -369,7 +374,8 @@ function BudgetsPageContent() {
                 value={<Amount value={left} currency={displayCurrency} size="md" tone="auto" />}
                 secondary={`${mode === "envelope" ? "left · " : ""}${Math.round(rawPct)}%`}
                 secondaryTone={over ? "neg" : "muted"}
-                onPress={() => setDetailId(b.id)}
+                selected={detail.selectedId === String(b.id)}
+                onPress={() => (detail.split ? detail.select(b.id) : setDetailId(b.id))}
                 aria-label={`${b.categoryName}: ${Math.round(rawPct)}% used`}
               />
             );
@@ -456,9 +462,7 @@ function BudgetsPageContent() {
       header={{
         overflow,
         actions: (
-          <Button className={PHONE_PRIMARY_CLASS} aria-label="Add Budget" render={<Link href={formHref} />}>
-            <Plus className="h-4 w-4 mr-1" /> Add Budget
-          </Button>
+          <ListDetailNewButton href={formHref} label="Add Budget" />
         ),
       }}
     >
@@ -534,7 +538,38 @@ function BudgetsPageContent() {
           {emptyBudgets}
         </>
       ) : (
-        shown.map((id) => <div key={id}>{nodes[id]}</div>)
+        <>
+          {/* Metric cards stay full width above the split; the category list shares the 2/3 column. */}
+          {shown.filter((id) => id !== "budgets").map((id) => <div key={id}>{nodes[id]}</div>)}
+          <ListDetailLayout
+            entity="budget"
+            newLabel="Add Budget"
+            list={<div className="space-y-6">{shown.filter((id) => id === "budgets").map((id) => <div key={id}>{nodes[id]}</div>)}</div>}
+            pane={(api) => {
+              const selected = budgets.find((b) => String(b.id) === api.selectedId) ?? null;
+              if (!api.isNew && !selected) {
+                return <p data-testid="budget-pane-missing" className="text-sm text-muted-foreground">This budget no longer exists.</p>;
+              }
+              return (
+                <div className="space-y-3">
+                  {selected && (
+                    <Button type="button" variant="outline" size="sm" className="w-full" render={<Link href={drillHref(selected)} />}>
+                      <Receipt className="mr-1 h-4 w-4" /> View transactions
+                    </Button>
+                  )}
+                  <BudgetFormPanel
+                    embedded
+                    month={month}
+                    budget={api.isNew ? null : selected}
+                    onSaved={() => { loadData(); api.afterSaved(); }}
+                    onCancel={api.clear}
+                    onDelete={selected ? () => setDeleteId(selected.id) : undefined}
+                  />
+                </div>
+              );
+            }}
+          />
+        </>
       )}
 
       <DetailSheet

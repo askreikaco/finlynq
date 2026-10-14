@@ -32,16 +32,26 @@ export function CategoryForm({
   mode,
   categoryId,
   chrome = true,
+  onSaved,
+  onCancel,
+  compact = false,
 }: {
   mode: "create" | "rename";
   /** Required when mode is "rename". */
   categoryId?: number | null;
   /** false: the caller (FormPage) renders the root and PageHeader; this renders the form only. */
   chrome?: boolean;
+  /** After a save (or a queued save). Default: go to returnTo. The split pane passes its own. */
+  onSaved?: () => void;
+  /** Cancel. Default: go to returnTo. */
+  onCancel?: () => void;
+  /** Pane: no page margins / width token around the form. */
+  compact?: boolean;
 }) {
   const router = useRouter();
   const returnTo = useReturnTo(CATEGORY_RETURN_FALLBACK);
   const isRename = mode === "rename";
+  const done = () => (onSaved ? onSaved() : router.push(returnTo));
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -108,12 +118,12 @@ export function CategoryForm({
         setFormError(data?.error || fallback);
         return;
       }
-      router.push(returnTo);
+      done();
     } catch (netErr) {
       // Offline queue (local-first L3): a rename is kept on this device. A create stays online (queued transactions reference category ids).
       const base = isRename ? categories.find((c) => c.id === categoryId) : undefined;
       if (base && isLocalWriteQueueActive() && isNetworkFailure(netErr) && name.trim() !== base.name && (await queueOfflineEntityEdit("category", base.id, { name: name.trim() }, { name: base.name }))) {
-        router.push(returnTo);
+        done();
         return;
       }
       setFormError(isRename ? "Failed to update category" : "Failed to create category");
@@ -135,7 +145,7 @@ export function CategoryForm({
   }
 
   const formNode = (
-    <form onSubmit={handleSubmit} noValidate className={`mt-3 space-y-4 ${TW.form} ${TW.formPad}`}>
+    <form onSubmit={handleSubmit} noValidate data-form="category" className={compact ? "space-y-4" : `mt-3 space-y-4 ${TW.form} ${TW.formPad}`}>
       {formError && (
         <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-lg">
           <AlertTriangle className="h-4 w-4 shrink-0" />
@@ -191,7 +201,7 @@ export function CategoryForm({
       )}
 
       <div className="flex justify-end gap-2 pt-2">
-        <Button type="button" variant="ghost" onClick={() => router.push(returnTo)} disabled={submitting}>
+        <Button type="button" variant="ghost" onClick={() => (onCancel ? onCancel() : router.push(returnTo))} disabled={submitting}>
           Cancel
         </Button>
         <Button type="submit" disabled={submitting || loading}>

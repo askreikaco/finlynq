@@ -36,7 +36,7 @@ const renderLayout = () =>
       list={<div data-testid="the-list">rows</div>}
       pane={(api) => (
         <div data-testid="the-form" data-id={api.selectedId ?? ""} data-new={String(api.isNew)}>
-          <button onClick={api.afterSaved}>saved</button>
+          <button onClick={() => api.afterSaved()}>saved</button>
           <button onClick={api.afterDeleted}>deleted</button>
         </div>
       )}

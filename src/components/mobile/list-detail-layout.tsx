@@ -71,9 +71,15 @@ export function ListDetailNewButton({
   className,
   size,
   variant,
+  children,
+  primary = true,
 }: {
+  /** The page header's primary action (icon-only cell on phones). false: an ordinary in-page button. */
+  primary?: boolean;
   href: string;
   label: string;
+  /** Replaces the default "+ label" content (e.g. a label with a screen-reader-only tail). */
+  children?: React.ReactNode;
   className?: string;
   size?: React.ComponentProps<typeof Button>["size"];
   variant?: React.ComponentProps<typeof Button>["variant"];
@@ -81,7 +87,7 @@ export function ListDetailNewButton({
   const { split, selectNew } = useListDetail();
   return (
     <Button
-      className={cn(PHONE_PRIMARY_CLASS, className)}
+      className={cn(primary && PHONE_PRIMARY_CLASS, className)}
       size={size}
       variant={variant}
       aria-label={label}
@@ -93,8 +99,12 @@ export function ListDetailNewButton({
         selectNew();
       }}
     >
-      <Plus className="mr-1 h-4 w-4" />
-      {label}
+      {children ?? (
+        <>
+          <Plus className="mr-1 h-4 w-4" />
+          {label}
+        </>
+      )}
     </Button>
   );
 }
@@ -119,8 +129,11 @@ export function ListDetailEmptyPane({ newLabel, entity }: { newLabel: string; en
 
 /** What the pane callback receives: the selection api plus the after-save / after-delete behaviour. */
 export interface ListDetailPaneApi extends ListDetailApi {
-  /** Edit: keep the pane on the item and reload its form from fresh data. Create: close the pane (the new row is in the list). */
-  afterSaved: () => void;
+  /**
+   * Edit: keep the pane on the item and reload its form from fresh data. Create: select the new item when its id is
+   * known, else close the pane (the new row is in the list).
+   */
+  afterSaved: (id?: string | number) => void;
   /** Close the pane. */
   afterDeleted: () => void;
 }
@@ -144,9 +157,11 @@ export function ListDetailLayout({ list, pane, newLabel, entity, className, enab
   if (!api.split || !enabled) return <>{list}</>;
   const paneApi: ListDetailPaneApi = {
     ...api,
-    afterSaved: () => {
-      if (api.sel.kind === "new") api.clear();
-      else setRev((n) => n + 1);
+    afterSaved: (id) => {
+      if (api.sel.kind === "new") {
+        if (id !== undefined && id !== null) api.replaceWith(id);
+        else api.clear();
+      } else setRev((n) => n + 1);
     },
     afterDeleted: api.clear,
   };

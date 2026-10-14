@@ -37,7 +37,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { Check, Trash2 } from "lucide-react";
+import { Check, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ErrorState } from "@/components/error-state";
@@ -99,6 +99,8 @@ export interface FormPageEmbedded {
   onSaved?: (res?: Response | null) => void;
   onCancel?: () => void;
   onDeleted?: () => void;
+  /** Extra header controls (e.g. a Delete that the host page confirms itself). */
+  actions?: React.ReactNode;
 }
 
 export interface FormPageContext<R, V, X = unknown> {
@@ -469,11 +471,19 @@ function FormPageBody<T, R, V, X>({
         <h2 className="truncate text-base font-semibold text-foreground">{title}</h2>
         {subtitleNode ? <div className="text-xs text-muted-foreground">{subtitleNode}</div> : null}
       </div>
-      {deleteCfg && openDelete ? (
-        <Button type="button" variant="outline" size="sm" className="shrink-0 text-destructive" onClick={openDelete}>
-          <Trash2 className="mr-1 h-4 w-4" aria-hidden /> {deleteCfg.headerLabel ?? deleteCfg.label}
-        </Button>
-      ) : null}
+      <div className="flex shrink-0 items-center gap-1">
+        {embedded?.actions}
+        {deleteCfg && openDelete ? (
+          <Button type="button" variant="outline" size="sm" className="text-destructive" onClick={openDelete}>
+            <Trash2 className="mr-1 h-4 w-4" aria-hidden /> {deleteCfg.headerLabel ?? deleteCfg.label}
+          </Button>
+        ) : null}
+        {embedded?.onCancel ? (
+          <Button type="button" variant="ghost" size="icon" aria-label="Close" data-slot="form-pane-close" onClick={embedded.onCancel}>
+            <X className="h-4 w-4" aria-hidden />
+          </Button>
+        ) : null}
+      </div>
     </div>
   );
   const headerNode = embedded ? embeddedHeader : (

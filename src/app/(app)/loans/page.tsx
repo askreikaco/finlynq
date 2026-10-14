@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { useCacheFirstJson } from "@/lib/data/use-cache-first";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -14,7 +14,8 @@ import { EmptyState } from "@/components/empty-state";
 import { ErrorState } from "@/components/error-state";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CspSafeBar } from "@/components/csp-safe-bar";
-import { Amount, MetricGrid, DetailSheet, ListRow, SectionCard, type MetricItem, type DetailItem } from "@/components/mobile";
+import { Amount, MetricGrid, DetailSheet, ListRow, SectionCard, ListDetailLayout, ListDetailNewButton, useListDetail, type MetricItem, type DetailItem } from "@/components/mobile";
+import { LoanFormPanel } from "./_components/loan-form-panel";
 import { MetricRangeSelect } from "@/components/metric-range-select";
 import { useMetricRange } from "@/lib/metrics/use-metric-range";
 import { compareCaption, monthsBetween, seriesWindow } from "@/lib/metrics/period";
@@ -114,7 +115,7 @@ function loanDetailItems(loan: Loan, displayCurrency: string, nextDue: string | 
   return items;
 }
 
-function LoanRow({ loan, paidOff, displayCurrency, onOpen }: { loan: Loan; paidOff: boolean; displayCurrency: string; onOpen: () => void }) {
+function LoanRow({ loan, paidOff, displayCurrency, onOpen, selected }: { loan: Loan; paidOff: boolean; displayCurrency: string; onOpen: () => void; selected?: boolean }) {
   const payment = loan.paymentPerPeriod ?? loan.monthlyPayment;
   const freq = FREQUENCY_LABELS[loan.paymentFrequency];
   const shown = loan.remainingBalanceDisplay;
@@ -125,6 +126,7 @@ function LoanRow({ loan, paidOff, displayCurrency, onOpen }: { loan: Loan; paidO
       subtitle={`${loan.annualRate}% · ${formatCurrency(payment, loan.currency)}${freq ? ` ${freq.toLowerCase()}` : ""}`}
       value={<Amount value={loan.remainingBalance} currency={loan.currency} size="md" tone="neg" />}
       secondary={converted ? `≈ ${formatCurrency(shown, displayCurrency)}` : paidOff ? "Paid off" : undefined}
+      selected={selected}
       onPress={onOpen}
     />
   );
@@ -146,12 +148,15 @@ function LoanProgress({ loan }: { loan: Loan }) {
 function LoansPageContent() {
   const router = useRouter();
   const { displayCurrency } = useDisplayCurrency();
+  // Split view (regular+): a row opens the edit form in the pane (?sel=<id>); phones keep the detail sheet.
+  const detail = useListDetail();
   // Cache-first when the local read cache is on (Settings > Data > Offline mode); a plain fetch otherwise.
   const { data: loansData, loading, error: loadError, reload: load } = useCacheFirstJson<Loan[]>("/api/loans");
   const loans = useMemo(() => (Array.isArray(loansData) ? loansData : []), [loansData]);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [detailId, setDetailId] = useState<number | null>(null);
+  const openLoan = (id: number) => (detail.split ? detail.select(id) : setDetailId(id));
   const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
   const [amort, setAmort] = useState<AmortResult | null>(null);
   const [whatIf, setWhatIf] = useState<WhatIf[]>([]);
@@ -247,118 +252,143 @@ function LoansPageContent() {
       width="report"
             header={{
         actions: (
-          <Button id="add-loan-btn" onClick={() => router.push("/loans/new")}>
-            <Plus className="h-4 w-4 mr-1" /> Add Loan
-          </Button>
+          <ListDetailNewButton href="/loans/new" label="Add Loan" />
         ),
       }}
     >
       <MetricRangeSelect value={selection} onChange={setSelection} />
       <MetricGrid metrics={metrics} />
 
-      {loans.length === 0 && (
-        <EmptyState
-          icon={Landmark}
-          title="No loans tracked yet"
-          description="Add a mortgage, car loan, student loan, or any other debt to see amortization schedules and payoff projections."
-          action={{ label: "Add your first loan", onClick: () => router.push("/loans/new") }}
-        />
-      )}
-
-      {activeLoans.length > 0 && (
-        <SectionCard label="Active" icon={Landmark} tone="indigo" padded={false} className={`[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3 ${CARD_ROW_GRID}`}>
-          {activeLoans.map((loan) => (
-            <LoanRow key={loan.id} loan={loan} paidOff={false} displayCurrency={displayCurrency} onOpen={() => setDetailId(loan.id)} />
-          ))}
-        </SectionCard>
-      )}
-
-      {/* Paid-off loans: collapsed by default */}
-      {completedLoans.length > 0 && (
-        <Accordion defaultValue={null}>
-          <AccordionItem
-            value="completed"
-            icon={<CheckCircle2 className="h-4 w-4" />}
-            title={`Completed (${completedLoans.length})`}
-            description="Paid-off loans"
-          >
-            <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
-              {completedLoans.map((loan) => (
-                <LoanRow key={loan.id} loan={loan} paidOff displayCurrency={displayCurrency} onOpen={() => setDetailId(loan.id)} />
+      <ListDetailLayout
+          entity="loan"
+          newLabel="Add Loan"
+          list={
+            <div className="space-y-6">
+              {loans.length === 0 && (
+                <EmptyState
+                  icon={Landmark}
+                  title="No loans tracked yet"
+                  description="Add a mortgage, car loan, student loan, or any other debt to see amortization schedules and payoff projections."
+                  action={{ label: "Add your first loan", onClick: () => (detail.split ? detail.selectNew() : router.push("/loans/new")) }}
+                />
+              )}
+          {activeLoans.length > 0 && (
+            <SectionCard label="Active" icon={Landmark} tone="indigo" padded={false} className={`[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3 ${CARD_ROW_GRID}`}>
+              {activeLoans.map((loan) => (
+                <LoanRow key={loan.id} loan={loan} paidOff={false} displayCurrency={displayCurrency} onOpen={() => openLoan(loan.id)} selected={detail.selectedId === String(loan.id)} />
               ))}
-            </div>
-          </AccordionItem>
-        </Accordion>
-      )}
+            </SectionCard>
+          )}
 
-      {/* Amortization panel. Every figure comes from the schedule the server computed in the loan's OWN currency. */}
-      {selectedLoan && amort && (
-        <SectionCard label={`Amortization: ${selectedLoan.name} (${selectedLoan.currency})`} icon={Table2} tone="cyan">
-          <Tabs defaultValue="chart">
-            <TabsList className="h-auto flex-wrap">
-              <TabsTrigger value="chart">Chart</TabsTrigger>
-              <TabsTrigger value="table">Schedule</TabsTrigger>
-              <TabsTrigger value="monthly">Monthly Interest</TabsTrigger>
-              <TabsTrigger value="whatif">What-If</TabsTrigger>
-            </TabsList>
-            <TabsContent value="chart">
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={amort.schedule.filter((_, i) => i % Math.max(1, Math.floor(amort.schedule.length / 60)) === 0)}>
-                  <XAxis dataKey="date" fontSize={10} tickLine={false} axisLine={false} /><YAxis fontSize={10} tickLine={false} axisLine={false} /><Tooltip /><Legend />
-                  <Bar dataKey="principal" fill="#10b981" name="Principal" stackId="a" radius={[2, 2, 0, 0]} />
-                  <Bar dataKey="interest" fill="#f43f5e" name="Interest" stackId="a" radius={[2, 2, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-              <ResponsiveContainer width="100%" height={200} className="mt-4">
-                <LineChart data={amort.schedule.filter((_, i) => i % Math.max(1, Math.floor(amort.schedule.length / 60)) === 0)}>
-                  <XAxis dataKey="date" fontSize={10} tickLine={false} axisLine={false} /><YAxis fontSize={10} tickLine={false} axisLine={false} /><Tooltip />
-                  <Line type="monotone" dataKey="balance" stroke="#6366f1" strokeWidth={2} dot={false} name="Balance" />
-                </LineChart>
-              </ResponsiveContainer>
-            </TabsContent>
-            <TabsContent value="table">
-              <div className="max-h-[60dvh] overflow-y-auto [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
-                {amort.schedule.map((r) => (
-                  <ListRow
-                    key={r.period}
-                    title={`#${r.period} · ${r.date}`}
-                    subtitle={`Principal ${formatCurrency(r.principal, selectedLoan.currency)} · Interest ${formatCurrency(r.interest, selectedLoan.currency)}`}
-                    value={<Amount value={r.payment} currency={selectedLoan.currency} size="md" tone="none" />}
-                    secondary={`Balance ${formatCurrency(r.balance, selectedLoan.currency)}`}
-                  />
-                ))}
+          {/* Paid-off loans: collapsed by default */}
+          {completedLoans.length > 0 && (
+            <Accordion defaultValue={null}>
+              <AccordionItem
+                value="completed"
+                icon={<CheckCircle2 className="h-4 w-4" />}
+                title={`Completed (${completedLoans.length})`}
+                description="Paid-off loans"
+              >
+                <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)] px-3">
+                  {completedLoans.map((loan) => (
+                    <LoanRow key={loan.id} loan={loan} paidOff displayCurrency={displayCurrency} onOpen={() => openLoan(loan.id)} selected={detail.selectedId === String(loan.id)} />
+                  ))}
+                </div>
+              </AccordionItem>
+            </Accordion>
+          )}
+
+          {/* Amortization panel. Every figure comes from the schedule the server computed in the loan's OWN currency. */}
+          {selectedLoan && amort && (
+            <SectionCard label={`Amortization: ${selectedLoan.name} (${selectedLoan.currency})`} icon={Table2} tone="cyan">
+              <Tabs defaultValue="chart">
+                <TabsList className="h-auto flex-wrap">
+                  <TabsTrigger value="chart">Chart</TabsTrigger>
+                  <TabsTrigger value="table">Schedule</TabsTrigger>
+                  <TabsTrigger value="monthly">Monthly Interest</TabsTrigger>
+                  <TabsTrigger value="whatif">What-If</TabsTrigger>
+                </TabsList>
+                <TabsContent value="chart">
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={amort.schedule.filter((_, i) => i % Math.max(1, Math.floor(amort.schedule.length / 60)) === 0)}>
+                      <XAxis dataKey="date" fontSize={10} tickLine={false} axisLine={false} /><YAxis fontSize={10} tickLine={false} axisLine={false} /><Tooltip /><Legend />
+                      <Bar dataKey="principal" fill="#10b981" name="Principal" stackId="a" radius={[2, 2, 0, 0]} />
+                      <Bar dataKey="interest" fill="#f43f5e" name="Interest" stackId="a" radius={[2, 2, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                  <ResponsiveContainer width="100%" height={200} className="mt-4">
+                    <LineChart data={amort.schedule.filter((_, i) => i % Math.max(1, Math.floor(amort.schedule.length / 60)) === 0)}>
+                      <XAxis dataKey="date" fontSize={10} tickLine={false} axisLine={false} /><YAxis fontSize={10} tickLine={false} axisLine={false} /><Tooltip />
+                      <Line type="monotone" dataKey="balance" stroke="#6366f1" strokeWidth={2} dot={false} name="Balance" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </TabsContent>
+                <TabsContent value="table">
+                  <div className="max-h-[60dvh] overflow-y-auto [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+                    {amort.schedule.map((r) => (
+                      <ListRow
+                        key={r.period}
+                        title={`#${r.period} · ${r.date}`}
+                        subtitle={`Principal ${formatCurrency(r.principal, selectedLoan.currency)} · Interest ${formatCurrency(r.interest, selectedLoan.currency)}`}
+                        value={<Amount value={r.payment} currency={selectedLoan.currency} size="md" tone="none" />}
+                        secondary={`Balance ${formatCurrency(r.balance, selectedLoan.currency)}`}
+                      />
+                    ))}
+                  </div>
+                </TabsContent>
+                <TabsContent value="monthly">
+                  <p className="text-sm text-muted-foreground mb-4">Interest accrued per calendar month — the reportable figure, day-weighted when payments straddle month boundaries.</p>
+                  <div className="max-h-[60dvh] overflow-y-auto [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+                    {(amort.monthlyAccrual ?? []).map((m) => (
+                      <ListRow
+                        key={m.month}
+                        title={m.month}
+                        value={<Amount value={m.interest} currency={selectedLoan.currency} size="md" tone="neg" />}
+                      />
+                    ))}
+                  </div>
+                </TabsContent>
+                <TabsContent value="whatif">
+                  <p className="text-sm text-muted-foreground mb-4">What if you added extra monthly payments? Amounts are in {selectedLoan.currency}.</p>
+                  <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
+                    {whatIf.map((w) => (
+                      <ListRow
+                        key={w.extraPayment}
+                        title={`Extra ${formatCurrency(w.extraPayment, selectedLoan.currency)} / month`}
+                        subtitle={`New payoff ${w.newPayoffDate}`}
+                        value={<span className="tabular-nums text-sm font-semibold text-pos">{w.monthsSaved} months</span>}
+                        secondary={`Interest saved ${formatCurrency(w.interestSaved, selectedLoan.currency)}`}
+                        secondaryTone="pos"
+                      />
+                    ))}
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </SectionCard>
+          )}
+            </div>
+          }
+          pane={(api) => {
+            const open = loans.find((l) => String(l.id) === api.selectedId) ?? null;
+            return (
+              <div className="space-y-3">
+                {open && (
+                  <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => void viewAmortization(open)}>
+                    <Table2 className="mr-1 h-4 w-4" /> View schedule
+                  </Button>
+                )}
+                <LoanFormPanel
+                  embedded
+                  mode={api.isNew ? "create" : "edit"}
+                  id={api.selectedId ?? undefined}
+                  onSaved={() => { load(); api.afterSaved(); }}
+                  onCancel={api.clear}
+                  onDeleted={() => { load(); api.afterDeleted(); }}
+                />
               </div>
-            </TabsContent>
-            <TabsContent value="monthly">
-              <p className="text-sm text-muted-foreground mb-4">Interest accrued per calendar month — the reportable figure, day-weighted when payments straddle month boundaries.</p>
-              <div className="max-h-[60dvh] overflow-y-auto [&>*:not(:last-child)]:shadow-[var(--list-divider)]">
-                {(amort.monthlyAccrual ?? []).map((m) => (
-                  <ListRow
-                    key={m.month}
-                    title={m.month}
-                    value={<Amount value={m.interest} currency={selectedLoan.currency} size="md" tone="neg" />}
-                  />
-                ))}
-              </div>
-            </TabsContent>
-            <TabsContent value="whatif">
-              <p className="text-sm text-muted-foreground mb-4">What if you added extra monthly payments? Amounts are in {selectedLoan.currency}.</p>
-              <div className="[&>*:not(:last-child)]:shadow-[var(--list-divider)]">
-                {whatIf.map((w) => (
-                  <ListRow
-                    key={w.extraPayment}
-                    title={`Extra ${formatCurrency(w.extraPayment, selectedLoan.currency)} / month`}
-                    subtitle={`New payoff ${w.newPayoffDate}`}
-                    value={<span className="tabular-nums text-sm font-semibold text-pos">{w.monthsSaved} months</span>}
-                    secondary={`Interest saved ${formatCurrency(w.interestSaved, selectedLoan.currency)}`}
-                    secondaryTone="pos"
-                  />
-                ))}
-              </div>
-            </TabsContent>
-          </Tabs>
-        </SectionCard>
-      )}
+            );
+          }}
+        />
 
       {detailLoan && (
         <DetailSheet
@@ -388,4 +418,10 @@ function LoansPageContent() {
   );
 }
 
-export default function LoansPage() { return <LoansPageContent />; }
+export default function LoansPage() {
+  return (
+    <Suspense fallback={<LoansSkeleton />}>
+      <LoansPageContent />
+    </Suspense>
+  );
+}

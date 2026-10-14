@@ -54,7 +54,9 @@ describe("goals list: openers navigate, no create/edit dialog", () => {
 
 describe("route pages render the shared form components", () => {
   const WIRING: [string, string, string][] = [
-    [`${APP}/budgets/new/page.tsx`, "SetBudgetForm", "../_components/set-budget-form"],
+    // Budgets: /budgets/new renders the shared BudgetFormPanel (FormPage + SetBudgetForm), the same one the /budgets split pane renders.
+    [`${APP}/budgets/new/page.tsx`, "BudgetFormPanel", "../_components/budget-form-panel"],
+    [`${APP}/budgets/_components/budget-form-panel.tsx`, "SetBudgetForm", "./set-budget-form"],
     [`${APP}/budgets/templates/new/page.tsx`, "SaveTemplateForm", "../../_components/save-template-form"],
     [`${APP}/budgets/templates/apply/page.tsx`, "ApplyTemplateForm", "../../_components/apply-template-form"],
     [`${APP}/budgets/move-money/page.tsx`, "MoveMoneyForm", "../_components/move-money-form"],
@@ -74,7 +76,7 @@ describe("route pages render the shared form components", () => {
   it("every form-page back/return target is validated with safeReturnTo (in FormPage's useReturnTo)", () => {
     expect(read("src/lib/forms/use-return-to.ts")).toMatch(/safeReturnTo\(searchParams\.get\("returnTo"\)/);
     for (const f of [
-      `${APP}/budgets/new/page.tsx`,
+      `${APP}/budgets/_components/budget-form-panel.tsx`,
       `${APP}/budgets/templates/new/page.tsx`,
       `${APP}/budgets/templates/apply/page.tsx`,
       `${APP}/budgets/move-money/page.tsx`,

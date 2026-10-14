@@ -72,27 +72,23 @@ describe("shared forms and new routes exist", () => {
     expect(f).toContain('method: isEdit ? "PUT" : "POST"');
   });
   it.each([
-    "src/app/(app)/loans/[id]/edit/page.tsx",
-    "src/app/(app)/subscriptions/new/page.tsx",
-    "src/app/(app)/subscriptions/[id]/edit/page.tsx",
-  ])("%s exists and validates returnTo", (rel) => {
+    ["src/app/(app)/loans/[id]/edit/page.tsx", "LoanFormPanel", "loans/_components/loan-form-panel.tsx"],
+    ["src/app/(app)/loans/new/page.tsx", "LoanFormPanel", "loans/_components/loan-form-panel.tsx"],
+    ["src/app/(app)/subscriptions/new/page.tsx", "SubscriptionFormPanel", "subscriptions/_components/subscription-form-panel.tsx"],
+    ["src/app/(app)/subscriptions/[id]/edit/page.tsx", "SubscriptionFormPanel", "subscriptions/_components/subscription-form-panel.tsx"],
+  ])("%s exists and renders the shared %s (FormPage: validates returnTo via useReturnTo)", (rel, comp, panel) => {
     expect(existsSync(path.join(ROOT, rel))).toBe(true);
-    expect(read(rel)).toContain("safeReturnTo(");
+    expect(read(rel)).toContain(`<${comp}`);
+    const p = read(`src/app/(app)/${panel}`);
+    expect(p).toContain('from "@/components/templates"');
+    expect(p).toContain("<FormPage");
+    expect(p).toMatch(/fallbackReturn=\{\w+_FALLBACK\}/);
   });
-  it("loans/new exists and validates returnTo through FormPage (useReturnTo, same rules)", () => {
-    const rel = "src/app/(app)/loans/new/page.tsx";
-    expect(existsSync(path.join(ROOT, rel))).toBe(true);
-    const s = read(rel);
-    expect(s).toContain('from "@/components/templates"');
-    expect(s).toContain('const LOANS_FALLBACK = "/loans"');
-    expect(s).toMatch(/fallbackReturn=\{LOANS_FALLBACK\}/);
-  });
-  it("the delete confirm lives on the edit pages, behind the overflow", () => {
-    for (const rel of ["src/app/(app)/loans/[id]/edit/page.tsx", "src/app/(app)/subscriptions/[id]/edit/page.tsx"]) {
-      const s = read(rel);
-      expect(s).toContain("overflow={[");
-      expect(s).toContain("<ConfirmDialog");
+  it("the delete confirm lives in the shared edit panels (FormPage delete config: overflow + ConfirmDialog)", () => {
+    for (const rel of ["loans/_components/loan-form-panel.tsx", "subscriptions/_components/subscription-form-panel.tsx"]) {
+      expect(read(`src/app/(app)/${rel}`)).toMatch(/delete=\{\{/);
     }
+    expect(read("src/components/templates/form-page.tsx")).toContain("<ConfirmDialog");
   });
   it("the old subscription dialog file is gone", () => {
     expect(existsSync(path.join(ROOT, "src/app/(app)/subscriptions/_components/subscription-dialog.tsx"))).toBe(false);
